@@ -15,6 +15,7 @@ import SpotterModelThumbnail from './thumbnails/SpotterModel.svg';
 import AdminLangThumbnail from './thumbnails/AdminLang.svg';
 import MiniSpottersThumbnail from './thumbnails/MiniSpotters.svg';
 import LiveboardTemplateThumbnail from './thumbnails/LiveboardTemplate.svg';
+import DataStudioThumbnail from './thumbnails/DataStudio.svg';
 
 /**
  * Metadata for a playground project
@@ -56,6 +57,7 @@ const SpotterModelProto = React.lazy(() => import('./SpotterModel'));
 const AdminLang = React.lazy(() => import('./AdminLang'));
 const MiniSpotters = React.lazy(() => import('./MiniSpotters'));
 const LiveboardTemplate = React.lazy(() => import('./_liveboard-template'));
+const DataStudio = React.lazy(() => import('./DataStudio'));
 
 
 /**
@@ -145,6 +147,16 @@ export const projectRegistry: ProjectMeta[] = [
     dsComponents: 8,
     customComponents: 4,
     section: 'sample',
+  },
+  {
+    id: 'DataStudio',
+    name: 'Data Studio',
+    description: 'Workspace for data teams to build, clean, join, and publish AI-ready data models.',
+    author: 'Vivek Sahi',
+    lastModified: '2026-03-31',
+    thumbnail: DataStudioThumbnail,
+    component: DataStudio,
+    section: 'mine',
   },
   // Add more projects here. New prototypes default to 'mine' section.
   // Set section: 'sample' to show under Sample prototypes instead.
