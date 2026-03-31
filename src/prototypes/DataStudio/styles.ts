@@ -1,6 +1,7 @@
 import { CSSProperties } from 'react';
 import { systemColors } from '../../tokens/colors';
 import { spacing } from '../../tokens/spacing';
+import { fontFamily, fontSize, fontWeight, v2TextStyles } from '../../tokens/typography';
 
 // ── Layout constants ──────────────────────────────────────────────────────────
 export const HEADER_HEIGHT = 56;
@@ -17,13 +18,13 @@ export const styles: Record<string, CSSProperties> = {
     height: '100vh',
     overflow: 'hidden',
     backgroundColor: systemColors.light['background-sunken'],
-    fontFamily: 'Inter, system-ui, sans-serif',
+    fontFamily: fontFamily.primary,
   },
 
   // Global top bar (dark)
   globalHeader: {
     height: GLOBAL_NAV_HEIGHT,
-    backgroundColor: '#1D232F',
+    backgroundColor: systemColors.light['background-base-inverse'],
     display: 'flex',
     alignItems: 'center',
     padding: `0 ${spacing.D}px`,
@@ -127,3 +128,9 @@ export const styles: Record<string, CSSProperties> = {
 // ── Color shortcuts ───────────────────────────────────────────────────────────
 export const c = systemColors.light;
 export const sp = spacing;
+
+// ── Typography shortcuts ──────────────────────────────────────────────────────
+export const ff = fontFamily;
+export const fs = fontSize;
+export const fw = fontWeight;
+export const ts = v2TextStyles;

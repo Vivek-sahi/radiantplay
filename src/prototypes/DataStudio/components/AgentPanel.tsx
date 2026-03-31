@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { c, sp } from '../styles';
-import { ProjectState } from '../index';
+import { c, sp, ff, fs, fw, ts } from '../styles';
+import { Button } from '../../../components/Button';
+import { ProjectState, ProjectContext } from '../index';
 
 export interface AgentMessage {
   id: string;
@@ -41,7 +42,7 @@ const SCRIPTS: Record<string, {
   proposal: string;
   execution: string;
   nextStep: ProjectState['buildStep'];
-  contextHint?: string;
+  contextUpdate?: Partial<ProjectContext>;
   newName?: string;
   setsProfileComplete?: boolean;
   lineDelay?: number;
@@ -87,7 +88,10 @@ Would you like me to add these to your project?`,
 
 Tables are now visible in the left panel. Would you like me to figure out the right joins between these tables?`,
     nextStep: 'tables',
-    contextHint: 'Analyze campaign performance vs orders by region and segment.',
+    contextUpdate: {
+      persona: 'Marketing analyst at an e-commerce company focused on campaign attribution, ROI, and regional performance.',
+      sampleQuestions: 'Which campaigns drove the most orders last month?\nWhat is the return on spend per campaign channel?\nHow do campaigns perform across regions and user segments?',
+    },
     newName: 'Marketing Campaign Attribution',
   },
 
@@ -298,6 +302,10 @@ Shall I proceed?`,
 **Data health is now Good (82/100).** Your model is AI-ready. Share it with your team.`,
     nextStep: 'healthy',
     lineDelay: 600,
+    contextUpdate: {
+      businessLogic: "Orders with null campaign_id are organic — keep them in revenue totals with LEFT JOIN.\nDuplicate order_ids removed; keep latest row per order_id.\nDate formats normalized to YYYY-MM-DD across all tables.",
+      spotterInstructions: 'For "top campaigns" sort by return_on_spend descending. "Latest" means last 30 days unless otherwise specified. "Organic" orders have no campaign attribution.',
+    },
   },
 };
 
@@ -361,8 +369,8 @@ function runFlow(
             pendingAction: action,
           }]);
           setIsProcessing(false);
-          if (script.contextHint) {
-            setProject(p => ({ ...p, contextHint: script.contextHint }));
+          if (script.contextUpdate) {
+            setProject(p => ({ ...p, context: { ...p.context, ...script.contextUpdate } }));
           }
         }, 400);
       }
@@ -490,6 +498,7 @@ Try: *"I want to analyze campaign performance"*`,
             buildStep: captured.nextStep,
             name: script.newName && p.name === 'Untitled Project' ? script.newName : p.name,
             ...(script.setsProfileComplete ? { profileComplete: true } : {}),
+            ...(script.contextUpdate ? { context: { ...p.context, ...script.contextUpdate } } : {}),
           }));
           return;
         }
@@ -513,8 +522,8 @@ Try: *"I want to analyze campaign performance"*`,
   if (collapsed) {
     return (
       <div style={{ width: 40, borderLeft: `1px solid ${c['border-divider']}`, backgroundColor: c['background-base'], display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: sp.D, flexShrink: 0 }}>
-        <button onClick={() => setCollapsed(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: c['content-secondary'], fontSize: 16 }}>«</button>
-        <span style={{ marginTop: sp.F, fontSize: 10, color: c['content-secondary'], writingMode: 'vertical-rl', transform: 'rotate(180deg)', letterSpacing: 1 }}>DATA AGENT</span>
+        <Button variant="tertiary" size="small" onClick={() => setCollapsed(false)}>«</Button>
+        <span style={{ marginTop: sp.F, fontSize: fs.xs, color: c['content-secondary'], writingMode: 'vertical-rl', transform: 'rotate(180deg)', letterSpacing: 1 }}>DATA AGENT</span>
       </div>
     );
   }
@@ -525,18 +534,18 @@ Try: *"I want to analyze campaign performance"*`,
       {/* Header */}
       <div style={{ height: 48, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: `0 ${sp.D}px`, borderBottom: `1px solid ${c['border-divider']}`, flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: sp.B }}>
-          <span style={{ fontSize: 15 }}>💡</span>
-          <span style={{ fontSize: 13, fontWeight: 600, color: c['content-primary'] }}>Data Agent</span>
+          <span style={{ fontSize: fs.sm }}>💡</span>
+          <span style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'] }}>Data Agent</span>
         </div>
-        <button onClick={() => setCollapsed(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: c['content-secondary'], fontSize: 14, fontWeight: 600 }}>»</button>
+        <Button variant="tertiary" size="small" onClick={() => setCollapsed(true)}>»</Button>
       </div>
 
       {/* Messages */}
       <div style={{ flex: 1, overflowY: 'auto', padding: sp.D, display: 'flex', flexDirection: 'column', gap: sp.D }}>
         {messages.length === 0 && (
           <div style={{ textAlign: 'center', padding: `${sp.H}px ${sp.D}px` }}>
-            <div style={{ fontSize: 28, marginBottom: sp.C }}>💡</div>
-            <p style={{ fontSize: 13, color: c['content-secondary'], lineHeight: 1.5, margin: `0 0 ${sp.F}px` }}>
+            <div style={{ fontSize: fs['2xl'], marginBottom: sp.C }}>💡</div>
+            <p style={{ ...ts.bodyNormal, color: c['content-secondary'], margin: `0 0 ${sp.F}px` }}>
               Describe what you want to build. I'll find the right data and set everything up.
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: sp.B }}>
@@ -545,10 +554,7 @@ Try: *"I want to analyze campaign performance"*`,
                 'Help me understand how campaigns drive orders',
                 'How can I improve my data health score?',
               ].map(hint => (
-                <button key={hint} onClick={() => setInput(hint)}
-                  style={{ padding: `${sp.B}px ${sp.C}px`, borderRadius: 8, border: `1px solid ${c['border-default']}`, background: c['background-subtle'], color: c['content-secondary'], fontSize: 12, cursor: 'pointer', textAlign: 'left', lineHeight: 1.4 }}>
-                  {hint}
-                </button>
+                <Button key={hint} variant="secondary" size="small" fullWidth onClick={() => setInput(hint)}>{hint}</Button>
               ))}
             </div>
           </div>
@@ -567,7 +573,7 @@ Try: *"I want to analyze campaign performance"*`,
 
       {/* Input */}
       <div style={{ padding: sp.C, borderTop: `1px solid ${c['border-divider']}`, flexShrink: 0 }}>
-        <div style={{ border: `1px solid ${c['border-default']}`, borderRadius: 10, backgroundColor: '#fff', overflow: 'hidden' }}>
+        <div style={{ border: `1px solid ${c['border-default']}`, borderRadius: 10, backgroundColor: c['background-base'], overflow: 'hidden' }}>
           <textarea
             ref={textareaRef}
             value={input}
@@ -577,13 +583,10 @@ Try: *"I want to analyze campaign performance"*`,
             rows={2}
             autoFocus
             disabled={isProcessing}
-            style={{ width: '100%', border: 'none', outline: 'none', resize: 'none', padding: `${sp.C}px ${sp.C}px ${sp.A}px`, fontSize: 13, color: c['content-primary'], fontFamily: 'inherit', boxSizing: 'border-box', lineHeight: 1.5, opacity: isProcessing ? 0.5 : 1 }}
+            style={{ width: '100%', border: 'none', outline: 'none', resize: 'none', padding: `${sp.C}px ${sp.C}px ${sp.A}px`, fontSize: fs.sm, color: c['content-primary'],  boxSizing: 'border-box', opacity: isProcessing ? 0.5 : 1 }}
           />
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', padding: `${sp.A}px ${sp.C}px ${sp.B}px` }}>
-            <button onClick={sendMessage} disabled={!input.trim() || isProcessing}
-              style={{ width: 28, height: 28, borderRadius: '50%', backgroundColor: input.trim() && !isProcessing ? '#4A90E2' : c['background-subtle'], border: 'none', cursor: input.trim() && !isProcessing ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <span style={{ color: input.trim() && !isProcessing ? '#fff' : c['content-secondary'], fontSize: 14 }}>↑</span>
-            </button>
+            <Button variant="primary" size="small" onClick={sendMessage} disabled={!input.trim() || isProcessing}>↑</Button>
           </div>
         </div>
       </div>
@@ -602,7 +605,7 @@ const MessageBubble: React.FC<{
   if (msg.type === 'user') {
     return (
       <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-        <div style={{ maxWidth: '85%', backgroundColor: c['background-subtle'], borderRadius: 10, padding: `${sp.B}px ${sp.C}px`, fontSize: 13, color: c['content-primary'], lineHeight: 1.5 }}>
+        <div style={{ maxWidth: '85%', backgroundColor: c['background-subtle'], borderRadius: 10, padding: `${sp.B}px ${sp.C}px`, fontSize: fs.sm, color: c['content-primary'] }}>
           {msg.content}
         </div>
       </div>
@@ -618,17 +621,19 @@ const MessageBubble: React.FC<{
         <AgentAvatar />
         <div style={{ flex: 1, minWidth: 0 }}>
           {/* Toggle header */}
-          <button
+          <Button
+            variant="tertiary"
+            size="small"
             onClick={() => onToggleSteps(msg.id)}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: sp.B, marginBottom: msg.stepsCollapsed ? 0 : sp.B, width: '100%', textAlign: 'left' }}
+            style={{ marginBottom: msg.stepsCollapsed ? 0 : sp.B, justifyContent: 'flex-start', width: '100%' }}
           >
-            <span style={{ fontSize: 11, color: c['content-secondary'] }}>{msg.stepsCollapsed ? '▶' : '▾'}</span>
-            <span style={{ fontSize: 12, color: c['content-secondary'], fontStyle: 'italic' }}>
+            <span style={{ fontSize: fs.xs, color: c['content-secondary'] }}>{msg.stepsCollapsed ? '▶' : '▾'}</span>
+            <span style={{ fontSize: fs.xs, color: c['content-secondary'], fontStyle: 'italic', marginLeft: sp.B }}>
               {allDone
                 ? `Worked through ${doneCount} steps · ${msg.duration}`
                 : `Working…`}
             </span>
-          </button>
+          </Button>
 
           {/* Expanded steps */}
           {!msg.stepsCollapsed && msg.steps && (
@@ -637,10 +642,10 @@ const MessageBubble: React.FC<{
                 <div key={i}>
                   {/* Step title row */}
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: sp.B }}>
-                    <span style={{ fontSize: 11, width: 14, textAlign: 'center', flexShrink: 0, marginTop: 2, color: step.status === 'done' ? '#22C55E' : c['content-secondary'] }}>
+                    <span style={{ fontSize: fs.xs, width: 14, textAlign: 'center', flexShrink: 0, marginTop: 2, color: step.status === 'done' ? c['content-success'] : c['content-secondary'] }}>
                       {step.status === 'done' ? '✓' : step.status === 'running' ? <SpinnerDot /> : '○'}
                     </span>
-                    <span style={{ fontSize: 12, color: step.status === 'pending' ? c['content-secondary'] : c['content-primary'], fontWeight: step.status === 'done' ? 500 : 400, lineHeight: 1.4 }}>
+                    <span style={{ fontSize: fs.xs, color: step.status === 'pending' ? c['content-secondary'] : c['content-primary'], fontWeight: step.status === 'done' ? 500 : 400 }}>
                       {step.label}
                     </span>
                   </div>
@@ -648,7 +653,7 @@ const MessageBubble: React.FC<{
                   {/* Detail text */}
                   {step.status === 'done' && step.detail && (
                     <div style={{ marginLeft: 22, marginTop: 3 }}>
-                      <p style={{ margin: 0, fontSize: 11, color: c['content-secondary'], lineHeight: 1.6, whiteSpace: 'pre-line' }}>
+                      <p style={{ margin: 0, fontSize: fs.xs, color: c['content-secondary'], whiteSpace: 'pre-line' }}>
                         {step.detail}
                       </p>
                     </div>
@@ -657,15 +662,11 @@ const MessageBubble: React.FC<{
                   {/* Collapsible code block */}
                   {step.status === 'done' && step.collapsible && (
                     <div style={{ marginLeft: 22, marginTop: 4 }}>
-                      <button
-                        onClick={() => onToggleCollapsible(msg.id, i)}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 4, color: '#4A90E2', fontSize: 11 }}
-                      >
-                        <span>{step.collapsibleOpen ? '▾' : '▶'}</span>
-                        <span>{step.collapsibleOpen ? 'Hide SQL' : 'View SQL'}</span>
-                      </button>
+                      <Button variant="tertiary" size="small" onClick={() => onToggleCollapsible(msg.id, i)}>
+                        {step.collapsibleOpen ? '▾ Hide SQL' : '▶ View SQL'}
+                      </Button>
                       {step.collapsibleOpen && (
-                        <pre style={{ margin: '4px 0 0', padding: `${sp.B}px ${sp.C}px`, backgroundColor: '#F8FAFC', border: `1px solid ${c['border-divider']}`, borderRadius: 6, fontSize: 11, fontFamily: 'monospace', color: c['content-primary'], lineHeight: 1.6, overflowX: 'auto', whiteSpace: 'pre' }}>
+                        <pre style={{ margin: '4px 0 0', padding: `${sp.B}px ${sp.C}px`, backgroundColor: c['background-subtle'], border: `1px solid ${c['border-divider']}`, borderRadius: 6, fontSize: fs.xs, fontFamily: ff.mono, color: c['content-primary'], overflowX: 'auto', whiteSpace: 'pre' }}>
                           {step.collapsible}
                         </pre>
                       )}
@@ -684,8 +685,8 @@ const MessageBubble: React.FC<{
     return (
       <div style={{ display: 'flex', gap: sp.B }}>
         <AgentAvatar />
-        <div style={{ flex: 1, backgroundColor: '#F8FBFF', border: `1px solid #BFDBFE`, borderRadius: 10, padding: `${sp.C}px ${sp.D}px` }}>
-          <div style={{ fontSize: 13, color: c['content-primary'], lineHeight: 1.7 }}>
+        <div style={{ flex: 1, backgroundColor: c['background-information'], border: `1px solid ${c['border-default']}`, borderRadius: 10, padding: `${sp.C}px ${sp.D}px` }}>
+          <div style={{ fontSize: fs.sm, color: c['content-primary'] }}>
             <FormattedMessage content={msg.content} />
           </div>
         </div>
@@ -698,7 +699,7 @@ const MessageBubble: React.FC<{
       <div style={{ display: 'flex', gap: sp.B }}>
         <AgentAvatar />
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 13, color: c['content-primary'], lineHeight: 1.7, whiteSpace: 'pre-line' }}>
+          <div style={{ fontSize: fs.sm, color: c['content-primary'], whiteSpace: 'pre-line' }}>
             <FormattedMessage content={msg.content} />
           </div>
         </div>
@@ -712,8 +713,8 @@ const MessageBubble: React.FC<{
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 const AgentAvatar: React.FC = () => (
-  <div style={{ width: 24, height: 24, borderRadius: '50%', backgroundColor: '#EEF4FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 2 }}>
-    <span style={{ fontSize: 11 }}>💡</span>
+  <div style={{ width: 24, height: 24, borderRadius: '50%', backgroundColor: c['background-information'], display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 2 }}>
+    <span style={{ fontSize: fs.xs }}>💡</span>
   </div>
 );
 
@@ -732,7 +733,7 @@ const FormattedMessage: React.FC<{ content: string }> = ({ content }) => {
     <>
       {parts.map((part, i) => {
         if (part.startsWith('**') && part.endsWith('**')) return <strong key={i}>{part.slice(2, -2)}</strong>;
-        if (part.startsWith('`') && part.endsWith('`')) return <code key={i} style={{ backgroundColor: '#F1F5F9', padding: '1px 4px', borderRadius: 3, fontSize: 11, fontFamily: 'monospace' }}>{part.slice(1, -1)}</code>;
+        if (part.startsWith('`') && part.endsWith('`')) return <code key={i} style={{ backgroundColor: c['background-subtle'], padding: '1px 4px', borderRadius: 3, fontSize: fs.xs, fontFamily: ff.mono }}>{part.slice(1, -1)}</code>;
         return <span key={i}>{part}</span>;
       })}
     </>

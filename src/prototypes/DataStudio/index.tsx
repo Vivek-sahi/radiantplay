@@ -15,13 +15,27 @@ import Workspace from './components/Workspace';
 
 export type AppView = 'list' | 'workspace';
 
+export interface ProjectContext {
+  persona: string;
+  sampleQuestions: string;
+  businessLogic: string;
+  spotterInstructions: string;
+}
+
+export const emptyContext: ProjectContext = {
+  persona: '',
+  sampleQuestions: '',
+  businessLogic: '',
+  spotterInstructions: '',
+};
+
 export interface ProjectState {
   id: string;
   name: string;
   buildStep: 'empty' | 'tables' | 'joined' | 'transformed' | 'healthy';
   activeTab: 'visualizer' | 'preview' | 'notebook';
   testMode: boolean;
-  contextHint?: string;
+  context: ProjectContext;
   profileComplete?: boolean;
 }
 
@@ -33,10 +47,11 @@ const DataStudio: React.FC = () => {
     buildStep: 'empty',
     activeTab: 'visualizer',
     testMode: false,
+    context: emptyContext,
   });
 
   const openProject = (name?: string) => {
-    setProject({ id: `proj-${Date.now()}`, name: name ?? 'Untitled Project', buildStep: 'empty', activeTab: 'visualizer', testMode: false });
+    setProject({ id: `proj-${Date.now()}`, name: name ?? 'Untitled Project', buildStep: 'empty', activeTab: 'visualizer', testMode: false, context: emptyContext });
     setView('workspace');
   };
 

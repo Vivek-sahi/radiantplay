@@ -277,7 +277,7 @@ export const v2TextStyles = {
     fontFamily: fontFamily.primary,
     fontSize: fontSize['3xl'],  // 32px
     fontWeight: fontWeight.medium,
-    lineHeight: lineHeight['3xl'],  // 40px
+    lineHeight: `${lineHeight['3xl']}px`,  // 40px
     letterSpacing: letterSpacing.tight,
   },
 
@@ -286,14 +286,14 @@ export const v2TextStyles = {
     fontFamily: fontFamily.primary,
     fontSize: fontSize['2xl'],  // 24px
     fontWeight: fontWeight.medium,
-    lineHeight: lineHeight['2xl'],  // 32px
+    lineHeight: `${lineHeight['2xl']}px`,  // 32px
     letterSpacing: letterSpacing.normal,
   },
   modalTitle: {
     fontFamily: fontFamily.primary,
     fontSize: fontSize.xl,  // 20px
     fontWeight: fontWeight.medium,
-    lineHeight: lineHeight.xl,  // 28px
+    lineHeight: `${lineHeight.xl}px`,  // 28px
     letterSpacing: letterSpacing.normal,
   },
 
@@ -302,21 +302,21 @@ export const v2TextStyles = {
     fontFamily: fontFamily.primary,
     fontSize: fontSize.lg,  // 18px
     fontWeight: fontWeight.medium,
-    lineHeight: lineHeight.lg,  // 24px
+    lineHeight: `${lineHeight.lg}px`,  // 24px
     letterSpacing: letterSpacing.normal,
   },
   contentLabel: {
     fontFamily: fontFamily.primary,
     fontSize: fontSize.md,  // 16px
     fontWeight: fontWeight.medium,
-    lineHeight: lineHeight.lg,  // 24px
+    lineHeight: `${lineHeight.lg}px`,  // 24px
     letterSpacing: letterSpacing.normal,
   },
   contentLabelSubhead: {
     fontFamily: fontFamily.primary,
     fontSize: fontSize.sm,  // 14px
     fontWeight: fontWeight.medium,
-    lineHeight: lineHeight.md,  // 20px
+    lineHeight: `${lineHeight.md}px`,  // 20px
     letterSpacing: letterSpacing.normal,
   },
 
@@ -325,14 +325,14 @@ export const v2TextStyles = {
     fontFamily: fontFamily.primary,
     fontSize: fontSize.md,  // 16px
     fontWeight: fontWeight.regular,
-    lineHeight: lineHeight.lg,  // 24px
+    lineHeight: `${lineHeight.lg}px`,  // 24px
     letterSpacing: letterSpacing.normal,
   },
   bodyNormal: {
     fontFamily: fontFamily.primary,
     fontSize: fontSize.sm,  // 14px
     fontWeight: fontWeight.regular,
-    lineHeight: lineHeight.md,  // 20px
+    lineHeight: `${lineHeight.md}px`,  // 20px
     letterSpacing: letterSpacing.normal,
   },
 
@@ -341,21 +341,21 @@ export const v2TextStyles = {
     fontFamily: fontFamily.primary,
     fontSize: fontSize.xs,  // 12px
     fontWeight: fontWeight.regular,
-    lineHeight: lineHeight.sm,  // 18px
+    lineHeight: `${lineHeight.sm}px`,  // 18px
     letterSpacing: letterSpacing.normal,
   },
   caption: {
     fontFamily: fontFamily.primary,
     fontSize: fontSize.xs,  // 12px
     fontWeight: fontWeight.regular,
-    lineHeight: lineHeight.sm,  // 18px
+    lineHeight: `${lineHeight.sm}px`,  // 18px
     letterSpacing: letterSpacing.normal,
   },
   overline: {
     fontFamily: fontFamily.primary,
     fontSize: fontSize.xs,  // 12px
     fontWeight: fontWeight.medium,
-    lineHeight: lineHeight.sm,  // 18px
+    lineHeight: `${lineHeight.sm}px`,  // 18px
     letterSpacing: letterSpacing.wider,
     textTransform: 'uppercase' as const,
   },
@@ -377,7 +377,7 @@ export type TextStyleValue = {
   fontFamily: string;
   fontSize: number;
   fontWeight: number;
-  lineHeight: number;
+  lineHeight: number | string;
   letterSpacing: string;
   textDecoration?: string;
   textTransform?: string;
