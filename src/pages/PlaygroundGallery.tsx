@@ -36,7 +36,11 @@ export const PlaygroundGallery: React.FC = () => {
         >
           <div style={styles.logoMark}>R</div>
           <span style={styles.logoTitle}>Radiant Play</span>
-          <span style={styles.logoVersion}>{getCurrentVersion()}</span>
+          <span
+            style={{ ...styles.logoVersion, cursor: 'pointer' }}
+            onClick={(e) => { e.stopPropagation(); navigate('/radiant/changelog'); }}
+            title="View changelog"
+          >{getCurrentVersion()}</span>
         </button>
         <div style={styles.headerTitle}>
           <h1 style={styles.title}>Playground</h1>

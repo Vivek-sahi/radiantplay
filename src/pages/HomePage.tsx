@@ -46,7 +46,11 @@ export const HomePage: React.FC = () => {
         <div style={styles.heroText}>
           <div style={styles.eyebrowRow}>
             <span style={styles.eyebrow}>ThoughtSpot Design</span>
-            <span style={styles.versionBadge}>{getCurrentVersion()}</span>
+            <span
+              style={{ ...styles.versionBadge, cursor: 'pointer' }}
+              onClick={() => navigate('/radiant/changelog')}
+              title="View changelog"
+            >{getCurrentVersion()}</span>
           </div>
           <h1 style={styles.title}>
             Radiant<span style={styles.titleAccent}>Play</span>

@@ -34,6 +34,7 @@ Example: `26.4.1b` = 2026, April, week 1, second release that week.
 
 ### Platform and tooling
 
+- **Deployment password gate**: Edge middleware password-gates Vercel deployments — opt-in per designer via `SITE_PASSWORD` env var in their Vercel dashboard
 - **CalVer versioning**: `platformVersion.ts` as single source of truth; version badge on homepage, playground, and DS sidebar
 - **Component source badges**: Figma / Scaligent / Custom badge on every component doc page
 - **Release tooling**: `scripts/release.sh`, pre-push hook, `install-maintainer-hooks.sh`

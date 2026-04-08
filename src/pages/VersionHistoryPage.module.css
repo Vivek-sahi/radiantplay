@@ -200,6 +200,21 @@
   background-color: var(--rd-sys-color-background-sunken);
 }
 
+.groupHeader {
+  font-family: var(--font-family-primary, 'Plain', -apple-system, sans-serif);
+  font-size: var(--font-size-xs, 12px);
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--rd-sys-color-content-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  padding: var(--spacing-2, 8px) var(--spacing-2, 8px) var(--spacing-1, 4px);
+  margin-top: var(--spacing-2, 8px);
+}
+
+.groupHeader:first-child {
+  margin-top: 0;
+}
+
 .changeItem {
   display: flex;
   align-items: flex-start;

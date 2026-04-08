@@ -100,18 +100,26 @@ const VersionCard: React.FC<VersionCardProps> = ({
       
       {isExpanded && (
         <div className={styles.changesList}>
-          {filteredChanges.map((change, index) => (
-            <div key={index} className={styles.changeItem}>
-              <span 
-                className={styles.changeIcon}
-                style={{ color: getChangeTypeColor(change.type) }}
-              >
-                {getChangeTypeIcon(change.type)}
-              </span>
-              <span className={styles.changeComponent}>{change.component}</span>
-              <span className={styles.changeDescription}>{change.description}</span>
-            </div>
-          ))}
+          {filteredChanges.map((change, index) => {
+            const isNewGroup = change.group && change.group !== filteredChanges[index - 1]?.group;
+            return (
+              <React.Fragment key={index}>
+                {isNewGroup && (
+                  <div className={styles.groupHeader}>{change.group}</div>
+                )}
+                <div className={styles.changeItem}>
+                  <span
+                    className={styles.changeIcon}
+                    style={{ color: getChangeTypeColor(change.type) }}
+                  >
+                    {getChangeTypeIcon(change.type)}
+                  </span>
+                  <span className={styles.changeComponent}>{change.component}</span>
+                  <span className={styles.changeDescription}>{change.description}</span>
+                </div>
+              </React.Fragment>
+            );
+          })}
         </div>
       )}
     </div>

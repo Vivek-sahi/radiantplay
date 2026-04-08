@@ -8,6 +8,7 @@ interface ChangelogEntry {
   type: 'major' | 'minor' | 'patch';
   changes: {
     category: 'added' | 'changed' | 'fixed' | 'removed';
+    label?: string; // overrides the default badge text (e.g. theme group names)
     items: string[];
   }[];
 }
@@ -21,35 +22,56 @@ const CHANGELOG: ChangelogEntry[] = [
     changes: [
       {
         category: 'added',
+        label: 'Fork architecture',
         items: [
           'Registry split — registry-core.ts (upstream) + registry-mine.ts (designer) + thin merger eliminates merge conflicts for all designer forks',
+          'Skills and docs updated — sync-upstream, check-upstream, new-prototype, prototype-structure, FORK-WORKFLOW all reference new 3-file registry',
+        ],
+      },
+      {
+        category: 'added',
+        label: 'AI orchestrator',
+        items: [
           'Orchestrator tier system — intent-based classification (Tier 0–3) with 81% context reduction for median tasks',
           'Pre-implementation gate — 4 checks before code (component exists, CSS anti-patterns, icon name, forbidden words)',
           'Iteration loop detection — suggests batching after 3+ sequential changes',
+          '6 Claude Code skills — auto-activating with globs (component-inventory, content-guidelines, token-usage, layout-patterns, widget-patterns, modal-patterns)',
+          'UserPromptSubmit hooks — Liveboard intent detection + post-compact convention recovery',
+          'CLAUDE.md trimmed 36% (210 → 135 lines) — guidelines moved to on-demand skills',
+        ],
+      },
+      {
+        category: 'added',
+        label: 'Liveboard system',
+        items: [
           'Liveboard canvas 3-tier split — core (242), edit (238), advanced (100) with prerequisite chains',
           'Liveboard requirements gate — 4-question pre-build gate (mode, interactions, tile types, data)',
           'Shared tiles system — _shared/tiles/ with AnswerTile, ChartRenderer, and 12 chart types',
           'SalesDashboard prototype — Liveboard with view/edit modes and SpotterViz panel',
-          'Platform version system — platformVersion.ts as single source of truth; version badge on 3 surfaces',
+        ],
+      },
+      {
+        category: 'added',
+        label: 'Platform tooling',
+        items: [
+          'Platform version system — platformVersion.ts as single source of truth; version badge on homepage, playground, and DS sidebar',
           'Component source badges — Figma / Scaligent / Custom on every component doc page',
           'Release tooling — scripts/release.sh, pre-push hook, install-maintainer-hooks.sh',
-          '6 Claude Code skills — auto-activating with globs (component-inventory, content-guidelines, token-usage, layout-patterns, widget-patterns, modal-patterns)',
-          'UserPromptSubmit hooks — Liveboard intent detection + post-compact convention recovery',
         ],
       },
       {
         category: 'changed',
+        label: 'UI and performance',
         items: [
-          'Skills and docs updated for registry split — sync-upstream, check-upstream, new-prototype, prototype-structure, FORK-WORKFLOW',
           'Homepage — space blue title, subtle card icons, shortened descriptions, footer easter egg',
           'ECharts lazy-loaded — 1.18 MB chunk deferred from startup to first chart render',
-          'CLAUDE.md trimmed 36% (210 → 135 lines) — guidelines moved to on-demand skills',
           'All DS pages centred with maxWidth 1200px in RadiantLayout',
           'Documentation refreshed — README, SETUP-GUIDE, Onepager, prototyping-guide',
         ],
       },
       {
         category: 'fixed',
+        label: 'Bug fixes and security',
         items: [
           '0 TypeScript errors — icon name, TileMode import, NoteTileProps, unused variables resolved',
           'Avatar contrast — light background tokens swapped for saturated content tokens',
@@ -60,6 +82,7 @@ const CHANGELOG: ChangelogEntry[] = [
       },
       {
         category: 'removed',
+        label: 'Cleanup',
         items: [
           'Cmdk prototype gitignored — 11 MB Figma Make export removed from designer forks',
           'Orphaned prototypes deleted — Homepage_example, ImpersonationV2, Liveboard, ModalPatterns',
@@ -381,11 +404,15 @@ export const ChangelogPage: React.FC = () => {
                   <span
                     style={{
                       ...styles.categoryBadge,
-                      backgroundColor: categoryColors[change.category].bg,
-                      color: categoryColors[change.category].text,
+                      backgroundColor: change.label
+                        ? systemColors.light['background-subtle']
+                        : categoryColors[change.category].bg,
+                      color: change.label
+                        ? systemColors.light['content-secondary']
+                        : categoryColors[change.category].text,
                     }}
                   >
-                    {categoryColors[change.category].label}
+                    {change.label ?? categoryColors[change.category].label}
                   </span>
                   <ul style={styles.changesList}>
                     {change.items.map((item, itemIndex) => (
