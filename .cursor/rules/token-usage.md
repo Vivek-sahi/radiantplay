@@ -1,6 +1,6 @@
 ---
 description: Design token reference for colors, spacing, and typography. Covers the 3-layer token hierarchy (reference/system/component), spacing scale (A-N), CSS variables, and common anti-patterns like hardcoded hex values or magic pixel numbers. Always consult when writing styles.
-globs: ["src/prototypes/**/*.tsx", "src/components/**/*.tsx", "src/components/**/*.css"]
+globs: ["src/components/**/*.css"]
 ---
 
 # Radiant Design Token Usage Guide
@@ -111,6 +111,10 @@ import { spacing, componentSpacing } from '../../tokens/spacing';
 | `spacing.H` | 32px | Section separators |
 | `spacing.I` | 40px | Large section gaps |
 | `spacing.J` | 48px | Page section spacing |
+| `spacing.K` | 56px | Large page gaps |
+| `spacing.L` | 64px | Major section dividers |
+| `spacing.M` | 80px | Hero spacing |
+| `spacing.N` | 96px | Page-level margins |
 
 ### Semantic Spacing Aliases
 

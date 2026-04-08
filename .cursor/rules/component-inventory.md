@@ -1,6 +1,6 @@
 ---
-description: Complete inventory of 72+ Radiant components with decision tree for selecting the right component. Use when choosing between Button/TextInput/Table/Select/Modal/Alert/Chip/Avatar/Menu/Tabs/Accordion and other components, or when checking if a component already exists before creating a custom one.
-globs: ["src/prototypes/**/*.tsx", "src/components/**/*.tsx"]
+description: Full Radiant component reference with props, code examples, and patterns. For a quick list of all 77 components, see component-summary.md (always loaded). Load this file when you need props, examples, or to verify a component exists.
+globs: ["src/prototypes/**/index.tsx"]
 ---
 
 # Radiant Component Inventory
@@ -314,15 +314,17 @@ FormControl + FormBuilder + DynamicForm
 
 ### Settings Form Pattern
 ```tsx
-<div style={{ display: 'flex' }}>
+<Horizontal>
   <Sidebar items={sections} activeItem={active} />
-  <div style={{ flex: 1 }}>
+  <Vertical gap={16} style={{ flex: 1 }}>
     <TextInput label="Name" />
     <Toggle label="Enable notifications" />
-    <Button variant="secondary">Cancel</Button>
-    <Button variant="primary">Save</Button>
-  </div>
-</div>
+    <Horizontal gap={8} justify="flex-end">
+      <Button variant="secondary">Cancel</Button>
+      <Button variant="primary">Save</Button>
+    </Horizontal>
+  </Vertical>
+</Horizontal>
 ```
 
 ### Data Table Pattern
@@ -443,7 +445,23 @@ export default StatusBadge;
 import { StatusBadge, MetricCard } from './components';
 ```
 
-### 4. Promotion criteria
+### 4. When a Radiant component doesn't exist for what you need
+
+Before building anything custom, work through this in order:
+
+**Step 1 — Check props first.** Can an existing component achieve the visual with different props?
+- No SplitButton? → Two `Button` components side by side, no custom HTML needed.
+- No circular icon button? → `Button` with `iconOnly` prop (added 2026-04-01).
+- No status dot? → `Toggle` (on/off state) or `Chip` (label state).
+
+**Step 2 — If truly no Radiant equivalent**, build a local component in `src/prototypes/<Name>/components/`.
+- Follow `design-system.md` rules: forwardRef, TypeScript, CSS Modules.
+- Do NOT use raw `<button>`, `<div onClick>`, or `<input>` — wrap in a proper React component.
+- Add a comment: `// Gap: Radiant has no <X> — local implementation`.
+
+**Step 3 — Never inline a component workaround** directly in the main component file. Even a one-off custom element belongs in `components/`.
+
+### 5. Promotion criteria
 
 A local component should be promoted to `src/components/` when ALL of these are true:
 

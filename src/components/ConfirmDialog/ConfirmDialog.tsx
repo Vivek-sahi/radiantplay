@@ -138,7 +138,6 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
             onClick={onConfirm}
             loading={isLoading}
             disabled={isConfirmDisabled || isLoading}
-            className={status === 'danger' ? styles.dangerButton : undefined}
           >
             {confirmText}
           </Button>

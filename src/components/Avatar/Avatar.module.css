@@ -95,17 +95,17 @@
   opacity: 1;
 }
 
-/* Random background colors for initials */
+/* Random background colors for initials — use content-* tokens (saturated) so white text is legible */
 .bgBlue {
-  background-color: var(--rd-sys-color-background-brand);
+  background-color: var(--rd-sys-color-content-brand);
 }
 
 .bgGreen {
-  background-color: var(--rd-sys-color-background-success);
+  background-color: var(--rd-sys-color-content-success);
 }
 
 .bgPurple {
-  background-color: var(--rd-sys-color-content-brand);
+  background-color: var(--rd-ref-color-purple-60, #8C62F5);
 }
 
 .bgTeal {
@@ -113,15 +113,16 @@
 }
 
 .bgOrange {
-  background-color: var(--rd-sys-color-content-warning);
+  background-color: var(--rd-ref-color-orange-60, #D97706);
 }
 
 .bgRed {
-  background-color: var(--rd-sys-color-background-failure);
+  background-color: var(--rd-sys-color-content-failure);
 }
 
 .bgYellow {
-  background-color: var(--rd-sys-color-background-warning);
+  background-color: var(--rd-sys-color-content-warning);
+  color: var(--rd-sys-color-content-inverse, #1D232F);
 }
 
 /* Name text */

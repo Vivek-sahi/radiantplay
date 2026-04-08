@@ -142,11 +142,11 @@ componentSpacing.modal.headerPaddingY // 20px
 componentSpacing.modal.footerPaddingY // 16px
 
 // Colors
-backgroundColors.primary    // Modal surface (white)
-backgroundColors.secondary  // Footer background (gray-10)
-borderColors.subtle         // Borders (gray-20)
-textColors.default          // Title text (gray-90)
-textColors.accent           // Tertiary button text (blue-60)
+systemColors.light['background-base']      // Modal surface (white)
+systemColors.light['background-sunken']    // Footer background (gray-10)
+systemColors.light['border-divider']       // Borders (gray-20)
+systemColors.light['content-primary']      // Title text (gray-90)
+systemColors.light['content-brand']        // Tertiary button text (blue-60)
 
 // Typography
 v2TextStyles.modalTitle     // 20px Medium, 28px line-height

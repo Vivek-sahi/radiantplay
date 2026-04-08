@@ -156,7 +156,7 @@ npm run dev
 | **Advanced** | Tour, RichTextEditor, DragDrop, FormBuilder, DynamicForm, FacetSortBar |
 | **Layout** | Accordion, Divider, Separator |
 | **Widgets** | GlobalHeader, AppSidebar, AppShell |
-| **Icons** | Icon component with 46 built-in icons, IconGallery |
+| **Icons** | Icon component with 55 built-in icons, IconGallery |
 
 All components are imported from `../../components`:
 
@@ -195,13 +195,12 @@ The kit includes several example prototypes you can study and reference:
 | Prototype | Description | Location |
 |-----------|-------------|----------|
 | **AdminGroups** | Admin panel with table, wizard modal, sidebar | `src/prototypes/AdminGroups/` |
-| **Cmdk** | Command palette with search and filters | `src/prototypes/Cmdk/` |
-| **Liveboard** | Dashboard with charts, KPIs, and filters | `src/prototypes/Liveboard/` |
 | **SpotterMemory** | Data table with toolbar and navigation | `src/prototypes/SpotterMemory/` |
-| **ImpersonationV2** | Admin impersonation with viewport border and session timer | `src/prototypes/ImpersonationV2/` |
-| **ModalPatterns** | Modal dialog patterns and variations | `src/prototypes/ModalPatterns/` |
-| **MuseChat** | Spotter AI chat with conversational data exploration | `src/prototypes/MuseChat/` |
 | **SpotterModel** | SpotterModel agent edit flow with onboarding and columns editing | `src/prototypes/SpotterModel/` |
+| **AdminLang** | Admin settings for CSV-based translation with upload and validation | `src/prototypes/AdminLang/` |
+| **MiniSpotters** | Domain-specific Spotter instances with bounded context | `src/prototypes/MiniSpotters/` |
+| **Liveboard Template** | Starter template for Liveboard prototypes with AnswerTile and SpotterViz | `src/prototypes/_liveboard-template/` |
+| **Sales Dashboard** | Liveboard prototype with view/edit modes and SpotterViz panel | `src/prototypes/SalesDashboard/` |
 
 ---
 
@@ -214,9 +213,9 @@ radiantplay/
 │   ├── prototypes/        ← YOUR prototypes go here
 │   │   ├── _template/     ← Starter template
 │   │   ├── AdminGroups/   ← Example: admin panel
-│   │   ├── Cmdk/          ← Example: command palette
-│   │   ├── Liveboard/     ← Example: dashboard
-│   │   └── SpotterMemory/ ← Example: data table
+│   │   ├── AdminGroups/        ← Example: admin panel
+│   │   ├── SpotterMemory/      ← Example: data table
+│   │   └── SalesDashboard/     ← Example: liveboard
 │   ├── mocks/             ← Sample data (users, analytics, etc.)
 │   ├── tokens/            ← Design tokens (colors, spacing, etc.)
 │   └── styles/            ← Global CSS

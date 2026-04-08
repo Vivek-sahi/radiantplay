@@ -16,15 +16,15 @@ import styles from './VersionHistoryPage.module.css';
 const getVersionTypeBadgeColor = (type: VersionType): string => {
   switch (type) {
     case 'major':
-      return 'var(--color-brand-purple-60, #8B5CF6)';
+      return 'var(--rd-ref-color-purple-60, #8C62F5)';
     case 'minor':
-      return 'var(--color-brand-blue-60, #2770EF)';
+      return 'var(--rd-sys-color-content-brand, #2770EF)';
     case 'patch':
-      return 'var(--color-brand-green-60, #06BF7F)';
+      return 'var(--rd-sys-color-content-success, #06BF7F)';
     case 'figma-sync':
-      return 'var(--color-brand-orange-60, #F5A623)';
+      return 'var(--rd-sys-color-content-warning, #FCC838)';
     default:
-      return 'var(--color-brand-gray-60, #777E8B)';
+      return 'var(--rd-sys-color-content-secondary, #777E8B)';
   }
 };
 

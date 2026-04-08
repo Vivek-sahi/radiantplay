@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { systemColors, referenceColors } from '../tokens/colors';
 import { spacing } from '../tokens/spacing';
 import { getComponentCount, getIconCount, getTokenCountLabel } from '../data/componentRegistry';
-import { getAllProjects } from '../prototypes/registry';
-import { Link } from '../components/Link';
+import { getCurrentVersion } from '../data/versionHistory';
 
 /**
  * HomePage - Landing page for Radiant Play
@@ -15,22 +14,24 @@ export const HomePage: React.FC = () => {
   const navigate = useNavigate();
 
   const footerMessages = [
-    'Made with coffee and tokens',
-    'Scrapped together with care',
-    'Built between meetings',
-    'Fueled by design tokens and caffeine',
-    'Assembled with love and AI',
-    'Crafted pixel by pixel',
-    'Made with borderRadius and box-shadow',
+    'Held together by design tokens and duct tape',
+    'No designers were harmed in the making of this',
+    'Built during standups nobody needed',
+    'AI wrote 80% of this. The other 20% was panic',
+    '12 components, 3 coffees, 1 deadline',
+    'Pixel-perfect except for that one thing',
+    'Shipped before anyone changed their mind',
+    'CSS is fine. Everything is fine',
+    'Made with spacing-D and questionable decisions',
+    'Reviewed by no one. Approved by everyone',
+    'Not a bug. It\'s a design token',
+    'Built on vibes and a 4px base grid',
   ];
 
   const [footerMessage] = React.useState(() =>
     footerMessages[Math.floor(Math.random() * footerMessages.length)]
   );
-
-  // Get the most recently added prototype (last in registry = newest)
-  const allProjects = getAllProjects();
-  const latestProject = allProjects.length > 0 ? allProjects[allProjects.length - 1] : null;
+  const [showEgg, setShowEgg] = React.useState(false);
 
   return (
     <div style={styles.container}>
@@ -43,7 +44,10 @@ export const HomePage: React.FC = () => {
       <main style={styles.main}>
         {/* ── Hero ──────────────────────────────────────────────── */}
         <div style={styles.heroText}>
-          <span style={styles.eyebrow}>ThoughtSpot Design System</span>
+          <div style={styles.eyebrowRow}>
+            <span style={styles.eyebrow}>ThoughtSpot Design</span>
+            <span style={styles.versionBadge}>{getCurrentVersion()}</span>
+          </div>
           <h1 style={styles.title}>
             Radiant<span style={styles.titleAccent}>Play</span>
           </h1>
@@ -103,17 +107,17 @@ export const HomePage: React.FC = () => {
             }}
           >
             <div style={styles.cardIconWrapper}>
-              <div style={{ ...styles.cardIcon, background: 'linear-gradient(135deg, #2770EF 0%, #1E5BBB 100%)' }}>
+              <div style={{ ...styles.cardIcon, background: referenceColors.blue['20'], boxShadow: 'none' }}>
                 <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M2 17L12 22L22 17" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M2 12L12 17L22 12" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke={referenceColors.blue['70']} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M2 17L12 22L22 17" stroke={referenceColors.blue['70']} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M2 12L12 17L22 12" stroke={referenceColors.blue['70']} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               </div>
             </div>
             <h2 style={styles.cardTitle}>Radiant DS</h2>
             <p style={styles.cardDescription}>
-              Explore the complete design system. Browse components, design tokens, icons, and documentation.
+              Explore components, design tokens, icons, and documentation.
             </p>
             <div style={styles.cardStats}>
               <span style={styles.cardStatPill}>{getComponentCount()} Components</span>
@@ -143,22 +147,22 @@ export const HomePage: React.FC = () => {
             }}
           >
             <div style={styles.cardIconWrapper}>
-              <div style={{ ...styles.cardIcon, background: 'linear-gradient(135deg, #06BF7F 0%, #059669 100%)' }}>
+              <div style={{ ...styles.cardIcon, background: referenceColors.blue['20'], boxShadow: 'none' }}>
                 <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M20 14.66V20C20 20.5304 19.7893 21.0391 19.4142 21.4142C19.0391 21.7893 18.5304 22 18 22H4C3.46957 22 2.96086 21.7893 2.58579 21.4142C2.21071 21.0391 2 20.5304 2 20V6C2 5.46957 2.21071 4.96086 2.58579 4.58579C2.96086 4.21071 3.46957 4 4 4H9.34" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M18 2L22 6L12 16H8V12L18 2Z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M20 14.66V20C20 20.5304 19.7893 21.0391 19.4142 21.4142C19.0391 21.7893 18.5304 22 18 22H4C3.46957 22 2.96086 21.7893 2.58579 21.4142C2.21071 21.0391 2 20.5304 2 20V6C2 5.46957 2.21071 4.96086 2.58579 4.58579C2.96086 4.21071 3.46957 4 4 4H9.34" stroke={referenceColors.blue['70']} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M18 2L22 6L12 16H8V12L18 2Z" stroke={referenceColors.blue['70']} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               </div>
             </div>
             <h2 style={styles.cardTitle}>Playground</h2>
             <p style={styles.cardDescription}>
-              Build interactive prototypes with AI assistance. Create, experiment, and iterate on your designs.
+              Build prototypes with AI assistance. Create and iterate on your designs.
             </p>
             <div style={styles.cardStats}>
               <span style={styles.cardStatPill}>Full-page experience</span>
               <span style={styles.cardStatPill}>AI-powered</span>
             </div>
-            <div style={{ ...styles.cardCtaButton, color: '#06BF7F', background: '#06BF7F12', borderColor: '#06BF7F30' }}>
+            <div style={{ ...styles.cardCtaButton, color: referenceColors.blue['60'], background: referenceColors.blue['10'], borderColor: referenceColors.blue['20'] }}>
               <span>Open projects</span>
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M3.33334 8H12.6667" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -168,49 +172,20 @@ export const HomePage: React.FC = () => {
           </button>
         </div>
 
-        {/* ── Latest Prototype ─────────────────────────────────── */}
-        {latestProject && (
-          <button
-            style={styles.latestBtn}
-            onClick={() => navigate(`/playground/${latestProject.id}`)}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(6, 191, 127, 0.14)';
-              e.currentTarget.style.borderColor = 'rgba(6, 191, 127, 0.35)';
-              e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.boxShadow = '0 6px 20px rgba(6, 191, 127, 0.18)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'rgba(6, 191, 127, 0.08)';
-              e.currentTarget.style.borderColor = 'rgba(6, 191, 127, 0.2)';
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 2px 12px rgba(6, 191, 127, 0.1)';
-            }}
-          >
-            <span style={styles.latestDot} />
-            <span>View latest prototype</span>
-            <span style={styles.latestName}>{latestProject.name}</span>
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-              <path d="M3.33334 8H12.6667" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M8 3.33334L12.6667 8L8 12.6667" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </button>
-        )}
-
         {/* ── Footer ───────────────────────────────────────────── */}
-        <div style={styles.footer}>
-          <Link
-            href="https://galaxy.corp.thoughtspot.com/mohammed-faris/radiantplay"
-            target="_blank"
-            color="gray"
-            size="small"
-            external
+        <div style={styles.eggWrapper}>
+          <div
+            style={styles.funFooter}
+            onClick={() => setShowEgg(v => !v)}
+            title=""
           >
-            Galaxy
-          </Link>
-        </div>
-
-        <div style={styles.funFooter}>
-          {footerMessage}
+            {footerMessage}
+          </div>
+          {showEgg && (
+            <div style={styles.eggTooltip}>
+              What are you looking for? 😄
+            </div>
+          )}
         </div>
       </main>
     </div>
@@ -241,6 +216,12 @@ const styles: Record<string, React.CSSProperties> = {
     textAlign: 'center',
     marginBottom: `${spacing.K}px`,
   },
+  eyebrowRow: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: `${spacing.B}px`,
+    marginBottom: `${spacing.E}px`,
+  },
   eyebrow: {
     display: 'inline-flex',
     alignItems: 'center',
@@ -253,18 +234,27 @@ const styles: Record<string, React.CSSProperties> = {
     padding: `${spacing.A}px ${spacing.D}px`,
     textTransform: 'uppercase',
     letterSpacing: '0.06em',
-    marginBottom: `${spacing.E}px`,
   },
   title: {
     fontSize: '56px',
     fontWeight: 800,
-    color: systemColors.light['content-primary'],
+    color: referenceColors.blue['85'],
     marginBottom: `${spacing.D}px`,
     letterSpacing: '-.03em',
     lineHeight: 1.1,
   },
   titleAccent: {
-    color: systemColors.light['content-brand'],
+    color: referenceColors.blue['60'],
+  },
+  versionBadge: {
+    display: 'inline-block',
+    fontSize: '12px',
+    fontWeight: 500,
+    color: systemColors.light['content-secondary'],
+    backgroundColor: systemColors.light['background-subtle'],
+    padding: `${spacing.A}px ${spacing.B}px`,
+    borderRadius: '20px',
+    letterSpacing: '0.01em',
   },
   subtitle: {
     fontSize: '18px',
@@ -333,7 +323,7 @@ const styles: Record<string, React.CSSProperties> = {
     flexDirection: 'column',
     alignItems: 'center',
     textAlign: 'center',
-    padding: `${spacing.J}px ${spacing.H}px`,
+    padding: `${spacing.G}px ${spacing.H}px`,
     background: systemColors.light['background-base'],
     border: `1px solid ${systemColors.light['background-subtle']}`,
     borderRadius: '24px',
@@ -389,12 +379,12 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'inline-flex',
     alignItems: 'center',
     gap: `${spacing.B}px`,
-    fontSize: '14px',
+    fontSize: '15px',
     fontWeight: 600,
     color: systemColors.light['content-brand'],
     background: referenceColors.blue['10'],
-    padding: `${spacing.B}px ${spacing.E}px`,
-    borderRadius: `${spacing.B}px`,
+    padding: `${spacing.C}px ${spacing.F}px`,
+    borderRadius: '10px',
     border: `1px solid ${systemColors.light['background-information']}`,
     transition: 'all 150ms ease',
   },
@@ -440,13 +430,33 @@ const styles: Record<string, React.CSSProperties> = {
     justifyContent: 'center',
     gap: `${spacing.C}px`,
   },
-  funFooter: {
+  eggWrapper: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: `${spacing.B}px`,
     marginTop: `${spacing.F}px`,
-    fontSize: '13px',
+  },
+  funFooter: {
+    fontSize: '14px',
     fontWeight: 400,
     color: systemColors.light['content-tertiary'],
     textAlign: 'center',
     fontStyle: 'italic',
+    cursor: 'default',
+    userSelect: 'none',
+    borderBottom: `1px dashed ${systemColors.light['border-divider']}`,
+    paddingBottom: `${spacing.A}px`,
+  },
+  eggTooltip: {
+    fontSize: '12px',
+    fontWeight: 500,
+    color: systemColors.light['content-secondary'],
+    backgroundColor: systemColors.light['background-base'],
+    border: `1px solid ${systemColors.light['background-subtle']}`,
+    borderRadius: '8px',
+    padding: `${spacing.B}px ${spacing.C}px`,
+    boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
   },
 };
 

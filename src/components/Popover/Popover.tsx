@@ -71,7 +71,7 @@ export interface PopoverProps {
  *   }
  *   placement="bottom-end"
  * >
- *   <Button icon="more" />
+ *   <Button icon="more" iconPosition="leading" />
  * </Popover>
  * ```
  */

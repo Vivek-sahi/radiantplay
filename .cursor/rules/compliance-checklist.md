@@ -1,6 +1,7 @@
 ---
 description: Mandatory compliance checklist for every prototype file. Catches hardcoded colors, raw HTML, wrong fonts, magic spacing values, and accessibility issues. Runs automatically on all prototype code.
 globs: ["src/prototypes/**/*.tsx", "src/components/**/*.tsx"]
+alwaysApply: true
 ---
 
 # Compliance Checklist
@@ -24,7 +25,7 @@ Run these checks on every `.tsx` file you create or modify. Do NOT declare done 
 
 | Raw element | Use instead |
 |-------------|-------------|
-| `<button>` | `Button` (exception: icon-only triggers, document with comment) |
+| `<button>` | `Button` (exception: non-standard overlay triggers for Popover/Tooltip only — document with comment) |
 | `<input>` | `TextInput` or `SearchInput` |
 | `<table>` | `Table` |
 | `<select>` | `Select` or `Dropdown` |
@@ -33,6 +34,11 @@ Run these checks on every `.tsx` file you create or modify. Do NOT declare done 
 
 - No values outside the spacing scale (e.g. `17px`, `gap: 7`)
 - Use `spacing.A` through `spacing.N` from `../../tokens/spacing`
+
+## Layout — no inline flex/grid
+
+- No `display: 'flex'` or `display: 'grid'` inline — use `Horizontal`, `Vertical`, `View`, `Grid`
+- Full-page layouts use `AppShell` (not hand-rolled header + sidebar)
 
 ## Responsive — no fixed column counts
 

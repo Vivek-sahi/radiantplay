@@ -276,23 +276,23 @@ Use the display name from the registry entry as the title text.
 
 ---
 
-### 7. Register in registry.ts
+### 7. Register in registry-mine.ts
 
-Open `src/prototypes/registry.ts` and make three additions:
+Open `src/prototypes/registry-mine.ts` — this is the designer's own file, never touched by upstream.
 
-**A — Add the thumbnail import** after the last existing thumbnail import line:
+**A — Add the thumbnail import** at the top of the file (after the existing import):
 
 ```ts
 import <Name>Thumbnail from './thumbnails/<Name>.svg';
 ```
 
-**B — Add the lazy import** after the last existing lazy import line:
+**B — Add the lazy import** before the `myRegistry` array:
 
 ```ts
 const <Name> = React.lazy(() => import('./<Name>'));
 ```
 
-**C — Add the registry entry** before the closing `];` of `projectRegistry`:
+**C — Add the registry entry** inside the `myRegistry` array:
 
 ```ts
   {
@@ -306,6 +306,9 @@ const <Name> = React.lazy(() => import('./<Name>'));
     section: 'mine',
   },
 ```
+
+> **Important:** Always write to `registry-mine.ts`, never to `registry-core.ts` or `registry.ts`.
+> `registry-mine.ts` is the designer's file — upstream never changes it, so it never conflicts on sync.
 
 ---
 
@@ -324,7 +327,7 @@ Files created:
   src/prototypes/<Name>/components/        ← put your local components here
   src/prototypes/thumbnails/<Name>.svg     ← gallery thumbnail
 
-Registered in registry.ts — it will appear in the gallery under "My prototypes".
+Registered in registry-mine.ts — it will appear in the gallery under "My prototypes".
 
 What's next:
   • Describe your UI or paste a Figma screenshot — Claude will build it using Radiant components

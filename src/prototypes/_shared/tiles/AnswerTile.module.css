@@ -1,0 +1,419 @@
+/* ─────────────────────────────────────────────────────────
+   AnswerTile
+   ───────────────────────────────────────────────────────── */
+
+/*
+ * SPACING MODEL (confirmed from Figma node 8737:359626)
+ *
+ * ┌──────────────────────────────────────────────────────┐
+ * │  8px  ← ORANGE ZONE: fixed outer padding             │  never changes
+ * │  ┌────────────────────────────────────────────────┐  │
+ * │  │  --tile-content-padding  ← GREEN ZONE (start)  │  │
+ * │  │                                                │  │  \
+ * │  │  [Header: title + description]                 │  │   |
+ * │  │                                                │  │   | ALL density-variable
+ * │  │  --tile-content-padding  ← gap also dynamic    │  │   | controlled by one var
+ * │  │                                                │  │   |
+ * │  │  [Chart area: fills remaining space]           │  │   |
+ * │  │                                                │  │  /
+ * │  │  --tile-content-padding  ← GREEN ZONE (end)    │  │
+ * │  └────────────────────────────────────────────────┘  │
+ * │  8px                                                 │
+ * └──────────────────────────────────────────────────────┘
+ *
+ * --tile-content-padding values:
+ *   compact     → 2px
+ *   comfortable → 4px  (default)
+ *   spacious    → 8px
+ *
+ * Set this variable on the grid container to apply density across all tiles.
+ */
+
+.tile {
+  /* Structure */
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  position: relative;
+
+  /* Fixed outer padding — never changes with content density */
+  padding: 8px;
+
+  /* Appearance */
+  background: var(--rd-sys-color-background-base, #ffffff);
+  border: 1px solid var(--rd-sys-color-border-divider, #eaedf2);
+  border-radius: 16px;
+
+  /* Allow selection handles to overflow the tile boundary */
+  overflow: visible;
+
+  /* Transitions */
+  transition: box-shadow 150ms ease, border-color 150ms ease;
+}
+
+/* ── View mode: hover ── */
+.tile:not(.tileEdit):hover {
+  border-color: #C0C6CF;
+  box-shadow: none;
+}
+
+/* ── Edit mode ── */
+.tileEdit {
+  cursor: default;
+}
+
+/* Drag zone — only the inner content area in edit mode */
+:global(.tile-drag-handle) {
+  cursor: grab;
+}
+:global(.tile-drag-handle):active {
+  cursor: grabbing;
+}
+
+.tileEdit:hover {
+  border-color: var(--rd-sys-color-content-brand, #2770ef);
+}
+
+/* ── Edit mode: selected — 1.5px blue border ── */
+.tileSelected {
+  border: 1.5px solid var(--rd-sys-color-content-brand, #2770ef) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+/* ─────────────────────────────────────────────────────────
+   Inner content (density-variable zone)
+   ───────────────────────────────────────────────────────── */
+
+.inner {
+  /*
+   * DENSITY-VARIABLE padding.
+   * Default: 4px (comfortable).
+   */
+  padding: var(--tile-content-padding, 4px);
+  border-radius: 6px;
+
+  display: flex;
+  flex-direction: column;
+  gap: var(--tile-content-padding, 4px); /* Density-variable — same token as padding */
+  flex: 1;
+  min-height: 0;
+  box-sizing: border-box;
+}
+
+/* ─────────────────────────────────────────────────────────
+   Header
+   ───────────────────────────────────────────────────────── */
+
+.header {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+/* Title container — Figma h-[28px]: padding(2) + line-height(24) + padding(2) */
+.titleWrapper {
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+
+.title {
+  display: block;
+  font-family: 'Plain', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size:      var(--tile-title-size,   16px);
+  font-weight:    var(--tile-title-weight, 600);
+  line-height:    var(--tile-title-lh,     24px);
+  letter-spacing: var(--tile-title-ls,     -0.4px);
+  color: var(--rd-sys-color-content-primary, #1d232f);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Inline edit input — matches the span's visual footprint exactly */
+.titleEditInput {
+  display: block;
+  font-family: 'Plain', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size:      var(--tile-title-size,   16px);
+  font-weight:    var(--tile-title-weight, 600);
+  line-height:    var(--tile-title-lh,     24px);
+  letter-spacing: var(--tile-title-ls,     -0.4px);
+  color: var(--rd-sys-color-content-primary, #1d232f);
+  background: transparent;
+  border: none;
+  outline: none;
+  width: 100%;
+  height: 24px;
+  padding: 0;
+  cursor: text;
+}
+
+/* Description container — Figma h-[20px]: line-height(20) + no padding */
+.descriptionWrapper {
+  padding: 0 4px;
+  border-radius: 4px;
+}
+
+.description {
+  display: block;
+  font-family: 'Plain', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 14px;
+  font-weight: 375;
+  line-height: 20px;
+  color: #4a515e;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.descEditInput {
+  display: block;
+  font-family: 'Plain', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 14px;
+  font-weight: 375;
+  line-height: 20px;
+  color: #4a515e;
+  background: transparent;
+  border: none;
+  outline: none;
+  width: 100%;
+  height: 20px;
+  padding: 0;
+  cursor: text;
+}
+
+/* ─────────────────────────────────────────────────────────
+   Chart area
+   ───────────────────────────────────────────────────────── */
+
+.chartArea {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: 4px;
+  display: flex;
+  align-items: stretch;
+}
+
+.chartArea > * {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ─────────────────────────────────────────────────────────
+   Selection handles overlay (selected state)
+   ───────────────────────────────────────────────────────── */
+
+/* Overlay sits exactly on the tile border */
+.selectionOverlay {
+  position: absolute;
+  inset: -1.5px;
+  border-radius: 0;
+  pointer-events: none;
+}
+
+/* All handles are drag targets */
+:global(.tile-drag-handle) {
+  cursor: grab;
+  pointer-events: auto !important;
+}
+
+:global(.tile-drag-handle):active {
+  cursor: grabbing;
+}
+
+/* Corner handle — 6px square */
+.handle {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background: #ffffff;
+  border: 0.75px solid var(--rd-sys-color-content-brand, #2770ef);
+  border-radius: 0;
+  box-sizing: border-box;
+  pointer-events: auto;
+}
+
+.handleTopLeft     { top: -3px;  left: -3px; }
+.handleTopRight    { top: -3px;  right: -3px; }
+.handleBottomLeft  { bottom: -3px; left: -3px; }
+.handleBottomRight { bottom: -3px; right: -3px; }
+
+/* Mid-edge pill handle — 6px × 32px, rounded */
+.handlePill {
+  position: absolute;
+  width: 6px;
+  height: 32px;
+  background: #ffffff;
+  border: 0.75px solid var(--rd-sys-color-content-brand, #2770ef);
+  border-radius: 16px;
+  box-sizing: border-box;
+  pointer-events: auto;
+}
+
+.handleMidLeft  { top: 50%; left: -3px;    transform: translateY(-50%); }
+.handleMidRight { top: 50%; right: -3px;   transform: translateY(-50%); }
+
+/* Horizontal pill (top/bottom mid-edge) — rotated */
+.handlePillH {
+  position: absolute;
+  width: 32px;
+  height: 6px;
+  background: #ffffff;
+  border: 0.75px solid var(--rd-sys-color-content-brand, #2770ef);
+  border-radius: 16px;
+  box-sizing: border-box;
+  pointer-events: auto;
+}
+
+.handleMidTop    { top: -3px;    left: 50%; transform: translateX(-50%); }
+.handleMidBottom { bottom: -3px; left: 50%; transform: translateX(-50%); }
+
+/* ─────────────────────────────────────────────────────────
+   Tile toolbar (appears above selected tile)
+   ───────────────────────────────────────────────────────── */
+
+.toolbar {
+  position: absolute;
+  top: -48px;
+  left: -8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  background: #1d232f;
+  border: 1px solid #777e8b;
+  border-radius: 4px;
+  box-shadow: 0 0 4px rgba(25, 35, 49, 0.1), 0 24px 32px rgba(25, 35, 49, 0.16);
+  white-space: nowrap;
+  pointer-events: auto;
+  z-index: 100;
+}
+
+.toolbarBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: transparent;
+  border: none;
+  border-radius: 2px;
+  cursor: pointer;
+  color: #ffffff;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.toolbarBtn:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.toolbarBtnWithChevron {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 24px;
+  background: transparent;
+  border: none;
+  border-radius: 2px;
+  cursor: pointer;
+  color: #ffffff;
+  padding: 2px 4px;
+  flex-shrink: 0;
+}
+
+.toolbarBtnWithChevron:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.toolbarDivider {
+  width: 1px;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.15);
+  flex-shrink: 0;
+}
+
+/* ─── Chart type dropdown ─────────────────────────────────── */
+
+.chartDropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1d232f;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  padding: 4px 0;
+  min-width: 148px;
+  z-index: 200;
+  box-shadow: 0 0 4px rgba(25, 35, 49, 0.1), 0 12px 24px rgba(25, 35, 49, 0.24);
+}
+
+.chartDropdownItem {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 7px 12px;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 13px;
+  font-weight: 375;
+  font-family: 'Plain', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  cursor: pointer;
+  text-align: left;
+  white-space: nowrap;
+  line-height: 18px;
+}
+
+.chartDropdownItem:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+
+.chartDropdownItemActive {
+  color: #5c8bef;
+  font-weight: 500;
+}
+
+/* ─────────────────────────────────────────────────────────
+   Edit mode chrome (drag handle - kept for react-grid-layout)
+   ───────────────────────────────────────────────────────── */
+
+.dragHandle {
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  cursor: grab;
+  color: var(--rd-sys-color-content-secondary, #777e8b);
+  opacity: 0;
+  transition: opacity 120ms ease;
+  pointer-events: none;
+}
+
+.tileSelected .dragHandle {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Resize handle — bottom-right */
+.resizeHandle {
+  position: absolute;
+  bottom: 6px;
+  right: 6px;
+  width: 14px;
+  height: 14px;
+  cursor: se-resize;
+  opacity: 0;
+  transition: opacity 120ms ease;
+  pointer-events: none;
+}
+
+.tileSelected .resizeHandle {
+  opacity: 1;
+  pointer-events: auto;
+}

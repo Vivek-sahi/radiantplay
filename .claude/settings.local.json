@@ -1,0 +1,116 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git branch:*)",
+      "Bash(git reset:*)",
+      "Bash(git push:*)",
+      "Bash(git stash:*)",
+      "Bash(git checkout:*)",
+      "Bash(pkill -f \"vite\")",
+      "Bash(pkill -f \"npm run dev\")",
+      "mcp__plugin_figma_figma__get_design_context",
+      "mcp__plugin_figma_figma__get_screenshot",
+      "Bash(grep -v \"^$\")",
+      "Bash(sed -i '' 's/<Button variant=\"\"tertiary\"\" icon=\"\"more\"\" \\\\/>/<Button variant=\"\"tertiary\"\" icon=\"\"more\"\" iconPosition=\"\"leading\"\" \\\\/>/g' .cursor/rules/widget-patterns.md .cursor/rules/figma-component-mapping.md)",
+      "Bash(sed -i '' 's/<Button variant=\"\"tertiary\"\" icon=\"\"more\"\" aria-label=\"\"More actions\"\" \\\\/>/<Button variant=\"\"tertiary\"\" icon=\"\"more\"\" iconPosition=\"\"leading\"\" aria-label=\"\"More actions\"\" \\\\/>/g' .cursor/rules/widget-patterns.md .cursor/rules/figma-component-mapping.md)",
+      "Bash(sed -i '' 's/<Button variant=\"\"secondary\"\" icon=\"\"filter\"\">Filter<\\\\/Button>/<Button variant=\"\"secondary\"\" icon=\"\"filter\"\" iconPosition=\"\"leading\"\">Filter<\\\\/Button>/g' .cursor/rules/layout-patterns.md)",
+      "Bash(sed -i '' 's/<Button variant=\"\"primary\"\" icon=\"\"plus\"\">Add item<\\\\/Button>/<Button variant=\"\"primary\"\" icon=\"\"plus\"\" iconPosition=\"\"leading\"\">Add item<\\\\/Button>/g' .cursor/rules/layout-patterns.md)",
+      "Bash(sed -i '' 's/<Button variant=\"\"tertiary\"\" icon=\"\"filter\"\" aria-label=\"\"Filters\"\" \\\\/>/<Button variant=\"\"tertiary\"\" icon=\"\"filter\"\" iconPosition=\"\"leading\"\" aria-label=\"\"Filters\"\" \\\\/>/g' .cursor/rules/widget-patterns.md)",
+      "Bash(grep -rn \"custom\\\\|<header\\\\|<nav\\\\|<input\\\\|<button\\\\|inline style\\\\|position.*absolute\\\\|#[0-9A-Fa-f]\\\\{3,6\\\\}\" src/prototypes/SpotterMemory/ --include=\"*.tsx\")",
+      "Read(//Users/mohammed.faris/code/radiantplay/**)",
+      "Bash(grep -rn \"#[0-9A-Fa-f]\\\\{3,6\\\\}\\\\|display.*flex\\\\|display.*grid\\\\|fontSize.*[0-9]px\\\\|padding.*[0-9]px\" src/prototypes/AdminUserManagement/ --include=\"*.tsx\")",
+      "Bash(grep -rn \"#[0-9A-Fa-f]\\\\{3,6\\\\}\\\\b\" src/prototypes/SpotterMemory/ --include=\"*.tsx\" --include=\"*.ts\")",
+      "Bash(grep -rn \"#[0-9A-Fa-f]\\\\{3,6\\\\}\\\\b\" src/prototypes/AdminUserManagement/ --include=\"*.tsx\" --include=\"*.ts\")",
+      "Skill(update-config)",
+      "Bash(for f:*)",
+      "Bash(do echo:*)",
+      "Bash(done)",
+      "Bash(git ls-tree:*)",
+      "Bash(git rm:*)",
+      "Bash(do)",
+      "Bash(echo \"removed: $f\")",
+      "Bash(echo \"skip \\(not tracked\\): $f\")",
+      "WebFetch(domain:yummy-design-sprint.notion.site)",
+      "Bash(wc -l /Users/mohammed.faris/code/radiantplay/.claude/commands/*.md)",
+      "Bash(wc -l /Users/mohammed.faris/code/radiantplay/.cursor/rules/*.md)",
+      "Bash(brew upgrade:*)",
+      "Bash(git merge:*)",
+      "Bash(gh issue:*)",
+      "Bash(grep -r LiveboardHeader /Users/mohammed.faris/code/radiantplay/src/components --include=*.tsx --include=*.ts)",
+      "Bash(npm install:*)",
+      "Bash(mkdir:*)",
+      "Bash(cp /Users/mohammed.faris/code/liveboard-canvas-system/src/prototypes/_liveboard-template/index.tsx /Users/mohammed.faris/code/radiantplay/src/prototypes/_liveboard-template/index.tsx)",
+      "Bash(cp /Users/mohammed.faris/code/liveboard-canvas-system/src/prototypes/_liveboard-template/data/mockData.ts /Users/mohammed.faris/code/radiantplay/src/prototypes/_liveboard-template/data/mockData.ts)",
+      "Bash(cp /Users/mohammed.faris/code/liveboard-canvas-system/src/prototypes/_liveboard-template/components/SpotterVizPanel.tsx /Users/mohammed.faris/code/radiantplay/src/prototypes/_liveboard-template/components/SpotterVizPanel.tsx)",
+      "Bash(git status:*)",
+      "WebFetch(domain:developers.thoughtspot.com)",
+      "Bash(python3 -m json.tool)",
+      "Bash(grep -oP '\\(?<=\\\\.\\)color\\\\\\([^\\\\\\)]{0,100}\\\\\\)' /Users/mohammed.faris/code/radiantplay/node_modules/@viz/muze/dist/muze.js)",
+      "mcp__plugin_figma_figma__generate_diagram",
+      "Bash(chmod:*)",
+      "Bash(bash /Users/mohammed.faris/code/radiantplay/.claude/hooks/liveboard-gate.sh)",
+      "Bash(echo \"Exit code: $?\")",
+      "Bash(gh api:*)",
+      "Bash(curl -s \"https://docs.anthropic.com/en/docs/claude-code/overview\")",
+      "Bash(claude --version)",
+      "Bash(head -5 /Users/mohammed.faris/code/radiantplay/.cursor/rules/*.md)",
+      "WebSearch",
+      "Bash(head:*)",
+      "Bash(grep \"\\\\.md$\")",
+      "WebFetch(domain:www.figma.com)",
+      "WebFetch(domain:arize.com)",
+      "WebFetch(domain:learn.thedesignsystem.guide)",
+      "WebFetch(domain:hackernoon.com)",
+      "WebFetch(domain:martinfowler.com)",
+      "WebFetch(domain:addyosmani.com)",
+      "WebFetch(domain:alexop.dev)",
+      "Bash(claude settings:*)",
+      "Bash(claude hooks:*)",
+      "Bash(cat /Users/mohammed.faris/code/radiantplay/.claude/plans/*.md)",
+      "Bash(wc:*)",
+      "Bash(bash .claude/hooks/post-compact-inject.sh)",
+      "Bash(find /Users/mohammed.faris/code/radiantplay/docs/collaboration -type f -name *.md)",
+      "Bash(find /Users/mohammed.faris/code/radiantplay/docs/archive -type f -name *.md)",
+      "mcp__plugin_figma_figma__get_figjam",
+      "mcp__plugin_figma_figma__use_figma",
+      "Bash(bash scripts/generate-changelog.sh 2026-04-01)",
+      "Bash(lsof -ti:5173)",
+      "Bash(grep:*)",
+      "Bash(node:*)",
+      "Bash(bash /Users/mohammed.faris/code/radiantplay/scripts/install-maintainer-hooks.sh)",
+      "Bash(npm audit:*)",
+      "Bash(cat \"src/prototypes/Cmdk/Cmd\\(figmamake\\)/package.json\")",
+      "Bash(git add:*)",
+      "Bash(du -sh /Users/mohammed.faris/code/radiantplay/src/prototypes/_shared/*)",
+      "Bash(ls -lh /Users/mohammed.faris/code/radiantplay/dist/*.js)",
+      "Bash(find /Users/mohammed.faris/code/radiantplay/public /Users/mohammed.faris/code/radiantplay/src -name *.svg -o -name *.png -o -name *.jpg -o -name *.webp)",
+      "Bash(xargs ls:*)",
+      "Bash(du -sh /Users/mohammed.faris/code/radiantplay/src/prototypes/*/)",
+      "Bash(ls /Users/mohammed.faris/code/radiantplay/*.md)",
+      "Bash(sed -i '' \"s/onAction={\\(\\) => console\\\\.log\\(''Undo clicked''\\)}/onAction={\\(\\) => {}}/g\" /Users/mohammed.faris/code/radiantplay/src/pages/ComponentDocPage.tsx)",
+      "Bash(sed -i '' \"s/onSubmit={\\(v\\) => console\\\\.log\\(''submitted'', v\\)}/onSubmit={\\(\\) => {}}/g\" /Users/mohammed.faris/code/radiantplay/src/pages/ComponentDocPage.tsx)"
+    ]
+  },
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/liveboard-gate.sh",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/post-compact-inject.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

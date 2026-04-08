@@ -9,64 +9,9 @@ Standard layouts for building prototypes. Use these patterns as starting points.
 
 ---
 
-## Layout Primitives — ALWAYS Use These
+## Layout Primitives
 
-> **RULE:** Never write `display: flex` or `display: grid` inline. Always use `Horizontal`, `Vertical`, `View`, or `Grid`.
-
-### Horizontal (flex row)
-```tsx
-import { Horizontal } from '../../components';
-
-// Instead of: <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-<Horizontal gap={8} align="center">
-  <Icon name="plus" size="s" />
-  <span>Add item</span>
-</Horizontal>
-```
-
-### Vertical (flex column)
-```tsx
-import { Vertical } from '../../components';
-
-// Instead of: <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-<Vertical gap={16}>
-  <TextInput label="Name" />
-  <TextInput label="Email" />
-</Vertical>
-```
-
-### View (custom flex)
-```tsx
-import { View } from '../../components';
-
-<View flexDirection="row-reverse" gap={12} align="flex-end">
-  <Button variant="primary">Save</Button>
-  <Button variant="secondary">Cancel</Button>
-</View>
-```
-
-### Grid / RdGrid (CSS grid)
-```tsx
-import { Grid, RdGridItem } from '../../components';
-
-<Grid columns={3} gap={16}>
-  <RdGridItem colSpan={2}><MainContent /></RdGridItem>
-  <RdGridItem><Sidebar /></RdGridItem>
-</Grid>
-```
-
-### SplitPane (resizable two panels)
-```tsx
-import { SplitPane } from '../../components';
-
-<SplitPane
-  left={<Tree nodes={nodes} />}
-  right={<TableView data={selected} />}
-  defaultSize={30}
-  minSize={20}
-  maxSize={50}
-/>
-```
+> **RULE:** Never write `display: flex` or `display: grid` inline. Use `Horizontal`, `Vertical`, `View`, or `Grid`. See `component-inventory.md` §Layout Primitives for the full component list and examples.
 
 ---
 
@@ -74,11 +19,11 @@ import { SplitPane } from '../../components';
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│  Header (56px)                                      │
+│  Header (60px)                                      │
 ├──────────────┬──────────────────────────────────────┤
 │              │                                      │
 │   Sidebar    │         Main Content                 │
-│   (240px)    │                                      │
+│   (260px)    │                                      │
 │              │                                      │
 │              │                                      │
 │              │                                      │
@@ -134,7 +79,7 @@ const styles = {
     overflow: 'hidden',
   },
   sidebar: {
-    width: '240px',
+    width: '260px',
     flexShrink: 0,
     backgroundColor: systemColors.light['background-base'],
     borderRight: `1px solid ${systemColors.light['border-divider']}`,
@@ -147,7 +92,7 @@ const styles = {
     backgroundColor: systemColors.light['background-base'],
   },
   content: {
-    maxWidth: '1200px',
+    maxWidth: '1280px',
   },
 };
 ```
@@ -560,8 +505,8 @@ const DataTablePageLayout: React.FC = () => {
           />
         </div>
         <div style={styles.actions}>
-          <Button variant="secondary" icon="filter">Filter</Button>
-          <Button variant="primary" icon="plus">Add item</Button>
+          <Button variant="secondary" icon="filter" iconPosition="leading">Filter</Button>
+          <Button variant="primary" icon="plus" iconPosition="leading">Add item</Button>
         </div>
       </div>
 
@@ -744,14 +689,14 @@ Wrap every `<Table>` in an `overflowX: 'auto'` container so it scrolls horizonta
 
 ```typescript
 // Header heights
-const HEADER_HEIGHT = 56;
+const HEADER_HEIGHT = 60;
 
 // Sidebar widths
-const SIDEBAR_WIDTH = 240;
+const SIDEBAR_WIDTH = 260;
 const SIDEBAR_COLLAPSED = 64;
 
 // Content max widths
-const CONTENT_MAX_WIDTH = 1200;
+const CONTENT_MAX_WIDTH = 1280;
 const FORM_MAX_WIDTH = 600;
 const MODAL_WIDTH = 600;
 

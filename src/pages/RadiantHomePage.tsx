@@ -141,7 +141,7 @@ export const RadiantHomePage: React.FC<RadiantHomePageProps> = ({ onNavigate }) 
         <div style={styles.heroContent}>
           <div style={styles.heroBadge}>
             <span style={styles.heroBadgeIcon}>✨</span>
-            <span>Design System v1.0</span>
+            <span>Design System 26.4.1b</span>
           </div>
           <h1 style={styles.heroTitle}>Radiant</h1>
           <p style={styles.heroSubtitle}>
@@ -228,7 +228,7 @@ export const RadiantHomePage: React.FC<RadiantHomePageProps> = ({ onNavigate }) 
         <div style={styles.sectionHeader}>
           <h2 style={styles.sectionTitle}>Components</h2>
           <p style={styles.sectionDescription}>
-            Explore all {components.length} components with live examples and documentation
+            {components.length} featured components with live examples — {getComponentCount()} total in the registry
           </p>
         </div>
         {componentCategories.map((category) => (
@@ -276,7 +276,7 @@ export const RadiantHomePage: React.FC<RadiantHomePageProps> = ({ onNavigate }) 
           <div style={styles.quickLinkContent}>
             <h3 style={styles.quickLinkTitle}>Icons</h3>
             <p style={styles.quickLinkDescription}>
-              Browse 46 carefully crafted icons with searchable gallery.
+              Browse {getIconCount()} carefully crafted icons with searchable gallery.
             </p>
           </div>
         </div>

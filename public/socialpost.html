@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Radiant Play — Social</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --blue-10:#EBF2FD;--blue-20:#DEE8FA;--blue-30:#CEDCF5;
+  --blue-40:#ABC7F9;--blue-50:#71A1F4;--blue-60:#2770EF;
+  --blue-70:#2359B6;--blue-80:#163772;--blue-90:#082559;
+  --gray-00:#FFFFFF;--gray-10:#F6F8FA;--gray-20:#EAEDF2;
+  --gray-30:#DBDFE7;--gray-40:#C0C6CF;--gray-50:#A5ACB9;
+  --gray-60:#777E8B;--gray-70:#4A515E;--gray-80:#323946;
+  --gray-85:#272D38;--gray-90:#1D232F;
+  --green:#06BF7F;--green-bg:rgba(6,191,127,0.12);
+  --orange:#F5A623;--orange-bg:rgba(245,166,35,0.12);
+  --purple:#7B61FF;--purple-bg:rgba(123,97,255,0.12);
+  --red:#E5484D;--red-bg:rgba(229,72,77,0.12);
+  --r:10px;--r-lg:16px;--r-xl:24px;
+  --font:'Inter',system-ui,sans-serif;
+  --mono:'SF Mono','Fira Code','Cascadia Code',monospace;
+}
+body { font-family:var(--font); background:var(--gray-90); color:#fff; height:100vh; overflow:hidden; -webkit-font-smoothing:antialiased; }
+
+/* ── chrome ── */
+.progress-bar { position:fixed;top:0;left:0;height:3px;background:var(--blue-60);transition:width .4s cubic-bezier(.4,0,.2,1);z-index:200;box-shadow:0 0 14px rgba(39,112,239,.7); }
+.slide-badge  { position:fixed;top:20px;right:32px;font-size:12px;font-weight:500;color:rgba(255,255,255,.3);z-index:200; }
+.wordmark { position:fixed;top:18px;left:32px;z-index:200;display:flex;align-items:center;gap:10px;text-decoration:none; }
+.wordmark-icon { width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,var(--blue-60) 0%,var(--blue-80) 100%);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;color:#fff;letter-spacing:-.5px;box-shadow:0 2px 8px rgba(39,112,239,.4);flex-shrink:0; }
+.wordmark-text { font-size:14px;font-weight:800;color:#fff;letter-spacing:-.02em;line-height:1; }
+.wordmark-text span { color:var(--blue-40); }
+
+/* ── nav ── */
+.nav { position:fixed;bottom:28px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:14px;z-index:200; }
+.nav-btn { width:40px;height:40px;border-radius:50%;border:1.5px solid rgba(255,255,255,.15);background:rgba(255,255,255,.06);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .18s;backdrop-filter:blur(10px); }
+.nav-btn:hover { background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.35); }
+.nav-btn:disabled { opacity:.25;cursor:not-allowed; }
+.dots { display:flex;gap:5px; }
+.dot { width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.22);cursor:pointer;transition:all .2s; }
+.dot.active { background:var(--blue-60);width:18px;border-radius:3px; }
+.kbd-hint { position:fixed;bottom:28px;right:32px;font-size:11px;color:rgba(255,255,255,.2);display:flex;align-items:center;gap:5px; }
+kbd { background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:4px;padding:2px 5px;font-family:var(--mono);font-size:10px; }
+
+/* ── slides ── */
+.slides { width:100%;height:100vh;position:relative; }
+.slide { position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:52px 72px;opacity:0;transform:translateX(48px);transition:opacity .42s cubic-bezier(.4,0,.2,1),transform .42s cubic-bezier(.4,0,.2,1);pointer-events:none; }
+.slide.active  { opacity:1;transform:translateX(0);pointer-events:all; }
+.slide.exit    { opacity:0;transform:translateX(-48px); }
+
+/* ── shared ── */
+.label { display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--blue-50);background:rgba(39,112,239,.12);border-radius:100px;padding:5px 14px;margin-bottom:18px; }
+.h1 { font-size:clamp(36px,4.2vw,58px);font-weight:900;letter-spacing:-.03em;line-height:1.08; }
+.h2 { font-size:clamp(24px,2.8vw,38px);font-weight:800;letter-spacing:-.025em;line-height:1.15; }
+.sub { font-size:15.5px;color:rgba(255,255,255,.46);line-height:1.65; }
+
+/* ════ SCREEN 1 — HERO ════ */
+.s-hero { background:linear-gradient(145deg,#051a3d 0%,var(--blue-90) 40%,var(--blue-80) 100%); }
+.hero-inner { position:relative;z-index:1;max-width:700px;width:100%; }
+.hero-eyebrow { display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--blue-40);margin-bottom:24px; }
+.hero-dot { width:6px;height:6px;background:var(--blue-50);border-radius:50%;animation:pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.75)} }
+.hero-title { color:#fff;margin-bottom:22px; }
+.hero-title em { font-style:normal;color:var(--blue-40); }
+.hero-sub { font-size:18px;color:rgba(255,255,255,.65);line-height:1.65;max-width:560px;margin-bottom:40px; }
+.hero-chips { display:flex;flex-wrap:wrap;gap:9px; }
+.hero-chip { background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);border-radius:100px;padding:7px 18px;font-size:13px;font-weight:500;color:rgba(255,255,255,.88); }
+
+/* ════ SCREEN 2 — PIPELINE DIAGRAM ════ */
+.s-pipeline { background:linear-gradient(145deg,#051a3d 0%,var(--blue-90) 40%,var(--blue-80) 100%); }
+.pipeline-inner { max-width:700px;width:100%;text-align:center; }
+.pipeline-wrap { margin-top:32px; }
+
+/* ════ SCREEN 3 — RULES STRUCTURE ════ */
+.s-rules { background:linear-gradient(145deg,#051a3d 0%,var(--blue-90) 40%,var(--blue-80) 100%); }
+.rules-inner { max-width:900px;width:100%; }
+.rules-inner { text-align:center; }
+.rules-code {
+  background:rgba(0,0,0,.35);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:var(--r-lg);
+  padding:28px 36px;
+  font-family:var(--mono);
+  font-size:13.5px;
+  line-height:1.9;
+  color:rgba(255,255,255,.55);
+  text-align:left;
+  max-width:680px;
+  margin:28px auto 0;
+}
+.rules-code .file { color:rgba(255,255,255,.75); }
+.rules-code .comment { color:rgba(255,255,255,.25);font-style:italic; }
+.rule-line {
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.rule-line .connector {
+  color:rgba(255,255,255,.15);
+  font-family:var(--mono);
+  flex-shrink:0;
+  width:20px;
+  text-align:right;
+  user-select:none;
+}
+.rule-line:last-child .connector::before { content:'└'; }
+.rule-line .connector::before { content:'├'; }
+.rule-line .content { flex:1;display:flex;justify-content:space-between;gap:12px; }
+.rule-title {
+  font-size:12px;
+  font-weight:800;
+  color:var(--blue-40);
+  margin-bottom:20px;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  text-align:left;
+}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progressBar"></div>
+<div class="slide-badge" id="slideBadge">01 / 03</div>
+
+<a href="/" class="wordmark">
+  <div class="wordmark-icon">R</div>
+  <div class="wordmark-text">Radiant<span>Play</span></div>
+</a>
+
+<div class="slides">
+
+  <!-- ══════════════════════════════
+       SCREEN 1 — HERO
+  ══════════════════════════════ -->
+  <div class="slide s-hero active" data-index="0">
+    <div class="hero-inner">
+      <div class="hero-eyebrow"><div class="hero-dot"></div>ThoughtSpot Design</div>
+      <h1 class="h1 hero-title" style="margin-bottom:22px">
+        Radiant<em>Play</em>
+      </h1>
+      <p class="hero-sub">A playground for building interactive prototypes with real Radiant components so every screen stays consistent with the design system. Describe what you want, RadiantPlay builds it, and you iterate in real time.</p>
+      <div class="hero-chips">
+        <div class="hero-chip">~100 Radiant components</div>
+        <div class="hero-chip">Contextual rules</div>
+        <div class="hero-chip">Tool agnostic</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════
+       SCREEN 2 — PIPELINE DIAGRAM
+  ══════════════════════════════ -->
+  <div class="slide s-pipeline" data-index="1">
+    <div class="pipeline-inner">
+      <div class="label">How it works</div>
+      <h2 class="h2">How it works</h2>
+      <p class="sub" style="margin-bottom:8px">From your input to a coded prototype.</p>
+
+      <div class="pipeline-wrap">
+        <svg viewBox="0 0 600 380" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block">
+
+          <!-- ── Input node ── -->
+          <rect x="190" y="10" width="220" height="52" rx="14" fill="rgba(255,255,255,.06)" stroke="rgba(255,255,255,.14)" stroke-width="1.5"/>
+          <text x="300" y="33" fill="rgba(255,255,255,.7)" font-size="13" font-weight="700" font-family="Inter,sans-serif" text-anchor="middle">Your prompts</text>
+          <text x="300" y="50" fill="rgba(255,255,255,.3)" font-size="10" font-family="Inter,sans-serif" text-anchor="middle">Figma MCP · Context · Screenshot · HTML</text>
+
+          <!-- Arrow down to orchestrator -->
+          <path d="M 300 62 L 300 98" stroke="rgba(113,161,244,.3)" stroke-width="1.5" stroke-dasharray="4 3"/>
+
+          <!-- ── Orchestrator node ── -->
+          <rect x="170" y="98" width="260" height="52" rx="14" fill="rgba(39,112,239,.12)" stroke="rgba(39,112,239,.4)" stroke-width="1.5"/>
+          <text x="300" y="120" fill="#71A1F4" font-size="11" font-weight="700" font-family="Inter,sans-serif" text-anchor="middle" letter-spacing=".08em">ORCHESTRATOR</text>
+          <text x="300" y="138" fill="rgba(255,255,255,.35)" font-size="10" font-family="Inter,sans-serif" text-anchor="middle">classifies intent and routes to rules</text>
+
+          <!-- Branching lines (solid — primary 5) -->
+          <path d="M 210 150 Q 210 178 120 198" stroke="rgba(123,97,255,.4)" stroke-width="1.5" fill="none"/>
+          <path d="M 250 150 Q 250 180 190 200" stroke="rgba(6,191,127,.4)" stroke-width="1.5" fill="none"/>
+          <path d="M 300 150 L 300 200" stroke="rgba(39,112,239,.4)" stroke-width="1.5" fill="none"/>
+          <path d="M 350 150 Q 350 180 410 200" stroke="rgba(245,166,35,.4)" stroke-width="1.5" fill="none"/>
+          <path d="M 390 150 Q 390 178 480 198" stroke="rgba(239,68,68,.4)" stroke-width="1.5" fill="none"/>
+
+          <!-- Branching lines (dotted — hint at more rules) -->
+          <path d="M 230 150 Q 228 182 155 204" stroke="rgba(255,255,255,.12)" stroke-width="1" stroke-dasharray="3 3" fill="none"/>
+          <path d="M 275 150 Q 274 184 245 206" stroke="rgba(255,255,255,.12)" stroke-width="1" stroke-dasharray="3 3" fill="none"/>
+          <path d="M 325 150 Q 326 184 355 206" stroke="rgba(255,255,255,.12)" stroke-width="1" stroke-dasharray="3 3" fill="none"/>
+          <path d="M 370 150 Q 372 182 445 204" stroke="rgba(255,255,255,.12)" stroke-width="1" stroke-dasharray="3 3" fill="none"/>
+
+          <!-- Ghost dots for the extra lines -->
+          <circle cx="155" cy="208" r="3" fill="rgba(255,255,255,.15)"/>
+          <circle cx="245" cy="210" r="3" fill="rgba(255,255,255,.15)"/>
+          <circle cx="355" cy="210" r="3" fill="rgba(255,255,255,.15)"/>
+          <circle cx="445" cy="208" r="3" fill="rgba(255,255,255,.15)"/>
+
+          <!-- Output dots with labels (primary 5) -->
+          <circle cx="120" cy="206" r="6" fill="#7B61FF"/>
+          <text x="120" y="228" fill="rgba(255,255,255,.5)" font-size="10" font-weight="600" font-family="Inter,sans-serif" text-anchor="middle">Layout</text>
+
+          <circle cx="190" cy="208" r="6" fill="#06BF7F"/>
+          <text x="190" y="230" fill="rgba(255,255,255,.5)" font-size="10" font-weight="600" font-family="Inter,sans-serif" text-anchor="middle">Components</text>
+
+          <circle cx="300" cy="208" r="6" fill="#2770EF"/>
+          <text x="300" y="230" fill="rgba(255,255,255,.5)" font-size="10" font-weight="600" font-family="Inter,sans-serif" text-anchor="middle">Tokens</text>
+
+          <circle cx="410" cy="208" r="6" fill="#F5A623"/>
+          <text x="410" y="230" fill="rgba(255,255,255,.5)" font-size="10" font-weight="600" font-family="Inter,sans-serif" text-anchor="middle">Modals</text>
+
+          <circle cx="480" cy="206" r="6" fill="#EF4444"/>
+          <text x="480" y="228" fill="rgba(255,255,255,.5)" font-size="10" font-weight="600" font-family="Inter,sans-serif" text-anchor="middle">Widgets</text>
+
+          <!-- "and more" hint -->
+          <text x="300" y="248" fill="rgba(255,255,255,.2)" font-size="10" font-weight="500" font-family="Inter,sans-serif" text-anchor="middle">+ 11 more rule files</text>
+
+          <!-- Converge lines -->
+          <path d="M 120 236 Q 120 274 240 298" stroke="rgba(255,255,255,.08)" stroke-width="1" fill="none"/>
+          <path d="M 190 238 Q 190 276 255 298" stroke="rgba(255,255,255,.08)" stroke-width="1" fill="none"/>
+          <path d="M 300 238 L 300 298" stroke="rgba(255,255,255,.08)" stroke-width="1" fill="none"/>
+          <path d="M 410 238 Q 410 276 345 298" stroke="rgba(255,255,255,.08)" stroke-width="1" fill="none"/>
+          <path d="M 480 236 Q 480 274 360 298" stroke="rgba(255,255,255,.08)" stroke-width="1" fill="none"/>
+
+          <!-- ── Output node ── -->
+          <rect x="190" y="298" width="220" height="44" rx="12" fill="rgba(6,191,127,.08)" stroke="rgba(6,191,127,.3)" stroke-width="1.5"/>
+          <text x="300" y="325" fill="rgba(255,255,255,.6)" font-size="13" font-weight="700" font-family="Inter,sans-serif" text-anchor="middle">Coded prototype</text>
+
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════
+       SCREEN 3 — RULES STRUCTURE
+  ══════════════════════════════ -->
+  <div class="slide s-rules" data-index="2">
+    <div class="rules-inner">
+      <div class="label">Reference system</div>
+      <h2 class="h2">Contextual rules</h2>
+      <p class="sub" style="margin-bottom:4px">16 rule files that teach any AI tool how to build with Radiant.</p>
+
+      <div class="rules-code">
+        <div class="rule-title">Orchestrator</div>
+        <div class="rule-line"><span class="connector"></span><span class="content"><span class="file">_orchestration.md</span> <span class="comment"># router</span></span></div>
+        <div class="rule-line"><span class="connector"></span><span class="content"><span class="file">prototype-generation.md</span> <span class="comment"># build workflow</span></span></div>
+        <div class="rule-line"><span class="connector"></span><span class="content"><span class="file">component-inventory.md</span> <span class="comment"># ~100 components</span></span></div>
+        <div class="rule-line"><span class="connector"></span><span class="content"><span class="file">compliance-checklist.md</span> <span class="comment"># quality gate</span></span></div>
+        <div class="rule-line"><span class="connector"></span><span class="content"><span class="file">layout-patterns.md</span> <span class="comment"># page templates</span></span></div>
+        <div class="rule-line"><span class="connector"></span><span class="content"><span class="file">widget-patterns.md</span> <span class="comment"># tables, alerts, menus</span></span></div>
+        <div class="rule-line"><span class="connector"></span><span class="content"><span class="file">modal-patterns.md</span> <span class="comment"># dialogs, wizards</span></span></div>
+        <div class="rule-line"><span class="connector"></span><span class="content"><span class="file">interaction-patterns.md</span> <span class="comment"># loading, errors</span></span></div>
+        <div class="rule-line"><span class="connector"></span><span class="content"><span class="file">token-usage.md</span> <span class="comment"># colors, spacing, type</span></span></div>
+        <div class="rule-line"><span class="connector"></span><span class="content"><span class="file">content-guidelines.md</span> <span class="comment"># UX writing rules</span></span></div>
+        <div class="rule-line"><span class="connector"></span><span class="content"><span class="file">figma-mcp-workflow.md</span> <span class="comment"># Figma URL pipeline</span></span></div>
+        <div class="rule-line"><span class="connector"></span><span class="content"><span class="file">figma-component-mapping.md</span> <span class="comment"># Figma → Radiant</span></span></div>
+        <div class="rule-line"><span class="connector"></span><span class="content"><span class="file">prototype-structure.md</span> <span class="comment"># folder conventions</span></span></div>
+        <div class="rule-line"><span class="connector"></span><span class="content"><span class="file">product-knowledge-a.md</span> <span class="comment"># ThoughtSpot domain</span></span></div>
+        <div class="rule-line"><span class="connector"></span><span class="content"><span class="file">product-knowledge-b.md</span> <span class="comment"># ThoughtSpot domain</span></span></div>
+        <div class="rule-line"><span class="connector"></span><span class="content"><span class="file">design-system.md</span> <span class="comment"># component standards</span></span></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Navigation -->
+<div class="nav">
+  <button class="nav-btn" id="prevBtn" onclick="navigate(-1)">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M12 2L4 8L12 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </button>
+  <div class="dots" id="dots"></div>
+  <button class="nav-btn" id="nextBtn" onclick="navigate(1)">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 2L12 8L4 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </button>
+</div>
+
+<div class="kbd-hint"><kbd>&larr;</kbd><kbd>&rarr;</kbd></div>
+
+<script>
+const slides = document.querySelectorAll('.slide');
+const total = slides.length;
+let cur = 0, busy = false;
+
+const dotsEl = document.getElementById('dots');
+for (let i = 0; i < total; i++) {
+  const d = document.createElement('div');
+  d.className = 'dot' + (i === 0 ? ' active' : '');
+  d.onclick = () => goTo(i);
+  dotsEl.appendChild(d);
+}
+
+function updateUI() {
+  document.getElementById('progressBar').style.width = ((cur + 1) / total * 100) + '%';
+  document.getElementById('slideBadge').textContent = String(cur + 1).padStart(2, '0') + ' / ' + String(total).padStart(2, '0');
+  document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === cur));
+  document.getElementById('prevBtn').disabled = cur === 0;
+  document.getElementById('nextBtn').disabled = cur === total - 1;
+}
+
+function goTo(idx) {
+  if (busy || idx === cur || idx < 0 || idx >= total) return;
+  busy = true;
+  const prev = slides[cur], next = slides[idx];
+  prev.classList.add('exit');
+  prev.classList.remove('active');
+  next.style.transform = idx > cur ? 'translateX(48px)' : 'translateX(-48px)';
+  next.style.opacity = '0';
+  next.classList.add('active');
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    next.style.transform = '';
+    next.style.opacity = '';
+  }));
+  setTimeout(() => {
+    prev.classList.remove('exit');
+    prev.style.transform = '';
+    prev.style.opacity = '';
+    busy = false;
+  }, 430);
+  cur = idx;
+  updateUI();
+}
+
+function navigate(dir) {
+  const n = cur + dir;
+  if (n >= 0 && n < total) goTo(n);
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') navigate(1);
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') navigate(-1);
+});
+
+let tx = 0;
+document.addEventListener('touchstart', e => { tx = e.touches[0].clientX; });
+document.addEventListener('touchend', e => {
+  const d = tx - e.changedTouches[0].clientX;
+  if (Math.abs(d) > 50) navigate(d > 0 ? 1 : -1);
+});
+
+updateUI();
+</script>
+</body>
+</html>

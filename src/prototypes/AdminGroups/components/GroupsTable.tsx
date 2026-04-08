@@ -13,7 +13,7 @@ interface GroupsTableProps {
 
 /**
  * GroupsTable Component
- * 
+ *
  * Data table showing groups with their details.
  */
 export const GroupsTable: React.FC<GroupsTableProps> = ({
@@ -85,8 +85,8 @@ export const GroupsTable: React.FC<GroupsTableProps> = ({
               </div>
               {group.description && (
                 <div style={{ fontSize: '12px', color: systemColors.light['content-tertiary'], marginTop: '2px' }}>
-                  {group.description.length > 50 
-                    ? `${group.description.substring(0, 50)}...` 
+                  {group.description.length > 50
+                    ? `${group.description.substring(0, 50)}...`
                     : group.description
                   }
                 </div>
@@ -127,8 +127,8 @@ export const GroupsTable: React.FC<GroupsTableProps> = ({
       })}
 
       {groups.length === 0 && (
-        <div style={{ 
-          padding: '48px', 
+        <div style={{
+          padding: '48px',
           textAlign: 'center',
           color: systemColors.light['content-tertiary'],
           fontSize: '14px',

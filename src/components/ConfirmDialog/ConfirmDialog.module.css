@@ -69,11 +69,3 @@
   justify-content: center;
 }
 
-/* Danger button override */
-.dangerButton {
-  background: linear-gradient(135deg, var(--rd-sys-color-background-failure) 0%, var(--rd-sys-color-content-failure) 100%) !important;
-}
-
-.dangerButton:hover:not(:disabled) {
-  background: linear-gradient(135deg, var(--rd-sys-color-content-failure) 0%, var(--rd-sys-color-border-failure) 100%) !important;
-}

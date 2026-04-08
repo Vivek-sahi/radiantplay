@@ -333,7 +333,7 @@ When recreating a Figma design, use this guide to map Figma elements to Radiant 
     { key: 'name', label: 'Name' },
     { key: 'status', label: 'Status', render: (v) => <Chip label={v} /> },
     { key: 'actions', label: '', render: () => (
-      <Button variant="tertiary" icon="more" />
+      <Button variant="tertiary" icon="more" iconPosition="leading" />
     )},
   ]}
   data={data}
@@ -380,7 +380,7 @@ When recreating a Figma design, use this guide to map Figma elements to Radiant 
 ```tsx
 // Figma: Icon button + dropdown menu
 <ActionMenu
-  trigger={<Button variant="tertiary" icon="more" />}
+  trigger={<Button variant="tertiary" icon="more" iconPosition="leading" />}
   placement="bottom-end"
 >
   <ActionMenu.Item label="Edit" icon={<Icon name="pencil" size="s" />} onClick={handleEdit} />

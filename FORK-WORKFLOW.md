@@ -119,7 +119,7 @@ Open Claude Code in your project folder and run:
 /sync-upstream
 ```
 
-Claude will commit any unsaved work, fetch upstream, merge, resolve the `registry.ts` conflict automatically, verify the build, and push to your fork. Nothing else needed.
+Claude will commit any unsaved work, fetch upstream, merge, move your prototype entries into `registry-mine.ts` if needed, verify the build, and push to your fork. Nothing else needed.
 
 ---
 
@@ -127,7 +127,11 @@ Claude will commit any unsaved work, fetch upstream, merge, resolve the `registr
 
 ### Why your prototype is safe
 
-Your prototype lives in `src/prototypes/YourName/` — files you created from scratch. Git only conflicts on files that **both sides modified**. Since nobody on the main repo touches your prototype folder, it will never conflict. The only file that typically needs manual resolution is `src/prototypes/registry.ts`.
+Your prototype lives in `src/prototypes/YourName/` — files you created from scratch. Git only conflicts on files that **both sides modified**. Since nobody on the main repo touches your prototype folder, it will never conflict.
+
+The registry is split into two files to prevent conflicts:
+- `registry-core.ts` — upstream-owned (sample prototypes). You never edit this.
+- `registry-mine.ts` — **your file**. Your prototype entries go here. Upstream never touches it, so it never conflicts.
 
 ---
 
@@ -173,69 +177,32 @@ git merge upstream/main
 One of two things will happen:
 
 - **Auto-merge succeeds** — git prints `Merge made by the 'ort' strategy` and you are done. Skip to Step 7.
-- **Conflict** — git prints `CONFLICT (content): Merge conflict in src/prototypes/registry.ts`. Continue to Step 5.
+- **Conflict** — git prints conflicts in registry files. Continue to Step 5.
 
 ---
 
-### Step 5: Resolve the conflict in `registry.ts`
+### Step 5: Resolve the registry conflict
 
-Open `src/prototypes/registry.ts` in Cursor. Find the conflict markers — they look like this:
+The project uses a **split registry** to prevent conflicts:
+- `registry-core.ts` — upstream's sample prototypes (don't edit)
+- `registry-mine.ts` — **your prototypes** (your file, upstream never touches it)
+- `registry.ts` — merges both files (don't edit)
 
-```ts
-<<<<<<< HEAD
-  // Your prototype entry
-  {
-    id: 'MyDashboard',
-    name: 'My Dashboard',
-    component: MyDashboard,
-    author: 'Your Name',
-  },
-=======
-  // New entries added to the main repo
-  {
-    id: 'AdminLang',
-    name: 'Admin language settings',
-    section: 'sample',
-    ...
-  },
-  {
-    id: 'MiniSpotters',
-    ...
-  },
->>>>>>> upstream/main
-```
+**If this is your first sync after the split** (your fork still has the old single `registry.ts`):
 
-**Keep both blocks.** Delete the conflict markers (`<<<<<<<`, `=======`, `>>>>>>>`) and arrange it so the new upstream entries come first, your entry comes last:
+1. Accept upstream's version of `registry.ts` (the new merger file)
+2. `registry-core.ts` and `registry-mine.ts` are new files — they appeared automatically
+3. Move your prototype entries into `registry-mine.ts`:
+   - Add your thumbnail imports and `React.lazy(...)` declarations
+   - Add your entries to the `myRegistry` array with `section: 'mine'`
+4. Or just tell Claude/Cursor to do it: *"Move my prototype entries from the old registry into registry-mine.ts"*
 
-```ts
-  // New entries from upstream
-  {
-    id: 'AdminLang',
-    name: 'Admin language settings',
-    section: 'sample',
-    ...
-  },
-  {
-    id: 'MiniSpotters',
-    section: 'sample',
-    ...
-  },
-  // Your prototype
-  {
-    id: 'MyDashboard',
-    name: 'My Dashboard',
-    component: MyDashboard,
-    author: 'Your Name',
-    section: 'mine',  // ← add this if it is not already there
-  },
-```
-
-> **Note on `section: 'mine'`** — this field was added in March 2026. It tells the gallery which section to show your prototype under. Always add `section: 'mine'` to your own entry. The sample prototypes from the main repo use `section: 'sample'`.
+**On subsequent syncs:** No conflict. `registry-mine.ts` is never touched by upstream.
 
 **Step 6: Mark the conflict as resolved and commit**
 
 ```bash
-git add src/prototypes/registry.ts
+git add src/prototypes/registry.ts src/prototypes/registry-core.ts src/prototypes/registry-mine.ts
 git commit
 ```
 
@@ -261,8 +228,8 @@ git add . && git commit -m "WIP: save before sync"
 git fetch upstream
 git merge upstream/main
 
-# 3. If conflict — edit registry.ts, then:
-git add src/prototypes/registry.ts && git commit
+# 3. If conflict — move your entries to registry-mine.ts, then:
+git add src/prototypes/registry*.ts && git commit
 
 # 4. Push to your fork
 git push origin main
@@ -314,8 +281,8 @@ If you want your prototype to appear in the main repo:
 
 | Problem | Solution |
 |---------|----------|
-| `git merge` shows conflicts in `registry.ts` | Keep both your entry and the upstream entries — see Step 5 above |
-| My prototype disappeared after syncing | Check `registry.ts` — your entry may have been lost during conflict resolution. Re-add it. |
+| `git merge` shows conflicts in registry files | Move your entries to `registry-mine.ts` — see Step 5 above |
+| My prototype disappeared after syncing | Check `registry-mine.ts` — your entry may have been lost during conflict resolution. Re-add it there. |
 | `upstream` remote not found | Run `git remote add upstream https://galaxy.corp.thoughtspot.com/mohammed-faris/radiantplay.git` |
 | `npm install` fails | Verify Node.js 18+: `node --version` |
 | AI in Cursor does not know Radiant components | Make sure you opened the `radiantplay` folder directly in Cursor, not a parent folder |

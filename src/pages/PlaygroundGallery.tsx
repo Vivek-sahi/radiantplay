@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { systemColors, referenceColors } from '../tokens/colors';
 import { spacing } from '../tokens/spacing';
 import { getAllProjects, ProjectMeta } from '../prototypes/registry';
+import { getCurrentVersion } from '../data/versionHistory';
 import { Icon } from '../components/icons';
 
 /**
@@ -35,6 +36,7 @@ export const PlaygroundGallery: React.FC = () => {
         >
           <div style={styles.logoMark}>R</div>
           <span style={styles.logoTitle}>Radiant Play</span>
+          <span style={styles.logoVersion}>{getCurrentVersion()}</span>
         </button>
         <div style={styles.headerTitle}>
           <h1 style={styles.title}>Playground</h1>
@@ -218,6 +220,16 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 600,
     color: systemColors.light['content-primary'],
     letterSpacing: '-0.3px',
+  },
+  logoVersion: {
+    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontSize: '10px',
+    fontWeight: 500,
+    color: systemColors.light['content-secondary'],
+    backgroundColor: systemColors.light['background-subtle'],
+    padding: `${spacing.A}px ${spacing.B}px`,
+    borderRadius: '10px',
+    letterSpacing: '0.2px',
   },
 
   // Header

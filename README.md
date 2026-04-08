@@ -11,7 +11,7 @@ Prototyping playground built on ThoughtSpot's Radiant design system — build in
 
 ## What is This?
 
-**Radiant Play** is a fork-ready repository for ThoughtSpot designers to build interactive prototypes that look and feel like the real product. It ships with 73+ Radiant UI components, design tokens, mock data, and AI rules — so you can describe a UI and get working code in seconds.
+**Radiant Play** is a fork-ready repository for ThoughtSpot designers to build interactive prototypes that look and feel like the real product. It ships with 75 Radiant UI components, design tokens, mock data, and AI rules — so you can describe a UI and get working code in seconds.
 
 **Live site:** [radiantplay.vercel.app](https://radiantplay.vercel.app) *(ThoughtSpot internal)*
 
@@ -55,7 +55,7 @@ Then open `src/prototypes/MyPrototype/index.tsx` in Cursor and describe your UI 
 
 ## Available Components
 
-73+ production-quality Radiant components, ready to use.
+75 production-quality Radiant components, ready to use.
 
 | Category | Components |
 |----------|------------|
@@ -85,14 +85,13 @@ Interactive prototypes included as reference and inspiration:
 
 | Prototype | Description |
 |-----------|-------------|
-| **Liveboard** | TSE Business Overview dashboard with KPIs, charts, and regional data |
-| **Command Palette** | Command-K interface with keyboard shortcuts and context-aware filtering |
 | **Spotter Memory** | Memory Sources object table with search, filtering, and pagination |
-| **Spotter Model** | Spotter model configuration and management |
+| **Spotter Model** | SpotterModel agent edit flow with onboarding and recommendations |
 | **Admin Groups** | Group creation wizard with bulk org assignment and role management |
-| **Impersonation V2** | Redesigned impersonation — GlobalHeader icon, session popup, Toast notification |
-| **Modal Patterns** | Modal and dialog pattern showcase |
-| **Muse Chat** | AI chat interface prototype |
+| **Admin Language** | Admin settings for CSV-based translation with upload and validation |
+| **MiniSpotters** | Domain-specific Spotter instances with bounded context and prompt libraries |
+| **Liveboard Template** | Starter template for Liveboard prototypes with AnswerTile and SpotterViz |
+| **Sales Dashboard** | Liveboard prototype with view/edit modes and SpotterViz panel |
 
 Browse them at `http://localhost:5173/playground` or study the code in `src/prototypes/`.
 
@@ -103,22 +102,22 @@ Browse them at `http://localhost:5173/playground` or study the code in `src/prot
 ```
 radiantplay/
 ├── src/
-│   ├── components/        # 73+ Radiant UI components
+│   ├── components/        # 75 Radiant UI components
 │   │   ├── Button/
 │   │   ├── Modal/
 │   │   ├── Table/
 │   │   ├── AppSidebar/
 │   │   ├── GlobalHeader/
-│   │   └── Icons/         # Icon component + 53 icons
+│   │   └── Icons/         # Icon component + 55 icons
 │   ├── prototypes/        # Your prototypes go here
-│   │   ├── Liveboard/
-│   │   ├── Cmdk/
 │   │   ├── AdminGroups/
 │   │   ├── SpotterMemory/
 │   │   ├── SpotterModel/
-│   │   ├── ImpersonationV2/
-│   │   ├── ModalPatterns/
-│   │   └── MuseChat/
+│   │   ├── AdminLang/
+│   │   ├── MiniSpotters/
+│   │   ├── _liveboard-template/
+│   │   ├── SalesDashboard/
+│   │   └── _shared/          # Shared tiles and charts
 │   ├── pages/             # App pages and routes
 │   ├── data/              # Component registry & roadmap data
 │   ├── tokens/            # Design tokens (colors, spacing, typography, etc.)

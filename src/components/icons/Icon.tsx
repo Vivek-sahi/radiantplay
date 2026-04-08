@@ -36,7 +36,9 @@ export const Icon: React.FC<IconProps> = ({
   const IconComponent = iconRegistry[name];
 
   if (!IconComponent) {
-    console.warn(`Icon "${name}" not found in registry`);
+    if (import.meta.env.DEV) {
+      console.warn(`Icon "${name}" not found in registry`);
+    }
     return null;
   }
 

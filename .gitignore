@@ -27,5 +27,20 @@ npm-debug.log*
 *.local
 .vercel
 
-# Local plans (not for repo)
+# Local plans and reports (not for repo)
 plans/
+docs/*plan*.md
+docs/*report*.md
+docs/*matrix*.md
+docs/*delta*.md
+docs/testing/
+docs/what-is-radiant-play.md
+
+# Local articles (not for repo)
+articles/
+
+# Local task tracking (not for repo)
+BACKLOG.md
+
+# Cmdk prototype — large Figma Make export (local only)
+src/prototypes/Cmdk/

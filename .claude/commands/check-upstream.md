@@ -57,7 +57,7 @@ git diff HEAD upstream/main --stat
 Then read the actual diff for meaningful files:
 ```
 git diff HEAD upstream/main -- src/components/
-git diff HEAD upstream/main -- src/prototypes/registry.ts
+git diff HEAD upstream/main -- src/prototypes/registry-core.ts
 git diff HEAD upstream/main -- src/tokens/
 git diff HEAD upstream/main -- .cursor/rules/
 git diff HEAD upstream/main -- docs/
@@ -69,8 +69,8 @@ From this, identify:
 **Updated components** — files modified under `src/components/`
 **Removed components** — files deleted from `src/components/`
 **Token changes** — any additions or changes in `src/tokens/`
-**New sample prototypes** — new entries in `registry.ts` on upstream
-**Removed sample prototypes** — entries removed from `registry.ts` on upstream
+**New sample prototypes** — new entries in `registry-core.ts` on upstream
+**Removed sample prototypes** — entries removed from `registry-core.ts` on upstream
 **Rule/doc updates** — changes to `.cursor/rules/` or `docs/`
 
 ---
@@ -93,7 +93,8 @@ Combine all results into a single list of the designer's modified files.
 
 Then check if any of those files overlap with files changed in upstream (from step 4's `--stat` output):
 
-- **registry.ts** overlaps → flag as **"Expected conflict — auto-resolved by /sync-upstream"**
+- **registry-core.ts** overlaps → flag as **"Expected — upstream sample prototypes updated, auto-resolved by /sync-upstream"**
+- **registry-mine.ts** overlaps → flag as **"Unexpected — upstream should not touch this file. Review manually."**
 - **Any other file** overlaps → flag as **"Potential conflict — review before syncing"** with details on what both sides changed
 - **No overlaps** → flag as **"Safe — no overlap with your prototype files"**
 
@@ -153,7 +154,7 @@ IMPACT ON YOUR PROTOTYPE
       Suggestion: <how to reconcile, e.g. "keep both, take upstream's new prop, reapply your logic">
 
   ↻ Auto-resolved by /sync-upstream:
-    • registry.ts — upstream added new sample entries, your prototype entries will be preserved
+    • registry-core.ts — upstream added/updated sample entries; your prototypes in registry-mine.ts are unaffected
 
 ──────────────────────────────
 RECOMMENDATION

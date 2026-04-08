@@ -1,0 +1,197 @@
+/* ─────────────────────────────────────────────────────────
+   GroupTile — Spacing from Figma node 8740:362406
+   ─────────────────────────────────────────────────────────
+   G_PAD=8   → header top+sides, body bottom+sides
+   G_PAD_I=4 → header bottom, body top
+   G_GUTTER=8 → gap between inner tiles
+   ───────────────────────────────────────────────────────── */
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  position: relative;
+  background: var(--rd-sys-color-background-base, #ffffff);
+  border: 1px solid var(--rd-sys-color-border-divider, #eaedf2);
+  border-radius: 16px;
+  overflow: visible;
+  transition: border-color 150ms ease;
+}
+
+.tile:not(.tileEdit):hover {
+  border-color: #C0C6CF;
+}
+
+.tileEdit { cursor: default; }
+.tileEdit:hover { border-color: var(--rd-sys-color-content-brand, #2770ef); }
+
+.tileSelected {
+  border: 1.5px solid var(--rd-sys-color-content-brand, #2770ef) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+/* ── Header ───────────────────────────────────────────────── */
+
+.header {
+  flex-shrink: 0;
+  /* pt-8 px-8 pb-4 */
+  padding: 8px 8px 4px 8px;
+  border-bottom: 1px solid var(--rd-sys-color-border-divider, #eaedf2);
+  border-radius: 16px 16px 0 0;
+  /* In edit mode the header is the drag handle — cursor is set by .tile-drag-handle global */
+}
+
+.textBlock {
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+}
+
+.title {
+  font-family: 'Plain', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 24px;
+  letter-spacing: -0.4px;
+  color: var(--rd-sys-color-content-primary, #1d232f);
+  height: 28px;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.description {
+  font-family: 'Plain', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 14px;
+  font-weight: 375;
+  line-height: 20px;
+  color: #4a515e;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Inner tile frame override ────────────────────────────── */
+/* Strips the AnswerTile / NoteTile outer container when rendered inside a group.
+   The group body provides the outer spacing (G_PAD / G_GUTTER).
+   Only the inner green zone (--tile-content-padding content area) carries forward.
+   The 6px border-radius comes from the slot wrapper in GroupTile.tsx.
+
+   Specificity notes:
+   - border-color/border-radius: NO !important — hover rules have higher specificity
+     (0,2,0 for :hover vs 0,1,0 for this class) so they override cleanly.
+   - .tileSelected uses !important which overrides everything (border + border-radius).
+   - padding/background/box-shadow: !important to permanently strip the outer frame. */
+
+.innerTileFrame {
+  padding:       0 !important;
+  background:    transparent !important;
+  box-shadow:    none !important;
+  border-color:  transparent;   /* default: no visible border */
+  border-radius: 6px;           /* slot shape; tileSelected overrides to 0 via !important */
+}
+
+/* ── Body ─────────────────────────────────────────────────── */
+/* Height is set explicitly via style.height in JSX (computed from inner tiles).
+   flex-shrink: 0 prevents the flex column from squishing it.
+   No CSS padding — inner tile G_PAD/G_PAD_I offsets are baked into innerPx(). */
+
+.body {
+  flex-shrink: 0;
+  position: relative;
+  overflow: visible;
+}
+
+/* ── Selection chrome (shared with AnswerTile) ─────────────── */
+
+.selectionOverlay {
+  position: absolute;
+  inset: -1.5px;
+  border-radius: 0;
+  pointer-events: none;
+}
+
+.handle {
+  position: absolute;
+  width: 6px; height: 6px;
+  background: #ffffff;
+  border: 0.75px solid var(--rd-sys-color-content-brand, #2770ef);
+  border-radius: 0;
+  box-sizing: border-box;
+  pointer-events: auto;
+}
+.handleTopLeft     { top: -3px;    left: -3px; }
+.handleTopRight    { top: -3px;    right: -3px; }
+.handleBottomLeft  { bottom: -3px; left: -3px; }
+.handleBottomRight { bottom: -3px; right: -3px; }
+
+.handlePill {
+  position: absolute;
+  width: 6px; height: 32px;
+  background: #ffffff;
+  border: 0.75px solid var(--rd-sys-color-content-brand, #2770ef);
+  border-radius: 16px;
+  box-sizing: border-box;
+  pointer-events: auto;
+}
+.handleMidLeft  { top: 50%; left: -3px;  transform: translateY(-50%); }
+.handleMidRight { top: 50%; right: -3px; transform: translateY(-50%); }
+
+.handlePillH {
+  position: absolute;
+  width: 32px; height: 6px;
+  background: #ffffff;
+  border: 0.75px solid var(--rd-sys-color-content-brand, #2770ef);
+  border-radius: 16px;
+  box-sizing: border-box;
+  pointer-events: auto;
+}
+.handleMidTop    { top: -3px;    left: 50%; transform: translateX(-50%); }
+.handleMidBottom { bottom: -3px; left: 50%; transform: translateX(-50%); }
+
+/* ── Toolbar ──────────────────────────────────────────────── */
+
+.toolbar {
+  position: absolute;
+  top: -48px; left: -8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  background: #1d232f;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  box-shadow: 0 0 4px rgba(25,35,49,0.1), 0 24px 32px rgba(25,35,49,0.16);
+  pointer-events: auto;
+  z-index: 100;
+  white-space: nowrap;
+}
+
+.toolbarBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px; height: 24px;
+  background: transparent;
+  border: none;
+  border-radius: 2px;
+  cursor: pointer;
+  color: #ffffff;
+  padding: 0;
+  flex-shrink: 0;
+}
+.toolbarBtn:hover { background: rgba(255,255,255,0.12); }
+
+.toolbarDivider {
+  width: 1px; height: 20px;
+  background: rgba(255,255,255,0.15);
+  flex-shrink: 0;
+}

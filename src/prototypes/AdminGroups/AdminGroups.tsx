@@ -132,7 +132,7 @@ const initialWizardData: WizardData = {
 
 /**
  * AdminGroups Component
- * 
+ *
  * Main page layout for the Admin Groups management experience.
  * Features a groups table and a multi-step wizard modal for creating groups.
  */
@@ -198,7 +198,7 @@ export const AdminGroups: React.FC = () => {
       createdBy: { id: 'usr-current', name: 'Current User', email: 'current@example.com' },
       memberCount: wizardData.selectedUserIds.length,
     };
-    
+
     setGroups([newGroup, ...groups]);
     handleCloseWizard();
   };
@@ -241,7 +241,7 @@ export const AdminGroups: React.FC = () => {
           <RoleAssignStep
             selectedOrgIds={wizardData.selectedOrgIds}
             roleAssignments={wizardData.roleAssignments}
-            onRoleAssignmentsChange={(assignments) => 
+            onRoleAssignmentsChange={(assignments) =>
               setWizardData({ ...wizardData, roleAssignments: assignments })
             }
           />
@@ -299,7 +299,7 @@ export const AdminGroups: React.FC = () => {
             <Icon name="chevron-right" size="xs" />
             <span style={{ color: systemColors.light['content-primary'] }}>Groups</span>
           </div>
-          
+
           {/* Title */}
           <h1 style={pageHeaderStyles.title}>Groups</h1>
 
@@ -355,7 +355,7 @@ export const AdminGroups: React.FC = () => {
         </div>
 
         {/* Groups Table */}
-        <GroupsTable 
+        <GroupsTable
           groups={filteredGroups}
           onGroupClick={(group) => console.log('Group clicked:', group)}
         />

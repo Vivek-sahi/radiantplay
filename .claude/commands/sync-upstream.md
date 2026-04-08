@@ -79,35 +79,38 @@ Two outcomes:
 Git prints `Merge made by the 'ort' strategy`. Proceed directly to step 7.
 
 **B — Conflict**
-Git prints `CONFLICT (content): Merge conflict in src/prototypes/registry.ts`.
-This is expected — proceed to step 6.
+Git may print conflicts in `registry.ts` or `registry-core.ts`. This is expected — proceed to step 6.
 
-If the conflict is in any file OTHER than `src/prototypes/registry.ts`, stop and explain what conflicted and why before attempting to resolve it.
+If the conflict is in any file OTHER than registry files (`registry.ts`, `registry-core.ts`, `registry-mine.ts`), stop and explain what conflicted and why before attempting to resolve it.
 
 ---
 
-### 6. Resolve the `registry.ts` conflict
+### 6. Resolve the registry conflict
 
-Read `src/prototypes/registry.ts` and find all conflict marker blocks (`<<<<<<<`, `=======`, `>>>>>>>`).
+The project uses a split registry:
+- `registry-core.ts` — upstream-owned sample prototypes (do not add designer entries here)
+- `registry-mine.ts` — designer-owned prototypes (this is the designer's file)
+- `registry.ts` — thin merger that combines both (do not edit directly)
 
-For each conflict block:
+**If this is the first sync after the registry split** (designer's fork still has the old single `registry.ts`):
 
-1. **Identify upstream entries** — the block after `=======` up to `>>>>>>>`. These are new sample prototypes added to the main repo. Keep all of them exactly as-is.
+1. Read the conflicted `registry.ts` and identify the designer's own prototype entries (any entries NOT in `registry-core.ts`)
+2. Accept upstream's version of `registry.ts` entirely (the thin merger)
+3. `registry-core.ts` and `registry-mine.ts` are new files from upstream — they will have appeared cleanly
+4. Open `registry-mine.ts` and add the designer's entries there:
+   - Add their `import React from 'react';` at the top if not present
+   - Add their thumbnail imports
+   - Add their `React.lazy(() => import(...))` declarations
+   - Add their entries to the `myRegistry` array, each with `section: 'mine'`
+5. Ensure `registry-mine.ts` imports `ProjectMeta` from `'./registry-core'`
 
-2. **Identify the designer's entries** — the block between `<<<<<<< HEAD` and `=======`. These are the designer's own prototype registrations. Keep all of them.
+**If the designer already has the split structure** (subsequent syncs):
 
-3. **Merge the two blocks** — write the final result with:
-   - All upstream entries first (in their original order)
-   - The designer's entries after, at the bottom
-   - Delete the three marker lines entirely (`<<<<<<<`, `=======`, `>>>>>>>`)
+Conflicts should only happen in `registry-core.ts` (upstream added/changed sample entries). Accept upstream's version. `registry-mine.ts` should never conflict since upstream does not touch it.
 
-4. **Add `section: 'mine'`** — for every designer entry that does not already have a `section` field, add `section: 'mine'` as the last property in that object.
-
-After editing, read the file back and confirm there are no remaining `<<<<<<<` markers.
-
-Then:
+After resolving:
 ```
-git add src/prototypes/registry.ts
+git add src/prototypes/registry.ts src/prototypes/registry-core.ts src/prototypes/registry-mine.ts
 git commit
 ```
 
@@ -128,7 +131,7 @@ npm run build
 
 | Error pattern | Fix |
 |---|---|
-| `Cannot find module './<Name>'` in registry.ts | A prototype was removed upstream but the lazy import still references it. Remove the `const <Name> = React.lazy(...)` line and its registry entry. |
+| `Cannot find module './<Name>'` in registry-core.ts or registry-mine.ts | A prototype was removed upstream but the lazy import still references it. Remove the `const <Name> = React.lazy(...)` line and its registry entry from the appropriate file. |
 | `Cannot find module` in an index or barrel file | An export references a deleted file. Remove the broken export line. |
 | TypeScript error in designer's own prototype files | This is unrelated to the sync — flag it to the designer and proceed with the push anyway. |
 
@@ -176,7 +179,7 @@ Pulled in X commits:
   ...
 
 Your prototype: intact — src/prototypes/<name>/ was not touched.
-registry.ts: conflict resolved — your entry preserved with section: 'mine'.
+Registry: your entries are in registry-mine.ts (yours, never conflicts with upstream).
 
 Your fork is now up to date.
 ```

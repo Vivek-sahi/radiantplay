@@ -1,9 +1,10 @@
 /**
  * Component Registry
- * 
+ *
  * Comprehensive metadata for all Radiant design system components.
  * Tracks Figma sync status, component states, and source information.
  */
+import { iconRegistry } from '../components/icons/registry';
 
 export type ComponentSource = 'figma' | 'scaligent' | 'custom';
 export type ComponentStatus = 'stable' | 'beta' | 'new' | 'deprecated';
@@ -1159,7 +1160,7 @@ export const getComponentCount = (): number => {
  * Get icon count
  */
 export const getIconCount = (): number => {
-  return 46;
+  return Object.keys(iconRegistry).length;
 };
 
 /**

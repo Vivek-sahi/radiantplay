@@ -70,6 +70,8 @@ const handleSave = () => {
 
 ## Error States
 
+> For Alert variant selection (Banner vs Section Alert vs Toast), see `widget-patterns.md` §Alert Taxonomy.
+
 ### Form validation errors
 
 | Situation | Behavior |
@@ -139,7 +141,7 @@ Is there no data at all (first-time user)?
   <p style={styles.emptyDescription}>
     Create your first Liveboard to visualize your data.
   </p>
-  <Button variant="primary" icon="plus">
+  <Button variant="primary" icon="plus" iconPosition="leading">
     Create Liveboard
   </Button>
 </div>

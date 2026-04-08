@@ -36,6 +36,8 @@ export interface ButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonE
   active?: boolean;
   /** Whether the button spans full width */
   fullWidth?: boolean;
+  /** Icon-only circular button — hides label, applies equal padding and border-radius: 50% */
+  iconOnly?: boolean;
   /** HTML button type */
   htmlType?: 'button' | 'submit' | 'reset';
 }
@@ -90,10 +92,11 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
   colorway = 'standard',
   children,
   icon,
-  iconPosition = 'none',
+  iconPosition = 'leading',
   loading = false,
   active = false,
   fullWidth = false,
+  iconOnly = false,
   disabled = false,
   htmlType = 'button',
   className,
@@ -150,6 +153,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
     disabled && styles.disabled,
     fullWidth && styles.fullWidth,
     hasIcon && styles.hasIcon,
+    iconOnly && styles.iconOnly,
     iconPosition === 'leading' && styles.iconLeading,
     iconPosition === 'trailing' && styles.iconTrailing,
     className,
@@ -173,7 +177,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
           {hasIcon && iconPosition === 'leading' && (
             <span className={styles.icon}>{renderIcon()}</span>
           )}
-          <span className={styles.label}>{children}</span>
+          {!iconOnly && <span className={styles.label}>{children}</span>}
           {hasIcon && iconPosition === 'trailing' && (
             <span className={styles.icon}>{renderIcon()}</span>
           )}

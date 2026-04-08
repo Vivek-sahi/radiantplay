@@ -1,6 +1,6 @@
 ---
 description: Core workflow for AI-assisted prototype generation from screenshots or descriptions
-globs: ["src/prototypes/**/*.tsx", "src/prototypes/**/*.ts"]
+globs: ["src/prototypes/**/index.tsx"]
 ---
 
 # Prototype Generation Rules

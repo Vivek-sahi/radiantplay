@@ -1,0 +1,279 @@
+/* ─────────────────────────────────────────────────────────
+   NoteTile
+   ─────────────────────────────────────────────────────────
+   Same spacing model as AnswerTile (confirmed Figma 8739:359660):
+   - ORANGE zone: fixed 8px outer padding
+   - GREEN zone:  var(--tile-content-padding, 4px) — padding + gap, fully dynamic
+   ───────────────────────────────────────────────────────── */
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  position: relative;
+
+  padding: 8px;
+
+  background: var(--rd-sys-color-background-base, #ffffff);
+  border: 1px solid var(--rd-sys-color-border-divider, #eaedf2);
+  border-radius: 16px;
+  overflow: visible;
+
+  transition: border-color 150ms ease;
+}
+
+/* View mode hover */
+.tile:not(.tileEdit):hover {
+  border-color: #C0C6CF;
+}
+
+/* Edit mode */
+.tileEdit {
+  cursor: default;
+}
+
+.tileEdit:hover {
+  border-color: var(--rd-sys-color-content-brand, #2770ef);
+}
+
+/* Selected */
+.tileSelected {
+  border: 1.5px solid var(--rd-sys-color-content-brand, #2770ef) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+/* ─── Inner zone (density-variable) ─────────────────────── */
+
+.inner {
+  padding: var(--tile-content-padding, 4px);
+  border-radius: 6px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+/* ─────────────────────────────────────────────────────────
+   Rich text content blocks
+   ───────────────────────────────────────────────────────── */
+
+.content {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: 0;
+}
+
+/* Title — 16px / 600 / #1D232F */
+.blockTitle {
+  font-family: 'Plain', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 24px;
+  letter-spacing: -0.4px;
+  color: var(--rd-sys-color-content-primary, #1d232f);
+  margin: 0 0 4px 0;
+  padding: 2px 4px;
+}
+
+/* Heading — 14px / 600 / #1D232F */
+.blockHeading {
+  font-family: 'Plain', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+  color: var(--rd-sys-color-content-primary, #1d232f);
+  margin: 8px 0 2px 0;
+  padding: 0 4px;
+}
+
+/* Paragraph — 14px / 375 (Light) / #4A515E */
+.blockParagraph {
+  font-family: 'Plain', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 14px;
+  font-weight: 375;
+  line-height: 20px;
+  color: #4a515e;
+  margin: 0 0 4px 0;
+  padding: 0 4px;
+}
+
+/* Bullet list */
+.blockBulletList {
+  margin: 2px 0 4px 0;
+  padding: 0 4px 0 20px;
+  list-style-type: disc;
+}
+
+/* Numbered list */
+.blockNumberedList {
+  margin: 2px 0 4px 0;
+  padding: 0 4px 0 20px;
+  list-style-type: decimal;
+}
+
+.listItem {
+  font-family: 'Plain', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 14px;
+  font-weight: 375;
+  line-height: 20px;
+  color: #4a515e;
+  margin-bottom: 2px;
+}
+
+/* Divider */
+.blockDivider {
+  border: none;
+  border-top: 1px solid var(--rd-sys-color-border-divider, #eaedf2);
+  margin: 8px 4px;
+}
+
+/* Image */
+.blockImage {
+  width: 100%;
+  border-radius: 4px;
+  margin: 4px 0;
+  display: block;
+  object-fit: cover;
+}
+
+/* Table */
+.blockTable {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 4px 0;
+  font-family: 'Plain', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 12px;
+}
+
+.blockTable th {
+  font-weight: 600;
+  font-size: 11px;
+  color: var(--rd-sys-color-content-secondary, #777e8b);
+  text-align: left;
+  padding: 4px 8px;
+  background: var(--rd-sys-color-background-sunken, #f6f8fa);
+  border-bottom: 1px solid var(--rd-sys-color-border-divider, #eaedf2);
+}
+
+.blockTable td {
+  font-weight: 375;
+  color: var(--rd-sys-color-content-primary, #1d232f);
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--rd-sys-color-border-divider, #eaedf2);
+}
+
+.blockTable tr:last-child td {
+  border-bottom: none;
+}
+
+/* ─── Inline styles ──────────────────────────────────────── */
+
+.inlineBold   { font-weight: 600; }
+.inlineItalic { font-style: italic; }
+.inlineLink   {
+  color: var(--rd-sys-color-content-brand, #2770ef);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* ─────────────────────────────────────────────────────────
+   Selection handles overlay (shared with AnswerTile)
+   ───────────────────────────────────────────────────────── */
+
+.selectionOverlay {
+  position: absolute;
+  inset: -1.5px;
+  border-radius: 0;
+  pointer-events: none;
+}
+
+.handle {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background: #ffffff;
+  border: 0.75px solid var(--rd-sys-color-content-brand, #2770ef);
+  border-radius: 0;
+  box-sizing: border-box;
+  pointer-events: auto;
+}
+
+.handleTopLeft     { top: -3px;    left: -3px; }
+.handleTopRight    { top: -3px;    right: -3px; }
+.handleBottomLeft  { bottom: -3px; left: -3px; }
+.handleBottomRight { bottom: -3px; right: -3px; }
+
+.handlePill {
+  position: absolute;
+  width: 6px;
+  height: 32px;
+  background: #ffffff;
+  border: 0.75px solid var(--rd-sys-color-content-brand, #2770ef);
+  border-radius: 16px;
+  box-sizing: border-box;
+  pointer-events: auto;
+}
+
+.handleMidLeft  { top: 50%; left: -3px;  transform: translateY(-50%); }
+.handleMidRight { top: 50%; right: -3px; transform: translateY(-50%); }
+
+.handlePillH {
+  position: absolute;
+  width: 32px;
+  height: 6px;
+  background: #ffffff;
+  border: 0.75px solid var(--rd-sys-color-content-brand, #2770ef);
+  border-radius: 16px;
+  box-sizing: border-box;
+  pointer-events: auto;
+}
+
+.handleMidTop    { top: -3px;    left: 50%; transform: translateX(-50%); }
+.handleMidBottom { bottom: -3px; left: 50%; transform: translateX(-50%); }
+
+/* ─── Toolbar ───────────────────────────────────────────── */
+
+.toolbar {
+  position: absolute;
+  top: -48px;
+  left: -8px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 6px;
+  background: #1d232f;
+  border: 1px solid #777e8b;
+  border-radius: 4px;
+  box-shadow: 0 0 4px rgba(25, 35, 49, 0.08), 0 24px 32px rgba(25, 35, 49, 0.16);
+  white-space: nowrap;
+  pointer-events: auto;
+  z-index: 100;
+}
+
+.toolbarBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: transparent;
+  border: none;
+  border-radius: 2px;
+  cursor: pointer;
+  color: #ffffff;
+  padding: 0;
+}
+
+.toolbarBtn:hover { background: rgba(255, 255, 255, 0.12); }
+
+.toolbarDivider {
+  width: 1px;
+  height: 24px;
+  background: #777e8b;
+  flex-shrink: 0;
+  margin: 0 2px;
+}

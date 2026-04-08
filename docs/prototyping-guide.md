@@ -53,7 +53,7 @@ radiantplay/
 │   ├── components/       # Radiant components
 │   ├── prototypes/       # Your prototypes go here
 │   │   ├── _template/    # Starter template
-│   │   └── _examples/    # Reference examples
+│   │   └── SalesDashboard/  # Example: liveboard prototype
 │   ├── mocks/           # Sample data
 │   └── tokens/          # Design tokens
 ├── .cursor/
@@ -150,7 +150,7 @@ The AI will analyze the screenshot and generate matching code.
 | `Popover` | `import { Popover } from '../../components'` | Click/hover overlay |
 | `Chip` | `import { Chip } from '../../components'` | Tags and labels |
 | `Sidebar` | `import { Sidebar } from '../../components'` | Side navigation |
-| `Icon` | `import { Icon } from '../../components'` | 46 icons |
+| `Icon` | `import { Icon } from '../../components'` | 55 icons |
 
 ### Common Patterns
 
@@ -343,7 +343,7 @@ Be more specific in your prompts:
 
 ## Getting Help
 
-- **Examples:** Check `src/prototypes/_examples/`
+- **Examples:** Browse `src/prototypes/` — SpotterMemory, AdminGroups, SalesDashboard are good references
 - **Component Docs:** Browse the component showcase in the app
 - **AI Rules:** Read `.cursor/rules/prototype-generation.md`
 - **Design Tokens:** See `design-token-structure.md`

@@ -16,6 +16,7 @@ import { TypographyPage } from './pages/TypographyPage';
 // import { RoadmapPage } from './pages/RoadmapPage';
 
 import { systemColors } from './tokens/colors';
+import { getCurrentVersion } from './data/versionHistory';
 
 // Navigation icons
 const HomeIcon = () => (
@@ -433,7 +434,10 @@ const RadiantLayout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       >
         <div style={styles.logo}>R</div>
         <div style={styles.logoText}>
-          <span style={styles.logoTitle}>Radiant</span>
+          <div style={styles.logoTitleRow}>
+            <span style={styles.logoTitle}>Radiant</span>
+            <span style={styles.logoVersion}>{getCurrentVersion()}</span>
+          </div>
           <span style={styles.logoSubtitle}>Design System</span>
         </div>
       </div>
@@ -663,6 +667,8 @@ const styles: Record<string, React.CSSProperties> = {
   content: {
     minHeight: '100%',
     padding: '32px',
+    maxWidth: '1200px',
+    margin: '0 auto',
   },
   sidebarHeader: {
     display: 'flex',
@@ -693,12 +699,27 @@ const styles: Record<string, React.CSSProperties> = {
     flexDirection: 'column',
     gap: '2px',
   },
+  logoTitleRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+  },
   logoTitle: {
     fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
     fontSize: '16px',
     fontWeight: 600,
     color: '#ffffff',
     letterSpacing: '-0.3px',
+  },
+  logoVersion: {
+    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontSize: '10px',
+    fontWeight: 500,
+    color: 'rgba(255, 255, 255, 0.45)',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    padding: '1px 6px',
+    borderRadius: '10px',
+    letterSpacing: '0.2px',
   },
   logoSubtitle: {
     fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',

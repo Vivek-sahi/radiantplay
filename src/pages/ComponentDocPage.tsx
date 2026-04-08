@@ -69,6 +69,7 @@ import { DynamicForm } from '../components/DynamicForm';
 import { FacetSortBar } from '../components/FacetSortBar';
 import { LiveboardHeader } from '../components/LiveboardHeader';
 import { systemColors, referenceColors } from '../tokens/colors';
+import { getComponent, getSourceLabel, ComponentSource } from '../data/componentRegistry';
 
 interface PropDefinition {
   name: string;
@@ -959,8 +960,31 @@ const componentDocs: Record<string, {
   },
 };
 
+const getSourceBadgeStyle = (source: ComponentSource): React.CSSProperties => {
+  const base: React.CSSProperties = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '5px',
+    fontSize: '14px',
+    fontWeight: 500,
+    padding: '4px 12px',
+    borderRadius: '20px',
+    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+  };
+  switch (source) {
+    case 'figma':
+      return { ...base, backgroundColor: 'var(--rd-ref-color-purple-10, #f4effe)', color: 'var(--rd-ref-color-purple-60, #8C62F5)' };
+    case 'scaligent':
+      return { ...base, backgroundColor: 'var(--rd-sys-color-background-success)', color: 'var(--rd-sys-color-content-success)' };
+    case 'custom':
+    default:
+      return { ...base, backgroundColor: 'var(--rd-sys-color-background-subtle)', color: 'var(--rd-sys-color-content-secondary)' };
+  }
+};
+
 export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId }) => {
   const doc = componentDocs[componentId];
+  const meta = getComponent(componentId);
   
   // State for interactive examples
   const [checkboxChecked, setCheckboxChecked] = useState(false);
@@ -1188,7 +1212,7 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
                 type="info" 
                 message="Item deleted" 
                 actionText="Undo"
-                onAction={() => console.log('Undo clicked')}
+                onAction={() => {}}
                 duration={0} 
               />
             </div>
@@ -2485,7 +2509,7 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
                 { id: 'role', type: 'select', label: 'Role', options: [{ id: 'admin', label: 'Admin' }, { id: 'editor', label: 'Editor' }, { id: 'viewer', label: 'Viewer' }] },
                 { id: 'notify', type: 'toggle', label: 'Email notifications' },
               ]}
-              onSubmit={(v) => console.log('submitted', v)}
+              onSubmit={() => {}}
               submitLabel="Save settings"
             />
           </div>
@@ -2501,7 +2525,7 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
                 { id: 'schedule', type: 'radio', label: 'Schedule', options: [{ id: 'daily', label: 'Daily' }, { id: 'weekly', label: 'Weekly' }, { id: 'monthly', label: 'Monthly' }] },
               ]}
               initialValue={{ schedule: 'weekly' }}
-              onSubmit={(v) => console.log('submitted', v)}
+              onSubmit={() => {}}
               submitLabel="Create report"
             />
           </div>
@@ -2569,7 +2593,12 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
           <span style={styles.breadcrumbSeparator}>/</span>
           <span style={styles.breadcrumbCurrent}>{doc.name}</span>
         </div>
-        <h1 style={styles.title}>{doc.name}</h1>
+        <div style={styles.titleRow}>
+          <h1 style={styles.title}>{doc.name}</h1>
+          <span style={getSourceBadgeStyle(meta?.source ?? 'custom')}>
+            {getSourceLabel(meta?.source ?? 'custom')}
+          </span>
+        </div>
         <p style={styles.description}>{doc.description}</p>
       </div>
 
@@ -2618,6 +2647,13 @@ const styles: Record<string, React.CSSProperties> = {
   header: {
     marginBottom: '40px',
   },
+  titleRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    flexWrap: 'wrap',
+    marginBottom: '12px',
+  },
   breadcrumb: {
     display: 'flex',
     alignItems: 'center',
@@ -2645,7 +2681,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '36px',
     fontWeight: 700,
     color: systemColors.light['content-primary'],
-    marginBottom: '12px',
+    margin: 0,
   },
   description: {
     fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
