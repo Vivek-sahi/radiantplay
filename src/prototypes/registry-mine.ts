@@ -32,6 +32,7 @@ import { ProjectMeta } from './registry-core';
 import DataStudioThumbnail from './thumbnails/DataStudio.svg';
 
 const DataStudio = React.lazy(() => import('./DataStudio'));
+const SpotterPrep = React.lazy(() => import('./SpotterPrep'));
 
 export const myRegistry: ProjectMeta[] = [
   {
@@ -42,6 +43,15 @@ export const myRegistry: ProjectMeta[] = [
     lastModified: '2026-03-31',
     thumbnail: DataStudioThumbnail,
     component: DataStudio,
+    section: 'mine',
+  },
+  {
+    id: 'SpotterPrep',
+    name: 'SpotterPrep',
+    description: 'Column-level data quality prep for ThoughtSpot data models. Profile, detect issues, apply fixes scheduled on cache refresh.',
+    author: 'Vivek Sahi',
+    lastModified: '2026-04-09',
+    component: SpotterPrep,
     section: 'mine',
   },
 ];
