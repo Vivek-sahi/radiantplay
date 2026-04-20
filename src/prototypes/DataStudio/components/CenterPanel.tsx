@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { c, sp, ff, fs, fw } from '../styles';
 import { Button } from '../../../components/Button';
 import { ProjectState } from '../index';
-import { ordersData } from '../data/mockData';
+import { ordersData, tableMetadata, relationships } from '../data/mockData';
 import TableDetailModal from './TableDetailModal';
 
 interface CenterPanelProps {
@@ -31,7 +31,8 @@ const CenterPanel: React.FC<CenterPanelProps> = ({ project }) => {
 // ── Visualizer ────────────────────────────────────────────────────────────────
 
 const VisualizerView: React.FC<{ project: ProjectState; onTableClick: (id: string) => void }> = ({ project, onTableClick }) => {
-  const hasData  = project.buildStep !== 'empty';
+  const [subView, setSubView] = useState<'tables' | 'columns'>('tables');
+  const hasData  = project.addedTables.length > 0;
   const hasJoins = project.buildStep === 'joined' || project.buildStep === 'transformed' || project.buildStep === 'healthy';
 
   if (!hasData) {
@@ -44,52 +45,256 @@ const VisualizerView: React.FC<{ project: ProjectState; onTableClick: (id: strin
     );
   }
 
-  const hasCalc = project.buildStep === 'transformed' || project.buildStep === 'healthy';
+  const hasCalc   = project.buildStep === 'transformed' || project.buildStep === 'healthy';
   const isHealthy = project.buildStep === 'healthy';
+  const tables    = project.addedTables;
+  const totalIncluded = Object.values(project.includedColumns).flat().length;
+
+  const layout       = getTableLayout(tables);
+  const activeJoins  = relationships.filter(
+    r => tables.includes(r.leftTable) && tables.includes(r.rightTable)
+  );
+  const svgH = Math.max(420, Math.ceil(tables.length / 2) * 180 + 60);
 
   return (
-    <div style={{ flex: 1, overflow: 'auto', padding: sp.H, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <svg width="620" height="420" viewBox="0 0 620 420" style={{ maxWidth: '100%' }}>
+    <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+      {/* Tables / Columns toggle */}
+      <div style={{ flexShrink: 0, display: 'flex', justifyContent: 'center', padding: `${sp.C}px 0 0`, backgroundColor: c['background-sunken'] }}>
+        <div style={{ display: 'flex', gap: 2, padding: 3, backgroundColor: c['background-subtle'], borderRadius: 8, border: `1px solid ${c['border-divider']}` }}>
+          {(['tables', 'columns'] as const).map(v => (
+            <button
+              key={v}
+              onClick={() => setSubView(v)}
+              style={{
+                padding: `${sp.A}px ${sp.C}px`,
+                borderRadius: 6, border: 'none', cursor: 'pointer', fontFamily: ff.primary, fontSize: fs.xs,
+                backgroundColor: subView === v ? c['background-base'] : 'transparent',
+                color:            subView === v ? c['content-primary']  : c['content-secondary'],
+                fontWeight:       subView === v ? fw.medium : fw.regular,
+                boxShadow:        subView === v ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                transition: 'all 0.12s',
+              }}
+            >
+              {v === 'tables' ? 'Tables' : `Columns${project.columnsSelected ? ` (${totalIncluded})` : ''}`}
+            </button>
+          ))}
+        </div>
+      </div>
 
-        {/* Orders — central fact table */}
-        <TableNode x={60} y={160} label="Orders" cols={8} calcBadge={hasCalc} healthyBadge={isHealthy} onClick={() => onTableClick('orders')} />
+      {subView === 'tables' ? (
+        <div style={{ flex: 1, overflow: 'auto', padding: sp.H, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <svg width="620" height={svgH} viewBox={`0 0 620 ${svgH}`} style={{ maxWidth: '100%' }}>
 
-        {/* Campaigns & Users — only visible when tables added */}
-        <TableNode x={360} y={60}  label="Campaigns" cols={9} onClick={() => onTableClick('campaigns')} />
-        <TableNode x={360} y={290} label="Users"     cols={8} onClick={() => onTableClick('users')} />
+            {/* Table nodes — dynamic, one per added table */}
+            {tables.map((id, idx) => {
+              const meta = tableMetadata[id];
+              const pos  = layout[id];
+              if (!pos) return null;
+              const label = meta?.name ?? (id.charAt(0).toUpperCase() + id.slice(1));
+              const cols  = meta?.columns.length ?? 0;
+              return (
+                <TableNode
+                  key={id}
+                  x={pos.x} y={pos.y}
+                  label={label} cols={cols}
+                  calcBadge={hasCalc && idx === 0}
+                  healthyBadge={isHealthy && idx === 0}
+                  onClick={() => onTableClick(id)}
+                />
+              );
+            })}
 
-        {hasJoins && (
-          <>
-            {/* Orders → Campaigns (LEFT JOIN on campaign_id) */}
-            <path d="M 240 195 C 295 195 295 100 360 100" stroke={c['content-brand']} strokeWidth="1.5" fill="none" />
-            <circle cx="240" cy="195" r="4" fill={c['content-brand']} />
-            <circle cx="360" cy="100" r="4" fill={c['content-brand']} />
-            <rect x="262" y="127" width="76" height="18" rx="4" fill={c['background-information']} />
-            <text x="300" y="140" fill={c['content-brand']} fontSize="10" fontFamily="system-ui" textAnchor="middle" fontWeight="500">LEFT JOIN</text>
-            <text x="300" y="122" fill={c['content-secondary']} fontSize="9" fontFamily="system-ui" textAnchor="middle">campaign_id</text>
+            {/* Join lines — dynamic, based on relationships data */}
+            {hasJoins && activeJoins.map(rel => {
+              const fromPos = layout[rel.leftTable];
+              const toPos   = layout[rel.rightTable];
+              if (!fromPos || !toPos) return null;
 
-            {/* Orders → Users (INNER JOIN on user_id) */}
-            <path d="M 240 215 C 295 215 295 330 360 330" stroke={c['content-brand']} strokeWidth="1.5" fill="none" />
-            <circle cx="240" cy="215" r="4" fill={c['content-brand']} />
-            <circle cx="360" cy="330" r="4" fill={c['content-brand']} />
-            <rect x="262" y="255" width="82" height="18" rx="4" fill={c['background-information']} />
-            <text x="303" y="268" fill={c['content-brand']} fontSize="10" fontFamily="system-ui" textAnchor="middle" fontWeight="500">INNER JOIN</text>
-            <text x="303" y="250" fill={c['content-secondary']} fontSize="9" fontFamily="system-ui" textAnchor="middle">user_id</text>
-          </>
-        )}
-      </svg>
+              const fromX = fromPos.x + TABLE_W;
+              const fromY = fromPos.y + TABLE_H / 2;
+              const toX   = toPos.x;
+              const toY   = toPos.y + TABLE_H / 2;
+              const midX  = (fromX + toX) / 2;
+              const midY  = (fromY + toY) / 2;
+              const label = rel.joinType.toUpperCase() + ' JOIN';
+              const labelW = label.length * 5.8 + 16;
+
+              return (
+                <g key={rel.id}>
+                  <path d={`M ${fromX} ${fromY} C ${midX} ${fromY} ${midX} ${toY} ${toX} ${toY}`} stroke={c['content-brand']} strokeWidth="1.5" fill="none" />
+                  <circle cx={fromX} cy={fromY} r="4" fill={c['content-brand']} />
+                  <circle cx={toX}   cy={toY}   r="4" fill={c['content-brand']} />
+                  <rect x={midX - labelW / 2} y={midY + 2} width={labelW} height={18} rx="4" fill={c['background-information']} />
+                  <text x={midX} y={midY + 15} fill={c['content-brand']} fontSize="10" fontFamily="system-ui" textAnchor="middle" fontWeight="500">{label}</text>
+                  <text x={midX} y={midY - 3}  fill={c['content-secondary']} fontSize="9" fontFamily="system-ui" textAnchor="middle">{rel.leftColumn}</text>
+                </g>
+              );
+            })}
+
+          </svg>
+        </div>
+      ) : (
+        <ColumnsView project={project} />
+      )}
     </div>
   );
 };
+
+// ── Columns view ──────────────────────────────────────────────────────────────
+
+const TABLE_COLORS: Record<string, string> = {
+  orders:    '#2770ef',
+  campaigns: '#7c3aed',
+  users:     '#059669',
+};
+
+const ColumnsView: React.FC<{ project: ProjectState }> = ({ project }) => {
+  if (!project.columnsSelected || Object.keys(project.includedColumns).length === 0) {
+    return (
+      <EmptyCenter
+        icon="⊟"
+        title="No columns selected"
+        body="Ask the Data Agent to recommend columns for your model, or select them manually from the left panel."
+      />
+    );
+  }
+
+  // Flatten to rows in table order
+  const rows: Array<{ tableId: string; tableName: string; tableColor: string; colName: string; type: string; classification?: string; aggregation?: string; description: string | null; isPII?: boolean; nullRate?: number; synonyms?: string[] }> = [];
+  for (const tableId of project.addedTables) {
+    const included = project.includedColumns[tableId] ?? [];
+    const meta = tableMetadata[tableId];
+    if (!meta) continue;
+    for (const colName of included) {
+      const col = meta.columns.find(c => c.name === colName);
+      if (col) rows.push({
+        tableId,
+        tableName: meta.name,
+        tableColor: TABLE_COLORS[tableId] ?? c['content-secondary'],
+        colName: col.name,
+        type: col.type,
+        classification: col.classification,
+        aggregation: col.aggregation,
+        description: col.description,
+        isPII: col.isPII,
+        nullRate: col.nullRate,
+        synonyms: col.synonyms,
+      });
+    }
+  }
+
+  const classColor = (cls?: string) =>
+    cls === 'measure'   ? { bg: '#eff6ff', text: '#1d4ed8' } :
+    cls === 'attribute' ? { bg: '#f0fdf4', text: '#15803d' } :
+    cls === 'key'       ? { bg: '#fef9c3', text: '#a16207' } :
+                          { bg: c['background-subtle'], text: c['content-secondary'] };
+
+  return (
+    <div style={{ flex: 1, overflow: 'auto' }}>
+      {/* Column header */}
+      <div style={{ display: 'grid', gridTemplateColumns: '160px 90px 90px 1fr 100px', gap: 0, position: 'sticky', top: 0, zIndex: 1, backgroundColor: c['background-subtle'], borderBottom: `1px solid ${c['border-divider']}` }}>
+        {['Column', 'Type', 'Role', 'Description', 'Profile'].map(h => (
+          <div key={h} style={{ padding: `${sp.B}px ${sp.C}px`, fontSize: fs.xs, fontWeight: fw.medium, color: c['content-secondary'] }}>{h}</div>
+        ))}
+      </div>
+
+      {/* Rows */}
+      {rows.map(({ tableId, tableName, tableColor, colName, type, classification, aggregation, description, isPII, nullRate, synonyms }, i) => {
+        const cls = classColor(classification);
+        return (
+          <div
+            key={`${tableId}-${colName}`}
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '160px 90px 90px 1fr 100px',
+              gap: 0,
+              borderBottom: `1px solid ${c['border-divider']}`,
+              backgroundColor: i % 2 === 0 ? c['background-base'] : c['background-sunken'],
+            }}
+          >
+            {/* Column name + table badge */}
+            <div style={{ padding: `${sp.B}px ${sp.C}px`, display: 'flex', flexDirection: 'column', gap: 3 }}>
+              <span style={{ fontSize: fs.xs, fontWeight: fw.medium, color: c['content-primary'], fontFamily: 'monospace' }}>{colName}</span>
+              <span style={{ fontSize: 10, color: tableColor, backgroundColor: tableColor + '18', padding: '1px 6px', borderRadius: 4, width: 'fit-content', fontWeight: fw.medium }}>{tableName}</span>
+            </div>
+            {/* Type */}
+            <div style={{ padding: `${sp.B}px ${sp.C}px`, display: 'flex', alignItems: 'center' }}>
+              <span style={{ fontSize: fs.xs, color: c['content-secondary'], fontFamily: 'monospace' }}>{type}</span>
+            </div>
+            {/* Classification */}
+            <div style={{ padding: `${sp.B}px ${sp.C}px`, display: 'flex', alignItems: 'center', gap: sp.A }}>
+              {classification && (
+                <span style={{ fontSize: 10, backgroundColor: cls.bg, color: cls.text, padding: '2px 6px', borderRadius: 4, fontWeight: fw.medium }}>
+                  {classification}{aggregation ? ` · ${aggregation}` : ''}
+                </span>
+              )}
+              {isPII && (
+                <span style={{ fontSize: 10, backgroundColor: '#fef2f2', color: '#dc2626', padding: '2px 5px', borderRadius: 4, fontWeight: fw.medium }}>PII</span>
+              )}
+            </div>
+            {/* Description */}
+            <div style={{ padding: `${sp.B}px ${sp.C}px`, display: 'flex', flexDirection: 'column', gap: 2, justifyContent: 'center' }}>
+              {description
+                ? <span style={{ fontSize: fs.xs, color: c['content-primary'], lineHeight: '16px' }}>{description}</span>
+                : <span style={{ fontSize: fs.xs, color: c['content-secondary'], fontStyle: 'italic' }}>No description</span>
+              }
+              {synonyms && synonyms.length > 0 && (
+                <span style={{ fontSize: 10, color: c['content-secondary'] }}>also: {synonyms.join(', ')}</span>
+              )}
+            </div>
+            {/* Profile */}
+            <div style={{ padding: `${sp.B}px ${sp.C}px`, display: 'flex', alignItems: 'center' }}>
+              {nullRate && nullRate > 0
+                ? <span style={{ fontSize: 10, color: nullRate > 10 ? c['content-warning'] : c['content-secondary'] }}>{nullRate}% null</span>
+                : <span style={{ fontSize: 10, color: c['content-secondary'] }}>—</span>
+              }
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+// ── Visualizer layout helpers ─────────────────────────────────────────────────
+
+const TABLE_W = 185;
+const TABLE_H = 80;
+const SVG_W   = 620;
+
+function getTableLayout(tables: string[]): Record<string, { x: number; y: number }> {
+  const n = tables.length;
+  const positions: Record<string, { x: number; y: number }> = {};
+  if (n === 0) return positions;
+
+  if (n === 1) {
+    positions[tables[0]] = { x: (SVG_W - TABLE_W) / 2, y: 170 };
+  } else if (n === 2) {
+    positions[tables[0]] = { x: 55, y: 170 };
+    positions[tables[1]] = { x: SVG_W - TABLE_W - 55, y: 170 };
+  } else {
+    // First table on the left, rest stacked on the right
+    const rightCount = n - 1;
+    const svgH = Math.max(420, rightCount * 180 + 60);
+    const spacing = svgH / (rightCount + 1);
+    positions[tables[0]] = { x: 55, y: svgH / 2 - TABLE_H / 2 };
+    for (let i = 1; i < n; i++) {
+      positions[tables[i]] = { x: SVG_W - TABLE_W - 55, y: spacing * i - TABLE_H / 2 };
+    }
+  }
+  return positions;
+}
+
+// ── Table node ────────────────────────────────────────────────────────────────
 
 const TableNode: React.FC<{ x: number; y: number; label: string; cols: number; calcBadge?: boolean; healthyBadge?: boolean; onClick?: () => void }> = ({ x, y, label, cols, calcBadge, healthyBadge, onClick }) => {
   const h = calcBadge ? 96 : 80;
   return (
     <g onClick={onClick} style={{ cursor: onClick ? 'pointer' : 'default' }}>
-      <rect x={x} y={y} width={185} height={h} rx={8} fill={c['background-base']} stroke={healthyBadge ? c['content-success'] : c['border-divider']} strokeWidth={healthyBadge ? 2 : 1.5} />
+      <rect x={x} y={y} width={TABLE_W} height={h} rx={8} fill={c['background-base']} stroke={healthyBadge ? c['content-success'] : c['border-divider']} strokeWidth={healthyBadge ? 2 : 1.5} />
       <text x={x + 14} y={y + 24} fill={c['content-primary']} fontSize="13" fontWeight="600" fontFamily="system-ui">{label}</text>
-      <text x={x + 14} y={y + 42} fill={c['content-secondary']} fontSize="11" fontFamily="system-ui">{cols} columns</text>
-      {Array.from({ length: Math.min(cols, 5) }).map((_, i) => (
+      {cols > 0 && <text x={x + 14} y={y + 42} fill={c['content-secondary']} fontSize="11" fontFamily="system-ui">{cols} columns</text>}
+      {Array.from({ length: Math.min(Math.max(cols, 0), 5) }).map((_, i) => (
         <rect key={i} x={x + 14 + i * 22} y={y + 55} width={16} height={5} rx={3} fill={c['border-divider']} />
       ))}
       {calcBadge && (
@@ -112,13 +317,26 @@ const DataPreviewView: React.FC<{ project: ProjectState }> = ({ project }) => {
       <EmptyCenter
         icon="📄"
         title="No preview available"
-        body="No joins exist, so there is no preview available. Create joins between your tables to see the combined dataset here."
+        body="Create joins between your tables to see the combined dataset here."
+      />
+    );
+  }
+
+  if (!project.columnsSelected) {
+    return (
+      <EmptyCenter
+        icon="⊟"
+        title="Select columns first"
+        body="Choose which columns to include in your model to see a data preview. Ask the Data Agent to recommend columns."
       />
     );
   }
 
   const displayRows = ordersData.slice(0, 30);
-  const columns = ['order_id', 'user_id', 'campaign_id', 'order_date', 'amount', 'product_category', 'status', 'region'];
+  // Use only the included columns from orders (the base table for preview rows)
+  const ALL_ORDERS_COLS = ['order_id', 'user_id', 'campaign_id', 'order_date', 'amount', 'product_category', 'status', 'region'];
+  const includedOrdersCols = project.includedColumns['orders'] ?? ALL_ORDERS_COLS;
+  const columns = ALL_ORDERS_COLS.filter(col => includedOrdersCols.includes(col));
   const extraCols = project.buildStep === 'transformed' || project.buildStep === 'healthy'
     ? [...columns, 'return_on_spend', 'campaign_performance']
     : columns;
@@ -202,7 +420,7 @@ const DataPreviewView: React.FC<{ project: ProjectState }> = ({ project }) => {
 // ── Notebook ──────────────────────────────────────────────────────────────────
 
 const NotebookView: React.FC<{ project: ProjectState }> = ({ project }) => {
-  const hasData = project.buildStep !== 'empty';
+  const hasData = project.addedTables.length > 0;
 
   const cells = [
     { id: 1, type: 'sql', comment: '// Add Orders table into this project',     query: 'SELECT *\nFROM orders;' },

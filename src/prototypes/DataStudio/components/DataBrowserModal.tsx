@@ -14,23 +14,33 @@ interface Database { id: string; name: string; path: string; description?: strin
 
 const DATABASES: Database[] = [
   {
-    id: 'team_reporting',
-    name: 'team_reporting',
-    path: 'Sarah-Snowflake/TEAM_REPORTING',
+    id: 'marketing_db',
+    name: 'marketing_db',
+    path: 'Sarah-Snowflake / MARKETING_DB',
+    description: 'Orders, campaigns, and user data for marketing analysis.',
     schemas: [
-      { name: 'analytics',  lastModified: 'Yesterday',    author: 'You',  tags: 'Reporting' },
-      { name: 'finance',    lastModified: 'Last Week',     author: 'Ram',  tags: 'Finance'   },
+      { name: 'analytics',  lastModified: 'Yesterday',  author: 'You',   tags: 'Marketing' },
+      { name: 'raw',        lastModified: 'Last week',  author: 'Sarah', tags: 'Ingestion' },
     ],
   },
   {
-    id: 'wine_falcon',
-    name: 'wine_falcon',
-    path: 'Sarah-Snowflake/WINE_FALCON',
+    id: 'finance_db',
+    name: 'finance_db',
+    path: 'Sarah-Snowflake / FINANCE_DB',
+    description: 'Transactions, expenses, and budget targets for finance reporting.',
     schemas: [
-      { name: 'marketing', lastModified: 'Yesterday',    author: 'You',  tags: 'Accounts'  },
-      { name: 'hr',        lastModified: 'Last Week',    author: 'Ram',  tags: 'Sales'     },
-      { name: 'accounts',  lastModified: 'This Month',   author: 'Ram',  tags: 'Users'     },
-      { name: 'product',   lastModified: 'Last Quarter', author: 'Jane', tags: 'Feedback'  },
+      { name: 'reporting',  lastModified: 'Last week',    author: 'Ram',  tags: 'Finance'  },
+      { name: 'raw',        lastModified: 'This month',   author: 'Sarah', tags: 'Ingestion' },
+    ],
+  },
+  {
+    id: 'sales_db',
+    name: 'sales_db',
+    path: 'Sarah-Snowflake / SALES_DB',
+    description: 'Accounts, reps, and deal pipeline for sales analytics.',
+    schemas: [
+      { name: 'crm',        lastModified: 'Yesterday',    author: 'You',  tags: 'Sales'    },
+      { name: 'semantic',   lastModified: 'Last week',    author: 'Jane', tags: 'Views'    },
     ],
   },
 ];
@@ -39,8 +49,8 @@ const DATABASES: Database[] = [
 
 const DataBrowserModal: React.FC<DataBrowserModalProps> = ({ onAdd, onClose }) => {
   const [search, setSearch] = useState('');
-  const [expandedDbs, setExpandedDbs] = useState<Set<string>>(new Set(['wine_falcon']));
-  const [selectedDb, setSelectedDb] = useState<Database>(DATABASES[1]);
+  const [expandedDbs, setExpandedDbs] = useState<Set<string>>(new Set(['marketing_db']));
+  const [selectedDb, setSelectedDb] = useState<Database>(DATABASES[0]);
   const [selectedSchemas, setSelectedSchemas] = useState<Set<string>>(new Set());
 
   const toggleDb = (id: string) => {

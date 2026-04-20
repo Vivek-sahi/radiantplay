@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { c, sp, ff, fs, fw, ts, GLOBAL_NAV_HEIGHT, HEADER_HEIGHT } from '../styles';
+import { c, sp, ff, fs, fw, ts, HEADER_HEIGHT } from '../styles';
 import { Button } from '../../../components/Button';
 import { TextInput } from '../../../components/TextInput';
 import { Select } from '../../../components/Select';
@@ -14,10 +14,13 @@ interface WorkspaceProps {
   project: ProjectState;
   setProject: React.Dispatch<React.SetStateAction<ProjectState>>;
   onBack: () => void;
+  initialPrompt?: string;
 }
 
-const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, onBack }) => {
+const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, onBack, initialPrompt }) => {
   const [messages, setMessages] = useState<AgentMessage[]>([]);
+  const [isBuilding, setIsBuilding] = useState(!!initialPrompt);
+  const [externalAgentMessage, setExternalAgentMessage] = useState<string | null>(null);
   const [warehouseOpen, setWarehouseOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [hasShared, setHasShared] = useState(false);
@@ -33,27 +36,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, onBack }) =>
     setProject(p => ({ ...p, testMode: false }));
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', fontFamily: ff.primary }}>
-
-      {/* Global header */}
-      <div style={{ height: GLOBAL_NAV_HEIGHT, backgroundColor: c['background-base-inverse'], display: 'flex', alignItems: 'center', padding: `0 ${sp.D}px`, gap: sp.C, flexShrink: 0 }}>
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-          <path d="M21.0234 18.0469C22.6674 18.0469 24.0008 19.3795 24.001 21.0234C24.001 22.6675 22.6675 24.001 21.0234 24.001C19.3795 24.0008 18.0469 22.6674 18.0469 21.0234C18.047 19.3796 19.3796 18.047 21.0234 18.0469ZM23.8135 7.44141H15.627V23.8125H14.1387V7.44141H12.6514V23.8125H11.1631V7.44141H9.6748V23.8125H8.18652V7.44141H0V5.95312H23.8135V7.44141ZM23.8135 4.46484H0V2.97656H23.8135V4.46484ZM23.8135 1.48828H0V0H23.8135V1.48828Z" fill="white" />
-        </svg>
-        <div style={{ flex: 1 }} />
-        <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 6, padding: `${sp.A}px ${sp.C}px`, width: 200 }}>
-          <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: fs.sm }}>🔍</span>
-          <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: fs.xs }}>Search your library</span>
-        </div>
-        {['🔔', '?'].map(icon => (
-          <div key={icon} style={{ width: 32, height: 32, borderRadius: '50%', backgroundColor: 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-            <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: fs.sm }}>{icon}</span>
-          </div>
-        ))}
-        <div style={{ width: 32, height: 32, borderRadius: '50%', backgroundColor: c['content-brand'], display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-          <span style={{ color: '#fff', fontSize: fs.sm, fontWeight: fw.semibold }}>V</span>
-        </div>
-      </div>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', fontFamily: ff.primary }}>
 
       {/* Project header */}
       <div style={{ height: HEADER_HEIGHT, backgroundColor: c['background-base'], borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', padding: `0 ${sp.D}px`, gap: sp.C, flexShrink: 0 }}>
@@ -155,14 +138,72 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, onBack }) =>
         <TestModePanel onExit={exitTestMode} project={project} />
       ) : (
         <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-          <LeftPanel project={project} setProject={setProject} />
-          <CenterPanel project={project} />
-          <AgentPanel project={project} setProject={setProject} messages={messages} setMessages={setMessages} />
+          {isBuilding ? (
+            <BuildingSkeleton />
+          ) : (
+            <>
+              <LeftPanel project={project} setProject={setProject} onSendToAgent={setExternalAgentMessage} />
+              <CenterPanel project={project} />
+            </>
+          )}
+          <AgentPanel
+            project={project}
+            setProject={setProject}
+            messages={messages}
+            setMessages={setMessages}
+            initialPrompt={initialPrompt}
+            onBuildComplete={() => setIsBuilding(false)}
+            externalMessage={externalAgentMessage}
+            onExternalMessageHandled={() => setExternalAgentMessage(null)}
+          />
         </div>
       )}
     </div>
   );
 };
+
+// ── Building skeleton ─────────────────────────────────────────────────────────
+
+const BuildingSkeleton: React.FC = () => (
+  <>
+    <style>{`
+      @keyframes ds-pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.4; }
+      }
+      .ds-skel { animation: ds-pulse 1.6s ease-in-out infinite; border-radius: 6px; background: ${c['background-subtle']}; }
+      .ds-skel:nth-child(2) { animation-delay: 0.2s; }
+      .ds-skel:nth-child(3) { animation-delay: 0.4s; }
+      .ds-skel:nth-child(4) { animation-delay: 0.6s; }
+    `}</style>
+
+    {/* Left panel skeleton */}
+    <div style={{ width: 240, flexShrink: 0, borderRight: `1px solid ${c['border-divider']}`, backgroundColor: c['background-base'], padding: sp.D, display: 'flex', flexDirection: 'column', gap: sp.D }}>
+      <div className="ds-skel" style={{ height: 14, width: '60%' }} />
+      <div className="ds-skel" style={{ height: 10, width: '85%' }} />
+      <div style={{ height: 1, backgroundColor: c['border-divider'], margin: `${sp.A}px 0` }} />
+      <div className="ds-skel" style={{ height: 14, width: '40%' }} />
+      <div className="ds-skel" style={{ height: 10, width: '70%' }} />
+      <div className="ds-skel" style={{ height: 10, width: '65%' }} />
+      <div className="ds-skel" style={{ height: 10, width: '75%' }} />
+      <div style={{ height: 1, backgroundColor: c['border-divider'], margin: `${sp.A}px 0` }} />
+      <div className="ds-skel" style={{ height: 14, width: '55%' }} />
+      <div className="ds-skel" style={{ height: 10, width: '80%' }} />
+      <div className="ds-skel" style={{ height: 10, width: '60%' }} />
+    </div>
+
+    {/* Center canvas skeleton */}
+    <div style={{ flex: 1, backgroundColor: c['background-sunken'], display: 'flex', alignItems: 'center', justifyContent: 'center', gap: sp.H }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: sp.F, alignItems: 'center' }}>
+        <div className="ds-skel" style={{ width: 180, height: 80 }} />
+        <div style={{ display: 'flex', gap: sp.H }}>
+          <div className="ds-skel" style={{ width: 160, height: 70 }} />
+          <div className="ds-skel" style={{ width: 160, height: 70 }} />
+        </div>
+      </div>
+    </div>
+  </>
+);
 
 // ── Cache modal ───────────────────────────────────────────────────────────────
 
