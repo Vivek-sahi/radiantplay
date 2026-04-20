@@ -28,6 +28,14 @@ export interface ColumnMeta {
   type: 'string' | 'number' | 'date' | 'boolean';
   description: string | null; // null = missing description (Data Health issue)
   nullable: boolean;
+  // Column-level semantics — used by select_columns workflow
+  classification?: 'measure' | 'attribute' | 'key';
+  aggregation?: 'SUM' | 'AVG' | 'COUNT' | 'MAX' | 'MIN';
+  synonyms?: string[];
+  isPII?: boolean;
+  isSystemField?: boolean;  // internal IDs / raw system fields not useful for analysis
+  nullRate?: number;        // 0–100 percentage
+  duplicateCount?: number;
 }
 
 export interface TableMeta {
@@ -61,14 +69,14 @@ export const tableMetadata: Record<string, TableMeta> = {
     rowCount: 150,
     lastSynced: '2024-03-28T14:32:00Z',
     columns: [
-      { id: 'order_id',         name: 'order_id',         type: 'string',  description: null,                                                    nullable: false },
-      { id: 'user_id',          name: 'user_id',          type: 'string',  description: null,                                                    nullable: false },
-      { id: 'campaign_id',      name: 'campaign_id',      type: 'string',  description: null,                                                    nullable: true  },
-      { id: 'order_date',       name: 'order_date',       type: 'date',    description: null,                                                    nullable: false },
-      { id: 'amount',           name: 'amount',           type: 'number',  description: 'Order value in USD at time of purchase.',               nullable: false },
-      { id: 'product_category', name: 'product_category', type: 'string',  description: null,                                                    nullable: false },
-      { id: 'status',           name: 'status',           type: 'string',  description: null,                                                    nullable: false },
-      { id: 'region',           name: 'region',           type: 'string',  description: null,                                                    nullable: false },
+      { id: 'order_id',         name: 'order_id',         type: 'string',  description: null,                                          nullable: false, classification: 'key',       isSystemField: true,  nullRate: 0,  duplicateCount: 7  },
+      { id: 'user_id',          name: 'user_id',          type: 'string',  description: null,                                          nullable: false, classification: 'key',                             nullRate: 0                     },
+      { id: 'campaign_id',      name: 'campaign_id',      type: 'string',  description: null,                                          nullable: true,  classification: 'key',                             nullRate: 18                    },
+      { id: 'order_date',       name: 'order_date',       type: 'date',    description: null,                                          nullable: false, classification: 'attribute',                       nullRate: 0                     },
+      { id: 'amount',           name: 'amount',           type: 'number',  description: 'Order value in USD at time of purchase.',      nullable: false, classification: 'measure',   aggregation: 'SUM',   nullRate: 0                     },
+      { id: 'product_category', name: 'product_category', type: 'string',  description: null,                                          nullable: false, classification: 'attribute',                       nullRate: 0                     },
+      { id: 'status',           name: 'status',           type: 'string',  description: null,                                          nullable: false, classification: 'attribute',  synonyms: ['order_status'], nullRate: 0               },
+      { id: 'region',           name: 'region',           type: 'string',  description: null,                                          nullable: false, classification: 'attribute',                       nullRate: 0                     },
     ],
     qualityIssues: [
       { type: 'no_description', severity: 'high',   count: 7,   percentage: 70, description: 'No descriptions — AI agent cannot interpret columns correctly'  },
@@ -88,15 +96,16 @@ export const tableMetadata: Record<string, TableMeta> = {
     rowCount: 45,
     lastSynced: '2024-03-28T14:32:00Z',
     columns: [
-      { id: 'campaign_id',     name: 'campaign_id',     type: 'string',  description: 'Unique identifier for each marketing campaign.',         nullable: false },
-      { id: 'campaign_name',   name: 'campaign_name',   type: 'string',  description: null,                                                     nullable: false },
-      { id: 'channel',         name: 'channel',         type: 'string',  description: null,                                                     nullable: false },
-      { id: 'budget',          name: 'budget',          type: 'number',  description: 'Total approved budget for the campaign in USD.',         nullable: false },
-      { id: 'spend',           name: 'spend',           type: 'number',  description: null,                                                     nullable: false },
-      { id: 'start_date',      name: 'start_date',      type: 'date',    description: null,                                                     nullable: false },
-      { id: 'end_date',        name: 'end_date',        type: 'date',    description: null,                                                     nullable: true  },
-      { id: 'target_region',   name: 'target_region',   type: 'string',  description: null,                                                     nullable: false },
-      { id: 'status',          name: 'status',          type: 'string',  description: null,                                                     nullable: false },
+      { id: 'campaign_id',   name: 'campaign_id',   type: 'string', description: 'Unique identifier for each marketing campaign.', nullable: false, classification: 'key',       isSystemField: false, nullRate: 0,  duplicateCount: 2  },
+      { id: 'campaign_name', name: 'campaign_name', type: 'string', description: null,                                             nullable: false, classification: 'attribute',                       nullRate: 0                     },
+      { id: 'channel',       name: 'channel',       type: 'string', description: null,                                             nullable: false, classification: 'attribute',  synonyms: ['marketing_channel', 'ad_channel'], nullRate: 0 },
+      { id: 'budget',        name: 'budget',        type: 'number', description: 'Total approved budget for the campaign in USD.', nullable: false, classification: 'measure',   aggregation: 'SUM',   nullRate: 0                     },
+      { id: 'spend',         name: 'spend',         type: 'number', description: null,                                             nullable: false, classification: 'measure',   aggregation: 'SUM',   nullRate: 0                     },
+      { id: 'impressions',   name: 'impressions',   type: 'number', description: null,                                             nullable: false, classification: 'measure',   aggregation: 'SUM',   nullRate: 0                     },
+      { id: 'start_date',    name: 'start_date',    type: 'date',   description: null,                                             nullable: false, classification: 'attribute',                       nullRate: 0                     },
+      { id: 'end_date',      name: 'end_date',      type: 'date',   description: null,                                             nullable: true,  classification: 'attribute',                       nullRate: 13                    },
+      { id: 'target_region', name: 'target_region', type: 'string', description: null,                                             nullable: false, classification: 'attribute',                       nullRate: 0                     },
+      { id: 'status',        name: 'status',        type: 'string', description: null,                                             nullable: false, classification: 'attribute',  synonyms: ['campaign_status'], nullRate: 0          },
     ],
     qualityIssues: [
       { type: 'no_description', severity: 'high',   count: 7,  percentage: 78, description: 'Missing column descriptions'                                          },
@@ -115,20 +124,176 @@ export const tableMetadata: Record<string, TableMeta> = {
     rowCount: 90,
     lastSynced: '2024-03-28T14:32:00Z',
     columns: [
-      { id: 'user_id',         name: 'user_id',         type: 'string',  description: 'Unique identifier for each registered user.',            nullable: false },
-      { id: 'name',            name: 'name',            type: 'string',  description: null,                                                     nullable: false },
-      { id: 'email',           name: 'email',           type: 'string',  description: null,                                                     nullable: false },
-      { id: 'signup_date',     name: 'signup_date',     type: 'date',    description: null,                                                     nullable: false },
-      { id: 'region',          name: 'region',          type: 'string',  description: null,                                                     nullable: false },
-      { id: 'segment',         name: 'segment',         type: 'string',  description: null,                                                     nullable: true  },
-      { id: 'age',             name: 'age',             type: 'number',  description: null,                                                     nullable: false },
-      { id: 'lifetime_value',  name: 'lifetime_value',  type: 'number',  description: 'Total historical spend by this user across all orders.', nullable: false },
+      { id: 'user_id',        name: 'user_id',        type: 'string', description: 'Unique identifier for each registered user.',             nullable: false, classification: 'key',                             nullRate: 0  },
+      { id: 'name',           name: 'name',           type: 'string', description: null,                                                      nullable: false, classification: 'attribute', isPII: true,           nullRate: 0  },
+      { id: 'email',          name: 'email',          type: 'string', description: null,                                                      nullable: false, classification: 'attribute', isPII: true,           nullRate: 0  },
+      { id: 'signup_date',    name: 'signup_date',    type: 'date',   description: null,                                                      nullable: false, classification: 'attribute',                       nullRate: 0  },
+      { id: 'region',         name: 'region',         type: 'string', description: null,                                                      nullable: false, classification: 'attribute',                       nullRate: 0  },
+      { id: 'segment',        name: 'segment',        type: 'string', description: null,                                                      nullable: true,  classification: 'attribute', synonyms: ['user_tier', 'customer_segment'], nullRate: 15 },
+      { id: 'age',            name: 'age',            type: 'number', description: null,                                                      nullable: false, classification: 'attribute', isPII: true,           nullRate: 0  },
+      { id: 'lifetime_value', name: 'lifetime_value', type: 'number', description: 'Total historical spend by this user across all orders.',  nullable: false, classification: 'measure',   aggregation: 'SUM',   nullRate: 0  },
     ],
     qualityIssues: [
       { type: 'no_description', severity: 'high',   count: 6,  percentage: 75, description: 'Missing column descriptions'                                                    },
       { type: 'null',           severity: 'medium', count: 14, percentage: 15, description: 'segment is null — users not yet classified into a tier'                          },
       { type: 'anomaly',        severity: 'low',    count: 4,  percentage: 4,  description: 'age anomalies: age=0, age=142, age=-3, age=199 — likely data entry errors'       },
       { type: 'date_format',    severity: 'high',   count: 90, percentage: 100,description: 'signup_date uses YYYY/MM/DD — third date format in dataset'                     },
+    ],
+  },
+
+  // ── Additional warehouse tables (minimal metadata — no sample rows) ───────────
+
+  order_items: {
+    id: 'order_items', name: 'Order Items', connection: 'Snowflake', connectionType: 'snowflake',
+    description: 'Line-item detail for every order — one row per product per order.',
+    rowCount: 420, lastSynced: '2024-03-28T14:32:00Z', qualityIssues: [],
+    columns: [
+      { id: 'item_id',          name: 'item_id',          type: 'string', description: 'Unique line-item identifier.',         nullable: false },
+      { id: 'order_id',         name: 'order_id',         type: 'string', description: null,                                   nullable: false },
+      { id: 'product_id',       name: 'product_id',       type: 'string', description: null,                                   nullable: false },
+      { id: 'product_name',     name: 'product_name',     type: 'string', description: null,                                   nullable: false },
+      { id: 'quantity',         name: 'quantity',         type: 'number', description: null,                                   nullable: false },
+      { id: 'unit_price',       name: 'unit_price',       type: 'number', description: 'Price per unit at time of purchase.',  nullable: false },
+      { id: 'discount',         name: 'discount',         type: 'number', description: null,                                   nullable: true  },
+      { id: 'line_total',       name: 'line_total',       type: 'number', description: null,                                   nullable: false },
+    ],
+  },
+
+  transactions: {
+    id: 'transactions', name: 'Transactions', connection: 'Snowflake', connectionType: 'snowflake',
+    description: 'Raw financial transactions including revenue and cost of goods by product and department.',
+    rowCount: 50, lastSynced: '2024-03-28T14:32:00Z', qualityIssues: [],
+    columns: [
+      { id: 'transaction_id',   name: 'transaction_id',   type: 'string', description: null, nullable: false },
+      { id: 'order_id',         name: 'order_id',         type: 'string', description: null, nullable: false },
+      { id: 'revenue',          name: 'revenue',          type: 'number', description: null, nullable: false },
+      { id: 'cogs',             name: 'cogs',             type: 'number', description: null, nullable: false },
+      { id: 'date',             name: 'date',             type: 'date',   description: null, nullable: false },
+      { id: 'product_category', name: 'product_category', type: 'string', description: null, nullable: false },
+      { id: 'region',           name: 'region',           type: 'string', description: null, nullable: false },
+      { id: 'department',       name: 'department',       type: 'string', description: null, nullable: false },
+    ],
+  },
+
+  expenses: {
+    id: 'expenses', name: 'Expenses', connection: 'Snowflake', connectionType: 'snowflake',
+    description: 'Operating expenses by category, department, and vendor.',
+    rowCount: 50, lastSynced: '2024-03-28T14:32:00Z', qualityIssues: [],
+    columns: [
+      { id: 'expense_id',   name: 'expense_id',   type: 'string', description: null, nullable: false },
+      { id: 'category',     name: 'category',     type: 'string', description: null, nullable: false },
+      { id: 'department',   name: 'department',   type: 'string', description: null, nullable: false },
+      { id: 'amount',       name: 'amount',       type: 'number', description: null, nullable: false },
+      { id: 'date',         name: 'date',         type: 'date',   description: null, nullable: false },
+      { id: 'vendor',       name: 'vendor',       type: 'string', description: null, nullable: true  },
+      { id: 'status',       name: 'status',       type: 'string', description: null, nullable: false },
+      { id: 'approved_by',  name: 'approved_by',  type: 'string', description: null, nullable: true  },
+    ],
+  },
+
+  budget_targets: {
+    id: 'budget_targets', name: 'Budget Targets', connection: 'Snowflake', connectionType: 'snowflake',
+    description: 'Monthly budget allocations by department and category, with actuals where available.',
+    rowCount: 50, lastSynced: '2024-03-28T14:32:00Z', qualityIssues: [],
+    columns: [
+      { id: 'budget_id',        name: 'budget_id',        type: 'string', description: null,                                      nullable: false },
+      { id: 'month',            name: 'month',            type: 'date',   description: null,                                      nullable: false },
+      { id: 'department',       name: 'department',       type: 'string', description: null,                                      nullable: false },
+      { id: 'category',         name: 'category',         type: 'string', description: null,                                      nullable: false },
+      { id: 'budgeted_amount',  name: 'budgeted_amount',  type: 'number', description: null,                                      nullable: false },
+      { id: 'actual_amount',    name: 'actual_amount',    type: 'number', description: 'Null for future months.',                  nullable: true  },
+      { id: 'currency',         name: 'currency',         type: 'string', description: null,                                      nullable: false },
+    ],
+  },
+
+  fct_pnl: {
+    id: 'fct_pnl', name: 'fct_pnl', connection: 'dbt Analytics', connectionType: 'thoughtspot',
+    description: 'P&L aggregated by department × month. Pre-built from transactions + expenses + budget_targets.',
+    rowCount: 50, lastSynced: '2024-03-28T14:32:00Z', qualityIssues: [],
+    columns: [
+      { id: 'month',                name: 'month',                type: 'date',   description: null, nullable: false },
+      { id: 'department',           name: 'department',           type: 'string', description: null, nullable: false },
+      { id: 'revenue',              name: 'revenue',              type: 'number', description: null, nullable: false },
+      { id: 'cogs',                 name: 'cogs',                 type: 'number', description: null, nullable: false },
+      { id: 'gross_profit',         name: 'gross_profit',         type: 'number', description: null, nullable: false },
+      { id: 'operating_expenses',   name: 'operating_expenses',   type: 'number', description: null, nullable: false },
+      { id: 'net_income',           name: 'net_income',           type: 'number', description: null, nullable: false },
+      { id: 'budget',               name: 'budget',               type: 'number', description: null, nullable: true  },
+      { id: 'variance',             name: 'variance',             type: 'number', description: null, nullable: true  },
+      { id: 'gross_margin_pct',     name: 'gross_margin_pct',     type: 'number', description: null, nullable: false },
+      { id: 'budget_variance_pct',  name: 'budget_variance_pct',  type: 'number', description: null, nullable: true  },
+    ],
+  },
+
+  sales_overview: {
+    id: 'sales_overview', name: 'sales_overview', connection: 'Snowflake', connectionType: 'snowflake',
+    description: 'Deals, accounts, and reps pre-joined as a semantic view. Includes computed win_rate, quota_attainment, pipeline_value.',
+    rowCount: 50, lastSynced: '2024-03-28T14:32:00Z', qualityIssues: [],
+    columns: [
+      { id: 'deal_id',           name: 'deal_id',           type: 'string', description: null, nullable: false },
+      { id: 'deal_amount',       name: 'deal_amount',       type: 'number', description: null, nullable: false },
+      { id: 'stage',             name: 'stage',             type: 'string', description: null, nullable: false },
+      { id: 'close_date',        name: 'close_date',        type: 'date',   description: null, nullable: true  },
+      { id: 'deal_type',         name: 'deal_type',         type: 'string', description: null, nullable: false },
+      { id: 'company_name',      name: 'company_name',      type: 'string', description: null, nullable: false },
+      { id: 'industry',          name: 'industry',          type: 'string', description: null, nullable: false },
+      { id: 'tier',              name: 'tier',              type: 'string', description: null, nullable: false },
+      { id: 'rep_name',          name: 'rep_name',          type: 'string', description: null, nullable: false },
+      { id: 'team',              name: 'team',              type: 'string', description: null, nullable: false },
+      { id: 'region',            name: 'region',            type: 'string', description: null, nullable: false },
+      { id: 'win_rate',          name: 'win_rate',          type: 'number', description: 'Computed: won / total deals.',        nullable: false },
+      { id: 'quota_attainment',  name: 'quota_attainment',  type: 'number', description: 'Computed: revenue / quota.',         nullable: false },
+      { id: 'pipeline_value',    name: 'pipeline_value',    type: 'number', description: 'Computed: open deals × probability.', nullable: false },
+    ],
+  },
+
+  deals: {
+    id: 'deals', name: 'Deals', connection: 'Snowflake', connectionType: 'snowflake',
+    description: 'Raw sales deals with stage, amount, and close date.',
+    rowCount: 50, lastSynced: '2024-03-28T14:32:00Z', qualityIssues: [],
+    columns: [
+      { id: 'deal_id',      name: 'deal_id',      type: 'string', description: null, nullable: false },
+      { id: 'account_id',   name: 'account_id',   type: 'string', description: null, nullable: false },
+      { id: 'rep_id',       name: 'rep_id',       type: 'string', description: null, nullable: false },
+      { id: 'stage',        name: 'stage',        type: 'string', description: null, nullable: false },
+      { id: 'amount',       name: 'amount',       type: 'number', description: null, nullable: false },
+      { id: 'close_date',   name: 'close_date',   type: 'date',   description: null, nullable: true  },
+      { id: 'created_date', name: 'created_date', type: 'date',   description: null, nullable: false },
+      { id: 'region',       name: 'region',       type: 'string', description: null, nullable: false },
+      { id: 'deal_type',    name: 'deal_type',    type: 'string', description: null, nullable: false },
+      { id: 'probability',  name: 'probability',  type: 'number', description: null, nullable: true  },
+    ],
+  },
+
+  accounts: {
+    id: 'accounts', name: 'Accounts', connection: 'Snowflake', connectionType: 'snowflake',
+    description: 'Company accounts including firmographic data.',
+    rowCount: 50, lastSynced: '2024-03-28T14:32:00Z', qualityIssues: [],
+    columns: [
+      { id: 'account_id',     name: 'account_id',     type: 'string', description: null, nullable: false },
+      { id: 'company_name',   name: 'company_name',   type: 'string', description: null, nullable: false },
+      { id: 'industry',       name: 'industry',       type: 'string', description: null, nullable: false },
+      { id: 'tier',           name: 'tier',           type: 'string', description: null, nullable: false },
+      { id: 'region',         name: 'region',         type: 'string', description: null, nullable: false },
+      { id: 'arr',            name: 'arr',            type: 'number', description: 'Annual recurring revenue.',  nullable: true  },
+      { id: 'employee_count', name: 'employee_count', type: 'number', description: null, nullable: true  },
+      { id: 'created_date',   name: 'created_date',   type: 'date',   description: null, nullable: false },
+    ],
+  },
+
+  reps: {
+    id: 'reps', name: 'Reps', connection: 'Snowflake', connectionType: 'snowflake',
+    description: 'Sales representatives with quota, attainment, and team data.',
+    rowCount: 50, lastSynced: '2024-03-28T14:32:00Z', qualityIssues: [],
+    columns: [
+      { id: 'rep_id',           name: 'rep_id',           type: 'string', description: null, nullable: false },
+      { id: 'name',             name: 'name',             type: 'string', description: null, nullable: false },
+      { id: 'region',           name: 'region',           type: 'string', description: null, nullable: false },
+      { id: 'manager',          name: 'manager',          type: 'string', description: null, nullable: true  },
+      { id: 'quota',            name: 'quota',            type: 'number', description: null, nullable: false },
+      { id: 'attainment_ytd',   name: 'attainment_ytd',   type: 'number', description: null, nullable: false },
+      { id: 'team',             name: 'team',             type: 'string', description: null, nullable: false },
+      { id: 'hire_date',        name: 'hire_date',        type: 'date',   description: null, nullable: false },
     ],
   },
 };
@@ -526,10 +691,18 @@ export const transformations = [
   },
   {
     id: 'TRF-002',
-    name: 'Campaign performance',
+    name: 'Conversion Rate',
     type: 'metric' as const,
-    formula: 'COUNT(orders.order_id) / NULLIF(campaigns.budget, 0) * 1000',
-    description: 'Orders per thousand dollars of campaign budget.',
+    formula: 'COUNT(orders.order_id) / NULLIF(campaigns.impressions, 0) * 100',
+    description: 'Orders as a percentage of campaign impressions.',
+    createdBy: 'agent' as const,
+  },
+  {
+    id: 'TRF-003',
+    name: 'Days to Convert',
+    type: 'metric' as const,
+    formula: 'DATEDIFF(orders.order_date, campaigns.start_date)',
+    description: 'Days between campaign start and order date.',
     createdBy: 'agent' as const,
   },
 ];
@@ -584,3 +757,670 @@ export const agentResponses: Record<string, { thinking: string; response: string
     response: '**Data health is Poor (34/100)**\n\nTop issues:\n- No descriptions: Orders (70%) — AI accuracy risk\n- Nulls: Orders (18%) in `campaign_id`\n- Duplicates: Campaigns (15%)\n- Anomalies: Orders (11%) — negative amount, extreme outlier\n\nFix descriptions first — they have the biggest impact on answer quality.',
   },
 };
+
+// ─── Overview mock data ──────────────────────────────────────────────────────
+
+export interface OverviewProject {
+  id: string;
+  name: string;
+  status: 'draft' | 'published';
+  lastModified: string;
+  conversations?: number;
+  author: string;
+}
+
+export const OVERVIEW_PROJECTS: OverviewProject[] = [
+  { id: 'proj-1', name: 'Sales Analytics',   status: 'draft',     lastModified: 'Apr 8',  author: 'Vivek Sahi', conversations: 0 },
+  { id: 'proj-2', name: 'Customer 360',       status: 'published', lastModified: 'Apr 3',  author: 'Priya M.',   conversations: 142 },
+  { id: 'proj-3', name: 'FnOps Cost Model',   status: 'draft',     lastModified: 'Mar 31', author: 'Vivek Sahi', conversations: 0 },
+];
+
+export interface OverviewAlert {
+  id: string;
+  type: 'schema_change' | 'sync_failure' | 'negative_feedback' | 'query_failed' | 'high_cost';
+  title: string;
+  project: string;
+  source: string;
+  time: string;
+  severity: 'critical' | 'warning';
+}
+
+export const OVERVIEW_ALERTS: OverviewAlert[] = [
+  { id: 'alert-1', type: 'schema_change',     severity: 'critical', title: '3 columns removed from ORDERS',          project: 'Sales Analytics',   source: 'Snowflake · TEAM_REPORTING', time: '2h ago' },
+  { id: 'alert-2', type: 'sync_failure',      severity: 'warning',  title: 'Table sync failed — connection timeout', project: 'Customer 360',      source: 'BigQuery · EVENTS',          time: '5h ago' },
+  { id: 'alert-3', type: 'negative_feedback', severity: 'warning',  title: 'Wrong data returned to user',            project: 'FnOps Cost Model',  source: 'Snowflake · FINANCE',        time: '1d ago' },
+];
+
+export interface RecentTable {
+  id: string;
+  name: string;
+  connection: string;
+  rowCount: string;
+  columns: number;
+  lastSynced: string;
+}
+
+export const RECENT_TABLES: RecentTable[] = [
+  { id: 'orders',      name: 'orders',      connection: 'Snowflake', rowCount: '1.2M', columns: 8,  lastSynced: '3h ago' },
+  { id: 'campaigns',   name: 'campaigns',   connection: 'Snowflake', rowCount: '84K',  columns: 12, lastSynced: '3h ago' },
+  { id: 'user_events', name: 'user_events', connection: 'BigQuery',  rowCount: '9.4M', columns: 38, lastSynced: '1d ago' },
+  { id: 'users',       name: 'users',       connection: 'Snowflake', rowCount: '52K',  columns: 9,  lastSynced: '3h ago' },
+];
+
+// ─── Warehouse Simulation — Deterministic Helpers ─────────────────────────────
+
+const _p  = <T>(arr: readonly T[], i: number): T => arr[Math.abs((i * 7 + 3) % arr.length)];
+const _f  = (i: number, min: number, max: number, dp = 2) =>
+  parseFloat((min + (Math.abs((i * 13 + 7) % 97) / 97) * (max - min)).toFixed(dp));
+const _d  = (i: number, startMs: number, spanDays: number): string => {
+  const ms = startMs + ((Math.abs(i * 7) % spanDays)) * 86400000;
+  return new Date(ms).toISOString().split('T')[0];
+};
+const _pd = (n: number, w = 3) => String(n).padStart(w, '0');
+
+const _REGIONS  = ['West', 'East', 'North', 'South'] as const;
+const _FIN_DEPTS = ['Marketing', 'Engineering', 'Sales', 'Finance', 'Operations'] as const;
+const _EXP_CATS  = ['Marketing Spend', 'Cloud & Infra', 'Salaries & Benefits', 'Travel & Events', 'Facilities'] as const;
+const _VENDORS   = ['Google Ads', 'AWS', 'Stripe', 'Salesforce', 'Workday', 'Zoom', 'HubSpot', 'NetSuite', 'Slack', 'Notion'] as const;
+const _FIN_START = Date.parse('2024-01-01');
+
+// ─── Finance Domain — raw tables ──────────────────────────────────────────────
+// Use case: P&L analysis — revenue vs cost vs budget by department
+// Underlying data for dbt model fct_pnl
+
+export interface Transaction {
+  transaction_id:   string;
+  order_id:         string;
+  revenue:          number;
+  cogs:             number;
+  date:             string;
+  product_category: string;
+  region:           string;
+  department:       string;
+}
+
+const _PROD_CATS = ['Electronics', 'Clothing', 'Home', 'Beauty', 'Sports'] as const;
+
+export const transactionsData: Transaction[] = Array.from({ length: 50 }, (_, i) => {
+  const revenue = _f(i, 50, 2000);
+  const cogs    = parseFloat((revenue * _f(i + 50, 0.35, 0.55)).toFixed(2));
+  return {
+    transaction_id:   `TRX-${_pd(i + 1)}`,
+    order_id:         `ORD-${_pd(((i * 3) % 50) + 1)}`,
+    revenue,
+    cogs,
+    date:             _d(i, _FIN_START, 90),
+    product_category: _p(_PROD_CATS, i),
+    region:           _p(_REGIONS, i),
+    department:       _p(_FIN_DEPTS, i),
+  };
+});
+
+export interface Expense {
+  expense_id:  string;
+  category:    string;
+  department:  string;
+  amount:      number;
+  date:        string;
+  vendor:      string;
+  status:      string;
+  approved_by: string;
+}
+
+const _APPROVERS = ['Anika R.', 'David K.', 'Priya M.', 'James L.', 'Sarah C.'] as const;
+const _EXP_STATUSES = ['approved', 'approved', 'approved', 'pending', 'rejected'] as const;
+
+export const expensesData: Expense[] = Array.from({ length: 50 }, (_, i) => ({
+  expense_id:  `EXP-${_pd(i + 1)}`,
+  category:    _p(_EXP_CATS, i),
+  department:  _p(_FIN_DEPTS, i),
+  amount:      _f(i, 500, 50000),
+  date:        _d(i, _FIN_START, 90),
+  vendor:      _p(_VENDORS, i),
+  status:      _p(_EXP_STATUSES, i),
+  approved_by: _p(_APPROVERS, i),
+}));
+
+export interface BudgetTarget {
+  budget_id:       string;
+  month:           string;
+  department:      string;
+  category:        string;
+  budgeted_amount: number;
+  actual_amount:   number | null;
+  currency:        string;
+}
+
+const _BUDGET_MONTHS = ['2024-01', '2024-02', '2024-03', '2024-04', '2024-05'] as const;
+
+export const budgetTargetsData: BudgetTarget[] = Array.from({ length: 50 }, (_, i) => {
+  const month  = _p(_BUDGET_MONTHS, i);
+  const budget = _f(i, 5000, 200000);
+  // future months have no actuals yet
+  const actual = month >= '2024-04' ? null : parseFloat((budget * _f(i + 25, 0.8, 1.2)).toFixed(2));
+  return {
+    budget_id:       `BUD-${_pd(i + 1)}`,
+    month,
+    department:      _p(_FIN_DEPTS, i),
+    category:        _p(_EXP_CATS, i),
+    budgeted_amount: budget,
+    actual_amount:   actual,
+    currency:        'USD',
+  };
+});
+
+// ─── Finance Domain — dbt model: fct_pnl ─────────────────────────────────────
+// Pre-aggregated P&L by department × month.
+// Joins: transactions + expenses + budget_targets (all resolved, carry over to ThoughtSpot).
+// Computed columns: gross_profit, net_income, variances (carry over).
+// Gaps: Jinja macros, custom dbt tests (do not carry over).
+
+export interface PnLRow {
+  month:               string;
+  department:          string;
+  revenue:             number;
+  cogs:                number;
+  gross_profit:        number;
+  operating_expenses:  number;
+  net_income:          number;
+  budget:              number;
+  variance:            number;
+  gross_margin_pct:    number;
+  budget_variance_pct: number;
+}
+
+const _PNL_DEPTS = [
+  'Marketing', 'Engineering', 'Sales - SMB', 'Sales - Enterprise',
+  'Finance - Accounting', 'Finance - FP&A', 'Operations', 'HR', 'Product', 'Customer Success',
+] as const;
+const _PNL_MONTHS = ['2024-01', '2024-02', '2024-03', '2024-04', '2024-05'] as const;
+
+// 5 months × 10 departments = 50 rows
+export const fctPnlData: PnLRow[] = Array.from({ length: 50 }, (_, i) => {
+  const monthIdx   = Math.floor(i / 10);
+  const deptIdx    = i % 10;
+  const month      = _PNL_MONTHS[monthIdx];
+  const department = _PNL_DEPTS[deptIdx];
+  const revenue    = _f(i, 80000, 500000);
+  const cogs       = parseFloat((revenue * _f(i + 10, 0.35, 0.55)).toFixed(2));
+  const gp         = parseFloat((revenue - cogs).toFixed(2));
+  const opex       = _f(i + 20, 10000, 80000);
+  const ni         = parseFloat((gp - opex).toFixed(2));
+  const budget     = _f(i + 30, 70000, 520000);
+  const variance   = parseFloat((ni - budget).toFixed(2));
+  return {
+    month, department, revenue, cogs,
+    gross_profit:        gp,
+    operating_expenses:  opex,
+    net_income:          ni,
+    budget,
+    variance,
+    gross_margin_pct:    parseFloat(((gp / revenue) * 100).toFixed(1)),
+    budget_variance_pct: parseFloat(((variance / budget) * 100).toFixed(1)),
+  };
+});
+
+// ─── Sales Domain — raw tables ────────────────────────────────────────────────
+// Use case: Deal pipeline + rep quota attainment
+// Underlying data for Snowflake semantic view sales_overview
+
+export interface Account {
+  account_id:     string;
+  company_name:   string;
+  industry:       string;
+  tier:           string;
+  region:         string;
+  arr:            number;
+  employee_count: number;
+  created_date:   string;
+}
+
+const _INDUSTRIES = ['SaaS', 'Retail', 'Healthcare', 'Finance', 'Manufacturing', 'Education', 'Media', 'Consulting'] as const;
+const _TIERS      = ['enterprise', 'mid_market', 'smb'] as const;
+const _COMPANIES  = [
+  'Nexus Analytics','Brightwave Inc','Vortex Systems','Apex Health','Meridian Labs',
+  'Cobalt Finance','Ironside Corp','Zephyr Media','Cascade Retail','Pinnacle Consulting',
+  'Horizon SaaS','Summit Tech','Vertex Data','Prism Solutions','Orbit Education',
+  'Ember Health','Nova Finance','Pulse Manufacturing','Beacon Analytics','Stellar Retail',
+  'Quantum Systems','Atlas Media','Helix Consulting','Core SaaS','Spark Health',
+  'Forge Finance','Titan Retail','Echo Tech','Solstice Labs','Flux Education',
+  'Arc Analytics','Drift Systems','Bloom Health','Granite Finance','Tempo Retail',
+  'Synapse SaaS','Rally Media','Crest Consulting','Mesh Manufacturing','Lime Education',
+  'Strata Health','Coast Finance','Cipher Analytics','Blaze Tech','Metro Retail',
+  'Glint SaaS','Ridge Systems','Bay Media','Vault Consulting','Dune Health',
+] as const;
+const _ACCT_START = Date.parse('2020-01-01');
+
+export const accountsData: Account[] = Array.from({ length: 50 }, (_, i) => ({
+  account_id:     `ACC-${_pd(i + 1)}`,
+  company_name:   _COMPANIES[i],
+  industry:       _p(_INDUSTRIES, i),
+  tier:           _p(_TIERS, i),
+  region:         _p(_REGIONS, i),
+  arr:            _f(i, 10000, 1000000),
+  employee_count: Math.abs(((i * 17 + 5) % 9990)) + 10,
+  created_date:   _d(i, _ACCT_START, 1460),
+}));
+
+export interface Rep {
+  rep_id:         string;
+  name:           string;
+  region:         string;
+  manager:        string;
+  quota:          number;
+  attainment_ytd: number;
+  team:           string;
+  hire_date:      string;
+}
+
+const _REP_NAMES = [
+  'Liam Foster','Emma Clarke','Noah Patel','Olivia Kim','Lucas Johnson',
+  'Sophia Williams','Nathan Brown','Ava Jones','William Davis','Isabella Martinez',
+  'James Garcia','Mia Anderson','Oliver Wilson','Charlotte Moore','Benjamin Taylor',
+  'Amelia Jackson','Elijah White','Harper Harris','Mason Thompson','Evelyn Lewis',
+  'Alexander Robinson','Abigail Walker','Henry Hall','Emily Allen','Sebastian Young',
+  'Elizabeth Hernandez','Jack King','Sofia Wright','Aiden Lopez','Grace Scott',
+  'Samuel Green','Ella Adams','David Baker','Scarlett Nelson','Joseph Carter',
+  'Chloe Mitchell','Owen Perez','Lily Roberts','Daniel Turner','Zoey Phillips',
+  'Matthew Campbell','Hannah Parker','Logan Evans','Avery Edwards','Jackson Collins',
+  'Madison Stewart','Carter Sanchez','Layla Morris','Wyatt Rogers','Penelope Reed',
+] as const;
+const _MANAGERS   = ['Sarah C.', 'David K.', 'Priya M.', 'James L.'] as const;
+const _TEAMS      = ['Enterprise', 'Mid-Market', 'SMB', 'Channel'] as const;
+const _REP_START  = Date.parse('2019-01-01');
+
+export const repsData: Rep[] = Array.from({ length: 50 }, (_, i) => {
+  const quota = _f(i, 500000, 2000000, 0);
+  return {
+    rep_id:         `REP-${_pd(i + 1)}`,
+    name:           _REP_NAMES[i],
+    region:         _p(_REGIONS, i),
+    manager:        _p(_MANAGERS, i),
+    quota,
+    attainment_ytd: _f(i + 25, 0, quota, 0),
+    team:           _p(_TEAMS, i),
+    hire_date:      _d(i, _REP_START, 1826),
+  };
+});
+
+export interface Deal {
+  deal_id:      string;
+  account_id:   string;
+  rep_id:       string;
+  stage:        string;
+  amount:       number;
+  close_date:   string;
+  created_date: string;
+  region:       string;
+  deal_type:    string;
+  probability:  number;
+}
+
+const _STAGES       = ['discovery', 'proposal', 'negotiation', 'closed_won', 'closed_lost'] as const;
+const _PROB_BY_STAGE: Record<string, number> = { discovery: 10, proposal: 25, negotiation: 50, closed_won: 100, closed_lost: 0 };
+const _DEAL_TYPES   = ['new_business', 'expansion', 'renewal'] as const;
+const _DEAL_START   = Date.parse('2024-01-01');
+const _CREATE_START = Date.parse('2023-06-01');
+
+export const dealsData: Deal[] = Array.from({ length: 50 }, (_, i) => {
+  const stage = _p(_STAGES, i);
+  return {
+    deal_id:      `DL-${_pd(i + 1)}`,
+    account_id:   `ACC-${_pd(((i * 3) % 20) + 1)}`,
+    rep_id:       `REP-${_pd(((i * 7) % 10) + 1)}`,
+    stage,
+    amount:       _f(i, 5000, 500000, 0),
+    close_date:   _d(i, _DEAL_START, 360),
+    created_date: _d(i, _CREATE_START, 270),
+    region:       _p(_REGIONS, i),
+    deal_type:    _p(_DEAL_TYPES, i),
+    probability:  _PROB_BY_STAGE[stage],
+  };
+});
+
+// ─── Sales Domain — Snowflake semantic view: sales_overview ───────────────────
+// Pre-joins deals + accounts + reps. Computes win_rate, quota_attainment, pipeline_value.
+// All joins carry over to ThoughtSpot. Computed metrics carry over.
+// Gaps: timezone handling may differ; Snowflake-specific window functions need review.
+
+export interface SalesOverviewRow {
+  deal_id:          string;
+  deal_amount:      number;
+  stage:            string;
+  close_date:       string;
+  deal_type:        string;
+  probability:      number;
+  company_name:     string;
+  industry:         string;
+  tier:             string;
+  rep_name:         string;
+  team:             string;
+  region:           string;
+  quota:            number;
+  win_rate:         number;
+  quota_attainment: number;
+  pipeline_value:   number;
+}
+
+export const salesOverviewData: SalesOverviewRow[] = dealsData.map((deal) => {
+  const acc        = accountsData.find(a => a.account_id === deal.account_id);
+  const rep        = repsData.find(r => r.rep_id === deal.rep_id);
+  const repDeals   = dealsData.filter(d => d.rep_id === deal.rep_id);
+  const closed     = repDeals.filter(d => d.stage === 'closed_won' || d.stage === 'closed_lost');
+  const won        = repDeals.filter(d => d.stage === 'closed_won');
+  const win_rate   = closed.length > 0 ? parseFloat(((won.length / closed.length) * 100).toFixed(1)) : 0;
+  const pipelineVal = repDeals
+    .filter(d => d.stage !== 'closed_won' && d.stage !== 'closed_lost')
+    .reduce((s, d) => s + d.amount * (d.probability / 100), 0);
+  return {
+    deal_id:          deal.deal_id,
+    deal_amount:      deal.amount,
+    stage:            deal.stage,
+    close_date:       deal.close_date,
+    deal_type:        deal.deal_type,
+    probability:      deal.probability,
+    company_name:     acc?.company_name ?? '—',
+    industry:         acc?.industry ?? '—',
+    tier:             acc?.tier ?? '—',
+    rep_name:         rep?.name ?? '—',
+    team:             rep?.team ?? '—',
+    region:           deal.region,
+    quota:            rep?.quota ?? 0,
+    win_rate,
+    quota_attainment: rep ? parseFloat(((rep.attainment_ytd / rep.quota) * 100).toFixed(1)) : 0,
+    pipeline_value:   parseFloat(pipelineVal.toFixed(2)),
+  };
+});
+
+// ─── Warehouse Registry ───────────────────────────────────────────────────────
+// All browseable data objects, organized for agent lookup and data browser UI.
+// Agent priority: semantic_view → dbt_model → table
+
+export type SourceType = 'table' | 'dbt_model' | 'semantic_view';
+
+export interface WarehouseObject {
+  id:          string;
+  name:        string;
+  type:        SourceType;
+  domain:      'marketing' | 'finance' | 'sales';
+  connection:  string;
+  description: string;
+  rowCount:    number;
+  columns:     Array<{ name: string; type: string; nullable: boolean; description: string | null }>;
+  qualityNotes?:  string[];
+  dbtInfo?:       { sourceRefs: string[]; materializedAs: 'table' | 'view'; carries: string[]; gaps: string[] };
+  semanticInfo?:  { baseObjects: string[]; predefinedJoins: string[]; predefinedMetrics: string[]; carries: string[]; gaps: string[] };
+}
+
+export const warehouseObjects: WarehouseObject[] = [
+  // ── Marketing ──────────────────────────────────────────────────────────────
+  {
+    id: 'orders', name: 'orders', type: 'table', domain: 'marketing', connection: 'Snowflake / TechCorp',
+    description: 'All e-commerce orders with campaign attribution, amount, and region.',
+    rowCount: 150,
+    columns: [
+      { name: 'order_id',         type: 'string',  nullable: false, description: null },
+      { name: 'user_id',          type: 'string',  nullable: false, description: null },
+      { name: 'campaign_id',      type: 'string',  nullable: true,  description: null },
+      { name: 'order_date',       type: 'date',    nullable: false, description: null },
+      { name: 'amount',           type: 'number',  nullable: false, description: 'Order value in USD' },
+      { name: 'product_category', type: 'string',  nullable: false, description: null },
+      { name: 'status',           type: 'string',  nullable: false, description: null },
+      { name: 'region',           type: 'string',  nullable: false, description: null },
+    ],
+    qualityNotes: ['18% null campaign_ids (organic orders)', '5 duplicate rows', '2 anomalous amounts', 'MM/DD/YYYY date format — conflicts with campaigns'],
+  },
+  {
+    id: 'campaigns', name: 'campaigns', type: 'table', domain: 'marketing', connection: 'Snowflake / TechCorp',
+    description: 'Marketing campaigns with budget, spend, channel, and targeting.',
+    rowCount: 45,
+    columns: [
+      { name: 'campaign_id',   type: 'string', nullable: false, description: 'Unique campaign identifier' },
+      { name: 'campaign_name', type: 'string', nullable: false, description: null },
+      { name: 'channel',       type: 'string', nullable: false, description: null },
+      { name: 'budget',        type: 'number', nullable: false, description: 'Total approved budget in USD' },
+      { name: 'spend',         type: 'number', nullable: false, description: null },
+      { name: 'start_date',    type: 'date',   nullable: false, description: null },
+      { name: 'end_date',      type: 'date',   nullable: true,  description: null },
+      { name: 'target_region', type: 'string', nullable: false, description: null },
+      { name: 'status',        type: 'string', nullable: false, description: null },
+    ],
+    qualityNotes: ['6 null end_dates (ongoing campaigns)', '2 duplicate campaign_ids', 'YYYY-MM-DD format — conflicts with orders'],
+  },
+  {
+    id: 'users', name: 'users', type: 'table', domain: 'marketing', connection: 'Snowflake / TechCorp',
+    description: 'Registered platform users with demographics and lifetime value.',
+    rowCount: 90,
+    columns: [
+      { name: 'user_id',        type: 'string',  nullable: false, description: 'Unique user identifier' },
+      { name: 'name',           type: 'string',  nullable: false, description: null },
+      { name: 'email',          type: 'string',  nullable: false, description: null },
+      { name: 'signup_date',    type: 'date',    nullable: false, description: null },
+      { name: 'region',         type: 'string',  nullable: false, description: null },
+      { name: 'segment',        type: 'string',  nullable: true,  description: null },
+      { name: 'age',            type: 'number',  nullable: false, description: null },
+      { name: 'lifetime_value', type: 'number',  nullable: false, description: 'Total historical spend in USD' },
+    ],
+    qualityNotes: ['15% null segments', '4 anomalous ages (0, -3, 142, 199)', 'YYYY/MM/DD format — third date format in dataset'],
+  },
+
+  // ── Finance ─────────────────────────────────────────────────────────────────
+  {
+    id: 'fct_pnl', name: 'fct_pnl', type: 'dbt_model', domain: 'finance', connection: 'Snowflake / TechCorp',
+    description: 'Pre-aggregated P&L by department and month. Built from transactions, expenses, and budget_targets. Use this for any finance or P&L use case.',
+    rowCount: 50,
+    columns: [
+      { name: 'month',               type: 'string', nullable: false, description: 'Month of reporting period (YYYY-MM)' },
+      { name: 'department',          type: 'string', nullable: false, description: 'Business department' },
+      { name: 'revenue',             type: 'number', nullable: false, description: 'Total recognized revenue (USD)' },
+      { name: 'cogs',                type: 'number', nullable: false, description: 'Cost of goods sold' },
+      { name: 'gross_profit',        type: 'number', nullable: false, description: 'Revenue minus COGS' },
+      { name: 'operating_expenses',  type: 'number', nullable: false, description: 'Total operating expenses' },
+      { name: 'net_income',          type: 'number', nullable: false, description: 'Gross profit minus operating expenses' },
+      { name: 'budget',              type: 'number', nullable: false, description: 'Approved budget for the period' },
+      { name: 'variance',            type: 'number', nullable: false, description: 'Net income minus budget (positive = favorable)' },
+      { name: 'gross_margin_pct',    type: 'number', nullable: false, description: 'Gross profit as % of revenue' },
+      { name: 'budget_variance_pct', type: 'number', nullable: false, description: 'Variance as % of budget' },
+    ],
+    dbtInfo: {
+      sourceRefs:      ['transactions', 'expenses', 'budget_targets'],
+      materializedAs:  'table',
+      carries: ['Joins (pre-resolved)', 'Computed columns (gross_profit, net_income, margins)', 'Column descriptions', 'Primary/foreign keys'],
+      gaps:    ['Jinja macros', 'Custom dbt tests', 'dbt source freshness checks'],
+    },
+  },
+  {
+    id: 'transactions', name: 'transactions', type: 'table', domain: 'finance', connection: 'Snowflake / TechCorp',
+    description: 'Revenue-side transactions linked to orders, by product category and department.',
+    rowCount: 50,
+    columns: [
+      { name: 'transaction_id',   type: 'string', nullable: false, description: null },
+      { name: 'order_id',         type: 'string', nullable: false, description: 'Links to orders table' },
+      { name: 'revenue',          type: 'number', nullable: false, description: null },
+      { name: 'cogs',             type: 'number', nullable: false, description: null },
+      { name: 'date',             type: 'date',   nullable: false, description: null },
+      { name: 'product_category', type: 'string', nullable: false, description: null },
+      { name: 'region',           type: 'string', nullable: false, description: null },
+      { name: 'department',       type: 'string', nullable: false, description: null },
+    ],
+  },
+  {
+    id: 'expenses', name: 'expenses', type: 'table', domain: 'finance', connection: 'Snowflake / TechCorp',
+    description: 'Operational expenses by category, department, and vendor.',
+    rowCount: 50,
+    columns: [
+      { name: 'expense_id',  type: 'string', nullable: false, description: null },
+      { name: 'category',    type: 'string', nullable: false, description: null },
+      { name: 'department',  type: 'string', nullable: false, description: null },
+      { name: 'amount',      type: 'number', nullable: false, description: null },
+      { name: 'date',        type: 'date',   nullable: false, description: null },
+      { name: 'vendor',      type: 'string', nullable: false, description: null },
+      { name: 'status',      type: 'string', nullable: false, description: null },
+      { name: 'approved_by', type: 'string', nullable: false, description: null },
+    ],
+  },
+  {
+    id: 'budget_targets', name: 'budget_targets', type: 'table', domain: 'finance', connection: 'Snowflake / TechCorp',
+    description: 'Monthly budget allocations by department and category. Actuals null for future months.',
+    rowCount: 50,
+    columns: [
+      { name: 'budget_id',       type: 'string', nullable: false, description: null },
+      { name: 'month',           type: 'string', nullable: false, description: 'YYYY-MM' },
+      { name: 'department',      type: 'string', nullable: false, description: null },
+      { name: 'category',        type: 'string', nullable: false, description: null },
+      { name: 'budgeted_amount', type: 'number', nullable: false, description: null },
+      { name: 'actual_amount',   type: 'number', nullable: true,  description: 'Null for future months' },
+      { name: 'currency',        type: 'string', nullable: false, description: null },
+    ],
+  },
+
+  // ── Sales ────────────────────────────────────────────────────────────────────
+  {
+    id: 'sales_overview', name: 'sales_overview', type: 'semantic_view', domain: 'sales', connection: 'Snowflake / TechCorp',
+    description: 'Pre-joined view of deals + accounts + reps with computed metrics. Use this for any sales pipeline, rep performance, or quota use case. All joins are preserved when translated to ThoughtSpot.',
+    rowCount: 50,
+    columns: [
+      { name: 'deal_id',          type: 'string', nullable: false, description: 'Unique deal identifier' },
+      { name: 'deal_amount',      type: 'number', nullable: false, description: 'Deal value in USD' },
+      { name: 'stage',            type: 'string', nullable: false, description: 'discovery / proposal / negotiation / closed_won / closed_lost' },
+      { name: 'close_date',       type: 'date',   nullable: false, description: 'Expected or actual close date' },
+      { name: 'deal_type',        type: 'string', nullable: false, description: 'new_business / expansion / renewal' },
+      { name: 'probability',      type: 'number', nullable: false, description: 'Close probability (0–100)' },
+      { name: 'company_name',     type: 'string', nullable: false, description: 'Account company name' },
+      { name: 'industry',         type: 'string', nullable: false, description: null },
+      { name: 'tier',             type: 'string', nullable: false, description: 'enterprise / mid_market / smb' },
+      { name: 'rep_name',         type: 'string', nullable: false, description: null },
+      { name: 'team',             type: 'string', nullable: false, description: 'Enterprise / Mid-Market / SMB / Channel' },
+      { name: 'region',           type: 'string', nullable: false, description: null },
+      { name: 'quota',            type: 'number', nullable: false, description: 'Annual quota for the rep' },
+      { name: 'win_rate',         type: 'number', nullable: false, description: '% of closed deals that were won (computed)' },
+      { name: 'quota_attainment', type: 'number', nullable: false, description: '% of quota achieved YTD (computed)' },
+      { name: 'pipeline_value',   type: 'number', nullable: false, description: 'Probability-weighted open pipeline value (computed)' },
+    ],
+    semanticInfo: {
+      baseObjects:      ['deals', 'accounts', 'reps'],
+      predefinedJoins:  ['deals.account_id → accounts.account_id (inner)', 'deals.rep_id → reps.rep_id (inner)'],
+      predefinedMetrics:['win_rate (closed_won / total_closed)', 'quota_attainment (attainment_ytd / quota)', 'pipeline_value (SUM(amount × probability/100) for open deals)'],
+      carries: ['All joins preserved', 'Computed metrics carry over', 'Column descriptions carry over'],
+      gaps:    ['Snowflake window function syntax may differ', 'Timezone handling'],
+    },
+  },
+  {
+    id: 'deals', name: 'deals', type: 'table', domain: 'sales', connection: 'Snowflake / TechCorp',
+    description: 'CRM deal records — pipeline stage, value, and attribution.',
+    rowCount: 50,
+    columns: [
+      { name: 'deal_id',      type: 'string', nullable: false, description: null },
+      { name: 'account_id',   type: 'string', nullable: false, description: 'Links to accounts table' },
+      { name: 'rep_id',       type: 'string', nullable: false, description: 'Links to reps table' },
+      { name: 'stage',        type: 'string', nullable: false, description: null },
+      { name: 'amount',       type: 'number', nullable: false, description: null },
+      { name: 'close_date',   type: 'date',   nullable: false, description: null },
+      { name: 'created_date', type: 'date',   nullable: false, description: null },
+      { name: 'region',       type: 'string', nullable: false, description: null },
+      { name: 'deal_type',    type: 'string', nullable: false, description: null },
+      { name: 'probability',  type: 'number', nullable: false, description: null },
+    ],
+  },
+  {
+    id: 'accounts', name: 'accounts', type: 'table', domain: 'sales', connection: 'Snowflake / TechCorp',
+    description: 'Customer accounts with industry, tier, and ARR.',
+    rowCount: 50,
+    columns: [
+      { name: 'account_id',     type: 'string', nullable: false, description: null },
+      { name: 'company_name',   type: 'string', nullable: false, description: null },
+      { name: 'industry',       type: 'string', nullable: false, description: null },
+      { name: 'tier',           type: 'string', nullable: false, description: null },
+      { name: 'region',         type: 'string', nullable: false, description: null },
+      { name: 'arr',            type: 'number', nullable: false, description: 'Annual recurring revenue in USD' },
+      { name: 'employee_count', type: 'number', nullable: false, description: null },
+      { name: 'created_date',   type: 'date',   nullable: false, description: null },
+    ],
+  },
+  {
+    id: 'reps', name: 'reps', type: 'table', domain: 'sales', connection: 'Snowflake / TechCorp',
+    description: 'Sales representatives with quota and YTD attainment.',
+    rowCount: 50,
+    columns: [
+      { name: 'rep_id',         type: 'string', nullable: false, description: null },
+      { name: 'name',           type: 'string', nullable: false, description: null },
+      { name: 'region',         type: 'string', nullable: false, description: null },
+      { name: 'manager',        type: 'string', nullable: false, description: null },
+      { name: 'quota',          type: 'number', nullable: false, description: 'Annual quota in USD' },
+      { name: 'attainment_ytd', type: 'number', nullable: false, description: 'Revenue closed YTD in USD' },
+      { name: 'team',           type: 'string', nullable: false, description: null },
+      { name: 'hire_date',      type: 'date',   nullable: false, description: null },
+    ],
+  },
+];
+
+// ─── LLM Prompt Context ────────────────────────────────────────────────────────
+// 5 representative rows per preferred object + column listings for raw tables.
+// Called from buildSkill() in agent.ts.
+
+function _fmtRows(rows: Record<string, string | number | boolean | null | undefined>[], cols: string[]): string {
+  const header = cols.join(' | ');
+  const lines  = rows.slice(0, 5).map(r => cols.map(c => String(r[c] ?? '—')).join(' | '));
+  return [header, ...lines].join('\n');
+}
+
+export function getWarehousePromptContext(): string {
+  const mktSample = _fmtRows(ordersData as never, ['order_id','user_id','campaign_id','order_date','amount','product_category','status','region']);
+  const camSample = _fmtRows(campaignsData as never, ['campaign_id','campaign_name','channel','budget','spend','start_date','end_date','status']);
+  const usrSample = _fmtRows(usersData as never, ['user_id','name','email','signup_date','region','segment','age','lifetime_value']);
+  const pnlSample = _fmtRows(fctPnlData as never, ['month','department','revenue','cogs','gross_profit','operating_expenses','net_income','variance','gross_margin_pct']);
+  const salSample = _fmtRows(salesOverviewData as never, ['deal_id','deal_amount','stage','close_date','company_name','industry','rep_name','team','win_rate','quota_attainment']);
+
+  return `## Warehouse — Snowflake / TechCorp
+
+### MARKETING DOMAIN (raw tables — campaign attribution for e-commerce)
+
+**orders** (table · 150 rows) — Orders with campaign attribution, amount, and region.
+Columns: order_id, user_id, campaign_id (nullable — 18% null = organic), order_date (MM/DD/YYYY ⚠), amount, product_category, status, region
+⚠ Quality: 18% null campaign_ids, 5 duplicate rows, 2 anomalous amounts
+Sample (5 rows):
+${mktSample}
+
+**campaigns** (table · 45 rows) — Campaigns with budget, spend, channel.
+Columns: campaign_id, campaign_name, channel, budget, spend, impressions, start_date (YYYY-MM-DD ⚠), end_date (nullable), target_region, status
+⚠ Quality: 6 null end_dates, 2 duplicate campaign_ids, YYYY-MM-DD format conflicts with orders
+Sample (5 rows):
+${camSample}
+
+**users** (table · 90 rows) — Registered users with demographics.
+Columns: user_id, name, email, signup_date (YYYY/MM/DD ⚠), region, segment (nullable — 15% null), age, lifetime_value
+⚠ Quality: 15% null segments, 4 anomalous ages (0, -3, 142, 199), YYYY/MM/DD third date format
+Sample (5 rows):
+${usrSample}
+
+### FINANCE DOMAIN ★ Use fct_pnl for any P&L, revenue, cost, or budget use case
+
+**fct_pnl** (dbt model · 50 rows) ★ PREFERRED — P&L aggregated by department × month.
+Built from: transactions + expenses + budget_targets (joins pre-resolved).
+Columns: month, department, revenue, cogs, gross_profit, operating_expenses, net_income, budget, variance, gross_margin_pct, budget_variance_pct
+✓ Carries to ThoughtSpot: joins, computed columns, descriptions
+⚠ Gaps: Jinja macros, dbt-specific tests
+Sample (5 rows):
+${pnlSample}
+
+Underlying raw tables (use only if fct_pnl doesn't cover the use case):
+- transactions (50 rows): transaction_id, order_id, revenue, cogs, date, product_category, region, department
+- expenses (50 rows): expense_id, category, department, amount, date, vendor, status, approved_by
+- budget_targets (50 rows): budget_id, month, department, category, budgeted_amount, actual_amount (null = future), currency
+
+### SALES DOMAIN ★ Use sales_overview for any pipeline, rep performance, or quota use case
+
+**sales_overview** (Snowflake semantic view · 50 rows) ★ PREFERRED — Deals + accounts + reps, pre-joined.
+Predefined joins: deals.account_id → accounts, deals.rep_id → reps (both inner).
+Predefined metrics: win_rate, quota_attainment, pipeline_value (all computed, carry to ThoughtSpot).
+Columns: deal_id, deal_amount, stage, close_date, deal_type, probability, company_name, industry, tier, rep_name, team, region, quota, win_rate, quota_attainment, pipeline_value
+✓ Carries to ThoughtSpot: all joins, all metrics, column descriptions
+⚠ Gaps: Snowflake window function syntax, timezone handling
+Sample (5 rows):
+${salSample}
+
+Underlying raw tables (use only if sales_overview doesn't cover the use case):
+- deals (50 rows): deal_id, account_id, rep_id, stage, amount, close_date, created_date, region, deal_type, probability
+- accounts (50 rows): account_id, company_name, industry, tier, region, arr, employee_count, created_date
+- reps (50 rows): rep_id, name, region, manager, quota, attainment_ytd, team, hire_date`;
+}

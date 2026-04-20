@@ -1,21 +1,11 @@
 import React, { useState } from 'react';
-import { systemColors } from '../../tokens/colors';
-import ProjectsList from './components/ProjectsList';
+import Shell, { NavSection } from './components/Shell';
+import Overview from './components/Overview';
 import Workspace from './components/Workspace';
-
-/**
- * DataStudio
- *
- * Goal: Prototype the Data Studio product — a workspace for data teams to
- *       build, clean, join, and publish data models for AI-powered analytics.
- * User: Data analyst / analytics engineer (technical, AI-assisted workflow)
- * Flows: Projects list → New project → Build mode (Visualizer / Data Preview / Notebook)
- *        → Test mode → Share
- */
-
-export type AppView = 'list' | 'workspace';
+import NewProjectPrompt from './components/NewProjectPrompt';
 
 export interface ProjectContext {
+  purpose: string;
   persona: string;
   sampleQuestions: string;
   businessLogic: string;
@@ -23,6 +13,7 @@ export interface ProjectContext {
 }
 
 export const emptyContext: ProjectContext = {
+  purpose: '',
   persona: '',
   sampleQuestions: '',
   businessLogic: '',
@@ -36,11 +27,23 @@ export interface ProjectState {
   activeTab: 'visualizer' | 'preview' | 'notebook';
   testMode: boolean;
   context: ProjectContext;
-  profileComplete?: boolean;
+  addedTables: string[];
+  columnsSelected: boolean;
+  includedColumns: Record<string, string[]>; // tableId → [colName, ...]
 }
 
+type AppView = 'overview' | 'new-project' | 'workspace';
+
 const DataStudio: React.FC = () => {
-  const [view, setView] = useState<AppView>('list');
+  React.useEffect(() => {
+    const prev = document.title;
+    document.title = 'Data Studio';
+    return () => { document.title = prev; };
+  }, []);
+
+  const [view, setView] = useState<AppView>('overview');
+  const [activeNav, setActiveNav] = useState<NavSection>('overview');
+  const [initialPrompt, setInitialPrompt] = useState<string>('');
   const [project, setProject] = useState<ProjectState>({
     id: 'proj-001',
     name: 'Untitled Project',
@@ -48,25 +51,92 @@ const DataStudio: React.FC = () => {
     activeTab: 'visualizer',
     testMode: false,
     context: emptyContext,
+    addedTables: [],
+    columnsSelected: false,
+    includedColumns: {},
   });
 
-  const openProject = (name?: string) => {
-    setProject({ id: `proj-${Date.now()}`, name: name ?? 'Untitled Project', buildStep: 'empty', activeTab: 'visualizer', testMode: false, context: emptyContext });
+  // Open an existing project — seeds a realistic "already built" state for demo
+  const openProject = (nameOrId?: string) => {
+    setInitialPrompt('');
+    setProject({
+      id: `proj-${Date.now()}`,
+      name: nameOrId ?? 'Untitled Project',
+      buildStep: 'healthy',
+      activeTab: 'visualizer',
+      testMode: false,
+      context: emptyContext,
+      addedTables: ['orders', 'campaigns', 'users'],
+      columnsSelected: true,
+      includedColumns: {
+        orders:    ['campaign_id', 'user_id', 'order_date', 'amount', 'region'],
+        campaigns: ['campaign_id', 'campaign_name', 'channel', 'spend', 'budget', 'impressions', 'target_region'],
+        users:     ['user_id', 'segment', 'lifetime_value', 'signup_date'],
+      },
+    });
     setView('workspace');
   };
 
-  const resumeProject = () => setView('workspace');
-  const backToList = () => setView('list');
+  // New project → goes to prompt screen first
+  const newProject = () => {
+    setProject({
+      id: `proj-${Date.now()}`,
+      name: 'Untitled Project',
+      buildStep: 'empty',
+      activeTab: 'visualizer',
+      testMode: false,
+      context: emptyContext,
+      addedTables: [],
+      columnsSelected: false,
+      includedColumns: {},
+    });
+    setInitialPrompt('');
+    setView('new-project');
+  };
+
+  // User submitted the prompt → go to workspace with agent auto-trigger
+  const handlePromptSubmit = (prompt: string, _tables: string[]) => {
+    setInitialPrompt(prompt);
+    setView('workspace');
+  };
+
+  // Start manually → empty workspace, no agent auto-trigger
+  const handleStartManually = () => {
+    setInitialPrompt('');
+    setView('workspace');
+  };
+
+  const backToOverview = () => {
+    setInitialPrompt('');
+    setView('overview');
+    setActiveNav('overview');
+  };
+
+  const handleNavChange = (nav: NavSection) => {
+    setActiveNav(nav);
+    if (nav === 'overview') setView('overview');
+  };
+
+  const hideSidebar = view === 'workspace' || view === 'new-project';
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: systemColors.light['background-sunken'] }}>
-      {view === 'list'
-        ? <ProjectsList onOpen={openProject} currentProject={project} onResume={resumeProject} />
-        : <Workspace project={project} setProject={setProject} onBack={backToList} />
-      }
-    </div>
+    <Shell activeNav={activeNav} onNavChange={handleNavChange} hideSidebar={hideSidebar}>
+      {view === 'overview' && (
+        <Overview onNewProject={newProject} onOpenProject={openProject} />
+      )}
+      {view === 'new-project' && (
+        <NewProjectPrompt onSubmit={handlePromptSubmit} onStartManually={handleStartManually} />
+      )}
+      {view === 'workspace' && (
+        <Workspace
+          project={project}
+          setProject={setProject}
+          onBack={backToOverview}
+          initialPrompt={initialPrompt}
+        />
+      )}
+    </Shell>
   );
 };
-
 
 export default DataStudio;
