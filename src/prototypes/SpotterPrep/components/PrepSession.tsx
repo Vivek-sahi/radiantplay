@@ -404,6 +404,41 @@ const ScorePopover: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   );
 };
 
+// ── Markdown-lite renderer for agent messages ────────────────────────────────
+
+const renderContent = (text: string): React.ReactNode => {
+  return text.split('\n').map((line, i) => {
+    if (line === '') {
+      return <div key={i} style={{ height: 6 }} />;
+    }
+    if (/^• /.test(line)) {
+      return (
+        <div key={i} style={{ display: 'flex', gap: 6, lineHeight: 1.6, marginBottom: 1 }}>
+          <span style={{ color: '#94a3b8', flexShrink: 0, marginTop: 1 }}>•</span>
+          <span>{line.slice(2)}</span>
+        </div>
+      );
+    }
+    if (/^\d+\. /.test(line)) {
+      const m = line.match(/^(\d+)\. (.+)/)!;
+      return (
+        <div key={i} style={{ display: 'flex', gap: 6, lineHeight: 1.6, marginBottom: 1 }}>
+          <span style={{ color: '#94a3b8', flexShrink: 0, minWidth: 16 }}>{m[1]}.</span>
+          <span>{m[2]}</span>
+        </div>
+      );
+    }
+    if (/^[A-Za-z].{0,40}:$/.test(line)) {
+      return (
+        <div key={i} style={{ fontWeight: 600, color: '#0f172a', marginTop: 6, lineHeight: 1.6 }}>
+          {line}
+        </div>
+      );
+    }
+    return <div key={i} style={{ lineHeight: 1.6 }}>{line}</div>;
+  });
+};
+
 // ── Agent panel ───────────────────────────────────────────────────────────────
 
 const AgentPanel: React.FC<{
@@ -467,20 +502,20 @@ const AgentPanel: React.FC<{
                 )}
               </div>
             ) : msg.role === 'agent' ? (
-              <div style={{ display: 'flex', gap: sp.B, alignItems: 'flex-start' }}>
-                <div style={{ width: 22, height: 22, borderRadius: 5, flexShrink: 0, background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#fff', fontWeight: fw.semibold, marginTop: 1 }}>S</div>
-                <div style={{ flex: 1, minWidth: 0, fontSize: fs.sm, color: c['content-primary'], lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
-                  {msg.content}
+              <div style={{ display: 'flex', gap: sp.C, alignItems: 'flex-start' }}>
+                <div style={{ width: 24, height: 24, borderRadius: 6, flexShrink: 0, background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: '#fff', fontWeight: fw.semibold, marginTop: 1 }}>S</div>
+                <div style={{ flex: 1, minWidth: 0, fontSize: fs.sm, color: c['content-primary'] }}>
+                  {renderContent(msg.content)}
                   {msg.type === 'view-plan' && (
-                    <button onClick={onViewPlan} style={{ marginTop: sp.B, display: 'block', padding: `${sp.B}px ${sp.C}px`, border: `1px solid ${c['border-default']}`, borderRadius: 6, backgroundColor: c['background-base'], color: c['content-brand'], fontSize: fs.sm, fontWeight: fw.medium, cursor: 'pointer', fontFamily: ff.primary }}>
+                    <button onClick={onViewPlan} style={{ marginTop: sp.C, display: 'inline-block', padding: `${sp.B}px ${sp.C}px`, border: `1px solid ${c['border-default']}`, borderRadius: 6, backgroundColor: c['background-base'], color: c['content-brand'], fontSize: fs.sm, fontWeight: fw.medium, cursor: 'pointer', fontFamily: ff.primary }}>
                       Review plan →
                     </button>
                   )}
                 </div>
               </div>
             ) : (
-              <div style={{ display: 'flex', gap: sp.B, alignItems: 'flex-start' }}>
-                <div style={{ width: 22, height: 22, borderRadius: '50%', flexShrink: 0, backgroundColor: c['background-subtle'], border: `1px solid ${c['border-default']}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: c['content-secondary'], marginTop: 1 }}>U</div>
+              <div style={{ display: 'flex', gap: sp.C, alignItems: 'flex-start' }}>
+                <div style={{ width: 24, height: 24, borderRadius: '50%', flexShrink: 0, backgroundColor: '#d97706', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#fff', fontWeight: fw.semibold, marginTop: 1 }}>V</div>
                 <div style={{ flex: 1, minWidth: 0, fontSize: fs.sm, color: c['content-primary'], lineHeight: 1.6 }}>
                   {msg.content}
                 </div>
@@ -495,7 +530,6 @@ const AgentPanel: React.FC<{
             {[
               { id: 'problem',  label: 'Fix a specific column problem', sub: 'I have a specific issue or column to debug' },
               { id: 'system',   label: 'Fix all quality problems',       sub: 'Profile the table and generate a full fix plan' },
-              { id: 'freetext', label: 'Ask anything',                   sub: 'Explore the data or ask a free-form question' },
             ].map((item, i, arr) => (
               <button
                 key={item.id}
@@ -571,10 +605,10 @@ const AgentPanel: React.FC<{
               flex: 1, minWidth: 0, resize: 'none', minHeight: 44, maxHeight: 120,
               overflow: 'auto',
               padding: `${sp.C}px ${sp.C}px`,
-              border: `1px solid ${c['border-default']}`,
-              borderRadius: 8, fontSize: fs.sm, fontFamily: ff.primary,
+              border: `1px solid ${c['border-divider']}`,
+              borderRadius: 10, fontSize: fs.sm, fontFamily: ff.primary,
               color: phase === 'fixing' ? c['content-tertiary'] : c['content-primary'],
-              backgroundColor: phase === 'fixing' ? c['background-sunken'] : c['background-base'],
+              backgroundColor: phase === 'fixing' ? c['background-sunken'] : c['background-subtle'],
               outline: 'none', lineHeight: 1.5,
             }}
             rows={1}
@@ -583,17 +617,18 @@ const AgentPanel: React.FC<{
             onClick={() => { if (inputValue.trim() && phase !== 'fixing') onSend(inputValue.trim()); }}
             disabled={phase === 'fixing'}
             style={{
-              width: 32, height: 32, flexShrink: 0, border: 'none', borderRadius: '50%',
-              backgroundColor: inputValue.trim() && phase !== 'fixing' ? '#6366f1' : c['background-subtle'],
-              color: inputValue.trim() && phase !== 'fixing' ? '#fff' : c['content-tertiary'],
-              cursor: inputValue.trim() && phase !== 'fixing' ? 'pointer' : 'default',
+              width: 34, height: 34, flexShrink: 0, border: 'none', borderRadius: '50%',
+              backgroundColor: phase === 'fixing' ? c['background-subtle'] : '#6366f1',
+              color: phase === 'fixing' ? c['content-tertiary'] : '#fff',
+              cursor: phase === 'fixing' ? 'default' : 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 14, transition: 'background-color 0.15s',
+              fontSize: 15, transition: 'background-color 0.15s',
             }}
           >↑</button>
         </div>
         <div style={{ marginTop: sp.A, fontSize: 11, color: c['content-tertiary'] }}>
-          SpotterPrep responses should be reviewed.
+          SpotterPrep responses should be reviewed.{' '}
+          <span style={{ textDecoration: 'underline', cursor: 'pointer' }}>Learn more</span>
         </div>
       </div>
     </div>

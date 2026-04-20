@@ -199,7 +199,7 @@ const MetricsStrip: React.FC<{
               whiteSpace: 'nowrap',
             }}
           >
-            Prep with agent
+            Improve Data Quality
           </button>
         </div>
       </div>

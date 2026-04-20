@@ -109,33 +109,27 @@ Dependents: 31 objects (8 liveboards, 14 saved answers, 9 Spot chats)
 
 ## What Needs Work
 
-### Data models list (`DataModelsPage.tsx`)
-- Left nav and header area ("Data Workspace · Data Models" + action buttons) have wrong font sizes — need adjustment only, table itself looks correct
+All items below came from team review (2026-04-20). Each needs design brainstorming before it becomes a buildable task — open questions are noted inline.
+
+### Data model list (`DataModelsPage.tsx`)
+- **Source is always Snowflake** — remove ThoughtSpot as a source option; all models connect via Snowflake. Brainstorm: does this affect the "Cache and Prep" modal copy which currently says "Cache it with ThoughtSpot"?
+- **Cached model indicator on source** — cached models need a visual indicator (badge, icon, dot) on the source cell/tile. Brainstorm: where exactly does it live — inline with the source name, as a column, or as a row-level state?
+- **Quality score only visible for cached models** — Campaign Performance (cached) should show a score; fnops-final (not cached) should show nothing. Brainstorm: does this flip the current demo setup? Need to decide which model is cached vs not in the final story.
 
 ### Quality tab (`QualityTab.tsx`)
-- Missing **last data refresh** status — needs to appear on both `ready` and `post-prep` states
-- Post-prep state: remove the "+37 pts" delta indicator — just show the updated score, no improvement messaging
-- Post-prep state: remove "0 objects affected · 31 dependencies are now healthy" — keep it simple: just score + issues count + column profile
-- Column profile table: should show cleaned data after prep (issues gone from affected columns) + add a new column for **issue type** ("What kind of issue") to the profile table
-- Post-prep state: the card should not feel different from ready state — same layout, same neutral styling, just updated numbers. No green border, no green tints.
+- **Quality score column — rethink** — team flagged the score column needs more thought. Brainstorm: is it a number, a grade, a bar, a combination? What does it communicate at a glance vs on the detail page?
+- **Column profile disclaimer** — add a note below the column profile table: "Column profile is based on sample data." Straightforward copy addition, no brainstorm needed.
+- **Issue severity** — each issue should have a severity level (e.g. Critical / High / Medium / Low). Brainstorm: how is severity determined — rule-based, AI-assigned, or user-set? Where does it appear — column profile table, fix plan, agent messages?
+- **Filter issues by severity** — column profile table and/or fix plan should support filtering by severity. Depends on severity design above.
 
-### Prep session — journey entry cards (`PrepSession.tsx`, `AgentPanel`)
-- The three journey cards (Fix specific column / Fix all problems / Ask anything) do not match ThoughtSpot design language — should look like buttons or chips, not custom-styled cards
-- User will provide the correct UI design reference for the conversational panel
-
-### Prep session — chat input
-- Text is overflowing in the chat input text box — fix sizing/overflow
-- Chat input disappears during the fixing phase (`phase === 'fixing'`) — it should stay visible at all times, just disabled or showing a status
-
-### Prep session — problem-led journey (reactive path)
-- After user selects "Fix a specific column problem", agent asks "Tell me what's happening — which column or report is giving you trouble?" and immediately shows suggestion chips ("VP of Sales flagged blended_cost in Slack", "Help me inspect the blended_cost column")
-- **These chips should not appear** — this is the first step of the reactive journey; the user should type their own problem description. Remove suggestion chips from this first wait step only.
-
-### Prep session — publish button
-- Publish should activate as soon as any fix is applied (already implemented via `hasFixes` state — verify it works correctly end-to-end)
+### Prep session (`PrepSession.tsx`)
+- **Feature rename: "Prep" → "Quality"** — the feature is being renamed. Affects: tab label in ModelDetail, button copy ("Improve Data Quality" CTA is already aligned), panel header ("SpotterPrep"), top bar in prep session, any other "Prep" references. Brainstorm: does the full-screen session also get renamed, or only the entry points?
+- **Version selector — remove** — versions will be auto-created on each publish, so the manual version selector in the prep session top bar is not needed. Straightforward removal.
+- **Undo / Redo** — within a session, user should be able to revert individual applied fixes. Brainstorm: is this per-fix or global undo stack? Does it affect the data table view (before/after toggle) or only the fix list? What happens to the quality score on undo?
+- **SpotterPrep icon** — the feature needs a proper icon (not the "S" gradient square). Brainstorm: ThoughtSpot design system icon, custom SVG, or an emoji-style glyph? Needs asset decision before implementation.
 
 ---
 
 ## Entry Point
 
-`index.tsx` — manages `AppSection` (`story` | `prototype`) and `PrototypeView` (`models` | `model-detail` | `prep-session`). `qualityState` lives here and is passed down. `handlePublish` sets `qualityState → post-prep` and returns to `model-detail`.
+`index.tsx` — manages `PrototypeView` (`models` | `model-detail` | `prep-session`). `qualityState` and `activeModelId` live here and are passed down. `handlePublish` sets `qualityState → post-prep` and returns to `model-detail`.
