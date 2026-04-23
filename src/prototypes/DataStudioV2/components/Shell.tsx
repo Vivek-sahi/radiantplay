@@ -18,24 +18,13 @@ const SIDEBAR_CATEGORIES: Record<string, SidebarCategory[]> = {
   insights: [],
   data: [
     {
-      title: 'Workspace',
       items: [
-        { id: 'overview',  label: 'Overview' },
-        { id: 'projects',  label: 'Projects' },
-      ],
-    },
-    {
-      title: 'Sources',
-      items: [
-        { id: 'data',        label: 'Data' },
-        { id: 'connections', label: 'Connections' },
-      ],
-    },
-    {
-      title: 'Operations',
-      items: [
-        { id: 'monitoring',  label: 'Monitoring' },
-        { id: 'governance',  label: 'Governance' },
+        { id: 'overview',     label: 'Overview' },
+        { id: 'projects',     label: 'Projects' },
+        { id: 'data',         label: 'Data' },
+        { id: 'connections',  label: 'Connections' },
+        { id: 'monitoring',   label: 'Monitoring' },
+        { id: 'governance',   label: 'Governance' },
       ],
     },
   ],

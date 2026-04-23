@@ -91,7 +91,7 @@ export interface SidebarNavItem {
 }
 
 export interface SidebarCategory {
-  title: string;
+  title?: string;
   items: SidebarNavItem[];
 }
 
@@ -289,8 +289,8 @@ export const AppSidebar = forwardRef<HTMLElement, AppSidebarProps>(
 
           <nav className={styles.nav} aria-label={`${activeTabConfig.label} navigation`}>
             {activeCategories.map((category) => (
-              <section key={category.title} className={styles.category}>
-                <h3 className={styles.categoryTitle}>{category.title}</h3>
+              <section key={category.title ?? category.items[0]?.id} className={styles.category}>
+                {category.title && <h3 className={styles.categoryTitle}>{category.title}</h3>}
                 <div className={styles.categoryItems}>
                   {category.items.map((item) => (
                     <SidebarItem
