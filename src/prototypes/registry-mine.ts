@@ -31,17 +31,27 @@ import React from 'react';
 import { ProjectMeta } from './registry-core';
 import DataStudioThumbnail from './thumbnails/DataStudio.svg';
 
-const DataStudio = React.lazy(() => import('./DataStudio'));
+const DataStudioV2 = React.lazy(() => import('./DataStudioV2'));
+const SpotterPrep = React.lazy(() => import('./SpotterPrep'));
 
 export const myRegistry: ProjectMeta[] = [
   {
-    id: 'DataStudio',
-    name: 'Data Studio',
-    description: 'Workspace for data teams to build, clean, join, and publish AI-ready data models.',
+    id: 'DataStudioV2',
+    name: 'Data Studio — Agentic UX',
+    description: 'Agentic workspace for data teams to build, clean, join, and publish AI-ready data models.',
     author: 'Vivek Sahi',
-    lastModified: '2026-03-31',
+    lastModified: '2026-04-23',
     thumbnail: DataStudioThumbnail,
-    component: DataStudio,
+    component: DataStudioV2,
+    section: 'mine',
+  },
+  {
+    id: 'SpotterPrep',
+    name: 'SpotterPrep',
+    description: 'Column-level data quality prep for ThoughtSpot data models. Profile, detect issues, apply fixes scheduled on cache refresh.',
+    author: 'Vivek Sahi',
+    lastModified: '2026-04-09',
+    component: SpotterPrep,
     section: 'mine',
   },
 ];

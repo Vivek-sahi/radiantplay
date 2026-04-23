@@ -1,14 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { c, sp, ff, fs, fw, ts, HEADER_HEIGHT } from '../styles';
 import { Button } from '../../../components/Button';
-import { TextInput } from '../../../components/TextInput';
-import { Select } from '../../../components/Select';
-import { Checkbox } from '../../../components/Checkbox';
+import { WizardModal } from '../../../components/WizardModal';
 import { ProjectState } from '../index';
 import { AgentMessage } from './AgentPanel';
 import AgentPanel from './AgentPanel';
 import LeftPanel from './LeftPanel';
 import CenterPanel from './CenterPanel';
+import ShareModal from './ShareModal';
+import { Checkbox } from '../../../components/Checkbox';
+import { tableMetadata } from '../data/mockData';
+import { DEFAULT_VISIBLE_COLS, ADVANCED_COLS, COL_LABELS } from './CenterPanel';
 
 interface WorkspaceProps {
   project: ProjectState;
@@ -17,135 +19,493 @@ interface WorkspaceProps {
   initialPrompt?: string;
 }
 
+interface Toast {
+  id: string;
+  message: string;
+  action?: { label: string; onClick: () => void };
+}
+
 const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, onBack, initialPrompt }) => {
   const [messages, setMessages] = useState<AgentMessage[]>([]);
   const [isBuilding, setIsBuilding] = useState(!!initialPrompt);
   const [externalAgentMessage, setExternalAgentMessage] = useState<string | null>(null);
+  const [externalAgentAttachment, setExternalAgentAttachment] = useState<{ type: string; label: string } | null>(null);
+  const [externalInputInject, setExternalInputInject] = useState<string | null>(null);
+  const [leftPanelOpen,    setLeftPanelOpen]    = useState(false);
+  const [agentPanelOpen,   setAgentPanelOpen]   = useState(true);
+  const [selectedColumns,  setSelectedColumns]  = useState<string[]>([]);
   const [warehouseOpen, setWarehouseOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
-  const [hasShared, setHasShared] = useState(false);
-  const [cacheModalOpen, setCacheModalOpen] = useState(false);
+  const [publishOpen, setPublishOpen] = useState(false);
+  const [toasts, setToasts] = useState<Toast[]>([]);
 
-  const setTab = (tab: ProjectState['activeTab']) =>
-    setProject(p => ({ ...p, activeTab: tab }));
+  // ── Agent panel drag-to-resize ───────────────────────────────────────────────
+  const AGENT_MIN = 340;
+  const AGENT_MAX = () => window.innerWidth - 340;
+  const [agentPanelWidth, setAgentPanelWidth] = useState(AGENT_MIN);
+  const [isDraggingAgent, setIsDraggingAgent] = useState(false);
+  const dragStartX = useRef(0);
+  const dragStartWidth = useRef(AGENT_MIN);
 
-  const enterTestMode = () =>
-    setProject(p => ({ ...p, testMode: true }));
+  useEffect(() => {
+    if (!isDraggingAgent) return;
+    const onMove = (e: MouseEvent) => {
+      const delta = dragStartX.current - e.clientX; // drag left = wider
+      const next = Math.min(Math.max(dragStartWidth.current + delta, AGENT_MIN), AGENT_MAX());
+      setAgentPanelWidth(next);
+    };
+    const onUp = () => {
+      setIsDraggingAgent(false);
+      document.body.style.userSelect = '';
+      document.body.style.cursor = '';
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+  }, [isDraggingAgent]);
 
-  const exitTestMode = () =>
-    setProject(p => ({ ...p, testMode: false }));
+  // Track model changes after publish to re-enable the Publish button
+  const prevBuildStep = useRef(project.buildStep);
+  const prevAddedTablesLen = useRef(project.addedTables.length);
+  useEffect(() => {
+    const stepChanged = project.buildStep !== prevBuildStep.current;
+    const tablesChanged = project.addedTables.length !== prevAddedTablesLen.current;
+    if ((stepChanged || tablesChanged) && project.publishedVersion > 0 && !project.hasUnpublishedChanges) {
+      setProject(p => ({ ...p, hasUnpublishedChanges: true }));
+    }
+    prevBuildStep.current = project.buildStep;
+    prevAddedTablesLen.current = project.addedTables.length;
+  }, [project.buildStep, project.addedTables.length]);
+
+  const showToast = (message: string, action?: Toast['action']) => {
+    const id = `toast-${Date.now()}`;
+    setToasts(prev => [...prev, { id, message, action }]);
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
+  };
+
+  // ── Canvas sub-header state (lifted from ColumnsView) ───────────────────────
+  const [search,         setSearch]         = useState('');
+  const [searchOpen,     setSearchOpen]     = useState(false);
+  const [showIssuesOnly, setShowIssuesOnly] = useState(false);
+  const [colVisOpen,     setColVisOpen]     = useState(false);
+  const [visibleCols,    setVisibleCols]    = useState<Set<string>>(new Set(DEFAULT_VISIBLE_COLS));
+  const colVisRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (colVisRef.current && !colVisRef.current.contains(e.target as Node)) setColVisOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const totalColCount = useMemo(() =>
+    Object.values(project.includedColumns).reduce((sum, cols) => sum + cols.length, 0),
+    [project.includedColumns]
+  );
+
+  const dbtIssueCount = useMemo(() => {
+    if (project.projectSource !== 'dbt') return 0;
+    let count = 0;
+    for (const tableId of project.addedTables) {
+      const included = project.includedColumns[tableId] ?? [];
+      const meta = tableMetadata[tableId];
+      if (!meta) continue;
+      for (const colName of included) {
+        const col = (meta.columns as any[]).find((c: any) => c.name === colName || c.id === colName);
+        if (col && (col.syncStatus === 'broken' || col.syncStatus === 'degraded')) count++;
+      }
+    }
+    return count;
+  }, [project.addedTables, project.includedColumns, project.projectSource]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', fontFamily: ff.primary }}>
 
-      {/* Project header */}
+      {/* ── Main header: project identity + primary actions ── */}
       <div style={{ height: HEADER_HEIGHT, backgroundColor: c['background-base'], borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', padding: `0 ${sp.D}px`, gap: sp.C, flexShrink: 0 }}>
 
-        {/* Left: back + project name */}
+        {/* Left: back + project name + badge */}
         <Button variant="tertiary" size="small" onClick={onBack}>←</Button>
         <span style={{ ...ts.contentLabelSubhead, color: c['content-primary'] }}>{project.name}</span>
-        <Button variant="tertiary" size="small">ⓘ</Button>
-
-        {/* Center: tabs */}
-        {!project.testMode && (
-          <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
-            <div style={{ display: 'flex', backgroundColor: c['background-subtle'], borderRadius: 8, padding: 3, gap: 2 }}>
-              {([
-                { id: 'visualizer', label: 'Visualizer', icon: '📊' },
-                { id: 'preview',   label: 'Data Preview', icon: '📄' },
-                { id: 'notebook',  label: 'Notebook',    icon: '</>' },
-              ] as const).map(tab => (
-                <button
-                  key={tab.id}
-                  onClick={() => setTab(tab.id)}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: sp.A,
-                    padding: `${sp.A}px ${sp.C}px`,
-                    borderRadius: 6, border: 'none', cursor: 'pointer',
-                    fontSize: fs.sm, fontWeight: project.activeTab === tab.id ? 500 : 400,
-                    backgroundColor: project.activeTab === tab.id ? c['background-base'] : 'transparent',
-                    color: project.activeTab === tab.id ? c['content-brand'] : c['content-secondary'],
-                    boxShadow: project.activeTab === tab.id ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-                    transition: 'all 0.15s',
-                  }}
-                >
-                  <span style={{ fontSize: fs.xs }}>{tab.icon}</span>
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-          </div>
+        {(project.publishedVersion === 0 || project.hasUnpublishedChanges) ? (
+          <span style={{ fontSize: 11, fontWeight: fw.medium, padding: '2px 7px', borderRadius: 4, color: c['content-secondary'], backgroundColor: c['background-subtle'] }}>
+            Draft
+          </span>
+        ) : (
+          <span style={{ fontSize: 11, fontWeight: fw.regular, color: c['content-secondary'] }}>
+            v{project.publishedVersion}
+          </span>
         )}
-
-        {project.testMode && (
-          <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
-            <div style={{ display: 'flex', gap: sp.B }}>
-              {['Spotter', 'Search Data'].map((t, i) => (
-                <Button key={t} variant={i === 0 ? 'primary' : 'secondary'} size="small">{t}</Button>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* Right: actions */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, marginLeft: 'auto' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 'auto' }}>
 
-          {/* Test button */}
-          {!project.testMode ? (
-            <Button variant="primary" size="small" onClick={enterTestMode}>▶ Test</Button>
-          ) : (
-            <Button variant="secondary" size="small" onClick={exitTestMode}>← Build</Button>
-          )}
-
-          {/* Warehouse dropdown */}
-          <div style={{ position: 'relative' }}>
-            <Button variant="secondary" size="small" onClick={() => setWarehouseOpen(o => !o)}>🗄 Warehouse ▾</Button>
-            {warehouseOpen && (
-              <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: 4, backgroundColor: c['background-base'], border: `1px solid ${c['border-default']}`, borderRadius: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.12)', zIndex: 100, minWidth: 220, overflow: 'hidden' }}>
-                <div
-                  onClick={() => setWarehouseOpen(false)}
-                  style={{ display: 'flex', alignItems: 'center', gap: sp.C, padding: `${sp.C}px ${sp.D}px`, cursor: 'pointer', backgroundColor: c['background-information'], fontSize: fs.sm, color: c['content-brand'] }}
-                >
-                  <span>❄</span>
-                  <span>Live query · Snowflake</span>
-                  <span style={{ marginLeft: 'auto', fontSize: fs.xs }}>✓</span>
-                </div>
-                <div
-                  onClick={() => { setWarehouseOpen(false); setCacheModalOpen(true); }}
-                  style={{ display: 'flex', alignItems: 'center', gap: sp.C, padding: `${sp.C}px ${sp.D}px`, cursor: 'pointer', fontSize: fs.sm, color: c['content-primary'] }}
+          {/* Utilities — icon-only, 26×26 */}
+              <div style={{ position: 'relative' }}>
+                <button
+                  title="Warehouse connection"
+                  onClick={() => setWarehouseOpen(o => !o)}
+                  style={{ width: 26, height: 26, padding: 4, border: `1px solid ${c['border-default']}`, borderRadius: 6, backgroundColor: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box' }}
                   onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
                   onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
                 >
-                  <span>⚡</span>
-                  <span>Enable caching in ThoughtSpot</span>
-                </div>
+                  <svg width="16" height="16" viewBox="0 0 18 18" fill="none" stroke={c['content-secondary']} strokeWidth="1.5">
+                    <rect x="3" y="5.25" width="12" height="11.25" rx="1.5"/>
+                    <path d="M5.25 5.25V3.75C5.25 2.92157 5.92157 2.25 6.75 2.25H11.25C12.0784 2.25 12.75 2.92157 12.75 3.75V5.25"/>
+                    <line x1="6" y1="9" x2="12" y2="9" strokeLinecap="round"/>
+                    <line x1="6" y1="12" x2="10.5" y2="12" strokeLinecap="round"/>
+                  </svg>
+                </button>
+                {warehouseOpen && (
+                  <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: 4, backgroundColor: c['background-base'], border: `1px solid ${c['border-default']}`, borderRadius: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.12)', zIndex: 100, minWidth: 220, overflow: 'hidden' }}>
+                    <div onClick={() => setWarehouseOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: sp.C, padding: `${sp.C}px ${sp.D}px`, cursor: 'pointer', backgroundColor: c['background-information'], fontSize: fs.sm, color: c['content-brand'] }}>
+                      <span>❄</span><span>Live query · Snowflake</span><span style={{ marginLeft: 'auto', fontSize: fs.xs }}>✓</span>
+                    </div>
+                    <div onClick={() => setWarehouseOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: sp.C, padding: `${sp.C}px ${sp.D}px`, cursor: 'pointer', fontSize: fs.sm, color: c['content-primary'] }}
+                      onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
+                      onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+                    >
+                      <span>⚡</span><span>Enable caching in ThoughtSpot</span>
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
 
-          <Button variant="secondary" size="small">⚙ Settings</Button>
-          {hasShared
-            ? <Button variant="secondary" size="small" onClick={() => setShareOpen(true)} style={{ color: c['content-success'], borderColor: c['content-success'] }}>✓ Shared</Button>
-            : <Button variant="secondary" size="small" onClick={() => setShareOpen(true)}>↗ Share</Button>}
+              <button
+                title="Settings"
+                style={{ width: 26, height: 26, padding: 4, border: `1px solid ${c['border-default']}`, borderRadius: 6, backgroundColor: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box' }}
+                onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
+                onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+              >
+                <svg width="16" height="16" viewBox="0 0 18 18" fill="none">
+                  <circle cx="9" cy="9" r="1.5" fill={c['content-secondary']}/>
+                  <circle cx="3.75" cy="9" r="1.5" fill={c['content-secondary']}/>
+                  <circle cx="14.25" cy="9" r="1.5" fill={c['content-secondary']}/>
+                </svg>
+              </button>
+
+              {/* Divider */}
+              <div style={{ width: 1, height: 20, backgroundColor: c['border-divider'], flexShrink: 0 }} />
+
+              {/* Share */}
+              <button
+                title="Share"
+                onClick={() => setShareOpen(true)}
+                style={{ width: 26, height: 26, padding: 4, border: `1px solid ${c['border-default']}`, borderRadius: 6, backgroundColor: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box' }}
+                onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
+                onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+              >
+                <svg width="14" height="14" viewBox="0 0 18 18" fill="none" stroke={c['content-secondary']} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="13.5" cy="3.75" r="2.25"/><circle cx="4.5" cy="9" r="2.25"/><circle cx="13.5" cy="14.25" r="2.25"/>
+                  <line x1="6.44" y1="10.13" x2="11.56" y2="13.12"/><line x1="11.56" y1="4.88" x2="6.44" y2="7.87"/>
+                </svg>
+              </button>
+
+              {/* Publish */}
+              {(() => {
+                const canPublish = project.publishedVersion === 0 || project.hasUnpublishedChanges;
+                return (
+                  <button
+                    onClick={canPublish ? () => setPublishOpen(true) : undefined}
+                    disabled={!canPublish}
+                    style={{ height: 26, padding: '0 14px', border: 'none', borderRadius: 6, backgroundColor: canPublish ? '#2563EB' : c['background-subtle'], cursor: canPublish ? 'pointer' : 'default', display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 12, fontWeight: 500, fontFamily: ff.primary, color: canPublish ? 'white' : c['content-secondary'], boxSizing: 'border-box', transition: 'background-color 0.15s' }}
+                    onMouseEnter={e => { if (canPublish) e.currentTarget.style.backgroundColor = '#1d4ed8'; }}
+                    onMouseLeave={e => { if (canPublish) e.currentTarget.style.backgroundColor = '#2563EB'; }}
+                  >
+                    <svg width="12" height="12" viewBox="0 0 18 18" fill="none" stroke={canPublish ? 'white' : c['content-secondary']} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M9 11.25V2.25M9 2.25L5.25 6M9 2.25L12.75 6"/>
+                      <line x1="3" y1="15.75" x2="15" y2="15.75"/>
+                    </svg>
+                    Publish
+                  </button>
+                );
+              })()}
         </div>
       </div>
 
-      {shareOpen && <ShareModal onClose={() => setShareOpen(false)} onShared={() => setHasShared(true)} />}
-      {cacheModalOpen && <CacheModal onClose={() => setCacheModalOpen(false)} />}
+
+      {shareOpen && (
+        <ShareModal
+          onClose={() => setShareOpen(false)}
+          onShared={() => {
+            showToast('Shared successfully');
+          }}
+        />
+      )}
+      {publishOpen && project.publishedVersion > 0 ? (
+        <RepublishWizard
+          project={project}
+          onClose={() => setPublishOpen(false)}
+          onPublish={() => {
+            const nextVersion = project.publishedVersion + 1;
+            setProject(p => ({ ...p, publishedVersion: nextVersion, hasUnpublishedChanges: false }));
+            showToast(`Published v${nextVersion}`, { label: 'Share →', onClick: () => setShareOpen(true) });
+            setPublishOpen(false);
+          }}
+        />
+      ) : publishOpen ? (
+        <PublishModal
+          project={project}
+          onClose={() => setPublishOpen(false)}
+          onPublish={() => {
+            const nextVersion = project.publishedVersion + 1;
+            setProject(p => ({ ...p, publishedVersion: nextVersion, hasUnpublishedChanges: false }));
+            showToast(`Published v${nextVersion}`, { label: 'Share →', onClick: () => setShareOpen(true) });
+          }}
+        />
+      ) : null}
+
+      {/* Toast notifications */}
+      {toasts.length > 0 && (
+        <div style={{ position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', gap: sp.B, alignItems: 'center', zIndex: 9999, pointerEvents: 'none' }}>
+          {toasts.map(t => (
+            <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: sp.C, backgroundColor: c['background-base-inverse'] ?? '#1a1d23', color: '#fff', padding: `${sp.B}px ${sp.D}px`, borderRadius: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.24)', fontSize: fs.sm, pointerEvents: 'auto', whiteSpace: 'nowrap' }}>
+              <span>✓</span>
+              <span>{t.message}</span>
+              {t.action && (
+                <button
+                  onClick={t.action.onClick}
+                  style={{ marginLeft: sp.A, background: 'none', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 4, color: '#fff', fontSize: fs.xs, padding: `2px ${sp.B}px`, cursor: 'pointer', fontFamily: ff.primary }}
+                >
+                  {t.action.label}
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Body */}
-      {project.testMode ? (
-        <TestModePanel onExit={exitTestMode} project={project} />
-      ) : (
-        <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+      <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+
+        {/* Center area — full width; LeftPanel floats as overlay */}
+        <div style={{ flex: 1, overflow: 'hidden', position: 'relative', display: 'flex', flexDirection: 'column' }}>
+
+          {/* Sub-header: unified canvas toolbar */}
+          {(project.buildStep !== 'empty' || !agentPanelOpen) && (
+            <div style={{ height: 40, backgroundColor: c['background-base'], borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', paddingLeft: sp.D, paddingRight: sp.D, gap: sp.B, flexShrink: 0 }}>
+
+              {/* Data panel toggle — left, unchanged */}
+              <button
+                title="Data panel"
+                onClick={() => setLeftPanelOpen(o => !o)}
+                disabled={isBuilding}
+                style={{ height: 28, padding: '0 10px', gap: 6, border: `1px solid ${leftPanelOpen ? c['border-brand'] : c['border-default']}`, borderRadius: 6, backgroundColor: leftPanelOpen ? c['background-information'] : 'transparent', cursor: isBuilding ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, color: leftPanelOpen ? c['content-brand'] : c['content-secondary'], boxSizing: 'border-box', flexShrink: 0, opacity: isBuilding ? 0.4 : 1 }}
+              >
+                <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+                  <rect x="1" y="1" width="14" height="14" rx="2" />
+                  <line x1="5" y1="1" x2="5" y2="15" />
+                </svg>
+                Data
+              </button>
+
+              <div style={{ flex: 1 }} />
+
+              {/* dbt indicators */}
+              {project.projectSource === 'dbt' && (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '2px 8px', borderRadius: 6, background: '#F0FDF4', border: '1px solid #BBF7D0', fontSize: 11, color: '#166534', fontWeight: fw.medium, flexShrink: 0 }}>
+                    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="#22C55E" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M14 8a6 6 0 01-9.17 5.08"/>
+                      <path d="M2 8a6 6 0 019.17-5.08"/>
+                      <polyline points="14,5 14,8 11,8"/>
+                      <polyline points="2,11 2,8 5,8"/>
+                    </svg>
+                    Synced
+                  </div>
+                  {dbtIssueCount > 0 && (
+                    <button
+                      onClick={() => setShowIssuesOnly(o => !o)}
+                      style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 6, background: showIssuesOnly ? '#FEE2E2' : '#FEF2F2', border: '1px solid #FECACA', fontSize: 11, color: '#B91C1C', fontWeight: fw.medium, cursor: 'pointer', fontFamily: ff.primary, flexShrink: 0 }}
+                    >
+                      ⚠ {dbtIssueCount} {dbtIssueCount === 1 ? 'issue' : 'issues'}
+                    </button>
+                  )}
+                  <div style={{ width: 1, height: 16, backgroundColor: c['border-divider'], flexShrink: 0 }} />
+                </>
+              )}
+
+              {/* Column count */}
+              <span style={{ fontSize: fs.xs, color: c['content-secondary'], whiteSpace: 'nowrap', flexShrink: 0 }}>
+                {totalColCount} {totalColCount === 1 ? 'column' : 'columns'}
+              </span>
+
+              {/* Search — inline expandable */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                {searchOpen && (
+                  <input
+                    autoFocus
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Escape') { setSearchOpen(false); setSearch(''); } }}
+                    placeholder="Search columns…"
+                    style={{ width: 176, height: 26, border: `1px solid ${c['border-default']}`, borderRadius: 6, padding: '0 8px', fontSize: fs.xs, fontFamily: ff.primary, color: c['content-primary'], outline: 'none', backgroundColor: c['background-base'], boxSizing: 'border-box', transition: 'width 0.15s' }}
+                    onFocus={e => (e.currentTarget.style.borderColor = c['border-brand'])}
+                    onBlur={e => (e.currentTarget.style.borderColor = c['border-default'])}
+                  />
+                )}
+                <button
+                  title="Search columns"
+                  onClick={() => { if (searchOpen) { setSearchOpen(false); setSearch(''); } else setSearchOpen(true); }}
+                  style={{ width: 28, height: 28, border: 'none', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, backgroundColor: searchOpen ? c['background-information'] : 'transparent', color: searchOpen ? c['content-brand'] : c['content-secondary'] }}
+                  onMouseEnter={e => { if (!searchOpen) e.currentTarget.style.backgroundColor = c['background-subtle']; }}
+                  onMouseLeave={e => { if (!searchOpen) e.currentTarget.style.backgroundColor = 'transparent'; }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+                    <circle cx="6.5" cy="6.5" r="4.5"/>
+                    <line x1="10.5" y1="10.5" x2="14" y2="14"/>
+                  </svg>
+                </button>
+              </div>
+
+              {/* Properties — column visibility popover */}
+              <div style={{ position: 'relative' }} ref={colVisRef}>
+                <button
+                  title="Column properties"
+                  onClick={() => setColVisOpen(o => !o)}
+                  style={{ width: 28, height: 28, border: 'none', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, backgroundColor: colVisOpen ? c['background-information'] : 'transparent', color: colVisOpen ? c['content-brand'] : c['content-secondary'] }}
+                  onMouseEnter={e => { if (!colVisOpen) e.currentTarget.style.backgroundColor = c['background-subtle']; }}
+                  onMouseLeave={e => { if (!colVisOpen) e.currentTarget.style.backgroundColor = 'transparent'; }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+                    <line x1="2" y1="4" x2="14" y2="4"/>
+                    <line x1="2" y1="8" x2="14" y2="8"/>
+                    <line x1="2" y1="12" x2="14" y2="12"/>
+                    <circle cx="5" cy="4" r="1.5" fill="currentColor" stroke="none"/>
+                    <circle cx="10" cy="8" r="1.5" fill="currentColor" stroke="none"/>
+                    <circle cx="7" cy="12" r="1.5" fill="currentColor" stroke="none"/>
+                  </svg>
+                </button>
+                {colVisOpen && (
+                  <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: 4, backgroundColor: c['background-base'], border: `1px solid ${c['border-divider']}`, borderRadius: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.1)', padding: sp.C, width: 220, zIndex: 100, maxHeight: 400, overflowY: 'auto' }}>
+                    <div style={{ fontSize: fs.xs, fontWeight: fw.medium, color: c['content-secondary'], textTransform: 'uppercase', letterSpacing: '0.02em', marginBottom: sp.A }}>Default visible</div>
+                    {DEFAULT_VISIBLE_COLS.map(key => (
+                      <div key={key} style={{ padding: '2px 0' }}>
+                        <Checkbox
+                          checked={visibleCols.has(key)}
+                          label={COL_LABELS[key]}
+                          onChange={() => { const s = new Set(visibleCols); s.has(key) ? s.delete(key) : s.add(key); setVisibleCols(s); }}
+                        />
+                      </div>
+                    ))}
+                    <div style={{ height: 1, backgroundColor: c['border-divider'], margin: `${sp.B}px 0` }} />
+                    <div style={{ fontSize: fs.xs, fontWeight: fw.medium, color: c['content-secondary'], textTransform: 'uppercase', letterSpacing: '0.02em', marginBottom: sp.A }}>Advanced</div>
+                    {ADVANCED_COLS.map(({ key, label }) => (
+                      <div key={key} style={{ padding: '2px 0' }}>
+                        <Checkbox
+                          checked={visibleCols.has(key)}
+                          label={label}
+                          onChange={() => { const s = new Set(visibleCols); s.has(key) ? s.delete(key) : s.add(key); setVisibleCols(s); }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Divider */}
+              <div style={{ width: 1, height: 16, backgroundColor: c['border-divider'], flexShrink: 0, margin: '0 2px' }} />
+
+              {/* View icons: Tables | Preview | Notebook */}
+              {([
+                { id: 'tables'   as const, title: 'Tables',
+                  icon: <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><rect x="1" y="3" width="6" height="10" rx="1.5"/><rect x="9" y="3" width="6" height="10" rx="1.5"/><line x1="7" y1="8" x2="9" y2="8"/></svg> },
+                { id: 'preview'  as const, title: 'Data preview',
+                  icon: <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="1" y="1" width="14" height="14" rx="1.5"/><line x1="1" y1="5" x2="15" y2="5"/><line x1="5" y1="5" x2="5" y2="15"/></svg> },
+                { id: 'notebook' as const, title: 'Notebook',
+                  icon: <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><rect x="3" y="1" width="10" height="14" rx="1.5"/><line x1="6" y1="5" x2="10" y2="5"/><line x1="6" y1="8" x2="10" y2="8"/><line x1="6" y1="11" x2="9" y2="11"/></svg> },
+              ]).map(({ id, title, icon }) => {
+                const active = project.activeTab === id;
+                return (
+                  <button
+                    key={id}
+                    title={title}
+                    onClick={() => setProject(p => ({ ...p, activeTab: p.activeTab === id ? 'columns' : id }))}
+                    style={{ width: 28, height: 28, border: 'none', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, backgroundColor: active ? c['background-information'] : 'transparent', color: active ? c['content-brand'] : c['content-secondary'] }}
+                    onMouseEnter={e => { if (!active) e.currentTarget.style.backgroundColor = c['background-subtle']; }}
+                    onMouseLeave={e => { if (!active) e.currentTarget.style.backgroundColor = 'transparent'; }}
+                  >
+                    {icon}
+                  </button>
+                );
+              })}
+
+              {/* Agent reopen */}
+              {!agentPanelOpen && (
+                <button
+                  onClick={() => setAgentPanelOpen(true)}
+                  style={{ height: 28, padding: '0 10px', gap: 6, border: `1px solid ${c['border-default']}`, borderRadius: 6, backgroundColor: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, color: c['content-secondary'], boxSizing: 'border-box', flexShrink: 0, marginLeft: sp.A }}
+                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
+                  onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+                >
+                  <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M8 1.5 L9.1 6.4 L14.5 8 L9.1 9.6 L8 14.5 L6.9 9.6 L1.5 8 L6.9 6.4 Z"/>
+                  </svg>
+                  Data Agent
+                </button>
+              )}
+            </div>
+          )}
+
           {isBuilding ? (
             <BuildingSkeleton />
           ) : (
+            <CenterPanel project={project} setProject={setProject} onSendToAgent={(msg) => setExternalAgentMessage(msg)} onInjectToAgent={(text) => { setExternalInputInject(text); setAgentPanelOpen(true); }} selectedColumns={selectedColumns} onToggleColumn={(name) => { setSelectedColumns(prev => prev.includes(name) ? prev.filter(c => c !== name) : [...prev, name]); setAgentPanelOpen(true); }} onClearColumns={() => setSelectedColumns([])} search={search} visibleCols={visibleCols} showIssuesOnly={showIssuesOnly} />
+          )}
+
+          {/* Left panel overlay */}
+          {leftPanelOpen && !isBuilding && (
             <>
-              <LeftPanel project={project} setProject={setProject} onSendToAgent={setExternalAgentMessage} />
-              <CenterPanel project={project} />
+              <div
+                onClick={() => setLeftPanelOpen(false)}
+                style={{ position: 'fixed', top: 96, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.04)', zIndex: 40 }}
+              />
+              <div style={{ position: 'fixed', left: 0, top: 96, bottom: 0, zIndex: 50, boxShadow: '1px 0 4px rgba(29,35,47,0.06)', clipPath: 'inset(0 -20px 0 0)', animation: 'ds-reveal 0.18s ease-out' }}>
+                <LeftPanel project={project} setProject={setProject} onSendToAgent={(msg) => { setExternalAgentMessage(msg); setLeftPanelOpen(false); }} />
+              </div>
             </>
           )}
+        </div>
+
+        {/* Drag handle — hidden when agent panel is closed */}
+        <div
+          onMouseDown={(e) => {
+            if (!agentPanelOpen) return;
+            e.preventDefault();
+            dragStartX.current = e.clientX;
+            dragStartWidth.current = agentPanelWidth;
+            setIsDraggingAgent(true);
+            document.body.style.userSelect = 'none';
+            document.body.style.cursor = 'col-resize';
+          }}
+          style={{
+            display: agentPanelOpen ? 'block' : 'none',
+            width: 5,
+            flexShrink: 0,
+            cursor: 'col-resize',
+            position: 'relative',
+            zIndex: 10,
+          }}
+        >
+          {/* Visible line — border-colored normally, blue on hover/active drag */}
+          <div style={{
+            position: 'absolute',
+            top: 0, bottom: 0,
+            left: 2,
+            width: 1,
+            backgroundColor: isDraggingAgent ? '#2770ef' : c['border-divider'],
+            transition: isDraggingAgent ? 'none' : 'background-color 0.15s',
+          }}
+            onMouseEnter={e => { if (!isDraggingAgent) (e.currentTarget as HTMLElement).style.backgroundColor = '#2770ef'; }}
+            onMouseLeave={e => { if (!isDraggingAgent) (e.currentTarget as HTMLElement).style.backgroundColor = c['border-divider']; }}
+          />
+        </div>
+
+        {/* Agent panel — always mounted so refs survive; hidden via display:none when toggled off */}
+        <div style={{ display: agentPanelOpen ? 'flex' : 'none' }}>
           <AgentPanel
             project={project}
             setProject={setProject}
@@ -154,258 +514,338 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, onBack, init
             initialPrompt={initialPrompt}
             onBuildComplete={() => setIsBuilding(false)}
             externalMessage={externalAgentMessage}
-            onExternalMessageHandled={() => setExternalAgentMessage(null)}
+            onExternalMessageHandled={() => { setExternalAgentMessage(null); setExternalAgentAttachment(null); }}
+            externalMessageAttachment={externalAgentAttachment}
+            injectInput={externalInputInject}
+            onInjectInputHandled={() => setExternalInputInject(null)}
+            width={agentPanelWidth}
+            onClose={() => setAgentPanelOpen(false)}
+            selectedColumns={selectedColumns}
+            onColumnRemove={(name) => setSelectedColumns(prev => prev.filter(c => c !== name))}
           />
         </div>
-      )}
+      </div>
     </div>
   );
 };
 
 // ── Building skeleton ─────────────────────────────────────────────────────────
 
-const BuildingSkeleton: React.FC = () => (
-  <>
-    <style>{`
-      @keyframes ds-pulse {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.4; }
-      }
-      .ds-skel { animation: ds-pulse 1.6s ease-in-out infinite; border-radius: 6px; background: ${c['background-subtle']}; }
-      .ds-skel:nth-child(2) { animation-delay: 0.2s; }
-      .ds-skel:nth-child(3) { animation-delay: 0.4s; }
-      .ds-skel:nth-child(4) { animation-delay: 0.6s; }
-    `}</style>
+const BUILDING_TIPS = [
+  'Describe your goal and the agent builds the full model — tables, joins, and columns.',
+  'Add a table by name: "Add the orders table from Snowflake"',
+  'Create metrics in plain English: "Add Return on Spend"',
+  'The agent removes PII, system fields, and low-signal columns automatically.',
+  'Expand an existing model: "Add product category breakdowns"',
+  'Ask for joins: "Connect orders to campaigns on campaign_id"',
+];
 
-    {/* Left panel skeleton */}
-    <div style={{ width: 240, flexShrink: 0, borderRight: `1px solid ${c['border-divider']}`, backgroundColor: c['background-base'], padding: sp.D, display: 'flex', flexDirection: 'column', gap: sp.D }}>
-      <div className="ds-skel" style={{ height: 14, width: '60%' }} />
-      <div className="ds-skel" style={{ height: 10, width: '85%' }} />
-      <div style={{ height: 1, backgroundColor: c['border-divider'], margin: `${sp.A}px 0` }} />
-      <div className="ds-skel" style={{ height: 14, width: '40%' }} />
-      <div className="ds-skel" style={{ height: 10, width: '70%' }} />
-      <div className="ds-skel" style={{ height: 10, width: '65%' }} />
-      <div className="ds-skel" style={{ height: 10, width: '75%' }} />
-      <div style={{ height: 1, backgroundColor: c['border-divider'], margin: `${sp.A}px 0` }} />
-      <div className="ds-skel" style={{ height: 14, width: '55%' }} />
-      <div className="ds-skel" style={{ height: 10, width: '80%' }} />
-      <div className="ds-skel" style={{ height: 10, width: '60%' }} />
-    </div>
+const BuildingSkeleton: React.FC = () => {
+  const [tipIndex, setTipIndex]   = useState(0);
+  const [visible,  setVisible]    = useState(true);
 
-    {/* Center canvas skeleton */}
-    <div style={{ flex: 1, backgroundColor: c['background-sunken'], display: 'flex', alignItems: 'center', justifyContent: 'center', gap: sp.H }}>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: sp.F, alignItems: 'center' }}>
-        <div className="ds-skel" style={{ width: 180, height: 80 }} />
-        <div style={{ display: 'flex', gap: sp.H }}>
-          <div className="ds-skel" style={{ width: 160, height: 70 }} />
-          <div className="ds-skel" style={{ width: 160, height: 70 }} />
-        </div>
-      </div>
-    </div>
-  </>
-);
-
-// ── Cache modal ───────────────────────────────────────────────────────────────
-
-const CACHE_COLUMNS = {
-  Orders:    ['order_id', 'user_id', 'campaign_id', 'order_date', 'amount', 'product_category', 'status', 'region'],
-  Campaigns: ['campaign_id', 'campaign_name', 'channel', 'start_date', 'end_date', 'spend', 'impressions', 'target_audience', 'budget'],
-  Users:     ['user_id', 'name', 'email', 'segment', 'region', 'age', 'signup_date', 'lifetime_value'],
-};
-
-const CacheModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-  const [frequency, setFrequency] = useState('every_monday');
-  const [filters, setFilters] = useState([{ col: 'region', op: '=', val: '' }]);
-  const [expandedTables, setExpandedTables] = useState<Record<string, boolean>>({ Orders: true, Campaigns: true, Users: true });
-  const [selectedCols, setSelectedCols] = useState<Record<string, boolean>>(
-    Object.values(CACHE_COLUMNS).flat().reduce((acc, col) => ({ ...acc, [col]: true }), {})
-  );
-
-  const addFilter = () => setFilters(f => [...f, { col: 'region', op: '=', val: '' }]);
-  const removeFilter = (i: number) => setFilters(f => f.filter((_, idx) => idx !== i));
-  const updateFilter = (i: number, key: 'col' | 'op' | 'val', value: string) =>
-    setFilters(f => f.map((row, idx) => idx === i ? { ...row, [key]: value } : row));
-
-  const toggleTable = (t: string) => setExpandedTables(e => ({ ...e, [t]: !e[t] }));
-  const toggleCol = (col: string) => setSelectedCols(s => ({ ...s, [col]: !s[col] }));
-  const toggleTable_allCols = (table: string) => {
-    const cols = CACHE_COLUMNS[table as keyof typeof CACHE_COLUMNS];
-    const allSelected = cols.every(c => selectedCols[c]);
-    setSelectedCols(s => ({ ...s, ...Object.fromEntries(cols.map(c => [c, !allSelected])) }));
-  };
-
-  const FREQ_OPTIONS = [
-    { value: 'every_monday',    label: 'Every Monday' },
-    { value: 'every_day',       label: 'Every day at midnight' },
-    { value: 'every_6h',        label: 'Every 6 hours' },
-    { value: 'every_hour',      label: 'Every hour' },
-    { value: 'manual',          label: 'Manual only' },
-  ];
-
-  const allColumns = Object.values(CACHE_COLUMNS).flat();
-  const colOptions = ['region', 'channel', 'segment', 'status', 'product_category'];
+  useEffect(() => {
+    const cycle = setInterval(() => {
+      setVisible(false);
+      setTimeout(() => {
+        setTipIndex(i => (i + 1) % BUILDING_TIPS.length);
+        setVisible(true);
+      }, 400);
+    }, 3500);
+    return () => clearInterval(cycle);
+  }, []);
 
   return (
-    <div style={{ position: 'fixed', inset: 0, backgroundColor: c['background-overlay'], zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-      onClick={onClose}>
-      <div style={{ backgroundColor: c['background-base'], borderRadius: 12, width: 580, maxHeight: '88vh', display: 'flex', flexDirection: 'column', boxShadow: '0 8px 40px rgba(0,0,0,0.18)' }}
-        onClick={e => e.stopPropagation()}>
+    <>
+      <style>{`
+        @keyframes ds-reveal {
+          from { opacity: 0; }
+          to   { opacity: 1; }
+        }
+        @keyframes ds-step-in {
+          from { opacity: 0; transform: translateY(4px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes ds-spin { to { transform: rotate(360deg); } }
+        .ds-gradient-text {
+          background: linear-gradient(90deg, #2770EF 0%, #9333EA 60%, #2770EF 100%);
+          background-size: 200% auto;
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          animation: ds-gradient-shift 2s linear infinite;
+        }
+        @keyframes ds-gradient-shift { to { background-position: 200% center; } }
+      `}</style>
 
-        {/* Header */}
-        <div style={{ padding: `${sp.D}px ${sp.F}px`, borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <h2 style={{ margin: 0, ...ts.sectionLabel, color: c['content-primary'] }}>Enable caching in ThoughtSpot</h2>
-          <Button variant="tertiary" size="small" onClick={onClose}>×</Button>
-        </div>
+      {/* Full-width canvas — illustration + rotating tips */}
+      <div style={{ flex: 1, backgroundColor: c['background-sunken'], display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: sp.D, maxWidth: 420, textAlign: 'center' }}>
 
-        <div style={{ flex: 1, overflowY: 'auto', padding: `${sp.D}px ${sp.F}px`, display: 'flex', flexDirection: 'column', gap: sp.F }}>
+          {/* Model-building illustration */}
+          <svg width="160" height="160" viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ color: c['content-secondary'], opacity: 0.5 }}>
+            {/* Central table node */}
+            <rect x="28" y="36" width="40" height="28" rx="5" stroke="currentColor" strokeWidth="2" fill="none"/>
+            <line x1="28" y1="46" x2="68" y2="46" stroke="currentColor" strokeWidth="1.5"/>
+            <line x1="36" y1="53" x2="60" y2="53" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+            <line x1="36" y1="58" x2="54" y2="58" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+            {/* Left satellite node */}
+            <rect x="4" y="14" width="28" height="20" rx="4" stroke="currentColor" strokeWidth="1.5" fill="none" strokeDasharray="4 2"/>
+            <line x1="4" y1="22" x2="32" y2="22" stroke="currentColor" strokeWidth="1" strokeDasharray="4 2"/>
+            {/* Right satellite node */}
+            <rect x="64" y="14" width="28" height="20" rx="4" stroke="currentColor" strokeWidth="1.5" fill="none" strokeDasharray="4 2"/>
+            <line x1="64" y1="22" x2="92" y2="22" stroke="currentColor" strokeWidth="1" strokeDasharray="4 2"/>
+            {/* Connector lines */}
+            <line x1="28" y1="42" x2="18" y2="34" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeDasharray="3 2"/>
+            <line x1="68" y1="42" x2="78" y2="34" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeDasharray="3 2"/>
+            {/* Bottom node */}
+            <rect x="32" y="72" width="32" height="18" rx="4" stroke="currentColor" strokeWidth="1.5" fill="none" strokeDasharray="4 2"/>
+            <line x1="48" y1="64" x2="48" y2="72" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeDasharray="3 2"/>
+          </svg>
 
-          {/* Refresh frequency */}
-          <div>
-            <label style={{ ...ts.contentLabelSubhead, color: c['content-primary'], display: 'block', marginBottom: sp.B }}>Caching refresh frequency</label>
-            <Select
-              options={FREQ_OPTIONS.map(o => ({ id: o.value, label: o.label }))}
-              value={frequency}
-              onChange={val => setFrequency(val)}
-              fullWidth
-            />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: sp.B }}>
+            <span style={{ fontSize: fs.sm, fontWeight: fw.medium, color: c['content-primary'] }}>
+              Building your model…
+            </span>
+            <span style={{
+              fontSize: fs.sm,
+              color: c['content-secondary'],
+              lineHeight: 1.55,
+              transition: 'opacity 0.35s ease',
+              opacity: visible ? 1 : 0,
+              minHeight: 36,
+            }}>
+              {BUILDING_TIPS[tipIndex]}
+            </span>
           </div>
 
-          {/* Filters */}
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: sp.B }}>
-              <label style={{ ...ts.contentLabelSubhead, color: c['content-primary'] }}>Filters</label>
-              <Button variant="tertiary" size="small" onClick={addFilter}>+ Add filter</Button>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: sp.B }}>
-              {filters.map((f, i) => (
-                <div key={i} style={{ display: 'flex', gap: sp.B, alignItems: 'center' }}>
-                  <div style={{ flex: 2 }}>
-                    <Select
-                      options={colOptions.map(col => ({ id: col, label: col }))}
-                      value={f.col}
-                      onChange={val => updateFilter(i, 'col', val)}
-                      fullWidth
-                    />
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <Select
-                      options={['=', '!=', 'contains', 'starts with'].map(op => ({ id: op, label: op }))}
-                      value={f.op}
-                      onChange={val => updateFilter(i, 'op', val)}
-                      fullWidth
-                    />
-                  </div>
-                  <div style={{ flex: 2 }}>
-                    <TextInput value={f.val} onChange={e => updateFilter(i, 'val', e.target.value)} placeholder="Value" />
-                  </div>
-                  <Button variant="tertiary" size="small" onClick={() => removeFilter(i)}>×</Button>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Column scope */}
-          <div>
-            <label style={{ ...ts.contentLabelSubhead, color: c['content-primary'], display: 'block', marginBottom: sp.B }}>Column scope</label>
-            <div style={{ border: `1px solid ${c['border-default']}`, borderRadius: 8, overflow: 'hidden' }}>
-              {(Object.entries(CACHE_COLUMNS) as [string, string[]][]).map(([table, cols], ti) => {
-                const allSel = cols.every(col => selectedCols[col]);
-                const someSel = cols.some(col => selectedCols[col]);
-                return (
-                  <div key={table} style={{ borderBottom: ti < 2 ? `1px solid ${c['border-divider']}` : 'none' }}>
-                    {/* Table row */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, padding: `${sp.B}px ${sp.C}px`, backgroundColor: c['background-subtle'], cursor: 'pointer' }}
-                      onClick={() => toggleTable(table)}>
-                      <div onClick={e => e.stopPropagation()}>
-                        <Checkbox
-                          checked={allSel}
-                          indeterminate={someSel && !allSel}
-                          onChange={() => toggleTable_allCols(table)}
-                        />
-                      </div>
-                      <span style={{ fontSize: fs.xs, fontWeight: fw.semibold, color: c['content-primary'], flex: 1 }}>⊞ {table}</span>
-                      <span style={{ fontSize: fs.xs, color: c['content-secondary'] }}>{expandedTables[table] ? '▾' : '▶'}</span>
-                    </div>
-                    {/* Column rows */}
-                    {expandedTables[table] && (
-                      <div style={{ paddingLeft: sp.H }}>
-                        {cols.map(col => (
-                          <label key={col} style={{ display: 'flex', alignItems: 'center', gap: sp.B, padding: `${sp.A}px ${sp.C}px`, cursor: 'pointer', fontSize: fs.xs, color: c['content-primary'] }}
-                            onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
-                            onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}>
-                            <input type="checkbox" checked={!!selectedCols[col]} onChange={() => toggleCol(col)}
-                              style={{ width: 13, height: 13, accentColor: c['content-brand'], cursor: 'pointer', flexShrink: 0 }} />
-                            <span style={{ fontFamily: ff.mono, fontSize: fs.xs }}>{col}</span>
-                          </label>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-            <p style={{ fontSize: fs.xs, color: c['content-secondary'], margin: `${sp.B}px 0 0` }}>
-              {Object.values(selectedCols).filter(Boolean).length} of {allColumns.length} columns included in cache
-            </p>
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div style={{ padding: `${sp.C}px ${sp.F}px`, borderTop: `1px solid ${c['border-divider']}`, display: 'flex', justifyContent: 'flex-end', gap: sp.B }}>
-          <Button variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button variant="primary" onClick={onClose}>Enable caching</Button>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 
-// ── Share modal ───────────────────────────────────────────────────────────────
 
-interface SharedUser {
-  id: string;
-  name: string;
-  initials: string;
-  color: string;
-  permission: 'Can view' | 'Can edit' | 'Can manage';
-}
+// ── Republish wizard ──────────────────────────────────────────────────────────
 
-const ShareModal: React.FC<{ onClose: () => void; onShared?: () => void }> = ({ onClose, onShared }) => {
-  const [inputValue, setInputValue] = useState('');
-  const [sharedUsers, setSharedUsers] = useState<SharedUser[]>([]);
-  const [sendNotification, setSendNotification] = useState(true);
-  const [addMessage, setAddMessage] = useState(false);
-  const [discoverable, setDiscoverable] = useState(true);
-  const [copied, setCopied] = useState(false);
-  const [openPermission, setOpenPermission] = useState<string | null>(null);
-  const [submitted, setSubmitted] = useState(false);
+const MOCK_DEPENDENTS = [
+  { name: 'Campaign ROI by Region',   type: 'Live board', owner: 'Sara Chen', lastViewed: '2 days ago' },
+  { name: 'Q1 Campaign Summary',      type: 'Live board', owner: 'Mark T.',   lastViewed: '5 days ago' },
+  { name: 'Top performing channels',  type: 'Answer',     owner: 'Sara Chen', lastViewed: '1 day ago'  },
+  { name: 'Campaign spend vs orders', type: 'Answer',     owner: 'Priya K.',  lastViewed: '3 days ago' },
+];
 
-  const AVATAR_COLORS = [c['content-brand'], c['content-success'], c['content-warning'], '#A855F7', c['content-failure'], '#14B8A6'];
+const RepublishWizard: React.FC<{
+  project: ProjectState;
+  onClose: () => void;
+  onPublish: () => void;
+}> = ({ project, onClose, onPublish }) => {
+  const [selectedAction, setSelectedAction] = useState<'detach' | 'delete' | null>(null);
 
-  const addUser = () => {
-    const name = inputValue.trim();
-    if (!name) return;
-    const initials = name.split(/[.\s@]/).filter(Boolean).map(w => w[0].toUpperCase()).slice(0, 2).join('');
-    setSharedUsers(prev => [...prev, {
-      id: `u-${Date.now()}`,
-      name,
-      initials: initials || name[0].toUpperCase(),
-      color: AVATAR_COLORS[prev.length % AVATAR_COLORS.length],
-      permission: 'Can view',
-    }]);
-    setInputValue('');
+  const tableCount    = project.addedTables.length || 3;
+  const joinCount     = project.addedTables.length >= 2 ? project.addedTables.length - 1 : 2;
+  const metricCount   = (project.buildStep === 'transformed' || project.buildStep === 'healthy') ? 3 : 0;
+  const totalCols     = Object.values(project.includedColumns).flat().length || 18;
+  const overriddenCols = Object.values(project.columnOverrides ?? {}).filter(v => v.aiContext).length;
+  const allDescribed   = overriddenCols >= totalCols;
+  const describedCols  = allDescribed ? totalCols : Math.round(totalCols * 0.78);
+
+  const rowStyle: React.CSSProperties = {
+    display: 'flex', alignItems: 'center',
+    padding: `${sp.B}px 0`,
+    borderBottom: `1px solid ${c['border-divider']}`,
+    gap: sp.C,
+  };
+  const labelStyle: React.CSSProperties = { fontSize: fs.sm, color: c['content-secondary'], width: 120, flexShrink: 0 };
+  const valueStyle: React.CSSProperties = { fontSize: fs.sm, color: c['content-primary'], fontWeight: fw.medium, flex: 1 };
+
+  const Badge: React.FC<{ variant: 'green' | 'yellow' | 'gray'; children: React.ReactNode }> = ({ variant, children }) => {
+    const bgColor = variant === 'green' ? c['background-success'] : variant === 'yellow' ? c['background-warning'] : c['background-sunken'];
+    const textColor = variant === 'green' ? c['content-success'] : variant === 'yellow' ? c['content-warning'] : c['content-secondary'];
+    return (
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: fw.semibold, padding: '2px 8px', borderRadius: 4, backgroundColor: bgColor, color: textColor }}>
+        {children}
+      </span>
+    );
   };
 
-  const removeUser = (id: string) => setSharedUsers(prev => prev.filter(u => u.id !== id));
+  const TypeBadge: React.FC<{ type: string }> = ({ type }) => (
+    <span style={{ fontSize: 11, fontWeight: fw.medium, padding: '2px 7px', borderRadius: 4,
+      backgroundColor: type === 'Live board' ? c['background-information'] : c['background-sunken'],
+      color: type === 'Live board' ? c['content-brand'] : c['content-secondary'] }}>
+      {type}
+    </span>
+  );
 
-  const setPermission = (id: string, permission: SharedUser['permission']) => {
-    setSharedUsers(prev => prev.map(u => u.id === id ? { ...u, permission } : u));
-    setOpenPermission(null);
+  const step1Content = (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: sp.D }}>
+      <p style={{ margin: 0, fontSize: fs.sm, color: c['content-secondary'] }}>
+        This model has dependents. Choose what to do with them before publishing.
+      </p>
+      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <thead>
+          <tr style={{ backgroundColor: c['background-sunken'] }}>
+            {['Name', 'Type', 'Owner', 'Last viewed'].map(h => (
+              <th key={h} style={{ padding: `${sp.B}px ${sp.C}px`, textAlign: 'left', fontSize: 11, fontWeight: fw.semibold, color: c['content-secondary'], textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: `1px solid ${c['border-divider']}` }}>
+                {h}
+              </th>
+            ))}
+            <th style={{ padding: `${sp.B}px ${sp.C}px`, borderBottom: `1px solid ${c['border-divider']}` }} />
+          </tr>
+        </thead>
+        <tbody>
+          {MOCK_DEPENDENTS.map(dep => (
+            <tr key={dep.name} style={{ borderBottom: `1px solid ${c['border-divider']}` }}>
+              <td style={{ padding: `${sp.C}px ${sp.C}px`, fontSize: fs.sm, color: c['content-primary'], fontWeight: fw.medium }}>{dep.name}</td>
+              <td style={{ padding: `${sp.C}px ${sp.C}px` }}><TypeBadge type={dep.type} /></td>
+              <td style={{ padding: `${sp.C}px ${sp.C}px`, fontSize: fs.sm, color: c['content-secondary'] }}>{dep.owner}</td>
+              <td style={{ padding: `${sp.C}px ${sp.C}px`, fontSize: fs.sm, color: c['content-secondary'] }}>{dep.lastViewed}</td>
+              <td style={{ padding: `${sp.C}px ${sp.C}px` }}>
+                <button
+                  onClick={() => window.open('about:blank', '_blank')}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: fs.xs, color: c['content-brand'], padding: 0, fontFamily: ff.primary }}
+                >
+                  View ↗
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: sp.B }}>
+        <p style={{ margin: 0, fontSize: fs.xs, fontWeight: fw.semibold, color: c['content-secondary'], textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          Choose an action
+        </p>
+        {(['detach', 'delete'] as const).map(action => (
+          <label key={action} style={{ display: 'flex', alignItems: 'center', gap: sp.B, cursor: 'pointer' }}>
+            <input
+              type="radio"
+              name="dependent-action"
+              value={action}
+              checked={selectedAction === action}
+              onChange={() => setSelectedAction(action)}
+              style={{ accentColor: c['content-brand'], width: 14, height: 14, flexShrink: 0 }}
+            />
+            <span style={{ fontSize: fs.sm, color: c['content-primary'] }}>
+              {action === 'detach' ? 'Detach all — remove model link, keep boards and answers' : 'Delete all — permanently remove dependent boards and answers'}
+            </span>
+          </label>
+        ))}
+      </div>
+    </div>
+  );
+
+  const step2Content = (
+    <div>
+      <p style={{ margin: `0 0 ${sp.D}px`, fontSize: fs.sm, color: c['content-secondary'] }}>
+        You're about to publish {project.name} with the following changes.
+      </p>
+      <div style={rowStyle}>
+        <span style={labelStyle}>Tables</span>
+        <span style={valueStyle}>
+          {tableCount}
+          <span style={{ color: c['content-secondary'], fontWeight: fw.regular, fontSize: fs.xs, marginLeft: 6 }}>
+            ({project.addedTables.map(t => t.charAt(0).toUpperCase() + t.slice(1)).join(', ') || 'Orders, Campaigns, Users'})
+          </span>
+        </span>
+      </div>
+      <div style={rowStyle}>
+        <span style={labelStyle}>Joins</span>
+        <span style={valueStyle}>{joinCount} relationships</span>
+      </div>
+      <div style={rowStyle}>
+        <span style={labelStyle}>Metrics</span>
+        <span style={valueStyle}>
+          {metricCount > 0
+            ? `${metricCount} (ROAS, Conversion Rate, Days to Convert)`
+            : <span style={{ color: c['content-secondary'], fontWeight: fw.regular }}>None defined</span>
+          }
+        </span>
+      </div>
+      <div style={rowStyle}>
+        <span style={labelStyle}>AI context</span>
+        <span style={valueStyle}>
+          {allDescribed
+            ? <Badge variant="green">✓ All columns described</Badge>
+            : <Badge variant="yellow">⚠ {describedCols} of {totalCols} columns described</Badge>
+          }
+        </span>
+      </div>
+      <div style={rowStyle}>
+        <span style={labelStyle}>Data prep</span>
+        <span style={valueStyle}><Badge variant="gray">Not configured</Badge></span>
+      </div>
+      <div style={{ ...rowStyle, borderBottom: 'none' }}>
+        <span style={labelStyle}>Caching</span>
+        <span style={valueStyle}><Badge variant="gray">Not configured</Badge></span>
+      </div>
+    </div>
+  );
+
+  return (
+    <WizardModal
+      isOpen
+      onClose={onClose}
+      title="Publish model"
+      size="medium"
+      onComplete={onPublish}
+      steps={[
+        {
+          id: 'dependents',
+          title: 'Update dependents',
+          content: step1Content,
+          validate: () => selectedAction !== null,
+          nextButtonText: 'Continue',
+          hideBackButton: true,
+        },
+        {
+          id: 'review',
+          title: 'Review changes',
+          content: step2Content,
+          nextButtonText: 'Publish model',
+        },
+      ]}
+    />
+  );
+};
+
+// ── Publish modal ─────────────────────────────────────────────────────────────
+
+const PublishModal: React.FC<{
+  project: ProjectState;
+  onClose: () => void;
+  onPublish: () => void;
+}> = ({ project, onClose, onPublish }) => {
+  const tableCount   = project.addedTables.length || 3;
+  const joinCount    = project.addedTables.length >= 2 ? project.addedTables.length - 1 : 0;
+  const metricCount  = (project.buildStep === 'transformed' || project.buildStep === 'healthy') ? 3 : 0;
+  const totalCols    = Object.values(project.includedColumns).flat().length || 18;
+  const describedCols = Math.round(totalCols * 0.78); // 78% described — realistic partial state
+  const hasPrep      = project.buildStep === 'healthy';
+  const nextVersion  = project.publishedVersion + 1;
+
+  const handlePublish = () => { onClose(); onPublish(); };
+
+  const rowStyle: React.CSSProperties = {
+    display: 'flex', alignItems: 'center',
+    padding: `${sp.B}px 0`,
+    borderBottom: `1px solid ${c['border-divider']}`,
+    gap: sp.C,
   };
+  const labelStyle: React.CSSProperties = { fontSize: fs.sm, color: c['content-secondary'], width: 120, flexShrink: 0 };
+  const valueStyle: React.CSSProperties = { fontSize: fs.sm, color: c['content-primary'], fontWeight: fw.medium, flex: 1 };
 
-  const handleCopy = () => {
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const Badge: React.FC<{ variant: 'green' | 'yellow' | 'gray'; children: React.ReactNode }> = ({ variant, children }) => {
+    const styles: Record<string, React.CSSProperties> = {
+      green:  { backgroundColor: '#DCFCE7', color: '#15803D' },
+      yellow: { backgroundColor: '#FEF9C3', color: '#854D0E' },
+      gray:   { backgroundColor: c['background-sunken'], color: c['content-secondary'] },
+    };
+    return (
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: fw.semibold, padding: '2px 8px', borderRadius: 4, ...styles[variant] }}>
+        {children}
+      </span>
+    );
   };
 
   return (
@@ -414,287 +854,80 @@ const ShareModal: React.FC<{ onClose: () => void; onShared?: () => void }> = ({ 
       onClick={onClose}
     >
       <div
-        style={{ backgroundColor: c['background-base'], borderRadius: 12, width: 560, maxHeight: '85vh', display: 'flex', flexDirection: 'column', boxShadow: '0 8px 40px rgba(0,0,0,0.18)' }}
+        style={{ backgroundColor: c['background-base'], borderRadius: 14, width: 480, display: 'flex', flexDirection: 'column', boxShadow: '0 8px 40px rgba(0,0,0,0.18)' }}
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div style={{ padding: `${sp.D}px ${sp.F}px`, borderBottom: `1px solid ${c['border-divider']}` }}>
-          <h2 style={{ margin: 0, ...ts.sectionLabel, color: c['content-primary'] }}>Share</h2>
+        <div style={{ padding: `${sp.D}px ${sp.F}px`, borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: sp.D }}>
+          <div>
+            <h2 style={{ margin: 0, fontSize: fs.lg, fontWeight: fw.semibold, color: c['content-primary'], letterSpacing: -0.2 }}>
+              Publish {project.name}
+            </h2>
+            <p style={{ margin: `${sp.A}px 0 0`, fontSize: fs.sm, color: c['content-secondary'] }}>
+              Make this model available to Spotter and your team.
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            style={{ width: 28, height: 28, flexShrink: 0, borderRadius: 7, backgroundColor: c['background-subtle'], border: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: c['content-secondary'], marginTop: 2 }}
+          >
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M1.5 1.5l9 9M10.5 1.5l-9 9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
+          </button>
         </div>
 
-        {/* Body */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: `${sp.D}px ${sp.F}px` }}>
-
-          {/* Input row */}
-          <label style={{ fontSize: fs.sm, fontWeight: fw.medium, color: c['content-primary'], display: 'flex', alignItems: 'center', gap: sp.A, marginBottom: sp.B }}>
-            Enter user name or group name
-            <span style={{ width: 16, height: 16, borderRadius: '50%', border: `1px solid ${c['border-default']}`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: fs.xs, color: c['content-secondary'], cursor: 'default' }}>i</span>
-          </label>
-          <div style={{ display: 'flex', gap: sp.B, marginBottom: sp.C }}>
-            <div style={{ flex: 1 }}>
-              <TextInput
-                value={inputValue}
-                onChange={e => setInputValue(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && addUser()}
-                placeholder="User name or group name"
-              />
-            </div>
-            <Button variant="secondary" size="small" onClick={addUser}>+</Button>
-          </div>
-
-          {/* Checkboxes */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: sp.F, marginBottom: sp.D }}>
-            <CheckboxField checked={sendNotification} onChange={setSendNotification} label="Send notification" />
-            <CheckboxField checked={addMessage} onChange={setAddMessage} label="Add message (optional)" />
-            <div style={{ display: 'flex', alignItems: 'center', gap: sp.A }}>
-              <CheckboxField checked={false} onChange={() => {}} label="Embedded link format" />
-              <span style={{ width: 14, height: 14, borderRadius: '50%', border: `1px solid ${c['border-default']}`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, color: c['content-secondary'], cursor: 'default', flexShrink: 0 }}>i</span>
-            </div>
-          </div>
-
-          {/* Shared users list */}
-          {sharedUsers.length > 0 && (
-            <div style={{ marginBottom: sp.D }}>
-              <p style={{ ...ts.contentLabelSubhead, color: c['content-primary'], margin: `0 0 ${sp.C}px` }}>Shared with:</p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: sp.B }}>
-                {sharedUsers.map(user => (
-                  <div key={user.id} style={{ display: 'flex', alignItems: 'center', gap: sp.C }}>
-                    <div style={{ width: 32, height: 32, borderRadius: '50%', backgroundColor: user.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <span style={{ fontSize: fs.xs, fontWeight: fw.semibold, color: '#fff' }}>{user.initials}</span>
-                    </div>
-                    <span style={{ flex: 1, fontSize: fs.sm, color: c['content-primary'] }}>{user.name}</span>
-
-                    {/* Permission dropdown */}
-                    <div style={{ position: 'relative' }}>
-                      <Button variant="tertiary" size="small" onClick={() => setOpenPermission(openPermission === user.id ? null : user.id)}>
-                        {user.permission} ▾
-                      </Button>
-                      {openPermission === user.id && (
-                        <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: 4, backgroundColor: c['background-base'], border: `1px solid ${c['border-default']}`, borderRadius: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.12)', zIndex: 10, overflow: 'hidden', minWidth: 130 }}>
-                          {(['Can view', 'Can edit', 'Can manage'] as const).map(perm => (
-                            <div
-                              key={perm}
-                              onClick={() => setPermission(user.id, perm)}
-                              style={{ padding: `${sp.B}px ${sp.C}px`, fontSize: fs.sm, cursor: 'pointer', color: user.permission === perm ? c['content-brand'] : c['content-primary'], backgroundColor: user.permission === perm ? c['background-information'] : c['background-base'], display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-                              onMouseEnter={e => { if (user.permission !== perm) e.currentTarget.style.backgroundColor = c['background-subtle']; }}
-                              onMouseLeave={e => { if (user.permission !== perm) e.currentTarget.style.backgroundColor = c['background-base']; }}
-                            >
-                              {perm}
-                              {user.permission === perm && <span style={{ fontSize: fs.xs }}>✓</span>}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    <Button variant="tertiary" size="small" onClick={() => removeUser(user.id)}>×</Button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Divider */}
-          <div style={{ borderTop: `1px solid ${c['border-divider']}`, margin: `${sp.C}px 0` }} />
-
-          {/* Discoverable */}
-          <div style={{ marginBottom: sp.C }}>
-            <CheckboxField checked={discoverable} onChange={setDiscoverable} label="Make this data model discoverable">
-              <span style={{ width: 14, height: 14, borderRadius: '50%', border: `1px solid ${c['border-default']}`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, color: c['content-secondary'], cursor: 'default', marginLeft: sp.A }}>i</span>
-            </CheckboxField>
-          </div>
-
-          {/* Copy link */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: fs.xs, color: c['content-secondary'] }}>
-              Anyone with access can use this link to view the data model
+        {/* Body — summary table */}
+        <div style={{ padding: `${sp.D}px ${sp.F}px` }}>
+          <div style={rowStyle}>
+            <span style={labelStyle}>Tables</span>
+            <span style={valueStyle}>
+              {tableCount}
+              <span style={{ color: c['content-secondary'], fontWeight: fw.regular, fontSize: fs.xs, marginLeft: 6 }}>
+                ({project.addedTables.map(t => t.charAt(0).toUpperCase() + t.slice(1)).join(', ') || 'Orders, Campaigns, Users'})
+              </span>
             </span>
-            <Button variant="secondary" size="small" onClick={handleCopy} style={{ flexShrink: 0, marginLeft: sp.D }}>
-              {copied ? '✓ Copied' : 'Copy link'}
-            </Button>
+          </div>
+          <div style={rowStyle}>
+            <span style={labelStyle}>Joins</span>
+            <span style={valueStyle}>{joinCount || 2} relationships</span>
+          </div>
+          <div style={rowStyle}>
+            <span style={labelStyle}>Metrics</span>
+            <span style={valueStyle}>
+              {metricCount > 0
+                ? `${metricCount}  (ROAS, Conversion Rate, Days to Convert)`
+                : <span style={{ color: c['content-secondary'], fontWeight: fw.regular }}>None defined</span>
+              }
+            </span>
+          </div>
+          <div style={rowStyle}>
+            <span style={labelStyle}>AI context</span>
+            <span style={valueStyle}>
+              {describedCols < totalCols
+                ? <Badge variant="yellow">⚠ {describedCols} of {totalCols} columns described</Badge>
+                : <Badge variant="green">✓ All columns described</Badge>
+              }
+            </span>
+          </div>
+          <div style={rowStyle}>
+            <span style={labelStyle}>Data prep</span>
+            <span style={valueStyle}>
+              <Badge variant="gray">Not configured</Badge>
+            </span>
+          </div>
+          <div style={{ ...rowStyle, borderBottom: 'none' }}>
+            <span style={labelStyle}>Caching</span>
+            <span style={valueStyle}><Badge variant="gray">Not configured</Badge></span>
           </div>
         </div>
 
         {/* Footer */}
-        <div style={{ padding: `${sp.C}px ${sp.F}px`, borderTop: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', justifyContent: submitted ? 'flex-start' : 'flex-end', gap: sp.B, minHeight: 56 }}>
-          {submitted ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, color: c['content-success'], fontSize: fs.sm, fontWeight: fw.medium }}>
-              <span style={{ fontSize: fs.lg }}>✓</span>
-              Shared with {sharedUsers.length} {sharedUsers.length === 1 ? 'person' : 'people'}
-            </div>
-          ) : (
-            <>
-              <Button variant="secondary" onClick={onClose}>Cancel</Button>
-              <Button
-                variant="primary"
-                onClick={() => {
-                  if (sharedUsers.length > 0) {
-                    setSubmitted(true);
-                    onShared?.();
-                    setTimeout(onClose, 1800);
-                  } else {
-                    onClose();
-                  }
-                }}
-              >Share</Button>
-            </>
-          )}
+        <div style={{ padding: `${sp.C}px ${sp.F}px`, borderTop: `1px solid ${c['border-divider']}`, display: 'flex', justifyContent: 'flex-end', gap: sp.B }}>
+          <Button variant="secondary" onClick={onClose}>Cancel</Button>
+          <Button variant="primary" onClick={handlePublish}>Publish Model</Button>
         </div>
       </div>
     </div>
   );
-};
-
-const CheckboxField: React.FC<{
-  checked: boolean;
-  onChange: (v: boolean) => void;
-  label: string;
-  children?: React.ReactNode;
-}> = ({ checked, onChange, label, children }) => (
-  <div style={{ display: 'flex', alignItems: 'center', gap: sp.A }}>
-    <Checkbox checked={checked} onChange={onChange} label={label} />
-    {children}
-  </div>
-);
-
-// ── Test mode panel ───────────────────────────────────────────────────────────
-
-const TEST_ANSWERS: Record<string, { content: string; chart?: boolean }> = {
-  'Which campaign drove the most orders last month?': {
-    content: `**Summer Sale 2024** drove the most orders last month.\n\n• Orders: **342**\n• Conversion rate: **4.7%**\n• Channel: Email\n• Spend: $12,400\n• Return on spend: **3.21×**\n• Top region: West (128 orders)`,
-    chart: true,
-  },
-  'What is the return on spend by campaign channel?': {
-    content: `**Return on spend by channel**\n\n• Email — **3.2×** avg RoS\n• Social — **2.8×** avg RoS\n• Paid Search — **2.1×** avg RoS\n• Display — **1.4×** avg RoS\n\nEmail campaigns are the highest performing channel at 3.2× return on spend on average.`,
-    chart: true,
-  },
-  'Which region has the highest order volume?': {
-    content: `**West** is the region with the highest order volume.\n\n• West — **335.9M** in sales (38% of total)\n• East — 241.3M\n• North — 198.7M\n• South — 156.2M\n\nWest has been the top region for 9 of the last 12 months.`,
-    chart: true,
-  },
-};
-
-const TestModePanel: React.FC<{ onExit: () => void; project: ProjectState }> = ({ onExit, project }) => {
-  const [testInput, setTestInput] = useState('');
-  const [testMessages, setTestMessages] = useState<{ role: 'user' | 'ai'; content: string; chart?: boolean }[]>([]);
-
-  const sendTest = () => {
-    const text = testInput.trim();
-    if (!text) return;
-    setTestInput('');
-    setTestMessages(prev => [...prev, { role: 'user', content: text }]);
-
-    const answer = TEST_ANSWERS[text] ?? {
-      content: `Based on your data model, I found relevant results for **"${text}"**.\n\nThe analysis shows patterns across your Orders, Campaigns, and Users data. Refine your question or explore the suggestions below for more specific insights.`,
-      chart: false,
-    };
-
-    setTimeout(() => {
-      setTestMessages(prev => [...prev, { role: 'ai', ...answer }]);
-    }, 1200);
-  };
-
-  if (project.buildStep === 'empty') {
-    return (
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: c['background-sunken'] }}>
-        <div style={{ textAlign: 'center', maxWidth: 400, padding: sp.H }}>
-          <div style={{ fontSize: fs['4xl'], marginBottom: sp.D }}>🎯</div>
-          <h2 style={{ ...ts.sectionLabel, color: c['content-primary'], margin: `0 0 ${sp.C}px` }}>No model ready yet</h2>
-          <p style={{ ...ts.bodyNormal, color: c['content-secondary'], margin: `0 0 ${sp.F}px` }}>
-            Build your model first — add data, create joins, and add calculated columns. Then come back here to test it with real questions.
-          </p>
-          <Button variant="secondary" onClick={onExit}>Back to build</Button>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: c['background-sunken'], overflow: 'hidden' }}>
-
-      {/* Messages */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: `${sp.H}px ${sp.H}px 0` }}>
-        {testMessages.length === 0 && (
-          <div style={{ maxWidth: 640, margin: '0 auto', textAlign: 'center', paddingTop: sp.J }}>
-            <div style={{ fontSize: fs['3xl'], marginBottom: sp.C }}>🎯</div>
-            <h2 style={{ ...ts.sectionLabel, color: c['content-primary'], marginBottom: sp.C }}>Test your model</h2>
-            <p style={{ fontSize: fs.sm, color: c['content-secondary'], marginBottom: sp.H }}>
-              Ask questions the way your business users will. Verify that your model returns accurate answers.
-            </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: sp.B, textAlign: 'left' }}>
-              {[
-                'Which campaign drove the most orders last month?',
-                'What is the return on spend by campaign channel?',
-                'Which region has the highest order volume?',
-              ].map(q => (
-                <Button key={q} variant="secondary" size="small" onClick={() => setTestInput(q)}>{q}</Button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {testMessages.map((msg, i) => (
-          <div key={i} style={{ maxWidth: 720, margin: '0 auto', marginBottom: sp.F }}>
-            {msg.role === 'user' ? (
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: sp.D }}>
-                <div style={{ backgroundColor: c['background-base'], borderRadius: 10, padding: `${sp.C}px ${sp.D}px`, fontSize: fs.sm, color: c['content-primary'], maxWidth: '75%', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
-                  {msg.content}
-                </div>
-              </div>
-            ) : (
-              <div style={{ backgroundColor: c['background-base'], borderRadius: 12, padding: sp.D, boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, marginBottom: sp.C }}>
-                  <span style={{ fontSize: fs.md }}>✨</span>
-                  <span style={{ fontSize: fs.xs, color: c['content-secondary'] }}>Work done in 15 seconds ▾</span>
-                </div>
-                <div style={{ fontSize: fs.sm, color: c['content-primary'], whiteSpace: 'pre-line' }}>
-                  <FormattedMsg content={msg.content} />
-                </div>
-                {msg.chart && (
-                  <div style={{ marginTop: sp.D, border: `1px solid ${c['border-divider']}`, borderRadius: 8, overflow: 'hidden' }}>
-                    <div style={{ padding: `${sp.B}px ${sp.C}px`, backgroundColor: c['background-subtle'], display: 'flex', gap: sp.B }}>
-                      {['top 1', 'region', 'sales', '↑ sort by sales'].map(chip => (
-                        <span key={chip} style={{ fontSize: fs.xs, backgroundColor: c['background-base'], border: `1px solid ${c['border-default']}`, borderRadius: 4, padding: '2px 6px', color: c['content-secondary'] }}>{chip}</span>
-                      ))}
-                    </div>
-                    <div style={{ height: 120, backgroundColor: c['background-warning'], display: 'flex', alignItems: 'flex-end', padding: `${sp.C}px ${sp.D}px ${sp.D}px` }}>
-                      <div style={{ width: '100%', height: 80, backgroundColor: c['content-warning'], borderRadius: '4px 4px 0 0' }} />
-                    </div>
-                    <div style={{ padding: `${sp.A}px ${sp.D}px`, fontSize: fs.xs, color: c['content-secondary'] }}>West · 335.89M</div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-
-      {/* Test input */}
-      <div style={{ padding: `${sp.D}px ${sp.H}px ${sp.F}px`, flexShrink: 0 }}>
-        <div style={{ maxWidth: 720, margin: '0 auto', border: `1px solid ${c['border-default']}`, borderRadius: 12, backgroundColor: c['background-base'], boxShadow: '0 2px 8px rgba(0,0,0,0.06)', overflow: 'hidden' }}>
-          <TextInput
-            value={testInput}
-            onChange={e => setTestInput(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && sendTest()}
-            placeholder="Ask me a question. Use '@' to search for columns or values"
-          />
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: `${sp.A}px ${sp.D}px ${sp.B}px` }}>
-            <div style={{ display: 'flex', gap: sp.B }}>
-              <span style={{ fontSize: fs.md, cursor: 'pointer' }}>📊</span>
-              <span style={{ fontSize: fs.sm, cursor: 'pointer', color: c['content-secondary'] }}>🔍</span>
-              <span style={{ fontSize: fs.xs, backgroundColor: c['background-subtle'], padding: '2px 8px', borderRadius: 4, color: c['content-secondary'] }}>{project.name}</span>
-            </div>
-            <Button variant="primary" size="small" disabled={!testInput.trim()} onClick={sendTest}>↑</Button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const FormattedMsg: React.FC<{ content: string }> = ({ content }) => {
-  const parts = content.split(/(\*\*[^*]+\*\*)/g);
-  return <>{parts.map((p, i) => p.startsWith('**') ? <strong key={i}>{p.slice(2,-2)}</strong> : <span key={i}>{p}</span>)}</>;
 };
 
 export default Workspace;

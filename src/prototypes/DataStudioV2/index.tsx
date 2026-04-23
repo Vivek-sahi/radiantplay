@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import Shell, { NavSection } from './components/Shell';
 import Overview from './components/Overview';
+import ModelView from './components/ModelView';
 import Workspace from './components/Workspace';
 import NewProjectPrompt from './components/NewProjectPrompt';
+import { OverviewProject, OverviewAlert } from './data/mockData';
 
 export interface ProjectContext {
   purpose: string;
@@ -20,19 +22,33 @@ export const emptyContext: ProjectContext = {
   spotterInstructions: '',
 };
 
+export interface PrepTransform {
+  id: string;
+  columnId: string;
+  tableId: string;
+  issueType: 'null' | 'duplicate' | 'anomaly' | 'date_format';
+  label: string;
+  sql: string;
+}
+
 export interface ProjectState {
   id: string;
   name: string;
   buildStep: 'empty' | 'tables' | 'joined' | 'transformed' | 'healthy';
-  activeTab: 'visualizer' | 'preview' | 'notebook';
+  activeTab: 'columns' | 'tables' | 'preview' | 'notebook';
   testMode: boolean;
+  publishedVersion: number;       // 0 = never published; 1, 2, … = version number
+  hasUnpublishedChanges: boolean; // true when working copy diverges from published
+  projectSource: 'warehouse' | 'dbt'; // entry path — affects column view indicators
   context: ProjectContext;
   addedTables: string[];
   columnsSelected: boolean;
   includedColumns: Record<string, string[]>; // tableId → [colName, ...]
+  columnOverrides: Record<string, { description?: string | null; aiContext?: string | null; synonyms?: string[]; syncStatus?: 'ok' | 'broken' | 'degraded' }>;
+  prepTransforms?: PrepTransform[];
 }
 
-type AppView = 'overview' | 'new-project' | 'workspace';
+type AppView = 'overview' | 'new-project' | 'model-view' | 'workspace';
 
 const DataStudio: React.FC = () => {
   React.useEffect(() => {
@@ -41,40 +57,76 @@ const DataStudio: React.FC = () => {
     return () => { document.title = prev; };
   }, []);
 
-  const [view, setView] = useState<AppView>('overview');
+  const [view, setView]           = useState<AppView>('overview');
+  const [prevView, setPrevView]   = useState<AppView>('overview');
   const [activeNav, setActiveNav] = useState<NavSection>('overview');
   const [initialPrompt, setInitialPrompt] = useState<string>('');
+  const [selectedProject, setSelectedProject] = useState<OverviewProject | null>(null);
+  const [activeAlert, setActiveAlert]         = useState<OverviewAlert | null>(null);
   const [project, setProject] = useState<ProjectState>({
     id: 'proj-001',
     name: 'Untitled Project',
     buildStep: 'empty',
-    activeTab: 'visualizer',
+    activeTab: 'columns',
     testMode: false,
+    publishedVersion: 0,
+    hasUnpublishedChanges: true,
+    projectSource: 'warehouse',
     context: emptyContext,
     addedTables: [],
     columnsSelected: false,
     includedColumns: {},
+    columnOverrides: {},
   });
 
+  // Helper: navigate to a view while tracking history
+  const navigateTo = (next: AppView) => {
+    setPrevView(view);
+    setView(next);
+  };
+
+  // Open model view — landing screen before workspace
+  const openModelView = (proj: OverviewProject) => {
+    setSelectedProject(proj);
+    setActiveAlert(proj.issues?.[0] ?? null);
+    navigateTo('model-view');
+  };
+
+  // Enter workspace from model view (Edit model button)
+  const enterWorkspaceFromModelView = () => {
+    if (!selectedProject) return;
+    openProject(selectedProject.name, selectedProject.status === 'published');
+  };
+
   // Open an existing project — seeds a realistic "already built" state for demo
-  const openProject = (nameOrId?: string) => {
+  const openProject = (nameOrId?: string, published = false) => {
     setInitialPrompt('');
     setProject({
       id: `proj-${Date.now()}`,
       name: nameOrId ?? 'Untitled Project',
       buildStep: 'healthy',
-      activeTab: 'visualizer',
+      activeTab: 'columns',
       testMode: false,
+      publishedVersion: published ? 1 : 0,
+      hasUnpublishedChanges: !published,
+      projectSource: 'warehouse',
       context: emptyContext,
       addedTables: ['orders', 'campaigns', 'users'],
       columnsSelected: true,
       includedColumns: {
-        orders:    ['campaign_id', 'user_id', 'order_date', 'amount', 'region'],
+        orders:    ['order_date', 'amount', 'region'],
         campaigns: ['campaign_id', 'campaign_name', 'channel', 'spend', 'budget', 'impressions', 'target_region'],
         users:     ['user_id', 'segment', 'lifetime_value', 'signup_date'],
       },
+      columnOverrides: {},
     });
-    setView('workspace');
+    navigateTo('workspace');
+  };
+
+  // Mark current project as dbt — called when user clicks the dbt suggestion tile.
+  // Does NOT navigate or auto-fire the agent; user still needs to submit the prompt.
+  const startDbtProject = () => {
+    setProject(p => ({ ...p, projectSource: 'dbt' }));
   };
 
   // New project → goes to prompt screen first
@@ -83,33 +135,44 @@ const DataStudio: React.FC = () => {
       id: `proj-${Date.now()}`,
       name: 'Untitled Project',
       buildStep: 'empty',
-      activeTab: 'visualizer',
+      activeTab: 'columns',
       testMode: false,
+      publishedVersion: 0,
+      hasUnpublishedChanges: true,
+      projectSource: 'warehouse',
       context: emptyContext,
       addedTables: [],
       columnsSelected: false,
       includedColumns: {},
+      columnOverrides: {},
     });
     setInitialPrompt('');
-    setView('new-project');
+    navigateTo('new-project');
   };
 
   // User submitted the prompt → go to workspace with agent auto-trigger
   const handlePromptSubmit = (prompt: string, _tables: string[]) => {
     setInitialPrompt(prompt);
-    setView('workspace');
+    navigateTo('workspace');
   };
 
   // Start manually → empty workspace, no agent auto-trigger
   const handleStartManually = () => {
     setInitialPrompt('');
-    setView('workspace');
+    navigateTo('workspace');
   };
 
-  const backToOverview = () => {
+  const goBack = () => {
     setInitialPrompt('');
-    setView('overview');
-    setActiveNav('overview');
+    setActiveAlert(null);
+    // If previous screen was model-view, go back there; otherwise overview
+    if (prevView === 'model-view' && selectedProject) {
+      setView('model-view');
+      setPrevView('overview');
+    } else {
+      setView('overview');
+      setActiveNav('overview');
+    }
   };
 
   const handleNavChange = (nav: NavSection) => {
@@ -117,25 +180,37 @@ const DataStudio: React.FC = () => {
     if (nav === 'overview') setView('overview');
   };
 
-  const hideSidebar = view === 'workspace' || view === 'new-project';
-
   return (
-    <Shell activeNav={activeNav} onNavChange={handleNavChange} hideSidebar={hideSidebar}>
-      {view === 'overview' && (
-        <Overview onNewProject={newProject} onOpenProject={openProject} />
-      )}
+    <>
+      <Shell activeNav={activeNav} onNavChange={handleNavChange}>
+        {view === 'overview' && (
+          <Overview onNewProject={newProject} onOpenProject={openModelView} />
+        )}
+        {view === 'model-view' && selectedProject && (
+          <ModelView
+            project={selectedProject}
+            alert={activeAlert}
+            onBack={goBack}
+            onEdit={enterWorkspaceFromModelView}
+          />
+        )}
+      </Shell>
       {view === 'new-project' && (
-        <NewProjectPrompt onSubmit={handlePromptSubmit} onStartManually={handleStartManually} />
+        <div style={{ position: 'fixed', inset: 0, zIndex: 50 }}>
+          <NewProjectPrompt onSubmit={handlePromptSubmit} onStartManually={handleStartManually} onStartDbt={startDbtProject} onBack={goBack} />
+        </div>
       )}
       {view === 'workspace' && (
-        <Workspace
-          project={project}
-          setProject={setProject}
-          onBack={backToOverview}
-          initialPrompt={initialPrompt}
-        />
+        <div style={{ position: 'fixed', inset: 0, zIndex: 50 }}>
+          <Workspace
+            project={project}
+            setProject={setProject}
+            onBack={goBack}
+            initialPrompt={initialPrompt}
+          />
+        </div>
       )}
-    </Shell>
+    </>
   );
 };
 

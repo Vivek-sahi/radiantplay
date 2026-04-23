@@ -3,132 +3,78 @@
 ## Session protocol
 
 **Every session, do this first:**
-1. Read `src/prototypes/DataStudio/CONTEXT.md` — it is the single source of truth for open questions, workflow status, and session history.
+1. Read `src/prototypes/DataStudioV2/CONTEXT.md` — current build state, next up, session log.
 2. Check current git branch (`git branch`) — always work on `prototype/data-studio`.
 3. At the end of the session, append a new entry to the Session log in CONTEXT.md.
 
 **Before closing any session:** run `npm run build` and confirm it passes.
 
----
-
-## What this prototype is
-
-A vision demo for ThoughtSpot's **Data Studio** — the unified workspace for making warehouse data AI-ready for BI agents (Spotter). The goal is to make stakeholders believe this is the right product to build, not to spec every feature.
-
-**The story (Story B):** Analysts have raw warehouse data. Spotter needs that data to be AI-ready to answer business questions well. Data Studio is the single workspace where that happens — connect, build, test, coach, cache, and monitor, all in one place.
-
-**Audience:** SVP Product, VP Product, Directors of data modeling and data prep teams.
+**Session type — say this at the start:**
+- **"next up"** → read CONTEXT.md → state the first open item + its classification (scale + novelty) out loud → then act based on that classification. Do not start building before stating the classification.
+- **"sidequest: [name]"** → read `sidequests/[name].md`, work in Playground.tsx only, don't touch main prototype code
+- **"research: [topic]"** → use `research/_template.md`, produce a research doc, write no code this session
 
 ---
 
-## 6 demo situations (the demo arc)
+## Task intake — classify before acting
 
-| # | Situation | Status |
-|---|-----------|--------|
-| 1 | **Zero to one** — build a model from scratch | Built |
-| 2 | **Test it** — ask questions, find where Spotter struggles | Not built |
-| 3 | **Teach and fix** — coach the model based on test results | Not built |
-| 4 | **Expand the model** — add a table or metric to a working model | Partial |
-| 5 | **Cache it** — pull data to ThoughtSpot, set refresh, cost story | Not built |
-| 6 | **Monitor and fix** — surface a change or alert, route to the fix | Not built |
+Before starting any task, classify it on two dimensions. State the classification before proceeding.
 
-One real AI moment per situation. The rest is scripted. Not a feature tour — a story.
+**Novelty:**
+- **Known** — extends or tweaks something already built in DataStudio
+- **New** — first time DataStudio touches this problem area
 
----
+**Scale:**
+- **Small** — ≤ 2 files, no new component, no new interaction pattern
+- **Medium** — new component, new interaction, or modifies an existing flow
+- **Large** — new product area, new user journey, new IA, or first treatment of a capability
 
-## Key files
+| | Known territory | New territory |
+|---|---|---|
+| **Small** | Build directly | Scan `knowledge/` and `research/` first |
+| **Medium** | Check `research/` for prior decisions, then build | Write a research doc first (`research/_template.md`) |
+| **Large** | Research + Playground explorations before committing | Full process: understand → research → IA → explore → converge → build |
 
-| File | What it does |
-|------|-------------|
-| `index.tsx` | Root. Manages `AppView` state (overview / new-project / workspace). `openProject()` pre-seeds healthy project state for situations 2–6. |
-| `components/Shell.tsx` | App navigation wrapper (ThoughtSpot sidebar + header). |
-| `components/Overview.tsx` | Dashboard — alerts, recent projects, data table. Entry point for all flows. |
-| `components/NewProjectPrompt.tsx` | "What would you like to build?" screen. Entry to situation 1. |
-| `components/WorkflowDirectory.tsx` | Modal listing 12 workflows. Currently cosmetic — wiring it to demo scenarios is future work. |
-| `components/Workspace.tsx` | 3-panel layout (LeftPanel / CenterPanel / AgentPanel). All build workflows live here. |
-| `components/LeftPanel.tsx` | Tables / Joins / Formulas tree. `+` buttons fire agent messages. |
-| `components/CenterPanel.tsx` | Visualizer (dynamic SVG), Data Preview, Notebook tabs. |
-| `components/AgentPanel.tsx` | Agent chat. Scripted flows + real Claude calls. All `execute*` functions live here. |
-| `api/agent.ts` | Skills registry, `routeMessage()`, all `execute*` functions. |
-| `data/mockData.ts` | All mock data. Do not invent table or column names — always use what is here. |
+**Signals — new territory:** first time a capability is touched (caching, monitoring, connections); changes where something lives in the UI; introduces a new user mental model.
 
----
+**Signals — explore first:** multiple layout approaches are valid; interaction pattern not established. Use `Playground.tsx`, try 2–3 directions before choosing.
 
-## Mock data schema
+**When uncertain:** err toward more process.
 
-Demo scenario: **Campaign Performance** — marketing team wants to understand how campaigns drive orders across regions and user segments.
+**Research is self-triggering.** You don't need the user to say "research: [topic]" — if a task classifies as medium/large + new territory, propose research before building, regardless of how the session started. Say:
 
-**`orders`** (150 rows, Snowflake)
-- `order_id` · `user_id` · `campaign_id` (18% null) · `order_date` (MM/DD/YYYY) · `amount` (SUM) · `product_category` · `status` · `region`
-- Issues: 7 duplicate rows, 4 anomalies in `amount`, date format conflict
+> "This is [scale] + new territory. I don't think we should build yet — I want to understand [X] first. Let me ask a few questions / start a research doc."
 
-**`campaigns`** (Snowflake)
-- `campaign_id` · `campaign_name` · `channel` · `spend` (SUM) · `budget` · `impressions` · `target_region` · `start_date` · `end_date` (6 nulls, ongoing)
-- Issues: 2 duplicate rows, date format YYYY-MM-DD (conflicts with orders)
-
-**`users`** (Snowflake)
-- `user_id` · `segment` (15% null) · `lifetime_value` · `signup_date` (YYYY/MM/DD) · `age` (anomalies: 0, -3, 142, 199) · `email` (PII) · `country`
-
-**Join keys:** `orders.campaign_id → campaigns.campaign_id`, `orders.user_id → users.user_id`
-
-**Intentional quality issues** (used in situation 4 — fix data):
-- `campaign_id` 18% null (organic orders, no campaign attribution)
-- Date format inconsistency across all 3 tables
-- Duplicate rows in orders and campaigns
-- Age anomalies in users
-- Most columns missing descriptions (semantic health issue)
+Then either ask pointed questions to fill `research/_template.md`, or start filling it with what's already known and mark the gaps. The user can redirect ("just build it") but the default is to pause.
 
 ---
 
-## Routing pipeline (do not restructure without asking)
+## Knowledge base — read when relevant
 
-Message processing order in `AgentPanel.tsx` / `api/agent.ts`:
+- `knowledge/users.md` — who the primary user is, their workflow, the AHA moment
+- `knowledge/platform.md` — ThoughtSpot current state, caching, Spotter failures, dbt integration
+- `knowledge/patterns.md` — confirmed patterns, anti-patterns, open design questions
+- `design-system.md` — Radiant component cheat sheet (use this before loading full rule files)
+- `product.md` — what DataStudio is, the 6 situations, design principles
+- `reference.md` — mock data schema, routing pipeline, ProjectState, key files, Figma keys
 
-1. **@mention detection** — `@tablename` → direct add, no confirmation needed
-2. **OBVIOUS_CONFIRM** — 35+ phrases ("yes", "looks good", "make sense", "apply", etc.) → infers workflow from `buildStep` and confirms pending proposal
-3. **Pre-routing guards** — 1-table join request → scripted nudge; "find related tables" → always `find_tables`
-4. **METRIC_TRIGGER** — local shortcut fires before Claude for "add calculated columns", "create metrics", "add formulas"
-5. **Claude routing** — `routeMessage()` in `api/agent.ts` → returns a skill key or `CHAT:[text]`
-6. **Scripted flow** — skill key maps to a script in `SCRIPTS` object in `AgentPanel.tsx`
-
-**Skills registry** (in `api/agent.ts`): `find_tables`, `create_joins`, `select_columns`, `create_metric`, `profile_data`, `fix_health`, `test_model`, `coach`, `publish`, `share`. Each has an `availableWhen` gate based on `ProjectState`.
+Read `reference.md` when touching `api/agent.ts`, `data/mockData.ts`, or the routing pipeline. Not needed for UI-only sessions.
 
 ---
 
-## ProjectState shape
+## Rule files — skip for all DataStudio sessions
 
-```typescript
-{
-  id: string;
-  name: string;
-  buildStep: 'empty' | 'tables' | 'joined' | 'transformed' | 'healthy';
-  activeTab: 'visualizer' | 'preview' | 'notebook';
-  testMode: boolean;
-  context: ProjectContext;       // purpose, persona, sampleQuestions, businessLogic, spotterInstructions
-  addedTables: string[];         // drives LeftPanel and Visualizer dynamically
-  columnsSelected: boolean;      // gates testing, coaching, prep
-  includedColumns: Record<string, string[]>; // tableId → [colName, ...]
-}
-```
+Never load: `liveboard-canvas-core.md`, `liveboard-canvas-edit.md`, `liveboard-canvas-advanced.md`, `liveboard-ia.md`, `liveboard-scaffolding.md`, `prototype-generation.md`, `prototype-structure.md`
 
----
-
-## Figma files
-
-| File | Key |
-|------|-----|
-| FigJam (workflow diagrams) | `60MAfL7Hw61kD5ygWPHMZI` |
-| Figma (UI designs) | `qLZ511mHw8l2vXlyJKRCsv` |
-
-Never create new Figma or FigJam files for Data Studio work. Always write into these two.
+Use `design-system.md` first. Escalate to full rule files only for patterns not covered there.
 
 ---
 
 ## Hard rules
 
-- **Never restructure the routing pipeline** without asking — it is load-bearing and has been carefully tuned across 6 sessions.
-- **Never invent mock data** — all table names, column names, and values must come from `mockData.ts`.
-- **Never add prototype components to `src/components/`** — DataStudio components go in `src/prototypes/DataStudio/components/` only.
+- **Never restructure the routing pipeline** without asking — load-bearing, tuned across 34 sessions. See `reference.md`.
+- **Never invent mock data** — all table and column names must come from `mockData.ts`. Schema in `reference.md`.
+- **Never add prototype components to `src/components/`** — DataStudio components go in `src/prototypes/DataStudioV2/components/` only.
 - **Always run `npm run build`** before marking a session complete.
-- **WorkflowDirectory** is currently cosmetic (clicking does nothing). Do not wire it unless explicitly asked.
+- **WorkflowDirectory** is currently cosmetic. Do not wire it unless explicitly asked.
 - **Manual paths** for all workflows are intentionally deferred — build agentic paths first.

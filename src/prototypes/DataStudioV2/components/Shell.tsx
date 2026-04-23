@@ -49,15 +49,17 @@ interface ShellProps {
   activeNav: NavSection;
   onNavChange: (nav: NavSection) => void;
   hideSidebar?: boolean;
+  hideHeader?: boolean;
   children: React.ReactNode;
 }
 
-const Shell: React.FC<ShellProps> = ({ activeNav, onNavChange, hideSidebar = false, children }) => {
+const Shell: React.FC<ShellProps> = ({ activeNav, onNavChange, hideSidebar = false, hideHeader = false, children }) => {
   const headerProps: GlobalHeaderProps = {
     searchPlaceholder: 'Search in ThoughtSpot',
     searchMode: 'trigger',
     userName: 'Vivek Sahi',
     notificationCount: 0,
+    style: hideHeader ? { display: 'none' } : undefined,
   };
 
   const sidebarProps: AppSidebarProps = {

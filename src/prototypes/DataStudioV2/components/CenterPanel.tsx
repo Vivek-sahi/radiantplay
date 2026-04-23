@@ -1,15 +1,27 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { c, sp, ff, fs, fw } from '../styles';
 import { Button } from '../../../components/Button';
+import { Select, SelectOption } from '../../../components/Select';
+import { Checkbox } from '../../../components/Checkbox';
+import { radius } from '../../../tokens/radius';
 import { ProjectState } from '../index';
-import { ordersData, tableMetadata, relationships } from '../data/mockData';
+import { ordersData, campaignsData, usersData, tableMetadata, relationships } from '../data/mockData';
 import TableDetailModal from './TableDetailModal';
 
 interface CenterPanelProps {
   project: ProjectState;
+  setProject: React.Dispatch<React.SetStateAction<ProjectState>>;
+  onSendToAgent?: (msg: string) => void;
+  onInjectToAgent?: (text: string) => void;
+  selectedColumns?: string[];
+  onToggleColumn?: (name: string) => void;
+  onClearColumns?: () => void;
+  search: string;
+  visibleCols: Set<string>;
+  showIssuesOnly: boolean;
 }
 
-const CenterPanel: React.FC<CenterPanelProps> = ({ project }) => {
+const CenterPanel: React.FC<CenterPanelProps> = ({ project, setProject, onSendToAgent, onInjectToAgent, selectedColumns, onToggleColumn, onClearColumns, search, visibleCols, showIssuesOnly }) => {
   const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
 
   return (
@@ -21,17 +33,17 @@ const CenterPanel: React.FC<CenterPanelProps> = ({ project }) => {
           onClose={() => setSelectedTableId(null)}
         />
       )}
-      {project.activeTab === 'visualizer' && <VisualizerView project={project} onTableClick={setSelectedTableId} />}
-      {project.activeTab === 'preview'    && <DataPreviewView project={project} />}
-      {project.activeTab === 'notebook'   && <NotebookView project={project} />}
+      {project.activeTab === 'columns'  && <ColumnsView project={project} setProject={setProject} onSendToAgent={onSendToAgent} onInjectToAgent={onInjectToAgent} selectedColumns={selectedColumns} onToggleColumn={onToggleColumn} onClearColumns={onClearColumns} search={search} visibleCols={visibleCols} showIssuesOnly={showIssuesOnly} />}
+      {project.activeTab === 'tables'   && <TablesView project={project} onTableClick={setSelectedTableId} />}
+      {project.activeTab === 'preview'  && <DataPreviewView project={project} />}
+      {project.activeTab === 'notebook' && <NotebookView project={project} />}
     </div>
   );
 };
 
-// ── Visualizer ────────────────────────────────────────────────────────────────
+// ── Tables view (diagram) ─────────────────────────────────────────────────────
 
-const VisualizerView: React.FC<{ project: ProjectState; onTableClick: (id: string) => void }> = ({ project, onTableClick }) => {
-  const [subView, setSubView] = useState<'tables' | 'columns'>('tables');
+const TablesView: React.FC<{ project: ProjectState; onTableClick: (id: string) => void }> = ({ project, onTableClick }) => {
   const hasData  = project.addedTables.length > 0;
   const hasJoins = project.buildStep === 'joined' || project.buildStep === 'transformed' || project.buildStep === 'healthy';
 
@@ -45,111 +57,148 @@ const VisualizerView: React.FC<{ project: ProjectState; onTableClick: (id: strin
     );
   }
 
-  const hasCalc   = project.buildStep === 'transformed' || project.buildStep === 'healthy';
-  const isHealthy = project.buildStep === 'healthy';
-  const tables    = project.addedTables;
-  const totalIncluded = Object.values(project.includedColumns).flat().length;
-
-  const layout       = getTableLayout(tables);
-  const activeJoins  = relationships.filter(
-    r => tables.includes(r.leftTable) && tables.includes(r.rightTable)
-  );
-  const svgH = Math.max(420, Math.ceil(tables.length / 2) * 180 + 60);
+  const tables      = project.addedTables;
+  const layout      = getTableLayout(tables);
+  const activeJoins = relationships.filter(r => tables.includes(r.leftTable) && tables.includes(r.rightTable));
+  const svgH        = Math.max(420, Math.ceil(tables.length / 2) * 180 + 60);
 
   return (
-    <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-      {/* Tables / Columns toggle */}
-      <div style={{ flexShrink: 0, display: 'flex', justifyContent: 'center', padding: `${sp.C}px 0 0`, backgroundColor: c['background-sunken'] }}>
-        <div style={{ display: 'flex', gap: 2, padding: 3, backgroundColor: c['background-subtle'], borderRadius: 8, border: `1px solid ${c['border-divider']}` }}>
-          {(['tables', 'columns'] as const).map(v => (
-            <button
-              key={v}
-              onClick={() => setSubView(v)}
-              style={{
-                padding: `${sp.A}px ${sp.C}px`,
-                borderRadius: 6, border: 'none', cursor: 'pointer', fontFamily: ff.primary, fontSize: fs.xs,
-                backgroundColor: subView === v ? c['background-base'] : 'transparent',
-                color:            subView === v ? c['content-primary']  : c['content-secondary'],
-                fontWeight:       subView === v ? fw.medium : fw.regular,
-                boxShadow:        subView === v ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
-                transition: 'all 0.12s',
-              }}
-            >
-              {v === 'tables' ? 'Tables' : `Columns${project.columnsSelected ? ` (${totalIncluded})` : ''}`}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {subView === 'tables' ? (
-        <div style={{ flex: 1, overflow: 'auto', padding: sp.H, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <svg width="620" height={svgH} viewBox={`0 0 620 ${svgH}`} style={{ maxWidth: '100%' }}>
-
-            {/* Table nodes — dynamic, one per added table */}
-            {tables.map((id, idx) => {
-              const meta = tableMetadata[id];
-              const pos  = layout[id];
-              if (!pos) return null;
-              const label = meta?.name ?? (id.charAt(0).toUpperCase() + id.slice(1));
-              const cols  = meta?.columns.length ?? 0;
-              return (
-                <TableNode
-                  key={id}
-                  x={pos.x} y={pos.y}
-                  label={label} cols={cols}
-                  calcBadge={hasCalc && idx === 0}
-                  healthyBadge={isHealthy && idx === 0}
-                  onClick={() => onTableClick(id)}
-                />
-              );
-            })}
-
-            {/* Join lines — dynamic, based on relationships data */}
-            {hasJoins && activeJoins.map(rel => {
-              const fromPos = layout[rel.leftTable];
-              const toPos   = layout[rel.rightTable];
-              if (!fromPos || !toPos) return null;
-
-              const fromX = fromPos.x + TABLE_W;
-              const fromY = fromPos.y + TABLE_H / 2;
-              const toX   = toPos.x;
-              const toY   = toPos.y + TABLE_H / 2;
-              const midX  = (fromX + toX) / 2;
-              const midY  = (fromY + toY) / 2;
-              const label = rel.joinType.toUpperCase() + ' JOIN';
-              const labelW = label.length * 5.8 + 16;
-
-              return (
-                <g key={rel.id}>
-                  <path d={`M ${fromX} ${fromY} C ${midX} ${fromY} ${midX} ${toY} ${toX} ${toY}`} stroke={c['content-brand']} strokeWidth="1.5" fill="none" />
-                  <circle cx={fromX} cy={fromY} r="4" fill={c['content-brand']} />
-                  <circle cx={toX}   cy={toY}   r="4" fill={c['content-brand']} />
-                  <rect x={midX - labelW / 2} y={midY + 2} width={labelW} height={18} rx="4" fill={c['background-information']} />
-                  <text x={midX} y={midY + 15} fill={c['content-brand']} fontSize="10" fontFamily="system-ui" textAnchor="middle" fontWeight="500">{label}</text>
-                  <text x={midX} y={midY - 3}  fill={c['content-secondary']} fontSize="9" fontFamily="system-ui" textAnchor="middle">{rel.leftColumn}</text>
-                </g>
-              );
-            })}
-
-          </svg>
-        </div>
-      ) : (
-        <ColumnsView project={project} />
-      )}
+    <div style={{ flex: 1, overflow: 'auto', padding: sp.H, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: c['background-sunken'] }}>
+      <svg width="620" height={svgH} viewBox={`0 0 620 ${svgH}`} style={{ maxWidth: '100%' }}>
+        {tables.map((id) => {
+          const meta         = tableMetadata[id];
+          const pos          = layout[id];
+          if (!pos) return null;
+          const label        = meta?.name ?? (id.charAt(0).toUpperCase() + id.slice(1));
+          const totalCols    = meta?.columns.length ?? 0;
+          const selectedCols = project.columnsSelected ? (project.includedColumns[id]?.length ?? 0) : 0;
+          return <TableNode key={id} x={pos.x} y={pos.y} label={label} totalCols={totalCols} selectedCols={selectedCols} onClick={() => onTableClick(id)} />;
+        })}
+        {hasJoins && activeJoins.map(rel => {
+          const fromPos = layout[rel.leftTable];
+          const toPos   = layout[rel.rightTable];
+          if (!fromPos || !toPos) return null;
+          const fromX = fromPos.x + TABLE_W;
+          const fromY = fromPos.y + TABLE_H / 2;
+          const toX   = toPos.x;
+          const toY   = toPos.y + TABLE_H / 2;
+          const midX  = Math.round((fromX + toX) / 2);
+          const dotX  = midX;
+          const dotY  = Math.round((fromY + toY) / 2);
+          const connColor = '#9CA3AF';
+          return (
+            <g key={rel.id}>
+              <path d={fromY === toY ? `M ${fromX} ${fromY} H ${toX}` : `M ${fromX} ${fromY} H ${midX} V ${toY} H ${toX}`} stroke={connColor} strokeWidth="1.5" fill="none" />
+              <line x1={fromX + 16} y1={fromY} x2={fromX} y2={fromY - 14} stroke={connColor} strokeWidth="1.5" strokeLinecap="round"/>
+              <line x1={fromX + 16} y1={fromY} x2={fromX} y2={fromY}      stroke={connColor} strokeWidth="1.5" strokeLinecap="round"/>
+              <line x1={fromX + 16} y1={fromY} x2={fromX} y2={fromY + 14} stroke={connColor} strokeWidth="1.5" strokeLinecap="round"/>
+              <circle cx={dotX} cy={dotY} r="6" fill={c['background-sunken']} stroke={connColor} strokeWidth="1.5"/>
+            </g>
+          );
+        })}
+      </svg>
     </div>
   );
 };
 
 // ── Columns view ──────────────────────────────────────────────────────────────
 
-const TABLE_COLORS: Record<string, string> = {
-  orders:    '#2770ef',
-  campaigns: '#7c3aed',
-  users:     '#059669',
+const TYPE_LABEL: Record<string, string> = { string: 'VARCHAR', number: 'NUMBER', date: 'DATE', boolean: 'BOOLEAN' };
+
+const COL_TYPE_OPTIONS: SelectOption[] = [
+  { id: 'attribute', label: 'Attribute' },
+  { id: 'measure',   label: 'Measure' },
+  { id: 'key',       label: 'Key' },
+];
+const AGG_SELECT_OPTIONS: SelectOption[] = ['—', 'SUM', 'AVG', 'COUNT', 'COUNT_DISTINCT', 'MAX', 'MIN'].map(v => ({ id: v, label: v }));
+const FORMAT_SELECT_OPTIONS: SelectOption[] = ['text', 'number', 'currency', 'percentage', 'date'].map(v => ({ id: v, label: v.charAt(0).toUpperCase() + v.slice(1) }));
+
+/** Local-state wrapper so DS Select can work in a table cell without mutating ProjectState */
+const SelectCell: React.FC<{ defaultValue: string; options: SelectOption[] }> = ({ defaultValue, options }) => {
+  const [val, setVal] = useState(defaultValue);
+  return <Select options={options} value={val} onChange={setVal} size="small" />;
 };
 
-const ColumnsView: React.FC<{ project: ProjectState }> = ({ project }) => {
-  if (!project.columnsSelected || Object.keys(project.includedColumns).length === 0) {
+/** Local-state wrapper so DS Checkbox can work in a table cell without mutating ProjectState */
+const CheckboxCell: React.FC<{ defaultChecked: boolean; label: string }> = ({ defaultChecked, label }) => {
+  const [checked, setChecked] = useState(defaultChecked);
+  return <Checkbox checked={checked} label={label} onChange={setChecked} />;
+};
+
+export const DEFAULT_VISIBLE_COLS = ['sourceTable','dataType','description','aiContext','synonyms','columnType','aggregation','additive','hidden','format','nullPct','duplicates','blanks','anomalies'];
+export const ADVANCED_COLS = [
+  { key: 'currencyType', label: 'Currency type' }, { key: 'dateBucket', label: 'Date bucket' },
+  { key: 'calendar', label: 'Calendar type' },     { key: 'geoConfig', label: 'Geo config' },
+  { key: 'indexPriority', label: 'Index priority' },{ key: 'suggestion', label: 'Suggestion settings' },
+  { key: 'spotIQ', label: 'SpotIQ preference' },   { key: 'customSort', label: 'Custom sort' },
+  { key: 'attribution', label: 'Attribution dimension' },
+];
+export const COL_LABELS: Record<string, string> = {
+  sourceTable: 'Source table', dataType: 'Data type', description: 'Description',
+  aiContext: 'AI Context', synonyms: 'Synonyms', columnType: 'Column type',
+  aggregation: 'Aggregation', additive: 'Additive', hidden: 'Hidden',
+  format: 'Format', nullPct: 'Null %', duplicates: 'Duplicates', blanks: 'Blanks', anomalies: 'Anomalies',
+};
+
+const STICKY_SHADOW = '4px 0 10px rgba(0,0,0,0.14)';
+const NAME_WIDTH = 160;
+
+interface EditingCell { rowKey: string; colId: string; field: 'description' | 'aiContext' | 'synonyms' }
+
+const ColumnsView: React.FC<{ project: ProjectState; setProject: React.Dispatch<React.SetStateAction<ProjectState>>; onSendToAgent?: (msg: string) => void; onInjectToAgent?: (text: string) => void; selectedColumns?: string[]; onToggleColumn?: (name: string) => void; onClearColumns?: () => void; search: string; visibleCols: Set<string>; showIssuesOnly: boolean }> = ({ project, setProject, onSendToAgent, onInjectToAgent, selectedColumns = [], onToggleColumn, onClearColumns, search, visibleCols, showIssuesOnly }) => {
+  const [editing,    setEditing]    = useState<EditingCell | null>(null);
+  const [editVal,    setEditVal]    = useState('');
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [visible,    setVisible]    = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setVisible(true), 16);
+    return () => clearTimeout(t);
+  }, []);
+  const tableWrapRef = useRef<HTMLDivElement>(null);
+  const editRef      = useRef<HTMLTextAreaElement | HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    if (editRef.current) editRef.current.focus();
+  }, [editing]);
+
+  useEffect(() => {
+    const el = tableWrapRef.current;
+    if (!el) return;
+    const onScroll = () => setIsScrolled(el.scrollLeft > 1);
+    el.addEventListener('scroll', onScroll, { passive: true });
+    return () => el.removeEventListener('scroll', onScroll);
+  }, []);
+
+  const rows = useMemo(() => {
+    const result: Array<{ rowKey: string; tableId: string; tableName: string; col: any }> = [];
+    for (const tableId of project.addedTables) {
+      const included = project.includedColumns[tableId] ?? [];
+      const meta = tableMetadata[tableId];
+      if (!meta) continue;
+      for (const colName of included) {
+        const col = meta.columns.find(c => c.name === colName || c.id === colName);
+        if (col) result.push({ rowKey: `${tableId}_${col.id}`, tableId, tableName: meta.name, col });
+      }
+    }
+    return result.sort((a, b) => a.col.name.localeCompare(b.col.name));
+  }, [project.addedTables, project.includedColumns]);
+
+  const prepTransformMap = useMemo(() => {
+    const map = new Map<string, string>(); // `${tableId}:${columnId}:${issueType}` → sql
+    for (const t of (project.prepTransforms ?? [])) {
+      map.set(`${t.tableId}:${t.columnId}:${t.issueType}`, t.sql);
+    }
+    return map;
+  }, [project.prepTransforms]);
+
+  const filtered = rows.filter(r => {
+    if (showIssuesOnly && r.col.syncStatus !== 'broken' && r.col.syncStatus !== 'degraded') return false;
+    if (search && !r.col.name.toLowerCase().includes(search.toLowerCase())) return false;
+    return true;
+  });
+
+  if (!project.columnsSelected || rows.length === 0) {
     return (
       <EmptyCenter
         icon="⊟"
@@ -159,99 +208,245 @@ const ColumnsView: React.FC<{ project: ProjectState }> = ({ project }) => {
     );
   }
 
-  // Flatten to rows in table order
-  const rows: Array<{ tableId: string; tableName: string; tableColor: string; colName: string; type: string; classification?: string; aggregation?: string; description: string | null; isPII?: boolean; nullRate?: number; synonyms?: string[] }> = [];
-  for (const tableId of project.addedTables) {
-    const included = project.includedColumns[tableId] ?? [];
-    const meta = tableMetadata[tableId];
-    if (!meta) continue;
-    for (const colName of included) {
-      const col = meta.columns.find(c => c.name === colName);
-      if (col) rows.push({
-        tableId,
-        tableName: meta.name,
-        tableColor: TABLE_COLORS[tableId] ?? c['content-secondary'],
-        colName: col.name,
-        type: col.type,
-        classification: col.classification,
-        aggregation: col.aggregation,
-        description: col.description,
-        isPII: col.isPII,
-        nullRate: col.nullRate,
-        synonyms: col.synonyms,
-      });
-    }
-  }
+  const getVal = (col: any, field: 'description' | 'aiContext' | 'synonyms') => {
+    const ov = project.columnOverrides?.[col.id];
+    if (ov && field in ov) return ov[field as keyof typeof ov];
+    return col[field];
+  };
 
-  const classColor = (cls?: string) =>
-    cls === 'measure'   ? { bg: '#eff6ff', text: '#1d4ed8' } :
-    cls === 'attribute' ? { bg: '#f0fdf4', text: '#15803d' } :
-    cls === 'key'       ? { bg: '#fef9c3', text: '#a16207' } :
-                          { bg: c['background-subtle'], text: c['content-secondary'] };
+  const commitEdit = () => {
+    if (!editing) return;
+    const { colId, field } = editing;
+    const val = field === 'synonyms'
+      ? editVal.split(',').map((s: string) => s.trim()).filter(Boolean)
+      : (editVal.trim() || null);
+    setProject(p => ({
+      ...p,
+      columnOverrides: { ...p.columnOverrides, [colId]: { ...(p.columnOverrides?.[colId] ?? {}), [field]: val } },
+    }));
+    setEditing(null);
+  };
+
+  const startEdit = (rowKey: string, colId: string, field: 'description' | 'aiContext' | 'synonyms', currentVal: any) => {
+    const strVal = field === 'synonyms' ? (currentVal ?? []).join(', ') : (currentVal ?? '');
+    setEditing({ rowKey, colId, field });
+    setEditVal(strVal);
+  };
+
+  const isMeasure = (col: any) => col.classification === 'measure';
+  const isAttr    = (col: any) => col.classification !== 'measure';
+
+
+  const thStyle = (minW: number): React.CSSProperties => ({
+    minWidth: minW, padding: `${sp.B}px ${sp.D}px`, borderBottom: `1px solid ${c['border-divider']}`,
+    textAlign: 'left', fontWeight: fw.medium, color: c['content-secondary'], fontSize: fs.xs,
+    textTransform: 'uppercase', letterSpacing: '0.5px',
+    whiteSpace: 'nowrap', backgroundColor: c['background-sunken'],
+    position: 'sticky', top: 0, zIndex: 2,
+  });
+  const tdStyle = (): React.CSSProperties => ({
+    padding: `${sp.B}px ${sp.D}px`, borderBottom: `1px solid ${c['border-divider']}`,
+    verticalAlign: 'middle', backgroundColor: c['background-base'],
+  });
+  const naCell = (): React.CSSProperties => tdStyle();
+
+  const EditableCell = ({ rowKey, colId, field, multiline, currentVal }: { rowKey: string; colId: string; field: 'description' | 'aiContext' | 'synonyms'; multiline: boolean; currentVal: any }) => {
+    const isEditing = editing?.rowKey === rowKey && editing?.field === field;
+    const display = field === 'synonyms'
+      ? (currentVal?.length ? currentVal.join(', ') : null)
+      : currentVal;
+    const editInputStyle: React.CSSProperties = {
+      width: '100%', fontFamily: ff.primary, fontSize: fs.sm, fontWeight: fw.light,
+      border: `1px solid ${c['border-default']}`, borderRadius: radius.input,
+      padding: '6px 10px', outline: 'none', color: c['content-primary'],
+      lineHeight: 1.45, boxSizing: 'border-box', backgroundColor: c['background-base'],
+    };
+    if (isEditing) {
+      return multiline ? (
+        <textarea
+          ref={editRef as React.RefObject<HTMLTextAreaElement>}
+          value={editVal}
+          onChange={e => setEditVal(e.target.value)}
+          onBlur={commitEdit}
+          onFocus={e => (e.currentTarget.style.borderColor = c['border-brand'])}
+          onKeyDown={e => { if (e.key === 'Escape') setEditing(null); if (e.key === 'Enter' && e.metaKey) commitEdit(); }}
+          style={{ ...editInputStyle, minHeight: 56, resize: 'vertical' }}
+        />
+      ) : (
+        <input
+          ref={editRef as React.RefObject<HTMLInputElement>}
+          value={editVal}
+          onChange={e => setEditVal(e.target.value)}
+          onBlur={commitEdit}
+          onFocus={e => (e.currentTarget.style.borderColor = c['border-brand'])}
+          onKeyDown={e => { if (e.key === 'Escape') setEditing(null); if (e.key === 'Enter') commitEdit(); }}
+          style={editInputStyle}
+        />
+      );
+    }
+    return (
+      <div
+        onClick={() => startEdit(rowKey, colId, field, currentVal)}
+        title={display ?? undefined}
+        style={{ cursor: 'text', padding: '4px 6px', borderRadius: radius.sm, fontSize: fs.sm, color: display ? c['content-primary'] : c['content-secondary'], fontStyle: display ? 'normal' : 'italic', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: multiline ? 'normal' : 'nowrap', lineHeight: 1.45, maxWidth: multiline ? 210 : 170 }}
+        onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-sunken'])}
+        onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+      >
+        {display ?? 'Click to add'}
+      </div>
+    );
+  };
+
+  const show = (key: string) => visibleCols.has(key);
 
   return (
-    <div style={{ flex: 1, overflow: 'auto' }}>
-      {/* Column header */}
-      <div style={{ display: 'grid', gridTemplateColumns: '160px 90px 90px 1fr 100px', gap: 0, position: 'sticky', top: 0, zIndex: 1, backgroundColor: c['background-subtle'], borderBottom: `1px solid ${c['border-divider']}` }}>
-        {['Column', 'Type', 'Role', 'Description', 'Profile'].map(h => (
-          <div key={h} style={{ padding: `${sp.B}px ${sp.C}px`, fontSize: fs.xs, fontWeight: fw.medium, color: c['content-secondary'] }}>{h}</div>
-        ))}
-      </div>
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundColor: c['background-base'], opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(8px)', transition: 'opacity 0.22s ease, transform 0.22s ease' }}>
 
-      {/* Rows */}
-      {rows.map(({ tableId, tableName, tableColor, colName, type, classification, aggregation, description, isPII, nullRate, synonyms }, i) => {
-        const cls = classColor(classification);
-        return (
-          <div
-            key={`${tableId}-${colName}`}
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '160px 90px 90px 1fr 100px',
-              gap: 0,
-              borderBottom: `1px solid ${c['border-divider']}`,
-              backgroundColor: i % 2 === 0 ? c['background-base'] : c['background-sunken'],
-            }}
-          >
-            {/* Column name + table badge */}
-            <div style={{ padding: `${sp.B}px ${sp.C}px`, display: 'flex', flexDirection: 'column', gap: 3 }}>
-              <span style={{ fontSize: fs.xs, fontWeight: fw.medium, color: c['content-primary'], fontFamily: 'monospace' }}>{colName}</span>
-              <span style={{ fontSize: 10, color: tableColor, backgroundColor: tableColor + '18', padding: '1px 6px', borderRadius: 4, width: 'fit-content', fontWeight: fw.medium }}>{tableName}</span>
-            </div>
-            {/* Type */}
-            <div style={{ padding: `${sp.B}px ${sp.C}px`, display: 'flex', alignItems: 'center' }}>
-              <span style={{ fontSize: fs.xs, color: c['content-secondary'], fontFamily: 'monospace' }}>{type}</span>
-            </div>
-            {/* Classification */}
-            <div style={{ padding: `${sp.B}px ${sp.C}px`, display: 'flex', alignItems: 'center', gap: sp.A }}>
-              {classification && (
-                <span style={{ fontSize: 10, backgroundColor: cls.bg, color: cls.text, padding: '2px 6px', borderRadius: 4, fontWeight: fw.medium }}>
-                  {classification}{aggregation ? ` · ${aggregation}` : ''}
-                </span>
-              )}
-              {isPII && (
-                <span style={{ fontSize: 10, backgroundColor: '#fef2f2', color: '#dc2626', padding: '2px 5px', borderRadius: 4, fontWeight: fw.medium }}>PII</span>
-              )}
-            </div>
-            {/* Description */}
-            <div style={{ padding: `${sp.B}px ${sp.C}px`, display: 'flex', flexDirection: 'column', gap: 2, justifyContent: 'center' }}>
-              {description
-                ? <span style={{ fontSize: fs.xs, color: c['content-primary'], lineHeight: '16px' }}>{description}</span>
-                : <span style={{ fontSize: fs.xs, color: c['content-secondary'], fontStyle: 'italic' }}>No description</span>
-              }
-              {synonyms && synonyms.length > 0 && (
-                <span style={{ fontSize: 10, color: c['content-secondary'] }}>also: {synonyms.join(', ')}</span>
-              )}
-            </div>
-            {/* Profile */}
-            <div style={{ padding: `${sp.B}px ${sp.C}px`, display: 'flex', alignItems: 'center' }}>
-              {nullRate && nullRate > 0
-                ? <span style={{ fontSize: 10, color: nullRate > 10 ? c['content-warning'] : c['content-secondary'] }}>{nullRate}% null</span>
-                : <span style={{ fontSize: 10, color: c['content-secondary'] }}>—</span>
-              }
-            </div>
-          </div>
-        );
-      })}
+
+
+      {/* Table */}
+      <div ref={tableWrapRef} style={{ flex: 1, overflowX: 'auto', overflowY: 'auto' }}>
+        <table style={{ borderCollapse: 'collapse', fontSize: fs.sm, minWidth: '100%', whiteSpace: 'nowrap' }}>
+          <thead>
+            <tr>
+              <th style={{ ...thStyle(NAME_WIDTH), position: 'sticky', left: 0, top: 0, zIndex: 4 }}>
+                Column name
+                {isScrolled && <div style={{ position: 'absolute', top: 0, right: -14, bottom: 0, width: 14, background: 'linear-gradient(to right, rgba(0,0,0,0.09), transparent)', pointerEvents: 'none', zIndex: 5 }} />}
+              </th>
+              {show('sourceTable') && <th style={thStyle(110)}>Source table</th>}
+              {show('dataType')    && <th style={thStyle(90)}>Data type</th>}
+              {show('description') && <th style={thStyle(220)}>Description</th>}
+              {show('aiContext')   && <th style={thStyle(220)}>✦ AI Context</th>}
+              {show('synonyms')    && <th style={thStyle(180)}>✦ Synonyms</th>}
+              {show('columnType')  && <th style={thStyle(120)}>Column type</th>}
+              {show('aggregation') && <th style={thStyle(140)}>Aggregation</th>}
+              {show('additive')    && <th style={thStyle(90)}>Additive</th>}
+              {show('hidden')      && <th style={thStyle(80)}>Hidden</th>}
+              {show('format')      && <th style={thStyle(120)}>Format</th>}
+              {show('nullPct')     && <th style={thStyle(80)}>Null %</th>}
+              {show('duplicates')  && <th style={thStyle(100)}>Duplicates</th>}
+              {show('blanks')      && <th style={thStyle(80)}>Blanks</th>}
+              {show('anomalies')   && <th style={thStyle(90)}>Anomalies</th>}
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map(({ rowKey, tableId, tableName, col }) => {
+              const isSelected = selectedColumns.includes(col.name);
+              const desc   = getVal(col, 'description') as string | null;
+              const aiCtx  = getVal(col, 'aiContext') as string | null;
+              const syns   = getVal(col, 'synonyms') as string[] | undefined;
+              const qVal   = (v?: number) => v && v > 0
+                ? <span style={{ color: c['content-primary'] }}>{v}</span>
+                : <span style={{ color: c['content-secondary'] }}>—</span>;
+              const rowBg  = c['background-base'];
+
+              const effectiveSyncStatus = project.columnOverrides?.[col.id]?.syncStatus ?? col.syncStatus;
+              return (
+                <tr key={rowKey}
+                  onClick={() => onToggleColumn?.(col.name)}
+                  style={{ backgroundColor: rowBg, cursor: 'pointer' }}
+                  onMouseEnter={e => { e.currentTarget.style.backgroundColor = c['background-sunken']; }}
+                  onMouseLeave={e => { e.currentTarget.style.backgroundColor = rowBg; }}
+                >
+                  <td
+                    style={{ ...tdStyle(), position: 'sticky', left: 0, zIndex: 2, fontWeight: fw.medium, backgroundColor: rowBg }}
+                  >
+                    <span style={{ display: 'flex', alignItems: 'center', gap: sp.A }}>
+                      {col.name}
+                      {col.isPII && <span style={{ fontSize: fs.xs, background: c['background-failure'], color: c['content-failure'], padding: '1px 5px', borderRadius: radius.tag, fontWeight: fw.regular }}>PII</span>}
+                      {effectiveSyncStatus === 'broken' && (
+                        <span
+                          title="Couldn't be translated"
+                          style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 16, height: 16, borderRadius: '50%', background: c['background-failure'], flexShrink: 0 }}
+                        >
+                          <svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M4 2V4.5" stroke={c['content-failure']} strokeWidth="1.5" strokeLinecap="round"/><circle cx="4" cy="6.5" r="0.75" fill={c['content-failure']}/></svg>
+                        </span>
+                      )}
+                      {effectiveSyncStatus === 'degraded' && (
+                        <span
+                          title="Partially translated"
+                          style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 16, height: 16, borderRadius: '50%', background: c['background-warning'], flexShrink: 0 }}
+                        >
+                          <svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M4 2V4.5" stroke={c['content-warning']} strokeWidth="1.5" strokeLinecap="round"/><circle cx="4" cy="6.5" r="0.75" fill={c['content-warning']}/></svg>
+                        </span>
+                      )}
+                    </span>
+                    {isScrolled && <div style={{ position: 'absolute', top: 0, right: -14, bottom: 0, width: 14, background: 'linear-gradient(to right, rgba(0,0,0,0.09), transparent)', pointerEvents: 'none', zIndex: 5 }} />}
+                  </td>
+                  {show('sourceTable') && <td style={{ ...tdStyle(), color: c['content-secondary'] }}>{tableName}</td>}
+                  {show('dataType')    && <td style={{ ...tdStyle(), fontFamily: ff.mono, fontSize: fs.xs, color: c['content-secondary'] }}>{TYPE_LABEL[col.type] ?? col.type.toUpperCase()}</td>}
+                  {show('description') && <td style={{ ...tdStyle(), maxWidth: 220 }}><EditableCell rowKey={rowKey} colId={col.id} field="description" multiline={true} currentVal={desc} /></td>}
+                  {show('aiContext')   && <td style={{ ...tdStyle(), maxWidth: 220 }}><EditableCell rowKey={rowKey} colId={col.id} field="aiContext"   multiline={true} currentVal={aiCtx} /></td>}
+                  {show('synonyms')    && <td style={{ ...tdStyle(), maxWidth: 180, overflow: 'hidden' }}><EditableCell rowKey={rowKey} colId={col.id} field="synonyms" multiline={false} currentVal={syns} /></td>}
+                  {show('columnType')  && (
+                    <td style={tdStyle()}>
+                      <SelectCell
+                        defaultValue={col.classification ?? 'attribute'}
+                        options={COL_TYPE_OPTIONS}
+                      />
+                    </td>
+                  )}
+                  {show('aggregation') && (
+                    isAttr(col)
+                      ? <td style={naCell()} title="Only applicable to measures"><span style={{ color: c['content-tertiary'] }}>—</span></td>
+                      : <td style={tdStyle()}>
+                          <SelectCell defaultValue={col.aggregation ?? '—'} options={AGG_SELECT_OPTIONS} />
+                        </td>
+                  )}
+                  {show('additive') && (
+                    isAttr(col)
+                      ? <td style={naCell()} title="Only applicable to measures"><span style={{ color: c['content-tertiary'] }}>—</span></td>
+                      : <td style={tdStyle()}>
+                          <CheckboxCell defaultChecked={col.isAdditive ?? false} label="Yes" />
+                        </td>
+                  )}
+                  {show('hidden') && (
+                    <td style={tdStyle()}>
+                      <CheckboxCell defaultChecked={col.isHidden ?? false} label="Hide" />
+                    </td>
+                  )}
+                  {show('format') && (
+                    <td style={tdStyle()}>
+                      <SelectCell defaultValue={col.formatPattern ?? 'text'} options={FORMAT_SELECT_OPTIONS} />
+                    </td>
+                  )}
+                  {show('nullPct') && (
+                    <td style={tdStyle()}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                        {qVal(col.nullRate)}{col.nullRate ? '%' : ''}
+                        {prepTransformMap.has(`${tableId}:${col.id}:null`) && (
+                          <span title={`Transform active: ${prepTransformMap.get(`${tableId}:${col.id}:null`)}`} style={{ fontSize: 12, color: c['content-brand'], cursor: 'default', lineHeight: 1, padding: '2px 2px' }}>✦</span>
+                        )}
+                      </span>
+                    </td>
+                  )}
+                  {show('duplicates') && (
+                    <td style={tdStyle()}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                        {qVal(col.duplicateCount)}
+                        {prepTransformMap.has(`${tableId}:${col.id}:duplicate`) && (
+                          <span title={`Transform active: ${prepTransformMap.get(`${tableId}:${col.id}:duplicate`)}`} style={{ fontSize: 12, color: c['content-brand'], cursor: 'default', lineHeight: 1, padding: '2px 2px' }}>✦</span>
+                        )}
+                      </span>
+                    </td>
+                  )}
+                  {show('blanks')     && <td style={tdStyle()}>{qVal(col.blankCount)}</td>}
+                  {show('anomalies') && (
+                    <td style={tdStyle()}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                        {qVal(col.anomalyCount)}
+                        {prepTransformMap.has(`${tableId}:${col.id}:anomaly`) && (
+                          <span title={`Transform active: ${prepTransformMap.get(`${tableId}:${col.id}:anomaly`)}`} style={{ fontSize: 12, color: c['content-brand'], cursor: 'default', lineHeight: 1, padding: '2px 2px' }}>✦</span>
+                        )}
+                      </span>
+                    </td>
+                  )}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 };
@@ -287,29 +482,29 @@ function getTableLayout(tables: string[]): Record<string, { x: number; y: number
 
 // ── Table node ────────────────────────────────────────────────────────────────
 
-const TableNode: React.FC<{ x: number; y: number; label: string; cols: number; calcBadge?: boolean; healthyBadge?: boolean; onClick?: () => void }> = ({ x, y, label, cols, calcBadge, healthyBadge, onClick }) => {
-  const h = calcBadge ? 96 : 80;
+const TableNode: React.FC<{ x: number; y: number; label: string; totalCols: number; selectedCols: number; onClick?: () => void }> = ({ x, y, label, totalCols, selectedCols, onClick }) => {
+  const colLabel = selectedCols > 0 ? `${selectedCols} / ${totalCols} columns` : `${totalCols} columns`;
   return (
     <g onClick={onClick} style={{ cursor: onClick ? 'pointer' : 'default' }}>
-      <rect x={x} y={y} width={TABLE_W} height={h} rx={8} fill={c['background-base']} stroke={healthyBadge ? c['content-success'] : c['border-divider']} strokeWidth={healthyBadge ? 2 : 1.5} />
-      <text x={x + 14} y={y + 24} fill={c['content-primary']} fontSize="13" fontWeight="600" fontFamily="system-ui">{label}</text>
-      {cols > 0 && <text x={x + 14} y={y + 42} fill={c['content-secondary']} fontSize="11" fontFamily="system-ui">{cols} columns</text>}
-      {Array.from({ length: Math.min(Math.max(cols, 0), 5) }).map((_, i) => (
-        <rect key={i} x={x + 14 + i * 22} y={y + 55} width={16} height={5} rx={3} fill={c['border-divider']} />
-      ))}
-      {calcBadge && (
-        <text x={x + 14} y={y + 80} fill={c['content-brand']} fontSize="10" fontFamily="system-ui">ƒx +3 calculated columns</text>
-      )}
-      {healthyBadge && (
-        <text x={x + 130} y={y + 16} fill={c['content-success']} fontSize="10" fontFamily="system-ui" fontWeight="600">✓ AI-ready</text>
-      )}
+      <rect x={x} y={y} width={TABLE_W} height={TABLE_H} rx={8} fill={c['background-base']} stroke="#9CA3AF" strokeWidth="1.5"/>
+      {/* Type label */}
+      <text x={x + 14} y={y + 20} fill="#9CA3AF" fontSize="10" fontFamily="system-ui" letterSpacing="0.3">Table</text>
+      {/* Menu dots */}
+      <text x={x + TABLE_W - 14} y={y + 21} fill="#9CA3AF" fontSize="13" fontFamily="system-ui" textAnchor="end">···</text>
+      {/* Table name */}
+      <text x={x + 14} y={y + 44} fill={c['content-primary']} fontSize="13" fontWeight="600" fontFamily="system-ui">{label}</text>
+      {/* Columns */}
+      <text x={x + 14} y={y + 66} fill="#9CA3AF" fontSize="11" fontFamily="system-ui">{colLabel}</text>
     </g>
   );
 };
 
 // ── Data Preview ──────────────────────────────────────────────────────────────
 
+const PAGE_SIZE = 100;
+
 const DataPreviewView: React.FC<{ project: ProjectState }> = ({ project }) => {
+  const [page, setPage] = useState(1);
   const hasJoins = project.buildStep === 'joined' || project.buildStep === 'transformed' || project.buildStep === 'healthy';
 
   if (!hasJoins) {
@@ -332,86 +527,183 @@ const DataPreviewView: React.FC<{ project: ProjectState }> = ({ project }) => {
     );
   }
 
-  const displayRows = ordersData.slice(0, 30);
-  // Use only the included columns from orders (the base table for preview rows)
-  const ALL_ORDERS_COLS = ['order_id', 'user_id', 'campaign_id', 'order_date', 'amount', 'product_category', 'status', 'region'];
-  const includedOrdersCols = project.includedColumns['orders'] ?? ALL_ORDERS_COLS;
-  const columns = ALL_ORDERS_COLS.filter(col => includedOrdersCols.includes(col));
-  const extraCols = project.buildStep === 'transformed' || project.buildStep === 'healthy'
-    ? [...columns, 'return_on_spend', 'campaign_performance']
-    : columns;
+  // Build lookup maps for joins
+  const campaignMap = Object.fromEntries(campaignsData.map(c => [c.campaign_id, c]));
+  const userMap = Object.fromEntries(usersData.map(u => [u.user_id, u]));
+
+  const isHealthy = project.buildStep === 'healthy';
+  const isTransformed = project.buildStep === 'transformed' || isHealthy;
+
+  // Column definitions: orders base + campaign cols + user cols + computed
+  const ALL_ORDERS_COLS   = ['order_id', 'user_id', 'campaign_id', 'order_date', 'amount', 'product_category', 'status', 'region'];
+  const ALL_CAMPAIGN_COLS = ['campaign_name', 'channel', 'spend', 'budget', 'target_region'];
+  const ALL_USER_COLS     = ['segment', 'lifetime_value', 'age'];
+
+  const includedOrders   = project.includedColumns['orders']    ?? ALL_ORDERS_COLS;
+  const includedCampaign = project.includedColumns['campaigns'] ?? ALL_CAMPAIGN_COLS;
+  const includedUser     = project.includedColumns['users']     ?? ALL_USER_COLS;
+
+  const orderCols   = ALL_ORDERS_COLS.filter(col => includedOrders.includes(col) || col === 'campaign_id' || col === 'user_id');
+  const campaignCols = ALL_CAMPAIGN_COLS.filter(col => includedCampaign.includes(col));
+  const userCols    = ALL_USER_COLS.filter(col => includedUser.includes(col));
+  const computedCols = isTransformed ? ['return_on_spend', 'campaign_performance'] : [];
+
+  // Determine which column groups to show based on build state
+  const hasJoinedCampaigns = project.addedTables.includes('campaigns');
+  const hasJoinedUsers     = project.addedTables.includes('users');
+
+  const allCols = [
+    ...orderCols,
+    ...(hasJoinedCampaigns ? campaignCols : []),
+    ...(hasJoinedUsers     ? userCols     : []),
+    ...computedCols,
+  ];
+
+  const totalRows = ordersData.length;
+  const totalPages = Math.ceil(totalRows / PAGE_SIZE);
+  const start = (page - 1) * PAGE_SIZE;
+  const end = Math.min(start + PAGE_SIZE, totalRows);
+  const baseRows = ordersData.slice(start, end);
+
+  // Join each order row with its campaign and user
+  type JoinedRow = Record<string, unknown>;
+  const displayRows: JoinedRow[] = baseRows.map((row, i) => {
+    const campaignId = isHealthy && row.campaign_id == null ? 'organic' : row.campaign_id;
+    const campaign = campaignId != null ? campaignMap[campaignId as string] : undefined;
+    const user = userMap[row.user_id];
+    return {
+      ...row,
+      campaign_id: campaignId,
+      ...(campaign ? {
+        campaign_name:   campaign.campaign_name,
+        channel:         campaign.channel,
+        spend:           campaign.spend,
+        budget:          campaign.budget,
+        target_region:   campaign.target_region,
+      } : {
+        campaign_name: null, channel: null, spend: null, budget: null, target_region: null,
+      }),
+      ...(user ? {
+        segment:        user.segment,
+        lifetime_value: user.lifetime_value,
+        age:            user.age,
+      } : {
+        segment: null, lifetime_value: null, age: null,
+      }),
+      return_on_spend:       isTransformed ? ((row.amount / 18700) * 100).toFixed(2) : null,
+      campaign_performance:  isTransformed ? (i * 0.42 + 1.1).toFixed(3) : null,
+    };
+  });
+
+  const cellPad = '3px 10px';
+  const thStyle: React.CSSProperties = {
+    padding: '5px 10px',
+    borderBottom: `2px solid ${c['border-divider']}`,
+    borderRight: `1px solid ${c['border-divider']}`,
+    backgroundColor: c['background-sunken'],
+    color: c['content-secondary'],
+    fontWeight: fw.semibold,
+    fontSize: 10,
+    textTransform: 'uppercase',
+    letterSpacing: '0.4px',
+    textAlign: 'left',
+    whiteSpace: 'nowrap',
+    userSelect: 'none',
+  };
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-      {/* Toolbar */}
-      <div style={{ height: 40, borderBottom: `1px solid ${c['border-divider']}`, backgroundColor: c['background-base'], display: 'flex', alignItems: 'center', padding: `0 ${sp.C}px`, gap: sp.B, flexShrink: 0 }}>
-        {['←', '→', '↑↓', '⊞', '≡', '⇔', '$', '%', 'T', 'ƒx', '▼', '↓'].map(tool => (
-          <Button key={tool} variant="tertiary" size="small">{tool}</Button>
-        ))}
-        <div style={{ width: 1, height: 16, backgroundColor: c['border-divider'] }} />
-        <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, fontSize: fs.xs, color: c['content-secondary'] }}>
-          <span style={{ fontWeight: fw.medium, color: c['content-primary'] }}>order_id</span>
-          <span>ƒx</span>
-        </div>
-      </div>
-
       {/* Grid */}
       <div style={{ flex: 1, overflow: 'auto' }}>
-        <table style={{ borderCollapse: 'collapse', fontSize: fs.xs, width: 'max-content' }}>
+        <table style={{ borderCollapse: 'collapse', fontSize: fs.xs, width: 'max-content', fontFamily: ff.primary }}>
           <thead>
-            <tr style={{ backgroundColor: c['background-subtle'], position: 'sticky', top: 0, zIndex: 1 }}>
-              <th style={{ width: 40, padding: `${sp.B}px ${sp.C}px`, borderBottom: `1px solid ${c['border-divider']}`, borderRight: `1px solid ${c['border-divider']}`, color: c['content-secondary'], fontWeight: fw.regular, textAlign: 'center' }}>#</th>
-              {extraCols.map(col => (
-                <th key={col} style={{ padding: `${sp.B}px ${sp.D}px`, borderBottom: `1px solid ${c['border-divider']}`, borderRight: `1px solid ${c['border-divider']}`, color: c['content-secondary'], fontWeight: fw.medium, textAlign: 'left', whiteSpace: 'nowrap', minWidth: col === 'return_on_spend' || col === 'campaign_performance' ? 160 : 120 }}>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    {col}
-                    {(col === 'return_on_spend' || col === 'campaign_performance') && (
-                      <span style={{ fontSize: fs.xs, backgroundColor: c['background-information'], color: c['content-brand'], padding: '0 3px', borderRadius: 3 }}>ƒx</span>
-                    )}
-                    <span style={{ marginLeft: 'auto', color: c['content-secondary'], opacity: 0.5 }}>▾</span>
-                  </span>
-                </th>
-              ))}
+            <tr style={{ position: 'sticky', top: 0, zIndex: 2 }}>
+              <th style={{ ...thStyle, width: 36, minWidth: 36, textAlign: 'right', borderRight: `2px solid ${c['border-divider']}`, fontWeight: fw.regular }}>#</th>
+              {allCols.map(col => {
+                const isComputed = computedCols.includes(col);
+                const isCampaignCol = ALL_CAMPAIGN_COLS.includes(col);
+                const isUserCol = ALL_USER_COLS.includes(col);
+                const minW = col === 'campaign_name' ? 200 : isComputed ? 148 : isCampaignCol || isUserCol ? 120 : 108;
+                return (
+                  <th key={col} style={{ ...thStyle, minWidth: minW }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                      <span style={{ fontFamily: ff.mono, fontSize: 10 }}>{col}</span>
+                      {isComputed && (
+                        <span style={{ fontSize: 9, fontFamily: ff.primary, backgroundColor: c['background-information'], color: c['content-brand'], padding: '1px 4px', borderRadius: 3, textTransform: 'none', letterSpacing: 0, fontWeight: fw.semibold }}>ƒx</span>
+                      )}
+                      <svg style={{ marginLeft: 'auto', opacity: 0.4, flexShrink: 0 }} width="8" height="8" viewBox="0 0 10 10" fill="none">
+                        <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+                      </svg>
+                    </span>
+                  </th>
+                );
+              })}
             </tr>
           </thead>
           <tbody>
             {displayRows.map((row, i) => (
-              <tr key={row.order_id + i} style={{ backgroundColor: i % 2 === 0 ? c['background-base'] : c['background-subtle'] }}
-                onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-information'])}
-                onMouseLeave={e => (e.currentTarget.style.backgroundColor = i % 2 === 0 ? c['background-base'] : c['background-subtle'])}
+              <tr
+                key={String(row['order_id']) + i}
+                style={{ backgroundColor: c['background-base'] }}
+                onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
+                onMouseLeave={e => (e.currentTarget.style.backgroundColor = c['background-base'])}
               >
-                <td style={{ padding: `${sp.A}px ${sp.C}px`, borderBottom: `1px solid ${c['border-divider']}`, borderRight: `1px solid ${c['border-divider']}`, color: c['content-secondary'], textAlign: 'center' }}>{i + 1}</td>
-                {columns.map(col => {
-                  const raw = (row as unknown as Record<string, unknown>)[col];
-                  const isHealthy = project.buildStep === 'healthy';
-                  // After health fix: nulls are filled
-                  const val = isHealthy && (raw === null || raw === undefined) && col === 'campaign_id'
-                    ? 'organic'
-                    : raw;
+                <td style={{ padding: cellPad, borderBottom: `1px solid ${c['border-divider']}`, borderRight: `2px solid ${c['border-divider']}`, color: c['content-secondary'], textAlign: 'right', fontFamily: ff.mono, fontSize: 10, userSelect: 'none', backgroundColor: c['background-sunken'] }}>
+                  {start + i + 1}
+                </td>
+                {allCols.map(col => {
+                  const val = row[col];
                   const isNull = val === null || val === undefined;
                   const isAnomaly = !isHealthy && col === 'amount' && typeof val === 'number' && (val < 0 || val > 10000);
-                  const isFlagged = isHealthy && col === 'amount' && typeof val === 'number' && (val < 0 || val > 10000);
+                  const isFlagged =  isHealthy && col === 'amount' && typeof val === 'number' && (val < 0 || val > 10000);
                   return (
-                    <td key={col} style={{ padding: `${sp.A}px ${sp.D}px`, borderBottom: `1px solid ${c['border-divider']}`, borderRight: `1px solid ${c['border-divider']}`, whiteSpace: 'nowrap', color: isNull ? c['content-failure'] : isAnomaly ? c['content-warning'] : isFlagged ? c['content-warning'] : c['content-primary'], backgroundColor: isAnomaly ? c['background-warning'] : undefined }}>
-                      {isNull ? <em style={{ color: c['content-failure'] }}>null</em> : String(val)}
-                      {isFlagged && <span style={{ marginLeft: 4, fontSize: fs.xs, backgroundColor: c['background-warning'], color: c['content-warning'], padding: '1px 4px', borderRadius: 3 }}>⚠</span>}
+                    <td key={col} style={{
+                      padding: cellPad,
+                      borderBottom: `1px solid ${c['border-divider']}`,
+                      borderRight: `1px solid ${c['border-divider']}`,
+                      whiteSpace: 'nowrap',
+                      fontFamily: ff.mono,
+                      color: isNull ? c['content-failure'] : isAnomaly || isFlagged ? c['content-warning'] : c['content-primary'],
+                      backgroundColor: isAnomaly ? c['background-warning'] : undefined,
+                    }}>
+                      {isNull
+                        ? <em style={{ fontStyle: 'italic', opacity: 0.55 }}>null</em>
+                        : String(val)
+                      }
+                      {isFlagged && <span style={{ marginLeft: 5, fontSize: 10, color: c['content-warning'] }}>⚠</span>}
                     </td>
                   );
                 })}
-                {(project.buildStep === 'transformed' || project.buildStep === 'healthy') && (
-                  <>
-                    <td style={{ padding: `${sp.A}px ${sp.D}px`, borderBottom: `1px solid ${c['border-divider']}`, borderRight: `1px solid ${c['border-divider']}`, color: c['content-brand'] }}>
-                      {((row.amount / 18700) * 100).toFixed(2)}
-                    </td>
-                    <td style={{ padding: `${sp.A}px ${sp.D}px`, borderBottom: `1px solid ${c['border-divider']}`, borderRight: `1px solid ${c['border-divider']}`, color: c['content-brand'] }}>
-                      {(i * 0.42 + 1.1).toFixed(3)}
-                    </td>
-                  </>
-                )}
               </tr>
             ))}
           </tbody>
         </table>
+      </div>
+
+      {/* Pagination bar */}
+      <div style={{ height: 36, borderTop: `1px solid ${c['border-divider']}`, backgroundColor: c['background-base'], display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: `0 ${sp.D}px`, flexShrink: 0 }}>
+        <span style={{ fontSize: fs.xs, color: c['content-secondary'] }}>
+          {start + 1}–{end} of {totalRows} rows
+        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: sp.A }}>
+          <button
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+            disabled={page === 1}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 26, height: 26, borderRadius: 5, border: `1px solid ${c['border-default']}`, backgroundColor: c['background-base'], cursor: page === 1 ? 'not-allowed' : 'pointer', opacity: page === 1 ? 0.4 : 1, color: c['content-primary'] }}
+          >
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M7.5 2L4 6l3.5 4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          </button>
+          <span style={{ fontSize: fs.xs, color: c['content-secondary'], minWidth: 48, textAlign: 'center' }}>
+            {page} / {totalPages}
+          </span>
+          <button
+            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+            disabled={page === totalPages}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 26, height: 26, borderRadius: 5, border: `1px solid ${c['border-default']}`, backgroundColor: c['background-base'], cursor: page === totalPages ? 'not-allowed' : 'pointer', opacity: page === totalPages ? 0.4 : 1, color: c['content-primary'] }}
+          >
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4.5 2L8 6l-3.5 4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          </button>
+        </div>
       </div>
     </div>
   );

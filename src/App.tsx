@@ -14,6 +14,9 @@ import { VersionHistoryPage } from './pages/VersionHistoryPage';
 import { ColorSystemPage } from './pages/ColorSystemPage';
 import { TypographyPage } from './pages/TypographyPage';
 // import { RoadmapPage } from './pages/RoadmapPage';
+const DataStudioV2Playground = React.lazy(() =>
+  import('./prototypes/DataStudioV2/Playground').then(m => ({ default: m.PlaygroundNav }))
+);
 
 import { systemColors } from './tokens/colors';
 import { getCurrentVersion } from './data/versionHistory';
@@ -635,6 +638,14 @@ const App: React.FC = () => {
       {/* Redirect icongallery to icons page */}
       <Route path="/radiant/components/icongallery" element={<Navigate to="/radiant/icons" replace />} />
       
+      {/* Data Studio V2 playground — unified nav shell */}
+      <Route path="/data-studio-v2/playground" element={<React.Suspense fallback={null}><DataStudioV2Playground /></React.Suspense>} />
+      <Route path="/data-studio-v2/playground-v2" element={<Navigate to="/data-studio-v2/playground" replace />} />
+      <Route path="/data-studio-v2/playground-v3" element={<Navigate to="/data-studio-v2/playground" replace />} />
+      <Route path="/data-studio-v2/playground-v4" element={<Navigate to="/data-studio-v2/playground" replace />} />
+      <Route path="/data-studio-v2/playground-v5" element={<Navigate to="/data-studio-v2/playground" replace />} />
+      <Route path="/data-studio-v2/playground-v6" element={<Navigate to="/data-studio-v2/playground" replace />} />
+
       {/* Playground Section - No sidebar */}
       <Route path="/playground" element={<Navigate to="/" replace />} />
       <Route path="/playground/:projectName" element={<PlaygroundProject />} />

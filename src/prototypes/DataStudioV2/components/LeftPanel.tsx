@@ -14,15 +14,6 @@ interface LeftPanelProps {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function getJoinKeySet(tableId: string): Set<string> {
-  const keys = new Set<string>();
-  for (const rel of relationships) {
-    if (rel.leftTable === tableId) keys.add(rel.leftColumn);
-    if (rel.rightTable === tableId) keys.add(rel.rightColumn);
-  }
-  return keys;
-}
-
 const TYPE_ABBR: Record<string, string> = {
   string: 'str',
   number: 'num',
@@ -30,26 +21,57 @@ const TYPE_ABBR: Record<string, string> = {
   boolean: 'bool',
 };
 
-const TABLE_COLORS: Record<string, string> = {
-  orders: '#2770ef',
-  campaigns: '#7c3aed',
-  users: '#059669',
+// ── Shared style constants ────────────────────────────────────────────────────
+
+// All item names (table, column, join, formula) start at this x position.
+// Chevron is position:absolute at left:6px so it never shifts the name.
+const NAME_LEFT = 20;
+const ROW_H = 24;
+const COL_ROW_H = 22;
+
+const rowStyle: React.CSSProperties = {
+  position: 'relative',
+  display: 'flex',
+  alignItems: 'center',
+  height: ROW_H,
+  paddingLeft: NAME_LEFT,
+  paddingRight: sp.B,
+  cursor: 'pointer',
+  borderRadius: 3,
+};
+
+const colRowStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  height: COL_ROW_H,
+  paddingLeft: NAME_LEFT,
+  paddingRight: sp.B,
+  borderRadius: 3,
+};
+
+const secLabelStyle: React.CSSProperties = {
+  fontSize: 10,
+  fontWeight: fw.bold,
+  color: c['content-secondary'],
+  textTransform: 'uppercase' as const,
+  letterSpacing: '0.5px',
 };
 
 // ── Main component ────────────────────────────────────────────────────────────
 
 const LeftPanel: React.FC<LeftPanelProps> = ({ project, setProject, onSendToAgent }) => {
-  const [memoryOpen, setMemoryOpen]         = useState(false);
+  const [memoryOpen, setMemoryOpen]           = useState(false);
   const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
-  const [expandedTables, setExpandedTables] = useState<Set<string>>(new Set());
-  const [openMenu, setOpenMenu]             = useState<string | null>(null);
+  const [expandedTables, setExpandedTables]   = useState<Set<string>>(new Set());
+  const [addMenuOpen, setAddMenuOpen]         = useState(false);
 
   const ctx       = project.context;
-  const hasMemory = ctx.purpose || ctx.persona || ctx.sampleQuestions || ctx.businessLogic || ctx.spotterInstructions;
-  const summaryText = hasMemory
-    ? (ctx.purpose || ctx.persona || ctx.sampleQuestions || ctx.businessLogic).slice(0, 42) + '…'
-    : 'Purpose, audience, and instructions';
+  const hasMemory = !!(ctx.purpose || ctx.persona || ctx.sampleQuestions || ctx.businessLogic || ctx.spotterInstructions);
+  const memoryText = hasMemory
+    ? (ctx.purpose || ctx.persona || ctx.sampleQuestions || ctx.businessLogic || ctx.spotterInstructions)
+    : 'Add purpose, audience, and instructions';
 
+  const isDbt        = project.projectSource === 'dbt';
   const hasData      = project.addedTables.length > 0;
   const hasJoins     = project.buildStep === 'joined' || project.buildStep === 'transformed' || project.buildStep === 'healthy';
   const hasTransforms = project.buildStep === 'transformed' || project.buildStep === 'healthy';
@@ -57,6 +79,14 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ project, setProject, onSendToAgen
   const activeJoins = relationships.filter(
     r => project.addedTables.includes(r.leftTable) && project.addedTables.includes(r.rightTable)
   );
+
+  // For dbt: computed columns with syncStatus — the translated metrics that may need fixing
+  const dbtFormulas = isDbt ? project.addedTables.flatMap(tableId => {
+    const included = new Set(project.includedColumns[tableId] ?? []);
+    const meta = tableMetadata[tableId];
+    if (!meta) return [];
+    return meta.columns.filter(col => included.has(col.id) && col.syncStatus);
+  }) : [];
 
   const toggleTable = (id: string) => {
     setExpandedTables(prev => {
@@ -66,22 +96,8 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ project, setProject, onSendToAgen
     });
   };
 
-  const removeTable = (tableId: string) => {
-    setProject(p => {
-      const addedTables = p.addedTables.filter(id => id !== tableId);
-      const includedColumns = { ...p.includedColumns };
-      delete includedColumns[tableId];
-      return {
-        ...p,
-        addedTables,
-        includedColumns,
-        buildStep: addedTables.length === 0 ? 'empty' : p.buildStep,
-      };
-    });
-  };
-
   return (
-    <div style={{ width: 240, flexShrink: 0, borderRight: `1px solid ${c['border-divider']}`, backgroundColor: c['background-base'], display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
+    <div style={{ width: 240, height: '100%', flexShrink: 0, borderRight: `1px solid ${c['border-divider']}`, backgroundColor: c['background-base'], display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
 
       {memoryOpen && (
         <MemoryModal
@@ -99,128 +115,135 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ project, setProject, onSendToAgen
         />
       )}
 
-      {/* ── Memory ── */}
-      <PanelSection
-        label="Memory"
-        action={<IconBtn title="Edit memory" icon="pencil" onClick={() => setMemoryOpen(true)} />}
+      {/* ── Memory ─────────────────────────────────────────────────────── */}
+      <div
+        onClick={() => setMemoryOpen(true)}
+        style={{ padding: `${sp.D}px ${sp.C}px ${sp.B}px`, borderBottom: `1px solid ${c['border-divider']}`, cursor: 'pointer' }}
+        onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
+        onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
       >
-        <p
-          onClick={() => setMemoryOpen(true)}
-          style={{ fontSize: fs.xs, color: hasMemory ? c['content-brand'] : c['content-secondary'], margin: 0, cursor: 'pointer', wordBreak: 'break-word' }}
-        >
-          {summaryText}
+        <div style={{ ...secLabelStyle, marginBottom: 3 }}>Memory</div>
+        <p style={{
+          fontSize: fs.xs,
+          color: hasMemory ? c['content-primary'] : c['content-secondary'],
+          margin: 0,
+          lineHeight: 1.45,
+          display: '-webkit-box',
+          WebkitLineClamp: 2,
+          WebkitBoxOrient: 'vertical' as const,
+          overflow: 'hidden',
+        }}>
+          {memoryText}
         </p>
-      </PanelSection>
+      </div>
 
-      {/* ── Tables ── */}
-      <PanelSection
-        label="Tables"
-        action={<IconBtn title="Add table" icon="plus" onClick={() => onSendToAgent('Add tables to this project')} />}
-      >
-        {!hasData ? (
-          <p style={{ fontSize: fs.xs, color: c['content-secondary'], margin: 0 }}>No tables added yet</p>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            {project.addedTables.map(id => {
-              const table = tableMetadata[id];
+      {/* ── Data ───────────────────────────────────────────────────────── */}
+      <div style={{ flex: 1 }}>
+
+        {/* Data header with + */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: `${sp.B}px ${sp.B}px ${sp.A}px ${sp.C}px`, position: 'relative' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: sp.B }}>
+            <span style={secLabelStyle}>Data</span>
+            {isDbt && (
+              <span style={{ fontSize: 10, fontWeight: fw.medium, color: c['content-secondary'], background: c['background-subtle'], border: `1px solid ${c['border-divider']}`, borderRadius: 3, padding: '1px 5px', lineHeight: '14px' }}>
+                dbt
+              </span>
+            )}
+          </div>
+          <div style={{ position: 'relative' }}>
+            <button
+              title={isDbt ? 'Model structure is managed by dbt' : 'Add'}
+              disabled={isDbt}
+              onClick={isDbt ? undefined : () => setAddMenuOpen(o => !o)}
+              style={{ background: 'none', border: 'none', cursor: isDbt ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 3, borderRadius: 3, color: c['content-secondary'], opacity: isDbt ? 0.35 : 1 }}
+              onMouseEnter={e => { if (!isDbt) e.currentTarget.style.backgroundColor = c['background-subtle']; }}
+              onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+            >
+              <svg width="13" height="13" viewBox="0 0 18 18" fill="none">
+                <path d="M9 3.75V14.25M3.75 9H14.25" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+              </svg>
+            </button>
+            {addMenuOpen && (
+              <ContextMenu
+                items={[
+                  { label: 'Add table',   onClick: () => onSendToAgent('Add tables to this project') },
+                  { label: 'Add join',    onClick: () => onSendToAgent('Add joins between the tables in my project') },
+                  { label: 'Add formula', onClick: () => onSendToAgent('Add a calculated column to my project') },
+                ]}
+                onClose={() => setAddMenuOpen(false)}
+              />
+            )}
+          </div>
+        </div>
+
+        {/* dbt model name */}
+        {isDbt && (
+          <div style={{ display: 'flex', alignItems: 'center', height: ROW_H, paddingLeft: NAME_LEFT, paddingRight: sp.B, marginBottom: sp.A }}>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, marginRight: 5, color: c['content-secondary'] }}>
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z" fill="currentColor" opacity="0"/>
+              <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.5"/>
+              <path d="M7 8h4M7 12h10M7 16h6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+            <span style={{ fontSize: fs.xs, fontWeight: fw.medium, color: c['content-primary'], overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {project.name}
+            </span>
+          </div>
+        )}
+
+        {/* Tables */}
+        <div style={{ marginBottom: 2 }}>
+          <div style={{ ...secLabelStyle, padding: `4px ${sp.C}px 2px` }}>Tables</div>
+          {!hasData ? (
+            <div style={{ ...rowStyle, cursor: 'default' }}>
+              <span style={{ fontSize: fs.xs, color: c['content-secondary'], fontStyle: 'italic' }}>No tables yet</span>
+            </div>
+          ) : (
+            project.addedTables.map(id => {
+              const table      = tableMetadata[id];
               if (!table) return null;
-
-              const isExpanded  = expandedTables.has(id);
-              const joinKeys    = getJoinKeySet(id);
+              const isExpanded = expandedTables.has(id);
               const includedSet = new Set(project.includedColumns[id] ?? []);
-              const color       = TABLE_COLORS[id] ?? c['content-brand'];
-
-              // Badge: included count (join keys + explicitly included)
-              const allIncluded    = new Set([...joinKeys, ...includedSet]);
-              const includedCount  = project.columnsSelected ? allIncluded.size : joinKeys.size;
-              const totalCount     = table.columns.length;
 
               return (
                 <div key={id}>
                   {/* Table row */}
                   <div
-                    style={{ display: 'flex', alignItems: 'center', gap: 4, padding: `${sp.B}px`, borderRadius: 4, cursor: 'pointer', position: 'relative' }}
+                    style={rowStyle}
+                    onClick={() => toggleTable(id)}
                     onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
                     onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
                   >
-                    <span
-                      onClick={() => toggleTable(id)}
-                      style={{ fontSize: 10, color: c['content-secondary'], width: 12, textAlign: 'center', flexShrink: 0, userSelect: 'none' }}
+                    {/* Chevron — absolute so it never shifts the name */}
+                    <svg
+                      style={{ position: 'absolute', left: 6, color: c['content-secondary'], transform: isExpanded ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.12s' }}
+                      width="10" height="10" viewBox="0 0 18 18" fill="none"
                     >
-                      {isExpanded ? '▾' : '›'}
-                    </span>
-                    <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: color, flexShrink: 0 }} />
-                    <span
-                      onClick={() => toggleTable(id)}
-                      style={{ fontSize: fs.xs, color: c['content-primary'], fontWeight: fw.medium, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-                    >
+                      <path d="M4.5 6.75L9 11.25L13.5 6.75" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    <span style={{ fontSize: fs.xs, color: c['content-primary'], fontWeight: fw.medium, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {table.name}
                     </span>
-                    <span style={{ fontSize: 10, color: c['content-secondary'], flexShrink: 0, marginRight: 2 }}>
-                      {includedCount}/{totalCount}
-                    </span>
-                    <div style={{ position: 'relative', flexShrink: 0 }}>
-                      <span
-                        onClick={e => { e.stopPropagation(); setOpenMenu(openMenu === `table-${id}` ? null : `table-${id}`); }}
-                        style={{ fontSize: fs.xs, color: c['content-secondary'], cursor: 'pointer', padding: `0 2px`, lineHeight: 1, userSelect: 'none' }}
-                      >
-                        ···
-                      </span>
-                      {openMenu === `table-${id}` && (
-                        <ContextMenu
-                          items={[
-                            { label: 'View detail', onClick: () => setSelectedTableId(id) },
-                            { label: 'Remove table', danger: true, onClick: () => removeTable(id) },
-                          ]}
-                          onClose={() => setOpenMenu(null)}
-                        />
-                      )}
-                    </div>
                   </div>
 
                   {/* Column list */}
                   {isExpanded && (
-                    <div style={{ paddingLeft: 18, paddingBottom: sp.A }}>
+                    <div style={{ paddingBottom: 2 }}>
                       {table.columns.map(col => {
-                        const isKey      = joinKeys.has(col.id);
-                        const isIncluded = project.columnsSelected && (includedSet.has(col.id) || isKey);
-                        const muted      = !isKey && !isIncluded;
-
+                        const isIncluded = !project.columnsSelected || includedSet.has(col.id) ||
+                          relationships.some(r =>
+                            (r.leftTable === id && r.leftColumn === col.id) ||
+                            (r.rightTable === id && r.rightColumn === col.id)
+                          );
                         return (
                           <div
                             key={col.id}
-                            style={{ display: 'flex', alignItems: 'center', gap: 5, padding: `2px ${sp.B}px`, borderRadius: 3 }}
+                            style={{ ...colRowStyle, opacity: isIncluded ? 1 : 0.45 }}
                             title={col.description ?? col.name}
+                            onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
+                            onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
                           >
-                            <span style={{
-                              fontSize: 10,
-                              width: 10,
-                              flexShrink: 0,
-                              color: isKey ? '#f59e0b' : isIncluded ? c['content-brand'] : c['content-secondary'],
-                              opacity: muted ? 0.5 : 1,
-                              textAlign: 'center',
-                            }}>
-                              {isKey ? '⚿' : isIncluded ? '✓' : '–'}
-                            </span>
-                            <span style={{
-                              fontSize: 10,
-                              fontFamily: ff.mono,
-                              color: muted ? c['content-secondary'] : c['content-primary'],
-                              flex: 1,
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap',
-                              opacity: muted ? 0.6 : 1,
-                            }}>
+                            <span style={{ fontSize: 11, fontFamily: ff.mono, color: c['content-primary'], flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                               {col.id}
-                            </span>
-                            <span style={{
-                              fontSize: 9,
-                              color: c['content-secondary'],
-                              flexShrink: 0,
-                              opacity: muted ? 0.4 : 0.7,
-                            }}>
-                              {TYPE_ABBR[col.type] ?? col.type}
                             </span>
                           </div>
                         );
@@ -229,119 +252,113 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ project, setProject, onSendToAgen
                   )}
                 </div>
               );
-            })}
-          </div>
-        )}
-      </PanelSection>
+            })
+          )}
+        </div>
 
-      {/* ── Joins ── */}
-      <PanelSection
-        label="Joins"
-        action={hasData ? <IconBtn title="Add join" icon="plus" onClick={() => onSendToAgent('Add joins between the tables in my project')} /> : undefined}
-      >
-        {!hasJoins || activeJoins.length === 0 ? (
-          <p style={{ fontSize: fs.xs, color: c['content-secondary'], margin: 0, fontStyle: 'italic' }}>No joins yet</p>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {activeJoins.map(rel => (
+        {/* Joins */}
+        <div style={{ marginBottom: 2 }}>
+          <div style={{ ...secLabelStyle, padding: `4px ${sp.C}px 2px` }}>Joins</div>
+          {!hasJoins || activeJoins.length === 0 ? (
+            <div style={{ ...rowStyle, cursor: 'default' }}>
+              <span style={{ fontSize: fs.xs, color: c['content-secondary'], fontStyle: 'italic' }}>No joins yet</span>
+            </div>
+          ) : (
+            activeJoins.map(rel => (
               <div
                 key={rel.id}
-                style={{ display: 'flex', alignItems: 'center', gap: 4, padding: `${sp.B}px`, borderRadius: 4, position: 'relative' }}
+                style={rowStyle}
                 onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
                 onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
               >
-                <span style={{ fontSize: 10, color: c['content-secondary'], flexShrink: 0 }}>⇄</span>
                 <span style={{ fontSize: fs.xs, color: c['content-primary'], flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {tableMetadata[rel.leftTable]?.name ?? rel.leftTable}
+                  {tableMetadata[rel.leftTable]?.name ?? rel.leftTable} → {tableMetadata[rel.rightTable]?.name ?? rel.rightTable}
                 </span>
-                <span style={{ fontSize: 9, color: c['content-secondary'], flexShrink: 0, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
-                  {rel.joinType}
-                </span>
-                <div style={{ position: 'relative', flexShrink: 0 }}>
-                  <span
-                    onClick={e => { e.stopPropagation(); setOpenMenu(openMenu === `join-${rel.id}` ? null : `join-${rel.id}`); }}
-                    style={{ fontSize: fs.xs, color: c['content-secondary'], cursor: 'pointer', padding: `0 2px`, userSelect: 'none' }}
-                  >
-                    ···
-                  </span>
-                  {openMenu === `join-${rel.id}` && (
-                    <ContextMenu
-                      items={[
-                        { label: 'Edit join type', onClick: () => {} },
-                        { label: 'Remove join', danger: true, onClick: () => {} },
-                      ]}
-                      onClose={() => setOpenMenu(null)}
-                    />
-                  )}
-                </div>
               </div>
-            ))}
-          </div>
-        )}
-      </PanelSection>
+            ))
+          )}
+        </div>
 
-      {/* ── Formulas ── */}
-      <PanelSection
-        label="Formulas"
-        action={hasData ? <IconBtn title="Add formula" icon="plus" onClick={() => onSendToAgent('Add a calculated column to my project')} /> : undefined}
-      >
-        {!hasTransforms ? (
-          <p style={{ fontSize: fs.xs, color: c['content-secondary'], margin: 0, fontStyle: 'italic' }}>No calculated columns yet</p>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {transformations.map(t => (
+        {/* Formulas */}
+        <div>
+          <div style={{ ...secLabelStyle, padding: `4px ${sp.C}px 2px` }}>Formulas</div>
+          {isDbt ? (
+            dbtFormulas.length === 0 ? (
+              <div style={{ ...rowStyle, cursor: 'default' }}>
+                <span style={{ fontSize: fs.xs, color: c['content-secondary'], fontStyle: 'italic' }}>No formulas</span>
+              </div>
+            ) : (
+              dbtFormulas.map(col => {
+                const effectiveStatus = project.columnOverrides?.[col.id]?.syncStatus ?? col.syncStatus;
+                const isBroken   = effectiveStatus === 'broken';
+                const isDegraded = effectiveStatus === 'degraded';
+                const isFixed    = effectiveStatus === 'ok';
+                return (
+                  <div
+                    key={col.id}
+                    style={{ ...rowStyle, cursor: 'default' }}
+                    onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
+                    onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+                  >
+                    <span style={{ fontSize: fs.xs, color: c['content-primary'], flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {col.name}
+                    </span>
+                    {!isFixed && (isBroken || isDegraded) && (
+                      <svg width="11" height="11" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, color: isBroken ? c['content-failure'] : c['content-warning'] }}>
+                        <rect x="7" y="3" width="2" height="6" rx="1" fill="currentColor"/>
+                        <rect x="7" y="11" width="2" height="2" rx="1" fill="currentColor"/>
+                      </svg>
+                    )}
+                  </div>
+                );
+              })
+            )
+          ) : !hasTransforms ? (
+            <div style={{ ...rowStyle, cursor: 'default' }}>
+              <span style={{ fontSize: fs.xs, color: c['content-secondary'], fontStyle: 'italic' }}>No formulas yet</span>
+            </div>
+          ) : (
+            transformations.map(t => (
               <div
                 key={t.id}
-                style={{ display: 'flex', alignItems: 'center', gap: 4, padding: `${sp.B}px`, borderRadius: 4, position: 'relative' }}
+                style={rowStyle}
                 onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
                 onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
               >
-                <span style={{ fontSize: 10, color: c['content-secondary'], fontFamily: ff.mono, flexShrink: 0 }}>ƒx</span>
                 <span style={{ fontSize: fs.xs, color: c['content-primary'], flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {t.name}
                 </span>
-                <div style={{ position: 'relative', flexShrink: 0 }}>
-                  <span
-                    onClick={e => { e.stopPropagation(); setOpenMenu(openMenu === `formula-${t.id}` ? null : `formula-${t.id}`); }}
-                    style={{ fontSize: fs.xs, color: c['content-secondary'], cursor: 'pointer', padding: `0 2px`, userSelect: 'none' }}
-                  >
-                    ···
-                  </span>
-                  {openMenu === `formula-${t.id}` && (
-                    <ContextMenu
-                      items={[
-                        { label: 'Edit formula', onClick: () => {} },
-                        { label: 'Remove formula', danger: true, onClick: () => {} },
-                      ]}
-                      onClose={() => setOpenMenu(null)}
-                    />
-                  )}
-                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Transformations — below Formulas */}
+        {project.prepTransforms && project.prepTransforms.length > 0 && (
+          <div style={{ marginTop: 2 }}>
+            <div style={{ ...secLabelStyle, padding: `4px ${sp.C}px 2px` }}>Transformations</div>
+            {project.prepTransforms.map(t => (
+              <div
+                key={t.id}
+                style={rowStyle}
+                title={t.sql}
+                onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
+                onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+              >
+                <span style={{ fontSize: fs.xs, color: c['content-primary'], flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {t.label}
+                </span>
               </div>
             ))}
           </div>
         )}
-      </PanelSection>
 
+      </div>
     </div>
   );
 };
 
-// ── Sub-components ────────────────────────────────────────────────────────────
-
-const PanelSection: React.FC<{
-  label: string;
-  action?: React.ReactNode;
-  children: React.ReactNode;
-}> = ({ label, action, children }) => (
-  <div style={{ padding: `${sp.C}px ${sp.D}px`, borderBottom: `1px solid ${c['border-divider']}` }}>
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: sp.B }}>
-      <span style={{ ...ts.contentLabelSubhead, color: c['content-primary'] }}>{label}</span>
-      {action}
-    </div>
-    {children}
-  </div>
-);
+// ── Context menu ──────────────────────────────────────────────────────────────
 
 const ContextMenu: React.FC<{
   items: Array<{ label: string; danger?: boolean; onClick: () => void }>;
@@ -361,17 +378,10 @@ const ContextMenu: React.FC<{
     <div
       ref={ref}
       style={{
-        position: 'absolute',
-        right: 0,
-        top: '100%',
-        marginTop: 2,
-        backgroundColor: c['background-base'],
-        border: `1px solid ${c['border-divider']}`,
-        borderRadius: 6,
-        boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
-        zIndex: 200,
-        minWidth: 148,
-        overflow: 'hidden',
+        position: 'absolute', right: 0, top: '100%', marginTop: 2,
+        backgroundColor: c['background-base'], border: `1px solid ${c['border-divider']}`,
+        borderRadius: 6, boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
+        zIndex: 200, minWidth: 148, overflow: 'hidden',
       }}
     >
       {items.map(item => (
@@ -389,12 +399,6 @@ const ContextMenu: React.FC<{
   );
 };
 
-const IconBtn: React.FC<{ title: string; icon: 'pencil' | 'plus' | 'settings'; onClick?: () => void }> = ({ title, icon, onClick }) => (
-  <Button variant="tertiary" size="small" title={title} onClick={onClick}>
-    <Icon name={icon} size="s" color={c['content-secondary']} />
-  </Button>
-);
-
 // ── Memory modal ──────────────────────────────────────────────────────────────
 
 const MemoryModal: React.FC<{
@@ -405,42 +409,14 @@ const MemoryModal: React.FC<{
   const [draft, setDraft] = useState<ProjectContext>({ ...context });
 
   const sections: Array<{ key: keyof ProjectContext; label: string; placeholder: string; rows?: number }> = [
-    {
-      key: 'purpose',
-      label: 'Purpose',
-      placeholder: 'What is this project for? What decisions does it support?',
-      rows: 3,
-    },
-    {
-      key: 'persona',
-      label: 'Audience',
-      placeholder: 'Who uses this project? Describe their role and what they care about.',
-      rows: 3,
-    },
-    {
-      key: 'sampleQuestions',
-      label: 'Sample questions',
-      placeholder: 'Key questions this model is designed to answer.\n\nExamples:\n— What was ARR last quarter?\n— Which regions are underperforming?\n— Show me churn by segment.',
-      rows: 5,
-    },
-    {
-      key: 'businessLogic',
-      label: 'Business logic',
-      placeholder: 'Domain definitions, KPI formulas, exclusion rules, date conventions.\n\nUse @table or @column to reference data.',
-      rows: 5,
-    },
-    {
-      key: 'spotterInstructions',
-      label: 'Spotter instructions',
-      placeholder: "How should Spotter interpret this data?\n\ne.g. If the user asks for 'latest', consider last week. If they ask 'top', consider first 100 by ARR.",
-      rows: 4,
-    },
+    { key: 'purpose',             label: 'Purpose',           placeholder: 'What is this project for? What decisions does it support?', rows: 3 },
+    { key: 'persona',             label: 'Audience',          placeholder: 'Who uses this project? Describe their role and what they care about.', rows: 3 },
+    { key: 'sampleQuestions',     label: 'Sample questions',  placeholder: 'Key questions this model is designed to answer.', rows: 5 },
+    { key: 'businessLogic',       label: 'Business logic',    placeholder: 'Domain definitions, KPI formulas, exclusion rules, date conventions.', rows: 5 },
+    { key: 'spotterInstructions', label: 'Spotter instructions', placeholder: "How should Spotter interpret this data?", rows: 4 },
   ];
 
-  const handleClose = () => {
-    onSave(draft);
-    onClose();
-  };
+  const handleClose = () => { onSave(draft); onClose(); };
 
   return (
     <div
@@ -451,53 +427,29 @@ const MemoryModal: React.FC<{
         style={{ backgroundColor: c['background-base'], borderRadius: 12, width: 720, maxHeight: '88vh', display: 'flex', flexDirection: 'column', boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }}
         onClick={e => e.stopPropagation()}
       >
-
-        {/* Header */}
         <div style={{ padding: `${sp.D}px ${sp.F}px`, borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexShrink: 0 }}>
           <div>
             <span style={{ fontSize: fs.md, fontWeight: fw.semibold, color: c['content-primary'] }}>Memory</span>
-            <p style={{ margin: `${sp.A}px 0 0`, fontSize: fs.xs, color: c['content-secondary'] }}>
-              Project context for this model. Updated by the agent and by you.
-            </p>
+            <p style={{ margin: `${sp.A}px 0 0`, fontSize: fs.xs, color: c['content-secondary'] }}>Project context for this model. Updated by the agent and by you.</p>
           </div>
           <button onClick={handleClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, color: c['content-secondary'], lineHeight: 1, padding: 0, marginTop: 2 }}>×</button>
         </div>
 
-        {/* Document body */}
         <div style={{ overflowY: 'auto', flexGrow: 1 }}>
           {sections.map(({ key, label, placeholder, rows }, i) => (
-            <div
-              key={key}
-              style={{
-                padding: `${sp.D}px ${sp.F}px`,
-                borderBottom: i < sections.length - 1 ? `1px solid ${c['border-divider']}` : 'none',
-              }}
-            >
+            <div key={key} style={{ padding: `${sp.D}px ${sp.F}px`, borderBottom: i < sections.length - 1 ? `1px solid ${c['border-divider']}` : 'none' }}>
               <p style={{ ...ts.overline, color: c['content-secondary'], margin: `0 0 ${sp.B}px` }}>{label}</p>
               <textarea
                 value={draft[key]}
                 onChange={e => setDraft(d => ({ ...d, [key]: e.target.value }))}
                 placeholder={placeholder}
                 rows={rows ?? 4}
-                style={{
-                  width: '100%',
-                  border: 'none',
-                  background: 'transparent',
-                  outline: 'none',
-                  resize: 'none',
-                  fontSize: fs.sm,
-                  color: c['content-primary'],
-                  fontFamily: ff.primary,
-                  lineHeight: '1.65',
-                  boxSizing: 'border-box',
-                  padding: 0,
-                }}
+                style={{ width: '100%', border: 'none', background: 'transparent', outline: 'none', resize: 'none', fontSize: fs.sm, color: c['content-primary'], fontFamily: ff.primary, lineHeight: '1.65', boxSizing: 'border-box', padding: 0 }}
               />
             </div>
           ))}
         </div>
 
-        {/* Footer */}
         <div style={{ padding: `${sp.C}px ${sp.F}px`, borderTop: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
           <span style={{ fontSize: fs.xs, color: c['content-secondary'] }}>Saves when you close</span>
           <Button variant="primary" size="basic" onClick={handleClose}>Done</Button>

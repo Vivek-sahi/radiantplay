@@ -22,6 +22,7 @@ export const WAREHOUSE_TREE: ConnectionNode[] = [
           { id: 'order_items', name: 'order_items', type: 'table' },
           { id: 'campaigns',   name: 'campaigns',   type: 'table' },
           { id: 'users',       name: 'users',       type: 'table' },
+          { id: 'returns',     name: 'returns',     type: 'table' },
         ]}],
       },
       {
@@ -101,17 +102,23 @@ const MatchText: React.FC<{ text: string; query: string }> = ({ text, query }) =
 export interface PromptBarRef {
   setValue: (v: string) => void;
   focus: () => void;
+  setColumns: (cols: string[]) => void;
 }
 
 export interface PromptBarProps {
   onSubmit: (text: string, tables: string[]) => void;
   disabled?: boolean;
+  isProcessing?: boolean;
+  onStop?: () => void;
   placeholder?: string;
   autoFocus?: boolean;
   /** 'up' opens dropdowns above the bar (use in panels); 'down' opens below (landing page) */
   dropDirection?: 'up' | 'down';
   /** compact hides the Upload button and uses an icon-only table button */
   compact?: boolean;
+  /** landingPage: single-row textarea, cleaner toolbar styling */
+  landingPage?: boolean;
+  onColumnRemove?: (name: string) => void;
 }
 
 // ── Component ──────────────────────────────────────────────────────────────────
@@ -119,14 +126,19 @@ export interface PromptBarProps {
 const PromptBar = forwardRef<PromptBarRef, PromptBarProps>(({
   onSubmit,
   disabled = false,
+  isProcessing = false,
+  onStop,
   placeholder = "Give me a task. Use '@' to mention tables.",
   autoFocus = false,
   dropDirection = 'down',
   compact = false,
+  landingPage = false,
+  onColumnRemove,
 }, ref) => {
 
-  const [value, setValue]               = useState('');
-  const [attachedTables, setAttached]   = useState<string[]>([]);
+  const [value, setValue]                     = useState('');
+  const [attachedTables, setAttached]         = useState<string[]>([]);
+  const [attachedColumns, setAttachedColumns] = useState<string[]>([]);
   const [focused, setFocused]           = useState(false);
   const [mentionActive, setMention]     = useState(false);
   const [mentionQuery, setQuery]        = useState('');
@@ -144,8 +156,9 @@ const PromptBar = forwardRef<PromptBarRef, PromptBarProps>(({
   const containerRef = useRef<HTMLDivElement>(null);
 
   useImperativeHandle(ref, () => ({
-    setValue: (v: string) => { setValue(v); textareaRef.current?.focus(); },
-    focus:    ()          => textareaRef.current?.focus(),
+    setValue:   (v: string)    => { setValue(v); textareaRef.current?.focus(); },
+    focus:      ()             => textareaRef.current?.focus(),
+    setColumns: (cols: string[]) => setAttachedColumns(cols),
   }));
 
   const canSubmit = value.trim().length > 0 && !disabled;
@@ -219,9 +232,11 @@ const PromptBar = forwardRef<PromptBarRef, PromptBarProps>(({
 
   const handleSubmit = () => {
     if (!canSubmit) return;
-    const text = value.trim();
+    const colPrefix = attachedColumns.map(c => `@${c}`).join(' ');
+    const text = colPrefix ? `${colPrefix} ${value.trim()}` : value.trim();
     setValue('');
     setAttached([]);
+    setAttachedColumns([]);
     if (textareaRef.current) textareaRef.current.style.height = 'auto';
     onSubmit(text, attachedTables);
   };
@@ -230,20 +245,27 @@ const PromptBar = forwardRef<PromptBarRef, PromptBarProps>(({
   const dropPos = isUp ? { bottom: 'calc(100% + 6px)' as const } : { top: 'calc(100% + 6px)' as const };
 
   const border = focused || mentionActive
-    ? `1px solid ${c['content-brand']}`
-    : `1px solid ${c['border-default']}`;
+    ? `1.5px solid ${c['content-brand']}`
+    : landingPage
+      ? '1.5px solid #E2E6ED'
+      : `1px solid ${c['border-default']}`;
+
+  const textPadding = landingPage ? `${sp.D}px ${sp.D}px ${sp.B}px` : `${sp.C}px ${sp.C}px ${sp.A}px`;
 
   return (
     <div ref={containerRef} style={{ position: 'relative' }}>
-      <style>{`@keyframes pb-spin { to { transform: rotate(360deg); } }`}</style>
+      <style>{`
+        @keyframes pb-spin { to { transform: rotate(360deg); } }
+        .pb-textarea::placeholder { color: #B0B8C4; }
+      `}</style>
 
-      <div style={{ backgroundColor: c['background-base'], borderRadius: 12, border, boxShadow: '0px 0px 4px rgba(25,35,49,0.06), 0px 2px 4px rgba(25,35,49,0.04)', transition: 'border-color 0.15s' }}>
+      <div style={{ backgroundColor: c['background-base'], borderRadius: landingPage ? 14 : 12, border, boxShadow: landingPage ? '0 2px 12px rgba(25,35,49,0.07)' : '0px 0px 4px rgba(25,35,49,0.06), 0px 2px 4px rgba(25,35,49,0.04)', transition: 'border-color 0.15s' }}>
 
         {/* ── Textarea + @mention mirror ── */}
         <div style={{ position: 'relative' }}>
           <div
             aria-hidden
-            style={{ position: 'absolute', inset: 0, padding: `${sp.C}px ${sp.C}px ${sp.A}px`, fontSize: fs.sm, fontFamily: ff.primary, lineHeight: '1.5', whiteSpace: 'pre-wrap', wordBreak: 'break-word', pointerEvents: 'none', boxSizing: 'border-box', color: c['content-primary'] }}
+            style={{ position: 'absolute', inset: 0, padding: textPadding, fontSize: landingPage ? fs.md : fs.sm, fontFamily: ff.primary, lineHeight: '1.6', whiteSpace: 'pre-wrap', wordBreak: 'break-word', pointerEvents: 'none', boxSizing: 'border-box', color: c['content-primary'] }}
             dangerouslySetInnerHTML={{ __html: mirrorText(value) }}
           />
           <textarea
@@ -252,12 +274,13 @@ const PromptBar = forwardRef<PromptBarRef, PromptBarProps>(({
             onChange={handleChange}
             onKeyDown={handleKey}
             placeholder={placeholder}
-            rows={2}
+            rows={landingPage ? 2 : 2}
             autoFocus={autoFocus}
             disabled={disabled}
             onFocus={() => setFocused(true)}
             onBlur={() => setFocused(false)}
-            style={{ position: 'relative', width: '100%', border: 'none', outline: 'none', resize: 'none', padding: `${sp.C}px ${sp.C}px ${sp.A}px`, fontSize: fs.sm, color: 'transparent', caretColor: c['content-primary'], fontFamily: ff.primary, lineHeight: '1.5', backgroundColor: 'transparent', boxSizing: 'border-box', borderRadius: '12px 12px 0 0', opacity: disabled ? 0.5 : 1 }}
+            className="pb-textarea"
+            style={{ position: 'relative', width: '100%', border: 'none', outline: 'none', resize: 'none', padding: textPadding, fontSize: landingPage ? fs.md : fs.sm, color: 'transparent', caretColor: c['content-primary'], fontFamily: ff.primary, lineHeight: '1.6', backgroundColor: 'transparent', boxSizing: 'border-box', borderRadius: landingPage ? '14px 14px 0 0' : '12px 12px 0 0', opacity: disabled ? 0.5 : 1 }}
           />
         </div>
 
@@ -285,6 +308,18 @@ const PromptBar = forwardRef<PromptBarRef, PromptBarProps>(({
           </div>
         )}
 
+        {/* ── Attached column chips ── */}
+        {attachedColumns.length > 0 && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: sp.A, padding: `0 ${sp.C}px ${sp.A}px` }}>
+            {attachedColumns.map(name => (
+              <span key={name} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: fs.xs, backgroundColor: '#F3F0FF', color: '#6D28D9', padding: `2px ${sp.B}px`, borderRadius: 6, fontFamily: ff.mono }}>
+                ✦ {name}
+                <span onClick={() => { setAttachedColumns(prev => prev.filter(c => c !== name)); onColumnRemove?.(name); }} style={{ cursor: 'pointer', opacity: 0.6, fontSize: 12, lineHeight: 1 }}>×</span>
+              </span>
+            ))}
+          </div>
+        )}
+
         {/* ── Attached table chips ── */}
         {attachedTables.length > 0 && (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: sp.A, padding: `0 ${sp.C}px ${sp.A}px` }}>
@@ -298,7 +333,7 @@ const PromptBar = forwardRef<PromptBarRef, PromptBarProps>(({
         )}
 
         {/* ── Toolbar ── */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: `${sp.A}px ${sp.B}px`, borderTop: `1px solid ${c['border-divider']}` }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: `${sp.A}px ${sp.B}px` }}>
           <div style={{ display: 'flex', gap: sp.A, position: 'relative' }}>
 
             {/* Table browser button */}
@@ -306,7 +341,7 @@ const PromptBar = forwardRef<PromptBarRef, PromptBarProps>(({
               <button
                 onClick={() => { setMention(false); setBrowser(v => !v); setSearch(''); }}
                 title="Add tables"
-                style={{ display: 'flex', alignItems: 'center', gap: 4, padding: compact ? `${sp.A}px ${sp.B}px` : `${sp.A}px ${sp.B}px`, border: `1px solid ${c['border-default']}`, borderRadius: 6, backgroundColor: 'transparent', color: c['content-secondary'], fontSize: fs.xs, cursor: 'pointer', fontFamily: ff.primary, lineHeight: '1.4' }}
+                style={{ display: 'flex', alignItems: 'center', gap: 4, padding: `${sp.A}px ${sp.B}px`, border: 'none', borderRadius: 6, backgroundColor: 'transparent', color: c['content-secondary'], fontSize: fs.xs, cursor: 'pointer', fontFamily: ff.primary, lineHeight: '1.4' }}
                 onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
                 onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
               >
@@ -359,7 +394,7 @@ const PromptBar = forwardRef<PromptBarRef, PromptBarProps>(({
 
             {!compact && (
               <button onClick={() => setUpload(true)}
-                style={{ padding: `${sp.A}px ${sp.B}px`, border: `1px solid ${c['border-default']}`, borderRadius: 6, backgroundColor: 'transparent', color: c['content-secondary'], fontSize: fs.xs, cursor: 'pointer', fontFamily: ff.primary, lineHeight: '1.4' }}
+                style={{ padding: `${sp.A}px ${sp.B}px`, border: 'none', borderRadius: 6, backgroundColor: 'transparent', color: c['content-secondary'], fontSize: fs.xs, cursor: 'pointer', fontFamily: ff.primary, lineHeight: '1.4' }}
                 onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
                 onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
               >
@@ -368,14 +403,14 @@ const PromptBar = forwardRef<PromptBarRef, PromptBarProps>(({
             )}
           </div>
 
-          {/* Send */}
+          {/* Send / Stop */}
           <button
-            onClick={handleSubmit}
-            disabled={!canSubmit}
-            title="Send"
-            style={{ width: 32, height: 32, borderRadius: '50%', border: 'none', backgroundColor: canSubmit ? '#2770ef' : c['border-default'], color: canSubmit ? '#fff' : c['content-secondary'], cursor: canSubmit ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, transition: 'background-color 0.15s', flexShrink: 0, fontFamily: ff.primary }}
+            onClick={isProcessing ? onStop : handleSubmit}
+            disabled={!isProcessing && !canSubmit}
+            title={isProcessing ? 'Stop' : 'Send'}
+            style={{ width: 32, height: 32, borderRadius: '50%', border: 'none', backgroundColor: isProcessing ? c['border-default'] : (canSubmit ? '#2770ef' : c['border-default']), color: isProcessing ? c['content-secondary'] : (canSubmit ? '#fff' : c['content-secondary']), cursor: (isProcessing || canSubmit) ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: isProcessing ? 10 : 14, transition: 'background-color 0.15s', flexShrink: 0, fontFamily: ff.primary }}
           >
-            ↑
+            {isProcessing ? '■' : '↑'}
           </button>
         </div>
       </div>

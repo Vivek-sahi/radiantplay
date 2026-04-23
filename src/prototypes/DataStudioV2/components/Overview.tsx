@@ -1,22 +1,22 @@
 import React, { useState } from 'react';
 import { c, sp, fs, fw, ff } from '../styles';
 import { Button } from '../../../components/Button';
-import { OVERVIEW_PROJECTS, OVERVIEW_ALERTS, RECENT_TABLES, OverviewAlert } from '../data/mockData';
-import WorkflowDirectory from './WorkflowDirectory';
+import { OVERVIEW_PROJECTS, RECENT_TABLES, OverviewAlert, OverviewProject } from '../data/mockData';
+
 
 interface OverviewProps {
   onNewProject: () => void;
-  onOpenProject: (id: string) => void;
+  onOpenProject: (project: OverviewProject) => void;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-const ALERT_TYPE_LABELS: Record<OverviewAlert['type'], string> = {
-  schema_change:     'Schema change',
-  sync_failure:      'Sync failure',
-  negative_feedback: 'Negative feedback',
-  query_failed:      'Query failed',
-  high_cost:         'High cost',
+const ISSUE_LABELS: Record<OverviewAlert['type'], string> = {
+  schema_change:  'Schema change',
+  sync_failure:   'Sync failure',
+  cache_failed:   'Cache failed',
+  prep_job_failed:'Prep job failed',
+  data_freshness: 'Data freshness',
 };
 
 const SectionLabel: React.FC<{ title: string; action?: React.ReactNode }> = ({ title, action }) => (
@@ -37,53 +37,46 @@ const Divider: React.FC = () => (
   <div style={{ height: 1, backgroundColor: c['border-divider'] }} />
 );
 
-// ── Alert card ────────────────────────────────────────────────────────────────
-
-const AlertCard: React.FC<{ alert: OverviewAlert }> = ({ alert }) => {
-  const isCritical = alert.severity === 'critical';
-  return (
+const ViewAllLink: React.FC<{ label: string }> = ({ label }) => (
+  <div style={{ marginTop: sp.C }}>
     <button style={{
-      textAlign: 'left' as const,
-      padding: sp.D,
-      backgroundColor: c['background-base'],
-      border: `1px solid ${isCritical ? '#fca5a5' : c['border-divider']}`,
-      borderTop: `3px solid ${isCritical ? '#ef4444' : '#f59e0b'}`,
-      borderRadius: 8,
-      cursor: 'pointer',
-      fontFamily: ff.primary,
-      display: 'flex', flexDirection: 'column', gap: sp.B,
-      width: '100%',
+      background: 'none', border: 'none', cursor: 'pointer',
+      fontSize: fs.sm, color: c['content-brand'],
+      fontFamily: ff.primary, padding: 0,
     }}>
-      {/* Type + time */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: sp.B }}>
-        <span style={{
-          fontSize: 11, fontWeight: fw.medium,
-          padding: '2px 7px', borderRadius: 4,
-          color:           isCritical ? '#b91c1c' : '#92400e',
-          backgroundColor: isCritical ? '#fee2e2' : '#fef3c7',
-          flexShrink: 0,
-        }}>
-          {ALERT_TYPE_LABELS[alert.type]}
-        </span>
-        <span style={{ fontSize: fs.xs, color: c['content-tertiary'] }}>{alert.time}</span>
-      </div>
-
-      {/* Title */}
-      <div style={{ fontSize: fs.xs, color: c['content-secondary'], lineHeight: 1.4 }}>{alert.title}</div>
-
-      {/* Project + connection */}
-      <div style={{ marginTop: 'auto' }}>
-        <div style={{ fontSize: fs.sm, fontWeight: fw.medium, color: c['content-primary'] }}>{alert.project}</div>
-        <div style={{ fontSize: fs.xs, color: c['content-secondary'], marginTop: 2 }}>{alert.source}</div>
-      </div>
+      {label} →
     </button>
+  </div>
+);
+
+// ── Issues badge ──────────────────────────────────────────────────────────────
+
+const IssuesBadge: React.FC<{ issues: OverviewAlert[] }> = ({ issues }) => {
+  if (!issues || issues.length === 0) {
+    return <span style={{ fontSize: fs.sm, color: c['content-tertiary'] }}>—</span>;
+  }
+
+  const hasCritical = issues.some(i => i.severity === 'critical');
+  const color = hasCritical ? '#b91c1c' : '#92400e';
+  const label = issues.length === 1
+    ? ISSUE_LABELS[issues[0].type]
+    : `${issues.length} issues`;
+
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color, fontSize: fs.sm, fontWeight: fw.medium }}>
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
+        <path d="M8 2.5L13.5 12.5H2.5L8 2.5Z" stroke={color} strokeWidth="1.5" strokeLinejoin="round" />
+        <line x1="8" y1="7" x2="8" y2="10" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
+        <circle cx="8" cy="11.5" r="0.75" fill={color} />
+      </svg>
+      {label}
+    </span>
   );
 };
 
 // ── Overview ──────────────────────────────────────────────────────────────────
 
 const Overview: React.FC<OverviewProps> = ({ onNewProject, onOpenProject }) => {
-  const [showWorkflows, setShowWorkflows] = useState(false);
 
   return (
     <div style={{ position: 'relative', height: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
@@ -100,26 +93,6 @@ const Overview: React.FC<OverviewProps> = ({ onNewProject, onOpenProject }) => {
             <Button variant="primary" size="basic" onClick={onNewProject}>New project</Button>
           </div>
 
-          {/* ── Alerts ──────────────────────────────────────────────────── */}
-          <div style={{ marginBottom: sp.H }}>
-            <SectionLabel
-              title="Alerts"
-              action={
-                <button style={{
-                  background: 'none', border: 'none', cursor: 'pointer',
-                  fontSize: fs.xs, color: c['content-brand'], fontFamily: ff.primary, padding: 0,
-                }}>
-                  View all →
-                </button>
-              }
-            />
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: sp.C }}>
-              {OVERVIEW_ALERTS.map(alert => (
-                <AlertCard key={alert.id} alert={alert} />
-              ))}
-            </div>
-          </div>
-
           {/* ── Recent projects ─────────────────────────────────────────── */}
           <div style={{ marginBottom: sp.H }}>
             <SectionLabel title="Recent projects" />
@@ -131,13 +104,13 @@ const Overview: React.FC<OverviewProps> = ({ onNewProject, onOpenProject }) => {
               {/* Header row */}
               <div style={{
                 display: 'grid',
-                gridTemplateColumns: '3fr 1fr 1fr 1fr 1fr',
+                gridTemplateColumns: '3fr 1fr 1fr 1fr 1fr 1fr',
                 gap: sp.C,
                 padding: `${sp.B}px ${sp.D}px`,
                 borderBottom: `1px solid ${c['border-divider']}`,
                 backgroundColor: c['background-subtle'],
               }}>
-                {['Project', 'Status', 'Conversations', 'Last edited', 'Author'].map(h => (
+                {['Project', 'Issues', 'Status', 'Conversations', 'Last edited', 'Author'].map(h => (
                   <div key={h} style={{
                     fontSize: 11, fontWeight: fw.medium,
                     color: c['content-secondary'],
@@ -156,27 +129,29 @@ const Overview: React.FC<OverviewProps> = ({ onNewProject, onOpenProject }) => {
                   <div
                     style={{
                       display: 'grid',
-                      gridTemplateColumns: '3fr 1fr 1fr 1fr 1fr',
+                      gridTemplateColumns: '3fr 1fr 1fr 1fr 1fr 1fr',
                       gap: sp.C,
                       padding: `${sp.C}px ${sp.D}px`,
                       cursor: 'pointer',
                       alignItems: 'center',
                     }}
-                    onClick={() => onOpenProject(project.id)}
+                    onClick={() => onOpenProject(project)}
+                    onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
+                    onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
                   >
-                    {/* Name — blue to signal clickability */}
+                    {/* Name */}
                     <div style={{ fontSize: fs.sm, fontWeight: fw.medium, color: c['content-brand'] }}>
                       {project.name}
                     </div>
 
+                    {/* Issues */}
+                    <div>
+                      <IssuesBadge issues={project.issues ?? []} />
+                    </div>
+
                     {/* Status */}
                     <div>
-                      <span style={{
-                        fontSize: 11, fontWeight: fw.medium,
-                        padding: '2px 7px', borderRadius: 4,
-                        color:           project.status === 'published' ? '#16a34a' : c['content-secondary'],
-                        backgroundColor: project.status === 'published' ? '#dcfce7' : c['background-subtle'],
-                      }}>
+                      <span style={{ fontSize: fs.sm, color: c['content-secondary'] }}>
                         {project.status === 'published' ? 'Published' : 'Draft'}
                       </span>
                     </div>
@@ -199,11 +174,12 @@ const Overview: React.FC<OverviewProps> = ({ onNewProject, onOpenProject }) => {
                 </React.Fragment>
               ))}
             </div>
+            <ViewAllLink label="View all projects" />
           </div>
 
-          {/* ── Data ────────────────────────────────────────────────────── */}
+          {/* ── Explore data ────────────────────────────────────────────── */}
           <div style={{ marginBottom: sp.H }}>
-            <SectionLabel title="Data" />
+            <SectionLabel title="Explore data" />
             <div style={{
               backgroundColor: c['background-base'],
               border: `1px solid ${c['border-divider']}`,
@@ -243,6 +219,8 @@ const Overview: React.FC<OverviewProps> = ({ onNewProject, onOpenProject }) => {
                       cursor: 'pointer',
                       alignItems: 'center',
                     }}
+                    onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
+                    onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
                   >
                     <div style={{ fontFamily: 'monospace', fontSize: fs.sm, fontWeight: fw.medium, color: c['content-brand'] }}>
                       {table.name}
@@ -254,31 +232,12 @@ const Overview: React.FC<OverviewProps> = ({ onNewProject, onOpenProject }) => {
                 </React.Fragment>
               ))}
             </div>
+            <ViewAllLink label="View all data" />
           </div>
 
         </div>
       </div>
 
-      {/* Workflow directory FAB */}
-      <button
-        onClick={() => setShowWorkflows(true)}
-        style={{
-          position: 'absolute', bottom: 24, left: 24,
-          display: 'flex', alignItems: 'center', gap: sp.B,
-          padding: `${sp.B + 1}px ${sp.D}px`,
-          backgroundColor: c['content-brand'],
-          color: '#ffffff',
-          border: 'none', borderRadius: 8, cursor: 'pointer',
-          fontSize: fs.sm, fontWeight: fw.medium,
-          fontFamily: ff.primary,
-          boxShadow: '0 2px 12px rgba(0,0,0,0.18)',
-          zIndex: 10,
-        }}
-      >
-        <span style={{ fontSize: 14 }}>⊞</span> Workflows
-      </button>
-
-      {showWorkflows && <WorkflowDirectory onClose={() => setShowWorkflows(false)} />}
     </div>
   );
 };

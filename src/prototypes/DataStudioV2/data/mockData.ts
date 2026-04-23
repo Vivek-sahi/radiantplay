@@ -22,20 +22,40 @@
 
 // ─── Table Metadata ──────────────────────────────────────────────────────────
 
+export type ColumnType      = 'attribute' | 'measure' | 'key';
+export type AggregationType = 'SUM' | 'AVG' | 'COUNT' | 'MAX' | 'MIN' | 'COUNT_DISTINCT';
+export type FormatPattern   = 'number' | 'currency' | 'percentage' | 'date' | 'text';
+
 export interface ColumnMeta {
   id: string;
   name: string;
+
+  // ── Warehouse-derived (auto, read-only) ──────────────────────────────────
   type: 'string' | 'number' | 'date' | 'boolean';
-  description: string | null; // null = missing description (Data Health issue)
   nullable: boolean;
-  // Column-level semantics — used by select_columns workflow
-  classification?: 'measure' | 'attribute' | 'key';
-  aggregation?: 'SUM' | 'AVG' | 'COUNT' | 'MAX' | 'MIN';
-  synonyms?: string[];
+  isSystemField?: boolean;      // internal IDs / raw system fields
   isPII?: boolean;
-  isSystemField?: boolean;  // internal IDs / raw system fields not useful for analysis
-  nullRate?: number;        // 0–100 percentage
+
+  // ── Semantic (analyst-edited, agent-writable) ────────────────────────────
+  description: string | null;   // null = missing (Data Health issue)
+  aiContext:   string | null;   // how the AI should interpret this column
+  synonyms?:   string[];        // alternative names Spotter matches on
+
+  // ── Modeling (analyst-edited) ────────────────────────────────────────────
+  classification?: ColumnType;
+  aggregation?:    AggregationType;  // measures only
+  isAdditive?:     boolean;          // measures only — can it be summed across all dims?
+  isHidden?:       boolean;          // excluded from Spotter surface
+  formatPattern?:  FormatPattern;
+
+  // ── Data quality (from last prep scan, read-only) ────────────────────────
+  nullRate?:       number;   // 0–100 %
   duplicateCount?: number;
+  blankCount?:     number;   // empty string rows (distinct from null)
+  anomalyCount?:   number;   // statistical outliers detected
+
+  // ── Sync (dbt / external source status, read-only) ──────────────────────
+  syncStatus?:     'ok' | 'broken' | 'degraded';
 }
 
 export interface TableMeta {
@@ -69,14 +89,30 @@ export const tableMetadata: Record<string, TableMeta> = {
     rowCount: 150,
     lastSynced: '2024-03-28T14:32:00Z',
     columns: [
-      { id: 'order_id',         name: 'order_id',         type: 'string',  description: null,                                          nullable: false, classification: 'key',       isSystemField: true,  nullRate: 0,  duplicateCount: 7  },
-      { id: 'user_id',          name: 'user_id',          type: 'string',  description: null,                                          nullable: false, classification: 'key',                             nullRate: 0                     },
-      { id: 'campaign_id',      name: 'campaign_id',      type: 'string',  description: null,                                          nullable: true,  classification: 'key',                             nullRate: 18                    },
-      { id: 'order_date',       name: 'order_date',       type: 'date',    description: null,                                          nullable: false, classification: 'attribute',                       nullRate: 0                     },
-      { id: 'amount',           name: 'amount',           type: 'number',  description: 'Order value in USD at time of purchase.',      nullable: false, classification: 'measure',   aggregation: 'SUM',   nullRate: 0                     },
-      { id: 'product_category', name: 'product_category', type: 'string',  description: null,                                          nullable: false, classification: 'attribute',                       nullRate: 0                     },
-      { id: 'status',           name: 'status',           type: 'string',  description: null,                                          nullable: false, classification: 'attribute',  synonyms: ['order_status'], nullRate: 0               },
-      { id: 'region',           name: 'region',           type: 'string',  description: null,                                          nullable: false, classification: 'attribute',                       nullRate: 0                     },
+      { id: 'order_id',         name: 'order_id',         type: 'string', nullable: false, classification: 'key',      isSystemField: true,
+        description: null, aiContext: null, isHidden: false,
+        nullRate: 0, duplicateCount: 7, blankCount: 0, anomalyCount: 0 },
+      { id: 'user_id',          name: 'user_id',          type: 'string', nullable: false, classification: 'key',
+        description: null, aiContext: null, isHidden: false,
+        nullRate: 0, duplicateCount: 0, blankCount: 0, anomalyCount: 0 },
+      { id: 'campaign_id',      name: 'campaign_id',      type: 'string', nullable: true,  classification: 'key',
+        description: null, aiContext: null, isHidden: false,
+        nullRate: 18, duplicateCount: 0, blankCount: 0, anomalyCount: 0 },
+      { id: 'order_date',       name: 'order_date',       type: 'date',   nullable: false, classification: 'attribute',
+        description: null, aiContext: null, isHidden: false, formatPattern: 'date',
+        nullRate: 0, duplicateCount: 0, blankCount: 0, anomalyCount: 0 },
+      { id: 'amount',           name: 'amount',           type: 'number', nullable: false, classification: 'measure',  aggregation: 'SUM', isAdditive: true, formatPattern: 'currency',
+        description: 'Order value in USD at time of purchase.', aiContext: null, synonyms: ['revenue', 'order value', 'sales'], isHidden: false,
+        nullRate: 0, duplicateCount: 0, blankCount: 0, anomalyCount: 4 },
+      { id: 'product_category', name: 'product_category', type: 'string', nullable: false, classification: 'attribute',
+        description: null, aiContext: null, isHidden: false,
+        nullRate: 0, duplicateCount: 0, blankCount: 2, anomalyCount: 0 },
+      { id: 'status',           name: 'status',           type: 'string', nullable: false, classification: 'attribute', synonyms: ['order_status'],
+        description: null, aiContext: null, isHidden: false,
+        nullRate: 0, duplicateCount: 0, blankCount: 0, anomalyCount: 0 },
+      { id: 'region',           name: 'region',           type: 'string', nullable: false, classification: 'attribute',
+        description: null, aiContext: null, isHidden: false,
+        nullRate: 0, duplicateCount: 0, blankCount: 0, anomalyCount: 0 },
     ],
     qualityIssues: [
       { type: 'no_description', severity: 'high',   count: 7,   percentage: 70, description: 'No descriptions — AI agent cannot interpret columns correctly'  },
@@ -96,16 +132,42 @@ export const tableMetadata: Record<string, TableMeta> = {
     rowCount: 45,
     lastSynced: '2024-03-28T14:32:00Z',
     columns: [
-      { id: 'campaign_id',   name: 'campaign_id',   type: 'string', description: 'Unique identifier for each marketing campaign.', nullable: false, classification: 'key',       isSystemField: false, nullRate: 0,  duplicateCount: 2  },
-      { id: 'campaign_name', name: 'campaign_name', type: 'string', description: null,                                             nullable: false, classification: 'attribute',                       nullRate: 0                     },
-      { id: 'channel',       name: 'channel',       type: 'string', description: null,                                             nullable: false, classification: 'attribute',  synonyms: ['marketing_channel', 'ad_channel'], nullRate: 0 },
-      { id: 'budget',        name: 'budget',        type: 'number', description: 'Total approved budget for the campaign in USD.', nullable: false, classification: 'measure',   aggregation: 'SUM',   nullRate: 0                     },
-      { id: 'spend',         name: 'spend',         type: 'number', description: null,                                             nullable: false, classification: 'measure',   aggregation: 'SUM',   nullRate: 0                     },
-      { id: 'impressions',   name: 'impressions',   type: 'number', description: null,                                             nullable: false, classification: 'measure',   aggregation: 'SUM',   nullRate: 0                     },
-      { id: 'start_date',    name: 'start_date',    type: 'date',   description: null,                                             nullable: false, classification: 'attribute',                       nullRate: 0                     },
-      { id: 'end_date',      name: 'end_date',      type: 'date',   description: null,                                             nullable: true,  classification: 'attribute',                       nullRate: 13                    },
-      { id: 'target_region', name: 'target_region', type: 'string', description: null,                                             nullable: false, classification: 'attribute',                       nullRate: 0                     },
-      { id: 'status',        name: 'status',        type: 'string', description: null,                                             nullable: false, classification: 'attribute',  synonyms: ['campaign_status'], nullRate: 0          },
+      { id: 'campaign_id',   name: 'campaign_id',   type: 'string', nullable: false, classification: 'key',      isSystemField: false,
+        description: 'Unique identifier for each marketing campaign.', aiContext: null, isHidden: false,
+        nullRate: 0, duplicateCount: 2, blankCount: 0, anomalyCount: 0 },
+      { id: 'campaign_name', name: 'campaign_name', type: 'string', nullable: false, classification: 'attribute',
+        description: null, aiContext: null, isHidden: false,
+        nullRate: 0, duplicateCount: 0, blankCount: 0, anomalyCount: 0 },
+      { id: 'channel',       name: 'channel',       type: 'string', nullable: false, classification: 'attribute', synonyms: ['marketing_channel', 'ad_channel'],
+        description: null, aiContext: null, isHidden: false,
+        nullRate: 0, duplicateCount: 0, blankCount: 0, anomalyCount: 0 },
+      { id: 'budget',        name: 'budget',        type: 'number', nullable: false, classification: 'measure',  aggregation: 'SUM', isAdditive: true, formatPattern: 'currency',
+        description: 'Total approved budget for the campaign in USD.', aiContext: null, isHidden: false,
+        nullRate: 0, duplicateCount: 0, blankCount: 0, anomalyCount: 0 },
+      { id: 'spend',         name: 'spend',         type: 'number', nullable: false, classification: 'measure',  aggregation: 'SUM', isAdditive: true, formatPattern: 'currency',
+        description: null, aiContext: null, synonyms: ['ad spend', 'investment', 'cost'], isHidden: false,
+        nullRate: 0, duplicateCount: 0, blankCount: 0, anomalyCount: 0 },
+      { id: 'impressions',   name: 'impressions',   type: 'number', nullable: false, classification: 'measure',  aggregation: 'SUM', isAdditive: true,
+        description: null, aiContext: null, isHidden: false,
+        nullRate: 0, duplicateCount: 0, blankCount: 0, anomalyCount: 0 },
+      { id: 'start_date',    name: 'start_date',    type: 'date',   nullable: false, classification: 'attribute', formatPattern: 'date',
+        description: null, aiContext: null, isHidden: false,
+        nullRate: 0, duplicateCount: 0, blankCount: 0, anomalyCount: 0 },
+      { id: 'end_date',      name: 'end_date',      type: 'date',   nullable: true,  classification: 'attribute', formatPattern: 'date',
+        description: null, aiContext: null, isHidden: false,
+        nullRate: 13, duplicateCount: 0, blankCount: 0, anomalyCount: 0 },
+      { id: 'target_region', name: 'target_region', type: 'string', nullable: false, classification: 'attribute',
+        description: null, aiContext: null, isHidden: false,
+        nullRate: 0, duplicateCount: 0, blankCount: 0, anomalyCount: 0 },
+      { id: 'status',        name: 'status',        type: 'string', nullable: false, classification: 'attribute', synonyms: ['campaign_status'],
+        description: null, aiContext: null, isHidden: false,
+        nullRate: 0, duplicateCount: 0, blankCount: 0, anomalyCount: 0 },
+      { id: 'campaign_roas',    name: 'campaign_roas',    type: 'number', nullable: true,  classification: 'measure', aggregation: 'AVG', isAdditive: false,
+        description: 'Return on Ad Spend — total revenue divided by total spend per campaign.', aiContext: null, isHidden: false,
+        nullRate: 0, duplicateCount: 0, blankCount: 0, anomalyCount: 0, syncStatus: 'broken' as const },
+      { id: 'days_to_convert',  name: 'days_to_convert',  type: 'number', nullable: true,  classification: 'measure', aggregation: 'AVG', isAdditive: false,
+        description: 'Average days from first impression to first order, per user.', aiContext: null, isHidden: false,
+        nullRate: 12, duplicateCount: 0, blankCount: 0, anomalyCount: 0, syncStatus: 'broken' as const },
     ],
     qualityIssues: [
       { type: 'no_description', severity: 'high',   count: 7,  percentage: 78, description: 'Missing column descriptions'                                          },
@@ -124,20 +186,73 @@ export const tableMetadata: Record<string, TableMeta> = {
     rowCount: 90,
     lastSynced: '2024-03-28T14:32:00Z',
     columns: [
-      { id: 'user_id',        name: 'user_id',        type: 'string', description: 'Unique identifier for each registered user.',             nullable: false, classification: 'key',                             nullRate: 0  },
-      { id: 'name',           name: 'name',           type: 'string', description: null,                                                      nullable: false, classification: 'attribute', isPII: true,           nullRate: 0  },
-      { id: 'email',          name: 'email',          type: 'string', description: null,                                                      nullable: false, classification: 'attribute', isPII: true,           nullRate: 0  },
-      { id: 'signup_date',    name: 'signup_date',    type: 'date',   description: null,                                                      nullable: false, classification: 'attribute',                       nullRate: 0  },
-      { id: 'region',         name: 'region',         type: 'string', description: null,                                                      nullable: false, classification: 'attribute',                       nullRate: 0  },
-      { id: 'segment',        name: 'segment',        type: 'string', description: null,                                                      nullable: true,  classification: 'attribute', synonyms: ['user_tier', 'customer_segment'], nullRate: 15 },
-      { id: 'age',            name: 'age',            type: 'number', description: null,                                                      nullable: false, classification: 'attribute', isPII: true,           nullRate: 0  },
-      { id: 'lifetime_value', name: 'lifetime_value', type: 'number', description: 'Total historical spend by this user across all orders.',  nullable: false, classification: 'measure',   aggregation: 'SUM',   nullRate: 0  },
+      { id: 'user_id',        name: 'user_id',        type: 'string', nullable: false, classification: 'key',
+        description: 'Unique identifier for each registered user.', aiContext: null, isHidden: false,
+        nullRate: 0, duplicateCount: 0, blankCount: 0, anomalyCount: 0 },
+      { id: 'name',           name: 'name',           type: 'string', nullable: false, classification: 'attribute', isPII: true,
+        description: null, aiContext: null, isHidden: true,
+        nullRate: 0, duplicateCount: 0, blankCount: 0, anomalyCount: 0 },
+      { id: 'email',          name: 'email',          type: 'string', nullable: false, classification: 'attribute', isPII: true,
+        description: null, aiContext: null, isHidden: true,
+        nullRate: 0, duplicateCount: 0, blankCount: 0, anomalyCount: 0 },
+      { id: 'signup_date',    name: 'signup_date',    type: 'date',   nullable: false, classification: 'attribute', formatPattern: 'date',
+        description: null, aiContext: null, isHidden: false,
+        nullRate: 0, duplicateCount: 0, blankCount: 0, anomalyCount: 0 },
+      { id: 'region',         name: 'region',         type: 'string', nullable: false, classification: 'attribute',
+        description: null, aiContext: null, isHidden: false,
+        nullRate: 0, duplicateCount: 0, blankCount: 0, anomalyCount: 0 },
+      { id: 'segment',        name: 'segment',        type: 'string', nullable: true,  classification: 'attribute', synonyms: ['user_tier', 'customer_segment'],
+        description: null, aiContext: null, isHidden: false,
+        nullRate: 15, duplicateCount: 0, blankCount: 0, anomalyCount: 0 },
+      { id: 'age',            name: 'age',            type: 'number', nullable: false, classification: 'attribute', isPII: true,
+        description: null, aiContext: null, isHidden: false,
+        nullRate: 0, duplicateCount: 0, blankCount: 0, anomalyCount: 4 },
+      { id: 'lifetime_value', name: 'lifetime_value', type: 'number', nullable: false, classification: 'measure',  aggregation: 'SUM', isAdditive: true, formatPattern: 'currency',
+        description: 'Total historical spend by this user across all orders.', aiContext: null, synonyms: ['LTV', 'customer value'], isHidden: false,
+        nullRate: 0, duplicateCount: 0, blankCount: 0, anomalyCount: 0 },
+      { id: 'user_segment_fill', name: 'user_segment_fill', type: 'string', nullable: true, classification: 'attribute',
+        description: 'Segment label backfilled using custom dbt macro — may not match ThoughtSpot logic exactly.', aiContext: null, isHidden: false,
+        nullRate: 8, duplicateCount: 0, blankCount: 0, anomalyCount: 0, syncStatus: 'degraded' as const },
     ],
     qualityIssues: [
       { type: 'no_description', severity: 'high',   count: 6,  percentage: 75, description: 'Missing column descriptions'                                                    },
       { type: 'null',           severity: 'medium', count: 14, percentage: 15, description: 'segment is null — users not yet classified into a tier'                          },
       { type: 'anomaly',        severity: 'low',    count: 4,  percentage: 4,  description: 'age anomalies: age=0, age=142, age=-3, age=199 — likely data entry errors'       },
       { type: 'date_format',    severity: 'high',   count: 90, percentage: 100,description: 'signup_date uses YYYY/MM/DD — third date format in dataset'                     },
+    ],
+  },
+
+  returns: {
+    id: 'returns',
+    name: 'Returns',
+    description: 'Customer return requests linked to orders, including reason, amount, and resolution status.',
+    connection: 'Snowflake',
+    connectionType: 'snowflake',
+    rowCount: 1240,
+    lastSynced: '2024-03-28T14:32:00Z',
+    columns: [
+      { id: 'return_id',     name: 'return_id',     type: 'string', nullable: false, classification: 'key', isSystemField: true,
+        description: 'Unique identifier for each return request.', aiContext: null, isHidden: false,
+        nullRate: 0, duplicateCount: 0, blankCount: 0, anomalyCount: 0 },
+      { id: 'order_id',      name: 'order_id',      type: 'string', nullable: false, classification: 'key',
+        description: 'References orders.order_id — the order this return belongs to.', aiContext: null, isHidden: false,
+        nullRate: 0, duplicateCount: 0, blankCount: 0, anomalyCount: 0 },
+      { id: 'return_date',   name: 'return_date',   type: 'date',   nullable: false, classification: 'attribute', formatPattern: 'date',
+        description: null, aiContext: null, isHidden: false,
+        nullRate: 0, duplicateCount: 0, blankCount: 0, anomalyCount: 0 },
+      { id: 'return_reason', name: 'return_reason', type: 'string', nullable: true,  classification: 'attribute',
+        description: null, aiContext: null, isHidden: false,
+        nullRate: 14, duplicateCount: 0, blankCount: 0, anomalyCount: 0 },
+      { id: 'amount',        name: 'amount',        type: 'number', nullable: false, classification: 'measure', aggregation: 'SUM', isAdditive: true, formatPattern: 'currency',
+        description: 'Value of the returned items in USD.', aiContext: null, isHidden: false,
+        nullRate: 0, duplicateCount: 0, blankCount: 0, anomalyCount: 0 },
+      { id: 'return_status', name: 'return_status', type: 'string', nullable: false, classification: 'attribute',
+        description: null, aiContext: null, isHidden: false,
+        nullRate: 0, duplicateCount: 0, blankCount: 0, anomalyCount: 0 },
+    ],
+    qualityIssues: [
+      { type: 'null',           severity: 'low',  count: 174, percentage: 14, description: 'return_reason is null — customer did not provide a reason (expected)' },
+      { type: 'no_description', severity: 'high', count: 4,   percentage: 67, description: 'Missing descriptions on 4 of 6 columns'                              },
     ],
   },
 
@@ -767,29 +882,234 @@ export interface OverviewProject {
   lastModified: string;
   conversations?: number;
   author: string;
+  issues?: OverviewAlert[];
 }
 
 export const OVERVIEW_PROJECTS: OverviewProject[] = [
-  { id: 'proj-1', name: 'Sales Analytics',   status: 'draft',     lastModified: 'Apr 8',  author: 'Vivek Sahi', conversations: 0 },
-  { id: 'proj-2', name: 'Customer 360',       status: 'published', lastModified: 'Apr 3',  author: 'Priya M.',   conversations: 142 },
-  { id: 'proj-3', name: 'FnOps Cost Model',   status: 'draft',     lastModified: 'Mar 31', author: 'Vivek Sahi', conversations: 0 },
+  {
+    id: 'proj-mc', name: 'Marketing Campaign Attribution', status: 'published',
+    lastModified: '20 April', author: 'Sara Chen', conversations: 1839,
+  },
+  {
+    id: 'proj-sp', name: 'Sales Performance', status: 'published',
+    lastModified: '20 April', author: 'Sara Chen', conversations: 412,
+    issues: [{
+      id: 'alert-1', type: 'sync_failure', severity: 'critical',
+      title: 'dbt model `dbt_sales_pipeline` failed to sync — compilation error',
+      project: 'Sales Performance', projectId: 'proj-sp',
+      source: 'dbt Cloud · sales_analytics', time: '2h ago',
+      errorLog: `[Apr 20 · 02:14:33]  Starting sync for dbt model: dbt_sales_pipeline\n[Apr 20 · 02:14:34]  Connecting to dbt Cloud... OK\n[Apr 20 · 02:14:38]  Fetching latest run — job: sales-pipeline-daily (run #234821)\n[Apr 20 · 02:14:39]  ERROR: dbt run failed with exit code 1\n[Apr 20 · 02:14:39]  Compilation error in model dbt_sales_pipeline\n             Column 'rep_territory_id' not found in source 'raw.sales_reps'\n             This column may have been renamed or removed upstream.\n[Apr 20 · 02:14:39]  Sync aborted. Last successful sync: Apr 19 · 02:00 AM`,
+    }],
+  },
+  {
+    id: 'proj-1', name: 'Sales Analytics', status: 'draft',
+    lastModified: '8 April', author: 'Vivek Sahi', conversations: 0,
+  },
+  {
+    id: 'proj-2', name: 'Customer 360', status: 'published',
+    lastModified: '3 April', author: 'Priya M.', conversations: 142,
+  },
+  {
+    id: 'proj-3', name: 'FnOps Cost Model', status: 'draft',
+    lastModified: '31 March', author: 'Vivek Sahi', conversations: 0,
+    issues: [{
+      id: 'alert-2', type: 'schema_change', severity: 'critical',
+      title: '2 columns removed from `dbt_finance_spend` — cost_center, allocation_type',
+      project: 'FnOps Cost Model', projectId: 'proj-3',
+      source: 'dbt Cloud · finance_analytics', time: '4h ago',
+    }],
+  },
+  {
+    id: 'proj-6', name: 'Product Usage Analytics', status: 'published',
+    lastModified: '18 April', author: 'Sara Chen', conversations: 287,
+    issues: [{
+      id: 'alert-3', type: 'data_freshness', severity: 'warning',
+      title: '`user_events` hasn\'t updated in 26h — exceeds 12h SLA',
+      project: 'Product Usage Analytics', projectId: 'proj-6',
+      source: 'BigQuery · product_db', time: '2h ago',
+    }],
+  },
+  {
+    id: 'proj-7', name: 'Revenue Attribution', status: 'draft',
+    lastModified: '14 April', author: 'Raj Patel', conversations: 0,
+  },
+  {
+    id: 'proj-8', name: 'Churn Prediction', status: 'published',
+    lastModified: '10 April', author: 'Priya M.', conversations: 94,
+  },
+  {
+    id: 'proj-9', name: 'Support Analytics', status: 'draft',
+    lastModified: '6 April', author: 'Vivek Sahi', conversations: 0,
+  },
+  {
+    id: 'proj-10', name: 'Inventory & Supply Chain', status: 'published',
+    lastModified: '28 March', author: 'Sara Chen', conversations: 61,
+  },
 ];
+
+// ─── Model detail data (for model view screen) ───────────────────────────────
+
+export interface ModelTable  { name: string; connection: string; rows: number; includedColumns: number }
+export interface ModelJoin   { left: string; right: string; on: string; type: string }
+export interface ModelColumn {
+  name: string;
+  table: string;                              // 'computed' for derived metrics, else source table name
+  type: 'attribute' | 'measure' | 'metric';
+  formula?: string;                           // computed metrics only
+  description?: string;
+  aiContextSet: boolean;
+  hidden?: boolean;                           // if true, excluded from Info tab column list
+}
+
+export interface ModelDetails {
+  source: 'warehouse' | 'dbt';
+  description: string;
+  tables: ModelTable[];
+  joins: ModelJoin[];
+  columns: ModelColumn[];
+  syncInfo?: {
+    project: string;
+    connection: string;
+    schedule: string;
+    lastSuccessfulSync: string;
+  };
+  warehouseInfo?: {
+    type: string;
+    database: string;
+  };
+}
+
+export const MODEL_DETAILS: Record<string, ModelDetails> = {
+  'proj-sp': {
+    source: 'dbt',
+    syncInfo: {
+      project: 'sales_analytics',
+      connection: 'dbt Cloud',
+      schedule: 'Daily · 2:00 AM UTC',
+      lastSuccessfulSync: 'Apr 19 · 02:00 AM',
+    },
+    description: 'Sales pipeline analysis for the revenue team. Tracks deal stage progression, rep performance, and territory coverage using dbt-modelled views from Salesforce.',
+    tables: [
+      { name: 'dbt_sales_pipeline', connection: 'dbt Cloud · sales_analytics', rows: 840, includedColumns: 8 },
+      { name: 'dbt_sales_reps',     connection: 'dbt Cloud · sales_analytics', rows: 62,  includedColumns: 5 },
+      { name: 'dbt_territories',    connection: 'dbt Cloud · sales_analytics', rows: 18,  includedColumns: 4 },
+    ],
+    joins: [
+      { left: 'dbt_sales_pipeline', right: 'dbt_sales_reps',  on: 'rep_id',       type: 'LEFT JOIN' },
+      { left: 'dbt_sales_pipeline', right: 'dbt_territories', on: 'territory_id', type: 'LEFT JOIN' },
+    ],
+    columns: [
+      // Computed metrics
+      { name: 'Win Rate',          table: 'computed', type: 'metric',    formula: "COUNT(CASE WHEN stage = 'closed_won' THEN 1 END) / COUNT(*)", description: 'Percentage of pipeline deals closed as won.',          aiContextSet: true  },
+      { name: 'Avg Deal Size',     table: 'computed', type: 'metric',    formula: "AVG(CASE WHEN stage = 'closed_won' THEN amount END)",         description: 'Average revenue per closed-won deal.',                aiContextSet: true  },
+      { name: 'Pipeline Coverage', table: 'computed', type: 'metric',    formula: 'SUM(expected_revenue) / NULLIF(SUM(quota), 0)',               description: 'Pipeline value as a multiple of sales quota.',        aiContextSet: true  },
+      // dbt_sales_pipeline columns
+      { name: 'deal_id',           table: 'dbt_sales_pipeline', type: 'attribute', description: 'Unique identifier for each pipeline deal.',                    aiContextSet: true  },
+      { name: 'stage',             table: 'dbt_sales_pipeline', type: 'attribute', description: 'Current deal stage: prospecting, proposal, negotiation, closed_won, closed_lost.', aiContextSet: true  },
+      { name: 'amount',            table: 'dbt_sales_pipeline', type: 'measure',   description: 'Expected deal value in USD.',                                  aiContextSet: true  },
+      { name: 'expected_revenue',  table: 'dbt_sales_pipeline', type: 'measure',   description: 'Probability-weighted revenue (amount × close probability).',   aiContextSet: true  },
+      { name: 'close_date',        table: 'dbt_sales_pipeline', type: 'attribute', description: 'Projected or actual close date.',                              aiContextSet: true  },
+      { name: 'created_date',      table: 'dbt_sales_pipeline', type: 'attribute', description: 'Date the deal was entered into the pipeline.',                 aiContextSet: false },
+      { name: 'quota',             table: 'dbt_sales_pipeline', type: 'measure',   description: 'Sales quota assigned to this rep for the period.',             aiContextSet: true  },
+      { name: 'segment',           table: 'dbt_sales_pipeline', type: 'attribute', description: 'Customer segment: SMB, Mid-Market, Enterprise.',               aiContextSet: true  },
+      // dbt_sales_reps columns
+      { name: 'rep_name',          table: 'dbt_sales_reps', type: 'attribute', description: 'Full name of the sales representative.',   aiContextSet: true  },
+      { name: 'region',            table: 'dbt_sales_reps', type: 'attribute', description: 'Sales region the rep is assigned to.',     aiContextSet: true  },
+      { name: 'hire_date',         table: 'dbt_sales_reps', type: 'attribute', description: 'Date the rep joined the sales team.',      aiContextSet: false },
+      { name: 'manager',           table: 'dbt_sales_reps', type: 'attribute', description: 'Name of the rep\'s direct manager.',       aiContextSet: true  },
+      { name: 'target',            table: 'dbt_sales_reps', type: 'measure',   description: 'Annual revenue target for this rep.',      aiContextSet: true  },
+      // dbt_territories columns
+      { name: 'territory_name',    table: 'dbt_territories', type: 'attribute', description: 'Name of the sales territory.',         aiContextSet: true  },
+      { name: 'territory_region',  table: 'dbt_territories', type: 'attribute', description: 'Geographic region of the territory.',  aiContextSet: true  },
+      { name: 'quota_target',      table: 'dbt_territories', type: 'measure',   description: 'Aggregate quota target for the territory.', aiContextSet: true  },
+      { name: 'account_count',     table: 'dbt_territories', type: 'measure',   description: 'Number of active accounts in territory.', aiContextSet: false },
+    ],
+  },
+  'proj-mc': {
+    source: 'warehouse',
+    warehouseInfo: {
+      type: 'Snowflake',
+      database: 'marketing_db',
+    },
+    description: 'Campaign performance analysis for the marketing team. Covers order attribution by campaign and channel, budget efficiency across regions, and user segment conversion rates.',
+    tables: [
+      { name: 'orders',    connection: 'Snowflake · marketing_db', rows: 150, includedColumns: 5 },
+      { name: 'campaigns', connection: 'Snowflake · marketing_db', rows: 45,  includedColumns: 7 },
+      { name: 'users',     connection: 'Snowflake · marketing_db', rows: 90,  includedColumns: 4 },
+    ],
+    joins: [
+      { left: 'orders', right: 'campaigns', on: 'campaign_id', type: 'LEFT JOIN'  },
+      { left: 'orders', right: 'users',     on: 'user_id',     type: 'INNER JOIN' },
+    ],
+    columns: [
+      // Computed metrics
+      { name: 'Return on Spend',  table: 'computed', type: 'metric', formula: 'SUM(orders.amount) / NULLIF(SUM(campaigns.spend), 0)',                       description: 'Revenue generated per dollar of campaign spend.',        aiContextSet: true  },
+      { name: 'Conversion Rate',  table: 'computed', type: 'metric', formula: 'COUNT(DISTINCT orders.user_id) / NULLIF(COUNT(DISTINCT users.user_id), 0)',  description: 'Percentage of users who placed an order.',              aiContextSet: true  },
+      // orders columns
+      { name: 'amount',           table: 'orders', type: 'measure',   description: 'Order revenue in USD.',                                                  aiContextSet: true  },
+      { name: 'order_date',       table: 'orders', type: 'attribute', description: 'Date the order was placed (MM/DD/YYYY).',                                aiContextSet: true  },
+      { name: 'product_category', table: 'orders', type: 'attribute', description: 'Product line: Electronics, Apparel, Home, Beauty, Sports.',              aiContextSet: true  },
+      { name: 'region',           table: 'orders', type: 'attribute', description: 'Geographic region where the order was placed.',                          aiContextSet: true  },
+      { name: 'status',           table: 'orders', type: 'attribute', description: 'Order status: completed, returned, pending.',                            aiContextSet: true  },
+      // campaigns columns
+      { name: 'campaign_name',    table: 'campaigns', type: 'attribute', description: 'Marketing campaign display name.',                                    aiContextSet: true  },
+      { name: 'channel',          table: 'campaigns', type: 'attribute', description: 'Marketing channel: paid_search, social, email, display.',             aiContextSet: true  },
+      { name: 'spend',            table: 'campaigns', type: 'measure',   description: 'Total ad spend for the campaign in USD.',                             aiContextSet: true  },
+      { name: 'budget',           table: 'campaigns', type: 'measure',   description: 'Allocated budget for the campaign in USD.',                           aiContextSet: true  },
+      { name: 'target_region',    table: 'campaigns', type: 'attribute', description: 'Geographic region the campaign is targeting.',                        aiContextSet: true  },
+      { name: 'start_date',       table: 'campaigns', type: 'attribute',                                                                                     aiContextSet: false },
+      { name: 'end_date',         table: 'campaigns', type: 'attribute', description: 'End date of the campaign; null if campaign is ongoing.',              aiContextSet: false },
+      // users columns
+      { name: 'segment',          table: 'users', type: 'attribute', description: 'Customer segment: SMB, Mid-Market, Enterprise.',                          aiContextSet: true  },
+      { name: 'lifetime_value',   table: 'users', type: 'measure',   description: 'Total revenue from this customer across all orders.',                     aiContextSet: true  },
+      { name: 'country',          table: 'users', type: 'attribute', description: 'Customer country.',                                                       aiContextSet: true  },
+      { name: 'age',              table: 'users', type: 'attribute', description: 'Customer age in years.',                                                  aiContextSet: true  },
+    ],
+  },
+};
+
+// ─── Model conversations (for usage tab) ─────────────────────────────────────
+
+export interface ModelConversation {
+  id: string;
+  question: string;
+  user: string;
+  timestamp: string;
+  feedback: 'positive' | 'negative' | null;
+  failed: boolean;
+}
+
+export const MODEL_CONVERSATIONS: Record<string, ModelConversation[]> = {
+  'proj-sp': [
+    { id: 'sc1', question: 'What is our win rate by territory this quarter?',      user: 'Raj Patel', timestamp: 'Apr 19, 3:10 PM',  feedback: 'positive', failed: false },
+    { id: 'sc2', question: 'Which reps have the highest pipeline coverage?',        user: 'Amy L.',    timestamp: 'Apr 19, 1:45 PM',  feedback: null,       failed: false },
+    { id: 'sc3', question: 'Show deals stuck in negotiation for 30+ days',          user: 'Raj Patel', timestamp: 'Apr 18, 4:30 PM',  feedback: null,       failed: true  },
+    { id: 'sc4', question: 'What is average deal size by segment?',                 user: 'Tom W.',    timestamp: 'Apr 18, 11:00 AM', feedback: 'positive', failed: false },
+    { id: 'sc5', question: 'How does Q1 pipeline compare to Q4 last year?',        user: 'Amy L.',    timestamp: 'Apr 17, 9:15 AM',  feedback: null,       failed: false },
+  ],
+  'proj-mc': [
+    { id: 'c1', question: 'What is our ROAS by campaign for last quarter?',      user: 'Alex Kim',   timestamp: 'Apr 18, 2:14 PM',  feedback: 'positive', failed: false },
+    { id: 'c2', question: 'Which user segments convert best?',                   user: 'Priya M.',   timestamp: 'Apr 18, 11:30 AM', feedback: 'negative', failed: false },
+    { id: 'c3', question: 'How efficient is our budget across regions?',          user: 'Marcus J.',  timestamp: 'Apr 17, 4:45 PM',  feedback: null,       failed: false },
+    { id: 'c4', question: 'What is revenue by product category?',                user: 'Nina R.',    timestamp: 'Apr 17, 3:20 PM',  feedback: null,       failed: true  },
+    { id: 'c5', question: 'Show me top campaigns by ROI',                        user: 'Alex Kim',   timestamp: 'Apr 16, 9:15 AM',  feedback: 'positive', failed: false },
+    { id: 'c6', question: 'What percentage of orders are organic?',              user: 'Sara Chen',  timestamp: 'Apr 15, 2:00 PM',  feedback: null,       failed: false },
+    { id: 'c7', question: 'Compare ROAS between paid search and social',         user: 'Priya M.',   timestamp: 'Apr 14, 10:45 AM', feedback: 'positive', failed: false },
+    { id: 'c8', question: 'Which campaigns drove the most SMB conversions?',     user: 'David K.',   timestamp: 'Apr 13, 3:30 PM',  feedback: null,       failed: false },
+  ],
+};
 
 export interface OverviewAlert {
   id: string;
-  type: 'schema_change' | 'sync_failure' | 'negative_feedback' | 'query_failed' | 'high_cost';
+  type: 'schema_change' | 'sync_failure' | 'cache_failed' | 'prep_job_failed' | 'data_freshness';
   title: string;
   project: string;
+  projectId: string;
   source: string;
   time: string;
   severity: 'critical' | 'warning';
+  errorLog?: string;
 }
-
-export const OVERVIEW_ALERTS: OverviewAlert[] = [
-  { id: 'alert-1', type: 'schema_change',     severity: 'critical', title: '3 columns removed from ORDERS',          project: 'Sales Analytics',   source: 'Snowflake · TEAM_REPORTING', time: '2h ago' },
-  { id: 'alert-2', type: 'sync_failure',      severity: 'warning',  title: 'Table sync failed — connection timeout', project: 'Customer 360',      source: 'BigQuery · EVENTS',          time: '5h ago' },
-  { id: 'alert-3', type: 'negative_feedback', severity: 'warning',  title: 'Wrong data returned to user',            project: 'FnOps Cost Model',  source: 'Snowflake · FINANCE',        time: '1d ago' },
-];
 
 export interface RecentTable {
   id: string;
@@ -801,10 +1121,16 @@ export interface RecentTable {
 }
 
 export const RECENT_TABLES: RecentTable[] = [
-  { id: 'orders',      name: 'orders',      connection: 'Snowflake', rowCount: '1.2M', columns: 8,  lastSynced: '3h ago' },
-  { id: 'campaigns',   name: 'campaigns',   connection: 'Snowflake', rowCount: '84K',  columns: 12, lastSynced: '3h ago' },
-  { id: 'user_events', name: 'user_events', connection: 'BigQuery',  rowCount: '9.4M', columns: 38, lastSynced: '1d ago' },
-  { id: 'users',       name: 'users',       connection: 'Snowflake', rowCount: '52K',  columns: 9,  lastSynced: '3h ago' },
+  { id: 'orders',           name: 'orders',           connection: 'Snowflake · marketing_db',  rowCount: '1.2M', columns: 8,  lastSynced: '3h ago' },
+  { id: 'campaigns',        name: 'campaigns',        connection: 'Snowflake · marketing_db',  rowCount: '84K',  columns: 12, lastSynced: '3h ago' },
+  { id: 'user_events',      name: 'user_events',      connection: 'BigQuery · product_db',     rowCount: '9.4M', columns: 38, lastSynced: '1d ago' },
+  { id: 'users',            name: 'users',            connection: 'Snowflake · marketing_db',  rowCount: '52K',  columns: 9,  lastSynced: '3h ago' },
+  { id: 'products',         name: 'products',         connection: 'Snowflake · commerce_db',   rowCount: '18K',  columns: 14, lastSynced: '3h ago' },
+  { id: 'transactions',     name: 'transactions',     connection: 'Snowflake · finance_db',    rowCount: '4.7M', columns: 11, lastSynced: '6h ago' },
+  { id: 'support_tickets',  name: 'support_tickets',  connection: 'Salesforce · support',      rowCount: '210K', columns: 22, lastSynced: '2h ago' },
+  { id: 'inventory',        name: 'inventory',        connection: 'Snowflake · commerce_db',   rowCount: '31K',  columns: 7,  lastSynced: '12h ago' },
+  { id: 'ad_impressions',   name: 'ad_impressions',   connection: 'BigQuery · ads_db',         rowCount: '22M',  columns: 16, lastSynced: '4h ago' },
+  { id: 'revenue_monthly',  name: 'revenue_monthly',  connection: 'Snowflake · finance_db',    rowCount: '860',  columns: 6,  lastSynced: '1d ago' },
 ];
 
 // ─── Warehouse Simulation — Deterministic Helpers ─────────────────────────────
