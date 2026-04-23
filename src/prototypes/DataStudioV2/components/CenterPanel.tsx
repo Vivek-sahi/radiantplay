@@ -125,8 +125,10 @@ const CheckboxCell: React.FC<{ defaultChecked: boolean; label: string }> = ({ de
   return <Checkbox checked={checked} label={label} onChange={setChecked} />;
 };
 
-export const DEFAULT_VISIBLE_COLS = ['sourceTable','dataType','description','aiContext','synonyms','columnType','aggregation','additive','hidden','format','nullPct','duplicates','blanks','anomalies'];
+export const DEFAULT_VISIBLE_COLS = ['sourceTable','dataType','description','aiContext','synonyms','columnType','nullPct','duplicates','blanks','anomalies'];
 export const ADVANCED_COLS = [
+  { key: 'aggregation', label: 'Aggregation' }, { key: 'additive', label: 'Additive' },
+  { key: 'hidden', label: 'Hidden' },            { key: 'format', label: 'Format' },
   { key: 'currencyType', label: 'Currency type' }, { key: 'dateBucket', label: 'Date bucket' },
   { key: 'calendar', label: 'Calendar type' },     { key: 'geoConfig', label: 'Geo config' },
   { key: 'indexPriority', label: 'Index priority' },{ key: 'suggestion', label: 'Suggestion settings' },
@@ -246,7 +248,7 @@ const ColumnsView: React.FC<{ project: ProjectState; setProject: React.Dispatch<
   });
   const tdStyle = (): React.CSSProperties => ({
     padding: `${sp.B}px ${sp.D}px`, borderBottom: `1px solid ${c['border-divider']}`,
-    verticalAlign: 'middle', backgroundColor: c['background-base'],
+    verticalAlign: 'middle',
   });
   const naCell = (): React.CSSProperties => tdStyle();
 
@@ -338,7 +340,7 @@ const ColumnsView: React.FC<{ project: ProjectState; setProject: React.Dispatch<
               const qVal   = (v?: number) => v && v > 0
                 ? <span style={{ color: c['content-primary'] }}>{v}</span>
                 : <span style={{ color: c['content-secondary'] }}>—</span>;
-              const rowBg  = c['background-base'];
+              const rowBg  = isSelected ? c['background-subtle'] : c['background-base'];
 
               const effectiveSyncStatus = project.columnOverrides?.[col.id]?.syncStatus ?? col.syncStatus;
               return (

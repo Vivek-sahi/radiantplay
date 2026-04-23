@@ -5,7 +5,36 @@ _Single source of truth for this prototype. Update as decisions are made._
 
 ## Next up
 
-**Work on code, table and data preview views.** Sub-header is now unified — next step is designing and building the Tables, Data Preview, and Notebook (code) child views to match the new single-toolbar design.
+1. Review the prototype end-to-end
+2. Update the session log
+
+### What's built (session 45):
+
+**Human-in-the-loop coaching flow — fixes + polish:**
+
+- **Build handoff fixed** — "Fix in build →" now injects a user message bubble into the Build chat: `"I tested '[question]' — [category]."` The agent starts working immediately after (no blank state).
+- **Per-category coaching fix scripts** — 5 new `SCRIPTS` entries (`coaching_time_period`, `coaching_number_wrong`, `coaching_wrong_columns`, `coaching_join_wrong`, `coaching_something_else`). All `autoComplete: true`, `stepDelay: 800`. Each is targeted — no more generic "17 columns" scan.
+- **Correct/Incorrect action bar** — merged into a single row: ✓ Correct · ✗ Incorrect on the left, Download on the right. "Was this correct?" label removed. After correct: "✓ Correct" in green in the same slot.
+- **"Switch to test mode" suggestion removed** from coaching fix scripts — no suggestion shown after the fix.
+- **Selected row highlight** — clicking a column row now shows a full-row `background-subtle` highlight (lightest grey token). All cells show the selection (removed `backgroundColor` from `tdStyle()` so `<tr>` color shows through). Sticky first column cell still has an explicit solid background.
+- **Impressions synonym workflow** — select `impressions` row, type anything with "synonym", "views", or "visits". Agent runs 3 working steps and writes `views` + `visits` as synonyms to `columnOverrides.impressions.synonyms`. Appears immediately in Synonyms column.
+- Build passes.
+
+---
+
+### What's built (session 44):
+
+**Human-in-the-loop coaching flow (Situation 3):**
+
+- **Issue Inspector removed** — replaced with a cleaner human-driven feedback model. No more auto-detected issue cards in test mode.
+- **Correct / Incorrect feedback buttons** — appear on every AI answer after it's revealed. "Correct" shows a "✓ Marked correct" confirmation. "Incorrect" opens the coaching flow.
+- **Coaching question step** — agent responds "Got it. What went wrong with this answer?" with 5 chip options: The number is wrong · The time period is wrong · The wrong columns or tables are being used · The join between tables is wrong · Something else. Selected option highlights blue; others dim and lock.
+- **Debug working animation** — 3 scripted working steps per category animate in (700ms each), followed by a diagnosis sentence. Different steps per category.
+- **Two CTAs** — "Continue testing" (dismisses, user keeps asking questions) and "Fix in build →" (switches to Build tab and pre-seeds the right coaching fix script with question context).
+- **No other flows disturbed** — build tab, all workflows unchanged.
+- Build passes.
+
+---
 
 ### What's built (session 39):
 - **Test mode UX research** — deep per-product analysis of dbt Cloud, Snowflake Cortex Analyst, Looker, Cursor 3, Hex, GitHub Copilot, Databricks. Includes user feedback, established vs. experimental patterns. Written to `research/test-mode-ux-patterns.md`.
@@ -122,6 +151,48 @@ Full scripted flows for all 6 situations → **[SCRIPT.md](./SCRIPT.md)**
 ## Session log
 
 _Last 3 sessions. Full history → [SESSION_LOG.md](./SESSION_LOG.md)_
+
+---
+
+### 2026-04-23 (session 44)
+
+**Human-in-the-loop coaching flow (Situation 3):**
+
+- **Issue Inspector removed** — replaced with a cleaner human-driven feedback model. No more auto-detected issue cards in test mode.
+- **Correct / Incorrect feedback buttons** — appear on every AI answer after it's revealed. "Correct" shows a "✓ Marked correct" confirmation. "Incorrect" opens the coaching flow.
+- **Coaching question step** — agent responds "Got it. What went wrong with this answer?" with 5 chip options: The number is wrong · The time period is wrong · The wrong columns or tables are being used · The join between tables is wrong · Something else. Selected option highlights blue; others dim and lock.
+- **Debug working animation** — 3 scripted working steps per category animate in (700ms each), followed by a diagnosis sentence. Different steps per category.
+- **Two CTAs** — "Continue testing" (dismisses, user keeps asking questions) and "Fix in build →" (switches to Build tab and pre-seeds `debug_context` flow with category context).
+- **No other flows disturbed** — build tab, all workflows (build_project, test mode, coaching via build agent, dbt import, etc.) unchanged. `debug_context` and `debug_context_bulk` SCRIPTS retained and used by the "Fix in build" handoff.
+- Build passes.
+
+---
+
+### 2026-04-23 (session 43)
+
+**Canvas sub-header: segmented view control + data quality improvements:**
+
+- **View segmented control** — replaced three right-side icon-only toggle buttons (Tables, Preview, Notebook) with a four-segment label-only control centered in the sub-header. Segments: Columns · Tables · Preview · Notebook. Active segment lifts to `background-base` with subtle shadow; inactive segments are `content-secondary`. Absolutely positioned at `left: 50%` so it never shifts when right-side controls appear/disappear.
+- **Columns is the default and explicit home** — no more hidden toggle-back gesture; clicking Columns returns to the column property view from any other view.
+- **Column-specific controls conditional** — column count, search, and Properties popover only render when Columns tab is active. Right-side wrapper uses `marginLeft: auto`.
+- **Aggregation, Additive, Hidden, Format hidden by default** — moved from `DEFAULT_VISIBLE_COLS` to `ADVANCED_COLS`. Now off by default, still accessible via Properties popover.
+- **Mock data quality issues expanded** — nullRate, blankCount, duplicateCount, anomalyCount spread across previously-clean columns in all three tables (orders, campaigns, users). ~15 columns now have at least one non-zero quality metric instead of ~5.
+- **Research doc written** — `research/secondary-views-placement.md`. Decision: full canvas swap is correct (not bottom panel); bottom panel is a poor fit for wide data grids. Real gap was the return UX and agent context bridges (deferred to a future session).
+- Build passes.
+
+---
+
+### 2026-04-23 (session 42)
+
+**V1/V2 deployment setup + branch rename:**
+
+- **Folder renamed** — `DataStudio/` → `DataStudioV2/` on `prototype/data-studio` branch. All imports, routes, and registry entries updated.
+- **Gallery card** — registry entry renamed to "Data Studio — Agentic UX" (`id: DataStudioV2`). Route: `/playground/DataStudioV2`.
+- **V1 preserved** — V1 DataStudio code restored from `2cf7019` into a separate `DataStudio/` folder on `main`. Both cards now live on `radiantplay-nine.vercel.app`.
+- **Deployed** — `vercel --prod` run from `main`. Both `DataStudio` (V1) and `DataStudioV2` (V2) cards visible in gallery alongside SpotterPrep.
+- **Working branch** — returned to `prototype/data-studio` for continued V2 development.
+- **Next up unchanged** — Tables, Data Preview, Notebook, and Lineage child views.
+- Build passes.
 
 ---
 

@@ -155,7 +155,7 @@ const SCRIPTS: Record<string, {
   autoComplete?: boolean;   // skip proposal/confirm — execute immediately after working steps
   stepDelay?: number;       // ms per step (default 800; use 5000 for one-shot build)
   followUpProposal?: string; // key of a SCRIPTS entry to show as a second proposal after execution
-  columnOverridesUpdate?: Record<string, { aiContext?: string | null; syncStatus?: 'ok' | 'broken' | 'degraded' }>; // written to columnOverrides on confirm
+  columnOverridesUpdate?: Record<string, { aiContext?: string | null; syncStatus?: 'ok' | 'broken' | 'degraded'; synonyms?: string[] }>; // written to columnOverrides on confirm
   additionalColumns?: Record<string, string[]>;  // merged into includedColumns (append, not replace)
   outcomeCard?: { title: string; chips: string[]; errorChips?: string[]; note: string }; // rendered after steps collapse
   setsProjectSource?: 'warehouse' | 'dbt'; // written to ProjectState on completion
@@ -837,6 +837,133 @@ Want me to go ahead — add the table, create the join, and populate the columns
     preserveStep: true,
     executionSuggestions: ['Switch to test mode'],
   },
+
+  // ── Coaching fix scripts — triggered by "Fix in build" from test tab ─────────
+  // Each is autoComplete (no proposal/confirm) with stepDelay: 800 for fast feel.
+  // executionSuggestions: ['Switch to test mode'] takes the user back to re-test.
+
+  coaching_time_period: {
+    steps: [
+      { label: 'Reading date column definitions', detail: 'Checking how order_date, start_date, and end_date are typed and described in the model.' },
+      { label: 'Identifying granularity gap', detail: 'order_date has no granularity context — Spotter defaulted to daily aggregation instead of the time period stated in the question.' },
+      { label: 'Writing granularity fix', detail: 'Adding AI context to order_date with correct time period guidance.' },
+    ],
+    duration: '6 seconds',
+    proposal: '',
+    execution: `Fixed. Updated \`order_date\` with granularity context:\n\n*"Use monthly aggregation for trend analysis; daily for operational queries. Default to the time period explicitly stated in the question."*\n\nSpotter will now apply the right time period by default.`,
+    autoComplete: true,
+    stepDelay: 800,
+    nextStep: 'healthy',
+    preserveStep: true,
+    executionSuggestions: ['Switch to test mode'],
+    columnOverridesUpdate: {
+      order_date: { aiContext: 'Date the order was placed, normalized to YYYY-MM-DD. Use monthly aggregation for trend analysis; daily for operational queries. Default to the time period explicitly stated in the question.' },
+    },
+  },
+
+  coaching_number_wrong: {
+    steps: [
+      { label: 'Checking metric formula', detail: 'Reading definitions for campaign_roas, conversion_rate, and related calculated columns.' },
+      { label: 'Identifying aggregation issue', detail: 'campaign_roas formula includes refunded orders in revenue — this inflates ROAS.' },
+      { label: 'Writing fix', detail: 'Adding aggregation rule to exclude refunded orders from revenue calculations.' },
+    ],
+    duration: '6 seconds',
+    proposal: '',
+    execution: `Fixed. Added aggregation rule to \`amount\`:\n\n*"Exclude orders where status = refunded from revenue calculations. Use SUM for total net revenue only."*\n\nROAS will now reflect net revenue, not gross.`,
+    autoComplete: true,
+    stepDelay: 800,
+    nextStep: 'healthy',
+    preserveStep: true,
+    executionSuggestions: ['Switch to test mode'],
+    columnOverridesUpdate: {
+      amount: { aiContext: 'Net order value in USD. Exclude orders with status = refunded from revenue calculations. Use SUM for total net revenue, AVG for average order value.' },
+    },
+  },
+
+  coaching_wrong_columns: {
+    steps: [
+      { label: 'Mapping question to model columns', detail: 'Matching terms in the question against column names across orders, campaigns, and users.' },
+      { label: 'Finding ambiguous column names', detail: 'Found columns with overlapping meanings and no descriptions — Spotter is guessing by column name alone.' },
+      { label: 'Writing column descriptions', detail: 'Adding AI context to the most ambiguous columns used in this query type.' },
+    ],
+    duration: '6 seconds',
+    proposal: '',
+    execution: `Fixed. Added descriptions to 5 columns most likely used for this query:\n✓ users.segment\n✓ orders.status\n✓ campaigns.channel\n✓ orders.amount\n✓ users.lifetime_value\n\nSpotter now has clear context for which columns to use.`,
+    autoComplete: true,
+    stepDelay: 800,
+    nextStep: 'healthy',
+    preserveStep: true,
+    executionSuggestions: ['Switch to test mode'],
+    columnOverridesUpdate: {
+      segment:        { aiContext: 'Customer tier based on company size and annual revenue. Values: Enterprise, Mid-market, SMB. Null = unclassified users — expected, not an error.' },
+      status:         { aiContext: 'Current state of the order. Values: completed, pending, cancelled, refunded.' },
+      channel:        { aiContext: 'Marketing channel used for this campaign. Values: paid_search, social, email, display.' },
+      amount:         { aiContext: 'Order value in USD at time of purchase. Use SUM for total revenue, AVG for average order value.' },
+      lifetime_value: { aiContext: 'Cumulative revenue from this user since signup. Use SUM for cohort totals, AVG to compare segments.' },
+    },
+  },
+
+  coaching_join_wrong: {
+    steps: [
+      { label: 'Inspecting join paths', detail: 'Tracing joins between orders, campaigns, and users — all are LEFT JOINs on foreign keys.' },
+      { label: 'Checking join cardinality', detail: 'orders × campaigns is 1:many — each campaign maps to many orders. Aggregation must happen before the join.' },
+      { label: 'Writing join context', detail: 'Adding a join hint to prevent row fan-out during aggregation.' },
+    ],
+    duration: '6 seconds',
+    proposal: '',
+    execution: `Fixed. Added join context to the model:\n\n*"Always aggregate orders before joining to campaigns to avoid row multiplication. Use SUM at the order level first."*\n\nSpotter will handle this join correctly going forward.`,
+    autoComplete: true,
+    stepDelay: 800,
+    nextStep: 'healthy',
+    preserveStep: true,
+    executionSuggestions: ['Switch to test mode'],
+  },
+
+  coaching_something_else: {
+    steps: [
+      { label: 'Scanning full model', detail: 'Reviewing all column definitions, joins, and metric formulas across 3 tables.' },
+      { label: 'Checking column context', detail: 'Found 4 columns with no descriptions — likely candidates for the issue.' },
+      { label: 'Applying best-guess fix', detail: 'Adding descriptions to the top columns most likely involved in this query type.' },
+    ],
+    duration: '6 seconds',
+    proposal: '',
+    execution: `Applied a best-guess fix: added descriptions to the 4 most likely columns involved in this query.\n\nIf the answer is still wrong after testing, try selecting the specific option that matches the issue — "number wrong", "time period", or "join".`,
+    autoComplete: true,
+    stepDelay: 800,
+    nextStep: 'healthy',
+    preserveStep: true,
+    executionSuggestions: ['Switch to test mode'],
+  },
+
+  // ── Add synonyms to impressions (Situation 1 / Build) ────────────────────────
+  // Triggered when impressions is selected and user asks to add synonyms/views/visits.
+
+  add_synonyms_impressions: {
+    steps: [
+      { label: 'Reading impressions column definition', detail: 'campaigns.impressions · measure · SUM. Current synonyms: none.' },
+      { label: 'Validating synonym candidates', detail: '"views" and "visits" are standard business terms for ad impression counts. No conflicts found across the model.' },
+      { label: 'Writing synonyms to model', detail: 'Adding "views" and "visits" as alternative names for campaigns.impressions.' },
+    ],
+    duration: '5 seconds',
+    proposal: '',
+    execution: `Done. Added synonyms to \`campaigns.impressions\`:\n\n✓ views\n✓ visits\n\nSpotter will now match questions like *"how many views did this campaign get?"* or *"show me visits by channel"* directly to the impressions column.`,
+    autoComplete: true,
+    stepDelay: 800,
+    nextStep: 'healthy',
+    preserveStep: true,
+    columnOverridesUpdate: {
+      impressions: { synonyms: ['views', 'visits'] },
+    },
+  },
+};
+
+// ── Coaching script key map ───────────────────────────────────────────────────
+const COACHING_SCRIPT_MAP: Record<string, string> = {
+  'The number is wrong':                       'coaching_number_wrong',
+  'The time period is wrong':                  'coaching_time_period',
+  'The wrong columns or tables are being used':'coaching_wrong_columns',
+  'The join between tables is wrong':          'coaching_join_wrong',
+  'Something else':                            'coaching_something_else',
 };
 
 // ── Script matching ───────────────────────────────────────────────────────────
@@ -1148,15 +1275,6 @@ function runDirectAdd(
 
 // ── Test mode types ───────────────────────────────────────────────────────────
 
-interface SpotterIssue {
-  type: 'Context' | 'Data quality' | 'Structure';
-  title: string;
-  message: string;
-  debugMessage: string;
-  column?: string;
-  ctaLabel?: string;
-}
-
 interface TestWorkingStep {
   title: string;
   desc?: string;
@@ -1175,14 +1293,14 @@ interface SpotterAnswer {
   chips: SpotterChip[];
   workingSteps: TestWorkingStep[];
   chartData?: { categories: string[]; values: number[]; formatter: string; yMax: number };
-  issues?: SpotterIssue[];
 }
 
 interface TestMsg {
   id: number;
-  role: 'user' | 'ai';
+  role: 'user' | 'ai' | 'coaching-question' | 'coaching-debug';
   content?: string;
   timestamp?: string;
+  // ai message fields
   answerTitle?: string;
   answerDesc?: string;
   chips?: SpotterChip[];
@@ -1191,8 +1309,17 @@ interface TestMsg {
   revealedSteps?: number;
   answerRevealed?: boolean;
   chartData?: SpotterAnswer['chartData'];
-  issues?: SpotterIssue[];
-  issueExpanded?: boolean;
+  feedbackState?: 'pending' | 'answered';
+  feedbackAnswer?: 'correct' | 'incorrect';
+  // coaching-question fields
+  coachingOptions?: string[];
+  selectedOption?: string;
+  sourceQuestion?: string;
+  // coaching-debug fields
+  debugCategory?: string;
+  debugSteps?: Array<{ label: string; detail: string }>;
+  debugRevealedSteps?: number;
+  debugResultRevealed?: boolean;
 }
 
 const SPOTTER_ANSWERS: Record<string, SpotterAnswer> = {
@@ -1243,16 +1370,6 @@ const SPOTTER_ANSWERS: Record<string, SpotterAnswer> = {
       formatter: '%',
       yMax: 55,
     },
-    issues: [
-      {
-        type: 'Context',
-        title: 'AI context missing',
-        message: "Spotter couldn't find AI context or description on `users.segment`, so it approximated the column meaning from values. This may affect the accuracy of this answer.",
-        debugMessage: 'I found a context issue during testing: `users.segment` has no description, so Spotter approximated its meaning from column values. Scan the entire model for columns missing descriptions and fix them all.',
-        column: 'users.segment',
-        ctaLabel: 'Update AI context',
-      },
-    ],
   },
 };
 
@@ -1337,70 +1454,50 @@ const TTypewriter: React.FC<{ text: string; active: boolean }> = ({ text, active
   return <>{displayed}</>;
 };
 
-const IssueInspectorIcon = () => (
-  <svg width="15" height="15" viewBox="0 0 18 18" fill="none">
-    <circle cx="8" cy="8" r="5" stroke="currentColor" strokeWidth="1.5"/>
-    <line x1="12" y1="12" x2="15.5" y2="15.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-    <line x1="8" y1="5.5" x2="8" y2="8.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-    <circle cx="8" cy="10.5" r="0.85" fill="currentColor"/>
-  </svg>
-);
+// ── Coaching debug steps — per category ──────────────────────────────────────
 
-const ISSUE_TYPE_COLORS: Record<SpotterIssue['type'], { badge: string; text: string }> = {
-  'Context':      { badge: '#EFF6FF', text: '#1D4ED8' },
-  'Data quality': { badge: '#FFF7ED', text: '#C2410C' },
-  'Structure':    { badge: '#F0FDF4', text: '#15803D' },
+const COACHING_OPTIONS = [
+  'The number is wrong',
+  'The time period is wrong',
+  'The wrong columns or tables are being used',
+  'The join between tables is wrong',
+  'Something else',
+];
+
+const COACHING_DEBUG_STEPS: Record<string, Array<{ label: string; detail: string }>> = {
+  'The number is wrong': [
+    { label: 'Reading metric definitions', detail: 'Checking formula logic for columns used in this answer.' },
+    { label: 'Verifying aggregation rules', detail: 'Looking for SUM vs COUNT mismatches and null handling.' },
+    { label: 'Scanning for filter conflicts', detail: 'Checking if any row-level filters are silently excluding data.' },
+  ],
+  'The time period is wrong': [
+    { label: 'Checking date column definitions', detail: 'Inspecting how date columns are typed and described in the model.' },
+    { label: 'Inspecting filter context', detail: 'Looking for default date filters or granularity settings that may restrict results.' },
+    { label: 'Verifying time intelligence setup', detail: 'Checking if fiscal year or custom calendar settings are interfering.' },
+  ],
+  'The wrong columns or tables are being used': [
+    { label: 'Mapping question intent to model columns', detail: 'Matching terms in the question to column names and descriptions.' },
+    { label: 'Checking for ambiguous column names', detail: 'Found multiple columns with similar names — no description to disambiguate.' },
+    { label: 'Identifying missing AI context', detail: 'Columns without descriptions force Spotter to guess by name alone.' },
+  ],
+  'The join between tables is wrong': [
+    { label: 'Inspecting join paths in model', detail: 'Tracing which tables are joined and on which keys.' },
+    { label: 'Checking join cardinality', detail: 'Verifying 1:1 vs 1:many relationships to detect row fan-out.' },
+    { label: 'Looking for aggregation inflation', detail: 'A bad join can silently multiply row counts and inflate metrics.' },
+  ],
+  'Something else': [
+    { label: 'Scanning full model', detail: 'Reviewing all column definitions, joins, and metric formulas.' },
+    { label: 'Checking column context and formulas', detail: 'Looking for missing descriptions, mistyped columns, and broken references.' },
+    { label: 'Reviewing join structure', detail: 'No obvious issue found — will need more context in the build agent.' },
+  ],
 };
 
-const IssueInspector: React.FC<{
-  issues: SpotterIssue[];
-  expanded: boolean;
-  onToggle: () => void;
-  onFix: (issue: SpotterIssue) => void;
-}> = ({ issues, expanded, onToggle, onFix }) => {
-  if (issues.length === 0) {
-    return (
-      <div style={{ marginTop: 16, border: '1px solid #D1FAE5', borderRadius: 8, backgroundColor: '#F0FDF4', display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px' }}>
-        <svg width="16" height="16" viewBox="0 0 18 18" fill="none">
-          <circle cx="9" cy="9" r="7" stroke="#16A34A" strokeWidth="1.5"/>
-          <path d="M6 9l2 2 4-4" stroke="#16A34A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-        </svg>
-        <span style={{ fontSize: 12.5, fontWeight: fw.medium, color: '#15803D' }}>No issues found with this answer</span>
-      </div>
-    );
-  }
-  return (
-    <div style={{ marginTop: 16, border: '1px solid #FDE68A', borderRadius: 8, overflow: 'hidden', backgroundColor: '#FFFBEB' }}>
-      <button onClick={onToggle} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' }}>
-        <span style={{ color: '#B45309', display: 'flex', flexShrink: 0 }}><IssueInspectorIcon /></span>
-        <span style={{ fontSize: 12.5, fontWeight: fw.semibold, color: '#92400E', flex: 1 }}>
-          Issue Inspector · {issues.length} {issues.length === 1 ? 'issue' : 'issues'} found
-        </span>
-        <TChevronIcon open={expanded} />
-      </button>
-      {expanded && (
-        <div style={{ borderTop: '1px solid #FDE68A' }}>
-          {issues.map((issue, idx) => (
-            <div key={idx} style={{ padding: '12px 14px', borderTop: idx > 0 ? '1px solid #FDE68A' : 'none', backgroundColor: '#fff' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                <span style={{ fontSize: 11, fontWeight: fw.semibold, padding: '2px 7px', borderRadius: 4, backgroundColor: ISSUE_TYPE_COLORS[issue.type].badge, color: ISSUE_TYPE_COLORS[issue.type].text }}>
-                  {issue.type}
-                </span>
-                <span style={{ fontSize: 13, fontWeight: fw.semibold, color: c['content-primary'] }}>{issue.title}</span>
-              </div>
-              <p style={{ fontSize: 12.5, color: c['content-secondary'], lineHeight: 1.6, margin: '0 0 12px' }}>{issue.message}</p>
-              <button
-                onClick={() => onFix(issue)}
-                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, backgroundColor: c['content-brand'], color: '#fff', border: 'none', borderRadius: 6, padding: '6px 14px', fontSize: 12.5, fontWeight: fw.semibold, cursor: 'pointer', fontFamily: 'inherit' }}
-              >
-                {issue.ctaLabel ?? 'Fix this'} →
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
+const COACHING_DEBUG_RESULTS: Record<string, string> = {
+  'The number is wrong': 'The metric formula may be using the wrong aggregation or column. I\'ve flagged the likely culprit — switch to Build and I\'ll diagnose and fix it.',
+  'The time period is wrong': 'The date column used in this answer may be missing a description or granularity rule. Switch to Build and I\'ll add the right context so Spotter filters correctly.',
+  'The wrong columns or tables are being used': 'Several columns in this model are missing descriptions, so Spotter is guessing by column name alone. Switch to Build and I\'ll write descriptions for all of them.',
+  'The join between tables is wrong': 'The join configuration may be causing row duplication or incorrect aggregation. Switch to Build to review and fix the join definition.',
+  'Something else': 'I\'ve scanned the model but need more context to isolate the issue. Switch to Build and describe the problem — I\'ll investigate from there.',
 };
 
 const TFormattedMsg: React.FC<{ content: string }> = ({ content }) => {
@@ -1787,7 +1884,16 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
       return;
     }
 
-    // 2g. Broken column fix routing — catches @campaign_roas / @days_to_convert from canvas selection
+    // 2g. Synonyms for impressions — triggers when impressions is selected and user mentions synonyms/views/visits
+    if (
+      selectedColumns?.includes('impressions') &&
+      /\b(synonym[s]?|view[s]?|visit[s]?|alias|also known)/i.test(text)
+    ) {
+      runFlow('add_synonyms_impressions', setMessages, setPending, setProcessing, setProject, text);
+      return;
+    }
+
+    // 2h. Broken column fix routing — catches @campaign_roas / @days_to_convert from canvas selection
     if (/@campaign_roas\b/i.test(text) && project.buildStep === 'healthy') {
       runFlow('fix_campaign_roas', setMessages, setPending, setProcessing, setProject, text);
       return;
@@ -1871,7 +1977,7 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
         id: msgId, role: 'ai',
         answerTitle: answer?.answerTitle, answerDesc: answer?.answerDesc, chips: answer?.chips,
         workingSteps: steps, workingExpanded: true, revealedSteps: 0, answerRevealed: false,
-        chartData: answer?.chartData, issues: answer?.issues, issueExpanded: false,
+        chartData: answer?.chartData,
         content: answer ? undefined : `Based on your Campaign Performance model, I found relevant results for this question.\n\nThe analysis draws from your orders, campaigns, and users data. Try one of the sample questions for a scripted demo answer.`,
       }]);
       const STEP_INTERVAL = 600;
@@ -1882,7 +1988,7 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
       });
       setTimeout(() => {
         setTestMessages(prev => prev.map(m =>
-          m.id === msgId ? { ...m, answerRevealed: true, issueExpanded: !!(answer?.issues?.some(iss => iss.type === 'Context')) } : m
+          m.id === msgId ? { ...m, answerRevealed: true, feedbackState: 'pending' as const } : m
         ));
       }, steps.length * STEP_INTERVAL + 500);
     }, 600);
@@ -1891,8 +1997,66 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
   const toggleTestWorking = (i: number) =>
     setTestMessages(prev => prev.map((m, idx) => idx === i ? { ...m, workingExpanded: !m.workingExpanded } : m));
 
-  const toggleTestIssue = (i: number) =>
-    setTestMessages(prev => prev.map((m, idx) => idx === i ? { ...m, issueExpanded: !m.issueExpanded } : m));
+  const handleFeedback = (msgIndex: number, answer: 'correct' | 'incorrect') => {
+    setTestMessages(prev => prev.map((m, i) =>
+      i === msgIndex ? { ...m, feedbackState: 'answered' as const, feedbackAnswer: answer } : m
+    ));
+    if (answer === 'correct') return;
+    // Capture the user's question from the nearest preceding user message
+    const sourceQuestion = testMessages
+      .slice(0, msgIndex)
+      .reverse()
+      .find(m => m.role === 'user')?.content ?? '';
+    const coachingId = Date.now();
+    setTestMessages(prev => [...prev, {
+      id: coachingId,
+      role: 'coaching-question' as const,
+      coachingOptions: COACHING_OPTIONS,
+      sourceQuestion,
+    }]);
+  };
+
+  const handleCoachingOption = (msgIndex: number, option: string) => {
+    const sourceQuestion = testMessages[msgIndex]?.sourceQuestion ?? '';
+    setTestMessages(prev => prev.map((m, i) =>
+      i === msgIndex ? { ...m, selectedOption: option } : m
+    ));
+    const debugId = Date.now();
+    const steps = COACHING_DEBUG_STEPS[option] ?? COACHING_DEBUG_STEPS['Something else'];
+    setTestMessages(prev => [...prev, {
+      id: debugId,
+      role: 'coaching-debug' as const,
+      debugCategory: option,
+      sourceQuestion,
+      debugSteps: steps,
+      debugRevealedSteps: 0,
+      debugResultRevealed: false,
+    }]);
+    steps.forEach((_, idx) => {
+      setTimeout(() => {
+        setTestMessages(prev => prev.map(m =>
+          m.id === debugId ? { ...m, debugRevealedSteps: idx + 1 } : m
+        ));
+        if (idx === steps.length - 1) {
+          setTimeout(() => {
+            setTestMessages(prev => prev.map(m =>
+              m.id === debugId ? { ...m, debugResultRevealed: true } : m
+            ));
+          }, 500);
+        }
+      }, (idx + 1) * 700);
+    });
+  };
+
+  const switchToBuildWithContext = (category: string, sourceQuestion: string) => {
+    const scriptKey = COACHING_SCRIPT_MAP[category] ?? 'coaching_something_else';
+    const userBubble = sourceQuestion
+      ? `I tested "${sourceQuestion}" — ${category.toLowerCase()}.`
+      : `Found an issue during testing: ${category.toLowerCase()}.`;
+    setProject(p => ({ ...p, testMode: false }));
+    setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: userBubble }]);
+    runFlow(scriptKey, setMessages, setPending, setProcessing, setProject, userBubble);
+  };
 
   const testChipStyle = (type: SpotterChip['type']): React.CSSProperties => ({
     display: 'inline-flex', alignItems: 'center', gap: 4,
@@ -2104,7 +2268,118 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
                   );
                 }
 
-                // AI response
+                // ── coaching-question message ──────────────────────────────────
+                if (msg.role === 'coaching-question') {
+                  return (
+                    <div key={i} style={{ display: 'flex', gap: sp.B, alignItems: 'flex-start' }}>
+                      <AgentAvatar working={false} />
+                      <div style={{ flex: 1, minWidth: 0, paddingTop: 2 }}>
+                        <p style={{ margin: `0 0 ${sp.C}px`, fontSize: fs.sm, color: c['content-primary'], lineHeight: '20px' }}>
+                          Got it. What went wrong with this answer?
+                        </p>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: sp.B }}>
+                          {msg.coachingOptions?.map(opt => {
+                            const isSelected = msg.selectedOption === opt;
+                            const isDimmed = !!msg.selectedOption && !isSelected;
+                            return (
+                              <button
+                                key={opt}
+                                onClick={() => !msg.selectedOption && handleCoachingOption(i, opt)}
+                                style={{
+                                  textAlign: 'left', border: `1px solid ${isSelected ? '#2770ef' : c['border-default']}`,
+                                  borderRadius: 8, padding: `${sp.B}px ${sp.C}px`, fontSize: fs.xs,
+                                  backgroundColor: isSelected ? '#EFF6FF' : c['background-base'],
+                                  color: isDimmed ? c['content-secondary'] : isSelected ? '#1D4ED8' : c['content-primary'],
+                                  cursor: msg.selectedOption ? 'default' : 'pointer',
+                                  fontFamily: ff.primary, fontWeight: isSelected ? fw.medium : fw.regular,
+                                  opacity: isDimmed ? 0.5 : 1, transition: 'all 0.15s',
+                                }}
+                              >
+                                {opt}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+
+                // ── coaching-debug message ─────────────────────────────────────
+                if (msg.role === 'coaching-debug') {
+                  const dbSteps = msg.debugSteps ?? [];
+                  const dbRevealed = msg.debugRevealedSteps ?? 0;
+                  const dbAnimating = dbRevealed < dbSteps.length;
+                  const dbVisibleSteps = dbSteps.slice(0, dbRevealed);
+                  const dbResult = COACHING_DEBUG_RESULTS[msg.debugCategory ?? ''] ?? COACHING_DEBUG_RESULTS['Something else'];
+                  return (
+                    <div key={i}>
+                      {dbVisibleSteps.length > 0 && (
+                        <div style={{ display: 'flex', gap: sp.B, alignItems: 'flex-start' }}>
+                          <AgentAvatar working={dbAnimating} />
+                          <div style={{ flex: 1, minWidth: 0, paddingTop: 2 }}>
+                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                              {dbVisibleSteps.map((step, si) => {
+                                const stepRunning = dbAnimating && si === dbVisibleSteps.length - 1;
+                                const stepDone = !stepRunning;
+                                return (
+                                  <div key={si} style={{ display: 'flex', gap: 10, animation: 'ag-step-in 0.22s ease' }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 14, flexShrink: 0 }}>
+                                      <div style={{ width: 14, height: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 3 }}>
+                                        {stepRunning ? <Spinner /> : <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#22C55E' }} />}
+                                      </div>
+                                      {si < dbVisibleSteps.length - 1 && (
+                                        <div style={{ flex: 1, width: 2, minHeight: 12, marginTop: 2, backgroundColor: stepDone ? '#22C55E' : c['border-divider'], transition: 'background-color 0.4s ease', borderRadius: 1 }} />
+                                      )}
+                                    </div>
+                                    <div style={{ flex: 1, paddingBottom: si < dbVisibleSteps.length - 1 ? sp.C : 0 }}>
+                                      <span className={stepRunning ? 'ag-gradient-text' : undefined} style={{ fontSize: fs.sm, fontWeight: stepRunning ? fw.medium : fw.regular, lineHeight: '20px', color: stepRunning ? undefined : c['content-secondary'] }}>
+                                        {step.label}
+                                      </span>
+                                      {step.detail && (
+                                        <p style={{ margin: '2px 0 0', fontSize: fs.xs, color: c['content-secondary'], lineHeight: '18px' }}>
+                                          <TTypewriter text={step.detail} active={stepRunning} />
+                                        </p>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      {msg.debugResultRevealed && (
+                        <div style={{ display: 'flex', gap: sp.B, alignItems: 'flex-start', marginTop: dbVisibleSteps.length > 0 ? sp.B : 0, animation: 'ag-step-in 0.3s ease-out' }}>
+                          <div style={{ width: 24, flexShrink: 0 }} />
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <p style={{ margin: `0 0 ${sp.C}px`, fontSize: fs.sm, color: c['content-primary'], lineHeight: '20px' }}>{dbResult}</p>
+                            <div style={{ display: 'flex', gap: sp.B }}>
+                              <button
+                                onClick={() => {/* just continue — no action needed */}}
+                                style={{ padding: `${sp.B}px ${sp.C}px`, border: `1px solid ${c['border-default']}`, borderRadius: 8, background: c['background-base'], fontSize: fs.xs, fontWeight: fw.medium, color: c['content-primary'], cursor: 'pointer', fontFamily: ff.primary }}
+                                onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
+                                onMouseLeave={e => (e.currentTarget.style.backgroundColor = c['background-base'])}
+                              >
+                                Continue testing
+                              </button>
+                              <button
+                                onClick={() => switchToBuildWithContext(msg.debugCategory ?? 'Something else', msg.sourceQuestion ?? '')}
+                                style={{ padding: `${sp.B}px ${sp.C}px`, border: 'none', borderRadius: 8, background: '#2770ef', fontSize: fs.xs, fontWeight: fw.medium, color: '#fff', cursor: 'pointer', fontFamily: ff.primary, display: 'inline-flex', alignItems: 'center', gap: 5 }}
+                                onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#1E5FD8')}
+                                onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#2770ef')}
+                              >
+                                Fix in build →
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+
+                // ── AI response ───────────────────────────────────────────────
                 const totalSteps = msg.workingSteps?.length ?? 0;
                 const revealed = msg.revealedSteps ?? totalSteps;
                 const isAnimating = msg.revealedSteps !== undefined && (revealed < totalSteps || !msg.answerRevealed);
@@ -2209,8 +2484,30 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
                             </div>
                           )}
 
-                          {/* Action bar */}
+                          {/* Action bar — feedback left, download right */}
                           <div style={{ display: 'flex', alignItems: 'center', marginTop: 6 }}>
+                            {msg.feedbackState === 'pending' && (<>
+                              <button
+                                onClick={() => handleFeedback(i, 'correct')}
+                                style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 10px', border: `1px solid ${c['border-default']}`, borderRadius: 6, background: 'none', fontSize: fs.xs, fontWeight: fw.medium, color: c['content-secondary'], cursor: 'pointer', fontFamily: ff.primary }}
+                                onMouseEnter={e => { e.currentTarget.style.borderColor = '#22C55E'; e.currentTarget.style.color = '#15803D'; }}
+                                onMouseLeave={e => { e.currentTarget.style.borderColor = c['border-default']; e.currentTarget.style.color = c['content-secondary']; }}
+                              >
+                                ✓ Correct
+                              </button>
+                              <button
+                                onClick={() => handleFeedback(i, 'incorrect')}
+                                style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 10px', marginLeft: sp.A, border: `1px solid ${c['border-default']}`, borderRadius: 6, background: 'none', fontSize: fs.xs, fontWeight: fw.medium, color: c['content-secondary'], cursor: 'pointer', fontFamily: ff.primary }}
+                                onMouseEnter={e => { e.currentTarget.style.borderColor = '#EF4444'; e.currentTarget.style.color = '#B91C1C'; }}
+                                onMouseLeave={e => { e.currentTarget.style.borderColor = c['border-default']; e.currentTarget.style.color = c['content-secondary']; }}
+                              >
+                                ✗ Incorrect
+                              </button>
+                            </>)}
+                            {msg.feedbackState === 'answered' && msg.feedbackAnswer === 'correct' && (
+                              <span style={{ fontSize: fs.xs, color: '#15803D' }}>✓ Correct</span>
+                            )}
+                            <div style={{ flex: 1 }} />
                             <button style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px', borderRadius: 5, fontSize: fs.xs, fontWeight: fw.medium, color: c['content-secondary'], fontFamily: 'inherit' }}
                               onMouseEnter={e => { e.currentTarget.style.background = c['background-subtle']; e.currentTarget.style.color = c['content-primary']; }}
                               onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = c['content-secondary']; }}
