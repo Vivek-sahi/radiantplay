@@ -5,8 +5,7 @@ _Single source of truth for this prototype. Update as decisions are made._
 
 ## Next up
 
-1. Review the prototype end-to-end
-2. Update the session log
+Left side navigation.
 
 ### What's built (session 45):
 
