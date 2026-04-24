@@ -5,7 +5,7 @@ _Single source of truth for this prototype. Update as decisions are made._
 
 ## Next up
 
-Left side navigation.
+Review of our design workflow.
 
 ### What's built (session 45):
 
@@ -150,6 +150,17 @@ Full scripted flows for all 6 situations → **[SCRIPT.md](./SCRIPT.md)**
 ## Session log
 
 _Last 3 sessions. Full history → [SESSION_LOG.md](./SESSION_LOG.md)_
+
+---
+
+### 2026-04-24 (session 46)
+
+**Deployment fix + left nav flatten:**
+
+- **Deployed sessions 43–45 to Vercel** — coaching flow, canvas segmented control, and impressions synonyms were committed but not live. Merged `prototype/data-studio` → `main` and deployed.
+- **Deploy process clarified** — Vercel does not auto-deploy from Galaxy git. Must run `vercel --prod` from `main` branch. Fixed a bad deploy that was run from `prototype/data-studio` (missing V1 folder).
+- **Left nav flattened** — removed Workspace / Sources / Operations section headers from the Shell sidebar. Now a single flat list: Overview · Projects · Data · Connections · Monitoring · Governance. Made `title` optional in `AppSidebar`'s `SidebarCategory` type so the `h3` only renders when a title is provided.
+- Build passes.
 
 ---
 
