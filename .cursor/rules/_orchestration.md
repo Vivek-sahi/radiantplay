@@ -80,7 +80,7 @@ Adding or modifying a feature within an existing prototype.
 | **Figma URL** | `figma-mcp-workflow.md` + `figma-component-mapping.md` | `figma.com/design/...` URL provided |
 | **Figma screenshot** | `figma-component-mapping.md` | Screenshot or Figma layer reference |
 | **Liveboard work** | `liveboard-ia.md` | Editing or adding to an existing Liveboard prototype |
-| **Liveboard styling panel** | `liveboard-styling.md` | Adding a style panel to edit mode, density controls, color themes, tile highlights, dark palette, corner radius, spacing mode, per-tile overrides |
+| **Liveboard styling panel** | `liveboard-styling.md` | Style button in edit toolbar, add styling panel, density controls, color themes, tile highlights, dark palette, corner radius, spacing mode, per-tile overrides, style drawer |
 | **Liveboard canvas (view)** | `liveboard-canvas-core.md` | Grid system, tile types, view mode, chart palette |
 | **DME structure / IA** | `data-model-editor-ia.md` | Editing layout variants, tabs, welcome state, or window bridge of an existing DME |
 | **DME components / agent panel** | `data-model-editor-components.md` | Modifying `_agentic` or `_datamodel` components used by DME (AgentPanel, TableCard, ColumnTree, etc.) |

@@ -16,11 +16,14 @@ globs: ["src/prototypes/StylingPanel/**", "src/prototypes/*Liveboard*/**", "src/
 
 Read this file when a user asks to **add a styling panel to a Liveboard's edit mode** — for example:
 
+- "Add a Style button to the edit toolbar" ← most common trigger
 - "Add a styling panel to the edit mode"
-- "Let users control density / color theme / tile highlights"
 - "Add a style drawer when a tile is selected"
+- "Let users control density / color theme / tile highlights"
 - "Let users change corner style or spacing mode"
 - Any request involving per-tile color overrides, highlight toggles, or dark palette on a Liveboard
+
+The **Style button** lives in the edit toolbar (top of the page, right side). Clicking it opens the `StylingPanelDrawer` — a 336px fixed panel that slides in from the right. The button toggles the drawer open/closed.
 
 Do NOT read this file for general Liveboard canvas questions — use `liveboard-canvas.md` or `liveboard-tiles-rules.md` instead.
 
