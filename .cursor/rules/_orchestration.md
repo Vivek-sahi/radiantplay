@@ -80,6 +80,7 @@ Adding or modifying a feature within an existing prototype.
 | **Figma URL** | `figma-mcp-workflow.md` + `figma-component-mapping.md` | `figma.com/design/...` URL provided |
 | **Figma screenshot** | `figma-component-mapping.md` | Screenshot or Figma layer reference |
 | **Liveboard work** | `liveboard-ia.md` | Editing or adding to an existing Liveboard prototype |
+| **Liveboard styling panel** | `liveboard-styling.md` | Adding a style panel to edit mode, density controls, color themes, tile highlights, dark palette, corner radius, spacing mode, per-tile overrides |
 | **Liveboard canvas (view)** | `liveboard-canvas-core.md` | Grid system, tile types, view mode, chart palette |
 | **DME structure / IA** | `data-model-editor-ia.md` | Editing layout variants, tabs, welcome state, or window bridge of an existing DME |
 | **DME components / agent panel** | `data-model-editor-components.md` | Modifying `_agentic` or `_datamodel` components used by DME (AgentPanel, TableCard, ColumnTree, etc.) |
@@ -149,7 +150,8 @@ Load `content-guidelines.md` before writing OR reviewing any labels, buttons, ti
 When the task is a **new Liveboard prototype** (Tier 2), BEFORE loading any liveboard canvas rules, ask the user:
 
 1. **Mode** — View-only (read-only dashboard), or edit mode with drag/resize?
-2. **Interactions** — Which do you need?
+2. **Styling panel** — Does edit mode need a styling panel (density, color themes, per-tile highlights)? If yes, load `liveboard-styling.md`.
+3. **Interactions** — Which do you need?
    - Drag and drop tiles
    - Resize tiles
    - Group tiles (mini-liveboard inside a container)
