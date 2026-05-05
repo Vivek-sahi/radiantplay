@@ -5,33 +5,9 @@ _Single source of truth for this prototype. Update at the end of every session._
 
 ## Next up
 
-**Journey 4 — session 57 demo walkthrough found 8 more issues. Fix before demo.**
+**Journey 4 — all 8 session-57 demo issues resolved. Prototype ready for demo.**
 
-Issues found during live walkthrough of the full Journey 4 flow. Fix in order:
-
-**1. External Models empty state — redesign to match DayZeroOverview style**
-Current centered logo + value-prop cards is wrong pattern. Use `ExistingModelCard` style from `DayZeroOverview.tsx`: full-width row card with logo icon, title, description, and chevron. One card: dbt logo + "dbt models" + "Import a dbt project and publish models directly to Spotter" → opens wizard. Replace `ExternalModelsEmptyState` in `DataBrowserPage.tsx`.
-
-**2. Wizard Step 4 — model names font is mono, should be Plain**
-`<code style={{ fontFamily: ff.mono ... }}>` on model names in `DbtImportWizard.tsx` Step4Content. Change to `ff.primary`.
-
-**3. Wizard Step 4 — "Issues" column header misaligned**
-Grid template `'2fr 1.4fr auto'` causes "Issues" header to not align with content below it. Inspect and fix the column grid.
-
-**4. Wizard Step 4 — Publish button does nothing**
-`onPublishModel` is `() => {}` in `DataBrowserPage`. Wire it: clicking Publish in the wizard should open `DbtPublishModal`. Pattern: pass a callback from `index.tsx` → `DataBrowserPage` → `DbtImportWizard` that opens the publish modal for the model name. Simplest approach: open the canvas for that model (same as Review issues) — or open a standalone DbtPublishModal.
-
-**5. Story sync — reduce wizard to 1 project with 2–3 models; filled state must match**
-`PROJECTS` in `DbtImportWizard.tsx` Step3 currently shows 3 projects. Reduce to 2 projects (analytics checked, finance unchecked). `DBT_MODELS` currently shows 5 rows. Reduce to 3 models (e.g. fct_revenue, dim_customers, dim_campaigns). Then `ExternalModelsView` filled state must show those same 3 models, not the full mockData catalog. Options: (a) add a `dbtModels` prop to `DataBrowserPage` with a fixed list of imported models, (b) add a small in-memory state that `onImportDbt` populates. Keep it simple for the prototype.
-
-**6. Filter pills — remove counts from ExternalModelsView toolbar**
-`"All (${entries.length})"` / `"dbt models (${dbtCount})"` — remove the `(n)` counts. Just show "All", "dbt models", "Semantic views".
-
-**7. Wizard modal height — stabilize across steps**
-Modal height changes as step content grows/shrinks. Add a fixed `minHeight` or explicit `height` to the WizardModal content area, OR ensure all step content is the same height. Check WizardModal CSS for a content height option. Alternatively, wrap each step's content div in a fixed-height container in `DbtImportWizard.tsx`.
-
-**8. Canvas — greyed-out broken columns after fix**
-After "Fix translation issues" fires `fix_campaign_roas`, other broken-status columns appear visually greyed out in the column list. Investigate `showIssuesOnly` state interaction with `syncStatus` — may be that `showIssuesOnly` is toggling on when it shouldn't, or the column visual for `degraded` status looks too dim. Quick check before demo.
+No open items. Next session: decide what to build next (Journey 2 monitoring polish, Journey 3 debug flow, or new area).
 
 ---
 
@@ -97,6 +73,23 @@ Original 6-situation arc (still valid for demo scripting) → `SCRIPT.md`
 ## Session log
 
 _Last 3 sessions. Full history → [SESSION_LOG.md](./SESSION_LOG.md)_
+
+---
+
+### 2026-05-06 (session 58)
+
+**Journey 4 — all 8 session-57 demo issues fixed.**
+
+- Fix 1: `ExternalModelsEmptyState` rebuilt as a single row card (dbt logo + "dbt models" + description + chevron) matching `ExistingModelCard` pattern from `DayZeroOverview.tsx`. Old centered logo + value-prop grid removed.
+- Fix 2: Step 4 model names — `<code ff.mono>` → `<span ff.primary>`.
+- Fix 3: Step 4 grid — `'2fr 1.4fr auto'` → `'2fr 1.4fr 160px'`; "Issues" header now aligns with button cells.
+- Fix 4: Publish button wired — `onPublishModel` calls `openDbtCanvas` (same as Review issues); canvas has `DbtPublishModal` accessible from toolbar.
+- Fix 5: Story sync — 2 projects (analytics ✓, finance ✗); 3 models (fct_revenue, dim_customers, dim_campaigns); `IMPORTED_DBT_ENTRIES` constant in `DataBrowserPage.tsx` — filled state shows these 3 instead of full catalog.
+- Fix 6: Filter pills — counts removed. "All", "dbt models", "Semantic views".
+- Fix 7: Wizard modal height — `minHeight: 280px` wrapper on every step's content; modal no longer resizes between steps.
+- Fix 8: `dbtIssueCount` in `Workspace.tsx` now checks `columnOverrides` first; count drops after a column is fixed by the agent.
+- Also fixed: branch docs — `prototype/data-studio` is the correct working branch (not `main`). Updated CLAUDE.md, CONTEXT.md, and session-start memory.
+- Build: clean ✓
 
 ---
 
