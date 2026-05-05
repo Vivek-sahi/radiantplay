@@ -1656,9 +1656,10 @@ interface AgentPanelProps {
   selectedColumns?: string[];
   onColumnRemove?: (name: string) => void;
   isDayZero?: boolean;
+  isDbtReview?: boolean;
 }
 
-const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, setMessages, initialPrompt, onBuildComplete, externalMessage, onExternalMessageHandled, externalMessageAttachment, injectInput, onInjectInputHandled, width = 340, onClose, selectedColumns, onColumnRemove, isDayZero }) => {
+const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, setMessages, initialPrompt, onBuildComplete, externalMessage, onExternalMessageHandled, externalMessageAttachment, injectInput, onInjectInputHandled, width = 340, onClose, selectedColumns, onColumnRemove, isDayZero, isDbtReview }) => {
   const [pendingAction, setPending]     = useState<PendingAction | null>(null);
   const [isProcessing, setProcessing]   = useState(false);
   const [planModalOpen, setPlanModalOpen] = useState(false);
@@ -1756,12 +1757,24 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
     if (initialPrompt || buildCalledRef.current) return;
     if (project.buildStep === 'healthy') {
       buildCalledRef.current = true;
-      setMessages([{
-        id: `r-${Date.now()}`,
-        type: 'response',
-        content: 'What would you like to do today?',
-        suggestions: ['Add a table', 'Create a formula', 'Add AI context'],
-      }]);
+      if (isDbtReview) {
+        setMessages([{
+          id: `r-${Date.now()}`,
+          type: 'response',
+          content: `I've opened **${project.name}** in ThoughtSpot. What would you like to do?`,
+          interactiveChips: [
+            { label: 'Enrich for AI', value: 'Enrich for AI' },
+            { label: 'Fix translation issues', value: 'Fix translation issues' },
+          ],
+        }]);
+      } else {
+        setMessages([{
+          id: `r-${Date.now()}`,
+          type: 'response',
+          content: 'What would you like to do today?',
+          suggestions: ['Add a table', 'Create a formula', 'Add AI context'],
+        }]);
+      }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -2222,7 +2235,12 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
       return;
     }
 
-    // 2h. Broken column fix routing — catches @campaign_roas / @days_to_convert from canvas selection
+    // 2h. Broken column fix routing — catches @campaign_roas / @days_to_convert from canvas selection,
+    //     and the "Fix translation issues" chip from the dbt review welcome card.
+    if (/fix translation issues/i.test(text) && project.buildStep === 'healthy') {
+      runFlow('fix_campaign_roas', setMessages, setPending, setProcessing, setProject, text);
+      return;
+    }
     if (/@campaign_roas\b/i.test(text) && project.buildStep === 'healthy') {
       runFlow('fix_campaign_roas', setMessages, setPending, setProcessing, setProject, text);
       return;

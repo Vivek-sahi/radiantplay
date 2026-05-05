@@ -1,26 +1,23 @@
 import React, { useState, useEffect } from 'react';
+import { WizardModal, WizardStep } from '../../../components/WizardModal';
 import { c, sp, fs, fw, ff } from '../styles';
-import { Button } from '../../../components/Button';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
-
-type WizardStep = 1 | 2 | 3 | 4;
 
 type ModelStatus = 'blocking' | 'advisory' | 'ready';
 
 interface DbtModel {
   name:       string;
   status:     ModelStatus;
-  issues:     number;
   issueLabel: string;
 }
 
 const DBT_MODELS: DbtModel[] = [
-  { name: 'fct_revenue',        status: 'advisory', issues: 2, issueLabel: '2 advisory'                   },
-  { name: 'fct_orders',         status: 'blocking', issues: 1, issueLabel: 'broken ref: customers.email'  },
-  { name: 'dim_customers',      status: 'ready',    issues: 0, issueLabel: '—'                            },
-  { name: 'dim_campaigns',      status: 'advisory', issues: 1, issueLabel: '1 advisory'                   },
-  { name: 'fct_marketing_perf', status: 'advisory', issues: 3, issueLabel: '3 advisory'                   },
+  { name: 'fct_revenue',        status: 'advisory', issueLabel: '2 issues'  },
+  { name: 'fct_orders',         status: 'blocking', issueLabel: '1 issue'   },
+  { name: 'dim_customers',      status: 'ready',    issueLabel: '—'         },
+  { name: 'dim_campaigns',      status: 'advisory', issueLabel: '1 issue'   },
+  { name: 'fct_marketing_perf', status: 'advisory', issueLabel: '3 issues'  },
 ];
 
 // ── Props ─────────────────────────────────────────────────────────────────────
@@ -32,39 +29,9 @@ interface DbtImportWizardProps {
   onPublishModel: (modelName: string) => void;
 }
 
-// ── Shared chrome ─────────────────────────────────────────────────────────────
-
-const StepIndicator: React.FC<{ current: WizardStep; total: number }> = ({ current, total }) => (
-  <div style={{ display: 'flex', alignItems: 'center', gap: sp.B }}>
-    {Array.from({ length: total }, (_, i) => {
-      const n = (i + 1) as WizardStep;
-      const done    = n < current;
-      const active  = n === current;
-      return (
-        <React.Fragment key={n}>
-          <div style={{
-            width: 24, height: 24, borderRadius: 12,
-            backgroundColor: done ? c['content-success'] : active ? c['content-brand'] : c['background-subtle'],
-            border: `1px solid ${done ? c['content-success'] : active ? c['content-brand'] : c['border-default']}`,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 11, fontWeight: fw.semibold, fontFamily: ff.primary,
-            color: done || active ? 'white' : c['content-tertiary'],
-            flexShrink: 0, transition: 'all 0.2s',
-          }}>
-            {done ? '✓' : n}
-          </div>
-          {i < total - 1 && (
-            <div style={{ flex: 1, height: 1, backgroundColor: done ? c['content-success'] : c['border-divider'], transition: 'background-color 0.3s' }} />
-          )}
-        </React.Fragment>
-      );
-    })}
-  </div>
-);
-
 // ── Step 1 — Connect ──────────────────────────────────────────────────────────
 
-const Step1: React.FC<{ onNext: () => void }> = ({ onNext }) => {
+const Step1Content: React.FC = () => {
   const [token, setToken] = useState('');
 
   const fieldStyle: React.CSSProperties = {
@@ -75,7 +42,6 @@ const Step1: React.FC<{ onNext: () => void }> = ({ onNext }) => {
     fontSize: fs.sm, fontFamily: ff.primary,
     color: c['content-primary'], outline: 'none',
   };
-
   const labelStyle: React.CSSProperties = {
     fontSize: fs.xs, fontWeight: fw.medium,
     color: c['content-secondary'], fontFamily: ff.primary,
@@ -84,7 +50,6 @@ const Step1: React.FC<{ onNext: () => void }> = ({ onNext }) => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: sp.E }}>
-      {/* Warehouse */}
       <div>
         <div style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'], fontFamily: ff.primary, marginBottom: sp.C }}>
           Warehouse
@@ -108,7 +73,6 @@ const Step1: React.FC<{ onNext: () => void }> = ({ onNext }) => {
         </div>
       </div>
 
-      {/* dbt credentials */}
       <div>
         <div style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'], fontFamily: ff.primary, marginBottom: sp.C }}>
           dbt Cloud credentials
@@ -126,18 +90,10 @@ const Step1: React.FC<{ onNext: () => void }> = ({ onNext }) => {
           </div>
           <div>
             <label style={labelStyle}>Service URL</label>
-            <input
-              type="text"
-              defaultValue="https://cloud.getdbt.com"
-              style={fieldStyle}
-            />
+            <input type="text" defaultValue="https://cloud.getdbt.com" style={fieldStyle} />
           </div>
         </div>
       </div>
-
-      <Button variant="primary" onClick={onNext} style={{ alignSelf: 'flex-end' }}>
-        Test connection →
-      </Button>
     </div>
   );
 };
@@ -150,7 +106,7 @@ const CONNECT_STEPS = [
   'Resolving warehouse views',
 ];
 
-const Step2: React.FC<{ onDone: () => void }> = ({ onDone }) => {
+const Step2Content: React.FC<{ onAutoAdvance: () => void }> = ({ onAutoAdvance }) => {
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
@@ -158,20 +114,21 @@ const Step2: React.FC<{ onDone: () => void }> = ({ onDone }) => {
     CONNECT_STEPS.forEach((_, i) => {
       timers.push(setTimeout(() => setProgress(i + 1), (i + 1) * 600));
     });
-    timers.push(setTimeout(onDone, CONNECT_STEPS.length * 600 + 400));
+    timers.push(setTimeout(onAutoAdvance, CONNECT_STEPS.length * 600 + 400));
     return () => timers.forEach(clearTimeout);
-  }, [onDone]);
+  // onAutoAdvance is stable (from parent closure) — empty dep list is intentional
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: sp.C }}>
       {CONNECT_STEPS.map((label, i) => {
-        const done    = i < progress;
-        const active  = i === progress;
+        const done   = i < progress;
+        const active = i === progress;
         return (
           <div key={label} style={{
             display: 'flex', alignItems: 'center', gap: sp.C,
-            padding: `${sp.B + 2}px ${sp.D}px`,
-            borderRadius: 8,
+            padding: `${sp.B + 2}px ${sp.D}px`, borderRadius: 8,
             backgroundColor: done ? c['background-success'] : active ? c['background-information'] : c['background-subtle'],
             transition: 'background-color 0.3s',
           }}>
@@ -205,14 +162,10 @@ const PROJECTS = [
   { id: 'finance',   label: 'finance',   models: 24, checked: false },
 ];
 
-const Step3: React.FC<{ onNext: () => void }> = ({ onNext }) => {
+const Step3Content: React.FC = () => {
   const [checked, setChecked] = useState<Record<string, boolean>>(
     Object.fromEntries(PROJECTS.map(p => [p.id, p.checked]))
   );
-
-  const selectedCount  = Object.values(checked).filter(Boolean).length;
-  const selectedModels = PROJECTS.filter(p => checked[p.id]).reduce((s, p) => s + p.models, 0);
-
   const toggle = (id: string) => setChecked(prev => ({ ...prev, [id]: !prev[id] }));
 
   return (
@@ -220,7 +173,6 @@ const Step3: React.FC<{ onNext: () => void }> = ({ onNext }) => {
       <div style={{ fontSize: fs.sm, color: c['content-secondary'], fontFamily: ff.primary }}>
         We found 3 projects in your dbt Cloud account
       </div>
-
       <div style={{ display: 'flex', flexDirection: 'column', gap: sp.B }}>
         {PROJECTS.map(p => (
           <div
@@ -254,12 +206,6 @@ const Step3: React.FC<{ onNext: () => void }> = ({ onNext }) => {
           </div>
         ))}
       </div>
-
-      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-        <Button variant="primary" onClick={onNext} disabled={selectedCount === 0}>
-          Import {selectedCount > 0 ? `${selectedCount} project${selectedCount > 1 ? 's' : ''} (${selectedModels} models)` : ''} →
-        </Button>
-      </div>
     </div>
   );
 };
@@ -274,19 +220,12 @@ const TRANSLATE_STEPS = [
 const statusColor = (s: ModelStatus) =>
   s === 'blocking' ? c['content-danger'] : s === 'advisory' ? '#B45309' : c['content-success'];
 
-const StatusDot: React.FC<{ status: ModelStatus }> = ({ status }) => (
-  <span style={{ color: statusColor(status), fontSize: 12 }}>
-    {status === 'advisory' ? '▲' : status === 'blocking' ? '●' : '●'}
-  </span>
-);
-
-interface Step4Props {
-  onImportClose:  () => void;
+interface Step4ContentProps {
   onReviewIssues: (name: string) => void;
   onPublish:      (name: string) => void;
 }
 
-const Step4: React.FC<Step4Props> = ({ onImportClose, onReviewIssues, onPublish }) => {
+const Step4Content: React.FC<Step4ContentProps> = ({ onReviewIssues, onPublish }) => {
   const [translating, setTranslating] = useState(true);
   const [progress, setProgress]       = useState(0);
 
@@ -334,176 +273,121 @@ const Step4: React.FC<Step4Props> = ({ onImportClose, onReviewIssues, onPublish 
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: sp.D }}>
-      {/* Summary chips */}
-      <div style={{ display: 'flex', gap: sp.B, flexWrap: 'wrap' }}>
-        {[
-          { label: '24 models',   color: c['content-secondary'],  bg: c['background-subtle'] },
-          { label: '1 blocking',  color: c['content-danger'],     bg: '#FEE2E2' },
-          { label: '14 advisory', color: '#B45309',               bg: '#FEF3C7' },
-          { label: '9 ready',     color: c['content-success'],    bg: c['background-success'] },
-        ].map(chip => (
-          <span key={chip.label} style={{
-            fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary,
-            padding: `${sp.A}px ${sp.C}px`, borderRadius: 12,
-            color: chip.color, backgroundColor: chip.bg,
-          }}>
-            {chip.label}
-          </span>
-        ))}
-      </div>
-
-      {/* Model table */}
+    <div style={{
+      border: `1px solid ${c['border-divider']}`,
+      borderRadius: 8, overflow: 'hidden',
+      backgroundColor: c['background-base'],
+    }}>
+      {/* Header */}
       <div style={{
-        border: `1px solid ${c['border-divider']}`,
-        borderRadius: 8, overflow: 'hidden',
-        backgroundColor: c['background-base'],
+        display: 'grid', gridTemplateColumns: '2fr 1.4fr auto',
+        gap: sp.C, padding: `${sp.B}px ${sp.D}px`,
+        backgroundColor: c['background-subtle'],
+        borderBottom: `1px solid ${c['border-divider']}`,
       }}>
-        {/* Header */}
-        <div style={{
-          display: 'grid', gridTemplateColumns: '2fr 1.2fr 1.4fr auto',
-          gap: sp.C, padding: `${sp.B}px ${sp.D}px`,
-          backgroundColor: c['background-subtle'],
-          borderBottom: `1px solid ${c['border-divider']}`,
-        }}>
-          {['Model', 'Status', 'Issues', ''].map(h => (
-            <div key={h} style={{ fontSize: 11, fontWeight: fw.medium, color: c['content-secondary'], fontFamily: ff.primary, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-              {h}
-            </div>
-          ))}
-        </div>
-
-        {/* Rows */}
-        {DBT_MODELS.map((m, i) => (
-          <div key={m.name} style={{
-            display: 'grid', gridTemplateColumns: '2fr 1.2fr 1.4fr auto',
-            gap: sp.C, padding: `${sp.B + 1}px ${sp.D}px`,
-            alignItems: 'center',
-            borderTop: i > 0 ? `1px solid ${c['border-divider']}` : 'none',
-          }}>
-            <code style={{ fontFamily: ff.mono, fontSize: fs.sm, color: c['content-brand'] }}>
-              {m.name}
-            </code>
-            <div style={{ display: 'flex', alignItems: 'center', gap: sp.A }}>
-              <StatusDot status={m.status} />
-              <span style={{ fontSize: fs.xs, color: statusColor(m.status), fontFamily: ff.primary, fontWeight: fw.medium, textTransform: 'capitalize' }}>
-                {m.status}
-              </span>
-            </div>
-            <span style={{ fontSize: fs.xs, color: c['content-secondary'], fontFamily: ff.primary }}>
-              {m.issueLabel}
-            </span>
-            <div style={{ display: 'flex', gap: sp.A, justifyContent: 'flex-end' }}>
-              <button
-                onClick={() => onReviewIssues(m.name)}
-                style={{
-                  padding: `${sp.A}px ${sp.B + 2}px`, borderRadius: 5,
-                  border: `1px solid ${c['border-default']}`,
-                  backgroundColor: 'transparent', cursor: 'pointer',
-                  fontSize: 11, fontFamily: ff.primary, color: c['content-secondary'],
-                }}
-                onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
-                onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
-              >
-                Review issues
-              </button>
-              {m.status !== 'blocking' && (
-                <button
-                  onClick={() => onPublish(m.name)}
-                  style={{
-                    padding: `${sp.A}px ${sp.B + 2}px`, borderRadius: 5,
-                    border: `1px solid ${c['border-default']}`,
-                    backgroundColor: 'transparent', cursor: 'pointer',
-                    fontSize: 11, fontFamily: ff.primary, color: c['content-secondary'],
-                  }}
-                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
-                  onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
-                >
-                  Publish
-                </button>
-              )}
-            </div>
+        {['Model', 'Issues', ''].map(h => (
+          <div key={h} style={{ fontSize: 11, fontWeight: fw.medium, color: c['content-secondary'], fontFamily: ff.primary, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            {h}
           </div>
         ))}
       </div>
 
-      {/* Footer */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-        <Button variant="secondary" onClick={onImportClose}>Import & close</Button>
-      </div>
+      {/* Rows */}
+      {DBT_MODELS.map((m, i) => (
+        <div key={m.name} style={{
+          display: 'grid', gridTemplateColumns: '2fr 1.4fr auto',
+          gap: sp.C, padding: `${sp.B + 1}px ${sp.D}px`,
+          alignItems: 'center',
+          borderTop: i > 0 ? `1px solid ${c['border-divider']}` : 'none',
+        }}>
+          <code style={{ fontFamily: ff.mono, fontSize: fs.sm, color: c['content-brand'] }}>
+            {m.name}
+          </code>
+          <span style={{ fontSize: fs.xs, color: c['content-secondary'], fontFamily: ff.primary }}>
+            {m.issueLabel}
+          </span>
+          <div style={{ display: 'flex', gap: sp.A, justifyContent: 'flex-end' }}>
+            <button
+              onClick={() => onReviewIssues(m.name)}
+              style={{
+                padding: `${sp.A}px ${sp.B + 2}px`, borderRadius: 5,
+                border: `1px solid ${c['border-default']}`,
+                backgroundColor: 'transparent', cursor: 'pointer',
+                fontSize: 11, fontFamily: ff.primary, color: c['content-secondary'],
+              }}
+              onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
+              onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+            >
+              Review issues
+            </button>
+            <button
+              onClick={() => onPublish(m.name)}
+              style={{
+                padding: `${sp.A}px ${sp.B + 2}px`, borderRadius: 5,
+                border: `1px solid ${c['border-default']}`,
+                backgroundColor: 'transparent', cursor: 'pointer',
+                fontSize: 11, fontFamily: ff.primary, color: c['content-secondary'],
+              }}
+              onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
+              onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+            >
+              Publish
+            </button>
+          </div>
+        </div>
+      ))}
     </div>
   );
 };
 
 // ── Wizard shell ──────────────────────────────────────────────────────────────
 
-const STEP_TITLES: Record<WizardStep, string> = {
-  1: 'Connect to dbt Cloud',
-  2: 'Testing connection',
-  3: 'Select projects',
-  4: 'Review models',
-};
-
 const DbtImportWizard: React.FC<DbtImportWizardProps> = ({
   onClose, onImportClose, onReviewIssues, onPublishModel,
 }) => {
-  const [step, setStep] = useState<WizardStep>(1);
+  const [step, setStep] = useState(0);
+
+  const steps: WizardStep[] = [
+    {
+      id: 'connect',
+      title: 'Connect to dbt Cloud',
+      content: <Step1Content />,
+      nextButtonText: 'Test connection →',
+      hideBackButton: true,
+    },
+    {
+      id: 'testing',
+      title: 'Testing connection',
+      content: <Step2Content onAutoAdvance={() => setStep(2)} />,
+      hideNextButton: true,
+      hideBackButton: true,
+    },
+    {
+      id: 'select',
+      title: 'Select projects',
+      content: <Step3Content />,
+      nextButtonText: 'Import',
+    },
+    {
+      id: 'review',
+      title: 'Review models',
+      content: <Step4Content onReviewIssues={onReviewIssues} onPublish={onPublishModel} />,
+      nextButtonText: 'Import & close',
+    },
+  ];
 
   return (
-    <div
-      style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.45)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-      onClick={onClose}
-    >
-      <div
-        style={{ backgroundColor: c['background-base'], borderRadius: 14, width: 560, maxHeight: '88vh', display: 'flex', flexDirection: 'column', boxShadow: '0 8px 40px rgba(0,0,0,0.22)', overflow: 'hidden' }}
-        onClick={e => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div style={{ padding: `${sp.D}px ${sp.F}px`, borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: sp.D }}>
-          <div style={{ flex: 1 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, marginBottom: sp.C }}>
-              <div style={{ width: 22, height: 22, borderRadius: 5, backgroundColor: '#FF694A', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: fw.semibold, color: 'white', fontFamily: ff.primary, flexShrink: 0 }}>
-                d
-              </div>
-              <span style={{ fontSize: fs.sm, fontWeight: fw.medium, color: c['content-primary'], fontFamily: ff.primary }}>
-                Import dbt project
-              </span>
-            </div>
-            <StepIndicator current={step} total={4} />
-          </div>
-          <button
-            onClick={onClose}
-            style={{ width: 28, height: 28, flexShrink: 0, borderRadius: 7, backgroundColor: c['background-subtle'], border: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: c['content-secondary'] }}
-          >
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M1.5 1.5l9 9M10.5 1.5l-9 9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
-          </button>
-        </div>
-
-        {/* Step label */}
-        <div style={{ padding: `${sp.C}px ${sp.F}px ${sp.B}px`, borderBottom: `1px solid ${c['border-divider']}` }}>
-          <div style={{ fontSize: fs.xs, color: c['content-tertiary'], fontFamily: ff.primary, marginBottom: 2 }}>
-            Step {step} of 4
-          </div>
-          <div style={{ fontSize: fs.md, fontWeight: fw.semibold, color: c['content-primary'], fontFamily: ff.primary }}>
-            {STEP_TITLES[step]}
-          </div>
-        </div>
-
-        {/* Body */}
-        <div style={{ padding: `${sp.E}px ${sp.F}px`, overflowY: 'auto', flex: 1 }}>
-          {step === 1 && <Step1 onNext={() => setStep(2)} />}
-          {step === 2 && <Step2 onDone={() => setStep(3)} />}
-          {step === 3 && <Step3 onNext={() => setStep(4)} />}
-          {step === 4 && (
-            <Step4
-              onImportClose={onImportClose}
-              onReviewIssues={onReviewIssues}
-              onPublish={onPublishModel}
-            />
-          )}
-        </div>
-      </div>
-    </div>
+    <WizardModal
+      isOpen
+      onClose={onClose}
+      title="Import dbt project"
+      steps={steps}
+      onComplete={onImportClose}
+      currentStep={step}
+      onStepChange={setStep}
+      size="medium"
+      showProgress
+    />
   );
 };
 

@@ -12,6 +12,7 @@ import {
   WarehouseConnection,
   WarehouseTable,
 } from '../data/mockData';
+import DbtImportWizard from './DbtImportWizard';
 
 // Brand accent — used only on the dbt model glyph color so dbt rows are
 // distinguishable from raw tables in dense lists.
@@ -824,10 +825,62 @@ const ExternalModelsView: React.FC<{ entries: ExternalEntry[] }> = ({ entries })
   );
 };
 
+// ── External Models empty state ──────────────────────────────────────────────
+
+const VALUE_PROPS = [
+  { title: 'Live link',         desc: 'dbt changes auto-sync to ThoughtSpot. Refresh on demand.' },
+  { title: 'AI catches issues', desc: 'Chasm traps, missing synonyms — flagged before publish.' },
+  { title: 'Push back to dbt', desc: 'Promote your overrides back to your dbt project.' },
+];
+
+const ExternalModelsEmptyState: React.FC<{ onImport: () => void }> = ({ onImport }) => (
+  <div style={{ flex: 1, overflowY: 'auto', backgroundColor: c['background-sunken'], padding: `${sp.J}px ${sp.H}px` }}>
+    <div style={{ maxWidth: 560, margin: '0 auto', textAlign: 'center', fontFamily: ff.primary }}>
+      {/* dbt logo */}
+      <div style={{
+        width: 52, height: 52, borderRadius: 10, backgroundColor: '#FF694A',
+        color: 'white', fontSize: 20, fontWeight: fw.semibold,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        margin: '0 auto',
+      }}>d</div>
+      <h2 style={{ margin: `${sp.D}px 0 0`, fontSize: 22, fontWeight: fw.semibold, color: c['content-primary'], letterSpacing: '-0.3px' }}>
+        No dbt projects connected
+      </h2>
+      <p style={{ marginTop: sp.B, marginBottom: sp.G, fontSize: fs.sm, color: c['content-secondary'], lineHeight: 1.6 }}>
+        Import your dbt project to build models in ThoughtSpot. Your models stay in sync automatically.
+      </p>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: sp.C, textAlign: 'left', marginBottom: sp.G }}>
+        {VALUE_PROPS.map(v => (
+          <Card key={v.title}>
+            <div style={{ padding: sp.D }}>
+              <div style={{ fontSize: fs.sm, fontWeight: fw.medium, color: c['content-primary'], marginBottom: sp.A }}>{v.title}</div>
+              <div style={{ fontSize: fs.xs, color: c['content-secondary'], lineHeight: 1.5 }}>{v.desc}</div>
+            </div>
+          </Card>
+        ))}
+      </div>
+      <Button variant="primary" onClick={onImport}>Import dbt project</Button>
+    </div>
+  </div>
+);
+
 // ── Top-level page ───────────────────────────────────────────────────────────
 
-const DataBrowserPage: React.FC = () => {
-  const [topTab, setTopTab] = useState<TopTab>('warehouses');
+interface DataBrowserPageProps {
+  initialTab?:      TopTab;
+  dbtImported?:     boolean;
+  onImportDbt?:     () => void;
+  onReviewIssues?:  (modelName: string) => void;
+}
+
+const DataBrowserPage: React.FC<DataBrowserPageProps> = ({
+  initialTab    = 'warehouses',
+  dbtImported,
+  onImportDbt,
+  onReviewIssues,
+}) => {
+  const [topTab, setTopTab] = useState<TopTab>(initialTab);
+  const [wizardOpen, setWizardOpen] = useState(false);
   const externalEntries = useMemo(() => getAllExternalModels(), []);
 
   return (
@@ -852,10 +905,30 @@ const DataBrowserPage: React.FC = () => {
       }}>
         <TopTabStrip active={topTab} onChange={setTopTab} />
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          {topTab === 'warehouses'      && <WarehousesView />}
-          {topTab === 'external-models' && <ExternalModelsView entries={externalEntries} />}
+          {topTab === 'warehouses' && <WarehousesView />}
+          {topTab === 'external-models' && dbtImported === false && (
+            <ExternalModelsEmptyState onImport={() => setWizardOpen(true)} />
+          )}
+          {topTab === 'external-models' && dbtImported !== false && (
+            <ExternalModelsView entries={externalEntries} />
+          )}
         </div>
       </div>
+
+      {wizardOpen && (
+        <DbtImportWizard
+          onClose={() => setWizardOpen(false)}
+          onImportClose={() => {
+            setWizardOpen(false);
+            onImportDbt?.();
+          }}
+          onReviewIssues={(modelName) => {
+            setWizardOpen(false);
+            onReviewIssues?.(modelName);
+          }}
+          onPublishModel={() => {}}
+        />
+      )}
     </div>
   );
 };

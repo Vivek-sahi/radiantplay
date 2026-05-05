@@ -8,8 +8,6 @@ import DataBrowserPage from './components/DataBrowserPage';
 import ConnectionsPage from './components/ConnectionsPage';
 import JourneyPicker from './components/JourneyPicker';
 import DayZeroOverview from './components/DayZeroOverview';
-import DbtOverview from './components/DbtOverview';
-import ExternalModelsPage from './components/ExternalModelsPage';
 import { OverviewProject, OverviewAlert } from './data/mockData';
 import { c, sp, ff, fs, fw } from './styles';
 
@@ -55,7 +53,7 @@ export interface ProjectState {
   prepTransforms?: PrepTransform[];
 }
 
-type AppView = 'journey-picker' | 'overview' | 'day-zero' | 'dbt-overview' | 'dbt-external-models' | 'new-project' | 'model-view' | 'workspace' | 'data-browser' | 'connections' | 'placeholder';
+type AppView = 'journey-picker' | 'overview' | 'day-zero' | 'new-project' | 'model-view' | 'workspace' | 'data-browser' | 'connections' | 'placeholder';
 
 // User-facing labels for the unwired nav sections so the placeholder reads cleanly.
 const PLACEHOLDER_LABEL: Record<NavSection, string> = {
@@ -79,6 +77,9 @@ const DataStudio: React.FC = () => {
   const [activeNav, setActiveNav] = useState<NavSection>('overview');
   const [initialPrompt, setInitialPrompt] = useState<string>('');
   const [isDayZero, setIsDayZero] = useState(false);
+  const [isDbtReview, setIsDbtReview] = useState(false);
+  const [dbtImported, setDbtImported] = useState(false);
+  const [dataBrowserInitialTab, setDataBrowserInitialTab] = useState<'warehouses' | 'external-models'>('warehouses');
   const [selectedProject, setSelectedProject] = useState<OverviewProject | null>(null);
   const [activeAlert, setActiveAlert]         = useState<OverviewAlert | null>(null);
   const [project, setProject] = useState<ProjectState>({
@@ -109,7 +110,9 @@ const DataStudio: React.FC = () => {
       navigateTo('day-zero');
     } else if (journeyId === 'dbt') {
       setActiveNav('data');
-      navigateTo('dbt-overview');
+      setDbtImported(false);
+      setDataBrowserInitialTab('external-models');
+      navigateTo('data-browser');
     } else {
       // Journeys 2–3 land on the existing overview (Day N state)
       setActiveNav('overview');
@@ -165,6 +168,7 @@ const DataStudio: React.FC = () => {
   const openDbtCanvas = (modelName: string) => {
     setInitialPrompt('');
     setIsDayZero(false);
+    setIsDbtReview(true);
     setProject({
       id: `dbt-${Date.now()}`,
       name: modelName,
@@ -179,8 +183,8 @@ const DataStudio: React.FC = () => {
       columnsSelected: true,
       includedColumns: {
         orders:    ['order_date', 'amount', 'region'],
-        campaigns: ['campaign_id', 'campaign_name', 'channel', 'spend', 'budget', 'impressions'],
-        users:     ['user_id', 'segment', 'lifetime_value'],
+        campaigns: ['campaign_id', 'campaign_name', 'channel', 'spend', 'budget', 'impressions', 'target_region', 'campaign_roas', 'days_to_convert'],
+        users:     ['user_id', 'segment', 'lifetime_value', 'signup_date', 'user_segment_fill'],
       },
       columnOverrides: {},
     });
@@ -250,6 +254,7 @@ const DataStudio: React.FC = () => {
     setInitialPrompt('');
     setActiveAlert(null);
     setIsDayZero(false);
+    setIsDbtReview(false);
     // If previous screen was model-view, go back there; otherwise overview
     if (prevView === 'model-view' && selectedProject) {
       setView('model-view');
@@ -262,8 +267,8 @@ const DataStudio: React.FC = () => {
 
   const handleNavChange = (nav: NavSection) => {
     setActiveNav(nav);
-    if (nav === 'overview')        setView('overview');
-    else if (nav === 'data')       setView('data-browser');
+    if (nav === 'overview')         setView('overview');
+    else if (nav === 'data')       { setDataBrowserInitialTab('warehouses'); setView('data-browser'); }
     else if (nav === 'connections') setView('connections');
     else                            setView('placeholder');
   };
@@ -293,19 +298,15 @@ const DataStudio: React.FC = () => {
             onEdit={enterWorkspaceFromModelView}
           />
         )}
-        {view === 'data-browser' && <DataBrowserPage />}
+        {view === 'data-browser' && (
+          <DataBrowserPage
+            initialTab={dataBrowserInitialTab}
+            dbtImported={dbtImported}
+            onImportDbt={() => setDbtImported(true)}
+            onReviewIssues={openDbtCanvas}
+          />
+        )}
         {view === 'connections'  && <ConnectionsPage />}
-        {view === 'dbt-overview' && (
-          <DbtOverview
-            onImportComplete={() => navigateTo('dbt-external-models')}
-            onReviewIssues={openDbtCanvas}
-          />
-        )}
-        {view === 'dbt-external-models' && (
-          <ExternalModelsPage
-            onReviewIssues={openDbtCanvas}
-          />
-        )}
         {view === 'placeholder' && (
           <div style={{
             flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -338,6 +339,7 @@ const DataStudio: React.FC = () => {
             onBack={goBack}
             initialPrompt={initialPrompt}
             isDayZero={isDayZero}
+            isDbtReview={isDbtReview}
           />
         </div>
       )}

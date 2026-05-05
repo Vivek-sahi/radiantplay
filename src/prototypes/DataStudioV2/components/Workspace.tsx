@@ -20,6 +20,7 @@ interface WorkspaceProps {
   onBack: () => void;
   initialPrompt?: string;
   isDayZero?: boolean;
+  isDbtReview?: boolean;
 }
 
 interface Toast {
@@ -28,7 +29,7 @@ interface Toast {
   action?: { label: string; onClick: () => void };
 }
 
-const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, onBack, initialPrompt, isDayZero }) => {
+const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, onBack, initialPrompt, isDayZero, isDbtReview }) => {
   const [messages, setMessages] = useState<AgentMessage[]>([]);
   const [isBuilding, setIsBuilding] = useState(!!initialPrompt);
   const [externalAgentMessage, setExternalAgentMessage] = useState<string | null>(null);
@@ -615,6 +616,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, onBack, init
             setMessages={setMessages}
             initialPrompt={initialPrompt}
             isDayZero={isDayZero}
+            isDbtReview={isDbtReview}
             onBuildComplete={() => setIsBuilding(false)}
             externalMessage={externalAgentMessage}
             onExternalMessageHandled={() => { setExternalAgentMessage(null); setExternalAgentAttachment(null); }}

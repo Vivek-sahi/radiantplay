@@ -5,9 +5,9 @@ _Single source of truth for this prototype. Update at the end of every session._
 
 ## Next up
 
-**Journey 4 fix pass (next session)**
+**Journey 4 — ready to demo. Demo review pass.**
 
-First build of Journey 4 (dbt plug-and-play) is done but has 8 issues found in review. All documented in `research/journey-4-dbt-spec.md` under "Session 56 — build review fixes". Fix those before demoing Journey 4. Key items: External Models empty state must live inside DataBrowserPage (not a separate screen), wizard must use design system WizardModal, canvas needs dbt welcome message + column warning indicators + working Publish modal.
+All 8 session-56 review fixes are done. Journey 4 is now fully wired: dbt picker → External Models empty state → WizardModal import → canvas with warning indicators + welcome card + working dbt Publish modal. Run through the full flow once before presenting to stakeholders.
 
 ---
 
@@ -73,6 +73,23 @@ Original 6-situation arc (still valid for demo scripting) → `SCRIPT.md`
 ## Session log
 
 _Last 3 sessions. Full history → [SESSION_LOG.md](./SESSION_LOG.md)_
+
+---
+
+### 2026-05-06 (session 57)
+
+**Journey 4 — 8 fix-pass items from session 56 review. All resolved.**
+
+- Fix 1: `DbtOverview.tsx` replaced — External Models empty state now lives inside `DataBrowserPage` (new `ExternalModelsEmptyState` component). DataBrowserPage gains props: `initialTab`, `dbtImported`, `onImportDbt`, `onReviewIssues`. `DbtImportWizard` is hosted inside DataBrowserPage.
+- Fix 2: `DbtImportWizard.tsx` fully rewritten to use design system `WizardModal`. Controlled mode (`currentStep` + `onStepChange`) enables Step 2 auto-advance.
+- Fix 3: Step 3 CTA simplified to "Import" (model count removed).
+- Fix 4: Step 4 summary chips removed. Both "Review issues" and "Publish" always shown per row.
+- Fix 5: `isDbtReview` prop threaded `index.tsx` → `Workspace` → `AgentPanel`. Welcome card shown on canvas open: "I've opened [model] in ThoughtSpot…" with "Enrich for AI" + "Fix translation issues" chips.
+- Fix 6: `openDbtCanvas` `includedColumns` updated to include `campaign_roas`, `days_to_convert`, `user_segment_fill` — these have `syncStatus: 'broken'/'degraded'` in mockData so warning icons now appear.
+- Fix 7: "Fix translation issues" chip routes to `fix_campaign_roas` script in `processText`.
+- Fix 8: `projectSource: 'dbt'` correctly preserved in `openDbtCanvas`; `DbtPublishModal` now opens reliably. Root cause was that broken column routes and isDbtReview flow weren't wired — publish itself was always correct.
+- `index.tsx`: removed `dbt-overview` + `dbt-external-models` views. Journey 4 now routes to `data-browser` with `initialTab='external-models'` and `dbtImported=false`. Nav → Data resets to `'warehouses'`.
+- Build: clean ✓
 
 ---
 
