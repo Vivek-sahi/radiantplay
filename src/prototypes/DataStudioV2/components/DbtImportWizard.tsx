@@ -345,7 +345,7 @@ const DbtImportWizard: React.FC<DbtImportWizardProps> = ({
   const [step, setStep] = useState(0);
 
   const wrap = (node: React.ReactNode) => (
-    <div style={{ minHeight: 280 }}>{node}</div>
+    <div style={{ height: 320, overflowY: 'auto' }}>{node}</div>
   );
 
   const steps: WizardStep[] = [

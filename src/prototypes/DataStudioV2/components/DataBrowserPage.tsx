@@ -851,44 +851,151 @@ const ExternalModelsView: React.FC<{ entries: ExternalEntry[] }> = ({ entries })
 };
 
 // ── External Models empty state ──────────────────────────────────────────────
+// Matches the "Start with an existing model" section from DayZeroOverview.
 
-const ExternalModelsEmptyState: React.FC<{ onImport: () => void }> = ({ onImport }) => {
+const EXTERNAL_MODEL_OPTIONS = [
+  {
+    id: 'dbt',
+    title: 'dbt models',
+    description: 'Import a dbt project and publish models directly to Spotter',
+    logo: '/logos/dbt.svg',
+  },
+  {
+    id: 'semantic',
+    title: 'Semantic views',
+    description: 'Start from an existing ThoughtSpot worksheet or semantic model',
+    logo: '/logos/snowflake.svg',
+  },
+] as const;
+
+const ExternalModelOptionCard: React.FC<{
+  option: typeof EXTERNAL_MODEL_OPTIONS[number];
+  onClick: () => void;
+}> = ({ option, onClick }) => {
   const [hovered, setHovered] = useState(false);
   return (
-    <div style={{ flex: 1, overflowY: 'auto', backgroundColor: c['background-sunken'], padding: `${sp.E}px ${sp.G}px` }}>
-      <button
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
-        onClick={onImport}
-        style={{
-          display: 'flex', alignItems: 'center', gap: sp.D,
-          width: '100%', padding: `${sp.C + 2}px ${sp.E}px`,
-          backgroundColor: hovered ? c['background-subtle'] : c['background-base'],
-          border: `1px solid ${hovered ? c['border-brand'] : c['border-divider']}`,
-          borderRadius: 10, cursor: 'pointer', textAlign: 'left',
-          fontFamily: ff.primary, transition: 'all 0.12s',
-        }}
+    <button
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onClick={onClick}
+      style={{
+        display: 'flex', alignItems: 'center', gap: sp.D,
+        width: '100%', padding: `${sp.C + 2}px ${sp.E}px`,
+        backgroundColor: hovered ? c['background-subtle'] : c['background-base'],
+        border: `1px solid ${hovered ? c['border-brand'] : c['border-divider']}`,
+        borderRadius: 10, cursor: 'pointer', textAlign: 'left',
+        fontFamily: ff.primary, transition: 'all 0.12s',
+      }}
+    >
+      <div style={{
+        width: 36, height: 36, borderRadius: 8, flexShrink: 0,
+        backgroundColor: c['background-subtle'],
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        overflow: 'hidden',
+      }}>
+        <img src={option.logo} alt={option.title} style={{ width: 22, height: 22, objectFit: 'contain' }} />
+      </div>
+      <div style={{ flex: 1 }}>
+        <div style={{ fontSize: fs.sm, fontWeight: fw.medium, color: c['content-primary'], marginBottom: 2 }}>
+          {option.title}
+        </div>
+        <div style={{ fontSize: fs.xs, color: c['content-secondary'] }}>
+          {option.description}
+        </div>
+      </div>
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke={c['content-tertiary']} strokeWidth="1.5" strokeLinecap="round">
+        <path d="M5 2.5l4.5 4.5L5 11.5"/>
+      </svg>
+    </button>
+  );
+};
+
+const ExternalModelsEmptyState: React.FC<{ onImport: () => void }> = ({ onImport }) => (
+  <div style={{ flex: 1, overflowY: 'auto', backgroundColor: c['background-sunken'] }}>
+    <div style={{ maxWidth: 560, margin: '0 auto', padding: `${sp.H}px` }}>
+      <div style={{
+        fontSize: 11, fontWeight: fw.semibold, textTransform: 'uppercase' as const,
+        letterSpacing: '0.06em', color: c['content-secondary'], marginBottom: sp.D,
+        fontFamily: ff.primary,
+      }}>
+        Start with an existing model
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: sp.C }}>
+        {EXTERNAL_MODEL_OPTIONS.map(opt => (
+          <ExternalModelOptionCard
+            key={opt.id}
+            option={opt}
+            onClick={opt.id === 'dbt' ? onImport : () => {}}
+          />
+        ))}
+      </div>
+    </div>
+  </div>
+);
+
+// ── Inline publish modal (shown from wizard Publish CTA) ──────────────────────
+
+const InlinePublishModal: React.FC<{
+  modelName: string;
+  onClose: () => void;
+  onPublish: () => void;
+}> = ({ modelName, onClose, onPublish }) => {
+  const rowStyle: React.CSSProperties = {
+    display: 'flex', alignItems: 'center',
+    padding: `${sp.B}px 0`,
+    borderBottom: `1px solid ${c['border-divider']}`,
+    gap: sp.C,
+  };
+  const labelStyle: React.CSSProperties = { fontSize: fs.sm, color: c['content-secondary'], width: 140, flexShrink: 0, fontFamily: ff.primary };
+  const valueStyle: React.CSSProperties = { fontSize: fs.sm, color: c['content-primary'], fontWeight: fw.medium, flex: 1, fontFamily: ff.primary };
+  const mutedStyle: React.CSSProperties = { fontSize: fs.sm, color: c['content-tertiary'], fontStyle: 'italic', flex: 1, fontFamily: ff.primary };
+
+  return (
+    <div
+      style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28, 35, 48, 0.5)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+      onClick={onClose}
+    >
+      <div
+        style={{ backgroundColor: c['background-base'], borderRadius: 14, width: 480, display: 'flex', flexDirection: 'column', boxShadow: '0 8px 40px rgba(0,0,0,0.18)' }}
+        onClick={e => e.stopPropagation()}
       >
-        <div style={{
-          width: 36, height: 36, borderRadius: 8, flexShrink: 0,
-          backgroundColor: c['background-subtle'],
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          overflow: 'hidden',
-        }}>
-          <img src="/logos/dbt.png" alt="dbt" style={{ width: 22, height: 22, objectFit: 'contain' }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-        </div>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: fs.sm, fontWeight: fw.medium, color: c['content-primary'], marginBottom: 2 }}>
-            dbt models
+        <div style={{ padding: `${sp.D}px ${sp.F}px`, borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: sp.D }}>
+          <div>
+            <h2 style={{ margin: 0, fontSize: fs.lg, fontWeight: fw.semibold, color: c['content-primary'], letterSpacing: -0.2, fontFamily: ff.primary }}>
+              Publish {modelName}
+            </h2>
+            <p style={{ margin: `${sp.A}px 0 0`, fontSize: fs.sm, color: c['content-secondary'], fontFamily: ff.primary }}>
+              Make this model available to Spotter and your team.
+            </p>
           </div>
-          <div style={{ fontSize: fs.xs, color: c['content-secondary'] }}>
-            Import a dbt project and publish models directly to Spotter
-          </div>
+          <button
+            onClick={onClose}
+            style={{ width: 28, height: 28, flexShrink: 0, borderRadius: 7, backgroundColor: c['background-subtle'], border: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: c['content-secondary'], marginTop: 2 }}
+          >
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M1.5 1.5l9 9M10.5 1.5l-9 9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
+          </button>
         </div>
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke={c['content-tertiary']} strokeWidth="1.5" strokeLinecap="round">
-          <path d="M5 2.5l4.5 4.5L5 11.5"/>
-        </svg>
-      </button>
+        <div style={{ padding: `${sp.D}px ${sp.F}px` }}>
+          <div style={rowStyle}>
+            <span style={labelStyle}>Source</span>
+            <span style={valueStyle}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ fontSize: 11, fontWeight: fw.semibold, color: '#FF694A', backgroundColor: 'rgba(255,105,74,0.08)', border: '1px solid rgba(255,105,74,0.2)', borderRadius: 3, padding: '1px 6px' }}>◆ dbt</span>
+                <span style={{ color: c['content-secondary'], fontWeight: fw.regular, fontFamily: ff.primary }}>analytics · linked</span>
+              </span>
+            </span>
+          </div>
+          <div style={rowStyle}><span style={labelStyle}>Joins</span><span style={valueStyle}>2 relationships</span></div>
+          <div style={rowStyle}><span style={labelStyle}>Metrics</span><span style={valueStyle}>3 (ROAS, Conversion Rate, Days to Convert)</span></div>
+          <div style={rowStyle}><span style={labelStyle}>AI context</span><span style={mutedStyle}>Not reviewed</span></div>
+          <div style={rowStyle}><span style={labelStyle}>Data prep</span><span style={mutedStyle}>Not reviewed</span></div>
+          <div style={{ ...rowStyle, borderBottom: 'none' }}><span style={labelStyle}>Caching</span><span style={mutedStyle}>Not available for linked dbt models</span></div>
+        </div>
+        <div style={{ padding: `${sp.C}px ${sp.F}px`, borderTop: `1px solid ${c['border-divider']}`, display: 'flex', justifyContent: 'flex-end', gap: sp.B }}>
+          <Button variant="secondary" onClick={onClose}>Cancel</Button>
+          <Button variant="primary" onClick={onPublish}>Publish model</Button>
+        </div>
+      </div>
     </div>
   );
 };
@@ -910,6 +1017,7 @@ const DataBrowserPage: React.FC<DataBrowserPageProps> = ({
 }) => {
   const [topTab, setTopTab] = useState<TopTab>(initialTab);
   const [wizardOpen, setWizardOpen] = useState(false);
+  const [publishModelName, setPublishModelName] = useState<string | null>(null);
   const externalEntries = useMemo(() => getAllExternalModels(), []);
 
   return (
@@ -955,7 +1063,18 @@ const DataBrowserPage: React.FC<DataBrowserPageProps> = ({
             setWizardOpen(false);
             onReviewIssues?.(modelName);
           }}
-          onPublishModel={(modelName) => { setWizardOpen(false); onReviewIssues?.(modelName); }}
+          onPublishModel={(modelName) => setPublishModelName(modelName)}
+        />
+      )}
+      {publishModelName !== null && (
+        <InlinePublishModal
+          modelName={publishModelName}
+          onClose={() => setPublishModelName(null)}
+          onPublish={() => {
+            setPublishModelName(null);
+            setWizardOpen(false);
+            onImportDbt?.();
+          }}
         />
       )}
     </div>
