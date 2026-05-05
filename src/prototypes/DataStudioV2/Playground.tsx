@@ -1766,9 +1766,24 @@ export const PlaygroundV6: React.FC = () => {
 // ║  Route: /data-studio-v2/playground                                            ║
 // ╚══════════════════════════════════════════════════════════════════════════════╝
 
-import { Iter1Layout, Iter2Layout, Iter3Layout } from '../TestModeLayouts';
+// TestModeLayouts/ lives as untracked work in worktree #1; stubbed locally so this
+// branch's build doesn't depend on it. Replace when the real layouts land in git.
+const TmStub: React.FC<{ name: string }> = ({ name }) => (
+  <div style={{ padding: sp.G, color: c['content-secondary'], fontFamily: ff.primary, fontSize: fs.sm }}>
+    {name} — playground stub. Real layout file is uncommitted in this worktree.
+  </div>
+);
+const Iter1Layout: React.FC = () => <TmStub name="TM1 Always-On" />;
+const Iter2Layout: React.FC = () => <TmStub name="TM2 Adaptive Shift" />;
+const Iter3Layout: React.FC = () => <TmStub name="TM3 Horizontal Stack" />;
+import { CacheDiscoverabilityCompare } from './CacheDiscoverability';
+import { DataQualityDiscoverabilityCompare } from './DataQualityDiscoverability';
+import { CombinedDiscoverabilityCompare } from './CombinedDiscoverability';
+import { ConnectionsExploration } from './components/explorations/Connections';
+import { DataBrowserExploration } from './components/explorations/DataBrowser';
+import { DbtExploration } from './components/explorations/Dbt';
 
-type NavId = 'v1' | 'v2' | 'v3' | 'v4' | 'v5' | 'v6' | 'tm1' | 'tm2' | 'tm3';
+type NavId = 'v1' | 'v2' | 'v3' | 'v4' | 'v5' | 'v6' | 'tm1' | 'tm2' | 'tm3' | 'p2-conn' | 'p2-browser' | 'p2-dbt';
 
 interface PGNavItem {
   id: NavId;
@@ -1797,7 +1812,31 @@ const PG_NAV: { section: string; items: PGNavItem[] }[] = [
       { id: 'tm3', label: 'Horizontal Stack', meta: 'dbt IDE' },
     ],
   },
+  {
+    section: 'Cache discoverability',
+    items: [],
+  },
+  {
+    section: 'Data quality discoverability',
+    items: [],
+  },
+  {
+    section: 'Combined model status',
+    items: [],
+  },
+  {
+    section: 'Phase 2 — explorations',
+    items: [
+      { id: 'p2-conn',    label: 'Connections',  meta: 'empty · list · new · detail · dbt' },
+      { id: 'p2-browser', label: 'Data Browser', meta: 'all · drilled · schema · actions' },
+      { id: 'p2-dbt',     label: 'dbt workflow', meta: 'empty · import · issues · publish' },
+    ],
+  },
 ];
+
+const CACHE_SECTION = 'Cache discoverability';
+const QUALITY_SECTION = 'Data quality discoverability';
+const COMBINED_SECTION = 'Combined model status';
 
 const renderNavIteration = (id: NavId): React.ReactNode => {
   switch (id) {
@@ -1810,6 +1849,9 @@ const renderNavIteration = (id: NavId): React.ReactNode => {
     case 'tm1': return <Iter1Layout />;
     case 'tm2': return <Iter2Layout />;
     case 'tm3': return <Iter3Layout />;
+    case 'p2-conn':    return <ConnectionsExploration />;
+    case 'p2-browser': return <DataBrowserExploration />;
+    case 'p2-dbt':     return <DbtExploration />;
   }
 };
 
@@ -1881,7 +1923,20 @@ export const PlaygroundNav: React.FC = () => {
         })}
       </div>
 
-      {/* Card grid */}
+      {/* Body — comparison views for cache / quality / combined, card grid for others */}
+      {activeGroup === CACHE_SECTION ? (
+        <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
+          <CacheDiscoverabilityCompare />
+        </div>
+      ) : activeGroup === QUALITY_SECTION ? (
+        <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
+          <DataQualityDiscoverabilityCompare />
+        </div>
+      ) : activeGroup === COMBINED_SECTION ? (
+        <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
+          <CombinedDiscoverabilityCompare />
+        </div>
+      ) : (
       <div style={{ flex: 1, overflow: 'auto', padding: 32 }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16, maxWidth: 1080 }}>
           {currentGroup.items.map(item => (
@@ -1916,6 +1971,7 @@ export const PlaygroundNav: React.FC = () => {
           ))}
         </div>
       </div>
+      )}
     </div>
   );
 };

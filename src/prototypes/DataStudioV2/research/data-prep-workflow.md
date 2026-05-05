@@ -313,21 +313,15 @@ The plan interface supports three modes: apply full plan · iterate with more in
 
 ---
 
-### Where prep transforms live in the workspace (open)
+### Where prep transforms live in the workspace — DECIDED: Option A
 
-Two candidate placements — needs visual exploration before deciding:
+**LeftPanel "Transformations" section** (below Formulas) + **`✦` indicators on individual data quality cells** in ColumnsView.
 
-**Option A: Column properties + LeftPanel "Prep" section**
-- Column properties shows the raw profile AND "1 transform applied" (expandable) per column
-- LeftPanel gets a "Prep" section alongside Tables / Formulas — aggregated view of all transforms across the model
-- Prep feels like a model-level capability, manageable as a whole
+- LeftPanel lists all transforms across the model in one place
+- ColumnsView cells (Null %, Duplicates, Anomalies) show a `✦` indicator when a transform is active on that column+issue combination. Tooltip shows the SQL.
+- The raw stat values don't change — the indicator signals "a transform addresses this."
 
-**Option B: Column properties only**
-- Each column carries its own transforms inline in column properties
-- No aggregated LeftPanel view — more per-column, annotation-style
-- Simpler surface, but harder to see the full prep plan at once
-
-Lean toward Option A: seeing the whole set of prep rules at once (LeftPanel) is more powerful than navigating column by column.
+**In Model View (in-use state):** Transforms will live in the Data Quality tab — shows all active transforms and their status per cache run. Not yet built. The open question here is whether cached data is raw (transforms re-applied at query time) or pre-transformed (transforms baked into the cache). **Needs PM/eng input.**
 
 ---
 

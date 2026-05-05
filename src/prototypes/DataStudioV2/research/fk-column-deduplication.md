@@ -1,5 +1,7 @@
 # FK Column Deduplication in Semantic Models
 
+**Status: DECIDED — FK columns excluded from fact tables by default. Built into mock data.**
+
 **Question:** When two tables are joined (e.g. orders JOIN campaigns on campaign_id), the join key column "campaign_id" exists in both tables. In the data model / semantic layer UI, should this column appear once or twice?
 
 **Date researched:** 2026-04-21

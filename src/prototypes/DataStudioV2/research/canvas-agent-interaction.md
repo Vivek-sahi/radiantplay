@@ -1,5 +1,7 @@
 # Canvas-to-Agent Interaction — Research & Design Decisions
 
+**Status: DECIDED — built session 25. No open questions.**
+
 _Research for Data Studio — canvas selection → agent input interaction pattern._  
 _Compiled 2026-04-22. Session 25._
 

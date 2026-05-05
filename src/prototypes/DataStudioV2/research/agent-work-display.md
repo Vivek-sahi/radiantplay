@@ -1,7 +1,7 @@
 # Agent Work Display — Research & Decision
 
 **Date:** 2026-04-22  
-**Status:** Decision made — C-iii (conversational + SQL on demand) as target direction  
+**Status: DECIDED — C-iii built. All open questions resolved.**  
 **Context:** Deciding how the Data Studio agent panel shows its work during modeling workflows
 
 ---
@@ -74,11 +74,13 @@ All three: steps appear dynamically (not pre-listed), avatar animates while work
 
 ---
 
-## Open questions
+## Resolved questions
 
-- For coaching and formulas, do steps still have this title+description structure or is it more like a back-and-forth chat? Likely the same pattern but with fewer steps.
-- When the agent makes an assumption mid-build ("I used orders_clean — say 'use raw' to switch"), where does that appear? Inline in the description of the relevant step, or as a separate line?
-- For the "Show work" expand: when expanded, do the SQL toggles re-open to their previous state, or all collapsed?
+**Coaching and formula workflows:** Same title+description step structure as the 1-shot build — fewer steps, but the same ladder format. Not a flat chat conversation. Confirmed by session 44 implementation.
+
+**Agent assumptions mid-build:** Inline in the description of the relevant step. No separate line.
+
+**"Show work" expand state:** All SQL toggles default to collapsed when expanded. The reasoning/step descriptions are the primary content. SQL is secondary — Sara clicks into whichever step she wants to verify specifically.
 
 ---
 

@@ -131,6 +131,6 @@ When the agent writes descriptions, AI context, or synonyms (Situation 3 — Coa
 
 ## Open questions
 
-- [ ] Should "Source column name" be a separate column from "Column name"? In our prototype they're identical (we don't rename columns). May matter post-rename feature.
-- [ ] Blank count vs. null count — in Snowflake these are distinct. Show separately or merge?
-- [ ] Anomaly count — is this a static scan result (from Prep) or live? For demo purposes: static from last prep run.
+- [ ] **Source column name as separate column** — currently merged with "Column name" (no renaming in prototype). Should be added as a distinct column in ColumnsView to support the rename feature. **Tracked as a future build task.**
+- [ ] **Blank count vs. null count** — in Snowflake these are distinct. Show as two separate columns or merge into one? **Needs PM input.**
+- [ ] **Anomaly count: absolute or percentage?** — confirmed as static (from last prep/profile scan, not live). Open question: is the value shown as an absolute row count or as a percentage? **Needs PM input.**

@@ -1750,3 +1750,112 @@ Underlying raw tables (use only if sales_overview doesn't cover the use case):
 - accounts (50 rows): account_id, company_name, industry, tier, region, arr, employee_count, created_date
 - reps (50 rows): rep_id, name, region, manager, quota, attainment_ytd, team, hire_date`;
 }
+
+// ─── Warehouse Tree — canonical source for PromptBar + Data Browser ───────────
+// Single source of truth for connections / databases / schemas / tables.
+// Optional metadata fields (rows, cols, sync, description, tests) are read by
+// the Data Browser. PromptBar's `+ Tables` flow only needs id/name/type.
+
+export type WarehouseTableType = 'table' | 'dbt_model' | 'semantic_view';
+export type WarehouseConnectionType = 'snowflake' | 'dbt';
+
+export interface WarehouseTable {
+  id: string;
+  name: string;
+  type?: WarehouseTableType;
+  rows?: string;
+  cols?: number;
+  sync?: string;
+  tests?: string;
+  description?: string;
+  // dbt-only fields — populated for dbt models so the Data Browser detail page
+  // can show what the model is built from and how it materializes.
+  sources?:        string[];          // upstream tables / models the dbt SQL reads from
+  materialization?: 'table' | 'view' | 'incremental' | 'ephemeral';
+  dbtProject?:     string;            // dbt project name
+  dbtSchedule?:    string;            // human-readable schedule, e.g. "Daily · 02:00 UTC"
+}
+
+export interface WarehouseSchema {
+  id: string;
+  name: string;
+  tables: WarehouseTable[];
+}
+
+export interface WarehouseDatabase {
+  id: string;
+  name: string;
+  schemas: WarehouseSchema[];
+}
+
+export interface WarehouseConnection {
+  id: string;
+  name: string;
+  type: WarehouseConnectionType;
+  databases: WarehouseDatabase[];
+}
+
+export const WAREHOUSE_TREE: WarehouseConnection[] = [
+  {
+    id: 'snowflake-1', name: 'Snowflake — production', type: 'snowflake',
+    databases: [
+      {
+        id: 'marketing_db', name: 'marketing_db',
+        schemas: [{ id: 'mkt_public', name: 'public', tables: [
+          { id: 'orders',      name: 'orders',      type: 'table', rows: '12.4M', cols: 22, sync: '2h ago', description: 'All customer orders placed via the platform.' },
+          { id: 'order_items', name: 'order_items', type: 'table', rows: '38.1M', cols: 9,  sync: '2h ago', description: 'Line items for each order.' },
+          { id: 'campaigns',   name: 'campaigns',   type: 'table', rows: '8.2K',  cols: 18, sync: '2h ago', description: 'Marketing campaigns by channel and budget.' },
+          { id: 'users',       name: 'users',       type: 'table', rows: '142K',  cols: 24, sync: '2h ago', description: 'Registered platform users.' },
+          { id: 'returns',     name: 'returns',     type: 'table', rows: '912K',  cols: 11, sync: '2h ago', description: 'Returned orders with reason codes.' },
+        ]}],
+      },
+      {
+        id: 'finance_db', name: 'finance_db',
+        schemas: [{ id: 'fin_reporting', name: 'reporting', tables: [
+          { id: 'transactions',   name: 'transactions',   type: 'table', rows: '4.4M', cols: 18, sync: '6h ago', description: 'Payment-level transaction records.' },
+          { id: 'expenses',       name: 'expenses',       type: 'table', rows: '320K', cols: 14, sync: '6h ago', description: 'Operating expenses by department and vendor.' },
+          { id: 'budget_targets', name: 'budget_targets', type: 'table', rows: '50',   cols: 7,  sync: '6h ago', description: 'Monthly budget targets by department.' },
+        ]}],
+      },
+      {
+        id: 'sales_db', name: 'sales_db',
+        schemas: [{ id: 'sales_schema', name: 'sales_schema', tables: [
+          { id: 'accounts',       name: 'accounts',       type: 'table',         rows: '24K',  cols: 16, sync: '4h ago', description: 'Customer accounts with industry and tier.' },
+          { id: 'reps',           name: 'reps',           type: 'table',         rows: '420',  cols: 12, sync: '4h ago', description: 'Sales reps with quota and territory.' },
+          { id: 'deals',          name: 'deals',          type: 'table',         rows: '88K',  cols: 19, sync: '4h ago', description: 'Pipeline deals with stage and probability.' },
+          { id: 'sales_overview', name: 'sales_overview', type: 'semantic_view', rows: '88K',  cols: 16, sync: '4h ago', description: 'Snowflake semantic view — deals + accounts + reps pre-joined.' },
+        ]}],
+      },
+    ],
+  },
+  {
+    id: 'dbt-1', name: 'dbt Analytics', type: 'dbt',
+    databases: [{
+      id: 'analytics', name: 'analytics',
+      schemas: [{ id: 'dbt_models', name: 'models', tables: [
+        { id: 'fct_pnl', name: 'fct_pnl', type: 'dbt_model', rows: '50', cols: 11, sync: '2h ago', tests: '12 / 12 passing', description: 'dbt model — P&L aggregated by department × month.', sources: ['transactions', 'expenses', 'budget_targets'], materialization: 'table', dbtProject: 'analytics', dbtSchedule: 'Daily · 02:00 UTC' },
+      ]}],
+    }],
+  },
+];
+
+// ─── Connections ─────────────────────────────────────────────────────────────
+
+export type ConnectionType   = 'snowflake' | 'bigquery' | 'databricks' | 'redshift' | 'postgres' | 'dbt';
+export type ConnectionStatus = 'connected' | 'auth-needed' | 'error';
+
+export interface Connection {
+  id:          string;
+  name:        string;
+  type:        ConnectionType;
+  status:      ConnectionStatus;
+  lastSync:    string;
+  ownerEmail?: string;
+  tables:      number;
+}
+
+export const CONNECTIONS: Connection[] = [
+  { id: 'snow-prod', name: 'snowflake-prod',    type: 'snowflake', status: 'connected',   lastSync: '3h ago', ownerEmail: 'vivek@example.com', tables: 184 },
+  { id: 'bq-mkt',   name: 'bigquery-marketing', type: 'bigquery',  status: 'connected',   lastSync: '1d ago', ownerEmail: 'vivek@example.com', tables: 42  },
+  { id: 'snow-fin', name: 'snowflake-finance',   type: 'snowflake', status: 'auth-needed', lastSync: 'Never',  tables: 0   },
+];

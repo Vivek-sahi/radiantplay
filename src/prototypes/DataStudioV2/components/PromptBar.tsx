@@ -1,61 +1,11 @@
 import React, { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { c, sp, ff, fs, fw } from '../styles';
+import { WAREHOUSE_TREE, WarehouseTableType } from '../data/mockData';
 
-// ── Warehouse tree ─────────────────────────────────────────────────────────────
+// Re-export so existing importers (Workspace + tests) continue to resolve here.
+export { WAREHOUSE_TREE };
 
-type TableType = 'table' | 'dbt_model' | 'semantic_view';
-
-interface TableNode   { id: string; name: string; type?: TableType; }
-interface SchemaNode  { id: string; name: string; tables: TableNode[]; }
-interface DatabaseNode { id: string; name: string; schemas: SchemaNode[]; }
-type ConnectionType = 'snowflake' | 'dbt';
-interface ConnectionNode { id: string; name: string; type: ConnectionType; databases: DatabaseNode[]; }
-
-export const WAREHOUSE_TREE: ConnectionNode[] = [
-  {
-    id: 'snowflake-1', name: 'Sarah-Snowflake', type: 'snowflake',
-    databases: [
-      {
-        id: 'marketing_db', name: 'marketing_db',
-        schemas: [{ id: 'mkt_public', name: 'public', tables: [
-          { id: 'orders',      name: 'orders',      type: 'table' },
-          { id: 'order_items', name: 'order_items', type: 'table' },
-          { id: 'campaigns',   name: 'campaigns',   type: 'table' },
-          { id: 'users',       name: 'users',       type: 'table' },
-          { id: 'returns',     name: 'returns',     type: 'table' },
-        ]}],
-      },
-      {
-        id: 'finance_db', name: 'finance_db',
-        schemas: [{ id: 'fin_reporting', name: 'reporting', tables: [
-          { id: 'transactions',   name: 'transactions',   type: 'table' },
-          { id: 'expenses',       name: 'expenses',       type: 'table' },
-          { id: 'budget_targets', name: 'budget_targets', type: 'table' },
-        ]}],
-      },
-      {
-        id: 'sales_db', name: 'sales_db',
-        schemas: [{ id: 'sales_schema', name: 'sales_schema', tables: [
-          { id: 'accounts',       name: 'accounts',       type: 'table' },
-          { id: 'reps',           name: 'reps',           type: 'table' },
-          { id: 'deals',          name: 'deals',          type: 'table' },
-          { id: 'sales_overview', name: 'sales_overview', type: 'semantic_view' },
-        ]}],
-      },
-    ],
-  },
-  {
-    id: 'dbt-1', name: 'dbt Analytics', type: 'dbt',
-    databases: [{
-      id: 'analytics', name: 'analytics',
-      schemas: [{ id: 'dbt_models', name: 'models', tables: [
-        { id: 'fct_pnl', name: 'fct_pnl', type: 'dbt_model' },
-      ]}],
-    }],
-  },
-];
-
-interface FlatTable { id: string; name: string; path: string; connectionName: string; type: TableType; }
+interface FlatTable { id: string; name: string; path: string; connectionName: string; type: WarehouseTableType; }
 const ALL_TABLES: FlatTable[] = WAREHOUSE_TREE.flatMap(conn =>
   conn.databases.flatMap(db =>
     db.schemas.flatMap(schema =>
@@ -64,7 +14,7 @@ const ALL_TABLES: FlatTable[] = WAREHOUSE_TREE.flatMap(conn =>
         name: t.name,
         path: `${conn.name} · ${db.name} · ${schema.name}`,
         connectionName: conn.name,
-        type: t.type ?? 'table' as TableType,
+        type: t.type ?? 'table',
       }))
     )
   )
@@ -78,7 +28,7 @@ function mirrorText(text: string): string {
     .replace(/@(\w*)/g, '<span style="color:#7C3AED;font-weight:500">@$1</span>');
 }
 
-function typeIcon(type: TableType): string {
+function typeIcon(type: WarehouseTableType): string {
   if (type === 'dbt_model')     return 'd';
   if (type === 'semantic_view') return '◎';
   return '⊞';
@@ -439,7 +389,7 @@ const TreeNode: React.FC<{ icon: string; label: string; depth: number; open: boo
   </div>
 );
 
-const BrowserRow: React.FC<{ name: string; sub?: string; depth?: number; type: TableType; added: boolean; onAdd: () => void }> = ({ name, sub, depth = 0, type, added, onAdd }) => (
+const BrowserRow: React.FC<{ name: string; sub?: string; depth?: number; type: WarehouseTableType; added: boolean; onAdd: () => void }> = ({ name, sub, depth = 0, type, added, onAdd }) => (
   <div
     onClick={!added ? onAdd : undefined}
     style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: `5px ${sp.C}px`, paddingLeft: 12 + depth * 14, cursor: added ? 'default' : 'pointer', opacity: added ? 0.5 : 1 }}

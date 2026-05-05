@@ -1,5 +1,7 @@
 # Semantic Model Import & Sync Research
 
+**Status: DECIDED — dbt import flow built (sessions 20–24). Two-layer model, agent working steps, broken/degraded indicators, fix-via-agent pattern all implemented. No open questions.**
+
 _Research for Data Studio — "Import from external semantic model" use case (Situation 1b, 2nd prompt card)._  
 _Compiled 2026-04-22. Sources: platform docs, product blogs, web research._
 

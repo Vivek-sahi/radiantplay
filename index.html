@@ -6,30 +6,48 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Radiant Play</title>
     <style>
-      /* Plain font - you would typically load this from a CDN or local fonts */
+      /* Plain (Radiant brand font) — loaded from /public/fonts so it works for everyone,
+         not only developers who happen to have Plain installed system-wide. local() is
+         kept as a faster fallback for those who do. */
       @font-face {
         font-family: 'Plain';
-        src: local('Plain Light');
+        src: url('/fonts/Plain-Light.otf') format('opentype'),
+             local('Plain Light');
         font-weight: 375;
         font-style: normal;
+        font-display: swap;
       }
       @font-face {
         font-family: 'Plain';
-        src: local('Plain Regular'), local('Plain Light');
+        src: url('/fonts/Plain-LightIta.otf') format('opentype'),
+             local('Plain Light Italic');
+        font-weight: 375;
+        font-style: italic;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: 'Plain';
+        src: url('/fonts/Plain-Regular.otf') format('opentype'),
+             local('Plain Regular'), local('Plain Light');
         font-weight: 400;
         font-style: normal;
+        font-display: swap;
       }
       @font-face {
         font-family: 'Plain';
-        src: local('Plain Medium');
+        src: url('/fonts/Plain-Medium.ttf') format('truetype'),
+             local('Plain Medium');
         font-weight: 500;
         font-style: normal;
+        font-display: swap;
       }
       @font-face {
         font-family: 'Plain';
-        src: local('Plain Semibold'), local('Plain Extrabold');
+        src: local('Plain Semibold'), local('Plain Extrabold'),
+             url('/fonts/Plain-Medium.ttf') format('truetype');
         font-weight: 600;
         font-style: normal;
+        font-display: swap;
       }
     </style>
   </head>
