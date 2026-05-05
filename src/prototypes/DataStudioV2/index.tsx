@@ -76,6 +76,7 @@ const DataStudio: React.FC = () => {
   const [prevView, setPrevView]   = useState<AppView>('overview');
   const [activeNav, setActiveNav] = useState<NavSection>('overview');
   const [initialPrompt, setInitialPrompt] = useState<string>('');
+  const [isDayZero, setIsDayZero] = useState(false);
   const [selectedProject, setSelectedProject] = useState<OverviewProject | null>(null);
   const [activeAlert, setActiveAlert]         = useState<OverviewAlert | null>(null);
   const [project, setProject] = useState<ProjectState>({
@@ -209,9 +210,15 @@ const DataStudio: React.FC = () => {
     navigateTo('workspace');
   };
 
+  const handleDayZeroPromptSubmit = (prompt: string) => {
+    setIsDayZero(true);
+    handleOverviewPromptSubmit(prompt);
+  };
+
   const goBack = () => {
     setInitialPrompt('');
     setActiveAlert(null);
+    setIsDayZero(false);
     // If previous screen was model-view, go back there; otherwise overview
     if (prevView === 'model-view' && selectedProject) {
       setView('model-view');
@@ -235,7 +242,7 @@ const DataStudio: React.FC = () => {
       <Shell activeNav={activeNav} onNavChange={handleNavChange} onJourneyPickerOpen={() => setView('journey-picker')}>
         {view === 'day-zero' && (
           <DayZeroOverview
-            onPromptSubmit={handleOverviewPromptSubmit}
+            onPromptSubmit={handleDayZeroPromptSubmit}
             onNewProject={newProject}
           />
         )}
@@ -288,6 +295,7 @@ const DataStudio: React.FC = () => {
             setProject={setProject}
             onBack={goBack}
             initialPrompt={initialPrompt}
+            isDayZero={isDayZero}
           />
         </div>
       )}

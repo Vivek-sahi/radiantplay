@@ -6,6 +6,7 @@ import { ProjectState, ProjectContext } from '../index';
 import { tableMetadata, relationships } from '../data/mockData';
 import PromptBar, { PromptBarRef } from './PromptBar';
 import DataQualityPlanModal from './DataQualityPlanModal';
+import CredentialFormCard from './CredentialFormCard';
 import { Avatar } from '../../../components/Avatar';
 import { TextInput } from '../../../components/TextInput';
 import { Button } from '../../../components/Button';
@@ -37,6 +38,8 @@ export interface AgentMessage {
   attachment?: { type: string; label: string };
   outcomeCard?: { title: string; chips: string[]; note: string };
   reviewPlanCTA?: boolean;
+  interactiveChips?: { label: string; value: string }[];
+  credentialForm?: boolean;
 }
 
 interface WorkingStep {
@@ -956,6 +959,47 @@ Want me to go ahead — add the table, create the join, and populate the columns
       impressions: { synonyms: ['views', 'visits'] },
     },
   },
+
+  // ── Day Zero connection flow ──────────────────────────────────────────────────
+
+  day_zero_discover: {
+    steps: [
+      { label: 'Reading your request…', detail: '' },
+      { label: 'Checking for warehouse connections…', detail: 'Querying your ThoughtSpot account for configured connections.' },
+      { label: 'No connections found', detail: 'Your account has no active warehouse connections.' },
+    ],
+    duration: '~2s',
+    proposal: '',
+    execution: '',
+    nextStep: 'empty',
+    stepDelay: 800,
+  },
+
+  day_zero_validate_connection: {
+    steps: [
+      { label: 'Verifying credentials…', detail: 'Authenticating with Snowflake using the provided credentials.' },
+      { label: 'Fetching available schemas…', detail: 'Reading schema metadata from your Snowflake account.' },
+      { label: 'Connection established', detail: 'Successfully connected to Snowflake. Found 3 schemas.' },
+    ],
+    duration: '~3s',
+    proposal: '',
+    execution: '',
+    nextStep: 'empty',
+    stepDelay: 800,
+  },
+
+  day_zero_parse_use_case: {
+    steps: [
+      { label: 'Parsing your use case…', detail: '' },
+      { label: 'Identifying relevant metrics and dimensions…', detail: 'ROI, spend, channel, region — cross-referencing the marketing schema.' },
+      { label: 'Preparing clarifying questions…', detail: 'Two quick questions before I start.' },
+    ],
+    duration: '~2s',
+    proposal: '',
+    execution: '',
+    nextStep: 'empty',
+    stepDelay: 600,
+  },
 };
 
 // ── Coaching script key map ───────────────────────────────────────────────────
@@ -1272,6 +1316,77 @@ function runDirectAdd(
   }, 2000);
 }
 
+// ── Day Zero state type ───────────────────────────────────────────────────────
+
+type DayZeroPhase =
+  | 'discover'
+  | 'connection_prompt'
+  | 'credential_form'
+  | 'validating'
+  | 'schema_select'
+  | 'use_case_prompt'
+  | 'clarify_q1'
+  | 'clarify_q2'
+  | 'confirm_build'
+  | 'done';
+
+// Runs working steps for a Day Zero script, then calls onComplete.
+// Does not use the normal proposal/confirm path — callers handle the follow-up.
+function runDayZeroSteps(
+  scriptKey: string,
+  userText: string | undefined,
+  setMessages: React.Dispatch<React.SetStateAction<AgentMessage[]>>,
+  onComplete: () => void,
+  abortRef: React.MutableRefObject<boolean>
+) {
+  const script = SCRIPTS[scriptKey];
+  if (!script) return;
+  const workingId = `w-${Date.now()}`;
+  const step0Detail = userText
+    ? `"${userText.length > 120 ? userText.slice(0, 120) + '…' : userText}"`
+    : script.steps[0]?.detail;
+
+  setMessages(prev => [...prev, {
+    id: workingId, type: 'working', content: '',
+    duration: script.duration,
+    steps: script.steps.map((s, i) => ({
+      label: s.label,
+      detail: i === 0 ? step0Detail : s.detail,
+      collapsibleOpen: false,
+      status: i === 0 ? 'running' as const : 'pending' as const,
+    })),
+    stepsCollapsed: false,
+  }]);
+
+  const delay = script.stepDelay ?? 800;
+  script.steps.forEach((_, idx) => {
+    setTimeout(() => {
+      if (abortRef.current) return;
+      setMessages(prev => prev.map(m => {
+        if (m.id !== workingId || !m.steps) return m;
+        return {
+          ...m,
+          steps: m.steps.map((s, i) =>
+            i === idx     ? { ...s, status: 'done' as const } :
+            i === idx + 1 ? { ...s, status: 'running' as const } : s
+          ),
+        };
+      }));
+      if (idx === script.steps.length - 1) {
+        setTimeout(() => {
+          if (abortRef.current) return;
+          setMessages(prev => prev.map(m =>
+            m.id === workingId
+              ? { ...m, stepsCollapsed: true, steps: m.steps?.map(s => ({ ...s, status: 'done' as const })) }
+              : m
+          ));
+          onComplete();
+        }, 600);
+      }
+    }, (idx + 1) * delay);
+  });
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 // ── Test mode types ───────────────────────────────────────────────────────────
@@ -1524,15 +1639,18 @@ interface AgentPanelProps {
   onClose?: () => void;
   selectedColumns?: string[];
   onColumnRemove?: (name: string) => void;
+  isDayZero?: boolean;
 }
 
-const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, setMessages, initialPrompt, onBuildComplete, externalMessage, onExternalMessageHandled, externalMessageAttachment, injectInput, onInjectInputHandled, width = 340, onClose, selectedColumns, onColumnRemove }) => {
+const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, setMessages, initialPrompt, onBuildComplete, externalMessage, onExternalMessageHandled, externalMessageAttachment, injectInput, onInjectInputHandled, width = 340, onClose, selectedColumns, onColumnRemove, isDayZero }) => {
   const [pendingAction, setPending]     = useState<PendingAction | null>(null);
   const [isProcessing, setProcessing]   = useState(false);
   const [planModalOpen, setPlanModalOpen] = useState(false);
   const [prepSuggestions, setPrepSuggestions] = useState<PrepSuggestion[]>(() =>
     PREP_SUGGESTIONS.map(s => ({ ...s }))
   );
+  const [dayZeroPhase, setDayZeroPhase] = useState<DayZeroPhase | null>(isDayZero ? 'discover' : null);
+  const [clarifyAnswers, setClarifyAnswers] = useState<{ q1?: string; q2?: string }>({});
   const messagesEndRef           = useRef<HTMLDivElement>(null);
   const promptBarRef             = useRef<PromptBarRef>(null);
   const buildCalledRef           = useRef(false);
@@ -1561,7 +1679,26 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
   useEffect(() => {
     if (!initialPrompt || initialPromptFiredRef.current) return;
     initialPromptFiredRef.current = true;
-    processText(initialPrompt);
+    if (isDayZero) {
+      setMessages([{ id: `u-${Date.now()}`, type: 'user', content: initialPrompt }]);
+      setProcessing(true);
+      setTimeout(() => {
+        runDayZeroSteps('day_zero_discover', initialPrompt, setMessages, () => {
+          setMessages(prev => [...prev, {
+            id: `r-${Date.now()}`, type: 'response',
+            content: "I couldn't find any warehouse connections in your account. Since you're working with Snowflake, let me help you set that up — it should only take a minute.",
+            interactiveChips: [
+              { label: 'Yes, connect Snowflake', value: 'Yes, connect Snowflake' },
+              { label: 'Skip for now', value: 'Skip for now' },
+            ],
+          }]);
+          setDayZeroPhase('connection_prompt');
+          setProcessing(false);
+        }, buildAbortRef);
+      }, 300);
+    } else {
+      processText(initialPrompt);
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -1756,6 +1893,147 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
     share:          `Use the **Share** button in the top-right header to invite people or groups and set their access level (Can view or Can edit).`,
   };
 
+  // ── Day Zero handlers ────────────────────────────────────────────────────────
+
+  const handleDayZeroFormSubmit = () => {
+    setDayZeroPhase('validating');
+    setProcessing(true);
+    runDayZeroSteps('day_zero_validate_connection', undefined, setMessages, () => {
+      setMessages(prev => [...prev, {
+        id: `r-${Date.now()}`, type: 'response',
+        content: '',
+        outcomeCard: {
+          title: 'Connected to Snowflake',
+          chips: ['View connection →'],
+          note: '3 schemas available · Latency ~120ms',
+        },
+      }]);
+      setTimeout(() => {
+        setMessages(prev => [...prev, {
+          id: `r-${Date.now()}`, type: 'response',
+          content: "Here are the schemas I found in your Snowflake account. Select the one that contains the data you want to work with:",
+          interactiveChips: [
+            { label: 'analytics', value: 'analytics' },
+            { label: 'marketing', value: 'marketing' },
+            { label: 'raw_data', value: 'raw_data' },
+          ],
+        }]);
+        setDayZeroPhase('schema_select');
+        setProcessing(false);
+      }, 400);
+    }, buildAbortRef);
+  };
+
+  const handleDayZeroInput = (input: string) => {
+    switch (dayZeroPhase) {
+      case 'connection_prompt': {
+        const isYes = /yes|connect|snowflake/i.test(input);
+        setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: input }]);
+        if (isYes) {
+          setTimeout(() => {
+            setMessages(prev => [...prev, {
+              id: `r-${Date.now()}`, type: 'response',
+              content: "Here are the credentials I'll need for Snowflake. I've defaulted to Username / Password — the most common setup.",
+              credentialForm: true,
+            }]);
+            setDayZeroPhase('credential_form');
+          }, 300);
+        } else {
+          setTimeout(() => {
+            setMessages(prev => [...prev, {
+              id: `r-${Date.now()}`, type: 'response',
+              content: "No problem — you can connect a warehouse anytime from the **Connections** tab.",
+            }]);
+            setDayZeroPhase('done');
+          }, 300);
+        }
+        break;
+      }
+
+      case 'schema_select': {
+        const schema = input.toLowerCase().replace(/[^a-z0-9_]/g, '');
+        setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: input }]);
+        setTimeout(() => {
+          setMessages(prev => [...prev, {
+            id: `r-${Date.now()}`, type: 'response',
+            content: `Got it — importing the \`${schema}\` schema. You'll be able to browse all its tables and columns in the **Data Browser** at any time.`,
+          }]);
+          setTimeout(() => {
+            setMessages(prev => [...prev, {
+              id: `r-${Date.now()}`, type: 'response',
+              content: "Now, what would you like to build? What's the business question you're trying to answer?",
+            }]);
+            setDayZeroPhase('use_case_prompt');
+          }, 500);
+        }, 300);
+        break;
+      }
+
+      case 'use_case_prompt': {
+        setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: input }]);
+        setProcessing(true);
+        runDayZeroSteps('day_zero_parse_use_case', input, setMessages, () => {
+          setMessages(prev => [...prev, {
+            id: `r-${Date.now()}`, type: 'response',
+            content: "A couple of quick questions before I start building:\n\n**Who is the primary audience for this model?**",
+            interactiveChips: [
+              { label: 'Marketing team', value: 'Marketing team' },
+              { label: 'Leadership / execs', value: 'Leadership / execs' },
+              { label: 'Whole org', value: 'Whole org' },
+            ],
+          }]);
+          setDayZeroPhase('clarify_q1');
+          setProcessing(false);
+        }, buildAbortRef);
+        break;
+      }
+
+      case 'clarify_q1': {
+        setClarifyAnswers(prev => ({ ...prev, q1: input }));
+        setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: input }]);
+        setTimeout(() => {
+          setMessages(prev => [...prev, {
+            id: `r-${Date.now()}`, type: 'response',
+            content: "Should I include ad spend data alongside ROI, or just the ROI metrics?",
+            interactiveChips: [
+              { label: 'ROI + spend', value: 'ROI + spend' },
+              { label: 'ROI only', value: 'ROI only' },
+            ],
+          }]);
+          setDayZeroPhase('clarify_q2');
+        }, 300);
+        break;
+      }
+
+      case 'clarify_q2': {
+        const q1Answer = clarifyAnswers.q1 ?? 'the team';
+        const includeSpend = /spend/i.test(input);
+        setClarifyAnswers(prev => ({ ...prev, q2: input }));
+        setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: input }]);
+        setTimeout(() => {
+          setMessages(prev => [...prev, {
+            id: `r-${Date.now()}`, type: 'response',
+            content: `Got it. Here's what I'll build:\n\n**Campaign ROI Model** — from the \`marketing\` schema, tracking return on ad spend by channel and region${includeSpend ? ', including spend data alongside ROI metrics' : ''}. Built for ${q1Answer.toLowerCase()}. Will answer questions like: *"Which channels drove the highest ROI last quarter?"* and *"How does spend efficiency vary by region?"*`,
+            interactiveChips: [
+              { label: 'Yes, build it →', value: 'Yes, build it' },
+            ],
+          }]);
+          setDayZeroPhase('confirm_build');
+        }, 300);
+        break;
+      }
+
+      case 'confirm_build': {
+        setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: input }]);
+        setDayZeroPhase('done');
+        setTimeout(() => {
+          runFlow('build_project', setMessages, setPending, setProcessing, setProject, input, buildAbortRef);
+        }, 300);
+        break;
+      }
+    }
+  };
+
   // ── Core processing ──────────────────────────────────────────────────────────
 
   const processText = async (text: string, mentionedTables?: string[], attachment?: { type: string; label: string }) => {
@@ -1770,6 +2048,11 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
       return;
     }
     if (!text || isProcessing) return;
+    // Day Zero flow — route through dedicated handler, skip normal matchScript
+    if (dayZeroPhase && dayZeroPhase !== 'done') {
+      handleDayZeroInput(text);
+      return;
+    }
     setProcessing(true);
     setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: text, attachment }]);
 
@@ -2189,6 +2472,8 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
                 onSuggestion={text => processText(text)}
                 onConfirm={isActivePending ? handleConfirm : undefined}
                 onOpenPlanModal={() => setPlanModalOpen(true)}
+                onChipClick={text => processText(text)}
+                onCredentialFormSubmit={handleDayZeroFormSubmit}
               />
             </div>
           );
@@ -2650,7 +2935,10 @@ const MessageBubble: React.FC<{
   onSuggestion: (text: string) => void;
   onConfirm?: () => void;
   onOpenPlanModal?: () => void;
-}> = ({ msg, showAvatar, onToggleSteps, onToggleCollapsible, onSuggestion, onConfirm, onOpenPlanModal }) => {
+  onChipClick?: (value: string) => void;
+  onCredentialFormSubmit?: () => void;
+}> = ({ msg, showAvatar, onToggleSteps, onToggleCollapsible, onSuggestion, onConfirm, onOpenPlanModal, onChipClick, onCredentialFormSubmit }) => {
+  const [chipUsed, setChipUsed] = React.useState(false);
 
   // ── User bubble ────────────────────────────────────────────────────────────
   if (msg.type === 'user') {
@@ -2819,6 +3107,37 @@ const MessageBubble: React.FC<{
           )}
           {msg.suggestions && msg.suggestions.length > 0 && (
             <SuggestionChips suggestions={msg.suggestions} onSelect={onSuggestion} />
+          )}
+          {msg.credentialForm && onCredentialFormSubmit && (
+            <CredentialFormCard onSubmit={onCredentialFormSubmit} />
+          )}
+          {msg.interactiveChips && msg.interactiveChips.length > 0 && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: sp.B, marginTop: sp.C }}>
+              {msg.interactiveChips.map(chip => (
+                <button
+                  key={chip.value}
+                  disabled={chipUsed}
+                  onClick={() => { setChipUsed(true); onChipClick?.(chip.value); }}
+                  style={{
+                    padding: `${sp.A + 2}px ${sp.C}px`,
+                    borderRadius: 20,
+                    border: `1px solid ${chipUsed ? c['border-divider'] : c['content-brand']}`,
+                    backgroundColor: chipUsed ? c['background-subtle'] : c['background-base'],
+                    color: chipUsed ? c['content-tertiary'] : c['content-brand'],
+                    fontSize: fs.xs,
+                    fontWeight: fw.medium,
+                    cursor: chipUsed ? 'default' : 'pointer',
+                    fontFamily: ff.primary,
+                    lineHeight: '18px',
+                    transition: 'all 0.1s',
+                  }}
+                  onMouseEnter={e => { if (!chipUsed) e.currentTarget.style.backgroundColor = c['background-information']; }}
+                  onMouseLeave={e => { if (!chipUsed) e.currentTarget.style.backgroundColor = c['background-base']; }}
+                >
+                  {chip.label}
+                </button>
+              ))}
+            </div>
           )}
         </div>
       </div>

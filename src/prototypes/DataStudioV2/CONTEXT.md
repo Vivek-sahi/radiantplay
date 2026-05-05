@@ -5,7 +5,8 @@ _Single source of truth for this prototype. Update at the end of every session._
 
 ## Next up
 
-**Day Zero — agent connection flow** (start of next session)
+**Day Zero — review in browser + left canvas placeholder**
+The Day Zero agentic flow is live. Next: open the prototype, run the full sequence (Snowflake card → submit → connection flow → schema chips → use case → clarifying Q&A → build), and decide if the left canvas needs a "waiting for connection" placeholder state during the pre-build phases.
 
 When the user submits a prompt (with a warehouse pre-filled or typed), navigate to Workspace and auto-fire a new `day_zero_connect_warehouse` SCRIPT. The agent walks through:
 
@@ -35,6 +36,7 @@ Full spec: `research/day-zero-journey.md`
 
 ## Decisions log
 
+- **2026-05-06** — Day Zero agentic flow built. Working branch confirmed as `prototype/data-studio` (not `main` — CONTEXT.md was wrong). Vivek owns this branch; Komal works on hers and merges in when ready.
 - **2026-05-06** — Journey infrastructure isolated to new files only. `Overview.tsx` never touched — teammate owns it for the monitoring journey. Merge safety: additive changes to `Shell.tsx` + `index.tsx` only.
 - **2026-05-06** — Day Zero journey warehouse path only (no sample data). Connection flow: 4 agent conversations, inline credential form in AgentPanel scroll. Clarifying questions before build fires (new `awaitingClarification` state). Full decisions in `research/day-zero-journey.md`.
 - **2026-05-05** — Migrated `DataModel` type, skill catalog, and per-skill reasoning from DataStudioVision into V2. Vision branch goes quiet; V2 is the single home.
@@ -79,6 +81,18 @@ Original 6-situation arc (still valid for demo scripting) → `SCRIPT.md`
 ## Session log
 
 _Last 3 sessions. Full history → [SESSION_LOG.md](./SESSION_LOG.md)_
+
+---
+
+### 2026-05-06 (session 54)
+
+**Day Zero agentic flow — connection → schema → clarify → build.**
+
+- `CredentialFormCard.tsx` — new component. Inline credential form rendered inside an agent message bubble. Auth method selector (decorative), 5 fields, 2s mock submit → fires validation phase.
+- `AgentPanel.tsx` — `isDayZero` prop + `dayZeroPhase` state machine (8 phases). `runDayZeroSteps` helper for working-step animations without the proposal/confirm path. `handleDayZeroFormSubmit` + `handleDayZeroInput` handle all phase transitions. 3 new SCRIPTS: `day_zero_discover`, `day_zero_validate_connection`, `day_zero_parse_use_case`. `interactiveChips` + `credentialForm` fields on `AgentMessage`. `MessageBubble` updated to render both.
+- `Workspace.tsx` — `isDayZero` prop threaded to AgentPanel.
+- `index.tsx` — `isDayZero` state, `handleDayZeroPromptSubmit`, reset on goBack, threaded to Workspace.
+- Build: clean ✓
 
 ---
 

@@ -19,6 +19,7 @@ interface WorkspaceProps {
   setProject: React.Dispatch<React.SetStateAction<ProjectState>>;
   onBack: () => void;
   initialPrompt?: string;
+  isDayZero?: boolean;
 }
 
 interface Toast {
@@ -27,7 +28,7 @@ interface Toast {
   action?: { label: string; onClick: () => void };
 }
 
-const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, onBack, initialPrompt }) => {
+const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, onBack, initialPrompt, isDayZero }) => {
   const [messages, setMessages] = useState<AgentMessage[]>([]);
   const [isBuilding, setIsBuilding] = useState(!!initialPrompt);
   const [externalAgentMessage, setExternalAgentMessage] = useState<string | null>(null);
@@ -608,6 +609,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, onBack, init
             messages={messages}
             setMessages={setMessages}
             initialPrompt={initialPrompt}
+            isDayZero={isDayZero}
             onBuildComplete={() => setIsBuilding(false)}
             externalMessage={externalAgentMessage}
             onExternalMessageHandled={() => { setExternalAgentMessage(null); setExternalAgentAttachment(null); }}
