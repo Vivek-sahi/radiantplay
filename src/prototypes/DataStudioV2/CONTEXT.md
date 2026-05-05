@@ -5,7 +5,47 @@ _Single source of truth for this prototype. Update as decisions are made._
 
 ## Next up
 
-Review of our design workflow.
+**Review Phase 2 strategy memo** → `research/phase-2-manage-iterate.md` (session 48). Once Vivek is aligned on the Manage + Iterate thesis and has validated the proposed definitions, 6-situation reshape, and metrics, the memo is ready to share with leadership. Until then, all other build work is paused.
+
+Deferred build tasks (from session 47 audit, still valid):
+
+- **Source column name** — add as a separate column in ColumnsView (currently merged with "Column name"). Needed for rename support.
+- **Agent context bridge** — "Ask agent" buttons on Data Preview rows + Notebook cells. Deferred, additive, low-risk.
+- **Data Quality tab in Model View** — where prep transforms surface in the in-use state (status per cache run). Not yet built.
+
+Needs PM input before building:
+- Blank count vs. null count — same column or separate?
+- Anomaly count — absolute row count or percentage?
+- Caching + prep interaction — does cached data include query-time transforms, or are transforms applied to cached data at query time?
+
+---
+
+## Where things live
+
+Quick reference. When you need X, this is where to look.
+
+| Need | File / folder |
+|---|---|
+| `DataModel` type + supporting interfaces (validationIssues, rls, healthStatus, etc.) | `data/types.ts` |
+| Mock data — tables, projects, scenarios, conversations, alerts | `data/mockData.ts` |
+| Agent panel + the SCRIPTS map (22 entries) that drives all skills | `components/AgentPanel.tsx` |
+| Skill catalog — 28 skills across 10 groups | `knowledge/skill-map.md` |
+| Per-skill reasoning chains + output states | `knowledge/agent-architecture.md` |
+| Users, platform constraints, confirmed patterns | `knowledge/users.md` · `platform.md` · `patterns.md` |
+| Routing pipeline + load-bearing rules | `reference.md` + `CLAUDE.md` Hard rules |
+| Why we made a non-obvious call | this file → Decisions log |
+
+---
+
+## Decisions log
+
+Non-obvious calls, with date and brief rationale. Add an entry when you make a decision that future-us might not infer from the code.
+
+- **2026-05-05** — Migrated `DataModel` type, skill catalog, and per-skill reasoning architecture from DataStudioVision into V2. Reason: V2 has the core working flow; the Vision restart turned out to be unnecessary. V2 is now the single home for future work; Vision branch goes quiet.
+- **2026-04-30** — Embedded `formula` inside `columns[]` rather than a separate `formulas[]` array on `DataModel`. Reason: ThoughtSpot formulas are derived columns, so they belong with their column kind (`'metric'`).
+- **2026-04-30** — Push only to `origin` (vivek-sahi fork). Never to `upstream` (mohammed-faris). Reason: don't have write access; team pulls from Vivek's fork.
+
+---
 
 ### What's built (session 45):
 
@@ -150,6 +190,21 @@ Full scripted flows for all 6 situations → **[SCRIPT.md](./SCRIPT.md)**
 ## Session log
 
 _Last 3 sessions. Full history → [SESSION_LOG.md](./SESSION_LOG.md)_
+
+---
+
+### 2026-04-25 (session 48)
+
+**Phase 2 strategy memo: Manage + Iterate thesis**
+
+- Wrote `research/phase-2-manage-iterate.md` — strategy memo for leadership arguing Data Studio's Phase 2 focus should be **Manage + Iterate** of the semantic layer, with **Build deprioritized to "import, don't author."**
+- **Thesis anchors:** Build is commoditizing (Omni Modeling Agent, Claude Code authoring, agents drafting DSLs); Iterate is undefended (Hex Context Suggestions + Ramp eval loop are v0); 17% residual failure in Metadata Reasoner paper is the iterate opportunity; silent semantic-layer drift is invisible without a closed loop.
+- **Reference architectures used:** Omni (shared data model as hub, workbook-promote-to-shared flow) + Hex Context Studio (Historical Threads → Review Agent → Suggestions to update context). Both diagrams referenced in the memo.
+- **Reframes the 6 situations:** demote S1 (build from scratch) to "onboard existing model"; elevate S3 (coach/fix) and S6 (monitor/fix) as core demo. S2/S4/S5 supporting.
+- **Proposes 5 KPIs:** silent failure rate, mean time to fix, context growth rate, eval coverage, accuracy trend.
+- **Surfaces 4 leadership decisions** + open team questions (review-agent proposal format, cross-layer fixes, multi-tenancy, eval ownership).
+- **Side work (not Data Studio):** set up `the-diff` as a separate project (new repo at `/Users/vivek.sahi/the-diff/` + https://github.com/Vivek-sahi/the-diff); moved bookmarks out of Data Studio; renamed and reconfigured the weekly digest routine ("The Diff") with trend-first framing, Unicode bold titles, personalized greeting. Runs Monday 9am IST to Slack DM.
+- **Next:** Vivek reviews the memo. Once aligned, it's ready to share with leadership.
 
 ---
 
