@@ -126,18 +126,16 @@ const ListView: React.FC<{
               }}
             >
               <ConnIcon type={conn.type} size="m" />
-              <div>
-                <div style={{ fontSize: fs.sm, fontWeight: fw.medium, color: c['content-brand'] }}>{conn.name}</div>
-                <div style={{ fontSize: fs.xs, color: c['content-tertiary'], marginTop: 1 }}>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: fs.sm, fontWeight: fw.medium, color: c['content-brand'], overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{conn.name}</div>
+                <div style={{ fontSize: fs.xs, color: c['content-tertiary'], marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {conn.status === 'auth-needed' ? 'Authenticate to access' : `You · last sync ${conn.lastSync}`}
                 </div>
               </div>
               <div style={{ fontSize: fs.sm, color: c['content-secondary'] }}>{CONN_LABEL[conn.type]}</div>
               <StatusDot status={conn.status} />
               <div style={{ fontSize: fs.sm, color: c['content-secondary'] }}>{conn.tables || '—'}</div>
-              <Button variant="ghost" size="basic" onClick={(e) => e.stopPropagation()}>
-                <Icon name="more" size="s" />
-              </Button>
+              <Button variant="ghost" size="small" icon="more" iconOnly onClick={(e) => e.stopPropagation()} />
             </div>
           ))}
         </Card>
