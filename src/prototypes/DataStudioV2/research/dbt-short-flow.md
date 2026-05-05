@@ -157,7 +157,7 @@ Three are visible from the comparison:
 
 ### Shape
 
-1. **Import → live draft Models.** dbt project arrives. TS Models exist immediately as drafts. Live link to dbt preserved (sync model TBD — see open questions).
+1. **Import → live draft Models.** dbt project arrives. TS Models exist immediately as drafts. **Bidirectional sync:** live link from dbt → TS (auto-applied as dbt changes land), plus on-demand pull (user can refresh manually), plus push-back to dbt (user-side overrides — descriptions, synonyms — can be promoted back to the dbt project to close the loop).
 2. **Issues review surface (fast, pre-computed).** Two tiers:
    - **Truly blocking:** issues that mean the Model literally won't function — broken reference, column doesn't exist in warehouse, missing PK that breaks a join, connection failure. User must resolve or override-with-acknowledgment before publishing.
    - **Advisory:** everything else — chasm/fan traps (works but produces inflated answers), missing descriptions, missing synonyms, ambiguous joins, RLS gaps, Spotter-readiness suggestions. Publish-anyway is allowed; fix-later is fine.
@@ -186,8 +186,13 @@ Three are visible from the comparison:
 ## What this defers
 
 - The dbt-side authentication and warehouse-pick step (covered in `connections-tab.md`)
-- Ongoing sync mechanics (out of scope for short-flow research)
+- **Re-sync conflict UX** — when the user has local TS overrides AND dbt-side changes are pulled, what does the user see? Conflicts surface at pull time (user-triggered), but the resolution UX is unspecified — to be designed when we get to it
 - Catalog / lineage UI
+
+## Explicitly NOT doing
+
+- **Branch / dev mode** (Omni / Hex pattern) — out of scope. TS doesn't have a separate dev surface, and we're not introducing one for dbt. Imports go straight to draft Models in the main workspace.
+- **Redesigning the publish UX** — the existing TS publish workflow stays. The "soft launch" framing is the mental model for what publish *means*, not a redesign of the action.
 
 ---
 

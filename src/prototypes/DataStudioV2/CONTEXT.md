@@ -53,6 +53,11 @@ Non-obvious calls, with date and brief rationale. Add an entry when you make a d
 - **2026-05-05** — Migrated `DataModel` type, skill catalog, and per-skill reasoning architecture from DataStudioVision into V2. Reason: V2 has the core working flow; the Vision restart turned out to be unnecessary. V2 is now the single home for future work; Vision branch goes quiet.
 - **2026-04-30** — Embedded `formula` inside `columns[]` rather than a separate `formulas[]` array on `DataModel`. Reason: ThoughtSpot formulas are derived columns, so they belong with their column kind (`'metric'`).
 - **2026-04-30** — Push only to `origin` (vivek-sahi fork). Never to `upstream` (mohammed-faris). Reason: don't have write access; team pulls from Vivek's fork.
+- **2026-05-05** — Connections: Option C (Hybrid). Admin-enabled warehouse + per-user credentials + soft schema filter at user-auth time. **No setup-time table/column picker** — removes ThoughtSpot's biggest friction. See `research/connections-tab.md`.
+- **2026-05-05** — Data Browser: Option B (Sigma-style separation). Data Browser = catalog of raw + dbt-built warehouse views + files. Models tab = ThoughtSpot Models (incl. drafts from dbt). No wrapper. See `research/data-browser-tab.md`.
+- **2026-05-05** — dbt short flow: Option B. Issues review surface + AI-fix loop. **Truly-blocking only for "won't function" issues** (broken refs, missing PKs that break joins). Everything else (incl. chasm/fan traps) is advisory. Publish framed as "soft launch for ~10 more people to try." dbt is technically attached to a warehouse connection, but surfaced prominently in Day Zero empty state + Data Browser. See `research/dbt-short-flow.md`.
+- **2026-05-05** — dbt sync model: bidirectional. Live link (auto-pull from dbt), on-demand pull (user-triggered refresh), push-back to dbt (user overrides like descriptions and synonyms can be promoted back). Closes the duplication-of-truth loop.
+- **2026-05-05** — No branch / dev mode for dbt. Imports go straight to draft Models in the main workspace. Don't introduce a dev surface that doesn't exist elsewhere in TS.
 
 ---
 
