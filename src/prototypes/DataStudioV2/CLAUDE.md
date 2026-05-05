@@ -4,7 +4,7 @@
 
 **Every session, do this first:**
 1. Read `src/prototypes/DataStudioV2/CONTEXT.md` — current build state, next up, session log.
-2. Check current git branch (`git branch`) — always work on `prototype/data-studio`.
+2. Check current git branch (`git branch`) — always work on `main`. If on another branch, ask before proceeding.
 3. At the end of the session, append a new entry to the Session log in CONTEXT.md.
 
 **Before closing any session:** run `npm run build` and confirm it passes.
@@ -67,6 +67,16 @@ Read `reference.md` when touching `api/agent.ts`, `data/mockData.ts`, or the rou
 Never load: `liveboard-canvas-core.md`, `liveboard-canvas-edit.md`, `liveboard-canvas-advanced.md`, `liveboard-ia.md`, `liveboard-scaffolding.md`, `prototype-generation.md`, `prototype-structure.md`
 
 Use `design-system.md` first. Escalate to full rule files only for patterns not covered there.
+
+---
+
+## Git rules
+
+- **Always work on `main`** of `origin` (`vivek-sahi/radiantplay` on galaxy). Never use `prototype/data-studio`.
+- **Push to `origin` only** — never to `upstream` (mohammed-faris/radiantplay).
+- **Komal's work** comes in via her own branch; review and merge into Vivek's `main`.
+- **After every commit**, push to `origin main` so the local dev server picks it up on next restart.
+- **Dev server note:** new file additions require a dev server restart (`Ctrl+C` → `npm run dev`) to appear — HMR alone won't pick up brand-new imports.
 
 ---
 
