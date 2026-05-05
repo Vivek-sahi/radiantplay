@@ -5,9 +5,9 @@ _Single source of truth for this prototype. Update at the end of every session._
 
 ## Next up
 
-**Journey 4 — demo-ready. No open items.**
+**Fresh start. No queued items.**
 
-Next session: decide what to build next — Journey 2 monitoring polish, Journey 3 debug flow, or new area.
+All 4 journeys are in a demo-ready state. Next session: discuss direction before building.
 
 ---
 
@@ -46,10 +46,10 @@ Replaces the original 6-situation arc as the primary demo structure.
 
 | # | Journey | Status | Overview entry state |
 |---|---------|--------|----------------------|
-| 1 | **Get started** — Day Zero, warehouse to first model | Building | Empty state (DayZeroOverview) |
+| 1 | **Get started** — Day Zero, warehouse to first model | Done | Empty state (DayZeroOverview) |
 | 2 | **Monitor & optimize** — Day N, improve existing models | Teammate building | Existing Overview (10–20 models + alerts) |
 | 3 | **Debug issues** | Later | Same as Journey 2 |
-| 4 | **dbt plug-and-play** | Later | Same as Journey 2 |
+| 4 | **dbt plug-and-play** | Done | Data Browser → External Models |
 
 Original 6-situation arc (still valid for demo scripting) → `SCRIPT.md`
 
