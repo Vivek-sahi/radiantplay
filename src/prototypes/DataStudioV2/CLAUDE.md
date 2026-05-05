@@ -72,10 +72,11 @@ Use `design-system.md` first. Escalate to full rule files only for patterns not 
 
 ## Git rules
 
-- **Always work on `main`** of `origin` (`vivek-sahi/radiantplay` on galaxy). Never use `prototype/data-studio`.
+- **Always work on `prototype/data-studio`** of `origin` (`vivek-sahi/radiantplay` on galaxy). This is the DataStudio working branch — all 57+ sessions have happened here.
+- `main` on Vivek's fork is an occasional sync of `upstream` (Faris's repo) — unrelated to DataStudio. Never work on `main` for DataStudio.
 - **Push to `origin` only** — never to `upstream` (mohammed-faris/radiantplay).
-- **Komal's work** comes in via her own branch; review and merge into Vivek's `main`.
-- **After every commit**, push to `origin main` so the local dev server picks it up on next restart.
+- **Komal's work** comes in via her own branch; review and merge into `prototype/data-studio`.
+- **After every commit**, push to `origin prototype/data-studio` so the local dev server picks it up on next restart.
 - **Dev server note:** new file additions require a dev server restart (`Ctrl+C` → `npm run dev`) to appear — HMR alone won't pick up brand-new imports.
 
 ---

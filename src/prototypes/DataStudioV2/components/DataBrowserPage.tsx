@@ -76,6 +76,33 @@ function getAllExternalModels(): ExternalEntry[] {
   return out;
 }
 
+// ── Imported dbt entries (filled state after wizard) ─────────────────────────
+// Fixed list of 3 models that matches what the wizard imports.
+
+const DBT_CONN: WarehouseConnection = { id: 'dbt-analytics', name: 'dbt Cloud', type: 'dbt', databases: [] };
+const DBT_SCHEMA: FlatSchema = { key: 'dbt-analytics/models', dbName: 'dbt Cloud', schemaName: 'analytics', label: 'dbt Cloud · analytics', tables: [] };
+
+const IMPORTED_DBT_ENTRIES: ExternalEntry[] = [
+  {
+    ref: { connId: 'dbt-analytics', schemaKey: 'dbt-analytics/models', tableId: 'fct_revenue' },
+    table: { id: 'fct_revenue', name: 'fct_revenue', type: 'dbt_model', rows: '142K', cols: 8, sync: '2h ago', tests: '8 / 8 passing', description: 'Revenue metrics by campaign, region, and product category.', sources: ['orders', 'campaigns'], materialization: 'table', dbtProject: 'analytics', dbtSchedule: 'Daily · 02:00 UTC' },
+    connection: DBT_CONN,
+    schema: DBT_SCHEMA,
+  },
+  {
+    ref: { connId: 'dbt-analytics', schemaKey: 'dbt-analytics/models', tableId: 'dim_customers' },
+    table: { id: 'dim_customers', name: 'dim_customers', type: 'dbt_model', rows: '24K', cols: 12, sync: '2h ago', tests: '10 / 10 passing', description: 'Customer dimension with segment, lifetime value, and acquisition source.', sources: ['users', 'orders'], materialization: 'table', dbtProject: 'analytics', dbtSchedule: 'Daily · 02:00 UTC' },
+    connection: DBT_CONN,
+    schema: DBT_SCHEMA,
+  },
+  {
+    ref: { connId: 'dbt-analytics', schemaKey: 'dbt-analytics/models', tableId: 'dim_campaigns' },
+    table: { id: 'dim_campaigns', name: 'dim_campaigns', type: 'dbt_model', rows: '3.2K', cols: 9, sync: '2h ago', tests: '7 / 7 passing', description: 'Campaign dimension with channel, budget, and targeting metadata.', sources: ['campaigns'], materialization: 'view', dbtProject: 'analytics', dbtSchedule: 'Daily · 02:00 UTC' },
+    connection: DBT_CONN,
+    schema: DBT_SCHEMA,
+  },
+];
+
 // ── Icons + glyphs ───────────────────────────────────────────────────────────
 
 const tableIconColor = (t: WarehouseTable): string => {
@@ -697,8 +724,6 @@ const ExternalModelsView: React.FC<{ entries: ExternalEntry[] }> = ({ entries })
   const [search, setSearch]         = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const dbtCount  = useMemo(() => entries.filter(e => isDbt(e.table)).length, [entries]);
-  const viewCount = useMemo(() => entries.filter(e => isSemanticView(e.table)).length, [entries]);
 
   const visible = useMemo(() => {
     let result = entries;
@@ -724,9 +749,9 @@ const ExternalModelsView: React.FC<{ entries: ExternalEntry[] }> = ({ entries })
   const selected = visible.find(e => e.ref.tableId === effectiveId);
 
   const FILTERS: { id: ExternalFilter; label: string }[] = [
-    { id: 'all',  label: `All (${entries.length})` },
-    { id: 'dbt',  label: `dbt models (${dbtCount})` },
-    { id: 'view', label: `Semantic views (${viewCount})` },
+    { id: 'all',  label: 'All' },
+    { id: 'dbt',  label: 'dbt models' },
+    { id: 'view', label: 'Semantic views' },
   ];
 
   return (
@@ -827,42 +852,46 @@ const ExternalModelsView: React.FC<{ entries: ExternalEntry[] }> = ({ entries })
 
 // ── External Models empty state ──────────────────────────────────────────────
 
-const VALUE_PROPS = [
-  { title: 'Live link',         desc: 'dbt changes auto-sync to ThoughtSpot. Refresh on demand.' },
-  { title: 'AI catches issues', desc: 'Chasm traps, missing synonyms — flagged before publish.' },
-  { title: 'Push back to dbt', desc: 'Promote your overrides back to your dbt project.' },
-];
-
-const ExternalModelsEmptyState: React.FC<{ onImport: () => void }> = ({ onImport }) => (
-  <div style={{ flex: 1, overflowY: 'auto', backgroundColor: c['background-sunken'], padding: `${sp.J}px ${sp.H}px` }}>
-    <div style={{ maxWidth: 560, margin: '0 auto', textAlign: 'center', fontFamily: ff.primary }}>
-      {/* dbt logo */}
-      <div style={{
-        width: 52, height: 52, borderRadius: 10, backgroundColor: '#FF694A',
-        color: 'white', fontSize: 20, fontWeight: fw.semibold,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        margin: '0 auto',
-      }}>d</div>
-      <h2 style={{ margin: `${sp.D}px 0 0`, fontSize: 22, fontWeight: fw.semibold, color: c['content-primary'], letterSpacing: '-0.3px' }}>
-        No dbt projects connected
-      </h2>
-      <p style={{ marginTop: sp.B, marginBottom: sp.G, fontSize: fs.sm, color: c['content-secondary'], lineHeight: 1.6 }}>
-        Import your dbt project to build models in ThoughtSpot. Your models stay in sync automatically.
-      </p>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: sp.C, textAlign: 'left', marginBottom: sp.G }}>
-        {VALUE_PROPS.map(v => (
-          <Card key={v.title}>
-            <div style={{ padding: sp.D }}>
-              <div style={{ fontSize: fs.sm, fontWeight: fw.medium, color: c['content-primary'], marginBottom: sp.A }}>{v.title}</div>
-              <div style={{ fontSize: fs.xs, color: c['content-secondary'], lineHeight: 1.5 }}>{v.desc}</div>
-            </div>
-          </Card>
-        ))}
-      </div>
-      <Button variant="primary" onClick={onImport}>Import dbt project</Button>
+const ExternalModelsEmptyState: React.FC<{ onImport: () => void }> = ({ onImport }) => {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <div style={{ flex: 1, overflowY: 'auto', backgroundColor: c['background-sunken'], padding: `${sp.E}px ${sp.G}px` }}>
+      <button
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        onClick={onImport}
+        style={{
+          display: 'flex', alignItems: 'center', gap: sp.D,
+          width: '100%', padding: `${sp.C + 2}px ${sp.E}px`,
+          backgroundColor: hovered ? c['background-subtle'] : c['background-base'],
+          border: `1px solid ${hovered ? c['border-brand'] : c['border-divider']}`,
+          borderRadius: 10, cursor: 'pointer', textAlign: 'left',
+          fontFamily: ff.primary, transition: 'all 0.12s',
+        }}
+      >
+        <div style={{
+          width: 36, height: 36, borderRadius: 8, flexShrink: 0,
+          backgroundColor: c['background-subtle'],
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          overflow: 'hidden',
+        }}>
+          <img src="/logos/dbt.png" alt="dbt" style={{ width: 22, height: 22, objectFit: 'contain' }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+        </div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: fs.sm, fontWeight: fw.medium, color: c['content-primary'], marginBottom: 2 }}>
+            dbt models
+          </div>
+          <div style={{ fontSize: fs.xs, color: c['content-secondary'] }}>
+            Import a dbt project and publish models directly to Spotter
+          </div>
+        </div>
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke={c['content-tertiary']} strokeWidth="1.5" strokeLinecap="round">
+          <path d="M5 2.5l4.5 4.5L5 11.5"/>
+        </svg>
+      </button>
     </div>
-  </div>
-);
+  );
+};
 
 // ── Top-level page ───────────────────────────────────────────────────────────
 
@@ -910,7 +939,7 @@ const DataBrowserPage: React.FC<DataBrowserPageProps> = ({
             <ExternalModelsEmptyState onImport={() => setWizardOpen(true)} />
           )}
           {topTab === 'external-models' && dbtImported !== false && (
-            <ExternalModelsView entries={externalEntries} />
+            <ExternalModelsView entries={dbtImported === true ? IMPORTED_DBT_ENTRIES : externalEntries} />
           )}
         </div>
       </div>
@@ -926,7 +955,7 @@ const DataBrowserPage: React.FC<DataBrowserPageProps> = ({
             setWizardOpen(false);
             onReviewIssues?.(modelName);
           }}
-          onPublishModel={() => {}}
+          onPublishModel={(modelName) => { setWizardOpen(false); onReviewIssues?.(modelName); }}
         />
       )}
     </div>

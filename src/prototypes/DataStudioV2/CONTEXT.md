@@ -59,7 +59,7 @@ After "Fix translation issues" fires `fix_campaign_roas`, other broken-status co
 - **2026-05-05** — Connections: Option C (Hybrid). Admin warehouse + per-user credentials + soft schema filter. No setup-time table/column picker. See `research/connections-tab.md`.
 - **2026-05-05** — Data Browser: Option B (Sigma-style). Data Browser = warehouse catalog. Models tab = TS Models (incl. dbt drafts). See `research/data-browser-tab.md`.
 - **2026-05-05** — dbt sync model: bidirectional. Live link + on-demand pull + push-back for user overrides.
-- **2026-05-06** — Working branch is `main` of `origin` (vivek-sahi fork). Never use `prototype/data-studio` for Vivek's work. Komal works on her own branch and merges into Vivek's `main`. Never push to `upstream` (mohammed-faris).
+- **2026-05-06** — Working branch is `prototype/data-studio` of `origin` (vivek-sahi fork). `main` on the fork is an unrelated sync of Faris's upstream — never use it for DataStudio. Komal works on her own branch and merges into `prototype/data-studio`. Never push to `upstream` (mohammed-faris). (The session-53 "main" decision was wrong and has been corrected.)
 - **2026-04-30** — `formula` embedded inside `columns[]`, not a separate array. ThoughtSpot formulas are derived columns.
 
 ---

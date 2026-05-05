@@ -13,11 +13,9 @@ interface DbtModel {
 }
 
 const DBT_MODELS: DbtModel[] = [
-  { name: 'fct_revenue',        status: 'advisory', issueLabel: '2 issues'  },
-  { name: 'fct_orders',         status: 'blocking', issueLabel: '1 issue'   },
-  { name: 'dim_customers',      status: 'ready',    issueLabel: '—'         },
-  { name: 'dim_campaigns',      status: 'advisory', issueLabel: '1 issue'   },
-  { name: 'fct_marketing_perf', status: 'advisory', issueLabel: '3 issues'  },
+  { name: 'fct_revenue',   status: 'advisory', issueLabel: '2 issues' },
+  { name: 'dim_customers', status: 'ready',    issueLabel: '—'        },
+  { name: 'dim_campaigns', status: 'advisory', issueLabel: '1 issue'  },
 ];
 
 // ── Props ─────────────────────────────────────────────────────────────────────
@@ -158,7 +156,6 @@ const Step2Content: React.FC<{ onAutoAdvance: () => void }> = ({ onAutoAdvance }
 
 const PROJECTS = [
   { id: 'analytics', label: 'analytics', models: 18, checked: true  },
-  { id: 'marketing', label: 'marketing', models: 6,  checked: true  },
   { id: 'finance',   label: 'finance',   models: 24, checked: false },
 ];
 
@@ -171,7 +168,7 @@ const Step3Content: React.FC = () => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: sp.D }}>
       <div style={{ fontSize: fs.sm, color: c['content-secondary'], fontFamily: ff.primary }}>
-        We found 3 projects in your dbt Cloud account
+        We found 2 projects in your dbt Cloud account
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: sp.B }}>
         {PROJECTS.map(p => (
@@ -280,7 +277,7 @@ const Step4Content: React.FC<Step4ContentProps> = ({ onReviewIssues, onPublish }
     }}>
       {/* Header */}
       <div style={{
-        display: 'grid', gridTemplateColumns: '2fr 1.4fr auto',
+        display: 'grid', gridTemplateColumns: '2fr 1.4fr 160px',
         gap: sp.C, padding: `${sp.B}px ${sp.D}px`,
         backgroundColor: c['background-subtle'],
         borderBottom: `1px solid ${c['border-divider']}`,
@@ -295,14 +292,14 @@ const Step4Content: React.FC<Step4ContentProps> = ({ onReviewIssues, onPublish }
       {/* Rows */}
       {DBT_MODELS.map((m, i) => (
         <div key={m.name} style={{
-          display: 'grid', gridTemplateColumns: '2fr 1.4fr auto',
+          display: 'grid', gridTemplateColumns: '2fr 1.4fr 160px',
           gap: sp.C, padding: `${sp.B + 1}px ${sp.D}px`,
           alignItems: 'center',
           borderTop: i > 0 ? `1px solid ${c['border-divider']}` : 'none',
         }}>
-          <code style={{ fontFamily: ff.mono, fontSize: fs.sm, color: c['content-brand'] }}>
+          <span style={{ fontFamily: ff.primary, fontSize: fs.sm, color: c['content-brand'] }}>
             {m.name}
-          </code>
+          </span>
           <span style={{ fontSize: fs.xs, color: c['content-secondary'], fontFamily: ff.primary }}>
             {m.issueLabel}
           </span>
@@ -347,31 +344,35 @@ const DbtImportWizard: React.FC<DbtImportWizardProps> = ({
 }) => {
   const [step, setStep] = useState(0);
 
+  const wrap = (node: React.ReactNode) => (
+    <div style={{ minHeight: 280 }}>{node}</div>
+  );
+
   const steps: WizardStep[] = [
     {
       id: 'connect',
       title: 'Connect to dbt Cloud',
-      content: <Step1Content />,
+      content: wrap(<Step1Content />),
       nextButtonText: 'Test connection →',
       hideBackButton: true,
     },
     {
       id: 'testing',
       title: 'Testing connection',
-      content: <Step2Content onAutoAdvance={() => setStep(2)} />,
+      content: wrap(<Step2Content onAutoAdvance={() => setStep(2)} />),
       hideNextButton: true,
       hideBackButton: true,
     },
     {
       id: 'select',
       title: 'Select projects',
-      content: <Step3Content />,
+      content: wrap(<Step3Content />),
       nextButtonText: 'Import',
     },
     {
       id: 'review',
       title: 'Review models',
-      content: <Step4Content onReviewIssues={onReviewIssues} onPublish={onPublishModel} />,
+      content: wrap(<Step4Content onReviewIssues={onReviewIssues} onPublish={onPublishModel} />),
       nextButtonText: 'Import & close',
     },
   ];

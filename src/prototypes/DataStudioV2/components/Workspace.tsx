@@ -122,11 +122,13 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, onBack, init
       if (!meta) continue;
       for (const colName of included) {
         const col = (meta.columns as any[]).find((c: any) => c.name === colName || c.id === colName);
-        if (col && (col.syncStatus === 'broken' || col.syncStatus === 'degraded')) count++;
+        if (!col) continue;
+        const effectiveStatus = project.columnOverrides?.[col.id]?.syncStatus ?? col.syncStatus;
+        if (effectiveStatus === 'broken' || effectiveStatus === 'degraded') count++;
       }
     }
     return count;
-  }, [project.addedTables, project.includedColumns, project.projectSource]);
+  }, [project.addedTables, project.includedColumns, project.projectSource, project.columnOverrides]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', fontFamily: ff.primary }}>
