@@ -4,6 +4,72 @@ _Sessions older than the last 3. Current sessions live in [CONTEXT.md](./CONTEXT
 
 ---
 
+### 2026-04-25 (session 48)
+
+**Phase 2 strategy memo: Manage + Iterate thesis.** Wrote `research/phase-2-manage-iterate.md` arguing Phase 2 should focus on Manage + Iterate (Build deprioritizing to "import, don't author"). Thesis: Build is commoditizing (Omni Modeling Agent, etc.); Iterate is undefended; 17% residual failure in Metadata Reasoner paper is the opportunity. Reframes 6 situations: elevates S3/S6 as core demo. Proposes 5 KPIs. Side work: set up `the-diff` project + weekly digest routine.
+
+---
+
+### 2026-04-24 (session 46)
+
+**Deployment fix + left nav flatten.** Deployed sessions 43–45 to Vercel (coaching flow etc. were committed but not live). Clarified deploy process: must run `vercel --prod` from `main`. Left nav flattened — removed section headers, now a single flat list: Overview · Projects · Data · Connections · Monitoring · Governance.
+
+---
+
+### 2026-04-23 (session 45)
+
+**Human-in-the-loop coaching flow — fixes + polish.** Build handoff fixed ("Fix in build →" injects user message bubble). 5 per-category coaching fix scripts (`coaching_time_period`, `coaching_number_wrong`, `coaching_wrong_columns`, `coaching_join_wrong`, `coaching_something_else`). Correct/Incorrect action bar merged into single row. Selected row highlight (`background-subtle`). Impressions synonym workflow (regex trigger, writes to `columnOverrides`).
+
+---
+
+### 2026-04-23 (session 44)
+
+**Human-in-the-loop coaching flow (Situation 3).** Issue Inspector removed. Correct/Incorrect feedback buttons on every AI answer. Coaching question step with 5 chip options. Debug working animation (3 steps per category, 700ms each). Two CTAs: "Continue testing" + "Fix in build →" (switches to Build tab, pre-seeds coaching fix script).
+
+---
+
+### 2026-04-23 (session 43)
+
+**Canvas sub-header: segmented view control + data quality improvements.** Replaced 3 icon-only toggle buttons with a 4-segment control (Columns · Tables · Preview · Notebook) centered in sub-header. Aggregation/Additive/Hidden/Format moved to ADVANCED_COLS (off by default). Mock data quality issues expanded to ~15 columns. Research doc: `research/secondary-views-placement.md`.
+
+---
+
+### 2026-04-23 (session 42)
+
+**V1/V2 deployment setup + branch rename.** `DataStudio/` → `DataStudioV2/` folder rename. V1 code restored to separate `DataStudio/` folder on `main`. Both cards live on radiantplay-nine.vercel.app. Gallery card renamed to "Data Studio — Agentic UX".
+
+---
+
+### 2026-04-23 (session 41)
+
+**Canvas sub-header unified into single toolbar.** Tabs pill removed; icon buttons (Tables, Preview, Notebook) on right of sub-header. ColumnsView's internal subheader merged into Workspace sub-header. dbt indicators moved to sub-header. State lifted to Workspace.
+
+---
+
+### 2026-04-23 (session 40)
+
+**Test mode merged into agent panel as a tab.** Build / Test tabs in agent panel header. `TestModePanel` fullscreen block removed (~640 lines). Test tab UI aligned to Build — same styling, same prompt bar. Canvas stays visible at all times.
+
+---
+
+### 2026-04-23 (session 38)
+
+**ColumnsView interaction cleanup.** ✦ hover icon removed. Purple row highlight removed. Bulk action bar removed. `hoveredRow` state removed. Chips in PromptBar are the only feedback for column selection.
+
+---
+
+### 2026-04-23 (session 37)
+
+**Column row-click → agent chip selection.** Checkboxes removed from ColumnsView. Row click → toggle selection. `selectedColumns` lifted to Workspace. PromptBar column chips (purple, × to remove). `onColumnRemove` callback wired.
+
+---
+
+### 2026-04-23 (session 36)
+
+**Empty state layout restructure + currency context workflow.** AgentPanel gets own 40px header. Sub-header moved inside center column. `convert_currency` script: auto-complete, regex trigger `/\b(inr|rupee|indian rupee)\b/`, applies to amount/spend/budget columns. Key decision: prep workflow is warehouse-only — dbt models are read-only.
+
+---
+
 ### 2026-04-23 (session 39)
 
 **Test mode UX research + playground consolidation:**
