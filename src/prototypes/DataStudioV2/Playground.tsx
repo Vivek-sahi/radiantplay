@@ -1766,7 +1766,16 @@ export const PlaygroundV6: React.FC = () => {
 // ║  Route: /data-studio-v2/playground                                            ║
 // ╚══════════════════════════════════════════════════════════════════════════════╝
 
-import { Iter1Layout, Iter2Layout, Iter3Layout } from '../TestModeLayouts';
+// TestModeLayouts/ lives as untracked work in worktree #1; stubbed locally so this
+// branch's build doesn't depend on it. Replace when the real layouts land in git.
+const TmStub: React.FC<{ name: string }> = ({ name }) => (
+  <div style={{ padding: sp.G, color: c['content-secondary'], fontFamily: ff.primary, fontSize: fs.sm }}>
+    {name} — playground stub. Real layout file is uncommitted in this worktree.
+  </div>
+);
+const Iter1Layout: React.FC = () => <TmStub name="TM1 Always-On" />;
+const Iter2Layout: React.FC = () => <TmStub name="TM2 Adaptive Shift" />;
+const Iter3Layout: React.FC = () => <TmStub name="TM3 Horizontal Stack" />;
 import { CacheDiscoverabilityCompare } from './CacheDiscoverability';
 import { DataQualityDiscoverabilityCompare } from './DataQualityDiscoverability';
 import { CombinedDiscoverabilityCompare } from './CombinedDiscoverability';

@@ -4,6 +4,7 @@ import Overview from './components/Overview';
 import ModelView from './components/ModelView';
 import Workspace from './components/Workspace';
 import NewProjectPrompt from './components/NewProjectPrompt';
+import DataBrowserPage from './components/DataBrowserPage';
 import { OverviewProject, OverviewAlert } from './data/mockData';
 
 export interface ProjectContext {
@@ -48,7 +49,7 @@ export interface ProjectState {
   prepTransforms?: PrepTransform[];
 }
 
-type AppView = 'overview' | 'new-project' | 'model-view' | 'workspace';
+type AppView = 'overview' | 'new-project' | 'model-view' | 'workspace' | 'data-browser';
 
 const DataStudio: React.FC = () => {
   React.useEffect(() => {
@@ -199,6 +200,7 @@ const DataStudio: React.FC = () => {
   const handleNavChange = (nav: NavSection) => {
     setActiveNav(nav);
     if (nav === 'overview') setView('overview');
+    if (nav === 'data')     setView('data-browser');
   };
 
   return (
@@ -220,6 +222,7 @@ const DataStudio: React.FC = () => {
             onEdit={enterWorkspaceFromModelView}
           />
         )}
+        {view === 'data-browser' && <DataBrowserPage />}
       </Shell>
       {view === 'new-project' && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 50 }}>
