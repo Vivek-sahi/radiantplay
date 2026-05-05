@@ -5,6 +5,8 @@ _Single source of truth for this prototype. Update as decisions are made._
 
 ## Next up
 
+**Data + Connections promotion — Done.** Both steps shipped on `dsv/vivek-data-browser-fixes`. Step 1 (Data Browser) in commit `b239100`; Step 2 (Connections) in commit `6412fdb`. Push to `origin` complete. Ready to merge into `dsv/vivek-phase-2-explorations` and review before deploying.
+
 **Phase 2** → `knowledge/phase-2.md` — eight concrete tasks. Strategy memo at `research/phase-2-manage-iterate.md` is reference background, not the build plan.
 
 1. Move agent prompt from inside project to Data Studio overview page
@@ -204,6 +206,23 @@ Full scripted flows for all 6 situations → **[SCRIPT.md](./SCRIPT.md)**
 ## Session log
 
 _Last 3 sessions. Full history → [SESSION_LOG.md](./SESSION_LOG.md)_
+
+---
+
+### 2026-05-05 (session 50)
+
+**Connections promotion (Step 2) — complete.**
+
+- **`ConnectionsPage.tsx` created** in `components/`. Strips `Shell` + `SubStateBar` from the playground exploration. Four sub-views: List → New wizard → Detail → dbt setup.
+- **New wizard fully wired:** completing the 4-step flow (pick → form → test → done) adds the new connection to the list state with a `Connection` object.
+- **Design system compliance:** replaced `Logo` (letter in colored square) with `Icon name="database"` + brand accent color; replaced raw `<button>` tabs in Detail with `Tabs` component; replaced raw modal div (schema filter) with `Modal`; replaced `<input type="checkbox">` with `Checkbox`. All spacing/color/typography via tokens.
+- **Action stubs** (Re-authenticate / Test / Edit / Disconnect) render but do nothing — per plan.
+- **`Connection` interface + `CONNECTIONS` array** added to `mockData.ts` as the canonical source.
+- **`connections` nav wired in `index.tsx`** alongside `overview` and `data-browser`.
+- **DataBrowserPage.tsx** pre-existing cleanup from Step 1 also committed (`WarehouseTableType` import removal, import reorder).
+- Build passes. Committed `6412fdb` + pushed to `origin dsv/vivek-data-browser-fixes`.
+- **Not merged** into `dsv/vivek-phase-2-explorations` or `main` — pending review.
+- **Next:** review both promotion steps together, then merge + deploy; or continue with Phase 2 tasks.
 
 ---
 
