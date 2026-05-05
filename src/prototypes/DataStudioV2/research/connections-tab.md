@@ -143,6 +143,8 @@ If we expose dbt as a *visible* connection type in the Connections list (the way
 - **A1.** Keep dbt as its own row in the Connections list, with a "depends on: [warehouse-connection-name]" subtitle. Mirrors current TS.
 - **A2.** Make dbt a *tab inside* a warehouse connection's detail page, the way Omni does it. Cleaner IA, but hides dbt from the Connections list entirely — bad for discovery on Day N.
 
+**Resolution (post `dbt-short-flow.md` research):** **A2** — dbt is technically attached to a warehouse connection. But surfaced prominently in two other places to preserve discoverability: (a) **Day Zero empty state** of Connections, where dbt is an explicit entry point alongside the warehouse, and (b) **Data Browser**, where dbt-built warehouse views appear in the catalog with dbt metadata enriching the rows (last run, tests, freshness). The technical relationship matches Hex / Omni; the discovery affordances avoid the "buried in a sub-page" cost of pure A2.
+
 ---
 
 ## Decision
@@ -170,7 +172,6 @@ If we expose dbt as a *visible* connection type in the Connections list (the way
 
 ## What this defers
 
-- **dbt placement (A1 vs A2)** — pending `dbt-short-flow.md` research conclusions
 - **Schema filter UI shape** — left-rail tree, two-pane all/selected, or other. Resolve during Playground exploration
 - **Workspace-level admin schema filter** — Hex/Omni let admins curate at the workspace level on top of user filtering. Scoped to "later"
 - Server-side auth/credential storage (out of scope — UX research only)
