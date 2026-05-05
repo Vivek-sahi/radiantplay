@@ -1769,6 +1769,7 @@ export const PlaygroundV6: React.FC = () => {
 import { Iter1Layout, Iter2Layout, Iter3Layout } from '../TestModeLayouts';
 import { CacheDiscoverabilityCompare } from './CacheDiscoverability';
 import { DataQualityDiscoverabilityCompare } from './DataQualityDiscoverability';
+import { CombinedDiscoverabilityCompare } from './CombinedDiscoverability';
 import { ConnectionsExploration } from './components/explorations/Connections';
 import { DataBrowserExploration } from './components/explorations/DataBrowser';
 import { DbtExploration } from './components/explorations/Dbt';
@@ -1811,6 +1812,10 @@ const PG_NAV: { section: string; items: PGNavItem[] }[] = [
     items: [],
   },
   {
+    section: 'Combined model status',
+    items: [],
+  },
+  {
     section: 'Phase 2 — explorations',
     items: [
       { id: 'p2-conn',    label: 'Connections',  meta: 'empty · list · new · detail · dbt' },
@@ -1822,6 +1827,7 @@ const PG_NAV: { section: string; items: PGNavItem[] }[] = [
 
 const CACHE_SECTION = 'Cache discoverability';
 const QUALITY_SECTION = 'Data quality discoverability';
+const COMBINED_SECTION = 'Combined model status';
 
 const renderNavIteration = (id: NavId): React.ReactNode => {
   switch (id) {
@@ -1908,7 +1914,7 @@ export const PlaygroundNav: React.FC = () => {
         })}
       </div>
 
-      {/* Body — comparison views for cache + quality, card grid for others */}
+      {/* Body — comparison views for cache / quality / combined, card grid for others */}
       {activeGroup === CACHE_SECTION ? (
         <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
           <CacheDiscoverabilityCompare />
@@ -1916,6 +1922,10 @@ export const PlaygroundNav: React.FC = () => {
       ) : activeGroup === QUALITY_SECTION ? (
         <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
           <DataQualityDiscoverabilityCompare />
+        </div>
+      ) : activeGroup === COMBINED_SECTION ? (
+        <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
+          <CombinedDiscoverabilityCompare />
         </div>
       ) : (
       <div style={{ flex: 1, overflow: 'auto', padding: 32 }}>

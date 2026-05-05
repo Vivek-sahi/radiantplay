@@ -234,6 +234,7 @@ COUNT(DISTINCT orders.user_id)
     outcomeCard: {
       title: 'Campaign Performance',
       chips: ['3 tables', '2 joins', '16 columns'],
+      errorChips: ['⚠ 9 quality issues'],
       note: 'Your model is ready. Start testing or make any changes first.',
     },
     contextUpdate: {
