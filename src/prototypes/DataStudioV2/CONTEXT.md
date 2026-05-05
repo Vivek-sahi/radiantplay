@@ -5,8 +5,15 @@ _Single source of truth for this prototype. Update at the end of every session._
 
 ## Next up
 
-**Day Zero — review in browser + left canvas placeholder**
-The Day Zero agentic flow is live. Next: open the prototype, run the full sequence (Snowflake card → submit → connection flow → schema chips → use case → clarifying Q&A → build), and decide if the left canvas needs a "waiting for connection" placeholder state during the pre-build phases.
+**Review Day Zero journey end-to-end in the browser**
+
+Run the full sequence: Journey picker → Journey 1 → Snowflake card → submit → agent connection flow → schema chips → use case prompt → clarifying Q&A → model confirmation → build fires. Check:
+- Each agent phase transitions correctly
+- Credential form renders inline and the 2s mock submit advances to validation
+- Interactive chips disable after click
+- Clarifying questions show the right follow-ups
+- Build fires cleanly and the existing build flow takes over without interruption
+- Any visual polish needed (spacing, chip styling, form field sizing)
 
 When the user submits a prompt (with a warehouse pre-filled or typed), navigate to Workspace and auto-fire a new `day_zero_connect_warehouse` SCRIPT. The agent walks through:
 
