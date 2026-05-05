@@ -5,23 +5,20 @@ _Single source of truth for this prototype. Update as decisions are made._
 
 ## Next up
 
-**Day 0 narrative on the Overview page** — Phase 2 tasks 1 + 2:
-1. Move agent prompt from inside the project to the Overview page
-2. Add example task chips on the Overview page (build, debug, modify, monitor)
+**Phase 2 status (post-merge, 2026-05-06):**
 
-Data + Connections promotion is ✓ done (sessions 50–51, branch `dsv/vivek-data-browser-fixes`).
-Work back in **worktree #1**: `/Users/vivek.sahi/radiantplay/` on `dsv/vivek-phase-2-explorations`.
+| # | Task | Status |
+|---|------|--------|
+| 1 | Move agent prompt to Overview page | ✓ done |
+| 2 | Add example task chips on Overview page | ✓ done |
+| 3 | Add a connection step at the start of the building flow | deferred — future work |
+| 4 | Show caching as a step in the building flow | ✓ done (session 49, M7) |
+| 5 | Show how dbt models are imported | deferred — separate track |
+| 6 | Trigger editing via an optimization use-case (agentic) | out of scope |
+| 7 | Show a debugging + monitoring use-case (agentic) | out of scope |
+| 8 | Increase the agent panel's default width | ✓ done |
 
-**Phase 2** → `knowledge/phase-2.md` — eight concrete tasks. Strategy memo at `research/phase-2-manage-iterate.md` is reference background, not the build plan.
-
-1. Move agent prompt from inside project to Data Studio overview page
-2. Add example task chips on the overview page (build, debug, modify, monitor)
-3. Add a connection step at the start of the building flow
-4. Show caching as a step in the building flow
-5. Show how dbt models are imported in the dbt build flow
-6. Trigger editing via an optimization use-case (agentic)
-7. Show a debugging + monitoring use-case (agentic)
-8. Increase the agent panel's default width
+**Branch merged:** `dsv/vivek-data-browser-fixes` → `prototype/data-studio` (2026-05-06). Data Browser + Connections now live in the prototype.
 
 Deferred build tasks (from session 47 audit, still valid):
 
@@ -214,31 +211,30 @@ _Last 3 sessions. Full history → [SESSION_LOG.md](./SESSION_LOG.md)_
 
 ---
 
-### 2026-05-06 (session 51)
+### 2026-05-05 (session 49)
 
-**Connections row-click bug fix.**
+**M7 cache + quality state in canvas header (live), then audit for Data + Connections promotion.**
 
-- **Bug fixed**: clicking any row in the connections list always opened `connections[0]`. Changed `ListView.onDetail` prop from `() => void` to `(conn: Connection) => void`; each row now calls `onDetail(conn)`. `ConnectionsPage` passes `onDetail={openDetail}` directly.
-- Build passes.
-- **Next:** merge `dsv/vivek-data-browser-fixes` into `dsv/vivek-phase-2-explorations`, then deploy.
-
----
-
-### 2026-05-06 (session 50)
-
-**Connections promotion (Step 2) + design system overhaul.**
-
-- **`ConnectionsPage.tsx` created** (`6412fdb`): list → wizard → detail → dbt-setup state machine. `Connection` type + `CONNECTIONS` added to `mockData.ts`. `connections` nav wired in `index.tsx`.
-- **Design system pass** (`c9c32e8`): rewrote the entire component after review feedback.
-  - **List**: full-width table (removed `maxWidth` cap), icon inline with name, "Type" renamed to "Source".
-  - **Wizard**: replaced custom inline wizard with `WizardModal` component (progress bar, Back/Next, keyboard ESC all built-in). 4 steps: Choose source → Configure → Test connection → Import data.
-  - **Test step**: checks animate in one-by-one at 700ms; Continue hidden until all 4 pass.
-  - **Import data step**: all schemas checked by default; user unchecks to exclude; running count shown.
-  - **After wizard completes**: new connection appended to list + detail view opens directly.
-  - `DetailView` now receives the `conn` prop so title/subtitle reflect the actual connection.
-- Build passes. Both commits pushed to `origin dsv/vivek-data-browser-fixes`.
-- **Not merged** into `dsv/vivek-phase-2-explorations` or `main` — pending review.
-- **Next:** review connections migration to main prototype (see "Next up" above).
+- **Cache + quality discoverability — promoted to live Workspace (commit `5ed8385`):**
+  - Two-line header identity: project name + Draft/v1 on top, status subtext (`Live query` / `9 quality issues` / `9 issues resolved`) beneath
+  - Replaced warehouse-icon dropdown with first-class chips on the subtext
+  - **Cache flow**: chip toggles Live query → Caching in progress (10s amber spinner, non-clickable) → Cached query. Modal: Cache model (smart defaults, recommended) vs Cache by tables; frequency + time + timezone for daily/weekly; lookup period; estimated savings. Re-opening while cached = editable summary view with Disable cache.
+  - **Quality flow**: red "9 quality issues" → green "9 issues resolved" once `prepTransforms` populated. Modal is summary only (no pre-computed fixes). CTA: Review with agent → injects `Review data quality` to AgentPanel → triggers existing `review_data_quality` script + DataQualityPlanModal. Both modals share severity palette + StatPill design.
+  - `errorChips: ['⚠ 9 quality issues']` added to `build_project` outcomeCard so the count surfaces inline post-build.
+  - Empty-state: pulsing skeleton bars in subtext while `buildStep === 'empty'`.
+  - Layout: main header 56→64; LeftPanel slide-in `top: 96 → 104`.
+- **Playground research (commit `5ed8385` includes):** three new tabs in PlaygroundNav — Cache discoverability (CD1–CD5), Data quality discoverability (DQ1–DQ5 + StatPill palette aligned to existing review modal), Combined model status (M1–M5 IA strategies + M6/M7 in-canvas mocks). M7 was chosen → promoted to live.
+- **Data Browser cleanup (commit `34e7aa7`):** removed `lineage` tab from TableTab type + JSX (47 lines deleted, build passes).
+- **Audit for Data + Connections promotion:**
+  - Confirmed live nav targets `data`, `connections`, `monitoring`, `governance` are dead clicks (only `overview` is wired in `index.tsx`).
+  - Confirmed `DataBrowserModal.tsx` is orphan (zero imports) — safe to delete.
+  - Confirmed playground explorations are self-contained (own Shell + SubStateBar) — promotion is mechanical strip-and-rewire.
+  - Confirmed `Dbt.tsx` is a separate exploration (project building flow, not Data/Connections nav) — out of scope for this promotion.
+  - Locked decisions: Data lands on Warehouse view; Connections lands on List view; PromptBar's `WAREHOUSE_TREE` is canonical (lift to mockData.ts); "+ New connection" wizard is in scope; action stubs (Test/Disconnect/Edit/Sync) stay visual-only; design system compliance is mandatory.
+  - Plan written to `research/data-connections-promotion-plan.md` with full briefing for next session.
+- **Working environment:** set up `git worktree` — worktree #1 at `/Users/vivek.sahi/radiantplay/` on `dsv/vivek-phase-2-explorations` (cache + prep work), worktree #2 at `/Users/vivek.sahi/radiantplay-conn/` on `dsv/vivek-data-browser-fixes` (Data + Connections promotion).
+- **Not pushed.** Both commits on `dsv/vivek-phase-2-explorations` local only. Komal not blocked.
+- **Next:** Step 1 (Data promotion) starts in worktree #2. Plan file has paste-ready briefing prompt.
 
 ---
 
