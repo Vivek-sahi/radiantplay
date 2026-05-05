@@ -5,9 +5,9 @@ _Single source of truth for this prototype. Update at the end of every session._
 
 ## Next up
 
-**Journey 4 — all 8 session-57 demo issues resolved. Prototype ready for demo.**
+**Journey 4 — demo-ready. No open items.**
 
-No open items. Next session: decide what to build next (Journey 2 monitoring polish, Journey 3 debug flow, or new area).
+Next session: decide what to build next — Journey 2 monitoring polish, Journey 3 debug flow, or new area.
 
 ---
 
@@ -73,6 +73,18 @@ Original 6-situation arc (still valid for demo scripting) → `SCRIPT.md`
 ## Session log
 
 _Last 3 sessions. Full history → [SESSION_LOG.md](./SESSION_LOG.md)_
+
+---
+
+### 2026-05-06 (session 59)
+
+**Journey 4 — three follow-up fixes after session-58 demo review.**
+
+- Empty state: rebuilt as full "Start with an existing model" section matching DayZeroOverview exactly — section label + both cards (dbt models, Semantic views) using `ExternalModelOptionCard` pattern. Semantic views card is a stub.
+- Wizard height: `minHeight: 280` → `height: 320px; overflowY: auto` — modal is now fixed height across all steps.
+- Publish: removed canvas navigation. `InlinePublishModal` now renders directly in `DataBrowserPage` state; confirming publish closes wizard and sets `dbtImported`.
+- Branch confusion resolved: `prototype/data-studio` confirmed as correct working branch. CLAUDE.md, CONTEXT.md, and session-start memory all updated.
+- Build: clean ✓
 
 ---
 
