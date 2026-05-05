@@ -1,6 +1,6 @@
 # Research: Day Zero Journey — "Zero to model in ThoughtSpot"
 
-_Journey spec. Not a decision doc — a full narrative map for the prototype._
+_Journey spec. Updated 2026-05-06 with session decisions. Build-ready._
 
 ---
 
@@ -11,320 +11,253 @@ cached, quality-checked model — without leaving the product, without waiting o
 engineer, and without any third-party tools. Everything happens inside Data Studio, guided
 by the agent.
 
-The story ends with a specific feeling: **"I didn't get blocked once."**
+The story ends with: **"I didn't get blocked once."**
 
 ---
 
-## Entry point: Journeys on the Overview page
+## The four journeys (vision)
 
-Add a **Journeys** section to the Overview page, above or below the Recent projects section.
-It surfaces guided narrative flows — Day Zero is the first. Day N (monitoring + optimization)
-is the second, to be specced separately.
+| # | Journey | Status | Overview entry state |
+|---|---------|--------|----------------------|
+| 1 | **Get started** — Day Zero, warehouse to first model | Building now | Empty state (new) |
+| 2 | **Monitor & optimize** — Day N, improve existing models | Teammate building | Existing overview (10–20 models + alerts) |
+| 3 | **Debug issues** — diagnose and fix a broken model | Later | Same as Journey 2 |
+| 4 | **dbt plug-and-play** — import and publish a dbt project | Later | Same as Journey 2 |
 
-**Journeys section layout:**
-- Section label: "Journeys"
-- One card per journey. Each card has:
-  - Title ("Getting started with ThoughtSpot")
-  - One-line description ("From warehouse to first model — guided by the agent")
-  - Estimated time ("~10 min")
-  - A "Start journey" button / CTA
-
-For this spec: one card, "Day Zero — Get your first model live."
+Journey 2–4 land on the same overview screen. Only Journey 1 is built in this session.
+Journeys 2–4 appear on the picker but are not clickable (locked/greyed out).
 
 ---
 
-## Full journey map
+## New work in this session
 
-### Step 0 — Journey picker screen
-_Triggered by "Start journey" on the Overview card._
+Two things are genuinely new:
 
-A full-page or modal overlay. Not the workspace yet — a dedicated pick screen.
+1. **Journey infrastructure** — picker screen, journey switcher (bottom-left shell pin),
+   empty-state overview for Day Zero.
+2. **Connection flow + clarifying questions** — four new agent conversations that don't
+   exist anywhere in the prototype yet.
 
-**What the user sees:**
-- Heading: "How do you want to start?"
-- Two large option cards side by side:
-  - **"Connect your data warehouse"** — Snowflake, BigQuery, Redshift, etc. Your own data.
-  - **"Start with sample data"** — a pre-loaded retail dataset. No credentials needed.
-- Small note: "You can always connect your warehouse later."
-
-**Decision for the build:** Both paths enter the same workspace + agent flow. Sample data
-path skips the connection setup steps and seeds the workspace with the existing mock data
-(orders, campaigns, users). Warehouse path goes through Steps 1–2 before the build.
+Everything from "use case prompt → build → quality → caching → publish" is reused unchanged.
 
 ---
 
-### Step 1 — Empty canvas + agent greeting (warehouse path only)
-_User lands in a fresh Workspace. `buildStep: 'empty'`. Agent panel is open._
+## Journey infrastructure
 
-This replaces the current "Tell me about the model you want to build" empty state for the
-Day Zero journey context. The agent greets first, before the user types anything.
+### Journey picker screen
+_Entry: clicking "Start journey" button on the Overview page, OR the journey switcher pin._
 
-**Agent opening message (auto-plays, no user prompt):**
+Full-page screen (not a modal). Shows all four journeys as cards. Only Journey 1 is active;
+2–4 are greyed out with a "Coming soon" label.
 
-> "Welcome. I don't see any data connected to your workspace yet.
-> Would you like to **connect your data warehouse**, or use **sample data** to explore first?"
+Each card:
+- Journey number + title
+- One-line description
+- For Journey 1: "Start →" CTA button
+- For Journeys 2–4: greyed out, "Coming soon" label
 
-Two inline chips / buttons:
-- "Connect warehouse"
-- "Use sample data"
-
-If "Use sample data" → skip to Step 3 (use case prompt), seeded with mock data.
-If "Connect warehouse" → proceed to Step 2.
-
-**What's new here:** A new SCRIPT entry `day_zero_greeting` that auto-fires when the
-journey context is 'warehouse' and `buildStep === 'empty'`. The current empty state flow
-starts on user input — this one starts on agent initiative.
+Clicking "Start →" on Journey 1 → navigate to the Day Zero empty-state overview.
 
 ---
 
-### Step 2 — Agent-driven connection setup
-_Agent guides the user through connecting a warehouse. Stays inside the agent panel._
+### Journey switcher (shell pin)
+_A new item pinned to the bottom of the left sidebar in Shell.tsx._
 
-**Script outline — `day_zero_connect_warehouse`:**
+Visually: a small icon button (e.g. a compass or map icon) pinned below the main nav
+items, separated by a divider. Always visible. Clicking it opens the journey picker.
 
-Working steps (animated, sequential):
-
-1. **"Which data warehouse are you connecting to?"**
-   Chips: Snowflake · BigQuery · Redshift · Databricks · Other
-   User selects → Snowflake (for the demo path).
-
-2. **"Great. What are your Snowflake credentials?"**
-   Agent renders an inline credential form in the chat:
-   - Account identifier (e.g. `xy12345.us-east-1`)
-   - Username
-   - Password or key-pair toggle
-   - Warehouse name
-   - Database + Schema (optional at this step)
-   Submit button: "Connect"
-   (Form is mock — submitting always succeeds after a 2s simulated delay.)
-
-3. **Working steps while "connecting":**
-   - Verifying credentials...
-   - Fetching available schemas...
-   - Connection established.
-
-4. **Agent outcome message:**
-   > "Connected to Snowflake — I can see 3 schemas. Which one contains the data you
-   > want to work with?"
-   Schema chips: `analytics` · `marketing` · `raw_data`
-   User selects → `analytics`.
-
-5. **Agent response:**
-   > "Got it. I'll use the `analytics` schema. Now tell me what you want to build."
-
-→ Proceed to Step 3.
-
-**What's reused:** The connection created here maps to the existing Connections page
-(wired but visual-only). The agent outcome card can show a "View connection →" link.
-
-**What's new:** SCRIPT `day_zero_connect_warehouse`, inline credential form component
-inside AgentPanel (similar pattern to DataQualityPlanModal — modal triggered by a CTA),
-simulated 2s loading state with working steps.
+**Implementation note:** additive change to Shell — new `pinnedBottom` slot or a simple
+absolute-positioned element at the bottom of the sidebar. Does not touch existing nav
+items or routing logic.
 
 ---
 
-### Step 3 — Use case prompt + build
-_Agent asks for the use case. User types. Agent clarifies, then builds._
+### Empty-state overview (Day Zero entry)
+_What the user sees when they start Journey 1._
 
-**Agent message:**
-> "What do you want to understand with this model? Tell me the business question,
-> and I'll figure out the tables."
+This is a **new component** (`DayZeroOverview.tsx`), not a modification of `Overview.tsx`.
+`index.tsx` routes to it when `journeyContext === 'day_zero'`.
 
-User types a use case (e.g. "I want to understand campaign ROI by channel and region").
+**Layout:**
+- Same shell (left nav, header) as the regular overview
+- Center: a hero area with the agent prompt bar (same `PromptBar` component)
+- Below the prompt bar: two card rows
 
-Agent asks 1–2 clarifying questions (existing pattern from `build_project` clarification
-steps). Then runs the full build workflow.
+**Card row 1 — "Connect your warehouse":**
+Horizontal row of warehouse icon cards: Snowflake · Redshift · BigQuery · Databricks · More
+Each card: warehouse logo + name. Clicking one (Snowflake for the demo) opens the
+workspace with `journeyContext: 'day_zero'` and `warehouseTarget: 'snowflake'` pre-set,
+and auto-fires the `day_zero_connect_warehouse` SCRIPT.
 
-**What's reused:** Existing `build_project` SCRIPT entirely. No new script needed here.
-The build populates the LeftPanel (tables, joins, formulas), ColumnsView, and the canvas
-header identity.
+**Card row 2 — "Start with an existing model":**
+A single card. Clicking it opens the existing `NewProjectPrompt` / workspace empty state.
+(Not the Day Zero flow — this is the escape hatch for users who already have something.)
 
-After build completes, `buildStep` reaches `'healthy'`. The quality indicator in the
-canvas header shows "9 quality issues" (red chip). The caching indicator shows "Live query".
-
----
-
-### Step 4 — Quality surfaced + agent prompt to review
-_No user action required — agent notices the quality state and proactively surfaces it._
-
-After the build outcome card settles, the agent sends a follow-up message (1.5s delay,
-`autoComplete: true`):
-
-> "Before you test this, I noticed **9 data quality issues** — nulls, duplicates,
-> and anomalies across several columns. I'd recommend reviewing these now so your
-> answers are accurate from the start."
-> CTA button: "Review issues →"
-
-Clicking "Review issues →" triggers the existing `review_data_quality` script +
-`DataQualityPlanModal`. No new script needed — just a new CTA message entry that
-auto-fires post-build in journey context.
-
-**What's new:** A post-build follow-up message that fires automatically in Day Zero
-journey context. A flag on the project state (`journeyContext: 'day_zero'`) would
-gate this behavior so it doesn't change the non-journey build flow.
+No recent projects. No alerts. No other sections. Clean.
 
 ---
 
-### Step 5 — Quality fix: agent prepares plan, user applies
-_User clicks "Review issues →". DataQualityPlanModal opens._
+## Connection flow (new agent work)
 
-This is the existing flow exactly:
-- 9 issues displayed in a flat table, grouped by severity
-- User can review, filter, edit fix labels
-- "Apply (N)" applies selected fixes → `prepTransforms` written → quality chip turns green
-- Agent sends confirmation: "9 issues resolved. Your model is ready to test."
+Four sequential conversations inside the agent panel. Uses all existing agent patterns:
+shimmer for working steps, `autoComplete: true` for non-interactive steps, chips for
+single-select choices.
 
-**What's reused:** `review_data_quality` SCRIPT, `DataQualityPlanModal`, `prepTransforms`
-state, quality indicator green state. Nothing new to build.
+### Conversation 1 — Warehouse already chosen (from the card click)
 
----
+Agent opens with a confirmation, not a question (user already clicked Snowflake):
 
-### Step 6 — Test (seamless, no manual publish step)
-_Agent suggests testing after quality is resolved._
+> "Connecting to Snowflake. I'll need your credentials."
 
-After the quality resolution message, agent adds:
-
-> "Ready to test? I've set this up so you can query it right now — no publishing
-> needed to start."
-> CTA button: "Start testing →"
-
-Clicking "Start testing →" switches to the Test tab in the agent panel. The existing
-test mode flow takes over: user asks a question, gets an answer, gives feedback
-(Correct / Incorrect), coaching flow if incorrect.
-
-**Coaching + agent memory:**
-When the user gives "Correct" feedback or after the coaching fix is applied, the agent
-sends a note:
-> "Noted — I've added that to this model's context so future answers stay consistent."
-
-This is narrative framing — no new data structure needed in the prototype. The agent
-simply says it and the user believes it. If we want to make it visual: a small "Memory
-updated" indicator on the agent avatar after a coaching fix (could be a green dot flash).
-
-**What's reused:** Test tab, existing test flow, `correct`/`incorrect` feedback,
-coaching SCRIPTS. Minor new: post-feedback "Noted" message and optional memory indicator.
+Immediately transitions to Conversation 2.
 
 ---
 
-### Step 7 — Caching decision
-_Triggered by user clicking the "Live query" chip in the canvas header._
+### Conversation 2 — Credentials
 
-No change to the existing caching flow. The agent can optionally prompt:
-> "One more thing — you're on live query, which means every question hits your warehouse.
-> Want to cache this model? It'll cut your costs and speed up answers."
-> CTA: "Set up caching →"
+Agent message:
+> "What are your Snowflake credentials?"
 
-Clicking opens the existing Cache modal (recommended defaults path → apply).
+Agent renders an **inline credential form** in the chat. This is a new UI component —
+a compact form card that appears inside the agent message scroll, not a modal.
 
-**What's reused:** Cache chip, cache modal, `Cached query` state. The optional agent
-prompt is new (same pattern as the quality follow-up — a post-test auto-message in
-journey context).
+Fields:
+- Account identifier (`xy12345.us-east-1`)
+- Username
+- Password (masked)
+- Warehouse name
+- Database (optional)
 
----
+Submit button: "Connect"
+(Mock — always succeeds after a 2s delay.)
 
-### Step 8 — Publish + share
-_Final step._
-
-After caching, agent sends:
-> "You're all set. Publish this model to make it available to your team."
-> CTA: "Publish →"
-
-Clicking "Publish →" triggers the existing publish flow (version bump, `publishedVersion: 1`).
-After publish, agent sends the journey close message:
-
-> "Done. Your first model is live — cached, quality-checked, and ready for Spotter.
-> You brought data from your warehouse, fixed quality issues, and built a production
-> model, all inside ThoughtSpot."
-
-A small "Journey complete" state appears — either a banner on the canvas header or a
-final agent card. Design to be explored.
+**Design pattern:** same visual language as the agent outcome card — bordered card,
+`background-subtle` fill, Radiant `TextInput` components. Submit calls the next script.
 
 ---
 
-## What's new vs. what's reused
+### Conversation 3 — Working steps (connecting)
 
-| Piece | Status | Notes |
-|-------|--------|-------|
-| Journeys section on Overview | New | One card; "Start journey" CTA |
-| Journey picker screen | New | Two options: warehouse / sample data |
-| `day_zero_greeting` SCRIPT | New | Auto-fires on agent init, warehouse path |
-| `day_zero_connect_warehouse` SCRIPT | New | Multi-step: picker → inline form → working steps → schema select |
-| Inline credential form in AgentPanel | New | Similar to quality modal pattern — triggered by script CTA |
-| `journeyContext` flag on ProjectState | New | Gates the auto-fire follow-up messages; doesn't affect non-journey flows |
-| Post-build quality follow-up message | New | Auto-fires in journey context after `build_project` completes |
-| Post-test caching nudge message | New | Auto-fires in journey context after first test interaction |
-| Journey close card / "complete" state | New | Design to be explored in Playground |
-| Build flow (`build_project`) | Reused | Unchanged |
-| Quality review + DataQualityPlanModal | Reused | Unchanged |
-| Test tab + coaching | Reused | Minor: "Noted" confirmation message added |
-| Cache modal | Reused | Unchanged |
-| Publish flow | Reused | Unchanged |
-| Connections page | Reused | Agent outcome card links to it |
+After submit, agent shows working steps (shimmer + sequential reveal, existing pattern):
+
+- Verifying credentials...
+- Fetching available schemas...
+- Connection established.
+
+Outcome card:
+> "Connected to Snowflake. Found 3 schemas."
+> [View connection →] (links to Connections page)
 
 ---
 
-## Open decisions
+### Conversation 4 — Schema + clarifying questions
 
-1. **Journey picker as overlay or full page?** Full page feels more deliberate; overlay
-   feels lighter. Preference TBD — explore both in Playground.
+Agent:
+> "Which schema contains the data you want to work with?"
 
-2. **Sample data path:** Does it also show the agent greeting, or does it skip straight
-   to the use case prompt? Recommendation: show a lighter greeting ("Using sample retail
-   data — orders, campaigns, users. What do you want to build?") to maintain the guided
-   feel.
+Chips: `analytics` · `marketing` · `raw_data`
+User selects → `analytics`.
 
-3. **Credential form placement:** Inline in the agent chat scroll, or a modal triggered
-   by a CTA in the chat? Inline is more immersive; modal is simpler to build. Lean toward
-   inline (same scroll as the rest of the conversation) but worth a quick Playground pass.
+Agent:
+> "Got it. Now tell me what you want to build — what's the business question?"
 
-4. **"Journey complete" state:** Banner on canvas header? Full-page moment? Subtle agent
-   card? This is a narrative payoff moment — should feel earned but not over-produced.
-   Needs a Playground exploration.
+User types use case (e.g. "Campaign ROI by channel and region").
 
-5. **`journeyContext` scoping:** Should the auto-fire follow-up messages be gated strictly
-   to Day Zero, or should they become the default post-build behavior for all new projects?
-   Lean toward journey-gated for now (simpler, doesn't disturb existing demo flows).
+**Clarifying questions (new agent pattern):**
 
-6. **Agent memory visualization:** "Noted — I've added that to this model's context."
-   Is a text message enough, or should there be a small visual (e.g. a momentary glow on
-   the agent avatar, or a "Model context updated" chip in the subheader)? Open — could
-   be a 30-min Playground exploration.
+Instead of building immediately, the agent asks 1–2 focused questions before starting.
+This is the new interaction — the agent doesn't assume and fire; it briefly confirms.
 
----
+Example exchange:
+> "A couple of quick questions before I start:"
+> "1. Is this for a marketing team, or broader across the org?"
+> "2. Do you want to include spend data alongside ROI, or just ROI?"
 
-## Explorations needed before building?
+User answers in plain text or chips (design TBD — probably plain text reply for a
+natural feel). After both answered, agent transitions to the build:
 
-Yes — two specific things:
+> "Got it. Building your campaign ROI model now..."
 
-1. **Journey picker screen** — try 2 directions: (a) full-page with large illustrated
-   option cards, (b) compact modal. Need to see which feels right at the scale of the
-   prototype.
+Then existing `build_project` SCRIPT fires. No changes to that script.
 
-2. **Journey complete state** — try 3 directions: (a) agent card with summary, (b) banner
-   + confetti-style moment, (c) subtle header state change. Don't over-invest — one
-   quick pass per direction.
-
-Everything else (connection form inline, auto-fire messages, Journeys section on Overview)
-can be built directly without a Playground pass.
+**What's new about clarifying questions:**
+- The agent initiates a multi-turn Q&A before the script (currently the build starts on
+  the first message).
+- Needs a new `awaitingClarification` state in AgentPanel — the panel is in a "listening"
+  mode, collecting answers, before the build script fires.
+- After N answers (2 for demo), the agent synthesizes and launches the build.
 
 ---
 
-## Build order (when ready)
+## What's reused, unchanged
 
-1. `journeyContext` flag + Journeys section on Overview + "Start journey" CTA
-2. Journey picker screen (after Playground exploration)
-3. `day_zero_greeting` SCRIPT + empty canvas greeting for warehouse path
-4. `day_zero_connect_warehouse` SCRIPT + inline credential form
-5. Post-build quality follow-up message (auto-fire in journey context)
-6. Post-test caching nudge message
-7. Journey complete state (after Playground exploration)
-8. Sample data path (lighter variant of Steps 0–1)
+- `build_project` SCRIPT — no changes
+- `review_data_quality` SCRIPT + `DataQualityPlanModal` — no changes
+- Test tab + coaching SCRIPTS — no changes
+- Cache modal — no changes
+- Publish flow — no changes
+- `Overview.tsx` — **not touched** (teammate's file)
 
 ---
 
-## Out of scope for this spec
+## Merge strategy
 
-- Day N journey (monitoring + optimization) — to be specced separately
-- Real credential validation / actual Snowflake connection
-- Multi-journey management / resuming a journey
-- dbt path (journey picker has the option but the flow is deferred)
+The teammate is building Journey 2 (monitoring) and making changes to `Overview.tsx`.
+Their prototype has no journey infrastructure (no picker, no switcher).
+
+**Rule: Journey infrastructure lives in new files and additive changes only.**
+
+| File | What we do | Teammate can do |
+|------|-----------|-----------------|
+| `Overview.tsx` | **Do not touch** | Free to modify |
+| `DayZeroOverview.tsx` | New file, we own it | No conflict |
+| `JourneyPicker.tsx` | New file, we own it | No conflict |
+| `Shell.tsx` | Additive: add pinned bottom slot | No conflict if they don't touch Shell |
+| `index.tsx` | Add `journeyContext` state + route to `DayZeroOverview` | Minor merge — just route additions |
+| `data/mockData.ts` | Add journey mock data if needed | Minor merge — additive |
+| `AgentPanel.tsx` | Add `awaitingClarification` state + new SCRIPTS | They likely won't touch this |
+
+When they merge their work in: `Overview.tsx` merges cleanly (we never touched it).
+`index.tsx` gets a 3-way merge on route additions — manageable since both sides are
+adding new routes, not editing the same ones. Shell gets a clean merge if we add the
+bottom pin as a new prop/slot.
+
+**The critical discipline:** never import from or modify `Overview.tsx` in our Day Zero
+work. The journey picker just navigates to `DayZeroOverview` (our file) or to `Overview`
+(their file) — `index.tsx` is the only router and it keeps the two separate.
+
+---
+
+## Out of scope (locked)
+
+- Sample data path
+- Journey complete state (quality → cache → publish → share is the existing flow, unchanged)
+- Agent memory visualization
+- Journey 2, 3, 4 implementation
+- dbt connection path
+- Real credential validation
+
+---
+
+## Build order
+
+1. Journey infrastructure
+   - `JourneyPicker.tsx` (4 cards, only #1 active)
+   - Shell: pinned bottom journey switcher button
+   - `index.tsx`: `journeyContext` state + route to picker + route to `DayZeroOverview`
+
+2. `DayZeroOverview.tsx`
+   - Hero prompt bar
+   - Warehouse icon cards (Snowflake, Redshift, BigQuery, Databricks)
+   - "Start with existing model" card
+
+3. Connection flow scripts
+   - `day_zero_connect_warehouse` SCRIPT (Conversations 1–3: greeting → credential form → working steps)
+   - Inline credential form component inside AgentPanel
+   - Conversation 4: schema chips + clarifying questions
+
+4. Clarifying questions pattern
+   - `awaitingClarification` state in AgentPanel
+   - 2-question exchange before `build_project` fires
+
+5. Verify the handoff into existing build flow is seamless
