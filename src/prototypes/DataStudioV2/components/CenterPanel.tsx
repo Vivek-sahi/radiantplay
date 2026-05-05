@@ -203,9 +203,9 @@ const ColumnsView: React.FC<{ project: ProjectState; setProject: React.Dispatch<
   if (!project.columnsSelected || rows.length === 0) {
     return (
       <EmptyCenter
-        icon="⊟"
-        title="No columns selected"
-        body="Ask the Data Agent to recommend columns for your model, or select them manually from the left panel."
+        icon="📊"
+        title="No data yet"
+        body="Start by telling the Data Agent what you want to build, or use the + button in the Data panel to add tables."
       />
     );
   }

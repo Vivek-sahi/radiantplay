@@ -105,7 +105,8 @@ const CredentialFormCard: React.FC<CredentialFormCardProps> = ({ onSubmit }) => 
 
       <Button
         variant="primary"
-        size="small"
+        size="medium"
+        fullWidth
         onClick={handleConnect}
         loading={loading}
         disabled={loading}

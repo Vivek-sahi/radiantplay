@@ -40,6 +40,9 @@ export interface AgentMessage {
   reviewPlanCTA?: boolean;
   interactiveChips?: { label: string; value: string }[];
   credentialForm?: boolean;
+  schemaChoice?: boolean;
+  schemaChecklist?: boolean;
+  clarifyCard?: { question: string; options: string[] };
 }
 
 interface WorkingStep {
@@ -991,14 +994,26 @@ Want me to go ahead — add the table, create the join, and populate the columns
   day_zero_parse_use_case: {
     steps: [
       { label: 'Parsing your use case…', detail: '' },
-      { label: 'Identifying relevant metrics and dimensions…', detail: 'ROI, spend, channel, region — cross-referencing the marketing schema.' },
-      { label: 'Preparing clarifying questions…', detail: 'Two quick questions before I start.' },
+      { label: 'Identifying relevant metrics and dimensions…', detail: '' },
+      { label: 'Preparing clarifying questions…', detail: '' },
     ],
     duration: '~2s',
     proposal: '',
     execution: '',
     nextStep: 'empty',
     stepDelay: 600,
+  },
+
+  day_zero_understand_requirement: {
+    steps: [
+      { label: 'Understanding your requirements…', detail: '' },
+      { label: 'Identifying the right tables and metrics…', detail: '' },
+    ],
+    duration: '~2s',
+    proposal: '',
+    execution: '',
+    nextStep: 'empty',
+    stepDelay: 900,
   },
 };
 
@@ -1323,7 +1338,8 @@ type DayZeroPhase =
   | 'connection_prompt'
   | 'credential_form'
   | 'validating'
-  | 'schema_select'
+  | 'schema_choice'
+  | 'schema_checklist'
   | 'use_case_prompt'
   | 'clarify_q1'
   | 'clarify_q2'
@@ -1689,7 +1705,7 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
             content: "I couldn't find any warehouse connections in your account. Since you're working with Snowflake, let me help you set that up — it should only take a minute.",
             interactiveChips: [
               { label: 'Yes, connect Snowflake', value: 'Yes, connect Snowflake' },
-              { label: 'Skip for now', value: 'Skip for now' },
+              { label: 'Try with demo data', value: 'Try with demo data' },
             ],
           }]);
           setDayZeroPhase('connection_prompt');
@@ -1905,23 +1921,37 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
         outcomeCard: {
           title: 'Connected to Snowflake',
           chips: ['View connection →'],
-          note: '3 schemas available · Latency ~120ms',
+          note: '3 schemas available',
         },
       }]);
       setTimeout(() => {
         setMessages(prev => [...prev, {
           id: `r-${Date.now()}`, type: 'response',
-          content: "Here are the schemas I found in your Snowflake account. Select the one that contains the data you want to work with:",
-          interactiveChips: [
-            { label: 'analytics', value: 'analytics' },
-            { label: 'marketing', value: 'marketing' },
-            { label: 'raw_data', value: 'raw_data' },
-          ],
+          content: "I found 6 schemas in your Snowflake account. How would you like to import them?",
+          schemaChoice: true,
         }]);
-        setDayZeroPhase('schema_select');
+        setDayZeroPhase('schema_choice');
         setProcessing(false);
       }, 400);
     }, buildAbortRef);
+  };
+
+  const handleSchemaImport = () => {
+    setProcessing(true);
+    setTimeout(() => {
+      setMessages(prev => [...prev, {
+        id: `r-${Date.now()}`, type: 'response',
+        content: "Got it. Importing your selected schemas — you'll be able to browse and use these tables in ThoughtSpot at any time.",
+      }]);
+      setTimeout(() => {
+        setMessages(prev => [...prev, {
+          id: `r-${Date.now()}`, type: 'response',
+          content: "Since we're connected to Snowflake, what would you like to build? What's the business question you're trying to answer?",
+        }]);
+        setDayZeroPhase('use_case_prompt');
+        setProcessing(false);
+      }, 500);
+    }, 300);
   };
 
   const handleDayZeroInput = (input: string) => {
@@ -1950,22 +1980,37 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
         break;
       }
 
-      case 'schema_select': {
-        const schema = input.toLowerCase().replace(/[^a-z0-9_]/g, '');
+      case 'schema_choice': {
         setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: input }]);
-        setTimeout(() => {
-          setMessages(prev => [...prev, {
-            id: `r-${Date.now()}`, type: 'response',
-            content: `Got it — importing the \`${schema}\` schema. You'll be able to browse all its tables and columns in the **Data Browser** at any time.`,
-          }]);
+        const wantsSelect = /select|choose|pick/i.test(input);
+        if (wantsSelect) {
           setTimeout(() => {
             setMessages(prev => [...prev, {
               id: `r-${Date.now()}`, type: 'response',
-              content: "Now, what would you like to build? What's the business question you're trying to answer?",
+              content: "Select the schemas you'd like to import:",
+              schemaChecklist: true,
             }]);
-            setDayZeroPhase('use_case_prompt');
-          }, 500);
-        }, 300);
+            setDayZeroPhase('schema_checklist');
+          }, 300);
+        } else {
+          setTimeout(() => {
+            setMessages(prev => [...prev, {
+              id: `r-${Date.now()}`, type: 'response',
+              content: "Got it. Importing all schemas — you'll be able to browse and use these tables in ThoughtSpot at any time.",
+            }]);
+            setTimeout(() => {
+              setMessages(prev => [...prev, {
+                id: `r-${Date.now()}`, type: 'response',
+                content: "Since we're connected to Snowflake, what would you like to build? What's the business question you're trying to answer?",
+              }]);
+              setDayZeroPhase('use_case_prompt');
+            }, 500);
+          }, 300);
+        }
+        break;
+      }
+
+      case 'schema_checklist': {
         break;
       }
 
@@ -1975,12 +2020,11 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
         runDayZeroSteps('day_zero_parse_use_case', input, setMessages, () => {
           setMessages(prev => [...prev, {
             id: `r-${Date.now()}`, type: 'response',
-            content: "A couple of quick questions before I start building:\n\n**Who is the primary audience for this model?**",
-            interactiveChips: [
-              { label: 'Marketing team', value: 'Marketing team' },
-              { label: 'Leadership / execs', value: 'Leadership / execs' },
-              { label: 'Whole org', value: 'Whole org' },
-            ],
+            content: "A couple of quick questions before I start:",
+            clarifyCard: {
+              question: "What are you trying to solve for?",
+              options: ['Campaign ROI', 'Ad spend tracking', 'Attribution analysis'],
+            },
           }]);
           setDayZeroPhase('clarify_q1');
           setProcessing(false);
@@ -1994,11 +2038,11 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
         setTimeout(() => {
           setMessages(prev => [...prev, {
             id: `r-${Date.now()}`, type: 'response',
-            content: "Should I include ad spend data alongside ROI, or just the ROI metrics?",
-            interactiveChips: [
-              { label: 'ROI + spend', value: 'ROI + spend' },
-              { label: 'ROI only', value: 'ROI only' },
-            ],
+            content: '',
+            clarifyCard: {
+              question: "What should I focus on?",
+              options: ['ROI metrics only', 'Ad spend + ROI', 'Full funnel analysis'],
+            },
           }]);
           setDayZeroPhase('clarify_q2');
         }, 300);
@@ -2006,20 +2050,21 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
       }
 
       case 'clarify_q2': {
-        const q1Answer = clarifyAnswers.q1 ?? 'the team';
-        const includeSpend = /spend/i.test(input);
+        const q1Answer = clarifyAnswers.q1 ?? 'campaign ROI';
         setClarifyAnswers(prev => ({ ...prev, q2: input }));
         setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: input }]);
-        setTimeout(() => {
+        setProcessing(true);
+        runDayZeroSteps('day_zero_understand_requirement', undefined, setMessages, () => {
           setMessages(prev => [...prev, {
             id: `r-${Date.now()}`, type: 'response',
-            content: `Got it. Here's what I'll build:\n\n**Campaign ROI Model** — from the \`marketing\` schema, tracking return on ad spend by channel and region${includeSpend ? ', including spend data alongside ROI metrics' : ''}. Built for ${q1Answer.toLowerCase()}. Will answer questions like: *"Which channels drove the highest ROI last quarter?"* and *"How does spend efficiency vary by region?"*`,
+            content: `Here's what I've captured:\n\nYou're looking for a model that can answer **${q1Answer.toLowerCase()}** questions — focused on **${input.toLowerCase()}**.\n\nShould I search your warehouse, find the right tables, and build a data model to answer these questions?`,
             interactiveChips: [
               { label: 'Yes, build it →', value: 'Yes, build it' },
             ],
           }]);
           setDayZeroPhase('confirm_build');
-        }, 300);
+          setProcessing(false);
+        }, buildAbortRef);
         break;
       }
 
@@ -2474,6 +2519,7 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
                 onOpenPlanModal={() => setPlanModalOpen(true)}
                 onChipClick={text => processText(text)}
                 onCredentialFormSubmit={handleDayZeroFormSubmit}
+                onSchemaImport={handleSchemaImport}
               />
             </div>
           );
@@ -2927,6 +2973,108 @@ const SuggestionChips: React.FC<{ suggestions: string[]; onSelect: (s: string) =
   </div>
 );
 
+const SCHEMA_NAMES = ['analytics', 'marketing', 'raw_data', 'operations', 'finance', 'product'];
+
+const SchemaChecklistCard: React.FC<{ onImport: () => void }> = ({ onImport }) => {
+  const [checked, setChecked] = React.useState<Record<string, boolean>>({});
+  const [imported, setImported] = React.useState(false);
+  const toggle = (name: string) => setChecked(prev => ({ ...prev, [name]: !prev[name] }));
+  const selectedCount = Object.values(checked).filter(Boolean).length;
+  const handleImport = () => { setImported(true); onImport(); };
+  return (
+    <div style={{ marginTop: sp.C, border: `1px solid ${c['border-default']}`, borderRadius: 10, overflow: 'hidden' }}>
+      <div style={{ display: 'flex', flexDirection: 'column' }}>
+        {SCHEMA_NAMES.map((name, i) => (
+          <label key={name} style={{
+            display: 'flex', alignItems: 'center', gap: sp.C, padding: `${sp.B + 2}px ${sp.D}px`,
+            borderBottom: i < SCHEMA_NAMES.length - 1 ? `1px solid ${c['border-divider']}` : 'none',
+            cursor: imported ? 'default' : 'pointer',
+            backgroundColor: checked[name] ? c['background-information'] : c['background-base'],
+            transition: 'background-color 0.1s',
+          }}>
+            <input type="checkbox" checked={!!checked[name]} onChange={() => !imported && toggle(name)}
+              disabled={imported}
+              style={{ accentColor: c['content-brand'], width: 14, height: 14, flexShrink: 0 }} />
+            <span style={{ fontSize: fs.sm, color: c['content-primary'], fontFamily: ff.primary }}>{name}</span>
+          </label>
+        ))}
+      </div>
+      <div style={{ padding: `${sp.C}px ${sp.D}px`, borderTop: `1px solid ${c['border-default']}`, backgroundColor: c['background-subtle'] }}>
+        <button
+          onClick={handleImport}
+          disabled={selectedCount === 0 || imported}
+          style={{
+            width: '100%', padding: `${sp.B + 2}px`, borderRadius: 8,
+            backgroundColor: selectedCount > 0 && !imported ? c['content-brand'] : c['background-subtle'],
+            color: selectedCount > 0 && !imported ? '#fff' : c['content-tertiary'],
+            border: 'none', fontSize: fs.sm, fontWeight: fw.semibold, fontFamily: ff.primary,
+            cursor: selectedCount > 0 && !imported ? 'pointer' : 'default', transition: 'all 0.15s',
+          }}
+        >
+          {imported ? 'Importing…' : selectedCount > 0 ? `Import ${selectedCount} schema${selectedCount > 1 ? 's' : ''}` : 'Import schemas'}
+        </button>
+      </div>
+    </div>
+  );
+};
+
+const ClarifyCard: React.FC<{ question: string; options: string[]; onSelect: (value: string) => void }> = ({ question, options, onSelect }) => {
+  const [selected, setSelected] = React.useState<string | null>(null);
+  const [customValue, setCustomValue] = React.useState('');
+  const handleSelect = (opt: string) => { if (selected) return; setSelected(opt); onSelect(opt); };
+  const handleCustomSubmit = () => {
+    const val = customValue.trim();
+    if (!val || selected) return;
+    setSelected(val);
+    onSelect(val);
+  };
+  return (
+    <div style={{ marginTop: sp.C, display: 'flex', flexDirection: 'column', gap: sp.B }}>
+      <p style={{ margin: 0, fontSize: fs.sm, fontWeight: fw.medium, color: c['content-primary'], lineHeight: '20px' }}>{question}</p>
+      {options.map(opt => {
+        const isSelected = selected === opt;
+        const isDimmed = !!selected && !isSelected;
+        return (
+          <button key={opt} onClick={() => handleSelect(opt)} disabled={!!selected}
+            style={{
+              textAlign: 'left', border: `1px solid ${isSelected ? c['content-brand'] : c['border-default']}`,
+              borderRadius: 8, padding: `${sp.B}px ${sp.C}px`, fontSize: fs.sm,
+              backgroundColor: isSelected ? c['background-information'] : c['background-base'],
+              color: isDimmed ? c['content-tertiary'] : isSelected ? c['content-brand'] : c['content-primary'],
+              cursor: selected ? 'default' : 'pointer', fontFamily: ff.primary,
+              fontWeight: isSelected ? fw.medium : fw.regular,
+              opacity: isDimmed ? 0.5 : 1, transition: 'all 0.15s',
+            }}
+          >{opt}</button>
+        );
+      })}
+      <div style={{ display: 'flex', gap: sp.B, opacity: selected ? 0.4 : 1, transition: 'opacity 0.15s' }}>
+        <input
+          value={customValue}
+          onChange={e => setCustomValue(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && handleCustomSubmit()}
+          disabled={!!selected}
+          placeholder="Enter your own…"
+          style={{
+            flex: 1, padding: `${sp.B}px ${sp.C}px`, borderRadius: 8,
+            border: `1px solid ${c['border-default']}`, fontSize: fs.sm,
+            fontFamily: ff.primary, color: c['content-primary'],
+            backgroundColor: c['background-base'], outline: 'none',
+          }}
+        />
+        <button onClick={handleCustomSubmit} disabled={!customValue.trim() || !!selected}
+          style={{
+            padding: `${sp.B}px ${sp.C}px`, borderRadius: 8, border: 'none',
+            backgroundColor: customValue.trim() && !selected ? c['content-brand'] : c['border-default'],
+            color: '#fff', fontSize: fs.xs, fontWeight: fw.semibold,
+            fontFamily: ff.primary, cursor: customValue.trim() && !selected ? 'pointer' : 'default',
+          }}
+        >↵</button>
+      </div>
+    </div>
+  );
+};
+
 const MessageBubble: React.FC<{
   msg: AgentMessage;
   showAvatar: boolean;
@@ -2937,7 +3085,8 @@ const MessageBubble: React.FC<{
   onOpenPlanModal?: () => void;
   onChipClick?: (value: string) => void;
   onCredentialFormSubmit?: () => void;
-}> = ({ msg, showAvatar, onToggleSteps, onToggleCollapsible, onSuggestion, onConfirm, onOpenPlanModal, onChipClick, onCredentialFormSubmit }) => {
+  onSchemaImport?: () => void;
+}> = ({ msg, showAvatar, onToggleSteps, onToggleCollapsible, onSuggestion, onConfirm, onOpenPlanModal, onChipClick, onCredentialFormSubmit, onSchemaImport }) => {
   const [chipUsed, setChipUsed] = React.useState(false);
 
   // ── User bubble ────────────────────────────────────────────────────────────
@@ -3110,6 +3259,40 @@ const MessageBubble: React.FC<{
           )}
           {msg.credentialForm && onCredentialFormSubmit && (
             <CredentialFormCard onSubmit={onCredentialFormSubmit} />
+          )}
+          {msg.schemaChoice && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: sp.B, marginTop: sp.C }}>
+              {[
+                { label: 'Bring all schemas', value: 'Bring all schemas', detail: 'Import everything — you can always hide tables later' },
+                { label: 'I want to select which schemas to bring', value: 'I want to select which schemas to bring', detail: 'Choose specific schemas to keep things focused' },
+              ].map(opt => (
+                <button key={opt.value} onClick={() => { if (!chipUsed) { setChipUsed(true); onChipClick?.(opt.value); } }}
+                  disabled={chipUsed}
+                  style={{
+                    textAlign: 'left', border: `1px solid ${c['border-default']}`,
+                    borderRadius: 10, padding: `${sp.C}px ${sp.D}px`,
+                    backgroundColor: chipUsed ? c['background-subtle'] : c['background-base'],
+                    cursor: chipUsed ? 'default' : 'pointer', fontFamily: ff.primary,
+                    transition: 'border-color 0.15s, background-color 0.15s',
+                  }}
+                  onMouseEnter={e => { if (!chipUsed) e.currentTarget.style.borderColor = c['content-brand']; }}
+                  onMouseLeave={e => { if (!chipUsed) e.currentTarget.style.borderColor = c['border-default']; }}
+                >
+                  <div style={{ fontSize: fs.sm, fontWeight: fw.medium, color: chipUsed ? c['content-tertiary'] : c['content-primary'], marginBottom: 2 }}>{opt.label}</div>
+                  <div style={{ fontSize: fs.xs, color: c['content-secondary'] }}>{opt.detail}</div>
+                </button>
+              ))}
+            </div>
+          )}
+          {msg.schemaChecklist && onSchemaImport && (
+            <SchemaChecklistCard onImport={onSchemaImport} />
+          )}
+          {msg.clarifyCard && (
+            <ClarifyCard
+              question={msg.clarifyCard.question}
+              options={msg.clarifyCard.options}
+              onSelect={val => onChipClick?.(val)}
+            />
           )}
           {msg.interactiveChips && msg.interactiveChips.length > 0 && (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: sp.B, marginTop: sp.C }}>

@@ -5,24 +5,9 @@ _Single source of truth for this prototype. Update at the end of every session._
 
 ## Next up
 
-**Review Day Zero journey end-to-end in the browser**
+**Journey 4 fix pass (next session)**
 
-Run the full sequence: Journey picker → Journey 1 → Snowflake card → submit → agent connection flow → schema chips → use case prompt → clarifying Q&A → model confirmation → build fires. Check:
-- Each agent phase transitions correctly
-- Credential form renders inline and the 2s mock submit advances to validation
-- Interactive chips disable after click
-- Clarifying questions show the right follow-ups
-- Build fires cleanly and the existing build flow takes over without interruption
-- Any visual polish needed (spacing, chip styling, form field sizing)
-
-When the user submits a prompt (with a warehouse pre-filled or typed), navigate to Workspace and auto-fire a new `day_zero_connect_warehouse` SCRIPT. The agent walks through:
-
-1. **Connection creation** — Agent confirms the warehouse ("Connecting to Snowflake…"), then renders an inline credential form inside the agent panel (Account ID, Username, Password, Warehouse name, Database — optional). "Connect" button submits.
-2. **Connection validation** — Working steps: Verifying credentials → Fetching schemas → Connection established. Outcome card with "View connection →" link.
-3. **Fetching tables / schema select** — Schema chips (`analytics` · `marketing` · `raw_data`). User selects one.
-4. **Clarifying questions** — Before build fires, agent asks 1–2 focused questions (audience, metrics scope). New `awaitingClarification` state in AgentPanel. After answers, `build_project` fires as normal.
-
-Full spec: `research/day-zero-journey.md`
+First build of Journey 4 (dbt plug-and-play) is done but has 8 issues found in review. All documented in `research/journey-4-dbt-spec.md` under "Session 56 — build review fixes". Fix those before demoing Journey 4. Key items: External Models empty state must live inside DataBrowserPage (not a separate screen), wizard must use design system WizardModal, canvas needs dbt welcome message + column warning indicators + working Publish modal.
 
 ---
 
@@ -88,6 +73,30 @@ Original 6-situation arc (still valid for demo scripting) → `SCRIPT.md`
 ## Session log
 
 _Last 3 sessions. Full history → [SESSION_LOG.md](./SESSION_LOG.md)_
+
+---
+
+### 2026-05-06 (session 56)
+
+**Journey 4 — dbt plug-and-play. First build pass + spec. 8 fixes identified.**
+
+- Toolbar polish: gear icon (inline SVG replacing broken CogIcon), Share button label added, Publish button always enabled.
+- Publish modal: AI context / data prep / caching rows updated to plain text (no chips).
+- `research/journey-4-dbt-spec.md` written. Full Journey 4 flow documented: 4-step wizard, 3 exit paths, External Models empty + filled states, dbt canvas, dbt PublishModal.
+- First build: `DbtImportWizard.tsx`, `DbtOverview.tsx`, `ExternalModelsPage.tsx` created. `DbtPublishModal` added to `Workspace.tsx`. Journey 4 routing wired in `index.tsx`.
+- Review found 8 issues — documented in spec. Key: External Models empty state should live inside `DataBrowserPage` tabs, not a separate screen. Wizard needs design system `WizardModal`. Canvas needs dbt welcome agent message + column warnings + working Publish.
+- Build: clean ✓
+
+---
+
+### 2026-05-06 (session 55)
+
+**Day Zero flow redesign — schema choice, clarify cards, requirement summary.**
+
+- `AgentPanel.tsx` — "Skip for now" renamed to "Try with demo data". Post-connection outcome card drops latency. Schema chips replaced with `schemaChoice` two-option card ("Bring all" / "I want to select"). New `SchemaChecklistCard` inline component: 6 schemas with checkboxes + "Import schemas" button. New `ClarifyCard` inline component: stacked option buttons + "Enter your own…" text input, one question at a time. Q1: "What are you trying to solve for?" [Campaign ROI, Ad spend tracking, Attribution analysis]. Q2: "What should I focus on?" [ROI metrics only, Ad spend + ROI, Full funnel analysis]. After Q2: `day_zero_understand_requirement` SCRIPT fires (Understanding → Identifying tables) → requirement summary card ("Here's what I've captured…") → "Yes, build it →" chip → existing `build_project`. New phases: `schema_choice`, `schema_checklist`. `handleSchemaImport` added.
+- `CredentialFormCard.tsx` — "Connect to Snowflake" button now `size="medium"` + `fullWidth`.
+- `CenterPanel.tsx` — "No columns selected" empty state replaced with neutral "No data yet" state.
+- Build: clean ✓
 
 ---
 

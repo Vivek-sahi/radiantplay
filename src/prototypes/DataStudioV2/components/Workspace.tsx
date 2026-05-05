@@ -227,10 +227,9 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, onBack, init
                 onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
                 onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
               >
-                <svg width="16" height="16" viewBox="0 0 18 18" fill="none">
-                  <circle cx="9" cy="9" r="1.5" fill={c['content-secondary']}/>
-                  <circle cx="3.75" cy="9" r="1.5" fill={c['content-secondary']}/>
-                  <circle cx="14.25" cy="9" r="1.5" fill={c['content-secondary']}/>
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke={c['content-secondary']} strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="7" cy="7" r="1.75"/>
+                  <path d="M7 1v1.5M7 11.5V13M13 7h-1.5M2.5 7H1M11.04 2.96l-1.06 1.06M4.02 9.98l-1.06 1.06M11.04 11.04l-1.06-1.06M4.02 4.02L2.96 2.96"/>
                 </svg>
               </button>
 
@@ -241,7 +240,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, onBack, init
               <button
                 title="Share"
                 onClick={() => setShareOpen(true)}
-                style={{ width: 26, height: 26, padding: 4, border: `1px solid ${c['border-default']}`, borderRadius: 6, backgroundColor: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box' }}
+                style={{ height: 26, padding: '0 10px', border: `1px solid ${c['border-default']}`, borderRadius: 6, backgroundColor: 'transparent', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: fw.medium, fontFamily: ff.primary, color: c['content-secondary'], boxSizing: 'border-box' }}
                 onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
                 onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
               >
@@ -249,27 +248,22 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, onBack, init
                   <circle cx="13.5" cy="3.75" r="2.25"/><circle cx="4.5" cy="9" r="2.25"/><circle cx="13.5" cy="14.25" r="2.25"/>
                   <line x1="6.44" y1="10.13" x2="11.56" y2="13.12"/><line x1="11.56" y1="4.88" x2="6.44" y2="7.87"/>
                 </svg>
+                Share
               </button>
 
               {/* Publish */}
-              {(() => {
-                const canPublish = project.publishedVersion === 0 || project.hasUnpublishedChanges;
-                return (
-                  <button
-                    onClick={canPublish ? () => setPublishOpen(true) : undefined}
-                    disabled={!canPublish}
-                    style={{ height: 26, padding: '0 14px', border: 'none', borderRadius: 6, backgroundColor: canPublish ? '#2563EB' : c['background-subtle'], cursor: canPublish ? 'pointer' : 'default', display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 12, fontWeight: 500, fontFamily: ff.primary, color: canPublish ? 'white' : c['content-secondary'], boxSizing: 'border-box', transition: 'background-color 0.15s' }}
-                    onMouseEnter={e => { if (canPublish) e.currentTarget.style.backgroundColor = '#1d4ed8'; }}
-                    onMouseLeave={e => { if (canPublish) e.currentTarget.style.backgroundColor = '#2563EB'; }}
-                  >
-                    <svg width="12" height="12" viewBox="0 0 18 18" fill="none" stroke={canPublish ? 'white' : c['content-secondary']} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M9 11.25V2.25M9 2.25L5.25 6M9 2.25L12.75 6"/>
-                      <line x1="3" y1="15.75" x2="15" y2="15.75"/>
-                    </svg>
-                    Publish
-                  </button>
-                );
-              })()}
+              <button
+                onClick={() => setPublishOpen(true)}
+                style={{ height: 26, padding: '0 14px', border: 'none', borderRadius: 6, backgroundColor: '#2563EB', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 12, fontWeight: 500, fontFamily: ff.primary, color: 'white', boxSizing: 'border-box', transition: 'background-color 0.15s' }}
+                onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#1d4ed8'; }}
+                onMouseLeave={e => { e.currentTarget.style.backgroundColor = '#2563EB'; }}
+              >
+                <svg width="12" height="12" viewBox="0 0 18 18" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 11.25V2.25M9 2.25L5.25 6M9 2.25L12.75 6"/>
+                  <line x1="3" y1="15.75" x2="15" y2="15.75"/>
+                </svg>
+                Publish
+              </button>
         </div>
       </div>
 
@@ -282,7 +276,18 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, onBack, init
           }}
         />
       )}
-      {publishOpen && project.publishedVersion > 0 ? (
+      {publishOpen && project.projectSource === 'dbt' ? (
+        <DbtPublishModal
+          project={project}
+          onClose={() => setPublishOpen(false)}
+          onPublish={() => {
+            const nextVersion = project.publishedVersion + 1;
+            setProject(p => ({ ...p, publishedVersion: nextVersion, hasUnpublishedChanges: false }));
+            showToast(`Published v${nextVersion}`, { label: 'Share →', onClick: () => setShareOpen(true) });
+            setPublishOpen(false);
+          }}
+        />
+      ) : publishOpen && project.publishedVersion > 0 ? (
         <RepublishWizard
           project={project}
           onClose={() => setPublishOpen(false)}
@@ -999,22 +1004,104 @@ const PublishModal: React.FC<{
           </div>
           <div style={rowStyle}>
             <span style={labelStyle}>AI context</span>
-            <span style={valueStyle}>
-              {describedCols < totalCols
-                ? <Badge variant="yellow">⚠ {describedCols} of {totalCols} columns described</Badge>
-                : <Badge variant="green">✓ All columns described</Badge>
-              }
-            </span>
+            <span style={valueStyle}>Available for entire model</span>
           </div>
           <div style={rowStyle}>
             <span style={labelStyle}>Data prep</span>
-            <span style={valueStyle}>
-              <Badge variant="gray">Not configured</Badge>
-            </span>
+            <span style={valueStyle}>9 jobs configured</span>
           </div>
           <div style={{ ...rowStyle, borderBottom: 'none' }}>
             <span style={labelStyle}>Caching</span>
-            <span style={valueStyle}><Badge variant="gray">Not configured</Badge></span>
+            <span style={valueStyle}>Cache configured for model</span>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div style={{ padding: `${sp.C}px ${sp.F}px`, borderTop: `1px solid ${c['border-divider']}`, display: 'flex', justifyContent: 'flex-end', gap: sp.B }}>
+          <Button variant="secondary" onClick={onClose}>Cancel</Button>
+          <Button variant="primary" onClick={handlePublish}>Publish Model</Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ── dbt Publish modal ──────────────────────────────────────────────────────────
+
+const DbtPublishModal: React.FC<{
+  project: ProjectState;
+  onClose: () => void;
+  onPublish: () => void;
+}> = ({ project, onClose, onPublish }) => {
+  const handlePublish = () => { onClose(); onPublish(); };
+
+  const rowStyle: React.CSSProperties = {
+    display: 'flex', alignItems: 'center',
+    padding: `${sp.B}px 0`,
+    borderBottom: `1px solid ${c['border-divider']}`,
+    gap: sp.C,
+  };
+  const labelStyle: React.CSSProperties = { fontSize: fs.sm, color: c['content-secondary'], width: 140, flexShrink: 0 };
+  const valueStyle: React.CSSProperties = { fontSize: fs.sm, color: c['content-primary'], fontWeight: fw.medium, flex: 1 };
+  const mutedStyle: React.CSSProperties = { fontSize: fs.sm, color: c['content-tertiary'], fontWeight: fw.regular, fontStyle: 'italic', flex: 1 };
+
+  return (
+    <div
+      style={{ position: 'fixed', inset: 0, backgroundColor: c['background-overlay'], zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+      onClick={onClose}
+    >
+      <div
+        style={{ backgroundColor: c['background-base'], borderRadius: 14, width: 480, display: 'flex', flexDirection: 'column', boxShadow: '0 8px 40px rgba(0,0,0,0.18)' }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div style={{ padding: `${sp.D}px ${sp.F}px`, borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: sp.D }}>
+          <div>
+            <h2 style={{ margin: 0, fontSize: fs.lg, fontWeight: fw.semibold, color: c['content-primary'], letterSpacing: -0.2 }}>
+              Publish {project.name}
+            </h2>
+            <p style={{ margin: `${sp.A}px 0 0`, fontSize: fs.sm, color: c['content-secondary'] }}>
+              Make this model available to Spotter and your team.
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            style={{ width: 28, height: 28, flexShrink: 0, borderRadius: 7, backgroundColor: c['background-subtle'], border: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: c['content-secondary'], marginTop: 2 }}
+          >
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M1.5 1.5l9 9M10.5 1.5l-9 9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
+          </button>
+        </div>
+
+        {/* Body */}
+        <div style={{ padding: `${sp.D}px ${sp.F}px` }}>
+          <div style={rowStyle}>
+            <span style={labelStyle}>Source</span>
+            <span style={valueStyle}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ fontSize: 11, fontWeight: fw.semibold, color: '#FF694A', backgroundColor: 'rgba(255,105,74,0.08)', border: '1px solid rgba(255,105,74,0.2)', borderRadius: 3, padding: '1px 6px' }}>◆ dbt</span>
+                <span style={{ color: c['content-secondary'], fontWeight: fw.regular }}>analytics · linked</span>
+              </span>
+            </span>
+          </div>
+          <div style={rowStyle}>
+            <span style={labelStyle}>Joins</span>
+            <span style={valueStyle}>2 relationships</span>
+          </div>
+          <div style={rowStyle}>
+            <span style={labelStyle}>Metrics</span>
+            <span style={valueStyle}>3 (ROAS, Conversion Rate, Days to Convert)</span>
+          </div>
+          <div style={rowStyle}>
+            <span style={labelStyle}>AI context</span>
+            <span style={mutedStyle}>Not reviewed</span>
+          </div>
+          <div style={rowStyle}>
+            <span style={labelStyle}>Data prep</span>
+            <span style={mutedStyle}>Not reviewed</span>
+          </div>
+          <div style={{ ...rowStyle, borderBottom: 'none' }}>
+            <span style={labelStyle}>Caching</span>
+            <span style={mutedStyle}>Not available for linked dbt models</span>
           </div>
         </div>
 

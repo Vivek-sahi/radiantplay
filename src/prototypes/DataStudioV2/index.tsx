@@ -8,6 +8,8 @@ import DataBrowserPage from './components/DataBrowserPage';
 import ConnectionsPage from './components/ConnectionsPage';
 import JourneyPicker from './components/JourneyPicker';
 import DayZeroOverview from './components/DayZeroOverview';
+import DbtOverview from './components/DbtOverview';
+import ExternalModelsPage from './components/ExternalModelsPage';
 import { OverviewProject, OverviewAlert } from './data/mockData';
 import { c, sp, ff, fs, fw } from './styles';
 
@@ -53,7 +55,7 @@ export interface ProjectState {
   prepTransforms?: PrepTransform[];
 }
 
-type AppView = 'journey-picker' | 'overview' | 'day-zero' | 'new-project' | 'model-view' | 'workspace' | 'data-browser' | 'connections' | 'placeholder';
+type AppView = 'journey-picker' | 'overview' | 'day-zero' | 'dbt-overview' | 'dbt-external-models' | 'new-project' | 'model-view' | 'workspace' | 'data-browser' | 'connections' | 'placeholder';
 
 // User-facing labels for the unwired nav sections so the placeholder reads cleanly.
 const PLACEHOLDER_LABEL: Record<NavSection, string> = {
@@ -105,8 +107,11 @@ const DataStudio: React.FC = () => {
   const handleJourneySelect = (journeyId: string) => {
     if (journeyId === 'day-zero') {
       navigateTo('day-zero');
+    } else if (journeyId === 'dbt') {
+      setActiveNav('data');
+      navigateTo('dbt-overview');
     } else {
-      // Journeys 2–4 land on the existing overview (Day N state)
+      // Journeys 2–3 land on the existing overview (Day N state)
       setActiveNav('overview');
       navigateTo('overview');
     }
@@ -154,6 +159,32 @@ const DataStudio: React.FC = () => {
   // Does NOT navigate or auto-fire the agent; user still needs to submit the prompt.
   const startDbtProject = () => {
     setProject(p => ({ ...p, projectSource: 'dbt' }));
+  };
+
+  // Open canvas with a dbt model pre-loaded (from wizard "Review issues")
+  const openDbtCanvas = (modelName: string) => {
+    setInitialPrompt('');
+    setIsDayZero(false);
+    setProject({
+      id: `dbt-${Date.now()}`,
+      name: modelName,
+      buildStep: 'healthy',
+      activeTab: 'columns',
+      testMode: false,
+      publishedVersion: 0,
+      hasUnpublishedChanges: true,
+      projectSource: 'dbt',
+      context: emptyContext,
+      addedTables: ['orders', 'campaigns', 'users'],
+      columnsSelected: true,
+      includedColumns: {
+        orders:    ['order_date', 'amount', 'region'],
+        campaigns: ['campaign_id', 'campaign_name', 'channel', 'spend', 'budget', 'impressions'],
+        users:     ['user_id', 'segment', 'lifetime_value'],
+      },
+      columnOverrides: {},
+    });
+    navigateTo('workspace');
   };
 
   // New project → goes to prompt screen first
@@ -264,6 +295,17 @@ const DataStudio: React.FC = () => {
         )}
         {view === 'data-browser' && <DataBrowserPage />}
         {view === 'connections'  && <ConnectionsPage />}
+        {view === 'dbt-overview' && (
+          <DbtOverview
+            onImportComplete={() => navigateTo('dbt-external-models')}
+            onReviewIssues={openDbtCanvas}
+          />
+        )}
+        {view === 'dbt-external-models' && (
+          <ExternalModelsPage
+            onReviewIssues={openDbtCanvas}
+          />
+        )}
         {view === 'placeholder' && (
           <div style={{
             flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
