@@ -5,19 +5,14 @@ _Single source of truth for this prototype. Update at the end of every session._
 
 ## Next up
 
-**Connection flow — new agent work** (Day Zero journey, step 2)
+**Day Zero — agent connection flow** (start of next session)
 
-Journey infrastructure is now live. Next: wire the connection flow when a warehouse card is clicked.
+When the user submits a prompt (with a warehouse pre-filled or typed), navigate to Workspace and auto-fire a new `day_zero_connect_warehouse` SCRIPT. The agent walks through:
 
-1. `day_zero_connect_warehouse` SCRIPT: 4 conversations in AgentPanel
-   - Conv 1: "Connecting to Snowflake. I'll need your credentials." → auto-advance
-   - Conv 2: Inline credential form (Account, Username, Password, Warehouse, Database) with "Connect" button
-   - Conv 3: Working steps — Verifying → Fetching schemas → Connected outcome card
-   - Conv 4: Schema chips (`analytics` · `marketing` · `raw_data`) → use case prompt → clarifying questions → `build_project` fires
-
-2. Clarifying questions pattern: `awaitingClarification` state in AgentPanel before `build_project` fires
-
-3. Wire warehouse card click in `DayZeroOverview` to navigate to workspace with `journeyContext: 'day_zero'` + auto-fire the SCRIPT (currently the card just pre-fills the prompt bar)
+1. **Connection creation** — Agent confirms the warehouse ("Connecting to Snowflake…"), then renders an inline credential form inside the agent panel (Account ID, Username, Password, Warehouse name, Database — optional). "Connect" button submits.
+2. **Connection validation** — Working steps: Verifying credentials → Fetching schemas → Connection established. Outcome card with "View connection →" link.
+3. **Fetching tables / schema select** — Schema chips (`analytics` · `marketing` · `raw_data`). User selects one.
+4. **Clarifying questions** — Before build fires, agent asks 1–2 focused questions (audience, metrics scope). New `awaitingClarification` state in AgentPanel. After answers, `build_project` fires as normal.
 
 Full spec: `research/day-zero-journey.md`
 
@@ -89,13 +84,15 @@ _Last 3 sessions. Full history → [SESSION_LOG.md](./SESSION_LOG.md)_
 
 ### 2026-05-06 (session 53)
 
-**Journey infrastructure promoted to live prototype.**
+**Journey infrastructure promoted to live + workflow cleanup.**
 
-- `JourneyPicker.tsx` — extracted from playground exploration. All 4 journeys now active and clickable. Journey 1 → `DayZeroOverview`, journeys 2–4 → existing `Overview`. App now opens on journey picker (initial view changed from `'overview'` to `'journey-picker'`).
-- `DayZeroOverview.tsx` — extracted from `j-day0` exploration. Shell wrapper removed (provided by `index.tsx`). Warehouse cards pre-fill prompt bar; PromptBar submit → `handleOverviewPromptSubmit`. Existing model cards → `newProject`.
-- `Shell.tsx` — added `onJourneyPickerOpen` prop + `JourneyPin` compass button rendered via new `bottomSlot` in AppSidebar. Clicking it from anywhere returns to journey picker.
-- `AppSidebar` — added `bottomSlot?: React.ReactNode` prop + `.bottomSlot` CSS (border-top divider, bottom padding). Purely additive, no existing behavior changed.
-- `index.tsx` — added `'journey-picker'` and `'day-zero'` to AppView type, `handleJourneySelect` router, both views wired.
+- `JourneyPicker.tsx` — extracted from playground. All 4 journeys active and clickable. Journey 1 → `DayZeroOverview`, journeys 2–4 → existing `Overview`. App opens on journey picker.
+- `DayZeroOverview.tsx` — extracted from `j-day0` exploration. Warehouse cards pre-fill prompt bar; PromptBar submit → `handleOverviewPromptSubmit`. Existing model cards → `newProject`.
+- `Shell.tsx` — added `onJourneyPickerOpen` prop + `JourneyPin` compass button via new `bottomSlot` in AppSidebar.
+- `AppSidebar` — additive `bottomSlot` prop + CSS. No existing behavior changed.
+- `index.tsx` — `'journey-picker'` and `'day-zero'` views wired.
+- **Cleanup:** deleted promoted exploration files (DataBrowser, Connections, JourneyExplorations), `radiantplay-optimizations.md`, `knowledge/phase-2.md`. Playground.tsx updated.
+- **Git workflow fixed:** working branch is now `main` of `origin` (vivek-sahi). Documented in CLAUDE.md.
 - Build: clean ✓
 
 ---
