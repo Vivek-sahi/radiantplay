@@ -20,6 +20,20 @@ _Single source of truth for this prototype. Update as decisions are made._
 
 **Branch merged:** `dsv/vivek-data-browser-fixes` → `prototype/data-studio` (2026-05-06). Data Browser + Connections now live in the prototype.
 
+---
+
+**Next: Day Zero Journey** — full spec at `research/day-zero-journey.md`
+
+Build order:
+1. `journeyContext` flag + Journeys section on Overview + "Start journey" CTA
+2. Journey picker screen (Playground exploration first — full-page vs. modal)
+3. `day_zero_greeting` SCRIPT + empty canvas agent greeting (warehouse path)
+4. `day_zero_connect_warehouse` SCRIPT + inline credential form in agent panel
+5. Post-build quality follow-up message (auto-fires in journey context)
+6. Post-test caching nudge message
+7. Journey complete state (Playground exploration first)
+8. Sample data path (lighter variant)
+
 Deferred build tasks (from session 47 audit, still valid):
 
 - **Source column name** — add as a separate column in ColumnsView (currently merged with "Column name"). Needed for rename support.
