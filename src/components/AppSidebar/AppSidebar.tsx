@@ -144,6 +144,7 @@ export interface AppSidebarProps {
   scopeToggle?: ScopeToggle;
   highlightedItem?: string | null;
   headerSlot?: React.ReactNode;
+  bottomSlot?: React.ReactNode;
   isOverlay?: boolean;
   onClose?: () => void;
   width?: number;
@@ -163,6 +164,7 @@ export const AppSidebar = forwardRef<HTMLElement, AppSidebarProps>(
       scopeToggle,
       highlightedItem = null,
       headerSlot,
+      bottomSlot,
       isOverlay = false,
       onClose,
       width = 261,
@@ -305,6 +307,7 @@ export const AppSidebar = forwardRef<HTMLElement, AppSidebarProps>(
               </section>
             ))}
           </nav>
+          {bottomSlot && <div className={styles.bottomSlot}>{bottomSlot}</div>}
         </div>
       </aside>
     );

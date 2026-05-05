@@ -37,12 +37,40 @@ const SIDEBAR_CATEGORIES: Record<string, SidebarCategory[]> = {
 interface ShellProps {
   activeNav: NavSection;
   onNavChange: (nav: NavSection) => void;
+  onJourneyPickerOpen?: () => void;
   hideSidebar?: boolean;
   hideHeader?: boolean;
   children: React.ReactNode;
 }
 
-const Shell: React.FC<ShellProps> = ({ activeNav, onNavChange, hideSidebar = false, hideHeader = false, children }) => {
+const JourneyPin: React.FC<{ onClick: () => void }> = ({ onClick }) => (
+  <button
+    onClick={onClick}
+    title="Switch journey"
+    style={{
+      display: 'flex', alignItems: 'center', gap: 10,
+      width: '100%', padding: '8px 24px',
+      background: 'transparent', border: 0, cursor: 'pointer',
+      color: 'rgba(219,223,231,0.6)',
+      fontFamily: 'inherit', fontSize: 14, fontWeight: 375,
+      transition: 'color 120ms ease',
+    }}
+    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = '#DBDFE7'; }}
+    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = 'rgba(219,223,231,0.6)'; }}
+  >
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeWidth="1.25"/>
+      <path d="M8 4.5L9.5 7H6.5L8 4.5Z" fill="currentColor" opacity="0.9"/>
+      <path d="M8 11.5L6.5 9H9.5L8 11.5Z" fill="currentColor" opacity="0.9"/>
+      <path d="M4.5 8L7 6.5V9.5L4.5 8Z" fill="currentColor" opacity="0.5"/>
+      <path d="M11.5 8L9 9.5V6.5L11.5 8Z" fill="currentColor" opacity="0.5"/>
+      <circle cx="8" cy="8" r="1.25" fill="currentColor"/>
+    </svg>
+    Journeys
+  </button>
+);
+
+const Shell: React.FC<ShellProps> = ({ activeNav, onNavChange, onJourneyPickerOpen, hideSidebar = false, hideHeader = false, children }) => {
   const headerProps: GlobalHeaderProps = {
     searchPlaceholder: 'Search in ThoughtSpot',
     searchMode: 'trigger',
@@ -58,6 +86,7 @@ const Shell: React.FC<ShellProps> = ({ activeNav, onNavChange, hideSidebar = fal
     categories: SIDEBAR_CATEGORIES,
     selectedNav: activeNav,
     onNavSelect: (id) => onNavChange(id as NavSection),
+    bottomSlot: onJourneyPickerOpen ? <JourneyPin onClick={onJourneyPickerOpen} /> : undefined,
   };
 
   return (

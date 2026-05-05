@@ -5,20 +5,19 @@ _Single source of truth for this prototype. Update at the end of every session._
 
 ## Next up
 
-**Promote journey infrastructure to live prototype** (start of next session)
+**Connection flow — new agent work** (Day Zero journey, step 2)
 
-Playground explorations are approved and ready:
-- `j-picker` — dark journey picker, 4 cards, Data Studio vision tagline
-- `j-day0` — Day Zero empty state, 7 warehouse cards with real logos, dbt + semantic views
+Journey infrastructure is now live. Next: wire the connection flow when a warehouse card is clicked.
 
-**Promotion steps:**
-1. Add journey switcher pin to `Shell.tsx` (bottom of left sidebar — additive only, no other changes)
-2. Wire `JourneyPicker` into `index.tsx` as an app-level screen; journeys 2–4 route to existing `Overview.tsx`
-3. Create `DayZeroOverview.tsx` from `j-day0` exploration; journey 1 routes here
+1. `day_zero_connect_warehouse` SCRIPT: 4 conversations in AgentPanel
+   - Conv 1: "Connecting to Snowflake. I'll need your credentials." → auto-advance
+   - Conv 2: Inline credential form (Account, Username, Password, Warehouse, Database) with "Connect" button
+   - Conv 3: Working steps — Verifying → Fetching schemas → Connected outcome card
+   - Conv 4: Schema chips (`analytics` · `marketing` · `raw_data`) → use case prompt → clarifying questions → `build_project` fires
 
-**Then — connection flow (new agent work):**
-4. `day_zero_connect_warehouse` SCRIPT: 4 conversations (warehouse confirm → inline credential form → working steps → schema select)
-5. Clarifying questions pattern: `awaitingClarification` state in AgentPanel before `build_project` fires
+2. Clarifying questions pattern: `awaitingClarification` state in AgentPanel before `build_project` fires
+
+3. Wire warehouse card click in `DayZeroOverview` to navigate to workspace with `journeyContext: 'day_zero'` + auto-fire the SCRIPT (currently the card just pre-fills the prompt bar)
 
 Full spec: `research/day-zero-journey.md`
 
@@ -85,6 +84,19 @@ Original 6-situation arc (still valid for demo scripting) → `SCRIPT.md`
 ## Session log
 
 _Last 3 sessions. Full history → [SESSION_LOG.md](./SESSION_LOG.md)_
+
+---
+
+### 2026-05-06 (session 53)
+
+**Journey infrastructure promoted to live prototype.**
+
+- `JourneyPicker.tsx` — extracted from playground exploration. All 4 journeys now active and clickable. Journey 1 → `DayZeroOverview`, journeys 2–4 → existing `Overview`. App now opens on journey picker (initial view changed from `'overview'` to `'journey-picker'`).
+- `DayZeroOverview.tsx` — extracted from `j-day0` exploration. Shell wrapper removed (provided by `index.tsx`). Warehouse cards pre-fill prompt bar; PromptBar submit → `handleOverviewPromptSubmit`. Existing model cards → `newProject`.
+- `Shell.tsx` — added `onJourneyPickerOpen` prop + `JourneyPin` compass button rendered via new `bottomSlot` in AppSidebar. Clicking it from anywhere returns to journey picker.
+- `AppSidebar` — added `bottomSlot?: React.ReactNode` prop + `.bottomSlot` CSS (border-top divider, bottom padding). Purely additive, no existing behavior changed.
+- `index.tsx` — added `'journey-picker'` and `'day-zero'` to AppView type, `handleJourneySelect` router, both views wired.
+- Build: clean ✓
 
 ---
 

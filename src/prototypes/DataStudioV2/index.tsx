@@ -6,6 +6,8 @@ import Workspace from './components/Workspace';
 import NewProjectPrompt from './components/NewProjectPrompt';
 import DataBrowserPage from './components/DataBrowserPage';
 import ConnectionsPage from './components/ConnectionsPage';
+import JourneyPicker from './components/JourneyPicker';
+import DayZeroOverview from './components/DayZeroOverview';
 import { OverviewProject, OverviewAlert } from './data/mockData';
 import { c, sp, ff, fs, fw } from './styles';
 
@@ -51,7 +53,7 @@ export interface ProjectState {
   prepTransforms?: PrepTransform[];
 }
 
-type AppView = 'overview' | 'new-project' | 'model-view' | 'workspace' | 'data-browser' | 'connections' | 'placeholder';
+type AppView = 'journey-picker' | 'overview' | 'day-zero' | 'new-project' | 'model-view' | 'workspace' | 'data-browser' | 'connections' | 'placeholder';
 
 // User-facing labels for the unwired nav sections so the placeholder reads cleanly.
 const PLACEHOLDER_LABEL: Record<NavSection, string> = {
@@ -70,7 +72,7 @@ const DataStudio: React.FC = () => {
     return () => { document.title = prev; };
   }, []);
 
-  const [view, setView]           = useState<AppView>('overview');
+  const [view, setView]           = useState<AppView>('journey-picker');
   const [prevView, setPrevView]   = useState<AppView>('overview');
   const [activeNav, setActiveNav] = useState<NavSection>('overview');
   const [initialPrompt, setInitialPrompt] = useState<string>('');
@@ -96,6 +98,17 @@ const DataStudio: React.FC = () => {
   const navigateTo = (next: AppView) => {
     setPrevView(view);
     setView(next);
+  };
+
+  // Journey picker selection
+  const handleJourneySelect = (journeyId: string) => {
+    if (journeyId === 'day-zero') {
+      navigateTo('day-zero');
+    } else {
+      // Journeys 2–4 land on the existing overview (Day N state)
+      setActiveNav('overview');
+      navigateTo('overview');
+    }
   };
 
   // Open model view — landing screen before workspace
@@ -219,7 +232,13 @@ const DataStudio: React.FC = () => {
 
   return (
     <>
-      <Shell activeNav={activeNav} onNavChange={handleNavChange}>
+      <Shell activeNav={activeNav} onNavChange={handleNavChange} onJourneyPickerOpen={() => setView('journey-picker')}>
+        {view === 'day-zero' && (
+          <DayZeroOverview
+            onPromptSubmit={handleOverviewPromptSubmit}
+            onNewProject={newProject}
+          />
+        )}
         {view === 'overview' && (
           <Overview
             onNewProject={newProject}
@@ -254,6 +273,9 @@ const DataStudio: React.FC = () => {
           </div>
         )}
       </Shell>
+      {view === 'journey-picker' && (
+        <JourneyPicker onSelectJourney={handleJourneySelect} />
+      )}
       {view === 'new-project' && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 50 }}>
           <NewProjectPrompt onSubmit={handlePromptSubmit} onStartManually={handleStartManually} onStartDbt={startDbtProject} onBack={goBack} />

@@ -254,6 +254,12 @@
   flex: 0 0 auto;
 }
 
+.bottomSlot {
+  border-top: 1px solid var(--as-border);
+  flex: 0 0 auto;
+  padding: 12px 0 16px;
+}
+
 @keyframes highlighted {
   0% {
     background: var(--as-highlight-bg);
