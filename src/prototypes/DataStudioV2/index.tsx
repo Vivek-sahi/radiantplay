@@ -5,7 +5,9 @@ import ModelView from './components/ModelView';
 import Workspace from './components/Workspace';
 import NewProjectPrompt from './components/NewProjectPrompt';
 import DataBrowserPage from './components/DataBrowserPage';
+import ConnectionsPage from './components/ConnectionsPage';
 import { OverviewProject, OverviewAlert } from './data/mockData';
+import { c, sp, ff, fs, fw } from './styles';
 
 export interface ProjectContext {
   purpose: string;
@@ -49,7 +51,17 @@ export interface ProjectState {
   prepTransforms?: PrepTransform[];
 }
 
-type AppView = 'overview' | 'new-project' | 'model-view' | 'workspace' | 'data-browser';
+type AppView = 'overview' | 'new-project' | 'model-view' | 'workspace' | 'data-browser' | 'connections' | 'placeholder';
+
+// User-facing labels for the unwired nav sections so the placeholder reads cleanly.
+const PLACEHOLDER_LABEL: Record<NavSection, string> = {
+  overview:    'Overview',
+  projects:    'Projects',
+  data:        'Data',
+  connections: 'Connections',
+  monitoring:  'Monitoring',
+  governance:  'Governance',
+};
 
 const DataStudio: React.FC = () => {
   React.useEffect(() => {
@@ -199,8 +211,10 @@ const DataStudio: React.FC = () => {
 
   const handleNavChange = (nav: NavSection) => {
     setActiveNav(nav);
-    if (nav === 'overview') setView('overview');
-    if (nav === 'data')     setView('data-browser');
+    if (nav === 'overview')        setView('overview');
+    else if (nav === 'data')       setView('data-browser');
+    else if (nav === 'connections') setView('connections');
+    else                            setView('placeholder');
   };
 
   return (
@@ -223,6 +237,22 @@ const DataStudio: React.FC = () => {
           />
         )}
         {view === 'data-browser' && <DataBrowserPage />}
+        {view === 'connections'  && <ConnectionsPage />}
+        {view === 'placeholder' && (
+          <div style={{
+            flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            backgroundColor: c['background-sunken'], color: c['content-secondary'],
+            fontFamily: ff.primary, fontSize: fs.md, lineHeight: 1.5,
+            textAlign: 'center', padding: sp.I,
+          }}>
+            <div>
+              <div style={{ fontSize: fs.lg, fontWeight: fw.medium, color: c['content-primary'], marginBottom: sp.A + 2 }}>
+                {PLACEHOLDER_LABEL[activeNav]}
+              </div>
+              <div>Coming in a later step. This nav target isn&rsquo;t wired yet.</div>
+            </div>
+          </div>
+        )}
       </Shell>
       {view === 'new-project' && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 50 }}>

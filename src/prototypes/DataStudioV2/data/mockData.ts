@@ -1768,6 +1768,12 @@ export interface WarehouseTable {
   sync?: string;
   tests?: string;
   description?: string;
+  // dbt-only fields — populated for dbt models so the Data Browser detail page
+  // can show what the model is built from and how it materializes.
+  sources?:        string[];          // upstream tables / models the dbt SQL reads from
+  materialization?: 'table' | 'view' | 'incremental' | 'ephemeral';
+  dbtProject?:     string;            // dbt project name
+  dbtSchedule?:    string;            // human-readable schedule, e.g. "Daily · 02:00 UTC"
 }
 
 export interface WarehouseSchema {
@@ -1791,7 +1797,7 @@ export interface WarehouseConnection {
 
 export const WAREHOUSE_TREE: WarehouseConnection[] = [
   {
-    id: 'snowflake-1', name: 'Sarah-Snowflake', type: 'snowflake',
+    id: 'snowflake-1', name: 'Snowflake — production', type: 'snowflake',
     databases: [
       {
         id: 'marketing_db', name: 'marketing_db',
@@ -1827,8 +1833,29 @@ export const WAREHOUSE_TREE: WarehouseConnection[] = [
     databases: [{
       id: 'analytics', name: 'analytics',
       schemas: [{ id: 'dbt_models', name: 'models', tables: [
-        { id: 'fct_pnl', name: 'fct_pnl', type: 'dbt_model', rows: '50', cols: 11, sync: '2h ago', tests: '12 / 12 passing', description: 'dbt model — P&L aggregated by department × month.' },
+        { id: 'fct_pnl', name: 'fct_pnl', type: 'dbt_model', rows: '50', cols: 11, sync: '2h ago', tests: '12 / 12 passing', description: 'dbt model — P&L aggregated by department × month.', sources: ['transactions', 'expenses', 'budget_targets'], materialization: 'table', dbtProject: 'analytics', dbtSchedule: 'Daily · 02:00 UTC' },
       ]}],
     }],
   },
+];
+
+// ─── Connections ─────────────────────────────────────────────────────────────
+
+export type ConnectionType   = 'snowflake' | 'bigquery' | 'databricks' | 'redshift' | 'postgres' | 'dbt';
+export type ConnectionStatus = 'connected' | 'auth-needed' | 'error';
+
+export interface Connection {
+  id:          string;
+  name:        string;
+  type:        ConnectionType;
+  status:      ConnectionStatus;
+  lastSync:    string;
+  ownerEmail?: string;
+  tables:      number;
+}
+
+export const CONNECTIONS: Connection[] = [
+  { id: 'snow-prod', name: 'snowflake-prod',    type: 'snowflake', status: 'connected',   lastSync: '3h ago', ownerEmail: 'vivek@example.com', tables: 184 },
+  { id: 'bq-mkt',   name: 'bigquery-marketing', type: 'bigquery',  status: 'connected',   lastSync: '1d ago', ownerEmail: 'vivek@example.com', tables: 42  },
+  { id: 'snow-fin', name: 'snowflake-finance',   type: 'snowflake', status: 'auth-needed', lastSync: 'Never',  tables: 0   },
 ];
