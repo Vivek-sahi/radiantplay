@@ -5,7 +5,7 @@ _Single source of truth for this prototype. Update as decisions are made._
 
 ## Next up
 
-**Data + Connections promotion — Done.** Both steps shipped on `dsv/vivek-data-browser-fixes`. Step 1 (Data Browser) in commit `b239100`; Step 2 (Connections) in commit `6412fdb`. Push to `origin` complete. Ready to merge into `dsv/vivek-phase-2-explorations` and review before deploying.
+**Review connections migration to main prototype** — branch `dsv/vivek-data-browser-fixes`. Both steps shipped (Data Browser `b239100`, Connections `c9c32e8`). Review the connections list, wizard flow, detail view, and dbt setup before merging into `dsv/vivek-phase-2-explorations` and deploying.
 
 **Phase 2** → `knowledge/phase-2.md` — eight concrete tasks. Strategy memo at `research/phase-2-manage-iterate.md` is reference background, not the build plan.
 
@@ -209,20 +209,21 @@ _Last 3 sessions. Full history → [SESSION_LOG.md](./SESSION_LOG.md)_
 
 ---
 
-### 2026-05-05 (session 50)
+### 2026-05-06 (session 50)
 
-**Connections promotion (Step 2) — complete.**
+**Connections promotion (Step 2) + design system overhaul.**
 
-- **`ConnectionsPage.tsx` created** in `components/`. Strips `Shell` + `SubStateBar` from the playground exploration. Four sub-views: List → New wizard → Detail → dbt setup.
-- **New wizard fully wired:** completing the 4-step flow (pick → form → test → done) adds the new connection to the list state with a `Connection` object.
-- **Design system compliance:** replaced `Logo` (letter in colored square) with `Icon name="database"` + brand accent color; replaced raw `<button>` tabs in Detail with `Tabs` component; replaced raw modal div (schema filter) with `Modal`; replaced `<input type="checkbox">` with `Checkbox`. All spacing/color/typography via tokens.
-- **Action stubs** (Re-authenticate / Test / Edit / Disconnect) render but do nothing — per plan.
-- **`Connection` interface + `CONNECTIONS` array** added to `mockData.ts` as the canonical source.
-- **`connections` nav wired in `index.tsx`** alongside `overview` and `data-browser`.
-- **DataBrowserPage.tsx** pre-existing cleanup from Step 1 also committed (`WarehouseTableType` import removal, import reorder).
-- Build passes. Committed `6412fdb` + pushed to `origin dsv/vivek-data-browser-fixes`.
+- **`ConnectionsPage.tsx` created** (`6412fdb`): list → wizard → detail → dbt-setup state machine. `Connection` type + `CONNECTIONS` added to `mockData.ts`. `connections` nav wired in `index.tsx`.
+- **Design system pass** (`c9c32e8`): rewrote the entire component after review feedback.
+  - **List**: full-width table (removed `maxWidth` cap), icon inline with name, "Type" renamed to "Source".
+  - **Wizard**: replaced custom inline wizard with `WizardModal` component (progress bar, Back/Next, keyboard ESC all built-in). 4 steps: Choose source → Configure → Test connection → Import data.
+  - **Test step**: checks animate in one-by-one at 700ms; Continue hidden until all 4 pass.
+  - **Import data step**: all schemas checked by default; user unchecks to exclude; running count shown.
+  - **After wizard completes**: new connection appended to list + detail view opens directly.
+  - `DetailView` now receives the `conn` prop so title/subtitle reflect the actual connection.
+- Build passes. Both commits pushed to `origin dsv/vivek-data-browser-fixes`.
 - **Not merged** into `dsv/vivek-phase-2-explorations` or `main` — pending review.
-- **Next:** review both promotion steps together, then merge + deploy; or continue with Phase 2 tasks.
+- **Next:** review connections migration to main prototype (see "Next up" above).
 
 ---
 
