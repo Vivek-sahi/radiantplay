@@ -22,12 +22,23 @@ _Single source of truth for this prototype. Update as decisions are made._
 
 ---
 
-**Next: Day Zero Journey** — full spec at `research/day-zero-journey.md`
+**Next: review Playground explorations, then promote to live prototype**
 
-Build order:
-1. `journeyContext` flag + Journeys section on Overview + "Start journey" CTA
-2. Journey picker screen (Playground exploration first — full-page vs. modal)
-3. `day_zero_greeting` SCRIPT + empty canvas agent greeting (warehouse path)
+Playground explorations built (session 52, 2026-05-06):
+- `j-picker` — dark journey picker, 4 cards, Day Zero active, Data Studio vision tagline
+- `j-day0` — Day Zero empty state, 7 warehouse options with real logos, dbt + semantic views in section 2
+
+**Review items before promoting:**
+- Visual review of journey picker (dark theme) and Day Zero empty state
+- Confirm warehouse logos render correctly
+
+**Journeys 2–4** → land on the existing `Overview.tsx` (with 10–20 models + alerts). That screen is untouched and intact. When promoting, `index.tsx` routes journey 2–4 clicks to `Overview` and journey 1 to `DayZeroOverview`.
+
+**After review — promote to live:**
+1. Add `journeyContext` state + journey switcher pin to `Shell.tsx` (bottom of left nav)
+2. Wire `JourneyPicker` into `index.tsx` as an app-level screen before `Overview`
+3. Create `DayZeroOverview.tsx` from the `j-day0` exploration (promote from Playground)
+4. Connection flow scripts (`day_zero_connect_warehouse`, clarifying questions) — next session
 4. `day_zero_connect_warehouse` SCRIPT + inline credential form in agent panel
 5. Post-build quality follow-up message (auto-fires in journey context)
 6. Post-test caching nudge message
