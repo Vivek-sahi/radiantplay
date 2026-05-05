@@ -17,7 +17,7 @@ const SUBTABS = [
 ];
 
 const DbtLogo: React.FC<{ size?: number }> = ({ size = 32 }) => (
-  <div style={{ width: size, height: size, borderRadius: 6, backgroundColor: '#FF694A', color: 'white', fontSize: size * 0.4, fontWeight: fw.bold, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>d</div>
+  <div style={{ width: size, height: size, borderRadius: 6, backgroundColor: '#FF694A', color: 'white', fontSize: size * 0.4, fontWeight: fw.medium, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>d</div>
 );
 
 const PageHeader: React.FC<{ title: string; subtitle?: string; actions?: React.ReactNode; back?: () => void }> = ({ title, subtitle, actions, back }) => (
@@ -25,7 +25,7 @@ const PageHeader: React.FC<{ title: string; subtitle?: string; actions?: React.R
     <div style={{ display: 'flex', alignItems: 'center', gap: sp.C }}>
       {back && <button onClick={back} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: c['content-secondary'], fontSize: 14 }}>←</button>}
       <div>
-        <h1 style={{ margin: 0, fontSize: 18, fontWeight: fw.semibold, color: c['content-primary'], fontFamily: ff.primary }}>{title}</h1>
+        <h1 style={{ margin: 0, fontSize: 18, fontWeight: fw.medium, color: c['content-primary'], fontFamily: ff.primary }}>{title}</h1>
         {subtitle && <div style={{ fontSize: fs.xs, color: c['content-tertiary'], marginTop: 2, fontFamily: ff.primary }}>{subtitle}</div>}
       </div>
     </div>
@@ -41,7 +41,7 @@ const EmptyState: React.FC = () => (
     <div style={{ flex: 1, overflowY: 'auto', backgroundColor: c['background-sunken'], padding: `${sp.J}px ${sp.H}px` }}>
       <div style={{ maxWidth: 720, margin: '0 auto', textAlign: 'center' as const, fontFamily: ff.primary }}>
         <DbtLogo size={56} />
-        <h2 style={{ margin: 0, marginTop: sp.D, fontSize: 22, fontWeight: fw.semibold, color: c['content-primary'] }}>No dbt project connected</h2>
+        <h2 style={{ margin: 0, marginTop: sp.D, fontSize: 22, fontWeight: fw.medium, color: c['content-primary'] }}>No dbt project connected</h2>
         <p style={{ marginTop: sp.B, marginBottom: sp.G, fontSize: fs.sm, color: c['content-secondary'] }}>
           dbt is set up from a warehouse connection. Open the connection you want to attach dbt to, then go to its <strong>dbt integration</strong> tab.
         </p>
@@ -53,7 +53,7 @@ const EmptyState: React.FC = () => (
           ].map(b => (
             <Card key={b.t}>
               <div style={{ padding: sp.D }}>
-                <div style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'] }}>{b.t}</div>
+                <div style={{ fontSize: fs.sm, fontWeight: fw.medium, color: c['content-primary'] }}>{b.t}</div>
                 <div style={{ fontSize: fs.xs, color: c['content-secondary'], marginTop: sp.A, lineHeight: 1.5 }}>{b.d}</div>
               </div>
             </Card>
@@ -120,7 +120,7 @@ const ImportedState: React.FC = () => (
             <Card key={s.k}>
               <div style={{ padding: sp.D }}>
                 <div style={{ fontSize: fs.xs, color: c['content-tertiary'], fontFamily: ff.primary }}>{s.k}</div>
-                <div style={{ fontSize: 22, fontWeight: fw.semibold, color: s.tone ? c[`content-${s.tone}` as keyof typeof c] as string : c['content-primary'], marginTop: 2, fontFamily: ff.primary }}>{s.v}</div>
+                <div style={{ fontSize: 22, fontWeight: fw.medium, color: s.tone ? c[`content-${s.tone}` as keyof typeof c] as string : c['content-primary'], marginTop: 2, fontFamily: ff.primary }}>{s.v}</div>
                 {s.sub && <div style={{ fontSize: fs.xs, color: c['content-secondary'], marginTop: 2, fontFamily: ff.primary }}>{s.sub}</div>}
               </div>
             </Card>
@@ -174,14 +174,14 @@ const IssuesState: React.FC = () => (
     />
     <div style={{ flex: 1, overflowY: 'auto', backgroundColor: c['background-sunken'], padding: `${sp.E}px ${sp.H}px` }}>
       <div style={{ maxWidth: 920, margin: '0 auto' }}>
-        <div style={{ fontSize: 11, color: c['content-secondary'], textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: fw.semibold, marginBottom: sp.B, fontFamily: ff.primary }}>
+        <div style={{ fontSize: 11, color: c['content-secondary'], textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: fw.medium, marginBottom: sp.B, fontFamily: ff.primary }}>
           Blocking <span style={{ color: c['content-tertiary'] }}>· must resolve to publish</span>
         </div>
         <Card>
           <div style={{ padding: sp.D, fontSize: fs.sm, color: c['content-tertiary'], fontFamily: ff.primary }}>No blocking issues for this model.</div>
         </Card>
 
-        <div style={{ fontSize: 11, color: c['content-secondary'], textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: fw.semibold, marginTop: sp.E, marginBottom: sp.B, fontFamily: ff.primary }}>
+        <div style={{ fontSize: 11, color: c['content-secondary'], textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: fw.medium, marginTop: sp.E, marginBottom: sp.B, fontFamily: ff.primary }}>
           Advisory <span style={{ color: c['content-tertiary'] }}>· publish anyway, fix later</span>
         </div>
         {[
@@ -193,7 +193,7 @@ const IssuesState: React.FC = () => (
             <div style={{ padding: sp.D, marginBottom: sp.B }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, marginBottom: sp.A }}>
                 <span style={{ fontSize: 14 }}>▲</span>
-                <span style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'], fontFamily: ff.primary }}>{iss.title}</span>
+                <span style={{ fontSize: fs.sm, fontWeight: fw.medium, color: c['content-primary'], fontFamily: ff.primary }}>{iss.title}</span>
                 <span style={{ fontSize: 11, padding: `1px ${sp.B}px`, borderRadius: 3, backgroundColor: c['background-warning'], color: c['content-warning'], fontWeight: fw.medium }}>{iss.type}</span>
               </div>
               <div style={{ fontSize: fs.xs, color: c['content-secondary'], lineHeight: 1.5, marginBottom: sp.C, marginLeft: 22, fontFamily: ff.primary }}>{iss.body}</div>
@@ -228,7 +228,7 @@ const FixFlowState: React.FC = () => (
       <div style={{ maxWidth: 920, margin: '0 auto' }}>
         <Card>
           <div style={{ padding: sp.D }}>
-            <div style={{ fontSize: fs.sm, fontWeight: fw.semibold, marginBottom: sp.B, color: c['content-primary'], fontFamily: ff.primary }}>The problem</div>
+            <div style={{ fontSize: fs.sm, fontWeight: fw.medium, marginBottom: sp.B, color: c['content-primary'], fontFamily: ff.primary }}>The problem</div>
             <div style={{ fontSize: fs.xs, color: c['content-secondary'], lineHeight: 1.5, fontFamily: ff.primary }}>
               Your join graph: <code style={{ fontFamily: ff.mono, color: c['content-brand'] }}>transactions ←(order_id)→ order_items</code> AND <code style={{ fontFamily: ff.mono, color: c['content-brand'] }}>transactions ←(order_id)→ returns</code>. When a transaction has both line items and returns, SUM(transactions.revenue) gets multiplied. Spotter answers will be inflated.
             </div>
@@ -259,7 +259,7 @@ const FixFlowState: React.FC = () => (
 
         <Card>
           <div style={{ padding: sp.D, marginTop: sp.D }}>
-            <div style={{ fontSize: fs.sm, fontWeight: fw.semibold, marginBottom: sp.B, color: c['content-primary'], fontFamily: ff.primary }}>What this changes</div>
+            <div style={{ fontSize: fs.sm, fontWeight: fw.medium, marginBottom: sp.B, color: c['content-primary'], fontFamily: ff.primary }}>What this changes</div>
             <ul style={{ margin: 0, paddingLeft: sp.D, fontSize: fs.xs, color: c['content-secondary'], lineHeight: 1.7, fontFamily: ff.primary }}>
               <li>Adds a CTE <code style={{ fontFamily: ff.mono }}>returns_agg</code> that sums returns per order_id</li>
               <li>Replaces the direct returns join with the aggregated one</li>
@@ -284,7 +284,7 @@ const PublishedState: React.FC = () => (
     <div style={{ flex: 1, overflowY: 'auto', backgroundColor: c['background-sunken'], padding: `${sp.J}px ${sp.H}px` }}>
       <div style={{ maxWidth: 720, margin: '0 auto', textAlign: 'center' as const, fontFamily: ff.primary }}>
         <div style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: c['background-success'], display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto', color: c['content-success'], fontSize: 28 }}>✓</div>
-        <h2 style={{ margin: 0, marginTop: sp.D, fontSize: 22, fontWeight: fw.semibold, color: c['content-primary'] }}>18 models live</h2>
+        <h2 style={{ margin: 0, marginTop: sp.D, fontSize: 22, fontWeight: fw.medium, color: c['content-primary'] }}>18 models live</h2>
         <p style={{ marginTop: sp.B, marginBottom: sp.G, fontSize: fs.sm, color: c['content-secondary'] }}>
           Your team can now query them in Spotter. 14 advisory items remain — fix anytime.
         </p>
@@ -295,7 +295,7 @@ const PublishedState: React.FC = () => (
             ['Push-back',      'Promote your overrides back to dbt'],
           ].map(([t, d]) => (
             <Card key={t}><div style={{ padding: sp.C }}>
-              <div style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'] }}>{t}</div>
+              <div style={{ fontSize: fs.sm, fontWeight: fw.medium, color: c['content-primary'] }}>{t}</div>
               <div style={{ fontSize: fs.xs, color: c['content-secondary'], marginTop: 2 }}>{d}</div>
             </div></Card>
           ))}

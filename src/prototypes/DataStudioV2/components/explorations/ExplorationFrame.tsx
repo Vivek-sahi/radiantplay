@@ -25,7 +25,7 @@ export const SubStateBar: React.FC<{
     gap: sp.B,
     fontFamily: ff.primary,
   }}>
-    <span style={{ fontSize: 10, color: c['content-warning'], textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: fw.semibold }}>
+    <span style={{ fontSize: 10, color: c['content-warning'], textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: fw.medium }}>
       Exploration sub-state
     </span>
     <div style={{ display: 'flex', gap: sp.A, flexWrap: 'wrap' }}>
@@ -43,7 +43,7 @@ export const SubStateBar: React.FC<{
               color: isActive ? c['content-warning'] : c['content-secondary'],
               fontSize: fs.xs,
               fontFamily: ff.primary,
-              fontWeight: isActive ? fw.semibold : fw.regular,
+              fontWeight: isActive ? fw.medium : fw.regular,
               cursor: 'pointer',
               whiteSpace: 'nowrap',
             }}

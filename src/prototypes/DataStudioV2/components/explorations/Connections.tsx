@@ -27,7 +27,7 @@ const Logo: React.FC<{ kind: string; size?: number }> = ({ kind, size = 32 }) =>
     <div style={{
       width: size, height: size, borderRadius: 6,
       backgroundColor: palette[kind] ?? c['background-subtle'],
-      color: 'white', fontSize: size * 0.4, fontWeight: fw.bold,
+      color: 'white', fontSize: size * 0.4, fontWeight: fw.medium,
       display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
     }}>{kind[0]}</div>
   );
@@ -60,7 +60,7 @@ const PageHeader: React.FC<{ title: string; subtitle?: string; back?: () => void
         </button>
       )}
       <div>
-        <h1 style={{ margin: 0, fontSize: 18, fontWeight: fw.semibold, color: c['content-primary'], fontFamily: ff.primary }}>{title}</h1>
+        <h1 style={{ margin: 0, fontSize: 18, fontWeight: fw.medium, color: c['content-primary'], fontFamily: ff.primary }}>{title}</h1>
         {subtitle && <div style={{ fontSize: fs.xs, color: c['content-tertiary'], marginTop: 2, fontFamily: ff.primary }}>{subtitle}</div>}
       </div>
     </div>
@@ -152,10 +152,10 @@ const NewWizard: React.FC<{ onCancel: () => void; onDone: () => void }> = ({ onC
                   <span style={{
                     width: 20, height: 20, borderRadius: 10,
                     backgroundColor: current ? c['content-brand'] : reached ? c['content-success'] : c['background-subtle'],
-                    color: 'white', fontSize: 11, fontWeight: fw.semibold,
+                    color: 'white', fontSize: 11, fontWeight: fw.medium,
                     display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                   }}>{reached && !current ? '✓' : i + 1}</span>
-                  <span style={{ fontSize: fs.xs, color: current ? c['content-primary'] : c['content-tertiary'], fontWeight: current ? fw.semibold : fw.regular }}>{labels[i]}</span>
+                  <span style={{ fontSize: fs.xs, color: current ? c['content-primary'] : c['content-tertiary'], fontWeight: current ? fw.medium : fw.regular }}>{labels[i]}</span>
                 </div>
                 {i < 3 && <span style={{ flex: 1, height: 1, backgroundColor: c['border-divider'] }} />}
               </React.Fragment>
@@ -169,7 +169,7 @@ const NewWizard: React.FC<{ onCancel: () => void; onDone: () => void }> = ({ onC
 
           {step === 'pick' && (
             <>
-              <h2 style={{ margin: 0, fontSize: 16, fontWeight: fw.semibold, color: c['content-primary'], fontFamily: ff.primary, marginBottom: sp.A }}>Choose what you're connecting to</h2>
+              <h2 style={{ margin: 0, fontSize: 16, fontWeight: fw.medium, color: c['content-primary'], fontFamily: ff.primary, marginBottom: sp.A }}>Choose what you're connecting to</h2>
               <p style={{ margin: 0, fontSize: fs.sm, color: c['content-secondary'], fontFamily: ff.primary, marginBottom: sp.E }}>Pick the type first — fields adjust to that source.</p>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: sp.C }}>
                 {TYPE_TILES.map(t => (
@@ -178,7 +178,7 @@ const NewWizard: React.FC<{ onCancel: () => void; onDone: () => void }> = ({ onC
                       <div style={{ padding: sp.D, display: 'flex', alignItems: 'center', gap: sp.C }}>
                         <Logo kind={t.kind} />
                         <div>
-                          <div style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'], fontFamily: ff.primary }}>{t.kind}</div>
+                          <div style={{ fontSize: fs.sm, fontWeight: fw.medium, color: c['content-primary'], fontFamily: ff.primary }}>{t.kind}</div>
                           <div style={{ fontSize: fs.xs, color: c['content-tertiary'], fontFamily: ff.primary }}>{t.tagline}</div>
                         </div>
                       </div>
@@ -193,7 +193,7 @@ const NewWizard: React.FC<{ onCancel: () => void; onDone: () => void }> = ({ onC
             <>
               <div style={{ display: 'flex', alignItems: 'center', gap: sp.C, marginBottom: sp.E }}>
                 <Logo kind={type} />
-                <h2 style={{ margin: 0, fontSize: 16, fontWeight: fw.semibold, color: c['content-primary'], fontFamily: ff.primary }}>Configure {type} connection</h2>
+                <h2 style={{ margin: 0, fontSize: 16, fontWeight: fw.medium, color: c['content-primary'], fontFamily: ff.primary }}>Configure {type} connection</h2>
               </div>
               <Card>
                 <div style={{ padding: sp.E, display: 'flex', flexDirection: 'column', gap: sp.D }}>
@@ -243,7 +243,7 @@ const NewWizard: React.FC<{ onCancel: () => void; onDone: () => void }> = ({ onC
 
           {step === 'test' && type && (
             <>
-              <h2 style={{ margin: 0, fontSize: 16, fontWeight: fw.semibold, color: c['content-primary'], fontFamily: ff.primary, marginBottom: sp.D }}>Testing connection</h2>
+              <h2 style={{ margin: 0, fontSize: 16, fontWeight: fw.medium, color: c['content-primary'], fontFamily: ff.primary, marginBottom: sp.D }}>Testing connection</h2>
               <Card>
                 <div style={{ padding: sp.E }}>
                   {[
@@ -271,7 +271,7 @@ const NewWizard: React.FC<{ onCancel: () => void; onDone: () => void }> = ({ onC
               <Card>
                 <div style={{ padding: sp.G, textAlign: 'center' }}>
                   <div style={{ width: 56, height: 56, margin: '0 auto', borderRadius: 28, backgroundColor: c['background-success'], color: c['content-success'], fontSize: 26, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✓</div>
-                  <h2 style={{ margin: 0, marginTop: sp.D, fontSize: 18, fontWeight: fw.semibold, color: c['content-primary'], fontFamily: ff.primary }}>Connected</h2>
+                  <h2 style={{ margin: 0, marginTop: sp.D, fontSize: 18, fontWeight: fw.medium, color: c['content-primary'], fontFamily: ff.primary }}>Connected</h2>
                   <p style={{ margin: 0, marginTop: sp.B, fontSize: fs.sm, color: c['content-secondary'], fontFamily: ff.primary }}>184 tables visible based on your role permissions.</p>
                   <div style={{ marginTop: sp.E, display: 'flex', justifyContent: 'center', gap: sp.B }}>
                     <Button variant="secondary" size="basic" onClick={onDone}>Back to connections</Button>
@@ -316,7 +316,7 @@ const DetailView: React.FC<{ onBack: () => void; onSetupDbt: () => void }> = ({ 
             border: 'none', backgroundColor: 'transparent',
             borderBottom: tab === t ? `2px solid ${c['content-brand']}` : '2px solid transparent',
             color: tab === t ? c['content-primary'] : c['content-secondary'],
-            fontSize: fs.sm, fontFamily: ff.primary, fontWeight: tab === t ? fw.semibold : fw.regular,
+            fontSize: fs.sm, fontFamily: ff.primary, fontWeight: tab === t ? fw.medium : fw.regular,
             cursor: 'pointer', marginBottom: -1, textTransform: 'capitalize' as const,
           }}>{t === 'dbt' ? 'dbt integration' : t}</button>
         ))}
@@ -328,7 +328,7 @@ const DetailView: React.FC<{ onBack: () => void; onSetupDbt: () => void }> = ({ 
           {tab === 'overview' && (
             <Card>
               <div style={{ padding: sp.E }}>
-                <div style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'], marginBottom: sp.C, fontFamily: ff.primary }}>Connection details</div>
+                <div style={{ fontSize: fs.sm, fontWeight: fw.medium, color: c['content-primary'], marginBottom: sp.C, fontFamily: ff.primary }}>Connection details</div>
                 {[
                   ['Account',         'mycompany.us-east-1'],
                   ['Warehouse',       'COMPUTE_WH'],
@@ -352,7 +352,7 @@ const DetailView: React.FC<{ onBack: () => void; onSetupDbt: () => void }> = ({ 
                 <div style={{ padding: sp.E }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: sp.C }}>
                     <div>
-                      <div style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'], fontFamily: ff.primary }}>Schemas in scope</div>
+                      <div style={{ fontSize: fs.sm, fontWeight: fw.medium, color: c['content-primary'], fontFamily: ff.primary }}>Schemas in scope</div>
                       <div style={{ fontSize: fs.xs, color: c['content-tertiary'], marginTop: 2, fontFamily: ff.primary }}>2 of 6 schemas added · {116} tables visible</div>
                     </div>
                     <Button variant="secondary" size="basic" onClick={() => setFilterModalOpen(true)}>Edit filter</Button>
@@ -378,7 +378,7 @@ const DetailView: React.FC<{ onBack: () => void; onSetupDbt: () => void }> = ({ 
                 <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }} onClick={() => setFilterModalOpen(false)}>
                   <div onClick={(e) => e.stopPropagation()} style={{ width: 480, backgroundColor: c['background-base'], borderRadius: 8, boxShadow: '0 12px 40px rgba(0,0,0,0.2)' }}>
                     <div style={{ padding: `${sp.D}px ${sp.E}px`, borderBottom: `1px solid ${c['border-divider']}` }}>
-                      <div style={{ fontSize: fs.md, fontWeight: fw.semibold, color: c['content-primary'], fontFamily: ff.primary }}>Edit schema filter</div>
+                      <div style={{ fontSize: fs.md, fontWeight: fw.medium, color: c['content-primary'], fontFamily: ff.primary }}>Edit schema filter</div>
                       <div style={{ fontSize: fs.xs, color: c['content-tertiary'], marginTop: 2, fontFamily: ff.primary }}>Choose which schemas show up. You can change this anytime.</div>
                     </div>
                     <div style={{ padding: sp.E, maxHeight: 360, overflowY: 'auto' }}>
@@ -413,7 +413,7 @@ const DetailView: React.FC<{ onBack: () => void; onSetupDbt: () => void }> = ({ 
             <Card>
               <div style={{ padding: sp.G, textAlign: 'center' }}>
                 <Logo kind="dbt" size={48} />
-                <h3 style={{ margin: 0, marginTop: sp.C, fontSize: fs.md, fontWeight: fw.semibold, color: c['content-primary'], fontFamily: ff.primary }}>No dbt integration yet</h3>
+                <h3 style={{ margin: 0, marginTop: sp.C, fontSize: fs.md, fontWeight: fw.medium, color: c['content-primary'], fontFamily: ff.primary }}>No dbt integration yet</h3>
                 <p style={{ margin: 0, marginTop: sp.A, fontSize: fs.sm, color: c['content-secondary'], maxWidth: 420, marginLeft: 'auto', marginRight: 'auto', fontFamily: ff.primary }}>
                   Connect your dbt project to bring in models with their tests, freshness, and lineage. Live link — changes flow both ways.
                 </p>
@@ -457,7 +457,7 @@ const DbtSetupView: React.FC<{ onCancel: () => void; onDone: () => void }> = ({ 
                     backgroundColor: s.selected ? c['background-information'] : c['background-base'],
                     cursor: 'pointer',
                   }}>
-                    <div style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: s.selected ? c['content-brand'] : c['content-primary'], fontFamily: ff.primary }}>{s.label}</div>
+                    <div style={{ fontSize: fs.sm, fontWeight: fw.medium, color: s.selected ? c['content-brand'] : c['content-primary'], fontFamily: ff.primary }}>{s.label}</div>
                     <div style={{ fontSize: fs.xs, color: c['content-tertiary'], marginTop: 2, fontFamily: ff.primary }}>{s.hint}</div>
                   </div>
                 ))}

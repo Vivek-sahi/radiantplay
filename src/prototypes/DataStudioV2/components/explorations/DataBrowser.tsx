@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { c, sp, fs, fw, ff } from '../../styles';
+import { c, sp, fs, fw, ff, ts } from '../../styles';
 import { Button } from '../../../../components/Button';
 import { Card } from '../../../../components/Card';
 import { SearchInput } from '../../../../components/SearchInput';
@@ -64,7 +64,7 @@ const Logo: React.FC<{ kind: string; size?: number }> = ({ kind, size = 20 }) =>
     <div style={{
       width: size, height: size, borderRadius: 4,
       backgroundColor: palette[kind] ?? c['background-subtle'],
-      color: 'white', fontSize: size * 0.5, fontWeight: fw.bold,
+      color: 'white', fontSize: size * 0.5, fontWeight: fw.medium,
       display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
     }}>{kind[0]}</div>
   );
@@ -115,7 +115,7 @@ const Tree: React.FC<{ selection: Selection; onSelect: (s: Selection) => void }>
                   backgroundColor: connSelected ? c['background-information'] : 'transparent',
                   color: connSelected ? c['content-brand'] : c['content-primary'],
                   fontSize: fs.sm,
-                  fontWeight: connSelected ? fw.semibold : fw.medium,
+                  fontWeight: connSelected ? fw.medium : fw.medium,
                 }}
               >
                 <span style={{ fontSize: 9, color: c['content-tertiary'], width: 8 }}>{connOpen ? '▾' : '▸'}</span>
@@ -136,7 +136,7 @@ const Tree: React.FC<{ selection: Selection; onSelect: (s: Selection) => void }>
                         backgroundColor: schemaSelected ? c['background-information'] : 'transparent',
                         color: schemaSelected ? c['content-brand'] : c['content-primary'],
                         fontSize: fs.xs,
-                        fontWeight: schemaSelected ? fw.semibold : fw.regular,
+                        fontWeight: schemaSelected ? fw.medium : fw.regular,
                       }}
                     >
                       <span style={{ fontSize: 9, color: c['content-tertiary'], width: 8 }}>{schemaOpen ? '▾' : '▸'}</span>
@@ -192,34 +192,32 @@ const PageHeader: React.FC<{
       {icon}
       <div style={{ minWidth: 0 }}>
         <h1 style={{
-          margin: 0, fontSize: 20, fontWeight: fw.semibold,
+          ...ts.modalTitle,
+          margin: 0,
           color: c['content-primary'],
           fontFamily: titleMono ? ff.mono : ff.primary,
           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
         }}>{title}</h1>
-        {subtitle && <div style={{ fontSize: fs.sm, color: c['content-secondary'], marginTop: 2, fontFamily: ff.primary }}>{subtitle}</div>}
+        {subtitle && <div style={{ ...ts.footnote, color: c['content-secondary'], marginTop: 2 }}>{subtitle}</div>}
       </div>
     </div>
-    {actions && <div style={{ display: 'flex', gap: sp.B, flexShrink: 0 }}>{actions}</div>}
+    {actions && <div style={{ display: 'flex', gap: sp.B, flexShrink: 0, alignItems: 'center' }}>{actions}</div>}
   </div>
 );
 
 const SectionLabel: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <div style={{
-    fontSize: 11, fontWeight: fw.semibold,
+    ...ts.overline,
     color: c['content-secondary'],
-    textTransform: 'uppercase' as const,
-    letterSpacing: '0.06em',
-    fontFamily: ff.primary,
     marginBottom: sp.C,
   }}>{children}</div>
 );
 
 const StatCell: React.FC<{ label: string; value: string }> = ({ label, value }) => (
   <Card>
-    <div style={{ padding: sp.D, fontFamily: ff.primary }}>
-      <div style={{ fontSize: fs.xs, color: c['content-tertiary'] }}>{label}</div>
-      <div style={{ fontSize: 20, fontWeight: fw.semibold, color: c['content-primary'], marginTop: 2 }}>{value}</div>
+    <div style={{ padding: sp.D }}>
+      <div style={{ ...ts.footnote, color: c['content-tertiary'] }}>{label}</div>
+      <div style={{ ...ts.headlineLarge, fontSize: fs.xl, color: c['content-primary'], marginTop: 2 }}>{value}</div>
     </div>
   </Card>
 );
@@ -301,7 +299,7 @@ const SchemaView: React.FC<{ conn: ConnNode; schema: SchemaNode; onPickTable: (t
                 backgroundColor: i === 0 ? c['background-information'] : 'transparent',
                 color: i === 0 ? c['content-brand'] : c['content-secondary'],
                 fontSize: fs.xs, fontFamily: ff.primary, cursor: 'pointer',
-                fontWeight: i === 0 ? fw.semibold : fw.regular,
+                fontWeight: i === 0 ? fw.medium : fw.regular,
               }}>{f}</button>
             ))}
           </div>
@@ -338,7 +336,11 @@ const SchemaView: React.FC<{ conn: ConnNode; schema: SchemaNode; onPickTable: (t
 
 // ── Table view ───────────────────────────────────────────────────────────────
 
+type TableTab = 'schema' | 'preview' | 'lineage' | 'used-by';
+
 const TableView: React.FC<{ conn: ConnNode; schema: SchemaNode; table: TableNode }> = ({ conn, schema, table }) => {
+  const [tab, setTab] = useState<TableTab>('schema');
+
   const SAMPLE_COLS = [
     { name: 'order_id',         type: 'varchar', notes: 'Primary key' },
     { name: 'user_id',          type: 'varchar', notes: 'Foreign key → users' },
@@ -350,6 +352,21 @@ const TableView: React.FC<{ conn: ConnNode; schema: SchemaNode; table: TableNode
     { name: 'status',           type: 'varchar', notes: 'completed / returned / pending' },
   ];
 
+  const SAMPLE_ROWS = [
+    ['ORD-00231', 'usr_8821',  'cam-014', '2024-04-12', '$ 142.40', 'Electronics', 'AMER', 'completed'],
+    ['ORD-00232', 'usr_4419',  'cam-014', '2024-04-12', '$  68.00', 'Apparel',     'EMEA', 'completed'],
+    ['ORD-00233', 'usr_1108',  null,      '2024-04-12', '$ 218.00', 'Home',        'AMER', 'completed'],
+    ['ORD-00234', 'usr_7762',  'cam-021', '2024-04-12', '$  34.50', 'Beauty',      'APAC', 'returned'],
+    ['ORD-00235', 'usr_3380',  'cam-019', '2024-04-12', '$ 990.00', 'Electronics', 'AMER', 'completed'],
+  ];
+
+  const TABS: { id: TableTab; label: string }[] = [
+    { id: 'schema',   label: 'Schema' },
+    { id: 'preview',  label: 'Preview' },
+    { id: 'lineage',  label: 'Lineage' },
+    { id: 'used-by',  label: 'Used by' },
+  ];
+
   return (
     <>
       <PageHeader
@@ -358,95 +375,207 @@ const TableView: React.FC<{ conn: ConnNode; schema: SchemaNode; table: TableNode
         titleMono
         subtitle={`${conn.name} · ${schema.name} · ${table.rows} rows · ${table.cols} cols · synced ${table.sync}`}
         actions={<>
-          <Button variant="secondary" size="basic">Preview rows</Button>
-          <Button variant="secondary" size="basic">Lineage</Button>
-          <Button variant="secondary" size="basic">Ask Spotter</Button>
-          <Button variant="primary"   size="basic">Build a model</Button>
+          <Button variant="tertiary" iconOnly icon="refresh" aria-label="Refresh" />
+          <Button variant="tertiary" iconOnly icon="more-horizontal" aria-label="More actions" />
+          <Button variant="primary"  size="basic">Build a model</Button>
         </>}
       />
+
+      {/* Tabs */}
+      <div style={{ flexShrink: 0, padding: `0 ${sp.G}px`, backgroundColor: c['background-base'], borderBottom: `1px solid ${c['border-divider']}`, display: 'flex' }}>
+        {TABS.map(t => {
+          const active = t.id === tab;
+          return (
+            <button key={t.id} onClick={() => setTab(t.id)} style={{
+              ...ts.bodyNormal,
+              padding: `${sp.C}px ${sp.D}px`,
+              border: 'none', backgroundColor: 'transparent',
+              borderBottom: active ? `2px solid ${c['content-brand']}` : '2px solid transparent',
+              color: active ? c['content-primary'] : c['content-secondary'],
+              fontWeight: active ? fw.medium : fw.regular,
+              cursor: 'pointer', marginBottom: -1,
+            }}>{t.label}</button>
+          );
+        })}
+      </div>
+
+      {/* Tab content */}
       <div style={{ flex: 1, overflowY: 'auto', backgroundColor: c['background-sunken'], padding: `${sp.E}px ${sp.G}px` }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: sp.E }}>
-          <Card>
-            <div style={{ padding: sp.D }}>
-              <SectionLabel>Schema</SectionLabel>
-              <div style={{ display: 'grid', gridTemplateColumns: '40px 1.6fr 1fr 2fr', gap: sp.C, padding: `${sp.A}px 0`, borderBottom: `1px solid ${c['background-subtle']}` }}>
-                {['', 'Name', 'Type', 'Notes'].map(h => (
-                  <div key={h} style={{ fontSize: 10, fontWeight: fw.medium, color: c['content-tertiary'], textTransform: 'uppercase' as const, letterSpacing: '0.04em', fontFamily: ff.primary }}>{h}</div>
-                ))}
-              </div>
-              {SAMPLE_COLS.map((col, i) => (
-                <div key={col.name} style={{
-                  display: 'grid', gridTemplateColumns: '40px 1.6fr 1fr 2fr', gap: sp.C,
-                  padding: `${sp.B}px 0`, fontSize: fs.xs, alignItems: 'center',
-                  borderBottom: i < SAMPLE_COLS.length - 1 ? `1px solid ${c['background-subtle']}` : 'none',
-                }}>
-                  <span style={{ color: c['content-tertiary'] }}>{i + 1}</span>
-                  <code style={{ fontFamily: ff.mono, color: c['content-primary'] }}>{col.name}</code>
-                  <span style={{ color: c['content-tertiary'], fontFamily: ff.primary }}>{col.type}</span>
-                  <span style={{ color: c['content-secondary'], fontFamily: ff.primary }}>{col.notes}</span>
+
+        {tab === 'schema' && (
+          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: sp.E }}>
+            <Card>
+              <div style={{ padding: sp.D }}>
+                <SectionLabel>Columns ({SAMPLE_COLS.length})</SectionLabel>
+                <div style={{ display: 'grid', gridTemplateColumns: '40px 1.6fr 1fr 2fr', gap: sp.C, padding: `${sp.A}px 0`, borderBottom: `1px solid ${c['background-subtle']}` }}>
+                  {['', 'Name', 'Type', 'Notes'].map(h => (
+                    <div key={h} style={{ ...ts.overline, color: c['content-tertiary'] }}>{h}</div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </Card>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: sp.D }}>
-            <Card>
-              <div style={{ padding: sp.D }}>
-                <SectionLabel>About</SectionLabel>
-                <p style={{ margin: 0, fontSize: fs.sm, color: c['content-secondary'], lineHeight: 1.5, fontFamily: ff.primary }}>
-                  {table.description ?? `${table.isDbt ? 'dbt model' : 'Source table'} from ${conn.type}.`}
-                </p>
-              </div>
-            </Card>
-
-            <Card>
-              <div style={{ padding: sp.D }}>
-                <SectionLabel>Properties</SectionLabel>
-                {[
-                  ['Type',        table.isDbt ? 'dbt model' : 'Table'],
-                  ['Rows',        table.rows],
-                  ['Columns',     String(table.cols)],
-                  ['Last synced', table.sync],
-                  ...(table.tests ? [['Tests', table.tests]] : []),
-                ].map(([k, v]) => (
-                  <div key={k as string} style={{ display: 'grid', gridTemplateColumns: '110px 1fr', padding: `${sp.A + 1}px 0`, fontSize: fs.xs, fontFamily: ff.primary }}>
-                    <div style={{ color: c['content-tertiary'] }}>{k}</div>
-                    <div style={{ color: c['content-primary'] }}>{v}</div>
+                {SAMPLE_COLS.map((col, i) => (
+                  <div key={col.name} style={{
+                    display: 'grid', gridTemplateColumns: '40px 1.6fr 1fr 2fr', gap: sp.C,
+                    padding: `${sp.B}px 0`, alignItems: 'center',
+                    borderBottom: i < SAMPLE_COLS.length - 1 ? `1px solid ${c['background-subtle']}` : 'none',
+                  }}>
+                    <span style={{ ...ts.footnote, color: c['content-tertiary'] }}>{i + 1}</span>
+                    <code style={{ fontFamily: ff.mono, fontSize: fs.sm, color: c['content-primary'] }}>{col.name}</code>
+                    <span style={{ ...ts.footnote, color: c['content-tertiary'] }}>{col.type}</span>
+                    <span style={{ ...ts.footnote, color: c['content-secondary'] }}>{col.notes}</span>
                   </div>
                 ))}
               </div>
             </Card>
 
-            {table.isDbt && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: sp.D }}>
               <Card>
                 <div style={{ padding: sp.D }}>
-                  <SectionLabel>dbt</SectionLabel>
+                  <SectionLabel>About</SectionLabel>
+                  <p style={{ ...ts.bodyNormal, margin: 0, color: c['content-secondary'] }}>
+                    {table.description ?? `${table.isDbt ? 'dbt model' : 'Source table'} from ${conn.type}.`}
+                  </p>
+                </div>
+              </Card>
+
+              <Card>
+                <div style={{ padding: sp.D }}>
+                  <SectionLabel>Properties</SectionLabel>
                   {[
-                    ['Project',    'analytics'],
-                    ['Materialized', 'table'],
-                    ['Last build', '2h ago'],
+                    ['Type',        table.isDbt ? 'dbt model' : 'Table'],
+                    ['Rows',        table.rows],
+                    ['Columns',     String(table.cols)],
+                    ['Last synced', table.sync],
+                    ...(table.tests ? [['Tests', table.tests]] : []),
                   ].map(([k, v]) => (
-                    <div key={k as string} style={{ display: 'grid', gridTemplateColumns: '110px 1fr', padding: `${sp.A + 1}px 0`, fontSize: fs.xs, fontFamily: ff.primary }}>
+                    <div key={k as string} style={{ ...ts.footnote, display: 'grid', gridTemplateColumns: '110px 1fr', padding: `${sp.A + 1}px 0` }}>
                       <div style={{ color: c['content-tertiary'] }}>{k}</div>
                       <div style={{ color: c['content-primary'] }}>{v}</div>
                     </div>
                   ))}
                 </div>
               </Card>
-            )}
 
+              {table.isDbt && (
+                <Card>
+                  <div style={{ padding: sp.D }}>
+                    <SectionLabel>dbt</SectionLabel>
+                    {[
+                      ['Project',      'analytics'],
+                      ['Materialized', 'table'],
+                      ['Last build',   '2h ago'],
+                    ].map(([k, v]) => (
+                      <div key={k as string} style={{ ...ts.footnote, display: 'grid', gridTemplateColumns: '110px 1fr', padding: `${sp.A + 1}px 0` }}>
+                        <div style={{ color: c['content-tertiary'] }}>{k}</div>
+                        <div style={{ color: c['content-primary'] }}>{v}</div>
+                      </div>
+                    ))}
+                  </div>
+                </Card>
+              )}
+            </div>
+          </div>
+        )}
+
+        {tab === 'preview' && (
+          <Card>
+            <div style={{ padding: sp.D }}>
+              <SectionLabel>First 5 of {table.rows} rows</SectionLabel>
+              <div style={{ overflowX: 'auto', marginTop: sp.B }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: ff.primary }}>
+                  <thead>
+                    <tr>
+                      {SAMPLE_COLS.map(col => (
+                        <th key={col.name} style={{ ...ts.overline, color: c['content-tertiary'], textAlign: 'left' as const, padding: `${sp.B}px ${sp.C}px`, borderBottom: `1px solid ${c['border-divider']}`, whiteSpace: 'nowrap' }}>
+                          {col.name}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {SAMPLE_ROWS.map((row, ri) => (
+                      <tr key={ri}>
+                        {row.map((cell, ci) => (
+                          <td key={ci} style={{ ...ts.bodyNormal, color: cell === null ? c['content-tertiary'] : c['content-primary'], padding: `${sp.B}px ${sp.C}px`, borderBottom: ri < SAMPLE_ROWS.length - 1 ? `1px solid ${c['background-subtle']}` : 'none', whiteSpace: 'nowrap', fontFamily: typeof cell === 'string' && /^\d|ORD|usr|cam/.test(cell) ? ff.mono : ff.primary }}>
+                            {cell === null ? <em style={{ ...ts.footnote, color: c['content-tertiary'] }}>NULL</em> : cell}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div style={{ ...ts.footnote, color: c['content-tertiary'], marginTop: sp.D }}>
+                Showing 5 sample rows · <button style={{ background: 'none', border: 'none', color: c['content-brand'], cursor: 'pointer', padding: 0, fontFamily: 'inherit', fontSize: 'inherit' }}>Load more</button>
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {tab === 'lineage' && (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: sp.E }}>
             <Card>
               <div style={{ padding: sp.D }}>
-                <SectionLabel>Used by</SectionLabel>
-                <div style={{ fontSize: fs.xs, color: c['content-secondary'], fontFamily: ff.primary, lineHeight: 1.7 }}>
-                  <div>• Campaign Attribution Model</div>
-                  <div>• Q4 Revenue Liveboard</div>
-                  <div>• 10 more...</div>
-                </div>
+                <SectionLabel>Upstream sources <span style={{ color: c['content-tertiary'] }}>(4)</span></SectionLabel>
+                {[
+                  { name: 'raw.orders_stream',     kind: 'Snowflake', icon: '▦' },
+                  { name: 'stg_orders',            kind: 'dbt model', icon: '◆' },
+                  { name: 'stg_users',             kind: 'dbt model', icon: '◆' },
+                  { name: 'campaigns_etl',         kind: 'View',      icon: '▦' },
+                ].map((u, i, arr) => (
+                  <div key={u.name} style={{ display: 'flex', alignItems: 'center', gap: sp.B, padding: `${sp.B}px 0`, borderBottom: i < arr.length - 1 ? `1px solid ${c['background-subtle']}` : 'none' }}>
+                    <span style={{ color: u.icon === '◆' ? '#FF694A' : c['content-tertiary'] }}>{u.icon}</span>
+                    <div style={{ flex: 1 }}>
+                      <code style={{ fontFamily: ff.mono, fontSize: fs.sm, color: c['content-primary'] }}>{u.name}</code>
+                      <div style={{ ...ts.footnote, color: c['content-tertiary'] }}>{u.kind}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+            <Card>
+              <div style={{ padding: sp.D }}>
+                <SectionLabel>Downstream consumers <span style={{ color: c['content-tertiary'] }}>(12)</span></SectionLabel>
+                {[
+                  { name: 'fct_revenue',                kind: 'dbt model',         icon: '◆' },
+                  { name: 'Campaign Attribution Model', kind: 'ThoughtSpot Model', icon: '◇' },
+                  { name: 'Q4 Revenue Liveboard',       kind: 'Liveboard',         icon: '▤' },
+                  { name: 'Marketing Performance',      kind: 'ThoughtSpot Model', icon: '◇' },
+                ].map((d, i, arr) => (
+                  <div key={d.name} style={{ display: 'flex', alignItems: 'center', gap: sp.B, padding: `${sp.B}px 0`, borderBottom: i < arr.length - 1 ? `1px solid ${c['background-subtle']}` : 'none' }}>
+                    <span style={{ color: d.icon === '◆' ? '#FF694A' : c['content-tertiary'] }}>{d.icon}</span>
+                    <div style={{ flex: 1 }}>
+                      <code style={{ fontFamily: ff.mono, fontSize: fs.sm, color: c['content-primary'] }}>{d.name}</code>
+                      <div style={{ ...ts.footnote, color: c['content-tertiary'] }}>{d.kind}</div>
+                    </div>
+                  </div>
+                ))}
+                <div style={{ ...ts.footnote, color: c['content-tertiary'], marginTop: sp.B }}>+ 8 more</div>
               </div>
             </Card>
           </div>
-        </div>
+        )}
+
+        {tab === 'used-by' && (
+          <Card>
+            <div style={{ padding: sp.D }}>
+              <SectionLabel>Used by 12 ThoughtSpot Models &amp; Liveboards</SectionLabel>
+              {[
+                { name: 'Campaign Attribution Model', kind: 'Model',     owner: 'Alex Kim',  updated: '2 days ago' },
+                { name: 'Q4 Revenue Liveboard',       kind: 'Liveboard', owner: 'Priya M.',  updated: 'last week'  },
+                { name: 'Marketing Performance',      kind: 'Model',     owner: 'Marcus J.', updated: 'last week'  },
+                { name: 'Customer 360',               kind: 'Model',     owner: 'Sarah C.',  updated: '3 weeks ago' },
+              ].map((u, i, arr) => (
+                <div key={u.name} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: sp.C, padding: `${sp.C}px 0`, alignItems: 'center', borderBottom: i < arr.length - 1 ? `1px solid ${c['background-subtle']}` : 'none' }}>
+                  <div style={{ ...ts.bodyNormal, color: c['content-brand'] }}>{u.name}</div>
+                  <div style={{ ...ts.footnote, color: c['content-secondary'] }}>{u.kind}</div>
+                  <div style={{ ...ts.footnote, color: c['content-secondary'] }}>{u.owner}</div>
+                  <div style={{ ...ts.footnote, color: c['content-tertiary'] }}>Updated {u.updated}</div>
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
+
       </div>
     </>
   );
