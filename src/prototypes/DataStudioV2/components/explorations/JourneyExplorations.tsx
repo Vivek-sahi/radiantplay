@@ -4,59 +4,48 @@ import Shell from '../Shell';
 import PromptBar, { PromptBarRef } from '../PromptBar';
 import { Button } from '../../../../components/Button';
 
+// ── Dark theme palette ────────────────────────────────────────────────────────
+
+const D = {
+  pageBg:       '#0B1017',
+  cardBg:       '#111827',
+  cardBgActive: '#0F1D2E',
+  border:       'rgba(255,255,255,0.07)',
+  borderActive: '#2770EF',
+  heading:      '#F1F5F9',
+  body:         '#94A3B8',
+  mono:         '#2770EF',
+  monoMuted:    '#334155',
+  badge:        '#1E293B',
+  badgeText:    '#64748B',
+  divider:      'rgba(255,255,255,0.06)',
+} as const;
+
 // ── Warehouse config ──────────────────────────────────────────────────────────
 
 const WAREHOUSES = [
-  {
-    id: 'snowflake',
-    name: 'Snowflake',
-    logo: '/logos/snowflake.svg',
-    prompt: 'I want to connect my Snowflake warehouse and build a model in ThoughtSpot',
-  },
-  {
-    id: 'redshift',
-    name: 'Redshift',
-    logo: '/logos/redshift.svg',
-    prompt: 'I want to connect my Amazon Redshift warehouse and build a model in ThoughtSpot',
-  },
-  {
-    id: 'bigquery',
-    name: 'BigQuery',
-    logo: '/logos/bigquery.svg',
-    prompt: 'I want to connect my Google BigQuery warehouse and build a model in ThoughtSpot',
-  },
-  {
-    id: 'databricks',
-    name: 'Databricks',
-    logo: '/logos/databricks.svg',
-    prompt: 'I want to connect my Databricks warehouse and build a model in ThoughtSpot',
-  },
+  { id: 'snowflake',  name: 'Snowflake',  logo: '/logos/snowflake.svg',  prompt: 'I want to connect my Snowflake warehouse and build a model in ThoughtSpot' },
+  { id: 'bigquery',   name: 'BigQuery',   logo: '/logos/bigquery.svg',   prompt: 'I want to connect my Google BigQuery warehouse and build a model in ThoughtSpot' },
+  { id: 'databricks', name: 'Databricks', logo: '/logos/databricks.svg', prompt: 'I want to connect my Databricks warehouse and build a model in ThoughtSpot' },
+  { id: 'redshift',   name: 'Redshift',   logo: '/logos/redshift.svg',   prompt: 'I want to connect my Amazon Redshift warehouse and build a model in ThoughtSpot' },
+  { id: 'azure',      name: 'Azure Synapse', logo: '/logos/azure.svg',   prompt: 'I want to connect my Azure Synapse warehouse and build a model in ThoughtSpot' },
+  { id: 'postgres',   name: 'PostgreSQL', logo: '/logos/postgres.svg',   prompt: 'I want to connect my PostgreSQL database and build a model in ThoughtSpot' },
+  { id: 'dbt',        name: 'dbt',        logo: '/logos/dbt.svg',        prompt: 'I want to connect via dbt and build a model in ThoughtSpot' },
 ] as const;
 
 const EXISTING_MODEL_OPTIONS = [
   {
-    id: 'dbt',
+    id: 'dbt-import',
     title: 'dbt models',
     description: 'Import a dbt project and publish models directly to Spotter',
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke={c['content-secondary']} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M3 15L9 3L15 15"/>
-        <line x1="5.25" y1="11.25" x2="12.75" y2="11.25"/>
-      </svg>
-    ),
+    logo: '/logos/dbt.svg',
   },
   {
     id: 'semantic',
     title: 'Semantic views',
-    description: 'Start from an existing ThoughtSpot semantic model or worksheet',
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke={c['content-secondary']} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="2.25" y="2.25" width="13.5" height="13.5" rx="1.5"/>
-        <line x1="5.25" y1="6.75" x2="12.75" y2="6.75"/>
-        <line x1="5.25" y1="9" x2="12.75" y2="9"/>
-        <line x1="5.25" y1="11.25" x2="9.75" y2="11.25"/>
-      </svg>
-    ),
+    description: 'Start from an existing ThoughtSpot worksheet or semantic model',
+    logo: '/logos/snowflake.svg',
+    logoOverride: true,
   },
 ] as const;
 
@@ -97,7 +86,7 @@ const JOURNEYS = [
   },
 ];
 
-// ── Journey Picker ────────────────────────────────────────────────────────────
+// ── Journey Picker (dark) ─────────────────────────────────────────────────────
 
 export const JourneyPickerExploration: React.FC = () => {
   const [selected, setSelected] = useState<string | null>(null);
@@ -105,90 +94,74 @@ export const JourneyPickerExploration: React.FC = () => {
   return (
     <div style={{
       position: 'fixed', inset: 0, overflowY: 'auto',
-      backgroundColor: c['background-sunken'],
+      backgroundColor: D.pageBg,
       fontFamily: ff.primary,
-      display: 'flex', flexDirection: 'column',
+      backgroundImage: 'radial-gradient(ellipse 80% 36% at 50% 0%, rgba(39,112,239,0.14) 0%, transparent 100%)',
     }}>
       {/* Top bar */}
       <div style={{
         height: 52, flexShrink: 0,
         display: 'flex', alignItems: 'center',
         padding: `0 ${sp.H}px`,
-        backgroundColor: c['background-base'],
-        borderBottom: `1px solid ${c['border-divider']}`,
+        borderBottom: `1px solid ${D.border}`,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{
             width: 28, height: 28, borderRadius: 7,
             background: 'linear-gradient(135deg, #1E40AF 0%, #3B82F6 100%)',
             display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+            boxShadow: '0 0 12px rgba(59,130,246,0.4)',
           }}>
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
               <path d="M7 1L8.1 5.4 12.5 7 8.1 8.6 7 13 5.9 8.6 1.5 7 5.9 5.4Z" fill="white" fillOpacity="0.95"/>
             </svg>
           </div>
-          <span style={{ fontSize: 14, fontWeight: fw.semibold, color: c['content-primary'] }}>Data Studio</span>
+          <span style={{ fontSize: 14, fontWeight: fw.semibold, color: D.heading, letterSpacing: '-0.1px' }}>
+            Data Studio
+          </span>
         </div>
-        <span style={{
-          marginLeft: sp.C,
-          fontSize: fs.xs, color: c['content-tertiary'],
-          backgroundColor: c['background-subtle'],
-          border: `1px solid ${c['border-divider']}`,
-          borderRadius: 4, padding: '2px 7px',
-          fontWeight: fw.medium, letterSpacing: '0.02em',
-        }}>
-          BETA
+        <div style={{ marginLeft: sp.C, height: 14, width: 1, backgroundColor: D.divider }} />
+        <span style={{ marginLeft: sp.C, fontSize: 11, color: D.badgeText, letterSpacing: '0.06em', fontWeight: fw.medium }}>
+          VISION
         </span>
       </div>
 
       {/* Content */}
       <div style={{
-        flex: 1, display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
-        padding: `${sp.J}px ${sp.H}px`,
+        display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
+        padding: `${sp.J + sp.D}px ${sp.H}px ${sp.J}px`,
       }}>
-        <div style={{ width: '100%', maxWidth: 760 }}>
+        <div style={{ width: '100%', maxWidth: 780 }}>
 
-          {/* Product identity + vision */}
-          <div style={{ marginBottom: sp.J }}>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: sp.C, marginBottom: sp.B }}>
-              <h1 style={{
-                margin: 0, fontSize: 26, fontWeight: fw.semibold,
-                color: c['content-primary'], letterSpacing: '-0.4px', lineHeight: 1.2,
-              }}>
-                Data Studio
-              </h1>
-              <span style={{
-                fontSize: fs.sm, color: c['content-tertiary'],
-                borderLeft: `1px solid ${c['border-divider']}`,
-                paddingLeft: sp.C,
-              }}>
-                Vision
-              </span>
-            </div>
+          {/* Product identity */}
+          <div style={{ marginBottom: sp.J + sp.D }}>
+            <h1 style={{
+              margin: `0 0 ${sp.C}px`,
+              fontSize: 32, fontWeight: fw.semibold,
+              color: D.heading, letterSpacing: '-0.6px', lineHeight: 1.2,
+            }}>
+              Data Studio
+            </h1>
             <p style={{
-              margin: 0, fontSize: fs.sm, color: c['content-secondary'], lineHeight: 1.6, maxWidth: 520,
+              margin: 0, fontSize: 15, color: D.body, lineHeight: 1.65, maxWidth: 480,
             }}>
               A single workspace for analysts to model, prep, and make data ready for AI agents — without waiting on engineering.
             </p>
           </div>
 
-          {/* Pick a journey */}
+          {/* Section label */}
           <div style={{
-            fontSize: 11, fontWeight: fw.semibold, textTransform: 'uppercase' as const,
-            letterSpacing: '0.06em', color: c['content-secondary'],
+            fontSize: 10.5, fontWeight: fw.semibold, textTransform: 'uppercase' as const,
+            letterSpacing: '0.1em', color: D.badgeText,
             marginBottom: sp.D,
           }}>
             Pick your journey
           </div>
 
           {/* Journey cards — 2×2 grid */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(2, 1fr)',
-            gap: sp.D,
-          }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: sp.C + 2 }}>
             {JOURNEYS.map(j => (
-              <JourneyCard
+              <DarkJourneyCard
                 key={j.id}
                 journey={j}
                 selected={selected === j.id}
@@ -203,16 +176,16 @@ export const JourneyPickerExploration: React.FC = () => {
   );
 };
 
-interface JourneyCardProps {
+interface DarkJourneyCardProps {
   journey: typeof JOURNEYS[number];
   selected: boolean;
   onSelect: () => void;
 }
 
-const JourneyCard: React.FC<JourneyCardProps> = ({ journey, selected, onSelect }) => {
+const DarkJourneyCard: React.FC<DarkJourneyCardProps> = ({ journey, selected, onSelect }) => {
   const [hovered, setHovered] = useState(false);
   const isActive = journey.active;
-  const highlighted = isActive && (selected || hovered);
+  const lit = isActive && (selected || hovered);
 
   return (
     <div
@@ -220,42 +193,46 @@ const JourneyCard: React.FC<JourneyCardProps> = ({ journey, selected, onSelect }
       onMouseEnter={() => isActive && setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        backgroundColor: c['background-base'],
-        border: `1px solid ${selected ? c['border-brand'] : c['border-divider']}`,
-        borderLeft: `3px solid ${selected ? c['content-brand'] : isActive ? c['border-default'] : c['border-divider']}`,
+        backgroundColor: selected ? D.cardBgActive : D.cardBg,
+        border: `1px solid ${lit ? D.borderActive : D.border}`,
+        borderLeft: `2px solid ${selected ? D.borderActive : lit ? 'rgba(39,112,239,0.4)' : D.border}`,
         borderRadius: 10,
         padding: `${sp.E}px ${sp.E}px ${sp.E}px ${sp.D + 2}px`,
         cursor: isActive ? 'pointer' : 'default',
-        opacity: isActive ? 1 : 0.45,
+        opacity: isActive ? 1 : 0.38,
         display: 'flex', flexDirection: 'column', gap: sp.C,
-        boxShadow: highlighted ? '0 2px 12px rgba(0,0,0,0.07)' : 'none',
-        transition: 'border-color 0.12s, box-shadow 0.12s',
-        minHeight: 168,
+        boxShadow: selected
+          ? '0 0 0 1px rgba(39,112,239,0.3), 0 4px 20px rgba(39,112,239,0.12)'
+          : hovered && isActive ? '0 2px 12px rgba(0,0,0,0.3)' : 'none',
+        transition: 'all 0.14s',
+        minHeight: 164,
       }}
     >
       {/* Number + badge */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <span style={{
           fontFamily: 'monospace', fontSize: 11,
-          color: selected ? c['content-brand'] : c['content-tertiary'],
+          color: selected ? D.mono : isActive ? D.monoMuted : D.monoMuted,
           letterSpacing: '0.06em', fontWeight: fw.medium,
         }}>
           {journey.num}
         </span>
         {!isActive && (
           <span style={{
-            fontSize: 10, fontWeight: fw.semibold, color: c['content-tertiary'],
-            backgroundColor: c['background-subtle'], border: `1px solid ${c['border-divider']}`,
-            borderRadius: 3, padding: '2px 6px', letterSpacing: '0.04em', textTransform: 'uppercase' as const,
+            fontSize: 9.5, fontWeight: fw.semibold, color: D.badgeText,
+            backgroundColor: D.badge,
+            borderRadius: 3, padding: '2px 6px',
+            letterSpacing: '0.06em', textTransform: 'uppercase' as const,
           }}>
             Coming soon
           </span>
         )}
         {isActive && selected && (
           <span style={{
-            fontSize: 10, fontWeight: fw.semibold, color: '#1D4ED8',
-            backgroundColor: '#EFF6FF', border: '1px solid #BFDBFE',
-            borderRadius: 3, padding: '2px 6px', letterSpacing: '0.04em', textTransform: 'uppercase' as const,
+            fontSize: 9.5, fontWeight: fw.semibold, color: '#93C5FD',
+            backgroundColor: 'rgba(39,112,239,0.15)',
+            borderRadius: 3, padding: '2px 6px',
+            letterSpacing: '0.06em', textTransform: 'uppercase' as const,
           }}>
             Selected
           </span>
@@ -265,12 +242,12 @@ const JourneyCard: React.FC<JourneyCardProps> = ({ journey, selected, onSelect }
       {/* Title + description */}
       <div>
         <div style={{
-          fontSize: 15, fontWeight: fw.semibold, color: c['content-primary'],
-          marginBottom: sp.A + 1, lineHeight: 1.3,
+          fontSize: 15, fontWeight: fw.semibold,
+          color: D.heading, marginBottom: sp.A + 1, lineHeight: 1.3,
         }}>
           {journey.title}
         </div>
-        <div style={{ fontSize: fs.sm, color: c['content-secondary'], lineHeight: 1.55 }}>
+        <div style={{ fontSize: fs.sm, color: D.body, lineHeight: 1.6 }}>
           {journey.description}
         </div>
       </div>
@@ -278,16 +255,23 @@ const JourneyCard: React.FC<JourneyCardProps> = ({ journey, selected, onSelect }
       {/* Footer */}
       <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         {journey.time && (
-          <span style={{ fontSize: 11, color: c['content-tertiary'] }}>{journey.time}</span>
+          <span style={{ fontSize: 11, color: D.badgeText }}>{journey.time}</span>
         )}
         {isActive && (
-          <Button
-            variant={selected ? 'primary' : 'secondary'}
-            size="basic"
+          <button
             onClick={(e) => { e.stopPropagation(); onSelect(); }}
+            style={{
+              height: 30, padding: `0 ${sp.D}px`,
+              backgroundColor: selected ? '#2563EB' : 'rgba(39,112,239,0.15)',
+              border: `1px solid ${selected ? '#2563EB' : 'rgba(39,112,239,0.3)'}`,
+              borderRadius: 6, cursor: 'pointer',
+              fontSize: 12, fontWeight: fw.medium, fontFamily: ff.primary,
+              color: selected ? '#fff' : '#93C5FD',
+              transition: 'all 0.12s',
+            }}
           >
             {selected ? 'Starting…' : 'Start journey'}
-          </Button>
+          </button>
         )}
       </div>
     </div>
@@ -321,7 +305,6 @@ export const DayZeroEmptyExploration: React.FC = () => {
               maxWidth: 720, margin: '0 auto',
               display: 'flex', flexDirection: 'column', alignItems: 'center', gap: sp.E,
             }}>
-              {/* Heading row */}
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: sp.B }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <div style={{
@@ -349,8 +332,6 @@ export const DayZeroEmptyExploration: React.FC = () => {
                   Describe your goal and the agent will connect, model, and prep your data.
                 </p>
               </div>
-
-              {/* Prompt bar */}
               <div style={{ width: '100%' }}>
                 <PromptBar
                   ref={promptBarRef}
@@ -391,13 +372,9 @@ export const DayZeroEmptyExploration: React.FC = () => {
             </div>
 
             {/* Divider */}
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: sp.D, marginBottom: sp.H,
-            }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: sp.D, marginBottom: sp.H }}>
               <div style={{ flex: 1, height: 1, backgroundColor: c['border-divider'] }}/>
-              <span style={{ fontSize: 11, color: c['content-tertiary'], fontWeight: fw.medium, letterSpacing: '0.04em' }}>
-                OR
-              </span>
+              <span style={{ fontSize: 11, color: c['content-tertiary'], fontWeight: fw.medium, letterSpacing: '0.04em' }}>OR</span>
               <div style={{ flex: 1, height: 1, backgroundColor: c['border-divider'] }}/>
             </div>
 
@@ -441,7 +418,7 @@ const WarehouseCard: React.FC<WarehouseCardProps> = ({ warehouse, selected, onCl
       onClick={onClick}
       style={{
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: sp.B,
-        width: 96, padding: `${sp.D}px ${sp.C}px`,
+        width: 88, padding: `${sp.D}px ${sp.C}px`,
         backgroundColor: selected ? c['background-information'] : hovered ? c['background-subtle'] : c['background-base'],
         border: `1px solid ${selected ? c['border-brand'] : hovered ? c['border-brand'] : c['border-divider']}`,
         borderRadius: 10, cursor: 'pointer',
@@ -450,21 +427,17 @@ const WarehouseCard: React.FC<WarehouseCardProps> = ({ warehouse, selected, onCl
       }}
     >
       <div style={{
-        width: 44, height: 44, borderRadius: 10,
+        width: 40, height: 40, borderRadius: 9,
         backgroundColor: c['background-subtle'],
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         overflow: 'hidden',
       }}>
-        <img
-          src={warehouse.logo}
-          alt={warehouse.name}
-          style={{ width: 28, height: 28, objectFit: 'contain' }}
-        />
+        <img src={warehouse.logo} alt={warehouse.name} style={{ width: 26, height: 26, objectFit: 'contain' }}/>
       </div>
       <span style={{
-        fontSize: 11, fontWeight: fw.medium,
+        fontSize: 10.5, fontWeight: fw.medium,
         color: selected ? c['content-brand'] : c['content-primary'],
-        textAlign: 'center',
+        textAlign: 'center', lineHeight: 1.3,
       }}>
         {warehouse.name}
       </span>
@@ -495,11 +468,12 @@ const ExistingModelCard: React.FC<ExistingModelCardProps> = ({ option }) => {
       }}
     >
       <div style={{
-        width: 34, height: 34, borderRadius: 8, flexShrink: 0,
+        width: 36, height: 36, borderRadius: 8, flexShrink: 0,
         backgroundColor: c['background-subtle'],
         display: 'flex', alignItems: 'center', justifyContent: 'center',
+        overflow: 'hidden',
       }}>
-        {option.icon}
+        <img src={option.logo} alt={option.title} style={{ width: 22, height: 22, objectFit: 'contain' }}/>
       </div>
       <div style={{ flex: 1 }}>
         <div style={{ fontSize: fs.sm, fontWeight: fw.medium, color: c['content-primary'], marginBottom: 2 }}>
