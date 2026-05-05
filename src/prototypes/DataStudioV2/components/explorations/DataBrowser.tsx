@@ -1,220 +1,173 @@
 import React, { useState } from 'react';
 import { c, sp, fs, fw, ff } from '../../styles';
-import { ExplorationFrame, Card, PrimaryButton, GhostButton, Pill } from './ExplorationFrame';
+import { Button } from '../../../../components/Button';
+import { Card } from '../../../../components/Card';
+import { SearchInput } from '../../../../components/SearchInput';
+import Shell from '../Shell';
+import { SubStateBar } from './ExplorationFrame';
 
-type SubState = 'all' | 'connection' | 'schema' | 'table-actions';
+type SubState = 'browse' | 'table-selected';
 
 const SUBTABS = [
-  { id: 'all',           label: 'Landing — all data' },
-  { id: 'connection',    label: 'Single connection drilled in' },
-  { id: 'schema',        label: 'Schema view' },
-  { id: 'table-actions', label: 'Table click — actions' },
+  { id: 'browse',         label: 'Browse — schema selected' },
+  { id: 'table-selected', label: 'Browse — table selected' },
 ];
 
-const Logo: React.FC<{ kind: string }> = ({ kind }) => {
+// ── Data model for the tree ──────────────────────────────────────────────────
+
+interface SchemaNode { name: string; tables: TableNode[]; }
+interface TableNode  { name: string; rows: string; cols: number; sync: string; isDbt?: boolean; tests?: string; }
+interface ConnNode   { id: string; name: string; type: string; schemas: SchemaNode[]; expanded?: boolean; }
+
+const TREE: ConnNode[] = [
+  {
+    id: 'snow', name: 'snowflake-prod', type: 'Snowflake', expanded: true,
+    schemas: [
+      { name: 'ANALYTICS', tables: [
+        { name: 'orders',         rows: '12.4M', cols: 22, sync: '2h ago' },
+        { name: 'campaigns',      rows: '8.2K',  cols: 18, sync: '2h ago' },
+        { name: 'users',          rows: '142K',  cols: 24, sync: '2h ago' },
+        { name: 'sessions',       rows: '88M',   cols: 14, sync: '2h ago' },
+        { name: 'fct_revenue',    rows: '4.6M',  cols: 12, sync: '2h ago', isDbt: true, tests: '8 / 8 ✓' },
+        { name: 'dim_customers',  rows: '142K',  cols: 16, sync: '2h ago', isDbt: true, tests: '5 / 5 ✓' },
+      ] },
+      { name: 'FINANCE', tables: [
+        { name: 'transactions',   rows: '4.4M', cols: 18, sync: '6h ago' },
+        { name: 'budget_targets', rows: '50',   cols: 7,  sync: '6h ago' },
+      ] },
+    ],
+  },
+  {
+    id: 'bq', name: 'bigquery-marketing', type: 'BigQuery', expanded: false,
+    schemas: [{ name: 'mkt_warehouse', tables: [] }],
+  },
+  {
+    id: 'files', name: 'uploaded files', type: 'File', expanded: false,
+    schemas: [{ name: 'uploads', tables: [] }],
+  },
+];
+
+const Logo: React.FC<{ kind: string; size?: number }> = ({ kind, size = 18 }) => {
   const palette: Record<string, string> = {
-    Snowflake: '#29B5E8', BigQuery: '#4285F4', Databricks: '#FF3621', Postgres: '#336791', dbt: '#FF694A', File: '#6B7280',
+    Snowflake: '#29B5E8', BigQuery: '#4285F4', File: '#6B7280', dbt: '#FF694A',
   };
   return (
     <div style={{
-      width: 24, height: 24, borderRadius: 4,
+      width: size, height: size, borderRadius: 3,
       backgroundColor: palette[kind] ?? c['background-subtle'],
-      color: 'white', fontSize: 10, fontWeight: fw.bold,
+      color: 'white', fontSize: size * 0.55, fontWeight: fw.bold,
       display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
     }}>{kind[0]}</div>
   );
 };
 
-// ── Landing state — all data across connections ──────────────────────────────
+// ── Left tree ────────────────────────────────────────────────────────────────
 
-const ALL_DATA = [
-  { conn: 'snowflake-prod',     type: 'Snowflake',  schemas: 6, tables: 184, dbt: false },
-  { conn: 'bigquery-marketing', type: 'BigQuery',   schemas: 3, tables: 42,  dbt: false },
-  { conn: 'marketing-models',   type: 'dbt',        schemas: 1, tables: 18,  dbt: true  },
-  { conn: 'uploaded files',     type: 'File',       schemas: 0, tables: 6,   dbt: false },
-];
+interface Selection { connId: string; schema?: string; table?: string; }
 
-const AllDataState: React.FC = () => (
-  <div style={{ padding: `${sp.G}px ${sp.H}px`, maxWidth: 1080, margin: '0 auto' }}>
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: sp.D }}>
-      <h1 style={{ margin: 0, fontSize: 18, fontWeight: fw.semibold, color: c['content-primary'] }}>Data Browser</h1>
-      <div style={{ display: 'flex', gap: sp.B }}>
-        <div style={{ position: 'relative', width: 280 }}>
-          <input style={{
-            width: '100%', padding: `${sp.B - 1}px ${sp.C}px ${sp.B - 1}px ${sp.G}px`,
-            border: `1px solid ${c['border-default']}`, borderRadius: 6,
-            fontSize: fs.sm, fontFamily: ff.primary,
-          }} placeholder="Search tables, columns, dbt models..." />
-          <span style={{ position: 'absolute', left: sp.C, top: '50%', transform: 'translateY(-50%)', color: c['content-tertiary'], fontSize: 14 }}>⌕</span>
-        </div>
+const Tree: React.FC<{ selection: Selection; onSelect: (s: Selection) => void }> = ({ selection, onSelect }) => {
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({ snow: true, 'snow:ANALYTICS': true });
+  const toggle = (k: string) => setExpanded(e => ({ ...e, [k]: !e[k] }));
+
+  return (
+    <div style={{ width: 280, borderRight: `1px solid ${c['border-divider']}`, backgroundColor: c['background-base'], overflowY: 'auto', flexShrink: 0 }}>
+      <div style={{ padding: sp.C, borderBottom: `1px solid ${c['border-divider']}` }}>
+        <SearchInput placeholder="Search tables, columns, models..." />
       </div>
-    </div>
-
-    <div style={{ fontSize: 11, color: c['content-secondary'], textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: fw.semibold, marginBottom: sp.B }}>
-      All data sources <span style={{ color: c['content-tertiary'] }}>· {ALL_DATA.length}</span>
-    </div>
-
-    <Card style={{ overflow: 'hidden' }}>
-      {ALL_DATA.map((d, i) => (
-        <div key={d.conn} style={{
-          display: 'grid', gridTemplateColumns: '32px 2fr 1fr 1fr 1fr 32px', gap: sp.C,
-          padding: `${sp.C}px ${sp.D}px`, alignItems: 'center', cursor: 'pointer',
-          borderTop: i > 0 ? `1px solid ${c['border-divider']}` : 'none',
-        }}>
-          <Logo kind={d.type} />
-          <div>
-            <div style={{ fontSize: fs.sm, fontWeight: fw.medium, color: c['content-brand'] }}>{d.conn}</div>
-            <div style={{ fontSize: fs.xs, color: c['content-tertiary'] }}>{d.type}{d.dbt && ' · dbt models with tests + freshness'}</div>
-          </div>
-          <div style={{ fontSize: fs.sm, color: c['content-secondary'] }}>{d.schemas} {d.schemas === 1 ? 'project' : 'schemas'}</div>
-          <div style={{ fontSize: fs.sm, color: c['content-secondary'] }}>{d.tables} tables</div>
-          <div>{d.dbt ? <Pill tone="info">dbt</Pill> : <Pill tone="neutral">Warehouse</Pill>}</div>
-          <div style={{ fontSize: 14, color: c['content-tertiary'] }}>›</div>
-        </div>
-      ))}
-    </Card>
-
-    <div style={{ marginTop: sp.E, padding: sp.D, borderRadius: 6, backgroundColor: c['background-information'], display: 'flex', alignItems: 'flex-start', gap: sp.C }}>
-      <span style={{ fontSize: 18 }}>💡</span>
-      <div style={{ fontSize: fs.xs, color: c['content-brand'], lineHeight: 1.5 }}>
-        Looking for ThoughtSpot Models you've built or imported from dbt? Find them in the <strong>Models</strong> tab — that's where curated artifacts live.
-      </div>
-    </div>
-  </div>
-);
-
-// ── Single connection drilled in ─────────────────────────────────────────────
-
-const ConnectionDrilledState: React.FC = () => (
-  <div style={{ padding: `${sp.G}px ${sp.H}px`, maxWidth: 1080, margin: '0 auto' }}>
-    <button style={{ background: 'none', border: 'none', color: c['content-secondary'], fontSize: fs.xs, cursor: 'pointer', padding: 0, marginBottom: sp.C }}>← Data Browser</button>
-    <div style={{ display: 'flex', alignItems: 'center', gap: sp.C, marginBottom: sp.E }}>
-      <Logo kind="Snowflake" />
-      <h1 style={{ margin: 0, fontSize: 18, fontWeight: fw.semibold, color: c['content-primary'] }}>snowflake-prod</h1>
-      <Pill tone="good">● Connected</Pill>
-      <span style={{ fontSize: fs.xs, color: c['content-tertiary'] }}>· 6 schemas · 184 tables</span>
-    </div>
-
-    <div style={{ display: 'grid', gridTemplateColumns: '240px 1fr', gap: sp.E }}>
-      {/* Schemas list */}
-      <div>
-        <div style={{ fontSize: 11, color: c['content-secondary'], textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: fw.semibold, marginBottom: sp.B }}>Schemas</div>
-        <Card style={{ overflow: 'hidden' }}>
-          {[
-            { name: 'ANALYTICS',     count: 84, active: true },
-            { name: 'FINANCE',       count: 32 },
-            { name: 'MARKETING',     count: 28 },
-            { name: 'PRODUCT',       count: 22 },
-            { name: 'STAGING',       count: 18 },
-          ].map((s, i) => (
-            <div key={s.name} style={{
-              padding: `${sp.B}px ${sp.C}px`, fontSize: fs.sm,
-              backgroundColor: s.active ? c['background-information'] : 'transparent',
-              color: s.active ? c['content-brand'] : c['content-primary'],
-              fontWeight: s.active ? fw.semibold : fw.regular,
-              borderTop: i > 0 ? `1px solid ${c['border-divider']}` : 'none',
-              display: 'flex', justifyContent: 'space-between',
-              cursor: 'pointer', fontFamily: ff.mono,
-            }}>
-              <span>{s.name}</span>
-              <span style={{ fontSize: fs.xs, color: c['content-tertiary'] }}>{s.count}</span>
+      <div style={{ padding: `${sp.B}px 0` }}>
+        {TREE.map(conn => {
+          const connOpen = expanded[conn.id];
+          const connSelected = selection.connId === conn.id && !selection.schema;
+          return (
+            <div key={conn.id}>
+              <button onClick={() => { toggle(conn.id); onSelect({ connId: conn.id }); }} style={{
+                width: '100%', textAlign: 'left' as const,
+                padding: `${sp.A + 2}px ${sp.C}px`, border: 'none',
+                backgroundColor: connSelected ? c['background-information'] : 'transparent',
+                color: connSelected ? c['content-brand'] : c['content-primary'],
+                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: sp.A, fontFamily: ff.primary,
+                fontSize: fs.sm, fontWeight: fw.medium,
+              }}>
+                <span style={{ fontSize: 9, color: c['content-tertiary'], width: 10 }}>{connOpen ? '▾' : '▸'}</span>
+                <Logo kind={conn.type} />
+                <span>{conn.name}</span>
+              </button>
+              {connOpen && conn.schemas.map(s => {
+                const schemaKey = `${conn.id}:${s.name}`;
+                const schemaOpen = expanded[schemaKey];
+                const schemaSelected = selection.connId === conn.id && selection.schema === s.name && !selection.table;
+                return (
+                  <div key={s.name}>
+                    <button onClick={() => { toggle(schemaKey); onSelect({ connId: conn.id, schema: s.name }); }} style={{
+                      width: '100%', textAlign: 'left' as const,
+                      padding: `${sp.A + 1}px ${sp.C}px ${sp.A + 1}px ${sp.E}px`, border: 'none',
+                      backgroundColor: schemaSelected ? c['background-information'] : 'transparent',
+                      color: schemaSelected ? c['content-brand'] : c['content-primary'],
+                      cursor: 'pointer', display: 'flex', alignItems: 'center', gap: sp.A, fontFamily: ff.mono,
+                      fontSize: fs.xs,
+                    }}>
+                      <span style={{ fontSize: 9, color: c['content-tertiary'], width: 10 }}>{schemaOpen ? '▾' : '▸'}</span>
+                      <span>{s.name}</span>
+                      <span style={{ marginLeft: 'auto', fontSize: 10, color: c['content-tertiary'], fontFamily: ff.primary }}>{s.tables.length}</span>
+                    </button>
+                    {schemaOpen && s.tables.map(t => {
+                      const tableSelected = selection.connId === conn.id && selection.schema === s.name && selection.table === t.name;
+                      return (
+                        <button key={t.name} onClick={() => onSelect({ connId: conn.id, schema: s.name, table: t.name })} style={{
+                          width: '100%', textAlign: 'left' as const,
+                          padding: `${sp.A}px ${sp.C}px ${sp.A}px ${sp.G}px`, border: 'none',
+                          backgroundColor: tableSelected ? c['background-information'] : 'transparent',
+                          color: tableSelected ? c['content-brand'] : c['content-primary'],
+                          cursor: 'pointer', display: 'flex', alignItems: 'center', gap: sp.A, fontFamily: ff.mono,
+                          fontSize: fs.xs,
+                        }}>
+                          <span style={{ fontSize: 10, color: t.isDbt ? '#FF694A' : c['content-tertiary'] }}>{t.isDbt ? '◆' : '▦'}</span>
+                          <span>{t.name}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                );
+              })}
             </div>
-          ))}
-        </Card>
-      </div>
-
-      {/* Tables in selected schema */}
-      <div>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: sp.B }}>
-          <div style={{ fontSize: 11, color: c['content-secondary'], textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: fw.semibold }}>Tables in <code style={{ fontFamily: ff.mono, color: c['content-primary'] }}>ANALYTICS</code></div>
-          <input style={{ padding: `${sp.A + 1}px ${sp.B}px`, border: `1px solid ${c['border-default']}`, borderRadius: 4, fontSize: fs.xs, fontFamily: ff.primary, width: 160 }} placeholder="Filter tables..." />
-        </div>
-
-        <Card style={{ overflow: 'hidden' }}>
-          {[
-            { name: 'orders',          rows: '12.4M', cols: 22, sync: '2h ago' },
-            { name: 'campaigns',       rows: '8.2K',  cols: 18, sync: '2h ago' },
-            { name: 'users',           rows: '142K',  cols: 24, sync: '2h ago' },
-            { name: 'sessions',        rows: '88M',   cols: 14, sync: '2h ago' },
-            { name: 'events',          rows: '1.2B',  cols: 32, sync: '2h ago' },
-            { name: 'fct_revenue',     rows: '4.6M',  cols: 12, sync: '2h ago', dbt: true },
-            { name: 'dim_customers',   rows: '142K',  cols: 16, sync: '2h ago', dbt: true },
-          ].map((t, i) => (
-            <div key={t.name} style={{
-              display: 'grid', gridTemplateColumns: '20px 2fr 1fr 1fr 1fr', gap: sp.C,
-              padding: `${sp.B + 1}px ${sp.C}px`, alignItems: 'center',
-              borderTop: i > 0 ? `1px solid ${c['border-divider']}` : 'none', cursor: 'pointer',
-              fontSize: fs.sm,
-            }}>
-              <span style={{ color: c['content-tertiary'] }}>▦</span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: sp.B }}>
-                <code style={{ fontFamily: ff.mono, color: c['content-brand'] }}>{t.name}</code>
-                {t.dbt && <Pill tone="info">dbt</Pill>}
-              </div>
-              <div style={{ color: c['content-secondary'] }}>{t.rows} rows</div>
-              <div style={{ color: c['content-secondary'] }}>{t.cols} cols</div>
-              <div style={{ color: c['content-tertiary'], fontSize: fs.xs }}>synced {t.sync}</div>
-            </div>
-          ))}
-        </Card>
+          );
+        })}
       </div>
     </div>
-  </div>
-);
+  );
+};
 
-// ── Schema view ──────────────────────────────────────────────────────────────
+// ── Right pane ───────────────────────────────────────────────────────────────
 
-const SchemaState: React.FC = () => (
-  <div style={{ padding: `${sp.G}px ${sp.H}px`, maxWidth: 1080, margin: '0 auto' }}>
-    <div style={{ fontSize: fs.xs, color: c['content-tertiary'], marginBottom: sp.B }}>
-      Data Browser › snowflake-prod › <strong>ANALYTICS</strong>
+const SchemaPane: React.FC<{ conn: ConnNode; schema: SchemaNode; onSelectTable: (t: string) => void }> = ({ conn, schema, onSelectTable }) => (
+  <div style={{ flex: 1, overflowY: 'auto', backgroundColor: c['background-sunken'], padding: `${sp.E}px ${sp.G}px` }}>
+    <div style={{ fontSize: fs.xs, color: c['content-tertiary'], marginBottom: sp.B, fontFamily: ff.primary }}>
+      <span>{conn.name}</span> <span style={{ margin: '0 6px' }}>›</span> <strong style={{ color: c['content-primary'], fontFamily: ff.mono }}>{schema.name}</strong>
     </div>
-    <h1 style={{ margin: 0, marginBottom: sp.E, fontSize: 18, fontWeight: fw.semibold, color: c['content-primary'], fontFamily: ff.mono }}>ANALYTICS</h1>
-
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: sp.C, marginBottom: sp.E }}>
-      {[['Tables', '84'], ['Views', '12'], ['dbt models', '18']].map(([k, v]) => (
-        <Card key={k} style={{ padding: sp.C }}>
-          <div style={{ fontSize: fs.xs, color: c['content-tertiary'] }}>{k}</div>
-          <div style={{ fontSize: 18, fontWeight: fw.semibold, color: c['content-primary'] }}>{v}</div>
-        </Card>
-      ))}
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: sp.E }}>
+      <h1 style={{ margin: 0, fontSize: 18, fontWeight: fw.semibold, color: c['content-primary'], fontFamily: ff.mono }}>{schema.name}</h1>
+      <div style={{ fontSize: fs.xs, color: c['content-tertiary'], fontFamily: ff.primary }}>
+        {schema.tables.length} tables · {schema.tables.filter(t => t.isDbt).length} dbt models
+      </div>
     </div>
 
-    <div style={{ display: 'flex', gap: sp.B, marginBottom: sp.C }}>
-      {['All', 'Tables', 'Views', 'dbt models'].map((f, i) => (
-        <span key={f} style={{
-          padding: `${sp.A + 1}px ${sp.C}px`, borderRadius: 14,
-          border: `1px solid ${i === 0 ? c['content-brand'] : c['border-default']}`,
-          backgroundColor: i === 0 ? c['background-information'] : 'transparent',
-          color: i === 0 ? c['content-brand'] : c['content-secondary'],
-          fontSize: fs.xs, cursor: 'pointer',
-        }}>{f}</span>
-      ))}
-    </div>
-
-    <Card style={{ overflow: 'hidden' }}>
+    <Card>
       <div style={{ display: 'grid', gridTemplateColumns: '24px 2fr 1fr 1fr 1fr 1fr', gap: sp.C, padding: `${sp.B}px ${sp.D}px`, backgroundColor: c['background-subtle'], borderBottom: `1px solid ${c['border-divider']}` }}>
         {['', 'Name', 'Type', 'Rows', 'Tests', 'Last sync'].map(h => (
-          <div key={h} style={{ fontSize: 11, fontWeight: fw.medium, color: c['content-secondary'], textTransform: 'uppercase', letterSpacing: '0.04em' }}>{h}</div>
+          <div key={h} style={{ fontSize: 11, fontWeight: fw.medium, color: c['content-secondary'], textTransform: 'uppercase', letterSpacing: '0.04em', fontFamily: ff.primary }}>{h}</div>
         ))}
       </div>
-      {[
-        { name: 'orders',         type: 'Table',     rows: '12.4M', tests: '—',     sync: '2h ago' },
-        { name: 'fct_revenue',    type: 'dbt model', rows: '4.6M',  tests: '8 / 8 ✓', sync: '2h ago', dbt: true },
-        { name: 'dim_customers',  type: 'dbt model', rows: '142K',  tests: '5 / 5 ✓', sync: '2h ago', dbt: true },
-        { name: 'campaigns',      type: 'Table',     rows: '8.2K',  tests: '—',     sync: '2h ago' },
-        { name: 'v_active_users', type: 'View',      rows: '38K',   tests: '—',     sync: '2h ago' },
-      ].map((t, i) => (
-        <div key={t.name} style={{
+      {schema.tables.map((t, i) => (
+        <div key={t.name} onClick={() => onSelectTable(t.name)} style={{
           display: 'grid', gridTemplateColumns: '24px 2fr 1fr 1fr 1fr 1fr', gap: sp.C,
           padding: `${sp.B + 1}px ${sp.D}px`, alignItems: 'center', cursor: 'pointer',
-          borderTop: i > 0 ? `1px solid ${c['border-divider']}` : 'none', fontSize: fs.sm,
+          borderTop: i > 0 ? `1px solid ${c['border-divider']}` : 'none', fontSize: fs.sm, fontFamily: ff.primary,
         }}>
-          <span style={{ color: c['content-tertiary'] }}>{t.dbt ? '◆' : '▦'}</span>
+          <span style={{ color: t.isDbt ? '#FF694A' : c['content-tertiary'] }}>{t.isDbt ? '◆' : '▦'}</span>
           <code style={{ fontFamily: ff.mono, color: c['content-brand'] }}>{t.name}</code>
-          <div style={{ color: c['content-secondary'] }}>{t.type}{t.dbt && ' '}{t.dbt && <Pill tone="info">dbt</Pill>}</div>
+          <div style={{ color: c['content-secondary'] }}>{t.isDbt ? 'dbt model' : 'Table'}</div>
           <div style={{ color: c['content-secondary'] }}>{t.rows}</div>
-          <div style={{ color: t.tests.includes('✓') ? c['content-success'] : c['content-tertiary'] }}>{t.tests}</div>
+          <div style={{ color: t.tests ? c['content-success'] : c['content-tertiary'] }}>{t.tests ?? '—'}</div>
           <div style={{ color: c['content-tertiary'], fontSize: fs.xs }}>{t.sync}</div>
         </div>
       ))}
@@ -222,77 +175,114 @@ const SchemaState: React.FC = () => (
   </div>
 );
 
-// ── Table click — actions menu ──────────────────────────────────────────────
-
-const TableActionsState: React.FC = () => (
-  <div style={{ padding: `${sp.G}px ${sp.H}px`, maxWidth: 920, margin: '0 auto' }}>
-    <div style={{ fontSize: fs.xs, color: c['content-tertiary'], marginBottom: sp.B }}>
-      Data Browser › snowflake-prod › ANALYTICS › <strong>orders</strong>
+const TablePane: React.FC<{ conn: ConnNode; schema: SchemaNode; table: TableNode }> = ({ conn, schema, table }) => (
+  <div style={{ flex: 1, overflowY: 'auto', backgroundColor: c['background-sunken'], padding: `${sp.E}px ${sp.G}px` }}>
+    <div style={{ fontSize: fs.xs, color: c['content-tertiary'], marginBottom: sp.B, fontFamily: ff.primary }}>
+      {conn.name} <span style={{ margin: '0 6px' }}>›</span> <span style={{ fontFamily: ff.mono }}>{schema.name}</span> <span style={{ margin: '0 6px' }}>›</span> <strong style={{ color: c['content-primary'], fontFamily: ff.mono }}>{table.name}</strong>
     </div>
-    <div style={{ display: 'flex', alignItems: 'center', gap: sp.C, marginBottom: sp.D }}>
-      <Logo kind="Snowflake" />
-      <h1 style={{ margin: 0, fontSize: 20, fontWeight: fw.semibold, color: c['content-primary'], fontFamily: ff.mono }}>orders</h1>
-      <Pill tone="neutral">Table</Pill>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: sp.E, gap: sp.D }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: sp.C }}>
+        <span style={{ color: table.isDbt ? '#FF694A' : c['content-tertiary'], fontSize: 16 }}>{table.isDbt ? '◆' : '▦'}</span>
+        <h1 style={{ margin: 0, fontSize: 18, fontWeight: fw.semibold, color: c['content-primary'], fontFamily: ff.mono }}>{table.name}</h1>
+        <span style={{ fontSize: fs.xs, color: c['content-tertiary'], fontFamily: ff.primary }}>{table.rows} rows · {table.cols} cols · synced {table.sync}</span>
+      </div>
+      <div style={{ display: 'flex', gap: sp.B }}>
+        <Button variant="secondary" size="basic">Preview rows</Button>
+        <Button variant="secondary" size="basic">Ask Spotter</Button>
+        <Button variant="primary"   size="basic">Build a model</Button>
+      </div>
     </div>
 
-    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: sp.D }}>
-      {/* Left: schema preview */}
-      <Card style={{ padding: sp.D }}>
-        <div style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'], marginBottom: sp.B }}>Schema preview</div>
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: sp.E }}>
+      <Card>
+        <div style={{ padding: sp.D }}>
+          <div style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'], marginBottom: sp.B, fontFamily: ff.primary }}>Schema</div>
           {[
-            ['order_id',       'varchar', 'PK'],
-            ['user_id',        'varchar', 'FK'],
-            ['campaign_id',    'varchar', 'FK · 18% null'],
-            ['order_date',     'date',    ''],
-            ['amount',         'number',  ''],
-            ['product_category','varchar',''],
-            ['region',         'varchar', ''],
-            ['status',         'varchar', ''],
-          ].map(([n, t, h], i) => (
+            ['order_id',        'varchar', 'PK'],
+            ['user_id',         'varchar', 'FK'],
+            ['campaign_id',     'varchar', 'FK · 18% null'],
+            ['order_date',      'date',    ''],
+            ['amount',          'number',  ''],
+            ['product_category','varchar', ''],
+            ['region',          'varchar', ''],
+            ['status',          'varchar', ''],
+          ].map(([n, t, h], i, arr) => (
             <div key={n} style={{
               display: 'grid', gridTemplateColumns: '2fr 1fr 1.5fr', gap: sp.C,
               padding: `${sp.A + 2}px 0`, fontSize: fs.xs,
-              borderBottom: i < 7 ? `1px solid ${c['background-subtle']}` : 'none',
+              borderBottom: i < arr.length - 1 ? `1px solid ${c['background-subtle']}` : 'none',
             }}>
               <code style={{ fontFamily: ff.mono, color: c['content-primary'] }}>{n}</code>
-              <span style={{ color: c['content-tertiary'] }}>{t}</span>
-              <span style={{ color: c['content-secondary'] }}>{h}</span>
+              <span style={{ color: c['content-tertiary'], fontFamily: ff.primary }}>{t}</span>
+              <span style={{ color: c['content-secondary'], fontFamily: ff.primary }}>{h}</span>
             </div>
           ))}
         </div>
-        <div style={{ marginTop: sp.C, fontSize: fs.xs, color: c['content-tertiary'] }}>12.4M rows · synced 2h ago</div>
       </Card>
 
-      {/* Right: actions */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: sp.B }}>
-        <div style={{ fontSize: 11, color: c['content-secondary'], textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: fw.semibold, marginBottom: sp.A }}>What you can do</div>
-        <PrimaryButton size="sm">✦ Build a model with this</PrimaryButton>
-        <GhostButton size="sm">+ Add to existing model</GhostButton>
-        <GhostButton size="sm">▶ Preview rows</GhostButton>
-        <GhostButton size="sm">⌕ Ask Spotter about this</GhostButton>
-        <GhostButton size="sm">≡ See lineage</GhostButton>
-        <GhostButton size="sm">⎘ Copy fully qualified name</GhostButton>
-      </div>
+      <Card>
+        <div style={{ padding: sp.D }}>
+          <div style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'], marginBottom: sp.B, fontFamily: ff.primary }}>About</div>
+          <div style={{ fontSize: fs.xs, color: c['content-secondary'], lineHeight: 1.5, fontFamily: ff.primary }}>
+            All customer orders placed via the platform. {table.isDbt ? 'Built from raw orders + returns join, deduplicated.' : 'Source table from Snowflake.'}
+          </div>
+          <div style={{ marginTop: sp.D, fontSize: fs.xs, color: c['content-tertiary'], fontFamily: ff.primary }}>
+            <div style={{ marginBottom: sp.A }}>Last synced · {table.sync}</div>
+            <div style={{ marginBottom: sp.A }}>Lineage · 4 upstream sources</div>
+            <div>Used by · 12 ThoughtSpot Models</div>
+          </div>
+        </div>
+      </Card>
     </div>
   </div>
 );
 
-// ── Top-level component ──────────────────────────────────────────────────────
+// ── Top-level ────────────────────────────────────────────────────────────────
 
 export const DataBrowserExploration: React.FC = () => {
-  const [state, setState] = useState<SubState>('all');
+  const [substate, setSubstate] = useState<SubState>('browse');
+  const initial: Selection = substate === 'browse'
+    ? { connId: 'snow', schema: 'ANALYTICS' }
+    : { connId: 'snow', schema: 'ANALYTICS', table: 'orders' };
+  const [selection, setSelection] = useState<Selection>(initial);
+
+  // sync substate → selection
+  React.useEffect(() => {
+    setSelection(substate === 'browse'
+      ? { connId: 'snow', schema: 'ANALYTICS' }
+      : { connId: 'snow', schema: 'ANALYTICS', table: 'orders' }
+    );
+  }, [substate]);
+
+  const conn = TREE.find(t => t.id === selection.connId)!;
+  const schema = conn.schemas.find(s => s.name === selection.schema);
+  const table = schema?.tables.find(t => t.name === selection.table);
+
   return (
-    <ExplorationFrame
-      title="Data Browser — explorations"
-      subtabs={SUBTABS}
-      active={state}
-      onChange={(id) => setState(id as SubState)}
-    >
-      {state === 'all'           && <AllDataState />}
-      {state === 'connection'    && <ConnectionDrilledState />}
-      {state === 'schema'        && <SchemaState />}
-      {state === 'table-actions' && <TableActionsState />}
-    </ExplorationFrame>
+    <Shell activeNav="data" onNavChange={() => {}}>
+      <SubStateBar subtabs={SUBTABS} active={substate} onChange={(id) => setSubstate(id as SubState)} />
+
+      {/* Page header */}
+      <div style={{ flexShrink: 0, padding: `${sp.D}px ${sp.H}px`, backgroundColor: c['background-base'], borderBottom: `1px solid ${c['border-divider']}` }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <h1 style={{ margin: 0, fontSize: 18, fontWeight: fw.semibold, color: c['content-primary'], fontFamily: ff.primary }}>Data Browser</h1>
+          <div style={{ fontSize: fs.xs, color: c['content-tertiary'], fontFamily: ff.primary }}>
+            Catalog of warehouse, dbt views, and uploaded files. <strong style={{ color: c['content-secondary'] }}>Models</strong> tab has your TS Models.
+          </div>
+        </div>
+      </div>
+
+      {/* Split-pane body */}
+      <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+        <Tree selection={selection} onSelect={setSelection} />
+        {schema && !table && <SchemaPane conn={conn} schema={schema} onSelectTable={(name) => setSelection({ ...selection, table: name })} />}
+        {schema &&  table && <TablePane  conn={conn} schema={schema} table={table} />}
+        {!schema && (
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: c['background-sunken'], color: c['content-tertiary'], fontSize: fs.sm, fontFamily: ff.primary }}>
+            Pick a schema or table to view details
+          </div>
+        )}
+      </div>
+    </Shell>
   );
 };
