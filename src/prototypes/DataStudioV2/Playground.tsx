@@ -6,6 +6,7 @@ import { AgentMessage } from './components/AgentPanel';
 import AgentPanel from './components/AgentPanel';
 import LeftPanel from './components/LeftPanel';
 import CenterPanel from './components/CenterPanel';
+import { JourneyPickerExploration, DayZeroEmptyExploration } from './components/explorations/JourneyExplorations';
 
 // ── Seeded project state ──────────────────────────────────────────────────────
 
@@ -1783,7 +1784,7 @@ import { ConnectionsExploration } from './components/explorations/Connections';
 import { DataBrowserExploration } from './components/explorations/DataBrowser';
 import { DbtExploration } from './components/explorations/Dbt';
 
-type NavId = 'v1' | 'v2' | 'v3' | 'v4' | 'v5' | 'v6' | 'tm1' | 'tm2' | 'tm3' | 'p2-conn' | 'p2-browser' | 'p2-dbt';
+type NavId = 'v1' | 'v2' | 'v3' | 'v4' | 'v5' | 'v6' | 'tm1' | 'tm2' | 'tm3' | 'p2-conn' | 'p2-browser' | 'p2-dbt' | 'j-picker' | 'j-day0';
 
 interface PGNavItem {
   id: NavId;
@@ -1832,6 +1833,13 @@ const PG_NAV: { section: string; items: PGNavItem[] }[] = [
       { id: 'p2-dbt',     label: 'dbt workflow', meta: 'empty · import · issues · publish' },
     ],
   },
+  {
+    section: 'Journeys',
+    items: [
+      { id: 'j-picker', label: 'Journey picker',       meta: '4 journeys · Day Zero active', tag: '★' },
+      { id: 'j-day0',   label: 'Day Zero — empty state', meta: 'warehouse cards · prompt bar' },
+    ],
+  },
 ];
 
 const CACHE_SECTION = 'Cache discoverability';
@@ -1852,6 +1860,8 @@ const renderNavIteration = (id: NavId): React.ReactNode => {
     case 'p2-conn':    return <ConnectionsExploration />;
     case 'p2-browser': return <DataBrowserExploration />;
     case 'p2-dbt':     return <DbtExploration />;
+    case 'j-picker':   return <JourneyPickerExploration />;
+    case 'j-day0':     return <DayZeroEmptyExploration />;
   }
 };
 
