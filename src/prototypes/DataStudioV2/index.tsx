@@ -156,6 +156,27 @@ const DataStudio: React.FC = () => {
     navigateTo('workspace');
   };
 
+  // User submitted the hero prompt on the overview page → reset project + go straight to workspace
+  const handleOverviewPromptSubmit = (prompt: string) => {
+    setProject(p => ({
+      id: `proj-${Date.now()}`,
+      name: 'Untitled Project',
+      buildStep: 'empty',
+      activeTab: 'columns',
+      testMode: false,
+      publishedVersion: 0,
+      hasUnpublishedChanges: true,
+      projectSource: p.projectSource, // preserve dbt chip click
+      context: emptyContext,
+      addedTables: [],
+      columnsSelected: false,
+      includedColumns: {},
+      columnOverrides: {},
+    }));
+    setInitialPrompt(prompt);
+    navigateTo('workspace');
+  };
+
   // Start manually → empty workspace, no agent auto-trigger
   const handleStartManually = () => {
     setInitialPrompt('');
@@ -184,7 +205,12 @@ const DataStudio: React.FC = () => {
     <>
       <Shell activeNav={activeNav} onNavChange={handleNavChange}>
         {view === 'overview' && (
-          <Overview onNewProject={newProject} onOpenProject={openModelView} />
+          <Overview
+            onNewProject={newProject}
+            onOpenProject={openModelView}
+            onPromptSubmit={handleOverviewPromptSubmit}
+            onStartDbt={startDbtProject}
+          />
         )}
         {view === 'model-view' && selectedProject && (
           <ModelView
