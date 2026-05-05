@@ -1767,8 +1767,13 @@ export const PlaygroundV6: React.FC = () => {
 // ╚══════════════════════════════════════════════════════════════════════════════╝
 
 import { Iter1Layout, Iter2Layout, Iter3Layout } from '../TestModeLayouts';
+import { CacheDiscoverabilityCompare } from './CacheDiscoverability';
+import { DataQualityDiscoverabilityCompare } from './DataQualityDiscoverability';
+import { ConnectionsExploration } from './components/explorations/Connections';
+import { DataBrowserExploration } from './components/explorations/DataBrowser';
+import { DbtExploration } from './components/explorations/Dbt';
 
-type NavId = 'v1' | 'v2' | 'v3' | 'v4' | 'v5' | 'v6' | 'tm1' | 'tm2' | 'tm3';
+type NavId = 'v1' | 'v2' | 'v3' | 'v4' | 'v5' | 'v6' | 'tm1' | 'tm2' | 'tm3' | 'p2-conn' | 'p2-browser' | 'p2-dbt';
 
 interface PGNavItem {
   id: NavId;
@@ -1797,7 +1802,26 @@ const PG_NAV: { section: string; items: PGNavItem[] }[] = [
       { id: 'tm3', label: 'Horizontal Stack', meta: 'dbt IDE' },
     ],
   },
+  {
+    section: 'Cache discoverability',
+    items: [],
+  },
+  {
+    section: 'Data quality discoverability',
+    items: [],
+  },
+  {
+    section: 'Phase 2 — explorations',
+    items: [
+      { id: 'p2-conn',    label: 'Connections',  meta: 'empty · list · new · detail · dbt' },
+      { id: 'p2-browser', label: 'Data Browser', meta: 'all · drilled · schema · actions' },
+      { id: 'p2-dbt',     label: 'dbt workflow', meta: 'empty · import · issues · publish' },
+    ],
+  },
 ];
+
+const CACHE_SECTION = 'Cache discoverability';
+const QUALITY_SECTION = 'Data quality discoverability';
 
 const renderNavIteration = (id: NavId): React.ReactNode => {
   switch (id) {
@@ -1810,6 +1834,9 @@ const renderNavIteration = (id: NavId): React.ReactNode => {
     case 'tm1': return <Iter1Layout />;
     case 'tm2': return <Iter2Layout />;
     case 'tm3': return <Iter3Layout />;
+    case 'p2-conn':    return <ConnectionsExploration />;
+    case 'p2-browser': return <DataBrowserExploration />;
+    case 'p2-dbt':     return <DbtExploration />;
   }
 };
 
@@ -1881,7 +1908,16 @@ export const PlaygroundNav: React.FC = () => {
         })}
       </div>
 
-      {/* Card grid */}
+      {/* Body — comparison views for cache + quality, card grid for others */}
+      {activeGroup === CACHE_SECTION ? (
+        <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
+          <CacheDiscoverabilityCompare />
+        </div>
+      ) : activeGroup === QUALITY_SECTION ? (
+        <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
+          <DataQualityDiscoverabilityCompare />
+        </div>
+      ) : (
       <div style={{ flex: 1, overflow: 'auto', padding: 32 }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16, maxWidth: 1080 }}>
           {currentGroup.items.map(item => (
@@ -1916,6 +1952,7 @@ export const PlaygroundNav: React.FC = () => {
           ))}
         </div>
       </div>
+      )}
     </div>
   );
 };
