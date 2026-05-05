@@ -5,7 +5,16 @@ _Single source of truth for this prototype. Update as decisions are made._
 
 ## Next up
 
-**Review Phase 2 strategy memo** → `research/phase-2-manage-iterate.md` (session 48). Once Vivek is aligned on the Manage + Iterate thesis and has validated the proposed definitions, 6-situation reshape, and metrics, the memo is ready to share with leadership. Until then, all other build work is paused.
+**Phase 2** → `knowledge/phase-2.md` — eight concrete tasks. Strategy memo at `research/phase-2-manage-iterate.md` is reference background, not the build plan.
+
+1. Move agent prompt from inside project to Data Studio overview page
+2. Add example task chips on the overview page (build, debug, modify, monitor)
+3. Add a connection step at the start of the building flow
+4. Show caching as a step in the building flow
+5. Show how dbt models are imported in the dbt build flow
+6. Trigger editing via an optimization use-case (agentic)
+7. Show a debugging + monitoring use-case (agentic)
+8. Increase the agent panel's default width
 
 Deferred build tasks (from session 47 audit, still valid):
 
