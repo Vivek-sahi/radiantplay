@@ -336,7 +336,7 @@ const SchemaView: React.FC<{ conn: ConnNode; schema: SchemaNode; onPickTable: (t
 
 // ── Table view ───────────────────────────────────────────────────────────────
 
-type TableTab = 'schema' | 'preview' | 'lineage' | 'used-by';
+type TableTab = 'schema' | 'preview' | 'used-by';
 
 const TableView: React.FC<{ conn: ConnNode; schema: SchemaNode; table: TableNode }> = ({ conn, schema, table }) => {
   const [tab, setTab] = useState<TableTab>('schema');
@@ -363,7 +363,6 @@ const TableView: React.FC<{ conn: ConnNode; schema: SchemaNode; table: TableNode
   const TABS: { id: TableTab; label: string }[] = [
     { id: 'schema',   label: 'Schema' },
     { id: 'preview',  label: 'Preview' },
-    { id: 'lineage',  label: 'Lineage' },
     { id: 'used-by',  label: 'Used by' },
   ];
 
@@ -509,50 +508,6 @@ const TableView: React.FC<{ conn: ConnNode; schema: SchemaNode; table: TableNode
               </div>
             </div>
           </Card>
-        )}
-
-        {tab === 'lineage' && (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: sp.E }}>
-            <Card>
-              <div style={{ padding: sp.D }}>
-                <SectionLabel>Upstream sources <span style={{ color: c['content-tertiary'] }}>(4)</span></SectionLabel>
-                {[
-                  { name: 'raw.orders_stream',     kind: 'Snowflake', icon: '▦' },
-                  { name: 'stg_orders',            kind: 'dbt model', icon: '◆' },
-                  { name: 'stg_users',             kind: 'dbt model', icon: '◆' },
-                  { name: 'campaigns_etl',         kind: 'View',      icon: '▦' },
-                ].map((u, i, arr) => (
-                  <div key={u.name} style={{ display: 'flex', alignItems: 'center', gap: sp.B, padding: `${sp.B}px 0`, borderBottom: i < arr.length - 1 ? `1px solid ${c['background-subtle']}` : 'none' }}>
-                    <span style={{ color: u.icon === '◆' ? '#FF694A' : c['content-tertiary'] }}>{u.icon}</span>
-                    <div style={{ flex: 1 }}>
-                      <code style={{ fontFamily: ff.mono, fontSize: fs.sm, color: c['content-primary'] }}>{u.name}</code>
-                      <div style={{ ...ts.footnote, color: c['content-tertiary'] }}>{u.kind}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </Card>
-            <Card>
-              <div style={{ padding: sp.D }}>
-                <SectionLabel>Downstream consumers <span style={{ color: c['content-tertiary'] }}>(12)</span></SectionLabel>
-                {[
-                  { name: 'fct_revenue',                kind: 'dbt model',         icon: '◆' },
-                  { name: 'Campaign Attribution Model', kind: 'ThoughtSpot Model', icon: '◇' },
-                  { name: 'Q4 Revenue Liveboard',       kind: 'Liveboard',         icon: '▤' },
-                  { name: 'Marketing Performance',      kind: 'ThoughtSpot Model', icon: '◇' },
-                ].map((d, i, arr) => (
-                  <div key={d.name} style={{ display: 'flex', alignItems: 'center', gap: sp.B, padding: `${sp.B}px 0`, borderBottom: i < arr.length - 1 ? `1px solid ${c['background-subtle']}` : 'none' }}>
-                    <span style={{ color: d.icon === '◆' ? '#FF694A' : c['content-tertiary'] }}>{d.icon}</span>
-                    <div style={{ flex: 1 }}>
-                      <code style={{ fontFamily: ff.mono, fontSize: fs.sm, color: c['content-primary'] }}>{d.name}</code>
-                      <div style={{ ...ts.footnote, color: c['content-tertiary'] }}>{d.kind}</div>
-                    </div>
-                  </div>
-                ))}
-                <div style={{ ...ts.footnote, color: c['content-tertiary'], marginTop: sp.B }}>+ 8 more</div>
-              </div>
-            </Card>
-          </div>
         )}
 
         {tab === 'used-by' && (
