@@ -5,7 +5,12 @@ _Single source of truth for this prototype. Update as decisions are made._
 
 ## Next up
 
-**Review connections migration to main prototype** — branch `dsv/vivek-data-browser-fixes`. Both steps shipped (Data Browser `b239100`, Connections `c9c32e8`). Review the connections list, wizard flow, detail view, and dbt setup before merging into `dsv/vivek-phase-2-explorations` and deploying.
+**Day 0 narrative on the Overview page** — Phase 2 tasks 1 + 2:
+1. Move agent prompt from inside the project to the Overview page
+2. Add example task chips on the Overview page (build, debug, modify, monitor)
+
+Data + Connections promotion is ✓ done (sessions 50–51, branch `dsv/vivek-data-browser-fixes`).
+Work back in **worktree #1**: `/Users/vivek.sahi/radiantplay/` on `dsv/vivek-phase-2-explorations`.
 
 **Phase 2** → `knowledge/phase-2.md` — eight concrete tasks. Strategy memo at `research/phase-2-manage-iterate.md` is reference background, not the build plan.
 
@@ -206,6 +211,16 @@ Full scripted flows for all 6 situations → **[SCRIPT.md](./SCRIPT.md)**
 ## Session log
 
 _Last 3 sessions. Full history → [SESSION_LOG.md](./SESSION_LOG.md)_
+
+---
+
+### 2026-05-06 (session 51)
+
+**Connections row-click bug fix.**
+
+- **Bug fixed**: clicking any row in the connections list always opened `connections[0]`. Changed `ListView.onDetail` prop from `() => void` to `(conn: Connection) => void`; each row now calls `onDetail(conn)`. `ConnectionsPage` passes `onDetail={openDetail}` directly.
+- Build passes.
+- **Next:** merge `dsv/vivek-data-browser-fixes` into `dsv/vivek-phase-2-explorations`, then deploy.
 
 ---
 

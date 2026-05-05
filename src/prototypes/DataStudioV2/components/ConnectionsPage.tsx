@@ -85,7 +85,7 @@ const COL_TEMPLATE = '2fr 1fr 1fr 80px 40px';
 const ListView: React.FC<{
   connections: Connection[];
   onNew:       () => void;
-  onDetail:    () => void;
+  onDetail:    (conn: Connection) => void;
 }> = ({ connections, onNew, onDetail }) => (
   <>
     <PageHeader
@@ -113,7 +113,7 @@ const ListView: React.FC<{
         {connections.map((conn, i) => (
           <div
             key={conn.id}
-            onClick={onDetail}
+            onClick={() => onDetail(conn)}
             style={{
               display: 'grid', gridTemplateColumns: COL_TEMPLATE,
               gap: sp.C, padding: `${sp.C}px ${sp.D}px`,
@@ -719,7 +719,7 @@ const ConnectionsPage: React.FC = () => {
         <ListView
           connections={connections}
           onNew={() => setWizardOpen(true)}
-          onDetail={() => openDetail(connections[0])}
+          onDetail={openDetail}
         />
       )}
       {view === 'detail' && (
