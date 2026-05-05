@@ -1,5 +1,7 @@
 # Publish vs. Share — UX Research & Decision
 
+**Status: DECIDED — built. No open questions.**
+
 _Researched 2026-04-22. Applies to Data Studio prototype._
 
 ---

@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { c, sp, fs, fw, ff } from '../../styles';
 import { Button } from '../../../../components/Button';
 import { Card } from '../../../../components/Card';
-import { SearchInput } from '../../../../components/SearchInput';
+import { TextInput } from '../../../../components/TextInput';
+import { Select } from '../../../../components/Select';
 import Shell from '../Shell';
 import { SubStateBar } from './ExplorationFrame';
 
@@ -196,22 +197,41 @@ const NewWizard: React.FC<{ onCancel: () => void; onDone: () => void }> = ({ onC
               </div>
               <Card>
                 <div style={{ padding: sp.E, display: 'flex', flexDirection: 'column', gap: sp.D }}>
-                  {[
-                    { label: 'Connection name',   value: `${type.toLowerCase()}-prod` },
-                    { label: type === 'BigQuery' ? 'Project ID' : 'Account',   value: 'mycompany.us-east-1' },
-                    { label: 'Auth method',       value: 'OAuth (recommended)', isSelect: true },
-                    ...(type === 'Snowflake' ? [
-                      { label: 'Default warehouse', value: 'COMPUTE_WH' },
-                      { label: 'Default role',      value: 'ANALYST_ROLE' },
-                    ] : []),
-                  ].map(f => (
-                    <div key={f.label}>
-                      <label style={{ display: 'block', fontSize: fs.xs, fontWeight: fw.medium, color: c['content-secondary'], marginBottom: 4, fontFamily: ff.primary }}>{f.label}</label>
-                      <div style={{ padding: `${sp.B}px ${sp.C}px`, border: `1px solid ${c['border-default']}`, borderRadius: 4, backgroundColor: c['background-base'], fontSize: fs.sm, color: c['content-primary'], fontFamily: ff.primary, display: 'flex', justifyContent: 'space-between' }}>
-                        {f.value} {f.isSelect && <span style={{ color: c['content-tertiary'] }}>▾</span>}
-                      </div>
-                    </div>
-                  ))}
+                  <TextInput
+                    label="Connection name"
+                    placeholder={`${type.toLowerCase()}-prod`}
+                    defaultValue={`${type.toLowerCase()}-prod`}
+                  />
+                  <TextInput
+                    label={type === 'BigQuery' ? 'Project ID' : 'Account'}
+                    placeholder={type === 'BigQuery' ? 'my-gcp-project' : 'mycompany.us-east-1'}
+                    defaultValue="mycompany.us-east-1"
+                  />
+                  <Select
+                    label="Auth method"
+                    fullWidth
+                    options={[
+                      { id: 'oauth',   label: 'OAuth (recommended)' },
+                      { id: 'keypair', label: 'Key pair' },
+                      { id: 'pat',     label: 'Personal access token' },
+                      { id: 'service', label: 'Service account' },
+                    ]}
+                    value="oauth"
+                  />
+                  {type === 'Snowflake' && (
+                    <>
+                      <TextInput
+                        label="Default warehouse"
+                        placeholder="COMPUTE_WH"
+                        defaultValue="COMPUTE_WH"
+                      />
+                      <TextInput
+                        label="Default role"
+                        placeholder="ANALYST_ROLE"
+                        defaultValue="ANALYST_ROLE"
+                      />
+                    </>
+                  )}
                 </div>
               </Card>
               <div style={{ marginTop: sp.D, display: 'flex', justifyContent: 'flex-end', gap: sp.B }}>
@@ -443,18 +463,18 @@ const DbtSetupView: React.FC<{ onCancel: () => void; onDone: () => void }> = ({ 
                 ))}
               </div>
             </div>
-            {[
-              { label: 'API token', value: '••••••••••••••••' },
-              { label: 'Account ID', value: '12345' },
-              { label: 'Project',    value: 'analytics (production)', isSelect: true },
-            ].map(f => (
-              <div key={f.label}>
-                <label style={{ display: 'block', fontSize: fs.xs, fontWeight: fw.medium, color: c['content-secondary'], marginBottom: 4, fontFamily: ff.primary }}>{f.label}</label>
-                <div style={{ padding: `${sp.B}px ${sp.C}px`, border: `1px solid ${c['border-default']}`, borderRadius: 4, fontSize: fs.sm, color: c['content-primary'], fontFamily: ff.primary, display: 'flex', justifyContent: 'space-between' }}>
-                  {f.value} {f.isSelect && <span style={{ color: c['content-tertiary'] }}>▾</span>}
-                </div>
-              </div>
-            ))}
+            <TextInput label="API token" placeholder="dbtc_••••••••••••••••" defaultValue="dbtc_••••••••••••••••" />
+            <TextInput label="Account ID" placeholder="12345" defaultValue="12345" />
+            <Select
+              label="Project"
+              fullWidth
+              options={[
+                { id: 'analytics-prod', label: 'analytics (production)' },
+                { id: 'analytics-dev',  label: 'analytics (dev)' },
+                { id: 'finance',        label: 'finance' },
+              ]}
+              value="analytics-prod"
+            />
           </div>
         </Card>
         <div style={{ marginTop: sp.D, display: 'flex', justifyContent: 'flex-end', gap: sp.B }}>

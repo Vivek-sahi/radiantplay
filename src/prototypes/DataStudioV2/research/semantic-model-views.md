@@ -54,7 +54,7 @@ Both were blocked by permission denials.
 ## Takeaways for Data Studio Info tab
 
 1. **Lead with purpose, not structure.** Sigma leads with "Explore." Genie leads with "common questions." Neither leads with a table list.
-2. **Sample questions are the killer feature.** Databricks Genie's "About" tab has pre-set questions users can ask. For us: "What questions can Spotter answer with this model?" should be front and center.
+2. **Sample questions belong in Spotter, not Model View.** When Sara is in the model view, she is a builder — debugging, caching, or expanding the model. Sample questions are irrelevant to her. They belong in Spotter/SpotIQ, surfaced to the analyst when they select a model to query. **This is a suggestion for the SpotIQ team, not a DataStudio feature.**
 3. **Metrics > tables in hierarchy.** The computed layer (metrics) is what makes the model AI-ready. Tables are raw plumbing — secondary.
 4. **Certification/trust signals.** Sigma has "Endorsed / Warning / Deprecated" badges. For us: published version + last updated is the trust signal.
 5. **Lineage is a power-user feature.** Useful but doesn't belong on the Info tab — maybe Data quality or a future Lineage tab.

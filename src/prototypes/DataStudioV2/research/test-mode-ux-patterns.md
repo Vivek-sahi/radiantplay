@@ -1,5 +1,7 @@
 # Test Mode UX Patterns — Design Brief
 
+**Status: DECIDED — Build/Test tabs in agent panel (session 40). Canvas always visible. No mode switch. No open questions.**
+
 _Research question: Should testing happen in a separate screen, or parallel to the model-building canvas? If parallel, does the data agent stay visible? What is the exact UI mechanism — modes, tabs, or persistent split?_
 
 _Researched 2026-04-23. Tools surveyed: dbt Cloud IDE + Canvas, Looker/LookML IDE + Explore, Hex Notebook, Mode Analytics, Snowflake Cortex Analyst, ThoughtSpot, Cursor 3, GitHub Copilot Workspace, Replit Agent, Databricks Genie Code, Power BI Copilot, Metabase, Omni Analytics._
