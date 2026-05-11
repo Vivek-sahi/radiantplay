@@ -2934,7 +2934,7 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
             setProcessing(false);
             setMessages(prev => [...prev, { id: `r-${Date.now()}`, type: 'response', content: "Stopped. What would you like to change?" }]);
           }}
-          placeholder={agentMode === 'test' ? "Ask anything about your model…" : dayZeroPhase === 'plan_ready' ? "Ask me to change anything in the plan…" : "Give me a task. Use '@' to mention tables."}
+          placeholder={agentMode === 'test' ? "Ask anything about your model…" : dayZeroPhase === 'plan_ready' ? "Ask me to change anything in the plan…" : "Describe a task, or '@' to mention tables."}
           autoFocus
           dropDirection="up"
           onColumnRemove={onColumnRemove}
