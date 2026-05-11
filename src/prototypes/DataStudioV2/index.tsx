@@ -8,8 +8,9 @@ import NewProjectPrompt from './components/NewProjectPrompt';
 import DataBrowserPage from './components/DataBrowserPage';
 import ConnectionsPage from './components/ConnectionsPage';
 import ModelsPage from './components/ModelsPage';
+import FullChatView from './components/FullChatView';
 import { AgentMessage } from './components/AgentPanel';
-import { OverviewProject, OverviewAlert } from './data/mockData';
+import { OverviewProject, OverviewAlert, ActiveInsight } from './data/mockData';
 import { c, sp, ff, fs, fw } from './styles';
 
 export interface ProjectContext {
@@ -54,7 +55,7 @@ export interface ProjectState {
   prepTransforms?: PrepTransform[];
 }
 
-type AppView = 'overview' | 'models' | 'chat' | 'new-project' | 'model-view' | 'workspace' | 'data-browser' | 'connections' | 'placeholder';
+type AppView = 'overview' | 'models' | 'chat' | 'new-project' | 'model-view' | 'workspace' | 'data-browser' | 'connections' | 'placeholder' | 'full-chat';
 
 // Derives a short model name from the user's intent prompt.
 const deriveModelName = (prompt: string): string => {
@@ -93,6 +94,9 @@ const DataStudio: React.FC = () => {
   const [dataBrowserInitialTab, setDataBrowserInitialTab] = useState<'warehouses' | 'external-models'>('warehouses');
   const [messages, setMessages]       = useState<AgentMessage[]>([]);
   const [isAgentMode, setIsAgentMode] = useState(false);
+  const [initialFlow, setInitialFlow]         = useState<string>('');
+  const [initialMessage, setInitialMessage]   = useState<string>('');
+  const [resolvedInsightIds, setResolvedInsightIds] = useState<string[]>([]);
   const [selectedProject, setSelectedProject] = useState<OverviewProject | null>(null);
   const [activeAlert, setActiveAlert]         = useState<OverviewAlert | null>(null);
   const [project, setProject] = useState<ProjectState>({
@@ -135,6 +139,52 @@ const DataStudio: React.FC = () => {
     setActiveAlert(proj.issues?.[0] ?? null);
     setModelViewInitialTab(initialTab);
     navigateTo('model-view');
+  };
+
+  const handleInsightResolved = (id: string) => {
+    setResolvedInsightIds(prev => prev.includes(id) ? prev : [...prev, id]);
+  };
+
+  const handleFixWithAgent = (insight: ActiveInsight, proj: OverviewProject) => {
+    const flowMap: Record<string, string> = {
+      'ins-d1': 'dbt_connection_repair',
+      'ins-d2': 'schema_drift_repair',
+      'ins-d3': 'schema_drift_multi_repair',
+      'ins-d6': 'null_rate_investigation',
+    };
+    const flow = flowMap[insight.id]
+      ?? (insight.primaryAction.type === 'fix-models' ? 'schema_drift_multi_repair'
+        : insight.primaryAction.type === 'fix-model'  ? 'schema_drift_repair'
+        : '');
+    const promptMap: Record<string, string> = {
+      'ins-d1': 'Fix the dbt Cloud connection — sales_analytics sync failed and 3 models are blocked.',
+      'ins-d2': 'Fix the schema drift on FnOps Cost Model — cost_center and allocation_type were removed from dbt_finance_spend.',
+      'ins-d3': 'Fix the schema drift on Revenue Forecast and Pipeline Health — quarterly_target, forecast_region, and pipeline_stage were removed from the warehouse source.',
+      'ins-d6': 'Investigate the null rate spike in Marketing Campaign Attribution — campaign_id nulls spiked from 2% to 18%.',
+    };
+    setInitialFlow(flow);
+    setInitialMessage(promptMap[insight.id] ?? insight.title);
+    setProject(p => ({
+      ...p,
+      id: `proj-${Date.now()}`,
+      name: proj.name,
+      buildStep: 'healthy',
+      activeTab: 'tables',
+      testMode: false,
+      publishedVersion: proj.status === 'published' ? 1 : 0,
+      hasUnpublishedChanges: proj.status !== 'published',
+      projectSource: 'warehouse',
+      addedTables: ['orders', 'campaigns', 'users'],
+      columnsSelected: true,
+      includedColumns: {
+        orders:    ['order_date', 'amount', 'region', 'cost_center', 'allocation_type'],
+        campaigns: ['campaign_id', 'campaign_name', 'channel', 'spend', 'budget'],
+        users:     ['user_id', 'segment', 'lifetime_value'],
+      },
+      columnOverrides: {},
+    }));
+    setMessages([]);
+    navigateTo('full-chat');
   };
 
   // Enter workspace from model view (Edit model button)
@@ -289,7 +339,7 @@ const DataStudio: React.FC = () => {
 
   return (
     <>
-      <Shell activeNav={activeNav} onNavChange={handleNavChange} hideSidebar={view === 'chat' || view === 'workspace'}>
+      <Shell activeNav={activeNav} onNavChange={handleNavChange} hideSidebar={view === 'chat' || view === 'workspace' || view === 'full-chat'}>
         {view === 'models' && (
           <ModelsPage
             onOpenProject={openModelView}
@@ -302,7 +352,8 @@ const DataStudio: React.FC = () => {
             onOpenProject={openModelView}
             onPromptSubmit={handleOverviewPromptSubmit}
             onOpenProjectAtMonitoring={(proj) => openModelView(proj, 'monitoring')}
-            onFixWithAgent={(insight, proj) => openModelView(proj, 'monitoring')}
+            onFixWithAgent={handleFixWithAgent}
+            resolvedInsightIds={resolvedInsightIds}
           />
         )}
         {view === 'model-view' && selectedProject && (
@@ -352,6 +403,16 @@ const DataStudio: React.FC = () => {
               setDataBrowserInitialTab('warehouses');
               navigateTo('data-browser');
             }}
+          />
+        )}
+        {view === 'full-chat' && (
+          <FullChatView
+            project={project}
+            setProject={setProject}
+            initialFlow={initialFlow}
+            initialMessage={initialMessage}
+            onBack={goBack}
+            onInsightResolved={handleInsightResolved}
           />
         )}
       </Shell>
