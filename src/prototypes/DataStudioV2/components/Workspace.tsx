@@ -69,7 +69,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
     }] : []),
   ], [planMsg, project.prepTransforms, project.buildStep, project.name]);
 
-  const contextTables = useMemo(() => planMsg?.planData?.tables.map(t => t.name) ?? [], [planMsg]);
+  const contextTables = useMemo(() => planMsg?.planData?.tables.map(t => t.name) ?? project.addedTables, [planMsg, project.addedTables]);
   const contextSkills = useMemo(() => project.buildStep !== 'empty' ? ['create-data-model'] : [], [project.buildStep]);
 
   // ── Agent panel drag-to-resize ───────────────────────────────────────────────

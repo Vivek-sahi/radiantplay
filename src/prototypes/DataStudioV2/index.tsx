@@ -190,6 +190,7 @@ const DataStudio: React.FC = () => {
   // Enter workspace from model view (Edit model button)
   const enterWorkspaceFromModelView = () => {
     if (!selectedProject) return;
+    setIsAgentMode(true);
     openProject(selectedProject.name, selectedProject.status === 'published');
   };
 
@@ -214,6 +215,11 @@ const DataStudio: React.FC = () => {
         users:     ['user_id', 'segment', 'lifetime_value', 'signup_date'],
       },
       columnOverrides: {},
+      prepTransforms: [
+        { id: 'pt1', columnId: 'order_date', tableId: 'orders', issueType: 'date_format', label: 'Standardise order_date to ISO 8601', sql: "TO_DATE(order_date, 'MM/DD/YYYY')" },
+        { id: 'pt2', columnId: 'amount', tableId: 'orders', issueType: 'null', label: 'Fill null amount with 0', sql: 'COALESCE(amount, 0)' },
+        { id: 'pt3', columnId: 'spend', tableId: 'campaigns', issueType: 'anomaly', label: 'Cap spend outliers at p99', sql: 'LEAST(spend, 9800)' },
+      ],
     });
     navigateTo('workspace');
   };
