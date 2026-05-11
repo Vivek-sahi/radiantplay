@@ -43,6 +43,23 @@ _Nothing queued. Ask at the start of the next session._
 
 ---
 
+## Done — Fix Shell header bleeding into Workspace (2026-05-11, session 79b)
+
+**Root cause of the recurring double-header bug:**
+- `Workspace` renders as `position: fixed, inset: 0, zIndex: 50` (outside `<Shell>`)
+- Shell's `GlobalHeader` (AppShell.module.css: `position: absolute, z-index: 20`) was still painting underneath
+- Result: dark TS shell bar visible on top of Workspace's own "← Chat" header
+
+**Fix (one line in `index.tsx`):**
+- `hideSidebar={view === 'chat' || view === 'workspace'}` — sidebar was also rendering when view=workspace
+- `hideHeader={view === 'workspace'}` — Shell.tsx already supported this via `display: none`; it was just never set
+
+**Why it keeps recurring:** Any view added as a `position: fixed` overlay outside `<Shell>` must explicitly pass `hideHeader`. Views added INSIDE `<Shell>` (like ChatView) correctly inherit the Shell header as a parent frame — two header bars there is intentional (global ThoughtSpot nav + page context bar).
+
+- Build: clean ✓
+
+---
+
 ## Done — Plan artifact panel polish (2026-05-11, session 79)
 
 Both `PlanPanel.tsx` and `QualityPlanPanel.tsx` now visually match the model artifact card.
