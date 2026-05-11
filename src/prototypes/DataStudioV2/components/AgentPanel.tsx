@@ -1714,9 +1714,10 @@ interface AgentPanelProps {
   isDayZero?: boolean;
   isDbtReview?: boolean;
   onOpenPlan?: (plan: PlanData) => void;
+  onOpenQualityPlan?: () => void;
 }
 
-const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, setMessages, initialPrompt, onBuildComplete, externalMessage, onExternalMessageHandled, externalMessageAttachment, injectInput, onInjectInputHandled, width = 340, selectedColumns, onColumnRemove, isDayZero, isDbtReview, onOpenPlan }) => {
+const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, setMessages, initialPrompt, onBuildComplete, externalMessage, onExternalMessageHandled, externalMessageAttachment, injectInput, onInjectInputHandled, width = 340, selectedColumns, onColumnRemove, isDayZero, isDbtReview, onOpenPlan, onOpenQualityPlan }) => {
   const [pendingAction, setPending]     = useState<PendingAction | null>(null);
   const [isProcessing, setProcessing]   = useState(false);
   const [planModalOpen, setPlanModalOpen] = useState(false);
@@ -1725,6 +1726,7 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
   );
   const [dayZeroPhase, setDayZeroPhase] = useState<DayZeroPhase | null>(isDayZero ? 'use_case_prompt' : null);
   const [planVersion, setPlanVersion]    = useState(1);
+  const [agentMode, setAgentMode]        = useState<'build' | 'test'>('build');
   const messagesEndRef           = useRef<HTMLDivElement>(null);
   const promptBarRef             = useRef<PromptBarRef>(null);
   const buildCalledRef           = useRef(false);
@@ -2509,6 +2511,7 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
                 onSuggestion={text => processText(text)}
                 onConfirm={isActivePending ? handleConfirm : undefined}
                 onOpenPlanModal={() => setPlanModalOpen(true)}
+                onOpenQualityPlan={onOpenQualityPlan}
                 onChipClick={text => processText(text)}
               />
             </div>
@@ -2536,11 +2539,38 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
             setProcessing(false);
             setMessages(prev => [...prev, { id: `r-${Date.now()}`, type: 'response', content: "Stopped. What would you like to change?" }]);
           }}
-          placeholder={dayZeroPhase === 'plan_ready' ? "Ask me to change anything in the plan…" : "Give me a task. Use '@' to mention tables."}
+          placeholder={agentMode === 'test' ? "Ask anything about your model…" : dayZeroPhase === 'plan_ready' ? "Ask me to change anything in the plan…" : "Give me a task. Use '@' to mention tables."}
           autoFocus
           dropDirection="up"
-          compact
           onColumnRemove={onColumnRemove}
+          leftSlot={
+            <div style={{ display: 'flex', padding: 2, background: c['background-subtle'], border: `1px solid ${c['border-default']}`, borderRadius: 8, gap: 2, flexShrink: 0 }}>
+              {(['build', 'test'] as const).map(m => {
+                const isActive = agentMode === m;
+                const canSwitch = m === 'build' || project.buildStep !== 'empty';
+                return (
+                  <button
+                    key={m}
+                    onClick={() => canSwitch && setAgentMode(m)}
+                    title={m === 'build' ? 'Build mode' : project.buildStep === 'empty' ? 'Test mode (available after model is built)' : 'Test mode'}
+                    style={{ width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', background: isActive ? c['background-base'] : 'transparent', border: isActive ? `1px solid ${c['border-default']}` : '1px solid transparent', borderRadius: 6, cursor: canSwitch ? 'pointer' : 'default', boxShadow: isActive ? '0 1px 2px rgba(0,0,0,0.08)' : 'none', transition: 'all 0.12s', opacity: canSwitch ? 1 : 0.35 }}
+                  >
+                    {m === 'build' ? (
+                      <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                        <rect x="1" y="8" width="2.5" height="4" rx="0.8" fill={isActive ? '#2770EF' : c['content-tertiary']}/>
+                        <rect x="5.25" y="5" width="2.5" height="7" rx="0.8" fill={isActive ? '#2770EF' : c['content-tertiary']}/>
+                        <rect x="9.5" y="1" width="2.5" height="11" rx="0.8" fill={isActive ? '#2770EF' : c['content-tertiary']}/>
+                      </svg>
+                    ) : (
+                      <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                        <path d="M4.5 1.5h4M6.5 1.5v5l3 5.5a.9.9 0 01-.8 1.3H4.3a.9.9 0 01-.8-1.3l3-5.5V1.5z" stroke={isActive ? '#7C3AED' : c['content-tertiary']} strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          }
         />
       </div>
 
@@ -2898,6 +2928,48 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
 
 // ── Message bubble ────────────────────────────────────────────────────────────
 
+// ── QualityPlanCard — quality plan artifact shown in chat ─────────────────────
+
+const QualityPlanCard: React.FC<{ onClick: () => void }> = ({ onClick }) => (
+  <div
+    onClick={onClick}
+    style={{
+      border: `1px solid ${c['border-default']}`,
+      borderRadius: 10,
+      backgroundColor: c['background-base'],
+      cursor: 'pointer',
+      overflow: 'hidden',
+      transition: 'border-color 0.15s',
+      maxWidth: 460,
+    }}
+    onMouseEnter={e => (e.currentTarget.style.borderColor = c['content-brand'])}
+    onMouseLeave={e => (e.currentTarget.style.borderColor = c['border-default'])}
+  >
+    {/* Header */}
+    <div style={{ padding: `${sp.C}px ${sp.D}px ${sp.B}px`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: sp.B }}>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke={c['content-secondary']} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M8 2L14 14H2L8 2z"/><line x1="8" y1="7" x2="8" y2="10"/><circle cx="8" cy="12.5" r="0.5" fill={c['content-secondary']}/>
+        </svg>
+        <span style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'] }}>Data Quality Plan</span>
+      </div>
+      <span style={{ fontSize: fs.xs, color: c['content-brand'], fontWeight: fw.medium, flexShrink: 0 }}>View plan →</span>
+    </div>
+    {/* Summary */}
+    <div style={{ padding: `0 ${sp.D}px ${sp.C}px` }}>
+      <p style={{ margin: 0, fontSize: fs.xs, color: c['content-secondary'], lineHeight: '18px' }}>
+        Found 9 issues across 3 tables — null values, duplicate rows, date format inconsistencies, and anomalous amounts.
+      </p>
+    </div>
+    {/* Stats */}
+    <div style={{ padding: `${sp.B}px ${sp.D}px`, borderTop: `1px solid ${c['border-divider']}`, display: 'flex', gap: sp.D }}>
+      {['9 issues', '4 high', '4 medium', '1 low'].map(stat => (
+        <span key={stat} style={{ fontSize: 11, color: c['content-secondary'], fontWeight: fw.medium }}>{stat}</span>
+      ))}
+    </div>
+  </div>
+);
+
 // ── Outcome card ──────────────────────────────────────────────────────────────
 
 const OutcomeCard: React.FC<{ card: { title: string; chips: string[]; errorChips?: string[]; note: string } }> = ({ card }) => (
@@ -3161,8 +3233,9 @@ const MessageBubble: React.FC<{
   onSuggestion: (text: string) => void;
   onConfirm?: () => void;
   onOpenPlanModal?: () => void;
+  onOpenQualityPlan?: () => void;
   onChipClick?: (value: string) => void;
-}> = ({ msg, showAvatar, onToggleSteps, onToggleCollapsible, onSuggestion, onConfirm, onOpenPlanModal, onChipClick }) => {
+}> = ({ msg, showAvatar, onToggleSteps, onToggleCollapsible, onSuggestion, onConfirm, onOpenPlanModal, onOpenQualityPlan, onChipClick }) => {
   const [chipUsed, setChipUsed] = React.useState(false);
 
   // ── User bubble ────────────────────────────────────────────────────────────
@@ -3292,25 +3365,27 @@ const MessageBubble: React.FC<{
         {showAvatar ? <AgentAvatar /> : <div style={{ width: 24, flexShrink: 0 }} />}
         <div style={{ flex: 1, minWidth: 0, paddingTop: 2 }}>
           {msg.content && <RichText content={msg.content} />}
-          {msg.reviewPlanCTA && onConfirm && (
+          {msg.reviewPlanCTA && (
             <div style={{ marginTop: sp.C }}>
-              <button
-                onClick={onOpenPlanModal}
-                style={{
-                  padding: `6px 14px`,
-                  backgroundColor: c['content-brand'],
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: 6,
-                  fontSize: fs.xs,
-                  fontWeight: fw.semibold,
-                  cursor: 'pointer',
-                  fontFamily: ff.primary,
-                  lineHeight: '18px',
-                }}
-              >
-                Review plan
-              </button>
+              <QualityPlanCard onClick={onOpenQualityPlan ?? (() => {})} />
+              <div style={{ display: 'flex', gap: sp.B, marginTop: sp.C }}>
+                {onConfirm && (
+                  <button
+                    onClick={onConfirm}
+                    style={{ padding: '6px 14px', backgroundColor: c['content-brand'], color: '#fff', border: 'none', borderRadius: 6, fontSize: fs.xs, fontWeight: fw.semibold, cursor: 'pointer', fontFamily: ff.primary, lineHeight: '18px' }}
+                  >
+                    Apply fixes
+                  </button>
+                )}
+                <button
+                  onClick={() => onSuggestion('Edit the quality plan')}
+                  style={{ padding: '6px 14px', backgroundColor: 'transparent', color: c['content-primary'], border: `1px solid ${c['border-default']}`, borderRadius: 6, fontSize: fs.xs, fontWeight: fw.medium, cursor: 'pointer', fontFamily: ff.primary, lineHeight: '18px' }}
+                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
+                  onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+                >
+                  Edit plan
+                </button>
+              </div>
             </div>
           )}
           {msg.outcomeCard && (

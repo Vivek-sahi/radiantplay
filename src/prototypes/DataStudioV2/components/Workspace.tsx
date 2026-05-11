@@ -581,9 +581,9 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
           {leftPanelOpen && !isBuilding && (
             <>
               <div onClick={() => setLeftPanelOpen(false)}
-                style={{ position: 'fixed', top: 144 + (project.activeTab === 'columns' ? 36 : 0), left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.04)', zIndex: 40 }}
+                style={{ position: 'fixed', top: 204 + (project.activeTab === 'columns' ? 36 : 0), left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.04)', zIndex: 40 }}
               />
-              <div style={{ position: 'fixed', left: 0, top: 144 + (project.activeTab === 'columns' ? 36 : 0), bottom: 0, zIndex: 50, boxShadow: '1px 0 4px rgba(29,35,47,0.06)', clipPath: 'inset(0 -20px 0 0)', animation: 'ds-reveal 0.18s ease-out' }}>
+              <div style={{ position: 'fixed', left: 0, top: 204 + (project.activeTab === 'columns' ? 36 : 0), bottom: 0, zIndex: 50, boxShadow: '1px 0 4px rgba(29,35,47,0.06)', clipPath: 'inset(0 -20px 0 0)', animation: 'ds-reveal 0.18s ease-out' }}>
                 <LeftPanel project={project} setProject={setProject} onSendToAgent={(msg) => { setExternalAgentMessage(msg); setLeftPanelOpen(false); }} />
               </div>
             </>

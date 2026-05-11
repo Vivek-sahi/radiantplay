@@ -39,13 +39,13 @@ The product moved away from a side-panel co-pilot toward a full-screen agent-fir
 
 ## Next up
 
-### 1. Header issue — Shell GlobalHeader still showing in Workspace
+### 1. Merge Komal's Overview page
 
-The `hideHeader={view === 'workspace'}` fix didn't fully resolve the problem in the browser. The dark ThoughtSpot global nav bar is still visible when in Workspace view. Root cause is understood (Shell renders GlobalHeader underneath the `position:fixed` overlay), fix needs re-investigation.
-
-### 2. Plan panel spacing — Workspace context
-
-After removing the double-wrapper from PlanPanel, top/right spacing dropped from ~20px to 8px (just the canvas column padding). The model artifact card also uses 8px and looks fine — the visual regression may be because the canvas column padding isn't the right fix here. The plan/quality panels may need their own inner offset to feel balanced in the wider canvas area. To be scoped at start of next session.
+Komal has built a new Overview page and shared it as a zip file. Steps at start of next session:
+1. Unzip and review her changes
+2. Identify which files are new vs modified
+3. Merge into `prototype/data-studio` — resolve any conflicts with current Overview.tsx and related files
+4. Test that Overview, chat, and workspace flows still work end-to-end
 
 ---
 
@@ -361,6 +361,22 @@ Original 6-situation arc (still valid for demo scripting) → `SCRIPT.md`
 ## Session log
 
 _Last 3 sessions. Full history → [SESSION_LOG.md](./SESSION_LOG.md)_
+
+---
+
+### 2026-05-11 (session 80)
+
+**Global header, quality plan in Created, test mode exploration + prompt bar.**
+
+- **Global header now visible in Workspace:** Workspace wrapper changed from `inset: 0` to `top: 60, left/right/bottom: 0`; `hideHeader={view === 'workspace'}` removed from Shell. `LeftPanel` overlay `top` updated from 144 → 204 (144 + 60px header).
+- **Data quality plan in Created section:** `ChatView.tsx` now detects `messages.find(m => m.reviewPlanCTA)` and adds a `quality-plan` item to the `created` array as soon as the review_data_quality proposal appears — not after fixes are applied. Clicking opens `QualityPlanPanel` in the side panel (same pattern as build plan).
+- **Test mode explorations (Playground):** 4 variants under "Test mode — Option A" (`tma1`–`tma4`): icon pill in header, text+icon segmented, mode chip above input, header dropdown. All toggle between Build and Test agent states interactively.
+- **Design decision on test mode:** test is a mode of the same agent (Option A), not a separate panel. Toggle lives in the prompt bar toolbar as a leftmost pill.
+- **Prompt bar consistency + mode toggle:**
+  - `PromptBar`: new `leftSlot?: React.ReactNode` prop renders at far left of toolbar. Upload button now always visible (removed `!compact` guard).
+  - `AgentPanel`: removed `compact` prop — `+ Tables` and `↑ Upload` now visible in both Overview and AgentPanel. Build/test pill added as `leftSlot`: bar chart icon (build) + flask icon (test). Test icon disabled at 35% opacity when `buildStep === 'empty'`.
+  - Placeholder switches to "Ask anything about your model…" in test mode. Behavior of test mode itself is TBD — wired visually only.
+- Build: clean ✓
 
 ---
 

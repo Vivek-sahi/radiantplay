@@ -53,6 +53,7 @@ export interface PromptBarRef {
   setValue: (v: string) => void;
   focus: () => void;
   setColumns: (cols: string[]) => void;
+  startTypewriter: (base: string, suffixes: string[]) => void;
 }
 
 export interface PromptBarProps {
@@ -64,11 +65,13 @@ export interface PromptBarProps {
   autoFocus?: boolean;
   /** 'up' opens dropdowns above the bar (use in panels); 'down' opens below (landing page) */
   dropDirection?: 'up' | 'down';
-  /** compact hides the Upload button and uses an icon-only table button */
+  /** compact: icon-only table button (Upload always visible) */
   compact?: boolean;
   /** landingPage: single-row textarea, cleaner toolbar styling */
   landingPage?: boolean;
   onColumnRemove?: (name: string) => void;
+  /** Rendered at the far left of the toolbar — use for mode toggles or custom actions */
+  leftSlot?: React.ReactNode;
 }
 
 // ── Component ──────────────────────────────────────────────────────────────────
@@ -84,6 +87,7 @@ const PromptBar = forwardRef<PromptBarRef, PromptBarProps>(({
   compact = false,
   landingPage = false,
   onColumnRemove,
+  leftSlot,
 }, ref) => {
 
   const [value, setValue]                     = useState('');
@@ -104,11 +108,57 @@ const PromptBar = forwardRef<PromptBarRef, PromptBarProps>(({
   const textareaRef  = useRef<HTMLTextAreaElement>(null);
   const searchRef    = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const animTimerRef  = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [ghostSuffix, setGhostSuffix] = useState('');
 
   useImperativeHandle(ref, () => ({
     setValue:   (v: string)    => { setValue(v); textareaRef.current?.focus(); },
     focus:      ()             => textareaRef.current?.focus(),
     setColumns: (cols: string[]) => setAttachedColumns(cols),
+    startTypewriter: (base: string, suffixes: string[]) => {
+      if (animTimerRef.current) clearTimeout(animTimerRef.current);
+      setValue(base);
+      setGhostSuffix('');
+      textareaRef.current?.focus();
+
+      let suffixIdx = 0;
+      let charCount = 0;
+      let phase: 'gap' | 'typing' | 'pausing' | 'deleting' = 'gap';
+
+      const tick = () => {
+        const suffix = suffixes[suffixIdx];
+        if (phase === 'gap') {
+          phase = 'typing';
+          animTimerRef.current = setTimeout(tick, 40);
+        } else if (phase === 'typing') {
+          charCount++;
+          setGhostSuffix(suffix.slice(0, charCount));
+          if (charCount >= suffix.length) {
+            phase = 'pausing';
+            animTimerRef.current = setTimeout(tick, 1600);
+          } else {
+            animTimerRef.current = setTimeout(tick, 65);
+          }
+        } else if (phase === 'pausing') {
+          phase = 'deleting';
+          animTimerRef.current = setTimeout(tick, 35);
+        } else if (phase === 'deleting') {
+          charCount--;
+          setGhostSuffix(suffix.slice(0, charCount));
+          if (charCount <= 0) {
+            suffixIdx++;
+            if (suffixIdx >= suffixes.length) { setGhostSuffix(''); animTimerRef.current = null; return; }
+            charCount = 0;
+            phase = 'gap';
+            animTimerRef.current = setTimeout(tick, 400);
+          } else {
+            animTimerRef.current = setTimeout(tick, 35);
+          }
+        }
+      };
+
+      animTimerRef.current = setTimeout(tick, 400);
+    },
   }));
 
   const canSubmit = value.trim().length > 0 && !disabled;
@@ -132,7 +182,11 @@ const PromptBar = forwardRef<PromptBarRef, PromptBarProps>(({
     if (browserOpen) setTimeout(() => searchRef.current?.focus(), 50);
   }, [browserOpen]);
 
+  useEffect(() => () => { if (animTimerRef.current) clearTimeout(animTimerRef.current); }, []);
+
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    if (animTimerRef.current) { clearTimeout(animTimerRef.current); animTimerRef.current = null; }
+    setGhostSuffix('');
     const val = e.target.value;
     setValue(val);
     const cursor = e.target.selectionStart ?? 0;
@@ -216,7 +270,7 @@ const PromptBar = forwardRef<PromptBarRef, PromptBarProps>(({
           <div
             aria-hidden
             style={{ position: 'absolute', inset: 0, padding: textPadding, fontSize: landingPage ? fs.md : fs.sm, fontFamily: ff.primary, lineHeight: '1.6', whiteSpace: 'pre-wrap', wordBreak: 'break-word', pointerEvents: 'none', boxSizing: 'border-box', color: c['content-primary'] }}
-            dangerouslySetInnerHTML={{ __html: mirrorText(value) }}
+            dangerouslySetInnerHTML={{ __html: mirrorText(value) + (ghostSuffix ? `<span style="color:#B0B8C4">${ghostSuffix.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</span>` : '') }}
           />
           <textarea
             ref={textareaRef}
@@ -284,7 +338,8 @@ const PromptBar = forwardRef<PromptBarRef, PromptBarProps>(({
 
         {/* ── Toolbar ── */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: `${sp.A}px ${sp.B}px` }}>
-          <div style={{ display: 'flex', gap: sp.A, position: 'relative' }}>
+          <div style={{ display: 'flex', gap: sp.A, alignItems: 'center', position: 'relative' }}>
+            {leftSlot}
 
             {/* Table browser button */}
             <div style={{ position: 'relative' }}>
@@ -342,7 +397,7 @@ const PromptBar = forwardRef<PromptBarRef, PromptBarProps>(({
               )}
             </div>
 
-            {!compact && (
+            {(
               <button onClick={() => setUpload(true)}
                 style={{ padding: `${sp.A}px ${sp.B}px`, border: 'none', borderRadius: 6, backgroundColor: 'transparent', color: c['content-secondary'], fontSize: fs.xs, cursor: 'pointer', fontFamily: ff.primary, lineHeight: '1.4' }}
                 onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}

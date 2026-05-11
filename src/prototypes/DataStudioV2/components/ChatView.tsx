@@ -4,6 +4,7 @@ import { ProjectState } from '../index';
 import { AgentMessage, PlanData } from './AgentPanel';
 import AgentPanel from './AgentPanel';
 import PlanPanel from './PlanPanel';
+import QualityPlanPanel from './QualityPlanPanel';
 import ChatContextPanel, { CreatedItem } from './ChatContextPanel';
 
 interface ChatViewProps {
@@ -26,16 +27,18 @@ const ChatView: React.FC<ChatViewProps> = ({
   initialPrompt, isDayZero, isDbtReview, onBack, onNavigateToTable,
 }) => {
   const [activePlan, setActivePlan] = useState<PlanData | null>(null);
+  const [qualityPlanOpen, setQualityPlanOpen] = useState(false);
   const [contextPanelOpen, setContextPanelOpen] = useState(true);
 
-  const isPlanOpen = activePlan !== null;
+  const isPlanOpen = activePlan !== null || qualityPlanOpen;
 
-  // Close context panel when plan opens to avoid 3-column crowding
+  // Close context panel when any side panel opens to avoid 3-column crowding
   useEffect(() => {
     if (isPlanOpen) setContextPanelOpen(false);
   }, [isPlanOpen]);
 
   const planMsg = useMemo(() => messages.find(m => m.planData != null), [messages]);
+  const qualityPlanMsg = useMemo(() => messages.find(m => m.reviewPlanCTA), [messages]);
 
   const created = useMemo((): CreatedItem[] => [
     ...(planMsg ? [{
@@ -43,11 +46,16 @@ const ChatView: React.FC<ChatViewProps> = ({
       name: 'Build plan',
       onClick: () => planMsg?.planData && setActivePlan(planMsg.planData),
     }] : []),
+    ...(qualityPlanMsg ? [{
+      type: 'quality-plan' as const,
+      name: 'Data quality plan',
+      onClick: () => setQualityPlanOpen(true),
+    }] : []),
     ...(project.buildStep !== 'empty' ? [{
       type: 'model' as const,
       name: project.name,
     }] : []),
-  ], [planMsg, project.buildStep, project.name]);
+  ], [planMsg, qualityPlanMsg, project.buildStep, project.name]);
 
   const contextTables = useMemo(() => planMsg?.planData?.tables.map(t => t.name) ?? [], [planMsg]);
   const contextSkills = useMemo(() => project.buildStep !== 'empty' ? ['create-data-model'] : [], [project.buildStep]);
@@ -119,6 +127,7 @@ const ChatView: React.FC<ChatViewProps> = ({
               isDbtReview={isDbtReview}
               width={isPlanOpen ? Math.max(340, Math.round(window.innerWidth * CHAT_PANEL_PCT)) : CHAT_WIDTH}
               onOpenPlan={plan => setActivePlan(plan)}
+              onOpenQualityPlan={() => setQualityPlanOpen(true)}
             />
           </div>
         </div>
@@ -129,6 +138,17 @@ const ChatView: React.FC<ChatViewProps> = ({
             <PlanPanel
               plan={activePlan}
               onClose={() => { setActivePlan(null); setContextPanelOpen(true); }}
+            />
+          </div>
+        )}
+
+        {/* Quality plan panel */}
+        {isPlanOpen && qualityPlanOpen && (
+          <div style={{ flex: 1, padding: '8px 8px 8px 0', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+            <QualityPlanPanel
+              onClose={() => { setQualityPlanOpen(false); setContextPanelOpen(true); }}
+              onApplyFixes={() => {}}
+              onEditPlan={() => {}}
             />
           </div>
         )}

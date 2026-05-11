@@ -286,7 +286,7 @@ const DataStudio: React.FC = () => {
 
   return (
     <>
-      <Shell activeNav={activeNav} onNavChange={handleNavChange} hideSidebar={view === 'chat' || view === 'workspace'} hideHeader={view === 'workspace'}>
+      <Shell activeNav={activeNav} onNavChange={handleNavChange} hideSidebar={view === 'chat' || view === 'workspace'}>
         {view === 'models' && (
           <ModelsPage
             onOpenProject={openModelView}
@@ -355,7 +355,7 @@ const DataStudio: React.FC = () => {
         </div>
       )}
       {view === 'workspace' && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 50 }}>
+        <div style={{ position: 'fixed', top: 60, left: 0, right: 0, bottom: 0, zIndex: 50 }}>
           <Workspace
             project={project}
             setProject={setProject}

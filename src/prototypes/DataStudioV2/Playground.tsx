@@ -351,6 +351,356 @@ const ClarifyBarExploration: React.FC = () => {
   );
 };
 
+// ── Context Panel exploration ─────────────────────────────────────────────────
+
+const CONTEXT_PANEL_W = 280;
+const CONTEXT_CHAT_W  = 720;
+
+type ContextStep = 0 | 1 | 2 | 3;
+
+interface ContextCreatedItem {
+  type: 'plan' | 'quality-plan' | 'model';
+  name: string;
+}
+
+const CONTEXT_STEPS_DATA: {
+  label: string;
+  created: ContextCreatedItem[];
+  tables: string[];
+  skills: string[];
+}[] = [
+  { label: 'Empty', created: [], tables: [], skills: [] },
+  {
+    label: 'Plan',
+    created: [{ type: 'plan', name: 'Build plan' }],
+    tables: ['marketing_data', 'ad_spend_daily', 'campaign_meta'],
+    skills: [],
+  },
+  {
+    label: '+ Quality',
+    created: [
+      { type: 'plan', name: 'Build plan' },
+      { type: 'quality-plan', name: 'Quality plan' },
+    ],
+    tables: ['marketing_data', 'ad_spend_daily', 'campaign_meta'],
+    skills: ['create-data-model'],
+  },
+  {
+    label: '+ Model',
+    created: [
+      { type: 'plan', name: 'Build plan' },
+      { type: 'quality-plan', name: 'Quality plan' },
+      { type: 'model', name: 'Campaign Performance' },
+    ],
+    tables: ['marketing_data', 'ad_spend_daily', 'campaign_meta'],
+    skills: ['create-data-model', 'review-data-quality'],
+  },
+];
+
+const CONTEXT_MSGS = [
+  { role: 'user'  as const, text: 'I want to build a campaign performance model for the marketing team.' },
+  { role: 'agent' as const, text: "Got it. I'll build a campaign performance model tracking ROI, spend, and attribution across channels." },
+  { role: 'agent' as const, text: "Here's the build plan I've put together — 3 tables, 2 joins, 14 columns." },
+  { role: 'user'  as const, text: 'Looks good, start building.' },
+  { role: 'agent' as const, text: "Building now. I'll flag any issues as I go." },
+  { role: 'agent' as const, text: "Model is ready. Found 9 data quality issues — null campaign IDs, date format mismatches, and anomalous spend values. I've put together a quality plan." },
+];
+
+const MSGS_PER_STEP: number[] = [1, 3, 5, 6];
+
+const ContextPanelExploration: React.FC = () => {
+  const [panelOpen,    setPanelOpen]    = useState(true);
+  const [step,         setStep]         = useState<ContextStep>(3);
+  const [layout,       setLayout]       = useState<'chat' | 'workspace'>('chat');
+  const [createdOpen,  setCreatedOpen]  = useState(true);
+  const [contextSOpen, setContextSOpen] = useState(true);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const data = CONTEXT_STEPS_DATA[step];
+  const msgs = CONTEXT_MSGS.slice(0, MSGS_PER_STEP[step]);
+
+  useEffect(() => {
+    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+  }, [step]);
+
+  // Reusable right panel JSX (same in both layouts)
+  const rightPanelEl = panelOpen ? (
+    <div style={{
+      width: CONTEXT_PANEL_W, flexShrink: 0,
+      borderLeft: `1px solid ${c['border-divider']}`,
+      backgroundColor: c['background-base'],
+      display: 'flex', flexDirection: 'column', overflow: 'hidden',
+    }}>
+      {/* Created section */}
+      <div style={{ borderBottom: `1px solid ${c['border-divider']}` }}>
+        <button
+          onClick={() => setCreatedOpen(o => !o)}
+          style={{ width: '100%', height: 40, display: 'flex', alignItems: 'center', padding: `0 ${sp.D}px`, gap: sp.B, border: 'none', backgroundColor: 'transparent', cursor: 'pointer', boxSizing: 'border-box' }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = c['background-subtle']; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'; }}
+        >
+          <span style={{ flex: 1, fontSize: fs.xs, fontWeight: fw.semibold, color: c['content-primary'], fontFamily: ff.primary, textAlign: 'left' }}>Created</span>
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke={c['content-tertiary']} strokeWidth="1.5" strokeLinecap="round" style={{ transform: createdOpen ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.15s' }}>
+            <path d="M2 4l4 4 4-4"/>
+          </svg>
+        </button>
+        {createdOpen && (
+          <div style={{ padding: `0 ${sp.C}px ${sp.C}px`, display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {data.created.length === 0 ? (
+              <p style={{ margin: 0, padding: `${sp.B}px ${sp.A}px`, fontSize: fs.xs, color: c['content-tertiary'], fontFamily: ff.primary }}>Nothing created yet.</p>
+            ) : (
+              <>
+                {/* Plan documents — neutral cards */}
+                {data.created.filter(i => i.type !== 'model').map((item, i) => (
+                  <div key={i}
+                    style={{ display: 'flex', alignItems: 'center', gap: sp.C, padding: `${sp.B}px ${sp.C}px`, borderRadius: 7, border: `1px solid ${c['border-divider']}`, backgroundColor: c['background-subtle'], cursor: 'pointer' }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = c['border-default']; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = c['border-divider']; }}
+                  >
+                    <div style={{ flexShrink: 0, width: 16, height: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {item.type === 'plan' ? (
+                        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke={c['content-secondary']} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="2" y="1.5" width="12" height="13" rx="2"/>
+                          <line x1="5" y1="5.5" x2="11" y2="5.5"/>
+                          <line x1="5" y1="8" x2="11" y2="8"/>
+                          <line x1="5" y1="10.5" x2="8" y2="10.5"/>
+                        </svg>
+                      ) : (
+                        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="#D97706" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M8 2L14.5 13H1.5L8 2Z"/>
+                          <line x1="8" y1="6" x2="8" y2="9.5"/>
+                          <circle cx="8" cy="11.5" r="0.75" fill="#D97706" stroke="none"/>
+                        </svg>
+                      )}
+                    </div>
+                    <span style={{ flex: 1, fontSize: fs.xs, color: c['content-primary'], fontFamily: ff.primary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</span>
+                  </div>
+                ))}
+                {/* Model — distinct blue card */}
+                {data.created.filter(i => i.type === 'model').map((item, i) => (
+                  <div key={i}
+                    style={{ display: 'flex', alignItems: 'center', gap: sp.C, padding: `${sp.B}px ${sp.C}px`, borderRadius: 7, border: '1px solid #BFDBFE', backgroundColor: '#EFF6FF', cursor: 'pointer' }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#93C5FD'; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = '#BFDBFE'; }}
+                  >
+                    <div style={{ flexShrink: 0, width: 16, height: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+                        <rect x="1.5" y="1.5" width="5.5" height="5.5" rx="1.5" fill="#2563EB" opacity="0.8"/>
+                        <rect x="9" y="1.5" width="5.5" height="5.5" rx="1.5" fill="#2563EB"/>
+                        <rect x="1.5" y="9" width="5.5" height="5.5" rx="1.5" fill="#2563EB"/>
+                        <rect x="9" y="9" width="5.5" height="5.5" rx="1.5" fill="#2563EB" opacity="0.4"/>
+                      </svg>
+                    </div>
+                    <span style={{ flex: 1, fontSize: fs.xs, fontWeight: fw.medium, color: c['content-brand'], fontFamily: ff.primary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</span>
+                  </div>
+                ))}
+              </>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Context section */}
+      <div>
+        <button
+          onClick={() => setContextSOpen(o => !o)}
+          style={{ width: '100%', height: 40, display: 'flex', alignItems: 'center', padding: `0 ${sp.D}px`, gap: sp.B, border: 'none', backgroundColor: 'transparent', cursor: 'pointer', boxSizing: 'border-box' }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = c['background-subtle']; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'; }}
+        >
+          <span style={{ flex: 1, fontSize: fs.xs, fontWeight: fw.semibold, color: c['content-primary'], fontFamily: ff.primary, textAlign: 'left' }}>Context</span>
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke={c['content-tertiary']} strokeWidth="1.5" strokeLinecap="round" style={{ transform: contextSOpen ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.15s' }}>
+            <path d="M2 4l4 4 4-4"/>
+          </svg>
+        </button>
+        {contextSOpen && (
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            {data.tables.length === 0 && data.skills.length === 0 ? (
+              <p style={{ margin: 0, padding: `${sp.B}px ${sp.D}px`, fontSize: fs.xs, color: c['content-tertiary'], fontFamily: ff.primary }}>No context used yet.</p>
+            ) : (
+              <>
+                {data.tables.length > 0 && (
+                  <div style={{ marginBottom: sp.C }}>
+                    <div style={{ padding: `${sp.B}px ${sp.D}px`, fontSize: 10, fontWeight: fw.medium, color: c['content-tertiary'], fontFamily: ff.primary, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Tables</div>
+                    {data.tables.map((t, i) => (
+                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: sp.C, padding: `5px ${sp.D}px`, cursor: 'pointer' }}
+                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = c['background-subtle']; }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'; }}
+                      >
+                        <svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke={c['content-secondary']} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="1" y="1" width="12" height="12" rx="2"/><line x1="1" y1="5" x2="13" y2="5"/><line x1="5" y1="5" x2="5" y2="13"/>
+                        </svg>
+                        <span style={{ fontSize: fs.xs, color: c['content-secondary'], fontFamily: ff.mono }}>{t}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {data.skills.length > 0 && (
+                  <div>
+                    <div style={{ padding: `${sp.B}px ${sp.D}px`, fontSize: 10, fontWeight: fw.medium, color: c['content-tertiary'], fontFamily: ff.primary, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Skills</div>
+                    {data.skills.map((s, i) => (
+                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: sp.C, padding: `5px ${sp.D}px`, cursor: 'pointer' }}
+                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = c['background-subtle']; }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'; }}
+                      >
+                        <svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke={c['content-secondary']} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="7" cy="7" r="5.5"/><polyline points="5,7.5 6.5,9 9,5.5"/>
+                        </svg>
+                        <span style={{ fontSize: fs.xs, color: c['content-secondary'], fontFamily: ff.mono }}>{s}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  ) : null;
+
+  return (
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundColor: c['background-base'] }}>
+
+      {/* Step + layout controls */}
+      <div style={{ height: 36, flexShrink: 0, borderBottom: `1px solid ${c['border-divider']}`, backgroundColor: c['background-subtle'], display: 'flex', alignItems: 'center', padding: `0 ${sp.D}px`, gap: sp.C }}>
+        <span style={{ fontSize: fs.xs, color: c['content-secondary'], fontFamily: ff.primary }}>Context panel skeleton</span>
+        {/* Layout toggle */}
+        <div style={{ display: 'flex', height: 24, border: `1px solid ${c['border-default']}`, borderRadius: 6, overflow: 'hidden' }}>
+          {(['chat', 'workspace'] as const).map((l, i) => (
+            <button key={l} onClick={() => setLayout(l)} style={{
+              height: '100%', padding: `0 ${sp.C}px`, border: 'none',
+              borderRight: i === 0 ? `1px solid ${c['border-default']}` : 'none',
+              backgroundColor: layout === l ? c['background-information'] : c['background-base'],
+              cursor: 'pointer', fontSize: 11, fontFamily: ff.primary,
+              color: layout === l ? c['content-brand'] : c['content-secondary'],
+            }}>{l === 'chat' ? 'Chat' : 'With artifact'}</button>
+          ))}
+        </div>
+        <div style={{ flex: 1 }} />
+        {CONTEXT_STEPS_DATA.map((s, i) => (
+          <button key={i} onClick={() => setStep(i as ContextStep)} style={{
+            height: 24, padding: `0 ${sp.C}px`,
+            border: `1px solid ${step === i ? c['border-brand'] : c['border-default']}`,
+            borderRadius: 6,
+            backgroundColor: step === i ? c['background-information'] : c['background-base'],
+            cursor: 'pointer', fontSize: 11, fontFamily: ff.primary,
+            color: step === i ? c['content-brand'] : c['content-secondary'],
+          }}>{s.label}</button>
+        ))}
+      </div>
+
+      {/* Page header */}
+      <div style={{ height: 48, flexShrink: 0, display: 'flex', alignItems: 'center', padding: `0 ${sp.D}px`, borderBottom: `1px solid ${c['border-divider']}`, backgroundColor: c['background-base'] }}>
+        <button style={{ display: 'flex', alignItems: 'center', gap: sp.B, height: 32, padding: `0 ${sp.C}px`, border: 'none', backgroundColor: 'transparent', cursor: 'pointer', borderRadius: 6, color: c['content-secondary'], fontFamily: ff.primary, fontSize: fs.sm }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = c['background-subtle']; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'; }}
+        >
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="10,4 6,8 10,12"/></svg>
+          Overview
+        </button>
+        <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+          <span style={{ fontSize: fs.sm, fontWeight: fw.medium, color: c['content-primary'], fontFamily: ff.primary }}>Campaign performance model</span>
+        </div>
+        <button onClick={() => setPanelOpen(o => !o)}
+          style={{ width: 32, height: 32, padding: 0, border: 'none', borderRadius: 6, backgroundColor: panelOpen ? c['background-subtle'] : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: panelOpen ? c['content-primary'] : c['content-tertiary'] }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = c['background-subtle']; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = panelOpen ? c['background-subtle'] : 'transparent'; }}
+        >
+          <svg width="16" height="16" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="1.5" y="1.5" width="15" height="15" rx="2"/><line x1="12" y1="1.5" x2="12" y2="16.5"/>
+          </svg>
+        </button>
+      </div>
+
+      {/* Body */}
+      <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+        {layout === 'chat' ? (
+          <>
+            {/* Centered chat column */}
+            <div style={{ flex: 1, display: 'flex', justifyContent: 'center', overflow: 'hidden' }}>
+              <div style={{ maxWidth: CONTEXT_CHAT_W, width: '100%', height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: `${sp.F}px ${sp.D}px`, display: 'flex', flexDirection: 'column', gap: sp.D }}>
+                  {msgs.map((msg, i) => (
+                    <div key={i} style={{ display: 'flex', flexDirection: msg.role === 'user' ? 'row-reverse' : 'row', alignItems: 'flex-start', gap: sp.C }}>
+                      {msg.role === 'agent' && <SpotterDot />}
+                      <div style={{ maxWidth: '72%', backgroundColor: msg.role === 'user' ? c['background-information'] : c['background-subtle'], border: `1px solid ${msg.role === 'user' ? c['border-default'] : c['border-divider']}`, borderRadius: msg.role === 'user' ? '12px 4px 12px 12px' : '4px 12px 12px 12px', padding: `${sp.C}px ${sp.D}px`, fontSize: fs.sm, lineHeight: '20px', color: c['content-primary'], fontFamily: ff.primary }}>{msg.text}</div>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ flexShrink: 0, padding: `${sp.C}px ${sp.D}px ${sp.D}px` }}>
+                  <div style={{ height: 44, borderRadius: 10, border: `1px solid ${c['border-default']}`, backgroundColor: c['background-base'], display: 'flex', alignItems: 'center', padding: `0 ${sp.D}px` }}>
+                    <span style={{ flex: 1, fontSize: fs.sm, color: c['content-tertiary'], fontFamily: ff.primary }}>Ask a follow-up…</span>
+                    <span style={{ fontSize: fs.xs, color: c['content-tertiary'], fontFamily: ff.primary }}>Spotter ↓</span>
+                  </div>
+                  <p style={{ margin: `${sp.A}px 0 0`, textAlign: 'center', fontSize: 11, color: c['content-secondary'], fontFamily: ff.primary, lineHeight: '16px' }}>Spotter responses should be reviewed.</p>
+                </div>
+              </div>
+            </div>
+            {rightPanelEl}
+          </>
+        ) : (
+          <>
+            {/* Workspace: agent left + artifact center + context panel right */}
+            <div style={{ width: 360, flexShrink: 0, borderRight: `1px solid ${c['border-divider']}`, display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundColor: c['background-base'] }}>
+              <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: `${sp.F}px ${sp.D}px`, display: 'flex', flexDirection: 'column', gap: sp.D }}>
+                {msgs.map((msg, i) => (
+                  <div key={i} style={{ display: 'flex', flexDirection: msg.role === 'user' ? 'row-reverse' : 'row', alignItems: 'flex-start', gap: sp.C }}>
+                    {msg.role === 'agent' && <SpotterDot />}
+                    <div style={{ maxWidth: '80%', backgroundColor: msg.role === 'user' ? c['background-information'] : c['background-subtle'], border: `1px solid ${msg.role === 'user' ? c['border-default'] : c['border-divider']}`, borderRadius: msg.role === 'user' ? '12px 4px 12px 12px' : '4px 12px 12px 12px', padding: `${sp.C}px ${sp.D}px`, fontSize: fs.sm, lineHeight: '20px', color: c['content-primary'], fontFamily: ff.primary }}>{msg.text}</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ flexShrink: 0, padding: `${sp.C}px ${sp.D}px ${sp.D}px` }}>
+                <div style={{ height: 44, borderRadius: 10, border: `1px solid ${c['border-default']}`, backgroundColor: c['background-base'], display: 'flex', alignItems: 'center', padding: `0 ${sp.D}px` }}>
+                  <span style={{ flex: 1, fontSize: fs.sm, color: c['content-tertiary'], fontFamily: ff.primary }}>Ask a follow-up…</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Artifact canvas */}
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundColor: c['background-sunken'], padding: sp.D }}>
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundColor: c['background-base'], border: `1px solid ${c['border-divider']}`, borderRadius: 10 }}>
+                {/* Identity row */}
+                <div style={{ height: 48, flexShrink: 0, display: 'flex', alignItems: 'center', padding: `0 ${sp.D}px`, gap: sp.C, borderBottom: `1px solid ${c['border-divider']}` }}>
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                    <rect x="1.5" y="1.5" width="5.5" height="5.5" rx="1.5" fill="#2563EB" opacity="0.8"/>
+                    <rect x="9" y="1.5" width="5.5" height="5.5" rx="1.5" fill="#2563EB"/>
+                    <rect x="1.5" y="9" width="5.5" height="5.5" rx="1.5" fill="#2563EB"/>
+                    <rect x="9" y="9" width="5.5" height="5.5" rx="1.5" fill="#2563EB" opacity="0.4"/>
+                  </svg>
+                  <span style={{ fontSize: fs.sm, fontWeight: fw.medium, color: c['content-primary'], fontFamily: ff.primary }}>Campaign Performance</span>
+                  <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 4, backgroundColor: '#EFF6FF', color: c['content-brand'], border: '1px solid #BFDBFE', fontFamily: ff.primary }}>Draft</span>
+                  <div style={{ flex: 1 }} />
+                  <button style={{ height: 28, padding: `0 ${sp.C}px`, border: `1px solid ${c['border-default']}`, borderRadius: 6, backgroundColor: 'transparent', cursor: 'pointer', fontSize: fs.xs, fontFamily: ff.primary, color: c['content-secondary'] }}>Share</button>
+                  <button style={{ height: 28, padding: `0 ${sp.C}px`, border: 'none', borderRadius: 6, backgroundColor: '#2563EB', color: 'white', cursor: 'pointer', fontSize: fs.xs, fontFamily: ff.primary }}>Publish model</button>
+                </div>
+                {/* Tab bar */}
+                <div style={{ height: 40, flexShrink: 0, display: 'flex', alignItems: 'flex-end', padding: `0 ${sp.D}px`, borderBottom: `1px solid ${c['border-divider']}` }}>
+                  {['Columns', 'Tables', 'Preview', 'Notebook'].map((tab, i) => (
+                    <button key={tab} style={{ height: 40, padding: '0 12px', border: 'none', background: 'transparent', cursor: 'pointer', fontSize: fs.xs, fontFamily: ff.primary, marginBottom: -1, fontWeight: i === 0 ? fw.semibold : fw.regular, color: i === 0 ? c['content-brand'] : c['content-secondary'], borderBottom: i === 0 ? `2px solid ${c['content-brand']}` : '2px solid transparent' }}>{tab}</button>
+                  ))}
+                </div>
+                {/* Columns stub */}
+                <div style={{ flex: 1, overflowY: 'auto' }}>
+                  {['order_date', 'amount', 'region', 'campaign_id', 'campaign_name', 'channel', 'spend', 'budget', 'impressions'].map((col, i) => (
+                    <div key={col} style={{ display: 'flex', alignItems: 'center', height: 36, padding: `0 ${sp.D}px`, gap: sp.C, borderBottom: `1px solid ${c['border-divider']}` }}>
+                      <span style={{ fontSize: 10, fontFamily: ff.mono, color: c['content-tertiary'], width: 44, flexShrink: 0 }}>{i < 1 ? 'DATE' : i < 3 ? 'TEXT' : i < 4 ? 'INT' : i < 6 ? 'TEXT' : 'FLOAT'}</span>
+                      <span style={{ fontSize: fs.sm, fontFamily: ff.primary, color: c['content-primary'] }}>{col}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {rightPanelEl}
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
+
 // ── Main playground ───────────────────────────────────────────────────────────
 
 const Playground: React.FC = () => {
@@ -358,7 +708,7 @@ const Playground: React.FC = () => {
   const [messages, setMessages]   = useState<AgentMessage[]>([]);
   const [leftOpen, setLeftOpen]   = useState(true);
   const [agentOpen, setAgentOpen] = useState(true);
-  const [explMode, setExplMode]   = useState<'workspace' | 'clarifybar'>('workspace');
+  const [explMode, setExplMode]   = useState<'workspace' | 'clarifybar' | 'context-panel'>('workspace');
   const [drawerTab, setDrawerTab] = useState<DrawerTab>('preview');
   const [drawerOpen, setDrawerOpen]     = useState(true);
   const [drawerHeight, setDrawerHeight] = useState(DRAWER_DEFAULT);
@@ -463,7 +813,7 @@ const Playground: React.FC = () => {
         </div>
         {/* Mode tabs */}
         <div style={{ flex: 1, display: 'flex', justifyContent: 'center', gap: 2 }}>
-          {(['workspace', 'clarifybar'] as const).map(mode => {
+          {(['workspace', 'clarifybar', 'context-panel'] as const).map(mode => {
             const active = explMode === mode;
             return (
               <button key={mode} onClick={() => setExplMode(mode)}
@@ -475,7 +825,7 @@ const Playground: React.FC = () => {
                   color: active ? c['content-brand'] : c['content-secondary'],
                   marginBottom: -1,
                 }}>
-                {mode === 'workspace' ? 'Workspace' : 'Clarify bar'}
+                {mode === 'workspace' ? 'Workspace' : mode === 'clarifybar' ? 'Clarify bar' : 'Context panel'}
               </button>
             );
           })}
@@ -494,7 +844,8 @@ const Playground: React.FC = () => {
       </div>
 
       {/* ── ClarifyBar exploration ── */}
-      {explMode === 'clarifybar' && <ClarifyBarExploration />}
+      {explMode === 'clarifybar'    && <ClarifyBarExploration />}
+      {explMode === 'context-panel' && <ContextPanelExploration />}
 
       {/* ── Workspace body ── */}
       {explMode === 'workspace' && <div style={{ flex: 1, overflow: 'hidden', display: 'flex' }}>
@@ -2382,6 +2733,284 @@ const ArtifactChatExploration: React.FC = () => {
   );
 };
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// Test mode — Option A (in-agent mode toggle) explorations
+// ═══════════════════════════════════════════════════════════════════════════════
+
+type AgentMode = 'build' | 'test';
+
+const BuildModeSvg: React.FC<{ color: string }> = ({ color }) => (
+  <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+    <rect x="1" y="9" width="3" height="5" rx="1" fill={color}/>
+    <rect x="6" y="5" width="3" height="9" rx="1" fill={color}/>
+    <rect x="11" y="1" width="3" height="13" rx="1" fill={color}/>
+  </svg>
+);
+
+const TestModeSvg: React.FC<{ color: string }> = ({ color }) => (
+  <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+    <path d="M5.5 1.5h4M7.5 1.5v5.5l3.5 6.5a1 1 0 01-.9 1.5H4.9a1 1 0 01-.9-1.5l3.5-6.5V1.5z" stroke={color} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
+const TM_BUILD_MSGS = [
+  { role: 'user' as const, text: 'Build a campaign performance model for my marketing team.' },
+  { role: 'agent' as const, text: 'On it. Pulling tables from your Snowflake warehouse and building the joins.', isCard: false },
+  { role: 'agent' as const, text: 'Campaign Performance model ready — 14 columns across 3 tables.', isCard: true },
+];
+
+const TM_TEST_MSGS = [
+  { role: 'agent' as const, text: 'Your model is ready. Ask me anything about it to see how Spotter will interpret the data.', isCard: false },
+  { role: 'agent' as const, chips: ['What was our highest ROI campaign?', 'Revenue by channel last 30 days', 'Show campaigns with spend > $10k'] },
+];
+
+const TmAgentBase: React.FC<{
+  mode: AgentMode;
+  headerExtra?: React.ReactNode;
+  inputExtra?: React.ReactNode;
+}> = ({ mode, headerExtra, inputExtra }) => {
+  const msgs = mode === 'build' ? TM_BUILD_MSGS : TM_TEST_MSGS;
+  const placeholder = mode === 'build' ? 'Tell the agent what to do next…' : 'Ask anything about your model…';
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+      {/* Header */}
+      <div style={{ height: 48, display: 'flex', alignItems: 'center', padding: '0 16px', gap: 8, borderBottom: `1px solid ${c['border-divider']}`, flexShrink: 0 }}>
+        <span style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'], flex: 1 }}>Data Agent</span>
+        {headerExtra}
+      </div>
+
+      {/* Messages */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 16px 8px' }}>
+        {msgs.map((msg, i) => (
+          <div key={`${mode}-${i}`} style={{ marginBottom: 12 }}>
+            {msg.role === 'user' ? (
+              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <div style={{ background: c['background-subtle'], borderRadius: 12, padding: '8px 12px', maxWidth: '75%', fontSize: fs.sm, color: c['content-primary'], lineHeight: 1.5 }}>
+                  {msg.text}
+                </div>
+              </div>
+            ) : 'chips' in msg && msg.chips ? (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 4 }}>
+                {msg.chips.map((chip: string) => (
+                  <button key={chip} style={{ background: c['background-subtle'], border: `1px solid ${c['border-default']}`, borderRadius: 20, padding: '5px 12px', fontSize: fs.sm, color: c['content-primary'], cursor: 'pointer', fontFamily: ff.primary }}>
+                    {chip}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div style={{ fontSize: fs.sm, color: c['content-primary'], lineHeight: 1.5, ...(msg.isCard ? { background: c['background-subtle'], border: `1px solid ${c['border-divider']}`, borderRadius: 8, padding: '10px 12px' } : {}) }}>
+                {msg.text}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Input area */}
+      <div style={{ padding: '8px 12px 12px', flexShrink: 0 }}>
+        {inputExtra}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, border: `1px solid ${c['border-default']}`, borderRadius: 10, padding: '8px 12px', background: c['background-base'] }}>
+          <span style={{ flex: 1, fontSize: fs.sm, color: c['content-tertiary'] }}>{placeholder}</span>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M3 8h10M9 4l4 4-4 4" stroke={c['content-secondary']} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const TmArtifactStub: React.FC = () => {
+  const [tab, setTab] = useState<'columns' | 'tables' | 'preview' | 'notebook'>('columns');
+  const TABS = ['columns', 'tables', 'preview', 'notebook'] as const;
+  const COLS = ['order_id', 'campaign_name', 'channel', 'region', 'amount', 'spend', 'return_on_spend', 'segment', 'user_id', 'order_date'];
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+      {/* Identity row */}
+      <div style={{ height: 48, display: 'flex', alignItems: 'center', padding: '0 16px', gap: 10, borderBottom: `1px solid ${c['border-divider']}`, flexShrink: 0 }}>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <rect x="0.5" y="0.5" width="6.5" height="6.5" rx="1.5" fill="#2770EF"/>
+          <rect x="9" y="0.5" width="6.5" height="6.5" rx="1.5" fill="#2770EF" opacity="0.5"/>
+          <rect x="0.5" y="9" width="6.5" height="6.5" rx="1.5" fill="#2770EF" opacity="0.5"/>
+          <rect x="9" y="9" width="6.5" height="6.5" rx="1.5" fill="#2770EF"/>
+        </svg>
+        <span style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'], flex: 1 }}>Campaign Performance</span>
+        <span style={{ fontSize: fs.xs, color: c['content-secondary'], background: c['background-subtle'], border: `1px solid ${c['border-default']}`, borderRadius: 4, padding: '2px 6px' }}>Draft</span>
+        <button style={{ fontSize: fs.sm, color: c['content-secondary'], background: 'none', border: `1px solid ${c['border-default']}`, borderRadius: 6, padding: '4px 10px', cursor: 'pointer', fontFamily: ff.primary }}>Share</button>
+        <button style={{ fontSize: fs.sm, color: '#fff', background: '#2770EF', border: 'none', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', fontFamily: ff.primary }}>Publish model</button>
+      </div>
+
+      {/* Tab bar */}
+      <div style={{ height: 40, display: 'flex', alignItems: 'stretch', borderBottom: `1px solid ${c['border-divider']}`, padding: '0 16px', flexShrink: 0, gap: 2 }}>
+        {TABS.map(t => (
+          <button key={t} onClick={() => setTab(t)}
+            style={{ background: 'none', border: 'none', borderBottom: tab === t ? '2px solid #2770EF' : '2px solid transparent', padding: '0 10px', cursor: 'pointer', fontFamily: ff.primary, fontSize: fs.sm, color: tab === t ? '#2770EF' : c['content-secondary'], fontWeight: tab === t ? fw.semibold : fw.regular, textTransform: 'capitalize' }}>
+            {t}
+          </button>
+        ))}
+        <div style={{ flex: 1 }}/>
+        <button style={{ background: 'none', border: 'none', padding: '0 8px', cursor: 'pointer', fontSize: fs.sm, color: c['content-secondary'], fontFamily: ff.primary }}>Live query</button>
+        <button style={{ background: 'none', border: 'none', padding: '0 8px', cursor: 'pointer', fontSize: fs.sm, color: c['content-secondary'], fontFamily: ff.primary }}>Quality</button>
+      </div>
+
+      {/* Content */}
+      {tab === 'columns' ? (
+        <div style={{ flex: 1, overflowY: 'auto' }}>
+          {COLS.map((col, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 16px', borderBottom: `1px solid ${c['border-divider']}` }}>
+              <div style={{ width: 18, height: 18, borderRadius: 3, background: c['background-subtle'], display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: fw.bold, fontFamily: ff.mono, color: c['content-tertiary'], flexShrink: 0 }}>A</div>
+              <span style={{ fontSize: fs.sm, color: c['content-primary'], fontFamily: ff.mono }}>{col}</span>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{ fontSize: fs.sm, color: c['content-tertiary'] }}>{tab} view</span>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const TmLayout: React.FC<{ label: string; desc: string; children: React.ReactNode }> = ({ label, desc, children }) => (
+  <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: c['background-sunken'], fontFamily: ff.primary }}>
+    <div style={{ height: 44, display: 'flex', alignItems: 'center', gap: 12, padding: '0 20px', borderBottom: `1px solid ${c['border-divider']}`, background: c['background-base'], flexShrink: 0 }}>
+      <span style={{ fontWeight: fw.semibold, fontSize: fs.sm, color: c['content-primary'] }}>{label}</span>
+      <span style={{ fontSize: fs.sm, color: c['content-secondary'] }}>{desc}</span>
+    </div>
+    <div style={{ flex: 1, overflow: 'hidden', display: 'flex', padding: 8, gap: 8 }}>
+      {children}
+    </div>
+  </div>
+);
+
+const TmCard: React.FC<{ width?: number; children: React.ReactNode }> = ({ width, children }) => (
+  <div style={{ width, flex: width ? undefined : 1, display: 'flex', flexDirection: 'column', background: c['background-base'], border: `1px solid ${c['border-divider']}`, borderRadius: 10, overflow: 'hidden', minWidth: 0 }}>
+    {children}
+  </div>
+);
+
+// ── A1: Icon pill in header ──────────────────────────────────────────────────
+const TestModeA1: React.FC = () => {
+  const [mode, setMode] = useState<AgentMode>('build');
+
+  const toggle = (
+    <div style={{ display: 'flex', padding: 2, background: c['background-subtle'], border: `1px solid ${c['border-default']}`, borderRadius: 8, gap: 2 }}>
+      {(['build', 'test'] as AgentMode[]).map(m => (
+        <button key={m} onClick={() => setMode(m)}
+          style={{ width: 30, height: 26, display: 'flex', alignItems: 'center', justifyContent: 'center', background: mode === m ? c['background-base'] : 'transparent', border: mode === m ? `1px solid ${c['border-default']}` : '1px solid transparent', borderRadius: 6, cursor: 'pointer', boxShadow: mode === m ? '0 1px 2px rgba(0,0,0,0.08)' : 'none', transition: 'all 0.12s' }}>
+          {m === 'build' ? <BuildModeSvg color={mode === 'build' ? '#2770EF' : c['content-tertiary']} /> : <TestModeSvg color={mode === 'test' ? '#2770EF' : c['content-tertiary']} />}
+        </button>
+      ))}
+    </div>
+  );
+
+  return (
+    <TmLayout label="A1 — Icon pill" desc="Two icons in a pill · header right · no labels">
+      <TmCard width={360}><TmAgentBase mode={mode} headerExtra={toggle} /></TmCard>
+      <TmCard><TmArtifactStub /></TmCard>
+    </TmLayout>
+  );
+};
+
+// ── A2: Text + icon segmented in header ─────────────────────────────────────
+const TestModeA2: React.FC = () => {
+  const [mode, setMode] = useState<AgentMode>('build');
+
+  const toggle = (
+    <div style={{ display: 'flex', padding: 2, background: c['background-subtle'], border: `1px solid ${c['border-default']}`, borderRadius: 8, gap: 2 }}>
+      {([['build', 'Build'], ['test', 'Test']] as [AgentMode, string][]).map(([m, label]) => (
+        <button key={m} onClick={() => setMode(m)}
+          style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '3px 10px', background: mode === m ? c['background-base'] : 'transparent', border: mode === m ? `1px solid ${c['border-default']}` : '1px solid transparent', borderRadius: 6, cursor: 'pointer', boxShadow: mode === m ? '0 1px 2px rgba(0,0,0,0.08)' : 'none', transition: 'all 0.12s' }}>
+          {m === 'build' ? <BuildModeSvg color={mode === 'build' ? '#2770EF' : c['content-tertiary']} /> : <TestModeSvg color={mode === 'test' ? '#2770EF' : c['content-tertiary']} />}
+          <span style={{ fontSize: 12, fontWeight: fw.medium, color: mode === m ? '#2770EF' : c['content-secondary'], fontFamily: ff.primary }}>{label}</span>
+        </button>
+      ))}
+    </div>
+  );
+
+  return (
+    <TmLayout label="A2 — Text + icon segmented" desc="Labelled pill in header · clearer affordance">
+      <TmCard width={360}><TmAgentBase mode={mode} headerExtra={toggle} /></TmCard>
+      <TmCard><TmArtifactStub /></TmCard>
+    </TmLayout>
+  );
+};
+
+// ── A3: Mode chip above input ─────────────────────────────────────────────────
+const TestModeA3: React.FC = () => {
+  const [mode, setMode] = useState<AgentMode>('build');
+  const [open, setOpen] = useState(false);
+
+  const chip = (
+    <div style={{ position: 'relative', marginBottom: 6 }}>
+      <button onClick={() => setOpen(o => !o)}
+        style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 8px 3px 6px', background: c['background-subtle'], border: `1px solid ${c['border-default']}`, borderRadius: 12, cursor: 'pointer', fontFamily: ff.primary }}>
+        <div style={{ width: 7, height: 7, borderRadius: '50%', background: mode === 'build' ? '#2770EF' : '#7C3AED', flexShrink: 0 }} />
+        <span style={{ fontSize: 12, fontWeight: fw.medium, color: c['content-primary'] }}>{mode === 'build' ? 'Build' : 'Test'}</span>
+        <svg width="10" height="10" viewBox="0 0 10 10"><path d="M2 3.5l3 3 3-3" stroke={c['content-secondary']} strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+      </button>
+      {open && (
+        <div style={{ position: 'absolute', bottom: '100%', left: 0, marginBottom: 4, background: c['background-base'], border: `1px solid ${c['border-default']}`, borderRadius: 8, boxShadow: '0 4px 12px rgba(0,0,0,0.1)', width: 130, overflow: 'hidden', zIndex: 10 }}>
+          {(['build', 'test'] as AgentMode[]).map(m => (
+            <button key={m} onClick={() => { setMode(m); setOpen(false); }}
+              style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px', background: mode === m ? c['background-subtle'] : 'transparent', border: 'none', cursor: 'pointer', fontFamily: ff.primary, fontSize: fs.sm, color: c['content-primary'] }}>
+              {m === 'build' ? <BuildModeSvg color={c['content-secondary']} /> : <TestModeSvg color={c['content-secondary']} />}
+              <span style={{ textTransform: 'capitalize', flex: 1, textAlign: 'left' }}>{m}</span>
+              {mode === m && <svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="#2770EF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  return (
+    <TmLayout label="A3 — Mode chip above input" desc="Pill near composer · header stays clean · dropdown to switch">
+      <TmCard width={360}><TmAgentBase mode={mode} inputExtra={chip} /></TmCard>
+      <TmCard><TmArtifactStub /></TmCard>
+    </TmLayout>
+  );
+};
+
+// ── A4: Dropdown in header ────────────────────────────────────────────────────
+const TestModeA4: React.FC = () => {
+  const [mode, setMode] = useState<AgentMode>('build');
+  const [open, setOpen] = useState(false);
+
+  const dropdown = (
+    <div style={{ position: 'relative' }}>
+      <button onClick={() => setOpen(o => !o)}
+        style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '4px 8px', background: 'transparent', border: `1px solid ${c['border-default']}`, borderRadius: 6, cursor: 'pointer', fontFamily: ff.primary }}>
+        {mode === 'build' ? <BuildModeSvg color={c['content-secondary']} /> : <TestModeSvg color={c['content-secondary']} />}
+        <span style={{ fontSize: fs.sm, fontWeight: fw.medium, color: c['content-primary'] }}>{mode === 'build' ? 'Build' : 'Test'}</span>
+        <svg width="10" height="10" viewBox="0 0 10 10"><path d="M2 3.5l3 3 3-3" stroke={c['content-secondary']} strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+      </button>
+      {open && (
+        <div style={{ position: 'absolute', top: '100%', left: 0, marginTop: 4, background: c['background-base'], border: `1px solid ${c['border-default']}`, borderRadius: 8, boxShadow: '0 4px 12px rgba(0,0,0,0.1)', width: 130, overflow: 'hidden', zIndex: 10 }}>
+          {(['build', 'test'] as AgentMode[]).map(m => (
+            <button key={m} onClick={() => { setMode(m); setOpen(false); }}
+              style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px', background: mode === m ? c['background-subtle'] : 'transparent', border: 'none', cursor: 'pointer', fontFamily: ff.primary, fontSize: fs.sm, color: c['content-primary'] }}>
+              {m === 'build' ? <BuildModeSvg color={c['content-secondary']} /> : <TestModeSvg color={c['content-secondary']} />}
+              <span style={{ textTransform: 'capitalize', flex: 1, textAlign: 'left' }}>{m}</span>
+              {mode === m && <svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="#2770EF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  return (
+    <TmLayout label="A4 — Dropdown in header" desc="Mode as a dropdown button beside agent title">
+      <TmCard width={360}><TmAgentBase mode={mode} headerExtra={dropdown} /></TmCard>
+      <TmCard><TmArtifactStub /></TmCard>
+    </TmLayout>
+  );
+};
+
 // ╔══════════════════════════════════════════════════════════════════════════════╗
 // ║  PLAYGROUND NAV — unified left-nav shell for all iterations                ║
 // ║  Route: /data-studio-v2/playground                                            ║
@@ -2402,7 +3031,7 @@ import { DataQualityDiscoverabilityCompare } from './DataQualityDiscoverability'
 import { CombinedDiscoverabilityCompare } from './CombinedDiscoverability';
 import { DbtExploration } from './components/explorations/Dbt';
 
-type NavId = 'v1' | 'v2' | 'v3' | 'v4' | 'v5' | 'v6' | 'tm1' | 'tm2' | 'tm3' | 'p2-dbt' | 'clarify-bar' | 'artifact-chat';
+type NavId = 'v1' | 'v2' | 'v3' | 'v4' | 'v5' | 'v6' | 'tm1' | 'tm2' | 'tm3' | 'p2-dbt' | 'clarify-bar' | 'artifact-chat' | 'context-panel' | 'tma1' | 'tma2' | 'tma3' | 'tma4';
 
 interface PGNavItem {
   id: NavId;
@@ -2448,7 +3077,17 @@ const PG_NAV: { section: string; items: PGNavItem[] }[] = [
     items: [
       { id: 'p2-dbt',       label: 'dbt workflow',    meta: 'empty · import · issues · publish' },
       { id: 'clarify-bar',  label: 'Clarify bar',    meta: 'prompt-adjacent · auto-advance · compiled message' },
-      { id: 'artifact-chat', label: 'Artifact chat',  meta: 'chat container · model artifact · identity row · tab bar', tag: 'NEW' },
+      { id: 'artifact-chat',  label: 'Artifact chat',   meta: 'chat container · model artifact · identity row · tab bar' },
+      { id: 'context-panel',  label: 'Context panel',   meta: 'created · context · tables · skills · toggle', tag: 'NEW' },
+    ],
+  },
+  {
+    section: 'Test mode — Option A',
+    items: [
+      { id: 'tma1', label: 'Icon pill',        meta: 'header · icon only' },
+      { id: 'tma2', label: 'Text + icon',      meta: 'header · labelled' },
+      { id: 'tma3', label: 'Mode chip',        meta: 'above input · dropdown' },
+      { id: 'tma4', label: 'Header dropdown',  meta: 'beside title' },
     ],
   },
 ];
@@ -2470,7 +3109,12 @@ const renderNavIteration = (id: NavId): React.ReactNode => {
     case 'tm3': return <Iter3Layout />;
     case 'p2-dbt':      return <DbtExploration />;
     case 'clarify-bar':   return <ClarifyBarExploration />;
-    case 'artifact-chat': return <ArtifactChatExploration />;
+    case 'artifact-chat':  return <ArtifactChatExploration />;
+    case 'context-panel':  return <ContextPanelExploration />;
+    case 'tma1': return <TestModeA1 />;
+    case 'tma2': return <TestModeA2 />;
+    case 'tma3': return <TestModeA3 />;
+    case 'tma4': return <TestModeA4 />;
   }
 };
 
