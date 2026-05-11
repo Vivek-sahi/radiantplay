@@ -25,7 +25,7 @@ const CenterPanel: React.FC<CenterPanelProps> = ({ project, setProject, onSendTo
   const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
 
   return (
-    <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', backgroundColor: c['background-sunken'] }}>
+    <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', backgroundColor: c['background-base'] }}>
       {selectedTableId && (
         <TableDetailModal
           tableId={selectedTableId}
@@ -63,7 +63,7 @@ const TablesView: React.FC<{ project: ProjectState; onTableClick: (id: string) =
   const svgH        = Math.max(420, Math.ceil(tables.length / 2) * 180 + 60);
 
   return (
-    <div style={{ flex: 1, overflow: 'auto', padding: sp.H, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: c['background-sunken'] }}>
+    <div style={{ flex: 1, overflow: 'auto', padding: sp.H, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: c['background-base'] }}>
       <svg width="620" height={svgH} viewBox={`0 0 620 ${svgH}`} style={{ maxWidth: '100%' }}>
         {tables.map((id) => {
           const meta         = tableMetadata[id];
@@ -764,7 +764,7 @@ const NotebookView: React.FC<{ project: ProjectState }> = ({ project }) => {
 const NotebookCell: React.FC<{ id: number; type: string; comment: string; query: string }> = ({ id, type, comment, query }) => (
   <div style={{ border: `1px solid ${c['border-divider']}`, borderRadius: 8, backgroundColor: c['background-base'], overflow: 'hidden' }}>
     {/* Cell header */}
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: `${sp.B}px ${sp.C}px`, borderBottom: `1px solid ${c['border-divider']}`, backgroundColor: c['background-subtle'] }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: `${sp.B}px ${sp.C}px`, borderBottom: `1px solid ${c['border-divider']}`, backgroundColor: c['background-base'] }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: sp.B }}>
         <span style={{ fontSize: fs.xs, backgroundColor: type === 'sql' ? '#E0E7FF' : '#FEF9C3', color: type === 'sql' ? '#3730A3' : '#854D0E', padding: '1px 6px', borderRadius: 3, fontWeight: fw.semibold, textTransform: 'uppercase' }}>{type}</span>
         <span style={{ fontSize: fs.xs, color: c['content-secondary'] }}>Cell {id}</span>
