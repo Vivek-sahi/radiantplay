@@ -135,7 +135,7 @@ const ProjectsList: React.FC<ProjectsListProps> = ({ onOpen, currentProject, onR
           </div>
 
           {[
-            { label: 'Projects', active: true },
+            { label: 'Models', active: true },
             { label: 'Data',     active: false },
             { label: 'Connections', active: false },
           ].map(item => (
@@ -152,8 +152,8 @@ const ProjectsList: React.FC<ProjectsListProps> = ({ onOpen, currentProject, onR
 
             {/* Page header */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: sp.F }}>
-              <h1 style={{ ...ts.modalTitle, color: c['content-primary'], margin: 0 }}>Projects</h1>
-              <Button variant="primary" icon="plus" iconPosition="leading" onClick={() => onOpen()}>New project</Button>
+              <h1 style={{ ...ts.modalTitle, color: c['content-primary'], margin: 0 }}>Models</h1>
+              <Button variant="primary" icon="plus" iconPosition="leading" onClick={() => onOpen()}>New model</Button>
             </div>
 
             {/* Table */}

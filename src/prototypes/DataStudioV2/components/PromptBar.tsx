@@ -448,7 +448,7 @@ const UploadModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         </div>
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: sp.B, padding: `${sp.C}px ${sp.F}px`, borderTop: `1px solid ${c['border-divider']}` }}>
           <button onClick={onClose} style={{ padding: `${sp.B}px ${sp.D}px`, borderRadius: 8, border: `1px solid ${c['border-default']}`, backgroundColor: 'transparent', color: c['content-secondary'], fontSize: fs.sm, cursor: 'pointer', fontFamily: ff.primary }}>Cancel</button>
-          <button onClick={onClose} disabled={!file} style={{ padding: `${sp.B}px ${sp.D}px`, borderRadius: 8, border: 'none', backgroundColor: file ? c['content-brand'] : c['border-default'], color: file ? '#fff' : c['content-secondary'], fontSize: fs.sm, cursor: file ? 'pointer' : 'default', fontFamily: ff.primary, fontWeight: fw.medium }}>Add to project</button>
+          <button onClick={onClose} disabled={!file} style={{ padding: `${sp.B}px ${sp.D}px`, borderRadius: 8, border: 'none', backgroundColor: file ? c['content-brand'] : c['border-default'], color: file ? '#fff' : c['content-secondary'], fontSize: fs.sm, cursor: file ? 'pointer' : 'default', fontFamily: ff.primary, fontWeight: fw.medium }}>Add to model</button>
         </div>
       </div>
     </div>

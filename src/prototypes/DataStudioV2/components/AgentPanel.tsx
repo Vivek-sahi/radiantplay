@@ -368,8 +368,8 @@ campaign_id (string), campaign_name (string), channel (string), budget (number),
 ~Sarah-Snowflake · marketing_db · analytics · Updated Mar 28 · 90 rows~
 user_id (string), name (string), email (string), signup_date (date), region (string) +3 more columns
 
-Would you like me to add these to your project?`,
-    execution: `Added **3 tables** to your project:
+Would you like me to add these to your model?`,
+    execution: `Added **3 tables** to your model:
 ✓ orders — 150 rows · 8 columns (Sarah-Snowflake · marketing_db)
 ✓ campaigns — 45 rows · 9 columns (Sarah-Snowflake · marketing_db)
 ✓ users — 90 rows · 8 columns (Sarah-Snowflake · marketing_db)
@@ -573,7 +573,7 @@ Want me to apply this? You can adjust: "include product_category", "skip budget"
 - segment: 15% null — 14 unclassified users
 
 **24 issues** found. Data health: **Poor (34/100)**. Want me to fix these?`,
-    execution: `Profile saved to project:
+    execution: `Profile saved to model:
 ✓ Column statistics computed for all 24 columns
 ✓ 4 anomalies flagged in orders.amount
 ✓ 3 date format mismatches identified
@@ -1151,7 +1151,7 @@ function runFlow(
             setProject(p => ({
               ...p,
               buildStep: script.nextStep,
-              name: script.newName && p.name === 'Untitled Project' ? script.newName : p.name,
+              name: script.newName && p.name === 'Untitled Model' ? script.newName : p.name,
               ...(script.tablesToAdd ? { addedTables: [...new Set([...p.addedTables, ...script.tablesToAdd])] } : {}),
               ...(script.setsColumnsSelected ? { columnsSelected: true, includedColumns: script.defaultColumns ?? p.includedColumns } : {}),
               ...(script.contextUpdate ? { context: { ...p.context, ...script.contextUpdate } } : {}),
@@ -1207,7 +1207,7 @@ function runDirectAdd(
     setTimeout(() => {
       setMessages(prev => [...prev, {
         id: `r-${Date.now()}`, type: 'response',
-        content: `**${names}** ${alreadyAdded.length === 1 ? 'is' : 'are'} already in your project. You can view ${alreadyAdded.length === 1 ? 'it' : 'them'} in the Data panel on the left.`,
+        content: `**${names}** ${alreadyAdded.length === 1 ? 'is' : 'are'} already in your model. You can view ${alreadyAdded.length === 1 ? 'it' : 'them'} in the Data panel on the left.`,
       }]);
       setIsProcessing(false);
     }, 300);
@@ -1776,7 +1776,7 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
         return `Joins created.\n\nVisualizer and Data Preview updated.`;
       }
       if (captured.key === 'create_metric') {
-        return 'Calculated columns added to your project.\n\nSQL cells added to Notebook.';
+        return 'Calculated columns added to your model.\n\nSQL cells added to Notebook.';
       }
       if (captured.key === 'select_columns') {
         const cols = captured.dynamicColumns ?? script.defaultColumns ?? {};
@@ -1803,7 +1803,7 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
         setProject(p => ({
           ...p,
           buildStep: script.preserveStep ? p.buildStep : captured.nextStep,
-          name: script.newName && p.name === 'Untitled Project' ? script.newName : p.name,
+          name: script.newName && p.name === 'Untitled Model' ? script.newName : p.name,
           ...(script.setsProfileComplete ? { profileComplete: true } : {}),
           ...(script.setsColumnsSelected ? { columnsSelected: true } : {}),
           ...(script.contextUpdate ? { context: { ...p.context, ...script.contextUpdate } } : {}),

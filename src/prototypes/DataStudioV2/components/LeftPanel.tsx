@@ -166,9 +166,9 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ project, setProject, onSendToAgen
             {addMenuOpen && (
               <ContextMenu
                 items={[
-                  { label: 'Add table',   onClick: () => onSendToAgent('Add tables to this project') },
-                  { label: 'Add join',    onClick: () => onSendToAgent('Add joins between the tables in my project') },
-                  { label: 'Add formula', onClick: () => onSendToAgent('Add a calculated column to my project') },
+                  { label: 'Add table',   onClick: () => onSendToAgent('Add tables to this model') },
+                  { label: 'Add join',    onClick: () => onSendToAgent('Add joins between the tables in my model') },
+                  { label: 'Add formula', onClick: () => onSendToAgent('Add a calculated column to my model') },
                 ]}
                 onClose={() => setAddMenuOpen(false)}
               />
@@ -409,8 +409,8 @@ const MemoryModal: React.FC<{
   const [draft, setDraft] = useState<ProjectContext>({ ...context });
 
   const sections: Array<{ key: keyof ProjectContext; label: string; placeholder: string; rows?: number }> = [
-    { key: 'purpose',             label: 'Purpose',           placeholder: 'What is this project for? What decisions does it support?', rows: 3 },
-    { key: 'persona',             label: 'Audience',          placeholder: 'Who uses this project? Describe their role and what they care about.', rows: 3 },
+    { key: 'purpose',             label: 'Purpose',           placeholder: 'What is this model for? What decisions does it support?', rows: 3 },
+    { key: 'persona',             label: 'Audience',          placeholder: 'Who uses this model? Describe their role and what they care about.', rows: 3 },
     { key: 'sampleQuestions',     label: 'Sample questions',  placeholder: 'Key questions this model is designed to answer.', rows: 5 },
     { key: 'businessLogic',       label: 'Business logic',    placeholder: 'Domain definitions, KPI formulas, exclusion rules, date conventions.', rows: 5 },
     { key: 'spotterInstructions', label: 'Spotter instructions', placeholder: "How should Spotter interpret this data?", rows: 4 },
@@ -430,7 +430,7 @@ const MemoryModal: React.FC<{
         <div style={{ padding: `${sp.D}px ${sp.F}px`, borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexShrink: 0 }}>
           <div>
             <span style={{ fontSize: fs.md, fontWeight: fw.semibold, color: c['content-primary'] }}>Memory</span>
-            <p style={{ margin: `${sp.A}px 0 0`, fontSize: fs.xs, color: c['content-secondary'] }}>Project context for this model. Updated by the agent and by you.</p>
+            <p style={{ margin: `${sp.A}px 0 0`, fontSize: fs.xs, color: c['content-secondary'] }}>Model context. Updated by the agent and by you.</p>
           </div>
           <button onClick={handleClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, color: c['content-secondary'], lineHeight: 1, padding: 0, marginTop: 2 }}>×</button>
         </div>

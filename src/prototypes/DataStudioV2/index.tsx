@@ -56,11 +56,9 @@ type AppView = 'overview' | 'new-project' | 'model-view' | 'workspace' | 'data-b
 // User-facing labels for the unwired nav sections so the placeholder reads cleanly.
 const PLACEHOLDER_LABEL: Record<NavSection, string> = {
   overview:    'Overview',
-  projects:    'Projects',
+  projects:    'Models',
   data:        'Data',
   connections: 'Connections',
-  monitoring:  'Monitoring',
-  governance:  'Governance',
 };
 
 const DataStudio: React.FC = () => {
@@ -82,7 +80,7 @@ const DataStudio: React.FC = () => {
   const [activeAlert, setActiveAlert]         = useState<OverviewAlert | null>(null);
   const [project, setProject] = useState<ProjectState>({
     id: 'proj-001',
-    name: 'Untitled Project',
+    name: 'Untitled Model',
     buildStep: 'empty',
     activeTab: 'columns',
     testMode: false,
@@ -120,7 +118,7 @@ const DataStudio: React.FC = () => {
     setInitialPrompt('');
     setProject({
       id: `proj-${Date.now()}`,
-      name: nameOrId ?? 'Untitled Project',
+      name: nameOrId ?? 'Untitled Model',
       buildStep: 'healthy',
       activeTab: 'columns',
       testMode: false,
@@ -177,7 +175,7 @@ const DataStudio: React.FC = () => {
   const newProject = () => {
     setProject({
       id: `proj-${Date.now()}`,
-      name: 'Untitled Project',
+      name: 'Untitled Model',
       buildStep: 'empty',
       activeTab: 'columns',
       testMode: false,
@@ -204,7 +202,7 @@ const DataStudio: React.FC = () => {
   const handleOverviewPromptSubmit = (prompt: string) => {
     setProject(p => ({
       id: `proj-${Date.now()}`,
-      name: 'Untitled Project',
+      name: 'Untitled Model',
       buildStep: 'empty',
       activeTab: 'columns',
       testMode: false,

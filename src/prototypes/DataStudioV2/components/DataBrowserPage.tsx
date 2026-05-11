@@ -333,7 +333,7 @@ const TableDetail: React.FC<{
   schema:   FlatSchema;
   table:    WarehouseTable;
   ctaLabel?: string;
-}> = ({ conn, schema, table, ctaLabel = 'Explore in a project' }) => {
+}> = ({ conn, schema, table, ctaLabel = 'Explore in a model' }) => {
   const [tab, setTab] = useState<TableTab>('schema');
   const subtitle = `${conn.name} · ${schema.label} · ${table.rows ?? '—'} rows · ${table.cols ?? '—'} cols · synced ${table.sync ?? '—'}`;
 
@@ -391,7 +391,7 @@ const TableDetail: React.FC<{
         icon={<TableTypeIcon table={table} size="l" />}
         title={table.name}
         subtitle={subtitle}
-        actions={<Button variant="primary" size="basic">Use in project</Button>}
+        actions={<Button variant="primary" size="basic">Use in model</Button>}
       />
 
       <div style={{ flexShrink: 0, padding: `0 ${sp.G}px`, backgroundColor: c['background-base'], borderBottom: `1px solid ${c['border-divider']}` }}>

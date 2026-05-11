@@ -232,7 +232,7 @@ const Overview: React.FC<OverviewProps> = ({ onNewProject, onOpenProject, onProm
                 borderBottom: `1px solid ${c['border-divider']}`,
                 backgroundColor: c['background-subtle'],
               }}>
-                {['Project', 'Issues', 'Status', 'Conversations', 'Last edited', 'Author'].map(h => (
+                {['Model', 'Issues', 'Status', 'Conversations', 'Last edited', 'Author'].map(h => (
                   <div key={h} style={{
                     fontSize: 11, fontWeight: fw.medium,
                     color: c['content-secondary'],
@@ -296,7 +296,7 @@ const Overview: React.FC<OverviewProps> = ({ onNewProject, onOpenProject, onProm
                 </React.Fragment>
               ))}
             </div>
-            <ViewAllLink label="View all projects" />
+            <ViewAllLink label="View all models" />
           </div>
 
           {/* ── Explore data ────────────────────────────────────────────── */}

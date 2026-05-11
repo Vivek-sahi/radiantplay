@@ -3,7 +3,7 @@ import { AppShell } from '../../../components';
 import type { AppSidebarProps, SidebarTab, SidebarCategory } from '../../../components/AppSidebar';
 import type { GlobalHeaderProps } from '../../../components/GlobalHeader';
 
-export type NavSection = 'overview' | 'projects' | 'data' | 'connections' | 'monitoring' | 'governance';
+export type NavSection = 'overview' | 'projects' | 'data' | 'connections';
 
 // ── Sidebar config ────────────────────────────────────────────────────────────
 
@@ -20,11 +20,9 @@ const SIDEBAR_CATEGORIES: Record<string, SidebarCategory[]> = {
     {
       items: [
         { id: 'overview',     label: 'Overview' },
-        { id: 'projects',     label: 'Projects' },
+        { id: 'projects',     label: 'Models' },
         { id: 'data',         label: 'Data' },
         { id: 'connections',  label: 'Connections' },
-        { id: 'monitoring',   label: 'Monitoring' },
-        { id: 'governance',   label: 'Governance' },
       ],
     },
   ],

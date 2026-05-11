@@ -717,9 +717,9 @@ const NotebookView: React.FC<{ project: ProjectState }> = ({ project }) => {
   const hasData = project.addedTables.length > 0;
 
   const cells = [
-    { id: 1, type: 'sql', comment: '// Add Orders table into this project',     query: 'SELECT *\nFROM orders;' },
-    { id: 2, type: 'sql', comment: '// Add Campaigns table into this project',  query: 'SELECT *\nFROM campaigns;' },
-    { id: 3, type: 'sql', comment: '// Add Users table into this project',      query: 'SELECT *\nFROM users;' },
+    { id: 1, type: 'sql', comment: '// Add Orders table into this model',     query: 'SELECT *\nFROM orders;' },
+    { id: 2, type: 'sql', comment: '// Add Campaigns table into this model',  query: 'SELECT *\nFROM campaigns;' },
+    { id: 3, type: 'sql', comment: '// Add Users table into this model',      query: 'SELECT *\nFROM users;' },
     ...(project.buildStep === 'joined' || project.buildStep === 'transformed' || project.buildStep === 'healthy' ? [
       { id: 4, type: 'sql', comment: '// Join orders with campaigns on campaign_id', query: 'SELECT o.*, c.campaign_name, c.channel, c.budget, c.spend\nFROM orders o\nLEFT JOIN campaigns c ON o.campaign_id = c.campaign_id;' },
       { id: 5, type: 'sql', comment: '// Join orders with users on user_id',         query: 'SELECT o.*, u.name, u.segment, u.region AS user_region, u.lifetime_value\nFROM orders o\nINNER JOIN users u ON o.user_id = u.user_id;' },
@@ -738,7 +738,7 @@ const NotebookView: React.FC<{ project: ProjectState }> = ({ project }) => {
       <EmptyCenter
         icon="</>"
         title="No cells yet"
-        body="The notebook shows every action taken in this project as SQL or Python cells. Add data to get started."
+        body="The notebook shows every action taken in this model as SQL or Python cells. Add data to get started."
       />
     );
   }
