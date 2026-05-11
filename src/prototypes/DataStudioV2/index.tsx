@@ -56,6 +56,18 @@ export interface ProjectState {
 
 type AppView = 'overview' | 'models' | 'chat' | 'new-project' | 'model-view' | 'workspace' | 'data-browser' | 'connections' | 'placeholder';
 
+// Derives a short model name from the user's intent prompt.
+const deriveModelName = (prompt: string): string => {
+  const s = prompt
+    .replace(/^i (want to |would like to )?(build|create|make|start with|improve|cache|debug)\s+(a |an )?(new )?(data model\s*(that |to |for |which |and |,)?\s*)?/i, '')
+    .replace(/^(that |to |for |which |and )\s*/i, '')
+    .replace(/^(tracks?|analyzes?|measures?|helps?|shows?|enables?|answers?|builds?|improves?)\s+/i, '')
+    .trim();
+  if (!s) return 'Untitled Model';
+  const words = s.split(/\s+/).slice(0, 5).join(' ');
+  return words.charAt(0).toUpperCase() + words.slice(1);
+};
+
 // User-facing labels for the unwired nav sections so the placeholder reads cleanly.
 const PLACEHOLDER_LABEL: Record<NavSection, string> = {
   overview:    'Overview',
@@ -213,23 +225,23 @@ const DataStudio: React.FC = () => {
     navigateTo('workspace');
   };
 
-  // User submitted the hero prompt on the overview page → reset project + go to workspace with clarify flow
+  // User submitted the hero prompt on the overview page → go to chat
   const handleOverviewPromptSubmit = (prompt: string) => {
-    setProject(p => ({
+    setProject({
       id: `proj-${Date.now()}`,
-      name: 'Untitled Model',
+      name: deriveModelName(prompt),
       buildStep: 'empty',
       activeTab: 'tables',
       testMode: false,
       publishedVersion: 0,
       hasUnpublishedChanges: true,
-      projectSource: p.projectSource, // preserve dbt chip click
+      projectSource: 'warehouse',
       context: emptyContext,
       addedTables: [],
       columnsSelected: false,
       includedColumns: {},
       columnOverrides: {},
-    }));
+    });
     setInitialPrompt(prompt);
     setIsDayZero(true);
     setIsAgentMode(true);
@@ -274,7 +286,7 @@ const DataStudio: React.FC = () => {
 
   return (
     <>
-      <Shell activeNav={activeNav} onNavChange={handleNavChange} hideSidebar={view === 'chat'}>
+      <Shell activeNav={activeNav} onNavChange={handleNavChange} hideSidebar={view === 'chat' || view === 'workspace'} hideHeader={view === 'workspace'}>
         {view === 'models' && (
           <ModelsPage
             onOpenProject={openModelView}
@@ -286,7 +298,6 @@ const DataStudio: React.FC = () => {
             onNewProject={newProject}
             onOpenProject={openModelView}
             onPromptSubmit={handleOverviewPromptSubmit}
-            onStartDbt={startDbtProject}
           />
         )}
         {view === 'model-view' && selectedProject && (
@@ -331,7 +342,7 @@ const DataStudio: React.FC = () => {
             isDayZero={isDayZero}
             isDbtReview={isDbtReview}
             onBack={goBack}
-            onNavigateToTable={(tableName) => {
+            onNavigateToTable={() => {
               setDataBrowserInitialTab('warehouses');
               navigateTo('data-browser');
             }}
