@@ -39,7 +39,42 @@ The product moved away from a side-panel co-pilot toward a full-screen agent-fir
 
 ## Next up
 
-_Nothing queued. Decide at next session._
+### Prompt bar cleanup — discuss at session start
+
+No spec yet. To be scoped at the start of the next session.
+
+---
+
+## Done — Context panel polish + bug fixes (2026-05-11, session 77)
+
+Multi-pass fix session on the context panel after session 76 promotion.
+
+**Icons:**
+- `"table"` and `"doc"` are not in the Radiant icon registry (render null silently). Replaced with inline SVGs: `DocIcon` (document outline + lines) and `TableIcon` (grid with header row). `checkmark-circle` (registered) kept for skills.
+- Quality plan icon: gray `content-secondary`, same as build plan — removed amber tint.
+
+**Context panel behaviour:**
+- Created items: flat rows (no card border), icon + name only. Quality plan: plain list item, no "Apply fixes" / "Edit plan" actions.
+- Quality plan only appears after `project.prepTransforms !== undefined` (set when `review_data_quality` script completes) — not immediately on build.
+- Context panel stays open when quality plan opens (removed auto-collapse effect).
+- Auto-close context when plan panel opens in ChatView; re-opens when plan panel closes.
+
+**Artifact close / canvas:**
+- Added `canvasVisible` + `planPanelOpen` states to Workspace.
+- Clicking X on any artifact (artifact card, quality plan, plan panel) → `setCanvasVisible(false)`. Canvas + drag handle hide, agent expands. No navigation away.
+- Clicking an item in Created → sets `canvasVisible(true)` + shows correct artifact.
+- Build plan now clickable: `PlanPanel` imported in Workspace; opens in canvas area when build plan item clicked.
+
+**Navigation fixes:**
+- ChatView header: added `← Overview` back button on left.
+- Workspace header: `← Chat` back button + centered title + panel toggle.
+- `goBack()` in index.tsx: if `prevView === 'chat'`, returns to chat without clearing messages/project state.
+- Table go-to arrow (↗) in context panel: navigates to data browser (wired in both ChatView and Workspace).
+- `onBack()` wiring replaced by `setCanvasVisible(false)` on artifact close.
+
+**QualityPlanPanel:** footer buttons (Apply fixes / Edit plan) removed — CTAs were in context panel (now also removed per feedback).
+
+- Build: clean ✓
 
 ---
 
