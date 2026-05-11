@@ -39,7 +39,24 @@ The product moved away from a side-panel co-pilot toward a full-screen agent-fir
 
 ## Next up
 
-No open items. Workspace migration is complete — review in browser and identify any polish.
+No open items. Review in browser and identify any polish.
+
+---
+
+## Done — Artifact card border treatment + panel cleanup (2026-05-11, session 70)
+
+**Visual treatment matching the Spotter artifact pattern (screenshot reference).**
+
+- Canvas column: `background-sunken` with 8px padding; artifact is a white bordered card (`1px solid border-divider`, `border-radius: 10px`) — no page-level divider line, card border does the separation
+- Drag handle: invisible 5px resize zone; visible line removed
+- AgentPanel: always visible, no collapse; entire Build/Test tab bar + close button removed from AgentPanel header
+- Identity row: Share gets share icon, Publish gets upload arrow icon; × close button added at far right (calls `onBack()` → returns to full-screen chat)
+- Tab bar: agent reopen button removed; Settings moved out; right side = divider → [▶ Test label] [Live/Caching…/Cached] [9 issues/9 resolved]
+- New columns sub-row (36px, columns tab only): dbt indicators left, search + properties popover + Settings gear right
+- Column count display ("14 columns") removed
+- LeftPanel overlay top: 144px base + 36px when columns sub-row visible
+- CenterPanel `onInjectToAgent` and `onToggleColumn` callbacks no longer call `setAgentPanelOpen`
+- Build: clean ✓
 
 ---
 
