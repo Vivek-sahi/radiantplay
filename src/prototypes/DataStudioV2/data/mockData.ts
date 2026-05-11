@@ -1859,3 +1859,418 @@ export const CONNECTIONS: Connection[] = [
   { id: 'bq-mkt',   name: 'bigquery-marketing', type: 'bigquery',  status: 'connected',   lastSync: '1d ago', ownerEmail: 'vivek@example.com', tables: 42  },
   { id: 'snow-fin', name: 'snowflake-finance',   type: 'snowflake', status: 'auth-needed', lastSync: 'Never',  tables: 0   },
 ];
+
+// ─── Workspace Monitoring Mock Data ──────────────────────────────────────────
+
+export interface WorkspaceQuery {
+  id: string;
+  query: string;
+  model: string;
+  modelId: string;
+  user: string;
+  latencyMs: number;
+  status: 'success' | 'error';
+  timestamp: string;
+  errorMessage?: string;
+}
+
+export const WORKSPACE_QUERIES: WorkspaceQuery[] = [
+  { id: 'q-1',  query: 'Win rate by region last quarter',             model: 'Sales Performance',             modelId: 'proj-sp',  user: 'Sara Chen',   latencyMs: 340,  status: 'success', timestamp: '2 min ago' },
+  { id: 'q-2',  query: 'Campaign ROI by channel',                     model: 'Marketing Campaign Attribution', modelId: 'proj-mc',  user: 'Raj Patel',   latencyMs: 520,  status: 'success', timestamp: '5 min ago' },
+  { id: 'q-3',  query: 'Revenue by department Q1 vs Q2',              model: 'FnOps Cost Model',               modelId: 'proj-3',   user: 'Vivek Sahi',  latencyMs: 0,    status: 'error',   timestamp: '12 min ago', errorMessage: 'Column rep_territory_id not found in source' },
+  { id: 'q-4',  query: 'Monthly active users by segment',             model: 'Product Usage Analytics',        modelId: 'proj-6',   user: 'Priya M.',    latencyMs: 890,  status: 'success', timestamp: '18 min ago' },
+  { id: 'q-5',  query: 'Customer lifetime value distribution',        model: 'Customer 360',                   modelId: 'proj-2',   user: 'Sara Chen',   latencyMs: 1240, status: 'success', timestamp: '24 min ago' },
+  { id: 'q-6',  query: 'Top deals by rep this month',                 model: 'Sales Performance',             modelId: 'proj-sp',  user: 'Raj Patel',   latencyMs: 0,    status: 'error',   timestamp: '31 min ago', errorMessage: 'dbt model sync failed — stale data' },
+  { id: 'q-7',  query: 'Churn risk by cohort',                        model: 'Churn Prediction',               modelId: 'proj-8',   user: 'Priya M.',    latencyMs: 670,  status: 'success', timestamp: '45 min ago' },
+  { id: 'q-8',  query: 'Support ticket volume by category',           model: 'Support Analytics',              modelId: 'proj-9',   user: 'Vivek Sahi',  latencyMs: 290,  status: 'success', timestamp: '1h ago' },
+  { id: 'q-9',  query: 'Impressions vs spend by campaign',            model: 'Marketing Campaign Attribution', modelId: 'proj-mc',  user: 'Sara Chen',   latencyMs: 410,  status: 'success', timestamp: '1h 20m ago' },
+  { id: 'q-10', query: 'Inventory turnover by SKU',                   model: 'Inventory & Supply Chain',       modelId: 'proj-10',  user: 'Raj Patel',   latencyMs: 560,  status: 'success', timestamp: '2h ago' },
+  { id: 'q-11', query: 'Pipeline value by stage',                     model: 'Sales Performance',             modelId: 'proj-sp',  user: 'Sara Chen',   latencyMs: 0,    status: 'error',   timestamp: '2h 10m ago', errorMessage: 'Column rep_territory_id not found in source' },
+  { id: 'q-12', query: 'Budget vs actual by category',                model: 'FnOps Cost Model',               modelId: 'proj-3',   user: 'Vivek Sahi',  latencyMs: 320,  status: 'success', timestamp: '3h ago' },
+];
+
+export interface SchemaChange {
+  type: 'added' | 'removed' | 'renamed';
+  column: string;
+  table: string;
+  timestamp: string;
+}
+
+export interface WorkspaceQualityEntry {
+  model: string;
+  modelId: string;
+  lastUpdated: string;
+  freshnessStatus: 'fresh' | 'stale' | 'critical';
+  anomalies: number;
+  nullRate: number;
+  schemaChanges: SchemaChange[];
+}
+
+export const WORKSPACE_QUALITY: WorkspaceQualityEntry[] = [
+  {
+    model: 'Marketing Campaign Attribution', modelId: 'proj-mc',
+    lastUpdated: '3h ago', freshnessStatus: 'fresh', anomalies: 4, nullRate: 18,
+    schemaChanges: [],
+  },
+  {
+    model: 'Sales Performance', modelId: 'proj-sp',
+    lastUpdated: 'Never (sync failed)', freshnessStatus: 'critical', anomalies: 0, nullRate: 0,
+    schemaChanges: [
+      { type: 'removed', column: 'rep_territory_id', table: 'raw.sales_reps', timestamp: 'Apr 20 · 02:14 AM' },
+    ],
+  },
+  {
+    model: 'Customer 360', modelId: 'proj-2',
+    lastUpdated: '3h ago', freshnessStatus: 'fresh', anomalies: 2, nullRate: 8,
+    schemaChanges: [],
+  },
+  {
+    model: 'FnOps Cost Model', modelId: 'proj-3',
+    lastUpdated: '4h ago', freshnessStatus: 'stale', anomalies: 0, nullRate: 5,
+    schemaChanges: [
+      { type: 'removed', column: 'cost_center',     table: 'dbt_finance_spend', timestamp: 'Apr 20 · 10:30 AM' },
+      { type: 'removed', column: 'allocation_type', table: 'dbt_finance_spend', timestamp: 'Apr 20 · 10:30 AM' },
+    ],
+  },
+  {
+    model: 'Product Usage Analytics', modelId: 'proj-6',
+    lastUpdated: '26h ago', freshnessStatus: 'stale', anomalies: 7, nullRate: 3,
+    schemaChanges: [],
+  },
+  {
+    model: 'Churn Prediction', modelId: 'proj-8',
+    lastUpdated: '3h ago', freshnessStatus: 'fresh', anomalies: 1, nullRate: 11,
+    schemaChanges: [],
+  },
+];
+
+export interface WorkspaceUsageDay {
+  date: string;
+  queries: number;
+  users: number;
+}
+
+export interface WorkspaceModelUsage {
+  model: string;
+  modelId: string;
+  queryCount: number;
+  uniqueUsers: number;
+  topSearches: string[];
+}
+
+export const WORKSPACE_USAGE_DAYS: WorkspaceUsageDay[] = [
+  { date: 'Apr 14', queries: 124, users: 18 },
+  { date: 'Apr 15', queries: 89,  users: 14 },
+  { date: 'Apr 16', queries: 67,  users: 11 },
+  { date: 'Apr 17', queries: 201, users: 29 },
+  { date: 'Apr 18', queries: 178, users: 26 },
+  { date: 'Apr 19', queries: 143, users: 22 },
+  { date: 'Apr 20', queries: 97,  users: 15 },
+];
+
+export const WORKSPACE_MODEL_USAGE: WorkspaceModelUsage[] = [
+  { model: 'Marketing Campaign Attribution', modelId: 'proj-mc',  queryCount: 1839, uniqueUsers: 34, topSearches: ['campaign ROI', 'channel performance', 'impressions vs spend'] },
+  { model: 'Sales Performance',              modelId: 'proj-sp',  queryCount: 412,  uniqueUsers: 12, topSearches: ['win rate', 'pipeline value', 'rep performance'] },
+  { model: 'Customer 360',                   modelId: 'proj-2',   queryCount: 142,  uniqueUsers: 9,  topSearches: ['lifetime value', 'churn risk', 'segment analysis'] },
+  { model: 'Product Usage Analytics',        modelId: 'proj-6',   queryCount: 287,  uniqueUsers: 21, topSearches: ['MAU', 'feature adoption', 'session length'] },
+  { model: 'Churn Prediction',               modelId: 'proj-8',   queryCount: 94,   uniqueUsers: 7,  topSearches: ['churn probability', 'cohort analysis', 'at-risk users'] },
+  { model: 'Inventory & Supply Chain',       modelId: 'proj-10',  queryCount: 61,   uniqueUsers: 5,  topSearches: ['turnover rate', 'stock levels', 'reorder point'] },
+];
+
+export interface SyncFailure {
+  timestamp: string;
+  model: string;
+  modelId: string;
+  error: string;
+}
+
+export interface WorkspaceConnection {
+  id: string;
+  name: string;
+  type: 'snowflake' | 'bigquery' | 'dbt' | 'salesforce';
+  status: 'healthy' | 'degraded' | 'failed';
+  lastSync: string;
+  nextSync: string;
+  failures: SyncFailure[];
+}
+
+export const WORKSPACE_CONNECTIONS: WorkspaceConnection[] = [
+  {
+    id: 'conn-snow',
+    name: 'Snowflake · marketing_db',
+    type: 'snowflake',
+    status: 'healthy',
+    lastSync: '3h ago',
+    nextSync: 'In 21h',
+    failures: [],
+  },
+  {
+    id: 'conn-dbt-sales',
+    name: 'dbt Cloud · sales_analytics',
+    type: 'dbt',
+    status: 'failed',
+    lastSync: 'Apr 19 · 02:00 AM',
+    nextSync: 'Paused (error)',
+    failures: [
+      { timestamp: 'Apr 20 · 02:14 AM', model: 'Sales Performance', modelId: 'proj-sp', error: "Column 'rep_territory_id' not found in source 'raw.sales_reps'" },
+    ],
+  },
+  {
+    id: 'conn-bq',
+    name: 'BigQuery · product_db',
+    type: 'bigquery',
+    status: 'degraded',
+    lastSync: '26h ago',
+    nextSync: 'Retrying…',
+    failures: [
+      { timestamp: 'Apr 19 · 12:00 PM', model: 'Product Usage Analytics', modelId: 'proj-6', error: "'user_events' hasn't updated — exceeds 12h SLA" },
+    ],
+  },
+  {
+    id: 'conn-dbt-fin',
+    name: 'dbt Cloud · finance_analytics',
+    type: 'dbt',
+    status: 'degraded',
+    lastSync: '4h ago',
+    nextSync: 'In 20h',
+    failures: [
+      { timestamp: 'Apr 20 · 10:30 AM', model: 'FnOps Cost Model', modelId: 'proj-3', error: '2 columns removed from dbt_finance_spend — cost_center, allocation_type' },
+    ],
+  },
+  {
+    id: 'conn-sf',
+    name: 'Salesforce · support',
+    type: 'salesforce',
+    status: 'healthy',
+    lastSync: '2h ago',
+    nextSync: 'In 1h',
+    failures: [],
+  },
+  {
+    id: 'conn-snow-fin',
+    name: 'Snowflake · finance_db',
+    type: 'snowflake',
+    status: 'healthy',
+    lastSync: '6h ago',
+    nextSync: 'In 18h',
+    failures: [],
+  },
+];
+
+// ─── Active Insights ──────────────────────────────────────────────────────────
+
+export interface ActiveInsight {
+  id: string;
+  priority: number;
+  category: 'debugging' | 'optimization';
+  title: string;
+  context: string;
+  metric?: string;
+  timestamp: string;
+  modelId: string;
+  primaryAction: {
+    label: string;
+    type: 'fix-model' | 'fix-models' | 'view-connection' | 'enable-cache' | 'view-gaps';
+  };
+}
+
+export const ACTIVE_INSIGHTS: ActiveInsight[] = [
+  {
+    id: 'ins-d1', priority: 1, category: 'debugging',
+    title: 'dbt Cloud connection down',
+    context: 'sales_analytics sync failed — downstream models are blocked',
+    metric: '3 models blocked', timestamp: '2h ago', modelId: 'proj-sp',
+    primaryAction: { label: 'Fix with agent →', type: 'view-connection' },
+  },
+  {
+    id: 'ins-d2', priority: 2, category: 'debugging',
+    title: 'Source columns removed',
+    context: 'FnOps Cost Model — cost_center and allocation_type missing from dbt_finance_spend',
+    metric: '2 columns removed', timestamp: '4h ago', modelId: 'proj-3',
+    primaryAction: { label: 'Fix with agent →', type: 'fix-model' },
+  },
+  {
+    id: 'ins-d3', priority: 3, category: 'debugging',
+    title: 'Warehouse columns removed',
+    context: 'Revenue Forecast + Pipeline Health — quarterly_target, forecast_region, pipeline_stage missing',
+    metric: '2 models broken', timestamp: '3h ago', modelId: 'proj-2',
+    primaryAction: { label: 'Fix with agent →', type: 'fix-models' },
+  },
+  {
+    id: 'ins-d4', priority: 4, category: 'debugging',
+    title: 'Freshness SLA breached',
+    context: 'Product Usage Analytics — data is 26h old, SLA is 12h',
+    metric: '14h overdue', timestamp: '14h ago', modelId: 'proj-6',
+    primaryAction: { label: 'Fix with agent →', type: 'view-connection' },
+  },
+  {
+    id: 'ins-d5', priority: 5, category: 'debugging',
+    title: 'Missing column causing failures',
+    context: 'Sales Performance — rep_territory_id removed but still referenced in queries',
+    metric: '3 errors today', timestamp: '1h ago', modelId: 'proj-sp',
+    primaryAction: { label: 'Fix with agent →', type: 'fix-model' },
+  },
+  {
+    id: 'ins-d6', priority: 6, category: 'debugging',
+    title: 'Null rate spike in join key',
+    context: 'Marketing Campaign Attribution — campaign_id nulls rose from 2% to 18%',
+    metric: '18% null rate', timestamp: '6h ago', modelId: 'proj-mc',
+    primaryAction: { label: 'Fix with agent →', type: 'fix-model' },
+  },
+  {
+    id: 'ins-o4', priority: 7, category: 'optimization',
+    title: 'Cache miss opportunity',
+    context: '"Win rate by region" run 34× this week with 0% cache hit rate',
+    metric: '~11s saved/query', timestamp: '1d ago', modelId: 'proj-sp',
+    primaryAction: { label: 'Enable cache →', type: 'enable-cache' },
+  },
+  {
+    id: 'ins-o3', priority: 8, category: 'optimization',
+    title: 'Semantic gaps limiting Spotter',
+    context: 'Marketing Campaign Attribution — 4 high-use columns missing descriptions',
+    metric: '4 gaps', timestamp: '2d ago', modelId: 'proj-mc',
+    primaryAction: { label: 'View gaps →', type: 'view-gaps' },
+  },
+  {
+    id: 'ins-o1', priority: 9, category: 'optimization',
+    title: 'Slow query hot spot',
+    context: 'Customer 360 — "lifetime value distribution" averaging 1.2s per query',
+    metric: 'Avg 1.2s', timestamp: '3d ago', modelId: 'proj-2',
+    primaryAction: { label: 'Optimize →', type: 'fix-model' },
+  },
+  {
+    id: 'ins-o2', priority: 10, category: 'optimization',
+    title: 'Unused columns detected',
+    context: 'Churn Prediction — 6 columns with zero queries in the past 30 days',
+    metric: '6 unused', timestamp: '5d ago', modelId: 'proj-8',
+    primaryAction: { label: 'Review columns →', type: 'fix-model' },
+  },
+  {
+    id: 'ins-o5', priority: 10, category: 'optimization',
+    title: 'Low model adoption',
+    context: 'Churn Prediction — 7 users, 94 queries/month vs 1,839 for top model',
+    metric: '94 queries/mo', timestamp: '7d ago', modelId: 'proj-8',
+    primaryAction: { label: 'View usage →', type: 'fix-model' },
+  },
+];
+
+// ─── Semantic Gaps ────────────────────────────────────────────────────────────
+
+export interface SemanticGap {
+  modelId: string;
+  column: string;
+  queryCount: number;
+  issue: string;
+  intentPattern?: string;
+}
+
+export const SEMANTIC_GAPS: SemanticGap[] = [
+  { modelId: 'proj-mc', column: 'campaign_id',      queryCount: 89, issue: 'No description — Spotter cannot resolve ambiguous references' },
+  { modelId: 'proj-mc', column: 'target_region',    queryCount: 74, issue: 'No description or synonyms — "area", "geo" not matched' },
+  { modelId: 'proj-mc', column: 'channel',          queryCount: 67, issue: 'No AI context — paid vs organic distinction unclear to Spotter' },
+  { modelId: 'proj-mc', column: 'spend',            queryCount: 52, issue: 'No description — "cost", "budget spent" not reliably matched' },
+  { modelId: 'proj-sp', column: 'rep_territory_id', queryCount: 38, issue: 'Broken — column missing from source (sync failure)' },
+  { modelId: 'proj-2',  column: 'lifetime_value',   queryCount: 31, issue: 'No description — "LTV", "CLV" synonyms not configured' },
+];
+
+// ─── Cache Stats ──────────────────────────────────────────────────────────────
+
+export interface CacheStat {
+  modelId: string;
+  query: string;
+  runCount: number;
+  avgLatencyMs: number;
+  potentialSavingMs: number;
+}
+
+export const CACHE_STATS: CacheStat[] = [
+  { modelId: 'proj-sp', query: 'Win rate by region last quarter',      runCount: 34, avgLatencyMs: 11200, potentialSavingMs: 10800 },
+  { modelId: 'proj-sp', query: 'Top deals by rep this month',          runCount: 21, avgLatencyMs: 8400,  potentialSavingMs: 8100  },
+  { modelId: 'proj-mc', query: 'Campaign ROI by channel',              runCount: 47, avgLatencyMs: 3200,  potentialSavingMs: 3000  },
+  { modelId: 'proj-mc', query: 'Impressions vs spend by campaign',     runCount: 29, avgLatencyMs: 2800,  potentialSavingMs: 2600  },
+  { modelId: 'proj-2',  query: 'Customer lifetime value distribution', runCount: 18, avgLatencyMs: 4100,  potentialSavingMs: 3900  },
+];
+
+// ─── Dead Columns ─────────────────────────────────────────────────────────────
+
+export interface DeadColumn {
+  modelId: string;
+  table: string;
+  column: string;
+  lastQueried: string | null;
+  reason: string;
+}
+
+export const DEAD_COLUMNS: DeadColumn[] = [
+  { modelId: 'proj-8', table: 'users',     column: 'referral_source',   lastQueried: null,      reason: 'Never queried' },
+  { modelId: 'proj-8', table: 'users',     column: 'device_type',       lastQueried: '45d ago', reason: 'No queries in 30+ days' },
+  { modelId: 'proj-8', table: 'orders',    column: 'shipping_method',   lastQueried: null,      reason: 'Never queried' },
+  { modelId: 'proj-8', table: 'orders',    column: 'coupon_code',       lastQueried: '38d ago', reason: 'No queries in 30+ days' },
+  { modelId: 'proj-8', table: 'campaigns', column: 'agency_name',       lastQueried: null,      reason: 'Never queried' },
+  { modelId: 'proj-8', table: 'campaigns', column: 'creative_variant',  lastQueried: '52d ago', reason: 'No queries in 30+ days' },
+  { modelId: 'proj-3', table: 'orders',    column: 'cost_center',       lastQueried: '60d ago', reason: 'Removed from source — schema drift' },
+  { modelId: 'proj-3', table: 'orders',    column: 'allocation_type',   lastQueried: '60d ago', reason: 'Removed from source — schema drift' },
+];
+
+// ─── Monitoring Trends ────────────────────────────────────────────────────────
+
+export interface MonitoringTrend {
+  modelId: string;
+  syncFailuresThisWeek: number;
+  syncFailuresLastWeek: number;
+  spotterSuccessRateThisWeek: number;
+  spotterSuccessRateLastWeek: number;
+  spotterFailedQueriesThisWeek: number;
+  spotterFailedQueriesLastWeek: number;
+  avgLatencyMsThisWeek: number;
+  avgLatencyMsLastWeek: number;
+  queriesThisWeek: number;
+  queriesLastWeek: number;
+}
+
+export const MONITORING_TRENDS: MonitoringTrend[] = [
+  { modelId: 'proj-sp',  syncFailuresThisWeek: 1,  syncFailuresLastWeek: 0,  spotterSuccessRateThisWeek: 74, spotterSuccessRateLastWeek: 91, spotterFailedQueriesThisWeek: 14, spotterFailedQueriesLastWeek: 5,  avgLatencyMsThisWeek: 9200, avgLatencyMsLastWeek: 8800, queriesThisWeek: 127, queriesLastWeek: 141 },
+  { modelId: 'proj-mc',  syncFailuresThisWeek: 0,  syncFailuresLastWeek: 0,  spotterSuccessRateThisWeek: 65, spotterSuccessRateLastWeek: 78, spotterFailedQueriesThisWeek: 31, spotterFailedQueriesLastWeek: 19, avgLatencyMsThisWeek: 2900, avgLatencyMsLastWeek: 3100, queriesThisWeek: 412, queriesLastWeek: 389 },
+  { modelId: 'proj-3',   syncFailuresThisWeek: 2,  syncFailuresLastWeek: 0,  spotterSuccessRateThisWeek: 43, spotterSuccessRateLastWeek: 82, spotterFailedQueriesThisWeek: 9,  spotterFailedQueriesLastWeek: 2,  avgLatencyMsThisWeek: 1800, avgLatencyMsLastWeek: 1600, queriesThisWeek: 16,  queriesLastWeek: 24  },
+  { modelId: 'proj-6',   syncFailuresThisWeek: 0,  syncFailuresLastWeek: 1,  spotterSuccessRateThisWeek: 81, spotterSuccessRateLastWeek: 83, spotterFailedQueriesThisWeek: 11, spotterFailedQueriesLastWeek: 14, avgLatencyMsThisWeek: 1400, avgLatencyMsLastWeek: 1500, queriesThisWeek: 74,  queriesLastWeek: 88  },
+  { modelId: 'proj-2',   syncFailuresThisWeek: 0,  syncFailuresLastWeek: 0,  spotterSuccessRateThisWeek: 88, spotterSuccessRateLastWeek: 86, spotterFailedQueriesThisWeek: 4,  spotterFailedQueriesLastWeek: 5,  avgLatencyMsThisWeek: 3800, avgLatencyMsLastWeek: 4200, queriesThisWeek: 38,  queriesLastWeek: 32  },
+  { modelId: 'proj-8',   syncFailuresThisWeek: 0,  syncFailuresLastWeek: 0,  spotterSuccessRateThisWeek: 79, spotterSuccessRateLastWeek: 81, spotterFailedQueriesThisWeek: 5,  spotterFailedQueriesLastWeek: 5,  avgLatencyMsThisWeek: 2200, avgLatencyMsLastWeek: 2400, queriesThisWeek: 22,  queriesLastWeek: 27  },
+];
+
+// ─── Monitoring Stats ─────────────────────────────────────────────────────────
+
+export interface MonitoringStats {
+  modelId: string;
+  uniqueUsersThisWeek: number;
+  weeklyQueryVolume: number;
+  estimatedWeeklyCostUsd: number;
+  costPerQuery: number;
+  costPerUser: number;
+  roiFlag: 'positive' | 'neutral' | 'negative';
+}
+
+export const MONITORING_STATS: MonitoringStats[] = [
+  { modelId: 'proj-sp',  uniqueUsersThisWeek: 12, weeklyQueryVolume: 127, estimatedWeeklyCostUsd: 180, costPerQuery: 1.42, costPerUser: 15.0, roiFlag: 'neutral'  },
+  { modelId: 'proj-mc',  uniqueUsersThisWeek: 34, weeklyQueryVolume: 412, estimatedWeeklyCostUsd: 74,  costPerQuery: 0.18, costPerUser: 2.18, roiFlag: 'positive' },
+  { modelId: 'proj-3',   uniqueUsersThisWeek: 3,  weeklyQueryVolume: 16,  estimatedWeeklyCostUsd: 45,  costPerQuery: 2.81, costPerUser: 15.0, roiFlag: 'negative' },
+  { modelId: 'proj-6',   uniqueUsersThisWeek: 21, weeklyQueryVolume: 74,  estimatedWeeklyCostUsd: 95,  costPerQuery: 1.28, costPerUser: 4.52, roiFlag: 'neutral'  },
+  { modelId: 'proj-2',   uniqueUsersThisWeek: 9,  weeklyQueryVolume: 38,  estimatedWeeklyCostUsd: 125, costPerQuery: 3.29, costPerUser: 13.9, roiFlag: 'neutral'  },
+  { modelId: 'proj-8',   uniqueUsersThisWeek: 7,  weeklyQueryVolume: 22,  estimatedWeeklyCostUsd: 35,  costPerQuery: 1.59, costPerUser: 5.0,  roiFlag: 'negative' },
+];
+
+// ─── Semantic Coverage ────────────────────────────────────────────────────────
+
+export interface SemanticCoverage {
+  modelId: string;
+  totalIntentsSampled: number;
+  coveredIntents: number;
+}
+
+export const SEMANTIC_COVERAGE: SemanticCoverage[] = [
+  { modelId: 'proj-sp',  totalIntentsSampled: 100, coveredIntents: 74 },
+  { modelId: 'proj-mc',  totalIntentsSampled: 100, coveredIntents: 65 },
+  { modelId: 'proj-3',   totalIntentsSampled: 100, coveredIntents: 43 },
+  { modelId: 'proj-6',   totalIntentsSampled: 100, coveredIntents: 81 },
+  { modelId: 'proj-2',   totalIntentsSampled: 100, coveredIntents: 88 },
+  { modelId: 'proj-8',   totalIntentsSampled: 100, coveredIntents: 79 },
+];

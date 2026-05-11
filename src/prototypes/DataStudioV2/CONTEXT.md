@@ -39,13 +39,32 @@ The product moved away from a side-panel co-pilot toward a full-screen agent-fir
 
 ## Next up
 
-### 1. Merge Komal's Overview page
+### 1. Replace ModelView.tsx with Komal's version (Step 3 of Komal merge)
 
-Komal has built a new Overview page and shared it as a zip file. Steps at start of next session:
-1. Unzip and review her changes
-2. Identify which files are new vs modified
-3. Merge into `prototype/data-studio` — resolve any conflicts with current Overview.tsx and related files
-4. Test that Overview, chat, and workspace flows still work end-to-end
+**Context:** Steps 1 and 2 of the Komal merge are already done. Do NOT redo them.
+
+**What's already done:**
+- **Step 1 (mockData)** — Komal's monitoring mock data is already appended to the bottom of `data/mockData.ts`. New exports: `WORKSPACE_QUERIES`, `WORKSPACE_QUALITY`, `WORKSPACE_USAGE_DAYS`, `WORKSPACE_MODEL_USAGE`, `WORKSPACE_CONNECTIONS`, `ACTIVE_INSIGHTS`, `SEMANTIC_GAPS`, `CACHE_STATS`, `DEAD_COLUMNS`, `MONITORING_TRENDS`, `MONITORING_STATS`, `SEMANTIC_COVERAGE`. All use the same project IDs as `OVERVIEW_PROJECTS` — no conflicts.
+- **Step 2 (Overview)** — `Overview.tsx` now has Pulse + Recent models panels (from Komal) inserted between the hero and our existing Recent models table. The hero, table, and Explore data sections are all untouched. Two new props added: `onOpenProjectAtMonitoring` and `onFixWithAgent` — both currently stub to `openModelView` in `index.tsx`.
+
+**What to do in this session:**
+
+Replace `components/ModelView.tsx` with Komal's version from `/Users/vivek.sahi/Downloads/DataStudioV2-Komal/components/ModelView.tsx`.
+
+Key differences in her version:
+- Tabs change: `info | usage | cache | quality` → `info | usage | monitoring`
+- New `initialTab?: TabId` prop added — lets callers open directly on a specific tab
+- Monitoring tab has 4 pillars (Sync health, Spotter quality, Data quality, Performance) + Cost/ROI + Semantic coverage sections
+- Imports these from mockData (all now present in ours): `WORKSPACE_QUERIES`, `WORKSPACE_QUALITY`, `CACHE_STATS`, `SEMANTIC_GAPS`, `MONITORING_TRENDS`, `MONITORING_STATS`, `SEMANTIC_COVERAGE`
+- Also imports `ProgressBar` from Radiant — already in our component library
+
+**After replacing ModelView.tsx:**
+1. Update `index.tsx` — find the `<ModelView` render (~line 303) and add the `initialTab` prop. Wire `onOpenProjectAtMonitoring` in Overview to open ModelView at `initialTab='monitoring'` instead of the current stub.
+2. Run `npm run build` — confirm clean.
+
+**The fix-alert workflow (`onFixWithAgent`):** Still a stub — deferred. When a Pulse debug item is clicked, it currently just opens the model view. The full fix-alert agent journey (Komal's `FullChatView.tsx`) is a separate future task.
+
+**Komal's source files:** `/Users/vivek.sahi/Downloads/DataStudioV2-Komal/` — zip is still available if needed.
 
 ---
 

@@ -298,6 +298,8 @@ const DataStudio: React.FC = () => {
             onNewProject={newProject}
             onOpenProject={openModelView}
             onPromptSubmit={handleOverviewPromptSubmit}
+            onOpenProjectAtMonitoring={openModelView}
+            onFixWithAgent={(insight, proj) => openModelView(proj)}
           />
         )}
         {view === 'model-view' && selectedProject && (
