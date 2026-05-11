@@ -13,6 +13,7 @@ import { tableMetadata } from '../data/mockData';
 import { DEFAULT_VISIBLE_COLS, ADVANCED_COLS, COL_LABELS } from './CenterPanel';
 import { CacheModal } from '../CacheDiscoverability';
 import { QualityModal } from '../DataQualityDiscoverability';
+import { Icon } from '../../../components/icons';
 
 interface WorkspaceProps {
   project: ProjectState;
@@ -141,6 +142,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
           50%      { opacity: 0.35; }
         }
         @keyframes ds-cache-spin { to { transform: rotate(360deg); } }
+        @keyframes ds-slide-in { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: translateX(0); } }
       `}</style>
 
       {/* ── Chat page header — conversation level ───────────────────────────── */}
@@ -285,14 +287,14 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
         />
 
         {/* Canvas column — sunken bg, artifact as bordered card */}
-        <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', backgroundColor: c['background-sunken'], padding: '8px 8px 8px 0' }}>
+        <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', backgroundColor: c['background-base'], padding: '8px 8px 8px 0' }}>
 
           {/* Building skeleton — full canvas, no card border yet */}
           {isBuilding && <BuildingSkeleton />}
 
           {/* Artifact card — appears when built */}
           {!isBuilding && project.buildStep !== 'empty' && (
-            <div style={{ flex: 1, overflow: 'hidden', backgroundColor: c['background-base'], border: `1px solid ${c['border-divider']}`, borderRadius: 10, display: 'flex', flexDirection: 'column' }}>
+            <div style={{ flex: 1, overflow: 'hidden', backgroundColor: c['background-base'], border: `1px solid ${c['border-divider']}`, borderRadius: 10, display: 'flex', flexDirection: 'column', animation: 'ds-slide-in 0.2s ease-out' }}>
 
               {/* Identity row */}
               <div style={{ height: 48, borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', paddingLeft: sp.D, paddingRight: sp.D, gap: sp.C, flexShrink: 0 }}>
@@ -315,13 +317,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
                     onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
                     onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
                   >
-                    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="12" cy="3" r="1.5" fill="currentColor" stroke="none"/>
-                      <circle cx="4" cy="8" r="1.5" fill="currentColor" stroke="none"/>
-                      <circle cx="12" cy="13" r="1.5" fill="currentColor" stroke="none"/>
-                      <line x1="4" y1="8" x2="10.5" y2="3.7"/>
-                      <line x1="4" y1="8" x2="10.5" y2="12.3"/>
-                    </svg>
+                    <Icon name="share" size="s" />
                     Share
                   </button>
                   <button
@@ -330,10 +326,8 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
                     onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#1a5fd4')}
                     onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#2770EF')}
                   >
-                    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M8 2v9"/><polyline points="4,6 8,2 12,6"/><path d="M3 12h10"/>
-                    </svg>
-                    {project.publishedVersion === 0 ? 'Publish model' : project.hasUnpublishedChanges ? 'Update model' : 'Published'}
+                    <Icon name="upload" size="s" color="#fff" />
+                    {project.publishedVersion === 0 ? 'Publish model' : 'Update model'}
                   </button>
                   <button
                     onClick={onBack}
@@ -383,9 +377,9 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
                   </button>
                   <button
                     onClick={() => setCacheModalOpen(true)}
-                    style={{ height: 28, padding: '0 10px', gap: 5, border: `1px solid ${cacheStatus === 'cached' ? '#BBF7D0' : c['border-default']}`, borderRadius: 6, backgroundColor: cacheStatus === 'cached' ? '#F0FDF4' : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, color: cacheStatus === 'cached' ? '#166534' : c['content-secondary'], boxSizing: 'border-box', flexShrink: 0 }}
-                    onMouseEnter={e => { if (cacheStatus !== 'cached') e.currentTarget.style.backgroundColor = c['background-subtle']; }}
-                    onMouseLeave={e => { if (cacheStatus !== 'cached') e.currentTarget.style.backgroundColor = 'transparent'; }}
+                    style={{ height: 28, padding: '0 10px', gap: 5, border: `1px solid ${c['border-default']}`, borderRadius: 6, backgroundColor: cacheStatus === 'cached' ? c['background-subtle'] : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, color: c['content-secondary'], boxSizing: 'border-box', flexShrink: 0 }}
+                    onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
+                    onMouseLeave={e => { e.currentTarget.style.backgroundColor = cacheStatus === 'cached' ? c['background-subtle'] : 'transparent'; }}
                   >
                     {cacheStatus === 'caching' ? (
                       <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" style={{ animation: 'ds-cache-spin 1s linear infinite', flexShrink: 0 }}>
@@ -400,14 +394,14 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
                   </button>
                   <button
                     onClick={() => setQualityModalOpen(true)}
-                    style={{ height: 28, padding: '0 10px', gap: 5, border: `1px solid ${project.buildStep === 'healthy' ? '#BBF7D0' : '#FECACA'}`, borderRadius: 6, backgroundColor: project.buildStep === 'healthy' ? '#F0FDF4' : '#FEF2F2', cursor: 'pointer', display: 'flex', alignItems: 'center', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, color: project.buildStep === 'healthy' ? '#166534' : '#B91C1C', boxSizing: 'border-box', flexShrink: 0 }}
+                    style={{ height: 28, padding: '0 10px', gap: 5, border: `1px solid ${(project.prepTransforms && project.prepTransforms.length > 0) ? '#BBF7D0' : '#FECACA'}`, borderRadius: 6, backgroundColor: (project.prepTransforms && project.prepTransforms.length > 0) ? '#F0FDF4' : '#FEF2F2', cursor: 'pointer', display: 'flex', alignItems: 'center', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, color: (project.prepTransforms && project.prepTransforms.length > 0) ? '#166534' : '#B91C1C', boxSizing: 'border-box', flexShrink: 0 }}
                     onMouseEnter={e => (e.currentTarget.style.opacity = '0.85')}
                     onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
                   >
                     <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M8 2L14 14H2L8 2z"/><line x1="8" y1="7" x2="8" y2="10"/><circle cx="8" cy="12.5" r="0.5" fill="currentColor"/>
                     </svg>
-                    {project.buildStep === 'healthy' ? '9 resolved' : '9 issues'}
+                    {(project.prepTransforms && project.prepTransforms.length > 0) ? '9 resolved' : '9 issues'}
                   </button>
                 </div>
               </div>
@@ -500,7 +494,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
               )}
 
               {/* Content */}
-              <div style={{ flex: 1, overflow: 'hidden' }}>
+              <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
                 <CenterPanel project={project} setProject={setProject} onSendToAgent={(msg) => setExternalAgentMessage(msg)} onInjectToAgent={(text) => setExternalInputInject(text)} selectedColumns={selectedColumns} onToggleColumn={(name) => setSelectedColumns(prev => prev.includes(name) ? prev.filter(c => c !== name) : [...prev, name])} onClearColumns={() => setSelectedColumns([])} search={search} visibleCols={visibleCols} showIssuesOnly={showIssuesOnly} />
               </div>
             </div>
@@ -574,7 +568,7 @@ const BuildingSkeleton: React.FC = () => {
       `}</style>
 
       {/* Full-width canvas — illustration + rotating tips */}
-      <div style={{ flex: 1, backgroundColor: c['background-sunken'], display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ flex: 1, backgroundColor: c['background-base'], display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: sp.D, maxWidth: 420, textAlign: 'center' }}>
 
           {/* Model-building illustration */}

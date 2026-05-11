@@ -175,18 +175,9 @@ export const CacheModal: React.FC<{
         </div>
 
         {applied ? (
-          // ── Applied view — same form, editable, with green banner + Save changes ──
+          // ── Applied view — same form, editable, with Save changes ──
           <>
             <div style={{ flex: 1, overflow: 'auto', padding: sp.E }}>
-              <div style={{ display: 'flex', gap: sp.C, marginBottom: sp.E, padding: sp.D, backgroundColor: '#F0FDF4', borderRadius: 8, border: '1px solid #BBF7D0' }}>
-                <svg width="20" height="20" viewBox="0 0 18 18" fill="none" stroke="#15803D" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 1 }}>
-                  <circle cx="9" cy="9" r="7"/>
-                  <path d="M5.5 9l2.5 2.5 4.5-5"/>
-                </svg>
-                <div style={{ fontSize: fs.sm, color: '#14532D', lineHeight: 1.5 }}>
-                  Caching is active. Queries are running on ThoughtSpot's store instead of the warehouse.
-                </div>
-              </div>
               {renderForm()}
             </div>
             <div style={{ height: 60, padding: `0 ${sp.E}px`, borderTop: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', flexShrink: 0 }}>
