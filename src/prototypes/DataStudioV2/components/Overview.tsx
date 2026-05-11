@@ -263,6 +263,14 @@ const RecentPanel: React.FC<{
 
 // ── Recent Models row ─────────────────────────────────────────────────────────
 
+const ModelIcon: React.FC<{ color: string }> = ({ color }) => (
+  <svg width="15" height="15" viewBox="0 0 16 16" fill="none" style={{ color }}>
+    <path d="M8 1.5L14 5L8 8.5L2 5Z" stroke="currentColor" strokeWidth="1.15" strokeLinejoin="round" fill="currentColor" fillOpacity="0.1"/>
+    <path d="M2 5L2 11L8 14.5L8 8.5Z" stroke="currentColor" strokeWidth="1.15" strokeLinejoin="round" fill="currentColor" fillOpacity="0.06"/>
+    <path d="M14 5L14 11L8 14.5L8 8.5Z" stroke="currentColor" strokeWidth="1.15" strokeLinejoin="round" fill="currentColor" fillOpacity="0.04"/>
+  </svg>
+);
+
 const RecentRow: React.FC<{
   project: OverviewProject;
   onClick: () => void;
@@ -272,6 +280,9 @@ const RecentRow: React.FC<{
   const health      = getProjectHealth(project);
   const healthColor = HEALTH_DOT[health];
   const healthLabel = HEALTH_LABEL[health];
+  const iconColor   = project.status === 'published' ? '#2563eb' : '#9ca3af';
+  const iconBg      = project.status === 'published' ? '#eff6ff' : '#f9fafb';
+  const iconBorder  = project.status === 'published' ? '#bfdbfe' : c['border-default'];
 
   return (
     <div
@@ -280,13 +291,16 @@ const RecentRow: React.FC<{
       onMouseLeave={() => setHovered(false)}
       style={{
         padding: '11px 20px',
-        display: 'flex', alignItems: 'center', gap: 14,
+        display: 'flex', alignItems: 'center', gap: 12,
         borderBottom: isLast ? 'none' : '1px solid rgba(0,0,0,0.05)',
         backgroundColor: hovered ? 'rgba(0,0,0,0.018)' : 'transparent',
         cursor: 'pointer',
         transition: 'background-color 0.12s',
       }}
     >
+      <div style={{ width: 32, height: 32, borderRadius: 8, flexShrink: 0, border: `1px solid ${iconBorder}`, backgroundColor: iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <ModelIcon color={iconColor} />
+      </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{
           fontSize: 13, fontWeight: fw.medium,
