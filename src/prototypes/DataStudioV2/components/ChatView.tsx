@@ -77,12 +77,9 @@ const ChatView: React.FC<ChatViewProps> = ({
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
               <path d="M9 2L4 7l5 5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
-            Overview
+            {project.name || 'Overview'}
           </button>
         </div>
-        <span style={{ fontSize: fs.sm, fontWeight: fw.medium, color: c['content-primary'] }}>
-          {project.name || 'New conversation'}
-        </span>
         <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
           <button
             onClick={() => setContextPanelOpen(o => !o)}
@@ -128,10 +125,12 @@ const ChatView: React.FC<ChatViewProps> = ({
 
         {/* Plan panel */}
         {isPlanOpen && activePlan && (
-          <PlanPanel
-            plan={activePlan}
-            onClose={() => { setActivePlan(null); setContextPanelOpen(true); }}
-          />
+          <div style={{ flex: 1, padding: '8px 8px 8px 0', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+            <PlanPanel
+              plan={activePlan}
+              onClose={() => { setActivePlan(null); setContextPanelOpen(true); }}
+            />
+          </div>
         )}
 
         {/* Context panel */}
