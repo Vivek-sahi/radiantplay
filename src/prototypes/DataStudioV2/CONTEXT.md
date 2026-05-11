@@ -415,6 +415,22 @@ _Last 3 sessions. Full history → [SESSION_LOG.md](./SESSION_LOG.md)_
 
 ---
 
+### 2026-05-11 (session 85)
+
+**Model-building flow polish — nav, layout, and panel cleanup.**
+
+- **Test button removed** from artifact tab bar (only in prompt bar pill now).
+- **Data button** moved to rightmost position in tab bar, icon changed to plus, placed after Quality issues.
+- **Workspace background** — added `backgroundColor: background-base` to root wrapper so the full area is white when artifact is closed.
+- **Agent panel centered** when artifact is closed — wrapped AgentPanel in a `flex:1 / justifyContent:center` div conditionally; canvas-visible state keeps prior fixed-width behaviour.
+- **Created section** in context panel (ChatView) — removed Build plan and Data quality plan entries; only the model shows (permanent artifacts only). Plans accessible from chat as before.
+- **Back navigation** unified — all back buttons from ChatView, Workspace, and FullChatView go directly to Overview (state cleared). Removed the `prevView === 'chat'` special case from `goBack()`.
+- **Workspace back label**: "← Chat" → "← Overview".
+- **FullChatView back label**: `project.name` → "Overview".
+- Build: clean ✓
+
+---
+
 ### 2026-05-11 (session 84)
 
 **FullChatView alignment + context panel + insight wiring fixes.**
