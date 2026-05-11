@@ -41,11 +41,16 @@ The product moved away from a side-panel co-pilot toward a full-screen agent-fir
 
 ### Pass 2 — Artifact paradigm (medium, needs read of AgentPanel first)
 
-9. **Model card in left panel: add open-artifact arrow** — when the agent builds a model and shows a model card in the conversation (left/chat side), that card should have a small `→` or `↗` arrow indicator to signal it opens as an artifact. The model is already opening on the right by default; this is a visual affordance so the user knows the card IS the artifact and can be re-focused. Find where model cards are rendered in AgentPanel message bubbles and add the arrow.
-
 10. **Plans as artifacts on the right side** — build plan and data quality fix plan are currently shown as panels/cards. Per the artifact paradigm, they should open on the right side panel (same treatment as model). This is a medium-sized change — needs exploration in Playground first before touching the live flow. Defer to its own session.
 
 ---
+
+---
+
+## Done — Open-artifact arrow on model outcome card (2026-05-11, session 72)
+
+- `OutcomeCard` title row: added `↗` arrow SVG in top-right corner — visual affordance signalling the card represents the artifact on the right panel. Applies to all outcome cards (build, add_tables, etc.). Decorative only; artifact opens by default.
+- Build: clean ✓
 
 ---
 
