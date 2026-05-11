@@ -39,7 +39,13 @@ The product moved away from a side-panel co-pilot toward a full-screen agent-fir
 
 ## Next up
 
-### 1. Wire the Opportunities tab agent flows
+### 1. Full prototype review
+
+Walk through every flow end-to-end — model building, monitoring/opportunities, debugging, dbt plug-and-play — and capture any remaining rough edges before the prototype is considered demo-ready.
+
+---
+
+### 2. Wire the Opportunities tab agent flows
 
 **What's built vs. not:**
 
