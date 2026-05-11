@@ -14,6 +14,8 @@ interface ChatContextPanelProps {
   tables: string[];
   skills: string[];
   onNavigateToTable?: (tableName: string) => void;
+  /** When provided, replaces the "Created" section with a "Model" section showing this existing model. Use for debugging/fix flows where a model is being worked on, not created. */
+  model?: { name: string };
 }
 
 // Inline SVGs for icons not in the Radiant registry
@@ -69,7 +71,7 @@ const SectionHeader: React.FC<{ label: string; open: boolean; onToggle: () => vo
   </button>
 );
 
-const ChatContextPanel: React.FC<ChatContextPanelProps> = ({ created, tables, skills, onNavigateToTable }) => {
+const ChatContextPanel: React.FC<ChatContextPanelProps> = ({ created, tables, skills, onNavigateToTable, model }) => {
   const [createdOpen, setCreatedOpen] = useState(true);
   const [contextOpen, setContextOpen] = useState(true);
   const [hoveredTable, setHoveredTable] = useState<number | null>(null);
@@ -85,56 +87,72 @@ const ChatContextPanel: React.FC<ChatContextPanelProps> = ({ created, tables, sk
       overflowY: 'auto', backgroundColor: c['background-base'],
     }}>
 
-      {/* Created section */}
-      <SectionHeader label="Created" open={createdOpen} onToggle={() => setCreatedOpen(o => !o)} />
-
-      {createdOpen && (
-        <div style={{ padding: `0 ${sp.C}px ${sp.C}px`, display: 'flex', flexDirection: 'column' }}>
-          {created.length === 0 ? (
-            <span style={{ fontSize: fs.sm, color: secondaryColor, padding: `2px ${sp.B}px` }}>Nothing created yet.</span>
-          ) : created.map((item, i) => (
-            <div key={i}>
-              <div
-                onClick={item.onClick}
-                onMouseEnter={() => setHoveredCreated(i)}
-                onMouseLeave={() => setHoveredCreated(null)}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 6,
-                  padding: `5px ${sp.B}px`, borderRadius: 4,
-                  cursor: item.onClick ? 'pointer' : 'default',
-                  backgroundColor: hoveredCreated === i && item.onClick ? c['background-subtle'] : 'transparent',
-                  transition: 'background-color 0.1s ease',
-                }}
-              >
-                {item.type === 'model' ? (
-                  <ModelIcon />
-                ) : (
-                  <DocIcon color={secondaryColor} />
-                )}
-                <span style={{ fontSize: fs.sm, color: c['content-primary'], flex: 1 }}>{item.name}</span>
+      {model ? (
+        /* Model section — used in debugging/fix flows where the model already exists */
+        <>
+          <SectionHeader label="Model" open={createdOpen} onToggle={() => setCreatedOpen(o => !o)} />
+          {createdOpen && (
+            <div style={{ padding: `0 ${sp.C}px ${sp.C}px`, display: 'flex', flexDirection: 'column' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: `5px ${sp.B}px`, borderRadius: 4 }}>
+                <ModelIcon />
+                <span style={{ fontSize: fs.sm, color: c['content-primary'], flex: 1 }}>{model.name}</span>
               </div>
-              {item.actions && item.actions.length > 0 && (
-                <div style={{ paddingLeft: 28, display: 'flex', gap: sp.C, paddingBottom: 4 }}>
-                  {item.actions.map((action, ai) => (
-                    <button
-                      key={ai}
-                      onClick={action.onClick}
-                      style={{
-                        background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0',
-                        fontSize: fs.xs, color: c['content-brand'], fontFamily: ff.primary,
-                        fontWeight: fw.medium,
-                      }}
-                      onMouseEnter={e => (e.currentTarget.style.textDecoration = 'underline')}
-                      onMouseLeave={e => (e.currentTarget.style.textDecoration = 'none')}
-                    >
-                      {action.label}
-                    </button>
-                  ))}
-                </div>
-              )}
             </div>
-          ))}
-        </div>
+          )}
+        </>
+      ) : (
+        /* Created section — used in build flows where artifacts are produced */
+        <>
+          <SectionHeader label="Created" open={createdOpen} onToggle={() => setCreatedOpen(o => !o)} />
+          {createdOpen && (
+            <div style={{ padding: `0 ${sp.C}px ${sp.C}px`, display: 'flex', flexDirection: 'column' }}>
+              {created.length === 0 ? (
+                <span style={{ fontSize: fs.sm, color: secondaryColor, padding: `2px ${sp.B}px` }}>Nothing created yet.</span>
+              ) : created.map((item, i) => (
+                <div key={i}>
+                  <div
+                    onClick={item.onClick}
+                    onMouseEnter={() => setHoveredCreated(i)}
+                    onMouseLeave={() => setHoveredCreated(null)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 6,
+                      padding: `5px ${sp.B}px`, borderRadius: 4,
+                      cursor: item.onClick ? 'pointer' : 'default',
+                      backgroundColor: hoveredCreated === i && item.onClick ? c['background-subtle'] : 'transparent',
+                      transition: 'background-color 0.1s ease',
+                    }}
+                  >
+                    {item.type === 'model' ? (
+                      <ModelIcon />
+                    ) : (
+                      <DocIcon color={secondaryColor} />
+                    )}
+                    <span style={{ fontSize: fs.sm, color: c['content-primary'], flex: 1 }}>{item.name}</span>
+                  </div>
+                  {item.actions && item.actions.length > 0 && (
+                    <div style={{ paddingLeft: 28, display: 'flex', gap: sp.C, paddingBottom: 4 }}>
+                      {item.actions.map((action, ai) => (
+                        <button
+                          key={ai}
+                          onClick={action.onClick}
+                          style={{
+                            background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0',
+                            fontSize: fs.xs, color: c['content-brand'], fontFamily: ff.primary,
+                            fontWeight: fw.medium,
+                          }}
+                          onMouseEnter={e => (e.currentTarget.style.textDecoration = 'underline')}
+                          onMouseLeave={e => (e.currentTarget.style.textDecoration = 'none')}
+                        >
+                          {action.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       <div style={{ height: 1, backgroundColor: c['border-divider'], margin: `0 ${sp.C}px` }} />
