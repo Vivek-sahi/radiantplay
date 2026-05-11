@@ -333,7 +333,7 @@ const PromptBar = forwardRef<PromptBarRef, PromptBarProps>(({
             onClick={isProcessing ? onStop : handleSubmit}
             disabled={!isProcessing && !canSubmit}
             title={isProcessing ? 'Stop' : 'Send'}
-            style={{ width: 32, height: 32, borderRadius: '50%', border: 'none', backgroundColor: isProcessing ? c['border-default'] : (canSubmit ? '#2770ef' : c['border-default']), color: isProcessing ? c['content-secondary'] : (canSubmit ? '#fff' : c['content-secondary']), cursor: (isProcessing || canSubmit) ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: isProcessing ? 10 : 14, transition: 'background-color 0.15s', flexShrink: 0, fontFamily: ff.primary }}
+            style={{ width: 32, height: 32, borderRadius: '50%', border: 'none', backgroundColor: isProcessing ? c['border-default'] : '#2770ef', color: isProcessing ? c['content-secondary'] : '#fff', opacity: (!isProcessing && !canSubmit) ? 0.4 : 1, cursor: (isProcessing || canSubmit) ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: isProcessing ? 10 : 14, transition: 'opacity 0.15s', flexShrink: 0, fontFamily: ff.primary }}
           >
             {isProcessing ? '■' : '↑'}
           </button>
