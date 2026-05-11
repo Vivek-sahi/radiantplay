@@ -108,8 +108,6 @@ const ChatContextPanel: React.FC<ChatContextPanelProps> = ({ created, tables, sk
               >
                 {item.type === 'model' ? (
                   <ModelIcon />
-                ) : item.type === 'quality-plan' ? (
-                  <DocIcon color="#D97706" />
                 ) : (
                   <DocIcon color={secondaryColor} />
                 )}

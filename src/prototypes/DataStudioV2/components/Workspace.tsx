@@ -50,30 +50,21 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [contextPanelOpen, setContextPanelOpen] = useState(false);
 
-  // Close context panel when quality plan opens
-  useEffect(() => {
-    if (qualityPlanOpen) setContextPanelOpen(false);
-  }, [qualityPlanOpen]);
-
   const planMsg = useMemo(() => messages.find(m => m.planData != null), [messages]);
 
   const contextCreated = useMemo((): CreatedItem[] => [
     ...(planMsg ? [{ type: 'plan' as const, name: 'Build plan' }] : []),
-    ...(project.buildStep !== 'empty' ? [{
+    ...(project.prepTransforms !== undefined ? [{
       type: 'quality-plan' as const,
       name: 'Data quality plan',
       onClick: () => setQualityPlanOpen(true),
-      actions: [
-        { label: 'Apply fixes', onClick: () => { setQualityPlanOpen(false); setExternalAgentMessage('yes'); } },
-        { label: 'Edit plan', onClick: () => { setQualityPlanOpen(false); setExternalInputInject('Edit the quality plan — '); } },
-      ],
     }] : []),
     ...(project.buildStep !== 'empty' ? [{
       type: 'model' as const,
       name: project.name,
       onClick: () => setQualityPlanOpen(false),
     }] : []),
-  ], [planMsg, project.buildStep, project.name]);
+  ], [planMsg, project.prepTransforms, project.buildStep, project.name]);
 
   const contextTables = useMemo(() => planMsg?.planData?.tables.map(t => t.name) ?? [], [planMsg]);
   const contextSkills = useMemo(() => project.buildStep !== 'empty' ? ['create-data-model'] : [], [project.buildStep]);
