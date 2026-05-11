@@ -17,10 +17,13 @@ import { QualityModal } from '../DataQualityDiscoverability';
 interface WorkspaceProps {
   project: ProjectState;
   setProject: React.Dispatch<React.SetStateAction<ProjectState>>;
+  messages: AgentMessage[];
+  setMessages: React.Dispatch<React.SetStateAction<AgentMessage[]>>;
   onBack: () => void;
   initialPrompt?: string;
   isDayZero?: boolean;
   isDbtReview?: boolean;
+  isAgentMode?: boolean;
 }
 
 interface Toast {
@@ -29,8 +32,7 @@ interface Toast {
   action?: { label: string; onClick: () => void };
 }
 
-const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, onBack, initialPrompt, isDayZero, isDbtReview }) => {
-  const [messages, setMessages] = useState<AgentMessage[]>([]);
+const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, setMessages, onBack, initialPrompt, isDayZero, isDbtReview, isAgentMode }) => {
   const [isBuilding, setIsBuilding] = useState(!!initialPrompt);
   const [externalAgentMessage, setExternalAgentMessage] = useState<string | null>(null);
   const [externalAgentAttachment, setExternalAgentAttachment] = useState<{ type: string; label: string } | null>(null);
@@ -48,7 +50,9 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, onBack, init
   // ── Agent panel drag-to-resize ───────────────────────────────────────────────
   const AGENT_MIN = 340;
   const AGENT_MAX = () => window.innerWidth - 340;
-  const [agentPanelWidth, setAgentPanelWidth] = useState(AGENT_MIN);
+  const [agentPanelWidth, setAgentPanelWidth] = useState(() =>
+    isAgentMode ? Math.max(AGENT_MIN, Math.round(window.innerWidth * 0.4)) : AGENT_MIN
+  );
   const [isDraggingAgent, setIsDraggingAgent] = useState(false);
   const dragStartX = useRef(0);
   const dragStartWidth = useRef(AGENT_MIN);

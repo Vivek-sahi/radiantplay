@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Shell, { NavSection } from './components/Shell';
 import Overview from './components/Overview';
 import ModelView from './components/ModelView';
 import Workspace from './components/Workspace';
+import ChatView from './components/ChatView';
 import NewProjectPrompt from './components/NewProjectPrompt';
 import DataBrowserPage from './components/DataBrowserPage';
 import ConnectionsPage from './components/ConnectionsPage';
 import ModelsPage from './components/ModelsPage';
+import { AgentMessage } from './components/AgentPanel';
 import { OverviewProject, OverviewAlert } from './data/mockData';
 import { c, sp, ff, fs, fw } from './styles';
 
@@ -52,7 +54,7 @@ export interface ProjectState {
   prepTransforms?: PrepTransform[];
 }
 
-type AppView = 'overview' | 'models' | 'new-project' | 'model-view' | 'workspace' | 'data-browser' | 'connections' | 'placeholder';
+type AppView = 'overview' | 'models' | 'chat' | 'new-project' | 'model-view' | 'workspace' | 'data-browser' | 'connections' | 'placeholder';
 
 // User-facing labels for the unwired nav sections so the placeholder reads cleanly.
 const PLACEHOLDER_LABEL: Record<NavSection, string> = {
@@ -77,6 +79,8 @@ const DataStudio: React.FC = () => {
   const [isDbtReview, setIsDbtReview] = useState(false);
   const [dbtImported, setDbtImported] = useState(false);
   const [dataBrowserInitialTab, setDataBrowserInitialTab] = useState<'warehouses' | 'external-models'>('warehouses');
+  const [messages, setMessages]       = useState<AgentMessage[]>([]);
+  const [isAgentMode, setIsAgentMode] = useState(false);
   const [selectedProject, setSelectedProject] = useState<OverviewProject | null>(null);
   const [activeAlert, setActiveAlert]         = useState<OverviewAlert | null>(null);
   const [project, setProject] = useState<ProjectState>({
@@ -100,6 +104,15 @@ const DataStudio: React.FC = () => {
     setPrevView(view);
     setView(next);
   };
+
+  // Auto-transition: chat → workspace when the build starts (buildStep leaves 'empty')
+  useEffect(() => {
+    if (view === 'chat' && project.buildStep !== 'empty') {
+      setInitialPrompt('');
+      navigateTo('workspace');
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [project.buildStep, view]);
 
   // Open model view — landing screen before workspace
   const openModelView = (proj: OverviewProject) => {
@@ -218,7 +231,8 @@ const DataStudio: React.FC = () => {
     }));
     setInitialPrompt(prompt);
     setIsDayZero(true);
-    navigateTo('workspace');
+    setIsAgentMode(true);
+    navigateTo('chat');
   };
 
   // Start manually → empty workspace, no agent auto-trigger
@@ -232,6 +246,8 @@ const DataStudio: React.FC = () => {
     setActiveAlert(null);
     setIsDayZero(false);
     setIsDbtReview(false);
+    setIsAgentMode(false);
+    setMessages([]);
     // If previous screen was model-view, go back there; otherwise overview
     if (prevView === 'model-view' && selectedProject) {
       setView('model-view');
@@ -306,15 +322,30 @@ const DataStudio: React.FC = () => {
           <NewProjectPrompt onSubmit={handlePromptSubmit} onStartManually={handleStartManually} onStartDbt={startDbtProject} onBack={goBack} />
         </div>
       )}
+      {view === 'chat' && (
+        <ChatView
+          project={project}
+          setProject={setProject}
+          messages={messages}
+          setMessages={setMessages}
+          initialPrompt={initialPrompt}
+          isDayZero={isDayZero}
+          isDbtReview={isDbtReview}
+          onBack={goBack}
+        />
+      )}
       {view === 'workspace' && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 50 }}>
           <Workspace
             project={project}
             setProject={setProject}
+            messages={messages}
+            setMessages={setMessages}
             onBack={goBack}
             initialPrompt={initialPrompt}
             isDayZero={isDayZero}
             isDbtReview={isDbtReview}
+            isAgentMode={isAgentMode}
           />
         </div>
       )}
