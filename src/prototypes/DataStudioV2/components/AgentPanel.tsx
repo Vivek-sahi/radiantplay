@@ -3,7 +3,7 @@ import ReactECharts from 'echarts-for-react';
 import { c, sp, ff, fs, fw, ts } from '../styles';
 import { ProjectState, ProjectContext } from '../index';
 // agent.ts: skills registry (no API calls — all execution is scripted)
-import { tableMetadata, relationships } from '../data/mockData';
+import { tableMetadata, relationships, CACHE_STATS } from '../data/mockData';
 import PromptBar, { PromptBarRef } from './PromptBar';
 import DataQualityPlanModal from './DataQualityPlanModal';
 import { Avatar } from '../../../components/Avatar';
@@ -76,6 +76,8 @@ export interface AgentMessage {
   reviewPlanCTA?: boolean;
   interactiveChips?: { label: string; value: string }[];
   planData?: PlanData;
+  genUI?: string;
+  genUIResult?: string;
 }
 
 interface WorkingStep {
@@ -241,6 +243,7 @@ const SCRIPTS: Record<string, {
   outcomeCard?: { title: string; chips: string[]; errorChips?: string[]; note: string }; // rendered after steps collapse
   setsProjectSource?: 'warehouse' | 'dbt'; // written to ProjectState on completion
   reviewPlanCTA?: boolean;  // show "Review plan" button instead of inline confirm
+  executionGenUI?: string;  // genUI card to attach to the auto-complete response message
 }> = {
 
   day_zero_generate_plan: {
@@ -884,6 +887,239 @@ Write descriptions for all of them? You can review and edit them afterwards.`,
     },
   },
 
+  // ── Enable caching ─────────────────────────────────────────────────────────
+  enable_cache: {
+    steps: [
+      { label: 'Identifying query candidates', detail: 'Scanning query log — "Win rate by region last quarter": 34 runs this week (avg 11.2s). "Top deals by rep this month": 21 runs this week (avg 8.4s).' },
+      { label: 'Estimating savings', detail: '55 queries × ~10s average = ~550 seconds saved per week. Cache hit rate expected 70–80% after warm-up period.' },
+      { label: 'Generating cache policy', detail: 'Query-level caching · 6h TTL · auto-invalidates on data sync · no stale results served.' },
+      { label: '✦ Enabling cache', detail: 'Applying policy to Campaign Performance model — 2 queries registered.' },
+    ],
+    duration: '10 seconds',
+    autoComplete: true,
+    stepDelay: 800,
+    proposal: '',
+    execution: `Caching enabled for **Campaign Performance**.\n\n✓ "Win rate by region last quarter" — cached (11.2s → <1s)\n✓ "Top deals by rep this month" — cached (8.4s → <1s)\n\nCache policy: 6h TTL · auto-invalidates on data sync.\n\nYour users will see faster answers starting from the next run.`,
+    nextStep: 'healthy',
+    preserveStep: true,
+    executionSuggestions: ['Add more queries to cache', 'Review cache settings'],
+  },
+
+  // ── Schema drift repair (single model) ────────────────────────────────────
+  schema_drift_repair: {
+    steps: [
+      { label: 'Reading sync error log', detail: 'dbt_finance_spend sync failed at Apr 20 02:14 AM. Error: columns cost_center, allocation_type not found in source schema.' },
+      { label: 'Comparing model schema to source', detail: 'Model expects 12 columns from dbt_finance_spend. Source now returns 10 — 2 columns missing.' },
+      { label: 'Checking downstream impact', detail: '4 answers, 3 liveboards and 2 formulas reference cost_center or allocation_type. All currently broken.' },
+      { label: '✦ Preparing resolution options', detail: 'Found replacement candidates in source: cost_bucket (string), cost_category (string). Preparing column resolution card.' },
+    ],
+    duration: '14 seconds',
+    autoComplete: true,
+    stepDelay: 800,
+    proposal: '',
+    execution: `Here's what changed in the source:\n\n**dbt_finance_spend** removed 2 columns — \`cost_center\` and \`allocation_type\`. They no longer exist in the upstream dbt model.\n\nDecide how to handle them:`,
+    nextStep: 'healthy',
+    preserveStep: true,
+    executionGenUI: 'drift_resolution',
+  },
+
+  schema_drift_preview: {
+    steps: [
+      { label: 'Applying column remapping', detail: 'cost_center → cost_bucket, allocation_type → cost_category.' },
+      { label: 'Rewriting 2 formulas', detail: 'channel_cost_ratio and cost_per_campaign both reference cost_center. Substituting → cost_bucket in both.' },
+      { label: '✦ Changeset ready — awaiting your approval to publish', detail: '' },
+    ],
+    duration: '8 seconds',
+    autoComplete: true,
+    stepDelay: 800,
+    proposal: '',
+    execution: 'Here\'s the full changeset for **FnOps Cost Model v2**. Review and publish when ready:',
+    nextStep: 'healthy',
+    preserveStep: true,
+    executionGenUI: 'drift_publish_preview',
+  },
+
+  schema_drift_publish: {
+    steps: [
+      { label: 'Publishing FnOps Cost Model v2', detail: 'Writing column remapping and 2 formula rewrites to the model definition.' },
+      { label: 'Running validation queries', detail: 'Spot-checking the 3 most-used answers against the updated schema — all returning valid data.' },
+      { label: 'Verifying downstream liveboards', detail: 'Finance Dashboard and 2 other liveboards loading successfully with fresh data.' },
+      { label: '✦ Monitoring alert cleared', detail: 'Schema drift for dbt_finance_spend is resolved. Removing from workspace pulse.' },
+    ],
+    duration: '12 seconds',
+    autoComplete: true,
+    stepDelay: 900,
+    proposal: '',
+    execution: 'Model is live and all dependents verified.',
+    nextStep: 'healthy',
+    preserveStep: true,
+    executionGenUI: 'drift_complete',
+  },
+
+  // ── Multi-model schema drift ───────────────────────────────────────────────
+  schema_drift_multi_repair: {
+    steps: [
+      { label: 'Reading warehouse schema change log', detail: 'Detected 3 columns removed from the shared source table used by multiple models.' },
+      { label: 'Identifying affected models', detail: 'Revenue Forecast and Pipeline Health both reference quarterly_target, forecast_region, and pipeline_stage.' },
+      { label: 'Checking warehouse for replacement columns', detail: 'No equivalent columns found — these columns no longer exist in any source table.' },
+      { label: 'Calculating downstream impact across both models', detail: '8 dependents affected: 5 answers, 2 liveboards, 1 formula across the 2 models.' },
+    ],
+    duration: '16 seconds',
+    autoComplete: true,
+    stepDelay: 800,
+    proposal: '',
+    execution: 'Here\'s the full picture — 3 columns were removed from the warehouse and no replacements exist. Both models are currently broken.',
+    nextStep: 'healthy',
+    preserveStep: true,
+    executionGenUI: 'multi_model_drift',
+  },
+
+  schema_drift_multi_execute: {
+    steps: [
+      { label: 'Removing quarterly_target from Revenue Forecast', detail: 'Updating 5 calculated columns that referenced this field.' },
+      { label: 'Removing forecast_region and pipeline_stage from Pipeline Health', detail: 'Removing 3 formula references and 2 column definitions.' },
+      { label: 'Updating 8 affected dependents', detail: 'Re-validating all answers, liveboards, and formulas that referenced the removed columns.' },
+    ],
+    duration: '12 seconds',
+    autoComplete: true,
+    stepDelay: 900,
+    proposal: '',
+    execution: 'Both models are repaired and ready to publish.',
+    nextStep: 'healthy',
+    preserveStep: true,
+    executionGenUI: 'repair_summary',
+  },
+
+  schema_drift_multi_preview: {
+    steps: [
+      { label: 'Applying column remapping across both models', detail: 'quarterly_target → q_target_amount, forecast_region → region_code, pipeline_stage → deal_stage.' },
+      { label: 'Rewriting 3 formulas', detail: 'target_attainment_rate, pipeline_coverage_ratio, and stage_conversion_rate all reference removed columns.' },
+      { label: '✦ Changeset ready — awaiting your approval to publish', detail: '' },
+    ],
+    duration: '10 seconds',
+    autoComplete: true,
+    stepDelay: 800,
+    proposal: '',
+    execution: 'Here\'s the full changeset for **Revenue Forecast v2** and **Pipeline Health v2**. Review and publish when ready:',
+    nextStep: 'healthy',
+    preserveStep: true,
+    executionGenUI: 'drift_multi_publish_preview',
+  },
+
+  schema_drift_multi_publish: {
+    steps: [
+      { label: 'Publishing Revenue Forecast v2', detail: 'Writing column remapping and formula rewrites to Revenue Forecast.' },
+      { label: 'Publishing Pipeline Health v2', detail: 'Writing column remapping and formula rewrites to Pipeline Health.' },
+      { label: 'Running validation queries', detail: 'Spot-checking the most-used answers across both models — all returning valid data.' },
+      { label: 'Verifying downstream liveboards', detail: '4 liveboards loading successfully with fresh data across both models.' },
+      { label: '✦ Monitoring alert cleared', detail: 'Schema drift for warehouse source resolved across both models. Removing from workspace pulse.' },
+    ],
+    duration: '18 seconds',
+    autoComplete: true,
+    stepDelay: 900,
+    proposal: '',
+    execution: 'Both models are live and all dependents verified.',
+    nextStep: 'healthy',
+    preserveStep: true,
+    executionGenUI: 'drift_multi_complete',
+  },
+
+  // ── dbt Cloud connection repair ────────────────────────────────────────────
+  dbt_connection_repair: {
+    steps: [
+      { label: 'Checking dbt Cloud connection status', detail: 'Connection ID: dbt-cloud-prod. Status: Offline.' },
+      { label: 'Diagnosing sync failure', detail: 'Last successful sync: Jan 12, 2026, 10:22am.' },
+      { label: 'Verifying API credentials', detail: 'API token expired Jan 12 at 10:22am. Token last rotated 90 days ago.', collapsible: '401 Unauthorized — token expiry confirmed via dbt Cloud auth endpoint' },
+      { label: 'Identifying all affected models', detail: 'Sales Analytics, Sales Performance, Revenue Forecast — all 3 blocked on downstream sync.' },
+    ],
+    duration: '10 seconds',
+    autoComplete: true,
+    stepDelay: 800,
+    proposal: '',
+    execution: 'Found the issue — the API token expired. Here\'s the full picture before I apply the fix:',
+    nextStep: 'healthy',
+    preserveStep: true,
+    executionGenUI: 'connection_status',
+  },
+
+  dbt_connection_apply: {
+    steps: [
+      { label: 'Rotating API token', detail: 'Generating new token via dbt Cloud credentials API.' },
+      { label: 'Reconnecting to dbt Cloud', detail: 'Handshake verified — connection restored.' },
+      { label: 'Queuing resync for 3 blocked models', detail: 'Sales Analytics, Sales Performance, Revenue Forecast added to sync queue. ETA: ~4 minutes.' },
+    ],
+    duration: '8 seconds',
+    autoComplete: true,
+    stepDelay: 800,
+    proposal: '',
+    execution: 'Connection restored. All 3 models are syncing — you\'ll see fresh data in ~4 minutes.',
+    nextStep: 'healthy',
+    preserveStep: true,
+  },
+
+  // ── Null rate investigation ────────────────────────────────────────────────
+  null_rate_investigation: {
+    steps: [
+      { label: 'Sampling campaign_id null distribution', detail: '18.2% of orders have null campaign_id as of today.', collapsible: 'SELECT COUNT(*) FILTER (WHERE campaign_id IS NULL) * 100.0 / COUNT(*) AS null_pct\nFROM orders\n-- Result: 18.2%' },
+      { label: 'Comparing against 30-day historical baseline', detail: 'Null rate was stable at 2% from Dec 1 – Jan 13. Spike started Jan 14.' },
+      { label: 'Tracing nulls through the join chain', detail: 'orders.campaign_id → campaigns.id — LEFT JOIN gap analysis complete.' },
+      { label: 'Segmenting null orders by channel and date', detail: 'Organic-channel orders added Jan 14 have no campaign_id — this is expected by design.' },
+      { label: '✦ Root cause identified', detail: 'Not a data error. New order source introduced Jan 14 intentionally has no campaign attribution.' },
+    ],
+    duration: '18 seconds',
+    autoComplete: true,
+    stepDelay: 800,
+    proposal: '',
+    execution: 'This isn\'t a data error — it\'s a new behavior introduced Jan 14. Here\'s the full picture and your options:',
+    nextStep: 'healthy',
+    preserveStep: true,
+    executionGenUI: 'null_rate',
+  },
+
+  null_rate_add_organic: {
+    steps: [
+      { label: 'Adding Organic to campaigns table', detail: 'Inserting campaign_id = \'organic\', name = \'Organic\', channel = \'organic\'.' },
+      { label: 'Backfilling campaign_id on organic orders', detail: '3,241 orders from Jan 14 onward updated.' },
+      { label: 'Updating join to LEFT JOIN', detail: 'orders → campaigns join now handles null-safe attribution.' },
+      { label: 'Recalculating attribution metrics', detail: 'All downstream attribution answers updated with organic channel.' },
+    ],
+    duration: '14 seconds',
+    autoComplete: true,
+    stepDelay: 800,
+    proposal: '',
+    execution: 'Attribution model updated. Organic is now a tracked channel — null rate resolved.',
+    nextStep: 'healthy',
+    preserveStep: true,
+  },
+
+  null_rate_filter_organic: {
+    steps: [
+      { label: 'Adding filter to exclude organic orders', detail: 'WHERE campaign_id IS NOT NULL applied to attribution model.' },
+      { label: 'Recalculating attribution metrics', detail: '3,241 organic orders excluded from all reports.' },
+    ],
+    duration: '8 seconds',
+    autoComplete: true,
+    stepDelay: 800,
+    proposal: '',
+    execution: 'Organic orders filtered. Null rate restored to 2% — note that 18% of orders are now excluded from attribution reports.',
+    nextStep: 'healthy',
+    preserveStep: true,
+  },
+
+  null_rate_suppress: {
+    steps: [
+      { label: 'Updating alert threshold', detail: 'Null rate threshold raised from 5% to 22% for campaign_id.' },
+      { label: 'Marking 18% as expected', detail: 'Baseline reset to current state — future spikes will alert only if rate exceeds 22%.' },
+    ],
+    duration: '4 seconds',
+    autoComplete: true,
+    stepDelay: 600,
+    proposal: '',
+    execution: 'Alert suppressed. No model changes made — threshold updated to 22%.',
+    nextStep: 'healthy',
+    preserveStep: true,
+  },
+
   // ── Expand model: add returns table (Situation 4) ────────────────────────
   // Triggered when user mentions @returns or "add returns" on a healthy model.
   // Shows work ladder then proposes join — requires explicit confirm.
@@ -1264,6 +1500,7 @@ function runFlow(
               content: script.execution,
               outcomeCard: script.outcomeCard,
               suggestions: script.executionSuggestions,
+              ...(script.executionGenUI ? { genUI: script.executionGenUI } : {}),
             }]);
             setIsProcessing(false);
           } else {
@@ -1715,9 +1952,14 @@ interface AgentPanelProps {
   isDbtReview?: boolean;
   onOpenPlan?: (plan: PlanData) => void;
   onOpenQualityPlan?: () => void;
+  fullPage?: boolean;
+  onBack?: () => void;
+  initialFlow?: string;
+  initialMessage?: string;
+  onInsightResolved?: (id: string) => void;
 }
 
-const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, setMessages, initialPrompt, onBuildComplete, externalMessage, onExternalMessageHandled, externalMessageAttachment, injectInput, onInjectInputHandled, width = 340, selectedColumns, onColumnRemove, isDayZero, isDbtReview, onOpenPlan, onOpenQualityPlan }) => {
+const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, setMessages, initialPrompt, onBuildComplete, externalMessage, onExternalMessageHandled, externalMessageAttachment, injectInput, onInjectInputHandled, width = 340, selectedColumns, onColumnRemove, isDayZero, isDbtReview, onOpenPlan, onOpenQualityPlan, fullPage = false, onBack, initialFlow, initialMessage, onInsightResolved }) => {
   const [pendingAction, setPending]     = useState<PendingAction | null>(null);
   const [isProcessing, setProcessing]   = useState(false);
   const [planModalOpen, setPlanModalOpen] = useState(false);
@@ -1731,6 +1973,7 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
   const promptBarRef             = useRef<PromptBarRef>(null);
   const buildCalledRef           = useRef(false);
   const initialPromptFiredRef    = useRef(false);
+  const initialFlowFiredRef      = useRef(false);
   const buildAbortRef            = useRef(false);
   const lastHandledExternalRef   = useRef<string | null>(null);
   const prevMsgLengthRef         = useRef(messages.length);
@@ -1770,6 +2013,27 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
       }, 300);
     } else {
       processText(initialPrompt);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // initialFlow — auto-trigger a named flow on mount (e.g. schema drift repair from Pulse)
+  useEffect(() => {
+    if (!initialFlow || initialFlowFiredRef.current || buildCalledRef.current) return;
+    initialFlowFiredRef.current = true;
+    buildCalledRef.current = true;
+    if (initialMessage) {
+      const delay = fullPage ? 420 : 0;
+      setTimeout(() => {
+        setMessages([{ id: `u-${Date.now()}`, type: 'user', content: initialMessage }]);
+        setTimeout(() => {
+          setProcessing(true);
+          runFlow(initialFlow, setMessages, setPending, setProcessing, setProject);
+        }, 520);
+      }, delay);
+    } else {
+      setProcessing(true);
+      runFlow(initialFlow, setMessages, setPending, setProcessing, setProject);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -1823,16 +2087,68 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
           ],
         }]);
       } else {
-        setMessages([{
-          id: `r-${Date.now()}`,
-          type: 'response',
-          content: 'What would you like to do today?',
-          suggestions: ['Add a table', 'Create a formula', 'Add AI context'],
-        }]);
+        const cacheStats = CACHE_STATS.filter(s => s.modelId === 'proj-sp');
+        if (project.name === 'Campaign Performance' && cacheStats.length > 0) {
+          setMessages([{
+            id: `r-${Date.now()}`,
+            type: 'response',
+            content: "I reviewed your model's query log. Two queries run frequently but hit the warehouse every time — no caching is in place. Here's what I found:",
+            genUI: 'cache_recommendation',
+            suggestions: ['Enable caching', 'Ignore this'],
+          }]);
+        } else {
+          setMessages([{
+            id: `r-${Date.now()}`,
+            type: 'response',
+            content: 'What would you like to do today?',
+            suggestions: ['Add a table', 'Create a formula', 'Add AI context'],
+          }]);
+        }
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const handleGenUIAction = (action: string, msgId: string) => {
+    setMessages(prev => prev.map(m => m.id === msgId ? { ...m, genUIResult: action } : m));
+
+    const addUser = (text: string) => setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: text }]);
+    const runNext = (flow: string) => setTimeout(() => { setProcessing(true); runFlow(flow, setMessages, setPending, setProcessing, setProject); }, 200);
+
+    if (action === 'enable_cache') { addUser('Enable caching for these queries.'); runNext('enable_cache'); return; }
+    if (action === 'drift_resolution_remove') { addUser('Remove both columns from the model.'); runNext('schema_drift_preview'); return; }
+    if (action === 'drift_resolution_sync')   { addUser('Apply the column mapping.');          runNext('schema_drift_preview'); return; }
+    if (action === 'drift_publish_confirm')   { addUser('Publish the model.');                  runNext('schema_drift_publish'); return; }
+    if (action === 'drift_multi_resolution_remove') { addUser('Remove all three columns from both models.'); runNext('schema_drift_multi_preview'); return; }
+    if (action === 'drift_multi_resolution_sync')   { addUser('Apply the column mapping across both models.'); runNext('schema_drift_multi_preview'); return; }
+    if (action === 'multi_model_drift_repair')  { addUser('Repair both models — remove the deprecated columns.'); runNext('schema_drift_multi_execute'); return; }
+    if (action === 'repair_summary_publish')    { addUser('Publish both models.');              runNext('schema_drift_multi_publish'); return; }
+    if (action === 'connection_status_apply') {
+      addUser('Rotate the token and resync all 3 models.');
+      runNext('dbt_connection_apply');
+      // 3 steps × 800ms + 200ms initial + ~300ms execution render
+      setTimeout(() => onInsightResolved?.('ins-d1'), 3200);
+      return;
+    }
+    if (action === 'null_rate_add_organic')    { addUser('Add an Organic campaign and map the orders.'); runNext('null_rate_add_organic'); return; }
+    if (action === 'null_rate_filter_organic') { addUser('Filter organic orders — restore the 2% null rate.'); runNext('null_rate_filter_organic'); return; }
+    if (action === 'null_rate_suppress')       { addUser('Mark 18% as expected and suppress the alert.'); runNext('null_rate_suppress'); return; }
+    if (action === 'drift_multi_publish_confirm') { addUser('Publish both models.'); runNext('schema_drift_multi_publish'); return; }
+    if (action === 'next_issue_dismiss') {
+      addUser("I'll handle this later.");
+      setTimeout(() => setMessages(prev => [...prev, { id: `r-${Date.now()}`, type: 'response', content: "Noted — it'll stay on the workspace pulse when you're ready." }]), 600);
+      return;
+    }
+    if (action === 'next_issue_view_connection') {
+      addUser('Show me the connection.');
+      setTimeout(() => setMessages(prev => [...prev, {
+        id: `r-${Date.now()}`, type: 'response',
+        content: 'The **dbt Cloud** connection last synced successfully on Apr 19 at 11:52 PM. The Apr 20 02:14 AM run failed with:\n\n```\nRuntime Error: Relation "analytics.sales_analytics" does not exist\n```\n\nThis is likely a schema rename or the model was dropped upstream. Check the dbt Cloud run log for the Apr 20 job to confirm, then update the source reference in the model.',
+        suggestions: ['Open dbt Cloud run log', 'Check source schema', 'Dismiss this issue'],
+      }]), 700);
+      return;
+    }
+  };
 
   const toggleCollapsible = (msgId: string, stepIdx: number) => {
     setMessages(prev => prev.map(m => {
@@ -2421,7 +2737,32 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
   // ── Render ────────────────────────────────────────────────────────────────────
 
   return (
-    <div style={{ width, flexShrink: 0, borderLeft: 'none', backgroundColor: c['background-base'], display: 'flex', flexDirection: 'column' }}>
+    <div style={fullPage
+      ? { height: '100%', display: 'flex', flexDirection: 'column', backgroundColor: '#f7f8fa' }
+      : { width, flexShrink: 0, borderLeft: 'none', backgroundColor: c['background-base'], display: 'flex', flexDirection: 'column' }
+    }>
+
+      {/* fullPage header: ← Overview + centered Agent identity */}
+      {fullPage && (
+        <div style={{ height: 52, borderBottom: '1px solid rgba(0,0,0,0.07)', display: 'flex', alignItems: 'center', padding: '0 20px', flexShrink: 0, backgroundColor: '#fff' }}>
+          <button
+            onClick={onBack}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 10px 5px 6px', borderRadius: 6, border: 'none', background: 'transparent', cursor: 'pointer', color: '#555', fontSize: 13, fontWeight: fw.medium, fontFamily: ff.primary }}
+            onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.05)')}
+            onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+          >
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="10,4 6,8 10,12"/></svg>
+            Overview
+          </button>
+          <div style={{ flex: 1 }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <AgentAvatar />
+            <span style={{ fontSize: 13, fontWeight: fw.semibold, color: '#1a1a1a' }}>Agent</span>
+          </div>
+          <div style={{ flex: 1 }} />
+          <div style={{ width: 86 }} />
+        </div>
+      )}
 
       {/* ── Build tab ─────────────────────────────────────────────────────────── */}
       {!project.testMode && (<>
@@ -2429,6 +2770,7 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
         @keyframes ag-spin { to { transform: rotate(360deg); } }
         @keyframes ag-pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(39,112,239,0.4); } 50% { box-shadow: 0 0 0 5px rgba(39,112,239,0); } }
         @keyframes ag-step-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fullchat-enter { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
         .ag-gradient-text {
           background: linear-gradient(to right, #2770ef 4%, #777e8b);
           -webkit-background-clip: text; -webkit-text-fill-color: transparent;
@@ -2437,7 +2779,12 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
       `}</style>
 
       {/* Messages */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: `${sp.C}px ${sp.D}px`, display: 'flex', flexDirection: 'column', gap: sp.D }}>
+      <div style={{ flex: 1, overflowY: 'auto', ...(fullPage ? { backgroundColor: '#f7f8fa' } : {}) }}>
+      <div style={{
+        padding: fullPage ? '32px 24px' : `${sp.C}px ${sp.D}px`,
+        display: 'flex', flexDirection: 'column', gap: sp.D,
+        ...(fullPage ? { maxWidth: 740, margin: '0 auto' } : {}),
+      }}>
 
         {messages.length === 0 && !initialPrompt && (
           <div style={{ textAlign: 'center', padding: `${sp.H}px ${sp.D}px` }}>
@@ -2513,11 +2860,30 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
                 onOpenPlanModal={() => setPlanModalOpen(true)}
                 onOpenQualityPlan={onOpenQualityPlan}
                 onChipClick={text => processText(text)}
+                onGenUIAction={handleGenUIAction}
+                publishedVersion={project.publishedVersion}
+                onComplete={msg.genUI === 'drift_complete' ? () => {
+                  onInsightResolved?.('ins-d2');
+                  setTimeout(() => {
+                    setMessages(prev => {
+                      if (prev.some(m => m.genUI === 'next_issue')) return prev;
+                      return [...prev, {
+                        id: `r-next-${Date.now()}`,
+                        type: 'response',
+                        content: 'There\'s still one more debugging issue open in your workspace — want to tackle it now?',
+                        genUI: 'next_issue',
+                      }];
+                    });
+                  }, 1400);
+                } : msg.genUI === 'drift_multi_complete' ? () => {
+                  onInsightResolved?.('ins-d3');
+                } : undefined}
               />
             </div>
           );
         })}
         <div ref={messagesEndRef} />
+      </div>
       </div>
 
       {/* Clarify card — floats above prompt bar during Day Zero clarify phase */}
@@ -2528,7 +2894,13 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
       )}
 
       {/* Prompt bar */}
-      <div style={{ padding: `${sp.B}px ${sp.C}px ${sp.C}px`, flexShrink: 0 }}>
+      <div style={{
+        padding: fullPage ? `${sp.B}px 24px ${sp.C}px` : `${sp.B}px ${sp.C}px ${sp.C}px`,
+        borderTop: `1px solid ${fullPage ? 'rgba(0,0,0,0.06)' : c['border-divider']}`,
+        flexShrink: 0,
+        ...(fullPage ? { backgroundColor: '#fff' } : {}),
+      }}>
+      <div style={fullPage ? { maxWidth: 740, margin: '0 auto' } : {}}>
         <PromptBar
           ref={promptBarRef}
           onSubmit={(text, tables) => processText(text, tables)}
@@ -2572,6 +2944,8 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
             </div>
           }
         />
+      </div>
+
       </div>
 
       {/* Disclaimer */}
@@ -3235,7 +3609,10 @@ const MessageBubble: React.FC<{
   onOpenPlanModal?: () => void;
   onOpenQualityPlan?: () => void;
   onChipClick?: (value: string) => void;
-}> = ({ msg, showAvatar, onToggleSteps, onToggleCollapsible, onSuggestion, onConfirm, onOpenPlanModal, onOpenQualityPlan, onChipClick }) => {
+  onGenUIAction?: (action: string, msgId: string) => void;
+  onComplete?: () => void;
+  publishedVersion?: number;
+}> = ({ msg, showAvatar, onToggleSteps, onToggleCollapsible, onSuggestion, onConfirm, onOpenPlanModal, onOpenQualityPlan, onChipClick, onGenUIAction, onComplete, publishedVersion }) => {
   const [chipUsed, setChipUsed] = React.useState(false);
 
   // ── User bubble ────────────────────────────────────────────────────────────
@@ -3392,6 +3769,43 @@ const MessageBubble: React.FC<{
             <div style={{ marginTop: msg.content ? sp.C : 0 }}>
               <OutcomeCard card={msg.outcomeCard} />
             </div>
+          )}
+          {/* ── GenUI cards ─────────────────────────────────────────────────── */}
+          {msg.genUI === 'cache_recommendation' && onGenUIAction && (
+            <CacheRecommendationCard msgId={msg.id} result={msg.genUIResult} onAction={onGenUIAction} />
+          )}
+          {msg.genUI === 'connection_status' && onGenUIAction && (
+            <ConnectionStatusCard msgId={msg.id} result={msg.genUIResult} onAction={onGenUIAction} />
+          )}
+          {msg.genUI === 'multi_model_drift' && onGenUIAction && (
+            <MultiModelDriftCard msgId={msg.id} result={msg.genUIResult} onAction={onGenUIAction} />
+          )}
+          {msg.genUI === 'repair_summary' && onGenUIAction && (
+            <RepairSummaryCard msgId={msg.id} result={msg.genUIResult} onAction={onGenUIAction} />
+          )}
+          {msg.genUI === 'null_rate' && onGenUIAction && (
+            <NullRateCard msgId={msg.id} result={msg.genUIResult} onAction={onGenUIAction} />
+          )}
+          {msg.genUI === 'drift_resolution' && onGenUIAction && (
+            <SchemaDriftResolutionCard msgId={msg.id} result={msg.genUIResult} onAction={onGenUIAction} />
+          )}
+          {msg.genUI === 'drift_publish_preview' && onGenUIAction && (
+            <DriftPublishPreviewCard msgId={msg.id} result={msg.genUIResult} onAction={onGenUIAction} publishedVersion={publishedVersion} />
+          )}
+          {msg.genUI === 'drift_multi_resolution' && onGenUIAction && (
+            <DriftMultiResolutionCard msgId={msg.id} result={msg.genUIResult} onAction={onGenUIAction} />
+          )}
+          {msg.genUI === 'drift_multi_publish_preview' && onGenUIAction && (
+            <DriftMultiPublishPreviewCard msgId={msg.id} result={msg.genUIResult} onAction={onGenUIAction} publishedVersion={publishedVersion} />
+          )}
+          {msg.genUI === 'drift_multi_complete' && (
+            <DriftMultiCompleteCard onComplete={onComplete} />
+          )}
+          {msg.genUI === 'next_issue' && onGenUIAction && (
+            <NextIssueCard msgId={msg.id} result={msg.genUIResult} onAction={onGenUIAction} />
+          )}
+          {msg.genUI === 'drift_complete' && (
+            <SchemaDriftCompleteCard onComplete={onComplete} />
           )}
           {msg.pendingAction && onConfirm && !msg.reviewPlanCTA && (
             <div style={{ marginTop: sp.C }}>
@@ -3677,5 +4091,707 @@ function parseInline(text: string): React.ReactNode {
     </>
   );
 }
+
+// ── GenUI shared primitives ───────────────────────────────────────────────────
+
+const GenUICard: React.FC<{ children: React.ReactNode; locked?: boolean }> = ({ children, locked }) => (
+  <div style={{
+    marginTop: sp.C, border: `1px solid ${locked ? 'rgba(0,0,0,0.07)' : 'rgba(0,0,0,0.1)'}`,
+    borderRadius: 10, overflow: 'hidden', backgroundColor: '#fff',
+    opacity: locked ? 0.85 : 1,
+  }}>
+    {children}
+  </div>
+);
+
+const GenUISection: React.FC<{ children: React.ReactNode; last?: boolean; bg?: string }> = ({ children, last, bg }) => (
+  <div style={{
+    padding: '10px 14px',
+    borderBottom: last ? 'none' : '1px solid rgba(0,0,0,0.06)',
+    backgroundColor: bg,
+  }}>
+    {children}
+  </div>
+);
+
+const GenUIBadge: React.FC<{ children: React.ReactNode; variant: 'red' | 'green' | 'amber' | 'blue' | 'grey' }> = ({ children, variant }) => {
+  const colors = {
+    red:   { color: '#dc2626', bg: '#fef2f2', border: '#fecaca' },
+    green: { color: '#16a34a', bg: '#f0fdf4', border: '#bbf7d0' },
+    amber: { color: '#d97706', bg: '#fffbeb', border: '#fcd34d' },
+    blue:  { color: '#1d4ed8', bg: '#eff6ff', border: '#bfdbfe' },
+    grey:  { color: '#6b7280', bg: '#f9fafb', border: '#e5e7eb' },
+  }[variant];
+  return (
+    <span style={{
+      display: 'inline-flex', alignItems: 'center', gap: 5,
+      fontSize: 11.5, fontWeight: fw.semibold,
+      color: colors.color, background: colors.bg,
+      border: `1px solid ${colors.border}`,
+      borderRadius: 5, padding: '3px 8px',
+    }}>
+      {children}
+    </span>
+  );
+};
+
+const GenUIActions: React.FC<{
+  locked: boolean;
+  lockedLabel?: string;
+  primary?: { label: string; action: string; msgId: string; onAction: (a: string, id: string) => void };
+  secondary?: { label: string; action: string; msgId: string; onAction: (a: string, id: string) => void };
+}> = ({ locked, lockedLabel, primary, secondary }) => (
+  <div style={{ padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 8 }}>
+    {locked ? (
+      <span style={{ fontSize: 12, color: '#888' }}>{lockedLabel ?? 'Done'}</span>
+    ) : (
+      <>
+        {secondary && (
+          <button
+            onClick={() => secondary.onAction(secondary.action, secondary.msgId)}
+            style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid rgba(0,0,0,0.12)', background: '#fff', cursor: 'pointer', fontSize: 12.5, fontWeight: fw.medium, color: '#444', fontFamily: ff.primary }}
+            onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#f9fafb')}
+            onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#fff')}
+          >
+            {secondary.label}
+          </button>
+        )}
+        {primary && (
+          <button
+            onClick={() => primary.onAction(primary.action, primary.msgId)}
+            style={{ padding: '6px 14px', borderRadius: 6, border: 'none', background: '#2563eb', cursor: 'pointer', fontSize: 12.5, fontWeight: fw.semibold, color: '#fff', fontFamily: ff.primary }}
+            onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#1d4ed8')}
+            onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#2563eb')}
+          >
+            {primary.label}
+          </button>
+        )}
+      </>
+    )}
+  </div>
+);
+
+const StatPill: React.FC<{ children: React.ReactNode; green?: boolean }> = ({ children, green }) => (
+  <span style={{
+    fontSize: 11.5, padding: '2px 8px', borderRadius: 5,
+    background: green ? '#f0fdf4' : '#f3f4f6',
+    color: green ? '#15803d' : '#555',
+    border: `1px solid ${green ? '#bbf7d0' : 'rgba(0,0,0,0.06)'}`,
+    fontWeight: fw.medium,
+  }}>{children}</span>
+);
+
+// ── CacheRecommendationCard ───────────────────────────────────────────────────
+
+const CacheRecommendationCard: React.FC<{
+  msgId: string;
+  result?: string;
+  onAction: (action: string, msgId: string) => void;
+}> = ({ msgId, result, onAction }) => {
+  const stats = CACHE_STATS.filter(s => s.modelId === 'proj-sp');
+  const totalSavingsSec = stats.reduce((sum, s) => sum + (s.runCount * s.potentialSavingMs / 1000), 0);
+  const enabled = result === 'enable_cache';
+  return (
+    <GenUICard locked={enabled}>
+      <GenUISection>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <GenUIBadge variant={enabled ? 'green' : 'amber'}>
+            {enabled ? '✓ Caching enabled' : '⚡ Cache opportunity'}
+          </GenUIBadge>
+          <span style={{ fontSize: 11, color: '#999' }}>2 queries · ~{Math.round(totalSavingsSec)}s/week savings</span>
+        </div>
+      </GenUISection>
+      {stats.map((stat, i) => (
+        <GenUISection key={i} last={i === stats.length - 1 && enabled}>
+          <div style={{ fontSize: 12, fontWeight: fw.medium, color: '#1a1a1a', marginBottom: 6, lineHeight: 1.4 }}>
+            "{stat.query}"
+          </div>
+          <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' as const }}>
+            <StatPill>{stat.runCount}× this week</StatPill>
+            <StatPill>{(stat.avgLatencyMs / 1000).toFixed(1)}s avg</StatPill>
+            <StatPill green>saves ~{(stat.potentialSavingMs / 1000).toFixed(1)}s/query</StatPill>
+          </div>
+        </GenUISection>
+      ))}
+      {!enabled && (
+        <GenUIActions
+          locked={false}
+          primary={{ label: 'Enable caching', action: 'enable_cache', msgId, onAction }}
+        />
+      )}
+    </GenUICard>
+  );
+};
+
+// ── ConnectionStatusCard ──────────────────────────────────────────────────────
+
+const ConnectionStatusCard: React.FC<{ msgId: string; result?: string; onAction: (action: string, msgId: string) => void }> = ({ msgId, result, onAction }) => {
+  const locked = !!result;
+  const applied = result === 'connection_status_apply';
+  const blockedModels = ['Sales Analytics', 'Sales Performance', 'Revenue Forecast'];
+  return (
+    <GenUICard locked={locked}>
+      <GenUISection>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <GenUIBadge variant={applied ? 'green' : 'red'}>{applied ? '✓ Connection restored' : '● Offline'}</GenUIBadge>
+          <span style={{ fontSize: 11, color: '#999' }}>dbt Cloud · prod</span>
+        </div>
+      </GenUISection>
+      <GenUISection>
+        <div style={{ fontSize: 11, fontWeight: fw.semibold, color: '#888', marginBottom: 8 }}>Why it failed</div>
+        <div style={{ fontSize: 12.5, color: '#333', lineHeight: 1.55 }}>API token expired <span style={{ fontFamily: ff.mono, fontSize: 12 }}>Jan 12 at 10:22am</span></div>
+        <div style={{ fontSize: 12, color: '#999', marginTop: 3 }}>Token last rotated: 90 days ago</div>
+      </GenUISection>
+      <GenUISection>
+        <div style={{ fontSize: 11, fontWeight: fw.semibold, color: '#888', marginBottom: 8 }}>{applied ? 'Models syncing' : '3 models currently blocked'}</div>
+        <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 6 }}>
+          {blockedModels.map(m => (
+            <span key={m} style={{ fontSize: 11.5, fontWeight: fw.medium, color: applied ? '#166534' : '#1e40af', background: applied ? '#f0fdf4' : '#eff6ff', border: `1px solid ${applied ? '#bbf7d0' : '#bfdbfe'}`, borderRadius: 5, padding: '3px 8px' }}>{m}</span>
+          ))}
+        </div>
+        {applied && <div style={{ fontSize: 12, color: '#16a34a', marginTop: 8 }}>Estimated resync: ~4 minutes</div>}
+      </GenUISection>
+      {!applied && (
+        <GenUISection>
+          <div style={{ fontSize: 11, fontWeight: fw.semibold, color: '#888', marginBottom: 6 }}>Fix</div>
+          <div style={{ fontSize: 12.5, color: '#333', lineHeight: 1.55 }}>Rotate API token + trigger downstream resync</div>
+          <div style={{ fontSize: 12, color: '#999', marginTop: 3 }}>Risk: none — reversible at any time · ETA: ~4 min</div>
+        </GenUISection>
+      )}
+      <GenUIActions locked={locked} lockedLabel={applied ? 'Fix applied' : 'Dismissed'} primary={!applied ? { label: 'Rotate token & resync', action: 'connection_status_apply', msgId, onAction } : undefined} />
+    </GenUICard>
+  );
+};
+
+// ── MultiModelDriftCard ───────────────────────────────────────────────────────
+
+const MULTI_DRIFT_DEPENDENTS = [
+  { name: 'Q4 Forecast', model: 'Revenue Forecast', ref: 'quarterly_target' },
+  { name: 'Pipeline Summary', model: 'Pipeline Health', ref: 'pipeline_stage' },
+  { name: 'Regional Forecast', model: 'Revenue Forecast', ref: 'forecast_region' },
+  { name: 'Stage Conversion', model: 'Pipeline Health', ref: 'pipeline_stage' },
+  { name: 'Exec Revenue View', model: 'Revenue Forecast', ref: 'quarterly_target' },
+  { name: 'Deal Velocity', model: 'Pipeline Health', ref: 'forecast_region' },
+];
+
+const MultiModelDriftCard: React.FC<{ msgId: string; result?: string; onAction: (action: string, msgId: string) => void }> = ({ msgId, result, onAction }) => {
+  const locked = !!result;
+  const repaired = result === 'multi_model_drift_repair';
+  const [expanded, setExpanded] = React.useState(false);
+  const visibleDependents = expanded ? MULTI_DRIFT_DEPENDENTS : MULTI_DRIFT_DEPENDENTS.slice(0, 2);
+  const models = [
+    { name: 'Revenue Forecast', columns: ['quarterly_target'] },
+    { name: 'Pipeline Health', columns: ['forecast_region', 'pipeline_stage'] },
+  ];
+  return (
+    <GenUICard locked={locked}>
+      <GenUISection>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <GenUIBadge variant={repaired ? 'green' : 'red'}>{repaired ? '✓ Both models repaired' : '3 columns removed — no replacements'}</GenUIBadge>
+          <span style={{ fontSize: 11, color: '#999' }}>warehouse source</span>
+        </div>
+      </GenUISection>
+      <GenUISection>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+          {models.map(model => (
+            <div key={model.name} style={{ border: '1px solid rgba(0,0,0,0.08)', borderRadius: 7, padding: '8px 10px', background: repaired ? '#f0fdf4' : '#fafafa' }}>
+              <div style={{ fontSize: 12, fontWeight: fw.semibold, color: '#333', marginBottom: 6 }}>{model.name}</div>
+              <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 4 }}>
+                {model.columns.map(col => (
+                  <span key={col} style={{ fontFamily: ff.mono, fontSize: 11, color: repaired ? '#6b7280' : '#991b1b', textDecoration: repaired ? 'line-through' : 'none', background: repaired ? 'transparent' : '#fee2e2', padding: repaired ? 0 : '1px 5px', borderRadius: 4, alignSelf: 'flex-start' }}>{col} ✕</span>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </GenUISection>
+      <GenUISection>
+        <div style={{ fontSize: 11, fontWeight: fw.semibold, color: '#888', marginBottom: 8 }}>8 dependents affected</div>
+        <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 5, marginBottom: visibleDependents.length < MULTI_DRIFT_DEPENDENTS.length ? 8 : 0 }}>
+          {visibleDependents.map(d => (
+            <span key={d.name} style={{ fontSize: 11.5, color: '#444', background: 'rgba(0,0,0,0.04)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 5, padding: '2px 8px', fontWeight: fw.medium }}>{d.name}</span>
+          ))}
+          {!expanded && MULTI_DRIFT_DEPENDENTS.length > 2 && (
+            <button onClick={() => setExpanded(true)} style={{ fontSize: 11.5, color: c['content-brand'], background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px', fontFamily: ff.primary, fontWeight: fw.medium }}>+{MULTI_DRIFT_DEPENDENTS.length - 2} more</button>
+          )}
+        </div>
+        <div style={{ fontSize: 12, color: '#999' }}>No replacements found in warehouse</div>
+      </GenUISection>
+      <GenUIActions locked={locked} lockedLabel={repaired ? 'Repair started' : 'Dismissed'} primary={!repaired ? { label: 'Repair both models — remove deprecated columns', action: 'multi_model_drift_repair', msgId, onAction } : undefined} />
+    </GenUICard>
+  );
+};
+
+// ── RepairSummaryCard ─────────────────────────────────────────────────────────
+
+const RepairSummaryCard: React.FC<{ msgId: string; result?: string; onAction: (action: string, msgId: string) => void }> = ({ msgId, result, onAction }) => {
+  const locked = !!result;
+  const published = result === 'repair_summary_publish';
+  return (
+    <GenUICard locked={locked}>
+      <GenUISection><GenUIBadge variant="green">{published ? '✓ Published' : '✓ Both models repaired'}</GenUIBadge></GenUISection>
+      <GenUISection>
+        <div style={{ display: 'flex', gap: 16 }}>
+          {[{ label: 'models repaired', value: '2' }, { label: 'columns removed', value: '3' }, { label: 'dependents updated', value: '8' }].map(stat => (
+            <div key={stat.label} style={{ textAlign: 'center' as const }}>
+              <div style={{ fontSize: 22, fontWeight: fw.semibold, color: '#1a1a1a', lineHeight: 1.2 }}>{stat.value}</div>
+              <div style={{ fontSize: 11, color: '#999', marginTop: 2 }}>{stat.label}</div>
+            </div>
+          ))}
+        </div>
+      </GenUISection>
+      <GenUIActions locked={locked} lockedLabel={published ? 'Published' : 'Done'} primary={!published ? { label: 'Publish changes', action: 'repair_summary_publish', msgId, onAction } : undefined} secondary={!published ? { label: 'Review changes', action: 'repair_summary_review', msgId, onAction } : undefined} />
+    </GenUICard>
+  );
+};
+
+// ── NullRateCard ──────────────────────────────────────────────────────────────
+
+const NullRateCard: React.FC<{ msgId: string; result?: string; onAction: (action: string, msgId: string) => void }> = ({ msgId, result, onAction }) => {
+  const locked = !!result;
+  const [selected, setSelected] = React.useState<'null_rate_add_organic' | 'null_rate_filter_organic' | 'null_rate_suppress'>('null_rate_add_organic');
+  const options: { id: typeof selected; label: string; sublabel: string; recommended?: boolean }[] = [
+    { id: 'null_rate_add_organic', label: 'Add "Organic" campaign', sublabel: 'Organic maps to a real channel — include it. 18% null rate becomes 0% with this fix.', recommended: true },
+    { id: 'null_rate_filter_organic', label: 'Filter organic orders', sublabel: 'Null rate restored to 2%, but 18% of orders excluded from all attribution reports.' },
+    { id: 'null_rate_suppress', label: 'Mark 18% as expected — suppress alert', sublabel: 'No model changes. Alert threshold updated to 22%.' },
+  ];
+  const sparkPoints = [2,2,2,2,2,2,2,2,2,3,4,5,9,14,18,18,18,18,18,18].map((v, i) => `${(i / 19) * 200},${28 - (v / 20) * 24}`).join(' ');
+  const resultLabel = result === 'null_rate_add_organic' ? 'Organic campaign added' : result === 'null_rate_filter_organic' ? 'Organic orders filtered' : result === 'null_rate_suppress' ? 'Alert suppressed' : '';
+  return (
+    <GenUICard locked={locked}>
+      <GenUISection>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <GenUIBadge variant={locked ? 'green' : 'amber'}>{locked ? `✓ ${resultLabel}` : 'campaign_id null rate spike'}</GenUIBadge>
+          <span style={{ fontSize: 11, color: '#999' }}>Marketing Campaign Attribution</span>
+        </div>
+      </GenUISection>
+      <GenUISection>
+        <svg width="100%" height="36" viewBox="0 0 200 36" preserveAspectRatio="none" style={{ display: 'block', marginBottom: 6 }}>
+          <rect x="130" y="0" width="70" height="36" fill="#fee2e2" opacity="0.35" />
+          <polyline points={sparkPoints} fill="none" stroke="#d97706" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+          <circle cx="130" cy="4" r="2.5" fill="#dc2626" />
+        </svg>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#999' }}>
+          <span>Jan 1: 2%</span><span style={{ color: '#dc2626', fontWeight: fw.semibold }}>Jan 14: spike</span><span>Now: 18%</span>
+        </div>
+      </GenUISection>
+      <GenUISection bg="#fffbeb">
+        <div style={{ fontSize: 11, fontWeight: fw.semibold, color: '#92400e', marginBottom: 4 }}>Root cause — not a data error</div>
+        <div style={{ fontSize: 12.5, color: '#78350f', lineHeight: 1.55 }}>Organic-channel orders added Jan 14 have no <span style={{ fontFamily: ff.mono, fontSize: 11.5 }}>campaign_id</span> by design.</div>
+      </GenUISection>
+      {!locked && (
+        <GenUISection>
+          <div style={{ fontSize: 11, fontWeight: fw.semibold, color: '#888', marginBottom: 10 }}>How would you like to handle organic orders?</div>
+          <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 7 }}>
+            {options.map(opt => (
+              <label key={opt.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', padding: '8px 10px', borderRadius: 7, border: `1.5px solid ${selected === opt.id ? '#2563eb' : 'rgba(0,0,0,0.07)'}`, background: selected === opt.id ? '#eff6ff' : 'transparent' }}>
+                <input type="radio" name={`null_rate_${msgId}`} value={opt.id} checked={selected === opt.id} onChange={() => setSelected(opt.id)} style={{ marginTop: 2, flexShrink: 0, accentColor: '#2563eb' }} />
+                <div>
+                  <div style={{ fontSize: 12.5, fontWeight: fw.medium, color: '#1a1a1a', lineHeight: 1.4 }}>
+                    {opt.label}
+                    {opt.recommended && <span style={{ marginLeft: 6, fontSize: 10, fontWeight: fw.semibold, color: '#1d4ed8', background: '#dbeafe', padding: '1px 6px', borderRadius: 4 }}>recommended</span>}
+                  </div>
+                  <div style={{ fontSize: 11.5, color: '#888', marginTop: 2 }}>{opt.sublabel}</div>
+                </div>
+              </label>
+            ))}
+          </div>
+        </GenUISection>
+      )}
+      <GenUIActions locked={locked} lockedLabel={resultLabel} primary={!locked ? { label: 'Apply selected fix', action: selected, msgId, onAction } : undefined} />
+    </GenUICard>
+  );
+};
+
+// ── Schema drift: column resolution card ──────────────────────────────────────
+
+type ColumnOption = { name: string; type: 'string' | 'number' | 'date' | 'boolean'; description?: string };
+const AVAILABLE_COLUMNS: ColumnOption[] = [
+  { name: 'cost_bucket',    type: 'string', description: 'Normalized cost allocation bucket, post-reorg' },
+  { name: 'cost_category',  type: 'string', description: 'High-level spend category for GL classification' },
+  { name: 'department_code',type: 'string', description: 'Department identifier from HR master data' },
+  { name: 'expense_type',   type: 'string', description: 'Expense classification for budget reporting' },
+  { name: 'gl_segment',     type: 'string', description: 'General ledger segment identifier' },
+  { name: 'spend_category', type: 'string', description: 'Spend grouping for finance dashboards' },
+  { name: 'account_code',   type: 'string' }, { name: 'budget_code', type: 'string' },
+  { name: 'allocation_code',type: 'string' }, { name: 'division_id', type: 'string' },
+  { name: 'region_code',    type: 'string' }, { name: 'project_code', type: 'string' },
+];
+const TYPE_COLORS: Record<string, { text: string; bg: string }> = {
+  string: { text: '#6b7280', bg: '#f3f4f6' }, number: { text: '#2563eb', bg: '#eff6ff' },
+  date:   { text: '#7c3aed', bg: '#f5f3ff' }, boolean:{ text: '#d97706', bg: '#fef3c7' },
+};
+const TypeBadge: React.FC<{ type: string; mismatch?: boolean }> = ({ type, mismatch }) => {
+  const { text, bg } = TYPE_COLORS[type] ?? { text: '#6b7280', bg: '#f3f4f6' };
+  return <span style={{ fontSize: 10, fontWeight: fw.semibold, fontFamily: ff.mono, color: mismatch ? '#d97706' : text, background: mismatch ? '#fef3c7' : bg, borderRadius: 3, padding: '1px 5px', flexShrink: 0, border: mismatch ? '1px solid #fcd34d' : 'none' }}>{type}{mismatch ? ' ⚠' : ''}</span>;
+};
+const ColumnPickerDropdown: React.FC<{ options: ColumnOption[]; selected: string; suggested: string; removedType?: string; onSelect: (name: string) => void }> = ({ options, selected, suggested, removedType, onSelect }) => (
+  <div style={{ position: 'absolute' as const, top: '100%', left: 0, marginTop: 4, zIndex: 20, background: '#fff', border: '1px solid rgba(0,0,0,0.1)', borderRadius: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.12)', minWidth: 240, maxHeight: 260, overflowY: 'auto' as const, padding: '4px 0' }}>
+    {options.map(opt => {
+      const isCurrent = opt.name === selected;
+      const isDefault = opt.name === suggested;
+      const hasMismatch = !!removedType && opt.type !== removedType;
+      return (
+        <button key={opt.name} onClick={() => onSelect(opt.name)} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, width: '100%', padding: '7px 12px', background: isCurrent ? '#f0fdf4' : 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left' as const }}
+          onMouseEnter={e => { if (!isCurrent) e.currentTarget.style.background = '#f9fafb'; }}
+          onMouseLeave={e => { if (!isCurrent) e.currentTarget.style.background = 'transparent'; }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: opt.description ? 2 : 0 }}>
+              <span style={{ fontFamily: ff.mono, fontSize: 12, color: isCurrent ? '#16a34a' : '#1a1a1a', fontWeight: isCurrent ? fw.semibold : fw.regular }}>{opt.name}</span>
+              <TypeBadge type={opt.type} mismatch={hasMismatch} />
+            </div>
+            {opt.description && <div style={{ fontSize: 11, color: '#888', lineHeight: 1.4, fontFamily: ff.primary }}>{opt.description}</div>}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, paddingTop: 1, flexShrink: 0 }}>
+            {isDefault && !isCurrent && <span style={{ fontSize: 10, color: '#aaa', fontFamily: ff.primary }}>suggested</span>}
+            {isCurrent && <span style={{ fontSize: 12, color: '#16a34a' }}>✓</span>}
+          </div>
+        </button>
+      );
+    })}
+  </div>
+);
+
+const SchemaDriftResolutionCard: React.FC<{ msgId: string; result?: string; onAction: (action: string, msgId: string) => void }> = ({ msgId, result, onAction }) => {
+  const locked = !!result;
+  const didRemap  = result === 'drift_resolution_sync';
+  const didRemove = result === 'drift_resolution_remove';
+  const [selections, setSelections] = React.useState<Record<string, string>>({ cost_center: 'cost_bucket', allocation_type: 'cost_category' });
+  const [openPicker, setOpenPicker] = React.useState<string | null>(null);
+  const [openGroups, setOpenGroups] = React.useState<Set<string>>(new Set());
+  const suggested: Record<string, string> = { cost_center: 'cost_bucket', allocation_type: 'cost_category' };
+  const removedTypes: Record<string, string> = { cost_center: 'string', allocation_type: 'string' };
+  const mappings = ['cost_center', 'allocation_type'];
+  const toggleGroup = (label: string) => setOpenGroups(prev => { const n = new Set(prev); n.has(label) ? n.delete(label) : n.add(label); return n; });
+  const impactGroups = [
+    { label: 'Answers', count: 4, dot: '#2563eb', mono: false, examples: ['Q4 Cost Analysis', 'Budget Variance Report', 'FY Spend Summary', 'Regional Cost Breakdown'] },
+    { label: 'Liveboards', count: 3, dot: '#7c3aed', mono: false, examples: ['Finance Operations Dashboard', 'Executive Cost View', 'FnOps Monthly Review'] },
+    { label: 'Formulas', count: 2, dot: '#d97706', mono: true, examples: ['channel_cost_ratio', 'cost_per_campaign'] },
+  ];
+  return (
+    <GenUICard locked={locked}>
+      <GenUISection>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <GenUIBadge variant={locked ? 'green' : 'red'}>{didRemap ? '✓ Remapped to replacements' : didRemove ? '✓ Removed from model' : '2 columns removed from source'}</GenUIBadge>
+          <span style={{ fontSize: 11, color: '#999' }}>FnOps Cost Model</span>
+        </div>
+      </GenUISection>
+      <GenUISection>
+        <div style={{ fontSize: 11, fontWeight: fw.semibold, color: '#888', marginBottom: 10 }}>{didRemove ? 'Removed' : 'Mapping'}</div>
+        <div style={{ display: 'flex', flexDirection: 'column' as const }}>
+          {mappings.map((col, i) => {
+            const sel = selections[col]; const isSuggested = sel === suggested[col]; const isOpen = openPicker === col;
+            return (
+              <div key={col} style={{ padding: '8px 0', borderBottom: i < mappings.length - 1 ? '1px solid rgba(0,0,0,0.05)' : 'none' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ fontFamily: ff.mono, fontSize: 12, fontWeight: fw.medium, color: didRemove ? '#aaa' : '#1a1a1a', textDecoration: didRemove ? 'line-through' : 'none', minWidth: 130, flexShrink: 0 }}>{col}</span>
+                  {!didRemove && (<>
+                    <svg width="14" height="10" viewBox="0 0 14 10" fill="none" style={{ flexShrink: 0, color: '#bbb' }}><path d="M1 5h11M8 1l4 4-4 4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    <div style={{ position: 'relative' as const, flex: 1 }}>
+                      {locked ? <span style={{ fontFamily: ff.mono, fontSize: 12, color: '#16a34a', fontWeight: fw.medium }}>{sel}</span> : (
+                        <button onClick={() => setOpenPicker(isOpen ? null : col)} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontFamily: ff.mono, fontSize: 12, fontWeight: fw.medium, color: '#16a34a', background: '#f0fdf4', border: `1px solid ${isOpen ? '#16a34a' : '#bbf7d0'}`, borderRadius: 5, padding: '2px 8px', cursor: 'pointer', lineHeight: 1.5 }}>
+                          {sel}<svg width="9" height="6" viewBox="0 0 9 6" fill="none"><path d="M1 1l3.5 3.5L8 1" stroke="#16a34a" strokeWidth="1.3" strokeLinecap="round"/></svg>
+                        </button>
+                      )}
+                      {isOpen && <ColumnPickerDropdown options={AVAILABLE_COLUMNS} selected={sel} suggested={suggested[col]} removedType={removedTypes[col]} onSelect={name => { setSelections(s => ({ ...s, [col]: name })); setOpenPicker(null); }} />}
+                    </div>
+                    {!locked && isSuggested && <span style={{ fontSize: 10, color: '#16a34a', background: '#f0fdf4', padding: '1px 6px', borderRadius: 4, flexShrink: 0, fontWeight: fw.medium }}>Suggested</span>}
+                    {!locked && !isSuggested && <button onClick={() => setSelections(s => ({ ...s, [col]: suggested[col] }))} style={{ fontSize: 10, color: '#999', background: 'transparent', border: 'none', cursor: 'pointer', padding: '1px 4px', flexShrink: 0, fontFamily: ff.primary }}>Reset</button>}
+                    {locked && <span style={{ fontSize: 12, color: '#16a34a', marginLeft: 'auto' }}>✓</span>}
+                  </>)}
+                  {didRemove && <span style={{ fontSize: 11, color: '#bbb', marginLeft: 'auto' }}>last queried 60d ago</span>}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </GenUISection>
+      <GenUISection>
+        <div style={{ fontSize: 11, fontWeight: fw.semibold, color: '#888', marginBottom: 6 }}>{locked ? (didRemove ? 'References cleared' : 'Dependents remapped') : 'Impact if removed / remapped'}</div>
+        <div style={{ display: 'flex', flexDirection: 'column' as const }}>
+          {impactGroups.map((group, i) => {
+            const isOpen = openGroups.has(group.label);
+            return (
+              <div key={group.label} style={{ borderBottom: i < impactGroups.length - 1 ? '1px solid rgba(0,0,0,0.06)' : 'none' }}>
+                <button onClick={() => !locked && toggleGroup(group.label)} style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '9px 0', background: 'none', border: 'none', cursor: locked ? 'default' : 'pointer', textAlign: 'left' as const }}>
+                  <span style={{ width: 7, height: 7, borderRadius: '50%', background: group.dot, flexShrink: 0 }} />
+                  <span style={{ flex: 1, fontSize: 13, color: '#222', fontWeight: fw.medium }}>{group.label}</span>
+                  <span style={{ fontSize: 13, fontWeight: fw.semibold, color: '#1a1a1a', marginRight: locked ? 0 : 6 }}>{group.count}</span>
+                  {!locked && <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0, color: '#999', transition: 'transform 0.15s', transform: isOpen ? 'rotate(180deg)' : 'none' }}><path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                </button>
+                {isOpen && !locked && (
+                  <div style={{ paddingLeft: 17, paddingBottom: 10 }}>
+                    {group.examples.map((name, j) => (
+                      <div key={name} style={{ fontSize: 13, lineHeight: 1.6, paddingTop: j === 0 ? 0 : 2, display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ color: '#ccc', fontSize: 10 }}>—</span>
+                        <button style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left' as const, ...(group.mono ? { fontFamily: ff.mono, fontSize: 12, color: '#2563eb' } : { fontFamily: ff.primary, fontSize: 13, color: '#2563eb' }), textDecoration: 'none', lineHeight: 1.6 }}
+                          onMouseEnter={e => { e.currentTarget.style.textDecoration = 'underline'; }} onMouseLeave={e => { e.currentTarget.style.textDecoration = 'none'; }}>{name}</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </GenUISection>
+      <GenUISection last={locked}>
+        {!locked && <div style={{ fontSize: 11, color: '#888', display: 'flex', alignItems: 'center', gap: 5 }}><span style={{ color: '#d97706' }}>ⓘ</span> Both columns last queried 60 days ago — low impact to remove</div>}
+      </GenUISection>
+      {!locked && <GenUIActions locked={false} secondary={{ label: 'Remove both', action: 'drift_resolution_remove', msgId, onAction }} primary={{ label: 'Apply mapping →', action: 'drift_resolution_sync', msgId, onAction }} />}
+    </GenUICard>
+  );
+};
+
+// ── DriftPublishPreviewCard ───────────────────────────────────────────────────
+
+const DriftPublishPreviewCard: React.FC<{ msgId: string; result?: string; onAction: (action: string, msgId: string) => void; publishedVersion?: number }> = ({ msgId, result, onAction, publishedVersion }) => {
+  const locked = !!result;
+  const changes = [
+    { icon: '↔', iconColor: '#2563eb', detail: <><span style={{ fontFamily: ff.mono, fontSize: 12, color: '#dc2626' }}>cost_center</span>{' → '}<span style={{ fontFamily: ff.mono, fontSize: 12, color: '#16a34a' }}>cost_bucket</span></> },
+    { icon: '↔', iconColor: '#2563eb', detail: <><span style={{ fontFamily: ff.mono, fontSize: 12, color: '#dc2626' }}>allocation_type</span>{' → '}<span style={{ fontFamily: ff.mono, fontSize: 12, color: '#16a34a' }}>cost_category</span></> },
+    { icon: 'ƒ', iconColor: '#d97706', detail: <><span style={{ fontFamily: ff.mono, fontSize: 12, color: '#1a1a1a' }}>channel_cost_ratio</span>{' — '}<span style={{ fontFamily: ff.mono, fontSize: 12, color: '#dc2626' }}>cost_center</span>{' → '}<span style={{ fontFamily: ff.mono, fontSize: 12, color: '#16a34a' }}>cost_bucket</span></> },
+    { icon: 'ƒ', iconColor: '#d97706', detail: <><span style={{ fontFamily: ff.mono, fontSize: 12, color: '#1a1a1a' }}>cost_per_campaign</span>{' — '}<span style={{ fontFamily: ff.mono, fontSize: 12, color: '#dc2626' }}>cost_center</span>{' → '}<span style={{ fontFamily: ff.mono, fontSize: 12, color: '#16a34a' }}>cost_bucket</span></> },
+    { icon: '↻', iconColor: '#d97706', detail: <span style={{ fontSize: 12, color: '#555' }}>7 dependents will re-query against the updated schema</span> },
+  ];
+  return (
+    <GenUICard locked={locked}>
+      <GenUISection><GenUIBadge variant={locked ? 'green' : 'blue'}>{locked ? '✓ Published — FnOps Cost Model v2' : 'Ready to publish · FnOps Cost Model v2'}</GenUIBadge></GenUISection>
+      <GenUISection last={locked}>
+        <div style={{ fontSize: 11, fontWeight: fw.semibold, color: '#888', marginBottom: 10 }}>Changeset</div>
+        <div style={{ display: 'flex', flexDirection: 'column' as const }}>
+          {changes.map((item, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: i < changes.length - 1 ? '1px solid rgba(0,0,0,0.05)' : 'none' }}>
+              <span style={{ width: 22, height: 22, borderRadius: 5, background: `${item.iconColor}14`, color: item.iconColor, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: fw.semibold, flexShrink: 0 }}>{item.icon}</span>
+              <span style={{ fontSize: 12, color: '#333', lineHeight: 1.5 }}>{item.detail}</span>
+            </div>
+          ))}
+        </div>
+      </GenUISection>
+      {!locked && <GenUIActions locked={false} primary={{ label: publishedVersion && publishedVersion > 0 ? 'Update and publish →' : 'Publish model →', action: 'drift_publish_confirm', msgId, onAction }} />}
+    </GenUICard>
+  );
+};
+
+// ── Multi-model drift resolution card ─────────────────────────────────────────
+
+const MULTI_AVAILABLE_COLUMNS: ColumnOption[] = [
+  { name: 'q_target_amount', type: 'number', description: 'Quarterly revenue target in USD' },
+  { name: 'q_target_value',  type: 'number', description: 'Target value for the current quarter' },
+  { name: 'target_revenue',  type: 'number', description: 'Annual revenue target, prorated quarterly' },
+  { name: 'forecast_amount', type: 'number' }, { name: 'region_code', type: 'string', description: 'Standardized region identifier' },
+  { name: 'territory_code',  type: 'string', description: 'Sales territory short code' },
+  { name: 'geo_segment',     type: 'string', description: 'Geographic market segment' },
+  { name: 'region_id',       type: 'string' }, { name: 'deal_stage', type: 'string', description: 'CRM deal stage from Salesforce' },
+  { name: 'opportunity_stage', type: 'string', description: 'Opportunity stage from CRM pipeline' },
+  { name: 'stage_name',      type: 'string' }, { name: 'pipeline_stage_id', type: 'string' },
+  { name: 'account_segment', type: 'string' }, { name: 'close_quarter', type: 'string' },
+  { name: 'deal_type',       type: 'string' }, { name: 'source_channel', type: 'string' },
+];
+
+const DriftMultiResolutionCard: React.FC<{ msgId: string; result?: string; onAction: (action: string, msgId: string) => void }> = ({ msgId, result, onAction }) => {
+  const locked = !!result;
+  const didRemap  = result === 'drift_multi_resolution_sync';
+  const didRemove = result === 'drift_multi_resolution_remove';
+  const suggested: Record<string, string> = { quarterly_target: 'q_target_amount', forecast_region: 'region_code', pipeline_stage: 'deal_stage' };
+  const removedTypes: Record<string, string> = { quarterly_target: 'number', forecast_region: 'string', pipeline_stage: 'string' };
+  const mappings = ['quarterly_target', 'forecast_region', 'pipeline_stage'];
+  const [selections, setSelections] = React.useState<Record<string, string>>({ ...suggested });
+  const [openPicker, setOpenPicker] = React.useState<string | null>(null);
+  const [openModels, setOpenModels] = React.useState<Set<string>>(new Set());
+  const [openContents, setOpenContents] = React.useState<Set<string>>(new Set());
+  const toggleModel = (l: string) => setOpenModels(p => { const n = new Set(p); n.has(l) ? n.delete(l) : n.add(l); return n; });
+  const toggleContent = (k: string) => setOpenContents(p => { const n = new Set(p); n.has(k) ? n.delete(k) : n.add(k); return n; });
+  const modelGroups = [
+    { label: 'Revenue Forecast', total: 6, contents: [
+      { label: 'Answers', count: 3, dot: '#2563eb', mono: false, examples: ['Q1 Revenue Projection', 'YoY Growth Analysis', 'Regional Forecast Summary'] },
+      { label: 'Liveboards', count: 2, dot: '#7c3aed', mono: false, examples: ['Revenue Dashboard', 'Executive Forecast'] },
+      { label: 'Formulas', count: 1, dot: '#d97706', mono: true, examples: ['target_attainment_rate'] },
+    ]},
+    { label: 'Pipeline Health', total: 6, contents: [
+      { label: 'Answers', count: 2, dot: '#2563eb', mono: false, examples: ['Pipeline Velocity Report', 'Stage Conversion Analysis'] },
+      { label: 'Liveboards', count: 2, dot: '#7c3aed', mono: false, examples: ['Sales Pipeline Overview', 'Deal Progress Tracker'] },
+      { label: 'Formulas', count: 2, dot: '#d97706', mono: true, examples: ['pipeline_coverage_ratio', 'stage_conversion_rate'] },
+    ]},
+  ];
+  return (
+    <GenUICard locked={locked}>
+      <GenUISection>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <GenUIBadge variant={locked ? 'green' : 'red'}>{didRemap ? '✓ Remapped across both models' : didRemove ? '✓ Removed from both models' : '3 columns removed from source'}</GenUIBadge>
+          <span style={{ fontSize: 11, color: '#999' }}>warehouse source</span>
+        </div>
+      </GenUISection>
+      <GenUISection>
+        <div style={{ fontSize: 11, fontWeight: fw.semibold, color: '#888', marginBottom: 10 }}>{didRemove ? 'Removed' : 'Mapping'}</div>
+        <div style={{ display: 'flex', flexDirection: 'column' as const }}>
+          {mappings.map((col, i) => {
+            const sel = selections[col]; const isSuggested = sel === suggested[col]; const isOpen = openPicker === col;
+            return (
+              <div key={col} style={{ padding: '8px 0', borderBottom: i < mappings.length - 1 ? '1px solid rgba(0,0,0,0.05)' : 'none' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ fontFamily: ff.mono, fontSize: 12, fontWeight: fw.medium, color: didRemove ? '#aaa' : '#1a1a1a', textDecoration: didRemove ? 'line-through' : 'none', minWidth: 140, flexShrink: 0 }}>{col}</span>
+                  {!didRemove && (<>
+                    <svg width="14" height="10" viewBox="0 0 14 10" fill="none" style={{ flexShrink: 0, color: '#bbb' }}><path d="M1 5h11M8 1l4 4-4 4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    <div style={{ position: 'relative' as const, flex: 1 }}>
+                      {locked ? <span style={{ fontFamily: ff.mono, fontSize: 12, color: '#16a34a', fontWeight: fw.medium }}>{sel}</span> : (
+                        <button onClick={() => setOpenPicker(isOpen ? null : col)} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontFamily: ff.mono, fontSize: 12, fontWeight: fw.medium, color: '#16a34a', background: '#f0fdf4', border: `1px solid ${isOpen ? '#16a34a' : '#bbf7d0'}`, borderRadius: 5, padding: '2px 8px', cursor: 'pointer', lineHeight: 1.5 }}>
+                          {sel}<svg width="9" height="6" viewBox="0 0 9 6" fill="none"><path d="M1 1l3.5 3.5L8 1" stroke="#16a34a" strokeWidth="1.3" strokeLinecap="round"/></svg>
+                        </button>
+                      )}
+                      {isOpen && <ColumnPickerDropdown options={MULTI_AVAILABLE_COLUMNS} selected={sel} suggested={suggested[col]} removedType={removedTypes[col]} onSelect={name => { setSelections(s => ({ ...s, [col]: name })); setOpenPicker(null); }} />}
+                    </div>
+                    {!locked && isSuggested && <span style={{ fontSize: 10, color: '#16a34a', background: '#f0fdf4', padding: '1px 6px', borderRadius: 4, flexShrink: 0, fontWeight: fw.medium }}>Suggested</span>}
+                    {!locked && !isSuggested && <button onClick={() => setSelections(s => ({ ...s, [col]: suggested[col] }))} style={{ fontSize: 10, color: '#999', background: 'transparent', border: 'none', cursor: 'pointer', padding: '1px 4px', flexShrink: 0, fontFamily: ff.primary }}>Reset</button>}
+                    {locked && <span style={{ fontSize: 12, color: '#16a34a', marginLeft: 'auto' }}>✓</span>}
+                  </>)}
+                  {didRemove && <span style={{ fontSize: 11, color: '#bbb', marginLeft: 'auto' }}>removed</span>}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </GenUISection>
+      <GenUISection>
+        <div style={{ fontSize: 11, fontWeight: fw.semibold, color: '#888', marginBottom: 6 }}>{locked ? (didRemove ? 'References cleared' : 'Dependents remapped') : 'Impact across models'}</div>
+        <div style={{ display: 'flex', flexDirection: 'column' as const }}>
+          {modelGroups.map((model, i) => {
+            const isOpen = openModels.has(model.label);
+            return (
+              <div key={model.label} style={{ borderBottom: i < modelGroups.length - 1 ? '1px solid rgba(0,0,0,0.06)' : 'none' }}>
+                <button onClick={() => !locked && toggleModel(model.label)} style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '9px 0', background: 'none', border: 'none', cursor: locked ? 'default' : 'pointer', textAlign: 'left' as const }}>
+                  <span style={{ width: 7, height: 7, borderRadius: 2, background: '#dc2626', flexShrink: 0 }} />
+                  <span style={{ flex: 1, fontSize: 13, color: '#222', fontWeight: fw.medium }}>{model.label}</span>
+                  <span style={{ fontSize: 12, color: '#888', marginRight: locked ? 0 : 6 }}>{model.total} dependents</span>
+                  {!locked && <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0, color: '#999', transition: 'transform 0.15s', transform: isOpen ? 'rotate(180deg)' : 'none' }}><path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                </button>
+                {isOpen && !locked && (
+                  <div style={{ paddingLeft: 17, paddingBottom: 6 }}>
+                    {model.contents.map((ct, ci) => {
+                      const contentKey = `${model.label}:${ct.label}`; const isCtOpen = openContents.has(contentKey);
+                      return (
+                        <div key={ct.label} style={{ borderBottom: ci < model.contents.length - 1 ? '1px solid rgba(0,0,0,0.04)' : 'none' }}>
+                          <button onClick={() => toggleContent(contentKey)} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '7px 0', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' as const }}>
+                            <span style={{ width: 6, height: 6, borderRadius: '50%', background: ct.dot, flexShrink: 0 }} />
+                            <span style={{ flex: 1, fontSize: 13, color: '#333', fontWeight: fw.medium }}>{ct.label}</span>
+                            <span style={{ fontSize: 13, fontWeight: fw.semibold, color: '#1a1a1a', marginRight: 6 }}>{ct.count}</span>
+                            <svg width="10" height="10" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0, color: '#bbb', transition: 'transform 0.15s', transform: isCtOpen ? 'rotate(180deg)' : 'none' }}><path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                          </button>
+                          {isCtOpen && (
+                            <div style={{ paddingLeft: 14, paddingBottom: 8 }}>
+                              {ct.examples.map(name => (
+                                <div key={name} style={{ display: 'flex', alignItems: 'center', gap: 8, paddingTop: 2 }}>
+                                  <span style={{ color: '#ddd', fontSize: 10 }}>—</span>
+                                  <button style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left' as const, lineHeight: 1.6, ...(ct.mono ? { fontFamily: ff.mono, fontSize: 12, color: '#2563eb' } : { fontFamily: ff.primary, fontSize: 13, color: '#2563eb' }) }}
+                                    onMouseEnter={e => { e.currentTarget.style.textDecoration = 'underline'; }} onMouseLeave={e => { e.currentTarget.style.textDecoration = 'none'; }}>{name}</button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </GenUISection>
+      <GenUISection last={locked}>{!locked && <div style={{ fontSize: 11, color: '#888', display: 'flex', alignItems: 'center', gap: 5 }}><span style={{ color: '#d97706' }}>ⓘ</span> Mapping applies to both models — changes publish together</div>}</GenUISection>
+      {!locked && <GenUIActions locked={false} secondary={{ label: 'Remove all', action: 'drift_multi_resolution_remove', msgId, onAction }} primary={{ label: 'Apply mapping →', action: 'drift_multi_resolution_sync', msgId, onAction }} />}
+    </GenUICard>
+  );
+};
+
+// ── DriftMultiPublishPreviewCard ──────────────────────────────────────────────
+
+const DriftMultiPublishPreviewCard: React.FC<{ msgId: string; result?: string; onAction: (action: string, msgId: string) => void; publishedVersion?: number }> = ({ msgId, result, onAction, publishedVersion }) => {
+  const locked = !!result;
+  const changes = [
+    { icon: '↔', iconColor: '#2563eb', detail: <><span style={{ fontFamily: ff.mono, fontSize: 12, color: '#dc2626' }}>quarterly_target</span>{' → '}<span style={{ fontFamily: ff.mono, fontSize: 12, color: '#16a34a' }}>q_target_amount</span></> },
+    { icon: '↔', iconColor: '#2563eb', detail: <><span style={{ fontFamily: ff.mono, fontSize: 12, color: '#dc2626' }}>forecast_region</span>{' → '}<span style={{ fontFamily: ff.mono, fontSize: 12, color: '#16a34a' }}>region_code</span></> },
+    { icon: '↔', iconColor: '#2563eb', detail: <><span style={{ fontFamily: ff.mono, fontSize: 12, color: '#dc2626' }}>pipeline_stage</span>{' → '}<span style={{ fontFamily: ff.mono, fontSize: 12, color: '#16a34a' }}>deal_stage</span></> },
+    { icon: 'ƒ', iconColor: '#d97706', detail: <><span style={{ fontFamily: ff.mono, fontSize: 12, color: '#1a1a1a' }}>target_attainment_rate</span>{' — column substituted'}</> },
+    { icon: 'ƒ', iconColor: '#d97706', detail: <><span style={{ fontFamily: ff.mono, fontSize: 12, color: '#1a1a1a' }}>pipeline_coverage_ratio</span>{' — column substituted'}</> },
+    { icon: 'ƒ', iconColor: '#d97706', detail: <><span style={{ fontFamily: ff.mono, fontSize: 12, color: '#1a1a1a' }}>stage_conversion_rate</span>{' — column substituted'}</> },
+    { icon: '↻', iconColor: '#d97706', detail: <span style={{ fontSize: 12, color: '#555' }}>12 dependents will re-query across Revenue Forecast + Pipeline Health</span> },
+  ];
+  return (
+    <GenUICard locked={locked}>
+      <GenUISection><GenUIBadge variant={locked ? 'green' : 'blue'}>{locked ? '✓ Published — Revenue Forecast v2 + Pipeline Health v2' : 'Ready to publish · 2 models'}</GenUIBadge></GenUISection>
+      <GenUISection last={locked}>
+        <div style={{ fontSize: 11, fontWeight: fw.semibold, color: '#888', marginBottom: 10 }}>Changeset</div>
+        <div style={{ display: 'flex', flexDirection: 'column' as const }}>
+          {changes.map((item, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 0', borderBottom: i < changes.length - 1 ? '1px solid rgba(0,0,0,0.05)' : 'none' }}>
+              <span style={{ width: 22, height: 22, borderRadius: 5, background: `${item.iconColor}14`, color: item.iconColor, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: fw.semibold, flexShrink: 0 }}>{item.icon}</span>
+              <span style={{ fontSize: 12, color: '#333', lineHeight: 1.5 }}>{item.detail}</span>
+            </div>
+          ))}
+        </div>
+      </GenUISection>
+      {!locked && <GenUIActions locked={false} primary={{ label: publishedVersion && publishedVersion > 0 ? 'Update and publish 2 models →' : 'Publish 2 models →', action: 'drift_multi_publish_confirm', msgId, onAction }} />}
+    </GenUICard>
+  );
+};
+
+// ── Completion cards ──────────────────────────────────────────────────────────
+
+const DriftMultiCompleteCard: React.FC<{ onComplete?: () => void }> = ({ onComplete }) => {
+  React.useEffect(() => { onComplete?.(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const items = ['3 columns remapped across both models', '3 formulas rewritten', '12 dependents updated (answers + liveboards)', 'Revenue Forecast re-published — v2', 'Pipeline Health re-published — v2', 'Monitoring alert cleared'];
+  return (
+    <GenUICard>
+      <GenUISection><GenUIBadge variant="green">✓ Schema drift resolved — 2 models</GenUIBadge></GenUISection>
+      <GenUISection last>
+        <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
+          {items.map((item, i) => <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}><span style={{ fontSize: 12, color: '#16a34a', flexShrink: 0 }}>✓</span><span style={{ fontSize: 13, color: '#333' }}>{item}</span></div>)}
+        </div>
+      </GenUISection>
+    </GenUICard>
+  );
+};
+
+const SchemaDriftCompleteCard: React.FC<{ onComplete?: () => void }> = ({ onComplete }) => {
+  React.useEffect(() => { onComplete?.(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const items = ['2 columns remapped', '2 formulas rewritten', '7 dependents updated (answers + liveboards)', 'Model re-published — v2', 'Monitoring alert cleared'];
+  return (
+    <GenUICard>
+      <GenUISection><GenUIBadge variant="green">✓ Schema drift resolved</GenUIBadge></GenUISection>
+      <GenUISection last>
+        <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
+          {items.map((item, i) => <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}><span style={{ fontSize: 12, color: '#16a34a', flexShrink: 0 }}>✓</span><span style={{ fontSize: 13, color: '#333' }}>{item}</span></div>)}
+        </div>
+      </GenUISection>
+    </GenUICard>
+  );
+};
+
+// ── NextIssueCard ─────────────────────────────────────────────────────────────
+
+const NextIssueCard: React.FC<{ msgId: string; result?: string; onAction: (action: string, msgId: string) => void }> = ({ msgId, result, onAction }) => {
+  const locked = !!result;
+  const dismissed = result === 'next_issue_dismiss';
+  return (
+    <GenUICard locked={locked}>
+      <GenUISection>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <GenUIBadge variant={locked ? (dismissed ? 'grey' : 'green') : 'red'}>{locked ? (dismissed ? 'Dismissed' : '✓ Acknowledged') : 'P1 · Debugging'}</GenUIBadge>
+          <span style={{ fontSize: 11, color: '#999' }}>2h ago</span>
+        </div>
+      </GenUISection>
+      <GenUISection last={locked}>
+        <div style={{ fontSize: 14, fontWeight: fw.semibold, color: '#111', marginBottom: 5 }}>Sync failure cascade</div>
+        <div style={{ fontSize: 13, color: '#555', lineHeight: 1.5 }}>dbt Cloud · <span style={{ fontWeight: fw.medium, color: '#333' }}>sales_analytics</span> failed — 3 downstream models blocked</div>
+        <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ fontSize: 11, fontWeight: fw.semibold, color: '#dc2626', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 4, padding: '2px 7px' }}>3 models blocked</span>
+          <span style={{ fontSize: 11, color: '#aaa' }}>Sales Analytics · Marketing Rollup · Exec Summary</span>
+        </div>
+      </GenUISection>
+      {!locked && <GenUIActions locked={false} secondary={{ label: 'Later', action: 'next_issue_dismiss', msgId, onAction }} primary={{ label: 'View connection →', action: 'next_issue_view_connection', msgId, onAction }} />}
+    </GenUICard>
+  );
+};
 
 export default AgentPanel;

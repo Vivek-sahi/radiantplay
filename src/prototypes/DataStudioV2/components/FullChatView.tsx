@@ -15,19 +15,21 @@ interface FullChatViewProps {
 
 const CHAT_WIDTH = 860;
 
-const FLOW_SKILLS: Record<string, string> = {
-  dbt_connection_repair:    'Repair dbt connection',
-  schema_drift_repair:      'Resolve schema drift',
-  schema_drift_multi_repair:'Resolve schema drift',
-  null_rate_investigation:  'Investigate data quality',
-  enable_cache:             'Enable query caching',
+interface FlowContext { models: string[]; tables: string[]; skill: string }
+
+const FLOW_CONTEXT: Record<string, FlowContext> = {
+  dbt_connection_repair:    { models: ['Sales Analytics', 'Sales Performance', 'Revenue Forecast'], tables: [],                          skill: 'Repair dbt connection' },
+  schema_drift_repair:      { models: ['FnOps Cost Model'],                                        tables: ['dbt_finance_spend'],         skill: 'Resolve schema drift' },
+  schema_drift_multi_repair:{ models: ['Revenue Forecast', 'Pipeline Health'],                     tables: [],                          skill: 'Resolve schema drift' },
+  null_rate_investigation:  { models: ['Marketing Campaign Attribution'],                          tables: ['orders', 'campaigns'],       skill: 'Investigate data quality' },
+  enable_cache:             { models: ['Campaign Performance'],                                    tables: [],                          skill: 'Enable query caching' },
 };
 
 const FullChatView: React.FC<FullChatViewProps> = ({ project, setProject, initialFlow, initialMessage, onBack, onInsightResolved }) => {
   const [messages, setMessages] = useState<AgentMessage[]>([]);
   const [contextPanelOpen, setContextPanelOpen] = useState(true);
 
-  const skill = FLOW_SKILLS[initialFlow];
+  const ctx = FLOW_CONTEXT[initialFlow] ?? { models: [], tables: [], skill: '' };
 
   return (
     <div style={{
@@ -99,9 +101,9 @@ const FullChatView: React.FC<FullChatViewProps> = ({ project, setProject, initia
         {contextPanelOpen && (
           <ChatContextPanel
             created={[]}
-            models={project.name ? [project.name] : []}
-            tables={project.addedTables ?? []}
-            skills={skill ? [skill] : []}
+            models={ctx.models}
+            tables={ctx.tables}
+            skills={ctx.skill ? [ctx.skill] : []}
           />
         )}
 
