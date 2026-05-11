@@ -3,8 +3,9 @@ import ReactECharts from 'echarts-for-react';
 import { c, sp, ff, fs, fw, ts } from '../styles';
 import { ProjectState, ProjectContext } from '../index';
 // agent.ts: skills registry (no API calls — all execution is scripted)
-import { tableMetadata, relationships, CACHE_STATS } from '../data/mockData';
+import { tableMetadata, relationships, CACHE_STATS, CONNECTIONS } from '../data/mockData';
 import PromptBar, { PromptBarRef } from './PromptBar';
+import ConnectionPill from './ConnectionPill';
 import DataQualityPlanModal from './DataQualityPlanModal';
 import { Avatar } from '../../../components/Avatar';
 import { TextInput } from '../../../components/TextInput';
@@ -1969,6 +1970,7 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
   const [dayZeroPhase, setDayZeroPhase] = useState<DayZeroPhase | null>(isDayZero ? 'use_case_prompt' : null);
   const [planVersion, setPlanVersion]    = useState(1);
   const [agentMode, setAgentMode]        = useState<'build' | 'test'>('build');
+  const [connFilter, setConnFilter]      = useState<string | null>(null);
   const messagesEndRef           = useRef<HTMLDivElement>(null);
   const promptBarRef             = useRef<PromptBarRef>(null);
   const buildCalledRef           = useRef(false);
@@ -2937,7 +2939,9 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
           dropDirection="up"
           onColumnRemove={onColumnRemove}
           leftSlot={
-            <div style={{ display: 'flex', padding: 2, background: c['background-subtle'], border: `1px solid ${c['border-default']}`, borderRadius: 8, gap: 2, flexShrink: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, flexShrink: 0 }}>
+              <ConnectionPill connections={CONNECTIONS} value={connFilter} onChange={setConnFilter} dropDirection="up" />
+              <div style={{ display: 'flex', padding: 2, background: c['background-subtle'], border: `1px solid ${c['border-default']}`, borderRadius: 8, gap: 2, flexShrink: 0 }}>
               {(['build', 'test'] as const).map(m => {
                 const isActive = agentMode === m;
                 const canSwitch = m === 'build' || project.buildStep !== 'empty';
@@ -2962,6 +2966,7 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
                   </button>
                 );
               })}
+              </div>
             </div>
           }
         />

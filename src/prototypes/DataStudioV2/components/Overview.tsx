@@ -3,8 +3,9 @@ import { c, sp, fs, fw, ff } from '../styles';
 import { Icon } from '../../../components/icons';
 import { iconSize } from '../../../tokens/icons';
 import Tabs from '../../../components/Tabs';
-import { OVERVIEW_PROJECTS, OverviewProject, ACTIVE_INSIGHTS, ActiveInsight } from '../data/mockData';
+import { OVERVIEW_PROJECTS, OverviewProject, ACTIVE_INSIGHTS, ActiveInsight, CONNECTIONS } from '../data/mockData';
 import PromptBar, { PromptBarRef } from './PromptBar';
+import ConnectionPill from './ConnectionPill';
 
 
 interface OverviewProps {
@@ -331,6 +332,7 @@ const Overview: React.FC<OverviewProps> = ({
   onOpenProjectAtMonitoring, onFixWithAgent, resolvedInsightIds = [],
 }) => {
   const promptBarRef = useRef<PromptBarRef>(null);
+  const [connFilter, setConnFilter] = useState<string | null>(null);
   const [pulseTab, setPulseTab] = useState<'debugging' | 'optimization'>('debugging');
   const [dismissedIds, setDismissedIds] = useState<string[]>([]);
 
@@ -350,8 +352,8 @@ const Overview: React.FC<OverviewProps> = ({
   const handleInsightAction = (insight: ActiveInsight) => {
     const proj = getProjectForInsight(insight);
     if (!proj) return;
-    const isFixWithAgent = insight.category === 'debugging' &&
-      (insight.primaryAction.type === 'fix-model' || insight.primaryAction.type === 'fix-models');
+    const isFixWithAgent = insight.category === 'debugging' ||
+      insight.primaryAction.type === 'enable-cache';
     if (isFixWithAgent) onFixWithAgent(insight, proj);
     else onOpenProjectAtMonitoring(proj);
   };
@@ -396,6 +398,14 @@ const Overview: React.FC<OverviewProps> = ({
                 dropDirection="down"
                 compact={false}
                 landingPage
+                leftSlot={
+                  <ConnectionPill
+                    connections={CONNECTIONS}
+                    value={connFilter}
+                    onChange={setConnFilter}
+                    dropDirection="down"
+                  />
+                }
               />
             </div>
 
