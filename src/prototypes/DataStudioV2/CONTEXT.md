@@ -39,7 +39,13 @@ The product moved away from a side-panel co-pilot toward a full-screen agent-fir
 
 ## Next up
 
-### 1. Full prototype review
+### 1. Add connection selection into prompt bar
+
+Allow the user to select a warehouse connection from within the prompt bar — similar to how `@` mentions tables, this would let the user scope a query or build to a specific connection before submitting.
+
+---
+
+### 2. Full prototype review
 
 Walk through every flow end-to-end — model building, monitoring/opportunities, debugging, dbt plug-and-play — and capture any remaining rough edges before the prototype is considered demo-ready.
 
