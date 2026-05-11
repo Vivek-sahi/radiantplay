@@ -2789,20 +2789,41 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
         {messages.length === 0 && !initialPrompt && (
           <div style={{ textAlign: 'center', padding: `${sp.H}px ${sp.D}px` }}>
             <AgentAvatarLarge />
-            <p style={{ fontSize: fs.sm, color: c['content-secondary'], margin: `${sp.C}px 0 ${sp.F}px`, lineHeight: '20px' }}>
-              Describe what you want to build. I'll find the right data and set everything up.
-            </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: sp.B }}>
-              {['Analyze campaign performance by channel and region', 'Measure campaign ROI across channels and segments', 'Track P&L by department using finance data'].map(hint => (
-                <button key={hint} onClick={() => promptBarRef.current?.setValue(hint)}
-                  style={{ padding: `${sp.B}px ${sp.C}px`, border: `1px solid ${c['border-default']}`, borderRadius: 8, backgroundColor: 'transparent', color: c['content-secondary'], fontSize: fs.xs, cursor: 'pointer', fontFamily: ff.primary, textAlign: 'left' }}
-                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
-                  onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
-                >
-                  {hint}
-                </button>
-              ))}
-            </div>
+            {project.buildStep === 'healthy' ? (
+              <>
+                <p style={{ fontSize: fs.sm, color: c['content-secondary'], margin: `${sp.C}px 0 ${sp.F}px`, lineHeight: '20px' }}>
+                  What would you like to do with this model today?
+                </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: sp.B }}>
+                  {['Add AI context to improve Spotter answers', 'Enable query caching for faster results', 'Track how this model is being used'].map(hint => (
+                    <button key={hint} onClick={() => promptBarRef.current?.setValue(hint)}
+                      style={{ padding: `${sp.B}px ${sp.C}px`, border: `1px solid ${c['border-default']}`, borderRadius: 8, backgroundColor: 'transparent', color: c['content-secondary'], fontSize: fs.xs, cursor: 'pointer', fontFamily: ff.primary, textAlign: 'left' }}
+                      onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
+                      onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+                    >
+                      {hint}
+                    </button>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <>
+                <p style={{ fontSize: fs.sm, color: c['content-secondary'], margin: `${sp.C}px 0 ${sp.F}px`, lineHeight: '20px' }}>
+                  Describe what you want to build. I'll find the right data and set everything up.
+                </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: sp.B }}>
+                  {['Analyze campaign performance by channel and region', 'Measure campaign ROI across channels and segments', 'Track P&L by department using finance data'].map(hint => (
+                    <button key={hint} onClick={() => promptBarRef.current?.setValue(hint)}
+                      style={{ padding: `${sp.B}px ${sp.C}px`, border: `1px solid ${c['border-default']}`, borderRadius: 8, backgroundColor: 'transparent', color: c['content-secondary'], fontSize: fs.xs, cursor: 'pointer', fontFamily: ff.primary, textAlign: 'left' }}
+                      onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
+                      onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+                    >
+                      {hint}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         )}
 
