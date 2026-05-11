@@ -39,32 +39,6 @@ The product moved away from a side-panel co-pilot toward a full-screen agent-fir
 
 ## Next up
 
-### Pass 1 — Polish + bug fixes (do these together, all small)
-
-**Visual**
-1. **Canvas + plan background: white throughout** — canvas column `backgroundColor: c['background-sunken']` → `c['background-base']`. Also check PlanPanel / ChatView for any grey backgrounds and remove them. The artifact card border is the only separator needed; no grey fill anywhere.
-2. **Panel open animation** — two places are jarring:
-   - Workspace split (chat → chat+artifact): add a CSS transition when the artifact card mounts (e.g., `animation: ds-slide-in 0.2s ease-out` with `@keyframes ds-slide-in { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: translateX(0); } }`)
-   - PlanPanel open: same fade/slide treatment when it mounts
-
-**Publish button state**
-3. **"Published" → "Update model"** — after first publish the button currently shows "Published" when `!hasUnpublishedChanges`. Remove that state. Logic should be: `publishedVersion === 0 ? 'Publish model' : 'Update model'`. Always "Update model" once published.
-
-**Quality issues button**
-4. **Wrong resolved condition** — `project.buildStep === 'healthy'` fires too early (build itself sets this). Find the correct state flag set by the "Apply fixes" chip in the `review_data_quality` SCRIPT outcome. The flow is: Quality button → QualityModal → "Review with agent" → agent runs review → "Apply fixes" chip → THAT action should flip the flag. Read AgentPanel SCRIPTS to find what `setProject(...)` call "Apply fixes" triggers, then use that flag as the condition for "9 resolved".
-
-**Cache/Live button**
-5. **Remove green from Cached state** — cached button uses `#F0FDF4 / #166534` (green). Change to neutral: `backgroundColor: c['background-subtle'], color: c['content-secondary'], border: c['border-default']`.
-6. **CacheModal: remove "caching is active" disclaimer banner** — find and delete the banner/alert inside `CacheModal` in `CacheDiscoverability.tsx` (or wherever it lives). Keep the rest of the modal intact.
-
-**Icons**
-7. **Share and Publish icons: use Radiant `Icon` component** — the current custom inline SVGs for Share and Publish in the identity row violate the design system rule (all icons must come from Radiant `Icon` component sized via `iconSize` tokens). Find the closest Radiant icons for share (e.g., `ShareIcon` or `UploadIcon`) and publish (e.g., `PublishIcon` or `ArrowUpIcon`). Check `src/components/` for available Icon names.
-
-**Layout**
-8. **Empty area at bottom of table view** — there is white dead space below the table content in the Tables tab. Investigate CenterPanel's Tables view and make content fill the available height (probably `height: 100%` or `flex: 1` issue in the table container).
-
----
-
 ### Pass 2 — Artifact paradigm (medium, needs read of AgentPanel first)
 
 9. **Model card in left panel: add open-artifact arrow** — when the agent builds a model and shows a model card in the conversation (left/chat side), that card should have a small `→` or `↗` arrow indicator to signal it opens as an artifact. The model is already opening on the right by default; this is a visual affordance so the user knows the card IS the artifact and can be re-focused. Find where model cards are rendered in AgentPanel message bubbles and add the arrow.
@@ -72,6 +46,20 @@ The product moved away from a side-panel co-pilot toward a full-screen agent-fir
 10. **Plans as artifacts on the right side** — build plan and data quality fix plan are currently shown as panels/cards. Per the artifact paradigm, they should open on the right side panel (same treatment as model). This is a medium-sized change — needs exploration in Playground first before touching the live flow. Defer to its own session.
 
 ---
+
+---
+
+## Done — Polish pass 1: 8 visual + bug fixes (2026-05-11, session 71)
+
+- Canvas column, BuildingSkeleton, PlanPanel: changed `background-sunken` → `background-base` (white throughout, card border is the only separator)
+- Slide-in animation (`ds-slide-in 0.2s ease-out`) on artifact card mount and PlanPanel open
+- Publish button: removed 'Published' state — always `publishedVersion === 0 ? 'Publish model' : 'Update model'`
+- Quality resolved condition: `buildStep === 'healthy'` → `prepTransforms && prepTransforms.length > 0` (correct: set by Apply fixes chip in `review_data_quality` script)
+- Cached button: removed green (#F0FDF4 / #166534) — now neutral (background-subtle / content-secondary / border-default)
+- CacheModal: removed "Caching is active" green banner from applied state in `CacheDiscoverability.tsx`
+- Share/Publish identity row icons: replaced inline SVGs with `<Icon name="share" />` and `<Icon name="upload" color="#fff" />`
+- Content wrapper in artifact card: added `display:flex, flexDirection:column` so CenterPanel `flex:1` fills full height — eliminates white dead space below table view
+- Build: clean ✓
 
 ---
 
