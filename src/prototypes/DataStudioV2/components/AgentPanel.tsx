@@ -2907,8 +2907,13 @@ const OutcomeCard: React.FC<{ card: { title: string; chips: string[]; errorChips
     borderRadius: 8,
     backgroundColor: c['background-base'],
   }}>
-    <div style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'], marginBottom: sp.B, lineHeight: '20px' }}>
-      {card.title}
+    <div style={{ display: 'flex', alignItems: 'center', marginBottom: sp.B }}>
+      <span style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'], lineHeight: '20px', flex: 1 }}>
+        {card.title}
+      </span>
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke={c['content-tertiary'] ?? c['content-secondary']} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, opacity: 0.7 }}>
+        <line x1="3" y1="13" x2="13" y2="3"/><polyline points="6,3 13,3 13,10"/>
+      </svg>
     </div>
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: sp.A, marginBottom: sp.B }}>
       {card.chips.map(chip => (
