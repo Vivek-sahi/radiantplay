@@ -302,7 +302,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
 
         {/* Agent panel — always visible; centered when canvas is closed */}
         <div style={canvasVisible
-          ? { flexShrink: 0 }
+          ? { flexShrink: 0, display: 'flex' }
           : { flex: 1, display: 'flex', justifyContent: 'center', overflow: 'hidden' }
         }>
           <AgentPanel
