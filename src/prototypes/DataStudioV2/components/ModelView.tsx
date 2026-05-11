@@ -8,7 +8,7 @@ import { Radio } from '../../../components/Radio';
 import { ProgressBar, ProgressBarColor } from '../../../components/ProgressBar/ProgressBar';
 import { radius } from '../../../tokens/radius';
 import {
-  OverviewProject, OverviewAlert, MODEL_DETAILS, MODEL_CONVERSATIONS, ModelColumn,
+  OverviewProject, OverviewAlert, MODEL_DETAILS, ModelColumn,
   WORKSPACE_QUERIES, WORKSPACE_QUALITY, CACHE_STATS, SEMANTIC_GAPS,
   MONITORING_TRENDS, MONITORING_STATS, SEMANTIC_COVERAGE,
 } from '../data/mockData';
@@ -22,14 +22,12 @@ interface ModelViewProps {
   onEdit: () => void;
 }
 
-type TabId = 'info' | 'usage' | 'cache' | 'quality' | 'monitoring';
+type TabId = 'info' | 'cache' | 'monitoring';
 
 const ModelView: React.FC<ModelViewProps> = ({ project, alert, initialTab, onBack, onEdit }) => {
   const [tab, setTab]               = useState<TabId>(initialTab ?? 'info');
   const [moreOpen, setMoreOpen]     = useState(false);
   const [shareOpen, setShareOpen]   = useState(false);
-  const [cacheEnabled, setCacheEnabled]         = useState(false);
-  const [showCacheModal, setShowCacheModal]     = useState(false);
   const [retryState, setRetryState]             = useState<'idle' | 'retrying' | 'success'>('idle');
   const [logModalOpen, setLogModalOpen]         = useState(false);
 
@@ -40,7 +38,6 @@ const ModelView: React.FC<ModelViewProps> = ({ project, alert, initialTab, onBac
 
   const isPublished = project.status === 'published';
   const details     = MODEL_DETAILS[project.id] ?? null;
-  const convos      = MODEL_CONVERSATIONS[project.id] ?? [];
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', fontFamily: ff.primary, backgroundColor: c['background-sunken'] }}>
@@ -137,9 +134,7 @@ const ModelView: React.FC<ModelViewProps> = ({ project, alert, initialTab, onBac
         <Tabs
           tabs={[
             { id: 'info',       label: 'Info' },
-            { id: 'usage',      label: 'Usage' },
             { id: 'cache',      label: 'Cache' },
-            { id: 'quality',    label: 'Data quality' },
             { id: 'monitoring', label: 'Monitoring' },
           ]}
           activeTab={tab}
@@ -151,20 +146,12 @@ const ModelView: React.FC<ModelViewProps> = ({ project, alert, initialTab, onBac
       <div style={{ flex: 1, overflowY: 'auto', padding: sp.H, display: 'flex', flexDirection: 'column' }}>
 
         {tab === 'info'       && <InfoTab details={details} project={project} alert={alert} retryState={retryState} onRetry={handleRetry} onViewLog={() => setLogModalOpen(true)} />}
-        {tab === 'usage'      && <UsageTab convos={convos} project={project} onCacheNow={() => setShowCacheModal(true)} />}
-        {tab === 'cache'      && <CacheTab defaultEnabled={cacheEnabled} />}
-        {tab === 'quality'    && <QualityTab />}
+        {tab === 'cache'      && <CacheTab />}
         {tab === 'monitoring' && <MonitoringTab modelId={project.id} />}
 
       </div>
 
       {shareOpen && <ShareModal onClose={() => setShareOpen(false)} />}
-      {showCacheModal && (
-        <CacheSetupModal
-          onClose={() => setShowCacheModal(false)}
-          onEnable={(s) => { setCacheEnabled(true); setShowCacheModal(false); setTab('cache'); }}
-        />
-      )}
       {logModalOpen && alert?.errorLog && (
         <LogModal log={alert.errorLog} onClose={() => setLogModalOpen(false)} />
       )}
@@ -478,94 +465,6 @@ const InfoTab: React.FC<{ details: typeof MODEL_DETAILS[string] | null; project:
   );
 };
 
-// ── Usage tab ─────────────────────────────────────────────────────────────────
-
-const UsageTab: React.FC<{ convos: ReturnType<typeof MODEL_CONVERSATIONS[string]>; project: OverviewProject; onCacheNow: () => void }> = ({ convos, project, onCacheNow }) => {
-  const negCount  = convos.filter(c => c.feedback === 'negative').length;
-  const failCount = convos.filter(c => c.failed).length;
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: sp.H }}>
-
-      {/* Cache promotion banner */}
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: sp.D,
-        padding: `${sp.C}px ${sp.D}px`,
-        backgroundColor: c['background-information'],
-        border: `1px solid ${c['border-information'] ?? c['border-divider']}`,
-        borderRadius: 10,
-      }}>
-        <svg width="16" height="16" viewBox="0 0 18 18" fill="none" stroke={c['content-brand']} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-          <path d="M3.75 9a5.25 5.25 0 1 1 10.5 0 5.25 5.25 0 0 1-10.5 0zM9 6.75v2.25M9 11.25h.008"/>
-        </svg>
-        <span style={{ flex: 1, fontSize: fs.sm, color: c['content-brand'] }}>
-          Caching this model can increase Spotter's response speed and reduce querying costs.
-        </span>
-        <button
-          onClick={onCacheNow}
-          style={{ flexShrink: 0, height: 26, padding: '0 12px', border: 'none', borderRadius: 6, backgroundColor: '#2563EB', color: 'white', fontSize: 12, fontWeight: 500, fontFamily: ff.primary, cursor: 'pointer' }}
-          onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#1d4ed8')}
-          onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#2563EB')}
-        >
-          Cache now
-        </button>
-        <button
-          style={{ flexShrink: 0, height: 26, padding: '0 10px', border: `1px solid ${c['border-default']}`, borderRadius: 6, backgroundColor: 'transparent', color: c['content-brand'], fontSize: 12, fontWeight: 500, fontFamily: ff.primary, cursor: 'pointer' }}
-          onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
-          onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
-        >
-          Learn more
-        </button>
-      </div>
-
-      {/* Headline stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: sp.D }}>
-        {[
-          { label: 'Total conversations', value: (project.conversations ?? 0).toLocaleString() },
-          { label: 'Negative feedback',   value: String(negCount) },
-          { label: 'Failed queries',       value: String(failCount) },
-          { label: 'Last updated',         value: project.lastModified },
-        ].map(({ label, value }) => (
-          <div key={label} style={{ backgroundColor: c['background-base'], border: `1px solid ${c['border-divider']}`, borderRadius: radius.card, padding: sp.D }}>
-            <div style={{ fontSize: fs['2xl'], fontWeight: fw.semibold, color: c['content-primary'], marginBottom: sp.A }}>{value}</div>
-            <div style={{ fontSize: fs.xs, color: c['content-secondary'] }}>{label}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Conversations list */}
-      <Section title="Recent conversations">
-        <div style={{ border: `1px solid ${c['border-divider']}`, borderRadius: 8, overflow: 'hidden' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '3fr 1fr 1fr 1fr', gap: sp.C, padding: `${sp.B}px ${sp.D}px`, backgroundColor: c['background-subtle'], borderBottom: `1px solid ${c['border-divider']}` }}>
-            {['Question', 'User', 'Time', 'Status'].map(h => (
-              <div key={h} style={{ fontSize: fs.xs, fontWeight: fw.medium, color: c['content-secondary'], textTransform: 'uppercase' as const, letterSpacing: '0.04em' }}>{h}</div>
-            ))}
-          </div>
-          {convos.map((conv, i) => (
-            <div key={conv.id} style={{ display: 'grid', gridTemplateColumns: '3fr 1fr 1fr 1fr', gap: sp.C, padding: `${sp.C}px ${sp.D}px`, borderBottom: i < convos.length - 1 ? `1px solid ${c['border-divider']}` : 'none', alignItems: 'center' }}>
-              <div style={{ fontSize: fs.sm, color: c['content-primary'] }}>{conv.question}</div>
-              <div style={{ fontSize: fs.sm, color: c['content-secondary'] }}>{conv.user}</div>
-              <div style={{ fontSize: fs.xs, color: c['content-secondary'] }}>{conv.timestamp}</div>
-              <div>
-                {conv.failed ? (
-                  <span style={{ fontSize: fs.xs, padding: '2px 6px', borderRadius: radius.badge, backgroundColor: c['background-failure'], color: c['content-failure'] }}>Failed</span>
-                ) : conv.feedback === 'negative' ? (
-                  <span style={{ fontSize: fs.xs, padding: '2px 6px', borderRadius: radius.badge, backgroundColor: c['background-warning'], color: c['content-warning'] }}>👎 Negative</span>
-                ) : conv.feedback === 'positive' ? (
-                  <span style={{ fontSize: fs.xs, padding: '2px 6px', borderRadius: radius.badge, backgroundColor: c['background-success'], color: c['content-success'] }}>👍 Positive</span>
-                ) : (
-                  <span style={{ fontSize: fs.xs, color: c['content-secondary'] }}>—</span>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      </Section>
-
-    </div>
-  );
-};
-
 // ── Cache tab ─────────────────────────────────────────────────────────────────
 
 interface CacheSettings {
@@ -592,8 +491,8 @@ const MOCK_RUN_HISTORY = [
   { date: 'Apr 17 · 2:00 AM',  status: 'completed', duration: '1m 57s', rows: '283,800' },
 ];
 
-const CacheTab: React.FC<{ defaultEnabled?: boolean }> = ({ defaultEnabled = false }) => {
-  const [enabled, setEnabled]       = useState(defaultEnabled);
+const CacheTab: React.FC = () => {
+  const [enabled, setEnabled]       = useState(false);
   const [modalOpen, setModalOpen]   = useState(false);
   const [runStatus, setRunStatus]   = useState<'idle' | 'running' | 'complete'>('idle');
   const [settings, setSettings]     = useState<CacheSettings>({
@@ -806,38 +705,6 @@ const CacheSetupModal: React.FC<{
     </div>
   );
 };
-
-// ── Data quality tab ──────────────────────────────────────────────────────────
-
-const QualityTab: React.FC = () => (
-  <div style={{ maxWidth: 560 }}>
-    <Section title="Data quality">
-      <div style={{ display: 'flex', alignItems: 'center', gap: sp.F, marginBottom: sp.F }}>
-        <div style={{ textAlign: 'center' as const }}>
-          <div style={{ fontSize: fs['3xl'], fontWeight: fw.semibold, color: c['content-success'] }}>82</div>
-          <div style={{ fontSize: fs.xs, color: c['content-secondary'] }}>/ 100</div>
-          <div style={{ fontSize: fs.xs, fontWeight: fw.medium, color: c['content-success'], marginTop: 2 }}>Good</div>
-        </div>
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: sp.C }}>
-          {[
-            { label: 'No descriptions', note: 'Resolved', pct: 0,  barColor: 'green'  as const },
-            { label: 'Null values',     note: 'Orders',   pct: 18, barColor: 'yellow' as const },
-            { label: 'Duplicates',      note: 'Resolved', pct: 0,  barColor: 'green'  as const },
-            { label: 'Anomalies',       note: 'Resolved', pct: 0,  barColor: 'green'  as const },
-          ].map(({ label, note, pct, barColor }) => (
-            <div key={label} style={{ display: 'flex', alignItems: 'center', gap: sp.C }}>
-              <span style={{ fontSize: fs.xs, color: c['content-secondary'], width: 120, flexShrink: 0 }}>{label}</span>
-              <div style={{ flex: 1 }}>
-                <ProgressBar value={pct} size="small" color={barColor} />
-              </div>
-              <span style={{ fontSize: fs.xs, color: pct === 0 ? c['content-success'] : c['content-warning'], width: 60, flexShrink: 0 }}>{note}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    </Section>
-  </div>
-);
 
 // ── Monitoring tab ────────────────────────────────────────────────────────────
 
