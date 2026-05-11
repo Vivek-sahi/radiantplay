@@ -312,11 +312,45 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
         {/* Center area — LeftPanel floats as overlay */}
         <div style={{ flex: 1, overflow: 'hidden', position: 'relative', display: 'flex', flexDirection: 'column' }}>
 
-          {/* Sub-header: unified canvas toolbar */}
+          {/* Artifact identity row */}
           {(project.buildStep !== 'empty' || !agentPanelOpen) && (
-            <div style={{ height: 40, backgroundColor: c['background-base'], borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', paddingLeft: sp.D, paddingRight: sp.D, gap: sp.B, flexShrink: 0, position: 'relative' }}>
+            <div style={{ height: 48, backgroundColor: c['background-base'], borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', paddingLeft: sp.D, paddingRight: sp.D, gap: sp.C, flexShrink: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, flex: 1, minWidth: 0 }}>
+                <svg width="18" height="18" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="1" y="1" width="6" height="6" rx="1.5" fill="#2770EF"/>
+                  <rect x="9" y="1" width="6" height="6" rx="1.5" fill="#2770EF" opacity="0.5"/>
+                  <rect x="1" y="9" width="6" height="6" rx="1.5" fill="#2770EF" opacity="0.5"/>
+                  <rect x="9" y="9" width="6" height="6" rx="1.5" fill="#2770EF"/>
+                </svg>
+                <span style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'], overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{project.name}</span>
+                <span style={{ fontSize: 11, fontWeight: fw.medium, color: project.publishedVersion === 0 ? c['content-secondary'] : c['content-brand'], backgroundColor: project.publishedVersion === 0 ? c['background-sunken'] : c['background-information'], border: `1px solid ${project.publishedVersion === 0 ? c['border-default'] : c['border-brand']}`, borderRadius: 4, padding: '1px 6px', flexShrink: 0 }}>
+                  {project.publishedVersion === 0 ? 'Draft' : `v${project.publishedVersion}`}
+                </span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, flexShrink: 0 }}>
+                <button
+                  onClick={() => setShareOpen(true)}
+                  style={{ height: 32, padding: '0 14px', border: `1px solid ${c['border-default']}`, borderRadius: 7, backgroundColor: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', fontSize: fs.sm, fontWeight: fw.medium, fontFamily: ff.primary, color: c['content-primary'], boxSizing: 'border-box' }}
+                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
+                  onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+                >Share</button>
+                <button
+                  onClick={() => setPublishOpen(true)}
+                  style={{ height: 32, padding: '0 14px', border: 'none', borderRadius: 7, backgroundColor: '#2770EF', cursor: 'pointer', display: 'flex', alignItems: 'center', fontSize: fs.sm, fontWeight: fw.medium, fontFamily: ff.primary, color: '#fff', boxSizing: 'border-box' }}
+                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#1a5fd4')}
+                  onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#2770EF')}
+                >
+                  {project.publishedVersion === 0 ? 'Publish model' : project.hasUnpublishedChanges ? 'Update model' : 'Published'}
+                </button>
+              </div>
+            </div>
+          )}
 
-              {/* Agent reopen — left side, mirrors agent panel position */}
+          {/* Artifact tab bar */}
+          {(project.buildStep !== 'empty' || !agentPanelOpen) && (
+            <div style={{ height: 40, backgroundColor: c['background-base'], borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', paddingLeft: sp.D, paddingRight: sp.D, gap: sp.B, flexShrink: 0 }}>
+
+              {/* Agent reopen — left side */}
               {!agentPanelOpen && (
                 <button
                   onClick={() => setAgentPanelOpen(true)}
@@ -331,7 +365,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
                 </button>
               )}
 
-              {/* Data panel toggle — left, unchanged */}
+              {/* Data panel toggle */}
               <button
                 title="Data panel"
                 onClick={() => setLeftPanelOpen(o => !o)}
@@ -345,149 +379,223 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
                 Data
               </button>
 
-              {/* View segmented control — absolutely centered so right-side controls don't shift it */}
-              <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', display: 'flex', alignItems: 'center', backgroundColor: c['background-subtle'], border: `1px solid ${c['border-default']}`, borderRadius: 8, padding: 2, gap: 1 }}>
-                {(['columns', 'tables', 'preview', 'notebook'] as ProjectState['activeTab'][]).map(id => {
-                  const label = id === 'columns' ? 'Columns' : id === 'tables' ? 'Tables' : id === 'preview' ? 'Preview' : 'Notebook';
-                  const active = project.activeTab === id;
-                  return (
-                    <button
-                      key={id}
-                      onClick={() => setProject(p => ({ ...p, activeTab: id }))}
-                      style={{
-                        height: 26,
-                        padding: '0 12px',
-                        border: 'none',
-                        borderRadius: 6,
-                        cursor: 'pointer',
-                        flexShrink: 0,
-                        backgroundColor: active ? c['background-base'] : 'transparent',
-                        color: active ? c['content-primary'] : c['content-secondary'],
-                        fontFamily: ff.primary,
-                        fontSize: fs.xs,
-                        fontWeight: fw.medium,
-                        boxShadow: active ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
-                        transition: 'background-color 0.1s, color 0.1s',
-                        whiteSpace: 'nowrap',
-                        boxSizing: 'border-box',
-                      }}
-                      onMouseEnter={e => { if (!active) e.currentTarget.style.backgroundColor = c['background-sunken']; }}
-                      onMouseLeave={e => { if (!active) e.currentTarget.style.backgroundColor = 'transparent'; }}
-                    >
-                      {label}
-                    </button>
-                  );
-                })}
-              </div>
+              {/* Separator */}
+              <div style={{ width: 1, height: 16, backgroundColor: c['border-divider'], flexShrink: 0 }} />
 
-              {/* Columns-specific controls — only shown when columns view is active */}
-              {/* Right-side controls — pushed to the right edge */}
+              {/* View tabs — underline style */}
+              {(['columns', 'tables', 'preview', 'notebook'] as ProjectState['activeTab'][]).map(id => {
+                const label = id === 'columns' ? 'Columns' : id === 'tables' ? 'Tables' : id === 'preview' ? 'Preview' : 'Notebook';
+                const active = project.activeTab === id;
+                return (
+                  <button
+                    key={id}
+                    onClick={() => setProject(p => ({ ...p, activeTab: id }))}
+                    style={{
+                      height: 40,
+                      padding: '0 12px',
+                      border: 'none',
+                      borderBottom: active ? `2px solid ${c['content-brand']}` : '2px solid transparent',
+                      borderRadius: 0,
+                      cursor: 'pointer',
+                      flexShrink: 0,
+                      backgroundColor: 'transparent',
+                      color: active ? c['content-brand'] : c['content-secondary'],
+                      fontFamily: ff.primary,
+                      fontSize: fs.sm,
+                      fontWeight: active ? fw.semibold : fw.medium,
+                      boxSizing: 'border-box',
+                      marginBottom: -1,
+                      whiteSpace: 'nowrap',
+                    }}
+                    onMouseEnter={e => { if (!active) e.currentTarget.style.color = c['content-primary']; }}
+                    onMouseLeave={e => { if (!active) e.currentTarget.style.color = c['content-secondary']; }}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+
+              {/* Right-side controls */}
               <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: sp.B }}>
-              {project.activeTab === 'columns' && (
-                <>
-                  {/* dbt indicators */}
-                  {project.projectSource === 'dbt' && (
-                    <>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '2px 8px', borderRadius: 6, background: '#F0FDF4', border: '1px solid #BBF7D0', fontSize: 11, color: '#166534', fontWeight: fw.medium, flexShrink: 0 }}>
-                        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="#22C55E" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+
+                {/* Columns-specific controls — only shown when columns view is active */}
+                {project.activeTab === 'columns' && (
+                  <>
+                    {/* dbt indicators */}
+                    {project.projectSource === 'dbt' && (
+                      <>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '2px 8px', borderRadius: 6, background: '#F0FDF4', border: '1px solid #BBF7D0', fontSize: 11, color: '#166534', fontWeight: fw.medium, flexShrink: 0 }}>
+                          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="#22C55E" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M14 8a6 6 0 01-9.17 5.08"/>
+                            <path d="M2 8a6 6 0 019.17-5.08"/>
+                            <polyline points="14,5 14,8 11,8"/>
+                            <polyline points="2,11 2,8 5,8"/>
+                          </svg>
+                          Synced
+                        </div>
+                        {dbtIssueCount > 0 && (
+                          <button
+                            onClick={() => setShowIssuesOnly(o => !o)}
+                            style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 6, background: showIssuesOnly ? '#FEE2E2' : '#FEF2F2', border: '1px solid #FECACA', fontSize: 11, color: '#B91C1C', fontWeight: fw.medium, cursor: 'pointer', fontFamily: ff.primary, flexShrink: 0 }}
+                          >
+                            ⚠ {dbtIssueCount} {dbtIssueCount === 1 ? 'issue' : 'issues'}
+                          </button>
+                        )}
+                        <div style={{ width: 1, height: 16, backgroundColor: c['border-divider'], flexShrink: 0 }} />
+                      </>
+                    )}
+
+                    {/* Column count */}
+                    <span style={{ fontSize: fs.xs, color: c['content-secondary'], whiteSpace: 'nowrap', flexShrink: 0 }}>
+                      {totalColCount} {totalColCount === 1 ? 'column' : 'columns'}
+                    </span>
+
+                    {/* Search — inline expandable */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                      {searchOpen && (
+                        <input
+                          autoFocus
+                          value={search}
+                          onChange={e => setSearch(e.target.value)}
+                          onKeyDown={e => { if (e.key === 'Escape') { setSearchOpen(false); setSearch(''); } }}
+                          placeholder="Search columns…"
+                          style={{ width: 176, height: 26, border: `1px solid ${c['border-default']}`, borderRadius: 6, padding: '0 8px', fontSize: fs.xs, fontFamily: ff.primary, color: c['content-primary'], outline: 'none', backgroundColor: c['background-base'], boxSizing: 'border-box', transition: 'width 0.15s' }}
+                          onFocus={e => (e.currentTarget.style.borderColor = c['border-brand'])}
+                          onBlur={e => (e.currentTarget.style.borderColor = c['border-default'])}
+                        />
+                      )}
+                      <button
+                        title="Search columns"
+                        onClick={() => { if (searchOpen) { setSearchOpen(false); setSearch(''); } else setSearchOpen(true); }}
+                        style={{ width: 28, height: 28, border: 'none', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, backgroundColor: searchOpen ? c['background-information'] : 'transparent', color: searchOpen ? c['content-brand'] : c['content-secondary'] }}
+                        onMouseEnter={e => { if (!searchOpen) e.currentTarget.style.backgroundColor = c['background-subtle']; }}
+                        onMouseLeave={e => { if (!searchOpen) e.currentTarget.style.backgroundColor = 'transparent'; }}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+                          <circle cx="6.5" cy="6.5" r="4.5"/>
+                          <line x1="10.5" y1="10.5" x2="14" y2="14"/>
+                        </svg>
+                      </button>
+                    </div>
+
+                    {/* Properties — column visibility popover */}
+                    <div style={{ position: 'relative' }} ref={colVisRef}>
+                      <button
+                        title="Column properties"
+                        onClick={() => setColVisOpen(o => !o)}
+                        style={{ width: 28, height: 28, border: 'none', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, backgroundColor: colVisOpen ? c['background-information'] : 'transparent', color: colVisOpen ? c['content-brand'] : c['content-secondary'] }}
+                        onMouseEnter={e => { if (!colVisOpen) e.currentTarget.style.backgroundColor = c['background-subtle']; }}
+                        onMouseLeave={e => { if (!colVisOpen) e.currentTarget.style.backgroundColor = 'transparent'; }}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+                          <line x1="2" y1="4" x2="14" y2="4"/>
+                          <line x1="2" y1="8" x2="14" y2="8"/>
+                          <line x1="2" y1="12" x2="14" y2="12"/>
+                          <circle cx="5" cy="4" r="1.5" fill="currentColor" stroke="none"/>
+                          <circle cx="10" cy="8" r="1.5" fill="currentColor" stroke="none"/>
+                          <circle cx="7" cy="12" r="1.5" fill="currentColor" stroke="none"/>
+                        </svg>
+                      </button>
+                      {colVisOpen && (
+                        <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: 4, backgroundColor: c['background-base'], border: `1px solid ${c['border-divider']}`, borderRadius: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.1)', padding: sp.C, width: 220, zIndex: 100, maxHeight: 400, overflowY: 'auto' }}>
+                          <div style={{ fontSize: fs.xs, fontWeight: fw.medium, color: c['content-secondary'], textTransform: 'uppercase', letterSpacing: '0.02em', marginBottom: sp.A }}>Default visible</div>
+                          {DEFAULT_VISIBLE_COLS.map(key => (
+                            <div key={key} style={{ padding: '2px 0' }}>
+                              <Checkbox
+                                checked={visibleCols.has(key)}
+                                label={COL_LABELS[key]}
+                                onChange={() => { const s = new Set(visibleCols); s.has(key) ? s.delete(key) : s.add(key); setVisibleCols(s); }}
+                              />
+                            </div>
+                          ))}
+                          <div style={{ height: 1, backgroundColor: c['border-divider'], margin: `${sp.B}px 0` }} />
+                          <div style={{ fontSize: fs.xs, fontWeight: fw.medium, color: c['content-secondary'], textTransform: 'uppercase', letterSpacing: '0.02em', marginBottom: sp.A }}>Advanced</div>
+                          {ADVANCED_COLS.map(({ key, label }) => (
+                            <div key={key} style={{ padding: '2px 0' }}>
+                              <Checkbox
+                                checked={visibleCols.has(key)}
+                                label={label}
+                                onChange={() => { const s = new Set(visibleCols); s.has(key) ? s.delete(key) : s.add(key); setVisibleCols(s); }}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Separator before action buttons */}
+                    {project.buildStep !== 'empty' && !isBuilding && (
+                      <div style={{ width: 1, height: 16, backgroundColor: c['border-divider'], flexShrink: 0 }} />
+                    )}
+                  </>
+                )}
+
+                {/* Action buttons — Test, Live query, Quality issues, Settings */}
+                {project.buildStep !== 'empty' && !isBuilding && (
+                  <>
+                    {/* Test — stub */}
+                    <button
+                      title="Test"
+                      style={{ width: 28, height: 28, border: 'none', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, backgroundColor: 'transparent', color: c['content-secondary'] }}
+                      onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
+                      onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+                    >
+                      <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor">
+                        <polygon points="3,2 13,8 3,14"/>
+                      </svg>
+                    </button>
+
+                    {/* Live query compact */}
+                    <button
+                      onClick={() => setCacheModalOpen(true)}
+                      style={{ height: 28, padding: '0 10px', gap: 5, border: `1px solid ${cacheStatus === 'cached' ? '#BBF7D0' : c['border-default']}`, borderRadius: 6, backgroundColor: cacheStatus === 'cached' ? '#F0FDF4' : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, color: cacheStatus === 'cached' ? '#166534' : c['content-secondary'], boxSizing: 'border-box', flexShrink: 0 }}
+                      onMouseEnter={e => { if (cacheStatus !== 'cached') e.currentTarget.style.backgroundColor = c['background-subtle']; }}
+                      onMouseLeave={e => { if (cacheStatus !== 'cached') e.currentTarget.style.backgroundColor = 'transparent'; }}
+                    >
+                      {cacheStatus === 'caching' ? (
+                        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" style={{ animation: 'ds-cache-spin 1s linear infinite', flexShrink: 0 }}>
                           <path d="M14 8a6 6 0 01-9.17 5.08"/>
                           <path d="M2 8a6 6 0 019.17-5.08"/>
-                          <polyline points="14,5 14,8 11,8"/>
-                          <polyline points="2,11 2,8 5,8"/>
                         </svg>
-                        Synced
-                      </div>
-                      {dbtIssueCount > 0 && (
-                        <button
-                          onClick={() => setShowIssuesOnly(o => !o)}
-                          style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 6, background: showIssuesOnly ? '#FEE2E2' : '#FEF2F2', border: '1px solid #FECACA', fontSize: 11, color: '#B91C1C', fontWeight: fw.medium, cursor: 'pointer', fontFamily: ff.primary, flexShrink: 0 }}
-                        >
-                          ⚠ {dbtIssueCount} {dbtIssueCount === 1 ? 'issue' : 'issues'}
-                        </button>
+                      ) : (
+                        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+                          <ellipse cx="8" cy="4" rx="6" ry="2"/>
+                          <path d="M2 4v4c0 1.1 2.686 2 6 2s6-.9 6-2V4"/>
+                          <path d="M2 8v4c0 1.1 2.686 2 6 2s6-.9 6-2V8"/>
+                        </svg>
                       )}
-                      <div style={{ width: 1, height: 16, backgroundColor: c['border-divider'], flexShrink: 0 }} />
-                    </>
-                  )}
+                      {cacheStatus === 'live' ? 'Live' : cacheStatus === 'caching' ? 'Caching…' : 'Cached'}
+                    </button>
 
-                  {/* Column count */}
-                  <span style={{ fontSize: fs.xs, color: c['content-secondary'], whiteSpace: 'nowrap', flexShrink: 0 }}>
-                    {totalColCount} {totalColCount === 1 ? 'column' : 'columns'}
-                  </span>
-
-                  {/* Search — inline expandable */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-                    {searchOpen && (
-                      <input
-                        autoFocus
-                        value={search}
-                        onChange={e => setSearch(e.target.value)}
-                        onKeyDown={e => { if (e.key === 'Escape') { setSearchOpen(false); setSearch(''); } }}
-                        placeholder="Search columns…"
-                        style={{ width: 176, height: 26, border: `1px solid ${c['border-default']}`, borderRadius: 6, padding: '0 8px', fontSize: fs.xs, fontFamily: ff.primary, color: c['content-primary'], outline: 'none', backgroundColor: c['background-base'], boxSizing: 'border-box', transition: 'width 0.15s' }}
-                        onFocus={e => (e.currentTarget.style.borderColor = c['border-brand'])}
-                        onBlur={e => (e.currentTarget.style.borderColor = c['border-default'])}
-                      />
-                    )}
+                    {/* Quality issues compact */}
                     <button
-                      title="Search columns"
-                      onClick={() => { if (searchOpen) { setSearchOpen(false); setSearch(''); } else setSearchOpen(true); }}
-                      style={{ width: 28, height: 28, border: 'none', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, backgroundColor: searchOpen ? c['background-information'] : 'transparent', color: searchOpen ? c['content-brand'] : c['content-secondary'] }}
-                      onMouseEnter={e => { if (!searchOpen) e.currentTarget.style.backgroundColor = c['background-subtle']; }}
-                      onMouseLeave={e => { if (!searchOpen) e.currentTarget.style.backgroundColor = 'transparent'; }}
+                      onClick={() => setQualityModalOpen(true)}
+                      style={{ height: 28, padding: '0 10px', gap: 5, border: `1px solid ${project.buildStep === 'healthy' ? '#BBF7D0' : '#FECACA'}`, borderRadius: 6, backgroundColor: project.buildStep === 'healthy' ? '#F0FDF4' : '#FEF2F2', cursor: 'pointer', display: 'flex', alignItems: 'center', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, color: project.buildStep === 'healthy' ? '#166534' : '#B91C1C', boxSizing: 'border-box', flexShrink: 0 }}
+                      onMouseEnter={e => (e.currentTarget.style.opacity = '0.85')}
+                      onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
                     >
-                      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-                        <circle cx="6.5" cy="6.5" r="4.5"/>
-                        <line x1="10.5" y1="10.5" x2="14" y2="14"/>
+                      <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M8 2L14 14H2L8 2z"/>
+                        <line x1="8" y1="7" x2="8" y2="10"/>
+                        <circle cx="8" cy="12.5" r="0.5" fill="currentColor"/>
+                      </svg>
+                      {project.buildStep === 'healthy' ? '9 resolved' : '9 issues'}
+                    </button>
+
+                    {/* Settings — stub */}
+                    <button
+                      title="Settings"
+                      style={{ width: 28, height: 28, border: 'none', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, backgroundColor: 'transparent', color: c['content-secondary'] }}
+                      onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
+                      onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="8" cy="8" r="2.5"/>
+                        <path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41"/>
                       </svg>
                     </button>
-                  </div>
-
-                  {/* Properties — column visibility popover */}
-                  <div style={{ position: 'relative' }} ref={colVisRef}>
-                    <button
-                      title="Column properties"
-                      onClick={() => setColVisOpen(o => !o)}
-                      style={{ width: 28, height: 28, border: 'none', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, backgroundColor: colVisOpen ? c['background-information'] : 'transparent', color: colVisOpen ? c['content-brand'] : c['content-secondary'] }}
-                      onMouseEnter={e => { if (!colVisOpen) e.currentTarget.style.backgroundColor = c['background-subtle']; }}
-                      onMouseLeave={e => { if (!colVisOpen) e.currentTarget.style.backgroundColor = 'transparent'; }}
-                    >
-                      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-                        <line x1="2" y1="4" x2="14" y2="4"/>
-                        <line x1="2" y1="8" x2="14" y2="8"/>
-                        <line x1="2" y1="12" x2="14" y2="12"/>
-                        <circle cx="5" cy="4" r="1.5" fill="currentColor" stroke="none"/>
-                        <circle cx="10" cy="8" r="1.5" fill="currentColor" stroke="none"/>
-                        <circle cx="7" cy="12" r="1.5" fill="currentColor" stroke="none"/>
-                      </svg>
-                    </button>
-                    {colVisOpen && (
-                      <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: 4, backgroundColor: c['background-base'], border: `1px solid ${c['border-divider']}`, borderRadius: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.1)', padding: sp.C, width: 220, zIndex: 100, maxHeight: 400, overflowY: 'auto' }}>
-                        <div style={{ fontSize: fs.xs, fontWeight: fw.medium, color: c['content-secondary'], textTransform: 'uppercase', letterSpacing: '0.02em', marginBottom: sp.A }}>Default visible</div>
-                        {DEFAULT_VISIBLE_COLS.map(key => (
-                          <div key={key} style={{ padding: '2px 0' }}>
-                            <Checkbox
-                              checked={visibleCols.has(key)}
-                              label={COL_LABELS[key]}
-                              onChange={() => { const s = new Set(visibleCols); s.has(key) ? s.delete(key) : s.add(key); setVisibleCols(s); }}
-                            />
-                          </div>
-                        ))}
-                        <div style={{ height: 1, backgroundColor: c['border-divider'], margin: `${sp.B}px 0` }} />
-                        <div style={{ fontSize: fs.xs, fontWeight: fw.medium, color: c['content-secondary'], textTransform: 'uppercase', letterSpacing: '0.02em', marginBottom: sp.A }}>Advanced</div>
-                        {ADVANCED_COLS.map(({ key, label }) => (
-                          <div key={key} style={{ padding: '2px 0' }}>
-                            <Checkbox
-                              checked={visibleCols.has(key)}
-                              label={label}
-                              onChange={() => { const s = new Set(visibleCols); s.has(key) ? s.delete(key) : s.add(key); setVisibleCols(s); }}
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
+                  </>
+                )}
 
               </div>
             </div>
@@ -504,9 +612,9 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
             <>
               <div
                 onClick={() => setLeftPanelOpen(false)}
-                style={{ position: 'fixed', top: 104, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.04)', zIndex: 40 }}
+                style={{ position: 'fixed', top: 136, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.04)', zIndex: 40 }}
               />
-              <div style={{ position: 'fixed', left: 0, top: 104, bottom: 0, zIndex: 50, boxShadow: '1px 0 4px rgba(29,35,47,0.06)', clipPath: 'inset(0 -20px 0 0)', animation: 'ds-reveal 0.18s ease-out' }}>
+              <div style={{ position: 'fixed', left: 0, top: 136, bottom: 0, zIndex: 50, boxShadow: '1px 0 4px rgba(29,35,47,0.06)', clipPath: 'inset(0 -20px 0 0)', animation: 'ds-reveal 0.18s ease-out' }}>
                 <LeftPanel project={project} setProject={setProject} onSendToAgent={(msg) => { setExternalAgentMessage(msg); setLeftPanelOpen(false); }} />
               </div>
             </>
