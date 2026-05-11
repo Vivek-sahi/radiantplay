@@ -13,6 +13,7 @@ import { tableMetadata } from '../data/mockData';
 import { DEFAULT_VISIBLE_COLS, ADVANCED_COLS, COL_LABELS } from './CenterPanel';
 import { CacheModal } from '../CacheDiscoverability';
 import QualityPlanPanel from './QualityPlanPanel';
+import PlanPanel from './PlanPanel';
 import { Icon } from '../../../components/icons';
 import ChatContextPanel, { CreatedItem } from './ChatContextPanel';
 
@@ -49,20 +50,22 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
   const [publishOpen, setPublishOpen] = useState(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [contextPanelOpen, setContextPanelOpen] = useState(false);
+  const [canvasVisible, setCanvasVisible] = useState(true);
+  const [planPanelOpen, setPlanPanelOpen] = useState(false);
 
   const planMsg = useMemo(() => messages.find(m => m.planData != null), [messages]);
 
   const contextCreated = useMemo((): CreatedItem[] => [
-    ...(planMsg ? [{ type: 'plan' as const, name: 'Build plan' }] : []),
+    ...(planMsg ? [{ type: 'plan' as const, name: 'Build plan', onClick: () => { setPlanPanelOpen(true); setQualityPlanOpen(false); setCanvasVisible(true); } }] : []),
     ...(project.prepTransforms !== undefined ? [{
       type: 'quality-plan' as const,
       name: 'Data quality plan',
-      onClick: () => setQualityPlanOpen(true),
+      onClick: () => { setQualityPlanOpen(true); setPlanPanelOpen(false); setCanvasVisible(true); },
     }] : []),
     ...(project.buildStep !== 'empty' ? [{
       type: 'model' as const,
       name: project.name,
-      onClick: () => setQualityPlanOpen(false),
+      onClick: () => { setQualityPlanOpen(false); setPlanPanelOpen(false); setCanvasVisible(true); },
     }] : []),
   ], [planMsg, project.prepTransforms, project.buildStep, project.name]);
 
@@ -318,7 +321,8 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
           onOpenQualityPlan={() => setQualityPlanOpen(true)}
         />
 
-        {/* Drag handle — invisible resize zone */}
+        {/* Drag handle + canvas — hidden when canvas is closed */}
+        {canvasVisible && <>
         <div
           onMouseDown={(e) => {
             e.preventDefault();
@@ -337,17 +341,25 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
           {/* Building skeleton — full canvas, no card border yet */}
           {isBuilding && <BuildingSkeleton />}
 
+          {/* Build plan — shown when plan item clicked in context panel */}
+          {!isBuilding && planPanelOpen && planMsg?.planData && (
+            <PlanPanel
+              plan={planMsg.planData}
+              onClose={() => { setPlanPanelOpen(false); setCanvasVisible(false); }}
+            />
+          )}
+
           {/* Quality plan artifact — shown when quality plan is open */}
-          {!isBuilding && project.buildStep !== 'empty' && qualityPlanOpen && (
+          {!isBuilding && project.buildStep !== 'empty' && qualityPlanOpen && !planPanelOpen && (
             <QualityPlanPanel
-              onClose={() => setQualityPlanOpen(false)}
+              onClose={() => { setQualityPlanOpen(false); setCanvasVisible(false); }}
               onApplyFixes={handleQualityApplyFixes}
               onEditPlan={handleQualityEditPlan}
             />
           )}
 
           {/* Artifact card — appears when built */}
-          {!isBuilding && project.buildStep !== 'empty' && !qualityPlanOpen && (
+          {!isBuilding && project.buildStep !== 'empty' && !qualityPlanOpen && !planPanelOpen && (
             <div style={{ flex: 1, overflow: 'hidden', backgroundColor: c['background-base'], border: `1px solid ${c['border-divider']}`, borderRadius: 10, display: 'flex', flexDirection: 'column', animation: 'ds-slide-in 0.2s ease-out' }}>
 
               {/* Identity row */}
@@ -384,7 +396,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
                     {project.publishedVersion === 0 ? 'Publish model' : 'Update model'}
                   </button>
                   <button
-                    onClick={onBack}
+                    onClick={() => setCanvasVisible(false)}
                     title="Close artifact"
                     style={{ width: 28, height: 28, border: 'none', borderRadius: 6, backgroundColor: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: c['content-secondary'], marginLeft: sp.A }}
                     onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
@@ -577,6 +589,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
             </>
           )}
         </div>
+        </>}
 
         {/* Context panel */}
         {contextPanelOpen && (
