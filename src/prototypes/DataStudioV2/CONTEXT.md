@@ -39,11 +39,58 @@ The product moved away from a side-panel co-pilot toward a full-screen agent-fir
 
 ## Next up
 
-### Pass 2 — Artifact paradigm (medium, needs read of AgentPanel first)
+### Pass 3 — Small fixes (all known territory, do together)
 
-10. **Plans as artifacts on the right side** — build plan and data quality fix plan are currently shown as panels/cards. Per the artifact paradigm, they should open on the right side panel (same treatment as model). This is a medium-sized change — needs exploration in Playground first before touching the live flow. Defer to its own session.
+1. **Gray gap between agent and artifact panel** — the 5px drag handle div in `Workspace.tsx` has no background; `AppShell`'s default `contentBackground: gray['10']` shows through it. Fix: add `backgroundColor: c['background-base']` to the drag handle div (`style={{ width: 5, flexShrink: 0, cursor: 'col-resize' }}`).
+
+2. **PlanPanel font sizes too small** — section accordion labels (`fs.xs` → `fs.sm`), table/column description text (`fontSize: 11` → `fs.xs`, `fontSize: fs.xs` → `fs.sm`). Also col name span → `fs.sm`.
+
+3. **Download button on plan artifact** — add a download icon button in the PlanPanel header, left of the close button. SVG: `<path d="M8 2v8"/><polyline points="5,7 8,10 11,7"/><path d="M3 13h10"/>`.
+
+4. **Settings gear next to Test button** — in `Workspace.tsx` tab bar right section, add a `28×28` gear icon button immediately before the Test button. Model-level settings — decorative stub for now. SVG: circle cx=8 r=2.5 + 8 radial spokes.
 
 ---
+
+### Pass 4 — Quality plan as artifact (medium, spec locked)
+
+**Full spec (discussed and agreed 2026-05-11):**
+
+5. **QualityPlanCard in chat** — replace the existing `reviewPlanCTA` "Review plan" button in `MessageBubble` with a `QualityPlanCard` component (same style as `PlanCard`): warning icon + "Data Quality Plan" title + "View plan →" + goal summary + stats row (`9 issues · 4 high · 4 medium · 1 low`). Below the card (outside it): "Apply fixes" button (calls `onConfirm`) + "Edit plan" ghost button (calls `onSuggestion('Edit the quality plan')`).
+
+6. **QualityPlanPanel.tsx (new component)** — static right-side artifact panel. Identity row: warning icon + "Data Quality Plan" + "9 issues" badge + download button + close button. Sections (accordion, same pattern as PlanPanel): Goal (summary + severity chips), Null values (3), Duplicate rows (2), Date format mismatches (3), Anomalous values (1). Each issue row: `<code>col name</code>` + severity badge (right) + detail + `→ fix`. Footer: "Apply fixes" (primary blue) + "Edit plan" (ghost).
+
+7. **Wire quality plan in Workspace.tsx**:
+   - Replace `qualityModalOpen` state → `qualityPlanOpen`
+   - Remove `QualityModal` import + render block
+   - Import `QualityPlanPanel`
+   - Add `qualityPlanOpen && <QualityPlanPanel .../>` in canvas column (replaces artifact card when open; artifact card shown when `!qualityPlanOpen`)
+   - Add `handleQualityApplyFixes` → `setQualityPlanOpen(false)` + `setExternalAgentMessage('yes')`
+   - Add `handleQualityEditPlan` → `setQualityPlanOpen(false)` + `setExternalInputInject('Edit the quality plan — ')`
+   - Pass `onOpenQualityPlan={() => setQualityPlanOpen(true)}` to AgentPanel
+   - Quality button in tab bar: `onClick={() => setQualityPlanOpen(true)}`
+
+8. **Wire quality plan in AgentPanel.tsx**:
+   - Add `onOpenQualityPlan?: () => void` to `AgentPanelProps` and destructuring
+   - Add `onOpenQualityPlan?: () => void` to `MessageBubble` props
+   - Pass `onOpenQualityPlan` through the message render loop to `MessageBubble`
+   - Add `QualityPlanCard` component (see spec in item 5 above)
+
+---
+
+### Pass 5 — Deferred
+
+9. **Plans as artifacts on the right side** — build plan and data quality fix plan are currently shown as panels/cards. Per the artifact paradigm, they should open on the right side panel (same treatment as model). This is a medium-sized change — needs exploration in Playground first before touching the live flow. Defer to its own session.
+
+---
+
+---
+
+## Done — Remove gray backgrounds from artifact content area (2026-05-11, session 73)
+
+- `CenterPanel.tsx`: outer wrapper, TablesView, NotebookCell header — all `background-sunken`/`background-subtle` → `background-base`. Full white throughout.
+- Build: clean ✓
+
+Session discussion: agreed Pass 3 (drag handle gap, font sizes, download, gear) and Pass 4 (quality plan as artifact — spec locked in Next Up above). Not implemented this session — context window limit hit.
 
 ---
 
