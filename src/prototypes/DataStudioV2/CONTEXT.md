@@ -39,13 +39,7 @@ The product moved away from a side-panel co-pilot toward a full-screen agent-fir
 
 ## Next up
 
-### 1. Add connection selection into prompt bar
-
-Allow the user to select a warehouse connection from within the prompt bar — similar to how `@` mentions tables, this would let the user scope a query or build to a specific connection before submitting.
-
----
-
-### 2. Full prototype review
+### 1. Full prototype review
 
 Walk through every flow end-to-end — model building, monitoring/opportunities, debugging, dbt plug-and-play — and capture any remaining rough edges before the prototype is considered demo-ready.
 
@@ -424,6 +418,18 @@ Original 6-situation arc (still valid for demo scripting) → `SCRIPT.md`
 ## Session log
 
 _Last 3 sessions. Full history → [SESSION_LOG.md](./SESSION_LOG.md)_
+
+---
+
+### 2026-05-12 (session 86)
+
+**Connection dropdown pill in prompt bar.**
+
+- **`ConnectionPill.tsx`** — new component. Pill-shaped trigger (gray background, label, vertical divider, chevron) + dropdown list. Default label: "All connections". Each connection row shows a status dot (green = connected, amber = auth-needed) and a checkmark on the selected row. Closes on outside click. `dropDirection` prop controls whether the dropdown opens above or below.
+- **Overview** — `ConnectionPill` wired as `leftSlot` of the landing page `PromptBar`, opens downward. State: `connFilter` (null = all, string = connection id).
+- **AgentPanel** — `ConnectionPill` wired as the leftmost item in the existing `leftSlot` div (left of the build/test mode toggle), opens upward.
+- Selection is visual scoping only — no agent flow rewiring.
+- Build: clean ✓
 
 ---
 
