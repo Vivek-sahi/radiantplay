@@ -214,9 +214,9 @@ const Overview: React.FC<OverviewProps> = ({ onNewProject, onOpenProject, onProm
                 textTransform: 'uppercase' as const,
                 letterSpacing: '0.06em',
               }}>
-                Recent projects
+                Recent models
               </span>
-              <Button variant="primary" size="basic" onClick={onNewProject}>New project</Button>
+              <Button variant="primary" size="basic" onClick={onNewProject}>New model</Button>
             </div>
             <div style={{
               backgroundColor: c['background-base'],

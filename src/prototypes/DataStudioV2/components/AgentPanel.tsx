@@ -1276,8 +1276,8 @@ function runDirectAdd(
     }).join('\n\n');
 
     const intro = knownTables.length === 1
-      ? `Found **${knownTables[0].name}** in your ${knownTables[0].connection} warehouse. I've added it to your project.`
-      : `Found **${knownTables.length} tables** in your warehouse. I've added them to your project.`;
+      ? `Found **${knownTables[0].name}** in your ${knownTables[0].connection} warehouse. I've added it to your model.`
+      : `Found **${knownTables.length} tables** in your warehouse. I've added them to your model.`;
 
     const futureCount = new Set([...project.addedTables, ...knownTables.map(t => t.id)]).size;
     const suggestions = futureCount >= 2
@@ -1877,7 +1877,7 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
   // ── Stub responses for workflows not yet scripted ─────────────────────────
 
   const STUBS: Record<string, string> = {
-    select_columns: `Column selection lets you choose which fields from each table to include in your project. This workflow is coming soon — all columns are included for now.`,
+    select_columns: `Column selection lets you choose which fields from each table to include in your model. This workflow is coming soon — all columns are included for now.`,
     test_model:     `Test mode lets you ask questions against your model and review the AI's reasoning. Switch to the **Test** tab in this panel to get started.`,
     coach:          `Coaching lets you fix a gap found during testing — the agent proposes a fix and writes it to memory. This workflow is coming soon.`,
     publish:        `Publishing is done from the header — click the **Publish** button in the top right when your model is ready.`,
@@ -2052,7 +2052,7 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
       setTimeout(() => {
         setMessages(prev => [...prev, {
           id: `r-${Date.now()}`, type: 'response',
-          content: `I need at least **2 tables** to identify joins. Right now you only have **${tableName}** in your project.\n\nUse **@** to add another table directly, or describe your use case and I'll search the warehouse for related tables.`,
+          content: `I need at least **2 tables** to identify joins. Right now you only have **${tableName}** in your model.\n\nUse **@** to add another table directly, or describe your use case and I'll search the warehouse for related tables.`,
           suggestions: ['Find related tables'],
         }]);
         setProcessing(false);

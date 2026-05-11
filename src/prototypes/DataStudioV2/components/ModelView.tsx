@@ -383,7 +383,7 @@ const InfoTab: React.FC<{ details: typeof MODEL_DETAILS[string] | null; project:
 
   if (!details) return (
     <div style={{ maxWidth: 720, color: c['content-secondary'], fontSize: fs.sm }}>
-      No model details available for this project.
+      No details available for this model.
     </div>
   );
 
