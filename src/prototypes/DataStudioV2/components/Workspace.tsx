@@ -169,7 +169,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
   }, [project.addedTables, project.includedColumns, project.projectSource, project.columnOverrides]);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', fontFamily: ff.primary }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', fontFamily: ff.primary, backgroundColor: c['background-base'] }}>
       <style>{`
         @keyframes ds-skeleton-pulse {
           0%, 100% { opacity: 0.7; }
@@ -190,7 +190,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
             <path d="M9 2L4 7l5 5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
-          Chat
+          Overview
         </button>
         <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
           <span style={{ fontSize: fs.sm, fontWeight: fw.medium, color: c['content-primary'] }}>{project.name || 'Untitled Model'}</span>
@@ -300,26 +300,31 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
       {/* Body */}
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
 
-        {/* Agent panel — always visible */}
-        <AgentPanel
-          project={project}
-          setProject={setProject}
-          messages={messages}
-          setMessages={setMessages}
-          initialPrompt={initialPrompt}
-          isDayZero={isDayZero}
-          isDbtReview={isDbtReview}
-          onBuildComplete={() => setIsBuilding(false)}
-          externalMessage={externalAgentMessage}
-          onExternalMessageHandled={() => { setExternalAgentMessage(null); setExternalAgentAttachment(null); }}
-          externalMessageAttachment={externalAgentAttachment}
-          injectInput={externalInputInject}
-          onInjectInputHandled={() => setExternalInputInject(null)}
-          width={agentPanelWidth}
-          selectedColumns={selectedColumns}
-          onColumnRemove={(name) => setSelectedColumns(prev => prev.filter(c => c !== name))}
-          onOpenQualityPlan={() => setQualityPlanOpen(true)}
-        />
+        {/* Agent panel — always visible; centered when canvas is closed */}
+        <div style={canvasVisible
+          ? { flexShrink: 0 }
+          : { flex: 1, display: 'flex', justifyContent: 'center', overflow: 'hidden' }
+        }>
+          <AgentPanel
+            project={project}
+            setProject={setProject}
+            messages={messages}
+            setMessages={setMessages}
+            initialPrompt={initialPrompt}
+            isDayZero={isDayZero}
+            isDbtReview={isDbtReview}
+            onBuildComplete={() => setIsBuilding(false)}
+            externalMessage={externalAgentMessage}
+            onExternalMessageHandled={() => { setExternalAgentMessage(null); setExternalAgentAttachment(null); }}
+            externalMessageAttachment={externalAgentAttachment}
+            injectInput={externalInputInject}
+            onInjectInputHandled={() => setExternalInputInject(null)}
+            width={agentPanelWidth}
+            selectedColumns={selectedColumns}
+            onColumnRemove={(name) => setSelectedColumns(prev => prev.filter(c => c !== name))}
+            onOpenQualityPlan={() => setQualityPlanOpen(true)}
+          />
+        </div>
 
         {/* Drag handle + canvas — hidden when canvas is closed */}
         {canvasVisible && <>
@@ -409,17 +414,6 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
 
               {/* Tab bar */}
               <div style={{ height: 40, borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', paddingLeft: sp.D, paddingRight: sp.D, gap: sp.B, flexShrink: 0 }}>
-                <button
-                  title="Data panel"
-                  onClick={() => setLeftPanelOpen(o => !o)}
-                  style={{ height: 28, padding: '0 10px', gap: 6, border: `1px solid ${leftPanelOpen ? c['border-brand'] : c['border-default']}`, borderRadius: 6, backgroundColor: leftPanelOpen ? c['background-information'] : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, color: leftPanelOpen ? c['content-brand'] : c['content-secondary'], boxSizing: 'border-box', flexShrink: 0 }}
-                >
-                  <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-                    <rect x="1" y="1" width="14" height="14" rx="2"/><line x1="5" y1="1" x2="5" y2="15"/>
-                  </svg>
-                  Data
-                </button>
-                <div style={{ width: 1, height: 16, backgroundColor: c['border-divider'], flexShrink: 0 }} />
                 {(['columns', 'tables', 'preview', 'notebook'] as ProjectState['activeTab'][]).map(id => {
                   const active = project.activeTab === id;
                   const label = id === 'columns' ? 'Columns' : id === 'tables' ? 'Tables' : id === 'preview' ? 'Preview' : 'Notebook';
@@ -443,14 +437,6 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
                       <circle cx="8" cy="8" r="2.5"/>
                       <path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41"/>
                     </svg>
-                  </button>
-                  <button
-                    style={{ height: 28, padding: '0 10px', gap: 5, border: 'none', borderRadius: 6, backgroundColor: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, color: c['content-secondary'], flexShrink: 0 }}
-                    onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
-                    onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
-                  >
-                    <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><polygon points="3,2 13,8 3,14"/></svg>
-                    Test
                   </button>
                   <button
                     onClick={() => setCacheModalOpen(true)}
@@ -479,6 +465,16 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
                       <path d="M8 2L14 14H2L8 2z"/><line x1="8" y1="7" x2="8" y2="10"/><circle cx="8" cy="12.5" r="0.5" fill="currentColor"/>
                     </svg>
                     {(project.prepTransforms && project.prepTransforms.length > 0) ? '9 resolved' : '9 issues'}
+                  </button>
+                  <button
+                    title="Data panel"
+                    onClick={() => setLeftPanelOpen(o => !o)}
+                    style={{ height: 28, padding: '0 10px', gap: 6, border: `1px solid ${leftPanelOpen ? c['border-brand'] : c['border-default']}`, borderRadius: 6, backgroundColor: leftPanelOpen ? c['background-information'] : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, color: leftPanelOpen ? c['content-brand'] : c['content-secondary'], boxSizing: 'border-box', flexShrink: 0 }}
+                  >
+                    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                      <line x1="8" y1="2" x2="8" y2="14"/><line x1="2" y1="8" x2="14" y2="8"/>
+                    </svg>
+                    Data
                   </button>
                 </div>
               </div>

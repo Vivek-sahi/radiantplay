@@ -38,24 +38,13 @@ const ChatView: React.FC<ChatViewProps> = ({
   }, [isPlanOpen]);
 
   const planMsg = useMemo(() => messages.find(m => m.planData != null), [messages]);
-  const qualityPlanMsg = useMemo(() => messages.find(m => m.reviewPlanCTA), [messages]);
 
   const created = useMemo((): CreatedItem[] => [
-    ...(planMsg ? [{
-      type: 'plan' as const,
-      name: 'Build plan',
-      onClick: () => planMsg?.planData && setActivePlan(planMsg.planData),
-    }] : []),
-    ...(qualityPlanMsg ? [{
-      type: 'quality-plan' as const,
-      name: 'Data quality plan',
-      onClick: () => setQualityPlanOpen(true),
-    }] : []),
     ...(project.buildStep !== 'empty' ? [{
       type: 'model' as const,
       name: project.name,
     }] : []),
-  ], [planMsg, qualityPlanMsg, project.buildStep, project.name]);
+  ], [project.buildStep, project.name]);
 
   const contextTables = useMemo(() => planMsg?.planData?.tables.map(t => t.name) ?? [], [planMsg]);
   const contextSkills = useMemo(() => project.buildStep !== 'empty' ? ['create-data-model'] : [], [project.buildStep]);

@@ -308,11 +308,6 @@ const DataStudio: React.FC = () => {
   };
 
   const goBack = () => {
-    // Workspace → back to chat: preserve messages and project, just switch view
-    if (prevView === 'chat') {
-      setView('chat');
-      return;
-    }
     setInitialPrompt('');
     setActiveAlert(null);
     setIsDayZero(false);
