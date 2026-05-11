@@ -127,10 +127,13 @@ const DataStudio: React.FC = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [project.buildStep, view]);
 
+  const [modelViewInitialTab, setModelViewInitialTab] = useState<'info' | 'usage' | 'cache' | 'quality' | 'monitoring' | undefined>(undefined);
+
   // Open model view — landing screen before workspace
-  const openModelView = (proj: OverviewProject) => {
+  const openModelView = (proj: OverviewProject, initialTab?: 'info' | 'usage' | 'cache' | 'quality' | 'monitoring') => {
     setSelectedProject(proj);
     setActiveAlert(proj.issues?.[0] ?? null);
+    setModelViewInitialTab(initialTab);
     navigateTo('model-view');
   };
 
@@ -298,14 +301,15 @@ const DataStudio: React.FC = () => {
             onNewProject={newProject}
             onOpenProject={openModelView}
             onPromptSubmit={handleOverviewPromptSubmit}
-            onOpenProjectAtMonitoring={openModelView}
-            onFixWithAgent={(insight, proj) => openModelView(proj)}
+            onOpenProjectAtMonitoring={(proj) => openModelView(proj, 'monitoring')}
+            onFixWithAgent={(insight, proj) => openModelView(proj, 'monitoring')}
           />
         )}
         {view === 'model-view' && selectedProject && (
           <ModelView
             project={selectedProject}
             alert={activeAlert}
+            initialTab={modelViewInitialTab}
             onBack={goBack}
             onEdit={enterWorkspaceFromModelView}
           />

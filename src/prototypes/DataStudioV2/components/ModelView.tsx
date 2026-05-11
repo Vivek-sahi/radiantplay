@@ -5,22 +5,27 @@ import { Select } from '../../../components/Select';
 import { Tabs } from '../../../components/Tabs';
 import { SegmentedControl } from '../../../components/SegmentedControl';
 import { Radio } from '../../../components/Radio';
-import { ProgressBar } from '../../../components/ProgressBar';
+import { ProgressBar, ProgressBarColor } from '../../../components/ProgressBar/ProgressBar';
 import { radius } from '../../../tokens/radius';
-import { OverviewProject, OverviewAlert, MODEL_DETAILS, MODEL_CONVERSATIONS, ModelColumn } from '../data/mockData';
+import {
+  OverviewProject, OverviewAlert, MODEL_DETAILS, MODEL_CONVERSATIONS, ModelColumn,
+  WORKSPACE_QUERIES, WORKSPACE_QUALITY, CACHE_STATS, SEMANTIC_GAPS,
+  MONITORING_TRENDS, MONITORING_STATS, SEMANTIC_COVERAGE,
+} from '../data/mockData';
 import ShareModal from './ShareModal';
 
 interface ModelViewProps {
   project: OverviewProject;
   alert?: OverviewAlert | null;
+  initialTab?: TabId;
   onBack: () => void;
   onEdit: () => void;
 }
 
-type TabId = 'info' | 'usage' | 'cache' | 'quality';
+type TabId = 'info' | 'usage' | 'cache' | 'quality' | 'monitoring';
 
-const ModelView: React.FC<ModelViewProps> = ({ project, alert, onBack, onEdit }) => {
-  const [tab, setTab]               = useState<TabId>('info');
+const ModelView: React.FC<ModelViewProps> = ({ project, alert, initialTab, onBack, onEdit }) => {
+  const [tab, setTab]               = useState<TabId>(initialTab ?? 'info');
   const [moreOpen, setMoreOpen]     = useState(false);
   const [shareOpen, setShareOpen]   = useState(false);
   const [cacheEnabled, setCacheEnabled]         = useState(false);
@@ -131,10 +136,11 @@ const ModelView: React.FC<ModelViewProps> = ({ project, alert, onBack, onEdit })
       <div style={{ flexShrink: 0 }}>
         <Tabs
           tabs={[
-            { id: 'info',    label: 'Info' },
-            { id: 'usage',   label: 'Usage' },
-            { id: 'cache',   label: 'Cache' },
-            { id: 'quality', label: 'Data quality' },
+            { id: 'info',       label: 'Info' },
+            { id: 'usage',      label: 'Usage' },
+            { id: 'cache',      label: 'Cache' },
+            { id: 'quality',    label: 'Data quality' },
+            { id: 'monitoring', label: 'Monitoring' },
           ]}
           activeTab={tab}
           onTabChange={id => setTab(id as TabId)}
@@ -144,10 +150,11 @@ const ModelView: React.FC<ModelViewProps> = ({ project, alert, onBack, onEdit })
 {/* Tab body */}
       <div style={{ flex: 1, overflowY: 'auto', padding: sp.H, display: 'flex', flexDirection: 'column' }}>
 
-        {tab === 'info' && <InfoTab details={details} project={project} alert={alert} retryState={retryState} onRetry={handleRetry} onViewLog={() => setLogModalOpen(true)} />}
-        {tab === 'usage' && <UsageTab convos={convos} project={project} onCacheNow={() => setShowCacheModal(true)} />}
-        {tab === 'cache' && <CacheTab defaultEnabled={cacheEnabled} />}
-        {tab === 'quality' && <QualityTab />}
+        {tab === 'info'       && <InfoTab details={details} project={project} alert={alert} retryState={retryState} onRetry={handleRetry} onViewLog={() => setLogModalOpen(true)} />}
+        {tab === 'usage'      && <UsageTab convos={convos} project={project} onCacheNow={() => setShowCacheModal(true)} />}
+        {tab === 'cache'      && <CacheTab defaultEnabled={cacheEnabled} />}
+        {tab === 'quality'    && <QualityTab />}
+        {tab === 'monitoring' && <MonitoringTab modelId={project.id} />}
 
       </div>
 
@@ -831,6 +838,246 @@ const QualityTab: React.FC = () => (
     </Section>
   </div>
 );
+
+// ── Monitoring tab ────────────────────────────────────────────────────────────
+
+type PillarStatus = 'healthy' | 'degraded' | 'critical';
+type PillarId     = 'sync-health' | 'spotter-quality' | 'data-quality' | 'performance';
+type TrendDir     = 'up' | 'down' | 'flat';
+
+const PILLAR_LABEL: Record<PillarId, string> = {
+  'sync-health': 'Sync health', 'spotter-quality': 'Spotter quality',
+  'data-quality': 'Data quality', 'performance': 'Performance',
+};
+const STATUS_COLOR: Record<PillarStatus, string> = { healthy: '#16a34a', degraded: '#d97706', critical: '#dc2626' };
+const STATUS_LABEL: Record<PillarStatus, string> = { healthy: 'Healthy', degraded: 'Degraded', critical: 'Critical' };
+const BADGE_BG: Record<PillarStatus, string>     = { healthy: '#dcfce7', degraded: '#fef3c7', critical: '#fee2e2' };
+const CARD_TOP: Record<PillarStatus, string>     = { healthy: '#16a34a', degraded: '#d97706', critical: '#dc2626' };
+
+const calcTrend = (current: number, prev: number): TrendDir => {
+  if (prev === 0 && current === 0) return 'flat';
+  if (prev === 0) return 'up';
+  const pct = (current - prev) / prev;
+  return pct > 0.05 ? 'up' : pct < -0.05 ? 'down' : 'flat';
+};
+
+const TrendBadge: React.FC<{ dir: TrendDir; good: 'up' | 'down' }> = ({ dir, good }) => {
+  if (dir === 'flat') return null;
+  return <span style={{ fontSize: 10, fontWeight: fw.semibold, color: dir === good ? '#16a34a' : '#dc2626', lineHeight: 1, marginLeft: 2 }}>{dir === 'up' ? '↑' : '↓'}</span>;
+};
+
+interface PillarIssue { text: string; sub?: string; action?: string; }
+interface StatChip { label: string; value: string; trendDir?: TrendDir; trendGood?: 'up' | 'down'; }
+interface PillarData { id: PillarId; status: PillarStatus; headline: string; stats: StatChip[]; issues?: PillarIssue[]; ctaLabel?: string; }
+
+const buildPillars = (modelId: string): PillarData[] => {
+  const queries      = WORKSPACE_QUERIES.filter(q => q.modelId === modelId);
+  const quality      = WORKSPACE_QUALITY.find(q => q.modelId === modelId);
+  const cacheStats   = CACHE_STATS.filter(cs => cs.modelId === modelId);
+  const trend        = MONITORING_TRENDS.find(t => t.modelId === modelId);
+  const semanticGaps = SEMANTIC_GAPS.filter(g => g.modelId === modelId);
+
+  const errorQueries   = queries.filter(q => q.status === 'error');
+  const successQueries = queries.filter(q => q.status === 'success' && q.latencyMs > 0);
+  const schemaChanges  = quality?.schemaChanges ?? [];
+  const avgLatency     = successQueries.length > 0 ? Math.round(successQueries.reduce((s, q) => s + q.latencyMs, 0) / successQueries.length) : null;
+  const maxLatency     = successQueries.length > 0 ? Math.max(...successQueries.map(q => q.latencyMs)) : null;
+  const totalWeeklyRuns = cacheStats.reduce((s, cs) => s + cs.runCount, 0);
+
+  const syncStatus: PillarStatus =
+    quality?.freshnessStatus === 'critical' || schemaChanges.length > 0 ? 'critical' :
+    quality?.freshnessStatus === 'stale'    || errorQueries.length > 0  ? 'degraded' : 'healthy';
+  const spotterRate    = trend?.spotterSuccessRateThisWeek ?? null;
+  const spotterStatus: PillarStatus = spotterRate !== null && spotterRate < 65 ? 'critical' : spotterRate !== null && spotterRate < 82 ? 'degraded' : 'healthy';
+  const qualityStatus: PillarStatus = (quality?.nullRate ?? 0) > 15 || (quality?.anomalies ?? 0) > 5 ? 'critical' : (quality?.nullRate ?? 0) > 5 || (quality?.anomalies ?? 0) > 0 ? 'degraded' : 'healthy';
+  const performanceStatus: PillarStatus = avgLatency !== null && avgLatency > 3000 ? 'critical' : avgLatency !== null && avgLatency > 800 ? 'degraded' : 'healthy';
+
+  return [
+    {
+      id: 'sync-health', status: syncStatus,
+      headline: quality?.freshnessStatus === 'critical' ? 'Sync failed' : quality ? `Last sync ${quality.lastUpdated}` : '—',
+      stats: [
+        { label: 'Sync failures', value: trend ? `${trend.syncFailuresThisWeek} this wk` : `${errorQueries.length}`, trendDir: trend ? calcTrend(trend.syncFailuresThisWeek, trend.syncFailuresLastWeek) : undefined, trendGood: 'down' },
+        { label: 'Schema changes', value: schemaChanges.length > 0 ? `${schemaChanges.length} detected` : 'None' },
+        { label: 'Query errors', value: `${errorQueries.length} today` },
+      ],
+      issues: [
+        ...schemaChanges.map(sc => ({ text: `${sc.column} ${sc.type} — ${sc.table}`, sub: sc.timestamp, action: 'Accept change' })),
+        ...errorQueries.map(q => ({ text: q.errorMessage ?? 'Unknown error', sub: `${q.query} · ${q.timestamp}`, action: 'Retry sync' })),
+      ],
+    },
+    {
+      id: 'spotter-quality', status: spotterStatus,
+      headline: spotterRate !== null ? `${spotterRate}% answer rate` : 'No Spotter data',
+      stats: [
+        { label: 'Answer rate', value: trend ? `${trend.spotterSuccessRateThisWeek}%` : '—', trendDir: trend ? calcTrend(trend.spotterSuccessRateThisWeek, trend.spotterSuccessRateLastWeek) : undefined, trendGood: 'up' },
+        { label: 'Failed queries', value: trend ? `${trend.spotterFailedQueriesThisWeek}` : '—', trendDir: trend ? calcTrend(trend.spotterFailedQueriesThisWeek, trend.spotterFailedQueriesLastWeek) : undefined, trendGood: 'down' },
+        { label: 'Semantic gaps', value: `${semanticGaps.length}` },
+      ],
+      issues: semanticGaps.slice(0, 3).map(gap => ({ text: `"${gap.column}" — ${gap.issue}`, sub: `${gap.queryCount} queries affected`, action: 'Fix description' })),
+    },
+    {
+      id: 'data-quality', status: qualityStatus,
+      headline: quality ? (qualityStatus === 'healthy' ? 'Clean data' : `${quality.nullRate}% null rate`) : 'No quality data',
+      stats: [
+        { label: 'Null rate', value: `${quality?.nullRate ?? 0}%` },
+        { label: 'Anomalies', value: `${quality?.anomalies ?? 0} detected` },
+        { label: 'Schema changes', value: `${schemaChanges.length}` },
+      ],
+      issues: quality?.anomalies ? [{ text: `${quality.anomalies} statistical outliers in source data`, sub: `Last checked ${quality.lastUpdated}`, action: 'Run data profile' }] : [],
+    },
+    {
+      id: 'performance', status: performanceStatus,
+      headline: avgLatency !== null ? `${(avgLatency / 1000).toFixed(1)}s avg response` : 'No query data',
+      stats: [
+        { label: 'Avg response', value: avgLatency !== null ? `${(avgLatency / 1000).toFixed(1)}s` : '—', trendDir: trend ? calcTrend(trend.avgLatencyMsThisWeek, trend.avgLatencyMsLastWeek) : undefined, trendGood: 'down' },
+        { label: 'Slowest query', value: maxLatency !== null ? `${(maxLatency / 1000).toFixed(1)}s` : '—' },
+        { label: 'Queries / week', value: totalWeeklyRuns > 0 ? `${totalWeeklyRuns}` : `${queries.length}`, trendDir: trend ? calcTrend(trend.queriesThisWeek, trend.queriesLastWeek) : undefined, trendGood: 'up' },
+      ],
+      issues: cacheStats.map(cs => ({ text: `"${cs.query}" — ${(cs.avgLatencyMs / 1000).toFixed(1)}s live · ${cs.runCount}× this week`, sub: `~${(cs.potentialSavingMs / 1000).toFixed(1)}s faster per query with caching` })),
+      ctaLabel: cacheStats.length > 0 ? 'Enable caching for this model' : undefined,
+    },
+  ];
+};
+
+const PillarCard: React.FC<{ pillar: PillarData }> = ({ pillar }) => {
+  const isHealthy = pillar.status === 'healthy';
+  return (
+    <div style={{ backgroundColor: c['background-base'], border: `1px solid ${c['border-divider']}`, borderTop: `3px solid ${CARD_TOP[pillar.status]}`, borderRadius: 8, padding: `${sp.C}px ${sp.D}px`, display: 'flex', flexDirection: 'column', gap: sp.B }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'] }}>{PILLAR_LABEL[pillar.id]}</span>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '1px 7px', borderRadius: 12, backgroundColor: BADGE_BG[pillar.status], fontSize: fs.xs, fontWeight: fw.medium, color: STATUS_COLOR[pillar.status] }}>
+          <span style={{ width: 5, height: 5, borderRadius: '50%', backgroundColor: STATUS_COLOR[pillar.status], flexShrink: 0 }} />
+          {STATUS_LABEL[pillar.status]}
+        </span>
+      </div>
+      <div style={{ fontSize: 17, fontWeight: fw.semibold, lineHeight: 1.2, letterSpacing: '-0.2px', color: isHealthy ? c['content-secondary'] : c['content-primary'] }}>{pillar.headline}</div>
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' as const }}>
+        {pillar.stats.map((s, si) => (
+          <div key={si} style={{ padding: '3px 8px', borderRadius: 5, backgroundColor: c['background-sunken'], border: `1px solid ${c['border-divider']}` }}>
+            <div style={{ fontSize: 10, color: c['content-tertiary'], marginBottom: 1 }}>{s.label}</div>
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <span style={{ fontSize: fs.xs, fontWeight: fw.semibold, color: isHealthy ? c['content-secondary'] : c['content-primary'] }}>{s.value}</span>
+              {s.trendDir && s.trendGood && <TrendBadge dir={s.trendDir} good={s.trendGood} />}
+            </div>
+          </div>
+        ))}
+      </div>
+      {!isHealthy && pillar.issues && pillar.issues.length > 0 && (
+        <div style={{ borderTop: `1px solid ${c['border-divider']}`, paddingTop: sp.B, display: 'flex', flexDirection: 'column', gap: sp.B }}>
+          {pillar.issues.map((issue, ii) => (
+            <div key={ii} style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+              <span style={{ width: 4, height: 4, borderRadius: '50%', backgroundColor: STATUS_COLOR[pillar.status], marginTop: 5, flexShrink: 0 }} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: fs.xs, color: c['content-primary'], lineHeight: 1.4 }}>{issue.text}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: sp.C, marginTop: 2, flexWrap: 'wrap' as const }}>
+                  {issue.sub && <span style={{ fontSize: 11, color: c['content-tertiary'] }}>{issue.sub}</span>}
+                  {issue.action && (
+                    <button onClick={() => {}} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: 11, fontWeight: fw.semibold, color: c['content-brand'], fontFamily: ff.primary, display: 'inline-flex', alignItems: 'center', gap: 2, lineHeight: 1 }}
+                      onMouseEnter={e => (e.currentTarget.style.textDecoration = 'underline')}
+                      onMouseLeave={e => (e.currentTarget.style.textDecoration = 'none')}
+                    >{issue.action} →</button>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      {!isHealthy && pillar.ctaLabel && (
+        <div style={{ paddingTop: sp.A, borderTop: `1px solid ${c['border-divider']}`, marginTop: sp.A }}>
+          <Button variant="primary" size="small" onClick={() => {}}>{pillar.ctaLabel}</Button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const ROI_COLOR: Record<'positive' | 'neutral' | 'negative', string> = { positive: '#16a34a', neutral: '#d97706', negative: '#dc2626' };
+const ROI_BG:    Record<'positive' | 'neutral' | 'negative', string> = { positive: '#dcfce7', neutral: '#fef3c7', negative: '#fee2e2' };
+const ROI_LABEL: Record<'positive' | 'neutral' | 'negative', string> = { positive: 'Positive ROI', neutral: 'Review usage', negative: 'Low ROI' };
+
+const CostRoiSection: React.FC<{ modelId: string }> = ({ modelId }) => {
+  const stats = MONITORING_STATS.find(s => s.modelId === modelId);
+  if (!stats) return null;
+  const cells = [
+    { label: 'Est. weekly cost', value: `$${stats.estimatedWeeklyCostUsd}` },
+    { label: 'Cost per query',   value: `$${stats.costPerQuery.toFixed(2)}` },
+    { label: 'Cost per user',    value: `$${stats.costPerUser.toFixed(2)}` },
+  ];
+  return (
+    <div style={{ marginTop: sp.H }}>
+      <div style={{ fontSize: 11, fontWeight: fw.semibold, color: c['content-secondary'], textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: sp.C }}>Cost & efficiency</div>
+      <div style={{ backgroundColor: c['background-base'], border: `1px solid ${c['border-divider']}`, borderRadius: 8, overflow: 'hidden', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr' }}>
+        {cells.map((cell, i) => (
+          <div key={i} style={{ padding: `${sp.C}px ${sp.D}px`, borderRight: `1px solid ${c['border-divider']}` }}>
+            <div style={{ fontSize: 11, color: c['content-tertiary'], marginBottom: 4 }}>{cell.label}</div>
+            <div style={{ fontSize: 18, fontWeight: fw.semibold, color: c['content-primary'], letterSpacing: '-0.3px', lineHeight: 1 }}>{cell.value}</div>
+          </div>
+        ))}
+        <div style={{ padding: `${sp.C}px ${sp.D}px`, backgroundColor: ROI_BG[stats.roiFlag], display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+          <div style={{ fontSize: fs.xs, fontWeight: fw.semibold, color: ROI_COLOR[stats.roiFlag] }}>{ROI_LABEL[stats.roiFlag]}</div>
+          <div style={{ fontSize: 11, color: ROI_COLOR[stats.roiFlag], marginTop: 3 }}>{stats.weeklyQueryVolume} queries · {stats.uniqueUsersThisWeek} users this week</div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const SemanticCoverageSection: React.FC<{ modelId: string }> = ({ modelId }) => {
+  const coverage = SEMANTIC_COVERAGE.find(s => s.modelId === modelId);
+  const gaps     = SEMANTIC_GAPS.filter(g => g.modelId === modelId).slice(0, 5);
+  if (!coverage && gaps.length === 0) return null;
+
+  const pct = coverage ? Math.round((coverage.coveredIntents / coverage.totalIntentsSampled) * 100) : null;
+  const barColor: ProgressBarColor = pct !== null ? (pct < 60 ? 'red' : pct < 80 ? 'yellow' : 'green') : 'green';
+
+  return (
+    <div style={{ marginTop: sp.H }}>
+      <div style={{ fontSize: 11, fontWeight: fw.semibold, color: c['content-secondary'], textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: sp.C }}>Semantic coverage</div>
+      <div style={{ backgroundColor: c['background-base'], border: `1px solid ${c['border-divider']}`, borderRadius: 8, padding: `${sp.C}px ${sp.D}px`, display: 'flex', flexDirection: 'column', gap: sp.C }}>
+        {coverage && pct !== null && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: sp.C }}>
+            <div style={{ flex: 1 }}><ProgressBar value={pct} max={100} color={barColor} size="small" /></div>
+            <span style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'], flexShrink: 0 }}>{pct}%</span>
+            <span style={{ fontSize: fs.xs, color: c['content-secondary'], flexShrink: 0 }}>{coverage.coveredIntents} of {coverage.totalIntentsSampled} user intents answered</span>
+          </div>
+        )}
+        {gaps.length > 0 && (
+          <div style={{ borderTop: coverage ? `1px solid ${c['border-divider']}` : 'none', paddingTop: coverage ? sp.C : 0 }}>
+            <div style={{ fontSize: 11, color: c['content-tertiary'], marginBottom: sp.B }}>Top gaps — questions users asked that Spotter couldn't answer</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: sp.A }}>
+              {gaps.map((gap, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'baseline', gap: sp.C }}>
+                  <span style={{ fontSize: fs.xs, fontWeight: fw.medium, color: c['content-primary'], minWidth: 130, flexShrink: 0 }}>{gap.column}</span>
+                  <span style={{ fontSize: 11, color: c['content-tertiary'], flexShrink: 0 }}>{gap.queryCount}× asked</span>
+                  <span style={{ fontSize: fs.xs, color: c['content-secondary'], flex: 1, minWidth: 0 }}>{gap.issue}</span>
+                  <button onClick={() => {}} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: 11, fontWeight: fw.semibold, color: c['content-brand'], fontFamily: ff.primary, flexShrink: 0 }}
+                    onMouseEnter={e => (e.currentTarget.style.textDecoration = 'underline')}
+                    onMouseLeave={e => (e.currentTarget.style.textDecoration = 'none')}
+                  >Fix →</button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const MonitoringTab: React.FC<{ modelId: string }> = ({ modelId }) => {
+  const pillars = buildPillars(modelId);
+  return (
+    <div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: sp.D }}>
+        {pillars.map(p => <PillarCard key={p.id} pillar={p} />)}
+      </div>
+      <CostRoiSection modelId={modelId} />
+      <SemanticCoverageSection modelId={modelId} />
+    </div>
+  );
+};
 
 // ── Log modal ─────────────────────────────────────────────────────────────────
 

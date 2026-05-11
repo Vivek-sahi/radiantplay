@@ -39,32 +39,27 @@ The product moved away from a side-panel co-pilot toward a full-screen agent-fir
 
 ## Next up
 
-### 1. Replace ModelView.tsx with Komal's version (Step 3 of Komal merge)
+### 1. Review the 5-tab ModelView — decide what to keep and remove
 
-**Context:** Steps 1 and 2 of the Komal merge are already done. Do NOT redo them.
+**Context:** `ModelView.tsx` now has 5 tabs: Info, Usage, Cache, Data quality, Monitoring. The Monitoring tab is Komal's addition (4 pillars + Cost/ROI + Semantic coverage). The existing Cache and Data quality tabs are ours.
 
-**What's already done:**
-- **Step 1 (mockData)** — Komal's monitoring mock data is already appended to the bottom of `data/mockData.ts`. New exports: `WORKSPACE_QUERIES`, `WORKSPACE_QUALITY`, `WORKSPACE_USAGE_DAYS`, `WORKSPACE_MODEL_USAGE`, `WORKSPACE_CONNECTIONS`, `ACTIVE_INSIGHTS`, `SEMANTIC_GAPS`, `CACHE_STATS`, `DEAD_COLUMNS`, `MONITORING_TRENDS`, `MONITORING_STATS`, `SEMANTIC_COVERAGE`. All use the same project IDs as `OVERVIEW_PROJECTS` — no conflicts.
-- **Step 2 (Overview)** — `Overview.tsx` now has Pulse + Recent models panels (from Komal) inserted between the hero and our existing Recent models table. The hero, table, and Explore data sections are all untouched. Two new props added: `onOpenProjectAtMonitoring` and `onFixWithAgent` — both currently stub to `openModelView` in `index.tsx`.
+**What to evaluate in the next session:**
 
-**What to do in this session:**
+Open any model from the Overview (e.g., Marketing Campaign Attribution — has mock data for all tabs). Click through all 5 tabs and decide:
 
-Replace `components/ModelView.tsx` with Komal's version from `/Users/vivek.sahi/Downloads/DataStudioV2-Komal/components/ModelView.tsx`.
+- **Cache tab** — does it still belong here, or is cache management now fully covered by the Workspace? Komal removed it in her version.
+- **Data quality tab** — standalone score + progress bars. Now that Monitoring has a Data quality pillar, is this tab redundant? Or does it add value as a dedicated view?
+- **Usage tab cache banner** — Komal removed the "Cache now" promotion banner from Usage. Does it belong there, or is the Monitoring → Performance pillar's CTA sufficient?
 
-Key differences in her version:
-- Tabs change: `info | usage | cache | quality` → `info | usage | monitoring`
-- New `initialTab?: TabId` prop added — lets callers open directly on a specific tab
-- Monitoring tab has 4 pillars (Sync health, Spotter quality, Data quality, Performance) + Cost/ROI + Semantic coverage sections
-- Imports these from mockData (all now present in ours): `WORKSPACE_QUERIES`, `WORKSPACE_QUALITY`, `CACHE_STATS`, `SEMANTIC_GAPS`, `MONITORING_TRENDS`, `MONITORING_STATS`, `SEMANTIC_COVERAGE`
-- Also imports `ProgressBar` from Radiant — already in our component library
+**Decision options:**
+- A: Keep all 5 tabs (no change — most conservative)
+- B: Remove Cache tab, keep Data quality tab (Monitoring covers cache status; data quality still useful standalone)
+- C: Remove both Cache and Data quality tabs, matching Komal's 3-tab structure (Monitoring consolidates everything)
+- D: Some other combination
 
-**After replacing ModelView.tsx:**
-1. Update `index.tsx` — find the `<ModelView` render (~line 303) and add the `initialTab` prop. Wire `onOpenProjectAtMonitoring` in Overview to open ModelView at `initialTab='monitoring'` instead of the current stub.
-2. Run `npm run build` — confirm clean.
+**After deciding:** apply the cuts to `ModelView.tsx` directly. No Playground step needed — it's a deletion, not an addition.
 
-**The fix-alert workflow (`onFixWithAgent`):** Still a stub — deferred. When a Pulse debug item is clicked, it currently just opens the model view. The full fix-alert agent journey (Komal's `FullChatView.tsx`) is a separate future task.
-
-**Komal's source files:** `/Users/vivek.sahi/Downloads/DataStudioV2-Komal/` — zip is still available if needed.
+**Also still open:** `onFixWithAgent` — Pulse alert clicks currently open ModelView at Monitoring tab. The full agent fix flow (Komal's `FullChatView.tsx`) is a separate task after this one.
 
 ---
 
@@ -380,6 +375,26 @@ Original 6-situation arc (still valid for demo scripting) → `SCRIPT.md`
 ## Session log
 
 _Last 3 sessions. Full history → [SESSION_LOG.md](./SESSION_LOG.md)_
+
+---
+
+### 2026-05-11 (session 81)
+
+**ModelView — combined 5-tab version + routing wired.**
+
+- **Clarified entry point distinction:** clicking a model → ModelView (Info tab); clicking a Pulse alert → should open full-screen agent chat (FullChatView), not just ModelView at Monitoring. `onFixWithAgent` deferred — full agent fix flow is a separate task.
+- **Combined ModelView approach:** instead of replacing with Komal's 3-tab version, added Monitoring as a 5th tab alongside existing Cache and Data quality tabs. Same approach as the Overview merge — additive first, then evaluate what to cut.
+- **`ModelView.tsx` changes:**
+  - Added `initialTab?: TabId` prop
+  - TabId extended: `'info' | 'usage' | 'cache' | 'quality' | 'monitoring'`
+  - New imports: `WORKSPACE_QUERIES`, `WORKSPACE_QUALITY`, `CACHE_STATS`, `SEMANTIC_GAPS`, `MONITORING_TRENDS`, `MONITORING_STATS`, `SEMANTIC_COVERAGE`, `ProgressBarColor`
+  - Added all monitoring components inline: `buildPillars`, `PillarCard`, `TrendBadge`, `CostRoiSection`, `SemanticCoverageSection`, `MonitoringTab`
+- **`index.tsx` changes:**
+  - `openModelView` now accepts optional `initialTab` param
+  - `onOpenProjectAtMonitoring` → opens at `initialTab='monitoring'`
+  - `onFixWithAgent` → also opens at `initialTab='monitoring'` (stub; full agent flow deferred)
+  - `<ModelView>` now receives `initialTab={modelViewInitialTab}`
+- Build: clean ✓
 
 ---
 
