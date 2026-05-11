@@ -39,31 +39,19 @@ The product moved away from a side-panel co-pilot toward a full-screen agent-fir
 
 ## Next up
 
-**Complete the Workspace.tsx migration to the new artifact layout.** The first edit (Chat page header) is already applied and building. Three remaining edits:
+No open items. Workspace migration is complete — review in browser and identify any polish.
 
-**Edit 2 — Add artifact identity row** inside the center/canvas column (after the `<div style={{ flex: 1, overflow: 'hidden', position: 'relative', display: 'flex', flexDirection: 'column' }}>` opening tag, before the canvas sub-header):
-- 48px row: `[model icon SVG] [project.name] [Draft/v1 badge]` left + `[Share button] [Publish button]` right
-- Use the exact same Share/Publish button JSX from the old header (same `onClick`, same `onMouseEnter/Leave` styles)
-- Model icon: small inline SVG (4-quadrant grid, brand blue, same as Playground `AcModelIcon`)
-- Draft/v1 badge: same conditional logic already in the old header
+---
 
-**Edit 3 — Restructure the canvas sub-header** (replace `{/* Sub-header: unified canvas toolbar */}` block):
-- Remove: absolutely-centered segmented control → replace with left-aligned underline tabs
-- Keep left: Agent reopen button (when closed) + Data panel toggle (unchanged, with `isBuilding` disable)
-- Add left: view tabs `[Columns][Tables][Preview][Notebook]` as underline-style tab buttons (height 40, `borderBottom: active ? 2px solid brand : transparent`, marginBottom: -1)
-- Right side actions (in order): `[Test icon]` stub + `[Live query]` compact (icon + "Live"/"Caching…"/"Cached", existing state+modal) + `[Quality issues]` compact (icon + "9 issues"/"9 resolved", existing state+modal) + `[Settings icon]`
-- Columns-specific controls (right, columns-only): dbt indicators + column count + search + column properties popover — all unchanged, just inside `{project.activeTab === 'columns' && ...}`
+## Done — Workspace migration complete (2026-05-11, session 69)
 
-**Edit 4 — Fix LeftPanel overlay top offset:**
-- Two occurrences: `top: 104` → `top: 136`
-- (New heights: 48 Chat header + 48 identity row + 40 tab bar = 136)
+**Completed the artifact layout migration in `Workspace.tsx` (Edits 2–4).**
 
-**Critical preservation rules:**
-- `CenterPanel` component and ALL its props are untouched — columns view triggers (data quality click → edit → refer in chat) are safe inside CenterPanel
-- AgentPanel, drag handle, BuildingSkeleton — untouched
-- All modals (PublishModal, RepublishWizard, DbtPublishModal, CacheModal, QualityModal, ShareModal) — untouched, same render conditions
-- All state variables — untouched
-- Live query and Quality issues: same state, same onClick → modal, same icons — only position moves from page header to tab bar right side, labels shortened to "Live"/"Cached"/"Caching…" and "9 issues"/"9 resolved"
+- Edit 2: Artifact identity row (48px) added inside the canvas column — 4-quadrant model icon SVG + project name + Draft/v1 badge left; Share and Publish model/Update model buttons right. Same conditional as the tab bar (`buildStep !== 'empty' || !agentPanelOpen`).
+- Edit 3: Canvas sub-header restructured — absolutely-centered segmented control removed; left-aligned underline tabs (Columns/Tables/Preview/Notebook, height 40, `marginBottom: -1` for active underline flush with divider). Right side: Test stub + Live query compact (db icon + Live/Caching…/Cached, `cacheStatus` state → `CacheModal`) + Quality issues compact (triangle icon + 9 issues/9 resolved based on `buildStep === 'healthy'` → `QualityModal`) + Settings stub. Columns-specific controls (dbt indicators, count, search, properties popover) remain columns-only to the left of action buttons with a conditional separator.
+- Edit 4: LeftPanel overlay `top: 104` → `top: 136` (48 chat header + 48 identity row + 40 tab bar).
+- All modals, state, AgentPanel, CenterPanel, BuildingSkeleton, drag handle — untouched.
+- Build: clean ✓
 
 ---
 
