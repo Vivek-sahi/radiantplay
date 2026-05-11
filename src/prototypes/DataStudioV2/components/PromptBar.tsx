@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { c, sp, ff, fs, fw } from '../styles';
+import { Icon } from '../../../components/icons';
 import { WAREHOUSE_TREE, WarehouseTableType } from '../data/mockData';
 
 // Re-export so existing importers (Workspace + tests) continue to resolve here.
@@ -316,15 +317,15 @@ const PromptBar = forwardRef<PromptBarRef, PromptBarProps>(({
           <div style={{ display: 'flex', gap: sp.A, alignItems: 'center', position: 'relative' }}>
             {leftSlot}
 
-            {(
-              <button onClick={() => setUpload(true)}
-                style={{ padding: `${sp.A}px ${sp.B}px`, border: 'none', borderRadius: 6, backgroundColor: 'transparent', color: c['content-secondary'], fontSize: fs.xs, cursor: 'pointer', fontFamily: ff.primary, lineHeight: '1.4' }}
-                onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
-                onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
-              >
-                ↑ Upload
-              </button>
-            )}
+            <button
+              onClick={() => setUpload(true)}
+              title="Upload a file"
+              style={{ width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', borderRadius: 6, backgroundColor: 'transparent', color: c['content-secondary'], cursor: 'pointer', flexShrink: 0 }}
+              onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
+              onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+            >
+              <Icon name="upload" size="s" color={c['content-secondary']} />
+            </button>
           </div>
 
           {/* Send / Stop */}
