@@ -25,6 +25,43 @@ export interface PrepSuggestion {
   sql: string; // used when writing PrepTransform; not shown in UI
 }
 
+// ── Plan mode types ───────────────────────────────────────────────────────────
+
+export interface PlanTable {
+  schema: string;
+  name: string;
+  description: string;
+  rowCount?: string;
+}
+
+export interface PlanRelationship {
+  fromTable: string;
+  toTable: string;
+  fromKey: string;
+  toKey: string;
+  joinType: string;
+  matchRate: string;
+}
+
+export interface PlanColumn {
+  table: string;
+  name: string;
+  type: 'metric' | 'dimension' | 'formula';
+  description: string;
+  formula?: string;
+  included: boolean;
+}
+
+export interface PlanData {
+  version: number;
+  modelName: string;
+  goal: string;
+  tables: PlanTable[];
+  relationships: PlanRelationship[];
+  columns: PlanColumn[];
+  sampleQuestions: string[];
+}
+
 export interface AgentMessage {
   id: string;
   type: 'user' | 'working' | 'response' | 'execution';
@@ -38,7 +75,7 @@ export interface AgentMessage {
   outcomeCard?: { title: string; chips: string[]; note: string };
   reviewPlanCTA?: boolean;
   interactiveChips?: { label: string; value: string }[];
-  clarifyCard?: { question: string; options: string[] };
+  planData?: PlanData;
 }
 
 interface WorkingStep {
@@ -139,6 +176,48 @@ const PREP_SUGGESTIONS: PrepSuggestion[] = [
   },
 ];
 
+// ── Mock plan data ────────────────────────────────────────────────────────────
+
+const MOCK_PLAN_BASE: Omit<PlanData, 'version'> = {
+  modelName: 'Campaign Performance',
+  goal: 'Understand campaign ROI and ad spend efficiency across channels, regions, and user segments — enabling full-funnel analysis from impression to first conversion.',
+  tables: [
+    { schema: 'marketing_db', name: 'orders', description: 'Transactional records for every order placed, including amount, region, and attribution to a campaign and user.', rowCount: '150 rows' },
+    { schema: 'marketing_db', name: 'campaigns', description: 'Campaign metadata — channel, spend, budget, impressions, and target region for each campaign run.', rowCount: '45 rows' },
+    { schema: 'marketing_db', name: 'users', description: 'Registered user profiles with segment classification, lifetime value, and signup date.', rowCount: '90 rows' },
+  ],
+  relationships: [
+    { fromTable: 'orders', toTable: 'campaigns', fromKey: 'campaign_id', toKey: 'campaign_id', joinType: 'LEFT JOIN', matchRate: '82% match · 27 nulls = organic orders, preserved' },
+    { fromTable: 'orders', toTable: 'users', fromKey: 'user_id', toKey: 'user_id', joinType: 'LEFT JOIN', matchRate: '100% match' },
+  ],
+  columns: [
+    { table: 'orders', name: 'order_date', type: 'dimension', description: 'Date the order was placed, normalised to YYYY-MM-DD. Use for time-series and trend analysis.', included: true },
+    { table: 'orders', name: 'amount', type: 'metric', description: 'Order value in USD at time of purchase. Use SUM for total revenue, AVG for average order value.', included: true },
+    { table: 'orders', name: 'region', type: 'dimension', description: 'Geographic region where the order was placed. Values: North, South, East, West, APAC.', included: true },
+    { table: 'campaigns', name: 'campaign_id', type: 'dimension', description: 'Unique campaign identifier. Join key — use campaign_name for display in charts.', included: true },
+    { table: 'campaigns', name: 'campaign_name', type: 'dimension', description: 'Human-readable name for this campaign. Use for labelling in charts and comparisons.', included: true },
+    { table: 'campaigns', name: 'channel', type: 'dimension', description: 'Marketing channel used for this campaign. Values: paid_search, social, email, display.', included: true },
+    { table: 'campaigns', name: 'spend', type: 'metric', description: 'Total amount spent running this campaign in USD. Denominator in ROAS = revenue ÷ spend.', included: true },
+    { table: 'campaigns', name: 'budget', type: 'metric', description: 'Total approved spend limit for this campaign in USD. Compare against spend for budget utilisation.', included: true },
+    { table: 'campaigns', name: 'impressions', type: 'metric', description: 'Number of times campaign ads were shown. Divide by spend for CPM reach metric.', included: true },
+    { table: 'campaigns', name: 'target_region', type: 'dimension', description: 'Geographic region this campaign was targeted at. May differ from where orders actually originated.', included: true },
+    { table: 'users', name: 'user_id', type: 'dimension', description: 'Unique identifier for each registered user. Join key linking orders to user profiles.', included: true },
+    { table: 'users', name: 'segment', type: 'dimension', description: 'Customer tier based on company size and revenue. Values: Enterprise, Mid-market, SMB. Null = unclassified.', included: true },
+    { table: 'users', name: 'lifetime_value', type: 'metric', description: 'Cumulative revenue from this user since signup. Use AVG to compare segments, SUM for cohort totals.', included: true },
+    { table: 'users', name: 'signup_date', type: 'dimension', description: 'Date the user registered, normalised to YYYY-MM-DD. Use for cohort analysis and churn calculations.', included: true },
+    { table: 'Formulas', name: 'campaign_roas', type: 'formula', description: 'Return on Ad Spend. Higher = more efficient use of budget.', formula: 'SUM(orders.amount) / NULLIF(SUM(campaigns.spend), 0)', included: true },
+    { table: 'Formulas', name: 'conversion_rate', type: 'formula', description: 'Percentage of exposed users who placed an order after campaign exposure.', formula: 'COUNT(DISTINCT orders.user_id) / NULLIF(COUNT(DISTINCT users.user_id), 0) * 100', included: true },
+  ],
+  sampleQuestions: [
+    'What is the ROAS by campaign and channel last month?',
+    'Which user segments convert best for paid search campaigns?',
+    'How does ad spend compare to budget across regions?',
+    'What is the average order value for social vs email campaigns?',
+    'Which campaigns have the highest conversion rate this quarter?',
+    'How has campaign performance trended over the last 6 months?',
+  ],
+};
+
 const SCRIPTS: Record<string, {
   steps: StepDef[];
   duration: string;
@@ -163,6 +242,21 @@ const SCRIPTS: Record<string, {
   setsProjectSource?: 'warehouse' | 'dbt'; // written to ProjectState on completion
   reviewPlanCTA?: boolean;  // show "Review plan" button instead of inline confirm
 }> = {
+
+  day_zero_generate_plan: {
+    steps: [
+      { label: 'Reviewing your requirements', detail: 'Reading your goals and use case from the clarifying questions.' },
+      { label: 'Reading warehouse schemas', detail: 'Found 3 matching tables: orders, campaigns, users — covering transactions, attribution, and user profiles.' },
+      { label: 'Drafting your model plan', detail: 'Identified 2 joins, 14 base columns, 2 derived formulas, and 6 sample questions.' },
+    ],
+    stepDelay: 1200,
+    duration: '~4 seconds',
+    autoComplete: true,
+    preserveStep: true,
+    proposal: '',
+    execution: '',
+    nextStep: 'empty',
+  },
 
   build_project: {
     steps: [
@@ -1304,7 +1398,8 @@ function runDirectAdd(
 type DayZeroPhase =
   | 'use_case_prompt'
   | 'clarify_q1'
-  | 'clarify_q2'
+  | 'plan_ready'
+  | 'plan_editing'
   | 'confirm_build'
   | 'done';
 
@@ -1614,14 +1709,14 @@ interface AgentPanelProps {
   injectInput?: string | null;
   onInjectInputHandled?: () => void;
   width?: number;
-  onClose?: () => void;
   selectedColumns?: string[];
   onColumnRemove?: (name: string) => void;
   isDayZero?: boolean;
   isDbtReview?: boolean;
+  onOpenPlan?: (plan: PlanData) => void;
 }
 
-const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, setMessages, initialPrompt, onBuildComplete, externalMessage, onExternalMessageHandled, externalMessageAttachment, injectInput, onInjectInputHandled, width = 340, onClose, selectedColumns, onColumnRemove, isDayZero, isDbtReview }) => {
+const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, setMessages, initialPrompt, onBuildComplete, externalMessage, onExternalMessageHandled, externalMessageAttachment, injectInput, onInjectInputHandled, width = 340, selectedColumns, onColumnRemove, isDayZero, isDbtReview, onOpenPlan }) => {
   const [pendingAction, setPending]     = useState<PendingAction | null>(null);
   const [isProcessing, setProcessing]   = useState(false);
   const [planModalOpen, setPlanModalOpen] = useState(false);
@@ -1629,7 +1724,7 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
     PREP_SUGGESTIONS.map(s => ({ ...s }))
   );
   const [dayZeroPhase, setDayZeroPhase] = useState<DayZeroPhase | null>(isDayZero ? 'use_case_prompt' : null);
-  const [clarifyAnswers, setClarifyAnswers] = useState<{ q1?: string; q2?: string }>({});
+  const [planVersion, setPlanVersion]    = useState(1);
   const messagesEndRef           = useRef<HTMLDivElement>(null);
   const promptBarRef             = useRef<PromptBarRef>(null);
   const buildCalledRef           = useRef(false);
@@ -1666,10 +1761,6 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
           setMessages(prev => [...prev, {
             id: `r-${Date.now()}`, type: 'response',
             content: "A couple of quick questions before I start:",
-            clarifyCard: {
-              question: "What are you trying to solve for?",
-              options: ['Campaign ROI', 'Ad spend tracking', 'Attribution analysis'],
-            },
           }]);
           setDayZeroPhase('clarify_q1');
           setProcessing(false);
@@ -1884,6 +1975,51 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
     share:          `Use the **Share** button in the top-right header to invite people or groups and set their access level (Can view or Can edit).`,
   };
 
+  const handleClarifyComplete = (answers: Record<number, string | null>) => {
+    setDayZeroPhase('confirm_build'); // hide the clarify card immediately
+    const parts = DAY_ZERO_QUESTIONS
+      .map((q, i) => answers[i] != null ? `${q.question}\n${answers[i]}` : null)
+      .filter(Boolean) as string[];
+    if (parts.length > 0) {
+      setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: parts.join('\n\n') }]);
+    }
+    setProcessing(true);
+    runDayZeroSteps('day_zero_generate_plan', undefined, setMessages, () => {
+      const plan: PlanData = { ...MOCK_PLAN_BASE, version: 1 };
+      setPlanVersion(1);
+      setMessages(prev => [...prev, {
+        id: `r-${Date.now()}`, type: 'response',
+        content: "Here's the plan for your model. Review it — once you're happy, I'll start building.",
+        planData: plan,
+      }]);
+      setDayZeroPhase('plan_ready');
+      setProcessing(false);
+    }, buildAbortRef);
+  };
+
+  const handleStartBuilding = () => {
+    setDayZeroPhase('done');
+    setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: 'Start building' }]);
+    setTimeout(() => {
+      runFlow('build_project', setMessages, setPending, setProcessing, setProject, 'Start building', buildAbortRef);
+    }, 300);
+  };
+
+  const handleEditPlan = () => {
+    setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: 'Edit the plan' }]);
+    setDayZeroPhase('plan_editing');
+    setTimeout(() => {
+      setMessages(prev => [...prev, {
+        id: `r-${Date.now()}`, type: 'response',
+        content: "What would you like to change?",
+      }]);
+    }, 400);
+  };
+
+  const handlePlanCardClick = (plan: PlanData) => {
+    if (onOpenPlan) onOpenPlan(plan);
+  };
+
   const handleDayZeroInput = (input: string) => {
     switch (dayZeroPhase) {
       case 'use_case_prompt': {
@@ -1893,10 +2029,6 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
           setMessages(prev => [...prev, {
             id: `r-${Date.now()}`, type: 'response',
             content: "A couple of quick questions before I start:",
-            clarifyCard: {
-              question: "What are you trying to solve for?",
-              options: ['Campaign ROI', 'Ad spend tracking', 'Attribution analysis'],
-            },
           }]);
           setDayZeroPhase('clarify_q1');
           setProcessing(false);
@@ -1904,39 +2036,22 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
         break;
       }
 
-      case 'clarify_q1': {
-        setClarifyAnswers(prev => ({ ...prev, q1: input }));
-        setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: input }]);
-        setTimeout(() => {
-          setMessages(prev => [...prev, {
-            id: `r-${Date.now()}`, type: 'response',
-            content: '',
-            clarifyCard: {
-              question: "What should I focus on?",
-              options: ['ROI metrics only', 'Ad spend + ROI', 'Full funnel analysis'],
-            },
-          }]);
-          setDayZeroPhase('clarify_q2');
-        }, 300);
-        break;
-      }
-
-      case 'clarify_q2': {
-        const q1Answer = clarifyAnswers.q1 ?? 'campaign ROI';
-        setClarifyAnswers(prev => ({ ...prev, q2: input }));
+      case 'plan_ready':
+      case 'plan_editing': {
         setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: input }]);
         setProcessing(true);
-        runDayZeroSteps('day_zero_understand_requirement', undefined, setMessages, () => {
+        setTimeout(() => {
+          const newVersion = planVersion + 1;
+          const updatedPlan: PlanData = { ...MOCK_PLAN_BASE, version: newVersion };
+          setPlanVersion(newVersion);
           setMessages(prev => [...prev, {
             id: `r-${Date.now()}`, type: 'response',
-            content: `Here's what I've captured:\n\nYou're looking for a model that can answer **${q1Answer.toLowerCase()}** questions — focused on **${input.toLowerCase()}**.\n\nShould I search your warehouse, find the right tables, and build a data model to answer these questions?`,
-            interactiveChips: [
-              { label: 'Yes, build it →', value: 'Yes, build it' },
-            ],
+            content: `Updated. Here's Plan v${newVersion} with your changes.`,
+            planData: updatedPlan,
           }]);
-          setDayZeroPhase('confirm_build');
+          setDayZeroPhase('plan_ready');
           setProcessing(false);
-        }, buildAbortRef);
+        }, 1400);
         break;
       }
 
@@ -2305,44 +2420,6 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
 
   return (
     <div style={{ width, flexShrink: 0, borderLeft: 'none', backgroundColor: c['background-base'], display: 'flex', flexDirection: 'column' }}>
-      {/* Panel header — Build/Test tabs + collapse */}
-      <div style={{ height: 40, borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', paddingLeft: sp.D, flexShrink: 0 }}>
-        {/* Tabs */}
-        {(['build', 'test'] as const).map(tab => {
-          const active = tab === 'build' ? !project.testMode : project.testMode;
-          return (
-            <button
-              key={tab}
-              onClick={() => setProject(p => ({ ...p, testMode: tab === 'test' }))}
-              style={{
-                height: 40, padding: '0 12px', border: 'none',
-                borderBottom: `2px solid ${active ? c['content-brand'] : 'transparent'}`,
-                background: 'transparent', cursor: 'pointer',
-                fontSize: fs.xs, fontWeight: active ? fw.semibold : fw.medium, fontFamily: ff.primary,
-                color: active ? c['content-brand'] : c['content-secondary'],
-                marginBottom: -1,
-              }}
-            >
-              {tab === 'build' ? 'Build' : 'Test'}
-            </button>
-          );
-        })}
-        <div style={{ flex: 1 }} />
-        {onClose && (
-          <button
-            onClick={onClose}
-            title="Collapse"
-            style={{ width: 24, height: 24, border: 'none', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 4, color: c['content-secondary'], padding: 0 }}
-            onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
-            onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
-          >
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="9,4 13,8 9,12"/>
-              <line x1="3" y1="8" x2="13" y2="8"/>
-            </svg>
-          </button>
-        )}
-      </div>
 
       {/* ── Build tab ─────────────────────────────────────────────────────────── */}
       {!project.testMode && (<>
@@ -2384,6 +2461,44 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
           const prevMsg = idx > 0 ? messages[idx - 1] : null;
           const isAfterWorking = (msg.type === 'response' || msg.type === 'execution') && prevMsg?.type === 'working';
           const isActivePending = msg.pendingAction != null && msg.pendingAction.key === pendingAction?.key;
+
+          if (msg.planData) {
+            const plan = msg.planData;
+            const isLatest = plan.version === planVersion;
+            return (
+              <div key={msg.id} style={{ marginTop: isAfterWorking ? -sp.B : 0, display: 'flex', gap: sp.B, alignItems: 'flex-start' }}>
+                {!isAfterWorking && <AgentAvatar />}
+                {isAfterWorking && <div style={{ width: 28, flexShrink: 0 }} />}
+                <div style={{ flex: 1, minWidth: 0, paddingTop: 2, display: 'flex', flexDirection: 'column', gap: sp.B }}>
+                  {msg.content && (
+                    <p style={{ margin: 0, fontSize: fs.sm, color: c['content-primary'], lineHeight: '20px' }}>{msg.content}</p>
+                  )}
+                  <PlanCard plan={plan} onClick={() => handlePlanCardClick(plan)} />
+                  {isLatest && (
+                    <div style={{ display: 'flex', gap: sp.B }}>
+                      <button
+                        onClick={handleStartBuilding}
+                        style={{ height: 34, padding: `0 ${sp.D}px`, border: 'none', borderRadius: 7, backgroundColor: c['content-brand'], color: 'white', fontSize: fs.xs, fontWeight: fw.semibold, fontFamily: ff.primary, cursor: 'pointer' }}
+                        onMouseEnter={e => (e.currentTarget.style.opacity = '0.88')}
+                        onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
+                      >
+                        Start building →
+                      </button>
+                      <button
+                        onClick={handleEditPlan}
+                        style={{ height: 34, padding: `0 ${sp.D}px`, border: `1px solid ${c['border-default']}`, borderRadius: 7, backgroundColor: 'transparent', color: c['content-primary'], fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, cursor: 'pointer' }}
+                        onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
+                        onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+                      >
+                        Edit the plan
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          }
+
           return (
             <div key={msg.id} style={{ marginTop: isAfterWorking ? -sp.B : 0 }}>
               <MessageBubble
@@ -2402,19 +2517,26 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
         <div ref={messagesEndRef} />
       </div>
 
+      {/* Clarify card — floats above prompt bar during Day Zero clarify phase */}
+      {dayZeroPhase === 'clarify_q1' && (
+        <div style={{ padding: `0 ${sp.C}px`, flexShrink: 0 }}>
+          <DayClarifyCard questions={DAY_ZERO_QUESTIONS} onComplete={handleClarifyComplete} />
+        </div>
+      )}
+
       {/* Prompt bar */}
-      <div style={{ padding: `${sp.B}px ${sp.C}px ${sp.C}px`, borderTop: `1px solid ${c['border-divider']}`, flexShrink: 0 }}>
+      <div style={{ padding: `${sp.B}px ${sp.C}px ${sp.C}px`, flexShrink: 0 }}>
         <PromptBar
           ref={promptBarRef}
           onSubmit={(text, tables) => processText(text, tables)}
-          disabled={isProcessing && project.buildStep !== 'empty'}
+          disabled={(isProcessing && project.buildStep !== 'empty') || dayZeroPhase === 'clarify_q1'}
           isProcessing={isProcessing}
           onStop={() => {
             buildAbortRef.current = true;
             setProcessing(false);
             setMessages(prev => [...prev, { id: `r-${Date.now()}`, type: 'response', content: "Stopped. What would you like to change?" }]);
           }}
-          placeholder="Give me a task. Use '@' to mention tables."
+          placeholder={dayZeroPhase === 'plan_ready' ? "Ask me to change anything in the plan…" : "Give me a task. Use '@' to mention tables."}
           autoFocus
           dropDirection="up"
           compact
@@ -2424,7 +2546,7 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
 
       {/* Disclaimer */}
       <p style={{ textAlign: 'center', fontSize: 11, color: c['content-secondary'], padding: `${sp.A}px ${sp.D}px ${sp.B}px`, margin: 0, lineHeight: '16px' }}>
-        Agent responses should be reviewed. <span style={{ textDecoration: 'underline', cursor: 'pointer' }}>Learn more</span>
+        Spotter responses should be reviewed. <span style={{ textDecoration: 'underline', cursor: 'pointer' }}>Learn more</span>
       </p>
       </>)}
 
@@ -2600,10 +2722,11 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
                         <AgentAvatar working={isAnimating} />
                         <div style={{ flex: 1, minWidth: 0, paddingTop: 2 }}>
                           {!isAnimating && (
-                            <button onClick={() => toggleTestWorking(i)} style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer', background: 'none', border: 'none', padding: 0, fontFamily: ff.primary, marginBottom: msg.workingExpanded ? sp.C : 0 }}>
-                              <span style={{ fontSize: fs.sm, color: c['content-brand'] }}>
-                                {msg.workingExpanded ? '▼' : '▶'} Show work
-                              </span>
+                            <button onClick={() => toggleTestWorking(i)} style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer', background: 'none', border: 'none', padding: 0, fontFamily: ff.primary, marginBottom: msg.workingExpanded ? sp.C : 0 }}>
+                              <span style={{ fontSize: fs.xs, color: c['content-secondary'], fontWeight: fw.medium }}>Show work</span>
+                              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke={c['content-secondary']} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: msg.workingExpanded ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.15s', flexShrink: 0 }}>
+                                <polyline points="2,4 6,8 10,4" />
+                              </svg>
                             </button>
                           )}
                           {(isAnimating || msg.workingExpanded) && (
@@ -2848,58 +2971,178 @@ const SuggestionChips: React.FC<{ suggestions: string[]; onSelect: (s: string) =
   </div>
 );
 
-const ClarifyCard: React.FC<{ question: string; options: string[]; onSelect: (value: string) => void }> = ({ question, options, onSelect }) => {
-  const [selected, setSelected] = React.useState<string | null>(null);
-  const [customValue, setCustomValue] = React.useState('');
-  const handleSelect = (opt: string) => { if (selected) return; setSelected(opt); onSelect(opt); };
-  const handleCustomSubmit = () => {
-    const val = customValue.trim();
-    if (!val || selected) return;
-    setSelected(val);
-    onSelect(val);
+
+// ── Day Zero clarify card ─────────────────────────────────────────────────────
+
+const DAY_ZERO_QUESTIONS = [
+  { question: 'What are you trying to solve for?', options: ['Campaign ROI', 'Ad spend tracking', 'Attribution analysis'] },
+  { question: 'What should I focus on?', options: ['ROI metrics only', 'Ad spend + ROI', 'Full funnel analysis'] },
+];
+
+const navBtnStyleDZ = (disabled: boolean): React.CSSProperties => ({
+  width: 22, height: 22, border: 'none', background: 'transparent', cursor: disabled ? 'default' : 'pointer',
+  display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 4, padding: 0,
+  color: disabled ? c['border-default'] : c['content-secondary'],
+  flexShrink: 0,
+});
+
+const DayClarifyCard: React.FC<{
+  questions: { question: string; options: string[] }[];
+  onComplete: (answers: Record<number, string | null>) => void;
+}> = ({ questions, onComplete }) => {
+  const [step, setStep] = useState(0);
+  const [answers, setAnswers] = useState<Record<number, string | null>>({});
+  const [customExpanded, setCustomExpanded] = useState(false);
+  const [customValue, setCustomValue] = useState('');
+  const customInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => { setCustomExpanded(false); setCustomValue(''); }, [step]);
+  useEffect(() => { if (customExpanded) setTimeout(() => customInputRef.current?.focus(), 50); }, [customExpanded]);
+
+  const advance = (newAnswers: Record<number, string | null>) => {
+    if (step < questions.length - 1) { setStep(s => s + 1); }
+    else { onComplete(newAnswers); }
   };
+
+  const handleSelect = (answer: string) => {
+    const updated = { ...answers, [step]: answer };
+    setAnswers(updated);
+    advance(updated);
+  };
+
+  const handleSkip = () => {
+    const updated = { ...answers, [step]: null };
+    setAnswers(updated);
+    advance(updated);
+  };
+
+  const handleCustomSubmit = () => {
+    const v = customValue.trim();
+    if (!v) return;
+    handleSelect(v);
+  };
+
+  const canGoBack = step > 0;
+  const canGoNext = step < questions.length - 1 && answers[step] !== undefined;
+  const q = questions[step];
+  const currentAnswer = answers[step];
+
   return (
-    <div style={{ marginTop: sp.C, display: 'flex', flexDirection: 'column', gap: sp.B }}>
-      <p style={{ margin: 0, fontSize: fs.sm, fontWeight: fw.medium, color: c['content-primary'], lineHeight: '20px' }}>{question}</p>
-      {options.map(opt => {
-        const isSelected = selected === opt;
-        const isDimmed = !!selected && !isSelected;
-        return (
-          <button key={opt} onClick={() => handleSelect(opt)} disabled={!!selected}
-            style={{
-              textAlign: 'left', border: `1px solid ${isSelected ? c['content-brand'] : c['border-default']}`,
-              borderRadius: 8, padding: `${sp.B}px ${sp.C}px`, fontSize: fs.sm,
-              backgroundColor: isSelected ? c['background-information'] : c['background-base'],
-              color: isDimmed ? c['content-tertiary'] : isSelected ? c['content-brand'] : c['content-primary'],
-              cursor: selected ? 'default' : 'pointer', fontFamily: ff.primary,
-              fontWeight: isSelected ? fw.medium : fw.regular,
-              opacity: isDimmed ? 0.5 : 1, transition: 'all 0.15s',
-            }}
-          >{opt}</button>
-        );
-      })}
-      <div style={{ display: 'flex', gap: sp.B, opacity: selected ? 0.4 : 1, transition: 'opacity 0.15s' }}>
-        <input
-          value={customValue}
-          onChange={e => setCustomValue(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && handleCustomSubmit()}
-          disabled={!!selected}
-          placeholder="Enter your own…"
-          style={{
-            flex: 1, padding: `${sp.B}px ${sp.C}px`, borderRadius: 8,
-            border: `1px solid ${c['border-default']}`, fontSize: fs.sm,
-            fontFamily: ff.primary, color: c['content-primary'],
-            backgroundColor: c['background-base'], outline: 'none',
-          }}
-        />
-        <button onClick={handleCustomSubmit} disabled={!customValue.trim() || !!selected}
-          style={{
-            padding: `${sp.B}px ${sp.C}px`, borderRadius: 8, border: 'none',
-            backgroundColor: customValue.trim() && !selected ? c['content-brand'] : c['border-default'],
-            color: '#fff', fontSize: fs.xs, fontWeight: fw.semibold,
-            fontFamily: ff.primary, cursor: customValue.trim() && !selected ? 'pointer' : 'default',
-          }}
-        >↵</button>
+    <div style={{ border: `1px solid ${c['border-divider']}`, borderRadius: 12, backgroundColor: c['background-base'], marginBottom: sp.C, overflow: 'hidden' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: `${sp.D}px ${sp.D}px ${sp.C}px` }}>
+        <p style={{ margin: 0, fontSize: fs.md, fontWeight: fw.semibold, color: c['content-primary'], lineHeight: '24px', flex: 1, paddingRight: sp.D }}>
+          {q.question}
+        </p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0, paddingTop: 2 }}>
+          <button style={navBtnStyleDZ(!canGoBack)} onClick={() => canGoBack && setStep(s => s - 1)} title="Previous">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="10,4 6,8 10,12"/></svg>
+          </button>
+          <span style={{ fontSize: fs.xs, color: c['content-secondary'], fontFamily: ff.primary, minWidth: 36, textAlign: 'center' }}>
+            {step + 1} of {questions.length}
+          </span>
+          <button style={navBtnStyleDZ(!canGoNext)} onClick={() => canGoNext && setStep(s => s + 1)} title="Next">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6,4 10,8 6,12"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div style={{ borderTop: `1px solid ${c['border-divider']}` }}>
+        {q.options.map((opt, idx) => {
+          const isSelected = currentAnswer === opt;
+          const isLast = idx === q.options.length - 1;
+          return (
+            <div key={opt} onClick={() => handleSelect(opt)}
+              style={{ display: 'flex', alignItems: 'center', gap: sp.C, padding: `${sp.C}px ${sp.D}px`, borderBottom: isLast ? 'none' : `1px solid ${c['border-divider']}`, backgroundColor: isSelected ? c['background-subtle'] : c['background-base'], cursor: 'pointer', transition: 'background-color 0.1s' }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = c['background-subtle']; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = isSelected ? c['background-subtle'] : c['background-base']; }}
+            >
+              <div style={{ width: 26, height: 26, borderRadius: 7, flexShrink: 0, backgroundColor: isSelected ? '#EFF6FF' : c['background-subtle'], border: `1px solid ${isSelected ? '#BFDBFE' : c['border-divider']}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: fw.medium, fontFamily: ff.mono, color: isSelected ? c['content-brand'] : c['content-secondary'] }}>
+                {idx + 1}
+              </div>
+              <span style={{ flex: 1, fontSize: fs.sm, color: c['content-primary'], fontFamily: ff.primary }}>{opt}</span>
+            </div>
+          );
+        })}
+
+        <div style={{ borderTop: `1px solid ${c['border-divider']}` }}>
+          {!customExpanded ? (
+            <div onClick={() => setCustomExpanded(true)}
+              style={{ display: 'flex', alignItems: 'center', gap: sp.C, padding: `${sp.C}px ${sp.D}px`, cursor: 'pointer', backgroundColor: c['background-base'], transition: 'background-color 0.1s' }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = c['background-subtle']; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = c['background-base']; }}
+            >
+              <div style={{ width: 26, height: 26, borderRadius: 7, flexShrink: 0, backgroundColor: c['background-subtle'], border: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <svg width="11" height="11" viewBox="0 0 14 14" fill="none" stroke={c['content-tertiary']} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9.5 1.5L12.5 4.5L4.5 12.5H1.5V9.5L9.5 1.5Z"/></svg>
+              </div>
+              <span style={{ flex: 1, fontSize: fs.sm, color: c['content-tertiary'], fontFamily: ff.primary }}>Something else</span>
+              <button onClick={e => { e.stopPropagation(); handleSkip(); }}
+                style={{ height: 26, padding: `0 ${sp.C}px`, border: `1px solid ${c['border-default']}`, borderRadius: 6, backgroundColor: c['background-base'], cursor: 'pointer', fontSize: fs.xs, fontFamily: ff.primary, color: c['content-secondary'], flexShrink: 0 }}>
+                Skip
+              </button>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, padding: `${sp.B}px ${sp.D}px` }}>
+              <input ref={customInputRef} value={customValue} onChange={e => setCustomValue(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') handleCustomSubmit(); if (e.key === 'Escape') { setCustomExpanded(false); setCustomValue(''); } }}
+                placeholder="Describe in your own words…"
+                style={{ flex: 1, height: 32, padding: `0 ${sp.C}px`, border: `1px solid ${c['border-default']}`, borderRadius: 6, fontSize: fs.sm, fontFamily: ff.primary, color: c['content-primary'], backgroundColor: c['background-base'], outline: `2px solid ${c['content-brand']}`, outlineOffset: -1, boxSizing: 'border-box' }}
+              />
+              <button onClick={handleCustomSubmit} disabled={!customValue.trim()}
+                style={{ height: 32, padding: `0 ${sp.C}px`, border: 'none', borderRadius: 6, backgroundColor: customValue.trim() ? c['content-brand'] : c['background-subtle'], color: customValue.trim() ? 'white' : c['content-tertiary'], cursor: customValue.trim() ? 'pointer' : 'default', fontSize: fs.xs, fontFamily: ff.primary, fontWeight: fw.medium, flexShrink: 0, transition: 'all 0.15s' }}>
+                Submit
+              </button>
+              <button onClick={handleSkip}
+                style={{ height: 32, padding: `0 ${sp.C}px`, border: `1px solid ${c['border-default']}`, borderRadius: 6, backgroundColor: c['background-base'], cursor: 'pointer', fontSize: fs.xs, fontFamily: ff.primary, color: c['content-secondary'], flexShrink: 0 }}>
+                Skip
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ── PlanCard — collapsed plan artifact shown in chat ─────────────────────────
+
+const PlanCard: React.FC<{ plan: PlanData; onClick: () => void }> = ({ plan, onClick }) => {
+  const tableCount = plan.tables.length;
+  const relCount   = plan.relationships.length;
+  const colCount   = plan.columns.filter(col => col.included).length;
+  const qCount     = plan.sampleQuestions.length;
+
+  return (
+    <div
+      onClick={onClick}
+      style={{
+        border: `1px solid ${c['border-default']}`,
+        borderRadius: 10,
+        backgroundColor: c['background-base'],
+        cursor: 'pointer',
+        overflow: 'hidden',
+        transition: 'border-color 0.15s',
+        maxWidth: 460,
+      }}
+      onMouseEnter={e => (e.currentTarget.style.borderColor = c['content-brand'])}
+      onMouseLeave={e => (e.currentTarget.style.borderColor = c['border-default'])}
+    >
+      {/* Header — model name + version */}
+      <div style={{ padding: `${sp.C}px ${sp.D}px ${sp.B}px`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: sp.B }}>
+          <span style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'] }}>{plan.modelName}</span>
+          <span style={{ fontSize: 10, fontWeight: fw.medium, padding: '1px 6px', borderRadius: 4, backgroundColor: c['background-subtle'], color: c['content-secondary'] }}>v{plan.version}</span>
+        </div>
+        <span style={{ fontSize: fs.xs, color: c['content-brand'], fontWeight: fw.medium, flexShrink: 0 }}>View plan →</span>
+      </div>
+      {/* Goal */}
+      <div style={{ padding: `0 ${sp.D}px ${sp.C}px` }}>
+        <p style={{ margin: 0, fontSize: fs.xs, color: c['content-secondary'], lineHeight: '18px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{plan.goal}</p>
+      </div>
+      {/* Stats — tables, relationships, columns only */}
+      <div style={{ padding: `${sp.B}px ${sp.D}px`, borderTop: `1px solid ${c['border-divider']}`, display: 'flex', gap: sp.D }}>
+        {[`${tableCount} tables`, `${relCount} relationships`, `${colCount} columns`].map(stat => (
+          <span key={stat} style={{ fontSize: 11, color: c['content-secondary'], fontWeight: fw.medium }}>{stat}</span>
+        ))}
       </div>
     </div>
   );
@@ -2931,7 +3174,7 @@ const MessageBubble: React.FC<{
             </span>
           </div>
         )}
-        <p style={{ margin: 0, fontSize: fs.sm, color: c['content-primary'], lineHeight: '20px', fontWeight: fw.regular }}>
+        <p style={{ margin: 0, fontSize: fs.sm, color: c['content-primary'], lineHeight: '20px', fontWeight: fw.regular, whiteSpace: 'pre-wrap' }}>
           {msg.content}
         </p>
       </div>
@@ -2954,11 +3197,12 @@ const MessageBubble: React.FC<{
           {allDone && (
             <button
               onClick={() => onToggleSteps(msg.id)}
-              style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer', background: 'none', border: 'none', padding: 0, fontFamily: ff.primary, marginBottom: isCollapsed ? 0 : sp.C }}
+              style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer', background: 'none', border: 'none', padding: 0, fontFamily: ff.primary, marginBottom: isCollapsed ? 0 : sp.C }}
             >
-              <span style={{ fontSize: fs.sm, color: c['content-brand'] }}>
-                {isCollapsed ? '▶' : '▼'} Show work
-              </span>
+              <span style={{ fontSize: fs.xs, color: c['content-secondary'], fontWeight: fw.medium }}>Show work</span>
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke={c['content-secondary']} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)', transition: 'transform 0.15s', flexShrink: 0 }}>
+                <polyline points="2,4 6,8 10,4" />
+              </svg>
             </button>
           )}
 
@@ -2966,64 +3210,51 @@ const MessageBubble: React.FC<{
           {msg.steps && (!allDone || !isCollapsed) && (
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               {msg.steps.filter(s => s.status !== 'pending').map((step, i, visible) => (
-                <div key={i} style={{ display: 'flex', gap: 10, animation: 'ag-step-in 0.22s ease' }}>
+                <div key={i} style={{ display: 'flex', gap: 12, animation: 'ag-step-in 0.22s ease' }}>
 
                   {/* Left: dot + connecting line */}
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 14, flexShrink: 0 }}>
-                    {/* Dot */}
-                    <div style={{ width: 14, height: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 3 }}>
-                      {step.status === 'done'
-                        ? <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#22C55E' }} />
-                        : <Spinner />
-                      }
-                    </div>
-                    {/* Connecting line to next visible step */}
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 10, flexShrink: 0 }}>
+                    <div style={{ width: 10, height: 10, borderRadius: '50%', backgroundColor: c['content-secondary'], opacity: step.status === 'running' ? 1 : 0.4, flexShrink: 0, marginTop: 5 }} />
                     {i < visible.length - 1 && (
-                      <div style={{
-                        flex: 1, width: 2, minHeight: 12, marginTop: 2,
-                        backgroundColor: step.status === 'done' ? '#22C55E' : c['border-divider'],
-                        transition: 'background-color 0.4s ease',
-                        borderRadius: 1,
-                      }} />
+                      <div style={{ flex: 1, width: 1, minHeight: 10, marginTop: 3, backgroundColor: c['border-default'] }} />
                     )}
                   </div>
 
                   {/* Right: step content */}
-                  <div style={{
-                    flex: 1,
-                    paddingBottom: i < visible.length - 1 ? sp.C : 0,
-                  }}>
-                    {/* Label row */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: sp.B }}>
-                      <span
-                        className={step.status === 'running' ? 'ag-gradient-text' : undefined}
-                        style={{
-                          fontSize: fs.sm,
-                          fontWeight: step.status === 'done' ? fw.regular : fw.medium,
-                          lineHeight: '20px',
-                          color: step.status === 'running' ? undefined : c['content-secondary'],
-                        }}
-                      >
-                        {step.label}
-                      </span>
-                    </div>
+                  <div style={{ flex: 1, paddingBottom: i < visible.length - 1 ? sp.D : 0 }}>
+                    <span style={{ fontSize: fs.sm, fontWeight: fw.semibold, lineHeight: '20px', color: c['content-primary'] }}>
+                      {step.label}
+                    </span>
 
-                    {/* Detail — typewriter effect while running, full text when done */}
                     {step.detail && step.status !== 'pending' && (
-                      <p style={{ margin: '2px 0 0', fontSize: fs.xs, color: c['content-secondary'], lineHeight: '18px', whiteSpace: 'pre-line' }}>
+                      <p style={{ margin: '3px 0 0', fontSize: fs.xs, color: c['content-secondary'], lineHeight: '18px', whiteSpace: 'pre-line' }}>
                         <TypewriterText text={step.detail} active={step.status === 'running'} />
                       </p>
                     )}
 
-                    {/* SQL on demand (C-iii) */}
+                    {/* SQL collapsible — card style */}
                     {step.status === 'done' && step.collapsible && (
-                      <div style={{ marginTop: 4 }}>
-                        <button onClick={() => onToggleCollapsible(msg.id, i)}
-                          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: fs.xs, color: c['content-brand'], fontFamily: ff.primary, padding: 0, display: 'flex', alignItems: 'center', gap: 3 }}>
-                          {step.collapsibleOpen ? '▾ Hide SQL' : '▶ View SQL'}
+                      <div style={{ marginTop: sp.B }}>
+                        <button
+                          onClick={() => onToggleCollapsible(msg.id, i)}
+                          style={{ width: '100%', display: 'flex', alignItems: 'center', gap: sp.B, padding: `${sp.B}px ${sp.C}px`, border: `1px solid ${c['border-divider']}`, borderRadius: 6, backgroundColor: c['background-base'], cursor: 'pointer', fontFamily: ff.primary, textAlign: 'left' }}
+                          onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
+                          onMouseLeave={e => (e.currentTarget.style.backgroundColor = c['background-base'])}
+                        >
+                          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke={c['content-secondary']} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                            <rect x="3" y="2" width="10" height="12" rx="1.5" />
+                            <line x1="6" y1="6" x2="10" y2="6" />
+                            <line x1="6" y1="9" x2="10" y2="9" />
+                          </svg>
+                          <span style={{ flex: 1, fontSize: fs.xs, color: c['content-secondary'], fontWeight: fw.medium }}>
+                            {step.collapsibleOpen ? 'Hide SQL' : 'View SQL'}
+                          </span>
+                          <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke={c['content-secondary']} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: step.collapsibleOpen ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.15s', flexShrink: 0 }}>
+                            <polyline points="2,4 6,8 10,4" />
+                          </svg>
                         </button>
                         {step.collapsibleOpen && (
-                          <pre style={{ margin: '4px 0 0', padding: `${sp.B}px ${sp.C}px`, backgroundColor: c['background-subtle'], border: `1px solid ${c['border-divider']}`, borderRadius: 6, fontSize: fs.xs, fontFamily: ff.mono, color: c['content-primary'], overflowX: 'auto', whiteSpace: 'pre' }}>
+                          <pre style={{ margin: '3px 0 0', padding: `${sp.B}px ${sp.C}px`, backgroundColor: c['background-subtle'], border: `1px solid ${c['border-divider']}`, borderRadius: 6, fontSize: fs.xs, fontFamily: ff.mono, color: c['content-primary'], overflowX: 'auto', whiteSpace: 'pre' }}>
                             {step.collapsible}
                           </pre>
                         )}
@@ -3032,6 +3263,16 @@ const MessageBubble: React.FC<{
                   </div>
                 </div>
               ))}
+
+              {/* Duration footer */}
+              {allDone && msg.duration && (
+                <div style={{ display: 'flex', gap: 12, marginTop: sp.B }}>
+                  <div style={{ width: 10, flexShrink: 0 }} />
+                  <span style={{ fontSize: fs.xs, fontWeight: fw.semibold, color: c['content-secondary'] }}>
+                    Worked for {msg.duration}
+                  </span>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -3084,13 +3325,6 @@ const MessageBubble: React.FC<{
           )}
           {msg.suggestions && msg.suggestions.length > 0 && (
             <SuggestionChips suggestions={msg.suggestions} onSelect={onSuggestion} />
-          )}
-          {msg.clarifyCard && (
-            <ClarifyCard
-              question={msg.clarifyCard.question}
-              options={msg.clarifyCard.options}
-              onSelect={val => onChipClick?.(val)}
-            />
           )}
           {msg.interactiveChips && msg.interactiveChips.length > 0 && (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: sp.B, marginTop: sp.C }}>

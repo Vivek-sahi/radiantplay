@@ -38,7 +38,6 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
   const [externalAgentAttachment, setExternalAgentAttachment] = useState<{ type: string; label: string } | null>(null);
   const [externalInputInject, setExternalInputInject] = useState<string | null>(null);
   const [leftPanelOpen,    setLeftPanelOpen]    = useState(false);
-  const [agentPanelOpen,   setAgentPanelOpen]   = useState(true);
   const [selectedColumns,  setSelectedColumns]  = useState<string[]>([]);
   const [cacheModalOpen, setCacheModalOpen] = useState(false);
   const [cacheStatus, setCacheStatus] = useState<'live' | 'caching' | 'cached'>('live');
@@ -252,33 +251,29 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
       {/* Body */}
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
 
-        {/* Agent panel — always mounted so refs survive; hidden via display:none when toggled off */}
-        <div style={{ display: agentPanelOpen ? 'flex' : 'none' }}>
-          <AgentPanel
-            project={project}
-            setProject={setProject}
-            messages={messages}
-            setMessages={setMessages}
-            initialPrompt={initialPrompt}
-            isDayZero={isDayZero}
-            isDbtReview={isDbtReview}
-            onBuildComplete={() => setIsBuilding(false)}
-            externalMessage={externalAgentMessage}
-            onExternalMessageHandled={() => { setExternalAgentMessage(null); setExternalAgentAttachment(null); }}
-            externalMessageAttachment={externalAgentAttachment}
-            injectInput={externalInputInject}
-            onInjectInputHandled={() => setExternalInputInject(null)}
-            width={agentPanelWidth}
-            onClose={() => setAgentPanelOpen(false)}
-            selectedColumns={selectedColumns}
-            onColumnRemove={(name) => setSelectedColumns(prev => prev.filter(c => c !== name))}
-          />
-        </div>
+        {/* Agent panel — always visible */}
+        <AgentPanel
+          project={project}
+          setProject={setProject}
+          messages={messages}
+          setMessages={setMessages}
+          initialPrompt={initialPrompt}
+          isDayZero={isDayZero}
+          isDbtReview={isDbtReview}
+          onBuildComplete={() => setIsBuilding(false)}
+          externalMessage={externalAgentMessage}
+          onExternalMessageHandled={() => { setExternalAgentMessage(null); setExternalAgentAttachment(null); }}
+          externalMessageAttachment={externalAgentAttachment}
+          injectInput={externalInputInject}
+          onInjectInputHandled={() => setExternalInputInject(null)}
+          width={agentPanelWidth}
+          selectedColumns={selectedColumns}
+          onColumnRemove={(name) => setSelectedColumns(prev => prev.filter(c => c !== name))}
+        />
 
-        {/* Drag handle — hidden when agent panel is closed */}
+        {/* Drag handle — invisible resize zone */}
         <div
           onMouseDown={(e) => {
-            if (!agentPanelOpen) return;
             e.preventDefault();
             dragStartX.current = e.clientX;
             dragStartWidth.current = agentPanelWidth;
@@ -286,211 +281,187 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
             document.body.style.userSelect = 'none';
             document.body.style.cursor = 'col-resize';
           }}
-          style={{
-            display: agentPanelOpen ? 'block' : 'none',
-            width: 5,
-            flexShrink: 0,
-            cursor: 'col-resize',
-            position: 'relative',
-            zIndex: 10,
-          }}
-        >
-          {/* Visible line — border-colored normally, blue on hover/active drag */}
-          <div style={{
-            position: 'absolute',
-            top: 0, bottom: 0,
-            left: 2,
-            width: 1,
-            backgroundColor: isDraggingAgent ? '#2770ef' : c['border-divider'],
-            transition: isDraggingAgent ? 'none' : 'background-color 0.15s',
-          }}
-            onMouseEnter={e => { if (!isDraggingAgent) (e.currentTarget as HTMLElement).style.backgroundColor = '#2770ef'; }}
-            onMouseLeave={e => { if (!isDraggingAgent) (e.currentTarget as HTMLElement).style.backgroundColor = c['border-divider']; }}
-          />
-        </div>
+          style={{ width: 5, flexShrink: 0, cursor: 'col-resize' }}
+        />
 
-        {/* Center area — LeftPanel floats as overlay */}
-        <div style={{ flex: 1, overflow: 'hidden', position: 'relative', display: 'flex', flexDirection: 'column' }}>
+        {/* Canvas column — sunken bg, artifact as bordered card */}
+        <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', backgroundColor: c['background-sunken'], padding: '8px 8px 8px 0' }}>
 
-          {/* Artifact identity row */}
-          {(project.buildStep !== 'empty' || !agentPanelOpen) && (
-            <div style={{ height: 48, backgroundColor: c['background-base'], borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', paddingLeft: sp.D, paddingRight: sp.D, gap: sp.C, flexShrink: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, flex: 1, minWidth: 0 }}>
-                <svg width="18" height="18" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <rect x="1" y="1" width="6" height="6" rx="1.5" fill="#2770EF"/>
-                  <rect x="9" y="1" width="6" height="6" rx="1.5" fill="#2770EF" opacity="0.5"/>
-                  <rect x="1" y="9" width="6" height="6" rx="1.5" fill="#2770EF" opacity="0.5"/>
-                  <rect x="9" y="9" width="6" height="6" rx="1.5" fill="#2770EF"/>
-                </svg>
-                <span style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'], overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{project.name}</span>
-                <span style={{ fontSize: 11, fontWeight: fw.medium, color: project.publishedVersion === 0 ? c['content-secondary'] : c['content-brand'], backgroundColor: project.publishedVersion === 0 ? c['background-sunken'] : c['background-information'], border: `1px solid ${project.publishedVersion === 0 ? c['border-default'] : c['border-brand']}`, borderRadius: 4, padding: '1px 6px', flexShrink: 0 }}>
-                  {project.publishedVersion === 0 ? 'Draft' : `v${project.publishedVersion}`}
-                </span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, flexShrink: 0 }}>
-                <button
-                  onClick={() => setShareOpen(true)}
-                  style={{ height: 32, padding: '0 14px', border: `1px solid ${c['border-default']}`, borderRadius: 7, backgroundColor: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', fontSize: fs.sm, fontWeight: fw.medium, fontFamily: ff.primary, color: c['content-primary'], boxSizing: 'border-box' }}
-                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
-                  onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
-                >Share</button>
-                <button
-                  onClick={() => setPublishOpen(true)}
-                  style={{ height: 32, padding: '0 14px', border: 'none', borderRadius: 7, backgroundColor: '#2770EF', cursor: 'pointer', display: 'flex', alignItems: 'center', fontSize: fs.sm, fontWeight: fw.medium, fontFamily: ff.primary, color: '#fff', boxSizing: 'border-box' }}
-                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#1a5fd4')}
-                  onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#2770EF')}
-                >
-                  {project.publishedVersion === 0 ? 'Publish model' : project.hasUnpublishedChanges ? 'Update model' : 'Published'}
-                </button>
-              </div>
-            </div>
-          )}
+          {/* Building skeleton — full canvas, no card border yet */}
+          {isBuilding && <BuildingSkeleton />}
 
-          {/* Artifact tab bar */}
-          {(project.buildStep !== 'empty' || !agentPanelOpen) && (
-            <div style={{ height: 40, backgroundColor: c['background-base'], borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', paddingLeft: sp.D, paddingRight: sp.D, gap: sp.B, flexShrink: 0 }}>
+          {/* Artifact card — appears when built */}
+          {!isBuilding && project.buildStep !== 'empty' && (
+            <div style={{ flex: 1, overflow: 'hidden', backgroundColor: c['background-base'], border: `1px solid ${c['border-divider']}`, borderRadius: 10, display: 'flex', flexDirection: 'column' }}>
 
-              {/* Agent reopen — left side */}
-              {!agentPanelOpen && (
-                <button
-                  onClick={() => setAgentPanelOpen(true)}
-                  style={{ height: 28, padding: '0 10px', gap: 6, border: `1px solid ${c['border-default']}`, borderRadius: 6, backgroundColor: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, color: c['content-secondary'], boxSizing: 'border-box', flexShrink: 0 }}
-                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
-                  onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
-                >
-                  <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor">
-                    <path d="M8 1.5 L9.1 6.4 L14.5 8 L9.1 9.6 L8 14.5 L6.9 9.6 L1.5 8 L6.9 6.4 Z"/>
+              {/* Identity row */}
+              <div style={{ height: 48, borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', paddingLeft: sp.D, paddingRight: sp.D, gap: sp.C, flexShrink: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, flex: 1, minWidth: 0 }}>
+                  <svg width="18" height="18" viewBox="0 0 16 16" fill="none">
+                    <rect x="1" y="1" width="6" height="6" rx="1.5" fill="#2770EF"/>
+                    <rect x="9" y="1" width="6" height="6" rx="1.5" fill="#2770EF" opacity="0.5"/>
+                    <rect x="1" y="9" width="6" height="6" rx="1.5" fill="#2770EF" opacity="0.5"/>
+                    <rect x="9" y="9" width="6" height="6" rx="1.5" fill="#2770EF"/>
                   </svg>
-                  Data Agent
-                </button>
-              )}
-
-              {/* Data panel toggle */}
-              <button
-                title="Data panel"
-                onClick={() => setLeftPanelOpen(o => !o)}
-                disabled={isBuilding}
-                style={{ height: 28, padding: '0 10px', gap: 6, border: `1px solid ${leftPanelOpen ? c['border-brand'] : c['border-default']}`, borderRadius: 6, backgroundColor: leftPanelOpen ? c['background-information'] : 'transparent', cursor: isBuilding ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, color: leftPanelOpen ? c['content-brand'] : c['content-secondary'], boxSizing: 'border-box', flexShrink: 0, opacity: isBuilding ? 0.4 : 1 }}
-              >
-                <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-                  <rect x="1" y="1" width="14" height="14" rx="2" />
-                  <line x1="5" y1="1" x2="5" y2="15" />
-                </svg>
-                Data
-              </button>
-
-              {/* Separator */}
-              <div style={{ width: 1, height: 16, backgroundColor: c['border-divider'], flexShrink: 0 }} />
-
-              {/* View tabs — underline style */}
-              {(['columns', 'tables', 'preview', 'notebook'] as ProjectState['activeTab'][]).map(id => {
-                const label = id === 'columns' ? 'Columns' : id === 'tables' ? 'Tables' : id === 'preview' ? 'Preview' : 'Notebook';
-                const active = project.activeTab === id;
-                return (
+                  <span style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'], overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{project.name}</span>
+                  <span style={{ fontSize: 11, fontWeight: fw.medium, color: project.publishedVersion === 0 ? c['content-secondary'] : c['content-brand'], backgroundColor: project.publishedVersion === 0 ? c['background-sunken'] : c['background-information'], border: `1px solid ${project.publishedVersion === 0 ? c['border-default'] : c['border-brand']}`, borderRadius: 4, padding: '1px 6px', flexShrink: 0 }}>
+                    {project.publishedVersion === 0 ? 'Draft' : `v${project.publishedVersion}`}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, flexShrink: 0 }}>
                   <button
-                    key={id}
-                    onClick={() => setProject(p => ({ ...p, activeTab: id }))}
-                    style={{
-                      height: 40,
-                      padding: '0 12px',
-                      border: 'none',
-                      borderBottom: active ? `2px solid ${c['content-brand']}` : '2px solid transparent',
-                      borderRadius: 0,
-                      cursor: 'pointer',
-                      flexShrink: 0,
-                      backgroundColor: 'transparent',
-                      color: active ? c['content-brand'] : c['content-secondary'],
-                      fontFamily: ff.primary,
-                      fontSize: fs.sm,
-                      fontWeight: active ? fw.semibold : fw.medium,
-                      boxSizing: 'border-box',
-                      marginBottom: -1,
-                      whiteSpace: 'nowrap',
-                    }}
-                    onMouseEnter={e => { if (!active) e.currentTarget.style.color = c['content-primary']; }}
-                    onMouseLeave={e => { if (!active) e.currentTarget.style.color = c['content-secondary']; }}
+                    onClick={() => setShareOpen(true)}
+                    style={{ height: 30, padding: '0 12px', gap: 6, border: `1px solid ${c['border-default']}`, borderRadius: 7, backgroundColor: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, color: c['content-primary'], boxSizing: 'border-box' }}
+                    onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
+                    onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
                   >
-                    {label}
+                    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="3" r="1.5" fill="currentColor" stroke="none"/>
+                      <circle cx="4" cy="8" r="1.5" fill="currentColor" stroke="none"/>
+                      <circle cx="12" cy="13" r="1.5" fill="currentColor" stroke="none"/>
+                      <line x1="4" y1="8" x2="10.5" y2="3.7"/>
+                      <line x1="4" y1="8" x2="10.5" y2="12.3"/>
+                    </svg>
+                    Share
                   </button>
-                );
-              })}
+                  <button
+                    onClick={() => setPublishOpen(true)}
+                    style={{ height: 30, padding: '0 12px', gap: 6, border: 'none', borderRadius: 7, backgroundColor: '#2770EF', cursor: 'pointer', display: 'flex', alignItems: 'center', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, color: '#fff', boxSizing: 'border-box' }}
+                    onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#1a5fd4')}
+                    onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#2770EF')}
+                  >
+                    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M8 2v9"/><polyline points="4,6 8,2 12,6"/><path d="M3 12h10"/>
+                    </svg>
+                    {project.publishedVersion === 0 ? 'Publish model' : project.hasUnpublishedChanges ? 'Update model' : 'Published'}
+                  </button>
+                  <button
+                    onClick={onBack}
+                    title="Close artifact"
+                    style={{ width: 28, height: 28, border: 'none', borderRadius: 6, backgroundColor: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: c['content-secondary'], marginLeft: sp.A }}
+                    onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
+                    onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+                  >
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M1.5 1.5l9 9M10.5 1.5l-9 9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
+                  </button>
+                </div>
+              </div>
 
-              {/* Right-side controls */}
-              <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: sp.B }}>
-
-                {/* Columns-specific controls — only shown when columns view is active */}
-                {project.activeTab === 'columns' && (
-                  <>
-                    {/* dbt indicators */}
-                    {project.projectSource === 'dbt' && (
-                      <>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '2px 8px', borderRadius: 6, background: '#F0FDF4', border: '1px solid #BBF7D0', fontSize: 11, color: '#166534', fontWeight: fw.medium, flexShrink: 0 }}>
-                          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="#22C55E" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M14 8a6 6 0 01-9.17 5.08"/>
-                            <path d="M2 8a6 6 0 019.17-5.08"/>
-                            <polyline points="14,5 14,8 11,8"/>
-                            <polyline points="2,11 2,8 5,8"/>
-                          </svg>
-                          Synced
-                        </div>
-                        {dbtIssueCount > 0 && (
-                          <button
-                            onClick={() => setShowIssuesOnly(o => !o)}
-                            style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 6, background: showIssuesOnly ? '#FEE2E2' : '#FEF2F2', border: '1px solid #FECACA', fontSize: 11, color: '#B91C1C', fontWeight: fw.medium, cursor: 'pointer', fontFamily: ff.primary, flexShrink: 0 }}
-                          >
-                            ⚠ {dbtIssueCount} {dbtIssueCount === 1 ? 'issue' : 'issues'}
-                          </button>
-                        )}
-                        <div style={{ width: 1, height: 16, backgroundColor: c['border-divider'], flexShrink: 0 }} />
-                      </>
+              {/* Tab bar */}
+              <div style={{ height: 40, borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', paddingLeft: sp.D, paddingRight: sp.D, gap: sp.B, flexShrink: 0 }}>
+                <button
+                  title="Data panel"
+                  onClick={() => setLeftPanelOpen(o => !o)}
+                  style={{ height: 28, padding: '0 10px', gap: 6, border: `1px solid ${leftPanelOpen ? c['border-brand'] : c['border-default']}`, borderRadius: 6, backgroundColor: leftPanelOpen ? c['background-information'] : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, color: leftPanelOpen ? c['content-brand'] : c['content-secondary'], boxSizing: 'border-box', flexShrink: 0 }}
+                >
+                  <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+                    <rect x="1" y="1" width="14" height="14" rx="2"/><line x1="5" y1="1" x2="5" y2="15"/>
+                  </svg>
+                  Data
+                </button>
+                <div style={{ width: 1, height: 16, backgroundColor: c['border-divider'], flexShrink: 0 }} />
+                {(['columns', 'tables', 'preview', 'notebook'] as ProjectState['activeTab'][]).map(id => {
+                  const active = project.activeTab === id;
+                  const label = id === 'columns' ? 'Columns' : id === 'tables' ? 'Tables' : id === 'preview' ? 'Preview' : 'Notebook';
+                  return (
+                    <button key={id} onClick={() => setProject(p => ({ ...p, activeTab: id }))}
+                      style={{ height: 40, padding: '0 12px', border: 'none', borderBottom: active ? `2px solid ${c['content-brand']}` : '2px solid transparent', borderRadius: 0, cursor: 'pointer', flexShrink: 0, backgroundColor: 'transparent', color: active ? c['content-brand'] : c['content-secondary'], fontFamily: ff.primary, fontSize: fs.sm, fontWeight: active ? fw.semibold : fw.medium, boxSizing: 'border-box', marginBottom: -1, whiteSpace: 'nowrap' }}
+                      onMouseEnter={e => { if (!active) e.currentTarget.style.color = c['content-primary']; }}
+                      onMouseLeave={e => { if (!active) e.currentTarget.style.color = c['content-secondary']; }}
+                    >{label}</button>
+                  );
+                })}
+                <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: sp.B }}>
+                  <div style={{ width: 1, height: 16, backgroundColor: c['border-divider'], flexShrink: 0 }} />
+                  <button
+                    style={{ height: 28, padding: '0 10px', gap: 5, border: 'none', borderRadius: 6, backgroundColor: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, color: c['content-secondary'], flexShrink: 0 }}
+                    onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
+                    onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+                  >
+                    <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><polygon points="3,2 13,8 3,14"/></svg>
+                    Test
+                  </button>
+                  <button
+                    onClick={() => setCacheModalOpen(true)}
+                    style={{ height: 28, padding: '0 10px', gap: 5, border: `1px solid ${cacheStatus === 'cached' ? '#BBF7D0' : c['border-default']}`, borderRadius: 6, backgroundColor: cacheStatus === 'cached' ? '#F0FDF4' : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, color: cacheStatus === 'cached' ? '#166534' : c['content-secondary'], boxSizing: 'border-box', flexShrink: 0 }}
+                    onMouseEnter={e => { if (cacheStatus !== 'cached') e.currentTarget.style.backgroundColor = c['background-subtle']; }}
+                    onMouseLeave={e => { if (cacheStatus !== 'cached') e.currentTarget.style.backgroundColor = 'transparent'; }}
+                  >
+                    {cacheStatus === 'caching' ? (
+                      <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" style={{ animation: 'ds-cache-spin 1s linear infinite', flexShrink: 0 }}>
+                        <path d="M14 8a6 6 0 01-9.17 5.08"/><path d="M2 8a6 6 0 019.17-5.08"/>
+                      </svg>
+                    ) : (
+                      <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+                        <ellipse cx="8" cy="4" rx="6" ry="2"/><path d="M2 4v4c0 1.1 2.686 2 6 2s6-.9 6-2V4"/><path d="M2 8v4c0 1.1 2.686 2 6 2s6-.9 6-2V8"/>
+                      </svg>
                     )}
+                    {cacheStatus === 'live' ? 'Live' : cacheStatus === 'caching' ? 'Caching…' : 'Cached'}
+                  </button>
+                  <button
+                    onClick={() => setQualityModalOpen(true)}
+                    style={{ height: 28, padding: '0 10px', gap: 5, border: `1px solid ${project.buildStep === 'healthy' ? '#BBF7D0' : '#FECACA'}`, borderRadius: 6, backgroundColor: project.buildStep === 'healthy' ? '#F0FDF4' : '#FEF2F2', cursor: 'pointer', display: 'flex', alignItems: 'center', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, color: project.buildStep === 'healthy' ? '#166534' : '#B91C1C', boxSizing: 'border-box', flexShrink: 0 }}
+                    onMouseEnter={e => (e.currentTarget.style.opacity = '0.85')}
+                    onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
+                  >
+                    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M8 2L14 14H2L8 2z"/><line x1="8" y1="7" x2="8" y2="10"/><circle cx="8" cy="12.5" r="0.5" fill="currentColor"/>
+                    </svg>
+                    {project.buildStep === 'healthy' ? '9 resolved' : '9 issues'}
+                  </button>
+                </div>
+              </div>
 
-                    {/* Column count */}
-                    <span style={{ fontSize: fs.xs, color: c['content-secondary'], whiteSpace: 'nowrap', flexShrink: 0 }}>
-                      {totalColCount} {totalColCount === 1 ? 'column' : 'columns'}
-                    </span>
-
-                    {/* Search — inline expandable */}
+              {/* Columns sub-row — columns tab only */}
+              {project.activeTab === 'columns' && (
+                <div style={{ height: 36, borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', paddingLeft: sp.D, paddingRight: sp.D, gap: sp.B, flexShrink: 0 }}>
+                  {project.projectSource === 'dbt' && (
+                    <>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '2px 8px', borderRadius: 6, background: '#F0FDF4', border: '1px solid #BBF7D0', fontSize: 11, color: '#166534', fontWeight: fw.medium, flexShrink: 0 }}>
+                        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="#22C55E" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M14 8a6 6 0 01-9.17 5.08"/><path d="M2 8a6 6 0 019.17-5.08"/>
+                          <polyline points="14,5 14,8 11,8"/><polyline points="2,11 2,8 5,8"/>
+                        </svg>
+                        Synced
+                      </div>
+                      {dbtIssueCount > 0 && (
+                        <button onClick={() => setShowIssuesOnly(o => !o)}
+                          style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 6, background: showIssuesOnly ? '#FEE2E2' : '#FEF2F2', border: '1px solid #FECACA', fontSize: 11, color: '#B91C1C', fontWeight: fw.medium, cursor: 'pointer', fontFamily: ff.primary, flexShrink: 0 }}
+                        >⚠ {dbtIssueCount} {dbtIssueCount === 1 ? 'issue' : 'issues'}</button>
+                      )}
+                      <div style={{ width: 1, height: 16, backgroundColor: c['border-divider'], flexShrink: 0 }} />
+                    </>
+                  )}
+                  <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: sp.B }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
                       {searchOpen && (
-                        <input
-                          autoFocus
-                          value={search}
-                          onChange={e => setSearch(e.target.value)}
+                        <input autoFocus value={search} onChange={e => setSearch(e.target.value)}
                           onKeyDown={e => { if (e.key === 'Escape') { setSearchOpen(false); setSearch(''); } }}
                           placeholder="Search columns…"
-                          style={{ width: 176, height: 26, border: `1px solid ${c['border-default']}`, borderRadius: 6, padding: '0 8px', fontSize: fs.xs, fontFamily: ff.primary, color: c['content-primary'], outline: 'none', backgroundColor: c['background-base'], boxSizing: 'border-box', transition: 'width 0.15s' }}
+                          style={{ width: 176, height: 26, border: `1px solid ${c['border-default']}`, borderRadius: 6, padding: '0 8px', fontSize: fs.xs, fontFamily: ff.primary, color: c['content-primary'], outline: 'none', backgroundColor: c['background-base'], boxSizing: 'border-box' }}
                           onFocus={e => (e.currentTarget.style.borderColor = c['border-brand'])}
                           onBlur={e => (e.currentTarget.style.borderColor = c['border-default'])}
                         />
                       )}
-                      <button
-                        title="Search columns"
+                      <button title="Search columns"
                         onClick={() => { if (searchOpen) { setSearchOpen(false); setSearch(''); } else setSearchOpen(true); }}
                         style={{ width: 28, height: 28, border: 'none', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, backgroundColor: searchOpen ? c['background-information'] : 'transparent', color: searchOpen ? c['content-brand'] : c['content-secondary'] }}
                         onMouseEnter={e => { if (!searchOpen) e.currentTarget.style.backgroundColor = c['background-subtle']; }}
                         onMouseLeave={e => { if (!searchOpen) e.currentTarget.style.backgroundColor = 'transparent'; }}
                       >
                         <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-                          <circle cx="6.5" cy="6.5" r="4.5"/>
-                          <line x1="10.5" y1="10.5" x2="14" y2="14"/>
+                          <circle cx="6.5" cy="6.5" r="4.5"/><line x1="10.5" y1="10.5" x2="14" y2="14"/>
                         </svg>
                       </button>
                     </div>
-
-                    {/* Properties — column visibility popover */}
                     <div style={{ position: 'relative' }} ref={colVisRef}>
-                      <button
-                        title="Column properties"
-                        onClick={() => setColVisOpen(o => !o)}
+                      <button title="Column properties" onClick={() => setColVisOpen(o => !o)}
                         style={{ width: 28, height: 28, border: 'none', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, backgroundColor: colVisOpen ? c['background-information'] : 'transparent', color: colVisOpen ? c['content-brand'] : c['content-secondary'] }}
                         onMouseEnter={e => { if (!colVisOpen) e.currentTarget.style.backgroundColor = c['background-subtle']; }}
                         onMouseLeave={e => { if (!colVisOpen) e.currentTarget.style.backgroundColor = 'transparent'; }}
                       >
                         <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-                          <line x1="2" y1="4" x2="14" y2="4"/>
-                          <line x1="2" y1="8" x2="14" y2="8"/>
-                          <line x1="2" y1="12" x2="14" y2="12"/>
+                          <line x1="2" y1="4" x2="14" y2="4"/><line x1="2" y1="8" x2="14" y2="8"/><line x1="2" y1="12" x2="14" y2="12"/>
                           <circle cx="5" cy="4" r="1.5" fill="currentColor" stroke="none"/>
                           <circle cx="10" cy="8" r="1.5" fill="currentColor" stroke="none"/>
                           <circle cx="7" cy="12" r="1.5" fill="currentColor" stroke="none"/>
@@ -501,90 +472,20 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
                           <div style={{ fontSize: fs.xs, fontWeight: fw.medium, color: c['content-secondary'], textTransform: 'uppercase', letterSpacing: '0.02em', marginBottom: sp.A }}>Default visible</div>
                           {DEFAULT_VISIBLE_COLS.map(key => (
                             <div key={key} style={{ padding: '2px 0' }}>
-                              <Checkbox
-                                checked={visibleCols.has(key)}
-                                label={COL_LABELS[key]}
-                                onChange={() => { const s = new Set(visibleCols); s.has(key) ? s.delete(key) : s.add(key); setVisibleCols(s); }}
-                              />
+                              <Checkbox checked={visibleCols.has(key)} label={COL_LABELS[key]} onChange={() => { const s = new Set(visibleCols); s.has(key) ? s.delete(key) : s.add(key); setVisibleCols(s); }} />
                             </div>
                           ))}
                           <div style={{ height: 1, backgroundColor: c['border-divider'], margin: `${sp.B}px 0` }} />
                           <div style={{ fontSize: fs.xs, fontWeight: fw.medium, color: c['content-secondary'], textTransform: 'uppercase', letterSpacing: '0.02em', marginBottom: sp.A }}>Advanced</div>
                           {ADVANCED_COLS.map(({ key, label }) => (
                             <div key={key} style={{ padding: '2px 0' }}>
-                              <Checkbox
-                                checked={visibleCols.has(key)}
-                                label={label}
-                                onChange={() => { const s = new Set(visibleCols); s.has(key) ? s.delete(key) : s.add(key); setVisibleCols(s); }}
-                              />
+                              <Checkbox checked={visibleCols.has(key)} label={label} onChange={() => { const s = new Set(visibleCols); s.has(key) ? s.delete(key) : s.add(key); setVisibleCols(s); }} />
                             </div>
                           ))}
                         </div>
                       )}
                     </div>
-
-                    {/* Separator before action buttons */}
-                    {project.buildStep !== 'empty' && !isBuilding && (
-                      <div style={{ width: 1, height: 16, backgroundColor: c['border-divider'], flexShrink: 0 }} />
-                    )}
-                  </>
-                )}
-
-                {/* Action buttons — Test, Live query, Quality issues, Settings */}
-                {project.buildStep !== 'empty' && !isBuilding && (
-                  <>
-                    {/* Test — stub */}
-                    <button
-                      title="Test"
-                      style={{ width: 28, height: 28, border: 'none', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, backgroundColor: 'transparent', color: c['content-secondary'] }}
-                      onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
-                      onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
-                    >
-                      <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor">
-                        <polygon points="3,2 13,8 3,14"/>
-                      </svg>
-                    </button>
-
-                    {/* Live query compact */}
-                    <button
-                      onClick={() => setCacheModalOpen(true)}
-                      style={{ height: 28, padding: '0 10px', gap: 5, border: `1px solid ${cacheStatus === 'cached' ? '#BBF7D0' : c['border-default']}`, borderRadius: 6, backgroundColor: cacheStatus === 'cached' ? '#F0FDF4' : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, color: cacheStatus === 'cached' ? '#166534' : c['content-secondary'], boxSizing: 'border-box', flexShrink: 0 }}
-                      onMouseEnter={e => { if (cacheStatus !== 'cached') e.currentTarget.style.backgroundColor = c['background-subtle']; }}
-                      onMouseLeave={e => { if (cacheStatus !== 'cached') e.currentTarget.style.backgroundColor = 'transparent'; }}
-                    >
-                      {cacheStatus === 'caching' ? (
-                        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" style={{ animation: 'ds-cache-spin 1s linear infinite', flexShrink: 0 }}>
-                          <path d="M14 8a6 6 0 01-9.17 5.08"/>
-                          <path d="M2 8a6 6 0 019.17-5.08"/>
-                        </svg>
-                      ) : (
-                        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-                          <ellipse cx="8" cy="4" rx="6" ry="2"/>
-                          <path d="M2 4v4c0 1.1 2.686 2 6 2s6-.9 6-2V4"/>
-                          <path d="M2 8v4c0 1.1 2.686 2 6 2s6-.9 6-2V8"/>
-                        </svg>
-                      )}
-                      {cacheStatus === 'live' ? 'Live' : cacheStatus === 'caching' ? 'Caching…' : 'Cached'}
-                    </button>
-
-                    {/* Quality issues compact */}
-                    <button
-                      onClick={() => setQualityModalOpen(true)}
-                      style={{ height: 28, padding: '0 10px', gap: 5, border: `1px solid ${project.buildStep === 'healthy' ? '#BBF7D0' : '#FECACA'}`, borderRadius: 6, backgroundColor: project.buildStep === 'healthy' ? '#F0FDF4' : '#FEF2F2', cursor: 'pointer', display: 'flex', alignItems: 'center', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, color: project.buildStep === 'healthy' ? '#166534' : '#B91C1C', boxSizing: 'border-box', flexShrink: 0 }}
-                      onMouseEnter={e => (e.currentTarget.style.opacity = '0.85')}
-                      onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
-                    >
-                      <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M8 2L14 14H2L8 2z"/>
-                        <line x1="8" y1="7" x2="8" y2="10"/>
-                        <circle cx="8" cy="12.5" r="0.5" fill="currentColor"/>
-                      </svg>
-                      {project.buildStep === 'healthy' ? '9 resolved' : '9 issues'}
-                    </button>
-
-                    {/* Settings — stub */}
-                    <button
-                      title="Settings"
+                    <button title="Settings"
                       style={{ width: 28, height: 28, border: 'none', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, backgroundColor: 'transparent', color: c['content-secondary'] }}
                       onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
                       onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
@@ -594,27 +495,24 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
                         <path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41"/>
                       </svg>
                     </button>
-                  </>
-                )}
+                  </div>
+                </div>
+              )}
 
+              {/* Content */}
+              <div style={{ flex: 1, overflow: 'hidden' }}>
+                <CenterPanel project={project} setProject={setProject} onSendToAgent={(msg) => setExternalAgentMessage(msg)} onInjectToAgent={(text) => setExternalInputInject(text)} selectedColumns={selectedColumns} onToggleColumn={(name) => setSelectedColumns(prev => prev.includes(name) ? prev.filter(c => c !== name) : [...prev, name])} onClearColumns={() => setSelectedColumns([])} search={search} visibleCols={visibleCols} showIssuesOnly={showIssuesOnly} />
               </div>
             </div>
-          )}
-
-          {isBuilding ? (
-            <BuildingSkeleton />
-          ) : (
-            <CenterPanel project={project} setProject={setProject} onSendToAgent={(msg) => setExternalAgentMessage(msg)} onInjectToAgent={(text) => { setExternalInputInject(text); setAgentPanelOpen(true); }} selectedColumns={selectedColumns} onToggleColumn={(name) => { setSelectedColumns(prev => prev.includes(name) ? prev.filter(c => c !== name) : [...prev, name]); setAgentPanelOpen(true); }} onClearColumns={() => setSelectedColumns([])} search={search} visibleCols={visibleCols} showIssuesOnly={showIssuesOnly} />
           )}
 
           {/* Left panel overlay */}
           {leftPanelOpen && !isBuilding && (
             <>
-              <div
-                onClick={() => setLeftPanelOpen(false)}
-                style={{ position: 'fixed', top: 136, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.04)', zIndex: 40 }}
+              <div onClick={() => setLeftPanelOpen(false)}
+                style={{ position: 'fixed', top: 144 + (project.activeTab === 'columns' ? 36 : 0), left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.04)', zIndex: 40 }}
               />
-              <div style={{ position: 'fixed', left: 0, top: 136, bottom: 0, zIndex: 50, boxShadow: '1px 0 4px rgba(29,35,47,0.06)', clipPath: 'inset(0 -20px 0 0)', animation: 'ds-reveal 0.18s ease-out' }}>
+              <div style={{ position: 'fixed', left: 0, top: 144 + (project.activeTab === 'columns' ? 36 : 0), bottom: 0, zIndex: 50, boxShadow: '1px 0 4px rgba(29,35,47,0.06)', clipPath: 'inset(0 -20px 0 0)', animation: 'ds-reveal 0.18s ease-out' }}>
                 <LeftPanel project={project} setProject={setProject} onSendToAgent={(msg) => { setExternalAgentMessage(msg); setLeftPanelOpen(false); }} />
               </div>
             </>
