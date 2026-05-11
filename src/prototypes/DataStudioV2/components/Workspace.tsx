@@ -64,8 +64,8 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
       name: 'Data quality plan',
       onClick: () => setQualityPlanOpen(true),
       actions: [
-        { label: 'Apply fixes', onClick: handleQualityApplyFixes },
-        { label: 'Edit plan', onClick: handleQualityEditPlan },
+        { label: 'Apply fixes', onClick: () => { setQualityPlanOpen(false); setExternalAgentMessage('yes'); } },
+        { label: 'Edit plan', onClick: () => { setQualityPlanOpen(false); setExternalInputInject('Edit the quality plan — '); } },
       ],
     }] : []),
     ...(project.buildStep !== 'empty' ? [{
@@ -73,7 +73,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
       name: project.name,
       onClick: () => setQualityPlanOpen(false),
     }] : []),
-  ], [planMsg, project.buildStep, project.name, qualityPlanOpen]);
+  ], [planMsg, project.buildStep, project.name]);
 
   const contextTables = useMemo(() => planMsg?.planData?.tables.map(t => t.name) ?? [], [planMsg]);
   const contextSkills = useMemo(() => project.buildStep !== 'empty' ? ['create-data-model'] : [], [project.buildStep]);

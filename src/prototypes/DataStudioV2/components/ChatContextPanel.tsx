@@ -16,6 +16,25 @@ interface ChatContextPanelProps {
   onNavigateToTable?: (tableName: string) => void;
 }
 
+// Inline SVGs for icons not in the Radiant registry
+
+const DocIcon: React.FC<{ color?: string }> = ({ color = 'currentColor' }) => (
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0 }}>
+    <rect x="2" y="1" width="10" height="12" rx="1.5" stroke={color} strokeWidth="1.4" fill="none"/>
+    <line x1="4.5" y1="4.5" x2="9.5" y2="4.5" stroke={color} strokeWidth="1.1" strokeLinecap="round"/>
+    <line x1="4.5" y1="7" x2="9.5" y2="7" stroke={color} strokeWidth="1.1" strokeLinecap="round"/>
+    <line x1="4.5" y1="9.5" x2="7.5" y2="9.5" stroke={color} strokeWidth="1.1" strokeLinecap="round"/>
+  </svg>
+);
+
+const TableIcon: React.FC<{ color?: string }> = ({ color = 'currentColor' }) => (
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0 }}>
+    <rect x="1" y="1" width="12" height="12" rx="1.5" stroke={color} strokeWidth="1.3" fill="none"/>
+    <line x1="1" y1="4.5" x2="13" y2="4.5" stroke={color} strokeWidth="1.1"/>
+    <line x1="5" y1="4.5" x2="5" y2="13" stroke={color} strokeWidth="1.1"/>
+  </svg>
+);
+
 const ModelIcon: React.FC = () => (
   <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0 }}>
     <rect x="0.5" y="0.5" width="5.5" height="5.5" rx="1.2" fill="#2770EF" />
@@ -56,6 +75,8 @@ const ChatContextPanel: React.FC<ChatContextPanelProps> = ({ created, tables, sk
   const [hoveredTable, setHoveredTable] = useState<number | null>(null);
   const [hoveredCreated, setHoveredCreated] = useState<number | null>(null);
 
+  const secondaryColor = c['content-secondary'];
+
   return (
     <div style={{
       width: 280, flexShrink: 0,
@@ -70,7 +91,7 @@ const ChatContextPanel: React.FC<ChatContextPanelProps> = ({ created, tables, sk
       {createdOpen && (
         <div style={{ padding: `0 ${sp.C}px ${sp.C}px`, display: 'flex', flexDirection: 'column' }}>
           {created.length === 0 ? (
-            <span style={{ fontSize: fs.sm, color: c['content-secondary'], padding: `2px ${sp.B}px` }}>Nothing created yet.</span>
+            <span style={{ fontSize: fs.sm, color: secondaryColor, padding: `2px ${sp.B}px` }}>Nothing created yet.</span>
           ) : created.map((item, i) => (
             <div key={i}>
               <div
@@ -87,13 +108,15 @@ const ChatContextPanel: React.FC<ChatContextPanelProps> = ({ created, tables, sk
               >
                 {item.type === 'model' ? (
                   <ModelIcon />
+                ) : item.type === 'quality-plan' ? (
+                  <DocIcon color="#D97706" />
                 ) : (
-                  <Icon name="doc" size="s" color={item.type === 'quality-plan' ? '#D97706' : c['content-secondary']} />
+                  <DocIcon color={secondaryColor} />
                 )}
                 <span style={{ fontSize: fs.sm, color: c['content-primary'], flex: 1 }}>{item.name}</span>
               </div>
               {item.actions && item.actions.length > 0 && (
-                <div style={{ paddingLeft: 28, display: 'flex', gap: 6, marginBottom: 4 }}>
+                <div style={{ paddingLeft: 28, display: 'flex', gap: sp.C, paddingBottom: 4 }}>
                   {item.actions.map((action, ai) => (
                     <button
                       key={ai}
@@ -101,7 +124,7 @@ const ChatContextPanel: React.FC<ChatContextPanelProps> = ({ created, tables, sk
                       style={{
                         background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0',
                         fontSize: fs.xs, color: c['content-brand'], fontFamily: ff.primary,
-                        fontWeight: fw.medium, textDecoration: 'none',
+                        fontWeight: fw.medium,
                       }}
                       onMouseEnter={e => (e.currentTarget.style.textDecoration = 'underline')}
                       onMouseLeave={e => (e.currentTarget.style.textDecoration = 'none')}
@@ -124,12 +147,12 @@ const ChatContextPanel: React.FC<ChatContextPanelProps> = ({ created, tables, sk
       {contextOpen && (
         <div style={{ padding: `0 ${sp.C}px ${sp.C}px`, display: 'flex', flexDirection: 'column', gap: sp.C }}>
           {tables.length === 0 && skills.length === 0 ? (
-            <span style={{ fontSize: fs.sm, color: c['content-secondary'], padding: `2px ${sp.B}px` }}>No context used yet.</span>
+            <span style={{ fontSize: fs.sm, color: secondaryColor, padding: `2px ${sp.B}px` }}>No context used yet.</span>
           ) : (
             <>
               {tables.length > 0 && (
                 <div>
-                  <div style={{ fontSize: fs.xs, color: c['content-secondary'], fontWeight: fw.medium, padding: `0 ${sp.B}px`, marginBottom: 2 }}>Tables</div>
+                  <div style={{ fontSize: fs.xs, color: secondaryColor, fontWeight: fw.medium, padding: `0 ${sp.B}px`, marginBottom: 2 }}>Tables</div>
                   {tables.map((t, i) => (
                     <div
                       key={i}
@@ -142,7 +165,7 @@ const ChatContextPanel: React.FC<ChatContextPanelProps> = ({ created, tables, sk
                         transition: 'background-color 0.1s ease',
                       }}
                     >
-                      <Icon name="table" size="s" color={c['content-secondary']} />
+                      <TableIcon color={secondaryColor} />
                       <span style={{ flex: 1, fontSize: fs.sm, color: c['content-primary'] }}>{t}</span>
                       {onNavigateToTable && (
                         <button
@@ -151,12 +174,12 @@ const ChatContextPanel: React.FC<ChatContextPanelProps> = ({ created, tables, sk
                           style={{
                             background: 'none', border: 'none', cursor: 'pointer',
                             padding: 2, display: 'flex', alignItems: 'center',
-                            color: c['content-secondary'], borderRadius: 3,
+                            color: secondaryColor, borderRadius: 3,
                             opacity: hoveredTable === i ? 1 : 0,
                             transition: 'opacity 0.1s ease',
                           }}
                           onMouseEnter={e => (e.currentTarget.style.color = c['content-primary'])}
-                          onMouseLeave={e => (e.currentTarget.style.color = c['content-secondary'])}
+                          onMouseLeave={e => (e.currentTarget.style.color = secondaryColor)}
                         >
                           <GoToArrow />
                         </button>
@@ -167,10 +190,10 @@ const ChatContextPanel: React.FC<ChatContextPanelProps> = ({ created, tables, sk
               )}
               {skills.length > 0 && (
                 <div>
-                  <div style={{ fontSize: fs.xs, color: c['content-secondary'], fontWeight: fw.medium, padding: `0 ${sp.B}px`, marginBottom: 2 }}>Skills</div>
+                  <div style={{ fontSize: fs.xs, color: secondaryColor, fontWeight: fw.medium, padding: `0 ${sp.B}px`, marginBottom: 2 }}>Skills</div>
                   {skills.map((s, i) => (
                     <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: `4px ${sp.B}px` }}>
-                      <Icon name="checkmark-circle" size="s" color={c['content-secondary']} />
+                      <Icon name="checkmark-circle" size="s" color={secondaryColor} />
                       <span style={{ fontSize: fs.sm, color: c['content-primary'] }}>{s}</span>
                     </div>
                   ))}
