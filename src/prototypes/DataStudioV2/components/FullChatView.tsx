@@ -98,8 +98,8 @@ const FullChatView: React.FC<FullChatViewProps> = ({ project, setProject, initia
         {/* Context panel */}
         {contextPanelOpen && (
           <ChatContextPanel
-            model={{ name: project.name }}
             created={[]}
+            models={project.name ? [project.name] : []}
             tables={project.addedTables ?? []}
             skills={skill ? [skill] : []}
           />
