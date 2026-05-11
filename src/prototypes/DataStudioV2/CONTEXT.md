@@ -39,11 +39,15 @@ The product moved away from a side-panel co-pilot toward a full-screen agent-fir
 
 ## Next up
 
-### Pass 5 — Deferred
-
-1. **Plans as artifacts on the right side** — build plan and data quality fix plan are currently shown as panels/cards. Per the artifact paradigm, they should open on the right side panel (same treatment as model). This is a medium-sized change — needs exploration in Playground first before touching the live flow. Defer to its own session.
+_Nothing queued. Decide at next session._
 
 ---
+
+## Done — Chat context panel promoted to live (2026-05-11, session 76)
+
+- `ChatContextPanel.tsx`: new component. Width 280px, `borderLeft: border-divider`. Two collapsible sections — **Created** (plan cards: white bg + border + doc icon; model card: `#EFF6FF` bg + `#BFDBFE` border + 4-quad SVG) and **Context** (Tables with table icon, Skills with checkmark-circle icon). Empty states per section. Chevron rotates via `transform` on `<span>`.
+- `ChatView.tsx`: added 48px conversation header row (centered project name, right-side panel toggle SVG icon). Content derived via `useMemo` — `planMsg`, `created`, `contextTables`, `contextSkills`. Panel renders when `contextPanelOpen && !isPlanOpen` (hides when plan panel open to avoid 3-column crowding).
+- Build: clean ✓
 
 ---
 
@@ -53,6 +57,18 @@ The product moved away from a side-panel co-pilot toward a full-screen agent-fir
 - `PlanPanel.tsx`: column/formula description text `fontSize: 11` → `fs.xs`; formula col name and sample question text `fs.xs` → `fs.sm`.
 - `QualityPlanPanel.tsx`: new component. Identity row (warning icon + "Data Quality Plan" + 9 issues badge + download + close). Accordion sections: Goal (summary + severity chips) + Null values (3) + Duplicate rows (2) + Date format mismatches (3) + Anomalous values (1). Each row: `<code>col</code>` + severity badge + detail + `→ fix` link. Footer: "Apply fixes" (primary) + "Edit plan" (ghost).
 - `QualityPlanCard`, Workspace wiring (state, callbacks, render), and AgentPanel wiring were already in place from prior sessions.
+- Build: clean ✓
+
+---
+
+## Done — Context panel skeleton in Playground (2026-05-11, session 75)
+
+- `Playground.tsx`: added `ContextPanelExploration` component and wired it into `PlaygroundNav` as `context-panel` card under Phase 2 — explorations.
+- Exploration shows: 48px header (← Overview, centered title, panel toggle icon), chat column centering within available space, 280px right panel with **Created** (plan + model cards) and **Context** (Tables + Skills) sections.
+- Layout toggle in step bar: "Chat" vs "With artifact" — artifact view shows 3-column layout (360px agent left, flex artifact canvas center, 280px context panel right).
+- Step buttons: Empty → Plan → + Quality → + Model — drives both chat messages and panel content.
+- Card design: plans = white bg + border + doc icon; model = light blue (`#EFF6FF`) card; no badges.
+- Feedback captured in CONTEXT.md Next up spec for live promotion (both plans use same `doc` icon, no gray fill on plan cards).
 - Build: clean ✓
 
 ---
