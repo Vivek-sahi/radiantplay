@@ -2941,7 +2941,7 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
           leftSlot={
             <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, flexShrink: 0 }}>
               <ConnectionPill connections={CONNECTIONS} value={connFilter} onChange={setConnFilter} dropDirection="up" />
-              <div style={{ display: 'flex', padding: 2, background: c['background-subtle'], border: `1px solid ${c['border-default']}`, borderRadius: 8, gap: 2, flexShrink: 0 }}>
+              <div style={{ display: 'flex', padding: 2, background: c['background-subtle'], border: `1px solid ${c['border-default']}`, borderRadius: 20, gap: 2, flexShrink: 0 }}>
               {(['build', 'test'] as const).map(m => {
                 const isActive = agentMode === m;
                 const canSwitch = m === 'build' || project.buildStep !== 'empty';
@@ -2950,7 +2950,7 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
                     key={m}
                     onClick={() => canSwitch && setAgentMode(m)}
                     title={m === 'build' ? 'Build mode' : project.buildStep === 'empty' ? 'Test mode (available after model is built)' : 'Test mode'}
-                    style={{ width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', background: isActive ? c['background-base'] : 'transparent', border: isActive ? `1px solid ${c['border-default']}` : '1px solid transparent', borderRadius: 6, cursor: canSwitch ? 'pointer' : 'default', boxShadow: isActive ? '0 1px 2px rgba(0,0,0,0.08)' : 'none', transition: 'all 0.12s', opacity: canSwitch ? 1 : 0.35 }}
+                    style={{ width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', background: isActive ? c['background-base'] : 'transparent', border: isActive ? `1px solid ${c['border-default']}` : '1px solid transparent', borderRadius: '50%', cursor: canSwitch ? 'pointer' : 'default', boxShadow: isActive ? '0 1px 2px rgba(0,0,0,0.08)' : 'none', transition: 'all 0.12s', opacity: canSwitch ? 1 : 0.35 }}
                   >
                     {m === 'build' ? (
                       <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
