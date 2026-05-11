@@ -38,30 +38,19 @@ const PlanPanel: React.FC<PlanPanelProps> = ({ plan, onClose }) => {
     <style>{`@keyframes ds-slide-in { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: translateX(0); } }`}</style>
     <div style={{
       flex: 1,
-      borderLeft: `1px solid ${c['border-divider']}`,
       backgroundColor: c['background-base'],
+      border: `1px solid ${c['border-divider']}`,
+      borderRadius: 10,
       display: 'flex',
       flexDirection: 'column',
-      padding: 12,
       overflow: 'hidden',
       fontFamily: ff.primary,
       animation: 'ds-slide-in 0.2s ease-out',
     }}>
 
-      {/* Inner document card */}
-      <div style={{
-        flex: 1,
-        backgroundColor: c['background-base'],
-        border: `1px solid ${c['border-default']}`,
-        borderRadius: 8,
-        display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden',
-      }}>
-
       {/* Header */}
       <div style={{
-        height: 40,
+        height: 48,
         borderBottom: `1px solid ${c['border-divider']}`,
         padding: `0 ${sp.D}px`,
         display: 'flex',
@@ -71,7 +60,7 @@ const PlanPanel: React.FC<PlanPanelProps> = ({ plan, onClose }) => {
       }}>
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: sp.B }}>
           <span style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'] }}>{plan.modelName}</span>
-          <span style={{ fontSize: 11, fontWeight: fw.medium, padding: '2px 7px', borderRadius: 4, backgroundColor: c['background-subtle'], color: c['content-secondary'] }}>
+          <span style={{ fontSize: fs.xs, fontWeight: fw.medium, padding: '2px 7px', borderRadius: 4, backgroundColor: c['background-subtle'], color: c['content-secondary'] }}>
             v{plan.version}
           </span>
         </div>
@@ -116,7 +105,7 @@ const PlanPanel: React.FC<PlanPanelProps> = ({ plan, onClose }) => {
                     {table.schema}.{table.name}
                   </span>
                   {table.rowCount && (
-                    <span style={{ fontSize: 11, color: c['content-secondary'] }}>{table.rowCount}</span>
+                    <span style={{ fontSize: fs.xs, color: c['content-secondary'] }}>{table.rowCount}</span>
                   )}
                 </div>
                 <p style={{ margin: 0, fontSize: fs.sm, color: c['content-secondary'], lineHeight: '20px' }}>{table.description}</p>
@@ -130,16 +119,16 @@ const PlanPanel: React.FC<PlanPanelProps> = ({ plan, onClose }) => {
             {plan.relationships.map((rel, i) => (
               <div key={i} style={{ borderRadius: 7, border: `1px solid ${c['border-divider']}`, padding: `${sp.B}px ${sp.C}px` }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, marginBottom: 4, flexWrap: 'wrap' }}>
-                  <code style={{ fontSize: 11, color: c['content-primary'], backgroundColor: c['background-subtle'], padding: '1px 5px', borderRadius: 3 }}>{rel.fromTable}</code>
-                  <span style={{ fontSize: 11, color: c['content-secondary'] }}>→</span>
-                  <code style={{ fontSize: 11, color: c['content-primary'], backgroundColor: c['background-subtle'], padding: '1px 5px', borderRadius: 3 }}>{rel.toTable}</code>
-                  <span style={{ fontSize: 11, fontWeight: fw.medium, color: '#1AA251', marginLeft: 'auto' }}>{rel.joinType}</span>
+                  <code style={{ fontSize: fs.xs, color: c['content-primary'], backgroundColor: c['background-subtle'], padding: '1px 5px', borderRadius: 3 }}>{rel.fromTable}</code>
+                  <span style={{ fontSize: fs.xs, color: c['content-secondary'] }}>→</span>
+                  <code style={{ fontSize: fs.xs, color: c['content-primary'], backgroundColor: c['background-subtle'], padding: '1px 5px', borderRadius: 3 }}>{rel.toTable}</code>
+                  <span style={{ fontSize: fs.xs, fontWeight: fw.medium, color: '#1AA251', marginLeft: 'auto' }}>{rel.joinType}</span>
                 </div>
                 <div style={{ display: 'flex', gap: 4, marginBottom: 3 }}>
-                  <span style={{ fontSize: 11, color: c['content-secondary'] }}>on</span>
-                  <code style={{ fontSize: 11, color: c['content-primary'] }}>{rel.fromKey} = {rel.toKey}</code>
+                  <span style={{ fontSize: fs.xs, color: c['content-secondary'] }}>on</span>
+                  <code style={{ fontSize: fs.xs, color: c['content-primary'] }}>{rel.fromKey} = {rel.toKey}</code>
                 </div>
-                <p style={{ margin: 0, fontSize: 11, color: c['content-secondary'] }}>{rel.matchRate}</p>
+                <p style={{ margin: 0, fontSize: fs.xs, color: c['content-secondary'] }}>{rel.matchRate}</p>
               </div>
             ))}
           </div>
@@ -158,7 +147,7 @@ const PlanPanel: React.FC<PlanPanelProps> = ({ plan, onClose }) => {
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, marginBottom: 2 }}>
                           <span style={{ fontSize: fs.sm, fontWeight: fw.medium, color: c['content-primary'] }}>{col.name}</span>
-                          <span style={{ fontSize: 10, color: typeColor(col.type) }}>{typeLabel(col.type)}</span>
+                          <span style={{ fontSize: fs.xs, color: typeColor(col.type) }}>{typeLabel(col.type)}</span>
                         </div>
                         <p style={{ margin: 0, fontSize: fs.xs, color: c['content-secondary'], lineHeight: '16px' }}>{col.description}</p>
                       </div>
@@ -177,11 +166,11 @@ const PlanPanel: React.FC<PlanPanelProps> = ({ plan, onClose }) => {
                 <div key={col.name} style={{ padding: `${sp.B}px 0`, borderBottom: ci < formulaCols.length - 1 ? `1px solid ${c['border-divider']}` : 'none' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, marginBottom: 3 }}>
                     <span style={{ fontSize: fs.sm, fontWeight: fw.medium, color: c['content-primary'] }}>{col.name}</span>
-                    <span style={{ fontSize: 10, color: c['content-brand'] }}>Formula</span>
+                    <span style={{ fontSize: fs.xs, color: c['content-brand'] }}>Formula</span>
                   </div>
                   <p style={{ margin: `0 0 3px`, fontSize: fs.xs, color: c['content-secondary'], lineHeight: '16px' }}>{col.description}</p>
                   {col.formula && (
-                    <code style={{ display: 'block', fontSize: 10, color: c['content-brand'], lineHeight: '16px', fontFamily: 'monospace' }}>{col.formula}</code>
+                    <code style={{ display: 'block', fontSize: fs.xs, color: c['content-brand'], lineHeight: '16px', fontFamily: 'monospace' }}>{col.formula}</code>
                   )}
                 </div>
               ))}
@@ -202,7 +191,6 @@ const PlanPanel: React.FC<PlanPanelProps> = ({ plan, onClose }) => {
 
       </div>
 
-      </div>{/* end inner card */}
     </div>
     </>
   );

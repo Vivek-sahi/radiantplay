@@ -71,33 +71,24 @@ const QualityPlanPanel: React.FC<QualityPlanPanelProps> = ({ onClose, onApplyFix
       <style>{`@keyframes ds-slide-in { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: translateX(0); } }`}</style>
       <div style={{
         flex: 1,
-        borderLeft: `1px solid ${c['border-divider']}`,
         backgroundColor: c['background-base'],
+        border: `1px solid ${c['border-divider']}`,
+        borderRadius: 10,
         display: 'flex',
         flexDirection: 'column',
-        padding: 12,
         overflow: 'hidden',
         fontFamily: ff.primary,
         animation: 'ds-slide-in 0.2s ease-out',
       }}>
-        <div style={{
-          flex: 1,
-          backgroundColor: c['background-base'],
-          border: `1px solid ${c['border-default']}`,
-          borderRadius: 8,
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
-        }}>
 
           {/* Identity row */}
-          <div style={{ height: 40, borderBottom: `1px solid ${c['border-divider']}`, padding: `0 ${sp.D}px`, display: 'flex', alignItems: 'center', gap: sp.C, flexShrink: 0 }}>
+          <div style={{ height: 48, borderBottom: `1px solid ${c['border-divider']}`, padding: `0 ${sp.D}px`, display: 'flex', alignItems: 'center', gap: sp.C, flexShrink: 0 }}>
             <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: sp.B }}>
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#D97706" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke={c['content-secondary']} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M8 2L14 14H2L8 2z"/><line x1="8" y1="7" x2="8" y2="10"/><circle cx="8" cy="12.5" r="0.5" fill="#D97706"/>
               </svg>
               <span style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'] }}>Data Quality Plan</span>
-              <span style={{ fontSize: 11, fontWeight: fw.medium, padding: '2px 7px', borderRadius: 4, backgroundColor: '#FEF2F2', color: '#DC2626', border: '1px solid #FECACA' }}>9 issues</span>
+              <span style={{ fontSize: fs.xs, fontWeight: fw.medium, padding: '2px 7px', borderRadius: 4, backgroundColor: '#FEF2F2', color: '#DC2626', border: '1px solid #FECACA' }}>9 issues</span>
             </div>
             <button
               title="Download plan"
@@ -133,7 +124,7 @@ const QualityPlanPanel: React.FC<QualityPlanPanelProps> = ({ onClose, onApplyFix
                 </p>
                 <div style={{ display: 'flex', gap: sp.B, flexWrap: 'wrap' }}>
                   {([['4 high', '#FEF2F2', '#DC2626', '#FECACA'], ['4 medium', '#FFFBEB', '#D97706', '#FDE68A'], ['1 low', '#F0FDF4', '#16A34A', '#BBF7D0']] as const).map(([label, bg, text, border]) => (
-                    <span key={label} style={{ fontSize: 11, fontWeight: fw.semibold, padding: '2px 8px', borderRadius: 4, backgroundColor: bg, color: text, border: `1px solid ${border}` }}>{label}</span>
+                    <span key={label} style={{ fontSize: fs.xs, fontWeight: fw.semibold, padding: '2px 8px', borderRadius: 4, backgroundColor: bg, color: text, border: `1px solid ${border}` }}>{label}</span>
                   ))}
                 </div>
               </div>
@@ -148,7 +139,7 @@ const QualityPlanPanel: React.FC<QualityPlanPanelProps> = ({ onClose, onApplyFix
                       <div key={issue.col} style={{ padding: `${sp.B}px 0`, borderBottom: i < section.issues.length - 1 ? `1px solid ${c['border-divider']}` : 'none' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, marginBottom: 3 }}>
                           <code style={{ fontSize: fs.xs, color: c['content-primary'], backgroundColor: c['background-subtle'], padding: '1px 5px', borderRadius: 3, fontFamily: 'monospace', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{issue.col}</code>
-                          <span style={{ fontSize: 11, fontWeight: fw.medium, padding: '1px 7px', borderRadius: 4, backgroundColor: sev.bg, color: sev.text, flexShrink: 0 }}>{sev.label}</span>
+                          <span style={{ fontSize: fs.xs, fontWeight: fw.medium, padding: '1px 7px', borderRadius: 4, backgroundColor: sev.bg, color: sev.text, flexShrink: 0 }}>{sev.label}</span>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: sp.B }}>
                           <p style={{ margin: 0, fontSize: fs.xs, color: c['content-secondary'], lineHeight: '16px' }}>{issue.detail}</p>
@@ -168,8 +159,6 @@ const QualityPlanPanel: React.FC<QualityPlanPanelProps> = ({ onClose, onApplyFix
             ))}
           </div>
 
-
-        </div>
       </div>
     </>
   );
