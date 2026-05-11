@@ -80,6 +80,277 @@ const TestPane: React.FC = () => (
   </div>
 );
 
+// ── ClarifyBar exploration ────────────────────────────────────────────────────
+
+const CLARIFY_QUESTIONS = [
+  { question: 'What are you trying to solve for?',  options: ['Campaign ROI', 'Ad spend tracking', 'Attribution analysis'] },
+  { question: 'What should I focus on?',            options: ['ROI metrics only', 'Ad spend + ROI', 'Full funnel analysis'] },
+];
+
+const CLARIFY_CHAT_W = 720;
+
+interface ClarifyMockMsg { id: string; role: 'user' | 'agent'; content: string; }
+
+const CLARIFY_SEED: ClarifyMockMsg[] = [
+  { id: 's1', role: 'user',  content: 'I want to build a campaign performance model for my marketing team.' },
+  { id: 's2', role: 'agent', content: 'Got it. Let me ask a couple of quick questions so I build exactly what you need.' },
+];
+
+const SpotterDot: React.FC = () => (
+  <div style={{ width: 28, height: 28, borderRadius: '50%', backgroundColor: '#6366f1', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <svg width="13" height="13" viewBox="0 0 16 16" fill="white"><path d="M8 1.5L9.1 6.4L14.5 8L9.1 9.6L8 14.5L6.9 9.6L1.5 8L6.9 6.4Z"/></svg>
+  </div>
+);
+
+const navBtnStyle = (disabled: boolean): React.CSSProperties => ({
+  width: 22, height: 22, border: 'none', background: 'transparent', cursor: disabled ? 'default' : 'pointer',
+  display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 4, padding: 0,
+  color: disabled ? c['content-disabled'] ?? c['border-default'] : c['content-secondary'],
+  flexShrink: 0,
+});
+
+const ClarifyBarExploration: React.FC = () => {
+  const [msgs, setMsgs]               = useState<ClarifyMockMsg[]>(CLARIFY_SEED);
+  const [step, setStep]               = useState(0);
+  const [answers, setAnswers]         = useState<Record<number, string | null>>({});
+  const [customExpanded, setCustomExpanded] = useState(false);
+  const [customValue, setCustomValue] = useState('');
+  const [done, setDone]               = useState(false);
+  const scrollRef                     = useRef<HTMLDivElement>(null);
+  const customInputRef                = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+  }, [msgs]);
+
+  useEffect(() => {
+    setCustomExpanded(false);
+    setCustomValue('');
+  }, [step]);
+
+  useEffect(() => {
+    if (customExpanded) setTimeout(() => customInputRef.current?.focus(), 50);
+  }, [customExpanded]);
+
+  const advance = (newAnswers: Record<number, string | null>) => {
+    if (step < CLARIFY_QUESTIONS.length - 1) {
+      setStep(s => s + 1);
+    } else {
+      setDone(true);
+      const parts = CLARIFY_QUESTIONS
+        .map((q, i) => newAnswers[i] != null ? `${q.question}\n${newAnswers[i]}` : null)
+        .filter(Boolean) as string[];
+      if (parts.length > 0) {
+        setMsgs(prev => [...prev, { id: `u-${Date.now()}`, role: 'user', content: parts.join('\n\n') }]);
+      }
+      setTimeout(() => {
+        setMsgs(prev => [...prev, { id: `a-${Date.now()}`, role: 'agent', content: "Perfect. I'll build your campaign ROI model focused on ad spend and ROI metrics. Identifying relevant tables now…" }]);
+      }, 700);
+    }
+  };
+
+  const handleSelect = (answer: string) => {
+    const updated = { ...answers, [step]: answer };
+    setAnswers(updated);
+    advance(updated);
+  };
+
+  const handleSkip = () => {
+    const updated = { ...answers, [step]: null };
+    setAnswers(updated);
+    advance(updated);
+  };
+
+  const handleCustomSubmit = () => {
+    const v = customValue.trim();
+    if (!v) return;
+    handleSelect(v);
+  };
+
+  const reset = () => {
+    setMsgs(CLARIFY_SEED); setStep(0); setAnswers({});
+    setCustomExpanded(false); setCustomValue(''); setDone(false);
+  };
+
+  const canGoBack = step > 0;
+  const canGoNext = step < CLARIFY_QUESTIONS.length - 1 && answers[step] !== undefined;
+  const q = CLARIFY_QUESTIONS[step];
+  const currentAnswer = answers[step];
+
+  return (
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundColor: c['background-base'] }}>
+
+      {/* Reset bar */}
+      <div style={{ height: 36, borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', padding: `0 ${sp.D}px`, flexShrink: 0, backgroundColor: c['background-subtle'] }}>
+        <span style={{ fontSize: fs.xs, color: c['content-secondary'], fontFamily: ff.primary }}>ClarifyCard · click to advance · back/next nav · something else inline · skip omits from message</span>
+        <div style={{ flex: 1 }} />
+        <button onClick={reset} style={{ height: 24, padding: `0 ${sp.C}px`, border: `1px solid ${c['border-default']}`, borderRadius: 6, backgroundColor: c['background-base'], cursor: 'pointer', fontSize: fs.xs, fontFamily: ff.primary, color: c['content-secondary'] }}>Reset</button>
+      </div>
+
+      {/* Centered chat column */}
+      <div style={{ flex: 1, display: 'flex', justifyContent: 'center', overflow: 'hidden' }}>
+        <div style={{ width: CLARIFY_CHAT_W, height: '100%', display: 'flex', overflow: 'hidden' }}>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+
+            {/* Messages */}
+            <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: `${sp.F}px ${sp.D}px`, display: 'flex', flexDirection: 'column', gap: sp.D }}>
+              {msgs.map(msg => (
+                <div key={msg.id} style={{ display: 'flex', flexDirection: msg.role === 'user' ? 'row-reverse' : 'row', alignItems: 'flex-start', gap: sp.C }}>
+                  {msg.role === 'agent' && <SpotterDot />}
+                  <div style={{
+                    maxWidth: '72%',
+                    backgroundColor: msg.role === 'user' ? c['background-information'] : c['background-subtle'],
+                    border: `1px solid ${msg.role === 'user' ? c['border-default'] : c['border-divider']}`,
+                    borderRadius: msg.role === 'user' ? '12px 4px 12px 12px' : '4px 12px 12px 12px',
+                    padding: `${sp.C}px ${sp.D}px`,
+                    fontSize: fs.sm, color: c['content-primary'], lineHeight: '20px',
+                    fontFamily: ff.primary, whiteSpace: 'pre-wrap',
+                  }}>
+                    {msg.content}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Bottom zone: clarify card + gap + prompt bar */}
+            <div style={{ flexShrink: 0, padding: `${sp.C}px ${sp.D}px ${sp.A}px` }}>
+
+              {/* ClarifyCard */}
+              {!done && (
+                <div style={{
+                  border: `1px solid ${c['border-divider']}`, borderRadius: 12,
+                  backgroundColor: c['background-base'], marginBottom: sp.C, overflow: 'hidden',
+                }}>
+                  {/* Card header: question + nav */}
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: `${sp.D}px ${sp.D}px ${sp.C}px` }}>
+                    <p style={{ margin: 0, fontSize: fs.md, fontWeight: fw.semibold, color: c['content-primary'], lineHeight: '24px', flex: 1, paddingRight: sp.D }}>
+                      {q.question}
+                    </p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0, paddingTop: 2 }}>
+                      <button style={navBtnStyle(!canGoBack)} onClick={() => canGoBack && setStep(s => s - 1)} title="Previous">
+                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="10,4 6,8 10,12"/></svg>
+                      </button>
+                      <span style={{ fontSize: fs.xs, color: c['content-secondary'], fontFamily: ff.primary, minWidth: 36, textAlign: 'center' }}>
+                        {step + 1} of {CLARIFY_QUESTIONS.length}
+                      </span>
+                      <button style={navBtnStyle(!canGoNext)} onClick={() => canGoNext && setStep(s => s + 1)} title="Next">
+                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6,4 10,8 6,12"/></svg>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Options list */}
+                  <div style={{ borderTop: `1px solid ${c['border-divider']}` }}>
+                    {q.options.map((opt, idx) => {
+                      const isSelected = currentAnswer === opt;
+                      const isLast = idx === q.options.length - 1;
+                      return (
+                        <div key={opt}
+                          onClick={() => handleSelect(opt)}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: sp.C,
+                            padding: `${sp.C}px ${sp.D}px`,
+                            borderBottom: isLast ? 'none' : `1px solid ${c['border-divider']}`,
+                            backgroundColor: isSelected ? c['background-subtle'] : c['background-base'],
+                            cursor: 'pointer', transition: 'background-color 0.1s',
+                          }}
+                          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = c['background-subtle']; }}
+                          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = isSelected ? c['background-subtle'] : c['background-base']; }}
+                        >
+                          <div style={{
+                            width: 26, height: 26, borderRadius: 7, flexShrink: 0,
+                            backgroundColor: isSelected ? '#EFF6FF' : c['background-subtle'],
+                            border: `1px solid ${isSelected ? '#BFDBFE' : c['border-divider']}`,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: 11, fontWeight: fw.medium, fontFamily: ff.mono,
+                            color: isSelected ? c['content-brand'] : c['content-secondary'],
+                          }}>
+                            {idx + 1}
+                          </div>
+                          <span style={{ flex: 1, fontSize: fs.sm, color: c['content-primary'], fontFamily: ff.primary }}>
+                            {opt}
+                          </span>
+                        </div>
+                      );
+                    })}
+
+                    {/* Something else row */}
+                    <div style={{ borderTop: `1px solid ${c['border-divider']}` }}>
+                      {!customExpanded ? (
+                        <div
+                          onClick={() => setCustomExpanded(true)}
+                          style={{ display: 'flex', alignItems: 'center', gap: sp.C, padding: `${sp.C}px ${sp.D}px`, cursor: 'pointer', backgroundColor: c['background-base'], transition: 'background-color 0.1s' }}
+                          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = c['background-subtle']; }}
+                          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = c['background-base']; }}
+                        >
+                          <div style={{ width: 26, height: 26, borderRadius: 7, flexShrink: 0, backgroundColor: c['background-subtle'], border: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <svg width="11" height="11" viewBox="0 0 14 14" fill="none" stroke={c['content-tertiary']} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M9.5 1.5L12.5 4.5L4.5 12.5H1.5V9.5L9.5 1.5Z"/>
+                            </svg>
+                          </div>
+                          <span style={{ flex: 1, fontSize: fs.sm, color: c['content-tertiary'], fontFamily: ff.primary }}>Something else</span>
+                          <button
+                            onClick={e => { e.stopPropagation(); handleSkip(); }}
+                            style={{ height: 26, padding: `0 ${sp.C}px`, border: `1px solid ${c['border-default']}`, borderRadius: 6, backgroundColor: c['background-base'], cursor: 'pointer', fontSize: fs.xs, fontFamily: ff.primary, color: c['content-secondary'], flexShrink: 0 }}
+                          >
+                            Skip
+                          </button>
+                        </div>
+                      ) : (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, padding: `${sp.B}px ${sp.D}px` }}>
+                          <input
+                            ref={customInputRef}
+                            value={customValue}
+                            onChange={e => setCustomValue(e.target.value)}
+                            onKeyDown={e => { if (e.key === 'Enter') handleCustomSubmit(); if (e.key === 'Escape') { setCustomExpanded(false); setCustomValue(''); } }}
+                            placeholder="Describe in your own words…"
+                            style={{ flex: 1, height: 32, padding: `0 ${sp.C}px`, border: `1px solid ${c['border-default']}`, borderRadius: 6, fontSize: fs.sm, fontFamily: ff.primary, color: c['content-primary'], backgroundColor: c['background-base'], outline: `2px solid ${c['content-brand']}`, outlineOffset: -1, boxSizing: 'border-box' }}
+                          />
+                          <button
+                            onClick={handleCustomSubmit}
+                            disabled={!customValue.trim()}
+                            style={{ height: 32, padding: `0 ${sp.C}px`, border: 'none', borderRadius: 6, backgroundColor: customValue.trim() ? c['content-brand'] : c['background-subtle'], color: customValue.trim() ? 'white' : c['content-tertiary'], cursor: customValue.trim() ? 'pointer' : 'default', fontSize: fs.xs, fontFamily: ff.primary, fontWeight: fw.medium, flexShrink: 0, transition: 'all 0.15s' }}
+                          >
+                            Submit
+                          </button>
+                          <button
+                            onClick={handleSkip}
+                            style={{ height: 32, padding: `0 ${sp.C}px`, border: `1px solid ${c['border-default']}`, borderRadius: 6, backgroundColor: c['background-base'], cursor: 'pointer', fontSize: fs.xs, fontFamily: ff.primary, color: c['content-secondary'], flexShrink: 0 }}
+                          >
+                            Skip
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Prompt bar — always visible */}
+              <div style={{
+                height: 40, borderRadius: 10,
+                border: `1px solid ${done ? c['border-default'] : c['border-divider']}`,
+                backgroundColor: done ? c['background-base'] : c['background-subtle'],
+                display: 'flex', alignItems: 'center', padding: `0 ${sp.D}px`,
+                fontSize: fs.sm, color: c['content-tertiary'], fontFamily: ff.primary,
+                transition: 'all 0.3s',
+              }}>
+                {done ? "Give me a task. Use '@' to mention tables." : ''}
+              </div>
+            </div>
+
+            {/* Disclaimer */}
+            <p style={{ margin: 0, textAlign: 'center', fontSize: 11, color: c['content-secondary'], fontFamily: ff.primary, padding: `${sp.A}px ${sp.D}px ${sp.C}px`, lineHeight: '16px' }}>
+              Spotter responses should be reviewed. <span style={{ textDecoration: 'underline', cursor: 'pointer' }}>Learn more</span>
+            </p>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ── Main playground ───────────────────────────────────────────────────────────
 
 const Playground: React.FC = () => {
@@ -87,6 +358,7 @@ const Playground: React.FC = () => {
   const [messages, setMessages]   = useState<AgentMessage[]>([]);
   const [leftOpen, setLeftOpen]   = useState(true);
   const [agentOpen, setAgentOpen] = useState(true);
+  const [explMode, setExplMode]   = useState<'workspace' | 'clarifybar'>('workspace');
   const [drawerTab, setDrawerTab] = useState<DrawerTab>('preview');
   const [drawerOpen, setDrawerOpen]     = useState(true);
   const [drawerHeight, setDrawerHeight] = useState(DRAWER_DEFAULT);
@@ -179,28 +451,53 @@ const Playground: React.FC = () => {
       {/* ── Sub-header ── */}
       <div style={{ height: 40, backgroundColor: c['background-base'], borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', padding: `0 ${sp.D}px`, flexShrink: 0 }}>
         <div style={{ width: 120, display: 'flex', alignItems: 'center' }}>
-          <button
-            onClick={() => setLeftOpen(o => !o)}
-            style={{ height: 28, padding: '0 10px', gap: 6, border: `1px solid ${leftOpen ? c['border-brand'] : c['border-default']}`, borderRadius: 6, backgroundColor: leftOpen ? c['background-information'] : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, color: leftOpen ? c['content-brand'] : c['content-secondary'], boxSizing: 'border-box' }}
-          >
-            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><rect x="1" y="1" width="14" height="14" rx="2"/><line x1="5" y1="1" x2="5" y2="15"/></svg>
-            Data
-          </button>
+          {explMode === 'workspace' && (
+            <button
+              onClick={() => setLeftOpen(o => !o)}
+              style={{ height: 28, padding: '0 10px', gap: 6, border: `1px solid ${leftOpen ? c['border-brand'] : c['border-default']}`, borderRadius: 6, backgroundColor: leftOpen ? c['background-information'] : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, color: leftOpen ? c['content-brand'] : c['content-secondary'], boxSizing: 'border-box' }}
+            >
+              <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><rect x="1" y="1" width="14" height="14" rx="2"/><line x1="5" y1="1" x2="5" y2="15"/></svg>
+              Data
+            </button>
+          )}
         </div>
-        <div style={{ flex: 1 }} />
+        {/* Mode tabs */}
+        <div style={{ flex: 1, display: 'flex', justifyContent: 'center', gap: 2 }}>
+          {(['workspace', 'clarifybar'] as const).map(mode => {
+            const active = explMode === mode;
+            return (
+              <button key={mode} onClick={() => setExplMode(mode)}
+                style={{
+                  height: 40, padding: '0 14px', border: 'none', cursor: 'pointer',
+                  borderBottom: `2px solid ${active ? c['content-brand'] : 'transparent'}`,
+                  background: 'transparent', fontFamily: ff.primary, fontSize: fs.xs,
+                  fontWeight: active ? fw.semibold : fw.regular,
+                  color: active ? c['content-brand'] : c['content-secondary'],
+                  marginBottom: -1,
+                }}>
+                {mode === 'workspace' ? 'Workspace' : 'Clarify bar'}
+              </button>
+            );
+          })}
+        </div>
         <div style={{ width: 120, display: 'flex', justifyContent: 'flex-end' }}>
-          <button
-            onClick={() => setAgentOpen(o => !o)}
-            style={{ height: 28, padding: '0 10px', gap: 6, border: `1px solid ${agentOpen ? c['border-brand'] : c['border-default']}`, borderRadius: 6, backgroundColor: agentOpen ? c['background-information'] : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, color: agentOpen ? c['content-brand'] : c['content-secondary'], boxSizing: 'border-box' }}
-          >
-            <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1.5 L9.1 6.4 L14.5 8 L9.1 9.6 L8 14.5 L6.9 9.6 L1.5 8 L6.9 6.4 Z"/></svg>
-            Data Agent
-          </button>
+          {explMode === 'workspace' && (
+            <button
+              onClick={() => setAgentOpen(o => !o)}
+              style={{ height: 28, padding: '0 10px', gap: 6, border: `1px solid ${agentOpen ? c['border-brand'] : c['border-default']}`, borderRadius: 6, backgroundColor: agentOpen ? c['background-information'] : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, color: agentOpen ? c['content-brand'] : c['content-secondary'], boxSizing: 'border-box' }}
+            >
+              <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1.5 L9.1 6.4 L14.5 8 L9.1 9.6 L8 14.5 L6.9 9.6 L1.5 8 L6.9 6.4 Z"/></svg>
+              Data Agent
+            </button>
+          )}
         </div>
       </div>
 
-      {/* ── Body ── */}
-      <div style={{ flex: 1, overflow: 'hidden', display: 'flex' }}>
+      {/* ── ClarifyBar exploration ── */}
+      {explMode === 'clarifybar' && <ClarifyBarExploration />}
+
+      {/* ── Workspace body ── */}
+      {explMode === 'workspace' && <div style={{ flex: 1, overflow: 'hidden', display: 'flex' }}>
 
         {/* Left panel */}
         {leftOpen && (
@@ -318,7 +615,7 @@ const Playground: React.FC = () => {
             setMessages={setMessages}
           />
         )}
-      </div>
+      </div>}
     </div>
   );
 };
@@ -1762,6 +2059,329 @@ export const PlaygroundV6: React.FC = () => {
   );
 };
 
+// ── ArtifactChatExploration ───────────────────────────────────────────────────
+// New paradigm: chat is the top-level container; model is an artifact created
+// inside the conversation. Explore header layout, tab bar, and action placement.
+
+const AC_COLUMNS = [
+  { name: 'campaign_id',    table: 'campaigns', type: 'attribute' as const, desc: 'Unique campaign identifier' },
+  { name: 'campaign_name',  table: 'campaigns', type: 'attribute' as const, desc: 'Campaign display name' },
+  { name: 'channel',        table: 'campaigns', type: 'attribute' as const, desc: 'Marketing channel' },
+  { name: 'spend',          table: 'campaigns', type: 'measure'   as const, desc: 'Total campaign spend' },
+  { name: 'budget',         table: 'campaigns', type: 'measure'   as const, desc: 'Allocated budget' },
+  { name: 'order_date',     table: 'orders',    type: 'attribute' as const, desc: 'Date of order' },
+  { name: 'amount',         table: 'orders',    type: 'measure'   as const, desc: 'Order value in USD' },
+  { name: 'region',         table: 'orders',    type: 'attribute' as const, desc: '' },
+  { name: 'user_id',        table: 'users',     type: 'attribute' as const, desc: '' },
+  { name: 'segment',        table: 'users',     type: 'attribute' as const, desc: 'Customer segment' },
+  { name: 'lifetime_value', table: 'users',     type: 'measure'   as const, desc: 'Predicted lifetime value' },
+  { name: 'campaign_roi',   table: '',          type: 'formula'   as const, desc: 'sum(amount) / sum(spend)' },
+  { name: 'cost_per_order', table: '',          type: 'formula'   as const, desc: 'sum(spend) / count(order_id)' },
+];
+
+const AC_STEPS = [
+  'Understanding your requirement',
+  'Identifying relevant tables',
+  'Mapping relationships',
+  'Generating column definitions',
+  'Adding calculated metrics',
+];
+
+const AcModelIcon: React.FC<{ size?: number }> = ({ size = 24 }) => (
+  <div style={{ width: size, height: size, borderRadius: Math.round(size * 0.22), background: 'rgba(39,112,239,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+    <svg width={size * 0.58} height={size * 0.58} viewBox="0 0 14 14" fill="none">
+      <rect x="1" y="1" width="5" height="5" rx="1" fill={c['content-brand']} />
+      <rect x="8" y="1" width="5" height="5" rx="1" fill={c['content-brand']} opacity="0.5" />
+      <rect x="1" y="8" width="5" height="5" rx="1" fill={c['content-brand']} opacity="0.5" />
+      <rect x="8" y="8" width="5" height="5" rx="1" fill={c['content-brand']} opacity="0.3" />
+    </svg>
+  </div>
+);
+
+const AcDraftBadge: React.FC = () => (
+  <span style={{ fontSize: 10.5, fontWeight: fw.semibold, color: '#92400E', background: '#FEF3C7', borderRadius: 4, padding: '2px 7px', flexShrink: 0, letterSpacing: '0.01em' }}>
+    Draft
+  </span>
+);
+
+const AcIconBtn: React.FC<{ children: React.ReactNode; onClick?: () => void }> = ({ children, onClick }) => {
+  const [hov, setHov] = useState(false);
+  return (
+    <button onClick={onClick}
+      onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+      style={{ width: 30, height: 30, borderRadius: 6, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', background: hov ? c['background-subtle'] : 'transparent', color: c['content-secondary'], flexShrink: 0 }}>
+      {children}
+    </button>
+  );
+};
+
+const ArtifactChatExploration: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<'columns' | 'tables' | 'preview' | 'notebook'>('columns');
+  const [prompt, setPrompt] = useState('');
+
+  const tabs = [
+    { id: 'columns'  as const, label: 'Columns' },
+    { id: 'tables'   as const, label: 'Tables' },
+    { id: 'preview'  as const, label: 'Preview' },
+    { id: 'notebook' as const, label: 'Notebook' },
+  ];
+
+  return (
+    // Page-level: full-screen flex COLUMN — conversation is the container
+    <div style={{ position: 'fixed', inset: 0, display: 'flex', flexDirection: 'column', fontFamily: ff.primary, background: c['background-sunken'] }}>
+
+      {/* ── PAGE HEADER — conversation level ─────────────────────────────────
+          This is the top of the screen. It represents the chat/conversation,
+          not the artifact. The artifact lives below this.                    */}
+      <div style={{ height: 48, flexShrink: 0, display: 'flex', alignItems: 'center', padding: '0 16px', gap: 10, background: c['background-base'], borderBottom: `1px solid ${c['border-divider']}` }}>
+        <AcIconBtn>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="10,3 5,8 10,13"/>
+          </svg>
+        </AcIconBtn>
+        <span style={{ fontSize: 13.5, fontWeight: fw.semibold, color: c['content-primary'] }}>Chat</span>
+      </div>
+
+      {/* ── BODY — agent panel + artifact panel, side by side ─────────────── */}
+      <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+
+        {/* Agent / conversation panel */}
+        <div style={{ width: 420, flexShrink: 0, display: 'flex', flexDirection: 'column', background: c['background-base'], borderRight: `1px solid ${c['border-divider']}` }}>
+
+          {/* Messages scroll */}
+          <div style={{ flex: 1, overflow: 'auto', padding: '20px 20px 8px', display: 'flex', flexDirection: 'column', gap: 18 }}>
+
+            {/* User: opening prompt */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <div style={{ maxWidth: 300, background: c['background-brand-subtle'], borderRadius: '12px 12px 4px 12px', padding: '10px 14px', fontSize: 13.5, color: c['content-primary'], lineHeight: 1.55 }}>
+                I want to build a campaign performance model for our marketing team.
+              </div>
+            </div>
+
+            {/* Agent: clarify intro */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxWidth: 340 }}>
+              <span style={{ fontSize: 11, fontWeight: fw.semibold, color: c['content-tertiary'], letterSpacing: '0.04em', textTransform: 'uppercase' }}>Spotter</span>
+              <div style={{ fontSize: 13.5, color: c['content-primary'], lineHeight: 1.6 }}>
+                A couple of questions before I start building.
+              </div>
+            </div>
+
+            {/* User: compiled clarify answers */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <div style={{ maxWidth: 300, background: c['background-brand-subtle'], borderRadius: '12px 12px 4px 12px', padding: '10px 14px', fontSize: 13.5, color: c['content-primary'], lineHeight: 1.65, whiteSpace: 'pre-wrap' }}>
+                {`What are you trying to solve for?\nCampaign ROI\n\nWhat should I focus on?\nFull funnel analysis`}
+              </div>
+            </div>
+
+            {/* Agent: working steps (done) */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxWidth: 340 }}>
+              <span style={{ fontSize: 11, fontWeight: fw.semibold, color: c['content-tertiary'], letterSpacing: '0.04em', textTransform: 'uppercase' }}>Spotter</span>
+              <div style={{ fontSize: 13.5, color: c['content-primary'], lineHeight: 1.6, marginBottom: 4 }}>On it.</div>
+              {AC_STEPS.map((step, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '2px 0' }}>
+                  <div style={{ width: 7, height: 7, borderRadius: '50%', background: c['content-brand'], flexShrink: 0, opacity: 0.7 }} />
+                  <span style={{ fontSize: 12.5, color: c['content-secondary'] }}>{step}</span>
+                </div>
+              ))}
+              <div style={{ fontSize: 11.5, color: c['content-tertiary'], marginTop: 4 }}>Worked for 8s</div>
+            </div>
+
+            {/* Agent: artifact ready message + artifact card */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 340 }}>
+              <span style={{ fontSize: 11, fontWeight: fw.semibold, color: c['content-tertiary'], letterSpacing: '0.04em', textTransform: 'uppercase' }}>Spotter</span>
+              <div style={{ fontSize: 13.5, color: c['content-primary'], lineHeight: 1.6 }}>
+                Campaign Performance is ready. 13 columns across 3 tables, including 2 calculated metrics.
+              </div>
+              {/* Artifact card — clicking this would open/focus the artifact pane */}
+              <div style={{ border: `1px solid ${c['border-default']}`, borderRadius: 10, padding: '12px 14px', background: c['background-base'], cursor: 'pointer', transition: 'border-color 0.12s, box-shadow 0.12s' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderColor = c['border-brand']; (e.currentTarget as HTMLDivElement).style.boxShadow = '0 2px 8px rgba(0,0,0,0.07)'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = c['border-default']; (e.currentTarget as HTMLDivElement).style.boxShadow = 'none'; }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <AcModelIcon size={32} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 3 }}>
+                      <span style={{ fontSize: 13, fontWeight: fw.semibold, color: c['content-primary'] }}>Campaign Performance</span>
+                      <AcDraftBadge />
+                    </div>
+                    <div style={{ fontSize: 11.5, color: c['content-secondary'] }}>Data model · 13 columns · 3 tables</div>
+                  </div>
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke={c['content-tertiary']} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="5,2 9,7 5,12"/>
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          {/* Prompt bar */}
+          <div style={{ flexShrink: 0, padding: '12px 16px 16px', borderTop: `1px solid ${c['border-divider']}` }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: c['background-subtle'], borderRadius: 10, padding: '0 12px', border: `1px solid ${c['border-default']}` }}>
+              <input value={prompt} onChange={e => setPrompt(e.target.value)}
+                placeholder="Ask Spotter..."
+                style={{ flex: 1, height: 42, background: 'transparent', border: 'none', outline: 'none', fontSize: 13.5, color: c['content-primary'], fontFamily: ff.primary }} />
+              <button style={{ width: 28, height: 28, borderRadius: 6, background: prompt ? c['content-brand'] : 'transparent', border: `1px solid ${prompt ? 'transparent' : c['border-default']}`, cursor: prompt ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background 0.12s' }}>
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                  <path d="M2 6h8M6 2l4 4-4 4" stroke={prompt ? 'white' : c['content-tertiary']} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* ── ARTIFACT PANEL ───────────────────────────────────────────────────
+            Self-contained panel. Does NOT reach into the page header.
+            Same skeleton will be used for Plan, Model, Dashboard artifacts.  */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, borderLeft: `1px solid ${c['border-divider']}` }}>
+
+          {/* Artifact identity row — what is this object + its state */}
+          <div style={{ height: 48, flexShrink: 0, display: 'flex', alignItems: 'center', padding: '0 14px', gap: 10, background: c['background-base'], borderBottom: `1px solid ${c['border-divider']}` }}>
+            <AcModelIcon size={26} />
+            <span style={{ fontSize: 14, fontWeight: fw.semibold, color: c['content-primary'] }}>Campaign Performance</span>
+            <AcDraftBadge />
+            <div style={{ flex: 1 }} />
+            {/* Close — collapses artifact pane, returns to full-screen chat */}
+            <AcIconBtn>
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+                <path d="M2 2l10 10M12 2L2 12"/>
+              </svg>
+            </AcIconBtn>
+          </div>
+
+          {/* Artifact tab bar — views (left) + actions (right) ─────────────
+              Views and actions are artifact-specific. For a Plan this row
+              would have different tabs and different actions.               */}
+          <div style={{ height: 40, flexShrink: 0, display: 'flex', alignItems: 'stretch', background: c['background-base'], borderBottom: `1px solid ${c['border-divider']}` }}>
+
+            {/* Views — left aligned */}
+            <div style={{ display: 'flex', alignItems: 'stretch', flex: 1, paddingLeft: 4 }}>
+              {tabs.map(tab => {
+                const on = activeTab === tab.id;
+                return (
+                  <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+                    style={{ height: 40, padding: '0 14px', border: 'none', borderBottom: on ? `2px solid ${c['content-brand']}` : '2px solid transparent', background: 'transparent', cursor: 'pointer', marginBottom: -1, fontSize: 13, fontFamily: ff.primary, fontWeight: on ? fw.semibold : fw.regular, color: on ? c['content-primary'] : c['content-secondary'] }}>
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Actions — right aligned. All surfaced; no ··· hiding.
+                Left group: feature actions on this artifact type.
+                Right group: lifecycle actions (share, publish).        */}
+            <div style={{ display: 'flex', alignItems: 'center', paddingRight: 8, gap: 2 }}>
+
+              {/* Test */}
+              <AcIconBtn>
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M5 1v5L2 12h10L9 6V1"/>
+                  <path d="M4 1h6"/>
+                </svg>
+              </AcIconBtn>
+
+              {/* Live query */}
+              <AcIconBtn>
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M7 1v4M7 9v4M1 7h4M9 7h4"/>
+                  <circle cx="7" cy="7" r="2.2"/>
+                </svg>
+              </AcIconBtn>
+
+              {/* Quality issues — with indicator dot */}
+              <div style={{ position: 'relative' }}>
+                <AcIconBtn>
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M7 2L1.5 12h11L7 2z"/>
+                    <path d="M7 6v2.5M7 10.5v.5"/>
+                  </svg>
+                </AcIconBtn>
+                <div style={{ position: 'absolute', top: 4, right: 4, width: 6, height: 6, borderRadius: '50%', background: '#EF4444', border: `1.5px solid ${c['background-base']}` }} />
+              </div>
+
+              {/* Data panel */}
+              <AcIconBtn>
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="1" y="1" width="12" height="12" rx="1.5"/>
+                  <path d="M5 1v12"/>
+                </svg>
+              </AcIconBtn>
+
+              {/* Settings */}
+              <AcIconBtn>
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="7" cy="7" r="2"/>
+                  <path d="M7 1v1.5M7 11.5V13M1 7h1.5M11.5 7H13M2.6 2.6l1.1 1.1M10.3 10.3l1.1 1.1M11.4 2.6l-1.1 1.1M3.7 10.3l-1.1 1.1"/>
+                </svg>
+              </AcIconBtn>
+
+              {/* Divider */}
+              <div style={{ width: 1, height: 18, background: c['border-divider'], margin: '0 4px' }} />
+
+              {/* Share */}
+              <AcIconBtn>
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M5 2H3a1 1 0 00-1 1v8a1 1 0 001 1h8a1 1 0 001-1V9"/>
+                  <path d="M8 1h5v5"/>
+                  <path d="M13 1L6.5 7.5"/>
+                </svg>
+              </AcIconBtn>
+
+              {/* Publish */}
+              <button style={{ height: 28, padding: '0 14px', marginLeft: 2, borderRadius: 6, background: c['content-brand'], border: 'none', cursor: 'pointer', fontSize: 12.5, fontWeight: fw.semibold, color: 'white', fontFamily: ff.primary }}>
+                Publish
+              </button>
+
+            </div>
+          </div>
+
+          {/* Artifact content — artifact-specific views plug in here.
+              Existing CenterPanel views (columns, tables, etc.) live here as-is. */}
+          <div style={{ flex: 1, overflow: 'auto', background: c['background-base'] }}>
+            {activeTab === 'columns' && (
+              <div>
+                {/* Columns sub-toolbar */}
+                <div style={{ height: 46, display: 'flex', alignItems: 'center', padding: '0 20px', gap: 10, borderBottom: `1px solid ${c['border-divider']}` }}>
+                  <span style={{ fontSize: 12.5, color: c['content-secondary'] }}>13 columns</span>
+                  <div style={{ flex: 1 }} />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: c['background-subtle'], borderRadius: 6, padding: '0 10px', height: 30, border: `1px solid ${c['border-default']}` }}>
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke={c['content-tertiary']} strokeWidth="1.5" strokeLinecap="round"><circle cx="5" cy="5" r="4"/><path d="M10 10l-2-2"/></svg>
+                    <span style={{ fontSize: 12, color: c['content-tertiary'], fontFamily: ff.primary }}>Search columns</span>
+                  </div>
+                </div>
+                {AC_COLUMNS.map((col, i) => (
+                  <div key={i}
+                    style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '9px 20px', borderBottom: `1px solid ${c['border-divider']}`, cursor: 'pointer' }}
+                    onMouseEnter={e => (e.currentTarget.style.background = c['background-subtle'])}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                    <div style={{ width: 20, height: 20, borderRadius: 4, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: fw.bold, fontFamily: ff.mono,
+                      background: col.type === 'measure' ? 'rgba(37,99,235,0.1)' : col.type === 'formula' ? 'rgba(124,58,237,0.1)' : c['background-subtle'],
+                      color: col.type === 'measure' ? '#2563EB' : col.type === 'formula' ? '#7C3AED' : c['content-tertiary'],
+                    }}>
+                      {col.type === 'measure' ? '#' : col.type === 'formula' ? 'f' : 'A'}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <span style={{ fontSize: 13, fontWeight: fw.medium, color: c['content-primary'], fontFamily: ff.mono }}>{col.name}</span>
+                      {col.desc && <span style={{ fontSize: 12, color: c['content-tertiary'], marginLeft: 10, fontFamily: ff.primary }}>{col.desc}</span>}
+                    </div>
+                    {col.table && <span style={{ fontSize: 11, color: c['content-tertiary'], fontFamily: ff.mono, flexShrink: 0 }}>{col.table}</span>}
+                  </div>
+                ))}
+              </div>
+            )}
+            {activeTab !== 'columns' && (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', minHeight: 300, flexDirection: 'column', gap: 8 }}>
+                <span style={{ fontSize: 14, fontWeight: fw.medium, color: c['content-secondary'] }}>{tabs.find(t => t.id === activeTab)?.label} view</span>
+                <span style={{ fontSize: 12, color: c['content-tertiary'] }}>Existing component plugs in here</span>
+              </div>
+            )}
+          </div>
+
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ╔══════════════════════════════════════════════════════════════════════════════╗
 // ║  PLAYGROUND NAV — unified left-nav shell for all iterations                ║
 // ║  Route: /data-studio-v2/playground                                            ║
@@ -1782,7 +2402,7 @@ import { DataQualityDiscoverabilityCompare } from './DataQualityDiscoverability'
 import { CombinedDiscoverabilityCompare } from './CombinedDiscoverability';
 import { DbtExploration } from './components/explorations/Dbt';
 
-type NavId = 'v1' | 'v2' | 'v3' | 'v4' | 'v5' | 'v6' | 'tm1' | 'tm2' | 'tm3' | 'p2-dbt';
+type NavId = 'v1' | 'v2' | 'v3' | 'v4' | 'v5' | 'v6' | 'tm1' | 'tm2' | 'tm3' | 'p2-dbt' | 'clarify-bar' | 'artifact-chat';
 
 interface PGNavItem {
   id: NavId;
@@ -1826,7 +2446,9 @@ const PG_NAV: { section: string; items: PGNavItem[] }[] = [
   {
     section: 'Phase 2 — explorations',
     items: [
-      { id: 'p2-dbt', label: 'dbt workflow', meta: 'empty · import · issues · publish' },
+      { id: 'p2-dbt',       label: 'dbt workflow',    meta: 'empty · import · issues · publish' },
+      { id: 'clarify-bar',  label: 'Clarify bar',    meta: 'prompt-adjacent · auto-advance · compiled message' },
+      { id: 'artifact-chat', label: 'Artifact chat',  meta: 'chat container · model artifact · identity row · tab bar', tag: 'NEW' },
     ],
   },
 ];
@@ -1846,7 +2468,9 @@ const renderNavIteration = (id: NavId): React.ReactNode => {
     case 'tm1': return <Iter1Layout />;
     case 'tm2': return <Iter2Layout />;
     case 'tm3': return <Iter3Layout />;
-    case 'p2-dbt': return <DbtExploration />;
+    case 'p2-dbt':      return <DbtExploration />;
+    case 'clarify-bar':   return <ClarifyBarExploration />;
+    case 'artifact-chat': return <ArtifactChatExploration />;
   }
 };
 

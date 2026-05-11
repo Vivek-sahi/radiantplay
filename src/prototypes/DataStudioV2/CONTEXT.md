@@ -3,11 +3,144 @@ _Single source of truth for this prototype. Update at the end of every session._
 
 ---
 
+## Product direction (current paradigm — read this first)
+
+**Deeper shift: chat is the top-level container; model is an artifact created inside the conversation.**
+
+This session significantly deepened the product paradigm beyond what was previously documented.
+
+- **Chat is the top-level object.** The conversation is what the user is always in. Artifacts are things the agent creates *within* that conversation.
+- **Artifacts are typed objects** with their own views and actions: a data model has Columns/Tables/Preview/Notebook views; a dashboard would have chart/code views. Views are artifact-specific, not hardcoded to the app.
+- **Publish is an artifact property, not an exit gate.** Some artifacts support publish (models, dashboards); others don't (plans). Unpublished but built = draft state on the platform — tied to the originating conversation.
+- **Test is a feature of the data model artifact** — same as "export as PDF" is a feature of a dashboard. Not a mode.
+- **Multiple artifacts per conversation:** temporary (plan — ephemeral, not saved) vs permanent (model/dashboard — saved as draft or published). Users scroll chat to switch between artifact cards.
+- **Entry:** from conversation (chat → artifact opens) OR from Models page (click draft → opens with chat context).
+
+The page-level header says "← Chat" — that is the conversation header. The artifact panel is a self-contained skeleton below it, with its own identity row (name + state + Share + Publish) and tab bar (views left, feature actions right).
+
+Artifact actions for a data model: Test, Live query, Quality issues, Data panel, Settings (tab bar right) + Share, Publish (identity row right).
+
+Playground exploration `artifact-chat` shows the layout — see Phase 2 → explorations in the Playground nav.
+
+Previous product direction notes (co-pilot paradigm) are still below for historical context.
+
+---
+
+**Previous paradigm (superseded):**
+
+The product moved away from a side-panel co-pilot toward a full-screen agent-first experience — closer to Claude artifacts / Claude canvas.
+
+- Entry: Overview prompt → full-screen chat → splits to agent (left) + canvas (right) when artifact ready
+- Agent patterns: clarify → build → test → publish
+- Journey picker removed; everything enters from Overview prompt bar
+- "Projects" renamed to "Models"
+
+---
+
 ## Next up
 
-**Fresh start. No queued items.**
+**Complete the Workspace.tsx migration to the new artifact layout.** The first edit (Chat page header) is already applied and building. Three remaining edits:
 
-All 4 journeys are in a demo-ready state. Next session: discuss direction before building.
+**Edit 2 — Add artifact identity row** inside the center/canvas column (after the `<div style={{ flex: 1, overflow: 'hidden', position: 'relative', display: 'flex', flexDirection: 'column' }}>` opening tag, before the canvas sub-header):
+- 48px row: `[model icon SVG] [project.name] [Draft/v1 badge]` left + `[Share button] [Publish button]` right
+- Use the exact same Share/Publish button JSX from the old header (same `onClick`, same `onMouseEnter/Leave` styles)
+- Model icon: small inline SVG (4-quadrant grid, brand blue, same as Playground `AcModelIcon`)
+- Draft/v1 badge: same conditional logic already in the old header
+
+**Edit 3 — Restructure the canvas sub-header** (replace `{/* Sub-header: unified canvas toolbar */}` block):
+- Remove: absolutely-centered segmented control → replace with left-aligned underline tabs
+- Keep left: Agent reopen button (when closed) + Data panel toggle (unchanged, with `isBuilding` disable)
+- Add left: view tabs `[Columns][Tables][Preview][Notebook]` as underline-style tab buttons (height 40, `borderBottom: active ? 2px solid brand : transparent`, marginBottom: -1)
+- Right side actions (in order): `[Test icon]` stub + `[Live query]` compact (icon + "Live"/"Caching…"/"Cached", existing state+modal) + `[Quality issues]` compact (icon + "9 issues"/"9 resolved", existing state+modal) + `[Settings icon]`
+- Columns-specific controls (right, columns-only): dbt indicators + column count + search + column properties popover — all unchanged, just inside `{project.activeTab === 'columns' && ...}`
+
+**Edit 4 — Fix LeftPanel overlay top offset:**
+- Two occurrences: `top: 104` → `top: 136`
+- (New heights: 48 Chat header + 48 identity row + 40 tab bar = 136)
+
+**Critical preservation rules:**
+- `CenterPanel` component and ALL its props are untouched — columns view triggers (data quality click → edit → refer in chat) are safe inside CenterPanel
+- AgentPanel, drag handle, BuildingSkeleton — untouched
+- All modals (PublishModal, RepublishWizard, DbtPublishModal, CacheModal, QualityModal, ShareModal) — untouched, same render conditions
+- All state variables — untouched
+- Live query and Quality issues: same state, same onClick → modal, same icons — only position moves from page header to tab bar right side, labels shortened to "Live"/"Cached"/"Caching…" and "9 issues"/"9 resolved"
+
+---
+
+## Done — Artifact paradigm + Workspace migration start (2026-05-11, session 68)
+
+**Paradigm deepened: chat as top-level container, model as artifact within conversation.**
+
+- CONTEXT.md: rewrote Product direction block to capture the new paradigm (artifacts, views, publish as artifact property, draft state, multiple artifacts per conversation, artifact panel skeleton).
+- `Playground.tsx`: added `ArtifactChatExploration` (id: `artifact-chat`) in Phase 2 → explorations. Shows: page-level "← Chat" header, agent panel left, model artifact panel right with identity row (name + Draft badge + close) and tab bar (views left, actions right: Test/Live query/Quality issues/Data panel/Settings/Share/Publish). Includes static conversation with artifact card and columns list stub.
+- `Workspace.tsx` (partial): Edit 1 applied — 64px main header replaced with 48px "← Chat" page-level header. Edits 2–4 deferred to next session (see Next up).
+- Build: clean ✓
+
+## Done — Layout + bug fixes (2026-05-11, session 67)
+
+- `index.tsx`: Fixed Day Zero re-trigger bug — added `setIsDayZero(false)` in the `chat → workspace` transition effect so `AgentPanel` remounts in normal mode after the build completes. Root cause: `isDayZero` was never reset, causing `dayZeroPhase` to reinitialize to `'use_case_prompt'` on remount.
+- `AgentPanel.tsx`: "Start building" button now adds a user bubble before the working steps animate in (same pattern as "Edit the plan").
+- `Workspace.tsx`: Publish button text changed from "Publish" → "Publish model" (pre-publish) / "Update model" (post-publish).
+- `index.tsx`: Default `activeTab` changed from `'columns'` → `'tables'` across all project states.
+- `PlanPanel.tsx` + `ChatView.tsx` + `Workspace.tsx`: Plan panel now opens on the left, agent on the right (60/40 split) — then immediately reversed again below.
+- **Agent moved to left:** Agent panel is now on the left, canvas on the right in Workspace. PlanPanel (in ChatView) also moves to the right when open, agent stays left. Drag handle direction fixed (`e.clientX - dragStartX` instead of reversed). "Data Agent" reopen button moved from right-side toolbar to left side. Gray card container added to PlanPanel (gray outer, white card, 40px header). Gray container removed from Workspace canvas.
+- Build: clean ✓
+
+## Done — Plan mode polish + working steps redesign (2026-05-11, session 66)
+
+- `AgentPanel.tsx`: Fixed clarify card not disappearing — added `setDayZeroPhase('confirm_build')` as first line of `handleClarifyComplete` so card hides immediately on last answer. Moved "Start building →" and "Edit the plan" CTAs out of PlanPanel and into the chat message rendering below the plan card (only on latest version). "Edit the plan" now creates a user bubble before the agent responds. Added `handleStartBuilding` and `handleEditPlan` as top-level functions. Simplified `onOpenPlan` prop to `(plan: PlanData) => void`. Plan card title now shows model name + version badge (no "Build Plan" label). Stats row drops "questions" count — shows tables, relationships, columns only. Working steps redesigned: grey dots (opacity 40% done, 100% running), single-pixel grey connecting line, step labels always `content-primary` + semibold, SQL collapsible restyled as a full-width bordered card with document icon + rotating chevron, "Worked for X" duration footer added. "Show work" toggle updated to `content-secondary` grey with SVG chevron (no blue, no filled triangles). Removed `borderTop` divider above prompt bar.
+- `PlanPanel.tsx`: Removed footer CTAs (panel is detail-view only). Removed redundant model name + stats block below header. Formulas split into a dedicated section separate from Columns. Sections: Goal → Tables → Relationships → Columns → Formulas → Sample questions.
+- `ChatView.tsx`: Simplified — `onOpenPlan` is now `(plan: PlanData) => void`, no CTA callbacks needed.
+- Build: clean ✓
+
+## Done — Plan mode phase 1 (2026-05-11, session 65)
+
+Built the plan card + panel flow that replaces the requirement summary card.
+
+- `AgentPanel.tsx`: Added `PlanData`, `PlanTable`, `PlanRelationship`, `PlanColumn` types (exported). Added `planData` field to `AgentMessage`. Added `plan_ready` + `plan_editing` to `DayZeroPhase`. Added `onOpenPlan` prop. Added `planVersion` state. Added `day_zero_generate_plan` SCRIPT (3 steps, 1200ms delay). Added `MOCK_PLAN_BASE` constant (Campaign Performance: 3 tables, 2 joins, 16 columns incl. 2 formulas, 6 sample questions). Replaced old `handleClarifyComplete` — now fires `day_zero_generate_plan` → produces plan card message. Added `handlePlanCardClick` (creates `startBuilding` + `editPlan` closures, calls `onOpenPlan`). Added `plan_ready` + `plan_editing` cases to `handleDayZeroInput` — user typing in either phase triggers mock plan update + new version card. Added `PlanCard` inline component — collapsed card in chat with version badge, model name, goal preview, stats row. Plan messages render outside `MessageBubble` with plan card below intro text.
+- `PlanPanel.tsx`: New component. Full detail panel: header (version badge, close button), model name + stats, 5 collapsible sections (Goal, Tables, Relationships, Columns grouped by table with type labels, Sample questions). Footer: disclaimer + "Start building →" (primary) + "Edit the plan" (secondary ghost).
+- `ChatView.tsx`: Added `activePlan` + `planCTAs` state. `handleOpenPlan` stores plan + CTA callbacks. When plan is open: chat column narrows to 460px (left-pinned), `PlanPanel` renders to the right filling remaining space. "Start building →" closes panel + fires startBuilding callback. "Edit the plan" closes panel + fires editPlan (sets `plan_editing` phase, agent asks what to change).
+- Build: clean ✓
+
+## Done — ClarifyCard promoted (2026-05-11, session 64)
+
+Replaced the old in-message clarify pattern with `DayClarifyCard` — a floating card above the prompt bar.
+
+### What to build
+
+The new ClarifyCard is a floating card that sits **above the prompt bar** (not inside chat message bubbles). It is the standard pattern for all clarifying questions going forward.
+
+**Card anatomy** (reference: `ClarifyBarExploration` in `Playground.tsx`):
+- Header: question text (large, semibold) + `‹ N of N ›` nav (no × button)
+- Full-width numbered option rows with dividers; click a row → immediately advances
+- "Something else" row with pencil icon → expands inline to text input + Submit + Skip
+- Skip omits that question from compiled message; back `‹` lets user revisit
+- Compiled message is a single user bubble: `Q\nA\n\nQ\nA` — skipped questions omitted, fires immediately on last answer
+
+### Exact changes in `AgentPanel.tsx`
+
+**1. Add `DayClarifyCard` component** — extract the card JSX from `ClarifyBarExploration` in `Playground.tsx` into a reusable component. Props: `questions: {question: string; options: string[]}[]`, `onComplete: (answers: Record<number, string|null>) => void`.
+
+**2. Two trigger points** both add a message with `clarifyCard` field + set `dayZeroPhase('clarify_q1')` — lines ~1666 and ~1896. Change both to add the intro message **without** the `clarifyCard` field. Phase set stays the same.
+
+**3. Replace `handleDayZeroInput` cases** — remove `clarify_q1` and `clarify_q2` cases. Add a `handleClarifyComplete(answers)` callback instead:
+- Store `q1 = answers[0]`, `q2 = answers[1]` in `clarifyAnswers`
+- Add compiled user message to `messages`
+- Call `runDayZeroSteps('day_zero_understand_requirement', ...)` with the same outcome as the old `clarify_q2` case (requirement summary card + `confirm_build` phase)
+
+**4. Render the card** — between messages scroll div and prompt bar div (~line 2405):
+```tsx
+{dayZeroPhase === 'clarify_q1' && (
+  <DayClarifyCard questions={DAY_ZERO_QUESTIONS} onComplete={handleClarifyComplete} />
+)}
+```
+
+**5. Remove old in-message ClarifyCard** — delete `{msg.clarifyCard && <ClarifyCard ... />}` block (~line 3088) and the old `ClarifyCard` component (~line 2851).
+
+**6. Clean up** — remove `clarify_q2` from `DayZeroPhase` union type (~line 1307); the card handles both steps internally under `clarify_q1`.
+
+### Build/Test tabs
+Leave untouched — separate task.
 
 ---
 
@@ -73,6 +206,72 @@ Original 6-situation arc (still valid for demo scripting) → `SCRIPT.md`
 ## Session log
 
 _Last 3 sessions. Full history → [SESSION_LOG.md](./SESSION_LOG.md)_
+
+---
+
+### 2026-05-11 (session 64)
+
+**ClarifyCard promoted to main prototype.**
+
+- `AgentPanel.tsx`: removed old in-message `ClarifyCard` component and `clarifyCard` field from `AgentMessage`. Removed `clarify_q2` from `DayZeroPhase` union. Removed `clarifyAnswers` state.
+- Added `DAY_ZERO_QUESTIONS` constant and `DayClarifyCard` component at module level — extracted from `ClarifyBarExploration` in Playground. Props: `questions`, `onComplete`.
+- Added `handleClarifyComplete(answers)` — builds compiled user message, fires `day_zero_understand_requirement` script, sets `confirm_build` phase.
+- Both trigger points (useEffect + `use_case_prompt` case) now add intro message without `clarifyCard` field.
+- Card renders above the prompt bar when `dayZeroPhase === 'clarify_q1'`; prompt bar disabled during clarify phase.
+- Fix: card now closes instantly on last answer — `setDayZeroPhase('confirm_build')` fires at top of `handleClarifyComplete` before async work.
+- Fix: compiled user bubble now renders with `whiteSpace: 'pre-wrap'` so `Q\nA\n\nQ\nA` displays as proper line breaks.
+- Build: clean ✓
+
+---
+
+### 2026-05-11 (session 63)
+
+**ClarifyCard design iteration — Playground exploration.**
+
+- Designed new clarifying questions pattern: floating card above the prompt bar (not in chat bubbles). Full-width numbered rows, click-to-advance, back/forward nav (`‹ 1 of 2 ›`), "Something else" expands inline, Skip omits from compiled message.
+- `Playground.tsx`: `ClarifyBarExploration` fully rebuilt to match sketch. Added to `PlaygroundNav` as "Clarify bar" card under "Phase 2 — explorations" section (NavId `clarify-bar`).
+- Prompt bar always visible below card, greyed out while clarify is active, no placeholder text.
+- Full promotion spec written to CONTEXT.md Next up.
+- Build: clean ✓
+
+---
+
+### 2026-05-11 (session 62)
+
+**Full-screen agent polish + ClarifyBar Playground exploration.**
+
+- `index.tsx`: `ChatView` moved inside `<Shell>` with `hideSidebar={view === 'chat'}` — full-screen agent mode now shows top header only, no left sidebar. Sidebar stays on all other views.
+- `ChatView.tsx`: "← Overview" back button removed (top nav handles navigation). Inner wrapper changed from flex column to flex row so `align-items: stretch` pulls AgentPanel to full height — prompt bar now correctly pinned at bottom.
+- `AgentPanel.tsx`: disclaimer text changed "Agent responses" → "Spotter responses should be reviewed."
+- `Playground.tsx`: `ClarifyBarExploration` component added. Tab toggle ("Workspace" / "Clarify bar") in sub-header. ClarifyBar shows questions above prompt bar (not in chat bubbles); chips auto-advance on select (300ms highlight); custom input per question; on last answer a compiled single user message appears ("Q\nA\n\nQ\nA" format); prompt bar activates after completion. Workspace panel toggles hidden in clarify mode.
+- Build: clean ✓
+
+---
+
+### 2026-05-11 (session 61)
+
+**Context cleanup + entry point unification.**
+
+- CLAUDE.md session protocol fixed: "always work on `main`" → `prototype/data-studio` (was causing branch confusion every session).
+- CONTEXT.md: added Product direction block at top (co-pilot → full-screen agent shift, Claude artifacts analogy). Note added that `/research/` and `/knowledge/` docs predate this shift.
+- "New model" button (Overview + ModelsPage) now routes through `handleOverviewPromptSubmit` → ChatView (full-screen agent), not old `handlePromptSubmit` → Workspace. `NewProjectPrompt` stays as the focused prompt screen; its submit now enters the full-screen agent flow.
+- Build: clean ✓
+
+---
+
+### 2026-05-11 (session 60)
+
+**Product direction shift — co-pilot → full-screen agent.**
+
+- Journey picker removed. App opens directly on Overview.
+- `ChatView.tsx` added — full-screen centered agent panel (860px wide). Entry: Overview prompt submit → `handleOverviewPromptSubmit` → `isDayZero=true`, `isAgentMode=true` → navigates to `'chat'` view.
+- Auto-transition: `chat` → `workspace` when `buildStep` leaves `'empty'` (artifact ready). If no artifact, stays full-screen.
+- `isAgentMode` flag passed to Workspace — agent panel starts at 40% width when entering from prompt.
+- "Projects" renamed to "Models" throughout (nav, headings, buttons).
+- Monitoring and governance tabs removed from nav. Nav is now: Overview / Models / Data / Connections.
+- `ModelsPage.tsx` populated — renders `OVERVIEW_PROJECTS` in a table.
+- Research docs in `/research/` predate this shift — treat as historical.
+- Build: assumed clean (not verified this session).
 
 ---
 

@@ -60,7 +60,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
   useEffect(() => {
     if (!isDraggingAgent) return;
     const onMove = (e: MouseEvent) => {
-      const delta = dragStartX.current - e.clientX; // drag left = wider
+      const delta = e.clientX - dragStartX.current; // drag right = wider (agent on left)
       const next = Math.min(Math.max(dragStartWidth.current + delta, AGENT_MIN), AGENT_MAX());
       setAgentPanelWidth(next);
     };
@@ -144,134 +144,10 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
         @keyframes ds-cache-spin { to { transform: rotate(360deg); } }
       `}</style>
 
-      {/* ── Main header: project identity (with status subtext) + primary actions ── */}
-      <div style={{ height: 64, backgroundColor: c['background-base'], borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', padding: `0 ${sp.D}px`, gap: sp.C, flexShrink: 0 }}>
-
-        {/* Left: back + identity-with-status (two-line) */}
+      {/* ── Chat page header — conversation level ───────────────────────────── */}
+      <div style={{ height: 48, backgroundColor: c['background-base'], borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', padding: `0 ${sp.D}px`, gap: sp.B, flexShrink: 0 }}>
         <Button variant="tertiary" size="small" onClick={onBack}>←</Button>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2, lineHeight: 1.2 }}>
-          {/* Top row — name + Draft/v1 badge */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ ...ts.contentLabelSubhead, color: c['content-primary'] }}>{project.name}</span>
-            {(project.publishedVersion === 0 || project.hasUnpublishedChanges) ? (
-              <span style={{ fontSize: 11, fontWeight: fw.medium, padding: '2px 7px', borderRadius: 4, color: c['content-secondary'], backgroundColor: c['background-subtle'] }}>
-                Draft
-              </span>
-            ) : (
-              <span style={{ fontSize: 11, fontWeight: fw.regular, color: c['content-secondary'] }}>
-                v{project.publishedVersion}
-              </span>
-            )}
-          </div>
-          {/* Subtext row — model status (cache · quality). Skeleton when no model yet. */}
-          {project.buildStep === 'empty' ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, height: 14 }}>
-              <div style={{ width: 88, height: 9, borderRadius: 4, backgroundColor: c['background-subtle'], animation: 'ds-skeleton-pulse 1.4s ease-in-out infinite' }} />
-              <div style={{ width: 3, height: 3, borderRadius: 2, backgroundColor: c['border-divider'] }} />
-              <div style={{ width: 96, height: 9, borderRadius: 4, backgroundColor: c['background-subtle'], animation: 'ds-skeleton-pulse 1.4s ease-in-out infinite', animationDelay: '0.2s' }} />
-            </div>
-          ) : (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: c['content-tertiary'] }}>
-              <button
-                onClick={cacheStatus === 'caching' ? undefined : () => setCacheModalOpen(true)}
-                disabled={cacheStatus === 'caching'}
-                title={cacheStatus === 'caching' ? 'Caching in progress — cannot be stopped' : undefined}
-                style={{
-                  padding: 0, border: 'none', background: 'transparent',
-                  cursor: cacheStatus === 'caching' ? 'default' : 'pointer',
-                  display: 'inline-flex', alignItems: 'center', gap: 5,
-                  fontSize: 11, fontFamily: ff.primary,
-                  color: cacheStatus === 'caching' ? '#A16207' : c['content-primary'],
-                  fontWeight: fw.medium,
-                }}
-                onMouseEnter={e => { if (cacheStatus !== 'caching') e.currentTarget.style.opacity = '0.75'; }}
-                onMouseLeave={e => { e.currentTarget.style.opacity = '1'; }}
-              >
-                {cacheStatus === 'caching' ? (
-                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="#A16207" strokeWidth="1.8" strokeLinecap="round" style={{ animation: 'ds-cache-spin 0.9s linear infinite' }}>
-                    <path d="M8 1.5a6.5 6.5 0 016.5 6.5"/>
-                  </svg>
-                ) : (
-                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                    <ellipse cx="8" cy="3.5" rx="5" ry="1.75"/>
-                    <path d="M3 3.5v5c0 1 2.24 1.75 5 1.75s5-.75 5-1.75v-5"/>
-                    <path d="M3 8.5v4c0 1 2.24 1.75 5 1.75s5-.75 5-1.75v-4"/>
-                  </svg>
-                )}
-                {cacheStatus === 'caching' ? 'Caching in progress…' : cacheStatus === 'cached' ? 'Cached query' : 'Live query'}
-              </button>
-              <span style={{ color: c['border-divider'] }}>·</span>
-              {(project.prepTransforms?.length ?? 0) > 0 ? (
-                <button onClick={() => setQualityModalOpen(true)}
-                  style={{ padding: 0, border: 'none', background: 'transparent', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontFamily: ff.primary, color: '#15803D', fontWeight: fw.medium }}
-                >
-                  <svg width="11" height="11" viewBox="0 0 18 18" fill="none" stroke="#15803D" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M3.75 9L7.5 12.75L14.25 5.25"/>
-                  </svg>
-                  9 issues resolved
-                </button>
-              ) : (
-                <button onClick={() => setQualityModalOpen(true)}
-                  style={{ padding: 0, border: 'none', background: 'transparent', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontFamily: ff.primary, color: '#991B1B', fontWeight: fw.medium }}
-                >
-                  <svg width="11" height="11" viewBox="0 0 18 18" fill="none" stroke="#991B1B" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M9 1.5L1.5 15.75H16.5L9 1.5Z"/>
-                    <line x1="9" y1="7" x2="9" y2="10.5"/>
-                    <circle cx="9" cy="13" r="0.5" fill="#991B1B"/>
-                  </svg>
-                  9 quality issues
-                </button>
-              )}
-            </div>
-          )}
-        </div>
-        {/* Right: actions */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 'auto' }}>
-
-              <button
-                title="Settings"
-                style={{ width: 26, height: 26, padding: 4, border: `1px solid ${c['border-default']}`, borderRadius: 6, backgroundColor: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box' }}
-                onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
-                onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
-              >
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke={c['content-secondary']} strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="7" cy="7" r="1.75"/>
-                  <path d="M7 1v1.5M7 11.5V13M13 7h-1.5M2.5 7H1M11.04 2.96l-1.06 1.06M4.02 9.98l-1.06 1.06M11.04 11.04l-1.06-1.06M4.02 4.02L2.96 2.96"/>
-                </svg>
-              </button>
-
-              {/* Divider */}
-              <div style={{ width: 1, height: 20, backgroundColor: c['border-divider'], flexShrink: 0 }} />
-
-              {/* Share */}
-              <button
-                title="Share"
-                onClick={() => setShareOpen(true)}
-                style={{ height: 26, padding: '0 10px', border: `1px solid ${c['border-default']}`, borderRadius: 6, backgroundColor: 'transparent', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: fw.medium, fontFamily: ff.primary, color: c['content-secondary'], boxSizing: 'border-box' }}
-                onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
-                onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
-              >
-                <svg width="14" height="14" viewBox="0 0 18 18" fill="none" stroke={c['content-secondary']} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="13.5" cy="3.75" r="2.25"/><circle cx="4.5" cy="9" r="2.25"/><circle cx="13.5" cy="14.25" r="2.25"/>
-                  <line x1="6.44" y1="10.13" x2="11.56" y2="13.12"/><line x1="11.56" y1="4.88" x2="6.44" y2="7.87"/>
-                </svg>
-                Share
-              </button>
-
-              {/* Publish */}
-              <button
-                onClick={() => setPublishOpen(true)}
-                style={{ height: 26, padding: '0 14px', border: 'none', borderRadius: 6, backgroundColor: '#2563EB', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 12, fontWeight: 500, fontFamily: ff.primary, color: 'white', boxSizing: 'border-box', transition: 'background-color 0.15s' }}
-                onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#1d4ed8'; }}
-                onMouseLeave={e => { e.currentTarget.style.backgroundColor = '#2563EB'; }}
-              >
-                <svg width="12" height="12" viewBox="0 0 18 18" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M9 11.25V2.25M9 2.25L5.25 6M9 2.25L12.75 6"/>
-                  <line x1="3" y1="15.75" x2="15" y2="15.75"/>
-                </svg>
-                Publish
-              </button>
-        </div>
+        <span style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'] }}>Chat</span>
       </div>
 
 
@@ -376,12 +252,84 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
       {/* Body */}
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
 
-        {/* Center area — full width; LeftPanel floats as overlay */}
+        {/* Agent panel — always mounted so refs survive; hidden via display:none when toggled off */}
+        <div style={{ display: agentPanelOpen ? 'flex' : 'none' }}>
+          <AgentPanel
+            project={project}
+            setProject={setProject}
+            messages={messages}
+            setMessages={setMessages}
+            initialPrompt={initialPrompt}
+            isDayZero={isDayZero}
+            isDbtReview={isDbtReview}
+            onBuildComplete={() => setIsBuilding(false)}
+            externalMessage={externalAgentMessage}
+            onExternalMessageHandled={() => { setExternalAgentMessage(null); setExternalAgentAttachment(null); }}
+            externalMessageAttachment={externalAgentAttachment}
+            injectInput={externalInputInject}
+            onInjectInputHandled={() => setExternalInputInject(null)}
+            width={agentPanelWidth}
+            onClose={() => setAgentPanelOpen(false)}
+            selectedColumns={selectedColumns}
+            onColumnRemove={(name) => setSelectedColumns(prev => prev.filter(c => c !== name))}
+          />
+        </div>
+
+        {/* Drag handle — hidden when agent panel is closed */}
+        <div
+          onMouseDown={(e) => {
+            if (!agentPanelOpen) return;
+            e.preventDefault();
+            dragStartX.current = e.clientX;
+            dragStartWidth.current = agentPanelWidth;
+            setIsDraggingAgent(true);
+            document.body.style.userSelect = 'none';
+            document.body.style.cursor = 'col-resize';
+          }}
+          style={{
+            display: agentPanelOpen ? 'block' : 'none',
+            width: 5,
+            flexShrink: 0,
+            cursor: 'col-resize',
+            position: 'relative',
+            zIndex: 10,
+          }}
+        >
+          {/* Visible line — border-colored normally, blue on hover/active drag */}
+          <div style={{
+            position: 'absolute',
+            top: 0, bottom: 0,
+            left: 2,
+            width: 1,
+            backgroundColor: isDraggingAgent ? '#2770ef' : c['border-divider'],
+            transition: isDraggingAgent ? 'none' : 'background-color 0.15s',
+          }}
+            onMouseEnter={e => { if (!isDraggingAgent) (e.currentTarget as HTMLElement).style.backgroundColor = '#2770ef'; }}
+            onMouseLeave={e => { if (!isDraggingAgent) (e.currentTarget as HTMLElement).style.backgroundColor = c['border-divider']; }}
+          />
+        </div>
+
+        {/* Center area — LeftPanel floats as overlay */}
         <div style={{ flex: 1, overflow: 'hidden', position: 'relative', display: 'flex', flexDirection: 'column' }}>
 
           {/* Sub-header: unified canvas toolbar */}
           {(project.buildStep !== 'empty' || !agentPanelOpen) && (
             <div style={{ height: 40, backgroundColor: c['background-base'], borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', paddingLeft: sp.D, paddingRight: sp.D, gap: sp.B, flexShrink: 0, position: 'relative' }}>
+
+              {/* Agent reopen — left side, mirrors agent panel position */}
+              {!agentPanelOpen && (
+                <button
+                  onClick={() => setAgentPanelOpen(true)}
+                  style={{ height: 28, padding: '0 10px', gap: 6, border: `1px solid ${c['border-default']}`, borderRadius: 6, backgroundColor: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, color: c['content-secondary'], boxSizing: 'border-box', flexShrink: 0 }}
+                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
+                  onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+                >
+                  <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M8 1.5 L9.1 6.4 L14.5 8 L9.1 9.6 L8 14.5 L6.9 9.6 L1.5 8 L6.9 6.4 Z"/>
+                  </svg>
+                  Data Agent
+                </button>
+              )}
 
               {/* Data panel toggle — left, unchanged */}
               <button
@@ -541,20 +489,6 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
                 </>
               )}
 
-              {/* Agent reopen */}
-              {!agentPanelOpen && (
-                <button
-                  onClick={() => setAgentPanelOpen(true)}
-                  style={{ height: 28, padding: '0 10px', gap: 6, border: `1px solid ${c['border-default']}`, borderRadius: 6, backgroundColor: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, color: c['content-secondary'], boxSizing: 'border-box', flexShrink: 0 }}
-                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
-                  onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
-                >
-                  <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor">
-                    <path d="M8 1.5 L9.1 6.4 L14.5 8 L9.1 9.6 L8 14.5 L6.9 9.6 L1.5 8 L6.9 6.4 Z"/>
-                  </svg>
-                  Data Agent
-                </button>
-              )}
               </div>
             </div>
           )}
@@ -579,62 +513,6 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
           )}
         </div>
 
-        {/* Drag handle — hidden when agent panel is closed */}
-        <div
-          onMouseDown={(e) => {
-            if (!agentPanelOpen) return;
-            e.preventDefault();
-            dragStartX.current = e.clientX;
-            dragStartWidth.current = agentPanelWidth;
-            setIsDraggingAgent(true);
-            document.body.style.userSelect = 'none';
-            document.body.style.cursor = 'col-resize';
-          }}
-          style={{
-            display: agentPanelOpen ? 'block' : 'none',
-            width: 5,
-            flexShrink: 0,
-            cursor: 'col-resize',
-            position: 'relative',
-            zIndex: 10,
-          }}
-        >
-          {/* Visible line — border-colored normally, blue on hover/active drag */}
-          <div style={{
-            position: 'absolute',
-            top: 0, bottom: 0,
-            left: 2,
-            width: 1,
-            backgroundColor: isDraggingAgent ? '#2770ef' : c['border-divider'],
-            transition: isDraggingAgent ? 'none' : 'background-color 0.15s',
-          }}
-            onMouseEnter={e => { if (!isDraggingAgent) (e.currentTarget as HTMLElement).style.backgroundColor = '#2770ef'; }}
-            onMouseLeave={e => { if (!isDraggingAgent) (e.currentTarget as HTMLElement).style.backgroundColor = c['border-divider']; }}
-          />
-        </div>
-
-        {/* Agent panel — always mounted so refs survive; hidden via display:none when toggled off */}
-        <div style={{ display: agentPanelOpen ? 'flex' : 'none' }}>
-          <AgentPanel
-            project={project}
-            setProject={setProject}
-            messages={messages}
-            setMessages={setMessages}
-            initialPrompt={initialPrompt}
-            isDayZero={isDayZero}
-            isDbtReview={isDbtReview}
-            onBuildComplete={() => setIsBuilding(false)}
-            externalMessage={externalAgentMessage}
-            onExternalMessageHandled={() => { setExternalAgentMessage(null); setExternalAgentAttachment(null); }}
-            externalMessageAttachment={externalAgentAttachment}
-            injectInput={externalInputInject}
-            onInjectInputHandled={() => setExternalInputInject(null)}
-            width={agentPanelWidth}
-            onClose={() => setAgentPanelOpen(false)}
-            selectedColumns={selectedColumns}
-            onColumnRemove={(name) => setSelectedColumns(prev => prev.filter(c => c !== name))}
-          />
-        </div>
       </div>
     </div>
   );
