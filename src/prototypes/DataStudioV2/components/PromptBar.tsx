@@ -65,8 +65,6 @@ export interface PromptBarProps {
   autoFocus?: boolean;
   /** 'up' opens dropdowns above the bar (use in panels); 'down' opens below (landing page) */
   dropDirection?: 'up' | 'down';
-  /** compact: icon-only table button (Upload always visible) */
-  compact?: boolean;
   /** landingPage: single-row textarea, cleaner toolbar styling */
   landingPage?: boolean;
   onColumnRemove?: (name: string) => void;
@@ -84,7 +82,6 @@ const PromptBar = forwardRef<PromptBarRef, PromptBarProps>(({
   placeholder = "Give me a task. Use '@' to mention tables.",
   autoFocus = false,
   dropDirection = 'down',
-  compact = false,
   landingPage = false,
   onColumnRemove,
   leftSlot,
@@ -97,16 +94,9 @@ const PromptBar = forwardRef<PromptBarRef, PromptBarProps>(({
   const [mentionActive, setMention]     = useState(false);
   const [mentionQuery, setQuery]        = useState('');
   const [mentionIndex, setMentionIdx]   = useState(0);
-  const [browserOpen, setBrowser]       = useState(false);
-  const [tableSearch, setSearch]        = useState('');
   const [uploadOpen, setUpload]         = useState(false);
 
-  const [expConns,   setExpConns]   = useState<Set<string>>(new Set(['snowflake-1']));
-  const [expDBs,     setExpDBs]     = useState<Set<string>>(new Set(['marketing_db']));
-  const [expSchemas, setExpSchemas] = useState<Set<string>>(new Set(['mkt_public']));
-
   const textareaRef  = useRef<HTMLTextAreaElement>(null);
-  const searchRef    = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const animTimerRef  = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [ghostSuffix, setGhostSuffix] = useState('');
@@ -164,23 +154,15 @@ const PromptBar = forwardRef<PromptBarRef, PromptBarProps>(({
   const canSubmit = value.trim().length > 0 && !disabled;
 
   const filtered = ALL_TABLES.filter(t => t.name.toLowerCase().includes(mentionQuery.toLowerCase()));
-  const searchResults = tableSearch.trim()
-    ? ALL_TABLES.filter(t => t.name.toLowerCase().includes(tableSearch.toLowerCase()))
-    : null;
-
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setBrowser(false); setMention(false);
+        setMention(false);
       }
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
-
-  useEffect(() => {
-    if (browserOpen) setTimeout(() => searchRef.current?.focus(), 50);
-  }, [browserOpen]);
 
   useEffect(() => () => { if (animTimerRef.current) clearTimeout(animTimerRef.current); }, []);
 
@@ -221,18 +203,11 @@ const PromptBar = forwardRef<PromptBarRef, PromptBarProps>(({
     setTimeout(() => { el.focus(); el.setSelectionRange(before.length, before.length); }, 0);
   };
 
-  const addTable = (id: string, closeMenu = false) => {
+  const addTable = (id: string) => {
     setAttached(prev => prev.includes(id) ? prev : [...prev, id]);
-    if (closeMenu) setBrowser(false);
   };
 
   const removeTable = (id: string) => setAttached(prev => prev.filter(x => x !== id));
-
-  const tog = (set: Set<string>, id: string) => {
-    const next = new Set(set);
-    next.has(id) ? next.delete(id) : next.add(id);
-    return next;
-  };
 
   const handleSubmit = () => {
     if (!canSubmit) return;
@@ -341,62 +316,6 @@ const PromptBar = forwardRef<PromptBarRef, PromptBarProps>(({
           <div style={{ display: 'flex', gap: sp.A, alignItems: 'center', position: 'relative' }}>
             {leftSlot}
 
-            {/* Table browser button */}
-            <div style={{ position: 'relative' }}>
-              <button
-                onClick={() => { setMention(false); setBrowser(v => !v); setSearch(''); }}
-                title="Add tables"
-                style={{ display: 'flex', alignItems: 'center', gap: 4, padding: `${sp.A}px ${sp.B}px`, border: 'none', borderRadius: 6, backgroundColor: 'transparent', color: c['content-secondary'], fontSize: fs.xs, cursor: 'pointer', fontFamily: ff.primary, lineHeight: '1.4' }}
-                onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
-                onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
-              >
-                <span style={{ fontSize: 12 }}>+</span>
-                {!compact && <span>Tables</span>}
-              </button>
-
-              {browserOpen && (
-                <div style={{ position: 'absolute', ...dropPos, left: 0, width: 300, backgroundColor: c['background-base'], border: `1px solid ${c['border-default']}`, borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', zIndex: 300, overflow: 'hidden', display: 'flex', flexDirection: 'column', maxHeight: 280 }}>
-                  <div style={{ padding: `${sp.B}px ${sp.C}px`, borderBottom: `1px solid ${c['border-divider']}`, flexShrink: 0 }}>
-                    <input
-                      ref={searchRef}
-                      value={tableSearch}
-                      onChange={e => setSearch(e.target.value)}
-                      placeholder="Search tables…"
-                      style={{ width: '100%', border: `1px solid ${c['border-default']}`, borderRadius: 6, padding: `${sp.A}px ${sp.B}px`, fontSize: fs.xs, fontFamily: ff.primary, color: c['content-primary'], backgroundColor: c['background-subtle'], outline: 'none', boxSizing: 'border-box' }}
-                    />
-                  </div>
-                  <div style={{ overflowY: 'auto', flex: 1 }}>
-                    {searchResults ? (
-                      searchResults.length === 0 ? (
-                        <div style={{ padding: sp.D, fontSize: fs.xs, color: c['content-secondary'], textAlign: 'center' }}>No tables found</div>
-                      ) : searchResults.map(t => (
-                        <BrowserRow key={t.id} name={t.name} sub={t.path} type={t.type} depth={0} added={attachedTables.includes(t.id)} onAdd={() => addTable(t.id, true)} />
-                      ))
-                    ) : (
-                      WAREHOUSE_TREE.map(conn => (
-                        <div key={conn.id}>
-                          <TreeNode icon={conn.type === 'snowflake' ? '❄' : '⬡'} label={conn.name} depth={0} open={expConns.has(conn.id)} onToggle={() => setExpConns(s => tog(s, conn.id))} bold />
-                          {expConns.has(conn.id) && conn.databases.map(db => (
-                            <div key={db.id}>
-                              <TreeNode icon="▤" label={db.name} depth={1} open={expDBs.has(db.id)} onToggle={() => setExpDBs(s => tog(s, db.id))} />
-                              {expDBs.has(db.id) && db.schemas.map(sc => (
-                                <div key={sc.id}>
-                                  <TreeNode icon="⊡" label={sc.name} depth={2} open={expSchemas.has(sc.id)} onToggle={() => setExpSchemas(s => tog(s, sc.id))} />
-                                  {expSchemas.has(sc.id) && sc.tables.map(t => (
-                                    <BrowserRow key={t.id} name={t.name} depth={3} type={t.type ?? 'table'} added={attachedTables.includes(t.id)} onAdd={() => addTable(t.id, true)} />
-                                  ))}
-                                </div>
-                              ))}
-                            </div>
-                          ))}
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-
             {(
               <button onClick={() => setUpload(true)}
                 style={{ padding: `${sp.A}px ${sp.B}px`, border: 'none', borderRadius: 6, backgroundColor: 'transparent', color: c['content-secondary'], fontSize: fs.xs, cursor: 'pointer', fontFamily: ff.primary, lineHeight: '1.4' }}
@@ -431,40 +350,6 @@ export default PromptBar;
 
 // ── Sub-components ─────────────────────────────────────────────────────────────
 
-const TreeNode: React.FC<{ icon: string; label: string; depth: number; open: boolean; onToggle: () => void; bold?: boolean }> = ({ icon, label, depth, open, onToggle, bold }) => (
-  <div
-    onClick={onToggle}
-    style={{ display: 'flex', alignItems: 'center', gap: sp.A, padding: `5px ${sp.C}px`, paddingLeft: 12 + depth * 14, cursor: 'pointer', userSelect: 'none' }}
-    onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
-    onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
-  >
-    <span style={{ fontSize: 9, color: c['content-secondary'], width: 10, flexShrink: 0 }}>{open ? '▼' : '▶'}</span>
-    <span style={{ fontSize: fs.xs, color: c['content-secondary'], width: 14, textAlign: 'center', flexShrink: 0 }}>{icon}</span>
-    <span style={{ fontSize: fs.xs, color: c['content-primary'], fontWeight: bold ? fw.semibold : fw.regular }}>{label}</span>
-  </div>
-);
-
-const BrowserRow: React.FC<{ name: string; sub?: string; depth?: number; type: WarehouseTableType; added: boolean; onAdd: () => void }> = ({ name, sub, depth = 0, type, added, onAdd }) => (
-  <div
-    onClick={!added ? onAdd : undefined}
-    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: `5px ${sp.C}px`, paddingLeft: 12 + depth * 14, cursor: added ? 'default' : 'pointer', opacity: added ? 0.5 : 1 }}
-    onMouseEnter={e => { if (!added) e.currentTarget.style.backgroundColor = c['background-subtle']; }}
-    onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
-  >
-    <div style={{ display: 'flex', alignItems: 'center', gap: sp.A }}>
-      <span style={{ fontSize: 9, color: 'transparent', width: 10, flexShrink: 0 }}>·</span>
-      <span style={{ fontSize: 10, color: c['content-secondary'], width: 14, textAlign: 'center', flexShrink: 0 }}>{typeIcon(type)}</span>
-      <div>
-        <span style={{ fontSize: fs.xs, color: c['content-primary'], fontFamily: ff.mono }}>{name}</span>
-        {sub && <div style={{ fontSize: 10, color: c['content-secondary'] }}>{sub}</div>}
-      </div>
-    </div>
-    {added
-      ? <span style={{ fontSize: fs.xs, color: c['content-success'] }}>✓</span>
-      : <span style={{ fontSize: fs.xs, color: c['content-brand'] }}>+ Add</span>
-    }
-  </div>
-);
 
 const UploadModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const [dragOver, setDragOver] = useState(false);

@@ -98,7 +98,6 @@ const NewProjectPrompt: React.FC<NewProjectPromptProps> = ({ onSubmit, onStartMa
               placeholder="Describe your use case and the questions you'd like to answer…"
               autoFocus
               dropDirection="down"
-              compact={false}
               landingPage
             />
           </div>

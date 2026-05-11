@@ -396,7 +396,6 @@ const Overview: React.FC<OverviewProps> = ({
                 onSubmit={(text) => onPromptSubmit(text)}
                 placeholder="How can I help you today?"
                 dropDirection="down"
-                compact={false}
                 landingPage
                 leftSlot={
                   <ConnectionPill
