@@ -39,27 +39,9 @@ The product moved away from a side-panel co-pilot toward a full-screen agent-fir
 
 ## Next up
 
-### 1. Review the 5-tab ModelView — decide what to keep and remove
+### 1. `onFixWithAgent` — Pulse alert → full agent fix flow
 
-**Context:** `ModelView.tsx` now has 5 tabs: Info, Usage, Cache, Data quality, Monitoring. The Monitoring tab is Komal's addition (4 pillars + Cost/ROI + Semantic coverage). The existing Cache and Data quality tabs are ours.
-
-**What to evaluate in the next session:**
-
-Open any model from the Overview (e.g., Marketing Campaign Attribution — has mock data for all tabs). Click through all 5 tabs and decide:
-
-- **Cache tab** — does it still belong here, or is cache management now fully covered by the Workspace? Komal removed it in her version.
-- **Data quality tab** — standalone score + progress bars. Now that Monitoring has a Data quality pillar, is this tab redundant? Or does it add value as a dedicated view?
-- **Usage tab cache banner** — Komal removed the "Cache now" promotion banner from Usage. Does it belong there, or is the Monitoring → Performance pillar's CTA sufficient?
-
-**Decision options:**
-- A: Keep all 5 tabs (no change — most conservative)
-- B: Remove Cache tab, keep Data quality tab (Monitoring covers cache status; data quality still useful standalone)
-- C: Remove both Cache and Data quality tabs, matching Komal's 3-tab structure (Monitoring consolidates everything)
-- D: Some other combination
-
-**After deciding:** apply the cuts to `ModelView.tsx` directly. No Playground step needed — it's a deletion, not an addition.
-
-**Also still open:** `onFixWithAgent` — Pulse alert clicks currently open ModelView at Monitoring tab. The full agent fix flow (Komal's `FullChatView.tsx`) is a separate task after this one.
+Clicking a "Fix with agent" Pulse insight currently opens ModelView at Monitoring (stub). The real flow should launch a full-screen agent conversation pre-seeded with the alert context. `onFixWithAgent(insight, project)` in `index.tsx` is the entry point.
 
 ---
 
@@ -375,6 +357,17 @@ Original 6-situation arc (still valid for demo scripting) → `SCRIPT.md`
 ## Session log
 
 _Last 3 sessions. Full history → [SESSION_LOG.md](./SESSION_LOG.md)_
+
+---
+
+### 2026-05-11 (session 82)
+
+**ModelView tabs cut + Overview/Models page cleanup.**
+
+- **ModelView:** removed Usage and Data quality tabs. Now 3 tabs: Info, Cache, Monitoring. Decision: Monitoring consolidates health/quality signals; Usage conversations had no clear home in the monitoring-first paradigm.
+- **Overview:** removed the `borderBottom` divider between the hero and the Pulse section. Removed the old table-style "Recent models" and "Explore data" sections below the panels. Recent Models card (next to Pulse) kept and updated — each row now shows model icon + name + status/queries subtext, then health dot + label and date on the right.
+- **Models page:** replaced "Issues" column with "Health" (colored dot + Healthy/Needs attention/Broken label). Dropped "Author" column. Removed `maxWidth: 1200` container so table fills full width.
+- Build: clean ✓
 
 ---
 
