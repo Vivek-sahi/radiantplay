@@ -1,10 +1,10 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { c, ff, fs, fw } from '../styles';
 import { ProjectState } from '../index';
 import { AgentMessage, PlanData } from './AgentPanel';
 import AgentPanel from './AgentPanel';
 import PlanPanel from './PlanPanel';
-import ChatContextPanel from './ChatContextPanel';
+import ChatContextPanel, { CreatedItem } from './ChatContextPanel';
 
 interface ChatViewProps {
   project: ProjectState;
@@ -15,6 +15,7 @@ interface ChatViewProps {
   isDayZero?: boolean;
   isDbtReview?: boolean;
   onBack: () => void;
+  onNavigateToTable?: (tableName: string) => void;
 }
 
 const CHAT_WIDTH = 860;
@@ -22,41 +23,45 @@ const CHAT_PANEL_PCT = 0.4;
 
 const ChatView: React.FC<ChatViewProps> = ({
   project, setProject, messages, setMessages,
-  initialPrompt, isDayZero, isDbtReview, onBack,
+  initialPrompt, isDayZero, isDbtReview, onBack, onNavigateToTable,
 }) => {
   const [activePlan, setActivePlan] = useState<PlanData | null>(null);
   const [contextPanelOpen, setContextPanelOpen] = useState(true);
 
   const isPlanOpen = activePlan !== null;
 
+  // Close context panel when plan opens to avoid 3-column crowding
+  useEffect(() => {
+    if (isPlanOpen) setContextPanelOpen(false);
+  }, [isPlanOpen]);
+
   const planMsg = useMemo(() => messages.find(m => m.planData != null), [messages]);
-  const created = useMemo(() => [
-    ...(planMsg ? [{ type: 'plan' as const, name: 'Build plan' }] : []),
-    ...(project.buildStep !== 'empty' ? [{ type: 'model' as const, name: project.name }] : []),
+
+  const created = useMemo((): CreatedItem[] => [
+    ...(planMsg ? [{
+      type: 'plan' as const,
+      name: 'Build plan',
+      onClick: () => planMsg?.planData && setActivePlan(planMsg.planData),
+    }] : []),
+    ...(project.buildStep !== 'empty' ? [{
+      type: 'model' as const,
+      name: project.name,
+    }] : []),
   ], [planMsg, project.buildStep, project.name]);
+
   const contextTables = useMemo(() => planMsg?.planData?.tables.map(t => t.name) ?? [], [planMsg]);
   const contextSkills = useMemo(() => project.buildStep !== 'empty' ? ['create-data-model'] : [], [project.buildStep]);
 
-  const showContextPanel = contextPanelOpen;
-
   return (
     <div style={{
-      flex: 1,
-      display: 'flex',
-      flexDirection: 'column',
-      overflow: 'hidden',
-      backgroundColor: c['background-base'],
-      fontFamily: ff.primary,
+      flex: 1, display: 'flex', flexDirection: 'column',
+      overflow: 'hidden', backgroundColor: c['background-base'], fontFamily: ff.primary,
     }}>
 
       {/* 48px header */}
       <div style={{
-        height: 48,
-        flexShrink: 0,
-        display: 'flex',
-        alignItems: 'center',
-        borderBottom: `1px solid ${c['border-divider']}`,
-        padding: '0 16px',
+        height: 48, flexShrink: 0, display: 'flex', alignItems: 'center',
+        borderBottom: `1px solid ${c['border-divider']}`, padding: '0 16px',
       }}>
         <div style={{ flex: 1 }}>
           <button
@@ -64,8 +69,7 @@ const ChatView: React.FC<ChatViewProps> = ({
             style={{
               background: 'none', border: 'none', cursor: 'pointer', padding: '4px 6px',
               display: 'flex', alignItems: 'center', gap: 6,
-              fontSize: fs.sm, color: c['content-secondary'], fontFamily: ff.primary,
-              borderRadius: 4,
+              fontSize: fs.sm, color: c['content-secondary'], fontFamily: ff.primary, borderRadius: 4,
             }}
             onMouseEnter={e => (e.currentTarget.style.color = c['content-primary'])}
             onMouseLeave={e => (e.currentTarget.style.color = c['content-secondary'])}
@@ -84,17 +88,11 @@ const ChatView: React.FC<ChatViewProps> = ({
             onClick={() => setContextPanelOpen(o => !o)}
             title={contextPanelOpen ? 'Hide context panel' : 'Show context panel'}
             style={{
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              padding: 4,
-              display: 'flex',
-              alignItems: 'center',
-              color: contextPanelOpen ? c['content-primary'] : c['content-secondary'],
-              borderRadius: 4,
+              background: 'none', border: 'none', cursor: 'pointer', padding: 4,
+              display: 'flex', alignItems: 'center',
+              color: contextPanelOpen ? c['content-primary'] : c['content-secondary'], borderRadius: 4,
             }}
           >
-            {/* Sidebar-right toggle icon (rect outline + vertical line at x=12) */}
             <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
               <rect x="1.5" y="1.5" width="15" height="15" rx="2" stroke="currentColor" strokeWidth="1.5" />
               <line x1="12" y1="1.5" x2="12" y2="16.5" stroke="currentColor" strokeWidth="1.5" />
@@ -106,19 +104,14 @@ const ChatView: React.FC<ChatViewProps> = ({
       {/* Body row */}
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
 
-        {/* Chat column — 40% when plan is open, full-width centered otherwise */}
+        {/* Chat column */}
         <div style={{
           flex: isPlanOpen ? `0 0 ${CHAT_PANEL_PCT * 100}%` : '1',
           display: 'flex',
           justifyContent: isPlanOpen ? 'flex-start' : 'center',
           overflow: 'hidden',
         }}>
-          <div style={{
-            width: isPlanOpen ? '100%' : CHAT_WIDTH,
-            height: '100%',
-            display: 'flex',
-            overflow: 'hidden',
-          }}>
+          <div style={{ width: isPlanOpen ? '100%' : CHAT_WIDTH, height: '100%', display: 'flex', overflow: 'hidden' }}>
             <AgentPanel
               project={project}
               setProject={setProject}
@@ -137,16 +130,17 @@ const ChatView: React.FC<ChatViewProps> = ({
         {isPlanOpen && activePlan && (
           <PlanPanel
             plan={activePlan}
-            onClose={() => setActivePlan(null)}
+            onClose={() => { setActivePlan(null); setContextPanelOpen(true); }}
           />
         )}
 
         {/* Context panel */}
-        {showContextPanel && (
+        {contextPanelOpen && (
           <ChatContextPanel
             created={created}
             tables={contextTables}
             skills={contextSkills}
+            onNavigateToTable={onNavigateToTable}
           />
         )}
 

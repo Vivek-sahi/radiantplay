@@ -168,25 +168,6 @@ const QualityPlanPanel: React.FC<QualityPlanPanelProps> = ({ onClose, onApplyFix
             ))}
           </div>
 
-          {/* Footer */}
-          <div style={{ padding: `${sp.C}px ${sp.D}px`, borderTop: `1px solid ${c['border-divider']}`, display: 'flex', gap: sp.B, flexShrink: 0 }}>
-            <button
-              onClick={onApplyFixes}
-              style={{ flex: 1, height: 32, backgroundColor: '#2770EF', color: '#fff', border: 'none', borderRadius: 7, fontSize: fs.sm, fontWeight: fw.semibold, cursor: 'pointer', fontFamily: ff.primary }}
-              onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#1a5fd4')}
-              onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#2770EF')}
-            >
-              Apply fixes
-            </button>
-            <button
-              onClick={onEditPlan}
-              style={{ height: 32, padding: '0 14px', backgroundColor: 'transparent', color: c['content-primary'], border: `1px solid ${c['border-default']}`, borderRadius: 7, fontSize: fs.sm, fontWeight: fw.medium, cursor: 'pointer', fontFamily: ff.primary }}
-              onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
-              onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
-            >
-              Edit plan
-            </button>
-          </div>
 
         </div>
       </div>

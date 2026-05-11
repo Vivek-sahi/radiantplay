@@ -1,121 +1,121 @@
 import React, { useState } from 'react';
-import { c, fs, fw, sp } from '../styles';
+import { c, fs, fw, sp, ff } from '../styles';
 import { Icon } from '../../../components/icons';
 
+export interface CreatedItem {
+  type: 'plan' | 'model' | 'quality-plan';
+  name: string;
+  onClick?: () => void;
+  actions?: { label: string; onClick: () => void }[];
+}
+
 interface ChatContextPanelProps {
-  created: { type: 'plan' | 'model'; name: string }[];
+  created: CreatedItem[];
   tables: string[];
   skills: string[];
+  onNavigateToTable?: (tableName: string) => void;
 }
 
 const ModelIcon: React.FC = () => (
-  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ flexShrink: 0 }}>
-    <rect x="1" y="1" width="8" height="8" rx="1.5" fill="#BFDBFE" />
-    <rect x="11" y="1" width="8" height="8" rx="1.5" fill="#93C5FD" />
-    <rect x="1" y="11" width="8" height="8" rx="1.5" fill="#93C5FD" />
-    <rect x="11" y="11" width="8" height="8" rx="1.5" fill="#60A5FA" />
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0 }}>
+    <rect x="0.5" y="0.5" width="5.5" height="5.5" rx="1.2" fill="#2770EF" />
+    <rect x="8" y="0.5" width="5.5" height="5.5" rx="1.2" fill="#2770EF" opacity="0.5" />
+    <rect x="0.5" y="8" width="5.5" height="5.5" rx="1.2" fill="#2770EF" opacity="0.5" />
+    <rect x="8" y="8" width="5.5" height="5.5" rx="1.2" fill="#2770EF" />
   </svg>
 );
 
-const SectionHeader: React.FC<{
-  label: string;
-  open: boolean;
-  onToggle: () => void;
-}> = ({ label, open, onToggle }) => (
+const GoToArrow: React.FC = () => (
+  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+    <path d="M2 10L10 2M10 2H5M10 2v5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+const SectionHeader: React.FC<{ label: string; open: boolean; onToggle: () => void }> = ({ label, open, onToggle }) => (
   <button
     onClick={onToggle}
     style={{
-      display: 'flex',
-      alignItems: 'center',
-      gap: sp.B,
-      width: '100%',
-      padding: `${sp.B}px ${sp.C}px`,
-      background: 'none',
-      border: 'none',
-      cursor: 'pointer',
-      color: c['content-secondary'],
-      fontSize: fs.xs,
-      fontWeight: fw.medium,
-      textTransform: 'uppercase',
-      letterSpacing: '0.06em',
+      display: 'flex', alignItems: 'center', gap: sp.B,
+      width: '100%', padding: `${sp.B}px ${sp.C}px`,
+      background: 'none', border: 'none', cursor: 'pointer',
+      color: c['content-secondary'], fontSize: fs.xs,
+      fontWeight: fw.medium, textTransform: 'uppercase', letterSpacing: '0.06em',
+      fontFamily: ff.primary,
     }}
   >
-    <span style={{
-      display: 'inline-flex',
-      transition: 'transform 0.15s ease',
-      transform: open ? 'rotate(0deg)' : 'rotate(-90deg)',
-    }}>
+    <span style={{ display: 'inline-flex', transition: 'transform 0.15s ease', transform: open ? 'rotate(0deg)' : 'rotate(-90deg)' }}>
       <Icon name="chevron-down" size="xs" />
     </span>
     {label}
   </button>
 );
 
-const ChatContextPanel: React.FC<ChatContextPanelProps> = ({ created, tables, skills }) => {
+const ChatContextPanel: React.FC<ChatContextPanelProps> = ({ created, tables, skills, onNavigateToTable }) => {
   const [createdOpen, setCreatedOpen] = useState(true);
   const [contextOpen, setContextOpen] = useState(true);
+  const [hoveredTable, setHoveredTable] = useState<number | null>(null);
+  const [hoveredCreated, setHoveredCreated] = useState<number | null>(null);
 
   return (
     <div style={{
-      width: 280,
-      flexShrink: 0,
+      width: 280, flexShrink: 0,
       borderLeft: `1px solid ${c['border-divider']}`,
-      display: 'flex',
-      flexDirection: 'column',
-      overflowY: 'auto',
-      backgroundColor: c['background-base'],
+      display: 'flex', flexDirection: 'column',
+      overflowY: 'auto', backgroundColor: c['background-base'],
     }}>
 
       {/* Created section */}
       <SectionHeader label="Created" open={createdOpen} onToggle={() => setCreatedOpen(o => !o)} />
 
       {createdOpen && (
-        <div style={{ padding: `0 ${sp.C}px ${sp.C}px`, display: 'flex', flexDirection: 'column', gap: sp.B }}>
+        <div style={{ padding: `0 ${sp.C}px ${sp.C}px`, display: 'flex', flexDirection: 'column' }}>
           {created.length === 0 ? (
-            <span style={{ fontSize: fs.sm, color: c['content-secondary'] }}>Nothing created yet.</span>
+            <span style={{ fontSize: fs.sm, color: c['content-secondary'], padding: `2px ${sp.B}px` }}>Nothing created yet.</span>
           ) : created.map((item, i) => (
-            item.type === 'plan' ? (
-              <div key={i} style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: sp.B,
-                padding: `${sp.B}px ${sp.C}px`,
-                backgroundColor: c['background-base'],
-                border: `1px solid ${c['border-default']}`,
-                borderRadius: 6,
-                cursor: 'pointer',
-                transition: 'background-color 0.1s ease',
-              }}
-                onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
-                onMouseLeave={e => (e.currentTarget.style.backgroundColor = c['background-base'])}
+            <div key={i}>
+              <div
+                onClick={item.onClick}
+                onMouseEnter={() => setHoveredCreated(i)}
+                onMouseLeave={() => setHoveredCreated(null)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  padding: `5px ${sp.B}px`, borderRadius: 4,
+                  cursor: item.onClick ? 'pointer' : 'default',
+                  backgroundColor: hoveredCreated === i && item.onClick ? c['background-subtle'] : 'transparent',
+                  transition: 'background-color 0.1s ease',
+                }}
               >
-                <Icon name="doc" size="s" />
-                <span style={{ fontSize: fs.sm, color: c['content-primary'], fontWeight: fw.medium }}>{item.name}</span>
+                {item.type === 'model' ? (
+                  <ModelIcon />
+                ) : (
+                  <Icon name="doc" size="s" color={item.type === 'quality-plan' ? '#D97706' : c['content-secondary']} />
+                )}
+                <span style={{ fontSize: fs.sm, color: c['content-primary'], flex: 1 }}>{item.name}</span>
               </div>
-            ) : (
-              <div key={i} style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: sp.B,
-                padding: `${sp.B}px ${sp.C}px`,
-                backgroundColor: '#EFF6FF',
-                border: `1px solid #BFDBFE`,
-                borderRadius: 6,
-                cursor: 'pointer',
-                transition: 'border-color 0.1s ease',
-              }}
-                onMouseEnter={e => (e.currentTarget.style.borderColor = '#93C5FD')}
-                onMouseLeave={e => (e.currentTarget.style.borderColor = '#BFDBFE')}
-              >
-                <ModelIcon />
-                <span style={{ fontSize: fs.sm, color: c['content-primary'], fontWeight: fw.medium }}>{item.name}</span>
-              </div>
-            )
+              {item.actions && item.actions.length > 0 && (
+                <div style={{ paddingLeft: 28, display: 'flex', gap: 6, marginBottom: 4 }}>
+                  {item.actions.map((action, ai) => (
+                    <button
+                      key={ai}
+                      onClick={action.onClick}
+                      style={{
+                        background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0',
+                        fontSize: fs.xs, color: c['content-brand'], fontFamily: ff.primary,
+                        fontWeight: fw.medium, textDecoration: 'none',
+                      }}
+                      onMouseEnter={e => (e.currentTarget.style.textDecoration = 'underline')}
+                      onMouseLeave={e => (e.currentTarget.style.textDecoration = 'none')}
+                    >
+                      {action.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           ))}
         </div>
       )}
 
-      {/* Divider */}
       <div style={{ height: 1, backgroundColor: c['border-divider'], margin: `0 ${sp.C}px` }} />
 
       {/* Context section */}
@@ -124,33 +124,56 @@ const ChatContextPanel: React.FC<ChatContextPanelProps> = ({ created, tables, sk
       {contextOpen && (
         <div style={{ padding: `0 ${sp.C}px ${sp.C}px`, display: 'flex', flexDirection: 'column', gap: sp.C }}>
           {tables.length === 0 && skills.length === 0 ? (
-            <span style={{ fontSize: fs.sm, color: c['content-secondary'] }}>No context used yet.</span>
+            <span style={{ fontSize: fs.sm, color: c['content-secondary'], padding: `2px ${sp.B}px` }}>No context used yet.</span>
           ) : (
             <>
               {tables.length > 0 && (
                 <div>
-                  <div style={{ fontSize: fs.xs, color: c['content-secondary'], fontWeight: fw.medium, marginBottom: sp.A }}>Tables</div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                    {tables.map((t, i) => (
-                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: sp.A }}>
-                        <Icon name="table" size="xs" />
-                        <span style={{ fontSize: fs.sm, color: c['content-primary'] }}>{t}</span>
-                      </div>
-                    ))}
-                  </div>
+                  <div style={{ fontSize: fs.xs, color: c['content-secondary'], fontWeight: fw.medium, padding: `0 ${sp.B}px`, marginBottom: 2 }}>Tables</div>
+                  {tables.map((t, i) => (
+                    <div
+                      key={i}
+                      onMouseEnter={() => setHoveredTable(i)}
+                      onMouseLeave={() => setHoveredTable(null)}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 6,
+                        padding: `4px ${sp.B}px`, borderRadius: 4,
+                        backgroundColor: hoveredTable === i ? c['background-subtle'] : 'transparent',
+                        transition: 'background-color 0.1s ease',
+                      }}
+                    >
+                      <Icon name="table" size="s" color={c['content-secondary']} />
+                      <span style={{ flex: 1, fontSize: fs.sm, color: c['content-primary'] }}>{t}</span>
+                      {onNavigateToTable && (
+                        <button
+                          onClick={() => onNavigateToTable(t)}
+                          title={`Open ${t} in Data Browser`}
+                          style={{
+                            background: 'none', border: 'none', cursor: 'pointer',
+                            padding: 2, display: 'flex', alignItems: 'center',
+                            color: c['content-secondary'], borderRadius: 3,
+                            opacity: hoveredTable === i ? 1 : 0,
+                            transition: 'opacity 0.1s ease',
+                          }}
+                          onMouseEnter={e => (e.currentTarget.style.color = c['content-primary'])}
+                          onMouseLeave={e => (e.currentTarget.style.color = c['content-secondary'])}
+                        >
+                          <GoToArrow />
+                        </button>
+                      )}
+                    </div>
+                  ))}
                 </div>
               )}
               {skills.length > 0 && (
                 <div>
-                  <div style={{ fontSize: fs.xs, color: c['content-secondary'], fontWeight: fw.medium, marginBottom: sp.A }}>Skills</div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                    {skills.map((s, i) => (
-                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: sp.A }}>
-                        <Icon name="checkmark-circle" size="xs" />
-                        <span style={{ fontSize: fs.sm, color: c['content-primary'] }}>{s}</span>
-                      </div>
-                    ))}
-                  </div>
+                  <div style={{ fontSize: fs.xs, color: c['content-secondary'], fontWeight: fw.medium, padding: `0 ${sp.B}px`, marginBottom: 2 }}>Skills</div>
+                  {skills.map((s, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: `4px ${sp.B}px` }}>
+                      <Icon name="checkmark-circle" size="s" color={c['content-secondary']} />
+                      <span style={{ fontSize: fs.sm, color: c['content-primary'] }}>{s}</span>
+                    </div>
+                  ))}
                 </div>
               )}
             </>

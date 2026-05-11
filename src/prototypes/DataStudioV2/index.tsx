@@ -331,6 +331,10 @@ const DataStudio: React.FC = () => {
             isDayZero={isDayZero}
             isDbtReview={isDbtReview}
             onBack={goBack}
+            onNavigateToTable={(tableName) => {
+              setDataBrowserInitialTab('warehouses');
+              navigateTo('data-browser');
+            }}
           />
         )}
       </Shell>
@@ -351,6 +355,10 @@ const DataStudio: React.FC = () => {
             isDayZero={isDayZero}
             isDbtReview={isDbtReview}
             isAgentMode={isAgentMode}
+            onNavigateToTable={(tableName) => {
+              setDataBrowserInitialTab('warehouses');
+              navigateTo('data-browser');
+            }}
           />
         </div>
       )}

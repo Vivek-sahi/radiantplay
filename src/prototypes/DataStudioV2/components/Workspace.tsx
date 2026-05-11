@@ -14,7 +14,7 @@ import { DEFAULT_VISIBLE_COLS, ADVANCED_COLS, COL_LABELS } from './CenterPanel';
 import { CacheModal } from '../CacheDiscoverability';
 import QualityPlanPanel from './QualityPlanPanel';
 import { Icon } from '../../../components/icons';
-import ChatContextPanel from './ChatContextPanel';
+import ChatContextPanel, { CreatedItem } from './ChatContextPanel';
 
 interface WorkspaceProps {
   project: ProjectState;
@@ -26,6 +26,7 @@ interface WorkspaceProps {
   isDayZero?: boolean;
   isDbtReview?: boolean;
   isAgentMode?: boolean;
+  onNavigateToTable?: (tableName: string) => void;
 }
 
 interface Toast {
@@ -34,7 +35,7 @@ interface Toast {
   action?: { label: string; onClick: () => void };
 }
 
-const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, setMessages, onBack, initialPrompt, isDayZero, isDbtReview, isAgentMode }) => {
+const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, setMessages, onBack, initialPrompt, isDayZero, isDbtReview, isAgentMode, onNavigateToTable }) => {
   const [isBuilding, setIsBuilding] = useState(!!initialPrompt);
   const [externalAgentMessage, setExternalAgentMessage] = useState<string | null>(null);
   const [externalAgentAttachment, setExternalAgentAttachment] = useState<{ type: string; label: string } | null>(null);
@@ -47,13 +48,33 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
   const [shareOpen, setShareOpen] = useState(false);
   const [publishOpen, setPublishOpen] = useState(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
-  const [contextPanelOpen, setContextPanelOpen] = useState(true);
+  const [contextPanelOpen, setContextPanelOpen] = useState(false);
+
+  // Close context panel when quality plan opens
+  useEffect(() => {
+    if (qualityPlanOpen) setContextPanelOpen(false);
+  }, [qualityPlanOpen]);
 
   const planMsg = useMemo(() => messages.find(m => m.planData != null), [messages]);
-  const contextCreated = useMemo(() => [
+
+  const contextCreated = useMemo((): CreatedItem[] => [
     ...(planMsg ? [{ type: 'plan' as const, name: 'Build plan' }] : []),
-    ...(project.buildStep !== 'empty' ? [{ type: 'model' as const, name: project.name }] : []),
-  ], [planMsg, project.buildStep, project.name]);
+    ...(project.buildStep !== 'empty' ? [{
+      type: 'quality-plan' as const,
+      name: 'Data quality plan',
+      onClick: () => setQualityPlanOpen(true),
+      actions: [
+        { label: 'Apply fixes', onClick: handleQualityApplyFixes },
+        { label: 'Edit plan', onClick: handleQualityEditPlan },
+      ],
+    }] : []),
+    ...(project.buildStep !== 'empty' ? [{
+      type: 'model' as const,
+      name: project.name,
+      onClick: () => setQualityPlanOpen(false),
+    }] : []),
+  ], [planMsg, project.buildStep, project.name, qualityPlanOpen]);
+
   const contextTables = useMemo(() => planMsg?.planData?.tables.map(t => t.name) ?? [], [planMsg]);
   const contextSkills = useMemo(() => project.buildStep !== 'empty' ? ['create-data-model'] : [], [project.buildStep]);
 
@@ -572,6 +593,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
             created={contextCreated}
             tables={contextTables}
             skills={contextSkills}
+            onNavigateToTable={onNavigateToTable}
           />
         )}
 
