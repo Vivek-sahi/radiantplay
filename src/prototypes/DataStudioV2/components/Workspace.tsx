@@ -12,8 +12,9 @@ import { Checkbox } from '../../../components/Checkbox';
 import { tableMetadata } from '../data/mockData';
 import { DEFAULT_VISIBLE_COLS, ADVANCED_COLS, COL_LABELS } from './CenterPanel';
 import { CacheModal } from '../CacheDiscoverability';
-import { QualityModal } from '../DataQualityDiscoverability';
+import QualityPlanPanel from './QualityPlanPanel';
 import { Icon } from '../../../components/icons';
+import ChatContextPanel from './ChatContextPanel';
 
 interface WorkspaceProps {
   project: ProjectState;
@@ -42,10 +43,19 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
   const [selectedColumns,  setSelectedColumns]  = useState<string[]>([]);
   const [cacheModalOpen, setCacheModalOpen] = useState(false);
   const [cacheStatus, setCacheStatus] = useState<'live' | 'caching' | 'cached'>('live');
-  const [qualityModalOpen, setQualityModalOpen] = useState(false);
+  const [qualityPlanOpen, setQualityPlanOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [publishOpen, setPublishOpen] = useState(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const [contextPanelOpen, setContextPanelOpen] = useState(true);
+
+  const planMsg = useMemo(() => messages.find(m => m.planData != null), [messages]);
+  const contextCreated = useMemo(() => [
+    ...(planMsg ? [{ type: 'plan' as const, name: 'Build plan' }] : []),
+    ...(project.buildStep !== 'empty' ? [{ type: 'model' as const, name: project.name }] : []),
+  ], [planMsg, project.buildStep, project.name]);
+  const contextTables = useMemo(() => planMsg?.planData?.tables.map(t => t.name) ?? [], [planMsg]);
+  const contextSkills = useMemo(() => project.buildStep !== 'empty' ? ['create-data-model'] : [], [project.buildStep]);
 
   // ── Agent panel drag-to-resize ───────────────────────────────────────────────
   const AGENT_MIN = 340;
@@ -94,6 +104,15 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
     const id = `toast-${Date.now()}`;
     setToasts(prev => [...prev, { id, message, action }]);
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
+  };
+
+  const handleQualityApplyFixes = () => {
+    setQualityPlanOpen(false);
+    setExternalAgentMessage('yes');
+  };
+  const handleQualityEditPlan = () => {
+    setQualityPlanOpen(false);
+    setExternalInputInject('Edit the quality plan — ');
   };
 
   // ── Canvas sub-header state (lifted from ColumnsView) ───────────────────────
@@ -147,8 +166,30 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
 
       {/* ── Chat page header — conversation level ───────────────────────────── */}
       <div style={{ height: 48, backgroundColor: c['background-base'], borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', padding: `0 ${sp.D}px`, gap: sp.B, flexShrink: 0 }}>
-        <Button variant="tertiary" size="small" onClick={onBack}>←</Button>
-        <span style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'] }}>Chat</span>
+        <button
+          onClick={onBack}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 6px', display: 'flex', alignItems: 'center', gap: 6, fontSize: fs.sm, color: c['content-secondary'], fontFamily: ff.primary, borderRadius: 4 }}
+          onMouseEnter={e => (e.currentTarget.style.color = c['content-primary'])}
+          onMouseLeave={e => (e.currentTarget.style.color = c['content-secondary'])}
+        >
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M9 2L4 7l5 5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          Chat
+        </button>
+        <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+          <span style={{ fontSize: fs.sm, fontWeight: fw.medium, color: c['content-primary'] }}>{project.name || 'Untitled Model'}</span>
+        </div>
+        <button
+          onClick={() => setContextPanelOpen(o => !o)}
+          title={contextPanelOpen ? 'Hide context panel' : 'Show context panel'}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'flex', alignItems: 'center', color: contextPanelOpen ? c['content-primary'] : c['content-secondary'], borderRadius: 4 }}
+        >
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <rect x="1.5" y="1.5" width="15" height="15" rx="2" stroke="currentColor" strokeWidth="1.5" />
+            <line x1="12" y1="1.5" x2="12" y2="16.5" stroke="currentColor" strokeWidth="1.5" />
+          </svg>
+        </button>
       </div>
 
 
@@ -220,15 +261,6 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
           }}
         />
       )}
-      {qualityModalOpen && (
-        <QualityModal
-          onClose={() => setQualityModalOpen(false)}
-          onReviewWithAgent={() => {
-            setQualityModalOpen(false);
-            setExternalAgentMessage('Review data quality');
-          }}
-        />
-      )}
 
       {/* Toast notifications */}
       {toasts.length > 0 && (
@@ -271,6 +303,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
           width={agentPanelWidth}
           selectedColumns={selectedColumns}
           onColumnRemove={(name) => setSelectedColumns(prev => prev.filter(c => c !== name))}
+          onOpenQualityPlan={() => setQualityPlanOpen(true)}
         />
 
         {/* Drag handle — invisible resize zone */}
@@ -283,7 +316,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
             document.body.style.userSelect = 'none';
             document.body.style.cursor = 'col-resize';
           }}
-          style={{ width: 5, flexShrink: 0, cursor: 'col-resize' }}
+          style={{ width: 5, flexShrink: 0, cursor: 'col-resize', backgroundColor: c['background-base'] }}
         />
 
         {/* Canvas column — sunken bg, artifact as bordered card */}
@@ -292,8 +325,17 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
           {/* Building skeleton — full canvas, no card border yet */}
           {isBuilding && <BuildingSkeleton />}
 
+          {/* Quality plan artifact — shown when quality plan is open */}
+          {!isBuilding && project.buildStep !== 'empty' && qualityPlanOpen && (
+            <QualityPlanPanel
+              onClose={() => setQualityPlanOpen(false)}
+              onApplyFixes={handleQualityApplyFixes}
+              onEditPlan={handleQualityEditPlan}
+            />
+          )}
+
           {/* Artifact card — appears when built */}
-          {!isBuilding && project.buildStep !== 'empty' && (
+          {!isBuilding && project.buildStep !== 'empty' && !qualityPlanOpen && (
             <div style={{ flex: 1, overflow: 'hidden', backgroundColor: c['background-base'], border: `1px solid ${c['border-divider']}`, borderRadius: 10, display: 'flex', flexDirection: 'column', animation: 'ds-slide-in 0.2s ease-out' }}>
 
               {/* Identity row */}
@@ -368,6 +410,17 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
                 <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: sp.B }}>
                   <div style={{ width: 1, height: 16, backgroundColor: c['border-divider'], flexShrink: 0 }} />
                   <button
+                    title="Model settings"
+                    style={{ width: 28, height: 28, padding: 0, border: 'none', borderRadius: 6, backgroundColor: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: c['content-secondary'], flexShrink: 0 }}
+                    onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
+                    onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="8" cy="8" r="2.5"/>
+                      <path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41"/>
+                    </svg>
+                  </button>
+                  <button
                     style={{ height: 28, padding: '0 10px', gap: 5, border: 'none', borderRadius: 6, backgroundColor: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, color: c['content-secondary'], flexShrink: 0 }}
                     onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
                     onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
@@ -393,7 +446,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
                     {cacheStatus === 'live' ? 'Live' : cacheStatus === 'caching' ? 'Caching…' : 'Cached'}
                   </button>
                   <button
-                    onClick={() => setQualityModalOpen(true)}
+                    onClick={() => setQualityPlanOpen(true)}
                     style={{ height: 28, padding: '0 10px', gap: 5, border: `1px solid ${(project.prepTransforms && project.prepTransforms.length > 0) ? '#BBF7D0' : '#FECACA'}`, borderRadius: 6, backgroundColor: (project.prepTransforms && project.prepTransforms.length > 0) ? '#F0FDF4' : '#FEF2F2', cursor: 'pointer', display: 'flex', alignItems: 'center', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, color: (project.prepTransforms && project.prepTransforms.length > 0) ? '#166534' : '#B91C1C', boxSizing: 'border-box', flexShrink: 0 }}
                     onMouseEnter={e => (e.currentTarget.style.opacity = '0.85')}
                     onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
@@ -512,6 +565,15 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
             </>
           )}
         </div>
+
+        {/* Context panel */}
+        {contextPanelOpen && (
+          <ChatContextPanel
+            created={contextCreated}
+            tables={contextTables}
+            skills={contextSkills}
+          />
+        )}
 
       </div>
     </div>

@@ -87,7 +87,7 @@ const DataStudio: React.FC = () => {
     id: 'proj-001',
     name: 'Untitled Model',
     buildStep: 'empty',
-    activeTab: 'columns',
+    activeTab: 'tables',
     testMode: false,
     publishedVersion: 0,
     hasUnpublishedChanges: true,
@@ -109,6 +109,7 @@ const DataStudio: React.FC = () => {
   useEffect(() => {
     if (view === 'chat' && project.buildStep !== 'empty') {
       setInitialPrompt('');
+      setIsDayZero(false);
       navigateTo('workspace');
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -134,7 +135,7 @@ const DataStudio: React.FC = () => {
       id: `proj-${Date.now()}`,
       name: nameOrId ?? 'Untitled Model',
       buildStep: 'healthy',
-      activeTab: 'columns',
+      activeTab: 'tables',
       testMode: false,
       publishedVersion: published ? 1 : 0,
       hasUnpublishedChanges: !published,
@@ -167,7 +168,7 @@ const DataStudio: React.FC = () => {
       id: `dbt-${Date.now()}`,
       name: modelName,
       buildStep: 'healthy',
-      activeTab: 'columns',
+      activeTab: 'tables',
       testMode: false,
       publishedVersion: 0,
       hasUnpublishedChanges: true,
@@ -191,7 +192,7 @@ const DataStudio: React.FC = () => {
       id: `proj-${Date.now()}`,
       name: 'Untitled Model',
       buildStep: 'empty',
-      activeTab: 'columns',
+      activeTab: 'tables',
       testMode: false,
       publishedVersion: 0,
       hasUnpublishedChanges: true,
@@ -218,7 +219,7 @@ const DataStudio: React.FC = () => {
       id: `proj-${Date.now()}`,
       name: 'Untitled Model',
       buildStep: 'empty',
-      activeTab: 'columns',
+      activeTab: 'tables',
       testMode: false,
       publishedVersion: 0,
       hasUnpublishedChanges: true,
@@ -242,13 +243,17 @@ const DataStudio: React.FC = () => {
   };
 
   const goBack = () => {
+    // Workspace → back to chat: preserve messages and project, just switch view
+    if (prevView === 'chat') {
+      setView('chat');
+      return;
+    }
     setInitialPrompt('');
     setActiveAlert(null);
     setIsDayZero(false);
     setIsDbtReview(false);
     setIsAgentMode(false);
     setMessages([]);
-    // If previous screen was model-view, go back there; otherwise overview
     if (prevView === 'model-view' && selectedProject) {
       setView('model-view');
       setPrevView('overview');
@@ -269,7 +274,7 @@ const DataStudio: React.FC = () => {
 
   return (
     <>
-      <Shell activeNav={activeNav} onNavChange={handleNavChange}>
+      <Shell activeNav={activeNav} onNavChange={handleNavChange} hideSidebar={view === 'chat'}>
         {view === 'models' && (
           <ModelsPage
             onOpenProject={openModelView}
@@ -316,23 +321,23 @@ const DataStudio: React.FC = () => {
             </div>
           </div>
         )}
+        {view === 'chat' && (
+          <ChatView
+            project={project}
+            setProject={setProject}
+            messages={messages}
+            setMessages={setMessages}
+            initialPrompt={initialPrompt}
+            isDayZero={isDayZero}
+            isDbtReview={isDbtReview}
+            onBack={goBack}
+          />
+        )}
       </Shell>
       {view === 'new-project' && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 50 }}>
-          <NewProjectPrompt onSubmit={handlePromptSubmit} onStartManually={handleStartManually} onStartDbt={startDbtProject} onBack={goBack} />
+          <NewProjectPrompt onSubmit={(prompt) => handleOverviewPromptSubmit(prompt)} onStartManually={handleStartManually} onStartDbt={startDbtProject} onBack={goBack} />
         </div>
-      )}
-      {view === 'chat' && (
-        <ChatView
-          project={project}
-          setProject={setProject}
-          messages={messages}
-          setMessages={setMessages}
-          initialPrompt={initialPrompt}
-          isDayZero={isDayZero}
-          isDbtReview={isDbtReview}
-          onBack={goBack}
-        />
       )}
       {view === 'workspace' && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 50 }}>

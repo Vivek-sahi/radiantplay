@@ -37,7 +37,7 @@ const ChatView: React.FC<ChatViewProps> = ({
   const contextTables = useMemo(() => planMsg?.planData?.tables.map(t => t.name) ?? [], [planMsg]);
   const contextSkills = useMemo(() => project.buildStep !== 'empty' ? ['create-data-model'] : [], [project.buildStep]);
 
-  const showContextPanel = contextPanelOpen && !isPlanOpen;
+  const showContextPanel = contextPanelOpen;
 
   return (
     <div style={{
@@ -58,7 +58,24 @@ const ChatView: React.FC<ChatViewProps> = ({
         borderBottom: `1px solid ${c['border-divider']}`,
         padding: '0 16px',
       }}>
-        <div style={{ flex: 1 }} />
+        <div style={{ flex: 1 }}>
+          <button
+            onClick={onBack}
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer', padding: '4px 6px',
+              display: 'flex', alignItems: 'center', gap: 6,
+              fontSize: fs.sm, color: c['content-secondary'], fontFamily: ff.primary,
+              borderRadius: 4,
+            }}
+            onMouseEnter={e => (e.currentTarget.style.color = c['content-primary'])}
+            onMouseLeave={e => (e.currentTarget.style.color = c['content-secondary'])}
+          >
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M9 2L4 7l5 5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            Overview
+          </button>
+        </div>
         <span style={{ fontSize: fs.sm, fontWeight: fw.medium, color: c['content-primary'] }}>
           {project.name || 'New conversation'}
         </span>
