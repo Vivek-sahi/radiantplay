@@ -1,10 +1,9 @@
 import React, { useRef, useState } from 'react';
 import { c, sp, fs, fw, ff } from '../styles';
-import { Button } from '../../../components/Button';
 import { Icon } from '../../../components/icons';
 import { iconSize } from '../../../tokens/icons';
 import Tabs from '../../../components/Tabs';
-import { OVERVIEW_PROJECTS, RECENT_TABLES, OverviewAlert, OverviewProject, ACTIVE_INSIGHTS, ActiveInsight } from '../data/mockData';
+import { OVERVIEW_PROJECTS, OverviewProject, ACTIVE_INSIGHTS, ActiveInsight } from '../data/mockData';
 import PromptBar, { PromptBarRef } from './PromptBar';
 
 
@@ -216,73 +215,6 @@ const PulseRow: React.FC<{
   );
 };
 
-const ModelIcon: React.FC<{ color: string }> = ({ color }) => (
-  <svg width="15" height="15" viewBox="0 0 16 16" fill="none" style={{ color }}>
-    <path d="M8 1.5L14 5L8 8.5L2 5Z" stroke="currentColor" strokeWidth="1.15" strokeLinejoin="round" fill="currentColor" fillOpacity="0.1"/>
-    <path d="M2 5L2 11L8 14.5L8 8.5Z" stroke="currentColor" strokeWidth="1.15" strokeLinejoin="round" fill="currentColor" fillOpacity="0.06"/>
-    <path d="M14 5L14 11L8 14.5L8 8.5Z" stroke="currentColor" strokeWidth="1.15" strokeLinejoin="round" fill="currentColor" fillOpacity="0.04"/>
-  </svg>
-);
-
-const RecentRow: React.FC<{
-  project: OverviewProject;
-  onClick: () => void;
-  isLast: boolean;
-}> = ({ project, onClick, isLast }) => {
-  const [hovered, setHovered] = useState(false);
-  const health      = getProjectHealth(project);
-  const statusColor = HEALTH_DOT[health];
-  const statusLabel = HEALTH_LABEL[health];
-  const iconColor   = project.status === 'published' ? '#2563eb' : '#9ca3af';
-  const iconBg      = project.status === 'published' ? '#eff6ff' : '#f9fafb';
-  const iconBorder  = project.status === 'published' ? '#bfdbfe' : c['border-default'];
-  const subtext     = `${project.status === 'published' ? 'Published' : 'Draft'}${project.conversations ? ` · ${project.conversations.toLocaleString()} queries` : ''}`;
-
-  return (
-    <div
-      onClick={onClick}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        padding: '14px 20px',
-        display: 'flex', alignItems: 'center', gap: 14,
-        borderBottom: isLast ? 'none' : '1px solid rgba(0,0,0,0.05)',
-        backgroundColor: hovered ? 'rgba(0,0,0,0.018)' : 'transparent',
-        cursor: 'pointer',
-        transition: 'background-color 0.12s',
-      }}
-    >
-      <div style={{
-        width: 34, height: 34, borderRadius: 9, flexShrink: 0,
-        border: `1px solid ${iconBorder}`,
-        backgroundColor: iconBg,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-      }}>
-        <ModelIcon color={iconColor} />
-      </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{
-          fontSize: 13, fontWeight: fw.medium,
-          color: hovered ? c['content-brand'] : c['content-primary'],
-          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-          transition: 'color 0.12s', lineHeight: 1.45,
-        }}>
-          {project.name}
-        </div>
-        <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 3, lineHeight: 1.4 }}>{subtext}</div>
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column' as const, alignItems: 'flex-end', gap: 4, flexShrink: 0 }}>
-        {project.status === 'published' && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: statusColor, flexShrink: 0, display: 'inline-block' }} />
-            <span style={{ fontSize: 12, fontWeight: fw.medium, color: statusColor }}>{statusLabel}</span>
-          </div>
-        )}
-        <span style={{ fontSize: 11, color: '#c4c9d4' }}>{project.lastModified}</span>
-      </div>
-    </div>
-  );
-};
 
 const PulsePanel: React.FC<{
   bodyHeight?: number;
@@ -329,68 +261,52 @@ const RecentPanel: React.FC<{
   </div>
 );
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// ── Recent Models row ─────────────────────────────────────────────────────────
 
-const ISSUE_LABELS: Record<OverviewAlert['type'], string> = {
-  schema_change:  'Schema change',
-  sync_failure:   'Sync failure',
-  cache_failed:   'Cache failed',
-  prep_job_failed:'Prep job failed',
-  data_freshness: 'Data freshness',
-};
-
-const SectionLabel: React.FC<{ title: string; action?: React.ReactNode }> = ({ title, action }) => (
-  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: sp.C }}>
-    <span style={{
-      fontSize: 11, fontWeight: fw.semibold,
-      color: c['content-secondary'],
-      textTransform: 'uppercase' as const,
-      letterSpacing: '0.06em',
-    }}>
-      {title}
-    </span>
-    {action}
-  </div>
-);
-
-const Divider: React.FC = () => (
-  <div style={{ height: 1, backgroundColor: c['border-divider'] }} />
-);
-
-const ViewAllLink: React.FC<{ label: string }> = ({ label }) => (
-  <div style={{ marginTop: sp.C }}>
-    <button style={{
-      background: 'none', border: 'none', cursor: 'pointer',
-      fontSize: fs.sm, color: c['content-brand'],
-      fontFamily: ff.primary, padding: 0,
-    }}>
-      {label} →
-    </button>
-  </div>
-);
-
-// ── Issues badge ──────────────────────────────────────────────────────────────
-
-const IssuesBadge: React.FC<{ issues: OverviewAlert[] }> = ({ issues }) => {
-  if (!issues || issues.length === 0) {
-    return <span style={{ fontSize: fs.sm, color: c['content-tertiary'] }}>—</span>;
-  }
-
-  const hasCritical = issues.some(i => i.severity === 'critical');
-  const color = hasCritical ? '#b91c1c' : '#92400e';
-  const label = issues.length === 1
-    ? ISSUE_LABELS[issues[0].type]
-    : `${issues.length} issues`;
+const RecentRow: React.FC<{
+  project: OverviewProject;
+  onClick: () => void;
+  isLast: boolean;
+}> = ({ project, onClick, isLast }) => {
+  const [hovered, setHovered] = useState(false);
+  const health      = getProjectHealth(project);
+  const healthColor = HEALTH_DOT[health];
+  const healthLabel = HEALTH_LABEL[health];
 
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color, fontSize: fs.sm, fontWeight: fw.medium }}>
-      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
-        <path d="M8 2.5L13.5 12.5H2.5L8 2.5Z" stroke={color} strokeWidth="1.5" strokeLinejoin="round" />
-        <line x1="8" y1="7" x2="8" y2="10" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
-        <circle cx="8" cy="11.5" r="0.75" fill={color} />
-      </svg>
-      {label}
-    </span>
+    <div
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        padding: '11px 20px',
+        display: 'flex', alignItems: 'center', gap: 14,
+        borderBottom: isLast ? 'none' : '1px solid rgba(0,0,0,0.05)',
+        backgroundColor: hovered ? 'rgba(0,0,0,0.018)' : 'transparent',
+        cursor: 'pointer',
+        transition: 'background-color 0.12s',
+      }}
+    >
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{
+          fontSize: 13, fontWeight: fw.medium,
+          color: hovered ? c['content-brand'] : c['content-primary'],
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          transition: 'color 0.12s', lineHeight: 1.45,
+        }}>
+          {project.name}
+        </div>
+        <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 2, lineHeight: 1.4 }}>
+          {project.status === 'published' ? 'Published' : 'Draft'}
+          {project.conversations ? ` · ${project.conversations.toLocaleString()} queries` : ''}
+        </div>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0 }}>
+        <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: healthColor, flexShrink: 0 }} />
+        <span style={{ fontSize: 12, fontWeight: fw.medium, color: healthColor, whiteSpace: 'nowrap' }}>{healthLabel}</span>
+      </div>
+      <span style={{ fontSize: 11, color: '#c4c9d4', flexShrink: 0, minWidth: 52, textAlign: 'right' as const }}>{project.lastModified}</span>
+    </div>
   );
 };
 
@@ -439,7 +355,6 @@ const Overview: React.FC<OverviewProps> = ({
         {/* ── Hero — agent prompt ───────────────────────────────────────── */}
         <div style={{
           backgroundColor: c['background-base'],
-          borderBottom: `1px solid ${c['border-divider']}`,
           padding: `72px ${sp.H}px ${sp.G}px`,
         }}>
           <div style={{
@@ -576,163 +491,9 @@ const Overview: React.FC<OverviewProps> = ({
               />
             ))}
           </RecentPanel>
-        </div>
-
-        <div style={{ padding: `${sp.H}px` }}>
-
-          {/* ── Recent projects ─────────────────────────────────────────── */}
-          <div style={{ marginBottom: sp.H }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: sp.C }}>
-              <span style={{
-                fontSize: 11, fontWeight: fw.semibold,
-                color: c['content-secondary'],
-                textTransform: 'uppercase' as const,
-                letterSpacing: '0.06em',
-              }}>
-                Recent models
-              </span>
-              <Button variant="primary" size="basic" onClick={onNewProject}>New model</Button>
-            </div>
-            <div style={{
-              backgroundColor: c['background-base'],
-              border: `1px solid ${c['border-divider']}`,
-              borderRadius: 8, overflow: 'hidden',
-            }}>
-              {/* Header row */}
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: '3fr 1fr 1fr 1fr 1fr 1fr',
-                gap: sp.C,
-                padding: `${sp.B}px ${sp.D}px`,
-                borderBottom: `1px solid ${c['border-divider']}`,
-                backgroundColor: c['background-subtle'],
-              }}>
-                {['Model', 'Issues', 'Status', 'Conversations', 'Last edited', 'Author'].map(h => (
-                  <div key={h} style={{
-                    fontSize: 11, fontWeight: fw.medium,
-                    color: c['content-secondary'],
-                    textTransform: 'uppercase' as const,
-                    letterSpacing: '0.04em',
-                  }}>
-                    {h}
-                  </div>
-                ))}
-              </div>
-
-              {/* Data rows */}
-              {OVERVIEW_PROJECTS.map((project, i) => (
-                <React.Fragment key={project.id}>
-                  {i > 0 && <Divider />}
-                  <div
-                    style={{
-                      display: 'grid',
-                      gridTemplateColumns: '3fr 1fr 1fr 1fr 1fr 1fr',
-                      gap: sp.C,
-                      padding: `${sp.C}px ${sp.D}px`,
-                      cursor: 'pointer',
-                      alignItems: 'center',
-                    }}
-                    onClick={() => onOpenProject(project)}
-                    onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
-                    onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
-                  >
-                    {/* Name */}
-                    <div style={{ fontSize: fs.sm, fontWeight: fw.medium, color: c['content-brand'] }}>
-                      {project.name}
-                    </div>
-
-                    {/* Issues */}
-                    <div>
-                      <IssuesBadge issues={project.issues ?? []} />
-                    </div>
-
-                    {/* Status */}
-                    <div>
-                      <span style={{ fontSize: fs.sm, color: c['content-secondary'] }}>
-                        {project.status === 'published' ? 'Published' : 'Draft'}
-                      </span>
-                    </div>
-
-                    {/* Conversations */}
-                    <div style={{ fontSize: fs.sm, color: c['content-secondary'] }}>
-                      {project.conversations ? project.conversations.toLocaleString() : '—'}
-                    </div>
-
-                    {/* Last edited */}
-                    <div style={{ fontSize: fs.sm, color: c['content-secondary'] }}>
-                      {project.lastModified}
-                    </div>
-
-                    {/* Author */}
-                    <div style={{ fontSize: fs.sm, color: c['content-secondary'] }}>
-                      {project.author}
-                    </div>
-                  </div>
-                </React.Fragment>
-              ))}
-            </div>
-            <ViewAllLink label="View all models" />
-          </div>
-
-          {/* ── Explore data ────────────────────────────────────────────── */}
-          <div style={{ marginBottom: sp.H }}>
-            <SectionLabel title="Explore data" />
-            <div style={{
-              backgroundColor: c['background-base'],
-              border: `1px solid ${c['border-divider']}`,
-              borderRadius: 8, overflow: 'hidden',
-            }}>
-              {/* Header */}
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: '3fr 2fr 1fr 1fr',
-                gap: sp.C,
-                padding: `${sp.B}px ${sp.D}px`,
-                borderBottom: `1px solid ${c['border-divider']}`,
-                backgroundColor: c['background-subtle'],
-              }}>
-                {['Table', 'Source', 'Rows', 'Columns'].map(h => (
-                  <div key={h} style={{
-                    fontSize: 11, fontWeight: fw.medium,
-                    color: c['content-secondary'],
-                    textTransform: 'uppercase' as const,
-                    letterSpacing: '0.04em',
-                  }}>
-                    {h}
-                  </div>
-                ))}
-              </div>
-
-              {/* Rows */}
-              {RECENT_TABLES.map((table, i) => (
-                <React.Fragment key={table.id}>
-                  {i > 0 && <Divider />}
-                  <div
-                    style={{
-                      display: 'grid',
-                      gridTemplateColumns: '3fr 2fr 1fr 1fr',
-                      gap: sp.C,
-                      padding: `${sp.C}px ${sp.D}px`,
-                      cursor: 'pointer',
-                      alignItems: 'center',
-                    }}
-                    onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
-                    onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
-                  >
-                    <div style={{ fontFamily: 'monospace', fontSize: fs.sm, fontWeight: fw.medium, color: c['content-brand'] }}>
-                      {table.name}
-                    </div>
-                    <div style={{ fontSize: fs.sm, color: c['content-secondary'] }}>{table.connection}</div>
-                    <div style={{ fontSize: fs.sm, color: c['content-secondary'] }}>{table.rowCount}</div>
-                    <div style={{ fontSize: fs.sm, color: c['content-secondary'] }}>{table.columns}</div>
-                  </div>
-                </React.Fragment>
-              ))}
-            </div>
-            <ViewAllLink label="View all data" />
-          </div>
 
         </div>
+
       </div>
 
     </div>
