@@ -313,7 +313,7 @@ const PromptBar = forwardRef<PromptBarRef, PromptBarProps>(({
         )}
 
         {/* ── Toolbar ── */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: `${sp.A}px ${sp.B}px` }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: `${sp.B}px` }}>
           <div style={{ display: 'flex', gap: sp.A, alignItems: 'center', position: 'relative' }}>
             {leftSlot}
 
