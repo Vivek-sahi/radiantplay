@@ -6,8 +6,6 @@ import Workspace from './components/Workspace';
 import NewProjectPrompt from './components/NewProjectPrompt';
 import DataBrowserPage from './components/DataBrowserPage';
 import ConnectionsPage from './components/ConnectionsPage';
-import JourneyPicker from './components/JourneyPicker';
-import DayZeroOverview from './components/DayZeroOverview';
 import { OverviewProject, OverviewAlert } from './data/mockData';
 import { c, sp, ff, fs, fw } from './styles';
 
@@ -53,7 +51,7 @@ export interface ProjectState {
   prepTransforms?: PrepTransform[];
 }
 
-type AppView = 'journey-picker' | 'overview' | 'day-zero' | 'new-project' | 'model-view' | 'workspace' | 'data-browser' | 'connections' | 'placeholder';
+type AppView = 'overview' | 'new-project' | 'model-view' | 'workspace' | 'data-browser' | 'connections' | 'placeholder';
 
 // User-facing labels for the unwired nav sections so the placeholder reads cleanly.
 const PLACEHOLDER_LABEL: Record<NavSection, string> = {
@@ -72,7 +70,7 @@ const DataStudio: React.FC = () => {
     return () => { document.title = prev; };
   }, []);
 
-  const [view, setView]           = useState<AppView>('journey-picker');
+  const [view, setView]           = useState<AppView>('overview');
   const [prevView, setPrevView]   = useState<AppView>('overview');
   const [activeNav, setActiveNav] = useState<NavSection>('overview');
   const [initialPrompt, setInitialPrompt] = useState<string>('');
@@ -102,22 +100,6 @@ const DataStudio: React.FC = () => {
   const navigateTo = (next: AppView) => {
     setPrevView(view);
     setView(next);
-  };
-
-  // Journey picker selection
-  const handleJourneySelect = (journeyId: string) => {
-    if (journeyId === 'day-zero') {
-      navigateTo('day-zero');
-    } else if (journeyId === 'dbt') {
-      setActiveNav('data');
-      setDbtImported(false);
-      setDataBrowserInitialTab('external-models');
-      navigateTo('data-browser');
-    } else {
-      // Journeys 2–3 land on the existing overview (Day N state)
-      setActiveNav('overview');
-      navigateTo('overview');
-    }
   };
 
   // Open model view — landing screen before workspace
@@ -218,7 +200,7 @@ const DataStudio: React.FC = () => {
     navigateTo('workspace');
   };
 
-  // User submitted the hero prompt on the overview page → reset project + go straight to workspace
+  // User submitted the hero prompt on the overview page → reset project + go to workspace with clarify flow
   const handleOverviewPromptSubmit = (prompt: string) => {
     setProject(p => ({
       id: `proj-${Date.now()}`,
@@ -236,6 +218,7 @@ const DataStudio: React.FC = () => {
       columnOverrides: {},
     }));
     setInitialPrompt(prompt);
+    setIsDayZero(true);
     navigateTo('workspace');
   };
 
@@ -243,11 +226,6 @@ const DataStudio: React.FC = () => {
   const handleStartManually = () => {
     setInitialPrompt('');
     navigateTo('workspace');
-  };
-
-  const handleDayZeroPromptSubmit = (prompt: string) => {
-    setIsDayZero(true);
-    handleOverviewPromptSubmit(prompt);
   };
 
   const goBack = () => {
@@ -275,13 +253,7 @@ const DataStudio: React.FC = () => {
 
   return (
     <>
-      <Shell activeNav={activeNav} onNavChange={handleNavChange} onJourneyPickerOpen={() => setView('journey-picker')}>
-        {view === 'day-zero' && (
-          <DayZeroOverview
-            onPromptSubmit={handleDayZeroPromptSubmit}
-            onNewProject={newProject}
-          />
-        )}
+      <Shell activeNav={activeNav} onNavChange={handleNavChange}>
         {view === 'overview' && (
           <Overview
             onNewProject={newProject}
@@ -323,9 +295,6 @@ const DataStudio: React.FC = () => {
           </div>
         )}
       </Shell>
-      {view === 'journey-picker' && (
-        <JourneyPicker onSelectJourney={handleJourneySelect} />
-      )}
       {view === 'new-project' && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 50 }}>
           <NewProjectPrompt onSubmit={handlePromptSubmit} onStartManually={handleStartManually} onStartDbt={startDbtProject} onBack={goBack} />
