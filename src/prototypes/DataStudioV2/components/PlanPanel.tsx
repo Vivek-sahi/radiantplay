@@ -76,6 +76,16 @@ const PlanPanel: React.FC<PlanPanelProps> = ({ plan, onClose }) => {
           </span>
         </div>
         <button
+          title="Download plan"
+          style={{ width: 28, height: 28, border: 'none', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 4, color: c['content-secondary'], padding: 0, flexShrink: 0 }}
+          onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
+          onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+        >
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M8 2v8"/><polyline points="5,7 8,10 11,7"/><path d="M3 13h10"/>
+          </svg>
+        </button>
+        <button
           onClick={onClose}
           title="Close"
           style={{ width: 28, height: 28, border: 'none', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 4, color: c['content-secondary'], padding: 0, flexShrink: 0 }}
@@ -109,7 +119,7 @@ const PlanPanel: React.FC<PlanPanelProps> = ({ plan, onClose }) => {
                     <span style={{ fontSize: 11, color: c['content-secondary'] }}>{table.rowCount}</span>
                   )}
                 </div>
-                <p style={{ margin: 0, fontSize: fs.xs, color: c['content-secondary'], lineHeight: '18px' }}>{table.description}</p>
+                <p style={{ margin: 0, fontSize: fs.sm, color: c['content-secondary'], lineHeight: '20px' }}>{table.description}</p>
               </div>
             ))}
           </div>
@@ -147,10 +157,10 @@ const PlanPanel: React.FC<PlanPanelProps> = ({ plan, onClose }) => {
                     <div key={col.name} style={{ display: 'flex', gap: sp.B, padding: `${sp.B}px 0`, borderBottom: ci < cols.length - 1 ? `1px solid ${c['border-divider']}` : 'none' }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, marginBottom: 2 }}>
-                          <span style={{ fontSize: fs.xs, fontWeight: fw.medium, color: c['content-primary'] }}>{col.name}</span>
+                          <span style={{ fontSize: fs.sm, fontWeight: fw.medium, color: c['content-primary'] }}>{col.name}</span>
                           <span style={{ fontSize: 10, color: typeColor(col.type) }}>{typeLabel(col.type)}</span>
                         </div>
-                        <p style={{ margin: 0, fontSize: 11, color: c['content-secondary'], lineHeight: '16px' }}>{col.description}</p>
+                        <p style={{ margin: 0, fontSize: fs.xs, color: c['content-secondary'], lineHeight: '16px' }}>{col.description}</p>
                       </div>
                     </div>
                   ))}
@@ -166,10 +176,10 @@ const PlanPanel: React.FC<PlanPanelProps> = ({ plan, onClose }) => {
               {formulaCols.map((col, ci) => (
                 <div key={col.name} style={{ padding: `${sp.B}px 0`, borderBottom: ci < formulaCols.length - 1 ? `1px solid ${c['border-divider']}` : 'none' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, marginBottom: 3 }}>
-                    <span style={{ fontSize: fs.xs, fontWeight: fw.medium, color: c['content-primary'] }}>{col.name}</span>
+                    <span style={{ fontSize: fs.sm, fontWeight: fw.medium, color: c['content-primary'] }}>{col.name}</span>
                     <span style={{ fontSize: 10, color: c['content-brand'] }}>Formula</span>
                   </div>
-                  <p style={{ margin: `0 0 3px`, fontSize: 11, color: c['content-secondary'], lineHeight: '16px' }}>{col.description}</p>
+                  <p style={{ margin: `0 0 3px`, fontSize: fs.xs, color: c['content-secondary'], lineHeight: '16px' }}>{col.description}</p>
                   {col.formula && (
                     <code style={{ display: 'block', fontSize: 10, color: c['content-brand'], lineHeight: '16px', fontFamily: 'monospace' }}>{col.formula}</code>
                   )}
@@ -184,7 +194,7 @@ const PlanPanel: React.FC<PlanPanelProps> = ({ plan, onClose }) => {
             {plan.sampleQuestions.map((q, i) => (
               <div key={i} style={{ display: 'flex', gap: sp.B, alignItems: 'flex-start' }}>
                 <span style={{ fontSize: fs.xs, color: c['content-secondary'], flexShrink: 0, paddingTop: 1, minWidth: 16, textAlign: 'right' }}>{i + 1}.</span>
-                <p style={{ margin: 0, fontSize: fs.xs, color: c['content-primary'], lineHeight: '18px' }}>{q}</p>
+                <p style={{ margin: 0, fontSize: fs.sm, color: c['content-primary'], lineHeight: '18px' }}>{q}</p>
               </div>
             ))}
           </div>
@@ -213,7 +223,7 @@ const Section: React.FC<{
       onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
       onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
     >
-      <span style={{ fontSize: fs.xs, fontWeight: fw.semibold, color: c['content-primary'] }}>{label}</span>
+      <span style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'] }}>{label}</span>
       <svg
         width="12" height="12" viewBox="0 0 12 12" fill="none" stroke={c['content-secondary']} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
         style={{ transform: collapsed ? 'rotate(-90deg)' : 'rotate(0deg)', transition: 'transform 0.15s', flexShrink: 0 }}
