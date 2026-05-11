@@ -39,7 +39,13 @@ The product moved away from a side-panel co-pilot toward a full-screen agent-fir
 
 ## Next up
 
-_Nothing queued. Ask at the start of the next session._
+### 1. Header issue — Shell GlobalHeader still showing in Workspace
+
+The `hideHeader={view === 'workspace'}` fix didn't fully resolve the problem in the browser. The dark ThoughtSpot global nav bar is still visible when in Workspace view. Root cause is understood (Shell renders GlobalHeader underneath the `position:fixed` overlay), fix needs re-investigation.
+
+### 2. Plan panel spacing — Workspace context
+
+After removing the double-wrapper from PlanPanel, top/right spacing dropped from ~20px to 8px (just the canvas column padding). The model artifact card also uses 8px and looks fine — the visual regression may be because the canvas column padding isn't the right fix here. The plan/quality panels may need their own inner offset to feel balanced in the wider canvas area. To be scoped at start of next session.
 
 ---
 
