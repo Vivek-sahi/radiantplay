@@ -6,6 +6,7 @@ import Workspace from './components/Workspace';
 import NewProjectPrompt from './components/NewProjectPrompt';
 import DataBrowserPage from './components/DataBrowserPage';
 import ConnectionsPage from './components/ConnectionsPage';
+import ModelsPage from './components/ModelsPage';
 import { OverviewProject, OverviewAlert } from './data/mockData';
 import { c, sp, ff, fs, fw } from './styles';
 
@@ -51,7 +52,7 @@ export interface ProjectState {
   prepTransforms?: PrepTransform[];
 }
 
-type AppView = 'overview' | 'new-project' | 'model-view' | 'workspace' | 'data-browser' | 'connections' | 'placeholder';
+type AppView = 'overview' | 'models' | 'new-project' | 'model-view' | 'workspace' | 'data-browser' | 'connections' | 'placeholder';
 
 // User-facing labels for the unwired nav sections so the placeholder reads cleanly.
 const PLACEHOLDER_LABEL: Record<NavSection, string> = {
@@ -244,6 +245,7 @@ const DataStudio: React.FC = () => {
   const handleNavChange = (nav: NavSection) => {
     setActiveNav(nav);
     if (nav === 'overview')         setView('overview');
+    else if (nav === 'projects')    setView('models');
     else if (nav === 'data')       { setDataBrowserInitialTab('warehouses'); setView('data-browser'); }
     else if (nav === 'connections') setView('connections');
     else                            setView('placeholder');
@@ -252,6 +254,12 @@ const DataStudio: React.FC = () => {
   return (
     <>
       <Shell activeNav={activeNav} onNavChange={handleNavChange}>
+        {view === 'models' && (
+          <ModelsPage
+            onOpenProject={openModelView}
+            onNewProject={newProject}
+          />
+        )}
         {view === 'overview' && (
           <Overview
             onNewProject={newProject}
