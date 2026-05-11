@@ -39,9 +39,64 @@ The product moved away from a side-panel co-pilot toward a full-screen agent-fir
 
 ## Next up
 
-### 1. `onFixWithAgent` — Pulse alert → full agent fix flow
+### 1. Wire the Opportunities tab agent flows
 
-Clicking a "Fix with agent" Pulse insight currently opens ModelView at Monitoring (stub). The real flow should launch a full-screen agent conversation pre-seeded with the alert context. `onFixWithAgent(insight, project)` in `index.tsx` is the entry point.
+**What's built vs. not:**
+
+Debugging ("Needs attention") — all 4 real flows are wired and working:
+- ins-d1 → `dbt_connection_repair` ✓
+- ins-d2 → `schema_drift_repair` ✓
+- ins-d3 → `schema_drift_multi_repair` ✓
+- ins-d6 → `null_rate_investigation` ✓
+
+Two debugging entries are technically broken (route to FullChatView but wrong/empty flow):
+- ins-d4 (Freshness SLA breached) → opens FullChatView with empty `initialFlow`
+- ins-d5 (Missing column causing failures) → incorrectly uses `schema_drift_repair`
+
+Optimization ("Opportunities") — only one is wired:
+- ins-o4 → `enable_cache` ✓ (wired in session 83)
+
+Four are not wired — clicking "View gaps →" / "Optimize →" etc. just opens ModelView/Monitoring tab (static, no agent):
+- ins-o3 — Semantic gaps limiting Spotter (4 columns missing descriptions on Marketing Campaign Attribution) — **highest priority**: data already in `SEMANTIC_GAPS`, directly improves Spotter answer quality
+- ins-o1 — Slow query hot spot (Customer 360, avg 1.2s)
+- ins-o2 — Unused columns detected (Churn Prediction, 6 columns)
+- ins-o5 — Low model adoption (Churn Prediction, 94 queries/mo)
+
+**What to build next:**
+Start with ins-o3 (semantic gaps). It's the most meaningful optimization — the "AI answer improvement" theme from the monitoring POV. Steps:
+1. Change ins-o3 routing in Overview.tsx to `onFixWithAgent` (add `'view-gaps'` to the condition alongside `'enable-cache'`)
+2. Add `semantic_gap_repair` to `flowMap` in `handleFixWithAgent` in index.tsx
+3. Add `semantic_gap_repair` SCRIPT in AgentPanel — reads from `SEMANTIC_GAPS` for `proj-mc`, proposes descriptions/synonyms for each column
+4. Add `SemanticGapCard` genUI — shows each column, the Spotter failure reason, agent's proposed description with editable field
+5. On approval: write to `columnOverrides`, call `onInsightResolved('ins-o3')`
+6. Add correct `FLOW_CONTEXT` entry for `semantic_gap_repair` in FullChatView
+
+---
+
+## Done — Pulse → FullChatView flows wired + CacheRecommendationCard (2026-05-11, session 83)
+
+**Goal:** Merge Komal's Pulse-triggered agent workflows into V2 without touching model-build flows.
+
+**Overview.tsx — routing fix:**
+- `isFixWithAgent` condition was `category === 'debugging' && type in [fix-model, fix-models]` — missed `view-connection` type (ins-d1 dbt Cloud) and all optimization insights.
+- Changed to: `category === 'debugging' || type === 'enable-cache'` — all debugging insights now route to `onFixWithAgent`, and ins-o4 (Cache miss opportunity) also routes there instead of opening ModelView.
+
+**AgentPanel.tsx — additive changes only:**
+- Added `CACHE_STATS` to mockData import.
+- Added `CacheRecommendationCard` genUI component — shows 2 high-frequency queries for Campaign Performance with run count, avg latency, and savings pill. "Enable caching" action fires `enable_cache` flow.
+- Added `cache_recommendation` genUI rendering in message section.
+- Updated healthy-project greeting: if `project.name === 'Campaign Performance'`, shows proactive cache recommendation instead of generic suggestions. This fires for both ins-o4 (Pulse → FullChatView) and direct workspace open.
+
+**Pre-existing broken build fixed:**
+- Previous session had left an extra `</div>` in the Build tab JSX section (line 2944 in old numbering) — `npm run build` was already failing. Removed the stray tag.
+
+**What was already in V2 (no changes needed):**
+- All 4 debugging fix flows and their genUI cards: `dbt_connection_repair` → `ConnectionStatusCard`, `schema_drift_repair` → `SchemaDriftResolutionCard`, `schema_drift_multi_repair` → `MultiModelDriftCard`, `null_rate_investigation` → `NullRateCard`
+- `NextIssueCard` (appears after schema drift fix completes)
+- `enable_cache` SCRIPT, genUI action handlers, `next_issue` handlers
+- `FullChatView.tsx` and `handleFixWithAgent` in index.tsx
+
+- Build: clean ✓
 
 ---
 
@@ -357,6 +412,20 @@ Original 6-situation arc (still valid for demo scripting) → `SCRIPT.md`
 ## Session log
 
 _Last 3 sessions. Full history → [SESSION_LOG.md](./SESSION_LOG.md)_
+
+---
+
+### 2026-05-11 (session 84)
+
+**FullChatView alignment + context panel + insight wiring fixes.**
+
+- **FullChatView mounted inside Shell** — moved from `position: fixed, inset: 0` overlay to inside `<Shell hideSidebar>`, so the global ThoughtSpot header is now visible (matching ChatView). `fullPage` prop removed from AgentPanel.
+- **FullChatView 48px header** — same structure as ChatView: `← [project.name]` back button (tokens throughout), context panel toggle icon on right.
+- **Context panel added to FullChatView** — 280px right panel matching ChatView. "Created" shows "Nothing created yet" (correct — no new artifact is produced at session start). "Context" shows: Models sub-section (the existing model being worked on — not "Created"), Tables, Skills. Each flow has accurate data via `FLOW_CONTEXT` map in `FullChatView.tsx` (e.g. dbt connection repair shows Sales Analytics / Sales Performance / Revenue Forecast, not the generic demo state).
+- **ChatContextPanel: `models` prop added** — new `models?: string[]` renders as a "Models" sub-section inside Context with `ModelIcon`, distinct from Created (build artifacts) and Tables. Existing ChatView usage unchanged.
+- **ins-d1 insight resolution fixed** — `onInsightResolved('ins-d1')` now fires ~3.2s after "Rotate token & resync" is clicked (timed to land after `dbt_connection_apply` steps finish). Was never called before — Pulse alert stayed visible after returning to Overview.
+- **Full Pulse wiring audit** — documented in Next up. 4 debugging flows fully wired; ins-d4 and ins-d5 broken; 4 of 5 optimization opportunities route to static ModelView with no agent flow.
+- Build: clean ✓
 
 ---
 
