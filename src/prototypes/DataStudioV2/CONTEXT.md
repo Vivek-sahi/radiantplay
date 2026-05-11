@@ -39,9 +39,41 @@ The product moved away from a side-panel co-pilot toward a full-screen agent-fir
 
 ## Next up
 
-### Prompt bar cleanup — discuss at session start
+_Nothing queued. Ask at the start of the next session._
 
-No spec yet. To be scoped at the start of the next session.
+---
+
+## Done — Plan artifact panel polish (2026-05-11, session 79)
+
+Both `PlanPanel.tsx` and `QualityPlanPanel.tsx` now visually match the model artifact card.
+
+- **Double-wrapper removed** — outer div with `padding: 12` + `borderLeft` replaced by the inner card becoming the root element (same pattern as the model artifact card in `Workspace.tsx`)
+- **Border**: `border-default` (#C0C6CF, visible grey) → `border-divider` (#EAEDF2, subtle/light)
+- **Border radius**: 8 → 10
+- **Header height**: 40px → 48px (matches the model artifact's identity row)
+- **Font sizes**: all hardcoded `fontSize: 11` / `fontSize: 10` replaced with `fs.xs` token (12px)
+- **QualityPlanPanel warning icon**: amber `#D97706` → `c['content-secondary']` grey (was intended in session 77 but not applied)
+- Severity chips and issue badge retain semantic colours (intentional)
+- Build: clean ✓
+
+---
+
+## Done — Overview + chat polish (2026-05-11, session 78)
+
+**Overview prompt bar:**
+- Heading: "What would you like to build?" → "Hey Sara, what would you like to do today?" (subtext removed).
+- Prompt bar placeholder: "How can I help you today?"
+- 5 capability chips with Radiant icons (`table`, `schema`, `ai`, `cord`, `sync`) — icon + label, same pill style.
+- Typewriter ghost animation: clicking a chip sets base text as real value, then cycles 2 example suffixes as ghost text overlaid in `#B0B8C4` via the mirror div. Real value never changes; cursor stays after base text. User keypress cancels instantly. Timing: 65ms/char type, 1.6s hold, 35ms/char delete. `PromptBarRef` gains `startTypewriter(base, suffixes[])`.
+- `onStartDbt` removed from `Overview` — all chips go through prompt submit.
+- All prompts route to chat (no dbt keyword branching — dbt is also an agentic flow, not a screen redirect).
+
+**Chat header + model name:**
+- Global ThoughtSpot shell header now visible in chat — `ChatView` is inside `<Shell hideSidebar>`, sidebar hidden, header visible. Matches overview framing.
+- ChatView secondary header: centered "Untitled Model" title removed. Back button label now shows `project.name` (e.g., "← Marketing attribution across channels").
+- `deriveModelName(prompt)` added in `index.tsx` — strips standard preamble + leading verbs, takes first 5 words, capitalises. Sets `project.name` on chat entry instead of hardcoded "Untitled Model".
+
+- Build: clean ✓
 
 ---
 
@@ -306,6 +338,20 @@ Original 6-situation arc (still valid for demo scripting) → `SCRIPT.md`
 ## Session log
 
 _Last 3 sessions. Full history → [SESSION_LOG.md](./SESSION_LOG.md)_
+
+---
+
+### 2026-05-11 (session 78)
+
+**Overview + chat header polish.**
+
+- Overview: heading → "Hey Sara, what would you like to do today?", subtext removed, placeholder → "How can I help you today?".
+- 5 capability chips with icons replacing old text suggestions. `PromptBarRef.startTypewriter(base, suffixes[])` added — animates ghost suffix in `#B0B8C4` via mirror div; real value stays as base text; user keystroke cancels. 65ms/char type, 1.6s hold, 35ms/char delete.
+- All chips route to chat (no screen-based dbt branch).
+- Global ThoughtSpot shell header now visible in chat — ChatView moved back inside `<Shell hideSidebar>`.
+- ChatView secondary header: "Untitled Model" centered title removed; back button label shows `project.name`.
+- `deriveModelName(prompt)` in `index.tsx`: strips preamble + leading verbs, first 5 words, capitalised — sets meaningful name on chat entry.
+- Build: clean ✓
 
 ---
 
