@@ -41,67 +41,7 @@ The product moved away from a side-panel co-pilot toward a full-screen agent-fir
 
 ---
 
-### 1. Merge Komal 3 — semantic gaps flow (ins-o3)
-
-**Source file:** `/Users/vivek.sahi/Downloads/DataStudioV2 3 komal/components/AgentPanel.tsx`
-**Files to touch:** `AgentPanel.tsx` only. No routing, no mockData, no index.tsx.
-**Risk:** Medium — additive only, no existing code removed.
-
-**What to copy in (all self-contained):**
-- 3 new SCRIPT entries: `semantic_gaps_detect`, `semantic_gaps_generate`, `semantic_gaps_apply`
-- 3 new genUI card components: `SemanticGapsCard`, `SemanticFillRecommendationsCard`, `SemanticGapsResolvedCard`
-- Wire the genUI action handler: when `genUI === 'semantic_gaps'` fires `semantic_gaps_generate`; when `genUI === 'semantic_fill'` fires `semantic_gaps_apply`
-
-**Entry point:** Clicking ins-o3 in Pulse (type: `'view-gaps'`) → `handleInsightAction` → `onFixWithAgent` → `FullChatView` opens → agent receives the insight → triggers `semantic_gaps_detect` script automatically.
-
-**How the 3-card flow works:**
-1. `semantic_gaps_detect` runs working steps → produces `SemanticGapsCard` (shows 4 columns with failure counts, trend arrows, grouped downstream queries). CTA: "Generate descriptions →"
-2. User clicks → fires `semantic_gaps_generate` → working steps → produces `SemanticFillRecommendationsCard` (4 editable textareas with AI-written descriptions + confidence badges). CTA: "Apply descriptions →"
-3. User clicks → fires `semantic_gaps_apply` → working steps → produces `SemanticGapsResolvedCard` (green success: ✓ 4 descriptions added, ✓ Spotter updated, ~31 failed queries/week fixed).
-
-**Before building:** confirm whether `onFixWithAgent` for `view-gaps` type currently routes to `FullChatView` or `onOpenProjectAtMonitoring`. Check `index.tsx` routing for `isFixWithAgent` condition — may need to add `view-gaps` to that condition.
-
----
-
-### 2. Merge Komal 3 — cache miss flow (ins-o4)
-
-**Source file:** `/Users/vivek.sahi/Downloads/DataStudioV2 3 komal/components/AgentPanel.tsx`
-**Files to touch:** `AgentPanel.tsx` only.
-**Risk:** Medium — overlaps existing `CacheRecommendationCard` + `enable_cache` script (from session 83). Decision needed first.
-
-**Decision to make at session start:** Our existing cache flow (1 card, `CacheRecommendationCard`) was built for the Pulse → FullChatView path in session 83. Komal's is a richer 3-stage version. Two options:
-- **Option A (replace):** Remove our existing `CacheRecommendationCard` and `enable_cache` script, replace entirely with Komal's 3-card flow (`cache_miss_detect` → `cache_miss_configure` → `cache_miss_enable`).
-- **Option B (keep ours):** Skip this merge for now — our cache flow already works end-to-end and the Pulse entry point is wired.
-
-**Vivek's likely preference:** Option A — Komal's version is more detailed and demo-worthy (shows "who's running it", config options, ROI estimate). Confirm at session start.
-
-**What Komal's 3-card flow looks like:**
-1. `CacheMissOpportunityCard` — stats grid (34× this week, 11.2s avg, 0% hit rate, ~374s wasted) + "who's running it" section. CTA: "Enable caching →"
-2. `CacheConfigurationCard` — radio group (this query / similar queries / model-level cache), refresh schedule + TTL dropdowns, green ROI estimate box (~85% hit rate, ~320s/week saved). CTA: "Enable cache →"
-3. `CacheEnabledCard` — green success: ✓ cache policy created, ✓ query routing updated, ~11s saved/query.
-
----
-
-### 3. Merge Komal 3 — resolution workflow object links
-
-**Source file:** `/Users/vivek.sahi/Downloads/DataStudioV2 3 komal/components/AgentPanel.tsx`
-**Files to touch:** `AgentPanel.tsx` only — specific genUI cards.
-**Risk:** Low-Medium — additive prop + handler.
-
-**What this is:** Inside Komal's resolution cards (e.g. `NullRateImpactCard`, `SchemaDriftResolutionCard`, `BlastRadiusCard`), object names like "Marketing Campaign Attribution", "Campaign Dashboard", and column names are clickable buttons. Clicking them calls `onOpenObject(name, type)` which opens that liveboard or model in a side panel.
-
-**We currently have:** These object names rendered as plain text (or styled spans) — not clickable. Our existing cards don't have `onOpenObject`.
-
-**What to add:**
-- `onOpenObject?: (name: string, type: 'model' | 'liveboard' | 'answer') => void` prop on the affected cards
-- Wire each clickable object name as a `<button>` that calls `onOpenObject`
-- For now `onOpenObject` can be a stub that `console.log`s — the visual affordance (blue link style, cursor pointer) is what matters for the demo
-
-**Cards affected:** `NullRateImpactCard`, `SchemaDriftResolutionCard`, `BlastRadiusCard`, `ConnectionStatusCard`
-
----
-
-### 4. DQ + AIRS chip — deferred
+### 1. DQ + AIRS chip — deferred
 
 **What we discussed:** The DQ chip "Fix all with agent" and AIRS "Generate →" / "Add →" buttons are currently unresponsive. Two options discussed:
 - **Option B (preferred):** Make the chip "Fix all with agent" the single entry point for DQ fixes — clicking it sends a message to the agent that triggers `review_data_quality`. Remove the suggestion chip approach. Mirror same pattern for AIRS with a new `improve_ai_readiness` script.
@@ -113,6 +53,19 @@ The product moved away from a side-panel co-pilot toward a full-screen agent-fir
 ### 5. Team review + iterate on feedback
 
 Any remaining visual or copy feedback from the team after reviewing the updated prototype.
+
+---
+
+### 2026-05-12 (session 101)
+
+**Merge Komal 3 — semantic gaps flow, cache miss flow, onOpenObject stub.**
+
+- **Semantic gaps (ins-o3)**: 3 new SCRIPT entries (`semantic_gaps_detect/generate/apply`) + 3 genUI cards (`SemanticGapsCard` with columns/downstream tabs + hover tooltips, `SemanticFillRecommendationsCard` with editable textareas + confidence badges, `SemanticGapsResolvedCard` green success state). Action handlers: `semantic_gaps_fill` → generate, `semantic_gaps_apply_descriptions` → apply, `semantic_gaps_cancel` → lock card.
+- **Cache miss (ins-o4)**: Replaced `enable_cache` SCRIPT + `CacheRecommendationCard` with Komal's 3-stage flow (`cache_miss_detect/configure/enable`) + `CacheMissOpportunityCard` (stats grid + "who's running it"), `CacheConfigurationCard` (scope radios + refresh/TTL dropdowns + ROI estimate), `CacheEnabledCard` green success. Action handlers: `cache_miss_configure_action` → configure, `cache_enable_action` → enable, `cache_cancel` → lock.
+- **onOpenObject stub**: `onOpenObject?: (name: string, highlightCol?: string) => void` added to `AgentPanelProps` + `MessageBubble` props. Passed to new cards — clicking clickable object names `console.log`s only. Visual affordance (blue link, cursor pointer) is live. Full behaviour is a future paradigm decision.
+- **`index.tsx`**: `ins-o3 → semantic_gaps_detect`, `ins-o4 → cache_miss_detect` added to flowMap; prompt strings added to promptMap.
+- **`Overview.tsx`**: `isFixWithAgent` condition changed from `category === 'debugging' || type === 'enable-cache'` to `label.includes('with agent')` — catches all agent-action Pulse rows including ins-o3 (`view-gaps` type).
+- Build: clean ✓
 
 ---
 
