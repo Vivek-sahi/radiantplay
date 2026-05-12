@@ -98,6 +98,36 @@ const HeroChip: React.FC<{ icon: React.ComponentProps<typeof Icon>['name']; labe
   </button>
 );
 
+// ── Pulse icons ───────────────────────────────────────────────────────────────
+
+const WarningIcon: React.FC<{ color: string }> = ({ color }) => (
+  <svg width="15" height="15" viewBox="0 0 16 16" fill="none" style={{ color }}>
+    <path d="M8 2.5L14 13.5H2L8 2.5Z" stroke="currentColor" strokeWidth="1.25" strokeLinejoin="round" fill="currentColor" fillOpacity="0.1" />
+    <path d="M8 7V9.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+    <circle cx="8" cy="11.5" r="0.75" fill="currentColor" />
+  </svg>
+);
+
+const AISparkleIcon: React.FC<{ color: string }> = ({ color }) => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ color }}>
+    <path
+      d="M8 1.5C8.4 4.8 11.2 7.6 14.5 8C11.2 8.4 8.4 11.2 8 14.5C7.6 11.2 4.8 8.4 1.5 8C4.8 7.6 7.6 4.8 8 1.5Z"
+      fill="currentColor" fillOpacity="0.9"
+    />
+    <path
+      d="M12.5 2.5C12.65 3.3 13.2 3.85 14 4C13.2 4.15 12.65 4.7 12.5 5.5C12.35 4.7 11.8 4.15 11 4C11.8 3.85 12.35 3.3 12.5 2.5Z"
+      fill="currentColor" fillOpacity="0.6"
+    />
+  </svg>
+);
+
+const getPulseIconStyle = (priority: number, category: 'debugging' | 'optimization') => {
+  if (category === 'optimization') return { bg: '#f5f3ff', border: '#ddd6fe', color: '#6d28d9' };
+  if (priority <= 2) return { bg: '#fef2f2', border: '#fecaca', color: '#dc2626' };
+  if (priority === 3) return { bg: '#fff7ed', border: '#fed7aa', color: '#c2410c' };
+  return { bg: '#fffbeb', border: '#fde68a', color: '#b45309' };
+};
+
 // ── Pulse helpers ─────────────────────────────────────────────────────────────
 
 type ProjectHealth = 'healthy' | 'needs-attention' | 'broken';
@@ -136,8 +166,8 @@ const PulseRow: React.FC<{
   isLast: boolean;
 }> = ({ insight, onAction, onDismiss, isLast }) => {
   const [hovered, setHovered] = useState(false);
-  const dotColor = getSeverityColor(insight.priority, insight.category);
-  const isUrgent = insight.category === 'debugging' && insight.priority <= 2;
+  const iconStyle = getPulseIconStyle(insight.priority, insight.category);
+  const isUrgent  = insight.category === 'debugging' && insight.priority <= 2;
 
   return (
     <div
@@ -153,43 +183,55 @@ const PulseRow: React.FC<{
         transition: 'background-color 0.12s',
       }}
     >
+      {/* Icon container */}
       <div style={{
-        width: 8, height: 8, borderRadius: '50%', flexShrink: 0, alignSelf: 'flex-start', marginTop: 5,
-        backgroundColor: dotColor,
-        boxShadow: hovered ? `0 0 0 4px ${dotColor}20` : `0 0 0 0px ${dotColor}00`,
-        transition: 'box-shadow 0.15s',
-      }} />
+        width: 34, height: 34, borderRadius: 9, flexShrink: 0,
+        border: `1px solid ${iconStyle.border}`,
+        backgroundColor: iconStyle.bg,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}>
+        {insight.category === 'optimization'
+          ? <AISparkleIcon color={iconStyle.color} />
+          : <WarningIcon color={iconStyle.color} />
+        }
+      </div>
+
+      {/* Two lines: titleShort / impact */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 13, lineHeight: 1.45, display: 'flex', alignItems: 'baseline', overflow: 'hidden' }}>
-          <span
-            title={insight.metric ? `${insight.title} · ${insight.metric}` : insight.title}
-            style={{
-              fontWeight: isUrgent ? fw.semibold : fw.medium,
-              color: c['content-primary'],
-              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-              flexShrink: 1, minWidth: 0,
-            }}
-          >
-            {insight.title}
+        <div style={{ display: 'flex', alignItems: 'baseline', overflow: 'hidden' }}>
+          <span style={{
+            fontSize: 13, lineHeight: 1.45,
+            fontWeight: isUrgent ? fw.semibold : fw.medium,
+            color: c['content-primary'],
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            flexShrink: 1, minWidth: 0,
+          }}>
+            {insight.titleShort ?? insight.title}
           </span>
-          {insight.metric && (
-            <>
-              <span style={{ color: '#d1d5db', flexShrink: 0, margin: '0 5px' }}>·</span>
-              <span style={{ fontWeight: fw.medium, color: dotColor, whiteSpace: 'nowrap', flexShrink: 0 }}>
-                {insight.metric}
-              </span>
-            </>
-          )}
         </div>
-        <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 3, lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {insight.context}
-          <span style={{ color: '#c4c9d4' }}> · {insight.timestamp}</span>
+        <div style={{ marginTop: 3 }}>
+          <span style={{
+            fontSize: 12, color: '#9ca3af', lineHeight: 1.4,
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            display: 'block',
+          }}>
+            {insight.impact}
+          </span>
         </div>
       </div>
+
+      {/* Right — action + dismiss, both revealed on hover */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
         <button
           onClick={e => { e.stopPropagation(); onAction(); }}
-          style={{ fontSize: 11, fontWeight: fw.medium, fontFamily: ff.primary, color: c['content-brand'], background: 'none', border: 'none', cursor: 'pointer', padding: 0, whiteSpace: 'nowrap' }}
+          style={{
+            fontSize: 11, fontWeight: fw.medium, fontFamily: ff.primary,
+            color: c['content-brand'],
+            background: 'none', border: 'none', cursor: 'pointer',
+            padding: 0, whiteSpace: 'nowrap',
+            opacity: hovered ? 1 : 0,
+            transition: 'opacity 0.12s',
+          }}
         >
           {insight.primaryAction.label}
         </button>
