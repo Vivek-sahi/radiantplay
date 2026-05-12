@@ -1,15 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import ReactECharts from 'echarts-for-react';
-import { c, sp, ff, fs, fw, ts } from '../styles';
+import { c, sp, ff, fs, fw } from '../styles';
 import { ProjectState, ProjectContext } from '../index';
 // agent.ts: skills registry (no API calls — all execution is scripted)
 import { tableMetadata, relationships, CACHE_STATS, CONNECTIONS } from '../data/mockData';
 import PromptBar, { PromptBarRef } from './PromptBar';
 import ConnectionPill from './ConnectionPill';
 import DataQualityPlanModal from './DataQualityPlanModal';
-import { Avatar } from '../../../components/Avatar';
-import { TextInput } from '../../../components/TextInput';
-import { Button } from '../../../components/Button';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -717,6 +714,8 @@ Data health: **Poor (34/100)**.`,
         detail: 'Rewriting currency labels and descriptions in all 3 columns.',
       },
     ],
+    duration: '',
+    proposal: '',
     autoComplete: true,
     execution: `Done. Updated currency context in 3 columns:\n✓ **amount** — "Order value in INR at time of purchase"\n✓ **spend** — "Total amount spent in INR"\n✓ **budget** — "Total approved spend limit in INR"\n\nSpotter will now interpret and report all monetary values in Indian Rupees.`,
     nextStep: 'healthy',
@@ -1742,32 +1741,6 @@ interface SpotterAnswer {
   chartData?: { categories: string[]; values: number[]; formatter: string; yMax: number };
 }
 
-interface TestMsg {
-  id: number;
-  role: 'user' | 'ai' | 'coaching-question' | 'coaching-debug';
-  content?: string;
-  timestamp?: string;
-  // ai message fields
-  answerTitle?: string;
-  answerDesc?: string;
-  chips?: SpotterChip[];
-  workingSteps?: TestWorkingStep[];
-  workingExpanded?: boolean;
-  revealedSteps?: number;
-  answerRevealed?: boolean;
-  chartData?: SpotterAnswer['chartData'];
-  feedbackState?: 'pending' | 'answered';
-  feedbackAnswer?: 'correct' | 'incorrect';
-  // coaching-question fields
-  coachingOptions?: string[];
-  selectedOption?: string;
-  sourceQuestion?: string;
-  // coaching-debug fields
-  debugCategory?: string;
-  debugSteps?: Array<{ label: string; detail: string }>;
-  debugRevealedSteps?: number;
-  debugResultRevealed?: boolean;
-}
 
 const SPOTTER_ANSWERS: Record<string, SpotterAnswer> = {
   'What is our ROAS by campaign and channel?': {
@@ -1870,62 +1843,6 @@ const DEMO_QUESTIONS = [
   'What is revenue by region?',
   'What is the budget utilisation rate?',
 ];
-
-// ── Test mode sub-components ──────────────────────────────────────────────────
-
-const SpotterIcon = () => (
-  <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
-    <circle cx="13" cy="13" r="11" stroke="#1D232F" strokeWidth="1.8"/>
-    <circle cx="13" cy="13" r="5.5" stroke="#1D232F" strokeWidth="1.8"/>
-    <circle cx="13" cy="13" r="2" fill="#1D232F"/>
-  </svg>
-);
-
-const SpotterIconSm = () => (
-  <svg width="16" height="16" viewBox="0 0 26 26" fill="none">
-    <circle cx="13" cy="13" r="11" stroke="#777E8B" strokeWidth="1.8"/>
-    <circle cx="13" cy="13" r="5.5" stroke="#777E8B" strokeWidth="1.8"/>
-    <circle cx="13" cy="13" r="2" fill="#777E8B"/>
-  </svg>
-);
-
-const FilterIcon = () => (
-  <svg width="10" height="10" viewBox="0 0 18 18" fill="none" style={{ flexShrink: 0 }}>
-    <path d="M1.5 3H16.5L10.5 10.065V14.5L7.5 16V10.065L1.5 3Z" stroke="#4A7FE5" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-  </svg>
-);
-
-const TChevronIcon: React.FC<{ open: boolean }> = ({ open }) => (
-  <svg width="11" height="11" viewBox="0 0 11 11" fill="none" style={{ transition: 'transform 0.18s', transform: open ? 'rotate(180deg)' : 'none' }}>
-    <path d="M1.5 3.5l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-  </svg>
-);
-
-const TableViewIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-    <rect x="1" y="1" width="12" height="12" rx="1.5" stroke="currentColor" strokeWidth="1.2"/>
-    <line x1="1" y1="5" x2="13" y2="5" stroke="currentColor" strokeWidth="1.2"/>
-    <line x1="5" y1="5" x2="5" y2="13" stroke="currentColor" strokeWidth="1.2"/>
-  </svg>
-);
-
-const ChartViewIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-    <rect x="1" y="8" width="3" height="5" rx="0.5" fill="currentColor"/>
-    <rect x="5.5" y="5" width="3" height="8" rx="0.5" fill="currentColor"/>
-    <rect x="10" y="2" width="3" height="11" rx="0.5" fill="currentColor"/>
-  </svg>
-);
-
-const DownloadIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 18 18" fill="none">
-    <path d="M9 2.25V11.25M9 11.25L5.25 7.5M9 11.25L12.75 7.5M3 15.75H15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-  </svg>
-);
-
-const TSpinner: React.FC = () => (
-  <div style={{ width: 10, height: 10, borderRadius: '50%', border: '1.5px solid #e0e3e8', borderTopColor: '#2770ef', flexShrink: 0, animation: 'ds-spin 0.7s linear infinite' }} />
-);
 
 const TTypewriter: React.FC<{ text: string; active: boolean }> = ({ text, active }) => {
   const [displayed, setDisplayed] = React.useState(active ? '' : text);
@@ -2477,7 +2394,7 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
 
     // 0. Test mode switch — chip or any "switch to test mode" phrasing
     if (/switch to test mode|enter test mode|go to test mode/i.test(text)) {
-      setProject(p => ({ ...p, testMode: true }));
+      setAgentMode('test');
       setProcessing(false);
       return;
     }
@@ -2749,14 +2666,6 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
     runFlow(scriptKey, setMessages, setPending, setProcessing, setProject, userBubble);
   };
 
-  const testChipStyle = (type: SpotterChip['type']): React.CSSProperties => ({
-    display: 'inline-flex', alignItems: 'center', gap: 4,
-    padding: '3px 9px 3px 7px', borderRadius: 4,
-    fontSize: 12, fontWeight: fw.medium, whiteSpace: 'nowrap',
-    cursor: 'default', userSelect: 'none', lineHeight: 1.5,
-    backgroundColor: '#EAEDF2', color: '#1D232F',
-  });
-
   const buildChartOption = (chartData: NonNullable<AgentMessage['chartData']>) => {
     const font = "-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif";
     return {
@@ -3018,7 +2927,7 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
                               <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 5, marginBottom: sp.B }}>
                                 {msg.spotterChips.map((chip, ci) => (
                                   <span key={ci} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 9px 3px 7px', borderRadius: 4, fontSize: 12, fontWeight: fw.medium, backgroundColor: '#EAEDF2', color: '#1D232F', whiteSpace: 'nowrap' }}>
-                                    {chip.type === 'measure' && <span style={{ fontSize: 10, color: '#4A7FE5', fontWeight: fw.bold }}>#</span>}
+                                    {chip.type === 'measure' && <span style={{ fontSize: 10, color: '#4A7FE5', fontWeight: fw.semibold }}>#</span>}
                                     {chip.type === 'filter' && <svg width="10" height="10" viewBox="0 0 18 18" fill="none" style={{ flexShrink: 0 }}><path d="M1.5 3H16.5L10.5 10.065V14.5L7.5 16V10.065L1.5 3Z" stroke="#4A7FE5" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                                     {chip.label}
                                   </span>
@@ -3156,7 +3065,6 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
                 onToggleCollapsible={toggleCollapsible}
                 onSuggestion={text => processText(text)}
                 onConfirm={isActivePending ? handleConfirm : undefined}
-                onOpenPlanModal={() => setPlanModalOpen(true)}
                 onOpenQualityPlan={onOpenQualityPlan}
                 onChipClick={text => processText(text)}
                 onGenUIAction={handleGenUIAction}
@@ -3189,6 +3097,29 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
       {dayZeroPhase === 'clarify_q1' && (
         <div style={{ padding: `0 ${sp.C}px`, flexShrink: 0 }}>
           <DayClarifyCard questions={DAY_ZERO_QUESTIONS} onComplete={handleClarifyComplete} />
+        </div>
+      )}
+
+      {/* Test mode — demo question suggestions */}
+      {agentMode === 'test' && (
+        <div style={{ padding: `${sp.B}px ${sp.D}px 0`, flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: sp.A, marginBottom: sp.B }}>
+            <svg width="12" height="12" viewBox="0 0 26 26" fill="none" style={{ flexShrink: 0, opacity: 0.5 }}>
+              <circle cx="13" cy="13" r="11" stroke={c['content-secondary']} strokeWidth="1.8"/>
+              <circle cx="13" cy="13" r="5.5" stroke={c['content-secondary']} strokeWidth="1.8"/>
+              <circle cx="13" cy="13" r="2" fill={c['content-secondary']}/>
+            </svg>
+            <span style={{ fontSize: 11, color: c['content-secondary'], fontWeight: fw.medium }}>Try a question</span>
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: sp.A }}>
+            {DEMO_QUESTIONS.map(q => (
+              <button key={q} onClick={() => { promptBarRef.current?.setValue(q); }}
+                style={{ padding: '4px 10px', border: `1px solid ${c['border-default']}`, borderRadius: 20, background: 'none', fontSize: 11, color: c['content-secondary'], cursor: 'pointer', fontFamily: ff.primary, whiteSpace: 'nowrap', transition: 'all 0.12s' }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = '#7C3AED'; e.currentTarget.style.color = '#7C3AED'; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = c['border-default']; e.currentTarget.style.color = c['content-secondary']; }}
+              >{q}</button>
+            ))}
+          </div>
         </div>
       )}
 
@@ -3533,7 +3464,6 @@ const PlanCard: React.FC<{ plan: PlanData; onClick: () => void }> = ({ plan, onC
   const tableCount = plan.tables.length;
   const relCount   = plan.relationships.length;
   const colCount   = plan.columns.filter(col => col.included).length;
-  const qCount     = plan.sampleQuestions.length;
 
   return (
     <div
@@ -3579,13 +3509,12 @@ const MessageBubble: React.FC<{
   onToggleCollapsible: (msgId: string, stepIdx: number) => void;
   onSuggestion: (text: string) => void;
   onConfirm?: () => void;
-  onOpenPlanModal?: () => void;
   onOpenQualityPlan?: () => void;
   onChipClick?: (value: string) => void;
   onGenUIAction?: (action: string, msgId: string) => void;
   onComplete?: () => void;
   publishedVersion?: number;
-}> = ({ msg, showAvatar, onToggleSteps, onToggleCollapsible, onSuggestion, onConfirm, onOpenPlanModal, onOpenQualityPlan, onChipClick, onGenUIAction, onComplete, publishedVersion }) => {
+}> = ({ msg, showAvatar, onToggleSteps, onToggleCollapsible, onSuggestion, onConfirm, onOpenQualityPlan, onChipClick, onGenUIAction, onComplete, publishedVersion }) => {
   const [chipUsed, setChipUsed] = React.useState(false);
 
   // ── User bubble ────────────────────────────────────────────────────────────
@@ -3614,7 +3543,6 @@ const MessageBubble: React.FC<{
     const allDone    = msg.steps?.every(s => s.status === 'done') ?? false;
     const isRunning  = msg.steps?.some(s => s.status === 'running') ?? false;
     const isCollapsed = msg.stepsCollapsed ?? false;
-    const stepCount  = msg.steps?.length ?? 0;
 
     return (
       <div style={{ display: 'flex', gap: sp.B, alignItems: 'flex-start' }}>
