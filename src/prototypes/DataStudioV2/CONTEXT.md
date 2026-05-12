@@ -39,19 +39,111 @@ The product moved away from a side-panel co-pilot toward a full-screen agent-fir
 
 ## Next up
 
-### 1. Review panel explorations in playground
+---
 
-4 explorations live at `/data-studio-v2/playground` → Model Health tab:
-- **mhp1 — Tier rows**: collapsible accordions, tier badge per section/dimension row
-- **mhp2 — Lighthouse**: score bars per category (DQ) + To improve / Done split (AIRS)
-- **mhp3 — Scorecards**: 2×2 card grid, tier badge + mini bar per card
-- **mhp4 — Flat list**: filter chips, no category hierarchy
+### 1. Merge Komal 3 — semantic gaps flow (ins-o3)
 
-Pick one direction (or mix), then promote to the main prototype. Also decide whether to bump font size +1 throughout.
+**Source file:** `/Users/vivek.sahi/Downloads/DataStudioV2 3 komal/components/AgentPanel.tsx`
+**Files to touch:** `AgentPanel.tsx` only. No routing, no mockData, no index.tsx.
+**Risk:** Medium — additive only, no existing code removed.
 
-### 2. Team review + iterate on feedback
+**What to copy in (all self-contained):**
+- 3 new SCRIPT entries: `semantic_gaps_detect`, `semantic_gaps_generate`, `semantic_gaps_apply`
+- 3 new genUI card components: `SemanticGapsCard`, `SemanticFillRecommendationsCard`, `SemanticGapsResolvedCard`
+- Wire the genUI action handler: when `genUI === 'semantic_gaps'` fires `semantic_gaps_generate`; when `genUI === 'semantic_fill'` fires `semantic_gaps_apply`
 
-Any remaining feedback items from the team.
+**Entry point:** Clicking ins-o3 in Pulse (type: `'view-gaps'`) → `handleInsightAction` → `onFixWithAgent` → `FullChatView` opens → agent receives the insight → triggers `semantic_gaps_detect` script automatically.
+
+**How the 3-card flow works:**
+1. `semantic_gaps_detect` runs working steps → produces `SemanticGapsCard` (shows 4 columns with failure counts, trend arrows, grouped downstream queries). CTA: "Generate descriptions →"
+2. User clicks → fires `semantic_gaps_generate` → working steps → produces `SemanticFillRecommendationsCard` (4 editable textareas with AI-written descriptions + confidence badges). CTA: "Apply descriptions →"
+3. User clicks → fires `semantic_gaps_apply` → working steps → produces `SemanticGapsResolvedCard` (green success: ✓ 4 descriptions added, ✓ Spotter updated, ~31 failed queries/week fixed).
+
+**Before building:** confirm whether `onFixWithAgent` for `view-gaps` type currently routes to `FullChatView` or `onOpenProjectAtMonitoring`. Check `index.tsx` routing for `isFixWithAgent` condition — may need to add `view-gaps` to that condition.
+
+---
+
+### 2. Merge Komal 3 — cache miss flow (ins-o4)
+
+**Source file:** `/Users/vivek.sahi/Downloads/DataStudioV2 3 komal/components/AgentPanel.tsx`
+**Files to touch:** `AgentPanel.tsx` only.
+**Risk:** Medium — overlaps existing `CacheRecommendationCard` + `enable_cache` script (from session 83). Decision needed first.
+
+**Decision to make at session start:** Our existing cache flow (1 card, `CacheRecommendationCard`) was built for the Pulse → FullChatView path in session 83. Komal's is a richer 3-stage version. Two options:
+- **Option A (replace):** Remove our existing `CacheRecommendationCard` and `enable_cache` script, replace entirely with Komal's 3-card flow (`cache_miss_detect` → `cache_miss_configure` → `cache_miss_enable`).
+- **Option B (keep ours):** Skip this merge for now — our cache flow already works end-to-end and the Pulse entry point is wired.
+
+**Vivek's likely preference:** Option A — Komal's version is more detailed and demo-worthy (shows "who's running it", config options, ROI estimate). Confirm at session start.
+
+**What Komal's 3-card flow looks like:**
+1. `CacheMissOpportunityCard` — stats grid (34× this week, 11.2s avg, 0% hit rate, ~374s wasted) + "who's running it" section. CTA: "Enable caching →"
+2. `CacheConfigurationCard` — radio group (this query / similar queries / model-level cache), refresh schedule + TTL dropdowns, green ROI estimate box (~85% hit rate, ~320s/week saved). CTA: "Enable cache →"
+3. `CacheEnabledCard` — green success: ✓ cache policy created, ✓ query routing updated, ~11s saved/query.
+
+---
+
+### 3. Merge Komal 3 — resolution workflow object links
+
+**Source file:** `/Users/vivek.sahi/Downloads/DataStudioV2 3 komal/components/AgentPanel.tsx`
+**Files to touch:** `AgentPanel.tsx` only — specific genUI cards.
+**Risk:** Low-Medium — additive prop + handler.
+
+**What this is:** Inside Komal's resolution cards (e.g. `NullRateImpactCard`, `SchemaDriftResolutionCard`, `BlastRadiusCard`), object names like "Marketing Campaign Attribution", "Campaign Dashboard", and column names are clickable buttons. Clicking them calls `onOpenObject(name, type)` which opens that liveboard or model in a side panel.
+
+**We currently have:** These object names rendered as plain text (or styled spans) — not clickable. Our existing cards don't have `onOpenObject`.
+
+**What to add:**
+- `onOpenObject?: (name: string, type: 'model' | 'liveboard' | 'answer') => void` prop on the affected cards
+- Wire each clickable object name as a `<button>` that calls `onOpenObject`
+- For now `onOpenObject` can be a stub that `console.log`s — the visual affordance (blue link style, cursor pointer) is what matters for the demo
+
+**Cards affected:** `NullRateImpactCard`, `SchemaDriftResolutionCard`, `BlastRadiusCard`, `ConnectionStatusCard`
+
+---
+
+### 4. DQ + AIRS chip — deferred
+
+**What we discussed:** The DQ chip "Fix all with agent" and AIRS "Generate →" / "Add →" buttons are currently unresponsive. Two options discussed:
+- **Option B (preferred):** Make the chip "Fix all with agent" the single entry point for DQ fixes — clicking it sends a message to the agent that triggers `review_data_quality`. Remove the suggestion chip approach. Mirror same pattern for AIRS with a new `improve_ai_readiness` script.
+
+**Why deferred:** Not blocking the demo arc. The existing suggestion chip already triggers the DQ flow. Cover other workflows first.
+
+---
+
+### 5. Team review + iterate on feedback
+
+Any remaining visual or copy feedback from the team after reviewing the updated prototype.
+
+---
+
+### 2026-05-12 (session 100)
+
+**Pulse row redesign — merged from Komal's DataStudioV2 3 komal.**
+
+- **Source**: Komal 3 only (superset of Komal 2 — no Komal 2 content needed separately).
+- **`mockData.ts`**: Added `titleShort?` and `impact?` fields to `ActiveInsight` interface. Replaced all 11 `ACTIVE_INSIGHTS` entries with Komal's richer content — `titleShort` is the short category label shown on line 1; `impact` is the downstream scope string shown on line 2 (e.g. `'sales_analytics · 3 models blocked · 12 answers stale · 4 liveboards affected'`). Action labels updated to specific verbs: Enable/Fill/Optimize/Clean up/Improve with agent →. Routing unaffected — `handleInsightAction` still uses `category` + `primaryAction.type`, not the label.
+- **`Overview.tsx`**: Added `WarningIcon` (triangle SVG), `AISparkleIcon` (4-point star SVG), and `getPulseIconStyle` helper above PulseRow. Replaced `PulseRow` body: dot indicator → 34×34 rounded icon box (colour-coded by severity/category); title+metric one-liner → two-line layout (`titleShort` / `impact`); action button now revealed on hover only (was always visible).
+- **Decision log**: Komal 3 is the single source for all merges going forward — it is the superset of Komal 2 plus the two new optimization flows.
+- Build: clean ✓
+
+---
+
+### 2026-05-12 (session 99)
+
+**Model Health panel design — mhp5 Playground exploration + promoted to main prototype.**
+
+- **Design decision**: narrow dropdown panels (340px, one signal at a time), two-level accordion (categories collapsed by default). mhp3 (scorecards) and mhp4 (flat list with tabs) ruled out for narrow-width constraint. mhp2 (Lighthouse) ruled out for disconnected sections. mhp1 direction chosen.
+- **mhp5 Playground exploration**: new `MhpShellDropdown` shell — full artifact skeleton, chips in tab bar anchor actual positioned dropdowns (340px, `maxHeight: 70vh`). One chip open at a time. All categories collapsed by default (`{}`). Added to Model Health nav section.
+- **Promoted to Workspace.tsx**:
+  - Replaced flat `MH_AIRS_ITEMS` + `MH_AIRS_BARS` with `MH_AIRS_DIMS` (4 collapsible dimensions: Semantic completeness 40%, Context & instructions 20%, Join accuracy 80%, Data type validity 90%).
+  - `dqSectionOpen` + `airsSectionOpen` state (both `{}`).
+  - Both panels now structurally identical: gauge dial header (SVG arc + div overlay for number — avoids SVG font issue) + collapsible accordion body + full-width "Fix all with agent" footer.
+  - DQ gauge: 0% arc (red) showing issue count; 100% arc (green, ✓) when resolved.
+  - AIRS gauge: 25% arc (red) showing score.
+  - Removed checkboxes from AIRS items; removed pts score (`0/25pt`). Both panels use same item row: `label · action →` (done items: strikethrough + grey).
+  - DQ item column names changed from `ff.mono` → `ff.primary` to match AIRS font.
+  - All text in both panels explicitly uses `fontFamily: ff.primary`.
+- Build: clean ✓
 
 ---
 
