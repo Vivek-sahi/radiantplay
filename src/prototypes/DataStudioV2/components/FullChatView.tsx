@@ -566,6 +566,7 @@ const FullChatView: React.FC<FullChatViewProps> = ({ project, setProject, initia
     setActiveObject({ name, highlightCol });
     setReferencedObjects(prev => prev.includes(name) ? prev : [...prev, name]);
     setAgentWidth(AGENT_DEFAULT());
+    setContextPanelOpen(false);
     const note = OBJECT_NOTES[name];
     if (note) {
       setMessages(prev => [...prev, {
@@ -576,7 +577,10 @@ const FullChatView: React.FC<FullChatViewProps> = ({ project, setProject, initia
     }
   }, []);
 
-  const handleCloseObject = useCallback(() => setActiveObject(null), []);
+  const handleCloseObject = useCallback(() => {
+    setActiveObject(null);
+    setContextPanelOpen(true);
+  }, []);
 
   return (
     <div style={{
