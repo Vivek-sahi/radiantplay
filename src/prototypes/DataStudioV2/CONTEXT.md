@@ -39,25 +39,41 @@ The product moved away from a side-panel co-pilot toward a full-screen agent-fir
 
 ## Next up
 
-### 1. Review Model Health explorations + decide on direction
+### 1. Model health chips — review + iterate
 
-Review `mh1` and `mh2` at `/data-studio-v2/playground` under **"Model Health"**:
-- `mh1` — Separate signals: two chips (data quality + AI readiness), each opening its own canvas view
-- `mh2` — Health umbrella: one chip, unified canvas view with two-level collapsible sections
+Chips are live in the artifact tab bar. Review the dropdowns and decide what to adjust.
 
-Decide: separate or umbrella? Consider: does the umbrella lose important nuance, or is the simplification cleaner in context? That decision drives the live artifact implementation.
+**Design decisions landed:**
+- Separate signals: DQ chip (`▲ 9 issues`) + AIRS chip (`◯ 25% AI ready`), not an umbrella
+- Both open compact dropdowns (340px popover), not canvas view replacements
+- Cache button moved to identity row: Cache → Share → Publish → ×
+- Tab bar right: Settings gear | DQ chip | AIRS chip | + Data
+- DQ dropdown: 9 issues across 3 sections (nulls, dupes, date formats), severity badges, Fix → per row
+- AIRS dropdown: gauge + score breakdown bars + 6 action items with pts
+- Mock: AIRS score = 25 / Not ready (red arc); DQ = 9 issues
 
-Also review the broader model health concept — what signals belong under it, how it surfaces in the models list vs. inside the artifact, and how it degrades over time.
-
-**Design decisions already landed (do not re-research):**
-- Clicking a health chip replaces the canvas content area (identity row + tab bar stay). Not a side panel, not a new artifact.
-- Data quality and AI readiness are distinct signals with different owners and fix actions.
-- 100% AI readiness ≠ guaranteed correct answers. Data quality and LLM limits are independent variables.
-- Score degrades over time: schema drift (new columns without descriptions), test failures, business logic changes not reflected in metadata.
+**Open — not yet decided:**
+- Should clicking "Fix →" / action buttons trigger the agent? Currently visual-only.
+- Should health chips appear in the Models list column?
 
 ### 2. Team review + iterate on feedback
 
 Any remaining feedback items from the team.
+
+---
+
+### 2026-05-12 (session 97)
+
+**Model health chips + cache button reorder.**
+
+- **Direction decided:** separate signals (not umbrella). Two compact dropdown chips in the tab bar.
+- **Cache button** moved from tab bar to identity row. New order: Cache → Share → Publish → ×. Label shows "Live query" / "Caching…" / "Cached" (status-aware).
+- **Tab bar right** is now: Settings gear | `▲ 9 issues` | `◯ 25% AI ready` | `+ Data`.
+- **DQ chip** (`▲ 9 issues`): red when issues present, green "9 resolved" when `prepTransforms` applied. Opens a 340px dropdown with 9 issues across 3 sections (nulls, duplicate rows, date format mismatches). Each row: `code` column name + detail text + severity badge (High/Med) + Fix → link. "Fix all with agent" in header.
+- **AIRS chip** (`◯ 25% AI ready`): red ring at score 25 (Not ready tier). Opens a 340px dropdown with a 36px circular gauge, score breakdown (4 colored bars), and 6 action items with pts earned/total. Done items have green checkmark + strikethrough. Action items show "Generate →" / "Add →" links.
+- Outside-click closes whichever dropdown is open. Clicking the other chip while one is open switches dropdowns.
+- Mock data: `MH_AIRS_SCORE = 25`, `MH_AIRS_TIER = 'Not ready'`, 9 DQ issues, 6 AIRS action items (25+15 pts earned = 25/100).
+- Build: clean ✓
 
 ---
 
