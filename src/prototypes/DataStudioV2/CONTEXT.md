@@ -39,9 +39,18 @@ The product moved away from a side-panel co-pilot toward a full-screen agent-fir
 
 ## Next up
 
-### 1. Team review + iterate on feedback
+### 1. Review test + coaching flow in prototype
 
-Prototype shared with team. Gathering feedback and iterating. Any remaining feedback items from the team.
+Start the dev server, run through the full test + coaching arc in the prototype:
+- Switch to test mode via prompt bar pill
+- Ask "What is our ROAS by campaign and channel?" → mark Looks right
+- Ask "What is the budget utilisation rate?" → mark Something's off → pick a coaching option → Fix in build
+- Verify the coaching script fires, mode switches back to build, fix is applied
+- Iterate on any visual or interaction issues found
+
+### 2. Team review + iterate on feedback
+
+Any remaining feedback items from the team.
 
 ---
 
