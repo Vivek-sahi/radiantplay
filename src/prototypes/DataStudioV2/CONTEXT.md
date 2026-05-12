@@ -39,13 +39,32 @@ The product moved away from a side-panel co-pilot toward a full-screen agent-fir
 
 ## Next up
 
-### 1. Review the data quality and model health buttons
+### 1. Review panel explorations in playground
 
-Look at the live artifact in the prototype and review how the DQ and AIRS chips feel — the chip labels, dropdown content, density, and interaction. Decide what to iterate on.
+4 explorations live at `/data-studio-v2/playground` → Model Health tab:
+- **mhp1 — Tier rows**: collapsible accordions, tier badge per section/dimension row
+- **mhp2 — Lighthouse**: score bars per category (DQ) + To improve / Done split (AIRS)
+- **mhp3 — Scorecards**: 2×2 card grid, tier badge + mini bar per card
+- **mhp4 — Flat list**: filter chips, no category hierarchy
+
+Pick one direction (or mix), then promote to the main prototype. Also decide whether to bump font size +1 throughout.
 
 ### 2. Team review + iterate on feedback
 
 Any remaining feedback items from the team.
+
+---
+
+### 2026-05-12 (session 98)
+
+**DQ + AIRS chip redesign + 4 panel explorations in Playground.**
+
+- **Chip labels**: both chips now use `Poor / Fair / Good / Excellent` tier vocabulary (shared `MhTier` type). Label pattern: `Data quality · Poor` / `AI readiness · Poor`. Always filled background (colored bg + border), full semantic color text.
+- **Tier metadata**: Poor=red, Fair=amber, Good=green, Excellent=deep green. Replaces the old `Not ready / Basic / AI-ready / Optimized` vocabulary on `MH_TIER_META` in Workspace.tsx.
+- **DQ chip**: tier derived from `prepTransforms` state — Poor (9 issues) or Good (resolved). Triangle icon removed. Dot removed.
+- **AIRS chip**: `MH_AIRS_SCORE=25` → Poor. Mini ring icon removed. Dot removed.
+- **4 Playground explorations** (mhp1–mhp4) added under Model Health tab. Both panels shown side-by-side simultaneously. Shared helpers: `PanelTier`, `PT_META`, `TierPill`, `MhpGauge`, `MhpChip`, `MhpShell`. AIRS score in playground = 53 → Good (distinct from DQ Poor for visual contrast).
+- Build: clean ✓
 
 ---
 

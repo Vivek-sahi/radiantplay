@@ -40,15 +40,15 @@ interface Toast {
 
 // ── Model health: mock data ───────────────────────────────────────────────────
 
-type MhAITier = 'Not ready' | 'Basic' | 'AI-ready' | 'Optimized';
-const MH_TIER_META: Record<MhAITier, { bg: string; text: string; border: string; dot: string }> = {
-  'Not ready': { bg: '#FEF2F2', text: '#DC2626', border: '#FECACA', dot: '#DC2626' },
-  'Basic':     { bg: '#FFFBEB', text: '#D97706', border: '#FDE68A', dot: '#D97706' },
-  'AI-ready':  { bg: '#EFF6FF', text: '#2563EB', border: '#BFDBFE', dot: '#2563EB' },
-  'Optimized': { bg: '#F0FDF4', text: '#059669', border: '#A7F3D0', dot: '#059669' },
+type MhTier = 'Poor' | 'Fair' | 'Good' | 'Excellent';
+const MH_TIER_META: Record<MhTier, { bg: string; text: string; border: string; dot: string }> = {
+  'Poor':      { bg: '#FEF2F2', text: '#DC2626', border: '#FECACA', dot: '#DC2626' },
+  'Fair':      { bg: '#FFFBEB', text: '#D97706', border: '#FDE68A', dot: '#D97706' },
+  'Good':      { bg: '#F0FDF4', text: '#059669', border: '#A7F3D0', dot: '#059669' },
+  'Excellent': { bg: '#ECFDF5', text: '#047857', border: '#6EE7B7', dot: '#047857' },
 };
 const MH_AIRS_SCORE = 25;
-const MH_AIRS_TIER: MhAITier = 'Not ready';
+const MH_AIRS_TIER: MhTier = 'Poor';
 
 interface MhAirsItem { id: string; title: string; pts: number; earned: number; action: string | null; }
 const MH_AIRS_ITEMS: MhAirsItem[] = [
@@ -107,8 +107,6 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
   const dqDropRef   = useRef<HTMLDivElement>(null);
   const airsDropRef = useRef<HTMLDivElement>(null);
   const mhTm = MH_TIER_META[MH_AIRS_TIER];
-  const mhR = 7, mhCirc = 2 * Math.PI * mhR;
-  const mhFilled = mhCirc * (MH_AIRS_SCORE / 100), mhGap = mhCirc - mhFilled;
   const [shareOpen, setShareOpen] = useState(false);
   const [publishOpen, setPublishOpen] = useState(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -550,22 +548,16 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
                   {/* DQ chip + dropdown */}
                   {(() => {
                     const resolved = !!(project.prepTransforms && project.prepTransforms.length > 0);
-                    const chipColor = resolved ? '#166534' : '#B91C1C';
-                    const chipBg    = resolved ? '#F0FDF4'  : '#FEF2F2';
-                    const chipBdr   = resolved ? '#BBF7D0'  : '#FECACA';
+                    const dqTier: MhTier = resolved ? 'Good' : 'Poor';
+                    const dqTm = MH_TIER_META[dqTier];
                     const isOpen = activeHealthView === 'quality';
                     return (
                       <div ref={dqDropRef} style={{ position: 'relative', flexShrink: 0 }}>
                         <button
                           onClick={() => setActiveHealthView(v => v === 'quality' ? null : 'quality')}
-                          style={{ height: 28, padding: '0 9px', gap: 5, border: `1px solid ${chipBdr}`, borderRadius: 6, backgroundColor: isOpen ? chipBg : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, color: chipColor, boxSizing: 'border-box' as const }}
-                          onMouseEnter={e => { if (!isOpen) (e.currentTarget as HTMLElement).style.backgroundColor = chipBg; }}
-                          onMouseLeave={e => { if (!isOpen) (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'; }}
+                          style={{ height: 28, padding: '0 9px', gap: 5, border: `1px solid ${dqTm.border}`, borderRadius: 6, backgroundColor: dqTm.bg, cursor: 'pointer', display: 'flex', alignItems: 'center', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, color: dqTm.text, boxSizing: 'border-box' as const }}
                         >
-                          <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-                            <path d="M8 2L14 14H2L8 2z"/><line x1="8" y1="7" x2="8" y2="10"/><circle cx="8" cy="12.5" r="0.5" fill="currentColor"/>
-                          </svg>
-                          {resolved ? '9 resolved' : '9 issues'}
+                          Data quality · {dqTier}
                           <svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" style={{ transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s', flexShrink: 0 }}><path d="M2 3.5l3 3 3-3"/></svg>
                         </button>
                         {isOpen && (
@@ -601,16 +593,9 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
                   <div ref={airsDropRef} style={{ position: 'relative', flexShrink: 0 }}>
                     <button
                       onClick={() => setActiveHealthView(v => v === 'readiness' ? null : 'readiness')}
-                      style={{ height: 28, padding: '0 8px', gap: 5, border: `1px solid ${mhTm.border}`, borderRadius: 6, backgroundColor: activeHealthView === 'readiness' ? mhTm.bg : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, color: mhTm.text, boxSizing: 'border-box' as const }}
-                      onMouseEnter={e => { if (activeHealthView !== 'readiness') (e.currentTarget as HTMLElement).style.backgroundColor = mhTm.bg; }}
-                      onMouseLeave={e => { if (activeHealthView !== 'readiness') (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'; }}
+                      style={{ height: 28, padding: '0 8px', gap: 5, border: `1px solid ${mhTm.border}`, borderRadius: 6, backgroundColor: mhTm.bg, cursor: 'pointer', display: 'flex', alignItems: 'center', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, color: mhTm.text, boxSizing: 'border-box' as const }}
                     >
-                      <svg width="14" height="14" viewBox="0 0 16 16" style={{ flexShrink: 0 }}>
-                        <circle cx="8" cy="8" r={mhR} fill="none" stroke={mhTm.border} strokeWidth="2"/>
-                        <circle cx="8" cy="8" r={mhR} fill="none" stroke={mhTm.dot} strokeWidth="2" strokeDasharray={`${mhFilled} ${mhGap}`} strokeLinecap="round" transform="rotate(-90 8 8)"/>
-                      </svg>
-                      <span style={{ fontSize: 11, fontWeight: fw.semibold }}>{MH_AIRS_SCORE}%</span>
-                      <span style={{ fontSize: 11 }}>AI ready</span>
+                      AI readiness · {MH_AIRS_TIER}
                       <svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" style={{ transform: activeHealthView === 'readiness' ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s', flexShrink: 0 }}><path d="M2 3.5l3 3 3-3"/></svg>
                     </button>
                     {activeHealthView === 'readiness' && (

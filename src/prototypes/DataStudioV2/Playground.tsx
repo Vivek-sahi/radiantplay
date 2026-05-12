@@ -4050,9 +4050,452 @@ const ModelHealthUmbrella: React.FC = () => {
   );
 };
 
+// ── Model Health — Panel design explorations ─────────────────────────────────
+
+type PanelTier = 'Poor' | 'Fair' | 'Good' | 'Excellent';
+const PT_META: Record<PanelTier, { bg: string; text: string; border: string; dot: string }> = {
+  'Poor':      { bg: '#FEF2F2', text: '#DC2626', border: '#FECACA', dot: '#DC2626' },
+  'Fair':      { bg: '#FFFBEB', text: '#D97706', border: '#FDE68A', dot: '#D97706' },
+  'Good':      { bg: '#F0FDF4', text: '#059669', border: '#A7F3D0', dot: '#059669' },
+  'Excellent': { bg: '#ECFDF5', text: '#047857', border: '#6EE7B7', dot: '#047857' },
+};
+const MHP_AIRS_SCORE = 53;
+const MHP_DQ_TOTAL = DQ_SECTIONS.reduce((n, s) => n + s.items.length, 0);
+function scoreToPT(n: number): PanelTier { return n <= 25 ? 'Poor' : n <= 50 ? 'Fair' : n <= 75 ? 'Good' : 'Excellent'; }
+function dqSecTier(items: DQItem[]): PanelTier { return items.some(i => i.severity === 'high') ? 'Poor' : items.some(i => i.severity === 'medium') ? 'Fair' : 'Good'; }
+const MHP_AIRS_TIER: PanelTier = scoreToPT(MHP_AIRS_SCORE);
+
+const TierPill: React.FC<{ tier: PanelTier }> = ({ tier }) => {
+  const m = PT_META[tier];
+  return <span style={{ fontSize: 11, fontWeight: fw.medium, padding: '1px 7px', borderRadius: 10, background: m.bg, color: m.text, border: `1px solid ${m.border}`, flexShrink: 0, whiteSpace: 'nowrap' as const }}>{tier}</span>;
+};
+
+const MhpGauge: React.FC<{ score: number; tier: PanelTier }> = ({ score, tier }) => {
+  const m = PT_META[tier], r = 12, circ = 2 * Math.PI * r;
+  return (
+    <svg width="30" height="30" viewBox="0 0 30 30" style={{ flexShrink: 0 }}>
+      <circle cx="15" cy="15" r={r} fill="none" stroke={m.border} strokeWidth="3"/>
+      <circle cx="15" cy="15" r={r} fill="none" stroke={m.dot} strokeWidth="3"
+        strokeDasharray={`${circ * (score / 100)} ${circ * (1 - score / 100)}`}
+        strokeLinecap="round" transform="rotate(-90 15 15)"/>
+    </svg>
+  );
+};
+
+const MhpChip: React.FC<{ label: string; tier: PanelTier }> = ({ label, tier }) => {
+  const m = PT_META[tier];
+  return (
+    <button style={{ height: 28, padding: '0 9px', gap: 5, border: `1px solid ${m.border}`, borderRadius: 6, backgroundColor: m.bg, cursor: 'pointer', display: 'flex', alignItems: 'center', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, color: m.text, boxSizing: 'border-box' as const }}>
+      {label} · {tier}
+      <svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M2 3.5l3 3 3-3"/></svg>
+    </button>
+  );
+};
+
+const MhpShell: React.FC<{ exploLabel: string; dqChip: React.ReactNode; airsChip: React.ReactNode; dqPanel: React.ReactNode; airsPanel: React.ReactNode }> = ({ exploLabel, dqChip, airsChip, dqPanel, airsPanel }) => (
+  <div style={{ position: 'fixed', inset: 0, background: c['background-sunken'], fontFamily: ff.primary, display: 'flex', flexDirection: 'column' }}>
+    <div style={{ height: 32, flexShrink: 0, background: c['background-base'], borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', padding: `0 ${sp.D}px` }}>
+      <span style={{ fontSize: 11, color: c['content-secondary'] }}>← Overview</span>
+      <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+        <span style={{ fontSize: fs.xs, fontWeight: fw.medium, color: c['content-brand'], background: c['background-information'], padding: '1px 8px', borderRadius: 4 }}>{exploLabel}</span>
+      </div>
+    </div>
+    <div style={{ flex: 1, display: 'flex', padding: '20px 24px', overflow: 'hidden' }}>
+      <div style={{ flex: 1, background: c['background-base'], border: `1px solid ${c['border-divider']}`, borderRadius: 10, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <div style={{ height: 48, borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', padding: `0 ${sp.D}px`, gap: sp.C, flexShrink: 0 }}>
+          <AirsModelIcon size={18}/>
+          <span style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'] }}>Campaign Performance</span>
+          <span style={{ fontSize: 11, background: c['background-subtle'], border: `1px solid ${c['border-divider']}`, borderRadius: 4, padding: '1px 6px', color: c['content-secondary'] }}>Draft</span>
+          <div style={{ flex: 1 }}/>
+          <button style={{ height: 28, padding: `0 ${sp.C}px`, border: `1px solid ${c['border-default']}`, borderRadius: 6, background: 'none', fontSize: fs.xs, fontFamily: ff.primary, cursor: 'pointer', color: c['content-secondary'] }}>Share</button>
+          <button style={{ height: 28, padding: `0 ${sp.C}px`, border: 'none', borderRadius: 6, background: '#2770EF', color: '#fff', fontSize: fs.xs, fontFamily: ff.primary, cursor: 'pointer', fontWeight: fw.medium }}>Publish model</button>
+        </div>
+        <div style={{ height: 40, borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', padding: `0 ${sp.D}px`, gap: sp.B, flexShrink: 0 }}>
+          {(['Columns', 'Tables', 'Preview', 'Notebook'] as const).map(tab => (
+            <button key={tab} style={{ height: 40, padding: '0 12px', border: 'none', borderBottom: tab === 'Tables' ? '2px solid #2770EF' : '2px solid transparent', borderRadius: 0, cursor: 'pointer', background: 'transparent', color: tab === 'Tables' ? '#2770EF' : c['content-secondary'], fontFamily: ff.primary, fontSize: fs.sm, fontWeight: tab === 'Tables' ? fw.semibold : fw.medium, boxSizing: 'border-box' as const, marginBottom: -1 }}>{tab}</button>
+          ))}
+          <div style={{ flex: 1 }}/>
+          <div style={{ display: 'flex', alignItems: 'center', gap: sp.B }}>
+            <div style={{ width: 1, height: 16, background: c['border-divider'] }}/>
+            {dqChip}{airsChip}
+          </div>
+        </div>
+        <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+          <div style={{ flex: 1, borderRight: `1px solid ${c['border-divider']}`, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>{dqPanel}</div>
+          <div style={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>{airsPanel}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+// ── mhp1: Tier rows ───────────────────────────────────────────────────────────
+
+const ModelHealthPanels1: React.FC = () => {
+  const [dqOpen, setDqOpen] = useState<Record<string, boolean>>({ nulls: true });
+  const [aiOpen, setAiOpen] = useState<Record<string, boolean>>({ semantic: true });
+
+  const dqPanel = (
+    <div style={{ display: 'flex', flexDirection: 'column' }}>
+      <div style={{ padding: `${sp.C}px ${sp.D}px`, borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', gap: sp.B }}>
+        <span style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'], flex: 1 }}>Data quality</span>
+        <TierPill tier="Poor"/><span style={{ fontSize: fs.xs, color: c['content-secondary'] }}>{MHP_DQ_TOTAL} issues</span>
+        <button style={{ height: 26, padding: '0 8px', border: 'none', borderRadius: 5, backgroundColor: '#2770EF', color: '#fff', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, cursor: 'pointer' }}>Fix all with agent</button>
+      </div>
+      {DQ_SECTIONS.map(sec => {
+        const isOpen = !!dqOpen[sec.key];
+        const tier = dqSecTier(sec.items);
+        return (
+          <div key={sec.key} style={{ borderBottom: `1px solid ${c['border-divider']}` }}>
+            <button onClick={() => setDqOpen(s => ({ ...s, [sec.key]: !s[sec.key] }))}
+              style={{ width: '100%', height: 38, display: 'flex', alignItems: 'center', padding: `0 ${sp.D}px`, gap: sp.B, border: 'none', background: 'transparent', cursor: 'pointer', boxSizing: 'border-box' as const }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = c['background-subtle']; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}>
+              <span style={{ flex: 1, fontSize: fs.xs, fontWeight: fw.medium, color: c['content-primary'], textAlign: 'left' as const }}>{sec.label}</span>
+              <TierPill tier={tier}/>
+              <span style={{ fontSize: fs.xs, color: c['content-secondary'], width: 50, textAlign: 'right' as const }}>{sec.items.length} issues</span>
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke={c['content-tertiary']} strokeWidth="1.5" strokeLinecap="round" style={{ transform: isOpen ? 'rotate(0)' : 'rotate(-90deg)', transition: 'transform 0.15s', flexShrink: 0 }}><path d="M2 4l4 4 4-4"/></svg>
+            </button>
+            {isOpen && (
+              <div style={{ padding: `0 ${sp.D}px ${sp.B}px`, display: 'flex', flexDirection: 'column', gap: 3 }}>
+                {sec.items.map(item => {
+                  const sm = SEV_META[item.severity];
+                  return (
+                    <div key={item.col} style={{ display: 'flex', alignItems: 'center', gap: sp.B, padding: `${sp.B}px ${sp.C}px`, borderRadius: 5, border: `1px solid ${c['border-divider']}`, background: c['background-subtle'] }}>
+                      <code style={{ fontSize: fs.xs, fontFamily: ff.mono, color: c['content-primary'], width: 130, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const, flexShrink: 0 }}>{item.col}</code>
+                      <span style={{ flex: 1, fontSize: fs.xs, color: c['content-secondary'], overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{item.detail}</span>
+                      <span style={{ fontSize: 11, fontWeight: fw.medium, padding: '1px 4px', borderRadius: 3, background: sm.bg, color: sm.text, border: `1px solid ${sm.border}`, flexShrink: 0 }}>{sm.label}</span>
+                      <button style={{ fontSize: fs.xs, color: '#2563EB', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: ff.primary, flexShrink: 0 }}>Fix →</button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+
+  const airsPanel = (
+    <div style={{ display: 'flex', flexDirection: 'column' }}>
+      <div style={{ padding: `${sp.C}px ${sp.D}px`, borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', gap: sp.C }}>
+        <MhpGauge score={MHP_AIRS_SCORE} tier={MHP_AIRS_TIER}/>
+        <span style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'], flex: 1 }}>AI readiness</span>
+        <TierPill tier={MHP_AIRS_TIER}/>
+        <button style={{ height: 26, padding: '0 8px', border: 'none', borderRadius: 5, backgroundColor: '#2770EF', color: '#fff', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, cursor: 'pointer' }}>Fix all with agent</button>
+      </div>
+      {AI_MOCK_DIMENSIONS.map(dim => {
+        const isOpen = !!aiOpen[dim.id];
+        const tier = scoreToPT(dim.score);
+        return (
+          <div key={dim.id} style={{ borderBottom: `1px solid ${c['border-divider']}` }}>
+            <button onClick={() => setAiOpen(s => ({ ...s, [dim.id]: !s[dim.id] }))}
+              style={{ width: '100%', height: 38, display: 'flex', alignItems: 'center', padding: `0 ${sp.D}px`, gap: sp.B, border: 'none', background: 'transparent', cursor: 'pointer', boxSizing: 'border-box' as const }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = c['background-subtle']; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}>
+              <span style={{ flex: 1, fontSize: fs.xs, fontWeight: fw.medium, color: c['content-primary'], textAlign: 'left' as const }}>{dim.label}</span>
+              <TierPill tier={tier}/>
+              <span style={{ fontSize: fs.xs, color: c['content-secondary'], width: 32, textAlign: 'right' as const }}>{dim.score}%</span>
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke={c['content-tertiary']} strokeWidth="1.5" strokeLinecap="round" style={{ transform: isOpen ? 'rotate(0)' : 'rotate(-90deg)', transition: 'transform 0.15s', flexShrink: 0 }}><path d="M2 4l4 4 4-4"/></svg>
+            </button>
+            {isOpen && (
+              <div style={{ padding: `0 ${sp.D}px ${sp.B}px`, display: 'flex', flexDirection: 'column', gap: 3 }}>
+                {dim.items.map(item => {
+                  const isDone = item.done >= item.total;
+                  return (
+                    <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: sp.B, padding: `${sp.B}px ${sp.C}px`, borderRadius: 5, border: `1px solid ${isDone ? '#A7F3D0' : c['border-divider']}`, background: isDone ? '#F0FDF4' : c['background-subtle'] }}>
+                      <div style={{ width: 14, height: 14, borderRadius: '50%', border: `1.5px solid ${isDone ? '#059669' : c['border-default']}`, background: isDone ? '#059669' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        {isDone && <svg width="7" height="7" viewBox="0 0 8 8" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="1,4 3,6 7,2"/></svg>}
+                      </div>
+                      <span style={{ flex: 1, fontSize: fs.xs, color: isDone ? '#065F46' : c['content-primary'], textDecoration: isDone ? 'line-through' : 'none' }}>{item.label}</span>
+                      <span style={{ fontSize: 11, fontFamily: ff.mono, color: isDone ? '#059669' : c['content-secondary'] }}>{item.done}/{item.total}</span>
+                      {!isDone && <button style={{ fontSize: fs.xs, color: '#2563EB', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: ff.primary, flexShrink: 0 }}>Fix →</button>}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+
+  return <MhpShell exploLabel="mhp1 — Tier rows" dqChip={<MhpChip label="Data quality" tier="Poor"/>} airsChip={<MhpChip label="AI readiness" tier={MHP_AIRS_TIER}/>} dqPanel={dqPanel} airsPanel={airsPanel}/>;
+};
+
+// ── mhp2: Lighthouse — score bars + Opportunities / Done split ────────────────
+
+const ModelHealthPanels2: React.FC = () => {
+  const [dqAllOpen, setDqAllOpen] = useState(false);
+  const [aiOppOpen, setAiOppOpen] = useState(true);
+  const [aiDoneOpen, setAiDoneOpen] = useState(false);
+
+  const dqPanel = (
+    <div style={{ display: 'flex', flexDirection: 'column' }}>
+      <div style={{ padding: `${sp.C}px ${sp.D}px`, borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', gap: sp.B }}>
+        <span style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'], flex: 1 }}>Data quality</span>
+        <TierPill tier="Poor"/>
+        <button style={{ height: 26, padding: '0 8px', border: 'none', borderRadius: 5, backgroundColor: '#2770EF', color: '#fff', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, cursor: 'pointer' }}>Fix all with agent</button>
+      </div>
+      <div style={{ padding: `${sp.C}px ${sp.D}px`, borderBottom: `1px solid ${c['border-divider']}` }}>
+        <div style={{ fontSize: 11, color: c['content-tertiary'], marginBottom: sp.B, textTransform: 'uppercase' as const, letterSpacing: '0.05em', fontWeight: fw.semibold }}>By category</div>
+        {DQ_SECTIONS.map(sec => {
+          const tier = dqSecTier(sec.items);
+          const m = PT_META[tier];
+          const highCount = sec.items.filter(i => i.severity === 'high').length;
+          const barPct = Math.max(5, 100 - (highCount * 35 + (sec.items.length - highCount) * 15));
+          return (
+            <div key={sec.key} style={{ display: 'flex', alignItems: 'center', gap: sp.C, marginBottom: 8 }}>
+              <span style={{ fontSize: fs.xs, color: c['content-primary'], width: 150, flexShrink: 0 }}>{sec.label}</span>
+              <div style={{ flex: 1, height: 6, borderRadius: 3, background: c['background-subtle'], overflow: 'hidden' }}>
+                <div style={{ height: '100%', width: `${barPct}%`, background: m.dot, borderRadius: 3 }}/>
+              </div>
+              <TierPill tier={tier}/>
+              <span style={{ fontSize: 11, color: c['content-secondary'], width: 50, textAlign: 'right' as const }}>{sec.items.length} issues</span>
+            </div>
+          );
+        })}
+      </div>
+      <div>
+        <button onClick={() => setDqAllOpen(o => !o)} style={{ width: '100%', height: 36, display: 'flex', alignItems: 'center', padding: `0 ${sp.D}px`, gap: sp.B, border: 'none', background: 'transparent', cursor: 'pointer', boxSizing: 'border-box' as const }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = c['background-subtle']; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}>
+          <span style={{ flex: 1, fontSize: fs.xs, fontWeight: fw.medium, color: c['content-primary'], textAlign: 'left' as const }}>All issues ({MHP_DQ_TOTAL})</span>
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke={c['content-tertiary']} strokeWidth="1.5" strokeLinecap="round" style={{ transform: dqAllOpen ? 'rotate(0)' : 'rotate(-90deg)', transition: 'transform 0.15s' }}><path d="M2 4l4 4 4-4"/></svg>
+        </button>
+        {dqAllOpen && DQ_SECTIONS.flatMap(sec => sec.items.map(item => {
+          const sm = SEV_META[item.severity];
+          return (
+            <div key={`${sec.key}:${item.col}`} style={{ display: 'flex', alignItems: 'center', gap: sp.B, padding: `5px ${sp.D}px`, borderTop: `1px solid ${c['border-divider']}` }}>
+              <code style={{ fontSize: fs.xs, fontFamily: ff.mono, color: c['content-primary'], width: 130, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const, flexShrink: 0 }}>{item.col}</code>
+              <span style={{ flex: 1, fontSize: fs.xs, color: c['content-secondary'], overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{item.detail}</span>
+              <span style={{ fontSize: 11, padding: '1px 4px', borderRadius: 3, background: sm.bg, color: sm.text, border: `1px solid ${sm.border}`, flexShrink: 0, fontWeight: fw.medium }}>{sm.label}</span>
+              <button style={{ fontSize: fs.xs, color: '#2563EB', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: ff.primary, flexShrink: 0 }}>Fix →</button>
+            </div>
+          );
+        }))}
+      </div>
+    </div>
+  );
+
+  const aiOpportunities = AI_MOCK_DIMENSIONS.flatMap(dim => dim.items.filter(i => i.done < i.total).map(i => ({ ...i, dimLabel: dim.label })));
+  const aiDone = AI_MOCK_DIMENSIONS.flatMap(dim => dim.items.filter(i => i.done >= i.total).map(i => ({ ...i, dimLabel: dim.label })));
+
+  const airsPanel = (
+    <div style={{ display: 'flex', flexDirection: 'column' }}>
+      <div style={{ padding: `${sp.C}px ${sp.D}px`, borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', gap: sp.C }}>
+        <MhpGauge score={MHP_AIRS_SCORE} tier={MHP_AIRS_TIER}/>
+        <div style={{ flex: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, marginBottom: 2 }}>
+            <span style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'] }}>AI readiness</span>
+            <TierPill tier={MHP_AIRS_TIER}/>
+          </div>
+          <span style={{ fontSize: 11, color: c['content-secondary'] }}>Spotter answers improve as this score increases</span>
+        </div>
+        <button style={{ height: 26, padding: '0 8px', border: 'none', borderRadius: 5, backgroundColor: '#2770EF', color: '#fff', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, cursor: 'pointer' }}>Fix all</button>
+      </div>
+      <div style={{ padding: `${sp.C}px ${sp.D}px`, borderBottom: `1px solid ${c['border-divider']}` }}>
+        <div style={{ fontSize: 11, color: c['content-tertiary'], marginBottom: sp.B, textTransform: 'uppercase' as const, letterSpacing: '0.05em', fontWeight: fw.semibold }}>Score breakdown</div>
+        {AI_MOCK_DIMENSIONS.map(dim => {
+          const tier = scoreToPT(dim.score);
+          const m = PT_META[tier];
+          return (
+            <div key={dim.id} style={{ display: 'flex', alignItems: 'center', gap: sp.C, marginBottom: 8 }}>
+              <span style={{ fontSize: fs.xs, color: c['content-primary'], width: 150, flexShrink: 0 }}>{dim.label}</span>
+              <div style={{ flex: 1, height: 6, borderRadius: 3, background: c['background-subtle'], overflow: 'hidden' }}>
+                <div style={{ height: '100%', width: `${dim.score}%`, background: m.dot, borderRadius: 3 }}/>
+              </div>
+              <TierPill tier={tier}/>
+              <span style={{ fontSize: 11, color: c['content-secondary'], width: 30, textAlign: 'right' as const }}>{dim.score}%</span>
+            </div>
+          );
+        })}
+      </div>
+      <div style={{ borderBottom: `1px solid ${c['border-divider']}` }}>
+        <button onClick={() => setAiOppOpen(o => !o)} style={{ width: '100%', height: 36, display: 'flex', alignItems: 'center', padding: `0 ${sp.D}px`, gap: sp.B, border: 'none', background: 'transparent', cursor: 'pointer', boxSizing: 'border-box' as const }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = c['background-subtle']; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}>
+          <span style={{ flex: 1, fontSize: fs.xs, fontWeight: fw.medium, color: c['content-primary'], textAlign: 'left' as const }}>To improve ({aiOpportunities.length})</span>
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke={c['content-tertiary']} strokeWidth="1.5" strokeLinecap="round" style={{ transform: aiOppOpen ? 'rotate(0)' : 'rotate(-90deg)', transition: 'transform 0.15s' }}><path d="M2 4l4 4 4-4"/></svg>
+        </button>
+        {aiOppOpen && aiOpportunities.map(item => (
+          <div key={`${item.dimLabel}:${item.label}`} style={{ display: 'flex', alignItems: 'center', gap: sp.B, padding: `5px ${sp.D}px`, borderTop: `1px solid ${c['border-divider']}` }}>
+            <span style={{ flex: 1, fontSize: fs.xs, color: c['content-primary'] }}>{item.label}</span>
+            <span style={{ fontSize: 11, fontFamily: ff.mono, color: c['content-secondary'] }}>{item.done}/{item.total}</span>
+            <button style={{ fontSize: fs.xs, color: '#2563EB', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: ff.primary, flexShrink: 0 }}>Fix →</button>
+          </div>
+        ))}
+      </div>
+      <div>
+        <button onClick={() => setAiDoneOpen(o => !o)} style={{ width: '100%', height: 36, display: 'flex', alignItems: 'center', padding: `0 ${sp.D}px`, gap: sp.B, border: 'none', background: 'transparent', cursor: 'pointer', boxSizing: 'border-box' as const }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = c['background-subtle']; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}>
+          <span style={{ flex: 1, fontSize: fs.xs, fontWeight: fw.medium, color: c['content-secondary'], textAlign: 'left' as const }}>Done ({aiDone.length})</span>
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke={c['content-tertiary']} strokeWidth="1.5" strokeLinecap="round" style={{ transform: aiDoneOpen ? 'rotate(0)' : 'rotate(-90deg)', transition: 'transform 0.15s' }}><path d="M2 4l4 4 4-4"/></svg>
+        </button>
+        {aiDoneOpen && aiDone.map(item => (
+          <div key={`${item.dimLabel}:${item.label}`} style={{ display: 'flex', alignItems: 'center', gap: sp.B, padding: `5px ${sp.D}px`, borderTop: `1px solid ${c['border-divider']}` }}>
+            <div style={{ width: 14, height: 14, borderRadius: '50%', background: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <svg width="7" height="7" viewBox="0 0 8 8" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="1,4 3,6 7,2"/></svg>
+            </div>
+            <span style={{ flex: 1, fontSize: fs.xs, color: c['content-secondary'], textDecoration: 'line-through' }}>{item.label}</span>
+            <span style={{ fontSize: 11, fontFamily: ff.mono, color: '#059669' }}>{item.total}/{item.total}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  return <MhpShell exploLabel="mhp2 — Lighthouse (bars + To improve / Done)" dqChip={<MhpChip label="Data quality" tier="Poor"/>} airsChip={<MhpChip label="AI readiness" tier={MHP_AIRS_TIER}/>} dqPanel={dqPanel} airsPanel={airsPanel}/>;
+};
+
+// ── mhp3: Scorecards — 2×2 card grid ─────────────────────────────────────────
+
+const ModelHealthPanels3: React.FC = () => {
+  const dqPanel = (
+    <div style={{ display: 'flex', flexDirection: 'column' }}>
+      <div style={{ padding: `${sp.C}px ${sp.D}px`, borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', gap: sp.B }}>
+        <span style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'], flex: 1 }}>Data quality</span>
+        <TierPill tier="Poor"/>
+        <button style={{ height: 26, padding: '0 8px', border: 'none', borderRadius: 5, backgroundColor: '#2770EF', color: '#fff', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, cursor: 'pointer' }}>Fix all with agent</button>
+      </div>
+      <div style={{ padding: sp.D, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: sp.C }}>
+        {DQ_SECTIONS.map(sec => {
+          const tier = dqSecTier(sec.items);
+          const m = PT_META[tier];
+          return (
+            <div key={sec.key} style={{ border: `1px solid ${m.border}`, borderRadius: 8, padding: sp.C, background: m.bg, display: 'flex', flexDirection: 'column', gap: sp.B, cursor: 'pointer' }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.boxShadow = '0 2px 8px rgba(0,0,0,0.08)'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.boxShadow = 'none'; }}>
+              <span style={{ fontSize: fs.xs, fontWeight: fw.semibold, color: c['content-primary'] }}>{sec.label}</span>
+              <TierPill tier={tier}/>
+              <span style={{ fontSize: 11, color: c['content-secondary'] }}>{sec.items.length} issues · {sec.items.filter(i => i.severity === 'high').length} high</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  const airsPanel = (
+    <div style={{ display: 'flex', flexDirection: 'column' }}>
+      <div style={{ padding: `${sp.C}px ${sp.D}px`, borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', gap: sp.C }}>
+        <MhpGauge score={MHP_AIRS_SCORE} tier={MHP_AIRS_TIER}/>
+        <span style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'], flex: 1 }}>AI readiness</span>
+        <TierPill tier={MHP_AIRS_TIER}/>
+        <button style={{ height: 26, padding: '0 8px', border: 'none', borderRadius: 5, backgroundColor: '#2770EF', color: '#fff', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, cursor: 'pointer' }}>Fix all</button>
+      </div>
+      <div style={{ padding: sp.D, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: sp.C }}>
+        {AI_MOCK_DIMENSIONS.map(dim => {
+          const tier = scoreToPT(dim.score);
+          const m = PT_META[tier];
+          return (
+            <div key={dim.id} style={{ border: `1px solid ${m.border}`, borderRadius: 8, padding: sp.C, background: m.bg, display: 'flex', flexDirection: 'column', gap: sp.B, cursor: 'pointer' }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.boxShadow = '0 2px 8px rgba(0,0,0,0.08)'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.boxShadow = 'none'; }}>
+              <span style={{ fontSize: fs.xs, fontWeight: fw.semibold, color: c['content-primary'] }}>{dim.label}</span>
+              <TierPill tier={tier}/>
+              <div style={{ height: 4, borderRadius: 2, background: 'rgba(0,0,0,0.08)', overflow: 'hidden' }}>
+                <div style={{ height: '100%', width: `${dim.score}%`, background: m.dot, borderRadius: 2 }}/>
+              </div>
+              <span style={{ fontSize: 11, color: c['content-secondary'] }}>{dim.score}% · {dim.items.filter(i => i.done < i.total).length} to improve</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  return <MhpShell exploLabel="mhp3 — Scorecards (card grid)" dqChip={<MhpChip label="Data quality" tier="Poor"/>} airsChip={<MhpChip label="AI readiness" tier={MHP_AIRS_TIER}/>} dqPanel={dqPanel} airsPanel={airsPanel}/>;
+};
+
+// ── mhp4: Flat list — filter chips, no category hierarchy ────────────────────
+
+const ModelHealthPanels4: React.FC = () => {
+  const [dqFilter, setDqFilter] = useState<string | null>(null);
+  const [aiFilter, setAiFilter] = useState<'todo' | 'done'>('todo');
+
+  const allDqItems = DQ_SECTIONS.flatMap(sec => sec.items.map(item => ({ ...item, secKey: sec.key, secLabel: sec.label })));
+  const filteredDq = dqFilter ? allDqItems.filter(i => i.secKey === dqFilter) : allDqItems;
+  const aiTodo = AI_MOCK_DIMENSIONS.flatMap(dim => dim.items.filter(i => i.done < i.total).map(i => ({ ...i, dimLabel: dim.label })));
+  const aiDone = AI_MOCK_DIMENSIONS.flatMap(dim => dim.items.filter(i => i.done >= i.total).map(i => ({ ...i, dimLabel: dim.label })));
+
+  const dqPanel = (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <div style={{ padding: `${sp.C}px ${sp.D}px`, borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', gap: sp.B, flexShrink: 0 }}>
+        <span style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'], flex: 1 }}>Data quality</span>
+        <TierPill tier="Poor"/>
+        <button style={{ height: 26, padding: '0 8px', border: 'none', borderRadius: 5, backgroundColor: '#2770EF', color: '#fff', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, cursor: 'pointer' }}>Fix all with agent</button>
+      </div>
+      <div style={{ padding: `${sp.B}px ${sp.D}px`, borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', gap: sp.B, flexShrink: 0, flexWrap: 'wrap' as const }}>
+        {[{ key: null as string | null, label: `All (${allDqItems.length})` }, ...DQ_SECTIONS.map(s => ({ key: s.key as string | null, label: `${s.label} (${s.items.length})` }))].map(f => (
+          <button key={f.key ?? 'all'} onClick={() => setDqFilter(f.key)}
+            style={{ height: 24, padding: '0 8px', border: `1px solid ${dqFilter === f.key ? c['border-brand'] : c['border-default']}`, borderRadius: 12, background: dqFilter === f.key ? c['background-information'] : 'transparent', color: dqFilter === f.key ? c['content-brand'] : c['content-secondary'], fontSize: 11, fontFamily: ff.primary, cursor: 'pointer', fontWeight: dqFilter === f.key ? fw.medium : fw.regular }}>
+            {f.label}
+          </button>
+        ))}
+      </div>
+      <div style={{ flex: 1, overflow: 'auto' }}>
+        {filteredDq.map((item, i) => {
+          const sm = SEV_META[item.severity];
+          return (
+            <div key={`${item.secKey}:${item.col}:${i}`} style={{ display: 'flex', alignItems: 'center', gap: sp.B, padding: `6px ${sp.D}px`, borderBottom: `1px solid ${c['border-divider']}` }}>
+              <code style={{ fontSize: fs.xs, fontFamily: ff.mono, color: c['content-primary'], width: 130, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const, flexShrink: 0 }}>{item.col}</code>
+              <span style={{ fontSize: 11, padding: '1px 5px', borderRadius: 3, background: c['background-subtle'], color: c['content-secondary'], border: `1px solid ${c['border-divider']}`, flexShrink: 0, whiteSpace: 'nowrap' as const }}>{item.secLabel}</span>
+              <span style={{ flex: 1, fontSize: fs.xs, color: c['content-secondary'], overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{item.detail}</span>
+              <span style={{ fontSize: 11, padding: '1px 4px', borderRadius: 3, background: sm.bg, color: sm.text, border: `1px solid ${sm.border}`, flexShrink: 0, fontWeight: fw.medium }}>{sm.label}</span>
+              <button style={{ fontSize: fs.xs, color: '#2563EB', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: ff.primary, flexShrink: 0 }}>Fix →</button>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  const aiItems = aiFilter === 'todo' ? aiTodo : aiDone;
+  const airsPanel = (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <div style={{ padding: `${sp.C}px ${sp.D}px`, borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', gap: sp.C, flexShrink: 0 }}>
+        <MhpGauge score={MHP_AIRS_SCORE} tier={MHP_AIRS_TIER}/>
+        <span style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'], flex: 1 }}>AI readiness</span>
+        <TierPill tier={MHP_AIRS_TIER}/>
+        <button style={{ height: 26, padding: '0 8px', border: 'none', borderRadius: 5, backgroundColor: '#2770EF', color: '#fff', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, cursor: 'pointer' }}>Fix all</button>
+      </div>
+      <div style={{ padding: `${sp.B}px ${sp.D}px`, borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', gap: sp.B, flexShrink: 0 }}>
+        {(['todo', 'done'] as const).map(f => (
+          <button key={f} onClick={() => setAiFilter(f)}
+            style={{ height: 24, padding: '0 10px', border: `1px solid ${aiFilter === f ? c['border-brand'] : c['border-default']}`, borderRadius: 12, background: aiFilter === f ? c['background-information'] : 'transparent', color: aiFilter === f ? c['content-brand'] : c['content-secondary'], fontSize: 11, fontFamily: ff.primary, cursor: 'pointer', fontWeight: aiFilter === f ? fw.medium : fw.regular }}>
+            {f === 'todo' ? `To improve (${aiTodo.length})` : `Done (${aiDone.length})`}
+          </button>
+        ))}
+      </div>
+      <div style={{ flex: 1, overflow: 'auto' }}>
+        {aiItems.map((item, i) => {
+          const isDone = aiFilter === 'done';
+          return (
+            <div key={`${item.dimLabel}:${item.label}:${i}`} style={{ display: 'flex', alignItems: 'center', gap: sp.B, padding: `6px ${sp.D}px`, borderBottom: `1px solid ${c['border-divider']}` }}>
+              <div style={{ width: 14, height: 14, borderRadius: '50%', border: `1.5px solid ${isDone ? '#059669' : c['border-default']}`, background: isDone ? '#059669' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                {isDone && <svg width="7" height="7" viewBox="0 0 8 8" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="1,4 3,6 7,2"/></svg>}
+              </div>
+              <span style={{ flex: 1, fontSize: fs.xs, color: isDone ? c['content-secondary'] : c['content-primary'], textDecoration: isDone ? 'line-through' : 'none' }}>{item.label}</span>
+              <span style={{ fontSize: 11, padding: '1px 5px', borderRadius: 3, background: c['background-subtle'], color: c['content-secondary'], border: `1px solid ${c['border-divider']}`, flexShrink: 0, whiteSpace: 'nowrap' as const }}>{item.dimLabel}</span>
+              <span style={{ fontSize: 11, fontFamily: ff.mono, color: isDone ? '#059669' : c['content-secondary'] }}>{item.done}/{item.total}</span>
+              {!isDone && <button style={{ fontSize: fs.xs, color: '#2563EB', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: ff.primary, flexShrink: 0 }}>Fix →</button>}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  return <MhpShell exploLabel="mhp4 — Flat list (filter chips)" dqChip={<MhpChip label="Data quality" tier="Poor"/>} airsChip={<MhpChip label="AI readiness" tier={MHP_AIRS_TIER}/>} dqPanel={dqPanel} airsPanel={airsPanel}/>;
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 
-type NavId = 'v1' | 'v2' | 'v3' | 'v4' | 'v5' | 'v6' | 'tm1' | 'tm2' | 'tm3' | 'p2-dbt' | 'clarify-bar' | 'artifact-chat' | 'context-panel' | 'tma1' | 'tma2' | 'tma3' | 'tma4' | 'airs1' | 'airs2' | 'airs3' | 'airs4' | 'mh1' | 'mh2';
+type NavId = 'v1' | 'v2' | 'v3' | 'v4' | 'v5' | 'v6' | 'tm1' | 'tm2' | 'tm3' | 'p2-dbt' | 'clarify-bar' | 'artifact-chat' | 'context-panel' | 'tma1' | 'tma2' | 'tma3' | 'tma4' | 'airs1' | 'airs2' | 'airs3' | 'airs4' | 'mh1' | 'mh2' | 'mhp1' | 'mhp2' | 'mhp3' | 'mhp4';
 
 interface PGNavItem {
   id: NavId;
@@ -4096,8 +4539,12 @@ const PG_NAV: { section: string; items: PGNavItem[] }[] = [
   {
     section: 'Model Health',
     items: [
-      { id: 'mh1', label: 'Separate signals', meta: 'quality chip + AI readiness chip · two canvas views', tag: 'NEW' },
-      { id: 'mh2', label: 'Health umbrella',  meta: 'one chip · both signals rolled up · two-level sections', tag: 'NEW' },
+      { id: 'mh1', label: 'Separate signals', meta: 'quality chip + AI readiness chip · two canvas views' },
+      { id: 'mh2', label: 'Health umbrella',  meta: 'one chip · both signals rolled up · two-level sections' },
+      { id: 'mhp1', label: 'Panel — Tier rows',     meta: 'collapsible sections · tier badge per row', tag: 'NEW' },
+      { id: 'mhp2', label: 'Panel — Lighthouse',    meta: 'score bars per category · To improve / Done', tag: 'NEW' },
+      { id: 'mhp3', label: 'Panel — Scorecards',    meta: '2×2 card grid · tier + mini bar per card', tag: 'NEW' },
+      { id: 'mhp4', label: 'Panel — Flat list',     meta: 'filter chips · no category hierarchy', tag: 'NEW' },
     ],
   },
   {
@@ -4158,6 +4605,10 @@ const renderNavIteration = (id: NavId): React.ReactNode => {
     case 'airs4': return <AIReadinessModelsList />;
     case 'mh1': return <ModelHealthSeparate />;
     case 'mh2': return <ModelHealthUmbrella />;
+    case 'mhp1': return <ModelHealthPanels1 />;
+    case 'mhp2': return <ModelHealthPanels2 />;
+    case 'mhp3': return <ModelHealthPanels3 />;
+    case 'mhp4': return <ModelHealthPanels4 />;
   }
 };
 
