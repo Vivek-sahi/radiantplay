@@ -3031,7 +3031,615 @@ import { DataQualityDiscoverabilityCompare } from './DataQualityDiscoverability'
 import { CombinedDiscoverabilityCompare } from './CombinedDiscoverability';
 import { DbtExploration } from './components/explorations/Dbt';
 
-type NavId = 'v1' | 'v2' | 'v3' | 'v4' | 'v5' | 'v6' | 'tm1' | 'tm2' | 'tm3' | 'p2-dbt' | 'clarify-bar' | 'artifact-chat' | 'context-panel' | 'tma1' | 'tma2' | 'tma3' | 'tma4';
+// ── AI Readiness Score explorations ──────────────────────────────────────────
+
+type AITier = 'Not ready' | 'Basic' | 'AI-ready' | 'Optimized';
+type ModelHealth = 'healthy' | 'needs-attention';
+
+interface AIReadinessDimension {
+  id: string; label: string; score: number; color: string;
+  items: { label: string; done: number; total: number }[];
+}
+
+const AI_TIER_META: Record<AITier, { bg: string; text: string; border: string; dot: string }> = {
+  'Not ready': { bg: '#FEF2F2', text: '#DC2626', border: '#FECACA', dot: '#DC2626' },
+  'Basic':     { bg: '#FFFBEB', text: '#D97706', border: '#FDE68A', dot: '#D97706' },
+  'AI-ready':  { bg: '#EFF6FF', text: '#2563EB', border: '#BFDBFE', dot: '#2563EB' },
+  'Optimized': { bg: '#F0FDF4', text: '#059669', border: '#A7F3D0', dot: '#059669' },
+};
+
+const AI_MOCK_SCORE = 53;
+const AI_MOCK_TIER: AITier = 'Basic';
+
+const AI_MOCK_DIMENSIONS: AIReadinessDimension[] = [
+  { id: 'semantic',   label: 'Semantic richness',  score: 40, color: '#2563EB',
+    items: [{ label: 'Column descriptions', done: 8, total: 14 }, { label: 'AI context', done: 5, total: 14 }, { label: 'Synonyms', done: 3, total: 14 }, { label: 'Semantic types', done: 11, total: 14 }] },
+  { id: 'definition', label: 'Model definition',   score: 68, color: '#7C3AED',
+    items: [{ label: 'Aggregation rules', done: 10, total: 14 }, { label: 'Relationship cardinality', done: 2, total: 2 }, { label: 'Formulas described', done: 2, total: 2 }] },
+  { id: 'context',    label: 'AI context',          score: 65, color: '#059669',
+    items: [{ label: 'Instructions file', done: 1, total: 1 }, { label: 'Sample questions', done: 6, total: 8 }, { label: 'Domain brief', done: 0, total: 1 }] },
+  { id: 'testing',    label: 'Test coverage',       score: 50, color: '#D97706',
+    items: [{ label: 'Verified test questions', done: 3, total: 6 }, { label: 'Pass rate', done: 3, total: 3 }] },
+];
+
+const AI_OPPORTUNITIES = [
+  { label: 'Add descriptions to 6 columns',   impact: 'High',   detail: 'amount, campaign_id, channel, segment, lifetime_value, region' },
+  { label: 'Add AI context to 9 columns',      impact: 'High',   detail: 'Improves Spotter answer precision significantly' },
+  { label: 'Set aggregation rules on 4 columns', impact: 'Medium', detail: 'margin_pct, conversion_rate, roas are non-additive' },
+];
+
+const AI_DIAGNOSTICS = [
+  { label: 'Instructions file present', note: 'instructions.md' },
+  { label: 'All formulas described',    note: '2 of 2' },
+  { label: 'Relationships documented',  note: '2 joins, cardinality set' },
+];
+
+const MOCK_MODELS_AI: { name: string; health: ModelHealth; score: number; tier: AITier }[] = [
+  { name: 'Campaign Performance', health: 'healthy',          score: 53, tier: 'Basic'     },
+  { name: 'Revenue Attribution',  health: 'healthy',          score: 82, tier: 'AI-ready'  },
+  { name: 'User Segments',        health: 'needs-attention',  score: 31, tier: 'Not ready' },
+  { name: 'Product Analytics',    health: 'healthy',          score: 91, tier: 'Optimized' },
+  { name: 'Marketing ROI',        health: 'needs-attention',  score: 48, tier: 'Basic'     },
+];
+
+const HEALTH_META: Record<ModelHealth, { dot: string; label: string; text: string }> = {
+  'healthy':          { dot: '#059669', label: 'Healthy',         text: '#065F46' },
+  'needs-attention':  { dot: '#D97706', label: 'Needs attention', text: '#78350F' },
+};
+
+// ── Shared sub-components ─────────────────────────────────────────────────────
+
+const AirsModelIcon: React.FC<{ size?: number }> = ({ size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 20 20" fill="none" style={{ flexShrink: 0 }}>
+    <rect x="2" y="2" width="7" height="7" rx="1.5" fill="#BFDBFE"/>
+    <rect x="11" y="2" width="7" height="7" rx="1.5" fill="#93C5FD"/>
+    <rect x="2" y="11" width="7" height="7" rx="1.5" fill="#60A5FA"/>
+    <rect x="11" y="11" width="7" height="7" rx="1.5" fill="#3B82F6"/>
+  </svg>
+);
+
+const AirsScoreGauge: React.FC<{ score: number; tier: AITier; size?: number }> = ({ score, tier, size = 90 }) => {
+  const tm = AI_TIER_META[tier];
+  const r = size * 0.38;
+  const circ = 2 * Math.PI * r;
+  const filled = circ * (score / 100);
+  const gap = circ - filled;
+  const cx = size / 2, cy = size / 2;
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ flexShrink: 0 }}>
+      <circle cx={cx} cy={cy} r={r} fill="none" stroke={tm.border} strokeWidth={size * 0.07}/>
+      <circle cx={cx} cy={cy} r={r} fill="none" stroke={tm.dot} strokeWidth={size * 0.07}
+        strokeDasharray={`${filled} ${gap}`} strokeLinecap="round"
+        transform={`rotate(-90 ${cx} ${cy})`}/>
+      <text x={cx} y={cy + size * 0.07} textAnchor="middle" fontSize={size * 0.22}
+        fontWeight="700" fill="#1D232F" fontFamily="sans-serif">{score}</text>
+      <text x={cx} y={cy + size * 0.22} textAnchor="middle" fontSize={size * 0.12}
+        fontWeight="600" fill={tm.text} fontFamily="sans-serif">{tier}</text>
+    </svg>
+  );
+};
+
+// ── airs1: Identity row chip variants ─────────────────────────────────────────
+
+const AIReadinessChipVariants: React.FC = () => {
+  const [openChip, setOpenChip] = useState<'A' | 'B' | 'C' | null>(null);
+  const tm = AI_TIER_META[AI_MOCK_TIER];
+
+  const rB = 7;
+  const circB = 2 * Math.PI * rB;
+  const dashB = circB * (AI_MOCK_SCORE / 100);
+  const gapB = circB - dashB;
+
+  const chipA = (
+    <div onClick={() => setOpenChip(v => v === 'A' ? null : 'A')}
+      style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '3px 8px 3px 6px',
+        border: `1px solid ${tm.border}`, borderRadius: 20, background: tm.bg, cursor: 'pointer', userSelect: 'none' as const }}>
+      <div style={{ width: 7, height: 7, borderRadius: '50%', background: tm.dot, flexShrink: 0 }}/>
+      <span style={{ fontSize: 12, fontWeight: fw.medium, color: tm.text, fontFamily: ff.primary }}>Basic</span>
+    </div>
+  );
+
+  const chipB = (
+    <div onClick={() => setOpenChip(v => v === 'B' ? null : 'B')}
+      style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '3px 8px 3px 5px',
+        border: `1px solid ${tm.border}`, borderRadius: 20, background: tm.bg, cursor: 'pointer', userSelect: 'none' as const }}>
+      <svg width="18" height="18" viewBox="0 0 18 18" style={{ flexShrink: 0 }}>
+        <circle cx="9" cy="9" r={rB} fill="none" stroke={tm.border} strokeWidth="2.5"/>
+        <circle cx="9" cy="9" r={rB} fill="none" stroke={tm.dot} strokeWidth="2.5"
+          strokeDasharray={`${dashB} ${gapB}`} strokeLinecap="round" transform="rotate(-90 9 9)"/>
+      </svg>
+      <span style={{ fontSize: 12, fontWeight: fw.semibold, color: tm.text, fontFamily: ff.primary }}>{AI_MOCK_SCORE}</span>
+      <span style={{ fontSize: 11, color: tm.text, opacity: 0.75, fontFamily: ff.primary }}>Basic</span>
+    </div>
+  );
+
+  const chipC = (
+    <div onClick={() => setOpenChip(v => v === 'C' ? null : 'C')}
+      style={{ display: 'flex', alignItems: 'center', gap: sp.B, padding: '3px 10px 3px 8px',
+        border: `1px solid ${c['border-divider']}`, borderRadius: 20, background: c['background-subtle'],
+        cursor: 'pointer', userSelect: 'none' as const }}>
+      <div style={{ display: 'flex', gap: 3, alignItems: 'center' }}>
+        {AI_MOCK_DIMENSIONS.map(d => (
+          <div key={d.id} title={`${d.label}: ${d.score}`}
+            style={{ width: 8, height: 8, borderRadius: '50%', background: d.color, opacity: d.score >= 65 ? 1 : 0.28 }}/>
+        ))}
+      </div>
+      <span style={{ fontSize: 11, color: c['content-secondary'], fontFamily: ff.primary }}>2 / 4 ready</span>
+    </div>
+  );
+
+  const compactPopover = (
+    <div style={{ border: `1px solid ${c['border-divider']}`, borderRadius: 8, background: c['background-base'],
+      padding: sp.D, display: 'flex', flexDirection: 'column', gap: sp.C, boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: sp.D }}>
+        <AirsScoreGauge score={AI_MOCK_SCORE} tier={AI_MOCK_TIER} size={56}/>
+        <div>
+          <div style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'], fontFamily: ff.primary, marginBottom: 3 }}>AI Readiness</div>
+          <div style={{ fontSize: fs.xs, color: c['content-secondary'], fontFamily: ff.primary }}>Spotter answer quality: moderate</div>
+        </div>
+      </div>
+      {AI_MOCK_DIMENSIONS.map(d => (
+        <div key={d.id}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+            <span style={{ fontSize: 11, color: c['content-secondary'], fontFamily: ff.primary }}>{d.label}</span>
+            <span style={{ fontSize: 11, fontWeight: fw.medium, color: c['content-secondary'], fontFamily: ff.mono }}>{d.score}</span>
+          </div>
+          <div style={{ height: 4, borderRadius: 2, background: c['background-subtle'], overflow: 'hidden' }}>
+            <div style={{ height: '100%', width: `${d.score}%`, background: d.color, borderRadius: 2, opacity: 0.7 }}/>
+          </div>
+        </div>
+      ))}
+      <div style={{ paddingTop: sp.B, borderTop: `1px solid ${c['border-divider']}` }}>
+        <div style={{ fontSize: fs.xs, fontWeight: fw.medium, color: c['content-primary'], fontFamily: ff.primary, marginBottom: 5 }}>Top opportunity</div>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+          <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#D97706', marginTop: 4, flexShrink: 0 }}/>
+          <span style={{ fontSize: fs.xs, color: c['content-secondary'], fontFamily: ff.primary }}>Add descriptions to 6 columns — High impact</span>
+        </div>
+      </div>
+      <button style={{ height: 28, border: 'none', borderRadius: 6, background: '#2770EF', color: 'white',
+        fontSize: fs.xs, fontFamily: ff.primary, fontWeight: fw.medium, cursor: 'pointer' }}>
+        View all gaps →
+      </button>
+    </div>
+  );
+
+  const variants: { key: 'A' | 'B' | 'C'; chip: React.ReactNode; label: string; meta: string }[] = [
+    { key: 'A', chip: chipA, label: 'Variant A — Tier label', meta: 'Colored dot + tier name only. Compact, no numbers. Communicates stage, not score.' },
+    { key: 'B', chip: chipB, label: 'Variant B — Score + mini ring', meta: 'Progress ring + numeric score + tier label. Highest information density.' },
+    { key: 'C', chip: chipC, label: 'Variant C — 4 segmented dots', meta: 'One dot per dimension. Dim = not ready. Shows balance at a glance, no aggregate.' },
+  ];
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: c['background-sunken'], overflow: 'auto', fontFamily: ff.primary }}>
+      <div style={{ maxWidth: 800, margin: '0 auto', padding: '40px 32px' }}>
+        <div style={{ marginBottom: 32 }}>
+          <div style={{ fontSize: fs.xs, fontWeight: fw.medium, color: c['content-brand'], textTransform: 'uppercase' as const, letterSpacing: '0.08em', marginBottom: 6 }}>airs1 — Exploration</div>
+          <div style={{ fontSize: 22, fontWeight: fw.semibold, color: c['content-primary'], marginBottom: 8 }}>Score chip in the identity row</div>
+          <div style={{ fontSize: fs.sm, color: c['content-secondary'], lineHeight: 1.6 }}>Three ways to represent AI Readiness as a chip in the artifact identity row. Click any chip to open the compact breakdown popover.</div>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: sp.D }}>
+          {variants.map(v => (
+            <div key={v.key} style={{ border: `1px solid ${c['border-divider']}`, borderRadius: 10, overflow: 'hidden', background: c['background-base'] }}>
+              <div style={{ padding: `${sp.B}px ${sp.D}px`, background: c['background-sunken'], borderBottom: `1px solid ${c['border-divider']}` }}>
+                <span style={{ fontSize: 12, fontWeight: fw.semibold, color: c['content-primary'], fontFamily: ff.primary }}>{v.label}</span>
+                <span style={{ fontSize: 11, color: c['content-secondary'], fontFamily: ff.primary, marginLeft: sp.B }}>{v.meta}</span>
+              </div>
+              <div style={{ height: 48, display: 'flex', alignItems: 'center', padding: `0 ${sp.D}px`, gap: sp.C }}>
+                <AirsModelIcon size={20}/>
+                <span style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'], fontFamily: ff.primary }}>Campaign Performance</span>
+                <span style={{ fontSize: 11, background: c['background-subtle'], border: `1px solid ${c['border-divider']}`, borderRadius: 4, padding: '1px 6px', color: c['content-secondary'], fontFamily: ff.mono }}>v1</span>
+                {v.chip}
+                <div style={{ flex: 1 }}/>
+                <button style={{ height: 28, padding: `0 ${sp.C}px`, border: `1px solid ${c['border-default']}`, borderRadius: 6, background: c['background-base'], fontSize: fs.xs, fontFamily: ff.primary, cursor: 'pointer', color: c['content-secondary'] }}>Share</button>
+                <button style={{ height: 28, padding: `0 ${sp.C}px`, border: 'none', borderRadius: 6, background: '#2770EF', color: 'white', fontSize: fs.xs, fontFamily: ff.primary, cursor: 'pointer', fontWeight: fw.medium }}>Publish model</button>
+              </div>
+              {openChip === v.key && (
+                <div style={{ padding: `0 ${sp.D}px ${sp.D}px` }}>
+                  {compactPopover}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ── airs2: Breakdown panel — Lighthouse vs Checklist ─────────────────────────
+
+const AIReadinessPanelExploration: React.FC = () => {
+  const [openDimsR, setOpenDimsR] = useState<Record<string, boolean>>({ semantic: true });
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: c['background-sunken'], overflow: 'auto', fontFamily: ff.primary }}>
+      <div style={{ maxWidth: 840, margin: '0 auto', padding: '40px 32px' }}>
+        <div style={{ marginBottom: 32 }}>
+          <div style={{ fontSize: fs.xs, fontWeight: fw.medium, color: c['content-brand'], textTransform: 'uppercase' as const, letterSpacing: '0.08em', marginBottom: 6 }}>airs2 — Exploration</div>
+          <div style={{ fontSize: 22, fontWeight: fw.semibold, color: c['content-primary'], marginBottom: 8 }}>Readiness breakdown panel</div>
+          <div style={{ fontSize: fs.sm, color: c['content-secondary'], lineHeight: 1.6 }}>Two detail panel designs. Left: Lighthouse-style with a score gauge, category bars, opportunities, and diagnostics. Right: Checklist-style with collapsible sections and binary done/not-done items.</div>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: sp.E, alignItems: 'start' }}>
+
+          {/* LEFT — Lighthouse style */}
+          <div style={{ background: c['background-base'], border: `1px solid ${c['border-divider']}`, borderRadius: 12, overflow: 'hidden' }}>
+            <div style={{ height: 44, display: 'flex', alignItems: 'center', padding: `0 ${sp.D}px`, borderBottom: `1px solid ${c['border-divider']}`, gap: sp.B }}>
+              <span style={{ flex: 1, fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'] }}>AI Readiness</span>
+              <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 3, background: '#FFFBEB', color: '#D97706', border: '1px solid #FDE68A', fontWeight: fw.medium }}>Lighthouse-style</span>
+              <button style={{ width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', color: c['content-tertiary'], fontSize: 14 }}>✕</button>
+            </div>
+            <div style={{ padding: sp.D, display: 'flex', flexDirection: 'column', gap: sp.D }}>
+              <div style={{ display: 'flex', justifyContent: 'center' }}>
+                <AirsScoreGauge score={AI_MOCK_SCORE} tier={AI_MOCK_TIER} size={110}/>
+              </div>
+              {AI_MOCK_DIMENSIONS.map(d => (
+                <div key={d.id}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <span style={{ fontSize: fs.xs, fontWeight: fw.medium, color: c['content-primary'] }}>{d.label}</span>
+                    <span style={{ fontSize: 11, fontWeight: fw.semibold, fontFamily: ff.mono, color: d.color }}>{d.score}</span>
+                  </div>
+                  <div style={{ height: 6, borderRadius: 3, background: c['background-subtle'], overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${d.score}%`, background: d.color, borderRadius: 3, opacity: 0.7 }}/>
+                  </div>
+                </div>
+              ))}
+              <div>
+                <div style={{ fontSize: fs.xs, fontWeight: fw.semibold, color: c['content-tertiary'], textTransform: 'uppercase' as const, letterSpacing: '0.07em', marginBottom: sp.C }}>Opportunities</div>
+                {AI_OPPORTUNITIES.map((o, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: sp.B, padding: sp.C, borderRadius: 7, background: '#FFFBEB', border: '1px solid #FDE68A', marginBottom: sp.B }}>
+                    <div style={{ width: 18, height: 18, borderRadius: '50%', background: '#FEF3C7', border: '1px solid #FDE68A', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <span style={{ fontSize: 9, fontWeight: fw.bold, color: '#D97706' }}>↑</span>
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: fs.xs, fontWeight: fw.medium, color: '#92400E' }}>{o.label}</div>
+                      <div style={{ fontSize: 11, color: '#78350F', marginTop: 2, opacity: 0.75 }}>{o.detail}</div>
+                    </div>
+                    <span style={{ fontSize: 10, fontWeight: fw.medium, color: o.impact === 'High' ? '#D97706' : c['content-secondary'], background: o.impact === 'High' ? '#FEF3C7' : c['background-subtle'], padding: '1px 5px', borderRadius: 3, flexShrink: 0 }}>{o.impact}</span>
+                  </div>
+                ))}
+              </div>
+              <div>
+                <div style={{ fontSize: fs.xs, fontWeight: fw.semibold, color: c['content-tertiary'], textTransform: 'uppercase' as const, letterSpacing: '0.07em', marginBottom: sp.C }}>Diagnostics</div>
+                {AI_DIAGNOSTICS.map((d, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: sp.B, padding: `${sp.B}px ${sp.C}px`, borderRadius: 6, background: '#F0FDF4', border: '1px solid #A7F3D0', marginBottom: sp.A }}>
+                    <div style={{ width: 14, height: 14, borderRadius: '50%', background: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <svg width="8" height="8" viewBox="0 0 8 8" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="1,4 3,6 7,2"/></svg>
+                    </div>
+                    <span style={{ flex: 1, fontSize: fs.xs, color: '#065F46' }}>{d.label}</span>
+                    <span style={{ fontSize: 11, color: '#047857', opacity: 0.65 }}>{d.note}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* RIGHT — Checklist style */}
+          <div style={{ background: c['background-base'], border: `1px solid ${c['border-divider']}`, borderRadius: 12, overflow: 'hidden' }}>
+            <div style={{ height: 44, display: 'flex', alignItems: 'center', padding: `0 ${sp.D}px`, borderBottom: `1px solid ${c['border-divider']}`, gap: sp.B }}>
+              <span style={{ flex: 1, fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'] }}>AI Readiness</span>
+              <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 3, background: c['background-subtle'], color: c['content-secondary'], border: `1px solid ${c['border-divider']}`, fontWeight: fw.medium }}>Checklist-style</span>
+              <button style={{ width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', color: c['content-tertiary'], fontSize: 14 }}>✕</button>
+            </div>
+            <div style={{ padding: `${sp.C}px ${sp.D}px`, borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', gap: sp.C }}>
+              <div style={{ flex: 1, height: 6, borderRadius: 3, background: c['background-subtle'], overflow: 'hidden' }}>
+                <div style={{ height: '100%', width: '58%', background: '#2563EB', borderRadius: 3 }}/>
+              </div>
+              <span style={{ fontSize: fs.xs, color: c['content-secondary'], flexShrink: 0 }}>7 of 12 complete</span>
+            </div>
+            {AI_MOCK_DIMENSIONS.map(d => {
+              const totalDone = d.items.filter(it => it.done >= it.total).length;
+              const isOpen = !!openDimsR[d.id];
+              return (
+                <div key={d.id} style={{ borderBottom: `1px solid ${c['border-divider']}` }}>
+                  <button
+                    onClick={() => setOpenDimsR(prev => ({ ...prev, [d.id]: !prev[d.id] }))}
+                    style={{ width: '100%', height: 40, display: 'flex', alignItems: 'center', padding: `0 ${sp.D}px`, gap: sp.C, border: 'none', background: 'transparent', cursor: 'pointer', boxSizing: 'border-box' as const }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = c['background-subtle']; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}>
+                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: d.color, flexShrink: 0 }}/>
+                    <span style={{ flex: 1, fontSize: fs.sm, fontWeight: fw.medium, color: c['content-primary'], textAlign: 'left' as const }}>{d.label}</span>
+                    <span style={{ fontSize: 11, fontFamily: ff.mono, color: totalDone === d.items.length ? '#059669' : c['content-tertiary'] }}>{totalDone}/{d.items.length}</span>
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke={c['content-tertiary']} strokeWidth="1.5" strokeLinecap="round" style={{ transform: isOpen ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.15s', flexShrink: 0 }}>
+                      <path d="M2 4l4 4 4-4"/>
+                    </svg>
+                  </button>
+                  {isOpen && (
+                    <div style={{ padding: `0 ${sp.D}px ${sp.C}px`, display: 'flex', flexDirection: 'column', gap: sp.A }}>
+                      {d.items.map((item, i) => {
+                        const isDone = item.done >= item.total;
+                        return (
+                          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: sp.C, padding: `${sp.B}px ${sp.C}px`, borderRadius: 6, background: isDone ? '#F0FDF4' : c['background-subtle'] }}>
+                            <div style={{ width: 16, height: 16, borderRadius: '50%', border: `1.5px solid ${isDone ? '#059669' : c['border-default']}`, background: isDone ? '#059669' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                              {isDone && <svg width="8" height="8" viewBox="0 0 8 8" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="1,4 3,6 7,2"/></svg>}
+                            </div>
+                            <span style={{ flex: 1, fontSize: fs.xs, color: isDone ? '#065F46' : c['content-primary'] }}>{item.label}</span>
+                            <span style={{ fontSize: 11, fontFamily: ff.mono, color: isDone ? '#059669' : c['content-secondary'] }}>{item.done}/{item.total}</span>
+                            {!isDone && <button style={{ fontSize: 11, color: '#2563EB', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: ff.primary }}>Fix →</button>}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ── airs3: Publish-time readiness gate ────────────────────────────────────────
+
+const AIReadinessPublishGate: React.FC = () => {
+  const [gateState, setGateState] = useState<'gate' | 'improving' | 'published'>('gate');
+  const [checked, setChecked] = useState<Record<number, boolean>>({});
+  const tm = AI_TIER_META[AI_MOCK_TIER];
+  const checkedCount = Object.values(checked).filter(Boolean).length;
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: c['background-sunken'], fontFamily: ff.primary, display: 'flex', flexDirection: 'column' }}>
+      {/* Simulated workspace top bar */}
+      <div style={{ height: 48, flexShrink: 0, background: c['background-base'], borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', padding: `0 ${sp.D}px`, gap: sp.C }}>
+        <span style={{ fontSize: fs.xs, color: c['content-secondary'] }}>← Overview</span>
+        <div style={{ flex: 1 }}/>
+        <AirsModelIcon size={18}/>
+        <span style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'] }}>Campaign Performance</span>
+        <span style={{ fontSize: 11, background: c['background-subtle'], border: `1px solid ${c['border-divider']}`, borderRadius: 4, padding: '1px 6px', color: c['content-secondary'], fontFamily: ff.mono }}>Draft</span>
+        <div style={{ flex: 1 }}/>
+        <button onClick={() => { setGateState('gate'); setChecked({}); }}
+          style={{ height: 30, padding: `0 ${sp.D}px`, border: 'none', borderRadius: 6, background: '#2770EF', color: 'white', fontSize: fs.xs, fontFamily: ff.primary, cursor: 'pointer', fontWeight: fw.medium }}>
+          Publish model
+        </button>
+      </div>
+
+      {/* Gate */}
+      {gateState !== 'published' && (
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: sp.H }}>
+          <div style={{ width: 520, background: c['background-base'], border: `1px solid ${c['border-divider']}`, borderRadius: 14, overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.1)' }}>
+            <div style={{ padding: `${sp.E}px ${sp.F}px ${sp.D}px`, borderBottom: `1px solid ${c['border-divider']}` }}>
+              <div style={{ fontSize: 18, fontWeight: fw.semibold, color: c['content-primary'], marginBottom: sp.B }}>
+                {gateState === 'gate' ? 'Before you publish' : 'Improve AI readiness'}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: sp.B }}>
+                <AirsModelIcon size={16}/>
+                <span style={{ fontSize: fs.xs, color: c['content-secondary'] }}>Campaign Performance</span>
+                <div style={{ width: 3, height: 3, borderRadius: '50%', background: c['content-tertiary'] }}/>
+                <span style={{ fontSize: fs.xs, padding: '2px 7px', borderRadius: 12, background: tm.bg, color: tm.text, border: `1px solid ${tm.border}`, fontWeight: fw.medium }}>● Basic</span>
+              </div>
+            </div>
+
+            <div style={{ padding: `${sp.D}px ${sp.F}px`, display: 'flex', flexDirection: 'column', gap: sp.D }}>
+              {gateState === 'gate' ? (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: sp.E }}>
+                    <AirsScoreGauge score={AI_MOCK_SCORE} tier={AI_MOCK_TIER} size={80}/>
+                    <div>
+                      <div style={{ fontSize: fs.sm, fontWeight: fw.medium, color: c['content-primary'], marginBottom: sp.B }}>Spotter answer quality will be moderate</div>
+                      <div style={{ fontSize: fs.xs, color: c['content-secondary'], lineHeight: 1.55 }}>Business users asking Spotter or Claude Code questions may get uncertain answers. Core semantic work is incomplete.</div>
+                    </div>
+                  </div>
+                  <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 8, padding: sp.D, display: 'flex', flexDirection: 'column', gap: sp.B }}>
+                    <div style={{ fontSize: fs.xs, fontWeight: fw.semibold, color: '#92400E', marginBottom: 4 }}>Top gaps before publishing</div>
+                    {AI_OPPORTUNITIES.map((o, i) => (
+                      <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: sp.B }}>
+                        <div style={{ width: 16, height: 16, borderRadius: 4, background: '#FEF3C7', border: '1px solid #FDE68A', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>
+                          <span style={{ fontSize: 9, fontWeight: fw.bold, color: '#D97706' }}>{i + 1}</span>
+                        </div>
+                        <div>
+                          <div style={{ fontSize: fs.xs, color: '#78350F', fontWeight: fw.medium }}>{o.label}</div>
+                          <div style={{ fontSize: 11, color: '#92400E', opacity: 0.7, marginTop: 2 }}>{o.detail}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div style={{ fontSize: fs.xs, color: c['content-secondary'], lineHeight: 1.55 }}>
+                    Check off what you've fixed. Your AI Readiness score updates as you complete each item.
+                  </div>
+                  {AI_OPPORTUNITIES.map((o, i) => {
+                    const done = !!checked[i];
+                    return (
+                      <div key={i} onClick={() => setChecked(prev => ({ ...prev, [i]: !prev[i] }))}
+                        style={{ display: 'flex', alignItems: 'flex-start', gap: sp.C, padding: sp.C, borderRadius: 8,
+                          border: `1px solid ${done ? '#A7F3D0' : c['border-divider']}`,
+                          background: done ? '#F0FDF4' : c['background-subtle'],
+                          cursor: 'pointer', transition: 'all 0.15s' }}>
+                        <div style={{ width: 18, height: 18, borderRadius: 4, border: `1.5px solid ${done ? '#059669' : c['border-default']}`, background: done ? '#059669' : c['background-base'], display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>
+                          {done && <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="2,5 4,7 8,2"/></svg>}
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: fs.xs, fontWeight: fw.medium, color: done ? '#065F46' : c['content-primary'], textDecoration: done ? 'line-through' : 'none' }}>{o.label}</div>
+                          <div style={{ fontSize: 11, color: done ? '#047857' : c['content-secondary'], marginTop: 2 }}>{o.detail}</div>
+                        </div>
+                        <span style={{ fontSize: 10, fontWeight: fw.medium, color: o.impact === 'High' ? '#D97706' : c['content-secondary'], background: o.impact === 'High' ? '#FEF3C7' : c['background-subtle'], padding: '2px 6px', borderRadius: 3, flexShrink: 0 }}>{o.impact}</span>
+                      </div>
+                    );
+                  })}
+                  {checkedCount > 0 && (
+                    <div style={{ padding: sp.C, borderRadius: 7, background: checkedCount === 3 ? '#F0FDF4' : '#EFF6FF', border: `1px solid ${checkedCount === 3 ? '#A7F3D0' : '#BFDBFE'}`, fontSize: fs.xs, color: checkedCount === 3 ? '#059669' : '#2563EB' }}>
+                      {checkedCount === 3 ? '✓ All gaps addressed — your model is now AI-ready.' : `${checkedCount} of 3 gaps addressed — keep going to reach AI-ready.`}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            <div style={{ padding: `${sp.C}px ${sp.F}px ${sp.E}px`, borderTop: `1px solid ${c['border-divider']}`, display: 'flex', gap: sp.C, justifyContent: 'flex-end' }}>
+              {gateState === 'gate' ? (
+                <>
+                  <button onClick={() => setGateState('published')}
+                    style={{ height: 34, padding: `0 ${sp.D}px`, border: `1px solid ${c['border-default']}`, borderRadius: 7, background: c['background-base'], color: c['content-secondary'], fontSize: fs.xs, fontFamily: ff.primary, cursor: 'pointer' }}>
+                    Publish anyway
+                  </button>
+                  <button onClick={() => setGateState('improving')}
+                    style={{ height: 34, padding: `0 ${sp.D}px`, border: 'none', borderRadius: 7, background: '#2770EF', color: 'white', fontSize: fs.xs, fontFamily: ff.primary, cursor: 'pointer', fontWeight: fw.medium }}>
+                    Improve first →
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button onClick={() => setGateState('gate')}
+                    style={{ height: 34, padding: `0 ${sp.D}px`, border: `1px solid ${c['border-default']}`, borderRadius: 7, background: c['background-base'], color: c['content-secondary'], fontSize: fs.xs, fontFamily: ff.primary, cursor: 'pointer' }}>
+                    ← Back
+                  </button>
+                  <button onClick={() => setGateState('published')}
+                    style={{ height: 34, padding: `0 ${sp.D}px`, border: 'none', borderRadius: 7, background: checkedCount === 3 ? '#059669' : '#2770EF', color: 'white', fontSize: fs.xs, fontFamily: ff.primary, cursor: 'pointer', fontWeight: fw.medium }}>
+                    {checkedCount === 3 ? 'Publish AI-ready model →' : 'Publish anyway'}
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Published confirmation */}
+      {gateState === 'published' && (
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: sp.D }}>
+          <div style={{ width: 56, height: 56, borderRadius: '50%', background: '#F0FDF4', border: '2px solid #A7F3D0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="4,12 9,17 20,6"/></svg>
+          </div>
+          <div style={{ fontSize: 18, fontWeight: fw.semibold, color: c['content-primary'], textAlign: 'center' as const }}>Model published</div>
+          <div style={{ fontSize: fs.sm, color: c['content-secondary'], textAlign: 'center' as const }}>Business users can now query this model via Spotter.</div>
+          <button onClick={() => { setGateState('gate'); setChecked({}); }}
+            style={{ fontSize: fs.xs, color: '#2563EB', background: 'none', border: 'none', cursor: 'pointer', fontFamily: ff.primary }}>
+            ← Start over
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ── airs4: Models list — two signals ─────────────────────────────────────────
+
+type AirsListLayout = 'A' | 'B' | 'C';
+
+const AIReadinessModelsList: React.FC = () => {
+  const [layout, setLayout] = useState<AirsListLayout>('A');
+
+  const layoutLabels: { id: AirsListLayout; label: string; meta: string }[] = [
+    { id: 'A', label: 'Layout A — Two columns',        meta: 'Health + AI Readiness as separate, distinct columns' },
+    { id: 'B', label: 'Layout B — Combined column',    meta: 'Both signals inline in one "Model health" column' },
+    { id: 'C', label: 'Layout C — Single worst-case',  meta: 'One indicator takes the worse of the two signals' },
+  ];
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: c['background-sunken'], overflow: 'auto', fontFamily: ff.primary }}>
+      <div style={{ maxWidth: 820, margin: '0 auto', padding: '40px 32px' }}>
+        <div style={{ marginBottom: 32 }}>
+          <div style={{ fontSize: fs.xs, fontWeight: fw.medium, color: c['content-brand'], textTransform: 'uppercase' as const, letterSpacing: '0.08em', marginBottom: 6 }}>airs4 — Exploration</div>
+          <div style={{ fontSize: 22, fontWeight: fw.semibold, color: c['content-primary'], marginBottom: 8 }}>Models list — two signals</div>
+          <div style={{ fontSize: fs.sm, color: c['content-secondary'], lineHeight: 1.6 }}>How Health (data quality) and AI Readiness (semantic completeness) coexist in the models list. Three layout approaches — toggle to compare.</div>
+        </div>
+
+        <div style={{ display: 'flex', gap: sp.B, marginBottom: sp.C }}>
+          {layoutLabels.map(l => (
+            <button key={l.id} onClick={() => setLayout(l.id)}
+              style={{ height: 32, padding: `0 ${sp.D}px`, border: `1px solid ${layout === l.id ? '#2563EB' : c['border-divider']}`, borderRadius: 7, background: layout === l.id ? '#EFF6FF' : c['background-base'], color: layout === l.id ? '#2563EB' : c['content-secondary'], fontSize: fs.xs, fontFamily: ff.primary, cursor: 'pointer', fontWeight: layout === l.id ? fw.semibold : fw.regular }}>
+              {l.id}
+            </button>
+          ))}
+        </div>
+        <div style={{ fontSize: fs.xs, color: c['content-secondary'], marginBottom: sp.E }}>
+          {layoutLabels.find(l => l.id === layout)?.meta}
+        </div>
+
+        <div style={{ background: c['background-base'], border: `1px solid ${c['border-divider']}`, borderRadius: 10, overflow: 'hidden', marginBottom: sp.E }}>
+          {/* Table header */}
+          <div style={{ display: 'flex', alignItems: 'center', height: 36, padding: `0 ${sp.D}px`, background: c['background-sunken'], borderBottom: `1px solid ${c['border-divider']}`, gap: sp.C }}>
+            <div style={{ width: 16 }}/>
+            <span style={{ flex: 1, fontSize: 11, fontWeight: fw.medium, color: c['content-secondary'], textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>Model</span>
+            {layout === 'A' && <>
+              <span style={{ width: 160, fontSize: 11, fontWeight: fw.medium, color: c['content-secondary'], textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>Health</span>
+              <span style={{ width: 150, fontSize: 11, fontWeight: fw.medium, color: c['content-secondary'], textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>AI Readiness</span>
+            </>}
+            {layout === 'B' && <span style={{ width: 260, fontSize: 11, fontWeight: fw.medium, color: c['content-secondary'], textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>Model health</span>}
+            {layout === 'C' && <span style={{ width: 180, fontSize: 11, fontWeight: fw.medium, color: c['content-secondary'], textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>Status</span>}
+            <div style={{ width: 52 }}/>
+          </div>
+
+          {MOCK_MODELS_AI.map(m => {
+            const hm = HEALTH_META[m.health];
+            const tm = AI_TIER_META[m.tier];
+            const isBadHealth = m.health === 'needs-attention';
+            const isBadAI = m.tier === 'Not ready' || m.tier === 'Basic';
+            const worstDot = isBadHealth ? hm.dot : isBadAI ? tm.dot : '#059669';
+            const worstText = isBadHealth ? hm.text : isBadAI ? tm.text : '#065F46';
+            const worstLabel = isBadHealth ? hm.label : isBadAI ? m.tier : 'Healthy';
+
+            return (
+              <div key={m.name} style={{ display: 'flex', alignItems: 'center', height: 44, padding: `0 ${sp.D}px`, borderBottom: `1px solid ${c['border-divider']}`, gap: sp.C, cursor: 'pointer' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = c['background-subtle']; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}>
+                <AirsModelIcon size={16}/>
+                <span style={{ flex: 1, fontSize: fs.sm, fontWeight: fw.medium, color: c['content-primary'] }}>{m.name}</span>
+
+                {layout === 'A' && <>
+                  <div style={{ width: 160, display: 'flex', alignItems: 'center', gap: sp.B }}>
+                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: hm.dot }}/>
+                    <span style={{ fontSize: fs.xs, color: hm.text }}>{hm.label}</span>
+                  </div>
+                  <div style={{ width: 150, display: 'flex', alignItems: 'center', gap: sp.B }}>
+                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: tm.dot }}/>
+                    <span style={{ fontSize: fs.xs, padding: '1px 7px', borderRadius: 10, background: tm.bg, color: tm.text, border: `1px solid ${tm.border}`, fontWeight: fw.medium }}>{m.tier}</span>
+                  </div>
+                </>}
+
+                {layout === 'B' && (
+                  <div style={{ width: 260, display: 'flex', alignItems: 'center', gap: sp.C }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                      <div style={{ width: 7, height: 7, borderRadius: '50%', background: hm.dot }}/>
+                      <span style={{ fontSize: fs.xs, color: hm.text }}>{hm.label}</span>
+                    </div>
+                    <div style={{ width: 1, height: 12, background: c['border-divider'] }}/>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                      <div style={{ width: 7, height: 7, borderRadius: '50%', background: tm.dot }}/>
+                      <span style={{ fontSize: fs.xs, color: tm.text }}>{m.tier}</span>
+                    </div>
+                  </div>
+                )}
+
+                {layout === 'C' && (
+                  <div style={{ width: 180, display: 'flex', alignItems: 'center', gap: sp.B }}>
+                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: worstDot }}/>
+                    <span style={{ fontSize: fs.xs, color: worstText }}>{worstLabel}</span>
+                  </div>
+                )}
+
+                <button style={{ fontSize: 11, color: c['content-secondary'], background: 'none', border: 'none', cursor: 'pointer', fontFamily: ff.primary, width: 52, textAlign: 'right' as const }}>View →</button>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Tradeoff notes */}
+        <div style={{ padding: sp.D, background: c['background-base'], border: `1px solid ${c['border-divider']}`, borderRadius: 8 }}>
+          <div style={{ fontSize: fs.xs, fontWeight: fw.semibold, color: c['content-primary'], marginBottom: sp.C }}>Layout tradeoffs</div>
+          {[
+            { id: 'A', text: 'Most explicit — makes the distinction between data quality and AI readiness clear. Two columns, two concepts. Best for users who need to act on each signal independently.' },
+            { id: 'B', text: 'Balanced — one "Model health" column with both signals inline. Reduces visual noise while keeping both visible. Best for power users who understand the distinction.' },
+            { id: 'C', text: 'Simplest — one signal, worst-case wins. Loses nuance but easiest to scan. Best for an overview or summary surface where space is tight.' },
+          ].map(note => (
+            <div key={note.id} style={{ display: 'flex', gap: sp.B, marginBottom: sp.A }}>
+              <span style={{ fontSize: fs.xs, fontWeight: fw.semibold, color: layout === note.id ? '#2563EB' : c['content-tertiary'], flexShrink: 0, width: 20 }}>{note.id}</span>
+              <span style={{ fontSize: fs.xs, color: layout === note.id ? c['content-primary'] : c['content-secondary'] }}>{note.text}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+type NavId = 'v1' | 'v2' | 'v3' | 'v4' | 'v5' | 'v6' | 'tm1' | 'tm2' | 'tm3' | 'p2-dbt' | 'clarify-bar' | 'artifact-chat' | 'context-panel' | 'tma1' | 'tma2' | 'tma3' | 'tma4' | 'airs1' | 'airs2' | 'airs3' | 'airs4';
 
 interface PGNavItem {
   id: NavId;
@@ -3090,6 +3698,15 @@ const PG_NAV: { section: string; items: PGNavItem[] }[] = [
       { id: 'tma4', label: 'Header dropdown',  meta: 'beside title' },
     ],
   },
+  {
+    section: 'AI Readiness Score',
+    items: [
+      { id: 'airs1', label: 'Score chip',         meta: 'identity row · 3 chip variants · compact popover', tag: 'NEW' },
+      { id: 'airs2', label: 'Breakdown panel',    meta: 'Lighthouse-style vs checklist · side by side',     tag: 'NEW' },
+      { id: 'airs3', label: 'Publish gate',       meta: 'pre-publish intercept · improve first flow',       tag: 'NEW' },
+      { id: 'airs4', label: 'Models list',        meta: 'two signals · 3 layout approaches',                tag: 'NEW' },
+    ],
+  },
 ];
 
 const CACHE_SECTION = 'Cache discoverability';
@@ -3115,6 +3732,10 @@ const renderNavIteration = (id: NavId): React.ReactNode => {
     case 'tma2': return <TestModeA2 />;
     case 'tma3': return <TestModeA3 />;
     case 'tma4': return <TestModeA4 />;
+    case 'airs1': return <AIReadinessChipVariants />;
+    case 'airs2': return <AIReadinessPanelExploration />;
+    case 'airs3': return <AIReadinessPublishGate />;
+    case 'airs4': return <AIReadinessModelsList />;
   }
 };
 
