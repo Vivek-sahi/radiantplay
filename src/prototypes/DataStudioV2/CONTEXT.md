@@ -39,22 +39,21 @@ The product moved away from a side-panel co-pilot toward a full-screen agent-fir
 
 ## Next up
 
-### 1. Review mh1 vs mh2 and decide on model health direction
+### 1. Review Model Health explorations + decide on direction
 
-Review the two new explorations at `/data-studio-v2/playground` under **"Combined model status"**:
+Review `mh1` and `mh2` at `/data-studio-v2/playground` under **"Model Health"**:
 - `mh1` — Separate signals: two chips (data quality + AI readiness), each opening its own canvas view
-- `mh2` — Model Health umbrella: one chip, unified canvas view with two-level collapsible sections
+- `mh2` — Health umbrella: one chip, unified canvas view with two-level collapsible sections
 
-Decide: separate or umbrella? This drives the live artifact implementation.
+Decide: separate or umbrella? Consider: does the umbrella lose important nuance, or is the simplification cleaner in context? That decision drives the live artifact implementation.
 
-Both use the hybrid visual pattern: compact status header (Lighthouse-inspired) + collapsible checklist sections (Checklist-inspired). Each item has a "Fix →" action; top-level CTA is "Fix all with agent."
+Also review the broader model health concept — what signals belong under it, how it surfaces in the models list vs. inside the artifact, and how it degrades over time.
 
-**Design decisions landed this session (do not re-research):**
-- AIRS chip clicks open a canvas view within the artifact (identity row + tab bar stay, content area replaced). Not a side panel, not a new artifact — functionally a virtual tab triggered from the right side of the tab bar.
-- Data quality and AI readiness are distinct signals (different owners, different fix actions). Model Health is the umbrella concept in the models list.
-- Three separate health dimensions: data quality (issue count), AI readiness (metadata completeness score), answer quality / test results (empirical — not scored separately for now, folded into test mode feedback).
-- 100% AI readiness ≠ guaranteed correct answers. Data quality issues still affect output. Test mode is the empirical check.
-- Score degrades over time: new columns from dbt sync arrive without descriptions → AIRS drops; test failures accumulate; business logic changes may not be reflected in descriptions.
+**Design decisions already landed (do not re-research):**
+- Clicking a health chip replaces the canvas content area (identity row + tab bar stay). Not a side panel, not a new artifact.
+- Data quality and AI readiness are distinct signals with different owners and fix actions.
+- 100% AI readiness ≠ guaranteed correct answers. Data quality and LLM limits are independent variables.
+- Score degrades over time: schema drift (new columns without descriptions), test failures, business logic changes not reflected in metadata.
 
 ### 2. Team review + iterate on feedback
 
