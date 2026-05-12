@@ -16,6 +16,7 @@ import QualityPlanPanel from './QualityPlanPanel';
 import PlanPanel from './PlanPanel';
 import { Icon } from '../../../components/icons';
 import ChatContextPanel, { CreatedItem } from './ChatContextPanel';
+import InstructionsPanel from './InstructionsPanel';
 
 interface WorkspaceProps {
   project: ProjectState;
@@ -27,6 +28,7 @@ interface WorkspaceProps {
   isDayZero?: boolean;
   isDbtReview?: boolean;
   isAgentMode?: boolean;
+  instructionsCreated?: boolean;
   onNavigateToTable?: (tableName: string) => void;
 }
 
@@ -36,7 +38,61 @@ interface Toast {
   action?: { label: string; onClick: () => void };
 }
 
-const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, setMessages, onBack, initialPrompt, isDayZero, isDbtReview, isAgentMode, onNavigateToTable }) => {
+// ── Model health: mock data ───────────────────────────────────────────────────
+
+type MhAITier = 'Not ready' | 'Basic' | 'AI-ready' | 'Optimized';
+const MH_TIER_META: Record<MhAITier, { bg: string; text: string; border: string; dot: string }> = {
+  'Not ready': { bg: '#FEF2F2', text: '#DC2626', border: '#FECACA', dot: '#DC2626' },
+  'Basic':     { bg: '#FFFBEB', text: '#D97706', border: '#FDE68A', dot: '#D97706' },
+  'AI-ready':  { bg: '#EFF6FF', text: '#2563EB', border: '#BFDBFE', dot: '#2563EB' },
+  'Optimized': { bg: '#F0FDF4', text: '#059669', border: '#A7F3D0', dot: '#059669' },
+};
+const MH_AIRS_SCORE = 25;
+const MH_AIRS_TIER: MhAITier = 'Not ready';
+
+interface MhAirsItem { id: string; title: string; pts: number; earned: number; action: string | null; }
+const MH_AIRS_ITEMS: MhAirsItem[] = [
+  { id: 'd', title: 'Add column descriptions',   pts: 25, earned: 0,  action: 'Generate' },
+  { id: 's', title: 'Add synonyms for key columns', pts: 20, earned: 0, action: 'Generate' },
+  { id: 'c', title: 'Define AI context instructions', pts: 15, earned: 0, action: 'Add'  },
+  { id: 'q', title: 'Add sample questions',      pts: 15, earned: 0,  action: 'Generate' },
+  { id: 'j', title: 'Verify join relationships', pts: 15, earned: 15, action: null       },
+  { id: 't', title: 'Validate data types',       pts: 10, earned: 10, action: null       },
+];
+
+interface MhDqItem { col: string; detail: string; sev: 'high' | 'med'; }
+interface MhDqSection { key: string; label: string; items: MhDqItem[]; }
+const MH_DQ_SECTIONS: MhDqSection[] = [
+  { key: 'nulls', label: 'Null values', items: [
+    { col: 'roas_actual',         detail: '847 of 10,420 rows',       sev: 'high' },
+    { col: 'campaign_start_date', detail: '1,203 null dates in Q3',   sev: 'med'  },
+    { col: 'user_segment',        detail: '312 nulls, likely new users', sev: 'med' },
+    { col: 'conversion_value',    detail: '2,140 nulls last 7 days',  sev: 'high' },
+  ]},
+  { key: 'dupes', label: 'Duplicate rows', items: [
+    { col: 'ad_impressions', detail: '340 exact duplicates',    sev: 'high' },
+    { col: 'campaign_spend', detail: '12 near-dupes ±$0.01',   sev: 'med'  },
+    { col: 'attribution_log', detail: '8 duplicate events',    sev: 'med'  },
+  ]},
+  { key: 'dates', label: 'Date format mismatches', items: [
+    { col: 'conversion_date', detail: 'Mixed ISO 8601 and MM/DD/YYYY', sev: 'high' },
+    { col: 'order_date',      detail: '4 different formats detected',  sev: 'med'  },
+  ]},
+];
+const MH_SEV: Record<'high' | 'med', { bg: string; text: string; label: string }> = {
+  high: { bg: '#FEF2F2', text: '#DC2626', label: 'High' },
+  med:  { bg: '#FFFBEB', text: '#D97706', label: 'Med'  },
+};
+const MH_AIRS_BARS = [
+  { pct: 0,   color: '#DC2626', label: 'Descriptions' },
+  { pct: 0,   color: '#E5E7EB', label: 'Context'      },
+  { pct: 100, color: '#059669', label: 'Joins'        },
+  { pct: 100, color: '#10B981', label: 'Data types'   },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, setMessages, onBack, initialPrompt, isDayZero, isDbtReview, isAgentMode, instructionsCreated, onNavigateToTable }) => {
   const [mounted, setMounted] = useState(false);
   const [isBuilding, setIsBuilding] = useState(!!initialPrompt);
   const [externalAgentMessage, setExternalAgentMessage] = useState<string | null>(null);
@@ -47,28 +103,36 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
   const [cacheModalOpen, setCacheModalOpen] = useState(false);
   const [cacheStatus, setCacheStatus] = useState<'live' | 'caching' | 'cached'>('live');
   const [qualityPlanOpen, setQualityPlanOpen] = useState(false);
+  const [activeHealthView, setActiveHealthView] = useState<null | 'quality' | 'readiness'>(null);
+  const dqDropRef   = useRef<HTMLDivElement>(null);
+  const airsDropRef = useRef<HTMLDivElement>(null);
+  const mhTm = MH_TIER_META[MH_AIRS_TIER];
+  const mhR = 7, mhCirc = 2 * Math.PI * mhR;
+  const mhFilled = mhCirc * (MH_AIRS_SCORE / 100), mhGap = mhCirc - mhFilled;
   const [shareOpen, setShareOpen] = useState(false);
   const [publishOpen, setPublishOpen] = useState(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
-  const [contextPanelOpen, setContextPanelOpen] = useState(false);
+  const [contextPanelOpen, setContextPanelOpen] = useState(!!instructionsCreated);
   const [canvasVisible, setCanvasVisible] = useState(true);
   const [planPanelOpen, setPlanPanelOpen] = useState(false);
+  const [instructionsPanelOpen, setInstructionsPanelOpen] = useState(false);
 
   const planMsg = useMemo(() => messages.find(m => m.planData != null), [messages]);
 
   const contextCreated = useMemo((): CreatedItem[] => [
-    ...(planMsg ? [{ type: 'plan' as const, name: 'Build plan', onClick: () => { setPlanPanelOpen(true); setQualityPlanOpen(false); setCanvasVisible(true); } }] : []),
+    ...(instructionsCreated ? [{ type: 'instructions' as const, name: 'instructions.md', onClick: () => { setInstructionsPanelOpen(true); setPlanPanelOpen(false); setQualityPlanOpen(false); setCanvasVisible(true); } }] : []),
+    ...(planMsg ? [{ type: 'plan' as const, name: 'Build plan', onClick: () => { setPlanPanelOpen(true); setQualityPlanOpen(false); setInstructionsPanelOpen(false); setCanvasVisible(true); } }] : []),
     ...(project.prepTransforms !== undefined ? [{
       type: 'quality-plan' as const,
       name: 'Data quality plan',
-      onClick: () => { setQualityPlanOpen(true); setPlanPanelOpen(false); setCanvasVisible(true); },
+      onClick: () => { setQualityPlanOpen(true); setPlanPanelOpen(false); setInstructionsPanelOpen(false); setCanvasVisible(true); },
     }] : []),
     ...(project.buildStep !== 'empty' ? [{
       type: 'model' as const,
       name: project.name,
-      onClick: () => { setQualityPlanOpen(false); setPlanPanelOpen(false); setCanvasVisible(true); },
+      onClick: () => { setQualityPlanOpen(false); setPlanPanelOpen(false); setInstructionsPanelOpen(false); setCanvasVisible(true); },
     }] : []),
-  ], [planMsg, project.prepTransforms, project.buildStep, project.name]);
+  ], [instructionsCreated, planMsg, project.prepTransforms, project.buildStep, project.name]);
 
   const contextTables = useMemo(() => planMsg?.planData?.tables.map(t => t.name) ?? project.addedTables, [planMsg, project.addedTables]);
   const contextSkills = useMemo(() => project.buildStep !== 'empty' ? ['create-data-model'] : [], [project.buildStep]);
@@ -142,6 +206,17 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (colVisRef.current && !colVisRef.current.contains(e.target as Node)) setColVisOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      const t = e.target as Node;
+      if (!dqDropRef.current?.contains(t) && !airsDropRef.current?.contains(t)) {
+        setActiveHealthView(null);
+      }
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
@@ -352,6 +427,14 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
           {/* Building skeleton — full canvas, no card border yet */}
           {isBuilding && <BuildingSkeleton />}
 
+          {/* Instructions file — shown when instructions.md clicked in context panel */}
+          {!isBuilding && instructionsPanelOpen && (
+            <InstructionsPanel
+              modelName={project.name}
+              onClose={() => { setInstructionsPanelOpen(false); setCanvasVisible(false); }}
+            />
+          )}
+
           {/* Build plan — shown when plan item clicked in context panel */}
           {!isBuilding && planPanelOpen && planMsg?.planData && (
             <PlanPanel
@@ -370,7 +453,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
           )}
 
           {/* Artifact card — appears when built */}
-          {!isBuilding && project.buildStep !== 'empty' && !qualityPlanOpen && !planPanelOpen && (
+          {!isBuilding && project.buildStep !== 'empty' && !qualityPlanOpen && !planPanelOpen && !instructionsPanelOpen && (
             <div style={{ flex: 1, overflow: 'hidden', backgroundColor: c['background-base'], border: `1px solid ${c['border-divider']}`, borderRadius: 10, display: 'flex', flexDirection: 'column' }}>
 
               {/* Identity row */}
@@ -388,6 +471,24 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
                   </span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, flexShrink: 0 }}>
+                  {/* Cache — moved to identity row */}
+                  <button
+                    onClick={() => setCacheModalOpen(true)}
+                    style={{ height: 30, padding: '0 10px', gap: 5, border: `1px solid ${c['border-default']}`, borderRadius: 7, backgroundColor: cacheStatus === 'cached' ? c['background-subtle'] : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, color: c['content-secondary'], boxSizing: 'border-box' }}
+                    onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
+                    onMouseLeave={e => { e.currentTarget.style.backgroundColor = cacheStatus === 'cached' ? c['background-subtle'] : 'transparent'; }}
+                  >
+                    {cacheStatus === 'caching' ? (
+                      <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" style={{ animation: 'ds-cache-spin 1s linear infinite', flexShrink: 0 }}>
+                        <path d="M14 8a6 6 0 01-9.17 5.08"/><path d="M2 8a6 6 0 019.17-5.08"/>
+                      </svg>
+                    ) : (
+                      <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" style={{ flexShrink: 0 }}>
+                        <ellipse cx="8" cy="4" rx="6" ry="2"/><path d="M2 4v4c0 1.1 2.686 2 6 2s6-.9 6-2V4"/><path d="M2 8v4c0 1.1 2.686 2 6 2s6-.9 6-2V8"/>
+                      </svg>
+                    )}
+                    {cacheStatus === 'live' ? 'Live query' : cacheStatus === 'caching' ? 'Caching…' : 'Cached'}
+                  </button>
                   <button
                     onClick={() => setShareOpen(true)}
                     style={{ height: 30, padding: '0 12px', gap: 6, border: `1px solid ${c['border-default']}`, borderRadius: 7, backgroundColor: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, color: c['content-primary'], boxSizing: 'border-box' }}
@@ -433,6 +534,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
                 })}
                 <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: sp.B }}>
                   <div style={{ width: 1, height: 16, backgroundColor: c['border-divider'], flexShrink: 0 }} />
+                  {/* Settings */}
                   <button
                     title="Model settings"
                     style={{ width: 28, height: 28, padding: 0, border: 'none', borderRadius: 6, backgroundColor: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: c['content-secondary'], flexShrink: 0 }}
@@ -444,34 +546,122 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
                       <path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41"/>
                     </svg>
                   </button>
-                  <button
-                    onClick={() => setCacheModalOpen(true)}
-                    style={{ height: 28, padding: '0 10px', gap: 5, border: `1px solid ${c['border-default']}`, borderRadius: 6, backgroundColor: cacheStatus === 'cached' ? c['background-subtle'] : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, color: c['content-secondary'], boxSizing: 'border-box', flexShrink: 0 }}
-                    onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
-                    onMouseLeave={e => { e.currentTarget.style.backgroundColor = cacheStatus === 'cached' ? c['background-subtle'] : 'transparent'; }}
-                  >
-                    {cacheStatus === 'caching' ? (
-                      <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" style={{ animation: 'ds-cache-spin 1s linear infinite', flexShrink: 0 }}>
-                        <path d="M14 8a6 6 0 01-9.17 5.08"/><path d="M2 8a6 6 0 019.17-5.08"/>
+
+                  {/* DQ chip + dropdown */}
+                  {(() => {
+                    const resolved = !!(project.prepTransforms && project.prepTransforms.length > 0);
+                    const chipColor = resolved ? '#166534' : '#B91C1C';
+                    const chipBg    = resolved ? '#F0FDF4'  : '#FEF2F2';
+                    const chipBdr   = resolved ? '#BBF7D0'  : '#FECACA';
+                    const isOpen = activeHealthView === 'quality';
+                    return (
+                      <div ref={dqDropRef} style={{ position: 'relative', flexShrink: 0 }}>
+                        <button
+                          onClick={() => setActiveHealthView(v => v === 'quality' ? null : 'quality')}
+                          style={{ height: 28, padding: '0 9px', gap: 5, border: `1px solid ${chipBdr}`, borderRadius: 6, backgroundColor: isOpen ? chipBg : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, color: chipColor, boxSizing: 'border-box' as const }}
+                          onMouseEnter={e => { if (!isOpen) (e.currentTarget as HTMLElement).style.backgroundColor = chipBg; }}
+                          onMouseLeave={e => { if (!isOpen) (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'; }}
+                        >
+                          <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                            <path d="M8 2L14 14H2L8 2z"/><line x1="8" y1="7" x2="8" y2="10"/><circle cx="8" cy="12.5" r="0.5" fill="currentColor"/>
+                          </svg>
+                          {resolved ? '9 resolved' : '9 issues'}
+                          <svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" style={{ transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s', flexShrink: 0 }}><path d="M2 3.5l3 3 3-3"/></svg>
+                        </button>
+                        {isOpen && (
+                          <div style={{ position: 'absolute', top: 'calc(100% + 5px)', right: 0, width: 340, zIndex: 200, backgroundColor: c['background-base'], border: `1px solid ${c['border-divider']}`, borderRadius: 8, boxShadow: '0 4px 20px rgba(0,0,0,0.12)', overflow: 'hidden' }}>
+                            <div style={{ padding: `${sp.B}px ${sp.C}px`, borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', gap: sp.B }}>
+                              <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#DC2626', flexShrink: 0 }}/>
+                              <span style={{ fontSize: fs.xs, fontWeight: fw.semibold, color: c['content-primary'], flex: 1 }}>Data quality · 9 issues</span>
+                              <button style={{ height: 22, padding: '0 8px', border: 'none', borderRadius: 5, backgroundColor: '#2770EF', color: '#fff', fontSize: 11, fontWeight: fw.medium, fontFamily: ff.primary, cursor: 'pointer', flexShrink: 0 }}>Fix all with agent</button>
+                            </div>
+                            {MH_DQ_SECTIONS.map(section => (
+                              <div key={section.key}>
+                                <div style={{ padding: '3px 12px', fontSize: 10, fontWeight: fw.semibold, color: c['content-secondary'], backgroundColor: c['background-subtle'], textTransform: 'uppercase' as const, letterSpacing: '0.04em' }}>{section.label}</div>
+                                {section.items.map(item => {
+                                  const sm = MH_SEV[item.sev];
+                                  return (
+                                    <div key={item.col} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderBottom: `1px solid ${c['border-divider']}` }}>
+                                      <code style={{ fontSize: 11, fontFamily: ff.mono, color: c['content-primary'], flexShrink: 0, width: 130, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{item.col}</code>
+                                      <span style={{ flex: 1, fontSize: 11, color: c['content-secondary'], overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{item.detail}</span>
+                                      <span style={{ fontSize: 10, fontWeight: fw.medium, padding: '1px 4px', borderRadius: 3, backgroundColor: sm.bg, color: sm.text, flexShrink: 0 }}>{sm.label}</span>
+                                      <button style={{ fontSize: 11, color: '#2563EB', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: ff.primary, flexShrink: 0 }}>Fix →</button>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+
+                  {/* AIRS chip + dropdown */}
+                  <div ref={airsDropRef} style={{ position: 'relative', flexShrink: 0 }}>
+                    <button
+                      onClick={() => setActiveHealthView(v => v === 'readiness' ? null : 'readiness')}
+                      style={{ height: 28, padding: '0 8px', gap: 5, border: `1px solid ${mhTm.border}`, borderRadius: 6, backgroundColor: activeHealthView === 'readiness' ? mhTm.bg : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, color: mhTm.text, boxSizing: 'border-box' as const }}
+                      onMouseEnter={e => { if (activeHealthView !== 'readiness') (e.currentTarget as HTMLElement).style.backgroundColor = mhTm.bg; }}
+                      onMouseLeave={e => { if (activeHealthView !== 'readiness') (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'; }}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 16 16" style={{ flexShrink: 0 }}>
+                        <circle cx="8" cy="8" r={mhR} fill="none" stroke={mhTm.border} strokeWidth="2"/>
+                        <circle cx="8" cy="8" r={mhR} fill="none" stroke={mhTm.dot} strokeWidth="2" strokeDasharray={`${mhFilled} ${mhGap}`} strokeLinecap="round" transform="rotate(-90 8 8)"/>
                       </svg>
-                    ) : (
-                      <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-                        <ellipse cx="8" cy="4" rx="6" ry="2"/><path d="M2 4v4c0 1.1 2.686 2 6 2s6-.9 6-2V4"/><path d="M2 8v4c0 1.1 2.686 2 6 2s6-.9 6-2V8"/>
-                      </svg>
+                      <span style={{ fontSize: 11, fontWeight: fw.semibold }}>{MH_AIRS_SCORE}%</span>
+                      <span style={{ fontSize: 11 }}>AI ready</span>
+                      <svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" style={{ transform: activeHealthView === 'readiness' ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s', flexShrink: 0 }}><path d="M2 3.5l3 3 3-3"/></svg>
+                    </button>
+                    {activeHealthView === 'readiness' && (
+                      <div style={{ position: 'absolute', top: 'calc(100% + 5px)', right: 0, width: 340, zIndex: 200, backgroundColor: c['background-base'], border: `1px solid ${c['border-divider']}`, borderRadius: 8, boxShadow: '0 4px 20px rgba(0,0,0,0.12)', overflow: 'hidden' }}>
+                        {/* Header with gauge */}
+                        <div style={{ padding: `${sp.C}px`, borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', gap: sp.C }}>
+                          <svg width="36" height="36" viewBox="0 0 36 36" style={{ flexShrink: 0 }}>
+                            <circle cx="18" cy="18" r="14" fill="none" stroke={mhTm.border} strokeWidth="3.5"/>
+                            <circle cx="18" cy="18" r="14" fill="none" stroke={mhTm.dot} strokeWidth="3.5"
+                              strokeDasharray={`${2 * Math.PI * 14 * (MH_AIRS_SCORE / 100)} ${2 * Math.PI * 14}`}
+                              strokeLinecap="round" transform="rotate(-90 18 18)"/>
+                            <text x="18" y="22" textAnchor="middle" fontSize="10" fontWeight="700" fill={mhTm.text} fontFamily="sans-serif">{MH_AIRS_SCORE}</text>
+                          </svg>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: fs.xs, fontWeight: fw.semibold, color: c['content-primary'] }}>AI readiness · {MH_AIRS_SCORE} / 100</div>
+                            <div style={{ fontSize: 11, color: c['content-secondary'], marginTop: 2 }}>Spotter answers improve as this score increases</div>
+                          </div>
+                          <button style={{ height: 22, padding: '0 8px', border: 'none', borderRadius: 5, backgroundColor: '#2770EF', color: '#fff', fontSize: 11, fontWeight: fw.medium, fontFamily: ff.primary, cursor: 'pointer', flexShrink: 0 }}>Fix all</button>
+                        </div>
+                        {/* Score breakdown bars */}
+                        <div style={{ padding: '6px 12px 8px', borderBottom: `1px solid ${c['border-divider']}` }}>
+                          <div style={{ fontSize: 10, color: c['content-tertiary'], marginBottom: 4 }}>Score breakdown</div>
+                          <div style={{ display: 'flex', gap: 3 }}>
+                            {MH_AIRS_BARS.map((b, i) => (
+                              <div key={i} title={b.label} style={{ flex: 1 }}>
+                                <div style={{ height: 5, borderRadius: 3, background: '#F3F4F6', overflow: 'hidden' }}>
+                                  <div style={{ height: '100%', width: `${b.pct}%`, background: b.color, borderRadius: 3 }}/>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        {/* Action items */}
+                        {MH_AIRS_ITEMS.map(item => {
+                          const isDone = item.action === null;
+                          return (
+                            <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderBottom: `1px solid ${c['border-divider']}` }}>
+                              <div style={{ width: 14, height: 14, borderRadius: '50%', border: `1.5px solid ${isDone ? '#059669' : c['border-default']}`, background: isDone ? '#059669' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                {isDone && <svg width="7" height="7" viewBox="0 0 8 8" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="1,4 3,6 7,2"/></svg>}
+                              </div>
+                              <span style={{ flex: 1, fontSize: 11, color: isDone ? c['content-secondary'] : c['content-primary'], overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const, textDecoration: isDone ? 'line-through' : 'none' }}>{item.title}</span>
+                              <span style={{ fontSize: 10, fontFamily: ff.mono, color: isDone ? '#059669' : '#DC2626', flexShrink: 0 }}>{item.earned}/{item.pts}pts</span>
+                              {!isDone && <button style={{ fontSize: 11, color: '#2563EB', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: ff.primary, flexShrink: 0, whiteSpace: 'nowrap' as const }}>{item.action} →</button>}
+                            </div>
+                          );
+                        })}
+                      </div>
                     )}
-                    {cacheStatus === 'live' ? 'Live' : cacheStatus === 'caching' ? 'Caching…' : 'Cached'}
-                  </button>
-                  <button
-                    onClick={() => setQualityPlanOpen(true)}
-                    style={{ height: 28, padding: '0 10px', gap: 5, border: `1px solid ${(project.prepTransforms && project.prepTransforms.length > 0) ? '#BBF7D0' : '#FECACA'}`, borderRadius: 6, backgroundColor: (project.prepTransforms && project.prepTransforms.length > 0) ? '#F0FDF4' : '#FEF2F2', cursor: 'pointer', display: 'flex', alignItems: 'center', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, color: (project.prepTransforms && project.prepTransforms.length > 0) ? '#166534' : '#B91C1C', boxSizing: 'border-box', flexShrink: 0 }}
-                    onMouseEnter={e => (e.currentTarget.style.opacity = '0.85')}
-                    onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
-                  >
-                    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M8 2L14 14H2L8 2z"/><line x1="8" y1="7" x2="8" y2="10"/><circle cx="8" cy="12.5" r="0.5" fill="currentColor"/>
-                    </svg>
-                    {(project.prepTransforms && project.prepTransforms.length > 0) ? '9 resolved' : '9 issues'}
-                  </button>
+                  </div>
+
+                  {/* Data panel */}
                   <button
                     title="Data panel"
                     onClick={() => setLeftPanelOpen(o => !o)}
