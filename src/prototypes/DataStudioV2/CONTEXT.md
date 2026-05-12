@@ -39,15 +39,22 @@ The product moved away from a side-panel co-pilot toward a full-screen agent-fir
 
 ## Next up
 
-### 1. Review AI Readiness Score explorations
+### 1. Review mh1 vs mh2 and decide on model health direction
 
-Review the 4 Playground explorations at `/data-studio-v2/playground` under **"AI Readiness Score"**:
-- `airs1` — Score chip in identity row (3 variants + compact popover)
-- `airs2` — Breakdown panel (Lighthouse-style vs Checklist-style)
-- `airs3` — Publish-time readiness gate ("Improve first" flow)
-- `airs4` — Models list with two signals (3 layout approaches)
+Review the two new explorations at `/data-studio-v2/playground` under **"Combined model status"**:
+- `mh1` — Separate signals: two chips (data quality + AI readiness), each opening its own canvas view
+- `mh2` — Model Health umbrella: one chip, unified canvas view with two-level collapsible sections
 
-Decide: which chip variant, which panel style, whether the publish gate is the right entry point. Research doc at `research/ai-readiness-score.md`.
+Decide: separate or umbrella? This drives the live artifact implementation.
+
+Both use the hybrid visual pattern: compact status header (Lighthouse-inspired) + collapsible checklist sections (Checklist-inspired). Each item has a "Fix →" action; top-level CTA is "Fix all with agent."
+
+**Design decisions landed this session (do not re-research):**
+- AIRS chip clicks open a canvas view within the artifact (identity row + tab bar stay, content area replaced). Not a side panel, not a new artifact — functionally a virtual tab triggered from the right side of the tab bar.
+- Data quality and AI readiness are distinct signals (different owners, different fix actions). Model Health is the umbrella concept in the models list.
+- Three separate health dimensions: data quality (issue count), AI readiness (metadata completeness score), answer quality / test results (empirical — not scored separately for now, folded into test mode feedback).
+- 100% AI readiness ≠ guaranteed correct answers. Data quality issues still affect output. Test mode is the empirical check.
+- Score degrades over time: new columns from dbt sync arrive without descriptions → AIRS drops; test failures accumulate; business logic changes may not be reflected in descriptions.
 
 ### 2. Team review + iterate on feedback
 
@@ -430,6 +437,19 @@ Original 6-situation arc (still valid for demo scripting) → `SCRIPT.md`
 ## Session log
 
 _Last 3 sessions. Full history → [SESSION_LOG.md](./SESSION_LOG.md)_
+
+---
+
+### 2026-05-12 (session 96)
+
+**Model health design exploration — mh1 + mh2 Playground explorations.**
+
+- **Design decisions:** AIRS chip opens a canvas view within the artifact (not a panel, not a new artifact — identity row + tab bar stay visible). Three signals: data quality (issue count), AI readiness (metadata score), answer quality (empirical / test mode only). 100% AIRS score does not guarantee correct answers — data quality and LLM limits are independent variables. Score degrades over time via schema drift and test failures.
+- **Conceptual framing:** data quality + AI readiness are separate signals (different owners, different fix actions). Model Health is the umbrella name for the models list column. Whether they appear as one chip or two chips in the artifact tab bar is what the explorations test.
+- **mh1 (Separate signals):** two chips in the tab bar right side — "9 issues" (data quality, red/green) + "53 Basic" (AI readiness, amber/blue ring). Each chip opens its own canvas view. Canvas view: compact summary bar (status + description + "Fix all with agent") + collapsible checklist sections. Individual "Fix →" per item. Items check off on fix.
+- **mh2 (Model Health umbrella):** single "Model health" chip with two colored dots (one for DQ, one for AIRS). Opens a unified canvas view with a summary bar showing both mini-signal pills + a two-level section hierarchy: Data quality → 4 subsections, AI readiness → 4 dimensions. Same fix interactions.
+- Both explorations include a full artifact skeleton (identity row, tab bar, table content stub) so placement is visible in context.
+- Build: clean ✓
 
 ---
 
