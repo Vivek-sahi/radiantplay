@@ -375,18 +375,16 @@ const Overview: React.FC<OverviewProps> = ({
 }) => {
   const promptBarRef = useRef<PromptBarRef>(null);
   const [connFilter, setConnFilter] = useState<string | null>(null);
-  const [pulseTab, setPulseTab] = useState<'debugging' | 'optimization'>('debugging');
   const [dismissedIds, setDismissedIds] = useState<string[]>([]);
 
   const dismissInsight = (id: string) => setDismissedIds(prev => [...prev, id]);
 
-  const sortedInsights = [...ACTIVE_INSIGHTS]
-    .filter(i => !resolvedInsightIds.includes(i.id) && !dismissedIds.includes(i.id))
-    .sort((a, b) => a.priority - b.priority);
+  const activeInsights = [...ACTIVE_INSIGHTS]
+    .filter(i => !resolvedInsightIds.includes(i.id) && !dismissedIds.includes(i.id));
 
-  const debuggingInsights    = sortedInsights.filter(i => i.category === 'debugging');
-  const optimizationInsights = sortedInsights.filter(i => i.category === 'optimization');
-  const visiblePulseInsights = pulseTab === 'debugging' ? debuggingInsights : optimizationInsights;
+  const debuggingInsights    = activeInsights.filter(i => i.category === 'debugging').sort((a, b) => a.priority - b.priority);
+  const optimizationInsights = activeInsights.filter(i => i.category === 'optimization').sort((a, b) => a.priority - b.priority);
+  const visiblePulseInsights = [...debuggingInsights, ...optimizationInsights];
 
   const getProjectForInsight = (insight: ActiveInsight) =>
     OVERVIEW_PROJECTS.find(p => p.id === insight.modelId) ?? null;
@@ -474,47 +472,18 @@ const Overview: React.FC<OverviewProps> = ({
           <PulsePanel
             bodyHeight={441}
             tabBar={
-              <div style={{ display: 'flex', alignItems: 'stretch', borderBottom: '1px solid rgba(0,0,0,0.05)', height: 48 }}>
-                <div style={{ display: 'flex', alignItems: 'center', padding: '0 4px 0 20px', flexShrink: 0 }}>
-                  <span style={{ fontSize: 13, fontWeight: fw.semibold, color: c['content-primary'], letterSpacing: '-0.1px' }}>Pulse</span>
-                </div>
-                <div style={{ width: 1, alignSelf: 'center', height: 14, backgroundColor: 'rgba(0,0,0,0.08)', flexShrink: 0, margin: '0 4px' }} />
-                <Tabs
-                  activeTab={pulseTab}
-                  onTabChange={id => setPulseTab(id as typeof pulseTab)}
-                  tabs={[
-                    {
-                      id: 'debugging',
-                      label: 'Needs attention',
-                      icon: (
-                        <span style={{
-                          fontSize: 11, fontWeight: fw.semibold,
-                          lineHeight: '16px', padding: '0 5px', borderRadius: 20,
-                          color: pulseTab === 'debugging' ? c['content-brand'] : '#9ca3af',
-                          backgroundColor: pulseTab === 'debugging' ? 'rgba(39,112,239,0.1)' : 'rgba(0,0,0,0.05)',
-                          minWidth: 18, textAlign: 'center' as const,
-                        }}>
-                          {debuggingInsights.length}
-                        </span>
-                      ),
-                    },
-                    {
-                      id: 'optimization',
-                      label: 'Opportunities',
-                      icon: (
-                        <span style={{
-                          fontSize: 11, fontWeight: fw.semibold,
-                          lineHeight: '16px', padding: '0 5px', borderRadius: 20,
-                          color: pulseTab === 'optimization' ? c['content-brand'] : '#9ca3af',
-                          backgroundColor: pulseTab === 'optimization' ? 'rgba(39,112,239,0.1)' : 'rgba(0,0,0,0.05)',
-                          minWidth: 18, textAlign: 'center' as const,
-                        }}>
-                          {optimizationInsights.length}
-                        </span>
-                      ),
-                    },
-                  ]}
-                />
+              <div style={{ display: 'flex', alignItems: 'center', padding: '0 20px', height: 48, borderBottom: '1px solid rgba(0,0,0,0.05)', gap: 8 }}>
+                <span style={{ fontSize: 13, fontWeight: fw.semibold, color: c['content-primary'], letterSpacing: '-0.1px' }}>Pulse</span>
+                {visiblePulseInsights.length > 0 && (
+                  <span style={{
+                    fontSize: 11, fontWeight: fw.semibold,
+                    lineHeight: '16px', padding: '0 5px', borderRadius: 20,
+                    color: '#9ca3af', backgroundColor: 'rgba(0,0,0,0.05)',
+                    minWidth: 18, textAlign: 'center' as const,
+                  }}>
+                    {visiblePulseInsights.length}
+                  </span>
+                )}
               </div>
             }
           >
@@ -530,7 +499,7 @@ const Overview: React.FC<OverviewProps> = ({
                 ))
               : (
                 <div style={{ padding: `${sp.H}px ${sp.D}px`, textAlign: 'center' as const, color: c['content-secondary'], fontSize: fs.sm }}>
-                  {pulseTab === 'debugging' ? 'All clear — no active issues' : 'No optimization opportunities right now'}
+                  All clear — no active issues
                 </div>
               )
             }
