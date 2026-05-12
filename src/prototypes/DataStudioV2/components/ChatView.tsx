@@ -6,6 +6,7 @@ import AgentPanel from './AgentPanel';
 import PlanPanel from './PlanPanel';
 import QualityPlanPanel from './QualityPlanPanel';
 import ChatContextPanel, { CreatedItem } from './ChatContextPanel';
+import InstructionsPanel from './InstructionsPanel';
 
 interface ChatViewProps {
   project: ProjectState;
@@ -15,6 +16,8 @@ interface ChatViewProps {
   initialPrompt: string;
   isDayZero?: boolean;
   isDbtReview?: boolean;
+  instructionsCreated: boolean;
+  onBuildStart: () => void;
   onBack: () => void;
   onNavigateToTable?: (tableName: string) => void;
 }
@@ -24,15 +27,16 @@ const CHAT_PANEL_PCT = 0.4;
 
 const ChatView: React.FC<ChatViewProps> = ({
   project, setProject, messages, setMessages,
-  initialPrompt, isDayZero, isDbtReview, onBack, onNavigateToTable,
+  initialPrompt, isDayZero, isDbtReview, instructionsCreated, onBuildStart, onBack, onNavigateToTable,
 }) => {
   const [activePlan, setActivePlan] = useState<PlanData | null>(null);
   const [qualityPlanOpen, setQualityPlanOpen] = useState(false);
+  const [instructionsPanelOpen, setInstructionsPanelOpen] = useState(false);
   const [contextPanelOpen, setContextPanelOpen] = useState(true);
   const [mounted, setMounted] = useState(false);
   const [contextVisible, setContextVisible] = useState(false);
 
-  const isPlanOpen = activePlan !== null || qualityPlanOpen;
+  const isPlanOpen = activePlan !== null || qualityPlanOpen || instructionsPanelOpen;
 
   // Staggered entrance: main content fades in immediately, context panel follows after a delay
   useEffect(() => {
@@ -49,11 +53,16 @@ const ChatView: React.FC<ChatViewProps> = ({
   const planMsg = useMemo(() => messages.find(m => m.planData != null), [messages]);
 
   const created = useMemo((): CreatedItem[] => [
+    ...(instructionsCreated ? [{
+      type: 'instructions' as const,
+      name: 'instructions.md',
+      onClick: () => { setInstructionsPanelOpen(true); setActivePlan(null); setQualityPlanOpen(false); },
+    }] : []),
     ...(project.buildStep !== 'empty' ? [{
       type: 'model' as const,
       name: project.name,
     }] : []),
-  ], [project.buildStep, project.name]);
+  ], [instructionsCreated, project.buildStep, project.name]);
 
   const contextTables = useMemo(() => planMsg?.planData?.tables.map(t => t.name) ?? [], [planMsg]);
   const contextSkills = useMemo(() => project.buildStep !== 'empty' ? ['create-data-model'] : [], [project.buildStep]);
@@ -128,6 +137,7 @@ const ChatView: React.FC<ChatViewProps> = ({
               width={isPlanOpen ? Math.max(340, Math.round(window.innerWidth * CHAT_PANEL_PCT)) : CHAT_WIDTH}
               onOpenPlan={plan => setActivePlan(plan)}
               onOpenQualityPlan={() => setQualityPlanOpen(true)}
+              onBuildStart={onBuildStart}
             />
           </div>
         </div>
@@ -149,6 +159,16 @@ const ChatView: React.FC<ChatViewProps> = ({
               onClose={() => { setQualityPlanOpen(false); setContextPanelOpen(true); }}
               onApplyFixes={() => {}}
               onEditPlan={() => {}}
+            />
+          </div>
+        )}
+
+        {/* Instructions panel */}
+        {isPlanOpen && instructionsPanelOpen && (
+          <div style={{ flex: 1, padding: '8px 8px 8px 0', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+            <InstructionsPanel
+              modelName={project.name || 'Marketing Campaign Attribution'}
+              onClose={() => { setInstructionsPanelOpen(false); setContextPanelOpen(true); }}
             />
           </div>
         )}

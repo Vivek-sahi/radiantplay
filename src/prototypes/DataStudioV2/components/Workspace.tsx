@@ -50,29 +50,19 @@ const MH_TIER_META: Record<MhTier, { bg: string; text: string; border: string; d
 const MH_AIRS_SCORE = 25;
 const MH_AIRS_TIER: MhTier = 'Poor';
 
-interface MhAirsItem { id: string; title: string; pts: number; earned: number; action: string | null; }
-const MH_AIRS_ITEMS: MhAirsItem[] = [
-  { id: 'd', title: 'Add column descriptions',   pts: 25, earned: 0,  action: 'Generate' },
-  { id: 's', title: 'Add synonyms for key columns', pts: 20, earned: 0, action: 'Generate' },
-  { id: 'c', title: 'Define AI context instructions', pts: 15, earned: 0, action: 'Add'  },
-  { id: 'q', title: 'Add sample questions',      pts: 15, earned: 0,  action: 'Generate' },
-  { id: 'j', title: 'Verify join relationships', pts: 15, earned: 15, action: null       },
-  { id: 't', title: 'Validate data types',       pts: 10, earned: 10, action: null       },
-];
-
 interface MhDqItem { col: string; detail: string; sev: 'high' | 'med'; }
 interface MhDqSection { key: string; label: string; items: MhDqItem[]; }
 const MH_DQ_SECTIONS: MhDqSection[] = [
   { key: 'nulls', label: 'Null values', items: [
-    { col: 'roas_actual',         detail: '847 of 10,420 rows',       sev: 'high' },
-    { col: 'campaign_start_date', detail: '1,203 null dates in Q3',   sev: 'med'  },
+    { col: 'roas_actual',         detail: '847 of 10,420 rows',         sev: 'high' },
+    { col: 'campaign_start_date', detail: '1,203 null dates in Q3',     sev: 'med'  },
     { col: 'user_segment',        detail: '312 nulls, likely new users', sev: 'med' },
-    { col: 'conversion_value',    detail: '2,140 nulls last 7 days',  sev: 'high' },
+    { col: 'conversion_value',    detail: '2,140 nulls last 7 days',    sev: 'high' },
   ]},
   { key: 'dupes', label: 'Duplicate rows', items: [
-    { col: 'ad_impressions', detail: '340 exact duplicates',    sev: 'high' },
-    { col: 'campaign_spend', detail: '12 near-dupes ±$0.01',   sev: 'med'  },
-    { col: 'attribution_log', detail: '8 duplicate events',    sev: 'med'  },
+    { col: 'ad_impressions',  detail: '340 exact duplicates',  sev: 'high' },
+    { col: 'campaign_spend',  detail: '12 near-dupes ±$0.01', sev: 'med'  },
+    { col: 'attribution_log', detail: '8 duplicate events',   sev: 'med'  },
   ]},
   { key: 'dates', label: 'Date format mismatches', items: [
     { col: 'conversion_date', detail: 'Mixed ISO 8601 and MM/DD/YYYY', sev: 'high' },
@@ -83,11 +73,24 @@ const MH_SEV: Record<'high' | 'med', { bg: string; text: string; label: string }
   high: { bg: '#FEF2F2', text: '#DC2626', label: 'High' },
   med:  { bg: '#FFFBEB', text: '#D97706', label: 'Med'  },
 };
-const MH_AIRS_BARS = [
-  { pct: 0,   color: '#DC2626', label: 'Descriptions' },
-  { pct: 0,   color: '#E5E7EB', label: 'Context'      },
-  { pct: 100, color: '#059669', label: 'Joins'        },
-  { pct: 100, color: '#10B981', label: 'Data types'   },
+
+interface MhAirsDimItem { label: string; pts: number; done: number; action: string | null; }
+interface MhAirsDim { id: string; label: string; score: number; items: MhAirsDimItem[]; }
+const MH_AIRS_DIMS: MhAirsDim[] = [
+  { id: 'semantic', label: 'Semantic completeness', score: 40, items: [
+    { label: 'Add column descriptions',      pts: 25, done: 0,  action: 'Generate' },
+    { label: 'Add synonyms for key columns', pts: 20, done: 0,  action: 'Generate' },
+  ]},
+  { id: 'context', label: 'Context & instructions', score: 20, items: [
+    { label: 'Define AI context instructions', pts: 15, done: 0, action: 'Add'      },
+    { label: 'Add sample questions',           pts: 15, done: 0, action: 'Generate' },
+  ]},
+  { id: 'joins', label: 'Join accuracy', score: 80, items: [
+    { label: 'Verify join relationships', pts: 15, done: 15, action: null },
+  ]},
+  { id: 'types', label: 'Data type validity', score: 90, items: [
+    { label: 'Validate data types', pts: 10, done: 10, action: null },
+  ]},
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -104,6 +107,8 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
   const [cacheStatus, setCacheStatus] = useState<'live' | 'caching' | 'cached'>('live');
   const [qualityPlanOpen, setQualityPlanOpen] = useState(false);
   const [activeHealthView, setActiveHealthView] = useState<null | 'quality' | 'readiness'>(null);
+  const [dqSectionOpen, setDqSectionOpen] = useState<Record<string, boolean>>({});
+  const [airsSectionOpen, setAirsSectionOpen] = useState<Record<string, boolean>>({});
   const dqDropRef   = useRef<HTMLDivElement>(null);
   const airsDropRef = useRef<HTMLDivElement>(null);
   const mhTm = MH_TIER_META[MH_AIRS_TIER];
@@ -551,6 +556,9 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
                     const dqTier: MhTier = resolved ? 'Good' : 'Poor';
                     const dqTm = MH_TIER_META[dqTier];
                     const isOpen = activeHealthView === 'quality';
+                    const totalIssues = MH_DQ_SECTIONS.reduce((n, s) => n + s.items.length, 0);
+                    const dqPct = resolved ? 100 : 0;
+                    const r = 14, circ = 2 * Math.PI * r;
                     return (
                       <div ref={dqDropRef} style={{ position: 'relative', flexShrink: 0 }}>
                         <button
@@ -561,28 +569,60 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
                           <svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" style={{ transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s', flexShrink: 0 }}><path d="M2 3.5l3 3 3-3"/></svg>
                         </button>
                         {isOpen && (
-                          <div style={{ position: 'absolute', top: 'calc(100% + 5px)', right: 0, width: 340, zIndex: 200, backgroundColor: c['background-base'], border: `1px solid ${c['border-divider']}`, borderRadius: 8, boxShadow: '0 4px 20px rgba(0,0,0,0.12)', overflow: 'hidden' }}>
-                            <div style={{ padding: `${sp.B}px ${sp.C}px`, borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', gap: sp.B }}>
-                              <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#DC2626', flexShrink: 0 }}/>
-                              <span style={{ fontSize: fs.xs, fontWeight: fw.semibold, color: c['content-primary'], flex: 1 }}>Data quality · 9 issues</span>
-                              <button style={{ height: 22, padding: '0 8px', border: 'none', borderRadius: 5, backgroundColor: '#2770EF', color: '#fff', fontSize: 11, fontWeight: fw.medium, fontFamily: ff.primary, cursor: 'pointer', flexShrink: 0 }}>Fix all with agent</button>
-                            </div>
-                            {MH_DQ_SECTIONS.map(section => (
-                              <div key={section.key}>
-                                <div style={{ padding: '3px 12px', fontSize: 10, fontWeight: fw.semibold, color: c['content-secondary'], backgroundColor: c['background-subtle'], textTransform: 'uppercase' as const, letterSpacing: '0.04em' }}>{section.label}</div>
-                                {section.items.map(item => {
-                                  const sm = MH_SEV[item.sev];
-                                  return (
-                                    <div key={item.col} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderBottom: `1px solid ${c['border-divider']}` }}>
-                                      <code style={{ fontSize: 11, fontFamily: ff.mono, color: c['content-primary'], flexShrink: 0, width: 130, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{item.col}</code>
-                                      <span style={{ flex: 1, fontSize: 11, color: c['content-secondary'], overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{item.detail}</span>
-                                      <span style={{ fontSize: 10, fontWeight: fw.medium, padding: '1px 4px', borderRadius: 3, backgroundColor: sm.bg, color: sm.text, flexShrink: 0 }}>{sm.label}</span>
-                                      <button style={{ fontSize: 11, color: '#2563EB', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: ff.primary, flexShrink: 0 }}>Fix →</button>
-                                    </div>
-                                  );
-                                })}
+                          <div style={{ position: 'absolute', top: 'calc(100% + 5px)', right: 0, width: 340, maxHeight: '70vh', overflowY: 'auto', zIndex: 200, backgroundColor: c['background-base'], border: `1px solid ${c['border-divider']}`, borderRadius: 8, boxShadow: '0 4px 20px rgba(0,0,0,0.12)', display: 'flex', flexDirection: 'column' }}>
+                            {/* Header */}
+                            <div style={{ padding: sp.C, borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', gap: sp.C, flexShrink: 0 }}>
+                              <div style={{ width: 36, height: 36, position: 'relative', flexShrink: 0 }}>
+                                <svg width="36" height="36" viewBox="0 0 36 36" style={{ position: 'absolute', inset: 0 }}>
+                                  <circle cx="18" cy="18" r={r} fill="none" stroke={dqTm.border} strokeWidth="3.5"/>
+                                  <circle cx="18" cy="18" r={r} fill="none" stroke={dqTm.dot} strokeWidth="3.5"
+                                    strokeDasharray={`${circ * dqPct / 100} ${circ * (1 - dqPct / 100)}`}
+                                    strokeLinecap="round" transform="rotate(-90 18 18)"/>
+                                </svg>
+                                <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: fw.semibold, fontFamily: ff.primary, color: dqTm.text }}>{resolved ? '✓' : totalIssues}</div>
                               </div>
-                            ))}
+                              <div style={{ flex: 1 }}>
+                                <div style={{ fontSize: fs.xs, fontWeight: fw.semibold, fontFamily: ff.primary, color: c['content-primary'] }}>Data quality</div>
+                                <div style={{ fontSize: 11, fontFamily: ff.primary, color: c['content-secondary'], marginTop: 2 }}>{resolved ? `${totalIssues} issues resolved` : `${totalIssues} issues detected`}</div>
+                              </div>
+                            </div>
+                            {/* Collapsible sections */}
+                            {MH_DQ_SECTIONS.map(section => {
+                              const isSectionOpen = !!dqSectionOpen[section.key];
+                              const hasHigh = section.items.some(i => i.sev === 'high');
+                              const badgeColor = hasHigh ? '#DC2626' : '#D97706';
+                              const badgeBg   = hasHigh ? '#FEF2F2' : '#FFFBEB';
+                              const badgeBdr  = hasHigh ? '#FECACA' : '#FDE68A';
+                              return (
+                                <div key={section.key} style={{ borderBottom: `1px solid ${c['border-divider']}` }}>
+                                  <button
+                                    onClick={() => setDqSectionOpen(s => ({ ...s, [section.key]: !s[section.key] }))}
+                                    style={{ width: '100%', height: 36, display: 'flex', alignItems: 'center', padding: `0 ${sp.C}px`, gap: sp.B, border: 'none', background: 'transparent', cursor: 'pointer', boxSizing: 'border-box' as const }}
+                                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = c['background-subtle']; }}
+                                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+                                  >
+                                    <span style={{ flex: 1, fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, color: c['content-primary'], textAlign: 'left' as const }}>{section.label}</span>
+                                    <span style={{ fontSize: 11, fontWeight: fw.medium, fontFamily: ff.primary, padding: '1px 5px', borderRadius: 4, background: badgeBg, color: badgeColor, border: `1px solid ${badgeBdr}`, flexShrink: 0 }}>{section.items.length} issues</span>
+                                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke={c['content-tertiary']} strokeWidth="1.5" strokeLinecap="round" style={{ transform: isSectionOpen ? 'rotate(0)' : 'rotate(-90deg)', transition: 'transform 0.15s', flexShrink: 0 }}><path d="M2 4l4 4 4-4"/></svg>
+                                  </button>
+                                  {isSectionOpen && section.items.map(item => {
+                                    const sm = MH_SEV[item.sev];
+                                    return (
+                                      <div key={item.col} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderTop: `1px solid ${c['border-divider']}` }}>
+                                        <span style={{ fontSize: 11, fontFamily: ff.primary, color: c['content-primary'], minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const, flexShrink: 0, maxWidth: 110 }}>{item.col}</span>
+                                        <span style={{ flex: 1, fontSize: 11, fontFamily: ff.primary, color: c['content-secondary'], overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const, minWidth: 0 }}>{item.detail}</span>
+                                        <span style={{ fontSize: 11, fontWeight: fw.medium, fontFamily: ff.primary, padding: '1px 4px', borderRadius: 3, backgroundColor: sm.bg, color: sm.text, flexShrink: 0 }}>{sm.label}</span>
+                                        <button style={{ fontSize: 11, fontFamily: ff.primary, color: '#2563EB', background: 'none', border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0 }}>Fix →</button>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              );
+                            })}
+                            {/* Footer */}
+                            <div style={{ padding: sp.C, borderTop: `1px solid ${c['border-divider']}`, flexShrink: 0 }}>
+                              <button style={{ width: '100%', height: 30, border: 'none', borderRadius: 6, backgroundColor: '#2770EF', color: '#fff', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, cursor: 'pointer' }}>Fix all with agent</button>
+                            </div>
                           </div>
                         )}
                       </div>
@@ -599,49 +639,56 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
                       <svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" style={{ transform: activeHealthView === 'readiness' ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s', flexShrink: 0 }}><path d="M2 3.5l3 3 3-3"/></svg>
                     </button>
                     {activeHealthView === 'readiness' && (
-                      <div style={{ position: 'absolute', top: 'calc(100% + 5px)', right: 0, width: 340, zIndex: 200, backgroundColor: c['background-base'], border: `1px solid ${c['border-divider']}`, borderRadius: 8, boxShadow: '0 4px 20px rgba(0,0,0,0.12)', overflow: 'hidden' }}>
-                        {/* Header with gauge */}
-                        <div style={{ padding: `${sp.C}px`, borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', gap: sp.C }}>
-                          <svg width="36" height="36" viewBox="0 0 36 36" style={{ flexShrink: 0 }}>
-                            <circle cx="18" cy="18" r="14" fill="none" stroke={mhTm.border} strokeWidth="3.5"/>
-                            <circle cx="18" cy="18" r="14" fill="none" stroke={mhTm.dot} strokeWidth="3.5"
-                              strokeDasharray={`${2 * Math.PI * 14 * (MH_AIRS_SCORE / 100)} ${2 * Math.PI * 14}`}
-                              strokeLinecap="round" transform="rotate(-90 18 18)"/>
-                            <text x="18" y="22" textAnchor="middle" fontSize="10" fontWeight="700" fill={mhTm.text} fontFamily="sans-serif">{MH_AIRS_SCORE}</text>
-                          </svg>
+                      <div style={{ position: 'absolute', top: 'calc(100% + 5px)', right: 0, width: 340, maxHeight: '70vh', overflowY: 'auto', zIndex: 200, backgroundColor: c['background-base'], border: `1px solid ${c['border-divider']}`, borderRadius: 8, boxShadow: '0 4px 20px rgba(0,0,0,0.12)', display: 'flex', flexDirection: 'column' }}>
+                        {/* Header */}
+                        <div style={{ padding: sp.C, borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', gap: sp.C, flexShrink: 0 }}>
+                          <div style={{ width: 36, height: 36, position: 'relative', flexShrink: 0 }}>
+                            <svg width="36" height="36" viewBox="0 0 36 36" style={{ position: 'absolute', inset: 0 }}>
+                              <circle cx="18" cy="18" r="14" fill="none" stroke={mhTm.border} strokeWidth="3.5"/>
+                              <circle cx="18" cy="18" r="14" fill="none" stroke={mhTm.dot} strokeWidth="3.5"
+                                strokeDasharray={`${2 * Math.PI * 14 * (MH_AIRS_SCORE / 100)} ${2 * Math.PI * 14}`}
+                                strokeLinecap="round" transform="rotate(-90 18 18)"/>
+                            </svg>
+                            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: fw.semibold, fontFamily: ff.primary, color: mhTm.text }}>{MH_AIRS_SCORE}</div>
+                          </div>
                           <div style={{ flex: 1 }}>
-                            <div style={{ fontSize: fs.xs, fontWeight: fw.semibold, color: c['content-primary'] }}>AI readiness · {MH_AIRS_SCORE} / 100</div>
-                            <div style={{ fontSize: 11, color: c['content-secondary'], marginTop: 2 }}>Spotter answers improve as this score increases</div>
-                          </div>
-                          <button style={{ height: 22, padding: '0 8px', border: 'none', borderRadius: 5, backgroundColor: '#2770EF', color: '#fff', fontSize: 11, fontWeight: fw.medium, fontFamily: ff.primary, cursor: 'pointer', flexShrink: 0 }}>Fix all</button>
-                        </div>
-                        {/* Score breakdown bars */}
-                        <div style={{ padding: '6px 12px 8px', borderBottom: `1px solid ${c['border-divider']}` }}>
-                          <div style={{ fontSize: 10, color: c['content-tertiary'], marginBottom: 4 }}>Score breakdown</div>
-                          <div style={{ display: 'flex', gap: 3 }}>
-                            {MH_AIRS_BARS.map((b, i) => (
-                              <div key={i} title={b.label} style={{ flex: 1 }}>
-                                <div style={{ height: 5, borderRadius: 3, background: '#F3F4F6', overflow: 'hidden' }}>
-                                  <div style={{ height: '100%', width: `${b.pct}%`, background: b.color, borderRadius: 3 }}/>
-                                </div>
-                              </div>
-                            ))}
+                            <div style={{ fontSize: fs.xs, fontWeight: fw.semibold, fontFamily: ff.primary, color: c['content-primary'] }}>AI readiness</div>
+                            <div style={{ fontSize: 11, fontFamily: ff.primary, color: c['content-secondary'], marginTop: 2 }}>{MH_AIRS_SCORE} / 100 · Spotter improves as score rises</div>
                           </div>
                         </div>
-                        {/* Action items */}
-                        {MH_AIRS_ITEMS.map(item => {
-                          const isDone = item.action === null;
+                        {/* Collapsible dimensions */}
+                        {MH_AIRS_DIMS.map(dim => {
+                          const isOpen = !!airsSectionOpen[dim.id];
+                          const dimTier: MhTier = dim.score >= 75 ? 'Good' : dim.score >= 50 ? 'Fair' : 'Poor';
+                          const dtm = MH_TIER_META[dimTier];
                           return (
-                            <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderBottom: `1px solid ${c['border-divider']}` }}>
-                              <div style={{ width: 14, height: 14, borderRadius: '50%', border: `1.5px solid ${isDone ? '#059669' : c['border-default']}`, background: isDone ? '#059669' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                {isDone && <svg width="7" height="7" viewBox="0 0 8 8" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="1,4 3,6 7,2"/></svg>}
-                              </div>
-                              <span style={{ flex: 1, fontSize: 11, color: isDone ? c['content-secondary'] : c['content-primary'], overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const, textDecoration: isDone ? 'line-through' : 'none' }}>{item.title}</span>
-                              <span style={{ fontSize: 10, fontFamily: ff.mono, color: isDone ? '#059669' : '#DC2626', flexShrink: 0 }}>{item.earned}/{item.pts}pts</span>
-                              {!isDone && <button style={{ fontSize: 11, color: '#2563EB', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: ff.primary, flexShrink: 0, whiteSpace: 'nowrap' as const }}>{item.action} →</button>}
+                            <div key={dim.id} style={{ borderBottom: `1px solid ${c['border-divider']}` }}>
+                              <button
+                                onClick={() => setAirsSectionOpen(s => ({ ...s, [dim.id]: !s[dim.id] }))}
+                                style={{ width: '100%', height: 36, display: 'flex', alignItems: 'center', padding: `0 ${sp.C}px`, gap: sp.B, border: 'none', background: 'transparent', cursor: 'pointer', boxSizing: 'border-box' as const }}
+                                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = c['background-subtle']; }}
+                                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+                              >
+                                <span style={{ flex: 1, fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, color: c['content-primary'], textAlign: 'left' as const }}>{dim.label}</span>
+                                <span style={{ fontSize: 11, fontWeight: fw.medium, fontFamily: ff.primary, padding: '1px 5px', borderRadius: 4, background: dtm.bg, color: dtm.text, border: `1px solid ${dtm.border}`, flexShrink: 0 }}>{dim.score}%</span>
+                                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke={c['content-tertiary']} strokeWidth="1.5" strokeLinecap="round" style={{ transform: isOpen ? 'rotate(0)' : 'rotate(-90deg)', transition: 'transform 0.15s', flexShrink: 0 }}><path d="M2 4l4 4 4-4"/></svg>
+                              </button>
+                              {isOpen && dim.items.map(item => {
+                                const isDone = item.action === null;
+                                return (
+                                  <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderTop: `1px solid ${c['border-divider']}` }}>
+                                    <span style={{ flex: 1, fontSize: 11, fontFamily: ff.primary, color: isDone ? c['content-secondary'] : c['content-primary'], overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const, textDecoration: isDone ? 'line-through' : 'none' }}>{item.label}</span>
+                                    {!isDone && <button style={{ fontSize: 11, fontFamily: ff.primary, color: '#2563EB', background: 'none', border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0, whiteSpace: 'nowrap' as const }}>{item.action} →</button>}
+                                  </div>
+                                );
+                              })}
                             </div>
                           );
                         })}
+                        {/* Footer */}
+                        <div style={{ padding: sp.C, borderTop: `1px solid ${c['border-divider']}`, flexShrink: 0 }}>
+                          <button style={{ width: '100%', height: 30, border: 'none', borderRadius: 6, backgroundColor: '#2770EF', color: '#fff', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, cursor: 'pointer' }}>Fix all with agent</button>
+                        </div>
                       </div>
                     )}
                   </div>

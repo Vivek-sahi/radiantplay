@@ -4,7 +4,7 @@
 
 **Every session, do this first:**
 1. Read `src/prototypes/DataStudioV2/CONTEXT.md` — current build state, next up, session log.
-2. Check current git branch (`git branch`) — always work on `main`. If on another branch, ask before proceeding.
+2. Check current git branch (`git branch`) — always work on `prototype/data-studio`. If on another branch, ask before proceeding.
 3. At the end of the session, append a new entry to the Session log in CONTEXT.md.
 
 **Before closing any session:** run `npm run build` and confirm it passes.

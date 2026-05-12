@@ -3,7 +3,7 @@ import { c, fs, fw, sp, ff } from '../styles';
 import { Icon } from '../../../components/icons';
 
 export interface CreatedItem {
-  type: 'plan' | 'model' | 'quality-plan';
+  type: 'plan' | 'model' | 'quality-plan' | 'instructions';
   name: string;
   onClick?: () => void;
   actions?: { label: string; onClick: () => void }[];
