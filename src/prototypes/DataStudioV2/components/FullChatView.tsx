@@ -5,6 +5,7 @@ import ChatContextPanel from './ChatContextPanel';
 import { ProjectState } from '../index';
 import { AnswerTile, ChartType } from '../../_shared/tiles';
 import { LiveboardHeader } from '@components/LiveboardHeader';
+import { MODEL_DETAILS, OVERVIEW_PROJECTS } from '../data/mockData';
 
 // ── Flow context (for ChatContextPanel) ──────────────────────────────────────
 
@@ -276,6 +277,11 @@ const COL_TYPE_COLOR: Record<string, string> = {
   boolean: '#a16207',
 };
 
+// Map model display name → MODEL_DETAILS key (project ID)
+const NAME_TO_MODEL_ID: Record<string, string> = Object.fromEntries(
+  OVERVIEW_PROJECTS.map(p => [p.name, p.id])
+);
+
 // ── LiveboardObjectView ───────────────────────────────────────────────────────
 
 const LiveboardObjectView: React.FC<{ name: string; onClose: () => void }> = ({ name, onClose }) => {
@@ -363,13 +369,92 @@ const ObjectPanel: React.FC<{
   onClose: () => void;
 }> = ({ name, highlightCol, onClose }) => {
   const obj = OBJECT_DATA[name];
+  const highlightRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (highlightRef.current) {
+      highlightRef.current.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }
+  }, [name, highlightCol]);
 
   if (obj?.label === 'Liveboard') {
     return <LiveboardObjectView name={name} onClose={onClose} />;
   }
 
-  const cols = obj?.cols ?? [];
-  const brokenCount = cols.filter(col => col.broken).length;
+  // Pull rich column data from MODEL_DETAILS where available
+  const modelId = NAME_TO_MODEL_ID[name];
+  const details = MODEL_DETAILS[modelId ?? ''] ?? null;
+  const detailCols = details ? details.columns.filter(dc => !dc.hidden) : [];
+
+  type MergedCol = {
+    name: string;
+    typeLabel: string;
+    sourceTable: string;
+    description?: string;
+    broken?: boolean;
+    brokenLabel?: string;
+    nullRate?: number;
+  };
+
+  // Start with MODEL_DETAILS columns (enriched), then append any OBJECT_DATA
+  // columns not already in that list that carry a debug status (broken/null).
+  const detailNames = new Set(detailCols.map(dc => dc.name));
+  const baseFromDetails: MergedCol[] = detailCols.map(dc => {
+    const objCol = obj?.cols.find(oc => oc.name === dc.name);
+    return {
+      name: dc.name,
+      typeLabel: dc.table === 'computed' ? 'formula' : dc.type,
+      sourceTable: dc.table === 'computed' ? '' : dc.table,
+      description: dc.description,
+      broken: objCol?.broken,
+      brokenLabel: objCol?.brokenLabel,
+      nullRate: objCol?.nullRate,
+    };
+  });
+  const extraFromObj: MergedCol[] = (obj?.cols ?? [])
+    .filter(oc => !detailNames.has(oc.name))
+    .map(oc => ({
+      name: oc.name,
+      typeLabel: oc.colType,
+      sourceTable: '',
+      broken: oc.broken,
+      brokenLabel: oc.brokenLabel,
+      nullRate: oc.nullRate,
+    }));
+
+  // If no MODEL_DETAILS, use OBJECT_DATA directly (all columns, not just debug ones)
+  const mergedCols: MergedCol[] = detailCols.length > 0
+    ? [...baseFromDetails, ...extraFromObj]
+    : (obj?.cols ?? []).map(oc => ({
+        name: oc.name,
+        typeLabel: oc.colType,
+        sourceTable: '',
+        broken: oc.broken,
+        brokenLabel: oc.brokenLabel,
+        nullRate: oc.nullRate,
+      }));
+
+  const brokenCount = mergedCols.filter(col => col.broken).length;
+
+  // Source rows from MODEL_DETAILS
+  const sourceRows: { label: string; value: React.ReactNode }[] = [];
+  if (details?.source === 'dbt' && details.syncInfo) {
+    const si = details.syncInfo;
+    sourceRows.push(
+      { label: 'Type', value: si.connection },
+      { label: 'Project', value: si.project },
+      { label: 'Schedule', value: si.schedule },
+      { label: 'Last sync', value: si.lastSuccessfulSync },
+    );
+  } else if (details?.source === 'warehouse' && details.warehouseInfo) {
+    const wi = details.warehouseInfo;
+    const tableNames = details.tables.map(t => t.name).join(', ');
+    sourceRows.push(
+      { label: 'Type', value: wi.type },
+      { label: 'Database', value: wi.database },
+      ...(tableNames ? [{ label: 'Tables', value: <span style={{ fontFamily: 'monospace', fontSize: fs.xs }}>{tableNames}</span> }] : []),
+    );
+  }
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -426,87 +511,127 @@ const ObjectPanel: React.FC<{
         </button>
       </div>
 
-      {/* Column table */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '12px 20px 24px' }}>
-        <div style={{
-          display: 'grid', gridTemplateColumns: '1fr 72px 1fr',
-          padding: '0 8px 8px', borderBottom: '1px solid rgba(0,0,0,0.06)',
-          marginBottom: 4,
-        }}>
-          {['Column name', 'Type', 'Status'].map(h => (
-            <span key={h} style={{ fontSize: 11, fontWeight: fw.semibold, color: '#999', textTransform: 'uppercase' as const, letterSpacing: '0.04em' }}>{h}</span>
-          ))}
-        </div>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px 24px', display: 'flex', flexDirection: 'column', gap: 20 }}>
 
-        {cols.map(col => {
-          const isHighlighted = col.name === highlightCol || col.broken;
-          return (
-            <div
-              key={col.name}
-              style={{
-                display: 'grid', gridTemplateColumns: '1fr 72px 1fr',
-                padding: '9px 8px',
-                borderBottom: '1px solid rgba(0,0,0,0.04)',
-                background: isHighlighted ? (col.broken ? '#fff8f8' : col.nullRate ? '#fffbeb' : 'transparent') : 'transparent',
-                borderRadius: isHighlighted ? 5 : 0,
-                alignItems: 'center',
-              }}
-            >
-              <span style={{
-                fontFamily: ff.mono, fontSize: 12,
-                color: col.broken ? '#991b1b' : col.nullRate ? '#92400e' : '#1a1a1a',
-                fontWeight: isHighlighted ? fw.semibold : fw.regular,
-              }}>
-                {col.name}
-              </span>
-              <span style={{
-                fontSize: 11, color: COL_TYPE_COLOR[col.colType] ?? '#555',
-                background: 'rgba(0,0,0,0.04)', borderRadius: 4,
-                padding: '1px 5px', fontFamily: ff.mono,
-                alignSelf: 'center', display: 'inline-block', width: 'fit-content',
-              }}>
-                {col.colType}
-              </span>
-              <div>
-                {col.broken && (
-                  <span style={{
-                    fontSize: 11, fontWeight: fw.semibold,
-                    color: '#dc2626', background: '#fee2e2',
-                    border: '1px solid #fca5a5', borderRadius: 4, padding: '2px 6px',
-                    display: 'inline-flex', alignItems: 'center', gap: 4,
-                  }}>
-                    <svg width="9" height="9" viewBox="0 0 10 10" fill="none"><circle cx="5" cy="5" r="4" stroke="#dc2626" strokeWidth="1.4"/><line x1="3.2" y1="3.2" x2="6.8" y2="6.8" stroke="#dc2626" strokeWidth="1.4" strokeLinecap="round"/><line x1="6.8" y1="3.2" x2="3.2" y2="6.8" stroke="#dc2626" strokeWidth="1.4" strokeLinecap="round"/></svg>
-                    {col.brokenLabel ?? 'broken'}
-                  </span>
-                )}
-                {col.nullRate && (
-                  <span style={{
-                    fontSize: 11, fontWeight: fw.semibold,
-                    color: '#d97706', background: '#fef3c7',
-                    border: '1px solid #fde68a', borderRadius: 4, padding: '2px 6px',
-                    display: 'inline-flex', alignItems: 'center', gap: 4,
-                  }}>
-                    <svg width="9" height="9" viewBox="0 0 10 10" fill="none"><path d="M5 1v4" stroke="#d97706" strokeWidth="1.5" strokeLinecap="round"/><circle cx="5" cy="8" r="0.9" fill="#d97706"/></svg>
-                    {col.nullRate}% null
-                  </span>
-                )}
-                {!col.broken && !col.nullRate && (
-                  <span style={{ fontSize: 11, color: '#16a34a' }}>✓</span>
-                )}
-              </div>
+        {/* Source section */}
+        {sourceRows.length > 0 && (
+          <div>
+            <div style={{ fontSize: fs.xs, fontWeight: fw.semibold, color: c['content-secondary'], textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: 10 }}>
+              Source
             </div>
-          );
-        })}
+            <div style={{ border: `1px solid ${c['border-divider']}`, borderRadius: 8, overflow: 'hidden' }}>
+              {sourceRows.map(({ label, value }, i) => (
+                <div
+                  key={label}
+                  style={{
+                    display: 'grid', gridTemplateColumns: '120px 1fr',
+                    padding: '9px 14px',
+                    borderBottom: i < sourceRows.length - 1 ? `1px solid ${c['border-divider']}` : 'none',
+                    backgroundColor: c['background-base'],
+                  }}
+                >
+                  <span style={{ fontSize: fs.xs, color: c['content-secondary'] }}>{label}</span>
+                  <span style={{ fontSize: fs.xs, color: c['content-primary'] }}>{value}</span>
+                </div>
+              ))}
+              {obj?.blocked && (
+                <div style={{
+                  display: 'grid', gridTemplateColumns: '120px 1fr',
+                  padding: '9px 14px',
+                  borderTop: `1px solid ${c['border-divider']}`,
+                  backgroundColor: '#fffbeb',
+                }}>
+                  <span style={{ fontSize: fs.xs, color: '#92400e' }}>Status</span>
+                  <span style={{ fontSize: fs.xs, color: '#92400e', fontWeight: fw.medium }}>Sync blocked — API token expired</span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
-        {obj?.blocked && (
+        {/* Blocked note for models without SOURCE data */}
+        {obj?.blocked && sourceRows.length === 0 && (
           <div style={{
-            marginTop: 12, padding: '10px 12px', borderRadius: 7,
+            padding: '10px 12px', borderRadius: 7,
             background: '#fef3c7', border: '1px solid #fde68a',
-            fontSize: 12, color: '#78350f', lineHeight: 1.5,
+            fontSize: fs.xs, color: '#78350f', lineHeight: 1.5,
           }}>
             Sync blocked — dbt Cloud connection is offline. Rotate the API token to restore data flow.
           </div>
         )}
+
+        {/* Columns section */}
+        <div>
+          <div style={{ fontSize: fs.xs, fontWeight: fw.semibold, color: c['content-secondary'], textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: 10 }}>
+            Columns · {mergedCols.length}
+          </div>
+          <div style={{ border: `1px solid ${c['border-divider']}`, borderRadius: 8, overflow: 'hidden' }}>
+            {mergedCols.map((col, i) => {
+              const isHighlighted = col.name === highlightCol;
+              const accentColor = col.broken ? '#dc2626' : col.nullRate ? '#d97706' : c['content-brand'];
+              return (
+                <div
+                  key={col.name}
+                  ref={isHighlighted ? highlightRef : undefined}
+                  style={{
+                    padding: '10px 14px',
+                    borderBottom: i < mergedCols.length - 1 ? `1px solid ${c['border-divider']}` : 'none',
+                    backgroundColor: isHighlighted ? c['background-subtle'] : c['background-base'],
+                    borderLeft: isHighlighted ? `3px solid ${accentColor}` : '3px solid transparent',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+                      <span style={{
+                        fontFamily: ff.mono, fontSize: fs.sm, fontWeight: fw.medium,
+                        color: col.broken ? '#991b1b' : col.nullRate ? '#92400e' : c['content-primary'],
+                      }}>
+                        {col.name}
+                      </span>
+                      <span style={{
+                        fontSize: 10, fontWeight: fw.medium, color: c['content-secondary'],
+                        background: c['background-subtle'], borderRadius: 3, padding: '1px 5px', flexShrink: 0,
+                      }}>
+                        {col.typeLabel}
+                      </span>
+                    </div>
+                    <div style={{ flexShrink: 0 }}>
+                      {col.broken && (
+                        <span style={{ fontSize: 11, fontWeight: fw.semibold, color: '#dc2626', background: '#fee2e2', border: '1px solid #fca5a5', borderRadius: 4, padding: '2px 6px' }}>
+                          {col.brokenLabel ?? 'broken'}
+                        </span>
+                      )}
+                      {col.nullRate && (
+                        <span style={{ fontSize: 11, fontWeight: fw.semibold, color: '#d97706', background: '#fef3c7', border: '1px solid #fde68a', borderRadius: 4, padding: '2px 6px' }}>
+                          {col.nullRate}% null
+                        </span>
+                      )}
+                      {!col.broken && !col.nullRate && (
+                        <span style={{ fontSize: 11, color: '#16a34a' }}>✓</span>
+                      )}
+                    </div>
+                  </div>
+                  {(col.sourceTable || col.description) && (
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, marginTop: 3 }}>
+                      {col.sourceTable && (
+                        <span style={{ fontSize: fs.xs, color: c['content-tertiary'], fontFamily: 'monospace', flexShrink: 0 }}>
+                          {col.sourceTable}
+                        </span>
+                      )}
+                      {col.sourceTable && col.description && <span style={{ fontSize: fs.xs, color: c['content-tertiary'] }}>·</span>}
+                      {col.description && (
+                        <span style={{ fontSize: fs.xs, color: c['content-secondary'], lineHeight: '16px' }}>
+                          {col.description}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
       </div>
     </div>
   );
