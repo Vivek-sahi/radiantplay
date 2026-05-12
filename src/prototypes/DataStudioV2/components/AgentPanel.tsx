@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import ReactECharts from 'echarts-for-react';
 import { c, sp, ff, fs, fw } from '../styles';
+import { shadows } from '@/tokens/shadows';
 import { ProjectState, ProjectContext } from '../index';
 // agent.ts: skills registry (no API calls — all execution is scripted)
 import { tableMetadata, relationships, CACHE_STATS, CONNECTIONS } from '../data/mockData';
@@ -3096,17 +3097,19 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
         const currentQuestions = DEMO_QUESTION_POOL.slice(groupIndex * groupSize, groupIndex * groupSize + groupSize);
         return (
           <div style={{ padding: `0 ${sp.C}px`, flexShrink: 0 }}>
+            {/* Shadow wrapper lifts the expanded block off the background */}
+            <div style={sampleQOpen ? { borderRadius: 10, boxShadow: shadows.sm } : {}}>
             {/* Expanded question rows — above the header strip */}
             {sampleQOpen && (
               <div style={{ border: `1px solid ${c['border-divider']}`, borderBottom: 'none', borderRadius: '10px 10px 0 0', overflow: 'hidden' }}>
                 {currentQuestions.map((q, idx) => (
                   <div key={q}
                     onClick={() => { promptBarRef.current?.setValue(q); setSampleQOpen(false); }}
-                    style={{ display: 'flex', alignItems: 'center', gap: sp.C, padding: `${sp.C}px ${sp.D}px`, borderBottom: idx === currentQuestions.length - 1 ? 'none' : `1px solid ${c['border-divider']}`, backgroundColor: c['background-base'], cursor: 'pointer', transition: 'background-color 0.1s' }}
-                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = c['background-subtle']; }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = c['background-base']; }}
+                    style={{ display: 'flex', alignItems: 'center', gap: sp.C, padding: `${sp.C}px ${sp.D}px`, borderBottom: idx === currentQuestions.length - 1 ? 'none' : `1px solid ${c['border-divider']}`, backgroundColor: c['background-subtle'], cursor: 'pointer', transition: 'background-color 0.1s' }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = c['background-sunken']; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = c['background-subtle']; }}
                   >
-                    <div style={{ width: 26, height: 26, borderRadius: 7, flexShrink: 0, backgroundColor: c['background-subtle'], border: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: fw.medium, fontFamily: ff.mono, color: c['content-secondary'] }}>
+                    <div style={{ width: 26, height: 26, borderRadius: 7, flexShrink: 0, backgroundColor: c['background-base'], border: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: fw.medium, fontFamily: ff.mono, color: c['content-secondary'] }}>
                       {idx + 1}
                     </div>
                     <span style={{ flex: 1, fontSize: fs.sm, color: c['content-primary'], fontFamily: ff.primary }}>{q}</span>
@@ -3137,6 +3140,7 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
                 <polyline points="2,4 6,8 10,4" />
               </svg>
             </div>
+            </div>{/* end shadow wrapper */}
           </div>
         );
       })()}
