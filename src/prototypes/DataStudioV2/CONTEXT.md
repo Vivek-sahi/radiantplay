@@ -41,7 +41,25 @@ The product moved away from a side-panel co-pilot toward a full-screen agent-fir
 
 ---
 
-### 1. DQ + AIRS chip — deferred
+### 1. Review all Pulse flows end-to-end
+
+Walk through every wired Pulse insight in the live prototype and verify the full flow works. For any broken or missing flows, fix or merge as needed.
+
+**Fully wired (scripted flows — verify these work correctly end-to-end):**
+- ins-d1 — dbt Cloud connection repair → `ConnectionStatusCard`
+- ins-d2 — Schema drift (single model) → `SchemaDriftResolutionCard`
+- ins-d3 — Schema drift (multi-model) → `MultiModelDriftCard`
+- ins-d6 — Null rate investigation → `NullRateCard`
+- ins-o3 — Semantic gaps → 3-card flow (merged session 101)
+- ins-o4 — Cache miss → 3-card flow (merged session 101)
+
+**Not wired (open chat, no scripted flow — lower priority, review if time allows):**
+- ins-d4, ins-d5 — debugging flows with no dedicated SCRIPT
+- ins-o1 (slow query), ins-o2 (unused columns), ins-o5 (low adoption) — optimization flows with no SCRIPT
+
+---
+
+### 2. DQ + AIRS chip — deferred
 
 **What we discussed:** The DQ chip "Fix all with agent" and AIRS "Generate →" / "Add →" buttons are currently unresponsive. Two options discussed:
 - **Option B (preferred):** Make the chip "Fix all with agent" the single entry point for DQ fixes — clicking it sends a message to the agent that triggers `review_data_quality`. Remove the suggestion chip approach. Mirror same pattern for AIRS with a new `improve_ai_readiness` script.
