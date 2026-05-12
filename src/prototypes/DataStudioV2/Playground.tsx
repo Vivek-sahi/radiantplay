@@ -4091,6 +4091,10 @@ const PG_NAV: { section: string; items: PGNavItem[] }[] = [
   },
   {
     section: 'Combined model status',
+    items: [],
+  },
+  {
+    section: 'Model Health',
     items: [
       { id: 'mh1', label: 'Separate signals', meta: 'quality chip + AI readiness chip · two canvas views', tag: 'NEW' },
       { id: 'mh2', label: 'Health umbrella',  meta: 'one chip · both signals rolled up · two-level sections', tag: 'NEW' },
