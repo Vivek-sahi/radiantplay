@@ -150,6 +150,8 @@ const DataStudio: React.FC = () => {
       'ins-d2': 'schema_drift_repair',
       'ins-d3': 'schema_drift_multi_repair',
       'ins-d6': 'null_rate_investigation',
+      'ins-o3': 'semantic_gaps_detect',
+      'ins-o4': 'cache_miss_detect',
     };
     const flow = flowMap[insight.id]
       ?? (insight.primaryAction.type === 'fix-models' ? 'schema_drift_multi_repair'
@@ -160,6 +162,8 @@ const DataStudio: React.FC = () => {
       'ins-d2': 'Fix the schema drift on FnOps Cost Model — cost_center and allocation_type were removed from dbt_finance_spend.',
       'ins-d3': 'Fix the schema drift on Revenue Forecast and Pipeline Health — quarterly_target, forecast_region, and pipeline_stage were removed from the warehouse source.',
       'ins-d6': 'Investigate the null rate spike in Marketing Campaign Attribution — campaign_id nulls spiked from 2% to 18%.',
+      'ins-o3': 'Fill the semantic gaps in Marketing Campaign Attribution — 4 high-use columns are missing descriptions that Spotter needs to answer questions about them correctly.',
+      'ins-o4': "Enable caching for the 'Win rate by region' query — it's run 34× this week with 0% cache hit rate. This should save ~11 seconds per query.",
     };
     setInitialFlow(flow);
     setInitialMessage(promptMap[insight.id] ?? insight.title);

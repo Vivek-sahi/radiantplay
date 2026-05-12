@@ -392,8 +392,7 @@ const Overview: React.FC<OverviewProps> = ({
   const handleInsightAction = (insight: ActiveInsight) => {
     const proj = getProjectForInsight(insight);
     if (!proj) return;
-    const isFixWithAgent = insight.category === 'debugging' ||
-      insight.primaryAction.type === 'enable-cache';
+    const isFixWithAgent = insight.primaryAction.label.includes('with agent');
     if (isFixWithAgent) onFixWithAgent(insight, proj);
     else onOpenProjectAtMonitoring(proj);
   };

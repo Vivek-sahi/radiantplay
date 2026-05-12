@@ -909,22 +909,112 @@ Write descriptions for all of them? You can review and edit them afterwards.`,
     },
   },
 
-  // ── Enable caching ─────────────────────────────────────────────────────────
-  enable_cache: {
+  // ── Semantic Gaps — Phase 1: detect ──────────────────────────────────────
+  semantic_gaps_detect: {
     steps: [
-      { label: 'Identifying query candidates', detail: 'Scanning query log — "Win rate by region last quarter": 34 runs this week (avg 11.2s). "Top deals by rep this month": 21 runs this week (avg 8.4s).' },
-      { label: 'Estimating savings', detail: '55 queries × ~10s average = ~550 seconds saved per week. Cache hit rate expected 70–80% after warm-up period.' },
-      { label: 'Generating cache policy', detail: 'Query-level caching · 6h TTL · auto-invalidates on data sync · no stale results served.' },
-      { label: '✦ Enabling cache', detail: 'Applying policy to Campaign Performance model — 2 queries registered.' },
+      { label: 'Scanning Marketing Campaign Attribution model', detail: 'Reading column metadata and Spotter query logs from the past 30 days.' },
+      { label: 'Detecting semantic gaps', detail: '4 columns missing descriptions: campaign_id, target_region, channel, spend.' },
+      { label: 'Analyzing Spotter failures', detail: 'Reviewing 31 failed queries this week — all caused by missing column context.' },
+      { label: '✦ Impact mapped — 4 gaps causing 31 failures/week', detail: 'Without descriptions, Spotter can\'t understand what these columns mean or when to use them.' },
     ],
-    duration: '10 seconds',
+    duration: '8 seconds',
     autoComplete: true,
     stepDelay: 800,
     proposal: '',
-    execution: `Caching enabled for **Campaign Performance**.\n\n✓ "Win rate by region last quarter" — cached (11.2s → <1s)\n✓ "Top deals by rep this month" — cached (8.4s → <1s)\n\nCache policy: 6h TTL · auto-invalidates on data sync.\n\nYour users will see faster answers starting from the next run.`,
+    execution: 'I found 4 columns in Marketing Campaign Attribution that are missing descriptions. These gaps are causing Spotter to fail 31 queries per week.',
     nextStep: 'healthy',
     preserveStep: true,
-    executionSuggestions: ['Add more queries to cache', 'Review cache settings'],
+    executionGenUI: 'semantic_gaps',
+  },
+
+  // ── Semantic Gaps — Phase 2: generate descriptions ────────────────────────
+  semantic_gaps_generate: {
+    steps: [
+      { label: 'Analyzing column usage patterns', detail: 'Reviewing how campaign_id, target_region, channel, and spend are used in queries and joins.' },
+      { label: 'Reviewing sample values and join relationships', detail: 'Inspecting data to understand semantic meaning and business context.' },
+      { label: 'Generating context-aware descriptions', detail: 'Creating descriptions based on usage patterns, sample data, and industry best practices.' },
+      { label: '✦ Descriptions ready — review and apply', detail: 'All 4 descriptions generated with high confidence.' },
+    ],
+    duration: '6 seconds',
+    autoComplete: true,
+    stepDelay: 700,
+    proposal: '',
+    execution: 'I\'ve generated descriptions for all 4 columns based on their usage patterns and sample data. Review them below and edit if needed:',
+    nextStep: 'healthy',
+    preserveStep: true,
+    executionGenUI: 'semantic_fill_recommendations',
+  },
+
+  // ── Semantic Gaps — Phase 3: apply descriptions ───────────────────────────
+  semantic_gaps_apply: {
+    steps: [
+      { label: 'Adding descriptions to 4 columns', detail: 'Writing campaign_id, target_region, channel, and spend descriptions to model metadata.' },
+      { label: 'Refreshing model metadata', detail: 'Updating Marketing Campaign Attribution model in the semantic layer.' },
+      { label: 'Updating Spotter context', detail: 'Propagating new descriptions to Spotter\'s context engine.' },
+      { label: '✦ Descriptions applied and Spotter updated', detail: 'All 31 failed queries per week should now succeed.' },
+    ],
+    duration: '5 seconds',
+    autoComplete: true,
+    stepDelay: 700,
+    proposal: '',
+    execution: 'All 4 column descriptions have been added. Spotter now has the context it needs to answer questions about campaigns, regions, channels, and spend.',
+    nextStep: 'healthy',
+    preserveStep: true,
+    executionGenUI: 'semantic_gaps_resolved',
+  },
+
+  // ── Cache Miss — Phase 1: detect opportunity ──────────────────────────────
+  cache_miss_detect: {
+    steps: [
+      { label: 'Scanning Sales Performance query logs', detail: 'Analyzing query patterns from the past 7 days.' },
+      { label: 'Detecting cache miss hot spot', detail: '"Win rate by region" run 34× this week with 0% cache hit rate.' },
+      { label: 'Analyzing query pattern and users', detail: '5 users running this query regularly — Sarah Chen (12×), Marcus Rodriguez (8×), and 3 others.' },
+      { label: '✦ Cache opportunity identified — ~374s wasted this week', detail: 'Enabling caching would save ~11 seconds per query.' },
+    ],
+    duration: '6 seconds',
+    autoComplete: true,
+    stepDelay: 800,
+    proposal: '',
+    execution: 'I found a high-frequency query that\'s never cached. "Win rate by region" has been run 34 times this week, wasting ~374 seconds of total execution time.',
+    nextStep: 'healthy',
+    preserveStep: true,
+    executionGenUI: 'cache_miss_opportunity',
+  },
+
+  // ── Cache Miss — Phase 2: configure cache settings ───────────────────────
+  cache_miss_configure: {
+    steps: [
+      { label: 'Analyzing query dimensions and filters', detail: 'Identifying cacheable query patterns based on region and time_period dimensions.' },
+      { label: 'Calculating optimal refresh schedule', detail: 'Data freshness requirement: 6 hours based on source table update frequency.' },
+      { label: 'Estimating cache hit rate', detail: '~85% expected hit rate based on query pattern similarity.' },
+      { label: '✦ Cache configuration ready', detail: 'Recommended: 6-hour refresh, 24-hour TTL.' },
+    ],
+    duration: '5 seconds',
+    autoComplete: true,
+    stepDelay: 700,
+    proposal: '',
+    execution: 'I\'ve configured optimal cache settings based on your query patterns and data freshness requirements. Review and enable:',
+    nextStep: 'healthy',
+    preserveStep: true,
+    executionGenUI: 'cache_configuration',
+  },
+
+  // ── Cache Miss — Phase 3: enable cache ───────────────────────────────────
+  cache_miss_enable: {
+    steps: [
+      { label: 'Creating cache policy for "Win rate by region"', detail: 'Setting up 6-hour refresh schedule with 24-hour TTL.' },
+      { label: 'Scheduling first data pull', detail: 'Initial cache population starting now — will complete in ~12 seconds.' },
+      { label: 'Updating query routing', detail: 'Configuring Spotter to check cache before hitting warehouse.' },
+      { label: '✦ Caching enabled successfully', detail: 'First cache refresh in progress.' },
+    ],
+    duration: '8 seconds',
+    autoComplete: true,
+    stepDelay: 800,
+    proposal: '',
+    execution: 'Cache enabled for "Win rate by region". The first data pull is in progress and will be available in a few seconds.',
+    nextStep: 'healthy',
+    preserveStep: true,
+    executionGenUI: 'cache_enabled',
   },
 
   // ── Schema drift repair (single model) ────────────────────────────────────
@@ -1942,9 +2032,10 @@ interface AgentPanelProps {
   initialFlow?: string;
   initialMessage?: string;
   onInsightResolved?: (id: string) => void;
+  onOpenObject?: (name: string, highlightCol?: string) => void;
 }
 
-const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, setMessages, initialPrompt, onBuildComplete, externalMessage, onExternalMessageHandled, externalMessageAttachment, injectInput, onInjectInputHandled, width = 340, selectedColumns, onColumnRemove, isDayZero, isDbtReview, onOpenPlan, onOpenQualityPlan, onBuildStart, fullPage = false, onBack, initialFlow, initialMessage, onInsightResolved }) => {
+const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, setMessages, initialPrompt, onBuildComplete, externalMessage, onExternalMessageHandled, externalMessageAttachment, injectInput, onInjectInputHandled, width = 340, selectedColumns, onColumnRemove, isDayZero, isDbtReview, onOpenPlan, onOpenQualityPlan, onBuildStart, fullPage = false, onBack, initialFlow, initialMessage, onInsightResolved, onOpenObject }) => {
   const [pendingAction, setPending]     = useState<PendingAction | null>(null);
   const [isProcessing, setProcessing]   = useState(false);
   const [planModalOpen, setPlanModalOpen] = useState(false);
@@ -2071,23 +2162,12 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
           ],
         }]);
       } else {
-        const cacheStats = CACHE_STATS.filter(s => s.modelId === 'proj-sp');
-        if (project.name === 'Campaign Performance' && cacheStats.length > 0) {
-          setMessages([{
-            id: `r-${Date.now()}`,
-            type: 'response',
-            content: "I reviewed your model's query log. Two queries run frequently but hit the warehouse every time — no caching is in place. Here's what I found:",
-            genUI: 'cache_recommendation',
-            suggestions: ['Enable caching', 'Ignore this'],
-          }]);
-        } else {
-          setMessages([{
-            id: `r-${Date.now()}`,
-            type: 'response',
-            content: 'What would you like to do today?',
-            suggestions: ['Add a table', 'Create a formula', 'Add AI context'],
-          }]);
-        }
+        setMessages([{
+          id: `r-${Date.now()}`,
+          type: 'response',
+          content: 'What would you like to do today?',
+          suggestions: ['Add a table', 'Create a formula', 'Add AI context'],
+        }]);
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -2099,7 +2179,28 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
     const addUser = (text: string) => setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: text }]);
     const runNext = (flow: string) => setTimeout(() => { setProcessing(true); runFlow(flow, setMessages, setPending, setProcessing, setProject); }, 200);
 
-    if (action === 'enable_cache') { addUser('Enable caching for these queries.'); runNext('enable_cache'); return; }
+    if (action === 'semantic_gaps_fill') {
+      setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: 'Fill with agent →' }]);
+      setTimeout(() => { setProcessing(true); runFlow('semantic_gaps_generate', setMessages, setPending, setProcessing, setProject); }, 300);
+      return;
+    }
+    if (action === 'semantic_gaps_apply_descriptions') {
+      setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: 'Apply descriptions →' }]);
+      setTimeout(() => { setProcessing(true); runFlow('semantic_gaps_apply', setMessages, setPending, setProcessing, setProject); }, 300);
+      return;
+    }
+    if (action === 'semantic_gaps_cancel') { return; }
+    if (action === 'cache_miss_configure_action') {
+      setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: 'Enable caching →' }]);
+      setTimeout(() => { setProcessing(true); runFlow('cache_miss_configure', setMessages, setPending, setProcessing, setProject); }, 300);
+      return;
+    }
+    if (action === 'cache_enable_action') {
+      setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: 'Enable cache →' }]);
+      setTimeout(() => { setProcessing(true); runFlow('cache_miss_enable', setMessages, setPending, setProcessing, setProject); }, 300);
+      return;
+    }
+    if (action === 'cache_cancel') { return; }
     if (action === 'drift_resolution_remove') { addUser('Remove both columns from the model.'); runNext('schema_drift_preview'); return; }
     if (action === 'drift_resolution_sync')   { addUser('Apply the column mapping.');          runNext('schema_drift_preview'); return; }
     if (action === 'drift_publish_confirm')   { addUser('Publish the model.');                  runNext('schema_drift_publish'); return; }
@@ -3050,6 +3151,7 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
                 onOpenQualityPlan={onOpenQualityPlan}
                 onChipClick={text => processText(text)}
                 onGenUIAction={handleGenUIAction}
+                onOpenObject={onOpenObject}
                 publishedVersion={project.publishedVersion}
                 onComplete={msg.genUI === 'drift_complete' ? () => {
                   onInsightResolved?.('ins-d2');
@@ -3562,7 +3664,8 @@ const MessageBubble: React.FC<{
   onGenUIAction?: (action: string, msgId: string) => void;
   onComplete?: () => void;
   publishedVersion?: number;
-}> = ({ msg, showAvatar, onToggleSteps, onToggleCollapsible, onSuggestion, onConfirm, onOpenQualityPlan, onChipClick, onGenUIAction, onComplete, publishedVersion }) => {
+  onOpenObject?: (name: string, highlightCol?: string) => void;
+}> = ({ msg, showAvatar, onToggleSteps, onToggleCollapsible, onSuggestion, onConfirm, onOpenQualityPlan, onChipClick, onGenUIAction, onComplete, publishedVersion, onOpenObject }) => {
   const [chipUsed, setChipUsed] = React.useState(false);
 
   // ── User bubble ────────────────────────────────────────────────────────────
@@ -3720,8 +3823,23 @@ const MessageBubble: React.FC<{
             </div>
           )}
           {/* ── GenUI cards ─────────────────────────────────────────────────── */}
-          {msg.genUI === 'cache_recommendation' && onGenUIAction && (
-            <CacheRecommendationCard msgId={msg.id} result={msg.genUIResult} onAction={onGenUIAction} />
+          {msg.genUI === 'semantic_gaps' && onGenUIAction && (
+            <SemanticGapsCard msgId={msg.id} result={msg.genUIResult} onAction={onGenUIAction} onOpenObject={onOpenObject} />
+          )}
+          {msg.genUI === 'semantic_fill_recommendations' && onGenUIAction && (
+            <SemanticFillRecommendationsCard msgId={msg.id} result={msg.genUIResult} onAction={onGenUIAction} onOpenObject={onOpenObject} />
+          )}
+          {msg.genUI === 'semantic_gaps_resolved' && onGenUIAction && (
+            <SemanticGapsResolvedCard msgId={msg.id} result={msg.genUIResult} onAction={onGenUIAction} />
+          )}
+          {msg.genUI === 'cache_miss_opportunity' && onGenUIAction && (
+            <CacheMissOpportunityCard msgId={msg.id} result={msg.genUIResult} onAction={onGenUIAction} onOpenObject={onOpenObject} />
+          )}
+          {msg.genUI === 'cache_configuration' && onGenUIAction && (
+            <CacheConfigurationCard msgId={msg.id} result={msg.genUIResult} onAction={onGenUIAction} />
+          )}
+          {msg.genUI === 'cache_enabled' && onGenUIAction && (
+            <CacheEnabledCard msgId={msg.id} result={msg.genUIResult} onAction={onGenUIAction} />
           )}
           {msg.genUI === 'connection_status' && onGenUIAction && (
             <ConnectionStatusCard msgId={msg.id} result={msg.genUIResult} onAction={onGenUIAction} />
@@ -4131,47 +4249,460 @@ const StatPill: React.FC<{ children: React.ReactNode; green?: boolean }> = ({ ch
   }}>{children}</span>
 );
 
-// ── CacheRecommendationCard ───────────────────────────────────────────────────
+// ── Semantic Gaps mock data ───────────────────────────────────────────────────
 
-const CacheRecommendationCard: React.FC<{
+const SEMANTIC_GAPS_DATA = [
+  {
+    column: 'campaign_id',
+    type: 'string',
+    samples: '"cmp_2024_q1_001", "cmp_2023_h2_045", "cmp_2024_q2_003"',
+    samplesTruncated: '"cmp_2024_q1_001", "cmp_2023_h2_045"...',
+    totalDistinct: 847,
+    failures: 12,
+    trend: 'up' as const,
+    description: 'Unique identifier for marketing campaigns. Links to campaign master table to track performance metrics and attribution.',
+    confidence: 'High',
+  },
+  {
+    column: 'target_region',
+    type: 'string',
+    samples: '"APAC", "EMEA", "NA", "LATAM"',
+    samplesTruncated: '"APAC", "EMEA", "NA", "LATAM"',
+    totalDistinct: 4,
+    failures: 8,
+    trend: 'stable' as const,
+    description: 'Geographic region targeted by the campaign. Values include APAC (Asia Pacific), EMEA (Europe/Middle East/Africa), NA (North America), and LATAM (Latin America).',
+    confidence: 'High',
+  },
+  {
+    column: 'channel',
+    type: 'string',
+    samples: '"paid_search", "organic_social", "email", "display"',
+    samplesTruncated: '"paid_search", "organic_social", "email"...',
+    totalDistinct: 8,
+    failures: 7,
+    trend: 'down' as const,
+    description: 'Marketing channel used for the campaign. Distinguishes between paid channels (paid_search, display) and organic channels (organic_social, email).',
+    confidence: 'High',
+  },
+  {
+    column: 'spend',
+    type: 'number',
+    samples: '45000, 23400, 78900, 12500',
+    samplesTruncated: '45000, 23400, 78900...',
+    totalDistinct: 324,
+    failures: 4,
+    trend: 'stable' as const,
+    description: 'Total amount spent on the campaign in USD. Used to calculate ROI, cost per acquisition, and other performance metrics.',
+    confidence: 'High',
+  },
+];
+
+const CACHE_QUERY_USERS = [
+  { name: 'Sarah Chen', runs: 12 },
+  { name: 'Marcus Rodriguez', runs: 8 },
+  { name: 'Alex Kim', runs: 6 },
+  { name: 'Jordan Lee', runs: 4 },
+  { name: 'Pat Johnson', runs: 4 },
+];
+
+const FAILED_QUERIES = [
+  {
+    category: 'Attribution Questions',
+    totalFailures: 17,
+    affectedUsers: 6,
+    queries: [
+      { query: "What's our spend by channel this quarter?", count: 8, needs: ['channel', 'spend'] },
+      { query: 'Show me campaign performance in APAC', count: 5, needs: ['target_region', 'campaign_id'] },
+      { query: 'Compare paid search vs organic social ROI', count: 4, needs: ['channel'] },
+    ],
+  },
+  {
+    category: 'Performance Questions',
+    totalFailures: 9,
+    affectedUsers: 4,
+    queries: [
+      { query: 'Which campaigns had the highest ROI?', count: 3, needs: ['campaign_id', 'spend'] },
+      { query: "What's our total spend by region?", count: 3, needs: ['target_region', 'spend'] },
+      { query: 'Show me email campaign performance', count: 3, needs: ['channel', 'campaign_id'] },
+    ],
+  },
+  {
+    category: 'Budget Analysis',
+    totalFailures: 5,
+    affectedUsers: 3,
+    queries: [
+      { query: 'How much did we spend on APAC campaigns?', count: 3, needs: ['target_region', 'spend'] },
+      { query: "What's our average spend per channel?", count: 2, needs: ['channel', 'spend'] },
+    ],
+  },
+];
+
+// ── SemanticGapsCard ──────────────────────────────────────────────────────────
+
+const SemanticGapsCard: React.FC<{
+  msgId: string;
+  result?: string;
+  onAction: (action: string, msgId: string) => void;
+  onOpenObject?: (name: string, highlightCol?: string) => void;
+}> = ({ msgId, result, onAction, onOpenObject }) => {
+  const [activeTab, setActiveTab] = useState<'columns' | 'downstream'>('columns');
+  const [whyDismissed, setWhyDismissed] = useState(false);
+  const [hoveredSample, setHoveredSample] = useState<string | null>(null);
+
+  return (
+    <div style={{ marginTop: 12, background: '#fff', border: '1px solid rgba(15,23,42,0.1)', borderRadius: 12, padding: '24px', boxShadow: '0 1px 2px rgba(15,23,42,0.04)' }}>
+      <div style={{ marginBottom: 20 }}>
+        <h3 style={{ margin: 0, fontSize: 15, fontWeight: 600, color: '#0f172a', marginBottom: 6 }}>
+          4 columns need descriptions to fix Spotter failures
+        </h3>
+        <div style={{ fontSize: 13, color: '#64748b', lineHeight: 1.5 }}>
+          <span onClick={() => onOpenObject?.('Marketing Campaign Attribution')} style={{ color: '#2770ef', cursor: 'pointer', fontWeight: 500 }} onMouseEnter={e => e.currentTarget.style.textDecoration = 'underline'} onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}>
+            Marketing Campaign Attribution
+          </span>
+          {' · Spotter failing 31 queries/week'}
+        </div>
+      </div>
+
+      {!whyDismissed && (
+        <div style={{ marginBottom: 20, background: '#fef3c7', border: '1px solid #fde68a', borderRadius: 8, padding: '12px 14px', fontSize: 13, color: '#92400e', lineHeight: 1.5, position: 'relative' }}>
+          <button onClick={() => setWhyDismissed(true)} style={{ position: 'absolute', top: 10, right: 10, width: 18, height: 18, padding: 0, border: 'none', background: 'none', color: '#b45309', cursor: 'pointer', fontSize: 14, lineHeight: '1', fontFamily: ff.primary }}>×</button>
+          These gaps caused 31 Spotter failures last week, interrupting analysts an average of 6 times per day. Without descriptions, Spotter can't understand what these columns mean or when to use them.
+        </div>
+      )}
+
+      <div style={{ marginBottom: 20 }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.5px', marginBottom: 14 }}>Impact</div>
+        <div style={{ display: 'flex', gap: 0, marginBottom: 16, borderBottom: '1px solid #e2e8f0' }}>
+          {(['columns', 'downstream'] as const).map(tab => (
+            <button key={tab} onClick={() => setActiveTab(tab)} style={{ padding: '8px 16px', background: 'none', border: 'none', borderBottom: activeTab === tab ? '2px solid #2770ef' : '2px solid transparent', color: activeTab === tab ? '#2770ef' : '#64748b', fontSize: 13, fontWeight: activeTab === tab ? 600 : 500, cursor: 'pointer', marginBottom: -1, fontFamily: ff.primary }}>
+              {tab.charAt(0).toUpperCase() + tab.slice(1)}
+            </button>
+          ))}
+        </div>
+
+        {activeTab === 'columns' && (
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
+                  {['Column', 'Failures', 'Type', 'Sample Values'].map(h => (
+                    <th key={h} style={{ padding: '10px 12px 10px 0', textAlign: 'left', fontWeight: 500, color: '#64748b', fontSize: 11, textTransform: 'uppercase' as const, letterSpacing: '0.5px' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {SEMANTIC_GAPS_DATA.map((row, i) => {
+                  const trendIcon = row.trend === 'up' ? '↗' : row.trend === 'down' ? '↘' : '→';
+                  const trendColor = row.trend === 'up' ? '#dc2626' : row.trend === 'down' ? '#16a34a' : '#64748b';
+                  return (
+                    <tr key={row.column} style={{ borderBottom: i < SEMANTIC_GAPS_DATA.length - 1 ? '1px solid #f1f5f9' : 'none' }} onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f8fafc'} onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}>
+                      <td style={{ padding: '16px 12px 16px 0' }}>
+                        <span onClick={() => onOpenObject?.('Marketing Campaign Attribution', row.column)} style={{ color: '#2770ef', cursor: 'pointer', fontFamily: 'Menlo, Monaco, monospace', fontSize: 13, fontWeight: 500 }} onMouseEnter={e => e.currentTarget.style.textDecoration = 'underline'} onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}>{row.column}</span>
+                      </td>
+                      <td style={{ padding: '16px 12px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span style={{ display: 'inline-block', padding: '4px 8px', borderRadius: 4, background: '#fef2f2', color: '#dc2626', fontSize: 12, fontWeight: 600 }}>{row.failures}/week</span>
+                          <span style={{ fontSize: 14, color: trendColor }}>{trendIcon}</span>
+                        </div>
+                      </td>
+                      <td style={{ padding: '16px 12px', color: '#64748b', fontSize: 12 }}>{row.type}</td>
+                      <td style={{ padding: '16px 0 16px 12px', color: '#64748b', fontFamily: 'Menlo, Monaco, monospace', fontSize: 12, cursor: 'pointer', position: 'relative' }} onMouseEnter={() => setHoveredSample(row.column)} onMouseLeave={() => setHoveredSample(null)}>
+                        {row.samplesTruncated}
+                        {hoveredSample === row.column && (
+                          <div style={{ position: 'absolute', bottom: '100%', left: 0, marginBottom: 4, padding: '8px 10px', background: '#1e293b', color: '#fff', fontSize: 11, borderRadius: 6, whiteSpace: 'nowrap', zIndex: 10 }}>
+                            {row.totalDistinct} distinct values
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {activeTab === 'downstream' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {FAILED_QUERIES.map((group, groupIdx) => (
+              <div key={groupIdx}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, paddingBottom: 8, borderBottom: '1px solid #e2e8f0' }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#0f172a' }}>{group.category}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 12, color: '#64748b' }}>
+                    <span style={{ padding: '2px 6px', borderRadius: 3, background: '#fef2f2', color: '#dc2626', fontWeight: 600 }}>{group.totalFailures} failures/week</span>
+                    <span>Affects {group.affectedUsers} users</span>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingLeft: 12 }}>
+                  {group.queries.map((q, qIdx) => (
+                    <div key={qIdx}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                        <span style={{ fontSize: 13, color: '#475569' }}>"{q.query}"</span>
+                        <span style={{ fontSize: 11, color: '#94a3b8', marginLeft: 12, flexShrink: 0 }}>{q.count}× this week</span>
+                      </div>
+                      <div style={{ fontSize: 11, color: '#94a3b8', fontFamily: 'Menlo, Monaco, monospace' }}>
+                        Needs: {q.needs.map((col, colIdx) => (
+                          <span key={colIdx}>
+                            <span style={{ color: '#2770ef', cursor: 'pointer' }} onClick={() => onOpenObject?.('Marketing Campaign Attribution', col)} onMouseEnter={e => e.currentTarget.style.textDecoration = 'underline'} onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}>{col}</span>
+                            {colIdx < q.needs.length - 1 && ', '}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
+        <button onClick={() => onAction('semantic_gaps_fill', msgId)} disabled={!!result} style={{ padding: '10px 18px', borderRadius: 8, border: 'none', background: result === 'semantic_gaps_fill' ? '#94a3b8' : result ? '#16a34a' : '#2770ef', color: '#fff', fontSize: 13, fontWeight: 600, cursor: result ? 'not-allowed' : 'pointer', fontFamily: ff.primary }} onMouseEnter={e => { if (!result) (e.target as HTMLButtonElement).style.background = '#1d5bbf'; }} onMouseLeave={e => { if (!result) (e.target as HTMLButtonElement).style.background = '#2770ef'; }}>
+          {result === 'semantic_gaps_fill' ? 'Analyzing...' : result ? '✓ Generated' : 'Generate descriptions →'}
+        </button>
+        {!result && <div style={{ fontSize: 11, color: '#94a3b8' }}>Based on patterns from 847 successful descriptions</div>}
+      </div>
+    </div>
+  );
+};
+
+// ── SemanticFillRecommendationsCard ───────────────────────────────────────────
+
+const SemanticFillRecommendationsCard: React.FC<{
+  msgId: string;
+  result?: string;
+  onAction: (action: string, msgId: string) => void;
+  onOpenObject?: (name: string, highlightCol?: string) => void;
+}> = ({ msgId, result, onAction, onOpenObject }) => {
+  const [descriptions, setDescriptions] = useState<Record<string, string>>(
+    SEMANTIC_GAPS_DATA.reduce((acc, item) => ({ ...acc, [item.column]: item.description }), {} as Record<string, string>)
+  );
+
+  return (
+    <div style={{ marginTop: 12, background: '#fff', border: '1px solid rgba(15,23,42,0.1)', borderRadius: 12, padding: '24px', boxShadow: '0 1px 2px rgba(15,23,42,0.04)' }}>
+      <div style={{ marginBottom: 20 }}>
+        <h3 style={{ margin: 0, fontSize: 15, fontWeight: 600, color: '#0f172a', marginBottom: 6 }}>Recommended descriptions</h3>
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 20 }}>
+        {SEMANTIC_GAPS_DATA.map(item => (
+          <div key={item.column} style={{ border: '1px solid #e2e8f0', borderRadius: 8, padding: '14px 16px' }}>
+            <div style={{ marginBottom: 8 }}>
+              <span onClick={() => onOpenObject?.('Marketing Campaign Attribution', item.column)} style={{ color: '#2770ef', fontWeight: 600, fontSize: 13, cursor: 'pointer', fontFamily: 'Menlo, Monaco, monospace' }} onMouseEnter={e => e.currentTarget.style.textDecoration = 'underline'} onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}>{item.column}</span>
+            </div>
+            <textarea value={descriptions[item.column]} onChange={e => setDescriptions({ ...descriptions, [item.column]: e.target.value })} style={{ width: '100%', minHeight: 60, padding: '8px 10px', border: '1px solid #e2e8f0', borderRadius: 6, fontSize: 13, color: '#475569', lineHeight: '1.5', fontFamily: ff.primary, resize: 'vertical', marginBottom: 10, boxSizing: 'border-box' }} />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+              <span style={{ display: 'inline-block', padding: '3px 8px', borderRadius: 4, background: '#dcfce7', color: '#166534', fontSize: 11, fontWeight: 600 }}>{item.confidence} confidence</span>
+              <span style={{ fontSize: 11, color: '#94a3b8', fontFamily: 'Menlo, Monaco, monospace' }}>Sample: {item.samples.split(',')[0]}...</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ marginBottom: 20, padding: '12px 14px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 12, color: '#64748b', lineHeight: 1.5 }}>
+        These descriptions are based on column usage patterns, sample data, and join relationships. Review and edit before applying.
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+        <button onClick={() => onAction('semantic_gaps_cancel', msgId)} style={{ padding: '10px 18px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#fff', color: '#64748b', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: ff.primary }} onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'} onMouseLeave={e => e.currentTarget.style.background = '#fff'}>Cancel</button>
+        <button onClick={() => onAction('semantic_gaps_apply_descriptions', msgId)} style={{ padding: '10px 18px', borderRadius: 8, border: 'none', background: '#2770ef', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: ff.primary }} onMouseEnter={e => e.currentTarget.style.background = '#1d5bbf'} onMouseLeave={e => e.currentTarget.style.background = '#2770ef'}>Apply descriptions →</button>
+      </div>
+    </div>
+  );
+};
+
+// ── SemanticGapsResolvedCard ──────────────────────────────────────────────────
+
+const SemanticGapsResolvedCard: React.FC<{
+  msgId: string;
+  result?: string;
+  onAction: (action: string, msgId: string) => void;
+}> = ({ msgId, result, onAction }) => (
+  <div style={{ marginTop: 12, background: '#fff', border: '1px solid #bbf7d0', borderRadius: 12, padding: '20px 24px', boxShadow: '0 1px 2px rgba(15,23,42,0.04)' }}>
+    <div style={{ marginBottom: 18, display: 'flex', alignItems: 'center', gap: 8 }}>
+      <span style={{ fontSize: 20, lineHeight: '1' }}>🎉</span>
+      <h3 style={{ margin: 0, fontSize: 15, fontWeight: 600, color: '#0f172a', lineHeight: 1.4 }}>Descriptions added and Spotter updated</h3>
+    </div>
+    <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 18 }}>
+      {['4 column descriptions added', 'Model metadata refreshed', 'Spotter context updated', '~31 failed queries/week will now succeed'].map(text => (
+        <li key={text} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, color: '#475569' }}>
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}><path d="M13 4L6 11L3 8" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          <span>{text}</span>
+        </li>
+      ))}
+    </ul>
+    <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: 14 }}>
+      <div style={{ fontSize: 13, fontWeight: 600, color: '#0f172a', marginBottom: 4 }}>Descriptions applied</div>
+      <div style={{ fontSize: 12, color: '#64748b' }}>{new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })} today</div>
+    </div>
+  </div>
+);
+
+// ── CacheMissOpportunityCard ──────────────────────────────────────────────────
+
+const CacheMissOpportunityCard: React.FC<{
+  msgId: string;
+  result?: string;
+  onAction: (action: string, msgId: string) => void;
+  onOpenObject?: (name: string, highlightCol?: string) => void;
+}> = ({ msgId, result, onAction, onOpenObject }) => {
+  const [whyDismissed, setWhyDismissed] = useState(false);
+
+  return (
+    <div style={{ marginTop: 12, background: '#fff', border: '1px solid rgba(15,23,42,0.1)', borderRadius: 12, padding: '24px', boxShadow: '0 1px 2px rgba(15,23,42,0.04)' }}>
+      <div style={{ marginBottom: 20 }}>
+        <h3 style={{ margin: 0, fontSize: 15, fontWeight: 600, color: '#0f172a', marginBottom: 6 }}>Cache miss opportunity detected</h3>
+        <div style={{ fontSize: 13, color: '#64748b', lineHeight: 1.5 }}>
+          <span onClick={() => onOpenObject?.('Sales Performance')} style={{ color: '#2770ef', cursor: 'pointer', fontWeight: 500 }} onMouseEnter={e => e.currentTarget.style.textDecoration = 'underline'} onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}>Sales Performance</span>
+          {' · "Win rate by region" · Run 34× this week · 0% cache hit · ~374s wasted'}
+        </div>
+      </div>
+
+      {!whyDismissed && (
+        <div style={{ marginBottom: 20, background: '#fef3c7', border: '1px solid #fde68a', borderRadius: 8, padding: '12px 14px', fontSize: 13, color: '#92400e', lineHeight: 1.5, position: 'relative' }}>
+          <button onClick={() => setWhyDismissed(true)} style={{ position: 'absolute', top: 10, right: 10, width: 18, height: 18, padding: 0, border: 'none', background: 'none', color: '#b45309', cursor: 'pointer', fontSize: 14, lineHeight: '1', fontFamily: ff.primary }}>×</button>
+          This query is run frequently but never cached, causing unnecessary warehouse load and slow response times. Enabling caching would save ~11 seconds per query.
+        </div>
+      )}
+
+      <div style={{ marginBottom: 20 }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.5px', marginBottom: 14 }}>Query Pattern</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16, marginBottom: 16 }}>
+          {[
+            { label: 'Frequency', value: '34× this week', sub: 'Avg 5/day', red: false },
+            { label: 'Avg Execution Time', value: '11.2s', sub: 'Per query', red: false },
+            { label: 'Cache Hit Rate', value: '0%', sub: 'Always hits warehouse', red: true },
+            { label: 'Time Wasted', value: '~374s', sub: 'This week', red: true },
+          ].map(stat => (
+            <div key={stat.label} style={{ padding: 16, background: stat.red ? '#fef2f2' : '#f8fafc', borderRadius: 8, border: `1px solid ${stat.red ? '#fecaca' : '#e2e8f0'}` }}>
+              <div style={{ fontSize: 11, color: stat.red ? '#991b1b' : '#64748b', marginBottom: 4, textTransform: 'uppercase' as const, letterSpacing: '0.5px', fontWeight: stat.red ? 600 : 400 }}>{stat.label}</div>
+              <div style={{ fontSize: 20, fontWeight: 600, color: stat.red ? '#dc2626' : '#0f172a' }}>{stat.value}</div>
+              <div style={{ fontSize: 11, color: stat.red ? '#991b1b' : '#64748b', marginTop: 2 }}>{stat.sub}</div>
+            </div>
+          ))}
+        </div>
+        <div>
+          <div style={{ fontSize: 12, fontWeight: 600, color: '#0f172a', marginBottom: 10 }}>Who's running it</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {CACHE_QUERY_USERS.map((user, i) => (
+              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: '#f8fafc', borderRadius: 6 }}>
+                <span style={{ fontSize: 13, color: '#475569' }}>{user.name}</span>
+                <span style={{ fontSize: 12, color: '#64748b', fontWeight: 600 }}>{user.runs} runs</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
+        <button onClick={() => onAction('cache_miss_configure_action', msgId)} disabled={!!result} style={{ padding: '10px 18px', borderRadius: 8, border: 'none', background: result === 'cache_miss_configure_action' ? '#94a3b8' : result ? '#16a34a' : '#2770ef', color: '#fff', fontSize: 13, fontWeight: 600, cursor: result ? 'not-allowed' : 'pointer', fontFamily: ff.primary }} onMouseEnter={e => { if (!result) (e.target as HTMLButtonElement).style.background = '#1d5bbf'; }} onMouseLeave={e => { if (!result) (e.target as HTMLButtonElement).style.background = '#2770ef'; }}>
+          {result === 'cache_miss_configure_action' ? 'Analyzing...' : result ? '✓ Configured' : 'Enable caching →'}
+        </button>
+        {!result && <div style={{ fontSize: 11, color: '#94a3b8' }}>Save ~11s per query · ~374s/week total</div>}
+      </div>
+    </div>
+  );
+};
+
+// ── CacheConfigurationCard ────────────────────────────────────────────────────
+
+const CacheConfigurationCard: React.FC<{
   msgId: string;
   result?: string;
   onAction: (action: string, msgId: string) => void;
 }> = ({ msgId, result, onAction }) => {
-  const stats = CACHE_STATS.filter(s => s.modelId === 'proj-sp');
-  const totalSavingsSec = stats.reduce((sum, s) => sum + (s.runCount * s.potentialSavingMs / 1000), 0);
-  const enabled = result === 'enable_cache';
+  const [cacheScope, setCacheScope] = useState<'query' | 'similar' | 'model'>('query');
+  const [refreshSchedule, setRefreshSchedule] = useState('6h');
+  const [ttl, setTTL] = useState('24h');
+
+  const scopeOptions = [
+    { value: 'query' as const, label: 'This query only', sub: 'Cache only "Win rate by region"' },
+    { value: 'similar' as const, label: 'All similar queries', sub: 'Queries with same dimensions (region, time_period)' },
+    { value: 'model' as const, label: 'Model-level cache', sub: 'All queries on Sales Performance model' },
+  ];
+
   return (
-    <GenUICard locked={enabled}>
-      <GenUISection>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <GenUIBadge variant={enabled ? 'green' : 'amber'}>
-            {enabled ? '✓ Caching enabled' : '⚡ Cache opportunity'}
-          </GenUIBadge>
-          <span style={{ fontSize: 11, color: '#999' }}>2 queries · ~{Math.round(totalSavingsSec)}s/week savings</span>
+    <div style={{ marginTop: 12, background: '#fff', border: '1px solid rgba(15,23,42,0.1)', borderRadius: 12, padding: '24px', boxShadow: '0 1px 2px rgba(15,23,42,0.04)' }}>
+      <div style={{ marginBottom: 20 }}>
+        <h3 style={{ margin: 0, fontSize: 15, fontWeight: 600, color: '#0f172a', marginBottom: 6 }}>Cache configuration</h3>
+        <div style={{ fontSize: 13, color: '#64748b' }}>Configure optimal cache settings for "Win rate by region"</div>
+      </div>
+
+      <div style={{ marginBottom: 20 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: '#0f172a', marginBottom: 10 }}>Cache scope</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {scopeOptions.map(opt => (
+            <label key={opt.value} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: 12, border: cacheScope === opt.value ? '2px solid #2770ef' : '1px solid #e2e8f0', borderRadius: 8, cursor: 'pointer', background: cacheScope === opt.value ? '#eff6ff' : '#fff' }}>
+              <input type="radio" name="cacheScope" value={opt.value} checked={cacheScope === opt.value} onChange={() => setCacheScope(opt.value)} style={{ marginTop: 2 }} />
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 500, color: '#0f172a', marginBottom: 2 }}>{opt.label}</div>
+                <div style={{ fontSize: 12, color: '#64748b' }}>{opt.sub}</div>
+              </div>
+            </label>
+          ))}
         </div>
-      </GenUISection>
-      {stats.map((stat, i) => (
-        <GenUISection key={i} last={i === stats.length - 1 && enabled}>
-          <div style={{ fontSize: 12, fontWeight: fw.medium, color: '#1a1a1a', marginBottom: 6, lineHeight: 1.4 }}>
-            "{stat.query}"
-          </div>
-          <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' as const }}>
-            <StatPill>{stat.runCount}× this week</StatPill>
-            <StatPill>{(stat.avgLatencyMs / 1000).toFixed(1)}s avg</StatPill>
-            <StatPill green>saves ~{(stat.potentialSavingMs / 1000).toFixed(1)}s/query</StatPill>
-          </div>
-        </GenUISection>
-      ))}
-      {!enabled && (
-        <GenUIActions
-          locked={false}
-          primary={{ label: 'Enable caching', action: 'enable_cache', msgId, onAction }}
-        />
-      )}
-    </GenUICard>
+      </div>
+
+      <div style={{ marginBottom: 20 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: '#0f172a', marginBottom: 10 }}>Refresh strategy</div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          {[
+            { label: 'Refresh schedule', value: refreshSchedule, setter: setRefreshSchedule, options: [{ value: 'realtime', label: 'Real-time' }, { value: '1h', label: 'Every hour' }, { value: '6h', label: 'Every 6 hours' }, { value: '24h', label: 'Daily' }, { value: '168h', label: 'Weekly' }] },
+            { label: 'TTL (time to live)', value: ttl, setter: setTTL, options: [{ value: '1h', label: '1 hour' }, { value: '6h', label: '6 hours' }, { value: '12h', label: '12 hours' }, { value: '24h', label: '24 hours' }, { value: '168h', label: '7 days' }] },
+          ].map(field => (
+            <div key={field.label}>
+              <label style={{ display: 'block', fontSize: 12, color: '#64748b', marginBottom: 6 }}>{field.label}</label>
+              <select value={field.value} onChange={e => field.setter(e.target.value)} style={{ width: '100%', padding: '8px 10px', border: '1px solid #e2e8f0', borderRadius: 6, fontSize: 13, color: '#0f172a', fontFamily: ff.primary, cursor: 'pointer' }}>
+                {field.options.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+              </select>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ marginBottom: 20, padding: '14px 16px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8 }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: '#166534', marginBottom: 8 }}>Estimated Impact</div>
+        {['Expected cache hit rate: ~85% (based on query pattern)', 'Time saved per week: ~320s (5.3 minutes)', 'Warehouse cost reduction: ~$0.42/week'].map(line => (
+          <div key={line} style={{ fontSize: 12, color: '#166534' }}>{line}</div>
+        ))}
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+        <button onClick={() => onAction('cache_cancel', msgId)} style={{ padding: '10px 18px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#fff', color: '#64748b', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: ff.primary }} onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'} onMouseLeave={e => e.currentTarget.style.background = '#fff'}>Cancel</button>
+        <button onClick={() => onAction('cache_enable_action', msgId)} style={{ padding: '10px 18px', borderRadius: 8, border: 'none', background: '#2770ef', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: ff.primary }} onMouseEnter={e => e.currentTarget.style.background = '#1d5bbf'} onMouseLeave={e => e.currentTarget.style.background = '#2770ef'}>Enable cache →</button>
+      </div>
+    </div>
   );
 };
+
+// ── CacheEnabledCard ──────────────────────────────────────────────────────────
+
+const CacheEnabledCard: React.FC<{
+  msgId: string;
+  result?: string;
+  onAction: (action: string, msgId: string) => void;
+}> = ({ msgId, result, onAction }) => (
+  <div style={{ marginTop: 12, background: '#fff', border: '1px solid #bbf7d0', borderRadius: 12, padding: '20px 24px', boxShadow: '0 1px 2px rgba(15,23,42,0.04)' }}>
+    <div style={{ marginBottom: 18, display: 'flex', alignItems: 'center', gap: 8 }}>
+      <span style={{ fontSize: 20, lineHeight: '1' }}>🎉</span>
+      <h3 style={{ margin: 0, fontSize: 15, fontWeight: 600, color: '#0f172a', lineHeight: 1.4 }}>Caching enabled for "Win rate by region"</h3>
+    </div>
+    <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 18 }}>
+      {['Cache policy created', 'First data pull scheduled', 'Query routing updated', '~11s saved per query · ~320s/week total'].map(text => (
+        <li key={text} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, color: '#475569' }}>
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}><path d="M13 4L6 11L3 8" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          <span>{text}</span>
+        </li>
+      ))}
+    </ul>
+    <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: 14 }}>
+      <div style={{ fontSize: 13, fontWeight: 600, color: '#0f172a', marginBottom: 4 }}>Cache enabled</div>
+      <div style={{ fontSize: 12, color: '#64748b' }}>{new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })} today · Next refresh in 6 hours</div>
+    </div>
+  </div>
+);
 
 // ── ConnectionStatusCard ──────────────────────────────────────────────────────
 
