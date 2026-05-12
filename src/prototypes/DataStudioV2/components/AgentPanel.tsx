@@ -2844,7 +2844,6 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
               <div key={msg.id} style={{ backgroundColor: c['background-sunken'], borderRadius: 12, padding: `${sp.C}px ${sp.D}px` }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, marginBottom: sp.B }}>
                   <UserAvatar />
-                  <span style={{ fontSize: fs.xs, fontWeight: fw.medium, color: c['content-secondary'] }}>Test question</span>
                 </div>
                 <p style={{ margin: 0, fontSize: fs.sm, color: c['content-primary'], lineHeight: '20px' }}>{msg.content}</p>
               </div>
@@ -2862,7 +2861,7 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
                 {/* Working steps */}
                 {visibleSteps.length > 0 && (
                   <div style={{ display: 'flex', gap: sp.B, alignItems: 'flex-start' }}>
-                    <SpotterIconAvatar working={isAnimating} />
+                    <AgentAvatar working={isAnimating} />
                     <div style={{ flex: 1, minWidth: 0, paddingTop: 2 }}>
                       {!isAnimating && (
                         <button
@@ -3774,13 +3773,6 @@ const MessageBubble: React.FC<{
 
 // ── Avatars ───────────────────────────────────────────────────────────────────
 
-const SpotterIconAvatar: React.FC<{ working?: boolean }> = ({ working }) => (
-  <svg width="24" height="24" viewBox="0 0 26 26" fill="none" style={{ flexShrink: 0, animation: working ? 'ag-pulse 1.4s ease-in-out infinite' : 'none' }}>
-    <circle cx="13" cy="13" r="11" stroke="#7C3AED" strokeWidth="1.8"/>
-    <circle cx="13" cy="13" r="5.5" stroke="#7C3AED" strokeWidth="1.8"/>
-    <circle cx="13" cy="13" r="2" fill="#7C3AED"/>
-  </svg>
-);
 
 const AgentAvatar: React.FC<{ working?: boolean }> = ({ working }) => (
   <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
