@@ -41,19 +41,57 @@ The product moved away from a side-panel co-pilot toward a full-screen agent-fir
 
 ---
 
-### 1. Review all Pulse flows end-to-end
+### 1. Review artifact UI in Pulse debug flows (ins-o3, ins-o4 working; ins-d1/d2/d3/d6 not yet wired)
 
-Walk through every wired Pulse insight in the live prototype and verify the full flow works. For any broken or missing flows, fix or merge as needed.
+**Context — what was done (session 103):**
+- Object panel now opens as an artifact on the RIGHT of the agent (was incorrectly opening on the left, pushing agent right)
+- AgentPanel is a single instance — wrapper div resizes on split, no remount/state reset on object open
+- Artifact card treatment: `background-base` outer column, `border: 1px solid border-divider` + `borderRadius: 10` card, 48px identity row — matches Workspace artifact styling
+- Draggable agent width (same Workspace mechanics): drag handle between agent and artifact, default 40% screen width on open, min 320px
+- Context panel is fully independent of artifact: toggle always visible in header, opening artifact does not force context open/closed
+- Referenced objects accumulate in context panel Models list as objects are clicked — persists across the conversation, deduped with flow's pre-seeded models
 
-**Fully wired (scripted flows — verify these work correctly end-to-end):**
-- ins-d1 — dbt Cloud connection repair → `ConnectionStatusCard`
-- ins-d2 — Schema drift (single model) → `SchemaDriftResolutionCard`
-- ins-d3 — Schema drift (multi-model) → `MultiModelDriftCard`
-- ins-d6 — Null rate investigation → `NullRateCard`
-- ins-o3 — Semantic gaps → 3-card flow (merged session 101)
-- ins-o4 — Cache miss → 3-card flow (merged session 101)
+**What still needs review:**
+- The artifact content (ObjectPanel column table, LiveboardObjectView) — compare to how artifacts look in the build flow and decide if any further visual polish is needed
+- Once artifact review is done, wire the 4 remaining debug cards (ins-d1, ins-d2, ins-d3, ins-d6) — see original spec below
 
-**Not wired (open chat, no scripted flow — lower priority, review if time allows):**
+**Original wiring spec (ins-d1/d2/d3/d6) — still valid:**
+Add `onOpenObject` prop to `ConnectionStatusCard`, `SchemaDriftResolutionCard`, `MultiModelDriftCard`, `NullRateCard` in `AgentPanel.tsx`. Komal's `AgentPanel.tsx` (`/Users/vivek.sahi/Downloads/DataStudioV2 3 komal/components/AgentPanel.tsx`) has the complete implementation. Key wiring per card:
+- `ConnectionStatusCard`: blocked model names (Sales Analytics, Sales Performance, Revenue Forecast) → `onOpenObject?.(m)`
+- `SchemaDriftResolutionCard`: "FnOps Cost Model" header → `onOpenObject?.('FnOps Cost Model', 'cost_center')`; expanded dependent/liveboard names → `onOpenObject?.(name)`
+- `MultiModelDriftCard`: model name cards → `onOpenObject?.(model.name, model.columns[0])`; dependent names → `onOpenObject?.(d.name, d.ref)`
+- `NullRateCard`: "Marketing Campaign Attribution" → `onOpenObject?.('Marketing Campaign Attribution', 'campaign_id')`
+
+All `OBJECT_DATA` entries are already in `FullChatView.tsx`. The `onOpenObject` prop is already threaded from `AgentPanel` → `MessageBubble` → card render sites.
+
+---
+
+### (old) Fix object-click panel for all 6 wired Pulse flows — superseded by item 1 above
+
+**Context — what was decided (session 102):**
+- Debugging is not editing. Clicking an object name in a Pulse flow should open a **read-only contextual view** alongside the chat, not the full Workspace edit artifact.
+- `FullChatView` now has a split layout: object panel slides in from the left (flex 1), agent narrows to 420px on the right. Context panel hides while split. This was merged from Komal's `FullChatView.tsx` in session 102 — `ObjectPanel` (models/dependents: columns + broken/null status) and `LiveboardObjectView` (real `LiveboardHeader` + `AnswerTile` grid with broken tile overlays) are live.
+
+**Current state — which flows open objects on click:**
+- ✅ **ins-o3** (Semantic gaps) — "Marketing Campaign Attribution" + column names open `ObjectPanel`
+- ✅ **ins-o4** (Cache miss) — "Sales Performance" opens `ObjectPanel`
+- ❌ **ins-d1** (dbt connection) — model names are plain `<span>` chips, not clickable at all
+- ❌ **ins-d2** (Schema drift single) — accordion items ("Finance Operations Dashboard", "Q4 Cost Analysis" etc.) render as blue `<button>` elements with hover-underline but **zero `onClick`** — look clickable, do nothing; "FnOps Cost Model" in header is plain `<span>`
+- ❌ **ins-d3** (Schema drift multi) — model/dependent names are plain `<span>` chips, not clickable
+- ❌ **ins-d6** (Null rate) — "Marketing Campaign Attribution" in header is plain `<span>`, not clickable
+
+**What needs to happen:**
+Add `onOpenObject` prop to all 4 debugging cards (`ConnectionStatusCard`, `SchemaDriftResolutionCard`, `MultiModelDriftCard`, `NullRateCard`) and wire object names to call it. Komal's `AgentPanel.tsx` (`/Users/vivek.sahi/Downloads/DataStudioV2 3 komal/components/AgentPanel.tsx`) has the complete implementation for all 4 cards — use as the source. Key wiring per card:
+- `ConnectionStatusCard`: blocked model names (Sales Analytics, Sales Performance, Revenue Forecast) → `onOpenObject?.(m)`
+- `SchemaDriftResolutionCard`: "FnOps Cost Model" header → `onOpenObject?.('FnOps Cost Model', 'cost_center')`; expanded dependent/liveboard names → `onOpenObject?.(name, group.highlightCol)`
+- `MultiModelDriftCard`: model name cards → `onOpenObject?.(model.name, model.columns[0])`; dependent names → `onOpenObject?.(d.name, d.ref)`
+- `NullRateCard`: "Marketing Campaign Attribution" → `onOpenObject?.('Marketing Campaign Attribution', 'campaign_id')`
+
+All the `OBJECT_DATA` these names resolve to is already in `FullChatView.tsx` (merged session 102). The `onOpenObject` prop is already threaded from `AgentPanel` → `MessageBubble` → card render sites for the 4 debugging cards — just need to add it to each card's props and wire the calls.
+
+**Also: verify ins-o3 and ins-o4 object opens correctly end-to-end** — the panel opens but confirm the right columns are highlighted and the agent note makes sense in context.
+
+**Not wired (lower priority — no SCRIPT, open chat only):**
 - ins-d4, ins-d5 — debugging flows with no dedicated SCRIPT
 - ins-o1 (slow query), ins-o2 (unused columns), ins-o5 (low adoption) — optimization flows with no SCRIPT
 
@@ -71,6 +109,31 @@ Walk through every wired Pulse insight in the live prototype and verify the full
 ### 5. Team review + iterate on feedback
 
 Any remaining visual or copy feedback from the team after reviewing the updated prototype.
+
+---
+
+### 2026-05-12 (session 103)
+
+**Pulse debug flow — artifact layout overhaul in FullChatView.**
+
+- **Object panel moved to right:** artifact now opens on the right of the agent (was left, pushing agent right). Fixed by reordering flex children in `FullChatView.tsx`.
+- **Single AgentPanel instance:** removed the split ternary that was mounting two separate `<AgentPanel>` instances. Agent is now a single instance in a wrapper div that changes size — no remount, no state/conversation reset when artifact opens.
+- **Artifact card treatment:** outer wrapper uses `background-base` + `padding: 8px 8px 8px 0` (matches Workspace canvas column). Inner card: `border: 1px solid border-divider`, `borderRadius: 10`, `background-base`. ObjectPanel identity row: 48px, `border-divider` token, `content-primary` name — matches Workspace artifact identity row.
+- **Draggable agent width:** agent width state + drag handle (5px) between agent and artifact. Default on artifact open: 40% of window width. Min 320px. Same `useEffect` + `mouseMove/mouseUp` pattern as Workspace.
+- **Independent context panel:** toggle button always visible in header (was hidden in split mode). Context panel driven only by `contextPanelOpen` toggle — artifact state does not force it open or closed.
+- **Referenced objects log:** `referencedObjects` state accumulates object names as they're clicked. `allModels` = deduped union of flow's pre-seeded models + referenced objects. Context panel shows this live list when open.
+- Build: clean ✓
+
+---
+
+### 2026-05-12 (session 102)
+
+**Pulse flow review — object-click paradigm decision + FullChatView merge.**
+
+- **Paradigm decision:** In Pulse/debug flows, clicking a model or liveboard name opens a read-only contextual view (not the Workspace edit artifact). The conversation stays the container; the object view slides in alongside it. Debugging = agent is the actor, user is the reviewer — the full edit surface (publish, DQ chip, AIRS chip) is wrong here.
+- **FullChatView split layout:** merged from Komal's `DataStudioV2 3 komal/components/FullChatView.tsx`. Added `OBJECT_DATA` (17 objects: models, dependents, liveboards with columns + broken/null status), `OBJECT_NOTES` (per-object contextual agent notes), `LIVEBOARD_DATA` (3 liveboards with tile layouts), `LiveboardObjectView` (real `LiveboardHeader` + `AnswerTile` grid, broken tiles show red overlay), `ObjectPanel` (columns table: name · type · status badges). On click: object panel slides in from left (flex 1), agent narrows to 420px, context panel hides. Agent injects contextual note into chat. Close button restores full-width layout.
+- **Object click state across 6 flows:** ins-o3 and ins-o4 are working (onOpenObject already on those cards from session 101). ins-d1/d2/d3/d6 are not — their cards lack the onOpenObject prop. Full details and fix plan documented in Next up item 1.
+- Build: clean ✓
 
 ---
 
