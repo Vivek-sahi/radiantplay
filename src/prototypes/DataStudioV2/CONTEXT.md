@@ -39,20 +39,55 @@ The product moved away from a side-panel co-pilot toward a full-screen agent-fir
 
 ## Next up
 
-### 1. Verify test + coaching arc end-to-end
+### 1. Review AI Readiness Score explorations
 
-The flow is now wired and the demo questions are surfaced. Do a live run-through:
-- Models page → click any model → workspace opens (buildStep: healthy)
-- Click the flask pill in the prompt bar → mode switches to test
-- Click "What is our ROAS by campaign and channel?" chip → Looks right
-- Click "What is the budget utilisation rate?" chip → Something's off → pick coaching option → Fix in build
-- Verify mode switches to build, coaching script fires
+Review the 4 Playground explorations at `/data-studio-v2/playground` under **"AI Readiness Score"**:
+- `airs1` — Score chip in identity row (3 variants + compact popover)
+- `airs2` — Breakdown panel (Lighthouse-style vs Checklist-style)
+- `airs3` — Publish-time readiness gate ("Improve first" flow)
+- `airs4` — Models list with two signals (3 layout approaches)
 
-If any interactions feel off, iterate here.
+Decide: which chip variant, which panel style, whether the publish gate is the right entry point. Research doc at `research/ai-readiness-score.md`.
 
 ### 2. Team review + iterate on feedback
 
 Any remaining feedback items from the team.
+
+---
+
+## Done — Test + coaching polish pass 2 (2026-05-12, session 94)
+
+**Sample questions — full redesign:**
+- Replaced 4 wrapping pill buttons with a collapsible "Sample questions" strip (closed by default, expands upward). Same width as the prompt bar.
+- Expanded rows use DayClarifyCard-style numbered boxes + question text. Click fills prompt bar + closes strip.
+- Refresh button (Radiant `Icon name="refresh"`) cycles between two groups of 4 from an 8-question pool; only visible when open.
+- Chevron: ∧ (up) when closed, ∨ (down) when open — content expands above the header strip.
+- Font size: `fs.sm` (was `fs.xs`).
+- `DEMO_QUESTIONS` renamed to `DEMO_QUESTION_POOL` with 8 questions; first group retains the two scripted demo questions.
+
+**Spotter + coaching step style updated:**
+- Both spotter-answer and coaching-result steps now use the build agent pattern: 10×10 grey dot (opacity 0.4 done / 1.0 running), 1px `border-default` connecting line, always `fw.semibold` + `content-primary` label. No more green circles or gradient text.
+
+**Auto-collapse working steps:**
+- Spotter-answer: steps collapse the moment `answerRevealed` fires (`workingExpanded: false` set alongside).
+- Coaching-result: steps collapse when `debugResultRevealed` fires; "Show work" toggle added (matching build agent pattern).
+
+**Divider above prompt bar removed** — `borderTop: 'none'` on the prompt bar wrapper (all modes). PromptBar's own border provides sufficient separation.
+
+- Build: clean ✓
+
+---
+
+## Done — Test + coaching flow polish (2026-05-12, session 93)
+
+4 feedback items addressed in `AgentPanel.tsx`:
+
+- **"Try a question" pills** — `fontSize: 11` → `fs.xs`; hover color `#7C3AED` (hardcoded purple) → `c['content-brand']` on both border and text.
+- **Coaching clarify card** — "Something's off" no longer adds a coaching-prompt message inline in chat. Instead sets `coachingPrompt` state → renders `CoachingClarifyCard` floating above the prompt bar (same DayClarifyCard visual pattern: bordered card, numbered option rows, hover-to-background-subtle). On selection: adds a user bubble with chosen option, then pushes coaching-result message. Prompt bar disabled while card is visible.
+- **"Fix in build →" → "Fix this"** — label change on the coaching-result CTA button.
+- **No "Switch to test mode" after fixing** — removed `executionSuggestions: ['Switch to test mode']` from all 5 coaching scripts (`coaching_time_period`, `coaching_number_wrong`, `coaching_wrong_columns`, `coaching_join_wrong`, `coaching_something_else`). Each execution text now ends with "Ask another question to verify the fix." `COACHING_DEBUG_RESULTS` text updated to remove "Switch to Build" references (button does that automatically now).
+
+- Build: clean ✓
 
 ---
 
@@ -395,6 +430,23 @@ Original 6-situation arc (still valid for demo scripting) → `SCRIPT.md`
 ## Session log
 
 _Last 3 sessions. Full history → [SESSION_LOG.md](./SESSION_LOG.md)_
+
+---
+
+### 2026-05-12 (session 95)
+
+**Sample questions strip polish + AI Readiness Score research + Playground explorations.**
+
+- **Strip spacing**: removed `marginBottom: sp.A` from strip wrapper — gap between strip and prompt bar halved (~12px → ~8px).
+- **Strip background**: header strip now uses `background-subtle` (hover → `background-sunken`) to separate it from the panel surface.
+- **Strip expanded shadow**: when open, a `shadows.sm` wrapper lifts the whole block off the background; question rows use `background-subtle` (was `background-base`); number boxes flipped to white for contrast.
+- **AI Readiness Score research doc**: written at `research/ai-readiness-score.md`. Covers: what the score means to a data analyst, 9 ranked factors affecting AI answer quality, competitive landscape (Snowflake Cortex, Databricks Genie, dbt, Alation), 4-dimension score structure with tiers, and design principle ("actionable, not just informational"). Decision: Option D (chip + popover + publish gate + test mode integration), build in phases.
+- **Playground explorations (airs1–airs4)**: 4 new explorations under "AI Readiness Score" tab at `/data-studio-v2/playground`:
+  - `airs1`: 3 chip variants in identity row — tier label / score+ring / 4-dot segmented; click opens compact breakdown popover
+  - `airs2`: Two detail panels side by side — Lighthouse-style (gauge + bars + opportunities + diagnostics) vs Checklist-style (collapsible sections, binary items)
+  - `airs3`: Publish-time gate — "Before you publish" intercept with "Improve first" checklist; checks off items with live score feedback; publish button turns green when all addressed
+  - `airs4`: Models list with Health + AI Readiness in 3 layout approaches (two columns / combined / single worst-case), with tradeoff notes
+- Build: clean ✓
 
 ---
 
