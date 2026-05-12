@@ -39,14 +39,16 @@ The product moved away from a side-panel co-pilot toward a full-screen agent-fir
 
 ## Next up
 
-### 1. Review test + coaching flow in prototype
+### 1. Verify test + coaching arc end-to-end
 
-Start the dev server, run through the full test + coaching arc in the prototype:
-- Switch to test mode via prompt bar pill
-- Ask "What is our ROAS by campaign and channel?" → mark Looks right
-- Ask "What is the budget utilisation rate?" → mark Something's off → pick a coaching option → Fix in build
-- Verify the coaching script fires, mode switches back to build, fix is applied
-- Iterate on any visual or interaction issues found
+The flow is now wired and the demo questions are surfaced. Do a live run-through:
+- Models page → click any model → workspace opens (buildStep: healthy)
+- Click the flask pill in the prompt bar → mode switches to test
+- Click "What is our ROAS by campaign and channel?" chip → Looks right
+- Click "What is the budget utilisation rate?" chip → Something's off → pick coaching option → Fix in build
+- Verify mode switches to build, coaching script fires
+
+If any interactions feel off, iterate here.
 
 ### 2. Team review + iterate on feedback
 
@@ -393,6 +395,23 @@ Original 6-situation arc (still valid for demo scripting) → `SCRIPT.md`
 ## Session log
 
 _Last 3 sessions. Full history → [SESSION_LOG.md](./SESSION_LOG.md)_
+
+---
+
+### 2026-05-12 (session 92)
+
+**Test + coaching flow review and fixes.**
+
+- **DEMO_QUESTIONS now surfaced in UI** — added a "Try a question" pill row above the prompt bar when `agentMode === 'test'`. 4 clickable pills (the exact scripted question strings) that fill the prompt bar on click. Eliminates the need to type exact strings during a demo.
+- **"Switch to test mode" chip fixed** — was calling `setProject(p => ({ ...p, testMode: true }))` (testMode was removed from ProjectState in session 91). Now calls `setAgentMode('test')` directly — the toggle pill actually flips.
+- **User bubble normalized** — spotter-user messages no longer show "Test question" label; render same as normal user bubbles.
+- **Agent avatar normalized** — Spotter answers now use `AgentAvatar` (blue) instead of `SpotterIconAvatar` (purple Spotter ring). Removed the SpotterIconAvatar component entirely.
+- **TypeScript fixes** in AgentPanel:
+  - `fw.bold` → `fw.semibold` in measure chip (bold doesn't exist in token type)
+  - `convert_currency` script: added missing `duration: ''` and `proposal: ''` fields required by the FlowDef type
+  - Removed leftover session-91 dead code: `TestMsg` interface, `SpotterIcon/Sm`, `FilterIcon`, `TChevronIcon`, `TableViewIcon/ChartViewIcon`, `DownloadIcon`, `TSpinner`, `testChipStyle`, `qCount`, `stepCount`, `onOpenPlanModal` (prop + destructure + call site)
+  - Removed unused imports: `Avatar`, `TextInput`, `Button`, `ts` token
+- Build: clean ✓
 
 ---
 
