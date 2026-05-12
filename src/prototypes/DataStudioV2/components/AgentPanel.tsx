@@ -7,6 +7,7 @@ import { tableMetadata, relationships, CACHE_STATS, CONNECTIONS } from '../data/
 import PromptBar, { PromptBarRef } from './PromptBar';
 import ConnectionPill from './ConnectionPill';
 import DataQualityPlanModal from './DataQualityPlanModal';
+import { Icon } from '../../../components/icons';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -1203,12 +1204,11 @@ Want me to go ahead — add the table, create the join, and populate the columns
     ],
     duration: '6 seconds',
     proposal: '',
-    execution: `Fixed. Updated \`order_date\` with granularity context:\n\n*"Use monthly aggregation for trend analysis; daily for operational queries. Default to the time period explicitly stated in the question."*\n\nSpotter will now apply the right time period by default.`,
+    execution: `Fixed. Updated \`order_date\` with granularity context:\n\n*"Use monthly aggregation for trend analysis; daily for operational queries. Default to the time period explicitly stated in the question."*\n\nSpotter will now apply the right time period by default. Ask another question to verify the fix.`,
     autoComplete: true,
     stepDelay: 800,
     nextStep: 'healthy',
     preserveStep: true,
-    executionSuggestions: ['Switch to test mode'],
     columnOverridesUpdate: {
       order_date: { aiContext: 'Date the order was placed, normalized to YYYY-MM-DD. Use monthly aggregation for trend analysis; daily for operational queries. Default to the time period explicitly stated in the question.' },
     },
@@ -1222,12 +1222,11 @@ Want me to go ahead — add the table, create the join, and populate the columns
     ],
     duration: '6 seconds',
     proposal: '',
-    execution: `Fixed. Added aggregation rule to \`amount\`:\n\n*"Exclude orders where status = refunded from revenue calculations. Use SUM for total net revenue only."*\n\nROAS will now reflect net revenue, not gross.`,
+    execution: `Fixed. Added aggregation rule to \`amount\`:\n\n*"Exclude orders where status = refunded from revenue calculations. Use SUM for total net revenue only."*\n\nROAS will now reflect net revenue, not gross. Ask another question to verify the fix.`,
     autoComplete: true,
     stepDelay: 800,
     nextStep: 'healthy',
     preserveStep: true,
-    executionSuggestions: ['Switch to test mode'],
     columnOverridesUpdate: {
       amount: { aiContext: 'Net order value in USD. Exclude orders with status = refunded from revenue calculations. Use SUM for total net revenue, AVG for average order value.' },
     },
@@ -1241,12 +1240,11 @@ Want me to go ahead — add the table, create the join, and populate the columns
     ],
     duration: '6 seconds',
     proposal: '',
-    execution: `Fixed. Added descriptions to 5 columns most likely used for this query:\n✓ users.segment\n✓ orders.status\n✓ campaigns.channel\n✓ orders.amount\n✓ users.lifetime_value\n\nSpotter now has clear context for which columns to use.`,
+    execution: `Fixed. Added descriptions to 5 columns most likely used for this query:\n✓ users.segment\n✓ orders.status\n✓ campaigns.channel\n✓ orders.amount\n✓ users.lifetime_value\n\nSpotter now has clear context for which columns to use. Ask another question to verify the fix.`,
     autoComplete: true,
     stepDelay: 800,
     nextStep: 'healthy',
     preserveStep: true,
-    executionSuggestions: ['Switch to test mode'],
     columnOverridesUpdate: {
       segment:        { aiContext: 'Customer tier based on company size and annual revenue. Values: Enterprise, Mid-market, SMB. Null = unclassified users — expected, not an error.' },
       status:         { aiContext: 'Current state of the order. Values: completed, pending, cancelled, refunded.' },
@@ -1264,12 +1262,11 @@ Want me to go ahead — add the table, create the join, and populate the columns
     ],
     duration: '6 seconds',
     proposal: '',
-    execution: `Fixed. Added join context to the model:\n\n*"Always aggregate orders before joining to campaigns to avoid row multiplication. Use SUM at the order level first."*\n\nSpotter will handle this join correctly going forward.`,
+    execution: `Fixed. Added join context to the model:\n\n*"Always aggregate orders before joining to campaigns to avoid row multiplication. Use SUM at the order level first."*\n\nSpotter will handle this join correctly going forward. Ask another question to verify the fix.`,
     autoComplete: true,
     stepDelay: 800,
     nextStep: 'healthy',
     preserveStep: true,
-    executionSuggestions: ['Switch to test mode'],
   },
 
   coaching_something_else: {
@@ -1280,12 +1277,11 @@ Want me to go ahead — add the table, create the join, and populate the columns
     ],
     duration: '6 seconds',
     proposal: '',
-    execution: `Applied a best-guess fix: added descriptions to the 4 most likely columns involved in this query.\n\nIf the answer is still wrong after testing, try selecting the specific option that matches the issue — "number wrong", "time period", or "join".`,
+    execution: `Applied a best-guess fix: added descriptions to the 4 most likely columns involved in this query.\n\nIf the answer is still wrong, try selecting the specific option that matches the issue — "number wrong", "time period", or "join". Ask another question to verify the fix.`,
     autoComplete: true,
     stepDelay: 800,
     nextStep: 'healthy',
     preserveStep: true,
-    executionSuggestions: ['Switch to test mode'],
   },
 
   // ── Add synonyms to impressions (Situation 1 / Build) ────────────────────────
@@ -1837,11 +1833,15 @@ const SPOTTER_ANSWERS: Record<string, SpotterAnswer> = {
   },
 };
 
-const DEMO_QUESTIONS = [
+const DEMO_QUESTION_POOL = [
   'What is our ROAS by campaign and channel?',
+  'What is the budget utilisation rate?',
   'Which user segments convert best?',
   'What is revenue by region?',
-  'What is the budget utilisation rate?',
+  'Show me campaign spend by channel last quarter',
+  'Which campaigns are over budget this month?',
+  'What is our cost per acquisition by channel?',
+  'How has conversion rate trended over the last 6 months?',
 ];
 
 const TTypewriter: React.FC<{ text: string; active: boolean }> = ({ text, active }) => {
@@ -1902,11 +1902,11 @@ const COACHING_DEBUG_STEPS: Record<string, Array<{ label: string; detail: string
 };
 
 const COACHING_DEBUG_RESULTS: Record<string, string> = {
-  'The number is wrong': 'The metric formula may be using the wrong aggregation or column. I\'ve flagged the likely culprit — switch to Build and I\'ll diagnose and fix it.',
-  'The time period is wrong': 'The date column used in this answer may be missing a description or granularity rule. Switch to Build and I\'ll add the right context so Spotter filters correctly.',
-  'The wrong columns or tables are being used': 'Several columns in this model are missing descriptions, so Spotter is guessing by column name alone. Switch to Build and I\'ll write descriptions for all of them.',
-  'The join between tables is wrong': 'The join configuration may be causing row duplication or incorrect aggregation. Switch to Build to review and fix the join definition.',
-  'Something else': 'I\'ve scanned the model but need more context to isolate the issue. Switch to Build and describe the problem — I\'ll investigate from there.',
+  'The number is wrong': 'The metric formula may be using the wrong aggregation or column. I\'ve flagged the likely culprit.',
+  'The time period is wrong': 'The date column used in this answer may be missing a description or granularity rule.',
+  'The wrong columns or tables are being used': 'Several columns in this model are missing descriptions, so Spotter is guessing by column name alone.',
+  'The join between tables is wrong': 'The join configuration may be causing row duplication or incorrect aggregation.',
+  'Something else': 'I\'ve scanned the model but need more context to isolate the issue.',
 };
 
 const TFormattedMsg: React.FC<{ content: string }> = ({ content }) => {
@@ -1954,6 +1954,9 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
   const [planVersion, setPlanVersion]    = useState(1);
   const [agentMode, setAgentMode]        = useState<'build' | 'test'>('build');
   const [connFilter, setConnFilter]      = useState<string | null>(null);
+  const [coachingPrompt, setCoachingPrompt] = useState<{ sourceQuestion: string } | null>(null);
+  const [sampleQOpen, setSampleQOpen]       = useState(false);
+  const [sampleQOffset, setSampleQOffset]   = useState(0);
   const messagesEndRef           = useRef<HTMLDivElement>(null);
   const scrollContainerRef       = useRef<HTMLDivElement>(null);
   const isNearBottomRef          = useRef(true);
@@ -2613,7 +2616,7 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
         }, (s + 1) * STEP_MS);
       });
       setTimeout(() => {
-        setMessages(prev => prev.map(m => m.id === aiId ? { ...m, answerRevealed: true } : m));
+        setMessages(prev => prev.map(m => m.id === aiId ? { ...m, answerRevealed: true, workingExpanded: false } : m));
       }, steps.length * STEP_MS + 500);
     }, 600);
   };
@@ -2623,21 +2626,18 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
       m.id === msgId ? { ...m, feedbackState: 'answered' as const, feedbackAnswer: answer } : m
     ));
     if (answer === 'correct') return;
-    const promptId = `cp-${Date.now()}`;
-    setMessages(prev => [...prev, {
-      id: promptId, type: 'coaching-prompt', content: '',
-      coachingOptions: COACHING_OPTIONS,
-      sourceQuestion,
-    }]);
+    setCoachingPrompt({ sourceQuestion });
   };
 
-  const handleSpotterCoachingOption = (msgId: string, option: string, sourceQuestion: string) => {
-    setMessages(prev => prev.map(m => m.id === msgId ? { ...m, selectedOption: option } : m));
+  const handleCoachingSelect = (option: string) => {
+    const src = coachingPrompt?.sourceQuestion ?? '';
+    setCoachingPrompt(null);
+    setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: option }]);
     const resultId = `cr-${Date.now()}`;
     const steps = COACHING_DEBUG_STEPS[option] ?? COACHING_DEBUG_STEPS['Something else'];
     setMessages(prev => [...prev, {
       id: resultId, type: 'coaching-result', content: '',
-      debugCategory: option, sourceQuestion,
+      debugCategory: option, sourceQuestion: src,
       debugSteps: steps, debugRevealedSteps: 0, debugResultRevealed: false,
     }]);
     steps.forEach((_, idx) => {
@@ -2648,7 +2648,7 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
         if (idx === steps.length - 1) {
           setTimeout(() => {
             setMessages(prev => prev.map(m =>
-              m.id === resultId ? { ...m, debugResultRevealed: true } : m
+              m.id === resultId ? { ...m, debugResultRevealed: true, workingExpanded: false } : m
             ));
           }, 500);
         }
@@ -2878,17 +2878,15 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
                             const stepRunning = isAnimating && si === visibleSteps.length - 1;
                             const stepDone = !stepRunning;
                             return (
-                              <div key={si} style={{ display: 'flex', gap: 10, animation: 'ag-step-in 0.22s ease' }}>
-                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 14, flexShrink: 0 }}>
-                                  <div style={{ width: 14, height: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 3 }}>
-                                    {stepRunning ? <Spinner /> : <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#22C55E' }} />}
-                                  </div>
+                              <div key={si} style={{ display: 'flex', gap: 12, animation: 'ag-step-in 0.22s ease' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 10, flexShrink: 0 }}>
+                                  <div style={{ width: 10, height: 10, borderRadius: '50%', backgroundColor: c['content-secondary'], opacity: stepRunning ? 1 : 0.4, flexShrink: 0, marginTop: 5 }} />
                                   {si < visibleSteps.length - 1 && (
-                                    <div style={{ flex: 1, width: 2, minHeight: 12, marginTop: 2, backgroundColor: stepDone ? '#22C55E' : c['border-divider'], transition: 'background-color 0.4s ease', borderRadius: 1 }} />
+                                    <div style={{ flex: 1, width: 1, minHeight: 10, marginTop: 3, backgroundColor: c['border-default'] }} />
                                   )}
                                 </div>
-                                <div style={{ flex: 1, paddingBottom: si < visibleSteps.length - 1 ? sp.C : 0 }}>
-                                  <span className={stepRunning ? 'ag-gradient-text' : undefined} style={{ fontSize: fs.sm, fontWeight: stepRunning ? fw.medium : fw.regular, lineHeight: '20px', color: stepRunning ? undefined : c['content-secondary'] }}>
+                                <div style={{ flex: 1, paddingBottom: si < visibleSteps.length - 1 ? sp.D : 0 }}>
+                                  <span style={{ fontSize: fs.sm, fontWeight: fw.semibold, lineHeight: '20px', color: c['content-primary'] }}>
                                     {step.title}
                                   </span>
                                   {step.desc && (
@@ -2967,31 +2965,6 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
             );
           }
 
-          // ── Coaching prompt (what went wrong?) ───────────────────────────────
-          if (msg.type === 'coaching-prompt') {
-            return (
-              <div key={msg.id} style={{ display: 'flex', gap: sp.B, alignItems: 'flex-start' }}>
-                <AgentAvatar working={false} />
-                <div style={{ flex: 1, minWidth: 0, paddingTop: 2 }}>
-                  <p style={{ margin: `0 0 ${sp.C}px`, fontSize: fs.sm, color: c['content-primary'], lineHeight: '20px' }}>
-                    Got it. What went wrong with this answer?
-                  </p>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: sp.B }}>
-                    {msg.coachingOptions?.map(opt => {
-                      const isSelected = msg.selectedOption === opt;
-                      const isDimmed = !!msg.selectedOption && !isSelected;
-                      return (
-                        <button key={opt}
-                          onClick={() => !msg.selectedOption && handleSpotterCoachingOption(msg.id, opt, msg.sourceQuestion ?? '')}
-                          style={{ textAlign: 'left', border: `1px solid ${isSelected ? '#2770ef' : c['border-default']}`, borderRadius: 8, padding: `${sp.B}px ${sp.C}px`, fontSize: fs.xs, backgroundColor: isSelected ? '#EFF6FF' : c['background-base'], color: isDimmed ? c['content-secondary'] : isSelected ? '#1D4ED8' : c['content-primary'], cursor: msg.selectedOption ? 'default' : 'pointer', fontFamily: ff.primary, fontWeight: isSelected ? fw.medium : fw.regular, opacity: isDimmed ? 0.5 : 1, transition: 'all 0.15s' }}
-                        >{opt}</button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-            );
-          }
 
           // ── Coaching result (debug steps + fix button) ───────────────────────
           if (msg.type === 'coaching-result') {
@@ -3006,22 +2979,30 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
                   <div style={{ display: 'flex', gap: sp.B, alignItems: 'flex-start' }}>
                     <AgentAvatar working={dbAnimating} />
                     <div style={{ flex: 1, minWidth: 0, paddingTop: 2 }}>
+                      {!dbAnimating && (
+                        <button
+                          onClick={() => setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, workingExpanded: !m.workingExpanded } : m))}
+                          style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer', background: 'none', border: 'none', padding: 0, fontFamily: ff.primary, marginBottom: msg.workingExpanded ? sp.C : 0 }}
+                        >
+                          <span style={{ fontSize: fs.xs, color: c['content-secondary'], fontWeight: fw.medium }}>Show work</span>
+                          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke={c['content-secondary']} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: msg.workingExpanded ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.15s' }}><polyline points="2,4 6,8 10,4" /></svg>
+                        </button>
+                      )}
+                      {(dbAnimating || msg.workingExpanded) && (
                       <div style={{ display: 'flex', flexDirection: 'column' }}>
                         {dbVisibleSteps.map((step, si) => {
                           const stepRunning = dbAnimating && si === dbVisibleSteps.length - 1;
                           const stepDone = !stepRunning;
                           return (
-                            <div key={si} style={{ display: 'flex', gap: 10, animation: 'ag-step-in 0.22s ease' }}>
-                              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 14, flexShrink: 0 }}>
-                                <div style={{ width: 14, height: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 3 }}>
-                                  {stepRunning ? <Spinner /> : <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#22C55E' }} />}
-                                </div>
+                            <div key={si} style={{ display: 'flex', gap: 12, animation: 'ag-step-in 0.22s ease' }}>
+                              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 10, flexShrink: 0 }}>
+                                <div style={{ width: 10, height: 10, borderRadius: '50%', backgroundColor: c['content-secondary'], opacity: stepRunning ? 1 : 0.4, flexShrink: 0, marginTop: 5 }} />
                                 {si < dbVisibleSteps.length - 1 && (
-                                  <div style={{ flex: 1, width: 2, minHeight: 12, marginTop: 2, backgroundColor: stepDone ? '#22C55E' : c['border-divider'], transition: 'background-color 0.4s ease', borderRadius: 1 }} />
+                                  <div style={{ flex: 1, width: 1, minHeight: 10, marginTop: 3, backgroundColor: c['border-default'] }} />
                                 )}
                               </div>
-                              <div style={{ flex: 1, paddingBottom: si < dbVisibleSteps.length - 1 ? sp.C : 0 }}>
-                                <span className={stepRunning ? 'ag-gradient-text' : undefined} style={{ fontSize: fs.sm, fontWeight: stepRunning ? fw.medium : fw.regular, lineHeight: '20px', color: stepRunning ? undefined : c['content-secondary'] }}>
+                              <div style={{ flex: 1, paddingBottom: si < dbVisibleSteps.length - 1 ? sp.D : 0 }}>
+                                <span style={{ fontSize: fs.sm, fontWeight: fw.semibold, lineHeight: '20px', color: c['content-primary'] }}>
                                   {step.label}
                                 </span>
                                 {step.detail && (
@@ -3034,6 +3015,7 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
                           );
                         })}
                       </div>
+                      )}
                     </div>
                   </div>
                 )}
@@ -3047,7 +3029,7 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
                         style={{ padding: `${sp.B}px ${sp.C}px`, border: 'none', borderRadius: 8, background: '#2770ef', fontSize: fs.xs, fontWeight: fw.medium, color: '#fff', cursor: 'pointer', fontFamily: ff.primary }}
                         onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#1E5FD8')}
                         onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#2770ef')}
-                      >Fix in build →</button>
+                      >Fix this</button>
                     </div>
                   </div>
                 )}
@@ -3099,33 +3081,70 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
         </div>
       )}
 
-      {/* Test mode — demo question suggestions */}
-      {agentMode === 'test' && (
-        <div style={{ padding: `${sp.B}px ${sp.D}px 0`, flexShrink: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: sp.A, marginBottom: sp.B }}>
-            <svg width="12" height="12" viewBox="0 0 26 26" fill="none" style={{ flexShrink: 0, opacity: 0.5 }}>
-              <circle cx="13" cy="13" r="11" stroke={c['content-secondary']} strokeWidth="1.8"/>
-              <circle cx="13" cy="13" r="5.5" stroke={c['content-secondary']} strokeWidth="1.8"/>
-              <circle cx="13" cy="13" r="2" fill={c['content-secondary']}/>
-            </svg>
-            <span style={{ fontSize: 11, color: c['content-secondary'], fontWeight: fw.medium }}>Try a question</span>
-          </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: sp.A }}>
-            {DEMO_QUESTIONS.map(q => (
-              <button key={q} onClick={() => { promptBarRef.current?.setValue(q); }}
-                style={{ padding: '4px 10px', border: `1px solid ${c['border-default']}`, borderRadius: 20, background: 'none', fontSize: 11, color: c['content-secondary'], cursor: 'pointer', fontFamily: ff.primary, whiteSpace: 'nowrap', transition: 'all 0.12s' }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = '#7C3AED'; e.currentTarget.style.color = '#7C3AED'; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = c['border-default']; e.currentTarget.style.color = c['content-secondary']; }}
-              >{q}</button>
-            ))}
-          </div>
+      {/* Coaching clarify card — floats above prompt bar when user flags a Spotter answer */}
+      {coachingPrompt && (
+        <div style={{ padding: `0 ${sp.C}px`, flexShrink: 0 }}>
+          <CoachingClarifyCard onSelect={handleCoachingSelect} />
         </div>
       )}
+
+      {/* Test mode — sample questions accordion */}
+      {agentMode === 'test' && (() => {
+        const groupSize = 4;
+        const groupCount = Math.ceil(DEMO_QUESTION_POOL.length / groupSize);
+        const groupIndex = sampleQOffset % groupCount;
+        const currentQuestions = DEMO_QUESTION_POOL.slice(groupIndex * groupSize, groupIndex * groupSize + groupSize);
+        return (
+          <div style={{ padding: `0 ${sp.C}px`, flexShrink: 0 }}>
+            {/* Expanded question rows — above the header strip */}
+            {sampleQOpen && (
+              <div style={{ border: `1px solid ${c['border-divider']}`, borderBottom: 'none', borderRadius: '10px 10px 0 0', overflow: 'hidden' }}>
+                {currentQuestions.map((q, idx) => (
+                  <div key={q}
+                    onClick={() => { promptBarRef.current?.setValue(q); setSampleQOpen(false); }}
+                    style={{ display: 'flex', alignItems: 'center', gap: sp.C, padding: `${sp.C}px ${sp.D}px`, borderBottom: idx === currentQuestions.length - 1 ? 'none' : `1px solid ${c['border-divider']}`, backgroundColor: c['background-base'], cursor: 'pointer', transition: 'background-color 0.1s' }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = c['background-subtle']; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = c['background-base']; }}
+                  >
+                    <div style={{ width: 26, height: 26, borderRadius: 7, flexShrink: 0, backgroundColor: c['background-subtle'], border: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: fw.medium, fontFamily: ff.mono, color: c['content-secondary'] }}>
+                      {idx + 1}
+                    </div>
+                    <span style={{ flex: 1, fontSize: fs.sm, color: c['content-primary'], fontFamily: ff.primary }}>{q}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            {/* Strip header */}
+            <div
+              onClick={() => setSampleQOpen(o => !o)}
+              style={{ display: 'flex', alignItems: 'center', gap: sp.B, padding: `${sp.B}px ${sp.C}px`, border: `1px solid ${c['border-divider']}`, borderRadius: sampleQOpen ? '0 0 10px 10px' : 10, cursor: 'pointer', backgroundColor: c['background-subtle'], userSelect: 'none' as const, transition: 'background-color 0.1s' }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = c['background-sunken']; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = c['background-subtle']; }}
+            >
+              <span style={{ flex: 1, fontSize: fs.sm, fontWeight: fw.medium, color: c['content-secondary'], fontFamily: ff.primary }}>Sample questions</span>
+              {sampleQOpen && (
+                <button
+                  onClick={e => { e.stopPropagation(); setSampleQOffset(o => o + 1); }}
+                  title="Refresh questions"
+                  style={{ width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', borderRadius: 4, color: c['content-secondary'], padding: 0, flexShrink: 0 }}
+                  onMouseEnter={e => { e.currentTarget.style.color = c['content-primary']; }}
+                  onMouseLeave={e => { e.currentTarget.style.color = c['content-secondary']; }}
+                >
+                  <Icon name="refresh" size="s" />
+                </button>
+              )}
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke={c['content-secondary']} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: sampleQOpen ? 'rotate(0deg)' : 'rotate(180deg)', transition: 'transform 0.15s', flexShrink: 0 }}>
+                <polyline points="2,4 6,8 10,4" />
+              </svg>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Prompt bar */}
       <div style={{
         padding: fullPage ? `${sp.B}px 24px ${sp.C}px` : `${sp.B}px ${sp.C}px ${sp.C}px`,
-        borderTop: `1px solid ${fullPage ? 'rgba(0,0,0,0.06)' : c['border-divider']}`,
+        borderTop: 'none',
         flexShrink: 0,
         ...(fullPage ? { backgroundColor: '#fff' } : {}),
       }}>
@@ -3133,7 +3152,7 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
         <PromptBar
           ref={promptBarRef}
           onSubmit={(text, tables) => processText(text, tables)}
-          disabled={(isProcessing && project.buildStep !== 'empty') || dayZeroPhase === 'clarify_q1'}
+          disabled={(isProcessing && project.buildStep !== 'empty') || dayZeroPhase === 'clarify_q1' || !!coachingPrompt}
           isProcessing={isProcessing}
           onStop={() => {
             buildAbortRef.current = true;
@@ -3456,6 +3475,32 @@ const DayClarifyCard: React.FC<{
     </div>
   );
 };
+
+// ── CoachingClarifyCard — floats above prompt bar when user flags an answer ──
+
+const CoachingClarifyCard: React.FC<{ onSelect: (option: string) => void }> = ({ onSelect }) => (
+  <div style={{ border: `1px solid ${c['border-divider']}`, borderRadius: 12, backgroundColor: c['background-base'], marginBottom: sp.C, overflow: 'hidden' }}>
+    <div style={{ padding: `${sp.D}px ${sp.D}px ${sp.C}px` }}>
+      <p style={{ margin: 0, fontSize: fs.md, fontWeight: fw.semibold, color: c['content-primary'], lineHeight: '24px' }}>
+        What went wrong with this answer?
+      </p>
+    </div>
+    <div style={{ borderTop: `1px solid ${c['border-divider']}` }}>
+      {COACHING_OPTIONS.map((opt, idx) => (
+        <div key={opt} onClick={() => onSelect(opt)}
+          style={{ display: 'flex', alignItems: 'center', gap: sp.C, padding: `${sp.C}px ${sp.D}px`, borderBottom: idx === COACHING_OPTIONS.length - 1 ? 'none' : `1px solid ${c['border-divider']}`, backgroundColor: c['background-base'], cursor: 'pointer', transition: 'background-color 0.1s' }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = c['background-subtle']; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = c['background-base']; }}
+        >
+          <div style={{ width: 26, height: 26, borderRadius: 7, flexShrink: 0, backgroundColor: c['background-subtle'], border: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: fw.medium, fontFamily: ff.mono, color: c['content-secondary'] }}>
+            {idx + 1}
+          </div>
+          <span style={{ flex: 1, fontSize: fs.sm, color: c['content-primary'], fontFamily: ff.primary }}>{opt}</span>
+        </div>
+      ))}
+    </div>
+  </div>
+);
 
 // ── PlanCard — collapsed plan artifact shown in chat ─────────────────────────
 
