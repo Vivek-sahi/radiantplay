@@ -112,6 +112,19 @@ Any remaining visual or copy feedback from the team after reviewing the updated 
 
 ---
 
+### 2026-05-12 (session 104)
+
+**Context panel / artifact independence fix — all three views.**
+
+- **Root cause 1 (Workspace):** `contextPanelOpen` was initialised to `!!instructionsCreated`, so both artifact canvas and context panel opened simultaneously on Workspace entry. Fixed: changed to `useState(false)` — context panel starts closed, user opens it independently with the toggle.
+- **Root cause 2 (FullChatView):** `contextPanelOpen` starts as `true`. When an object was opened, the ObjectPanel AND context panel were both visible in the right area simultaneously, looking like they opened together. Fixed: `handleOpenObject` now calls `setContextPanelOpen(false)`; `handleCloseObject` calls `setContextPanelOpen(true)`. Object panel and context panel are now mutually exclusive.
+- **ChatView (earlier fix this session):** removed the `useEffect` that auto-closed context panel when `isPlanOpen` became true, and removed `setContextPanelOpen(true)` from all three artifact close handlers. Panel and artifact are independent.
+- **Workspace artifact close handlers:** `InstructionsPanel`, `PlanPanel`, `QualityPlanPanel` close buttons no longer call `setCanvasVisible(false)` — they just close their own panel, falling through to show the model artifact card. Only the model artifact card's × closes the canvas entirely.
+- Committed and deployed to Vercel (https://radiantplay-nine.vercel.app) via `vercel --prod`.
+- Build: clean ✓
+
+---
+
 ### 2026-05-12 (session 103)
 
 **Pulse debug flow — artifact layout overhaul in FullChatView.**
