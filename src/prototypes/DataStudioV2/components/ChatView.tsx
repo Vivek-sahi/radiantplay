@@ -45,10 +45,6 @@ const ChatView: React.FC<ChatViewProps> = ({
     return () => { cancelAnimationFrame(raf); clearTimeout(t); };
   }, []);
 
-  // Close context panel when any side panel opens to avoid 3-column crowding
-  useEffect(() => {
-    if (isPlanOpen) setContextPanelOpen(false);
-  }, [isPlanOpen]);
 
   const planMsg = useMemo(() => messages.find(m => m.planData != null), [messages]);
 
@@ -147,7 +143,7 @@ const ChatView: React.FC<ChatViewProps> = ({
           <div style={{ flex: 1, padding: '8px 8px 8px 0', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
             <PlanPanel
               plan={activePlan}
-              onClose={() => { setActivePlan(null); setContextPanelOpen(true); }}
+              onClose={() => setActivePlan(null)}
             />
           </div>
         )}
@@ -156,7 +152,7 @@ const ChatView: React.FC<ChatViewProps> = ({
         {isPlanOpen && qualityPlanOpen && (
           <div style={{ flex: 1, padding: '8px 8px 8px 0', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
             <QualityPlanPanel
-              onClose={() => { setQualityPlanOpen(false); setContextPanelOpen(true); }}
+              onClose={() => setQualityPlanOpen(false)}
               onApplyFixes={() => {}}
               onEditPlan={() => {}}
             />
@@ -168,7 +164,7 @@ const ChatView: React.FC<ChatViewProps> = ({
           <div style={{ flex: 1, padding: '8px 8px 8px 0', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
             <InstructionsPanel
               modelName={project.name || 'Marketing Campaign Attribution'}
-              onClose={() => { setInstructionsPanelOpen(false); setContextPanelOpen(true); }}
+              onClose={() => setInstructionsPanelOpen(false)}
             />
           </div>
         )}

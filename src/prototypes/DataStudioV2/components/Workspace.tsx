@@ -434,7 +434,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
           {!isBuilding && instructionsPanelOpen && (
             <InstructionsPanel
               modelName={project.name}
-              onClose={() => { setInstructionsPanelOpen(false); setCanvasVisible(false); }}
+              onClose={() => setInstructionsPanelOpen(false)}
             />
           )}
 
@@ -442,14 +442,14 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
           {!isBuilding && planPanelOpen && planMsg?.planData && (
             <PlanPanel
               plan={planMsg.planData}
-              onClose={() => { setPlanPanelOpen(false); setCanvasVisible(false); }}
+              onClose={() => setPlanPanelOpen(false)}
             />
           )}
 
           {/* Quality plan artifact — shown when quality plan is open */}
           {!isBuilding && project.buildStep !== 'empty' && qualityPlanOpen && !planPanelOpen && (
             <QualityPlanPanel
-              onClose={() => { setQualityPlanOpen(false); setCanvasVisible(false); }}
+              onClose={() => setQualityPlanOpen(false)}
               onApplyFixes={handleQualityApplyFixes}
               onEditPlan={handleQualityEditPlan}
             />
