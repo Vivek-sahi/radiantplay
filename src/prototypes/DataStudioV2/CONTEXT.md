@@ -39,22 +39,9 @@ The product moved away from a side-panel co-pilot toward a full-screen agent-fir
 
 ## Next up
 
-### 1. Model health chips — review + iterate
+### 1. Review the data quality and model health buttons
 
-Chips are live in the artifact tab bar. Review the dropdowns and decide what to adjust.
-
-**Design decisions landed:**
-- Separate signals: DQ chip (`▲ 9 issues`) + AIRS chip (`◯ 25% AI ready`), not an umbrella
-- Both open compact dropdowns (340px popover), not canvas view replacements
-- Cache button moved to identity row: Cache → Share → Publish → ×
-- Tab bar right: Settings gear | DQ chip | AIRS chip | + Data
-- DQ dropdown: 9 issues across 3 sections (nulls, dupes, date formats), severity badges, Fix → per row
-- AIRS dropdown: gauge + score breakdown bars + 6 action items with pts
-- Mock: AIRS score = 25 / Not ready (red arc); DQ = 9 issues
-
-**Open — not yet decided:**
-- Should clicking "Fix →" / action buttons trigger the agent? Currently visual-only.
-- Should health chips appear in the Models list column?
+Look at the live artifact in the prototype and review how the DQ and AIRS chips feel — the chip labels, dropdown content, density, and interaction. Decide what to iterate on.
 
 ### 2. Team review + iterate on feedback
 
