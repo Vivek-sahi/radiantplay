@@ -3087,6 +3087,35 @@ const HEALTH_META: Record<ModelHealth, { dot: string; label: string; text: strin
   'needs-attention':  { dot: '#D97706', label: 'Needs attention', text: '#78350F' },
 };
 
+interface DQItem { col: string; severity: 'high' | 'medium' | 'low'; detail: string; }
+interface DQSection { key: string; label: string; items: DQItem[]; }
+
+const SEV_META = {
+  high:   { bg: '#FEF2F2', text: '#DC2626', border: '#FECACA',  label: 'High'   },
+  medium: { bg: '#FFFBEB', text: '#D97706', border: '#FDE68A',  label: 'Medium' },
+  low:    { bg: '#F8FAFC', text: '#64748B', border: '#E2E8F0',  label: 'Low'    },
+};
+
+const DQ_SECTIONS: DQSection[] = [
+  { key: 'nulls', label: 'Null values', items: [
+    { col: 'roas_actual',         severity: 'high',   detail: '847 of 10,420 rows contain nulls' },
+    { col: 'campaign_start_date', severity: 'medium', detail: '1,203 rows with null dates in Q3' },
+    { col: 'user_segment',        severity: 'low',    detail: '312 null values, likely new users' },
+  ]},
+  { key: 'duplicates', label: 'Duplicate rows', items: [
+    { col: 'ad_impressions', severity: 'high',   detail: '340 exact duplicates in last 30 days' },
+    { col: 'campaign_spend', severity: 'medium', detail: '12 near-duplicates within ±$0.01' },
+  ]},
+  { key: 'dates', label: 'Date format mismatches', items: [
+    { col: 'conversion_date',     severity: 'high',   detail: 'Mixed ISO 8601 and MM/DD/YYYY formats' },
+    { col: 'order_date',          severity: 'medium', detail: '4 different date formats detected' },
+    { col: 'campaign_start_date', severity: 'low',    detail: 'Partial ISO format, missing time zones' },
+  ]},
+  { key: 'anomalous', label: 'Anomalous values', items: [
+    { col: 'transaction_amount', severity: 'high', detail: '14 values >10σ above mean' },
+  ]},
+];
+
 // ── Shared sub-components ─────────────────────────────────────────────────────
 
 const AirsModelIcon: React.FC<{ size?: number }> = ({ size = 20 }) => (
@@ -3637,9 +3666,393 @@ const AIReadinessModelsList: React.FC = () => {
   );
 };
 
+// ── Shared artifact skeleton ──────────────────────────────────────────────────
+
+const ArtifactTabStub: React.FC = () => (
+  <div style={{ flex: 1, overflow: 'auto', padding: sp.D }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: sp.A }}>
+      {['campaign_id','campaign_name','channel','roas_actual','amount','conversion_date','user_segment','ad_impressions','campaign_spend','order_date'].map((col, i) => (
+        <div key={col} style={{ height: 36, display: 'flex', alignItems: 'center', padding: `0 ${sp.C}px`, borderRadius: 6, background: i % 2 === 0 ? c['background-base'] : c['background-sunken'], border: `1px solid ${c['border-divider']}` }}>
+          <code style={{ fontSize: 11, fontFamily: ff.mono, color: c['content-primary'], flex: 1 }}>{col}</code>
+          <span style={{ fontSize: 11, color: c['content-secondary'] }}>{(['string','string','string','float','float','date','string','integer','float','date'] as const)[i]}</span>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+const CloseBtn: React.FC<{ onClick: () => void }> = ({ onClick }) => (
+  <button onClick={onClick}
+    style={{ width: 26, height: 26, border: 'none', borderRadius: 6, background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: c['content-secondary'], flexShrink: 0 }}
+    onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
+    onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+  >
+    <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M1.5 1.5l9 9M10.5 1.5l-9 9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
+  </button>
+);
+
+// ── mh1: Separate signals — data quality chip + AI readiness chip ─────────────
+
+const ModelHealthSeparate: React.FC = () => {
+  const [activeView, setActiveView] = useState<null | 'quality' | 'readiness'>(null);
+  const [openDQ, setOpenDQ] = useState<Record<string, boolean>>({ nulls: true });
+  const [openAI, setOpenAI] = useState<Record<string, boolean>>({ semantic: true });
+  const [fixedDQ, setFixedDQ] = useState<Set<string>>(new Set());
+  const [fixedAI, setFixedAI] = useState<Set<string>>(new Set());
+
+  const tm = AI_TIER_META[AI_MOCK_TIER];
+  const dqTotal = DQ_SECTIONS.reduce((n, s) => n + s.items.length, 0);
+  const rB = 7, circB = 2 * Math.PI * rB, dashB = circB * (AI_MOCK_SCORE / 100), gapB = circB - dashB;
+
+  const qualityChip = (
+    <button onClick={() => setActiveView(v => v === 'quality' ? null : 'quality')}
+      style={{ height: 28, padding: '0 10px', gap: 5, border: `1px solid ${fixedDQ.size === dqTotal ? '#BBF7D0' : '#FECACA'}`, borderRadius: 6, backgroundColor: fixedDQ.size === dqTotal ? '#F0FDF4' : '#FEF2F2', cursor: 'pointer', display: 'flex', alignItems: 'center', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, color: fixedDQ.size === dqTotal ? '#166534' : '#B91C1C', boxSizing: 'border-box', flexShrink: 0, outline: activeView === 'quality' ? `2px solid ${fixedDQ.size === dqTotal ? '#16A34A' : '#DC2626'}` : 'none', outlineOffset: 1 }}>
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M8 2L14 14H2L8 2z"/><line x1="8" y1="7" x2="8" y2="10"/><circle cx="8" cy="12.5" r="0.5" fill="currentColor"/></svg>
+      {fixedDQ.size === dqTotal ? `${dqTotal} resolved` : `${dqTotal - fixedDQ.size} issues`}
+    </button>
+  );
+
+  const airsChip = (
+    <button onClick={() => setActiveView(v => v === 'readiness' ? null : 'readiness')}
+      style={{ height: 28, padding: '0 8px', gap: 5, border: `1px solid ${tm.border}`, borderRadius: 6, backgroundColor: tm.bg, cursor: 'pointer', display: 'flex', alignItems: 'center', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, color: tm.text, boxSizing: 'border-box', flexShrink: 0, outline: activeView === 'readiness' ? `2px solid ${tm.dot}` : 'none', outlineOffset: 1 }}>
+      <svg width="16" height="16" viewBox="0 0 16 16" style={{ flexShrink: 0 }}>
+        <circle cx="8" cy="8" r={rB} fill="none" stroke={tm.border} strokeWidth="2"/>
+        <circle cx="8" cy="8" r={rB} fill="none" stroke={tm.dot} strokeWidth="2" strokeDasharray={`${dashB} ${gapB}`} strokeLinecap="round" transform="rotate(-90 8 8)"/>
+      </svg>
+      <span style={{ fontSize: 11, fontWeight: fw.semibold }}>{AI_MOCK_SCORE}</span>
+      <span style={{ fontSize: 11, opacity: 0.85 }}>{AI_MOCK_TIER}</span>
+    </button>
+  );
+
+  const dqView = (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+      <div style={{ padding: `${sp.C}px ${sp.D}px`, borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', gap: sp.C, flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, flex: 1 }}>
+          <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: fixedDQ.size === dqTotal ? '#059669' : '#DC2626', flexShrink: 0 }}/>
+          <span style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'] }}>Data quality</span>
+          <span style={{ fontSize: fs.xs, color: c['content-secondary'] }}>·</span>
+          <span style={{ fontSize: fs.xs, color: c['content-secondary'] }}>{fixedDQ.size > 0 ? `${fixedDQ.size} of ${dqTotal} fixed` : `${dqTotal} issues found`}</span>
+        </div>
+        <button style={{ height: 28, padding: '0 10px', border: 'none', borderRadius: 6, backgroundColor: '#2770EF', color: '#fff', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, cursor: 'pointer', flexShrink: 0 }}>Fix all with agent</button>
+        <CloseBtn onClick={() => setActiveView(null)}/>
+      </div>
+      <div style={{ flex: 1, overflow: 'auto' }}>
+        {DQ_SECTIONS.map(section => {
+          const isOpen = !!openDQ[section.key];
+          const sectionFixed = section.items.filter(it => fixedDQ.has(`${section.key}:${it.col}`)).length;
+          return (
+            <div key={section.key} style={{ borderBottom: `1px solid ${c['border-divider']}` }}>
+              <button onClick={() => setOpenDQ(s => ({ ...s, [section.key]: !s[section.key] }))}
+                style={{ width: '100%', height: 40, display: 'flex', alignItems: 'center', padding: `0 ${sp.D}px`, gap: sp.C, border: 'none', background: 'transparent', cursor: 'pointer', boxSizing: 'border-box' as const }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = c['background-subtle']; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}>
+                <span style={{ flex: 1, fontSize: fs.sm, fontWeight: fw.medium, color: c['content-primary'], textAlign: 'left' as const }}>{section.label}</span>
+                <span style={{ fontSize: 11, fontFamily: ff.mono, color: sectionFixed === section.items.length ? '#059669' : c['content-secondary'] }}>{sectionFixed}/{section.items.length}</span>
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke={c['content-tertiary']} strokeWidth="1.5" strokeLinecap="round" style={{ transform: isOpen ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.15s', flexShrink: 0 }}><path d="M2 4l4 4 4-4"/></svg>
+              </button>
+              {isOpen && (
+                <div style={{ padding: `0 ${sp.D}px ${sp.C}px`, display: 'flex', flexDirection: 'column', gap: sp.A }}>
+                  {section.items.map(item => {
+                    const key = `${section.key}:${item.col}`;
+                    const isFixed = fixedDQ.has(key);
+                    const sm = SEV_META[item.severity];
+                    return (
+                      <div key={item.col} style={{ display: 'flex', alignItems: 'center', gap: sp.C, padding: `${sp.B}px ${sp.C}px`, borderRadius: 6, background: isFixed ? '#F0FDF4' : c['background-subtle'], border: `1px solid ${isFixed ? '#BBF7D0' : c['border-divider']}` }}>
+                        <div style={{ width: 16, height: 16, borderRadius: '50%', border: `1.5px solid ${isFixed ? '#059669' : c['border-default']}`, background: isFixed ? '#059669' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          {isFixed && <svg width="8" height="8" viewBox="0 0 8 8" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="1,4 3,6 7,2"/></svg>}
+                        </div>
+                        <code style={{ fontSize: 11, fontFamily: ff.mono, color: isFixed ? '#065F46' : c['content-primary'], flexShrink: 0 }}>{item.col}</code>
+                        <span style={{ flex: 1, fontSize: fs.xs, color: isFixed ? '#047857' : c['content-secondary'] }}>{item.detail}</span>
+                        {!isFixed && <span style={{ fontSize: 10, fontWeight: fw.medium, padding: '1px 5px', borderRadius: 3, background: sm.bg, color: sm.text, border: `1px solid ${sm.border}`, flexShrink: 0 }}>{sm.label}</span>}
+                        {!isFixed && <button onClick={() => setFixedDQ(prev => { const n = new Set(prev); n.add(key); return n; })} style={{ fontSize: 11, color: '#2563EB', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: ff.primary, flexShrink: 0 }}>Fix →</button>}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  const airsView = (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+      <div style={{ padding: `${sp.C}px ${sp.D}px`, borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', gap: sp.C, flexShrink: 0 }}>
+        <AirsScoreGauge score={AI_MOCK_SCORE} tier={AI_MOCK_TIER} size={40}/>
+        <div style={{ flex: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, marginBottom: 2 }}>
+            <span style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'] }}>AI readiness</span>
+            <span style={{ fontSize: 11, padding: '1px 6px', borderRadius: 10, background: tm.bg, color: tm.text, border: `1px solid ${tm.border}`, fontWeight: fw.medium }}>{AI_MOCK_TIER}</span>
+          </div>
+          <span style={{ fontSize: fs.xs, color: c['content-secondary'] }}>Spotter can answer simple questions; complex queries may return uncertain results</span>
+        </div>
+        <button style={{ height: 28, padding: '0 10px', border: 'none', borderRadius: 6, backgroundColor: '#2770EF', color: '#fff', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, cursor: 'pointer', flexShrink: 0 }}>Fix all with agent</button>
+        <CloseBtn onClick={() => setActiveView(null)}/>
+      </div>
+      <div style={{ flex: 1, overflow: 'auto' }}>
+        {AI_MOCK_DIMENSIONS.map(dim => {
+          const isOpen = !!openAI[dim.id];
+          const dimFixed = dim.items.filter(it => it.done >= it.total || fixedAI.has(`${dim.id}:${it.label}`)).length;
+          return (
+            <div key={dim.id} style={{ borderBottom: `1px solid ${c['border-divider']}` }}>
+              <button onClick={() => setOpenAI(s => ({ ...s, [dim.id]: !s[dim.id] }))}
+                style={{ width: '100%', height: 40, display: 'flex', alignItems: 'center', padding: `0 ${sp.D}px`, gap: sp.C, border: 'none', background: 'transparent', cursor: 'pointer', boxSizing: 'border-box' as const }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = c['background-subtle']; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}>
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: dim.color, flexShrink: 0 }}/>
+                <span style={{ flex: 1, fontSize: fs.sm, fontWeight: fw.medium, color: c['content-primary'], textAlign: 'left' as const }}>{dim.label}</span>
+                <span style={{ fontSize: 11, fontFamily: ff.mono, color: dimFixed === dim.items.length ? '#059669' : c['content-secondary'] }}>{dimFixed}/{dim.items.length}</span>
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke={c['content-tertiary']} strokeWidth="1.5" strokeLinecap="round" style={{ transform: isOpen ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.15s', flexShrink: 0 }}><path d="M2 4l4 4 4-4"/></svg>
+              </button>
+              {isOpen && (
+                <div style={{ padding: `0 ${sp.D}px ${sp.C}px`, display: 'flex', flexDirection: 'column', gap: sp.A }}>
+                  {dim.items.map(item => {
+                    const isDone = item.done >= item.total || fixedAI.has(`${dim.id}:${item.label}`);
+                    return (
+                      <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: sp.C, padding: `${sp.B}px ${sp.C}px`, borderRadius: 6, background: isDone ? '#F0FDF4' : c['background-subtle'], border: `1px solid ${isDone ? '#BBF7D0' : c['border-divider']}` }}>
+                        <div style={{ width: 16, height: 16, borderRadius: '50%', border: `1.5px solid ${isDone ? '#059669' : c['border-default']}`, background: isDone ? '#059669' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          {isDone && <svg width="8" height="8" viewBox="0 0 8 8" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="1,4 3,6 7,2"/></svg>}
+                        </div>
+                        <span style={{ flex: 1, fontSize: fs.xs, color: isDone ? '#065F46' : c['content-primary'] }}>{item.label}</span>
+                        <span style={{ fontSize: 11, fontFamily: ff.mono, color: isDone ? '#059669' : c['content-secondary'] }}>{item.done}/{item.total}</span>
+                        {!isDone && <button onClick={() => setFixedAI(prev => { const n = new Set(prev); n.add(`${dim.id}:${item.label}`); return n; })} style={{ fontSize: 11, color: '#2563EB', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: ff.primary, flexShrink: 0 }}>Fix →</button>}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: c['background-sunken'], fontFamily: ff.primary, display: 'flex', flexDirection: 'column' }}>
+      <div style={{ height: 32, flexShrink: 0, background: c['background-base'], borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', padding: `0 ${sp.D}px` }}>
+        <span style={{ fontSize: 11, color: c['content-secondary'] }}>← Overview</span>
+        <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+          <span style={{ fontSize: fs.xs, fontWeight: fw.medium, color: c['content-brand'], background: c['background-information'], padding: '1px 8px', borderRadius: 4 }}>mh1 — Separate signals</span>
+        </div>
+      </div>
+      <div style={{ flex: 1, display: 'flex', padding: '20px 24px', overflow: 'hidden' }}>
+        <div style={{ flex: 1, background: c['background-base'], border: `1px solid ${c['border-divider']}`, borderRadius: 10, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          {/* Identity row */}
+          <div style={{ height: 48, borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', padding: `0 ${sp.D}px`, gap: sp.C, flexShrink: 0 }}>
+            <AirsModelIcon size={18}/>
+            <span style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'] }}>Campaign Performance</span>
+            <span style={{ fontSize: 11, background: c['background-subtle'], border: `1px solid ${c['border-divider']}`, borderRadius: 4, padding: '1px 6px', color: c['content-secondary'] }}>Draft</span>
+            <div style={{ flex: 1 }}/>
+            <button style={{ height: 28, padding: `0 ${sp.C}px`, border: `1px solid ${c['border-default']}`, borderRadius: 6, background: 'none', fontSize: fs.xs, fontFamily: ff.primary, cursor: 'pointer', color: c['content-secondary'] }}>Share</button>
+            <button style={{ height: 28, padding: `0 ${sp.C}px`, border: 'none', borderRadius: 6, background: '#2770EF', color: '#fff', fontSize: fs.xs, fontFamily: ff.primary, cursor: 'pointer', fontWeight: fw.medium }}>Publish model</button>
+          </div>
+          {/* Tab bar */}
+          <div style={{ height: 40, borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', padding: `0 ${sp.D}px`, gap: sp.B, flexShrink: 0 }}>
+            {(['Columns', 'Tables', 'Preview', 'Notebook'] as const).map(label => (
+              <button key={label} style={{ height: 40, padding: '0 12px', border: 'none', borderBottom: label === 'Tables' && !activeView ? '2px solid #2770EF' : '2px solid transparent', borderRadius: 0, cursor: 'pointer', background: 'transparent', color: label === 'Tables' && !activeView ? '#2770EF' : c['content-secondary'], fontFamily: ff.primary, fontSize: fs.sm, fontWeight: label === 'Tables' && !activeView ? fw.semibold : fw.medium, boxSizing: 'border-box', marginBottom: -1, flexShrink: 0 }}>{label}</button>
+            ))}
+            <div style={{ flex: 1 }}/>
+            <div style={{ display: 'flex', alignItems: 'center', gap: sp.B }}>
+              <div style={{ width: 1, height: 16, background: c['border-divider'] }}/>
+              {qualityChip}
+              {airsChip}
+            </div>
+          </div>
+          {activeView === 'quality' ? dqView : activeView === 'readiness' ? airsView : <ArtifactTabStub/>}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ── mh2: Model Health umbrella — one chip, both signals ───────────────────────
+
+const ModelHealthUmbrella: React.FC = () => {
+  const [healthOpen, setHealthOpen] = useState(false);
+  const [openTop, setOpenTop] = useState<Record<string, boolean>>({ quality: true, readiness: false });
+  const [openDQSubs, setOpenDQSubs] = useState<Record<string, boolean>>({ nulls: true });
+  const [openAISubs, setOpenAISubs] = useState<Record<string, boolean>>({});
+  const [fixedDQ, setFixedDQ] = useState<Set<string>>(new Set());
+  const [fixedAI, setFixedAI] = useState<Set<string>>(new Set());
+
+  const tm = AI_TIER_META[AI_MOCK_TIER];
+  const dqTotal = DQ_SECTIONS.reduce((n, s) => n + s.items.length, 0);
+  const rB = 7, circB = 2 * Math.PI * rB, dashB = circB * (AI_MOCK_SCORE / 100), gapB = circB - dashB;
+  const dqDot = fixedDQ.size === dqTotal ? '#059669' : '#DC2626';
+
+  const healthChip = (
+    <button onClick={() => setHealthOpen(o => !o)}
+      style={{ height: 28, padding: '0 10px', gap: 6, border: `1px solid ${healthOpen ? '#BFDBFE' : c['border-default']}`, borderRadius: 6, backgroundColor: healthOpen ? '#EFF6FF' : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, color: healthOpen ? '#2563EB' : c['content-secondary'], boxSizing: 'border-box', flexShrink: 0 }}>
+      <div style={{ display: 'flex', gap: 3, alignItems: 'center' }}>
+        <div style={{ width: 6, height: 6, borderRadius: '50%', background: dqDot }}/>
+        <div style={{ width: 6, height: 6, borderRadius: '50%', background: tm.dot }}/>
+      </div>
+      Model health
+    </button>
+  );
+
+  const healthView = (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+      {/* Summary bar */}
+      <div style={{ padding: `${sp.C}px ${sp.D}px`, borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', gap: sp.D, flexShrink: 0, flexWrap: 'wrap' as const }}>
+        <span style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'], flexShrink: 0 }}>Model health</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '3px 8px', borderRadius: 6, background: fixedDQ.size === dqTotal ? '#F0FDF4' : '#FEF2F2', border: `1px solid ${fixedDQ.size === dqTotal ? '#BBF7D0' : '#FECACA'}` }}>
+          <div style={{ width: 6, height: 6, borderRadius: '50%', background: dqDot }}/>
+          <span style={{ fontSize: 11, color: fixedDQ.size === dqTotal ? '#166534' : '#B91C1C', fontFamily: ff.primary }}>Data quality · {fixedDQ.size === dqTotal ? 'clean' : `${dqTotal - fixedDQ.size} issues`}</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '3px 8px', borderRadius: 6, background: tm.bg, border: `1px solid ${tm.border}` }}>
+          <svg width="14" height="14" viewBox="0 0 14 14">
+            <circle cx="7" cy="7" r="5.5" fill="none" stroke={tm.border} strokeWidth="1.8"/>
+            <circle cx="7" cy="7" r="5.5" fill="none" stroke={tm.dot} strokeWidth="1.8" strokeDasharray={`${circB * 0.55 * (AI_MOCK_SCORE / 100)} ${circB * 0.55}`} strokeLinecap="round" transform="rotate(-90 7 7)"/>
+          </svg>
+          <span style={{ fontSize: 11, color: tm.text, fontFamily: ff.primary }}>AI readiness · {AI_MOCK_TIER}</span>
+        </div>
+        <div style={{ flex: 1 }}/>
+        <button style={{ height: 28, padding: '0 10px', border: 'none', borderRadius: 6, backgroundColor: '#2770EF', color: '#fff', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, cursor: 'pointer', flexShrink: 0 }}>Fix all with agent</button>
+        <CloseBtn onClick={() => setHealthOpen(false)}/>
+      </div>
+      {/* Two top-level sections */}
+      <div style={{ flex: 1, overflow: 'auto' }}>
+        {/* Data quality section */}
+        <div style={{ borderBottom: `1px solid ${c['border-divider']}` }}>
+          <button onClick={() => setOpenTop(s => ({ ...s, quality: !s.quality }))}
+            style={{ width: '100%', height: 44, display: 'flex', alignItems: 'center', padding: `0 ${sp.D}px`, gap: sp.C, border: 'none', background: 'transparent', cursor: 'pointer', boxSizing: 'border-box' as const }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = c['background-subtle']; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}>
+            <div style={{ width: 8, height: 8, borderRadius: '50%', background: dqDot, flexShrink: 0 }}/>
+            <span style={{ flex: 1, fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'], textAlign: 'left' as const }}>Data quality</span>
+            <span style={{ fontSize: fs.xs, color: c['content-secondary'] }}>{fixedDQ.size === dqTotal ? 'All resolved' : `${dqTotal - fixedDQ.size} issues`}</span>
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke={c['content-tertiary']} strokeWidth="1.5" strokeLinecap="round" style={{ transform: openTop.quality ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.15s', marginLeft: sp.B, flexShrink: 0 }}><path d="M2 4l4 4 4-4"/></svg>
+          </button>
+          {openTop.quality && DQ_SECTIONS.map(section => {
+            const isOpen = !!openDQSubs[section.key];
+            return (
+              <div key={section.key} style={{ borderTop: `1px solid ${c['border-divider']}` }}>
+                <button onClick={() => setOpenDQSubs(s => ({ ...s, [section.key]: !s[section.key] }))}
+                  style={{ width: '100%', height: 36, display: 'flex', alignItems: 'center', padding: `0 ${sp.D}px 0 ${sp.F}px`, gap: sp.C, border: 'none', background: 'transparent', cursor: 'pointer', boxSizing: 'border-box' as const }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = c['background-subtle']; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}>
+                  <span style={{ flex: 1, fontSize: fs.xs, fontWeight: fw.medium, color: c['content-primary'], textAlign: 'left' as const }}>{section.label}</span>
+                  <span style={{ fontSize: 11, fontFamily: ff.mono, color: c['content-secondary'] }}>{section.items.filter(it => fixedDQ.has(`${section.key}:${it.col}`)).length}/{section.items.length}</span>
+                  <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke={c['content-tertiary']} strokeWidth="1.5" strokeLinecap="round" style={{ transform: isOpen ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.15s', flexShrink: 0 }}><path d="M2 4l4 4 4-4"/></svg>
+                </button>
+                {isOpen && (
+                  <div style={{ padding: `0 ${sp.D}px ${sp.C}px ${sp.F}px`, display: 'flex', flexDirection: 'column', gap: sp.A }}>
+                    {section.items.map(item => {
+                      const key = `${section.key}:${item.col}`;
+                      const isFixed = fixedDQ.has(key);
+                      const sm = SEV_META[item.severity];
+                      return (
+                        <div key={item.col} style={{ display: 'flex', alignItems: 'center', gap: sp.C, padding: `${sp.B}px ${sp.C}px`, borderRadius: 6, background: isFixed ? '#F0FDF4' : c['background-subtle'], border: `1px solid ${isFixed ? '#BBF7D0' : c['border-divider']}` }}>
+                          <div style={{ width: 14, height: 14, borderRadius: '50%', border: `1.5px solid ${isFixed ? '#059669' : c['border-default']}`, background: isFixed ? '#059669' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            {isFixed && <svg width="7" height="7" viewBox="0 0 8 8" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="1,4 3,6 7,2"/></svg>}
+                          </div>
+                          <code style={{ fontSize: 11, fontFamily: ff.mono, color: isFixed ? '#065F46' : c['content-primary'], flexShrink: 0 }}>{item.col}</code>
+                          <span style={{ flex: 1, fontSize: fs.xs, color: isFixed ? '#047857' : c['content-secondary'] }}>{item.detail}</span>
+                          {!isFixed && <span style={{ fontSize: 10, padding: '1px 5px', borderRadius: 3, background: sm.bg, color: sm.text, border: `1px solid ${sm.border}`, flexShrink: 0 }}>{sm.label}</span>}
+                          {!isFixed && <button onClick={() => setFixedDQ(prev => { const n = new Set(prev); n.add(key); return n; })} style={{ fontSize: 11, color: '#2563EB', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: ff.primary, flexShrink: 0 }}>Fix →</button>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+        {/* AI readiness section */}
+        <div style={{ borderBottom: `1px solid ${c['border-divider']}` }}>
+          <button onClick={() => setOpenTop(s => ({ ...s, readiness: !s.readiness }))}
+            style={{ width: '100%', height: 44, display: 'flex', alignItems: 'center', padding: `0 ${sp.D}px`, gap: sp.C, border: 'none', background: 'transparent', cursor: 'pointer', boxSizing: 'border-box' as const }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = c['background-subtle']; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}>
+            <div style={{ width: 8, height: 8, borderRadius: '50%', background: tm.dot, flexShrink: 0 }}/>
+            <span style={{ flex: 1, fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'], textAlign: 'left' as const }}>AI readiness</span>
+            <span style={{ fontSize: fs.xs, padding: '1px 7px', borderRadius: 10, background: tm.bg, color: tm.text, border: `1px solid ${tm.border}`, fontWeight: fw.medium }}>{AI_MOCK_TIER}</span>
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke={c['content-tertiary']} strokeWidth="1.5" strokeLinecap="round" style={{ transform: openTop.readiness ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.15s', marginLeft: sp.B, flexShrink: 0 }}><path d="M2 4l4 4 4-4"/></svg>
+          </button>
+          {openTop.readiness && AI_MOCK_DIMENSIONS.map(dim => {
+            const isOpen = !!openAISubs[dim.id];
+            const dimFixed = dim.items.filter(it => it.done >= it.total || fixedAI.has(`${dim.id}:${it.label}`)).length;
+            return (
+              <div key={dim.id} style={{ borderTop: `1px solid ${c['border-divider']}` }}>
+                <button onClick={() => setOpenAISubs(s => ({ ...s, [dim.id]: !s[dim.id] }))}
+                  style={{ width: '100%', height: 36, display: 'flex', alignItems: 'center', padding: `0 ${sp.D}px 0 ${sp.F}px`, gap: sp.C, border: 'none', background: 'transparent', cursor: 'pointer', boxSizing: 'border-box' as const }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = c['background-subtle']; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}>
+                  <div style={{ width: 7, height: 7, borderRadius: '50%', background: dim.color, flexShrink: 0 }}/>
+                  <span style={{ flex: 1, fontSize: fs.xs, fontWeight: fw.medium, color: c['content-primary'], textAlign: 'left' as const }}>{dim.label}</span>
+                  <span style={{ fontSize: 11, fontFamily: ff.mono, color: dimFixed === dim.items.length ? '#059669' : c['content-secondary'] }}>{dimFixed}/{dim.items.length}</span>
+                  <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke={c['content-tertiary']} strokeWidth="1.5" strokeLinecap="round" style={{ transform: isOpen ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.15s', flexShrink: 0 }}><path d="M2 4l4 4 4-4"/></svg>
+                </button>
+                {isOpen && (
+                  <div style={{ padding: `0 ${sp.D}px ${sp.C}px ${sp.F}px`, display: 'flex', flexDirection: 'column', gap: sp.A }}>
+                    {dim.items.map(item => {
+                      const isDone = item.done >= item.total || fixedAI.has(`${dim.id}:${item.label}`);
+                      return (
+                        <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: sp.C, padding: `${sp.B}px ${sp.C}px`, borderRadius: 6, background: isDone ? '#F0FDF4' : c['background-subtle'], border: `1px solid ${isDone ? '#BBF7D0' : c['border-divider']}` }}>
+                          <div style={{ width: 14, height: 14, borderRadius: '50%', border: `1.5px solid ${isDone ? '#059669' : c['border-default']}`, background: isDone ? '#059669' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            {isDone && <svg width="7" height="7" viewBox="0 0 8 8" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="1,4 3,6 7,2"/></svg>}
+                          </div>
+                          <span style={{ flex: 1, fontSize: fs.xs, color: isDone ? '#065F46' : c['content-primary'] }}>{item.label}</span>
+                          <span style={{ fontSize: 11, fontFamily: ff.mono, color: isDone ? '#059669' : c['content-secondary'] }}>{item.done}/{item.total}</span>
+                          {!isDone && <button onClick={() => setFixedAI(prev => { const n = new Set(prev); n.add(`${dim.id}:${item.label}`); return n; })} style={{ fontSize: 11, color: '#2563EB', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: ff.primary, flexShrink: 0 }}>Fix →</button>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: c['background-sunken'], fontFamily: ff.primary, display: 'flex', flexDirection: 'column' }}>
+      <div style={{ height: 32, flexShrink: 0, background: c['background-base'], borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', padding: `0 ${sp.D}px` }}>
+        <span style={{ fontSize: 11, color: c['content-secondary'] }}>← Overview</span>
+        <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+          <span style={{ fontSize: fs.xs, fontWeight: fw.medium, color: c['content-brand'], background: c['background-information'], padding: '1px 8px', borderRadius: 4 }}>mh2 — Model Health umbrella</span>
+        </div>
+      </div>
+      <div style={{ flex: 1, display: 'flex', padding: '20px 24px', overflow: 'hidden' }}>
+        <div style={{ flex: 1, background: c['background-base'], border: `1px solid ${c['border-divider']}`, borderRadius: 10, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          {/* Identity row */}
+          <div style={{ height: 48, borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', padding: `0 ${sp.D}px`, gap: sp.C, flexShrink: 0 }}>
+            <AirsModelIcon size={18}/>
+            <span style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'] }}>Campaign Performance</span>
+            <span style={{ fontSize: 11, background: c['background-subtle'], border: `1px solid ${c['border-divider']}`, borderRadius: 4, padding: '1px 6px', color: c['content-secondary'] }}>Draft</span>
+            <div style={{ flex: 1 }}/>
+            <button style={{ height: 28, padding: `0 ${sp.C}px`, border: `1px solid ${c['border-default']}`, borderRadius: 6, background: 'none', fontSize: fs.xs, fontFamily: ff.primary, cursor: 'pointer', color: c['content-secondary'] }}>Share</button>
+            <button style={{ height: 28, padding: `0 ${sp.C}px`, border: 'none', borderRadius: 6, background: '#2770EF', color: '#fff', fontSize: fs.xs, fontFamily: ff.primary, cursor: 'pointer', fontWeight: fw.medium }}>Publish model</button>
+          </div>
+          {/* Tab bar */}
+          <div style={{ height: 40, borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', padding: `0 ${sp.D}px`, gap: sp.B, flexShrink: 0 }}>
+            {(['Columns', 'Tables', 'Preview', 'Notebook'] as const).map(label => (
+              <button key={label} style={{ height: 40, padding: '0 12px', border: 'none', borderBottom: label === 'Tables' && !healthOpen ? '2px solid #2770EF' : '2px solid transparent', borderRadius: 0, cursor: 'pointer', background: 'transparent', color: label === 'Tables' && !healthOpen ? '#2770EF' : c['content-secondary'], fontFamily: ff.primary, fontSize: fs.sm, fontWeight: label === 'Tables' && !healthOpen ? fw.semibold : fw.medium, boxSizing: 'border-box', marginBottom: -1, flexShrink: 0 }}>{label}</button>
+            ))}
+            <div style={{ flex: 1 }}/>
+            <div style={{ display: 'flex', alignItems: 'center', gap: sp.B }}>
+              <div style={{ width: 1, height: 16, background: c['border-divider'] }}/>
+              {healthChip}
+            </div>
+          </div>
+          {healthOpen ? healthView : <ArtifactTabStub/>}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 
-type NavId = 'v1' | 'v2' | 'v3' | 'v4' | 'v5' | 'v6' | 'tm1' | 'tm2' | 'tm3' | 'p2-dbt' | 'clarify-bar' | 'artifact-chat' | 'context-panel' | 'tma1' | 'tma2' | 'tma3' | 'tma4' | 'airs1' | 'airs2' | 'airs3' | 'airs4';
+type NavId = 'v1' | 'v2' | 'v3' | 'v4' | 'v5' | 'v6' | 'tm1' | 'tm2' | 'tm3' | 'p2-dbt' | 'clarify-bar' | 'artifact-chat' | 'context-panel' | 'tma1' | 'tma2' | 'tma3' | 'tma4' | 'airs1' | 'airs2' | 'airs3' | 'airs4' | 'mh1' | 'mh2';
 
 interface PGNavItem {
   id: NavId;
@@ -3678,7 +4091,10 @@ const PG_NAV: { section: string; items: PGNavItem[] }[] = [
   },
   {
     section: 'Combined model status',
-    items: [],
+    items: [
+      { id: 'mh1', label: 'Separate signals', meta: 'quality chip + AI readiness chip · two canvas views', tag: 'NEW' },
+      { id: 'mh2', label: 'Health umbrella',  meta: 'one chip · both signals rolled up · two-level sections', tag: 'NEW' },
+    ],
   },
   {
     section: 'Phase 2 — explorations',
@@ -3736,6 +4152,8 @@ const renderNavIteration = (id: NavId): React.ReactNode => {
     case 'airs2': return <AIReadinessPanelExploration />;
     case 'airs3': return <AIReadinessPublishGate />;
     case 'airs4': return <AIReadinessModelsList />;
+    case 'mh1': return <ModelHealthSeparate />;
+    case 'mh2': return <ModelHealthUmbrella />;
   }
 };
 
