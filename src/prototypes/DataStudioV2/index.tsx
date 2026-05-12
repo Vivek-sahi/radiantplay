@@ -43,7 +43,6 @@ export interface ProjectState {
   name: string;
   buildStep: 'empty' | 'tables' | 'joined' | 'transformed' | 'healthy';
   activeTab: 'columns' | 'tables' | 'preview' | 'notebook';
-  testMode: boolean;
   publishedVersion: number;       // 0 = never published; 1, 2, … = version number
   hasUnpublishedChanges: boolean; // true when working copy diverges from published
   projectSource: 'warehouse' | 'dbt'; // entry path — affects column view indicators
@@ -89,6 +88,7 @@ const DataStudio: React.FC = () => {
   const [activeNav, setActiveNav] = useState<NavSection>('overview');
   const [initialPrompt, setInitialPrompt] = useState<string>('');
   const [isDayZero, setIsDayZero] = useState(false);
+  const [instructionsCreated, setInstructionsCreated] = useState(false);
   const [isDbtReview, setIsDbtReview] = useState(false);
   const [dbtImported, setDbtImported] = useState(false);
   const [dataBrowserInitialTab, setDataBrowserInitialTab] = useState<'warehouses' | 'external-models'>('warehouses');
@@ -104,7 +104,6 @@ const DataStudio: React.FC = () => {
     name: 'Untitled Model',
     buildStep: 'empty',
     activeTab: 'tables',
-    testMode: false,
     publishedVersion: 0,
     hasUnpublishedChanges: true,
     projectSource: 'warehouse',
@@ -170,7 +169,6 @@ const DataStudio: React.FC = () => {
       name: proj.name,
       buildStep: 'healthy',
       activeTab: 'tables',
-      testMode: false,
       publishedVersion: proj.status === 'published' ? 1 : 0,
       hasUnpublishedChanges: proj.status !== 'published',
       projectSource: 'warehouse',
@@ -202,7 +200,6 @@ const DataStudio: React.FC = () => {
       name: nameOrId ?? 'Untitled Model',
       buildStep: 'healthy',
       activeTab: 'tables',
-      testMode: false,
       publishedVersion: published ? 1 : 0,
       hasUnpublishedChanges: !published,
       projectSource: 'warehouse',
@@ -240,7 +237,6 @@ const DataStudio: React.FC = () => {
       name: modelName,
       buildStep: 'healthy',
       activeTab: 'tables',
-      testMode: false,
       publishedVersion: 0,
       hasUnpublishedChanges: true,
       projectSource: 'dbt',
@@ -264,7 +260,6 @@ const DataStudio: React.FC = () => {
       name: 'Untitled Model',
       buildStep: 'empty',
       activeTab: 'tables',
-      testMode: false,
       publishedVersion: 0,
       hasUnpublishedChanges: true,
       projectSource: 'warehouse',
@@ -291,7 +286,6 @@ const DataStudio: React.FC = () => {
       name: deriveModelName(prompt),
       buildStep: 'empty',
       activeTab: 'tables',
-      testMode: false,
       publishedVersion: 0,
       hasUnpublishedChanges: true,
       projectSource: 'warehouse',
@@ -399,6 +393,8 @@ const DataStudio: React.FC = () => {
             initialPrompt={initialPrompt}
             isDayZero={isDayZero}
             isDbtReview={isDbtReview}
+            instructionsCreated={instructionsCreated}
+            onBuildStart={() => setInstructionsCreated(true)}
             onBack={goBack}
             onNavigateToTable={() => {
               setDataBrowserInitialTab('warehouses');
@@ -434,6 +430,7 @@ const DataStudio: React.FC = () => {
             isDayZero={isDayZero}
             isDbtReview={isDbtReview}
             isAgentMode={isAgentMode}
+            instructionsCreated={instructionsCreated}
             onNavigateToTable={(tableName) => {
               setDataBrowserInitialTab('warehouses');
               navigateTo('data-browser');

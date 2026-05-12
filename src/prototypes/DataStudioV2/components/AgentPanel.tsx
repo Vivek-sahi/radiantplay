@@ -65,7 +65,7 @@ export interface PlanData {
 
 export interface AgentMessage {
   id: string;
-  type: 'user' | 'working' | 'response' | 'execution';
+  type: 'user' | 'working' | 'response' | 'execution' | 'spotter-user' | 'spotter-answer' | 'coaching-prompt' | 'coaching-result';
   content: string;
   steps?: WorkingStep[];
   stepsCollapsed?: boolean;
@@ -79,6 +79,26 @@ export interface AgentMessage {
   planData?: PlanData;
   genUI?: string;
   genUIResult?: string;
+  // spotter-answer fields
+  answerTitle?: string;
+  answerDesc?: string;
+  spotterChips?: SpotterChip[];
+  workingSteps?: TestWorkingStep[];
+  workingExpanded?: boolean;
+  revealedSteps?: number;
+  answerRevealed?: boolean;
+  chartData?: SpotterAnswer['chartData'];
+  feedbackState?: 'pending' | 'answered';
+  feedbackAnswer?: 'correct' | 'incorrect';
+  sourceQuestion?: string;
+  // coaching-prompt fields
+  coachingOptions?: string[];
+  selectedOption?: string;
+  // coaching-result fields
+  debugCategory?: string;
+  debugSteps?: Array<{ label: string; detail: string }>;
+  debugRevealedSteps?: number;
+  debugResultRevealed?: boolean;
 }
 
 interface WorkingStep {
@@ -1798,12 +1818,57 @@ const SPOTTER_ANSWERS: Record<string, SpotterAnswer> = {
       yMax: 55,
     },
   },
+  'What is revenue by region?': {
+    answerTitle: 'Revenue by Region',
+    answerDesc: "Revenue is distributed across four regions. North America leads with 58% of total revenue from this model's orders data.",
+    chips: [
+      { type: 'measure',   label: 'SUM(amount)' },
+      { type: 'attribute', label: 'region' },
+    ],
+    workingSteps: [
+      { title: 'Mapping revenue metric to orders table' },
+      { title: 'Retrieving model context' },
+      { title: 'Fetching relevant dataset context', toolCard: 'ThoughtSpot: Fetching relevant dataset context' },
+      { title: 'Grouping by region dimension', desc: 'orders.region has 4 values: North America, EMEA, APAC, LATAM. No nulls.' },
+      { title: 'Fetching data from dataset', toolCard: 'ThoughtSpot: Answer generation' },
+      { title: 'Worked for 5 seconds', isTiming: true },
+    ],
+    chartData: {
+      categories: ['North America', 'EMEA', 'APAC', 'LATAM'],
+      values: [142000, 68000, 41000, 19000],
+      formatter: '',
+      yMax: 170000,
+    },
+  },
+  'What is the budget utilisation rate?': {
+    answerTitle: 'Budget Utilisation Rate',
+    answerDesc: "I found the budget and spend columns but couldn't confidently map 'utilisation rate' — the column has no description or synonym. I've used SUM(spend)/SUM(budget) as a best guess.",
+    chips: [
+      { type: 'measure',   label: 'SUM(spend) / SUM(budget)' },
+      { type: 'filter',    label: 'budget > 0' },
+    ],
+    workingSteps: [
+      { title: "Searching for 'budget utilisation' in model" },
+      { title: 'Retrieving model context' },
+      { title: 'Fetching relevant dataset context', toolCard: 'ThoughtSpot: Fetching relevant dataset context' },
+      { title: 'No direct match — approximating from available columns', desc: "campaigns.budget has no description or synonym for 'utilisation'. Calculated spend/budget ratio as fallback." },
+      { title: 'Fetching data from dataset', toolCard: 'ThoughtSpot: Answer generation' },
+      { title: 'Worked for 9 seconds', isTiming: true },
+    ],
+    chartData: {
+      categories: ['Retargeting', 'Summer Sale', 'Spring Promo', 'Brand Awareness', 'Product Launch'],
+      values: [94, 87, 72, 61, 48],
+      formatter: '%',
+      yMax: 110,
+    },
+  },
 };
 
 const DEMO_QUESTIONS = [
   'What is our ROAS by campaign and channel?',
   'Which user segments convert best?',
-  'How efficient is our budget across regions?',
+  'What is revenue by region?',
+  'What is the budget utilisation rate?',
 ];
 
 // ── Test mode sub-components ──────────────────────────────────────────────────
@@ -1953,6 +2018,7 @@ interface AgentPanelProps {
   isDbtReview?: boolean;
   onOpenPlan?: (plan: PlanData) => void;
   onOpenQualityPlan?: () => void;
+  onBuildStart?: () => void;
   fullPage?: boolean;
   onBack?: () => void;
   initialFlow?: string;
@@ -1960,7 +2026,7 @@ interface AgentPanelProps {
   onInsightResolved?: (id: string) => void;
 }
 
-const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, setMessages, initialPrompt, onBuildComplete, externalMessage, onExternalMessageHandled, externalMessageAttachment, injectInput, onInjectInputHandled, width = 340, selectedColumns, onColumnRemove, isDayZero, isDbtReview, onOpenPlan, onOpenQualityPlan, fullPage = false, onBack, initialFlow, initialMessage, onInsightResolved }) => {
+const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, setMessages, initialPrompt, onBuildComplete, externalMessage, onExternalMessageHandled, externalMessageAttachment, injectInput, onInjectInputHandled, width = 340, selectedColumns, onColumnRemove, isDayZero, isDbtReview, onOpenPlan, onOpenQualityPlan, onBuildStart, fullPage = false, onBack, initialFlow, initialMessage, onInsightResolved }) => {
   const [pendingAction, setPending]     = useState<PendingAction | null>(null);
   const [isProcessing, setProcessing]   = useState(false);
   const [planModalOpen, setPlanModalOpen] = useState(false);
@@ -1982,14 +2048,6 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
   const lastHandledExternalRef   = useRef<string | null>(null);
   const prevMsgLengthRef         = useRef(messages.length);
 
-  // Test tab state
-  const [testInput, setTestInput]       = useState('');
-  const [testMessages, setTestMessages] = useState<TestMsg[]>([]);
-  const testEndRef                      = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    testEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [testMessages]);
 
   // Auto-scroll to bottom on any messages change (new message or step update),
   // but only if the user is already near the bottom — don't hijack manual scrolling.
@@ -2323,6 +2381,7 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
   const handleStartBuilding = () => {
     setDayZeroPhase('done');
     setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: 'Start building' }]);
+    onBuildStart?.();
     setTimeout(() => {
       runFlow('build_project', setMessages, setPending, setProcessing, setProject, 'Start building', buildAbortRef);
     }, 300);
@@ -2403,6 +2462,11 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
       return;
     }
     if (!text || isProcessing) return;
+    // Test mode — route to Spotter, skip build agent
+    if (agentMode === 'test') {
+      handleSpotterQuestion(text);
+      return;
+    }
     // Day Zero flow — route through dedicated handler, skip normal matchScript
     if (dayZeroPhase && dayZeroPhase !== 'done') {
       handleDayZeroInput(text);
@@ -2600,91 +2664,74 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
     runFlow(scriptKey, setMessages, setPending, setProcessing, setProject);
   };
 
-  // ── Test tab helpers ─────────────────────────────────────────────────────────
+  // ── Spotter (inline test mode) ───────────────────────────────────────────────
 
-  const sendTest = (questionOverride?: string) => {
-    const text = (questionOverride ?? testInput).trim();
-    if (!text) return;
-    setTestInput('');
-    const now = new Date();
-    const timestamp = now.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }) + ' ' + now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-    const msgId = Date.now();
-    setTestMessages(prev => [...prev, { id: msgId - 1, role: 'user', content: text, timestamp }]);
+  const handleSpotterQuestion = (text: string) => {
+    if (!text.trim()) return;
+    const userId = `su-${Date.now()}`;
+    setMessages(prev => [...prev, { id: userId, type: 'spotter-user', content: text }]);
     const answer = SPOTTER_ANSWERS[text];
-    const steps = answer?.workingSteps ?? [
+    const steps: TestWorkingStep[] = answer?.workingSteps ?? [
       { title: 'Resolved question intent' },
       { title: 'Mapped columns across model' },
-      { title: 'Applied joins and computed result' },
+      { title: 'Applied joins and computed result', isTiming: true },
     ];
+    const aiId = `sa-${Date.now()}`;
     setTimeout(() => {
-      setTestMessages(prev => [...prev, {
-        id: msgId, role: 'ai',
-        answerTitle: answer?.answerTitle, answerDesc: answer?.answerDesc, chips: answer?.chips,
-        workingSteps: steps, workingExpanded: true, revealedSteps: 0, answerRevealed: false,
+      setMessages(prev => [...prev, {
+        id: aiId, type: 'spotter-answer',
+        content: answer ? '' : 'Based on your Campaign Performance model, I found relevant results. Try one of the sample questions for a scripted demo answer.',
+        answerTitle: answer?.answerTitle,
+        answerDesc: answer?.answerDesc,
+        spotterChips: answer?.chips,
         chartData: answer?.chartData,
-        content: answer ? undefined : `Based on your Campaign Performance model, I found relevant results for this question.\n\nThe analysis draws from your orders, campaigns, and users data. Try one of the sample questions for a scripted demo answer.`,
+        workingSteps: steps, workingExpanded: true, revealedSteps: 0, answerRevealed: false,
+        feedbackState: 'pending',
+        sourceQuestion: text,
       }]);
-      const STEP_INTERVAL = 600;
+      const STEP_MS = 600;
       steps.forEach((_, s) => {
         setTimeout(() => {
-          setTestMessages(prev => prev.map(m => m.id === msgId ? { ...m, revealedSteps: s + 1 } : m));
-        }, (s + 1) * STEP_INTERVAL);
+          setMessages(prev => prev.map(m => m.id === aiId ? { ...m, revealedSteps: s + 1 } : m));
+        }, (s + 1) * STEP_MS);
       });
       setTimeout(() => {
-        setTestMessages(prev => prev.map(m =>
-          m.id === msgId ? { ...m, answerRevealed: true, feedbackState: 'pending' as const } : m
-        ));
-      }, steps.length * STEP_INTERVAL + 500);
+        setMessages(prev => prev.map(m => m.id === aiId ? { ...m, answerRevealed: true } : m));
+      }, steps.length * STEP_MS + 500);
     }, 600);
   };
 
-  const toggleTestWorking = (i: number) =>
-    setTestMessages(prev => prev.map((m, idx) => idx === i ? { ...m, workingExpanded: !m.workingExpanded } : m));
-
-  const handleFeedback = (msgIndex: number, answer: 'correct' | 'incorrect') => {
-    setTestMessages(prev => prev.map((m, i) =>
-      i === msgIndex ? { ...m, feedbackState: 'answered' as const, feedbackAnswer: answer } : m
+  const handleSpotterFeedback = (msgId: string, answer: 'correct' | 'incorrect', sourceQuestion: string) => {
+    setMessages(prev => prev.map(m =>
+      m.id === msgId ? { ...m, feedbackState: 'answered' as const, feedbackAnswer: answer } : m
     ));
     if (answer === 'correct') return;
-    // Capture the user's question from the nearest preceding user message
-    const sourceQuestion = testMessages
-      .slice(0, msgIndex)
-      .reverse()
-      .find(m => m.role === 'user')?.content ?? '';
-    const coachingId = Date.now();
-    setTestMessages(prev => [...prev, {
-      id: coachingId,
-      role: 'coaching-question' as const,
+    const promptId = `cp-${Date.now()}`;
+    setMessages(prev => [...prev, {
+      id: promptId, type: 'coaching-prompt', content: '',
       coachingOptions: COACHING_OPTIONS,
       sourceQuestion,
     }]);
   };
 
-  const handleCoachingOption = (msgIndex: number, option: string) => {
-    const sourceQuestion = testMessages[msgIndex]?.sourceQuestion ?? '';
-    setTestMessages(prev => prev.map((m, i) =>
-      i === msgIndex ? { ...m, selectedOption: option } : m
-    ));
-    const debugId = Date.now();
+  const handleSpotterCoachingOption = (msgId: string, option: string, sourceQuestion: string) => {
+    setMessages(prev => prev.map(m => m.id === msgId ? { ...m, selectedOption: option } : m));
+    const resultId = `cr-${Date.now()}`;
     const steps = COACHING_DEBUG_STEPS[option] ?? COACHING_DEBUG_STEPS['Something else'];
-    setTestMessages(prev => [...prev, {
-      id: debugId,
-      role: 'coaching-debug' as const,
-      debugCategory: option,
-      sourceQuestion,
-      debugSteps: steps,
-      debugRevealedSteps: 0,
-      debugResultRevealed: false,
+    setMessages(prev => [...prev, {
+      id: resultId, type: 'coaching-result', content: '',
+      debugCategory: option, sourceQuestion,
+      debugSteps: steps, debugRevealedSteps: 0, debugResultRevealed: false,
     }]);
     steps.forEach((_, idx) => {
       setTimeout(() => {
-        setTestMessages(prev => prev.map(m =>
-          m.id === debugId ? { ...m, debugRevealedSteps: idx + 1 } : m
+        setMessages(prev => prev.map(m =>
+          m.id === resultId ? { ...m, debugRevealedSteps: idx + 1 } : m
         ));
         if (idx === steps.length - 1) {
           setTimeout(() => {
-            setTestMessages(prev => prev.map(m =>
-              m.id === debugId ? { ...m, debugResultRevealed: true } : m
+            setMessages(prev => prev.map(m =>
+              m.id === resultId ? { ...m, debugResultRevealed: true } : m
             ));
           }, 500);
         }
@@ -2697,7 +2744,7 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
     const userBubble = sourceQuestion
       ? `I tested "${sourceQuestion}" — ${category.toLowerCase()}.`
       : `Found an issue during testing: ${category.toLowerCase()}.`;
-    setProject(p => ({ ...p, testMode: false }));
+    setAgentMode('build');
     setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: userBubble }]);
     runFlow(scriptKey, setMessages, setPending, setProcessing, setProject, userBubble);
   };
@@ -2710,7 +2757,7 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
     backgroundColor: '#EAEDF2', color: '#1D232F',
   });
 
-  const buildChartOption = (chartData: NonNullable<TestMsg['chartData']>) => {
+  const buildChartOption = (chartData: NonNullable<AgentMessage['chartData']>) => {
     const font = "-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif";
     return {
       grid: { top: 28, bottom: 32, left: 12, right: 12, containLabel: true },
@@ -2769,8 +2816,8 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
         </div>
       )}
 
-      {/* ── Build tab ─────────────────────────────────────────────────────────── */}
-      {!project.testMode && (<>
+      {/* ── Agent panel ───────────────────────────────────────────────────────── */}
+      <>
       <style>{`
         @keyframes ag-spin { to { transform: rotate(360deg); } }
         @keyframes ag-pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(39,112,239,0.4); } 50% { box-shadow: 0 0 0 5px rgba(39,112,239,0); } }
@@ -2882,6 +2929,224 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
             );
           }
 
+          // ── Spotter user question ────────────────────────────────────────────
+          if (msg.type === 'spotter-user') {
+            return (
+              <div key={msg.id} style={{ backgroundColor: c['background-sunken'], borderRadius: 12, padding: `${sp.C}px ${sp.D}px` }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, marginBottom: sp.B }}>
+                  <UserAvatar />
+                  <span style={{ fontSize: fs.xs, fontWeight: fw.medium, color: c['content-secondary'] }}>Test question</span>
+                </div>
+                <p style={{ margin: 0, fontSize: fs.sm, color: c['content-primary'], lineHeight: '20px' }}>{msg.content}</p>
+              </div>
+            );
+          }
+
+          // ── Spotter answer ───────────────────────────────────────────────────
+          if (msg.type === 'spotter-answer') {
+            const totalSteps = msg.workingSteps?.length ?? 0;
+            const revealed = msg.revealedSteps ?? totalSteps;
+            const isAnimating = msg.revealedSteps !== undefined && (revealed < totalSteps || !msg.answerRevealed);
+            const visibleSteps = msg.workingSteps?.slice(0, revealed) ?? [];
+            return (
+              <div key={msg.id}>
+                {/* Working steps */}
+                {visibleSteps.length > 0 && (
+                  <div style={{ display: 'flex', gap: sp.B, alignItems: 'flex-start' }}>
+                    <SpotterIconAvatar working={isAnimating} />
+                    <div style={{ flex: 1, minWidth: 0, paddingTop: 2 }}>
+                      {!isAnimating && (
+                        <button
+                          onClick={() => setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, workingExpanded: !m.workingExpanded } : m))}
+                          style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer', background: 'none', border: 'none', padding: 0, fontFamily: ff.primary, marginBottom: msg.workingExpanded ? sp.C : 0 }}
+                        >
+                          <span style={{ fontSize: fs.xs, color: c['content-secondary'], fontWeight: fw.medium }}>Show work</span>
+                          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke={c['content-secondary']} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: msg.workingExpanded ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.15s' }}><polyline points="2,4 6,8 10,4" /></svg>
+                        </button>
+                      )}
+                      {(isAnimating || msg.workingExpanded) && (
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          {visibleSteps.map((step, si) => {
+                            const stepRunning = isAnimating && si === visibleSteps.length - 1;
+                            const stepDone = !stepRunning;
+                            return (
+                              <div key={si} style={{ display: 'flex', gap: 10, animation: 'ag-step-in 0.22s ease' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 14, flexShrink: 0 }}>
+                                  <div style={{ width: 14, height: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 3 }}>
+                                    {stepRunning ? <Spinner /> : <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#22C55E' }} />}
+                                  </div>
+                                  {si < visibleSteps.length - 1 && (
+                                    <div style={{ flex: 1, width: 2, minHeight: 12, marginTop: 2, backgroundColor: stepDone ? '#22C55E' : c['border-divider'], transition: 'background-color 0.4s ease', borderRadius: 1 }} />
+                                  )}
+                                </div>
+                                <div style={{ flex: 1, paddingBottom: si < visibleSteps.length - 1 ? sp.C : 0 }}>
+                                  <span className={stepRunning ? 'ag-gradient-text' : undefined} style={{ fontSize: fs.sm, fontWeight: stepRunning ? fw.medium : fw.regular, lineHeight: '20px', color: stepRunning ? undefined : c['content-secondary'] }}>
+                                    {step.title}
+                                  </span>
+                                  {step.desc && (
+                                    <p style={{ margin: '2px 0 0', fontSize: fs.xs, color: c['content-secondary'], lineHeight: '18px' }}>
+                                      <TTypewriter text={step.desc} active={stepRunning} />
+                                    </p>
+                                  )}
+                                  {step.toolCard && (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, border: `1px solid ${c['border-divider']}`, borderRadius: 8, padding: '8px 12px', marginTop: 6, backgroundColor: c['background-subtle'] }}>
+                                      <span style={{ fontSize: fs.xs, color: c['content-secondary'] }}>⊞</span>
+                                      <span style={{ flex: 1, fontSize: fs.xs, color: c['content-primary'] }}>{step.toolCard}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+                {/* Answer card */}
+                {msg.answerRevealed !== false && (
+                  <div style={{ display: 'flex', gap: sp.B, alignItems: 'flex-start', marginTop: visibleSteps.length > 0 ? -sp.B : 0 }}>
+                    <div style={{ width: 24, flexShrink: 0 }} />
+                    <div style={{ flex: 1, minWidth: 0, paddingTop: 2 }}>
+                      {msg.answerTitle && <p style={{ margin: `0 0 ${sp.A}px`, fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'], lineHeight: '20px', animation: 'ag-step-in 0.3s ease-out' }}>{msg.answerTitle}</p>}
+                      {msg.answerDesc && <p style={{ margin: `0 0 ${sp.C}px`, fontSize: fs.sm, color: c['content-primary'], lineHeight: '20px' }}>{msg.answerDesc}</p>}
+                      {msg.content && <p style={{ margin: 0, fontSize: fs.sm, color: c['content-primary'], lineHeight: '20px', animation: 'ag-step-in 0.3s ease-out' }}><TFormattedMsg content={msg.content} /></p>}
+                      {(msg.spotterChips || msg.chartData) && (
+                        <div style={{ marginTop: sp.C, border: `1px solid ${c['border-divider']}`, borderRadius: 10, overflow: 'hidden', backgroundColor: c['background-base'], animation: 'ag-step-in 0.35s ease-out' }}>
+                          {msg.spotterChips && (
+                            <div style={{ padding: `${sp.C}px ${sp.C}px 0` }}>
+                              <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 5, marginBottom: sp.B }}>
+                                {msg.spotterChips.map((chip, ci) => (
+                                  <span key={ci} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 9px 3px 7px', borderRadius: 4, fontSize: 12, fontWeight: fw.medium, backgroundColor: '#EAEDF2', color: '#1D232F', whiteSpace: 'nowrap' }}>
+                                    {chip.type === 'measure' && <span style={{ fontSize: 10, color: '#4A7FE5', fontWeight: fw.bold }}>#</span>}
+                                    {chip.type === 'filter' && <svg width="10" height="10" viewBox="0 0 18 18" fill="none" style={{ flexShrink: 0 }}><path d="M1.5 3H16.5L10.5 10.065V14.5L7.5 16V10.065L1.5 3Z" stroke="#4A7FE5" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                                    {chip.label}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {msg.chartData && (
+                            <ReactECharts option={buildChartOption(msg.chartData)} style={{ height: 200, width: '100%' }} opts={{ renderer: 'svg' }} />
+                          )}
+                        </div>
+                      )}
+                      {/* Feedback row */}
+                      <div style={{ display: 'flex', alignItems: 'center', marginTop: 6 }}>
+                        {msg.feedbackState === 'pending' && (<>
+                          <button onClick={() => handleSpotterFeedback(msg.id, 'correct', msg.sourceQuestion ?? '')}
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 10px', border: `1px solid ${c['border-default']}`, borderRadius: 6, background: 'none', fontSize: fs.xs, fontWeight: fw.medium, color: c['content-secondary'], cursor: 'pointer', fontFamily: ff.primary }}
+                            onMouseEnter={e => { e.currentTarget.style.borderColor = '#22C55E'; e.currentTarget.style.color = '#15803D'; }}
+                            onMouseLeave={e => { e.currentTarget.style.borderColor = c['border-default']; e.currentTarget.style.color = c['content-secondary']; }}
+                          >✓ Looks right</button>
+                          <button onClick={() => handleSpotterFeedback(msg.id, 'incorrect', msg.sourceQuestion ?? '')}
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 10px', marginLeft: sp.A, border: `1px solid ${c['border-default']}`, borderRadius: 6, background: 'none', fontSize: fs.xs, fontWeight: fw.medium, color: c['content-secondary'], cursor: 'pointer', fontFamily: ff.primary }}
+                            onMouseEnter={e => { e.currentTarget.style.borderColor = '#EF4444'; e.currentTarget.style.color = '#B91C1C'; }}
+                            onMouseLeave={e => { e.currentTarget.style.borderColor = c['border-default']; e.currentTarget.style.color = c['content-secondary']; }}
+                          >✗ Something's off</button>
+                        </>)}
+                        {msg.feedbackState === 'answered' && msg.feedbackAnswer === 'correct' && (
+                          <span style={{ fontSize: fs.xs, color: '#15803D' }}>✓ Looks right</span>
+                        )}
+                        {msg.feedbackState === 'answered' && msg.feedbackAnswer === 'incorrect' && (
+                          <span style={{ fontSize: fs.xs, color: c['content-secondary'] }}>✗ Flagged</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          }
+
+          // ── Coaching prompt (what went wrong?) ───────────────────────────────
+          if (msg.type === 'coaching-prompt') {
+            return (
+              <div key={msg.id} style={{ display: 'flex', gap: sp.B, alignItems: 'flex-start' }}>
+                <AgentAvatar working={false} />
+                <div style={{ flex: 1, minWidth: 0, paddingTop: 2 }}>
+                  <p style={{ margin: `0 0 ${sp.C}px`, fontSize: fs.sm, color: c['content-primary'], lineHeight: '20px' }}>
+                    Got it. What went wrong with this answer?
+                  </p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: sp.B }}>
+                    {msg.coachingOptions?.map(opt => {
+                      const isSelected = msg.selectedOption === opt;
+                      const isDimmed = !!msg.selectedOption && !isSelected;
+                      return (
+                        <button key={opt}
+                          onClick={() => !msg.selectedOption && handleSpotterCoachingOption(msg.id, opt, msg.sourceQuestion ?? '')}
+                          style={{ textAlign: 'left', border: `1px solid ${isSelected ? '#2770ef' : c['border-default']}`, borderRadius: 8, padding: `${sp.B}px ${sp.C}px`, fontSize: fs.xs, backgroundColor: isSelected ? '#EFF6FF' : c['background-base'], color: isDimmed ? c['content-secondary'] : isSelected ? '#1D4ED8' : c['content-primary'], cursor: msg.selectedOption ? 'default' : 'pointer', fontFamily: ff.primary, fontWeight: isSelected ? fw.medium : fw.regular, opacity: isDimmed ? 0.5 : 1, transition: 'all 0.15s' }}
+                        >{opt}</button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            );
+          }
+
+          // ── Coaching result (debug steps + fix button) ───────────────────────
+          if (msg.type === 'coaching-result') {
+            const dbSteps = msg.debugSteps ?? [];
+            const dbRevealed = msg.debugRevealedSteps ?? 0;
+            const dbAnimating = dbRevealed < dbSteps.length;
+            const dbVisibleSteps = dbSteps.slice(0, dbRevealed);
+            const dbResult = COACHING_DEBUG_RESULTS[msg.debugCategory ?? ''] ?? COACHING_DEBUG_RESULTS['Something else'];
+            return (
+              <div key={msg.id}>
+                {dbVisibleSteps.length > 0 && (
+                  <div style={{ display: 'flex', gap: sp.B, alignItems: 'flex-start' }}>
+                    <AgentAvatar working={dbAnimating} />
+                    <div style={{ flex: 1, minWidth: 0, paddingTop: 2 }}>
+                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        {dbVisibleSteps.map((step, si) => {
+                          const stepRunning = dbAnimating && si === dbVisibleSteps.length - 1;
+                          const stepDone = !stepRunning;
+                          return (
+                            <div key={si} style={{ display: 'flex', gap: 10, animation: 'ag-step-in 0.22s ease' }}>
+                              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 14, flexShrink: 0 }}>
+                                <div style={{ width: 14, height: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 3 }}>
+                                  {stepRunning ? <Spinner /> : <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#22C55E' }} />}
+                                </div>
+                                {si < dbVisibleSteps.length - 1 && (
+                                  <div style={{ flex: 1, width: 2, minHeight: 12, marginTop: 2, backgroundColor: stepDone ? '#22C55E' : c['border-divider'], transition: 'background-color 0.4s ease', borderRadius: 1 }} />
+                                )}
+                              </div>
+                              <div style={{ flex: 1, paddingBottom: si < dbVisibleSteps.length - 1 ? sp.C : 0 }}>
+                                <span className={stepRunning ? 'ag-gradient-text' : undefined} style={{ fontSize: fs.sm, fontWeight: stepRunning ? fw.medium : fw.regular, lineHeight: '20px', color: stepRunning ? undefined : c['content-secondary'] }}>
+                                  {step.label}
+                                </span>
+                                {step.detail && (
+                                  <p style={{ margin: '2px 0 0', fontSize: fs.xs, color: c['content-secondary'], lineHeight: '18px' }}>
+                                    <TTypewriter text={step.detail} active={stepRunning} />
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {msg.debugResultRevealed && (
+                  <div style={{ display: 'flex', gap: sp.B, alignItems: 'flex-start', marginTop: dbVisibleSteps.length > 0 ? sp.B : 0, animation: 'ag-step-in 0.3s ease-out' }}>
+                    <div style={{ width: 24, flexShrink: 0 }} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ margin: `0 0 ${sp.C}px`, fontSize: fs.sm, color: c['content-primary'], lineHeight: '20px' }}>{dbResult}</p>
+                      <button
+                        onClick={() => switchToBuildWithContext(msg.debugCategory ?? 'Something else', msg.sourceQuestion ?? '')}
+                        style={{ padding: `${sp.B}px ${sp.C}px`, border: 'none', borderRadius: 8, background: '#2770ef', fontSize: fs.xs, fontWeight: fw.medium, color: '#fff', cursor: 'pointer', fontFamily: ff.primary }}
+                        onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#1E5FD8')}
+                        onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#2770ef')}
+                      >Fix in build →</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          }
+
           return (
             <div key={msg.id} style={{ marginTop: isAfterWorking ? -sp.B : 0 }}>
               <MessageBubble
@@ -2989,337 +3254,8 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
       <p style={{ textAlign: 'center', fontSize: 11, color: c['content-secondary'], padding: `${sp.A}px ${sp.D}px ${sp.B}px`, margin: 0, lineHeight: '16px' }}>
         Spotter responses should be reviewed. <span style={{ textDecoration: 'underline', cursor: 'pointer' }}>Learn more</span>
       </p>
-      </>)}
+      </>
 
-      {/* ── Test tab ──────────────────────────────────────────────────────────── */}
-      {project.testMode && (
-        project.buildStep === 'empty' ? (
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div style={{ textAlign: 'center', maxWidth: 280, padding: sp.H }}>
-              <h2 style={{ ...ts.sectionLabel, color: c['content-primary'], margin: `0 0 ${sp.C}px` }}>No model ready yet</h2>
-              <p style={{ fontSize: fs.sm, color: c['content-secondary'], margin: `0 0 ${sp.F}px` }}>
-                Build your model first, then come back to test it.
-              </p>
-              <Button variant="secondary" onClick={() => setProject(p => ({ ...p, testMode: false }))}>Back to build</Button>
-            </div>
-          </div>
-        ) : (
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: c['background-base'], overflow: 'hidden' }}>
-
-            {/* Test messages */}
-            <div style={{ flex: 1, overflowY: 'auto', padding: `${sp.C}px ${sp.D}px`, display: 'flex', flexDirection: 'column', gap: sp.D }}>
-              {testMessages.length === 0 && (
-                <div style={{ textAlign: 'center', padding: `${sp.H}px ${sp.D}px` }}>
-                  <AgentAvatarLarge />
-                  <p style={{ fontSize: fs.sm, color: c['content-secondary'], margin: `${sp.C}px 0 ${sp.F}px`, lineHeight: '20px' }}>
-                    Ask questions the way your business users will.
-                  </p>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: sp.B }}>
-                    {DEMO_QUESTIONS.map(q => (
-                      <button key={q} onClick={() => sendTest(q)}
-                        style={{ padding: `${sp.B}px ${sp.C}px`, border: `1px solid ${c['border-default']}`, borderRadius: 8, backgroundColor: 'transparent', color: c['content-secondary'], fontSize: fs.xs, cursor: 'pointer', fontFamily: ff.primary, textAlign: 'left' }}
-                        onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
-                        onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
-                      >{q}</button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {testMessages.map((msg, i) => {
-                if (msg.role === 'user') {
-                  return (
-                    <div key={i} style={{ backgroundColor: c['background-sunken'], borderRadius: 12, padding: `${sp.C}px ${sp.D}px` }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, marginBottom: sp.B }}>
-                        <UserAvatar />
-                      </div>
-                      <p style={{ margin: 0, fontSize: fs.sm, color: c['content-primary'], lineHeight: '20px' }}>{msg.content}</p>
-                    </div>
-                  );
-                }
-
-                // ── coaching-question message ──────────────────────────────────
-                if (msg.role === 'coaching-question') {
-                  return (
-                    <div key={i} style={{ display: 'flex', gap: sp.B, alignItems: 'flex-start' }}>
-                      <AgentAvatar working={false} />
-                      <div style={{ flex: 1, minWidth: 0, paddingTop: 2 }}>
-                        <p style={{ margin: `0 0 ${sp.C}px`, fontSize: fs.sm, color: c['content-primary'], lineHeight: '20px' }}>
-                          Got it. What went wrong with this answer?
-                        </p>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: sp.B }}>
-                          {msg.coachingOptions?.map(opt => {
-                            const isSelected = msg.selectedOption === opt;
-                            const isDimmed = !!msg.selectedOption && !isSelected;
-                            return (
-                              <button
-                                key={opt}
-                                onClick={() => !msg.selectedOption && handleCoachingOption(i, opt)}
-                                style={{
-                                  textAlign: 'left', border: `1px solid ${isSelected ? '#2770ef' : c['border-default']}`,
-                                  borderRadius: 8, padding: `${sp.B}px ${sp.C}px`, fontSize: fs.xs,
-                                  backgroundColor: isSelected ? '#EFF6FF' : c['background-base'],
-                                  color: isDimmed ? c['content-secondary'] : isSelected ? '#1D4ED8' : c['content-primary'],
-                                  cursor: msg.selectedOption ? 'default' : 'pointer',
-                                  fontFamily: ff.primary, fontWeight: isSelected ? fw.medium : fw.regular,
-                                  opacity: isDimmed ? 0.5 : 1, transition: 'all 0.15s',
-                                }}
-                              >
-                                {opt}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                }
-
-                // ── coaching-debug message ─────────────────────────────────────
-                if (msg.role === 'coaching-debug') {
-                  const dbSteps = msg.debugSteps ?? [];
-                  const dbRevealed = msg.debugRevealedSteps ?? 0;
-                  const dbAnimating = dbRevealed < dbSteps.length;
-                  const dbVisibleSteps = dbSteps.slice(0, dbRevealed);
-                  const dbResult = COACHING_DEBUG_RESULTS[msg.debugCategory ?? ''] ?? COACHING_DEBUG_RESULTS['Something else'];
-                  return (
-                    <div key={i}>
-                      {dbVisibleSteps.length > 0 && (
-                        <div style={{ display: 'flex', gap: sp.B, alignItems: 'flex-start' }}>
-                          <AgentAvatar working={dbAnimating} />
-                          <div style={{ flex: 1, minWidth: 0, paddingTop: 2 }}>
-                            <div style={{ display: 'flex', flexDirection: 'column' }}>
-                              {dbVisibleSteps.map((step, si) => {
-                                const stepRunning = dbAnimating && si === dbVisibleSteps.length - 1;
-                                const stepDone = !stepRunning;
-                                return (
-                                  <div key={si} style={{ display: 'flex', gap: 10, animation: 'ag-step-in 0.22s ease' }}>
-                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 14, flexShrink: 0 }}>
-                                      <div style={{ width: 14, height: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 3 }}>
-                                        {stepRunning ? <Spinner /> : <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#22C55E' }} />}
-                                      </div>
-                                      {si < dbVisibleSteps.length - 1 && (
-                                        <div style={{ flex: 1, width: 2, minHeight: 12, marginTop: 2, backgroundColor: stepDone ? '#22C55E' : c['border-divider'], transition: 'background-color 0.4s ease', borderRadius: 1 }} />
-                                      )}
-                                    </div>
-                                    <div style={{ flex: 1, paddingBottom: si < dbVisibleSteps.length - 1 ? sp.C : 0 }}>
-                                      <span className={stepRunning ? 'ag-gradient-text' : undefined} style={{ fontSize: fs.sm, fontWeight: stepRunning ? fw.medium : fw.regular, lineHeight: '20px', color: stepRunning ? undefined : c['content-secondary'] }}>
-                                        {step.label}
-                                      </span>
-                                      {step.detail && (
-                                        <p style={{ margin: '2px 0 0', fontSize: fs.xs, color: c['content-secondary'], lineHeight: '18px' }}>
-                                          <TTypewriter text={step.detail} active={stepRunning} />
-                                        </p>
-                                      )}
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                      {msg.debugResultRevealed && (
-                        <div style={{ display: 'flex', gap: sp.B, alignItems: 'flex-start', marginTop: dbVisibleSteps.length > 0 ? sp.B : 0, animation: 'ag-step-in 0.3s ease-out' }}>
-                          <div style={{ width: 24, flexShrink: 0 }} />
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <p style={{ margin: `0 0 ${sp.C}px`, fontSize: fs.sm, color: c['content-primary'], lineHeight: '20px' }}>{dbResult}</p>
-                            <div style={{ display: 'flex', gap: sp.B }}>
-                              <button
-                                onClick={() => {/* just continue — no action needed */}}
-                                style={{ padding: `${sp.B}px ${sp.C}px`, border: `1px solid ${c['border-default']}`, borderRadius: 8, background: c['background-base'], fontSize: fs.xs, fontWeight: fw.medium, color: c['content-primary'], cursor: 'pointer', fontFamily: ff.primary }}
-                                onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
-                                onMouseLeave={e => (e.currentTarget.style.backgroundColor = c['background-base'])}
-                              >
-                                Continue testing
-                              </button>
-                              <button
-                                onClick={() => switchToBuildWithContext(msg.debugCategory ?? 'Something else', msg.sourceQuestion ?? '')}
-                                style={{ padding: `${sp.B}px ${sp.C}px`, border: 'none', borderRadius: 8, background: '#2770ef', fontSize: fs.xs, fontWeight: fw.medium, color: '#fff', cursor: 'pointer', fontFamily: ff.primary, display: 'inline-flex', alignItems: 'center', gap: 5 }}
-                                onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#1E5FD8')}
-                                onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#2770ef')}
-                              >
-                                Fix in build →
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                }
-
-                // ── AI response ───────────────────────────────────────────────
-                const totalSteps = msg.workingSteps?.length ?? 0;
-                const revealed = msg.revealedSteps ?? totalSteps;
-                const isAnimating = msg.revealedSteps !== undefined && (revealed < totalSteps || !msg.answerRevealed);
-                const visibleSteps = msg.workingSteps?.slice(0, revealed) ?? [];
-
-                return (
-                  <div key={i}>
-                    {/* Working block — same as Build's working message */}
-                    {visibleSteps.length > 0 && (
-                      <div style={{ display: 'flex', gap: sp.B, alignItems: 'flex-start' }}>
-                        <AgentAvatar working={isAnimating} />
-                        <div style={{ flex: 1, minWidth: 0, paddingTop: 2 }}>
-                          {!isAnimating && (
-                            <button onClick={() => toggleTestWorking(i)} style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer', background: 'none', border: 'none', padding: 0, fontFamily: ff.primary, marginBottom: msg.workingExpanded ? sp.C : 0 }}>
-                              <span style={{ fontSize: fs.xs, color: c['content-secondary'], fontWeight: fw.medium }}>Show work</span>
-                              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke={c['content-secondary']} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: msg.workingExpanded ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.15s', flexShrink: 0 }}>
-                                <polyline points="2,4 6,8 10,4" />
-                              </svg>
-                            </button>
-                          )}
-                          {(isAnimating || msg.workingExpanded) && (
-                            <div style={{ display: 'flex', flexDirection: 'column' }}>
-                              {visibleSteps.map((step, si) => {
-                                const stepRunning = isAnimating && si === visibleSteps.length - 1;
-                                const stepDone = !stepRunning;
-                                return (
-                                  <div key={si} style={{ display: 'flex', gap: 10, animation: 'ag-step-in 0.22s ease' }}>
-                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 14, flexShrink: 0 }}>
-                                      <div style={{ width: 14, height: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 3 }}>
-                                        {stepRunning ? <Spinner /> : <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#22C55E' }} />}
-                                      </div>
-                                      {si < visibleSteps.length - 1 && (
-                                        <div style={{ flex: 1, width: 2, minHeight: 12, marginTop: 2, backgroundColor: stepDone ? '#22C55E' : c['border-divider'], transition: 'background-color 0.4s ease', borderRadius: 1 }} />
-                                      )}
-                                    </div>
-                                    <div style={{ flex: 1, paddingBottom: si < visibleSteps.length - 1 ? sp.C : 0 }}>
-                                      <span className={stepRunning ? 'ag-gradient-text' : undefined} style={{ fontSize: fs.sm, fontWeight: stepRunning ? fw.medium : fw.regular, lineHeight: '20px', color: stepRunning ? undefined : c['content-secondary'] }}>
-                                        {step.title}
-                                      </span>
-                                      {step.desc && (
-                                        <p style={{ margin: '2px 0 0', fontSize: fs.xs, color: c['content-secondary'], lineHeight: '18px' }}>
-                                          <TTypewriter text={step.desc} active={stepRunning} />
-                                        </p>
-                                      )}
-                                      {step.toolCard && (
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, border: `1px solid ${c['border-divider']}`, borderRadius: 8, padding: '8px 12px', marginTop: 6, backgroundColor: c['background-subtle'] }}>
-                                          <span style={{ fontSize: fs.xs, color: c['content-secondary'] }}>⊞</span>
-                                          <span style={{ flex: 1, fontSize: fs.xs, color: c['content-primary'] }}>{step.toolCard}</span>
-                                        </div>
-                                      )}
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Answer — same layout as Build's response block */}
-                    {msg.answerRevealed !== false && (
-                      <div style={{ display: 'flex', gap: sp.B, alignItems: 'flex-start', marginTop: visibleSteps.length > 0 ? -sp.B : 0 }}>
-                        <div style={{ width: 24, flexShrink: 0 }} />
-                        <div style={{ flex: 1, minWidth: 0, paddingTop: 2 }}>
-                          {msg.answerTitle && (
-                            <p style={{ margin: `0 0 ${sp.A}px`, fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'], lineHeight: '20px', animation: 'ag-step-in 0.3s ease-out' }}>{msg.answerTitle}</p>
-                          )}
-                          {msg.answerDesc && (
-                            <p style={{ margin: `0 0 ${sp.C}px`, fontSize: fs.sm, color: c['content-primary'], lineHeight: '20px' }}>{msg.answerDesc}</p>
-                          )}
-                          {msg.content && (
-                            <p style={{ margin: 0, fontSize: fs.sm, color: c['content-primary'], lineHeight: '20px', animation: 'ag-step-in 0.3s ease-out' }}>
-                              <TFormattedMsg content={msg.content} />
-                            </p>
-                          )}
-
-                          {/* Answer card */}
-                          {(msg.chips || msg.chartData) && (
-                            <div style={{ marginTop: sp.C, border: `1px solid ${c['border-divider']}`, borderRadius: 10, overflow: 'hidden', backgroundColor: c['background-base'], animation: 'ag-step-in 0.35s ease-out' }}>
-                              <div style={{ padding: `${sp.C}px ${sp.C}px 0` }}>
-                                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
-                                  <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 5, marginBottom: sp.B }}>
-                                      {msg.chips?.map((chip, ci) => (
-                                        <span key={ci} style={testChipStyle(chip.type)}>
-                                          {chip.type === 'measure' && <span style={{ fontSize: 10, color: '#4A7FE5', fontWeight: fw.bold }}>#</span>}
-                                          {chip.type === 'filter' && <FilterIcon />}
-                                          {chip.label}
-                                        </span>
-                                      ))}
-                                    </div>
-                                  </div>
-                                  <div style={{ display: 'flex', border: `1px solid ${c['border-divider']}`, borderRadius: 6, overflow: 'hidden', flexShrink: 0, alignSelf: 'flex-start' }}>
-                                    <button style={{ background: 'none', border: 'none', padding: '5px 8px', cursor: 'pointer', color: c['content-secondary'], display: 'flex' }} title="Table view"><TableViewIcon /></button>
-                                    <button style={{ background: '#EFF6FF', border: 'none', borderLeft: `1px solid ${c['border-divider']}`, padding: '5px 8px', cursor: 'pointer', color: '#2563EB', display: 'flex' }} title="Chart view"><ChartViewIcon /></button>
-                                  </div>
-                                </div>
-                              </div>
-                              {msg.chartData && (
-                                <ReactECharts option={buildChartOption(msg.chartData)} style={{ height: 200, width: '100%' }} opts={{ renderer: 'svg' }} />
-                              )}
-                            </div>
-                          )}
-
-                          {/* Action bar — feedback left, download right */}
-                          <div style={{ display: 'flex', alignItems: 'center', marginTop: 6 }}>
-                            {msg.feedbackState === 'pending' && (<>
-                              <button
-                                onClick={() => handleFeedback(i, 'correct')}
-                                style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 10px', border: `1px solid ${c['border-default']}`, borderRadius: 6, background: 'none', fontSize: fs.xs, fontWeight: fw.medium, color: c['content-secondary'], cursor: 'pointer', fontFamily: ff.primary }}
-                                onMouseEnter={e => { e.currentTarget.style.borderColor = '#22C55E'; e.currentTarget.style.color = '#15803D'; }}
-                                onMouseLeave={e => { e.currentTarget.style.borderColor = c['border-default']; e.currentTarget.style.color = c['content-secondary']; }}
-                              >
-                                ✓ Correct
-                              </button>
-                              <button
-                                onClick={() => handleFeedback(i, 'incorrect')}
-                                style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 10px', marginLeft: sp.A, border: `1px solid ${c['border-default']}`, borderRadius: 6, background: 'none', fontSize: fs.xs, fontWeight: fw.medium, color: c['content-secondary'], cursor: 'pointer', fontFamily: ff.primary }}
-                                onMouseEnter={e => { e.currentTarget.style.borderColor = '#EF4444'; e.currentTarget.style.color = '#B91C1C'; }}
-                                onMouseLeave={e => { e.currentTarget.style.borderColor = c['border-default']; e.currentTarget.style.color = c['content-secondary']; }}
-                              >
-                                ✗ Incorrect
-                              </button>
-                            </>)}
-                            {msg.feedbackState === 'answered' && msg.feedbackAnswer === 'correct' && (
-                              <span style={{ fontSize: fs.xs, color: '#15803D' }}>✓ Correct</span>
-                            )}
-                            <div style={{ flex: 1 }} />
-                            <button style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px', borderRadius: 5, fontSize: fs.xs, fontWeight: fw.medium, color: c['content-secondary'], fontFamily: 'inherit' }}
-                              onMouseEnter={e => { e.currentTarget.style.background = c['background-subtle']; e.currentTarget.style.color = c['content-primary']; }}
-                              onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = c['content-secondary']; }}
-                            >
-                              <DownloadIcon /> Download
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-              <div ref={testEndRef} />
-            </div>
-
-            {/* Test prompt bar — matches Build's PromptBar visually */}
-            <div style={{ padding: `${sp.B}px ${sp.C}px ${sp.C}px`, borderTop: `1px solid ${c['border-divider']}`, flexShrink: 0 }}>
-              <style>{`.test-textarea::placeholder { color: #B0B8C4; }`}</style>
-              <div style={{ backgroundColor: c['background-base'], borderRadius: 12, border: `1px solid ${c['border-default']}`, boxShadow: '0px 0px 4px rgba(25,35,49,0.06), 0px 2px 4px rgba(25,35,49,0.04)' }}>
-                <textarea
-                  value={testInput}
-                  onChange={e => setTestInput(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendTest(); } }}
-                  placeholder="Ask a question about your data"
-                  rows={2}
-                  className="test-textarea"
-                  style={{ width: '100%', border: 'none', outline: 'none', resize: 'none', padding: `${sp.C}px ${sp.C}px ${sp.A}px`, fontSize: fs.sm, color: c['content-primary'], fontFamily: ff.primary, lineHeight: '1.6', backgroundColor: 'transparent', boxSizing: 'border-box', borderRadius: '12px 12px 0 0' }}
-                />
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', padding: `${sp.A}px ${sp.B}px` }}>
-                  <button
-                    onClick={() => sendTest()}
-                    disabled={!testInput.trim()}
-                    style={{ width: 32, height: 32, borderRadius: '50%', border: 'none', backgroundColor: testInput.trim() ? '#2770ef' : c['border-default'], color: testInput.trim() ? '#fff' : c['content-secondary'], cursor: testInput.trim() ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, transition: 'background-color 0.15s', flexShrink: 0, fontFamily: ff.primary }}
-                  >↑</button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )
-      )}
 
       {/* Data quality plan modal */}
       <DataQualityPlanModal
@@ -3909,6 +3845,14 @@ const MessageBubble: React.FC<{
 };
 
 // ── Avatars ───────────────────────────────────────────────────────────────────
+
+const SpotterIconAvatar: React.FC<{ working?: boolean }> = ({ working }) => (
+  <svg width="24" height="24" viewBox="0 0 26 26" fill="none" style={{ flexShrink: 0, animation: working ? 'ag-pulse 1.4s ease-in-out infinite' : 'none' }}>
+    <circle cx="13" cy="13" r="11" stroke="#7C3AED" strokeWidth="1.8"/>
+    <circle cx="13" cy="13" r="5.5" stroke="#7C3AED" strokeWidth="1.8"/>
+    <circle cx="13" cy="13" r="2" fill="#7C3AED"/>
+  </svg>
+);
 
 const AgentAvatar: React.FC<{ working?: boolean }> = ({ working }) => (
   <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
