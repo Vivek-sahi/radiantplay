@@ -41,47 +41,7 @@ The product moved away from a side-panel co-pilot toward a full-screen agent-fir
 
 ### 1. Team review + iterate on feedback
 
-Prototype shared with team. Gather feedback, then iterate. Key areas likely to surface: prompt bar feel, overview greeting/tone, connection pill behaviour, agent flow polish.
-
----
-
-### 2. Full prototype review
-
-Walk through every flow end-to-end — model building, monitoring/opportunities, debugging, dbt plug-and-play — and capture any remaining rough edges before the prototype is considered demo-ready.
-
----
-
-### 2. Wire the Opportunities tab agent flows
-
-**What's built vs. not:**
-
-Debugging ("Needs attention") — all 4 real flows are wired and working:
-- ins-d1 → `dbt_connection_repair` ✓
-- ins-d2 → `schema_drift_repair` ✓
-- ins-d3 → `schema_drift_multi_repair` ✓
-- ins-d6 → `null_rate_investigation` ✓
-
-Two debugging entries are technically broken (route to FullChatView but wrong/empty flow):
-- ins-d4 (Freshness SLA breached) → opens FullChatView with empty `initialFlow`
-- ins-d5 (Missing column causing failures) → incorrectly uses `schema_drift_repair`
-
-Optimization ("Opportunities") — only one is wired:
-- ins-o4 → `enable_cache` ✓ (wired in session 83)
-
-Four are not wired — clicking "View gaps →" / "Optimize →" etc. just opens ModelView/Monitoring tab (static, no agent):
-- ins-o3 — Semantic gaps limiting Spotter (4 columns missing descriptions on Marketing Campaign Attribution) — **highest priority**: data already in `SEMANTIC_GAPS`, directly improves Spotter answer quality
-- ins-o1 — Slow query hot spot (Customer 360, avg 1.2s)
-- ins-o2 — Unused columns detected (Churn Prediction, 6 columns)
-- ins-o5 — Low model adoption (Churn Prediction, 94 queries/mo)
-
-**What to build next:**
-Start with ins-o3 (semantic gaps). It's the most meaningful optimization — the "AI answer improvement" theme from the monitoring POV. Steps:
-1. Change ins-o3 routing in Overview.tsx to `onFixWithAgent` (add `'view-gaps'` to the condition alongside `'enable-cache'`)
-2. Add `semantic_gap_repair` to `flowMap` in `handleFixWithAgent` in index.tsx
-3. Add `semantic_gap_repair` SCRIPT in AgentPanel — reads from `SEMANTIC_GAPS` for `proj-mc`, proposes descriptions/synonyms for each column
-4. Add `SemanticGapCard` genUI — shows each column, the Spotter failure reason, agent's proposed description with editable field
-5. On approval: write to `columnOverrides`, call `onInsightResolved('ins-o3')`
-6. Add correct `FLOW_CONTEXT` entry for `semantic_gap_repair` in FullChatView
+Prototype shared with team. Gathering feedback and iterating. Any remaining feedback items from the team.
 
 ---
 
@@ -424,6 +384,45 @@ Original 6-situation arc (still valid for demo scripting) → `SCRIPT.md`
 ## Session log
 
 _Last 3 sessions. Full history → [SESSION_LOG.md](./SESSION_LOG.md)_
+
+---
+
+### 2026-05-12 (session 91)
+
+**Test mode — design decisions + build (inline conversation migration).**
+
+- Design session: defined testing paradigm for data analysts (known-answer verification, granularity ladder, business question coverage, Spotter interpretation checks).
+- Key decisions: test mode = Spotter Q&A inline in the conversation thread; answers ephemeral in chat history only (not saved to Created); no liveboards in draft state; one conversation per model persists across sessions. See `research/test-mode-design-decisions.md`.
+- Build spec written at `research/test-mode-build-spec.md` — 4-phase migration plan.
+- **Build — AgentPanel.tsx:** migrated from separate `testMessages` state + test panel JSX to inline in main `messages` array. New types: `spotter-user`, `spotter-answer`, `coaching-prompt`, `coaching-result`. New functions: `handleSpotterQuestion`, `handleSpotterFeedback`, `handleSpotterCoachingOption`. `agentMode` state routes `processText` to Spotter when in test mode. Feedback buttons (Looks right / Something's off) on each answer; Something's off triggers coaching-prompt → coaching-result → Fix in build. `SpotterIconAvatar` (purple ring) distinguishes Spotter from build agent. 2 new SPOTTER_ANSWERS: revenue by region (happy path) and budget utilisation (coaching demo arc). `switchToBuildWithContext` updated to use `setAgentMode('build')`.
+- **Build — index.tsx:** `testMode` removed from `ProjectState` type and all 6 initial state objects.
+- Removed: `testMessages`, `testInput`, `testEndRef` state; `sendTest`, `toggleTestWorking`, old `handleFeedback`, old `handleCoachingOption`, old test panel JSX (~326 lines).
+- Build: clean ✓
+
+---
+
+### 2026-05-12 (session 90)
+
+**Instructions file — bug fixes (state persistence + exclusive canvas).**
+
+- **`index.tsx`** — lifted `instructionsCreated` state out of ChatView to persist across the chat → workspace auto-transition. Passed as prop to both ChatView and Workspace. `onBuildStart` callback passed to ChatView.
+- **`ChatView.tsx`** — removed local `instructionsCreated` state; now accepts `instructionsCreated` + `onBuildStart` as props.
+- **`Workspace.tsx`** — added `instructionsPanelOpen` state. Added `instructions.md` to `contextCreated` (first item). Context panel now starts open when `instructionsCreated` is true. InstructionsPanel renders in canvas exclusively — model artifact hidden when `instructionsPanelOpen`. All Created item click handlers now close each other (`setInstructionsPanelOpen(false)` added to plan/quality/model handlers).
+- **Reverted** Instructions tab from model artifact — instructions.md is a separate file, not part of the model.
+- Build: clean ✓
+
+---
+
+### 2026-05-12 (session 89)
+
+**Instructions file — new artifact in Created section.**
+
+- **`InstructionsPanel.tsx`** — new component. Panel with "instructions.md" header (doc icon + filename + close button). Body: model name as h2, two paragraphs of context, "Sample questions" section with 5 bullet points. Content is scoped to the Campaign Performance / Marketing Campaign Attribution demo model.
+- **`AgentPanel.tsx`** — added `onBuildStart?: () => void` prop. Called in `handleStartBuilding` (fires when user clicks "Start building →" after approving the plan).
+- **`ChatView.tsx`** — added `instructionsCreated` + `instructionsPanelOpen` states. `onBuildStart` → `setInstructionsCreated(true)`. `created` array now prepends an `'instructions'` item (name: "instructions.md") when created; clicking it opens InstructionsPanel in the canvas. `isPlanOpen` extended to include `instructionsPanelOpen` so the 40/60 layout activates. InstructionsPanel closes and reopens context panel on close.
+- **`ChatContextPanel.tsx`** — added `'instructions'` to `CreatedItem` type union.
+- Order in Created: instructions.md → model (chronological — instructions appear at "Start building", model appears when build completes).
+- Build: clean ✓
 
 ---
 
