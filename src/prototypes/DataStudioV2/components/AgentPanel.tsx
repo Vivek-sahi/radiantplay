@@ -1972,6 +1972,8 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
   const [agentMode, setAgentMode]        = useState<'build' | 'test'>('build');
   const [connFilter, setConnFilter]      = useState<string | null>(null);
   const messagesEndRef           = useRef<HTMLDivElement>(null);
+  const scrollContainerRef       = useRef<HTMLDivElement>(null);
+  const isNearBottomRef          = useRef(true);
   const promptBarRef             = useRef<PromptBarRef>(null);
   const buildCalledRef           = useRef(false);
   const initialPromptFiredRef    = useRef(false);
@@ -1989,12 +1991,13 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
     testEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [testMessages]);
 
-  // Only scroll when a new message is added — NOT on step status updates within existing messages
+  // Auto-scroll to bottom on any messages change (new message or step update),
+  // but only if the user is already near the bottom — don't hijack manual scrolling.
   useEffect(() => {
-    if (messages.length > prevMsgLengthRef.current) {
-      prevMsgLengthRef.current = messages.length;
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }
+    prevMsgLengthRef.current = messages.length;
+    if (!isNearBottomRef.current) return;
+    const el = scrollContainerRef.current;
+    if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
   }, [messages]);
 
   useEffect(() => {
@@ -2781,7 +2784,15 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
       `}</style>
 
       {/* Messages */}
-      <div style={{ flex: 1, overflowY: 'auto', ...(fullPage ? { backgroundColor: '#f7f8fa' } : {}) }}>
+      <div
+        ref={scrollContainerRef}
+        onScroll={() => {
+          const el = scrollContainerRef.current;
+          if (!el) return;
+          isNearBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 100;
+        }}
+        style={{ flex: 1, overflowY: 'auto', ...(fullPage ? { backgroundColor: '#f7f8fa' } : {}) }}
+      >
       <div style={{
         padding: fullPage ? '32px 24px' : `${sp.C}px ${sp.D}px`,
         display: 'flex', flexDirection: 'column', gap: sp.D,

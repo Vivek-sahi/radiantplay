@@ -37,6 +37,7 @@ interface Toast {
 }
 
 const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, setMessages, onBack, initialPrompt, isDayZero, isDbtReview, isAgentMode, onNavigateToTable }) => {
+  const [mounted, setMounted] = useState(false);
   const [isBuilding, setIsBuilding] = useState(!!initialPrompt);
   const [externalAgentMessage, setExternalAgentMessage] = useState<string | null>(null);
   const [externalAgentAttachment, setExternalAgentAttachment] = useState<{ type: string; label: string } | null>(null);
@@ -146,6 +147,11 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => setMounted(true));
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
   const totalColCount = useMemo(() =>
     Object.values(project.includedColumns).reduce((sum, cols) => sum + cols.length, 0),
     [project.includedColumns]
@@ -169,14 +175,14 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
   }, [project.addedTables, project.includedColumns, project.projectSource, project.columnOverrides]);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', fontFamily: ff.primary, backgroundColor: c['background-base'] }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', fontFamily: ff.primary, backgroundColor: c['background-base'], opacity: mounted ? 1 : 0, transition: 'opacity 0.4s ease-out' }}>
       <style>{`
         @keyframes ds-skeleton-pulse {
           0%, 100% { opacity: 0.7; }
           50%      { opacity: 0.35; }
         }
         @keyframes ds-cache-spin { to { transform: rotate(360deg); } }
-        @keyframes ds-slide-in { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes ds-slide-in { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: translateX(0); } }
       `}</style>
 
       {/* ── Chat page header — conversation level ───────────────────────────── */}
@@ -327,7 +333,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
         </div>
 
         {/* Drag handle + canvas — hidden when canvas is closed */}
-        {canvasVisible && <>
+        {canvasVisible && <div style={{ flex: 1, display: 'flex', overflow: 'hidden', animation: 'ds-slide-in 0.5s ease-out 0.28s both' }}>
         <div
           onMouseDown={(e) => {
             e.preventDefault();
@@ -365,7 +371,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
 
           {/* Artifact card — appears when built */}
           {!isBuilding && project.buildStep !== 'empty' && !qualityPlanOpen && !planPanelOpen && (
-            <div style={{ flex: 1, overflow: 'hidden', backgroundColor: c['background-base'], border: `1px solid ${c['border-divider']}`, borderRadius: 10, display: 'flex', flexDirection: 'column', animation: 'ds-slide-in 0.2s ease-out' }}>
+            <div style={{ flex: 1, overflow: 'hidden', backgroundColor: c['background-base'], border: `1px solid ${c['border-divider']}`, borderRadius: 10, display: 'flex', flexDirection: 'column' }}>
 
               {/* Identity row */}
               <div style={{ height: 48, borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', paddingLeft: sp.D, paddingRight: sp.D, gap: sp.C, flexShrink: 0 }}>
@@ -585,7 +591,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
             </>
           )}
         </div>
-        </>}
+        </div>}
 
         {/* Context panel */}
         {contextPanelOpen && (

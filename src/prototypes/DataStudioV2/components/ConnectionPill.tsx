@@ -37,7 +37,7 @@ export default function ConnectionPill({ connections, value, onChange, dropDirec
           alignItems: 'center',
           height: 30,
           background: c['background-subtle'],
-          border: `1px solid ${c['border-default']}`,
+          border: 'none',
           borderRadius: 20,
           cursor: 'pointer',
           padding: 0,
@@ -45,10 +45,10 @@ export default function ConnectionPill({ connections, value, onChange, dropDirec
       >
         <span style={{
           paddingLeft: 10,
-          paddingRight: 8,
+          paddingRight: 4,
           fontSize: fs.sm,
           fontFamily: ff.primary,
-          color: c['content-primary'],
+          color: c['content-secondary'],
           maxWidth: 160,
           overflow: 'hidden',
           textOverflow: 'ellipsis',
@@ -57,8 +57,7 @@ export default function ConnectionPill({ connections, value, onChange, dropDirec
         }}>
           {selected ? selected.name : 'All connections'}
         </span>
-        <span style={{ width: 1, height: 14, background: c['border-default'], flexShrink: 0 }} />
-        <span style={{ width: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <span style={{ width: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
           <svg width="10" height="6" viewBox="0 0 10 6" fill="none">
             <path d="M1 1l4 4 4-4" stroke={c['content-secondary']} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
           </svg>

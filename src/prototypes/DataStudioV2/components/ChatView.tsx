@@ -29,8 +29,17 @@ const ChatView: React.FC<ChatViewProps> = ({
   const [activePlan, setActivePlan] = useState<PlanData | null>(null);
   const [qualityPlanOpen, setQualityPlanOpen] = useState(false);
   const [contextPanelOpen, setContextPanelOpen] = useState(true);
+  const [mounted, setMounted] = useState(false);
+  const [contextVisible, setContextVisible] = useState(false);
 
   const isPlanOpen = activePlan !== null || qualityPlanOpen;
+
+  // Staggered entrance: main content fades in immediately, context panel follows after a delay
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => setMounted(true));
+    const t = setTimeout(() => setContextVisible(true), 220);
+    return () => { cancelAnimationFrame(raf); clearTimeout(t); };
+  }, []);
 
   // Close context panel when any side panel opens to avoid 3-column crowding
   useEffect(() => {
@@ -53,6 +62,8 @@ const ChatView: React.FC<ChatViewProps> = ({
     <div style={{
       flex: 1, display: 'flex', flexDirection: 'column',
       overflow: 'hidden', backgroundColor: c['background-base'], fontFamily: ff.primary,
+      opacity: mounted ? 1 : 0,
+      transition: 'opacity 0.28s ease-out',
     }}>
 
       {/* 48px header */}
@@ -142,14 +153,21 @@ const ChatView: React.FC<ChatViewProps> = ({
           </div>
         )}
 
-        {/* Context panel */}
+        {/* Context panel — slides in from right after main content */}
         {contextPanelOpen && (
-          <ChatContextPanel
-            created={created}
-            tables={contextTables}
-            skills={contextSkills}
-            onNavigateToTable={onNavigateToTable}
-          />
+          <div style={{
+            opacity: contextVisible ? 1 : 0,
+            transform: contextVisible ? 'translateX(0)' : 'translateX(14px)',
+            transition: 'opacity 0.26s ease-out, transform 0.26s ease-out',
+            display: 'flex', flexShrink: 0,
+          }}>
+            <ChatContextPanel
+              created={created}
+              tables={contextTables}
+              skills={contextSkills}
+              onNavigateToTable={onNavigateToTable}
+            />
+          </div>
         )}
 
       </div>

@@ -427,6 +427,18 @@ _Last 3 sessions. Full history → [SESSION_LOG.md](./SESSION_LOG.md)_
 
 ---
 
+### 2026-05-12 (session 88)
+
+**Feedback pass — transitions, auto-scroll, connection pill polish.**
+
+- **`ConnectionPill.tsx`** — reduced visual emphasis on Overview prompt bar: removed border, removed internal divider between label and chevron, kept `background-subtle` fill (for separation from upload button), text color → `content-secondary`. Tightened label `paddingRight` 8→4px and chevron container width 28→20px.
+- **`ChatView.tsx`** — staggered entrance animation on mount: root fades in (opacity 0→1, 280ms); context panel follows 220ms later with fade + 14px slide from right (260ms). Eliminates the hard pop when switching from Overview → chat.
+- **`AgentPanel.tsx`** — auto-scroll now fires on any `messages` change (step updates + new messages), not just when `messages.length` increases. Added `scrollContainerRef` + `isNearBottomRef`: scrolls to bottom if user is within 100px of bottom; stops hijacking scroll if user has scrolled up to read.
+- **`Workspace.tsx`** — staggered entrance on mount: root fades in (opacity 0→1, 400ms); entire canvas half (drag handle + artifact) slides in from right (28px, 500ms) after a 280ms delay — agent panel settles visibly before artifact arrives. Removed redundant `ds-slide-in` from artifact card since parent wrapper now animates.
+- Build: clean ✓
+
+---
+
 ### 2026-05-12 (session 86–87)
 
 **Prompt bar polish pass + Vercel deploy.**
