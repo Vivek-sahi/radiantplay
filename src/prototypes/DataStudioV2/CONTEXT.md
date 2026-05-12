@@ -39,7 +39,13 @@ The product moved away from a side-panel co-pilot toward a full-screen agent-fir
 
 ## Next up
 
-### 1. Full prototype review
+### 1. Team review + iterate on feedback
+
+Prototype shared with team. Gather feedback, then iterate. Key areas likely to surface: prompt bar feel, overview greeting/tone, connection pill behaviour, agent flow polish.
+
+---
+
+### 2. Full prototype review
 
 Walk through every flow end-to-end — model building, monitoring/opportunities, debugging, dbt plug-and-play — and capture any remaining rough edges before the prototype is considered demo-ready.
 
@@ -421,14 +427,21 @@ _Last 3 sessions. Full history → [SESSION_LOG.md](./SESSION_LOG.md)_
 
 ---
 
-### 2026-05-12 (session 86)
+### 2026-05-12 (session 86–87)
 
-**Connection dropdown pill in prompt bar.**
+**Prompt bar polish pass + Vercel deploy.**
 
 - **`ConnectionPill.tsx`** — new component. Pill-shaped trigger (gray background, label, vertical divider, chevron) + dropdown list. Default label: "All connections". Each connection row shows a status dot (green = connected, amber = auth-needed) and a checkmark on the selected row. Closes on outside click. `dropDirection` prop controls whether the dropdown opens above or below.
 - **Overview** — `ConnectionPill` wired as `leftSlot` of the landing page `PromptBar`, opens downward. State: `connFilter` (null = all, string = connection id).
 - **AgentPanel** — `ConnectionPill` wired as the leftmost item in the existing `leftSlot` div (left of the build/test mode toggle), opens upward.
-- Selection is visual scoping only — no agent flow rewiring.
+- **Remove Add Tables button** — `+ Tables` button and full warehouse tree browser removed from PromptBar. Dead state (`browserOpen`, `tableSearch`, `expConns/DBs/Schemas`, `searchRef`, `tog`, `TreeNode`, `BrowserRow`, `compact` prop) cleaned up. `@` mention lookup unaffected.
+- **Upload button** — replaced `↑ Upload` text with `<Icon name="upload" size="s" />` from Radiant registry. 28×28 icon-only button.
+- **Send button** — always blue (`#2770ef`); 40% opacity when input is empty instead of going gray. Stop button stays neutral gray.
+- **Overview greeting** — "Morning, Sara" → "Welcome back, Sara."
+- **Prompt bar toolbar padding** — `sp.A / sp.B` (4/8px) → `sp.B` (8px) all around; bottom now matches sides.
+- **Build/test toggle** — outer wrapper `borderRadius: 8 → 20` (pill), buttons `borderRadius: 6 → 50%` (circular), buttons `28×28 → 26×26` to match connection pill height of 30px.
+- **Build mode placeholder** — "Give me a task. Use '@' to mention tables." → "Describe a task, or '@' to mention tables." (one sentence).
+- **Deployed** to Vercel production: https://radiantplay-nine.vercel.app
 - Build: clean ✓
 
 ---
