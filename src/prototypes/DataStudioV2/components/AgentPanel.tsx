@@ -3845,7 +3845,7 @@ const MessageBubble: React.FC<{
             <ConnectionStatusCard msgId={msg.id} result={msg.genUIResult} onAction={onGenUIAction} onOpenObject={onOpenObject} />
           )}
           {msg.genUI === 'multi_model_drift' && onGenUIAction && (
-            <MultiModelDriftCard msgId={msg.id} result={msg.genUIResult} onAction={onGenUIAction} onOpenObject={onOpenObject} />
+            <DriftMultiResolutionCard msgId={msg.id} result={msg.genUIResult} onAction={onGenUIAction} />
           )}
           {msg.genUI === 'repair_summary' && onGenUIAction && (
             <RepairSummaryCard msgId={msg.id} result={msg.genUIResult} onAction={onGenUIAction} />
