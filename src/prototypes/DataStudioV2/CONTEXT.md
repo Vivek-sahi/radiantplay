@@ -610,12 +610,14 @@ _Last 3 sessions. Full history → [SESSION_LOG.md](./SESSION_LOG.md)_
 
 ### 2026-05-13 (session 109)
 
-**PlanPanel — Preview/Code tabs.**
+**PlanPanel — Preview/Code tabs + scroll fixes.**
 
-- **Tab bar:** "Preview" | "Code" below the identity row. Active tab: `content-brand` color + 2px bottom border. Inactive: `content-secondary`.
-- **Preview tab:** existing accordion unchanged. When any code cell has been run, an info banner appears at top: "Some sections were last edited in code view."
-- **Code tab:** 3 SQL cells — Sources & joins / Columns & metrics / Sample questions. SQL generated dynamically from `plan` prop (table aliases, joins, column grouping by Dimension/Metric/Formula, sample questions as `-- N.` comments).
-- **Cell interaction:** pencil icon → edit mode (textarea, `background-sunken`, `ff.mono`); **Run ▶** (blue button) applies change + marks cell applied; **Cancel** discards draft. Read-only view: line numbers + keyword colorizer (SQL keywords purple, comments `content-secondary`).
+- **Tab bar:** "Preview" | "Code" below the identity row. Active tab: `content-brand` color + 2px bottom border.
+- **Preview tab:** existing accordion unchanged. "Some sections were last edited in code view" info banner when any cell has been run.
+- **Code tab — 6 cells** matching preview sections: Goal (text), Tables (SQL/CTEs), Relationships (SQL/JOINs), Columns (SQL/SELECT), Formulas (computed columns with inline comments), Sample questions (text). SQL generated dynamically from `plan` prop.
+- **Hex-style cell UI:** 3px left accent bar (blue=SQL, gray=text); cell type as faded uppercase label; edit button reveals on header hover; Run button green (#16a34a); SQL body uses `background-sunken`; text cells use `background-base`.
+- **Cell interaction:** pencil → edit mode (textarea); Run ▶ applies + marks applied; Cancel discards. Read-only: line numbers + SQL keyword colorizer.
+- **Scroll fix (3 iterations):** (1) `minHeight: 0` on tab body containers; (2) `minHeight: 0` on PlanPanel root div; (3) `flexShrink: 0` on CodeCell root div — flex children shrink by default, so cells were compressing to fit instead of overflowing and triggering scroll.
 - Build: clean ✓
 
 ---
