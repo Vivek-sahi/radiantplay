@@ -214,6 +214,7 @@ const CodeCell: React.FC<CodeCellProps> = ({
       borderRadius: 8,
       backgroundColor: c['background-base'],
       overflow: 'hidden',
+      flexShrink: 0,
     }}>
       {/* Cell header */}
       <div
