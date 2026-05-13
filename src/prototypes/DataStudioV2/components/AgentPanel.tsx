@@ -2137,7 +2137,7 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
         runDayZeroSteps('day_zero_parse_use_case', initialPrompt, setMessages, () => {
           setMessages(prev => [...prev, {
             id: `r-${Date.now()}`, type: 'response',
-            content: "A couple of quick questions before I start:",
+            content: `I can see you want to build a data model for ${project.name}. Before I start, a couple of quick questions to make sure it fits your use case — feel free to upload any docs or files too.`,
           }]);
           setDayZeroPhase('clarify_q1');
           setProcessing(false);
@@ -3524,8 +3524,8 @@ const SuggestionChips: React.FC<{ suggestions: string[]; onSelect: (s: string) =
 // ── Day Zero clarify card ─────────────────────────────────────────────────────
 
 const DAY_ZERO_QUESTIONS = [
-  { question: 'What are you trying to solve for?', options: ['Campaign ROI', 'Ad spend tracking', 'Attribution analysis'] },
-  { question: 'What should I focus on?', options: ['ROI metrics only', 'Ad spend + ROI', 'Full funnel analysis'] },
+  { question: 'Who is the primary audience for this model?', options: ['Executive / board', 'Marketing managers', 'Data analysts', 'Engineers'] },
+  { question: 'What is the data domain?', options: ['Marketing', 'Finance', 'Sales', 'Operations'] },
 ];
 
 const navBtnStyleDZ = (disabled: boolean): React.CSSProperties => ({

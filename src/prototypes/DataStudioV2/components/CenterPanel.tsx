@@ -711,27 +711,114 @@ const DataPreviewView: React.FC<{ project: ProjectState }> = ({ project }) => {
   );
 };
 
+// ── SQL / Python colorizers ───────────────────────────────────────────────────
+
+const NB_SQL_KW = new Set([
+  'SELECT', 'FROM', 'JOIN', 'LEFT', 'INNER', 'RIGHT', 'OUTER', 'ON', 'WHERE', 'AS',
+  'DISTINCT', 'OVER', 'PARTITION', 'BY', 'ORDER', 'GROUP', 'HAVING', 'WITH',
+  'SUM', 'COUNT', 'AVG', 'MAX', 'MIN', 'NULLIF', 'AND', 'OR', 'NOT', 'NULL',
+  'CASE', 'WHEN', 'THEN', 'ELSE', 'END', 'COALESCE',
+]);
+const NB_SQL_KW_RE = /\b(SELECT|FROM|JOIN|LEFT|INNER|RIGHT|OUTER|ON|WHERE|AS|DISTINCT|OVER|PARTITION|BY|ORDER|GROUP|HAVING|WITH|SUM|COUNT|AVG|MAX|MIN|NULLIF|AND|OR|NOT|NULL|CASE|WHEN|THEN|ELSE|END|COALESCE)\b/g;
+
+const NbSqlTokens: React.FC<{ text: string }> = ({ text }) => {
+  const parts = text.split(new RegExp(NB_SQL_KW_RE.source, 'g'));
+  return (
+    <span>
+      {parts.map((part, i) =>
+        NB_SQL_KW.has(part)
+          ? <span key={i} style={{ color: '#7C3AED', fontWeight: fw.semibold }}>{part}</span>
+          : <span key={i} style={{ color: c['content-primary'] }}>{part}</span>
+      )}
+    </span>
+  );
+};
+
+const NbSqlLine: React.FC<{ line: string }> = ({ line }) => {
+  const commentIdx = line.indexOf('--');
+  if (commentIdx === 0) return <span style={{ color: c['content-secondary'] }}>{line}</span>;
+  if (commentIdx > 0) {
+    return (
+      <span>
+        <NbSqlTokens text={line.slice(0, commentIdx)} />
+        <span style={{ color: c['content-secondary'] }}>{line.slice(commentIdx)}</span>
+      </span>
+    );
+  }
+  return <NbSqlTokens text={line} />;
+};
+
+const NbPyLine: React.FC<{ line: string }> = ({ line }) => {
+  if (line.startsWith('#')) return <span style={{ color: c['content-secondary'] }}>{line}</span>;
+  if (line.startsWith('import') || line.startsWith('from')) return <span style={{ color: '#7C3AED' }}>{line}</span>;
+  return <span style={{ color: c['content-primary'] }}>{line}</span>;
+};
+
 // ── Notebook ──────────────────────────────────────────────────────────────────
+
+type NbCellType = 'sql' | 'python';
+
+const NB_CELL_ACCENT: Record<NbCellType, string> = {
+  sql:    '#2770EF',
+  python: '#D97706',
+};
+
+interface NbCellDef {
+  id: number;
+  type: NbCellType;
+  label: string;
+  query: string;
+}
+
+function buildNotebookCells(project: ProjectState): NbCellDef[] {
+  const joined      = ['joined', 'transformed', 'healthy'].includes(project.buildStep);
+  const transformed = ['transformed', 'healthy'].includes(project.buildStep);
+  const healthy     = project.buildStep === 'healthy';
+  return [
+    { id: 1, type: 'sql', label: 'Source: orders',
+      query: '-- Add Orders table into this model\nSELECT *\nFROM orders;' },
+    { id: 2, type: 'sql', label: 'Source: campaigns',
+      query: '-- Add Campaigns table into this model\nSELECT *\nFROM campaigns;' },
+    { id: 3, type: 'sql', label: 'Source: users',
+      query: '-- Add Users table into this model\nSELECT *\nFROM users;' },
+    ...(joined ? [
+      { id: 4, type: 'sql' as NbCellType, label: 'Join: orders × campaigns',
+        query: '-- Join orders with campaigns on campaign_id\nSELECT o.*, c.campaign_name, c.channel, c.budget, c.spend\nFROM orders o\nLEFT JOIN campaigns c ON o.campaign_id = c.campaign_id;' },
+      { id: 5, type: 'sql' as NbCellType, label: 'Join: orders × users',
+        query: '-- Join orders with users on user_id\nSELECT o.*, u.name, u.segment, u.region AS user_region, u.lifetime_value\nFROM orders o\nINNER JOIN users u ON o.user_id = u.user_id;' },
+    ] : []),
+    ...(transformed ? [
+      { id: 6, type: 'sql' as NbCellType, label: 'Metric: return_on_spend',
+        query: '-- Return on Spend metric\nSELECT\n  SUM(o.amount) / NULLIF(c.spend, 0) AS return_on_spend\nFROM orders o\nLEFT JOIN campaigns c ON o.campaign_id = c.campaign_id;' },
+    ] : []),
+    ...(healthy ? [
+      { id: 7, type: 'python' as NbCellType, label: 'Transform: normalize dates',
+        query: "# Normalize date formats across all tables\nimport pandas as pd\n\norders['order_date'] = pd.to_datetime(orders['order_date'], format='%m/%d/%Y')\ncampaigns['start_date'] = pd.to_datetime(campaigns['start_date'])\nusers['signup_date'] = pd.to_datetime(users['signup_date'], format='%Y/%m/%d')" },
+      { id: 8, type: 'sql' as NbCellType, label: 'Deduplicate: orders',
+        query: '-- Remove duplicate orders\nSELECT DISTINCT *\nFROM (\n  SELECT *, ROW_NUMBER() OVER (PARTITION BY order_id ORDER BY order_date DESC) AS rn\n  FROM orders\n)\nWHERE rn = 1;' },
+    ] : []),
+  ];
+}
 
 const NotebookView: React.FC<{ project: ProjectState }> = ({ project }) => {
   const hasData = project.addedTables.length > 0;
+  const cells   = buildNotebookCells(project);
 
-  const cells = [
-    { id: 1, type: 'sql', comment: '// Add Orders table into this model',     query: 'SELECT *\nFROM orders;' },
-    { id: 2, type: 'sql', comment: '// Add Campaigns table into this model',  query: 'SELECT *\nFROM campaigns;' },
-    { id: 3, type: 'sql', comment: '// Add Users table into this model',      query: 'SELECT *\nFROM users;' },
-    ...(project.buildStep === 'joined' || project.buildStep === 'transformed' || project.buildStep === 'healthy' ? [
-      { id: 4, type: 'sql', comment: '// Join orders with campaigns on campaign_id', query: 'SELECT o.*, c.campaign_name, c.channel, c.budget, c.spend\nFROM orders o\nLEFT JOIN campaigns c ON o.campaign_id = c.campaign_id;' },
-      { id: 5, type: 'sql', comment: '// Join orders with users on user_id',         query: 'SELECT o.*, u.name, u.segment, u.region AS user_region, u.lifetime_value\nFROM orders o\nINNER JOIN users u ON o.user_id = u.user_id;' },
-    ] : []),
-    ...(project.buildStep === 'transformed' || project.buildStep === 'healthy' ? [
-      { id: 6, type: 'sql', comment: '// Return on Spend metric',   query: 'SELECT\n  SUM(o.amount) / NULLIF(c.spend, 0) AS return_on_spend\nFROM orders o\nLEFT JOIN campaigns c ON o.campaign_id = c.campaign_id;' },
-    ] : []),
-    ...(project.buildStep === 'healthy' ? [
-      { id: 7, type: 'python', comment: '# Normalize date formats across all tables', query: 'import pandas as pd\n\norders[\'order_date\'] = pd.to_datetime(orders[\'order_date\'], format=\'%m/%d/%Y\')\ncampaigns[\'start_date\'] = pd.to_datetime(campaigns[\'start_date\'])\nusers[\'signup_date\'] = pd.to_datetime(users[\'signup_date\'], format=\'%Y/%m/%d\')' },
-      { id: 8, type: 'sql', comment: '// Remove duplicate orders',                   query: 'SELECT DISTINCT *\nFROM (\n  SELECT *, ROW_NUMBER() OVER (PARTITION BY order_id ORDER BY order_date DESC) AS rn\n  FROM orders\n)\nWHERE rn = 1;' },
-    ] : []),
-  ];
+  const [editingCell, setEditingCell] = useState<number | null>(null);
+  const [draftValue, setDraftValue]   = useState('');
+  const [cellValues, setCellValues]   = useState<Record<number, string>>({});
+
+  const getValue = (cell: NbCellDef) => cellValues[cell.id] ?? cell.query;
+
+  const handleEdit = (cell: NbCellDef) => {
+    setEditingCell(cell.id);
+    setDraftValue(getValue(cell));
+  };
+  const handleRun = (cellId: number) => {
+    setCellValues(prev => ({ ...prev, [cellId]: draftValue }));
+    setEditingCell(null);
+  };
+  const handleCancel = () => setEditingCell(null);
 
   if (!hasData) {
     return (
@@ -745,74 +832,154 @@ const NotebookView: React.FC<{ project: ProjectState }> = ({ project }) => {
 
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: sp.D }}>
-
-      {/* Add cell toolbar */}
       <div style={{ marginBottom: sp.D }}>
         <Button variant="secondary" size="small" icon="plus" iconPosition="leading">Add cell</Button>
       </div>
-
-      {/* Cells */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: sp.C }}>
         {cells.map(cell => (
-          <NotebookCell key={cell.id} {...cell} />
+          <NotebookCell
+            key={cell.id}
+            type={cell.type}
+            label={cell.label}
+            value={getValue(cell)}
+            isEditing={editingCell === cell.id}
+            draftValue={editingCell === cell.id ? draftValue : ''}
+            onEdit={() => handleEdit(cell)}
+            onRun={() => handleRun(cell.id)}
+            onCancel={handleCancel}
+            onDraftChange={setDraftValue}
+          />
         ))}
       </div>
     </div>
   );
 };
 
-const NotebookCell: React.FC<{ id: number; type: string; comment: string; query: string }> = ({ id, type, comment, query }) => (
-  <div style={{ border: `1px solid ${c['border-divider']}`, borderRadius: 8, backgroundColor: c['background-base'], overflow: 'hidden' }}>
-    {/* Cell header */}
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: `${sp.B}px ${sp.C}px`, borderBottom: `1px solid ${c['border-divider']}`, backgroundColor: c['background-base'] }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: sp.B }}>
-        <span style={{ fontSize: fs.xs, backgroundColor: type === 'sql' ? '#E0E7FF' : '#FEF9C3', color: type === 'sql' ? '#3730A3' : '#854D0E', padding: '1px 6px', borderRadius: 3, fontWeight: fw.semibold, textTransform: 'uppercase' }}>{type}</span>
-        <span style={{ fontSize: fs.xs, color: c['content-secondary'] }}>Cell {id}</span>
-      </div>
-      <div style={{ display: 'flex', gap: sp.B }}>
-        <IconButton>✏</IconButton>
-        <IconButton>▶</IconButton>
-        <IconButton>…</IconButton>
-      </div>
-    </div>
-    {/* Cell body */}
-    <div style={{ padding: sp.C, fontFamily: ff.mono, fontSize: fs.xs }}>
-      <div style={{ color: c['content-secondary'] }}>{comment}</div>
-      {query.split('\n').map((line, i) => (
-        <div key={i}>
-          <span style={{ color: c['content-secondary'], marginRight: 16, userSelect: 'none', fontSize: fs.xs }}>{i + 1}</span>
-          <ColorizedLine line={line} lang={type} />
+interface NotebookCellProps {
+  type: NbCellType;
+  label: string;
+  value: string;
+  isEditing: boolean;
+  draftValue: string;
+  onEdit: () => void;
+  onRun: () => void;
+  onCancel: () => void;
+  onDraftChange: (v: string) => void;
+}
+
+const NotebookCell: React.FC<NotebookCellProps> = ({
+  type, label, value, isEditing, draftValue, onEdit, onRun, onCancel, onDraftChange,
+}) => {
+  const [headerHovered, setHeaderHovered] = useState(false);
+  const displayValue = isEditing ? draftValue : value;
+  const lineCount    = displayValue.split('\n').length;
+
+  return (
+    <div style={{
+      border: `1px solid ${c['border-divider']}`,
+      borderLeft: `3px solid ${NB_CELL_ACCENT[type]}`,
+      borderRadius: 8,
+      backgroundColor: c['background-base'],
+      overflow: 'hidden',
+      flexShrink: 0,
+    }}>
+      {/* Header */}
+      <div
+        style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: `6px ${sp.C}px`, borderBottom: `1px solid ${c['border-divider']}`,
+          backgroundColor: headerHovered && !isEditing ? c['background-subtle'] : c['background-base'],
+          transition: 'background-color 0.1s',
+        }}
+        onMouseEnter={() => setHeaderHovered(true)}
+        onMouseLeave={() => setHeaderHovered(false)}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: sp.B }}>
+          <span style={{
+            fontSize: 10, fontWeight: fw.semibold,
+            color: type === 'sql' ? '#7C3AED' : '#D97706',
+            textTransform: 'uppercase', letterSpacing: '0.06em',
+          }}>{type}</span>
+          <span style={{ fontSize: fs.xs, color: c['content-primary'], fontWeight: fw.medium }}>{label}</span>
         </div>
-      ))}
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, opacity: isEditing || headerHovered ? 1 : 0, transition: 'opacity 0.15s' }}>
+          {isEditing ? (
+            <>
+              <button
+                onClick={onCancel}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: fs.xs, color: c['content-secondary'], padding: '2px 6px', fontFamily: ff.primary }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={onRun}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 5,
+                  background: '#16a34a', color: '#fff', border: 'none',
+                  borderRadius: 5, cursor: 'pointer',
+                  fontSize: fs.xs, fontWeight: fw.semibold, padding: '3px 10px', fontFamily: ff.primary,
+                }}
+              >
+                <svg width="7" height="8" viewBox="0 0 7 8" fill="currentColor"><polygon points="0,0 7,4 0,8" /></svg>
+                Run
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={onEdit}
+              title="Edit cell"
+              style={{
+                width: 24, height: 24, border: 'none', background: 'transparent',
+                cursor: 'pointer', display: 'flex', alignItems: 'center',
+                justifyContent: 'center', borderRadius: 4,
+                color: c['content-secondary'], padding: 0,
+              }}
+              onMouseEnter={e => (e.currentTarget.style.color = c['content-primary'])}
+              onMouseLeave={e => (e.currentTarget.style.color = c['content-secondary'])}
+            >
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M11.5 2.5a1.5 1.5 0 0 1 2.1 2.1L5 13.1l-3 .9.9-3 8.6-8.5z" />
+              </svg>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Body */}
+      {isEditing ? (
+        <textarea
+          autoFocus
+          value={draftValue}
+          onChange={e => onDraftChange(e.target.value)}
+          style={{
+            width: '100%',
+            minHeight: Math.max(lineCount * 20 + 24, 80),
+            padding: sp.C,
+            fontFamily: ff.mono,
+            fontSize: fs.xs,
+            color: c['content-primary'],
+            backgroundColor: c['background-sunken'],
+            border: 'none', outline: 'none',
+            resize: 'vertical', lineHeight: '20px',
+            boxSizing: 'border-box',
+          }}
+        />
+      ) : (
+        <div style={{ padding: sp.C, fontFamily: ff.mono, fontSize: fs.xs, lineHeight: '20px', backgroundColor: c['background-sunken'] }}>
+          {displayValue.split('\n').map((line, i) => (
+            <div key={i} style={{ display: 'flex', gap: sp.C }}>
+              <span style={{ color: c['content-secondary'], userSelect: 'none', minWidth: 18, textAlign: 'right', flexShrink: 0, opacity: 0.5 }}>
+                {i + 1}
+              </span>
+              {type === 'sql' ? <NbSqlLine line={line} /> : <NbPyLine line={line} />}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
-  </div>
-);
-
-const ColorizedLine: React.FC<{ line: string; lang: string }> = ({ line, lang }) => {
-  if (lang === 'sql') {
-    const keywords = /\b(SELECT|FROM|JOIN|LEFT|INNER|ON|WHERE|AS|DISTINCT|OVER|PARTITION|BY|ORDER|SUM|COUNT|NULLIF|AND|OR|NULL)\b/g;
-    const parts = line.split(keywords);
-    return (
-      <span>
-        {parts.map((part, i) =>
-          keywords.test(part)
-            ? <span key={i} style={{ color: '#7C3AED', fontWeight: fw.semibold }}>{part}</span>
-            : <span key={i} style={{ color: c['content-primary'] }}>{part}</span>
-        )}
-      </span>
-    );
-  }
-  if (lang === 'python') {
-    if (line.startsWith('#')) return <span style={{ color: c['content-secondary'] }}>{line}</span>;
-    if (line.startsWith('import')) return <span style={{ color: '#7C3AED' }}>{line}</span>;
-    return <span style={{ color: c['content-primary'] }}>{line}</span>;
-  }
-  return <span style={{ color: c['content-primary'] }}>{line}</span>;
+  );
 };
-
-const IconButton: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <Button variant="tertiary" size="small">{children}</Button>
-);
 
 // ── Empty center ──────────────────────────────────────────────────────────────
 
