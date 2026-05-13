@@ -3221,8 +3221,21 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
                 onGenUIAction={handleGenUIAction}
                 onOpenObject={onOpenObject}
                 publishedVersion={project.publishedVersion}
-                onComplete={msg.genUI === 'drift_complete' || msg.genUI === 'restore_point' ? () => {
+                onComplete={msg.genUI === 'drift_complete' ? () => {
                   onInsightResolved?.('ins-d2');
+                  setTimeout(() => {
+                    setMessages(prev => {
+                      if (prev.some(m => m.genUI === 'next_issue')) return prev;
+                      return [...prev, {
+                        id: `r-next-${Date.now()}`,
+                        type: 'response',
+                        content: 'There\'s still one more debugging issue open in your workspace — want to tackle it now?',
+                        genUI: 'next_issue',
+                      }];
+                    });
+                  }, 1400);
+                } : msg.genUI === 'restore_point' ? () => {
+                  onInsightResolved?.('ins-d3');
                   setTimeout(() => {
                     setMessages(prev => {
                       if (prev.some(m => m.genUI === 'next_issue')) return prev;
