@@ -101,7 +101,7 @@ All the `OBJECT_DATA` these names resolve to is already in `FullChatView.tsx` (m
 
 ---
 
-### 2. DQ + AIRS chip — deferred
+### 2. Discuss with Vivek — next direction TBD
 
 **What we discussed:** The DQ chip "Fix all with agent" and AIRS "Generate →" / "Add →" buttons are currently unresponsive. Two options discussed:
 - **Option B (preferred):** Make the chip "Fix all with agent" the single entry point for DQ fixes — clicking it sends a message to the agent that triggers `review_data_quality`. Remove the suggestion chip approach. Mirror same pattern for AIRS with a new `improve_ai_readiness` script.
