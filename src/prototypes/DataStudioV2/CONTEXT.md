@@ -47,6 +47,14 @@ The product moved away from a side-panel co-pilot toward a full-screen agent-fir
 
 ### ~~1c. Wire blast radius flow for ins-d2; update ins-d3 to MultiModelDriftCard~~ — Done (session 108)
 
+### 3. Add code view to plan mode artifact — Next session
+
+**What:** The plan mode artifact (PlanPanel in Workspace) currently has no code view. Add a Code tab/view so users can see the TML or SQL that the agent is generating as part of the plan.
+
+**Status:** Not started — to discuss and design in next session.
+
+---
+
 **Context — what was done (session 103):**
 - Object panel now opens as an artifact on the RIGHT of the agent (was incorrectly opening on the left, pushing agent right)
 - AgentPanel is a single instance — wrapper div resizes on split, no remount/state reset on object open
