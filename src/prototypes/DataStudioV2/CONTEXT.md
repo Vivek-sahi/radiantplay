@@ -41,11 +41,11 @@ The product moved away from a side-panel co-pilot toward a full-screen agent-fir
 
 ---
 
-### 1. ~~Review artifact UI in Pulse debug flows~~ — Done (session 105)
-
-Debug artifact view replaced with composite Info tab style (Source + Columns with broken/null status). ins-o3 and ins-o4 confirmed working. ins-d1/d2/d3/d6 wiring (onOpenObject on 4 debug cards) still pending — see original spec below.
+### ~~1. Review artifact UI in Pulse debug flows~~ — Done (session 105)
 
 ### ~~1b. Wire onOpenObject on 4 remaining debug cards (ins-d1/d2/d3/d6)~~ — Done (session 106)
+
+### ~~1c. Wire blast radius flow for ins-d2; update ins-d3 to MultiModelDriftCard~~ — Done (session 108)
 
 **Context — what was done (session 103):**
 - Object panel now opens as an artifact on the RIGHT of the agent (was incorrectly opening on the left, pushing agent right)
@@ -601,6 +601,30 @@ Original 6-situation arc (still valid for demo scripting) → `SCRIPT.md`
 ## Session log
 
 _Last 3 sessions. Full history → [SESSION_LOG.md](./SESSION_LOG.md)_
+
+---
+
+### 2026-05-13 (session 108)
+
+**Blast radius flow wired for ins-d2; MultiModelDriftCard wired for ins-d3.**
+
+- **ins-d2 (single model):** switched `flowMap` from `schema_drift_repair` → `schema_blast_repair`. Added render conditions for `blast_radius`, `schema_reconcile`, and `restore_point` genUI types (cards were pre-built but unwired). Added `onComplete` prop to `RestorePointCard` (useEffect pattern, same as SchemaDriftCompleteCard). Extended `onComplete` condition to cover `restore_point` so `onInsightResolved('ins-d2')` and next-issue prompt fire on success. Full 3-card flow: `BlastRadiusCard` (detection + Models/Downstream impact tabs) → `SchemaReconciliationCard` (per-column replace/remove with confidence %) → `RestorePointCard` (success + roll back).
+- **ins-d3 (multi-model):** swapped `DriftMultiResolutionCard` → `MultiModelDriftCard` in render section. MultiModelDriftCard was already in the file; adds per-model cards showing removed columns with ✕, dependent chips with `onOpenObject`, and "Repair both models" CTA.
+- Build: clean ✓
+
+---
+
+### 2026-05-13 (session 107)
+
+**SchemaDriftResolutionCard upgraded to Komal v4 (ins-d2).**
+
+- Source: `/Users/vivek.sahi/Downloads/DataStudioV2 4 Komal/components/AgentPanel.tsx`
+- **Per-column decisions:** each column now has its own "Remap to" / "Remove it" toggle pair, with an inline column picker dropdown. Columns are fully independent.
+- **Dynamic CTA:** single button that changes text + background — blue "Apply mapping → all 9 continue" when all remapped; red "Apply — N will break" when any column is set to remove. Consequence text also updates inline per-column.
+- **Agent recommendation block (✦):** blue box above the decisions explaining why remapping is safe ("Both replacements carry the same data under new names…").
+- **Flat dependent chips:** accordion removed. All 9 dependents (Answers/Liveboards/Formulas) visible immediately as clickable chips. `onOpenObject` wiring preserved on every chip and the "FnOps Cost Model ↗" header button.
+- Scripts, action handlers, `DriftPublishPreviewCard`, `SchemaDriftCompleteCard` unchanged.
+- Build: clean ✓
 
 ---
 
