@@ -606,10 +606,13 @@ _Last 3 sessions. Full history → [SESSION_LOG.md](./SESSION_LOG.md)_
 
 ### 2026-05-13 (session 108)
 
-**Blast radius flow wired for ins-d2; MultiModelDriftCard wired for ins-d3.**
+**Blast radius flow wired for ins-d3 (fact_sales); MultiModelDriftCard wired for ins-d3 multi-model; routing fixes.**
 
-- **ins-d2 (single model):** switched `flowMap` from `schema_drift_repair` → `schema_blast_repair`. Added render conditions for `blast_radius`, `schema_reconcile`, and `restore_point` genUI types (cards were pre-built but unwired). Added `onComplete` prop to `RestorePointCard` (useEffect pattern, same as SchemaDriftCompleteCard). Extended `onComplete` condition to cover `restore_point` so `onInsightResolved('ins-d2')` and next-issue prompt fire on success. Full 3-card flow: `BlastRadiusCard` (detection + Models/Downstream impact tabs) → `SchemaReconciliationCard` (per-column replace/remove with confidence %) → `RestorePointCard` (success + roll back).
-- **ins-d3 (multi-model):** swapped `DriftMultiResolutionCard` → `MultiModelDriftCard` in render section. MultiModelDriftCard was already in the file; adds per-model cards showing removed columns with ✕, dependent chips with `onOpenObject`, and "Repair both models" CTA.
+- **ins-d3 (fact_sales, blast radius):** `flowMap` maps `ins-d3` → `schema_blast_repair`. Added render conditions for `blast_radius`, `schema_reconcile`, `restore_point` genUI types (cards were pre-built but unwired). Added `onComplete` prop to `RestorePointCard`. Full flow: `BlastRadiusCard` (detection + Models·2 / Downstream·12 tabs) → `SchemaReconciliationCard` (per-column replace/remove with confidence %) → `RestorePointCard` (success + roll back). No next_issue prompt after completion.
+- **ins-d2 (FnOps Cost Model):** restored to original `schema_drift_repair` mapping — unchanged flow.
+- **ins-d3 multi-model render:** swapped `DriftMultiResolutionCard` → `MultiModelDriftCard` (already in file) for `multi_model_drift` genUI — per-model column cards, dependent chips, onOpenObject wiring.
+- **Routing bug fixed:** mockData has ins-d3 = fact_sales, ins-d2 = FnOps Cost Model. Initial commit had them swapped in flowMap.
+- Deployed to Vercel (https://radiantplay-nine.vercel.app).
 - Build: clean ✓
 
 ---
