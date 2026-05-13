@@ -41,7 +41,11 @@ The product moved away from a side-panel co-pilot toward a full-screen agent-fir
 
 ---
 
-### 1. Review artifact UI in Pulse debug flows (ins-o3, ins-o4 working; ins-d1/d2/d3/d6 not yet wired)
+### 1. ~~Review artifact UI in Pulse debug flows~~ — Done (session 105)
+
+Debug artifact view replaced with composite Info tab style (Source + Columns with broken/null status). ins-o3 and ins-o4 confirmed working. ins-d1/d2/d3/d6 wiring (onOpenObject on 4 debug cards) still pending — see original spec below.
+
+### ~~1b. Wire onOpenObject on 4 remaining debug cards (ins-d1/d2/d3/d6)~~ — Done (session 106)
 
 **Context — what was done (session 103):**
 - Object panel now opens as an artifact on the RIGHT of the agent (was incorrectly opening on the left, pushing agent right)
@@ -597,6 +601,33 @@ Original 6-situation arc (still valid for demo scripting) → `SCRIPT.md`
 ## Session log
 
 _Last 3 sessions. Full history → [SESSION_LOG.md](./SESSION_LOG.md)_
+
+---
+
+### 2026-05-13 (session 106)
+
+**Wire onOpenObject on 4 remaining Pulse debug cards (ins-d1/d2/d3/d6).**
+
+- **ConnectionStatusCard (ins-d1):** blocked model name `<span>` chips → `<button>` elements calling `onOpenObject?.(m)`. Added `↗` affordance.
+- **MultiModelDriftCard (ins-d3):** model name `<div>` → `<button>` calling `onOpenObject?.(model.name, model.columns[0])`; dependent `<span>` chips → `<button>` calling `onOpenObject?.(d.name, d.ref)`. Added `↗` affordance on both.
+- **NullRateCard (ins-d6):** "Marketing Campaign Attribution" `<span>` → `<button>` calling `onOpenObject?.('Marketing Campaign Attribution', 'campaign_id')`. Added `↗` affordance.
+- **SchemaDriftResolutionCard (ins-d2):** "FnOps Cost Model" `<span>` → styled `<button>` calling `onOpenObject?.('FnOps Cost Model', 'cost_center')` with hover-underline; accordion item buttons now have `onClick={() => onOpenObject?.(name)}` (were visually clickable but fired nothing).
+- All 4 render sites updated to pass `onOpenObject={onOpenObject}`.
+- Build: clean ✓
+
+---
+
+### 2026-05-12 (session 105)
+
+**Debug artifact view — replaced ObjectPanel with composite Info tab style.**
+
+- **Design decision:** Object clicks in Pulse debug flows now open a view-mode artifact that combines ModelView's Info tab layout with debug-specific status data from OBJECT_DATA. Liveboards unchanged.
+- **Source section:** shown above Columns when MODEL_DETAILS has data. Warehouse models (Marketing Campaign Attribution): Type, Database, Tables. dbt models (Sales Performance): Type, Project, Schedule, Last sync. Blocked status appears as a Status row inside the Source block — not a disconnected bottom banner.
+- **Columns section:** Info tab card-row layout — name (mono) + type badge left, broken/null status badge right; second line shows source table · description where MODEL_DETAILS has it. `highlightCol` auto-scrolls and gets a 3px left accent border.
+- **Merge fix:** MODEL_DETAILS columns are primary (richer descriptions/types); OBJECT_DATA columns not present in MODEL_DETAILS (e.g. `campaign_id`) are appended so debug-relevant status is never lost.
+- **Blocked fallback:** models that are blocked but have no MODEL_DETAILS entry show a warning note above the column list.
+- Committed and deployed to Vercel (https://radiantplay-nine.vercel.app).
+- Build: clean ✓
 
 ---
 
