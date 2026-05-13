@@ -1136,6 +1136,63 @@ Write descriptions for all of them? You can review and edit them afterwards.`,
     executionGenUI: 'drift_multi_complete',
   },
 
+  // ── Blast radius — Phase 1: detect + map full impact ─────────────────────
+  schema_blast_repair: {
+    steps: [
+      { label: 'Scanning connection metadata — Snowflake_Sales_Prod', detail: 'Reading latest schema diff from metadata sync completed at 03:14 AM.' },
+      { label: 'Detecting removed columns', detail: 'gross_margin and store_id are absent from fact_sales (Snowflake_Sales_Prod). Both were present in the previous sync on Jan 13.' },
+      { label: 'Mapping downstream impact — scanning all dependent objects', detail: 'Tracing column references across all Models, Answers, and Liveboards.' },
+      { label: 'Scoring criticality — identifying high-traffic objects', detail: 'CEO\'s Daily Pulse Liveboard (2,400 views/wk) and Executive Revenue Dashboard (1,800 views/wk) flagged critical.' },
+      { label: '✦ Blast radius mapped — 14 objects, 2 critical', detail: '2 Models · 8 Answers · 4 Liveboards currently serving broken or stale data.' },
+    ],
+    duration: '18 seconds',
+    autoComplete: true,
+    stepDelay: 900,
+    proposal: '',
+    execution: 'Two columns were removed from your warehouse during a schema migration last night — I\'ve mapped every object they power.\n\n**gross_margin** and **store_id** feed 14 objects across your analytics stack. Two of them are critical and currently serving broken data to executives.',
+    nextStep: 'healthy',
+    preserveStep: true,
+    executionGenUI: 'blast_radius',
+  },
+
+  // ── Blast radius — Phase 2: semantic analysis + reconciliation plan ────────
+  schema_reconcile_plan: {
+    steps: [
+      { label: '✦ Running semantic analysis on Snowflake_Sales_Prod schema', detail: 'Comparing column names, types, and join patterns against 90 days of usage history.' },
+      { label: 'Matching gross_margin → gm_final_amt (95% semantic confidence)', detail: 'Same numeric type, same join keys, found in 6 formula references. High confidence.' },
+      { label: 'Matching store_id → location_key (88% confidence via join patterns)', detail: 'Same string type. Found in 4 join conditions — location_key is the post-migration equivalent.' },
+      { label: 'Detecting formula references — 6 formulas need column rewrites', detail: 'gross_margin appears in 4 calculated columns; store_id appears in 2 filter expressions.' },
+      { label: '✦ Reconciliation plan ready — review and apply', detail: '' },
+    ],
+    duration: '11 seconds',
+    autoComplete: true,
+    stepDelay: 800,
+    proposal: '',
+    execution: 'I found semantic successors for both columns in your current warehouse schema. Here\'s the full mapping — confirm or adjust before updating:',
+    nextStep: 'healthy',
+    preserveStep: true,
+    executionGenUI: 'schema_reconcile',
+  },
+
+  // ── Blast radius — Phase 3: heal all dependents ────────────────────────────
+  schema_blast_heal: {
+    steps: [
+      { label: 'Updating TML for 2 Models — gross_margin → gm_final_amt, store_id → location_key', detail: 'Sales Performance and Revenue Summary models updated.' },
+      { label: 'Propagating changes to 8 Answers', detail: 'All 8 answers referencing either column now point to the new names.' },
+      { label: 'Updating 4 Liveboards', detail: 'CEO\'s Daily Pulse Liveboard and Executive Revenue Dashboard now restoring — data will refresh on next query.' },
+      { label: 'Rewriting 6 formula references across the stack', detail: 'channel_margin_ratio, revenue_by_store, and 4 others updated.' },
+      { label: '✦ Creating restore point — pre-reconciliation snapshot saved', detail: 'Restore point timestamped Apr 14, 2:47 PM. Roll back available.' },
+    ],
+    duration: '22 seconds',
+    autoComplete: true,
+    stepDelay: 1000,
+    proposal: '',
+    execution: 'All 14 dependents updated. The CEO\'s Daily Pulse Liveboard and Executive Revenue Dashboard are live again.\n\nI\'ve saved a restore point so you can roll back everything with one click if the business logic is questioned.',
+    nextStep: 'healthy',
+    preserveStep: true,
+    executionGenUI: 'restore_point',
+  },
+
   // ── dbt Cloud connection repair ────────────────────────────────────────────
   dbt_connection_repair: {
     steps: [
@@ -2201,6 +2258,17 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
       return;
     }
     if (action === 'cache_cancel') { return; }
+    if (action === 'blast_radius_review') {
+      setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: 'Review fix plan →' }]);
+      setTimeout(() => { setProcessing(true); runFlow('schema_reconcile_plan', setMessages, setPending, setProcessing, setProject); }, 300);
+      return;
+    }
+    if (action === 'schema_reconcile_heal') {
+      setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: 'Apply changes' }]);
+      setTimeout(() => { setProcessing(true); runFlow('schema_blast_heal', setMessages, setPending, setProcessing, setProject); }, 300);
+      return;
+    }
+    if (action === 'restore_rollback') { return; }
     if (action === 'drift_resolution_remove') { addUser('Remove both columns from the model.'); runNext('schema_drift_preview'); return; }
     if (action === 'drift_resolution_sync')   { addUser('Apply the column mapping.');          runNext('schema_drift_preview'); return; }
     if (action === 'drift_publish_confirm')   { addUser('Publish the model.');                  runNext('schema_drift_publish'); return; }
@@ -3153,7 +3221,7 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
                 onGenUIAction={handleGenUIAction}
                 onOpenObject={onOpenObject}
                 publishedVersion={project.publishedVersion}
-                onComplete={msg.genUI === 'drift_complete' ? () => {
+                onComplete={msg.genUI === 'drift_complete' || msg.genUI === 'restore_point' ? () => {
                   onInsightResolved?.('ins-d2');
                   setTimeout(() => {
                     setMessages(prev => {
@@ -3873,6 +3941,15 @@ const MessageBubble: React.FC<{
           )}
           {msg.genUI === 'drift_complete' && (
             <SchemaDriftCompleteCard onComplete={onComplete} />
+          )}
+          {msg.genUI === 'blast_radius' && onGenUIAction && (
+            <BlastRadiusCard msgId={msg.id} result={msg.genUIResult} onAction={onGenUIAction} onOpenObject={onOpenObject} />
+          )}
+          {msg.genUI === 'schema_reconcile' && onGenUIAction && (
+            <SchemaReconciliationCard msgId={msg.id} result={msg.genUIResult} onAction={onGenUIAction} onOpenObject={onOpenObject} />
+          )}
+          {msg.genUI === 'restore_point' && onGenUIAction && (
+            <RestorePointCard msgId={msg.id} result={msg.genUIResult} onAction={onGenUIAction} onComplete={onComplete} />
           )}
           {msg.pendingAction && onConfirm && !msg.reviewPlanCTA && (
             <div style={{ marginTop: sp.C }}>
@@ -5322,6 +5399,285 @@ const SchemaDriftCompleteCard: React.FC<{ onComplete?: () => void }> = ({ onComp
         </div>
       </GenUISection>
     </GenUICard>
+  );
+};
+
+// ── Blast Radius cards (ins-d3 schema drift detection flow) ───────────────────
+
+const BLAST_BROKEN_ANSWERS = [
+  'Q4 Revenue by Region', 'Win Rate by Territory', 'Sales Rep Leaderboard',
+  'Pipeline by Stage', 'Closed Won Trend', 'Monthly Revenue Summary',
+  'Revenue vs Target', 'YTD Revenue Breakdown',
+];
+const BLAST_BROKEN_LIVEBOARDS = [
+  "CEO's Daily Pulse Liveboard", 'Executive Revenue Dashboard',
+  'Sales Performance Overview', 'Regional Revenue Breakdown',
+];
+const BLAST_AVAILABLE_COLUMNS: ColumnOption[] = [
+  { name: 'gm_final_amt',      type: 'number', description: 'Gross margin after adjustments, post-migration' },
+  { name: 'margin_amt',        type: 'number', description: 'Pre-adjustment gross margin figure' },
+  { name: 'gross_profit',      type: 'number', description: 'Revenue minus cost of goods sold' },
+  { name: 'location_key',      type: 'string', description: 'Warehouse location identifier — replaces store_id' },
+  { name: 'store_location_id', type: 'string', description: 'Full store location path' },
+  { name: 'venue_id',          type: 'string', description: 'Physical venue identifier' },
+  { name: 'site_code',         type: 'string', description: 'Site identifier for reporting' },
+];
+const RECONCILE_COLUMNS = [
+  { key: 'gross_margin', type: 'number', suggested: 'gm_final_amt',   confidence: 95,
+    reasoning: 'Exact semantic match — both represent post-adjustment gross margin. Same type (number), same aggregation behavior.',
+    refs: 4 },
+  { key: 'store_id',     type: 'string', suggested: 'location_key',   confidence: 88,
+    reasoning: 'High confidence match — both are location identifiers. Naming convention changed during migration, but join behavior is identical.',
+    refs: 2 },
+];
+
+const BlastRadiusCard: React.FC<{ msgId: string; result?: string; onAction: (action: string, msgId: string) => void; onOpenObject?: (name: string, highlightCol?: string) => void }> = ({ msgId, result, onAction, onOpenObject }) => {
+  const locked = !!result;
+  const [impactTab, setImpactTab] = React.useState<'models' | 'downstream'>('models');
+  const brokenModels = [
+    { name: 'Sales Performance', formulas: 3, answers: 5, liveboards: 2 },
+    { name: 'Revenue Summary',   formulas: 1, answers: 3, liveboards: 2 },
+  ];
+  return (
+    <div style={{ marginTop: sp.C, background: '#fff', border: '1px solid rgba(15,23,42,0.1)', borderRadius: 12, padding: '22px 24px 20px', opacity: locked ? 0.7 : 1, transition: 'opacity 0.2s', boxShadow: '0 1px 2px rgba(15,23,42,0.04)' }}>
+      {/* What happened */}
+      <div style={{ marginBottom: 18 }}>
+        <h3 style={{ margin: '0 0 10px', fontSize: 15, fontWeight: fw.semibold, color: '#0f172a', lineHeight: 1.4, letterSpacing: '-0.01em' }}>Schema drift detected</h3>
+        <div style={{ fontSize: 13, color: '#475569', lineHeight: 1.6 }}>
+          <button onClick={() => onOpenObject?.('fact_sales')} style={{ background: 'none', border: 'none', padding: 0, fontFamily: ff.mono, color: '#2563eb', cursor: onOpenObject ? 'pointer' : 'default', fontSize: 13, textDecoration: 'underline', textDecorationColor: 'transparent', transition: 'text-decoration-color 120ms' }} onMouseEnter={e => { e.currentTarget.style.textDecorationColor = '#2563eb'; }} onMouseLeave={e => { e.currentTarget.style.textDecorationColor = 'transparent'; }}>fact_sales</button>
+          {' removed 2 columns from '}
+          <span style={{ fontFamily: ff.mono, color: '#0f172a' }}>Snowflake_Sales_Prod</span>
+          {' at 2:14 AM on Jan 12'}
+        </div>
+        <div style={{ marginTop: 10, display: 'flex', gap: 6 }}>
+          <span style={{ fontFamily: ff.mono, fontSize: 13, color: '#0f172a', background: '#fef2f2', border: '1px solid #fecaca', padding: '3px 8px', borderRadius: 5, fontWeight: fw.medium }}>gross_margin</span>
+          <span style={{ fontFamily: ff.mono, fontSize: 13, color: '#0f172a', background: '#fef2f2', border: '1px solid #fecaca', padding: '3px 8px', borderRadius: 5, fontWeight: fw.medium }}>store_id</span>
+        </div>
+      </div>
+      {/* Why it matters */}
+      <div style={{ background: '#fffbeb', border: '1px solid #fde047', borderRadius: 8, padding: '12px 14px', marginBottom: 18 }}>
+        <div style={{ fontSize: 13, color: '#78350f', lineHeight: 1.6 }}>These columns were referenced by formulas and joins across your models. Queries using them are now failing.</div>
+      </div>
+      {/* Impact tabbed */}
+      <div style={{ marginBottom: 18 }}>
+        <div style={{ marginBottom: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ fontSize: 13, fontWeight: fw.semibold, color: '#0f172a' }}>Impact</div>
+          <div style={{ display: 'flex', gap: 2, background: '#f8fafc', borderRadius: 6, padding: 2 }}>
+            {(['models', 'downstream'] as const).map(tab => (
+              <button key={tab} onClick={() => setImpactTab(tab)} style={{ background: impactTab === tab ? '#fff' : 'transparent', border: impactTab === tab ? '1px solid rgba(0,0,0,0.06)' : '1px solid transparent', borderRadius: 5, padding: '5px 12px', fontSize: 13, fontWeight: fw.medium, color: impactTab === tab ? '#0f172a' : '#64748b', cursor: 'pointer', fontFamily: ff.primary, transition: 'all 120ms', boxShadow: impactTab === tab ? '0 1px 2px rgba(0,0,0,0.04)' : 'none' }}>
+                {tab === 'models' ? 'Models · 2' : 'Downstream · 12'}
+              </button>
+            ))}
+          </div>
+        </div>
+        {impactTab === 'models' && (
+          <div style={{ border: '1px solid rgba(0,0,0,0.06)', borderRadius: 8, padding: '14px 16px', background: '#fafafa' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' as const, fontVariantNumeric: 'tabular-nums' as const }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid rgba(0,0,0,0.08)' }}>
+                  {['Model', 'Formulas', 'Answers', 'Liveboards'].map((h, i) => (
+                    <th key={h} style={{ fontSize: 11, fontWeight: fw.semibold, color: '#64748b', textAlign: i === 0 ? 'left' as const : 'right' as const, padding: '0 0 8px 0', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {brokenModels.map((model, i) => (
+                  <tr key={model.name} style={{ borderBottom: i < brokenModels.length - 1 ? '1px solid rgba(0,0,0,0.04)' : 'none' }}>
+                    <td style={{ padding: '10px 0', fontSize: 13, color: '#0f172a', fontWeight: fw.medium }}>
+                      <button onClick={() => onOpenObject?.(model.name)} style={{ background: 'none', border: 'none', padding: 0, color: '#2563eb', cursor: onOpenObject ? 'pointer' : 'default', fontSize: 13, fontWeight: fw.medium, fontFamily: ff.primary, textDecoration: 'underline', textDecorationColor: 'transparent', transition: 'text-decoration-color 120ms' }} onMouseEnter={e => { e.currentTarget.style.textDecorationColor = '#2563eb'; }} onMouseLeave={e => { e.currentTarget.style.textDecorationColor = 'transparent'; }}>{model.name}</button>
+                    </td>
+                    <td style={{ padding: '10px 0', fontSize: 13, color: '#475569', textAlign: 'right' as const }}>{model.formulas}</td>
+                    <td style={{ padding: '10px 0', fontSize: 13, color: '#475569', textAlign: 'right' as const }}>{model.answers}</td>
+                    <td style={{ padding: '10px 0', fontSize: 13, color: '#475569', textAlign: 'right' as const }}>{model.liveboards}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        {impactTab === 'downstream' && (
+          <div style={{ border: '1px solid rgba(0,0,0,0.06)', borderRadius: 8, padding: '14px 16px', background: '#fafafa' }}>
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ fontSize: 11, fontWeight: fw.semibold, color: '#64748b', marginBottom: 8, textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>4 liveboards</div>
+              <div style={{ display: 'grid', gap: 2 }}>
+                {BLAST_BROKEN_LIVEBOARDS.map(name => (
+                  <button key={name} onClick={() => onOpenObject?.(name)} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', background: '#fff', border: '1px solid rgba(0,0,0,0.06)', borderRadius: 6, cursor: onOpenObject ? 'pointer' : 'default', fontFamily: ff.primary, textAlign: 'left' as const, fontSize: 13, color: '#0f172a', fontWeight: fw.regular, transition: 'all 120ms' }} onMouseEnter={e => { e.currentTarget.style.background = '#fafafa'; e.currentTarget.style.borderColor = 'rgba(0,0,0,0.1)'; }} onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.borderColor = 'rgba(0,0,0,0.06)'; }}>
+                    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>
+                    <span style={{ flex: 1 }}>{name}</span>
+                    <span style={{ opacity: 0.3, fontSize: 12 }}>↗</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: fw.semibold, color: '#64748b', marginBottom: 8, textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>8 answers</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+                {BLAST_BROKEN_ANSWERS.map(name => (
+                  <button key={name} onClick={() => onOpenObject?.(name)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 10px', background: '#fff', border: '1px solid rgba(0,0,0,0.06)', borderRadius: 6, cursor: onOpenObject ? 'pointer' : 'default', fontFamily: ff.primary, textAlign: 'left' as const, fontSize: 13, color: '#0f172a', fontWeight: fw.regular, transition: 'all 120ms' }} onMouseEnter={e => { e.currentTarget.style.background = '#fafafa'; e.currentTarget.style.borderColor = 'rgba(0,0,0,0.1)'; }} onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.borderColor = 'rgba(0,0,0,0.06)'; }}>
+                    <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{name}</span>
+                    <span style={{ opacity: 0.3, fontSize: 12, flexShrink: 0 }}>↗</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+      {/* Action */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+        {!locked ? (
+          <button onClick={() => onAction('blast_radius_review', msgId)} style={{ background: c['content-brand'], color: '#fff', border: 'none', borderRadius: 7, padding: '9px 16px', fontSize: 13, fontWeight: fw.semibold, cursor: 'pointer', fontFamily: ff.primary, display: 'inline-flex', alignItems: 'center', gap: 6, transition: 'background 120ms', boxShadow: '0 1px 2px rgba(37,99,235,0.2)' }} onMouseEnter={e => (e.currentTarget.style.background = '#1d4ed8')} onMouseLeave={e => (e.currentTarget.style.background = c['content-brand'])}>
+            Review fix plan
+          </button>
+        ) : (
+          <span style={{ fontSize: 13, fontWeight: fw.medium, color: '#1e40af', background: '#eff6ff', borderRadius: 5, padding: '5px 11px' }}>Reviewing fix plan...</span>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const SchemaReconciliationCard: React.FC<{ msgId: string; result?: string; onAction: (action: string, msgId: string) => void; onOpenObject?: (name: string, highlightCol?: string) => void }> = ({ msgId, result, onAction, onOpenObject }) => {
+  const locked = !!result;
+  const [remapTo, setRemapTo] = React.useState<Record<string, string>>({ gross_margin: 'gm_final_amt', store_id: 'location_key' });
+  const [columnActions, setColumnActions] = React.useState<Record<string, 'replace' | 'remove'>>({ gross_margin: 'replace', store_id: 'replace' });
+  const [openPicker, setOpenPicker] = React.useState<string | null>(null);
+  const [hoveredCol, setHoveredCol] = React.useState<string | null>(null);
+  const confidenceBg  = (pct: number) => pct >= 90 ? '#dcfce7' : '#fef9c3';
+  const confidenceCol = (pct: number) => pct >= 90 ? '#15803d' : '#854d0e';
+  const replaceCount = Object.values(columnActions).filter(a => a === 'replace').length;
+  const removeCount  = Object.values(columnActions).filter(a => a === 'remove').length;
+  return (
+    <div style={{ marginTop: 12, background: '#fff', border: '1px solid rgba(15,23,42,0.1)', borderRadius: 12, padding: '20px 24px', boxShadow: '0 1px 2px rgba(15,23,42,0.04)' }}>
+      <div style={{ marginBottom: 18 }}>
+        <h3 style={{ fontSize: 15, fontWeight: 600, color: '#0f172a', margin: '0 0 4px 0', lineHeight: 1.4 }}>Found replacement columns</h3>
+        <div style={{ fontSize: 13, color: '#64748b', lineHeight: 1.5 }}>
+          <button onClick={() => onOpenObject?.('fact_sales')} style={{ background: 'none', border: 'none', padding: 0, fontFamily: ff.mono, color: '#2563eb', cursor: onOpenObject ? 'pointer' : 'default', fontSize: 13, textDecoration: 'underline', textDecorationColor: 'transparent', transition: 'text-decoration-color 120ms' }} onMouseEnter={e => { e.currentTarget.style.textDecorationColor = '#2563eb'; }} onMouseLeave={e => { e.currentTarget.style.textDecorationColor = 'transparent'; }}>fact_sales</button>
+          {' schema changed — 2 columns removed but successors exist in the updated table'}
+        </div>
+      </div>
+      <div style={{ marginBottom: 18 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: '#0f172a', marginBottom: 6 }}>Recommended replacements</div>
+        <div style={{ fontSize: 12, color: '#64748b', lineHeight: 1.5, marginBottom: 14 }}>Both replacements are semantically equivalent — same type, same join behavior. You can safely replace references or delete them.</div>
+        <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 16 }}>
+          {RECONCILE_COLUMNS.map(col => {
+            const mappedTo = remapTo[col.key];
+            const action = columnActions[col.key];
+            const isHovered = hoveredCol === col.key;
+            const isPickerOpen = openPicker === col.key;
+            return (
+              <div key={col.key} style={{ position: 'relative' as const }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ fontFamily: ff.mono, fontSize: 12.5, fontWeight: 600, color: '#dc2626', textDecoration: locked ? 'line-through' : 'none', flexShrink: 0, minWidth: 110 }}>{col.key}</span>
+                  <svg width="14" height="10" viewBox="0 0 14 10" fill="none" style={{ flexShrink: 0, color: '#cbd5e1' }}><path d="M1 5h11M8 1l4 4-4 4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  {action === 'replace' ? (
+                    <div style={{ position: 'relative' as const, flex: 1 }}>
+                      {locked ? (
+                        <span style={{ fontFamily: ff.mono, fontSize: 12.5, fontWeight: 600, color: '#16a34a' }}>{mappedTo}</span>
+                      ) : (
+                        <button onClick={() => setOpenPicker(isPickerOpen ? null : col.key)} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontFamily: ff.mono, fontSize: 12.5, fontWeight: 600, color: '#16a34a', background: '#f0fdf4', border: `1px solid ${isPickerOpen ? '#16a34a' : '#bbf7d0'}`, borderRadius: 6, padding: '6px 10px', cursor: 'pointer', lineHeight: 1.5 }}>
+                          {mappedTo}
+                          <svg width="10" height="6" viewBox="0 0 10 6" fill="none" style={{ flexShrink: 0 }}><path d="M1 1l4 4 4-4" stroke="#16a34a" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        </button>
+                      )}
+                      {isPickerOpen && <ColumnPickerDropdown options={BLAST_AVAILABLE_COLUMNS} selected={mappedTo} suggested={col.suggested} removedType={col.type} onSelect={name => { setRemapTo(r => ({ ...r, [col.key]: name })); setOpenPicker(null); }} />}
+                    </div>
+                  ) : (
+                    <span style={{ fontFamily: ff.mono, fontSize: 12.5, fontWeight: 600, color: '#94a3b8', fontStyle: 'italic', flex: 1 }}>will be removed</span>
+                  )}
+                  {action === 'replace' && (
+                    <span onMouseEnter={() => setHoveredCol(col.key)} onMouseLeave={() => setHoveredCol(null)} style={{ fontSize: 11, fontWeight: 600, flexShrink: 0, background: confidenceBg(col.confidence), color: confidenceCol(col.confidence), borderRadius: 12, padding: '3px 9px', cursor: 'help', position: 'relative' as const }}>
+                      {col.confidence}%
+                    </span>
+                  )}
+                  <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginLeft: 8 }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: locked ? 'default' : 'pointer', fontSize: 12, color: '#64748b' }}>
+                      <input type="radio" name={`action-${col.key}`} checked={action === 'replace'} onChange={() => setColumnActions(prev => ({ ...prev, [col.key]: 'replace' }))} disabled={locked} style={{ cursor: locked ? 'default' : 'pointer' }} />
+                      Replace
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: locked ? 'default' : 'pointer', fontSize: 12, color: '#64748b' }}>
+                      <input type="radio" name={`action-${col.key}`} checked={action === 'remove'} onChange={() => setColumnActions(prev => ({ ...prev, [col.key]: 'remove' }))} disabled={locked} style={{ cursor: locked ? 'default' : 'pointer' }} />
+                      Remove
+                    </label>
+                  </div>
+                </div>
+                {isHovered && action === 'replace' && !locked && (
+                  <div style={{ position: 'absolute' as const, top: '100%', right: 0, marginTop: 6, background: '#1e293b', color: '#f1f5f9', fontSize: 12, lineHeight: 1.5, borderRadius: 8, padding: '10px 12px', maxWidth: 320, boxShadow: '0 4px 12px rgba(0,0,0,0.2)', zIndex: 10 }}>
+                    {col.reasoning}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      {!locked ? (
+        <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div>
+            <div style={{ fontSize: 12, color: '#64748b', marginBottom: 3 }}>2 Models · 8 Answers · 4 Liveboards</div>
+            <div style={{ fontSize: 11, color: '#94a3b8' }}>
+              {replaceCount > 0 && `${replaceCount} to replace`}{replaceCount > 0 && removeCount > 0 && ' · '}{removeCount > 0 && `${removeCount} to remove`}
+            </div>
+          </div>
+          <button onClick={() => onAction('schema_reconcile_heal', msgId)} style={{ padding: '8px 18px', borderRadius: 8, border: 'none', background: '#2563eb', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: ff.primary }}>Apply changes</button>
+        </div>
+      ) : (
+        <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: 16, display: 'flex', justifyContent: 'flex-end' }}>
+          <span style={{ fontSize: 12, fontWeight: 600, color: '#16a34a', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 6, padding: '5px 11px' }}>✓ Updating in progress...</span>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const RestorePointCard: React.FC<{ msgId: string; result?: string; onAction: (action: string, msgId: string) => void; onComplete?: () => void }> = ({ msgId, result, onAction, onComplete }) => {
+  const rolledBack = result === 'restore_rollback';
+  React.useEffect(() => { onComplete?.(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  return (
+    <div style={{ marginTop: 12, background: '#fff', border: rolledBack ? '1px solid rgba(15,23,42,0.1)' : '1px solid #bbf7d0', borderRadius: 12, padding: '20px 24px', boxShadow: '0 1px 2px rgba(15,23,42,0.04)' }}>
+      <div style={{ marginBottom: 18, display: 'flex', alignItems: 'center', gap: 8 }}>
+        {!rolledBack && <span style={{ fontSize: 20, lineHeight: 1 }}>🎉</span>}
+        <h3 style={{ margin: 0, fontSize: 15, fontWeight: 600, color: '#0f172a', lineHeight: 1.4 }}>
+          {rolledBack ? 'Rolled back to pre-reconciliation' : 'Columns successfully replaced and dependents updated'}
+        </h3>
+      </div>
+      {!rolledBack && (
+        <div style={{ marginBottom: 18 }}>
+          <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
+            {[
+              { icon: 'check', label: <span><strong style={{ color: '#0f172a', fontWeight: 600 }}>2</strong> columns remapped</span> },
+              { icon: 'check', label: <span><strong style={{ color: '#0f172a', fontWeight: 600 }}>6</strong> formulas rewritten</span> },
+              { icon: 'check', label: <span><strong style={{ color: '#0f172a', fontWeight: 600 }}>14</strong> dependents updated</span> },
+              { icon: 'heart', label: <span>~6 hours of manual work automated</span> },
+            ].map((item, i) => (
+              <li key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, color: '#475569' }}>
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
+                  {item.icon === 'check'
+                    ? <path d="M13 4L6 11L3 8" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    : <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  }
+                </svg>
+                {item.label}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: 14 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: '#0f172a' }}>{rolledBack ? 'Restored to previous state' : 'Restore point saved'}</div>
+          {!result && (
+            <button onClick={() => onAction('restore_rollback', msgId)} style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#fff', color: '#475569', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: ff.primary }}>↩ Roll back</button>
+          )}
+        </div>
+        <div style={{ fontSize: 12, color: '#64748b' }}>"Pre-reconciliation" · Apr 14, 2:47 PM</div>
+        {rolledBack && (
+          <div style={{ marginTop: 12, fontSize: 12, color: '#92400e', lineHeight: 1.5, background: '#fffbeb', border: '1px solid #fde047', borderRadius: 8, padding: '10px 12px' }}>
+            All 14 objects restored to their pre-reconciliation state. Re-run the fix plan when ready.
+          </div>
+        )}
+      </div>
+    </div>
   );
 };
 

@@ -147,7 +147,7 @@ const DataStudio: React.FC = () => {
   const handleFixWithAgent = (insight: ActiveInsight, proj: OverviewProject) => {
     const flowMap: Record<string, string> = {
       'ins-d1': 'dbt_connection_repair',
-      'ins-d2': 'schema_drift_repair',
+      'ins-d2': 'schema_blast_repair',
       'ins-d3': 'schema_drift_multi_repair',
       'ins-d6': 'null_rate_investigation',
       'ins-o3': 'semantic_gaps_detect',
@@ -159,7 +159,7 @@ const DataStudio: React.FC = () => {
         : '');
     const promptMap: Record<string, string> = {
       'ins-d1': 'Fix the dbt Cloud connection — sales_analytics sync failed and 3 models are blocked.',
-      'ins-d2': 'Fix the schema drift on FnOps Cost Model — cost_center and allocation_type were removed from dbt_finance_spend.',
+      'ins-d2': 'Fix the schema drift on fact_sales — gross_margin and store_id were removed from Snowflake_Sales_Prod.',
       'ins-d3': 'Fix the schema drift on Revenue Forecast and Pipeline Health — quarterly_target, forecast_region, and pipeline_stage were removed from the warehouse source.',
       'ins-d6': 'Investigate the null rate spike in Marketing Campaign Attribution — campaign_id nulls spiked from 2% to 18%.',
       'ins-o3': 'Fill the semantic gaps in Marketing Campaign Attribution — 4 high-use columns are missing descriptions that Spotter needs to answer questions about them correctly.',
