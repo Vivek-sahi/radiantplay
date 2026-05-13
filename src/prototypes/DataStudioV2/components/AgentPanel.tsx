@@ -3842,19 +3842,19 @@ const MessageBubble: React.FC<{
             <CacheEnabledCard msgId={msg.id} result={msg.genUIResult} onAction={onGenUIAction} />
           )}
           {msg.genUI === 'connection_status' && onGenUIAction && (
-            <ConnectionStatusCard msgId={msg.id} result={msg.genUIResult} onAction={onGenUIAction} />
+            <ConnectionStatusCard msgId={msg.id} result={msg.genUIResult} onAction={onGenUIAction} onOpenObject={onOpenObject} />
           )}
           {msg.genUI === 'multi_model_drift' && onGenUIAction && (
-            <MultiModelDriftCard msgId={msg.id} result={msg.genUIResult} onAction={onGenUIAction} />
+            <MultiModelDriftCard msgId={msg.id} result={msg.genUIResult} onAction={onGenUIAction} onOpenObject={onOpenObject} />
           )}
           {msg.genUI === 'repair_summary' && onGenUIAction && (
             <RepairSummaryCard msgId={msg.id} result={msg.genUIResult} onAction={onGenUIAction} />
           )}
           {msg.genUI === 'null_rate' && onGenUIAction && (
-            <NullRateCard msgId={msg.id} result={msg.genUIResult} onAction={onGenUIAction} />
+            <NullRateCard msgId={msg.id} result={msg.genUIResult} onAction={onGenUIAction} onOpenObject={onOpenObject} />
           )}
           {msg.genUI === 'drift_resolution' && onGenUIAction && (
-            <SchemaDriftResolutionCard msgId={msg.id} result={msg.genUIResult} onAction={onGenUIAction} />
+            <SchemaDriftResolutionCard msgId={msg.id} result={msg.genUIResult} onAction={onGenUIAction} onOpenObject={onOpenObject} />
           )}
           {msg.genUI === 'drift_publish_preview' && onGenUIAction && (
             <DriftPublishPreviewCard msgId={msg.id} result={msg.genUIResult} onAction={onGenUIAction} publishedVersion={publishedVersion} />
@@ -4706,7 +4706,7 @@ const CacheEnabledCard: React.FC<{
 
 // ── ConnectionStatusCard ──────────────────────────────────────────────────────
 
-const ConnectionStatusCard: React.FC<{ msgId: string; result?: string; onAction: (action: string, msgId: string) => void }> = ({ msgId, result, onAction }) => {
+const ConnectionStatusCard: React.FC<{ msgId: string; result?: string; onAction: (action: string, msgId: string) => void; onOpenObject?: (name: string, highlightCol?: string) => void }> = ({ msgId, result, onAction, onOpenObject }) => {
   const locked = !!result;
   const applied = result === 'connection_status_apply';
   const blockedModels = ['Sales Analytics', 'Sales Performance', 'Revenue Forecast'];
@@ -4727,7 +4727,7 @@ const ConnectionStatusCard: React.FC<{ msgId: string; result?: string; onAction:
         <div style={{ fontSize: 11, fontWeight: fw.semibold, color: '#888', marginBottom: 8 }}>{applied ? 'Models syncing' : '3 models currently blocked'}</div>
         <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 6 }}>
           {blockedModels.map(m => (
-            <span key={m} style={{ fontSize: 11.5, fontWeight: fw.medium, color: applied ? '#166534' : '#1e40af', background: applied ? '#f0fdf4' : '#eff6ff', border: `1px solid ${applied ? '#bbf7d0' : '#bfdbfe'}`, borderRadius: 5, padding: '3px 8px' }}>{m}</span>
+            <button key={m} onClick={() => onOpenObject?.(m)} style={{ fontSize: 11.5, fontWeight: fw.medium, color: applied ? '#166534' : '#1e40af', background: applied ? '#f0fdf4' : '#eff6ff', border: `1px solid ${applied ? '#bbf7d0' : '#bfdbfe'}`, borderRadius: 5, padding: '3px 8px', cursor: onOpenObject ? 'pointer' : 'default', fontFamily: ff.primary, display: 'inline-flex', alignItems: 'center', gap: 3 }}>{m} <span style={{ opacity: 0.6, fontSize: 10 }}>↗</span></button>
           ))}
         </div>
         {applied && <div style={{ fontSize: 12, color: '#16a34a', marginTop: 8 }}>Estimated resync: ~4 minutes</div>}
@@ -4755,7 +4755,7 @@ const MULTI_DRIFT_DEPENDENTS = [
   { name: 'Deal Velocity', model: 'Pipeline Health', ref: 'forecast_region' },
 ];
 
-const MultiModelDriftCard: React.FC<{ msgId: string; result?: string; onAction: (action: string, msgId: string) => void }> = ({ msgId, result, onAction }) => {
+const MultiModelDriftCard: React.FC<{ msgId: string; result?: string; onAction: (action: string, msgId: string) => void; onOpenObject?: (name: string, highlightCol?: string) => void }> = ({ msgId, result, onAction, onOpenObject }) => {
   const locked = !!result;
   const repaired = result === 'multi_model_drift_repair';
   const [expanded, setExpanded] = React.useState(false);
@@ -4776,7 +4776,7 @@ const MultiModelDriftCard: React.FC<{ msgId: string; result?: string; onAction: 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
           {models.map(model => (
             <div key={model.name} style={{ border: '1px solid rgba(0,0,0,0.08)', borderRadius: 7, padding: '8px 10px', background: repaired ? '#f0fdf4' : '#fafafa' }}>
-              <div style={{ fontSize: 12, fontWeight: fw.semibold, color: '#333', marginBottom: 6 }}>{model.name}</div>
+              <button onClick={() => onOpenObject?.(model.name, model.columns[0])} style={{ fontSize: 12, fontWeight: fw.semibold, color: '#1e40af', marginBottom: 6, background: 'none', border: 'none', padding: 0, cursor: onOpenObject ? 'pointer' : 'default', fontFamily: ff.primary, display: 'flex', alignItems: 'center', gap: 3 }}>{model.name} <span style={{ opacity: 0.5, fontSize: 10 }}>↗</span></button>
               <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 4 }}>
                 {model.columns.map(col => (
                   <span key={col} style={{ fontFamily: ff.mono, fontSize: 11, color: repaired ? '#6b7280' : '#991b1b', textDecoration: repaired ? 'line-through' : 'none', background: repaired ? 'transparent' : '#fee2e2', padding: repaired ? 0 : '1px 5px', borderRadius: 4, alignSelf: 'flex-start' }}>{col} ✕</span>
@@ -4790,7 +4790,7 @@ const MultiModelDriftCard: React.FC<{ msgId: string; result?: string; onAction: 
         <div style={{ fontSize: 11, fontWeight: fw.semibold, color: '#888', marginBottom: 8 }}>8 dependents affected</div>
         <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 5, marginBottom: visibleDependents.length < MULTI_DRIFT_DEPENDENTS.length ? 8 : 0 }}>
           {visibleDependents.map(d => (
-            <span key={d.name} style={{ fontSize: 11.5, color: '#444', background: 'rgba(0,0,0,0.04)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 5, padding: '2px 8px', fontWeight: fw.medium }}>{d.name}</span>
+            <button key={d.name} onClick={() => onOpenObject?.(d.name, d.ref)} style={{ fontSize: 11.5, color: '#444', background: 'rgba(0,0,0,0.04)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 5, padding: '2px 8px', fontWeight: fw.medium, fontFamily: ff.primary, cursor: onOpenObject ? 'pointer' : 'default', display: 'inline-flex', alignItems: 'center', gap: 3 }}>{d.name} <span style={{ opacity: 0.45, fontSize: 10 }}>↗</span></button>
           ))}
           {!expanded && MULTI_DRIFT_DEPENDENTS.length > 2 && (
             <button onClick={() => setExpanded(true)} style={{ fontSize: 11.5, color: c['content-brand'], background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px', fontFamily: ff.primary, fontWeight: fw.medium }}>+{MULTI_DRIFT_DEPENDENTS.length - 2} more</button>
@@ -4828,7 +4828,7 @@ const RepairSummaryCard: React.FC<{ msgId: string; result?: string; onAction: (a
 
 // ── NullRateCard ──────────────────────────────────────────────────────────────
 
-const NullRateCard: React.FC<{ msgId: string; result?: string; onAction: (action: string, msgId: string) => void }> = ({ msgId, result, onAction }) => {
+const NullRateCard: React.FC<{ msgId: string; result?: string; onAction: (action: string, msgId: string) => void; onOpenObject?: (name: string, highlightCol?: string) => void }> = ({ msgId, result, onAction, onOpenObject }) => {
   const locked = !!result;
   const [selected, setSelected] = React.useState<'null_rate_add_organic' | 'null_rate_filter_organic' | 'null_rate_suppress'>('null_rate_add_organic');
   const options: { id: typeof selected; label: string; sublabel: string; recommended?: boolean }[] = [
@@ -4843,7 +4843,7 @@ const NullRateCard: React.FC<{ msgId: string; result?: string; onAction: (action
       <GenUISection>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <GenUIBadge variant={locked ? 'green' : 'amber'}>{locked ? `✓ ${resultLabel}` : 'campaign_id null rate spike'}</GenUIBadge>
-          <span style={{ fontSize: 11, color: '#999' }}>Marketing Campaign Attribution</span>
+          <button onClick={() => onOpenObject?.('Marketing Campaign Attribution', 'campaign_id')} style={{ fontSize: 11, color: '#1e40af', background: 'none', border: 'none', padding: 0, cursor: onOpenObject ? 'pointer' : 'default', fontFamily: ff.primary, display: 'inline-flex', alignItems: 'center', gap: 2 }}>Marketing Campaign Attribution <span style={{ opacity: 0.55, fontSize: 10 }}>↗</span></button>
         </div>
       </GenUISection>
       <GenUISection>
@@ -4933,7 +4933,7 @@ const ColumnPickerDropdown: React.FC<{ options: ColumnOption[]; selected: string
   </div>
 );
 
-const SchemaDriftResolutionCard: React.FC<{ msgId: string; result?: string; onAction: (action: string, msgId: string) => void }> = ({ msgId, result, onAction }) => {
+const SchemaDriftResolutionCard: React.FC<{ msgId: string; result?: string; onAction: (action: string, msgId: string) => void; onOpenObject?: (name: string, highlightCol?: string) => void }> = ({ msgId, result, onAction, onOpenObject }) => {
   const locked = !!result;
   const didRemap  = result === 'drift_resolution_sync';
   const didRemove = result === 'drift_resolution_remove';
@@ -4954,7 +4954,7 @@ const SchemaDriftResolutionCard: React.FC<{ msgId: string; result?: string; onAc
       <GenUISection>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <GenUIBadge variant={locked ? 'green' : 'red'}>{didRemap ? '✓ Remapped to replacements' : didRemove ? '✓ Removed from model' : '2 columns removed from source'}</GenUIBadge>
-          <span style={{ fontSize: 11, color: '#999' }}>FnOps Cost Model</span>
+          <button onClick={() => onOpenObject?.('FnOps Cost Model', 'cost_center')} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 11, color: '#2563eb', fontFamily: ff.primary }} onMouseEnter={e => { e.currentTarget.style.textDecoration = 'underline'; }} onMouseLeave={e => { e.currentTarget.style.textDecoration = 'none'; }}>FnOps Cost Model <span style={{ opacity: 0.5, fontSize: 10 }}>↗</span></button>
         </div>
       </GenUISection>
       <GenUISection>
@@ -5005,7 +5005,7 @@ const SchemaDriftResolutionCard: React.FC<{ msgId: string; result?: string; onAc
                     {group.examples.map((name, j) => (
                       <div key={name} style={{ fontSize: 13, lineHeight: 1.6, paddingTop: j === 0 ? 0 : 2, display: 'flex', alignItems: 'center', gap: 8 }}>
                         <span style={{ color: '#ccc', fontSize: 10 }}>—</span>
-                        <button style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left' as const, ...(group.mono ? { fontFamily: ff.mono, fontSize: 12, color: '#2563eb' } : { fontFamily: ff.primary, fontSize: 13, color: '#2563eb' }), textDecoration: 'none', lineHeight: 1.6 }}
+                        <button onClick={() => onOpenObject?.(name)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left' as const, ...(group.mono ? { fontFamily: ff.mono, fontSize: 12, color: '#2563eb' } : { fontFamily: ff.primary, fontSize: 13, color: '#2563eb' }), textDecoration: 'none', lineHeight: 1.6 }}
                           onMouseEnter={e => { e.currentTarget.style.textDecoration = 'underline'; }} onMouseLeave={e => { e.currentTarget.style.textDecoration = 'none'; }}>{name}</button>
                       </div>
                     ))}
