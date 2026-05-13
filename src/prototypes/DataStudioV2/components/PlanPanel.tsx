@@ -370,7 +370,7 @@ const PlanPanel: React.FC<PlanPanelProps> = ({ plan, onClose }) => {
 
         {/* Preview tab */}
         {activeTab === 'preview' && (
-          <div style={{ flex: 1, overflowY: 'auto', padding: `${sp.B}px 0` }}>
+          <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: `${sp.B}px 0` }}>
             {appliedCells.size > 0 && (
               <div style={{
                 margin: `${sp.B}px ${sp.D}px`,
@@ -491,7 +491,7 @@ const PlanPanel: React.FC<PlanPanelProps> = ({ plan, onClose }) => {
 
         {/* Code tab */}
         {activeTab === 'code' && (
-          <div style={{ flex: 1, overflowY: 'auto', padding: sp.D, display: 'flex', flexDirection: 'column', gap: sp.C }}>
+          <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: sp.D, display: 'flex', flexDirection: 'column', gap: sp.C }}>
             {CELL_LABELS.map((label, i) => (
               <CodeCell
                 key={i}
