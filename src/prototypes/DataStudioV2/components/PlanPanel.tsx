@@ -9,20 +9,21 @@ interface PlanPanelProps {
 
 type PanelTab = 'preview' | 'code';
 type SectionKey = 'goal' | 'tables' | 'relationships' | 'columns' | 'formulas' | 'questions';
-type CellType = 'sql' | 'text';
+type CellType = 'sql' | 'python' | 'text';
 
 interface CellDef {
   label: string;
   type: CellType;
+  instruction: string;
 }
 
 const CELL_DEFS: CellDef[] = [
-  { label: 'Goal',             type: 'text' },
-  { label: 'Tables',           type: 'sql'  },
-  { label: 'Relationships',    type: 'sql'  },
-  { label: 'Columns',          type: 'sql'  },
-  { label: 'Formulas',         type: 'sql'  },
-  { label: 'Sample questions', type: 'text' },
+  { label: 'Goal',             type: 'text', instruction: 'Sets the business intent and scope for this model. The agent uses this to guide all downstream decisions.' },
+  { label: 'Tables',           type: 'sql',  instruction: 'Declares the source tables this model draws from.' },
+  { label: 'Relationships',    type: 'sql',  instruction: 'Specifies how the source tables join to each other.' },
+  { label: 'Columns',          type: 'sql',  instruction: 'Selects and renames the output columns that analysts will see.' },
+  { label: 'Formulas',         type: 'sql',  instruction: 'Calculates derived metrics using ThoughtSpot formula syntax.' },
+  { label: 'Sample questions', type: 'text', instruction: 'Natural language questions this model should answer — used to validate coverage.' },
 ];
 
 // ── SQL / text generation ──────────────────────────────────────────────────────
@@ -182,8 +183,9 @@ const SqlTokens: React.FC<{ text: string }> = ({ text }) => {
 // ── Cell accent colors ─────────────────────────────────────────────────────────
 
 const CELL_ACCENT: Record<CellType, string> = {
-  sql:  '#2770EF',
-  text: c['border-divider'],
+  sql:    '#2770EF',
+  python: '#E8A020',
+  text:   c['border-divider'],
 };
 
 // ── Code cell ──────────────────────────────────────────────────────────────────
@@ -194,6 +196,8 @@ interface CodeCellProps {
   value: string;
   isEditing: boolean;
   draftValue: string;
+  isRunning?: boolean;
+  isFlash?: boolean;
   onEdit: () => void;
   onRun: () => void;
   onCancel: () => void;
@@ -201,42 +205,64 @@ interface CodeCellProps {
 }
 
 const CodeCell: React.FC<CodeCellProps> = ({
-  label, type, value, isEditing, draftValue, onEdit, onRun, onCancel, onDraftChange,
+  label, type, value, isEditing, draftValue, isRunning, isFlash, onEdit, onRun, onCancel, onDraftChange,
 }) => {
   const [headerHovered, setHeaderHovered] = useState(false);
   const displayValue = isEditing ? draftValue : value;
   const lineCount = displayValue.split('\n').length;
 
+  const headerBg = isFlash
+    ? '#dcfce7'
+    : headerHovered && !isEditing && !isRunning
+      ? c['background-subtle']
+      : c['background-base'];
+
   return (
     <div style={{
-      border: `1px solid ${c['border-divider']}`,
-      borderLeft: `3px solid ${CELL_ACCENT[type]}`,
+      border: `1px solid ${isFlash ? '#86efac' : c['border-divider']}`,
+      borderLeft: `3px solid ${isFlash ? '#16a34a' : CELL_ACCENT[type]}`,
       borderRadius: 8,
       backgroundColor: c['background-base'],
       overflow: 'hidden',
       flexShrink: 0,
+      transition: 'border-color 0.3s',
     }}>
       {/* Cell header */}
       <div
         style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           padding: `6px ${sp.C}px`, borderBottom: `1px solid ${c['border-divider']}`,
-          backgroundColor: headerHovered && !isEditing ? c['background-subtle'] : c['background-base'],
-          transition: 'background-color 0.1s',
+          backgroundColor: headerBg,
+          transition: 'background-color 0.3s',
         }}
         onMouseEnter={() => setHeaderHovered(true)}
         onMouseLeave={() => setHeaderHovered(false)}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: sp.B }}>
           <span style={{
-            fontSize: 10, fontWeight: fw.semibold, color: type === 'sql' ? '#7C3AED' : c['content-secondary'],
+            fontSize: 10, fontWeight: fw.semibold, color: type === 'sql' ? '#7C3AED' : type === 'python' ? '#B45309' : c['content-secondary'],
             textTransform: 'uppercase', letterSpacing: '0.06em',
           }}>{type}</span>
           <span style={{ fontSize: fs.xs, color: c['content-primary'], fontWeight: fw.medium }}>{label}</span>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, opacity: isEditing || headerHovered ? 1 : 0, transition: 'opacity 0.15s' }}>
-          {isEditing ? (
+        <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, opacity: isEditing || isRunning || isFlash || headerHovered ? 1 : 0, transition: 'opacity 0.15s' }}>
+          {isRunning ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: fs.xs, color: c['content-secondary'], fontFamily: ff.primary }}>
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ animation: 'ds-spin 0.8s linear infinite', flexShrink: 0 }}>
+                <circle cx="6" cy="6" r="4.5" strokeOpacity="0.25" />
+                <path d="M6 1.5A4.5 4.5 0 0 1 10.5 6" strokeLinecap="round" />
+              </svg>
+              Running…
+            </div>
+          ) : isFlash ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: fs.xs, color: '#16a34a', fontFamily: ff.primary, fontWeight: fw.medium }}>
+              <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="2,6 5,9 10,3" />
+              </svg>
+              Applied
+            </div>
+          ) : isEditing ? (
             <>
               <button
                 onClick={onCancel}
@@ -352,12 +378,33 @@ const PlanPanel: React.FC<PlanPanelProps> = ({ plan, onClose }) => {
     goal: false, tables: false, relationships: false, columns: false, formulas: false, questions: false,
   });
 
+  const [cellDefs, setCellDefs] = useState<CellDef[]>(() => [...CELL_DEFS]);
   const [cellValues, setCellValues] = useState<string[]>(() =>
     CELL_DEFS.map((_, i) => genCellValue(plan, i))
   );
   const [editingCell, setEditingCell] = useState<number | null>(null);
   const [draftValue, setDraftValue] = useState('');
   const [appliedCells, setAppliedCells] = useState<Set<number>>(new Set());
+  const [showAddMenu, setShowAddMenu] = useState(false);
+  const [runningCells, setRunningCells] = useState<Set<number>>(new Set());
+  const [flashCells, setFlashCells] = useState<Set<number>>(new Set());
+  const [localVersion, setLocalVersion] = useState(plan.version);
+
+  const addCell = (type: CellType) => {
+    const defaults: Record<CellType, string> = {
+      sql:    '-- Write SQL here\n',
+      python: '# Write Python here\n',
+      text:   'Add description here',
+    };
+    const labels: Record<CellType, string> = {
+      sql:    'New SQL cell',
+      python: 'New Python cell',
+      text:   'New text cell',
+    };
+    setCellDefs(prev => [...prev, { label: labels[type], type, instruction: '' }]);
+    setCellValues(prev => [...prev, defaults[type]]);
+    setShowAddMenu(false);
+  };
 
   const toggleSection = (key: SectionKey) =>
     setCollapsed(prev => ({ ...prev, [key]: !prev[key] }));
@@ -365,10 +412,20 @@ const PlanPanel: React.FC<PlanPanelProps> = ({ plan, onClose }) => {
   const startEdit = (i: number) => { setEditingCell(i); setDraftValue(cellValues[i]); };
   const cancelEdit = () => { setEditingCell(null); setDraftValue(''); };
   const runCell = (i: number) => {
-    setCellValues(prev => { const next = [...prev]; next[i] = draftValue; return next; });
-    setAppliedCells(prev => new Set(prev).add(i));
+    const valueToApply = draftValue;
     setEditingCell(null);
-    setDraftValue('');
+    setRunningCells(prev => new Set(prev).add(i));
+    setTimeout(() => {
+      setCellValues(prev => { const next = [...prev]; next[i] = valueToApply; return next; });
+      setAppliedCells(prev => new Set(prev).add(i));
+      setRunningCells(prev => { const s = new Set(prev); s.delete(i); return s; });
+      setFlashCells(prev => new Set(prev).add(i));
+      setLocalVersion(prev => Math.round((prev + 0.1) * 10) / 10);
+      setDraftValue('');
+      setTimeout(() => {
+        setFlashCells(prev => { const s = new Set(prev); s.delete(i); return s; });
+      }, 600);
+    }, 700);
   };
 
   const baseColumns = plan.columns.filter(col => col.type !== 'formula');
@@ -384,7 +441,10 @@ const PlanPanel: React.FC<PlanPanelProps> = ({ plan, onClose }) => {
 
   return (
     <>
-      <style>{`@keyframes ds-slide-in { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: translateX(0); } }`}</style>
+      <style>{`
+        @keyframes ds-slide-in { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes ds-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+      `}</style>
       <div style={{
         flex: 1,
         minHeight: 0,        // ← critical: lets flex:1 be constrained so inner scroll works
@@ -406,7 +466,7 @@ const PlanPanel: React.FC<PlanPanelProps> = ({ plan, onClose }) => {
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: sp.B }}>
             <span style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'] }}>{plan.modelName}</span>
             <span style={{ fontSize: fs.xs, fontWeight: fw.medium, padding: '2px 7px', borderRadius: 4, backgroundColor: c['background-subtle'], color: c['content-secondary'] }}>
-              v{plan.version}
+              v{localVersion.toFixed(1)}
             </span>
           </div>
           <button
@@ -573,20 +633,75 @@ const PlanPanel: React.FC<PlanPanelProps> = ({ plan, onClose }) => {
         {/* Code tab */}
         {activeTab === 'code' && (
           <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: sp.D, display: 'flex', flexDirection: 'column', gap: sp.C }}>
-            {CELL_DEFS.map(({ label, type }, i) => (
-              <CodeCell
-                key={i}
-                label={label}
-                type={type}
-                value={cellValues[i]}
-                isEditing={editingCell === i}
-                draftValue={editingCell === i ? draftValue : ''}
-                onEdit={() => startEdit(i)}
-                onRun={() => runCell(i)}
-                onCancel={cancelEdit}
-                onDraftChange={setDraftValue}
-              />
+            {cellDefs.map(({ label, type, instruction }, i) => (
+              <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                {instruction && (
+                  <p style={{ margin: 0, fontSize: fs.xs, color: c['content-secondary'], lineHeight: '16px', paddingLeft: 4 }}>{instruction}</p>
+                )}
+                <CodeCell
+                  label={label}
+                  type={type}
+                  value={cellValues[i]}
+                  isEditing={editingCell === i}
+                  draftValue={editingCell === i ? draftValue : ''}
+                  isRunning={runningCells.has(i)}
+                  isFlash={flashCells.has(i)}
+                  onEdit={() => startEdit(i)}
+                  onRun={() => runCell(i)}
+                  onCancel={cancelEdit}
+                  onDraftChange={setDraftValue}
+                />
+              </div>
             ))}
+
+            {/* Add new code block */}
+            <div style={{ position: 'relative', marginTop: sp.B }}>
+              <button
+                onClick={() => setShowAddMenu(prev => !prev)}
+                style={{
+                  width: '100%', padding: `${sp.B}px ${sp.C}px`,
+                  border: `1px dashed ${c['border-divider']}`, borderRadius: 8,
+                  background: 'transparent', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: sp.B,
+                  fontSize: fs.xs, color: c['content-secondary'], fontFamily: ff.primary,
+                }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = c['border-default']; e.currentTarget.style.color = c['content-primary']; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = c['border-divider']; e.currentTarget.style.color = c['content-secondary']; }}
+              >
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+                  <path d="M6 1v10M1 6h10" />
+                </svg>
+                Add new code block
+              </button>
+
+              {showAddMenu && (
+                <div style={{
+                  position: 'absolute', bottom: '100%', left: 0, marginBottom: 4,
+                  background: c['background-base'], border: `1px solid ${c['border-divider']}`,
+                  borderRadius: 8, boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                  overflow: 'hidden', minWidth: 160, zIndex: 10,
+                }}>
+                  {(['sql', 'python', 'text'] as CellType[]).map(type => (
+                    <button
+                      key={type}
+                      onClick={() => addCell(type)}
+                      style={{
+                        width: '100%', padding: `${sp.B}px ${sp.C}px`,
+                        border: 'none', background: 'transparent', cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', gap: sp.B,
+                        fontSize: fs.xs, color: c['content-primary'],
+                        fontFamily: ff.primary, textAlign: 'left',
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.background = c['background-subtle']; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+                    >
+                      <span style={{ width: 8, height: 8, borderRadius: 2, background: CELL_ACCENT[type], flexShrink: 0 }} />
+                      {type === 'sql' ? 'SQL cell' : type === 'python' ? 'Python cell' : 'Text cell'}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
 

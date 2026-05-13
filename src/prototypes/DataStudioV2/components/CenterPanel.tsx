@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { c, sp, ff, fs, fw } from '../styles';
-import { Button } from '../../../components/Button';
 import { Select, SelectOption } from '../../../components/Select';
 import { Checkbox } from '../../../components/Checkbox';
 import { radius } from '../../../tokens/radius';
@@ -756,11 +755,12 @@ const NbPyLine: React.FC<{ line: string }> = ({ line }) => {
 
 // ── Notebook ──────────────────────────────────────────────────────────────────
 
-type NbCellType = 'sql' | 'python';
+type NbCellType = 'sql' | 'python' | 'text';
 
 const NB_CELL_ACCENT: Record<NbCellType, string> = {
   sql:    '#2770EF',
   python: '#D97706',
+  text:   c['border-divider'],
 };
 
 interface NbCellDef {
@@ -768,6 +768,7 @@ interface NbCellDef {
   type: NbCellType;
   label: string;
   query: string;
+  instruction?: string;
 }
 
 function buildNotebookCells(project: ProjectState): NbCellDef[] {
@@ -776,25 +777,33 @@ function buildNotebookCells(project: ProjectState): NbCellDef[] {
   const healthy     = project.buildStep === 'healthy';
   return [
     { id: 1, type: 'sql', label: 'Source: orders',
+      instruction: 'Imports the orders table into this model.',
       query: '-- Add Orders table into this model\nSELECT *\nFROM orders;' },
     { id: 2, type: 'sql', label: 'Source: campaigns',
+      instruction: 'Imports the campaigns table into this model.',
       query: '-- Add Campaigns table into this model\nSELECT *\nFROM campaigns;' },
     { id: 3, type: 'sql', label: 'Source: users',
+      instruction: 'Imports the users table into this model.',
       query: '-- Add Users table into this model\nSELECT *\nFROM users;' },
     ...(joined ? [
       { id: 4, type: 'sql' as NbCellType, label: 'Join: orders × campaigns',
+        instruction: 'Joins orders with campaigns on campaign_id to combine transaction and marketing data.',
         query: '-- Join orders with campaigns on campaign_id\nSELECT o.*, c.campaign_name, c.channel, c.budget, c.spend\nFROM orders o\nLEFT JOIN campaigns c ON o.campaign_id = c.campaign_id;' },
       { id: 5, type: 'sql' as NbCellType, label: 'Join: orders × users',
+        instruction: 'Joins orders with users on user_id to enrich transactions with user attributes.',
         query: '-- Join orders with users on user_id\nSELECT o.*, u.name, u.segment, u.region AS user_region, u.lifetime_value\nFROM orders o\nINNER JOIN users u ON o.user_id = u.user_id;' },
     ] : []),
     ...(transformed ? [
       { id: 6, type: 'sql' as NbCellType, label: 'Metric: return_on_spend',
+        instruction: 'Calculates revenue generated per unit of ad spend.',
         query: '-- Return on Spend metric\nSELECT\n  SUM(o.amount) / NULLIF(c.spend, 0) AS return_on_spend\nFROM orders o\nLEFT JOIN campaigns c ON o.campaign_id = c.campaign_id;' },
     ] : []),
     ...(healthy ? [
       { id: 7, type: 'python' as NbCellType, label: 'Transform: normalize dates',
+        instruction: 'Standardizes date formats across all source tables for consistent querying.',
         query: "# Normalize date formats across all tables\nimport pandas as pd\n\norders['order_date'] = pd.to_datetime(orders['order_date'], format='%m/%d/%Y')\ncampaigns['start_date'] = pd.to_datetime(campaigns['start_date'])\nusers['signup_date'] = pd.to_datetime(users['signup_date'], format='%Y/%m/%d')" },
       { id: 8, type: 'sql' as NbCellType, label: 'Deduplicate: orders',
+        instruction: 'Removes duplicate order records, keeping the most recent version.',
         query: '-- Remove duplicate orders\nSELECT DISTINCT *\nFROM (\n  SELECT *, ROW_NUMBER() OVER (PARTITION BY order_id ORDER BY order_date DESC) AS rn\n  FROM orders\n)\nWHERE rn = 1;' },
     ] : []),
   ];
@@ -807,6 +816,8 @@ const NotebookView: React.FC<{ project: ProjectState }> = ({ project }) => {
   const [editingCell, setEditingCell] = useState<number | null>(null);
   const [draftValue, setDraftValue]   = useState('');
   const [cellValues, setCellValues]   = useState<Record<number, string>>({});
+  const [extraCells, setExtraCells]   = useState<NbCellDef[]>([]);
+  const [showAddMenu, setShowAddMenu] = useState(false);
 
   const getValue = (cell: NbCellDef) => cellValues[cell.id] ?? cell.query;
 
@@ -820,6 +831,24 @@ const NotebookView: React.FC<{ project: ProjectState }> = ({ project }) => {
   };
   const handleCancel = () => setEditingCell(null);
 
+  const addCell = (type: NbCellType) => {
+    const defaults: Record<NbCellType, string> = {
+      sql:    '-- Write SQL here\n',
+      python: '# Write Python here\n',
+      text:   'Add description here',
+    };
+    const labels: Record<NbCellType, string> = {
+      sql:    'New SQL cell',
+      python: 'New Python cell',
+      text:   'New text cell',
+    };
+    const newId = 100 + extraCells.length;
+    setExtraCells(prev => [...prev, { id: newId, type, label: labels[type], query: defaults[type] }]);
+    setShowAddMenu(false);
+  };
+
+  const allCells = [...cells, ...extraCells];
+
   if (!hasData) {
     return (
       <EmptyCenter
@@ -832,24 +861,74 @@ const NotebookView: React.FC<{ project: ProjectState }> = ({ project }) => {
 
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: sp.D }}>
-      <div style={{ marginBottom: sp.D }}>
-        <Button variant="secondary" size="small" icon="plus" iconPosition="leading">Add cell</Button>
-      </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: sp.C }}>
-        {cells.map(cell => (
-          <NotebookCell
-            key={cell.id}
-            type={cell.type}
-            label={cell.label}
-            value={getValue(cell)}
-            isEditing={editingCell === cell.id}
-            draftValue={editingCell === cell.id ? draftValue : ''}
-            onEdit={() => handleEdit(cell)}
-            onRun={() => handleRun(cell.id)}
-            onCancel={handleCancel}
-            onDraftChange={setDraftValue}
-          />
+        {allCells.map(cell => (
+          <div key={cell.id} style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+            {cell.instruction && (
+              <p style={{ margin: 0, fontSize: fs.xs, color: c['content-secondary'], lineHeight: '16px', paddingLeft: 4 }}>{cell.instruction}</p>
+            )}
+            <NotebookCell
+              type={cell.type}
+              label={cell.label}
+              value={getValue(cell)}
+              isEditing={editingCell === cell.id}
+              draftValue={editingCell === cell.id ? draftValue : ''}
+              onEdit={() => handleEdit(cell)}
+              onRun={() => handleRun(cell.id)}
+              onCancel={handleCancel}
+              onDraftChange={setDraftValue}
+            />
+          </div>
         ))}
+
+        {/* Add new code block */}
+        <div style={{ position: 'relative', marginTop: sp.B }}>
+          <button
+            onClick={() => setShowAddMenu(prev => !prev)}
+            style={{
+              width: '100%', padding: `${sp.B}px ${sp.C}px`,
+              border: `1px dashed ${c['border-divider']}`, borderRadius: 8,
+              background: 'transparent', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: sp.B,
+              fontSize: fs.xs, color: c['content-secondary'], fontFamily: ff.primary,
+            }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = c['border-default']; e.currentTarget.style.color = c['content-primary']; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = c['border-divider']; e.currentTarget.style.color = c['content-secondary']; }}
+          >
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+              <path d="M6 1v10M1 6h10" />
+            </svg>
+            Add new code block
+          </button>
+
+          {showAddMenu && (
+            <div style={{
+              position: 'absolute', bottom: '100%', left: 0, marginBottom: 4,
+              background: c['background-base'], border: `1px solid ${c['border-divider']}`,
+              borderRadius: 8, boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+              overflow: 'hidden', minWidth: 160, zIndex: 10,
+            }}>
+              {(['sql', 'python', 'text'] as NbCellType[]).map(type => (
+                <button
+                  key={type}
+                  onClick={() => addCell(type)}
+                  style={{
+                    width: '100%', padding: `${sp.B}px ${sp.C}px`,
+                    border: 'none', background: 'transparent', cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', gap: sp.B,
+                    fontSize: fs.xs, color: c['content-primary'],
+                    fontFamily: ff.primary, textAlign: 'left',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = c['background-subtle']; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+                >
+                  <span style={{ width: 8, height: 8, borderRadius: 2, background: NB_CELL_ACCENT[type], flexShrink: 0 }} />
+                  {type === 'sql' ? 'SQL cell' : type === 'python' ? 'Python cell' : 'Text cell'}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -897,7 +976,7 @@ const NotebookCell: React.FC<NotebookCellProps> = ({
         <div style={{ display: 'flex', alignItems: 'center', gap: sp.B }}>
           <span style={{
             fontSize: 10, fontWeight: fw.semibold,
-            color: type === 'sql' ? '#7C3AED' : '#D97706',
+            color: type === 'sql' ? '#7C3AED' : type === 'python' ? '#D97706' : c['content-secondary'],
             textTransform: 'uppercase', letterSpacing: '0.06em',
           }}>{type}</span>
           <span style={{ fontSize: fs.xs, color: c['content-primary'], fontWeight: fw.medium }}>{label}</span>
