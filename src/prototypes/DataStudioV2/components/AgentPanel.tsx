@@ -1456,7 +1456,6 @@ Want me to go ahead — add the table, create the join, and populate the columns
   day_zero_parse_use_case: {
     steps: [
       { label: 'Parsing your use case…', detail: '' },
-      { label: 'Identifying relevant metrics and dimensions…', detail: '' },
       { label: 'Preparing clarifying questions…', detail: '' },
     ],
     duration: '~2s',
