@@ -4935,91 +4935,167 @@ const ColumnPickerDropdown: React.FC<{ options: ColumnOption[]; selected: string
 
 const SchemaDriftResolutionCard: React.FC<{ msgId: string; result?: string; onAction: (action: string, msgId: string) => void; onOpenObject?: (name: string, highlightCol?: string) => void }> = ({ msgId, result, onAction, onOpenObject }) => {
   const locked = !!result;
-  const didRemap  = result === 'drift_resolution_sync';
-  const didRemove = result === 'drift_resolution_remove';
-  const [selections, setSelections] = React.useState<Record<string, string>>({ cost_center: 'cost_bucket', allocation_type: 'cost_category' });
+  const didRemap = result === 'drift_resolution_sync';
+
+  const [decisions, setDecisions] = React.useState<Record<string, 'remap' | 'remove'>>({
+    cost_center: 'remap', allocation_type: 'remap',
+  });
+  const [remapTo, setRemapTo] = React.useState<Record<string, string>>({
+    cost_center: 'cost_bucket', allocation_type: 'cost_category',
+  });
   const [openPicker, setOpenPicker] = React.useState<string | null>(null);
-  const [openGroups, setOpenGroups] = React.useState<Set<string>>(new Set());
-  const suggested: Record<string, string> = { cost_center: 'cost_bucket', allocation_type: 'cost_category' };
-  const removedTypes: Record<string, string> = { cost_center: 'string', allocation_type: 'string' };
-  const mappings = ['cost_center', 'allocation_type'];
-  const toggleGroup = (label: string) => setOpenGroups(prev => { const n = new Set(prev); n.has(label) ? n.delete(label) : n.add(label); return n; });
-  const impactGroups = [
-    { label: 'Answers', count: 4, dot: '#2563eb', mono: false, examples: ['Q4 Cost Analysis', 'Budget Variance Report', 'FY Spend Summary', 'Regional Cost Breakdown'] },
-    { label: 'Liveboards', count: 3, dot: '#7c3aed', mono: false, examples: ['Finance Operations Dashboard', 'Executive Cost View', 'FnOps Monthly Review'] },
-    { label: 'Formulas', count: 2, dot: '#d97706', mono: true, examples: ['channel_cost_ratio', 'cost_per_campaign'] },
+
+  const columns = [
+    { key: 'cost_center',     suggested: 'cost_bucket',   dependents: 9, note: 'Same data, new name — exact type match' },
+    { key: 'allocation_type', suggested: 'cost_category', dependents: 6, note: 'Same data, new name — exact type match' },
   ];
+  const dependentGroups = [
+    { label: 'Answers',    dot: '#2563eb', mono: false, items: ['Q4 Cost Analysis', 'Budget Variance Report', 'FY Spend Summary', 'Regional Cost Breakdown'], highlightCol: 'cost_center' },
+    { label: 'Liveboards', dot: '#7c3aed', mono: false, items: ['Finance Operations Dashboard', 'Executive Cost View', 'FnOps Monthly Review'], highlightCol: 'cost_center' },
+    { label: 'Formulas',   dot: '#d97706', mono: true,  items: ['channel_cost_ratio', 'cost_per_campaign'], highlightCol: 'cost_center' },
+  ];
+  const suggested: Record<string, string> = { cost_center: 'cost_bucket', allocation_type: 'cost_category' };
+
+  const removedCols = columns.filter(c => decisions[c.key] === 'remove');
+  const breakCount = removedCols.reduce((acc, col) => Math.max(acc, col.dependents), 0);
+  const allRemap = removedCols.length === 0;
+  const ctaLabel = allRemap ? 'Apply mapping → all 9 continue' : removedCols.length === columns.length ? 'Apply — all 9 will break' : `Apply — ${breakCount} will break`;
+  const ctaBg = allRemap ? c['content-brand'] : '#dc2626';
+
   return (
     <GenUICard locked={locked}>
       <GenUISection>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <GenUIBadge variant={locked ? 'green' : 'red'}>{didRemap ? '✓ Remapped to replacements' : didRemove ? '✓ Removed from model' : '2 columns removed from source'}</GenUIBadge>
-          <button onClick={() => onOpenObject?.('FnOps Cost Model', 'cost_center')} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 11, color: '#2563eb', fontFamily: ff.primary }} onMouseEnter={e => { e.currentTarget.style.textDecoration = 'underline'; }} onMouseLeave={e => { e.currentTarget.style.textDecoration = 'none'; }}>FnOps Cost Model <span style={{ opacity: 0.5, fontSize: 10 }}>↗</span></button>
+          <GenUIBadge variant={locked ? 'green' : 'red'}>
+            {didRemap ? '✓ Mapping applied' : locked ? '✓ Columns removed' : '2 columns removed from source'}
+          </GenUIBadge>
+          <button onClick={() => onOpenObject?.('FnOps Cost Model', 'cost_center')} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 11, color: '#2563eb', fontFamily: ff.primary }} onMouseEnter={e => { e.currentTarget.style.textDecoration = 'underline'; }} onMouseLeave={e => { e.currentTarget.style.textDecoration = 'none'; }}>
+            FnOps Cost Model <span style={{ opacity: 0.5, fontSize: 10 }}>↗</span>
+          </button>
         </div>
       </GenUISection>
+
+      {!locked && (
+        <GenUISection bg="#f0f6ff">
+          <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+            <span style={{ fontSize: 13, flexShrink: 0, marginTop: 1 }}>✦</span>
+            <div>
+              <div style={{ fontSize: 12.5, fontWeight: fw.semibold, color: '#1d4ed8', marginBottom: 3 }}>Both replacements carry the same data under new names.</div>
+              <div style={{ fontSize: 12, color: '#3b5fa0', lineHeight: 1.55 }}>Map them and all 9 dependents continue without any changes — they'll never know the columns were renamed. Removing either one breaks the dependents that reference it.</div>
+            </div>
+          </div>
+        </GenUISection>
+      )}
+
       <GenUISection>
-        <div style={{ fontSize: 11, fontWeight: fw.semibold, color: '#888', marginBottom: 10 }}>{didRemove ? 'Removed' : 'Mapping'}</div>
-        <div style={{ display: 'flex', flexDirection: 'column' as const }}>
-          {mappings.map((col, i) => {
-            const sel = selections[col]; const isSuggested = sel === suggested[col]; const isOpen = openPicker === col;
+        <div style={{ fontSize: 11, fontWeight: fw.semibold, color: '#888', marginBottom: 10, textTransform: 'uppercase' as const, letterSpacing: '0.04em' }}>
+          {locked ? (didRemap ? 'Mapped columns' : 'Removed columns') : 'Decide per column'}
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 12 }}>
+          {columns.map(col => {
+            const decision = decisions[col.key];
+            const isRemap = decision === 'remap';
+            const isRemoved = decision === 'remove';
+            const mappedTo = remapTo[col.key];
+            const isPickerOpen = openPicker === col.key;
             return (
-              <div key={col} style={{ padding: '8px 0', borderBottom: i < mappings.length - 1 ? '1px solid rgba(0,0,0,0.05)' : 'none' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <span style={{ fontFamily: ff.mono, fontSize: 12, fontWeight: fw.medium, color: didRemove ? '#aaa' : '#1a1a1a', textDecoration: didRemove ? 'line-through' : 'none', minWidth: 130, flexShrink: 0 }}>{col}</span>
-                  {!didRemove && (<>
-                    <svg width="14" height="10" viewBox="0 0 14 10" fill="none" style={{ flexShrink: 0, color: '#bbb' }}><path d="M1 5h11M8 1l4 4-4 4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                    <div style={{ position: 'relative' as const, flex: 1 }}>
-                      {locked ? <span style={{ fontFamily: ff.mono, fontSize: 12, color: '#16a34a', fontWeight: fw.medium }}>{sel}</span> : (
-                        <button onClick={() => setOpenPicker(isOpen ? null : col)} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontFamily: ff.mono, fontSize: 12, fontWeight: fw.medium, color: '#16a34a', background: '#f0fdf4', border: `1px solid ${isOpen ? '#16a34a' : '#bbf7d0'}`, borderRadius: 5, padding: '2px 8px', cursor: 'pointer', lineHeight: 1.5 }}>
-                          {sel}<svg width="9" height="6" viewBox="0 0 9 6" fill="none"><path d="M1 1l3.5 3.5L8 1" stroke="#16a34a" strokeWidth="1.3" strokeLinecap="round"/></svg>
-                        </button>
-                      )}
-                      {isOpen && <ColumnPickerDropdown options={AVAILABLE_COLUMNS} selected={sel} suggested={suggested[col]} removedType={removedTypes[col]} onSelect={name => { setSelections(s => ({ ...s, [col]: name })); setOpenPicker(null); }} />}
-                    </div>
-                    {!locked && isSuggested && <span style={{ fontSize: 10, color: '#16a34a', background: '#f0fdf4', padding: '1px 6px', borderRadius: 4, flexShrink: 0, fontWeight: fw.medium }}>Suggested</span>}
-                    {!locked && !isSuggested && <button onClick={() => setSelections(s => ({ ...s, [col]: suggested[col] }))} style={{ fontSize: 10, color: '#999', background: 'transparent', border: 'none', cursor: 'pointer', padding: '1px 4px', flexShrink: 0, fontFamily: ff.primary }}>Reset</button>}
-                    {locked && <span style={{ fontSize: 12, color: '#16a34a', marginLeft: 'auto' }}>✓</span>}
-                  </>)}
-                  {didRemove && <span style={{ fontSize: 11, color: '#bbb', marginLeft: 'auto' }}>last queried 60d ago</span>}
+              <div key={col.key} style={{ background: isRemoved ? '#fff5f5' : '#fafafa', border: `1px solid ${isRemoved ? '#fecaca' : 'rgba(0,0,0,0.07)'}`, borderRadius: 8, padding: '10px 12px', transition: 'background 0.15s, border-color 0.15s' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <span style={{ fontFamily: ff.mono, fontSize: 12.5, fontWeight: fw.semibold, color: isRemoved ? '#dc2626' : '#1a1a1a', textDecoration: locked && !didRemap ? 'line-through' : 'none' }}>{col.key}</span>
+                  <span style={{ fontSize: 11, color: '#aaa' }}>removed Jan 14</span>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-      </GenUISection>
-      <GenUISection>
-        <div style={{ fontSize: 11, fontWeight: fw.semibold, color: '#888', marginBottom: 6 }}>{locked ? (didRemove ? 'References cleared' : 'Dependents remapped') : 'Impact if removed / remapped'}</div>
-        <div style={{ display: 'flex', flexDirection: 'column' as const }}>
-          {impactGroups.map((group, i) => {
-            const isOpen = openGroups.has(group.label);
-            return (
-              <div key={group.label} style={{ borderBottom: i < impactGroups.length - 1 ? '1px solid rgba(0,0,0,0.06)' : 'none' }}>
-                <button onClick={() => !locked && toggleGroup(group.label)} style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '9px 0', background: 'none', border: 'none', cursor: locked ? 'default' : 'pointer', textAlign: 'left' as const }}>
-                  <span style={{ width: 7, height: 7, borderRadius: '50%', background: group.dot, flexShrink: 0 }} />
-                  <span style={{ flex: 1, fontSize: 13, color: '#222', fontWeight: fw.medium }}>{group.label}</span>
-                  <span style={{ fontSize: 13, fontWeight: fw.semibold, color: '#1a1a1a', marginRight: locked ? 0 : 6 }}>{group.count}</span>
-                  {!locked && <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0, color: '#999', transition: 'transform 0.15s', transform: isOpen ? 'rotate(180deg)' : 'none' }}><path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-                </button>
-                {isOpen && !locked && (
-                  <div style={{ paddingLeft: 17, paddingBottom: 10 }}>
-                    {group.examples.map((name, j) => (
-                      <div key={name} style={{ fontSize: 13, lineHeight: 1.6, paddingTop: j === 0 ? 0 : 2, display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <span style={{ color: '#ccc', fontSize: 10 }}>—</span>
-                        <button onClick={() => onOpenObject?.(name)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left' as const, ...(group.mono ? { fontFamily: ff.mono, fontSize: 12, color: '#2563eb' } : { fontFamily: ff.primary, fontSize: 13, color: '#2563eb' }), textDecoration: 'none', lineHeight: 1.6 }}
-                          onMouseEnter={e => { e.currentTarget.style.textDecoration = 'underline'; }} onMouseLeave={e => { e.currentTarget.style.textDecoration = 'none'; }}>{name}</button>
-                      </div>
-                    ))}
+                {locked ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    {didRemap ? (
+                      <>
+                        <svg width="14" height="10" viewBox="0 0 14 10" fill="none" style={{ color: '#16a34a', flexShrink: 0 }}><path d="M1 5h11M8 1l4 4-4 4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        <span style={{ fontFamily: ff.mono, fontSize: 12, color: '#16a34a', fontWeight: fw.medium }}>{mappedTo}</span>
+                        <span style={{ fontSize: 11, color: '#16a34a', marginLeft: 'auto' }}>✓</span>
+                      </>
+                    ) : (
+                      <span style={{ fontSize: 11.5, color: '#dc2626' }}>Removed — references cleared</span>
+                    )}
                   </div>
+                ) : (
+                  <>
+                    <div style={{ display: 'flex', gap: 6, marginBottom: isRemap ? 6 : 0 }}>
+                      <div style={{ position: 'relative' as const, flex: 1 }}>
+                        <button
+                          onClick={() => { setDecisions(d => ({ ...d, [col.key]: 'remap' })); if (isRemap) setOpenPicker(isPickerOpen ? null : col.key); }}
+                          style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 6, padding: '5px 9px', borderRadius: 6, border: `1.5px solid ${isRemap ? '#16a34a' : 'rgba(0,0,0,0.1)'}`, background: isRemap ? '#f0fdf4' : '#fff', color: isRemap ? '#16a34a' : '#666', fontSize: 12, fontWeight: isRemap ? fw.semibold : fw.regular, cursor: 'pointer', fontFamily: ff.primary, transition: 'all 0.12s' }}
+                        >
+                          {isRemap && <span style={{ fontSize: 11 }}>✓</span>}
+                          <span style={{ flex: 1, textAlign: 'left' as const }}>Remap to</span>
+                          <span style={{ fontFamily: ff.mono, fontSize: 11.5, color: isRemap ? '#16a34a' : '#999' }}>{mappedTo}</span>
+                          {isRemap && <svg width="9" height="6" viewBox="0 0 9 6" fill="none" style={{ flexShrink: 0 }}><path d="M1 1l3.5 3.5L8 1" stroke="#16a34a" strokeWidth="1.3" strokeLinecap="round"/></svg>}
+                        </button>
+                        {isPickerOpen && (
+                          <ColumnPickerDropdown options={AVAILABLE_COLUMNS} selected={mappedTo} suggested={suggested[col.key]} removedType="string" onSelect={name => { setRemapTo(r => ({ ...r, [col.key]: name })); setOpenPicker(null); }} />
+                        )}
+                      </div>
+                      <button
+                        onClick={() => { setDecisions(d => ({ ...d, [col.key]: 'remove' })); setOpenPicker(null); }}
+                        style={{ padding: '5px 10px', borderRadius: 6, flexShrink: 0, border: `1.5px solid ${isRemoved ? '#dc2626' : 'rgba(0,0,0,0.1)'}`, background: isRemoved ? '#fef2f2' : '#fff', color: isRemoved ? '#dc2626' : '#888', fontSize: 12, fontWeight: isRemoved ? fw.semibold : fw.regular, cursor: 'pointer', fontFamily: ff.primary, transition: 'all 0.12s', whiteSpace: 'nowrap' as const }}
+                      >
+                        {isRemoved ? '✕ Remove it' : 'Remove it'}
+                      </button>
+                    </div>
+                    <div style={{ fontSize: 11, color: isRemap ? '#16a34a' : '#dc2626', lineHeight: 1.4 }}>
+                      {isRemap ? col.note : `${col.dependents} dependents that reference ${col.key} will break`}
+                    </div>
+                  </>
                 )}
               </div>
             );
           })}
         </div>
       </GenUISection>
+
       <GenUISection last={locked}>
-        {!locked && <div style={{ fontSize: 11, color: '#888', display: 'flex', alignItems: 'center', gap: 5 }}><span style={{ color: '#d97706' }}>ⓘ</span> Both columns last queried 60 days ago — low impact to remove</div>}
+        <div style={{ fontSize: 11, fontWeight: fw.semibold, color: '#888', marginBottom: 10, textTransform: 'uppercase' as const, letterSpacing: '0.04em' }}>
+          {locked ? (didRemap ? 'Dependents remapped' : 'Dependents broken') : '9 dependents affected'}
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 10 }}>
+          {dependentGroups.map(group => (
+            <div key={group.label}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: group.dot, flexShrink: 0 }} />
+                <span style={{ fontSize: 11, fontWeight: fw.semibold, color: '#888' }}>{group.label}</span>
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 6, paddingLeft: 12 }}>
+                {group.items.map(name => (
+                  <button key={name} onClick={() => onOpenObject?.(name, group.highlightCol)}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 9px', borderRadius: 20, border: '1px solid rgba(0,0,0,0.1)', background: locked && didRemap ? '#f0fdf4' : locked ? '#fff5f5' : '#fff', cursor: 'pointer', fontFamily: group.mono ? ff.mono : ff.primary, fontSize: group.mono ? 11 : 12, color: '#2563eb', fontWeight: fw.medium, transition: 'background 0.1s' }}
+                    onMouseEnter={e => { e.currentTarget.style.background = '#eff6ff'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = locked && didRemap ? '#f0fdf4' : locked ? '#fff5f5' : '#fff'; }}
+                  >
+                    {name} <span style={{ opacity: 0.4, fontSize: 9 }}>↗</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
       </GenUISection>
-      {!locked && <GenUIActions locked={false} secondary={{ label: 'Remove both', action: 'drift_resolution_remove', msgId, onAction }} primary={{ label: 'Apply mapping →', action: 'drift_resolution_sync', msgId, onAction }} />}
+
+      {!locked && (
+        <GenUISection last bg="rgba(0,0,0,0.015)">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            {!allRemap && <span style={{ fontSize: 11, color: '#dc2626', flex: 1 }}>{removedCols.length === columns.length ? 'All dependents will break — consider remapping instead' : `${breakCount} dependents will break from the removed column${removedCols.length > 1 ? 's' : ''}`}</span>}
+            {allRemap && <span style={{ fontSize: 11, color: '#16a34a', flex: 1 }}>All 9 dependents continue working ✓</span>}
+            <button onClick={() => onAction(allRemap ? 'drift_resolution_sync' : 'drift_resolution_remove', msgId)} style={{ padding: '6px 16px', borderRadius: 6, flexShrink: 0, border: 'none', background: ctaBg, color: '#fff', fontSize: 12, fontWeight: fw.semibold, cursor: 'pointer', fontFamily: ff.primary, transition: 'background 0.15s' }}>
+              {ctaLabel}
+            </button>
+          </div>
+        </GenUISection>
+      )}
+      {locked && (
+        <GenUISection last bg="rgba(0,0,0,0.015)">
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <GenUIBadge variant="green">✓ {didRemap ? 'Mapping applied' : 'Columns removed'}</GenUIBadge>
+          </div>
+        </GenUISection>
+      )}
     </GenUICard>
   );
 };
