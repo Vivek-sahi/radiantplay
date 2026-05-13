@@ -51,6 +51,20 @@ The product moved away from a side-panel co-pilot toward a full-screen agent-fir
 
 ---
 
+### 2026-05-13 (session 111)
+
+**Notebook view polish — instructions, add block button, run animation + version bump.**
+
+- **Cell instructions**: subtle grey context text above each cell card in both PlanPanel (code view) and model notebook (CenterPanel). Explains why the cell exists. New user-added cells have no instruction.
+- **"Add new code block" button**: dashed button at the bottom of both views. Opens a dropdown with SQL / Python / Text options; appends a new editable cell. Replaced the old "Add cell" Radiant button at the top of the model notebook.
+- **Python cell type**: added to both views (`NbCellType` in CenterPanel, `CellType` in PlanPanel). Amber accent colour.
+- **Run animation (PlanPanel only)**: clicking Run → 700ms spinner + "Running…" → green flash + "✓ Applied" for 600ms. Left border + header background transition to green during flash.
+- **Version bump (PlanPanel only)**: `localVersion` state starts at `plan.version`, increments by 0.1 on each run. Identity row shows `v1.0 → v1.1 → v1.2`. Parent `planData.version` is untouched — purely local state, no side effects.
+- Committed and deployed to Vercel (https://radiantplay-nine.vercel.app).
+- Build: clean ✓
+
+---
+
 ### 2026-05-13 (session 110)
 
 **Working steps fix — day_zero_parse_use_case.**
