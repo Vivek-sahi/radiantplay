@@ -9,8 +9,23 @@ interface PlanPanelProps {
 
 type PanelTab = 'preview' | 'code';
 type SectionKey = 'goal' | 'tables' | 'relationships' | 'columns' | 'formulas' | 'questions';
+type CellType = 'sql' | 'text';
 
-// ── SQL generation ─────────────────────────────────────────────────────────────
+interface CellDef {
+  label: string;
+  type: CellType;
+}
+
+const CELL_DEFS: CellDef[] = [
+  { label: 'Goal',             type: 'text' },
+  { label: 'Tables',           type: 'sql'  },
+  { label: 'Relationships',    type: 'sql'  },
+  { label: 'Columns',          type: 'sql'  },
+  { label: 'Formulas',         type: 'sql'  },
+  { label: 'Sample questions', type: 'text' },
+];
+
+// ── SQL / text generation ──────────────────────────────────────────────────────
 
 function makeAliases(tables: PlanTable[]): Record<string, string> {
   const used = new Set<string>();
@@ -18,68 +33,108 @@ function makeAliases(tables: PlanTable[]): Record<string, string> {
   for (const t of tables) {
     let a = t.name[0].toLowerCase();
     if (used.has(a)) a = t.name.slice(0, 2).toLowerCase();
-    if (used.has(a)) a = t.name.slice(0, 3).toLowerCase();
     used.add(a);
     out[t.name] = a;
   }
   return out;
 }
 
-function genSourcesSQL(plan: PlanData): string {
+function genGoalText(plan: PlanData): string {
+  return plan.goal;
+}
+
+function genTablesSQL(plan: PlanData): string {
+  if (plan.tables.length === 0) return '';
+  const lines: string[] = ['-- Source tables', 'WITH'];
+  plan.tables.forEach((t, i) => {
+    const comma = i < plan.tables.length - 1 ? ',' : '';
+    const rowNote = t.rowCount ? `  -- ${t.rowCount}` : '';
+    lines.push(`  ${t.name} AS (SELECT * FROM ${t.schema}.${t.name})${comma}${rowNote}`);
+  });
+  return lines.join('\n');
+}
+
+function genRelationshipsSQL(plan: PlanData): string {
   if (plan.tables.length === 0) return '';
   const al = makeAliases(plan.tables);
   const primary = plan.tables[0];
   const pa = al[primary.name];
-  const baseCols = plan.columns.filter(col => col.type !== 'formula');
 
-  const selects = baseCols.map((col, i) => {
-    const alias = al[col.table] ?? col.table.slice(0, 1).toLowerCase();
-    const comma = i < baseCols.length - 1 ? ',' : '';
-    return `  ${alias}.${col.name}${comma}`;
-  });
+  const joinedCols = plan.columns
+    .filter(col => col.type !== 'formula' && col.table !== primary.name)
+    .map(col => {
+      const alias = al[col.table] ?? col.table.slice(0, 1).toLowerCase();
+      return `  ${alias}.${col.name}`;
+    });
 
-  const joins = plan.relationships.map(rel => {
-    const toTable = plan.tables.find(t => t.name === rel.toTable);
+  const lines: string[] = [
+    '-- Join conditions',
+    'SELECT',
+    `  ${pa}.*,`,
+    ...joinedCols.map((line, i) => line + (i < joinedCols.length - 1 ? ',' : '')),
+    `FROM ${primary.name} ${pa}`,
+  ];
+
+  plan.relationships.forEach(rel => {
     const ta = al[rel.toTable] ?? rel.toTable.slice(0, 1).toLowerCase();
-    return `${rel.joinType} ${toTable?.schema ?? primary.schema}.${rel.toTable} ${ta}\n  ON ${pa}.${rel.fromKey} = ${ta}.${rel.toKey}`;
+    lines.push(`${rel.joinType} ${rel.toTable} ${ta}  -- ${rel.matchRate}`);
+    lines.push(`  ON ${pa}.${rel.fromKey} = ${ta}.${rel.toKey}`);
   });
 
-  return ['SELECT', ...selects, `FROM ${primary.schema}.${primary.name} ${pa}`, ...joins].join('\n');
+  return lines.join('\n');
 }
 
 function genColumnsSQL(plan: PlanData): string {
   const dims = plan.columns.filter(col => col.type === 'dimension');
   const metrics = plan.columns.filter(col => col.type === 'metric');
-  const formulas = plan.columns.filter(col => col.type === 'formula');
-  const viewName = plan.modelName.toLowerCase().replace(/\s+/g, '_') + '_base';
-  const lines: string[] = ['SELECT'];
+  const lines: string[] = ['-- Dimensions and metrics', 'SELECT'];
 
   if (dims.length > 0) {
     lines.push('  -- Dimensions');
     dims.forEach((col, i) => {
-      const hasMore = i < dims.length - 1 || metrics.length > 0 || formulas.length > 0;
+      const hasMore = i < dims.length - 1 || metrics.length > 0;
       lines.push(`  ${col.name}${hasMore ? ',' : ''}`);
     });
   }
   if (metrics.length > 0) {
     lines.push('  -- Metrics');
     metrics.forEach((col, i) => {
-      const hasMore = i < metrics.length - 1 || formulas.length > 0;
-      lines.push(`  ${col.name}${hasMore ? ',' : ''}`);
+      lines.push(`  ${col.name}${i < metrics.length - 1 ? ',' : ''}`);
     });
   }
-  if (formulas.length > 0) {
-    lines.push('  -- Formulas');
-    formulas.forEach((col, i) => {
-      lines.push(`  ${col.formula || col.name} AS ${col.name}${i < formulas.length - 1 ? ',' : ''}`);
-    });
-  }
+
+  const viewName = plan.modelName.toLowerCase().replace(/\s+/g, '_') + '_base';
   lines.push(`FROM ${viewName}`);
   return lines.join('\n');
 }
 
-function genQuestionsSQL(plan: PlanData): string {
-  return plan.sampleQuestions.map((q, i) => `-- ${i + 1}. ${q}`).join('\n');
+function genFormulasSQL(plan: PlanData): string {
+  const formulas = plan.columns.filter(col => col.type === 'formula');
+  if (formulas.length === 0) return '-- No formula columns defined';
+  const lines: string[] = ['-- Calculated columns', 'SELECT', '  *,'];
+  formulas.forEach((col, i) => {
+    const comma = i < formulas.length - 1 ? ',' : '';
+    lines.push(`  ${col.formula || col.name} AS ${col.name}${comma}  -- ${col.description}`);
+  });
+  const viewName = plan.modelName.toLowerCase().replace(/\s+/g, '_') + '_joined';
+  lines.push(`FROM ${viewName}`);
+  return lines.join('\n');
+}
+
+function genSampleQuestionsText(plan: PlanData): string {
+  return plan.sampleQuestions.map((q, i) => `${i + 1}. ${q}`).join('\n');
+}
+
+function genCellValue(plan: PlanData, index: number): string {
+  switch (index) {
+    case 0: return genGoalText(plan);
+    case 1: return genTablesSQL(plan);
+    case 2: return genRelationshipsSQL(plan);
+    case 3: return genColumnsSQL(plan);
+    case 4: return genFormulasSQL(plan);
+    case 5: return genSampleQuestionsText(plan);
+    default: return '';
+  }
 }
 
 // ── SQL colorizer ──────────────────────────────────────────────────────────────
@@ -93,10 +148,26 @@ const SQL_KW = new Set([
 const SQL_KW_RE = /\b(SELECT|FROM|JOIN|LEFT|INNER|RIGHT|OUTER|ON|WHERE|AS|DISTINCT|OVER|PARTITION|BY|ORDER|GROUP|HAVING|WITH|SUM|COUNT|AVG|MAX|MIN|NULLIF|AND|OR|NOT|NULL|CASE|WHEN|THEN|ELSE|END|COALESCE)\b/g;
 
 const SqlLine: React.FC<{ line: string }> = ({ line }) => {
-  if (line.trim().startsWith('--')) {
+  // Comment: everything from -- to end of line
+  const commentIdx = line.indexOf('--');
+  if (commentIdx === 0) {
     return <span style={{ color: c['content-secondary'] }}>{line}</span>;
   }
-  const parts = line.split(new RegExp(SQL_KW_RE.source, 'g'));
+  if (commentIdx > 0) {
+    const code = line.slice(0, commentIdx);
+    const comment = line.slice(commentIdx);
+    return (
+      <span>
+        <SqlTokens text={code} />
+        <span style={{ color: c['content-secondary'] }}>{comment}</span>
+      </span>
+    );
+  }
+  return <SqlTokens text={line} />;
+};
+
+const SqlTokens: React.FC<{ text: string }> = ({ text }) => {
+  const parts = text.split(new RegExp(SQL_KW_RE.source, 'g'));
   return (
     <span>
       {parts.map((part, i) =>
@@ -108,10 +179,18 @@ const SqlLine: React.FC<{ line: string }> = ({ line }) => {
   );
 };
 
+// ── Cell accent colors ─────────────────────────────────────────────────────────
+
+const CELL_ACCENT: Record<CellType, string> = {
+  sql:  '#2770EF',
+  text: c['border-divider'],
+};
+
 // ── Code cell ──────────────────────────────────────────────────────────────────
 
 interface CodeCellProps {
   label: string;
+  type: CellType;
   value: string;
   isEditing: boolean;
   draftValue: string;
@@ -122,37 +201,45 @@ interface CodeCellProps {
 }
 
 const CodeCell: React.FC<CodeCellProps> = ({
-  label, value, isEditing, draftValue, onEdit, onRun, onCancel, onDraftChange,
+  label, type, value, isEditing, draftValue, onEdit, onRun, onCancel, onDraftChange,
 }) => {
-  const displayLines = isEditing ? draftValue.split('\n') : value.split('\n');
+  const [headerHovered, setHeaderHovered] = useState(false);
+  const displayValue = isEditing ? draftValue : value;
+  const lineCount = displayValue.split('\n').length;
 
   return (
-    <div style={{ border: `1px solid ${c['border-divider']}`, borderRadius: 8, backgroundColor: c['background-base'], overflow: 'hidden' }}>
+    <div style={{
+      border: `1px solid ${c['border-divider']}`,
+      borderLeft: `3px solid ${CELL_ACCENT[type]}`,
+      borderRadius: 8,
+      backgroundColor: c['background-base'],
+      overflow: 'hidden',
+    }}>
       {/* Cell header */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: `${sp.B}px ${sp.C}px`,
-        borderBottom: `1px solid ${c['border-divider']}`,
-      }}>
+      <div
+        style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: `6px ${sp.C}px`, borderBottom: `1px solid ${c['border-divider']}`,
+          backgroundColor: headerHovered && !isEditing ? c['background-subtle'] : c['background-base'],
+          transition: 'background-color 0.1s',
+        }}
+        onMouseEnter={() => setHeaderHovered(true)}
+        onMouseLeave={() => setHeaderHovered(false)}
+      >
         <div style={{ display: 'flex', alignItems: 'center', gap: sp.B }}>
           <span style={{
-            fontSize: fs.xs, backgroundColor: '#E0E7FF', color: '#3730A3',
-            padding: '1px 6px', borderRadius: 3, fontWeight: fw.semibold, textTransform: 'uppercase',
-          }}>SQL</span>
-          <span style={{ fontSize: fs.xs, fontWeight: fw.medium, color: c['content-primary'] }}>{label}</span>
+            fontSize: 10, fontWeight: fw.semibold, color: type === 'sql' ? '#7C3AED' : c['content-secondary'],
+            textTransform: 'uppercase', letterSpacing: '0.06em',
+          }}>{type}</span>
+          <span style={{ fontSize: fs.xs, color: c['content-primary'], fontWeight: fw.medium }}>{label}</span>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: sp.B }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, opacity: isEditing || headerHovered ? 1 : 0, transition: 'opacity 0.15s' }}>
           {isEditing ? (
             <>
               <button
                 onClick={onCancel}
-                style={{
-                  background: 'none', border: 'none', cursor: 'pointer',
-                  fontSize: fs.xs, color: c['content-secondary'], padding: '2px 6px', fontFamily: ff.primary,
-                }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: fs.xs, color: c['content-secondary'], padding: '2px 6px', fontFamily: ff.primary }}
               >
                 Cancel
               </button>
@@ -160,14 +247,12 @@ const CodeCell: React.FC<CodeCellProps> = ({
                 onClick={onRun}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 5,
-                  background: c['content-brand'], color: '#fff',
-                  border: 'none', borderRadius: 5, cursor: 'pointer',
+                  background: '#16a34a', color: '#fff', border: 'none',
+                  borderRadius: 5, cursor: 'pointer',
                   fontSize: fs.xs, fontWeight: fw.semibold, padding: '3px 10px', fontFamily: ff.primary,
                 }}
               >
-                <svg width="8" height="9" viewBox="0 0 8 9" fill="currentColor">
-                  <polygon points="0,0 8,4.5 0,9" />
-                </svg>
+                <svg width="7" height="8" viewBox="0 0 7 8" fill="currentColor"><polygon points="0,0 7,4 0,8" /></svg>
                 Run
               </button>
             </>
@@ -176,15 +261,15 @@ const CodeCell: React.FC<CodeCellProps> = ({
               onClick={onEdit}
               title="Edit cell"
               style={{
-                width: 26, height: 26, border: 'none', background: 'transparent',
+                width: 24, height: 24, border: 'none', background: 'transparent',
                 cursor: 'pointer', display: 'flex', alignItems: 'center',
                 justifyContent: 'center', borderRadius: 4,
                 color: c['content-secondary'], padding: 0,
               }}
-              onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
-              onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+              onMouseEnter={e => (e.currentTarget.style.color = c['content-primary'])}
+              onMouseLeave={e => (e.currentTarget.style.color = c['content-secondary'])}
             >
-              <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M11.5 2.5a1.5 1.5 0 0 1 2.1 2.1L5 13.1l-3 .9.9-3 8.6-8.5z" />
               </svg>
             </button>
@@ -200,29 +285,31 @@ const CodeCell: React.FC<CodeCellProps> = ({
           onChange={e => onDraftChange(e.target.value)}
           style={{
             width: '100%',
-            minHeight: Math.max(displayLines.length * 20 + 24, 80),
+            minHeight: Math.max(lineCount * 20 + 24, 80),
             padding: sp.C,
-            fontFamily: ff.mono,
+            fontFamily: type === 'sql' ? ff.mono : ff.primary,
             fontSize: fs.xs,
             color: c['content-primary'],
-            backgroundColor: c['background-sunken'],
-            border: 'none',
-            outline: 'none',
-            resize: 'vertical',
-            lineHeight: '20px',
+            backgroundColor: type === 'sql' ? c['background-sunken'] : c['background-base'],
+            border: 'none', outline: 'none',
+            resize: 'vertical', lineHeight: '20px',
             boxSizing: 'border-box',
           }}
         />
-      ) : (
-        <div style={{ padding: sp.C, fontFamily: ff.mono, fontSize: fs.xs, lineHeight: '20px' }}>
+      ) : type === 'sql' ? (
+        <div style={{ padding: sp.C, fontFamily: ff.mono, fontSize: fs.xs, lineHeight: '20px', backgroundColor: c['background-sunken'] }}>
           {value.split('\n').map((line, i) => (
             <div key={i} style={{ display: 'flex', gap: sp.C }}>
-              <span style={{ color: c['content-secondary'], userSelect: 'none', minWidth: 20, textAlign: 'right', flexShrink: 0 }}>
+              <span style={{ color: c['content-secondary'], userSelect: 'none', minWidth: 18, textAlign: 'right', flexShrink: 0, opacity: 0.5 }}>
                 {i + 1}
               </span>
               <SqlLine line={line} />
             </div>
           ))}
+        </div>
+      ) : (
+        <div style={{ padding: `${sp.C}px ${sp.D}px`, fontSize: fs.sm, color: c['content-primary'], lineHeight: '22px', whiteSpace: 'pre-wrap' }}>
+          {value}
         </div>
       )}
     </div>
@@ -258,19 +345,15 @@ const Section: React.FC<{
 
 // ── Main component ─────────────────────────────────────────────────────────────
 
-const CELL_LABELS = ['Sources & joins', 'Columns & metrics', 'Sample questions'] as const;
-
 const PlanPanel: React.FC<PlanPanelProps> = ({ plan, onClose }) => {
   const [activeTab, setActiveTab] = useState<PanelTab>('preview');
   const [collapsed, setCollapsed] = useState<Record<SectionKey, boolean>>({
     goal: false, tables: false, relationships: false, columns: false, formulas: false, questions: false,
   });
 
-  const [cellValues, setCellValues] = useState<[string, string, string]>(() => [
-    genSourcesSQL(plan),
-    genColumnsSQL(plan),
-    genQuestionsSQL(plan),
-  ]);
+  const [cellValues, setCellValues] = useState<string[]>(() =>
+    CELL_DEFS.map((_, i) => genCellValue(plan, i))
+  );
   const [editingCell, setEditingCell] = useState<number | null>(null);
   const [draftValue, setDraftValue] = useState('');
   const [appliedCells, setAppliedCells] = useState<Set<number>>(new Set());
@@ -281,7 +364,7 @@ const PlanPanel: React.FC<PlanPanelProps> = ({ plan, onClose }) => {
   const startEdit = (i: number) => { setEditingCell(i); setDraftValue(cellValues[i]); };
   const cancelEdit = () => { setEditingCell(null); setDraftValue(''); };
   const runCell = (i: number) => {
-    setCellValues(prev => { const next = [...prev] as [string, string, string]; next[i] = draftValue; return next; });
+    setCellValues(prev => { const next = [...prev]; next[i] = draftValue; return next; });
     setAppliedCells(prev => new Set(prev).add(i));
     setEditingCell(null);
     setDraftValue('');
@@ -303,6 +386,7 @@ const PlanPanel: React.FC<PlanPanelProps> = ({ plan, onClose }) => {
       <style>{`@keyframes ds-slide-in { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: translateX(0); } }`}</style>
       <div style={{
         flex: 1,
+        minHeight: 0,        // ← critical: lets flex:1 be constrained so inner scroll works
         backgroundColor: c['background-base'],
         border: `1px solid ${c['border-divider']}`,
         borderRadius: 10,
@@ -375,10 +459,8 @@ const PlanPanel: React.FC<PlanPanelProps> = ({ plan, onClose }) => {
               <div style={{
                 margin: `${sp.B}px ${sp.D}px`,
                 padding: `${sp.B}px ${sp.C}px`,
-                borderRadius: 6,
-                backgroundColor: c['background-information'],
-                fontSize: fs.xs,
-                color: c['content-brand'],
+                borderRadius: 6, backgroundColor: c['background-information'],
+                fontSize: fs.xs, color: c['content-brand'],
                 display: 'flex', alignItems: 'center', gap: sp.B,
               }}>
                 <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
@@ -402,9 +484,7 @@ const PlanPanel: React.FC<PlanPanelProps> = ({ plan, onClose }) => {
                       <span style={{ fontSize: fs.xs, fontWeight: fw.semibold, color: c['content-primary'], fontFamily: 'monospace' }}>
                         {table.schema}.{table.name}
                       </span>
-                      {table.rowCount && (
-                        <span style={{ fontSize: fs.xs, color: c['content-secondary'] }}>{table.rowCount}</span>
-                      )}
+                      {table.rowCount && <span style={{ fontSize: fs.xs, color: c['content-secondary'] }}>{table.rowCount}</span>}
                     </div>
                     <p style={{ margin: 0, fontSize: fs.sm, color: c['content-secondary'], lineHeight: '20px' }}>{table.description}</p>
                   </div>
@@ -492,10 +572,11 @@ const PlanPanel: React.FC<PlanPanelProps> = ({ plan, onClose }) => {
         {/* Code tab */}
         {activeTab === 'code' && (
           <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: sp.D, display: 'flex', flexDirection: 'column', gap: sp.C }}>
-            {CELL_LABELS.map((label, i) => (
+            {CELL_DEFS.map(({ label, type }, i) => (
               <CodeCell
                 key={i}
                 label={label}
+                type={type}
                 value={cellValues[i]}
                 isEditing={editingCell === i}
                 draftValue={editingCell === i ? draftValue : ''}
