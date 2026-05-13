@@ -51,6 +51,17 @@ The product moved away from a side-panel co-pilot toward a full-screen agent-fir
 
 ---
 
+### 2026-05-13 (session 110)
+
+**Working steps fix — day_zero_parse_use_case.**
+
+- Removed `'Identifying relevant metrics and dimensions…'` from the `day_zero_parse_use_case` steps array in `AgentPanel.tsx`. The step was inaccurate — the agent hasn't received enough context at that point to know what to look for.
+- Working steps now: `Parsing your use case…` → `Preparing clarifying questions…`
+- Committed and deployed to Vercel (https://radiantplay-nine.vercel.app).
+- Build: clean ✓
+
+---
+
 **Context — what was done (session 103):**
 - Object panel now opens as an artifact on the RIGHT of the agent (was incorrectly opening on the left, pushing agent right)
 - AgentPanel is a single instance — wrapper div resizes on split, no remount/state reset on object open
