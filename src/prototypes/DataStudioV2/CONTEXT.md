@@ -47,11 +47,7 @@ The product moved away from a side-panel co-pilot toward a full-screen agent-fir
 
 ### ~~1c. Wire blast radius flow for ins-d2; update ins-d3 to MultiModelDriftCard~~ — Done (session 108)
 
-### 3. Add code view to plan mode artifact — Next session
-
-**What:** The plan mode artifact (PlanPanel in Workspace) currently has no code view. Add a Code tab/view so users can see the TML or SQL that the agent is generating as part of the plan.
-
-**Status:** Not started — to discuss and design in next session.
+### ~~3. Add Preview/Code tabs to PlanPanel~~ — Done (session 109)
 
 ---
 
@@ -609,6 +605,18 @@ Original 6-situation arc (still valid for demo scripting) → `SCRIPT.md`
 ## Session log
 
 _Last 3 sessions. Full history → [SESSION_LOG.md](./SESSION_LOG.md)_
+
+---
+
+### 2026-05-13 (session 109)
+
+**PlanPanel — Preview/Code tabs.**
+
+- **Tab bar:** "Preview" | "Code" below the identity row. Active tab: `content-brand` color + 2px bottom border. Inactive: `content-secondary`.
+- **Preview tab:** existing accordion unchanged. When any code cell has been run, an info banner appears at top: "Some sections were last edited in code view."
+- **Code tab:** 3 SQL cells — Sources & joins / Columns & metrics / Sample questions. SQL generated dynamically from `plan` prop (table aliases, joins, column grouping by Dimension/Metric/Formula, sample questions as `-- N.` comments).
+- **Cell interaction:** pencil icon → edit mode (textarea, `background-sunken`, `ff.mono`); **Run ▶** (blue button) applies change + marks cell applied; **Cancel** discards draft. Read-only view: line numbers + keyword colorizer (SQL keywords purple, comments `content-secondary`).
+- Build: clean ✓
 
 ---
 
