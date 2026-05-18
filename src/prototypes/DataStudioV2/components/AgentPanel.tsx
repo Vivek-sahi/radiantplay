@@ -266,7 +266,7 @@ const SCRIPTS: Record<string, {
   executionGenUI?: string;  // genUI card to attach to the auto-complete response message
 }> = {
 
-  day_zero_generate_plan: {
+  scratch_generate_plan: {
     steps: [
       { label: 'Reviewing your requirements', detail: 'Reading your goals and use case from the clarifying questions.' },
       { label: 'Reading warehouse schemas', detail: 'Found 3 matching tables: orders, campaigns, users — covering transactions, attribution, and user profiles.' },
@@ -1453,7 +1453,7 @@ Want me to go ahead — add the table, create the join, and populate the columns
     },
   },
 
-  day_zero_parse_use_case: {
+  scratch_parse_use_case: {
     steps: [
       { label: 'Parsing your use case…', detail: '' },
       { label: 'Preparing clarifying questions…', detail: '' },
@@ -1465,7 +1465,7 @@ Want me to go ahead — add the table, create the join, and populate the columns
     stepDelay: 600,
   },
 
-  day_zero_understand_requirement: {
+  scratch_understand_requirement: {
     steps: [
       { label: 'Understanding your requirements…', detail: '' },
       { label: 'Identifying the right tables and metrics…', detail: '' },
@@ -1795,7 +1795,7 @@ function runDirectAdd(
 
 // ── Day Zero state type ───────────────────────────────────────────────────────
 
-type DayZeroPhase =
+type FromScratchPhase =
   | 'use_case_prompt'
   | 'clarify_q1'
   | 'plan_ready'
@@ -1805,7 +1805,7 @@ type DayZeroPhase =
 
 // Runs working steps for a Day Zero script, then calls onComplete.
 // Does not use the normal proposal/confirm path — callers handle the follow-up.
-function runDayZeroSteps(
+function runFromScratchSteps(
   scriptKey: string,
   userText: string | undefined,
   setMessages: React.Dispatch<React.SetStateAction<AgentMessage[]>>,
@@ -2078,7 +2078,7 @@ interface AgentPanelProps {
   width?: number;
   selectedColumns?: string[];
   onColumnRemove?: (name: string) => void;
-  isDayZero?: boolean;
+  isFromScratch?: boolean;
   isDbtReview?: boolean;
   onOpenPlan?: (plan: PlanData) => void;
   onOpenQualityPlan?: () => void;
@@ -2091,14 +2091,14 @@ interface AgentPanelProps {
   onOpenObject?: (name: string, highlightCol?: string) => void;
 }
 
-const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, setMessages, initialPrompt, onBuildComplete, externalMessage, onExternalMessageHandled, externalMessageAttachment, injectInput, onInjectInputHandled, width = 340, selectedColumns, onColumnRemove, isDayZero, isDbtReview, onOpenPlan, onOpenQualityPlan, onBuildStart, fullPage = false, onBack, initialFlow, initialMessage, onInsightResolved, onOpenObject }) => {
+const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, setMessages, initialPrompt, onBuildComplete, externalMessage, onExternalMessageHandled, externalMessageAttachment, injectInput, onInjectInputHandled, width = 340, selectedColumns, onColumnRemove, isFromScratch, isDbtReview, onOpenPlan, onOpenQualityPlan, onBuildStart, fullPage = false, onBack, initialFlow, initialMessage, onInsightResolved, onOpenObject }) => {
   const [pendingAction, setPending]     = useState<PendingAction | null>(null);
   const [isProcessing, setProcessing]   = useState(false);
   const [planModalOpen, setPlanModalOpen] = useState(false);
   const [prepSuggestions, setPrepSuggestions] = useState<PrepSuggestion[]>(() =>
     PREP_SUGGESTIONS.map(s => ({ ...s }))
   );
-  const [dayZeroPhase, setDayZeroPhase] = useState<DayZeroPhase | null>(isDayZero ? 'use_case_prompt' : null);
+  const [fromScratchPhase, setFromScratchPhase] = useState<FromScratchPhase | null>(isFromScratch ? 'use_case_prompt' : null);
   const [planVersion, setPlanVersion]    = useState(1);
   const [agentMode, setAgentMode]        = useState<'build' | 'test'>('build');
   const [connFilter, setConnFilter]      = useState<string | null>(null);
@@ -2129,16 +2129,16 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
   useEffect(() => {
     if (!initialPrompt || initialPromptFiredRef.current) return;
     initialPromptFiredRef.current = true;
-    if (isDayZero) {
+    if (isFromScratch) {
       setMessages([{ id: `u-${Date.now()}`, type: 'user', content: initialPrompt }]);
       setProcessing(true);
       setTimeout(() => {
-        runDayZeroSteps('day_zero_parse_use_case', initialPrompt, setMessages, () => {
+        runFromScratchSteps('scratch_parse_use_case', initialPrompt, setMessages, () => {
           setMessages(prev => [...prev, {
             id: `r-${Date.now()}`, type: 'response',
             content: `I can see you want to build a data model for ${project.name}. Before I start, a couple of quick questions to make sure it fits your use case — feel free to upload any docs or files too.`,
           }]);
-          setDayZeroPhase('clarify_q1');
+          setFromScratchPhase('clarify_q1');
           setProcessing(false);
         }, buildAbortRef);
       }, 300);
@@ -2446,15 +2446,15 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
   };
 
   const handleClarifyComplete = (answers: Record<number, string | null>) => {
-    setDayZeroPhase('confirm_build'); // hide the clarify card immediately
-    const parts = DAY_ZERO_QUESTIONS
+    setFromScratchPhase('confirm_build'); // hide the clarify card immediately
+    const parts = FROM_SCRATCH_QUESTIONS
       .map((q, i) => answers[i] != null ? `${q.question}\n${answers[i]}` : null)
       .filter(Boolean) as string[];
     if (parts.length > 0) {
       setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: parts.join('\n\n') }]);
     }
     setProcessing(true);
-    runDayZeroSteps('day_zero_generate_plan', undefined, setMessages, () => {
+    runFromScratchSteps('scratch_generate_plan', undefined, setMessages, () => {
       const plan: PlanData = { ...MOCK_PLAN_BASE, version: 1 };
       setPlanVersion(1);
       setMessages(prev => [...prev, {
@@ -2462,13 +2462,13 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
         content: "Here's the plan for your model. Review it — once you're happy, I'll start building.",
         planData: plan,
       }]);
-      setDayZeroPhase('plan_ready');
+      setFromScratchPhase('plan_ready');
       setProcessing(false);
     }, buildAbortRef);
   };
 
   const handleStartBuilding = () => {
-    setDayZeroPhase('done');
+    setFromScratchPhase('done');
     setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: 'Start building' }]);
     onBuildStart?.();
     setTimeout(() => {
@@ -2478,7 +2478,7 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
 
   const handleEditPlan = () => {
     setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: 'Edit the plan' }]);
-    setDayZeroPhase('plan_editing');
+    setFromScratchPhase('plan_editing');
     setTimeout(() => {
       setMessages(prev => [...prev, {
         id: `r-${Date.now()}`, type: 'response',
@@ -2491,17 +2491,17 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
     if (onOpenPlan) onOpenPlan(plan);
   };
 
-  const handleDayZeroInput = (input: string) => {
-    switch (dayZeroPhase) {
+  const handleFromScratchInput = (input: string) => {
+    switch (fromScratchPhase) {
       case 'use_case_prompt': {
         setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: input }]);
         setProcessing(true);
-        runDayZeroSteps('day_zero_parse_use_case', input, setMessages, () => {
+        runFromScratchSteps('scratch_parse_use_case', input, setMessages, () => {
           setMessages(prev => [...prev, {
             id: `r-${Date.now()}`, type: 'response',
             content: "A couple of quick questions before I start:",
           }]);
-          setDayZeroPhase('clarify_q1');
+          setFromScratchPhase('clarify_q1');
           setProcessing(false);
         }, buildAbortRef);
         break;
@@ -2520,7 +2520,7 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
             content: `Updated. Here's Plan v${newVersion} with your changes.`,
             planData: updatedPlan,
           }]);
-          setDayZeroPhase('plan_ready');
+          setFromScratchPhase('plan_ready');
           setProcessing(false);
         }, 1400);
         break;
@@ -2528,7 +2528,7 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
 
       case 'confirm_build': {
         setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: input }]);
-        setDayZeroPhase('done');
+        setFromScratchPhase('done');
         setTimeout(() => {
           runFlow('build_project', setMessages, setPending, setProcessing, setProject, input, buildAbortRef);
         }, 300);
@@ -2557,8 +2557,8 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
       return;
     }
     // Day Zero flow — route through dedicated handler, skip normal matchScript
-    if (dayZeroPhase && dayZeroPhase !== 'done') {
-      handleDayZeroInput(text);
+    if (fromScratchPhase && fromScratchPhase !== 'done') {
+      handleFromScratchInput(text);
       return;
     }
     setProcessing(true);
@@ -3247,9 +3247,9 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
       </div>
 
       {/* Clarify card — floats above prompt bar during Day Zero clarify phase */}
-      {dayZeroPhase === 'clarify_q1' && (
+      {fromScratchPhase === 'clarify_q1' && (
         <div style={{ padding: `0 ${sp.C}px`, flexShrink: 0 }}>
-          <DayClarifyCard questions={DAY_ZERO_QUESTIONS} onComplete={handleClarifyComplete} />
+          <DayClarifyCard questions={FROM_SCRATCH_QUESTIONS} onComplete={handleClarifyComplete} />
         </div>
       )}
 
@@ -3327,14 +3327,14 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
         <PromptBar
           ref={promptBarRef}
           onSubmit={(text, tables) => processText(text, tables)}
-          disabled={(isProcessing && project.buildStep !== 'empty') || dayZeroPhase === 'clarify_q1' || !!coachingPrompt}
+          disabled={(isProcessing && project.buildStep !== 'empty') || fromScratchPhase === 'clarify_q1' || !!coachingPrompt}
           isProcessing={isProcessing}
           onStop={() => {
             buildAbortRef.current = true;
             setProcessing(false);
             setMessages(prev => [...prev, { id: `r-${Date.now()}`, type: 'response', content: "Stopped. What would you like to change?" }]);
           }}
-          placeholder={agentMode === 'test' ? "Ask anything about your model…" : dayZeroPhase === 'plan_ready' ? "Ask me to change anything in the plan…" : "Describe a task, or '@' to mention tables."}
+          placeholder={agentMode === 'test' ? "Ask anything about your model…" : fromScratchPhase === 'plan_ready' ? "Ask me to change anything in the plan…" : "Describe a task, or '@' to mention tables."}
           autoFocus
           dropDirection="up"
           onColumnRemove={onColumnRemove}
@@ -3522,7 +3522,7 @@ const SuggestionChips: React.FC<{ suggestions: string[]; onSelect: (s: string) =
 
 // ── Day Zero clarify card ─────────────────────────────────────────────────────
 
-const DAY_ZERO_QUESTIONS = [
+const FROM_SCRATCH_QUESTIONS = [
   { question: 'Who is the primary audience for this model?', options: ['Executive / board', 'Marketing managers', 'Data analysts', 'Engineers'] },
   { question: 'What is the data domain?', options: ['Marketing', 'Finance', 'Sales', 'Operations'] },
 ];

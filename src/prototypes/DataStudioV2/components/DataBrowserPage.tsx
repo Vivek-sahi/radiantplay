@@ -851,7 +851,7 @@ const ExternalModelsView: React.FC<{ entries: ExternalEntry[] }> = ({ entries })
 };
 
 // ── External Models empty state ──────────────────────────────────────────────
-// Matches the "Start with an existing model" section from DayZeroOverview.
+// Matches the "Start with an existing model" section from the from-scratch flow.
 
 const EXTERNAL_MODEL_OPTIONS = [
   {

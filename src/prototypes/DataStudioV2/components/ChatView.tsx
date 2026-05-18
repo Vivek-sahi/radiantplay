@@ -14,7 +14,7 @@ interface ChatViewProps {
   messages: AgentMessage[];
   setMessages: React.Dispatch<React.SetStateAction<AgentMessage[]>>;
   initialPrompt: string;
-  isDayZero?: boolean;
+  isFromScratch?: boolean;
   isDbtReview?: boolean;
   instructionsCreated: boolean;
   onBuildStart: () => void;
@@ -27,7 +27,7 @@ const CHAT_PANEL_PCT = 0.4;
 
 const ChatView: React.FC<ChatViewProps> = ({
   project, setProject, messages, setMessages,
-  initialPrompt, isDayZero, isDbtReview, instructionsCreated, onBuildStart, onBack, onNavigateToTable,
+  initialPrompt, isFromScratch, isDbtReview, instructionsCreated, onBuildStart, onBack, onNavigateToTable,
 }) => {
   const [activePlan, setActivePlan] = useState<PlanData | null>(null);
   const [qualityPlanOpen, setQualityPlanOpen] = useState(false);
@@ -128,7 +128,7 @@ const ChatView: React.FC<ChatViewProps> = ({
               messages={messages}
               setMessages={setMessages}
               initialPrompt={initialPrompt}
-              isDayZero={isDayZero}
+              isFromScratch={isFromScratch}
               isDbtReview={isDbtReview}
               width={isPlanOpen ? Math.max(340, Math.round(window.innerWidth * CHAT_PANEL_PCT)) : CHAT_WIDTH}
               onOpenPlan={plan => setActivePlan(plan)}

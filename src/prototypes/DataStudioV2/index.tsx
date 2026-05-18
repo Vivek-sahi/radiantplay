@@ -87,7 +87,7 @@ const DataStudio: React.FC = () => {
   const [prevView, setPrevView]   = useState<AppView>('overview');
   const [activeNav, setActiveNav] = useState<NavSection>('overview');
   const [initialPrompt, setInitialPrompt] = useState<string>('');
-  const [isDayZero, setIsDayZero] = useState(false);
+  const [isFromScratch, setIsFromScratch] = useState(false);
   const [instructionsCreated, setInstructionsCreated] = useState(false);
   const [isDbtReview, setIsDbtReview] = useState(false);
   const [dbtImported, setDbtImported] = useState(false);
@@ -124,7 +124,7 @@ const DataStudio: React.FC = () => {
   useEffect(() => {
     if (view === 'chat' && project.buildStep !== 'empty') {
       setInitialPrompt('');
-      setIsDayZero(false);
+      setIsFromScratch(false);
       navigateTo('workspace');
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -234,7 +234,7 @@ const DataStudio: React.FC = () => {
   // Open canvas with a dbt model pre-loaded (from wizard "Review issues")
   const openDbtCanvas = (modelName: string) => {
     setInitialPrompt('');
-    setIsDayZero(false);
+    setIsFromScratch(false);
     setIsDbtReview(true);
     setProject({
       id: `dbt-${Date.now()}`,
@@ -300,7 +300,7 @@ const DataStudio: React.FC = () => {
       columnOverrides: {},
     });
     setInitialPrompt(prompt);
-    setIsDayZero(true);
+    setIsFromScratch(true);
     setIsAgentMode(true);
     navigateTo('chat');
   };
@@ -314,7 +314,7 @@ const DataStudio: React.FC = () => {
   const goBack = () => {
     setInitialPrompt('');
     setActiveAlert(null);
-    setIsDayZero(false);
+    setIsFromScratch(false);
     setIsDbtReview(false);
     setIsAgentMode(false);
     setMessages([]);
@@ -395,7 +395,7 @@ const DataStudio: React.FC = () => {
             messages={messages}
             setMessages={setMessages}
             initialPrompt={initialPrompt}
-            isDayZero={isDayZero}
+            isFromScratch={isFromScratch}
             isDbtReview={isDbtReview}
             instructionsCreated={instructionsCreated}
             onBuildStart={() => setInstructionsCreated(true)}
@@ -431,7 +431,7 @@ const DataStudio: React.FC = () => {
             setMessages={setMessages}
             onBack={goBack}
             initialPrompt={initialPrompt}
-            isDayZero={isDayZero}
+            isFromScratch={isFromScratch}
             isDbtReview={isDbtReview}
             isAgentMode={isAgentMode}
             instructionsCreated={instructionsCreated}

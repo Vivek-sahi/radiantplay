@@ -25,7 +25,7 @@ interface WorkspaceProps {
   setMessages: React.Dispatch<React.SetStateAction<AgentMessage[]>>;
   onBack: () => void;
   initialPrompt?: string;
-  isDayZero?: boolean;
+  isFromScratch?: boolean;
   isDbtReview?: boolean;
   isAgentMode?: boolean;
   instructionsCreated?: boolean;
@@ -95,7 +95,7 @@ const MH_AIRS_DIMS: MhAirsDim[] = [
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, setMessages, onBack, initialPrompt, isDayZero, isDbtReview, isAgentMode, instructionsCreated, onNavigateToTable }) => {
+const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, setMessages, onBack, initialPrompt, isFromScratch, isDbtReview, isAgentMode, instructionsCreated, onNavigateToTable }) => {
   const [mounted, setMounted] = useState(false);
   const [isBuilding, setIsBuilding] = useState(!!initialPrompt);
   const [externalAgentMessage, setExternalAgentMessage] = useState<string | null>(null);
@@ -395,7 +395,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
             messages={messages}
             setMessages={setMessages}
             initialPrompt={initialPrompt}
-            isDayZero={isDayZero}
+            isFromScratch={isFromScratch}
             isDbtReview={isDbtReview}
             onBuildComplete={() => setIsBuilding(false)}
             externalMessage={externalAgentMessage}
