@@ -1,93 +1,58 @@
-# Data Studio — Product Brain
-
-_What this product is, who it's for, and the design direction. Read this alongside CLAUDE.md (session rules) and CONTEXT.md (build state)._
+# Data Studio
 
 ---
 
-## What Data Studio is
+## Vision
 
-Data Studio is ThoughtSpot's unified workspace for making warehouse data AI-ready for Spotter (ThoughtSpot's BI agent). It is a **product vertical** — not a single feature, but a suite of capabilities centered on the data modeling + prep + caching lifecycle.
+The world has moved toward BI consumed by both humans and AI agents.
+Data is fragmented — across warehouses, dbt models, spreadsheets,
+external sources. Data teams spend most of their time bridging that
+gap instead of improving the data itself.
 
-The problem it solves: analysts have raw warehouse data, but Spotter needs that data to be semantically enriched and structurally clean to answer business questions well. Today that work is fragmented across tools. Data Studio brings it into one place.
-
-**Core workflow:** Connect → Build → Test → Coach → Prep → Cache → Monitor
-
----
-
-## Where we are
-
-**Phase 1 (now):** Building the vision demo — an agentic experience that shows stakeholders what Data Studio should feel like. One real AI moment per situation, the rest scripted. Goal: make SVP/VP Product believe this is the right product to build.
-
-**Phase 2 (next few weeks):** Shifting into UI exploration — visual design iterations, multiple canvas layouts, component-level decisions. The prototype becomes a design tool, not just a demo.
+Data Studio reduces the time from data to insight — for both humans
+and AI — by giving data teams a single place to manage the full
+AI-readiness lifecycle.
 
 ---
 
-## Audience
+## Mission
 
-| Person | Role | What they care about |
-|--------|------|---------------------|
-| SVP Product | Decision-maker | Is this the right bet? Does it unify the story? |
-| VP Product | Sponsor | Does this accelerate Spotter adoption? |
-| Directors (data modeling, data prep) | Validators | Is the workflow real? Would my team use this? |
+Enable data teams to connect, build, and continuously improve their
+data models — so that AI agents like Spotter can always work from
+clean, semantically rich, up-to-date data.
 
 ---
 
-## The 6 demo situations
+## What it is
 
-| # | Situation | Core moment | Status |
-|---|-----------|-------------|--------|
-| 1 | Zero to one — build a model from scratch | Agent assembles joins + columns from a vague brief | Built |
-| 2 | Test it — ask questions, find where Spotter struggles | One-shot answer + 3-dimension diagnostic | Built |
-| 3 | Teach and fix — coach the model based on test results | Agent applies coaching, no approval needed | Built |
-| 4 | Expand the model — add a table or metric | Add metric built; add new table not yet | Partial |
-| 5 | Cache it — pull data to ThoughtSpot, set refresh | Cache tab + cost story | Built |
-| 6 | Monitor and fix — surface a change, route to fix | Alert → model view with pre-focused fix | Built |
+Data Studio is ThoughtSpot's unified workspace for the full data
+model lifecycle: connect fragmented sources, build models, test and
+coach them for AI accuracy, prepare and cache data for performance,
+and monitor for drift or quality degradation.
 
----
-
-## Design principles
-
-**Agentic, not wizard-like.** The agent assumes and proceeds. It states assumptions inline. It doesn't stop to ask about preferences — it bets and proceeds, and the user can redirect.
-
-**One real moment per situation.** The surprise should be real — actual Claude inference, not faked. Everything else can be scripted. The magic is in the contrast between routine and unexpected.
-
-**The workspace doesn't lock.** Publishing doesn't make the model read-only. Monitoring alerts navigate back into the workspace pre-focused on the problem. There is no separate "published view."
-
-**Data quality is ambient, not a gate.** Issues surface in ColumnsView per column. No banners, no blocking gates. The user decides when to fix, not the system.
-
-**Prep and caching are orthogonal.** Prep = query-time SQL transforms embedded in the model. Cache = performance optimization. They're independent decisions. Demo shows prep on live data; caching is a later optional step.
+It is agent-first. The primary interaction mode is a conversation
+with an agent that handles the heavy work. Data teams direct; the
+agent executes.
 
 ---
 
-## Key product decisions (locked)
+## Key decisions
 
-- No auto-profiling on build — `nullRate`, `duplicateCount`, `anomalyCount` already visible in ColumnsView by default
-- Transforms in LeftPanel "Transformations" section (separate from Formulas)
-- Coaching applies directly, no approval step — agent applies, shows summary, user edits inline
-- "Skip and test" path shows raw data quality warnings in test diagnostics
-- WorkflowDirectory is cosmetic for now — do not wire unless explicitly asked
+- **SpotterX alignment** — Paradigm and interaction decisions flow from
+  SpotterX, ThoughtSpot's agent architecture. Data Studio aligns with
+  that architecture.
 
----
+- **Models** — The central object is a model. Not a project, not a
+  dataset. Models everywhere.
 
-## Research library
+- **Agent-first** — Designed for a world where agents do most of the
+  work. Users can always act manually, but the primary path is
+  conversational and agentic.
 
-Complex design decisions are researched before building. Each doc covers tools/prior art, the decision made, and why.
+- **Full lifecycle** — Data Studio covers the complete journey a data
+  team takes with their data: connecting sources, building models,
+  testing and improving them, and monitoring over time.
 
-| Doc | Topic |
-|-----|-------|
-| `research/data-prep-workflow.md` | How analysts do data prep today; led to the query-time transforms decision |
-| `research/agent-work-display.md` | How to show agent work in progress |
-| `research/canvas-agent-interaction.md` | Agent panel interaction patterns |
-| `research/column-properties.md` | Column-level metadata and property views |
-| `research/publish-share-ux.md` | Publish and share flows |
-| `research/semantic-model-views.md` | Model view IA |
-| `research/semantic-model-import-sync.md` | dbt import and sync patterns |
-| `research/fk-column-deduplication.md` | FK column handling in joins |
-
----
-
-## What's coming next
-
-- **Test diagnostic variation** — when `prepTransforms` is set, Data quality dim shows "N transforms active" instead of raw issue
-- **UI explorations** — canvas layout iterations, 2nd/3rd workspace concepts (see CONTEXT.md "Later" section)
-- **Situation 4 completion** — add new table to a working model
+- **AI and human BI** — Models serve both human analysts and AI agents
+  like Spotter. Quality and readiness decisions account for both
+  consumers.

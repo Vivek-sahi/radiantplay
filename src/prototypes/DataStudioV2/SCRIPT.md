@@ -1,6 +1,6 @@
-# Data Studio — Demo Script
+# Data Studio — Use Case Scenarios
 
-_Sara's story. Full scripted flows for all 6 situations. Keep in sync with the demo arc in CONTEXT.md._
+> **Note:** This document describes scripted use case flows built during the prototype phase. The "6 situations" and "demo arc" framing is historical. Data Studio is now a full product — these scenarios remain valid as use cases but are not a complete or current picture of the product. For current product direction see `product.md`. For current build state see `CONTEXT.md`. "Project" in this document means "model."
 
 ---
 

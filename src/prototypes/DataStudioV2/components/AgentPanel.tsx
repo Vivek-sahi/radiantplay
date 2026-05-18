@@ -1793,7 +1793,7 @@ function runDirectAdd(
   }, 2000);
 }
 
-// ── Day Zero state type ───────────────────────────────────────────────────────
+// ── From-scratch state type ───────────────────────────────────────────────────
 
 type FromScratchPhase =
   | 'use_case_prompt'
@@ -1803,7 +1803,7 @@ type FromScratchPhase =
   | 'confirm_build'
   | 'done';
 
-// Runs working steps for a Day Zero script, then calls onComplete.
+// Runs working steps for a from-scratch script, then calls onComplete.
 // Does not use the normal proposal/confirm path — callers handle the follow-up.
 function runFromScratchSteps(
   scriptKey: string,
@@ -2556,7 +2556,7 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
       handleSpotterQuestion(text);
       return;
     }
-    // Day Zero flow — route through dedicated handler, skip normal matchScript
+    // From-scratch flow — route through dedicated handler, skip normal matchScript
     if (fromScratchPhase && fromScratchPhase !== 'done') {
       handleFromScratchInput(text);
       return;
@@ -3246,7 +3246,7 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
       </div>
       </div>
 
-      {/* Clarify card — floats above prompt bar during Day Zero clarify phase */}
+      {/* Clarify card — floats above prompt bar during from-scratch clarify phase */}
       {fromScratchPhase === 'clarify_q1' && (
         <div style={{ padding: `0 ${sp.C}px`, flexShrink: 0 }}>
           <DayClarifyCard questions={FROM_SCRATCH_QUESTIONS} onComplete={handleClarifyComplete} />
@@ -3520,7 +3520,7 @@ const SuggestionChips: React.FC<{ suggestions: string[]; onSelect: (s: string) =
 );
 
 
-// ── Day Zero clarify card ─────────────────────────────────────────────────────
+// ── From-scratch clarify card ─────────────────────────────────────────────────
 
 const FROM_SCRATCH_QUESTIONS = [
   { question: 'Who is the primary audience for this model?', options: ['Executive / board', 'Marketing managers', 'Data analysts', 'Engineers'] },

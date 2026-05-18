@@ -3,14 +3,15 @@
 ## Session protocol
 
 **Every session, do this first:**
-1. Read `src/prototypes/DataStudioV2/CONTEXT.md` — current build state, next up, session log.
-2. Check current git branch (`git branch`) — always work on `prototype/data-studio`. If on another branch, ask before proceeding.
-3. At the end of the session, append a new entry to the Session log in CONTEXT.md.
+1. Read `src/prototypes/DataStudioV2/CONTEXT.md` — current build state.
+2. Read `src/prototypes/DataStudioV2/product.md` if product context is needed — vision, mission, key decisions.
+3. Check current git branch (`git branch`) — always work on `prototype/data-studio`. If on another branch, ask before proceeding.
+4. At the end of the session, append a new entry to `SESSION_LOG.md` and update the current state block in `CONTEXT.md`.
 
 **Before closing any session:** run `npm run build` and confirm it passes.
 
 **Session type — say this at the start:**
-- **"next up"** → read CONTEXT.md → state the first open item + its classification (scale + novelty) out loud → then act based on that classification. Do not start building before stating the classification.
+- **"next up"** → read NEXT_UP.md → state the first open item + its classification (scale + novelty) out loud → then act based on that classification. Do not start building before stating the classification.
 - **"sidequest: [name]"** → read `sidequests/[name].md`, work in Playground.tsx only, don't touch main prototype code
 - **"research: [topic]"** → use `research/_template.md`, produce a research doc, write no code this session
 

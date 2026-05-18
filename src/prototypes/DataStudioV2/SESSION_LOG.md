@@ -1,12 +1,524 @@
 # Data Studio — Session Log (Archive)
 
-_Sessions older than the last 3. Current sessions live in [CONTEXT.md](./CONTEXT.md)._
+_Archive of all sessions. New sessions are appended here at the end of each session._
 
 ---
 
 ### 2026-04-25 (session 48)
 
 **Phase 2 strategy memo: Manage + Iterate thesis.** Wrote `research/phase-2-manage-iterate.md` arguing Phase 2 should focus on Manage + Iterate (Build deprioritizing to "import, don't author"). Thesis: Build is commoditizing (Omni Modeling Agent, etc.); Iterate is undefended; 17% residual failure in Metadata Reasoner paper is the opportunity. Reframes 6 situations: elevates S3/S6 as core demo. Proposes 5 KPIs. Side work: set up `the-diff` project + weekly digest routine.
+
+---
+
+### 2026-05-06 (session 49)
+
+**Day Zero journey — improvements from session-52 spec.**
+
+Research doc finalized. Playground `j-day0` exploration built. Journey infrastructure isolated to new files (`JourneyExplorations.tsx`, `DayZeroOverview.tsx`). Working branch confirmed as `prototype/data-studio`.
+
+---
+
+### 2026-05-06 (session 50)
+
+**Day Zero journey — improvements from session-52 spec (continued).**
+
+Additional polish on the warehouse path. Credential form card iteration.
+
+---
+
+### 2026-05-06 (session 51)
+
+**Day Zero journey — additional fixes.**
+
+Polish on DayZeroOverview and journey picker. See session 53 for final promotion.
+
+---
+
+### 2026-05-06 (session 52)
+
+**Journey infrastructure spec + Playground explorations.**
+
+Day Zero Journey spec finalized at `research/day-zero-journey.md`. Scope locked: warehouse-only path, 4 agent conversations for connection setup, clarifying questions before build, journeys 2–4 land on existing `Overview.tsx`. `j-picker` exploration — dark theme journey picker. `j-day0` exploration — DayZeroOverview screen.
+
+---
+
+### 2026-05-06 (session 53)
+
+**Journey infrastructure promoted to live + workflow cleanup.**
+
+`JourneyPicker.tsx` extracted from playground. `DayZeroOverview.tsx` extracted. `Shell.tsx` gained `bottomSlot` for journey picker pin. `index.tsx` wired `journey-picker` and `day-zero` views. Cleanup: deleted promoted exploration files, `radiantplay-optimizations.md`, `knowledge/phase-2.md`.
+
+---
+
+### 2026-05-06 (session 54)
+
+**Day Zero agentic flow — connection → schema → clarify → build.**
+
+`CredentialFormCard.tsx` — new component. Inline credential form in agent message bubble. `AgentPanel.tsx` — `isDayZero` prop + `dayZeroPhase` state machine (8 phases). `runDayZeroSteps` helper. 3 new SCRIPTS: `day_zero_discover`, `day_zero_validate_connection`, `day_zero_parse_use_case`.
+
+---
+
+### 2026-05-06 (session 55)
+
+**Day Zero flow redesign — schema choice, clarify cards, requirement summary.**
+
+Schema chips replaced with `schemaChoice` two-option card. New `SchemaChecklistCard`. New `ClarifyCard` inline component (stacked option buttons, one question at a time). Q1/Q2 clarifying flow → `day_zero_understand_requirement` script → requirement summary card → "Yes, build it →" chip.
+
+---
+
+### 2026-05-06 (session 56)
+
+**Journey 4 — dbt plug-and-play. First build pass + spec. 8 fixes identified.**
+
+`research/journey-4-dbt-spec.md` written. First build: `DbtImportWizard.tsx`, `DbtOverview.tsx`, `ExternalModelsPage.tsx` created. `DbtPublishModal` added to `Workspace.tsx`. Journey 4 routing wired. 8 issues identified for next session.
+
+---
+
+### 2026-05-06 (session 57)
+
+**Journey 4 — 8 fix-pass items resolved.**
+
+`DbtImportWizard.tsx` rewritten to use DS `WizardModal`. `ExternalModelsEmptyState` moved inside `DataBrowserPage`. `isDbtReview` prop threaded. "Fix translation issues" chip routes to `fix_campaign_roas`. `dbt-overview` + `dbt-external-models` views removed; Journey 4 routes to `data-browser`.
+
+---
+
+### 2026-05-06 (session 58)
+
+**Journey 4 — all 8 session-57 issues fixed.**
+
+External Models empty state rebuilt as card matching `ExistingModelCard` pattern. Step 4 fixes. Publish button wired to `openDbtCanvas`. Story sync fixed (2 projects, 3 models). Filter pill counts removed. Wizard modal height fixed. Branch docs corrected: `prototype/data-studio` confirmed.
+
+---
+
+### 2026-05-06 (session 59)
+
+**Journey 4 — three follow-up fixes after demo review.**
+
+Empty state rebuilt as "Start with an existing model" section. Wizard height fixed to `height: 320px`. Publish: `InlinePublishModal` renders in `DataBrowserPage` state directly. Branch confusion resolved: `prototype/data-studio` confirmed.
+
+---
+
+### 2026-05-11 (session 60)
+
+**Product direction shift — co-pilot → full-screen agent.**
+
+Journey picker removed. `ChatView.tsx` added — full-screen centered agent (860px wide). Entry: Overview prompt → `isDayZero=true`, `isAgentMode=true` → `'chat'` view. Auto-transition: `chat` → `workspace` when `buildStep` leaves `'empty'`. "Projects" renamed to "Models." Monitoring and governance tabs removed; nav now: Overview / Models / Data / Connections.
+
+---
+
+### 2026-05-11 (session 61)
+
+**Context cleanup + entry point unification.**
+
+CLAUDE.md session protocol fixed: "always work on main" → `prototype/data-studio`. CONTEXT.md: added Product direction block (co-pilot → full-screen agent shift). "New model" button now routes through full-screen agent flow.
+
+---
+
+### 2026-05-11 (session 62)
+
+**Full-screen agent polish + ClarifyBar Playground exploration.**
+
+`ChatView` moved inside `<Shell>` with `hideSidebar`. Inner wrapper flex row for full-height AgentPanel. `ClarifyBarExploration` in Playground: questions above prompt bar, chips auto-advance, compiled single user message on last answer.
+
+---
+
+### 2026-05-11 (session 63)
+
+**ClarifyCard design iteration — Playground exploration.**
+
+New clarifying questions pattern: floating card above prompt bar. Full-width numbered rows, click-to-advance, back/forward nav, "Something else" expands inline. `ClarifyBarExploration` rebuilt, added to `PlaygroundNav` as `clarify-bar`.
+
+---
+
+### 2026-05-11 (session 64)
+
+**ClarifyCard promoted to main prototype.**
+
+Old in-message `ClarifyCard` removed. `DAY_ZERO_QUESTIONS` + `DayClarifyCard` component added at module level (extracted from Playground). `handleClarifyComplete` fires `day_zero_understand_requirement`. Card renders above prompt bar when `dayZeroPhase === 'clarify_q1'`.
+
+---
+
+### 2026-05-11 (session 65)
+
+**Plan mode phase 1.**
+
+`PlanData`, `PlanTable`, `PlanRelationship`, `PlanColumn` types added. `day_zero_generate_plan` SCRIPT. `MOCK_PLAN_BASE` constant. `PlanCard` inline component. `PlanPanel.tsx` new component — 5 collapsible sections. `ChatView.tsx` — `activePlan` + `planCTAs` state; plan panel opens right of chat (40/60 split).
+
+---
+
+### 2026-05-11 (session 66)
+
+**Plan mode polish + working steps redesign.**
+
+ClarifyCard disappear fix. CTAs moved out of PlanPanel into chat message. "Edit the plan" creates user bubble. Working steps redesigned: grey dots, single-pixel connecting line, semibold labels, full-width SQL collapsible, "Worked for X" footer.
+
+---
+
+### 2026-05-11 (session 67)
+
+**Layout + bug fixes.**
+
+Day Zero re-trigger bug fixed (`setIsDayZero(false)` on chat→workspace transition). "Start building" button adds user bubble. Publish button text: "Publish model" / "Update model." Agent moved to left; canvas on right.
+
+---
+
+### 2026-05-11 (session 68)
+
+**Artifact paradigm + Workspace migration start.**
+
+Paradigm deepened: chat as top-level container, model as artifact. `ArtifactChatExploration` added to Playground. `Workspace.tsx` Edit 1: 64px main header → 48px "← Chat" page-level header.
+
+---
+
+### 2026-05-11 (session 69)
+
+**Workspace migration complete.**
+
+Edit 2: Artifact identity row (48px) — model icon + name + badge left; Share + Publish right. Edit 3: Canvas sub-header restructured — left-aligned underline tabs, right side actions. Edit 4: LeftPanel overlay top updated.
+
+---
+
+### 2026-05-11 (session 70)
+
+**Artifact card border treatment + panel cleanup.**
+
+Canvas: `background-sunken` + 8px padding; artifact = white bordered card (`border-divider`, `border-radius: 10px`). AgentPanel always visible, no collapse. Identity row: Share + upload icon, × close button.
+
+---
+
+### 2026-05-11 (session 71)
+
+**Polish pass 1 — 8 visual + bug fixes.**
+
+Canvas/BuildingSkeleton/PlanPanel: `background-sunken` → `background-base`. Slide-in animation on artifact mount. Publish button always "Publish model" / "Update model." Quality resolved condition fixed. Cache button neutral style. Share/Publish icons → Radiant `Icon`.
+
+---
+
+### 2026-05-11 (session 72)
+
+**Open-artifact arrow on model outcome card.**
+
+`OutcomeCard` title row: `↗` arrow SVG in top-right corner. Decorative only; artifact opens by default.
+
+---
+
+### 2026-05-11 (session 73)
+
+**Remove gray backgrounds from artifact content area.**
+
+`CenterPanel.tsx`: outer wrapper, TablesView, NotebookCell header → all `background-base`.
+
+---
+
+### 2026-05-11 (session 74)
+
+**Pass 3 + Pass 4: font size fixes + QualityPlanPanel.**
+
+`PlanPanel.tsx` font size fixes. `QualityPlanPanel.tsx` new component: identity row, 4 accordion sections (Null values, Duplicate rows, Date format mismatches, Anomalous values).
+
+---
+
+### 2026-05-11 (session 75)
+
+**Context panel skeleton in Playground.**
+
+`ContextPanelExploration` added to Playground under Phase 2. Three-column layout toggle (agent / chat / context panel). Card design for plans and model artifact.
+
+---
+
+### 2026-05-11 (session 76)
+
+**Chat context panel promoted to live.**
+
+`ChatContextPanel.tsx` new component — 280px, two sections: Created (plan + model cards) and Context (Tables + Skills). `ChatView.tsx` — 48px conversation header, panel toggle, `useMemo` for derived content.
+
+---
+
+### 2026-05-11 (session 77)
+
+**Context panel polish + bug fixes.**
+
+Icons: replaced `"table"` / `"doc"` (not in registry) with inline SVGs. Quality plan: only appears after `prepTransforms` set. Context panel mutual exclusivity with plan panel. Navigation fixes: ChatView ← Overview, Workspace ← Chat. `goBack()` restored. Table go-to arrow wires to data browser.
+
+---
+
+### 2026-05-11 (session 78)
+
+**Overview + chat header polish.**
+
+Heading → "Hey Sara, what would you like to do today?". 5 capability chips with icons. `PromptBarRef.startTypewriter()` — ghost suffix animation. Global shell header now visible in chat. `deriveModelName(prompt)` in `index.tsx`.
+
+---
+
+### 2026-05-11 (session 79)
+
+**Plan artifact panel polish.**
+
+`PlanPanel.tsx` and `QualityPlanPanel.tsx` visually match model artifact card: `border-divider`, `borderRadius: 10`, 48px header, `fs.xs` font tokens.
+
+---
+
+### 2026-05-11 (session 79b)
+
+**Fix Shell header bleeding into Workspace.**
+
+Root cause: Workspace `position: fixed, inset: 0` — Shell's GlobalHeader painting underneath. Fix: `hideHeader={view === 'workspace'}` in `index.tsx`. Rule: any `position: fixed` overlay outside Shell must explicitly pass `hideHeader`.
+
+---
+
+### 2026-05-11 (session 80)
+
+**Global header, quality plan in Created, test mode exploration + prompt bar.**
+
+Global header now visible in Workspace. Quality plan item added to Created section. 4 test mode explorations (tma1–tma4) in Playground. Test mode = mode of same agent (Option A). Build/test pill added as `leftSlot` in PromptBar.
+
+---
+
+### 2026-05-11 (session 81)
+
+**ModelView — combined 5-tab version + routing wired.**
+
+Monitoring added as 5th tab. `initialTab` prop added. `onFixWithAgent` → opens at `initialTab='monitoring'` (stub). `onOpenProjectAtMonitoring` wired.
+
+---
+
+### 2026-05-11 (session 82)
+
+**ModelView tabs cut + Overview/Models page cleanup.**
+
+ModelView: Usage and Data quality tabs removed. Now 3 tabs: Info, Cache, Monitoring. Overview: hero/Pulse divider removed, old "Recent models" + "Explore data" sections removed. Models page: "Issues" → "Health" column, "Author" column dropped.
+
+---
+
+### 2026-05-11 (session 83)
+
+**Pulse → FullChatView flows wired + CacheRecommendationCard.**
+
+`isFixWithAgent` condition changed to `category === 'debugging' || type === 'enable-cache'`. `CacheRecommendationCard` genUI component added. Healthy-project greeting shows proactive cache recommendation for Campaign Performance. Pre-existing broken build fixed (stray `</div>`).
+
+---
+
+### 2026-05-11 (session 84)
+
+**FullChatView alignment + context panel + insight wiring fixes.**
+
+FullChatView moved inside `<Shell hideSidebar>`. 48px header added. Context panel added (280px, `FLOW_CONTEXT` map for per-flow data). `ChatContextPanel` gains `models` prop. `ins-d1` resolution fires `onInsightResolved` after 3.2s.
+
+---
+
+### 2026-05-11 (session 85)
+
+**Model-building flow polish — nav, layout, panel cleanup.**
+
+Test button removed from tab bar. Data button moved to rightmost position. Agent panel centered when artifact is closed. Created section: only model shown (plans removed). Back navigation unified: all back → Overview. Workspace back label: "← Overview."
+
+---
+
+### 2026-05-12 (session 86–87)
+
+**Prompt bar polish pass + Vercel deploy.**
+
+`ConnectionPill.tsx` new component. `+ Tables` browser removed from PromptBar. Upload button → icon-only. Send button always blue. Build/test toggle pill → circular style. Deployed to Vercel production.
+
+---
+
+### 2026-05-12 (session 88)
+
+**Feedback pass — transitions, auto-scroll, connection pill polish.**
+
+`ConnectionPill.tsx` reduced emphasis. `ChatView.tsx` staggered entrance animation. `AgentPanel.tsx` auto-scroll fires on any messages change with smart scroll-hijack prevention. `Workspace.tsx` staggered canvas entrance animation.
+
+---
+
+### 2026-05-12 (session 89)
+
+**Instructions file — new artifact in Created section.**
+
+`InstructionsPanel.tsx` new component. `AgentPanel.tsx` — `onBuildStart` prop. `ChatView.tsx` — `instructionsCreated` + `instructionsPanelOpen` states. Instructions appear in Created chronologically before model.
+
+---
+
+### 2026-05-12 (session 90)
+
+**Instructions file — bug fixes (state persistence + exclusive canvas).**
+
+`instructionsCreated` state lifted to `index.tsx` to persist across chat → workspace transition. `Workspace.tsx` — `instructionsPanelOpen` state; model artifact hidden when instructions panel open. All Created item handlers close each other.
+
+---
+
+### 2026-05-12 (session 91)
+
+**Test mode — design decisions + build (inline conversation migration).**
+
+Test mode = Spotter Q&A inline in main `messages` array. New types: `spotter-user`, `spotter-answer`, `coaching-prompt`, `coaching-result`. `agentMode` state. `handleSpotterQuestion`, `handleSpotterFeedback`, `handleSpotterCoachingOption`. `testMode` removed from `ProjectState`. ~326 lines of old test panel JSX removed.
+
+---
+
+### 2026-05-12 (session 92)
+
+**Test + coaching flow review and fixes.**
+
+"Try a question" pill row above prompt bar when `agentMode === 'test'`. "Switch to test mode" chip fixed to call `setAgentMode('test')`. User bubble normalized. Agent avatar normalized — `SpotterIconAvatar` removed. TypeScript fixes and dead code cleanup.
+
+---
+
+### 2026-05-12 (session 93)
+
+**Test + coaching polish pass 2.**
+
+"Try a question" pills — `fs.xs`; hover color → `content-brand`. Coaching clarify card floats above prompt bar (DayClarifyCard pattern). "Fix in build →" → "Fix this." No "Switch to test mode" after coaching fix.
+
+---
+
+### 2026-05-12 (session 94)
+
+**Test + coaching polish pass 2 continued.**
+
+Sample questions — collapsible strip (closed by default, expands upward), refresh cycles question groups. Spotter + coaching steps updated to build agent pattern (grey dots, semibold labels). Auto-collapse working steps. Divider above prompt bar removed.
+
+---
+
+### 2026-05-12 (session 95)
+
+**Sample questions strip polish + AI Readiness Score research + Playground explorations.**
+
+Strip spacing + background fixes. AI Readiness Score research doc at `research/ai-readiness-score.md`. 4 Playground explorations (airs1–airs4) under "AI Readiness Score" tab.
+
+---
+
+### 2026-05-12 (session 96)
+
+**Model health design exploration — mh1 + mh2 Playground explorations.**
+
+Two signals vs. umbrella approach explored. mh1: two chips in tab bar (9 issues + 53 Basic). mh2: single "Model health" chip with two colored dots. Both include full artifact skeleton.
+
+---
+
+### 2026-05-12 (session 97)
+
+**Model health chips + cache button reorder.**
+
+Direction decided: separate signals. DQ chip (`▲ 9 issues`) + AIRS chip (`◯ 25% AI ready`) in tab bar right. Cache button moved to identity row. Both chips open 340px dropdowns. Outside-click closes.
+
+---
+
+### 2026-05-12 (session 98)
+
+**DQ + AIRS chip redesign + 4 panel explorations in Playground.**
+
+Chip labels: `Poor / Fair / Good / Excellent` tier vocabulary. `MhTier` type. `MH_AIRS_SCORE=25` → Poor. 4 Playground explorations (mhp1–mhp4). Shared helpers: `MhpGauge`, `MhpChip`, `MhpShell`.
+
+---
+
+### 2026-05-12 (session 99)
+
+**Model Health panel design — mhp5 Playground exploration + promoted to main prototype.**
+
+Design decision: narrow dropdown panels (340px), two-level accordion. mhp5 `MhpShellDropdown` — chips anchor actual positioned dropdowns. Promoted to `Workspace.tsx`: DQ and AIRS panels now structurally identical with gauge dial header + accordion body + "Fix all with agent" footer.
+
+---
+
+### 2026-05-12 (session 100)
+
+**Pulse row redesign — merged from Komal's DataStudioV2 3 komal.**
+
+`mockData.ts`: `titleShort?` and `impact?` fields added to `ActiveInsight`. All 11 `ACTIVE_INSIGHTS` entries replaced with Komal's richer content. `Overview.tsx`: `WarningIcon`, `AISparkleIcon`, `getPulseIconStyle`. Two-line layout, hover-revealed action button.
+
+---
+
+### 2026-05-12 (session 101)
+
+**Merge Komal 3 — semantic gaps flow, cache miss flow, onOpenObject stub.**
+
+Semantic gaps: 3 SCRIPT entries + 3 genUI cards (`SemanticGapsCard`, `SemanticFillRecommendationsCard`, `SemanticGapsResolvedCard`). Cache miss: 3-stage flow + `CacheMissOpportunityCard`, `CacheConfigurationCard`, `CacheEnabledCard`. `onOpenObject` stub added to `AgentPanelProps`.
+
+---
+
+### 2026-05-12 (session 102)
+
+**Pulse flow review — object-click paradigm decision + FullChatView merge.**
+
+Paradigm decision: clicking model/liveboard names in Pulse debug flows opens read-only contextual view, not Workspace edit artifact. FullChatView split layout merged from Komal 3: `OBJECT_DATA` (17 objects), `LIVEBOARD_DATA`, `ObjectPanel`, `LiveboardObjectView`. ins-o3 and ins-o4 working; ins-d1/d2/d3/d6 not yet wired.
+
+---
+
+### 2026-05-12 (session 103)
+
+**Pulse debug flow — artifact layout overhaul in FullChatView.**
+
+Object panel moved to right. Single AgentPanel instance (no remount). Artifact card treatment matches Workspace. Draggable agent width (default 40% on open, min 320px). Independent context panel toggle. Referenced objects accumulate in context panel.
+
+---
+
+### 2026-05-12 (session 104)
+
+**Context panel / artifact independence fix — all three views.**
+
+Workspace: `contextPanelOpen` initialised to `false` (was `!!instructionsCreated`). FullChatView: `handleOpenObject` calls `setContextPanelOpen(false)`; `handleCloseObject` calls `setContextPanelOpen(true)`. ChatView: removed auto-close effects between panel and artifact.
+
+---
+
+### 2026-05-12 (session 105)
+
+**Debug artifact view — replaced ObjectPanel with composite Info tab style.**
+
+Object clicks in Pulse debug flows open a view-mode artifact combining ModelView's Info tab layout with debug-specific status data from OBJECT_DATA. Source section above Columns. `highlightCol` auto-scrolls with 3px left accent border.
+
+---
+
+### 2026-05-13 (session 106)
+
+**Wire onOpenObject on 4 remaining Pulse debug cards (ins-d1/d2/d3/d6).**
+
+`ConnectionStatusCard`: blocked model name spans → buttons calling `onOpenObject`. `MultiModelDriftCard`: model name + dependent chips → buttons. `NullRateCard`: "Marketing Campaign Attribution" → button. `SchemaDriftResolutionCard`: "FnOps Cost Model" → button; accordion item buttons wired.
+
+---
+
+### 2026-05-13 (session 107)
+
+**SchemaDriftResolutionCard upgraded to Komal v4 (ins-d2).**
+
+Per-column decisions with independent "Remap to" / "Remove it" toggles + inline column picker. Dynamic CTA changes text + background based on decisions. Agent recommendation block (✦). Flat dependent chips replacing accordion.
+
+---
+
+### 2026-05-13 (session 108)
+
+**Blast radius flow wired for ins-d3; MultiModelDriftCard wired for ins-d3 multi-model; routing fixes.**
+
+`flowMap` maps `ins-d3` → `schema_blast_repair`. `BlastRadiusCard`, `SchemaReconciliationCard`, `RestorePointCard` render conditions wired. ins-d2 restored to `schema_drift_repair`. Routing bug fixed (ins-d2/d3 were swapped in flowMap).
+
+---
+
+### 2026-05-13 (session 109)
+
+**PlanPanel — Preview/Code tabs + scroll fixes.**
+
+"Preview" | "Code" tab bar below identity row. Preview: existing accordion. Code: 6 cells (Goal/Tables/Relationships/Columns/Formulas/Sample questions). Hex-style cell UI with 3px left accent. Run button applies + marks applied. Three-iteration scroll fix (`minHeight: 0`, `flexShrink: 0`).
+
+---
+
+### 2026-05-13 (session 110)
+
+**Working steps fix — day_zero_parse_use_case.**
+
+Removed `'Identifying relevant metrics and dimensions…'` from `day_zero_parse_use_case` steps. Working steps now: "Parsing your use case…" → "Preparing clarifying questions…"
+
+---
+
+### 2026-05-13 (session 111)
+
+**Notebook view polish — instructions, add block button, run animation + version bump.**
+
+Cell instructions: subtle grey context text above each cell. "Add new code block" dashed button with SQL/Python/Text dropdown. Python cell type added (amber accent). Run animation: 700ms spinner → green flash "✓ Applied" (PlanPanel only). Version bump: `localVersion` increments by 0.1 on each run (PlanPanel only).
+
+---
+
+### 2026-05-18 (session 112)
+
+**Rename Day Zero → fromScratch throughout codebase.**
+
+Pure rename across 5 files (`AgentPanel.tsx`, `ChatView.tsx`, `Workspace.tsx`, `DataBrowserPage.tsx`, `index.tsx`). Mapping: `isDayZero` → `isFromScratch`, `DayZeroPhase` → `FromScratchPhase`, `dayZeroPhase` → `fromScratchPhase`, `runDayZeroSteps` → `runFromScratchSteps`, `handleDayZeroInput` → `handleFromScratchInput`, `DAY_ZERO_QUESTIONS` → `FROM_SCRATCH_QUESTIONS`, `day_zero_*` script keys → `scratch_*`. No behaviour change.
 
 ---
 
