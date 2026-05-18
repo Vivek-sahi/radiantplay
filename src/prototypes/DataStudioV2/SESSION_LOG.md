@@ -514,6 +514,17 @@ Cell instructions: subtle grey context text above each cell. "Add new code block
 
 ---
 
+### 2026-05-18 (session 113)
+
+**Project cleanup — docs, stale files, terminology (all 3 tracks).**
+
+- **Track 1 (Documentation):** `product.md` fully rewritten around current vision (SpotterX-aligned, agent-first, full lifecycle). `CONTEXT.md` stripped to current build state only. `SESSION_LOG.md` established as archive for all sessions. `NEXT_UP.md` created for active work queue. `CLAUDE.md` session protocol updated. `SCRIPT.md` disclaimer added. Deleted: `day-zero-journey.md`, `day-zero-build-spec.md`, `phase-2-manage-iterate.md`, `_template.md`.
+- **Track 2 (Code):** Deleted 3 orphaned files (`api/agent.ts`, `api/tools.ts`, `data/types.ts`). 5 "Day Zero" comments in `AgentPanel.tsx` updated to "from-scratch".
+- **Track 3 (Onboarding):** `README.md` created.
+- Build: clean ✓
+
+---
+
 ### 2026-05-18 (session 112)
 
 **Rename Day Zero → fromScratch throughout codebase.**
