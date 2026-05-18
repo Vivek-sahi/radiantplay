@@ -51,6 +51,18 @@ The product moved away from a side-panel co-pilot toward a full-screen agent-fir
 
 ---
 
+### 2026-05-18 (session 112)
+
+**Rename Day Zero → fromScratch throughout codebase.**
+
+- "Day Zero" was an internal label for a retired separate journey. The flow is now just the normal starting-from-scratch path when a user submits a prompt.
+- Pure rename across 5 files (`AgentPanel.tsx`, `ChatView.tsx`, `Workspace.tsx`, `DataBrowserPage.tsx`, `index.tsx`). No behaviour change.
+- Mapping: `isDayZero` → `isFromScratch`, `DayZeroPhase` → `FromScratchPhase`, `dayZeroPhase` → `fromScratchPhase`, `runDayZeroSteps` → `runFromScratchSteps`, `handleDayZeroInput` → `handleFromScratchInput`, `DAY_ZERO_QUESTIONS` → `FROM_SCRATCH_QUESTIONS`, `day_zero_*` script keys → `scratch_*`.
+- Committed and deployed to Vercel (https://radiantplay-nine.vercel.app).
+- Build: clean ✓
+
+---
+
 ### 2026-05-13 (session 111)
 
 **Notebook view polish — instructions, add block button, run animation + version bump.**
