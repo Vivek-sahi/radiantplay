@@ -2029,7 +2029,7 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
               <a
                 href="/preview/appshell"
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
                 style={{
                   color: systemColors.light['content-brand'],
                   textDecoration: 'none',
