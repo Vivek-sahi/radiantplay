@@ -54,7 +54,10 @@ export const SpotterWelcome: React.FC<SpotterWelcomeProps> = ({
       <div className={styles.content}>
         {greeting ?? <DefaultGreeting />}
         {prompt ?? <SpotterPrompt {...promptProps} />}
-        {quickActions ?? <QuickActionRow {...quickActionProps} />}
+        {/* Absolutely positioned so it never shifts the greeting/prompt upward */}
+        <div className={styles.actionsArea}>
+          {quickActions ?? <QuickActionRow {...quickActionProps} />}
+        </div>
       </div>
     </section>
   );
