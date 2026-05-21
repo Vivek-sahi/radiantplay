@@ -16,7 +16,9 @@
   transition:
     background-color 150ms ease,
     border-color 150ms ease,
-    color 150ms ease;
+    color 150ms ease,
+    transform 80ms ease,
+    opacity 150ms ease;
 }
 
 .quickAction:hover {
@@ -25,9 +27,22 @@
   color: var(--rd-sys-color-content-primary);
 }
 
+.quickAction:active {
+  background-color: var(--rd-sys-color-background-subtle);
+  border-color: var(--rd-sys-color-border-default);
+  color: var(--rd-sys-color-content-primary);
+  transform: scale(0.97);
+}
+
 .quickAction:focus-visible {
   outline: 2px solid var(--rd-sys-color-border-focus);
   outline-offset: 2px;
+}
+
+.quickAction:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
 .icon {

@@ -45,13 +45,13 @@ Use these when building or modifying anything chat-flavoured.
 | `useSpotterChat` | Hook with the must-be-inside-provider guard. |
 | `ChatThread` | Scrollable list of messages. Auto-scrolls on append + on streaming updates (tracks block count + text length fingerprint). |
 | `MessageRow` | Role dispatcher → `UserBubble` for user, `AgentMessage` for agent. **Renamed from ChatMessage to avoid colliding with the schema type.** |
-| `UserBubble` | Single-row layout: avatar + text + timestamp inside a soft-gray rounded container. |
+| `UserBubble` | Two-part layout: (1) a row with avatar + text inside a soft-gray rounded container, (2) timestamp rendered **below** the row, right-aligned (`align-self: flex-end`). Timestamp is never inside the bubble row. |
 | `AgentMessage` | Avatar (icon-based, default `ai`) + reasoning + response blocks + feedback row when `stage === 'done'`. |
 | `TypingIndicator` | Spinner ring + "Analysing…" — shown only between submit and the first reasoning chunk. |
 | `ReasoningBlock` | Collapsible "Show work ⌄" trigger. Auto-expands during streaming, auto-collapses 600ms after done. Renders steps with title + description + optional ToolcallCard + "Worked for X seconds" footer. Done dots are gray (`content-tertiary`). |
 | `AgentResponseBlock` | Block dispatcher. Iterates `content.blocks` and calls the right renderer per `kind`. |
 | `SpotterPrompt` | Controlled prompt with auto-resize textarea, mode toggle (ChartSearch / Orbits icons), model picker, controls icon, blue submit. **Gets a purple→blue gradient border on `:focus-within`.** |
-| `QuickAction`, `QuickActionRow` | Pill buttons used in the welcome state. |
+| `QuickAction`, `QuickActionRow` | Pill buttons used in the welcome state. Interaction rules: (1) `:active` state applies `scale(0.97)` press feedback. (2) Once any button is clicked, all others become `disabled` (opacity 0.5, no pointer events) to prevent double-fire. (3) `QuickActionRow` pre-fills `promptValue` for one frame so the user sees the text before it's sent. Never remove the disabled state or skip the pre-fill flash. |
 
 ### blocks/ — block renderers
 

@@ -53,7 +53,7 @@ const SpotterInner: React.FC = () => {
   const [openModal, setOpenModal] = useState<ModalKey>(null);
   const [favoriteChats, setFavoriteChats] = useState<Set<string>>(new Set());
 
-  const { state, send, clear } = useSpotterChat();
+  const { state, send, clear, load } = useSpotterChat();
   const isEmpty = state.messages.length === 0;
 
   const toggleMode = (): void => {
@@ -72,7 +72,13 @@ const SpotterInner: React.FC = () => {
       'know-your-data': 'What are the most common questions asked about this data?',
     };
     const text = promptByAction[id];
-    if (text) send(text);
+    if (!text) return;
+    // Pre-fill the input so the user sees what's being sent, then submit
+    setPromptValue(text);
+    requestAnimationFrame(() => {
+      send(text);
+      setPromptValue('');
+    });
   };
 
   const handleNewChat = (): void => {
@@ -155,7 +161,11 @@ const SpotterInner: React.FC = () => {
             <SpotterPanelItem
               label={analyst.name}
               selected={selectedAnalyst === analyst.id}
-              onClick={() => setSelectedAnalyst(analyst.id)}
+              onClick={() => {
+                setSelectedAnalyst(analyst.id);
+                setSelectedChat(null);
+                clear();
+              }}
             />
           </AnalystRowMenu>
         ))}
@@ -180,7 +190,11 @@ const SpotterInner: React.FC = () => {
             <SpotterPanelItem
               label={chat.title}
               selected={selectedChat === chat.id}
-              onClick={() => setSelectedChat(chat.id)}
+              onClick={() => {
+                setSelectedChat(chat.id);
+                setSelectedAnalyst(null);
+                load(chat.messages);
+              }}
             />
           </ChatRowMenu>
         ))}

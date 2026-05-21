@@ -168,7 +168,7 @@ SpotterPanel (260px)
 
 Shows the **2 most recently used analysts** plus a `"View all >"` row.
 
-- Clicking an **analyst row** sets the right pane to the **Analyst landing** state for that analyst
+- Clicking an **analyst row** sets the right pane to the **Analyst landing** state for that analyst. In the prototype, this clears the active chat thread (`clear()`) and deselects any selected chat so the canvas returns to the welcome/empty state scoped to that analyst.
 - Clicking **"View all >"** sets the right pane to **Analyst list**
 - **Hover menu** on each analyst row:
   - **Edit** — only shown if the user has edit privilege on that analyst
@@ -184,7 +184,7 @@ Components: planned `AnalystCard` (row) + `AnalystRowMenu` (hover menu).
 
 All chats, sorted by recency (most recent first).
 
-- Clicking a chat row sets the right pane to **Chat — active** with that chat loaded
+- Clicking a chat row sets the right pane to **Chat — active** with that chat loaded. In the prototype, this calls `load(chat.messages)` (via `useSpotterChat`) which replaces the active thread with that chat's pre-baked `ChatMessage[]` history. The selected analyst is cleared. Each `ChatEntry` in `mockData.ts` must carry a `messages` array — never leave it empty.
 - **Hover menu** on each chat row:
   - Rename
   - Favorite / Star

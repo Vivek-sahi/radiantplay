@@ -22,7 +22,9 @@ export type ChatAction =
   | { type: 'START_AGENT'; agentId: string }
   | { type: 'AGENT_CHUNK'; agentId: string; chunk: AnswerChunk }
   | { type: 'AGENT_ERROR'; agentId: string; message: string }
-  | { type: 'CLEAR' };
+  | { type: 'CLEAR' }
+  /** Load a pre-built message history (e.g. selecting a chat from the panel). */
+  | { type: 'LOAD'; messages: ChatMessage[] };
 
 export const initialChatState: ChatState = {
   messages: [],
@@ -83,6 +85,9 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
 
     case 'CLEAR':
       return initialChatState;
+
+    case 'LOAD':
+      return { messages: action.messages, isStreaming: false };
   }
 }
 
