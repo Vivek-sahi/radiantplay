@@ -145,12 +145,17 @@ Auto-scroll on append + streaming. See `spotter-logic.md` for state machine and 
 
 Properties:
 - Auto-resize textarea (grows with content, capped)
-- Mode toggle — `ChartSearch` / `Orbits` icons (search vs explore mode)
-- Model picker — current model display + dropdown
+- **Mode toggle** — left = `ChartSearch` icon (`'ask'` / quick search, short outputs), right = `Orbits` icon (`'analyze'` / deep analysis, longer responses). Toggle is interactive — active side highlighted. State (`promptMode`) is lifted to the prototype and passed as `mode`/`onModeChange`.
+- **Data model picker** — shown only on the default Spotter welcome page and chat. **Hidden on named-analyst landing pages** via `showDataModel={false}`. Never show the data model picker on an analyst-scoped page.
 - Controls icon — more actions (placeholder)
 - Submit button (blue, disabled when empty)
 - Purple → blue gradient border on `:focus-within`
 - Disclaimer beneath: "Spotter responses should be reviewed. Learn more"
+
+**Quick action buttons (welcome state only):**
+- **Quick search** → opens `PromptSuggestionsPanel` with 4 short lookup prompts. Clicking the same button again closes the panel.
+- **Deep analysis** → opens `PromptSuggestionsPanel` with 4 report/analysis prompts. Clicking the same button again closes the panel.
+- **Know your data** → fires `"Help me understand this data model and what can you do with it?"` directly (no panel).
 
 ---
 
