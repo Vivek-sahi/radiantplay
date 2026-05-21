@@ -43,6 +43,7 @@ export const AnalystListPage: React.FC<AnalystListPageProps> = ({
 
   return (
     <div className={styles.page}>
+      <div className={styles.inner}>
       <div className={styles.header}>
         <h1 className={styles.title}>Analysts</h1>
         <Button variant="secondary" onClick={onCreateNew}>
@@ -91,6 +92,7 @@ export const AnalystListPage: React.FC<AnalystListPageProps> = ({
             </button>
           );
         })}
+      </div>
       </div>
     </div>
   );

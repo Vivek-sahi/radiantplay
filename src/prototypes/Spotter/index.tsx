@@ -198,7 +198,7 @@ const SpotterInner: React.FC = () => {
       <SpotterPanelSection>
         <SpotterPanelItem
           label="Spotter (Default)"
-          selected={selectedAnalyst === 'spotter-default'}
+          selected={selectedAnalyst === 'spotter-default' && rightPaneOverride !== 'analyst-list'}
           onClick={() => {
             setSelectedAnalyst('spotter-default');
             setSelectedChat(null);
@@ -220,7 +220,7 @@ const SpotterInner: React.FC = () => {
           >
             <SpotterPanelItem
               label={analyst.name}
-              selected={selectedAnalyst === analyst.id}
+              selected={selectedAnalyst === analyst.id && rightPaneOverride !== 'analyst-list'}
               onClick={() => handleAnalystClick(analyst.id)}
             />
           </AnalystRowMenu>
