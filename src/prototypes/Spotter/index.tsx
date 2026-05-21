@@ -195,7 +195,7 @@ const SpotterInner: React.FC = () => {
       }
       footer={settingsButton}
     >
-      <SpotterPanelSection label="Analysts">
+      <SpotterPanelSection>
         <SpotterPanelItem
           label="Spotter (Default)"
           selected={selectedAnalyst === 'spotter-default'}
@@ -206,6 +206,9 @@ const SpotterInner: React.FC = () => {
             setRightPaneOverride(null);
           }}
         />
+      </SpotterPanelSection>
+
+      <SpotterPanelSection label="Analysts">
         {sortedAnalysts.slice(0, 2).map((analyst) => (
           <AnalystRowMenu
             key={analyst.id}
