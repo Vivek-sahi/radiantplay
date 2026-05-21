@@ -1,5 +1,4 @@
 import React from 'react';
-import { Icon } from '@components/icons';
 import { spotterGlow } from '../tokens';
 import { SpotterPrompt } from '../chat/SpotterPrompt';
 import type { SpotterPromptProps } from '../chat/SpotterPrompt';
@@ -53,9 +52,6 @@ export const SpotterWelcome: React.FC<SpotterWelcomeProps> = ({
     <section className={classes} style={styleVars}>
       <div className={styles.glow} aria-hidden="true" />
       <div className={styles.content}>
-        <div className={styles.logo} aria-hidden="true">
-          <Icon name="spotter" size="l" />
-        </div>
         {greeting ?? <DefaultGreeting />}
         {prompt ?? <SpotterPrompt {...promptProps} />}
         {quickActions ?? <QuickActionRow {...quickActionProps} />}

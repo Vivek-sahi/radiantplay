@@ -198,7 +198,6 @@ const SpotterInner: React.FC = () => {
       <SpotterPanelSection label="Analysts">
         <SpotterPanelItem
           label="Spotter (Default)"
-          icon="spotter"
           selected={selectedAnalyst === 'spotter-default'}
           onClick={() => {
             setSelectedAnalyst('spotter-default');

@@ -53,12 +53,3 @@
 .greetingAccent {
   color: var(--rd-sys-color-content-brand);
 }
-
-.logo {
-  width: 48px;
-  height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--rd-sys-color-content-brand);
-}
