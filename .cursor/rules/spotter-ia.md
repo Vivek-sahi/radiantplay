@@ -8,7 +8,7 @@ alwaysApply: false
 
 > Standalone Spotter is the **full-page agentic chat** at `src/prototypes/Spotter/`. For the embedded agentic chat used inside Spotter Model / Spotter Viz / Spotter Code, see `spotter-agentic-chat-ia.md`. For the component inventory, see `spotter-components.md`.
 
-Last updated: 2026-05-19 (Standalone IA rewrite — left panel structure, right-pane states, Settings menu, hover menus, exact widths).
+Last updated: 2026-05-21 (12-change update — Spotter Default item, AnalystLandingPage, AnalystListPage, chat auto-naming, analyst selection invariant, recency ordering, Settings flat button).
 
 ---
 
@@ -37,7 +37,7 @@ SpotterShell
 
 Tokens: `spotterLayout.chatMaxWidth = 936`, `spotterLayout.textMaxWidth = 844` (see `src/spotter/tokens.ts`).
 
-The shell is built once. The right pane has multiple **states** (see next section). The most common state — chat — swaps between **welcome** (empty thread) and **chat-active** based on `state.messages.length === 0`.
+The shell is built once. The right pane has multiple **states** (see next section). The active state is derived from three pieces of prototype-local state: `selectedAnalyst`, `selectedChat`, and `rightPaneOverride`.
 
 ---
 
@@ -47,16 +47,28 @@ The right pane is not always the chat thread. Four primary states + modal overla
 
 | State | When | Renders |
 |---|---|---|
-| **Chat — welcome** | `state.messages.length === 0` | Hero + sticky prompt — see "Welcome states" below |
-| **Chat — active** | `state.messages.length > 0` | Scrollable `ChatThread` + sticky prompt — see "Chat-active state" below |
-| **Analyst landing** | User clicks an analyst row in the left panel | Landing page for that analyst (about, recent activity, recent chats with this analyst, action to start a new chat). Component: planned `AnalystLandingPage` |
-| **Analyst list** | User clicks "View all >" in the Analysts section | Full list of analysts with search / filter / sort. Component: planned `AnalystListPage` |
+| **Chat — welcome** | `selectedAnalyst === 'spotter-default'` and no chat active | `SpotterWelcome`: Spotter logo + greeting + radial glow + prompt + quick actions |
+| **Analyst landing** | Named analyst selected and no chat active | `AnalystLandingPage`: avatar circle + "Hi, I'm {name}" + analyst-scoped prompt |
+| **Chat — active** | `selectedChat !== null` or `state.messages.length > 0` | Scrollable `ChatThread` + sticky prompt — see "Chat-active state" below |
+| **Analyst list** | `rightPaneOverride === 'analyst-list'` (via "View all >" click) | `AnalystListPage`: search + All/Yours/Shared tabs + 3-column analyst card grid |
+
+**Right-pane derivation (implement exactly as shown):**
+```tsx
+const isChatActive = selectedChat !== null || state.messages.length > 0;
+const rightPane = isChatActive
+  ? 'chat'
+  : rightPaneOverride === 'analyst-list'
+  ? 'analyst-list'
+  : selectedAnalyst === 'spotter-default'
+  ? 'welcome'
+  : 'analyst-landing';
+```
 
 **Modal overlays** (over any state):
 - **Spotter instructions** (from Settings)
 - **Spotter best practices** (from Settings)
 
-State transitions are driven by left-pane navigation. The chat state is owned by `SpotterChatProvider`; the analyst-landing and analyst-list states are owned by prototype-local state (route or `useState`).
+State transitions are driven by left-pane navigation. The chat state is owned by `SpotterChatProvider`; the right-pane override is owned by `rightPaneOverride: 'analyst-list' | null` prototype state.
 
 ---
 
@@ -69,12 +81,13 @@ A "welcome state" is what the canvas shows before any user prompt is submitted. 
 The "first prompt" hero. No history, no model preselected, full attention on the prompt.
 
 **Elements:**
-- Centred hero copy — "Welcome to Spotter" / "Ask anything about your data"
+- `spotter` icon (brand color, 48px) — above the greeting
+- Centred hero copy — "Lets make sense of your data together." with "make sense" in brand blue
 - Radial brand glow behind the hero (`spotterGlow` token)
 - Sticky `SpotterPrompt` at bottom (chat input)
 - Optional `QuickActionRow` with 2–4 starter prompts (e.g., "Show me total sales by month")
 
-**When to use:** First-time user, after `clear()`, anonymous session.
+**When to use:** `selectedAnalyst === 'spotter-default'` and no chat active.
 
 ### 2. Returning (planned)
 
@@ -152,50 +165,75 @@ Collapsible between **rail** (64px, icons only) and **panel** (260px, with label
 SpotterPanel (260px)
 ├── Spotter title                          ← brand
 ├── SpotterLeftToggle                      ← collapse/expand icon button
-├── SpotterPanelAction "+ New chat"        ← top-level action, calls clear()
+├── SpotterPanelAction "+ New chat"        ← top-level action (variant='pill')
 ├── ─── Analysts section ──────────────────
-│   ├── AnalystCard (recent #1)             ← name + hover menu
-│   ├── AnalystCard (recent #2)
-│   └── "View all >"                        ← navigates right pane to AnalystListPage
+│   ├── SpotterPanelItem "Spotter (Default)" ← always present, spotter icon, selected by default
+│   ├── SpotterPanelItem (most recently used analyst #1) ← name + hover menu
+│   ├── SpotterPanelItem (most recently used analyst #2)
+│   └── SpotterPanelItem "View all >"       ← sets rightPaneOverride='analyst-list'
 ├── ─── Chats section ─────────────────────
 │   ├── Chat row (recency #1)               ← name + hover menu
 │   ├── Chat row (recency #2)
-│   └── ... (sorted by recency)
-└── Settings button (at the bottom)         ← opens SettingsMenu popover
+│   └── ... (sorted by recency, newest first)
+└── SpotterPanelAction "Settings" (variant='flat')  ← opens SettingsMenu popover
 ```
 
 ### Analysts section
 
-Shows the **2 most recently used analysts** plus a `"View all >"` row.
+Always shows: **"Spotter (Default)"** first, then the **2 most recently used named analysts**, then **"View all >"**.
 
-- Clicking an **analyst row** sets the right pane to the **Analyst landing** state for that analyst. In the prototype, this clears the active chat thread (`clear()`) and deselects any selected chat so the canvas returns to the welcome/empty state scoped to that analyst.
-- Clicking **"View all >"** sets the right pane to **Analyst list**
-- **Hover menu** on each analyst row:
+**Invariant:** exactly one analyst is always selected (`selectedAnalyst: string` — never null). Defaults to `'spotter-default'`. There is no unselected state.
+
+**Selection rules:**
+- Clicking **"Spotter (Default)"**: `setSelectedAnalyst('spotter-default'); setSelectedChat(null); clear(); setRightPaneOverride(null)`. Right pane → welcome.
+- Clicking a **named analyst**: `setSelectedAnalyst(id); setSelectedChat(null); clear(); setRightPaneOverride(null)`. Also move the id to front of `analystOrder` (MRU reordering). Right pane → AnalystLandingPage.
+- Clicking **"View all >"**: `setRightPaneOverride('analyst-list')`. `selectedAnalyst` is unchanged. The "View all" row gets `selected` styling when `rightPaneOverride === 'analyst-list'`.
+
+**Chat active + analyst highlight:** Analyst rows always reflect `selectedAnalyst` regardless of whether a chat is open. Both the analyst row and the chat row can be highlighted simultaneously.
+
+**Landing pages — no chat highlighted:** When `selectedChat === null` (on any landing page), no chat row is highlighted. Chats get highlighted only when clicked or when a new chat is started.
+
+**Recency ordering:** Named analysts are rendered sorted by `analystOrder` (most recently clicked first). The top 2 are displayed in the panel.
+
+- **Hover menu** on each named analyst row:
   - **Edit** — only shown if the user has edit privilege on that analyst
   - Share
   - Make a copy
   - Delete
 
-Components: planned `AnalystCard` (row) + `AnalystRowMenu` (hover menu).
+Components: `SpotterPanelItem` (rows) + `AnalystRowMenu` (hover menu, built at `src/spotter/page/AnalystRowMenu.tsx`).
 
 > Analyst ≠ data model. An analyst is a **custom AI agent** with its own configuration. A data model is a **data source** selected from the prompt's model picker. Both concepts coexist in the same chat session.
 
 ### Chats section
 
-All chats, sorted by recency (most recent first).
+All chats, sorted by recency (most recent first). Managed as `localChats: ChatEntry[]` in prototype-local state (mutable, prepend on new, newest first).
 
-- Clicking a chat row sets the right pane to **Chat — active** with that chat loaded. In the prototype, this calls `load(chat.messages)` (via `useSpotterChat`) which replaces the active thread with that chat's pre-baked `ChatMessage[]` history. The selected analyst is cleared. Each `ChatEntry` in `mockData.ts` must carry a `messages` array — never leave it empty.
+**Chat auto-naming:** When a user sends the first prompt in a new session (`selectedChat === null`), a new `ChatEntry` is created with:
+- `id`: `chat-${Date.now()}`
+- `title`: first 45 chars of the prompt, truncated with "…" if longer
+- `analystId`: the `selectedAnalyst` at time of send (links the chat to its analyst)
+- `messages: []` (live messages come from `state.messages`, not the entry)
+
+The new entry is prepended to `localChats` and `selectedChat` is set to the new id immediately — the chat row in the panel becomes highlighted before the first response arrives.
+
+**Clicking a chat row:** `setSelectedChat(chat.id); setSelectedAnalyst(chat.analystId); setRightPaneOverride(null); load(chat.messages)`. This also selects the chat's associated analyst in the panel, keeping analyst + chat in sync.
+
+**"New chat" button:** `clear(); setSelectedChat(null); setRightPaneOverride(null)` — does NOT reset `selectedAnalyst`. The right pane returns to the currently selected analyst's landing page.
+
+**Each `ChatEntry` in `mockData.ts`** must carry a `messages` array and an `analystId`. Never leave either empty.
+
 - **Hover menu** on each chat row:
   - Rename
   - Favorite / Star
   - Share
   - Delete
 
-Components: planned `ChatRowMenu` (hover menu).
+Components: `SpotterPanelItem` (rows) + `ChatRowMenu` (hover menu, built at `src/spotter/page/ChatRowMenu.tsx`).
 
 ### Settings (at the bottom of the panel)
 
-A persistent **Settings** button anchored at the bottom of the panel. Clicking it opens a popover menu with 6 items in 4 visual groups (separated by dividers):
+A persistent **Settings** button anchored at the bottom of the panel. Uses `SpotterPanelAction` with `variant="flat"` — full-width, no pill background, icon + text centered horizontally, 48px height. Clicking it opens a popover menu with 6 items in 4 visual groups (separated by dividers):
 
 | # | Item | Behaviour |
 |---|---|---|
@@ -209,7 +247,7 @@ A persistent **Settings** button anchored at the bottom of the panel. Clicking i
 | — | *divider* | |
 | 6 | **Spotter best practices** | Opens an in-page modal |
 
-Components: planned `SettingsMenu` (shell) + `PersonalMemoryToggle` (the inline toggle row). All other rows are simple link/menu rows distinguished by the external icon.
+Components: `SettingsMenu` (built at `src/spotter/page/SettingsMenu.tsx`) + `PersonalMemoryToggle` (built). All other rows are simple link/menu rows distinguished by the external icon.
 
 ### Rail mode
 

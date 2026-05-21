@@ -1,4 +1,4 @@
-.welcome {
+.page {
   position: relative;
   display: flex;
   flex-direction: column;
@@ -39,7 +39,30 @@
   max-width: var(--spotter-text-max-width, 844px);
 }
 
-.greeting {
+.avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(
+    135deg,
+    var(--rd-sys-color-content-brand) 0%,
+    var(--rd-ref-color-purple-500, #7c3aed) 100%
+  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.avatarInitial {
+  color: #ffffff;
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-2xl, 28px);
+  font-weight: var(--font-weight-semibold, 600);
+  line-height: 1;
+}
+
+.heading {
   margin: 0;
   color: var(--rd-sys-color-content-primary);
   font-family: var(--font-family-primary);
@@ -48,17 +71,4 @@
   line-height: var(--line-height-3xl, 40px);
   letter-spacing: -0.4px;
   text-align: center;
-}
-
-.greetingAccent {
-  color: var(--rd-sys-color-content-brand);
-}
-
-.logo {
-  width: 48px;
-  height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--rd-sys-color-content-brand);
 }

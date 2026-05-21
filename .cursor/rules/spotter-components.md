@@ -83,11 +83,11 @@ To add a new block kind:
 | `SpotterLeftToggle` | Default toggle button (uses the custom `PanelToggleIcon`). |
 | `SpotterRail` | Collapsed 64-wide column. Slots for `top` (icon items) and `bottom`. |
 | `SpotterRailItem` | Icon-only entry with `Tooltip` on hover. |
-| `SpotterPanel` | Expanded 260-wide column. Slots for `top`, `primaryAction`, body (sections), `footer`. |
-| `SpotterPanelAction` | Pill-style primary action button (e.g. "New chat", "Settings"). |
+| `SpotterPanel` | Expanded 260-wide column. Slots for `top`, `primaryAction`, body (sections), `footer`. The `footer` slot has zero padding — its child is expected to be full-width. |
+| `SpotterPanelAction` | Action button in the panel. `variant='pill'` (default): rounded pill with subtle background — for "New chat". `variant='flat'`: transparent, full-width, centered, 48px height — for "Settings". Always use `variant='flat'` for the Settings button at the bottom of the panel. |
 | `SpotterPanelSection` | Section with optional uppercase label. **Top divider for full-width line breaks.** |
 | `SpotterPanelItem` | Full-width row with optional leading icon + label + optional trailing icon. **Selected state uses `background-information` + `content-brand`, no border-radius.** |
-| `SpotterWelcome` | Empty-state canvas: greeting with brand-blue accent + radial glow + slot for prompt + slot for quick actions. |
+| `SpotterWelcome` | Default-analyst landing canvas. Spotter `spotter` icon (48px, brand color) above the greeting. Greeting with brand-blue accent + radial glow + slot for prompt + slot for quick actions. |
 
 ## runtime/ — wire format + service
 
@@ -124,11 +124,10 @@ To add a new block kind:
 
 ## Where consumers live
 
-- **Prototype**: `src/prototypes/Spotter/` — wraps `<SpotterChatProvider>`,
-  switches between `<SpotterWelcome>` and the local `<ChatCanvas>`.
-- **`ChatCanvas`** (prototype-local at `src/prototypes/Spotter/components/`)
-  — chat-active layout: scrollable `<ChatThread>` + sticky `<SpotterPrompt>`
-  + disclaimer.
+- **Prototype**: `src/prototypes/Spotter/` — wraps `<SpotterChatProvider>`. Right pane derived from `(selectedAnalyst, selectedChat, rightPaneOverride)` state — see `spotter-ia.md` for exact derivation.
+- **`ChatCanvas`** (prototype-local at `src/prototypes/Spotter/components/`) — chat-active layout: scrollable `<ChatThread>` + sticky `<SpotterPrompt>` + disclaimer.
+- **`AnalystLandingPage`** (prototype-local at `src/prototypes/Spotter/components/`) — right-pane view when a named analyst is selected and no chat is active. Full-height centered: radial glow + 80px avatar circle (brand gradient, white initial) + "Hi, I'm {name}" heading + `SpotterPrompt` with analyst-specific placeholder.
+- **`AnalystListPage`** (prototype-local at `src/prototypes/Spotter/components/`) — right-pane view when `rightPaneOverride === 'analyst-list'`. Full-width page: header ("Analysts" + "+ Create new") + search bar + All/Yours/Shared tabs + 3-column responsive grid of analyst cards (avatar, name, description, author, integration chips).
 
 When you change a Spotter DS component, that change ripples to every
 consumer. When you change a prototype-local component (like
@@ -156,41 +155,43 @@ Statuses: `design` (Figma in progress) → `figma-ready` (Figma done, code not s
 
 ### AnalystCard
 - **Status:** design pending
-- **Purpose:** Row item shown in the left-pane **Analysts** section (avatar + name + hover affordance for the row menu). Also reused inside `AnalystListPage` as the row primitive.
+- **Purpose:** Row item shown in the left-pane **Analysts** section (avatar + name + hover affordance for the row menu). Currently `SpotterPanelItem` is used directly.
 - **Note:** Analyst ≠ data model. An analyst is a custom AI agent; a data model is a data source.
 - **Will live at:** `src/spotter/page/AnalystCard.tsx` (tentative)
 
 ### AnalystRowMenu
-- **Status:** design pending
-- **Purpose:** Hover menu that appears on each analyst row in the left panel.
-- **Items:** Edit (only shown when the user has edit privilege on the analyst), Share, Make a copy, Delete.
-- **Will live at:** `src/spotter/page/AnalystRowMenu.tsx` (tentative)
+- **Status:** built
+- **Lives at:** `src/spotter/page/AnalystRowMenu.tsx`
+- **Purpose:** Hover menu that appears on each analyst row in the left panel. Items: Edit (only shown when user has edit privilege), Share, Make a copy, Delete.
 
 ### AnalystLandingPage
-- **Status:** design pending
-- **Purpose:** Right-pane state when the user clicks an analyst in the left panel. Shows the analyst's about info, recent activity, recent chats with this analyst, and an action to start a new chat against it.
-- **Will live at:** `src/spotter/page/AnalystLandingPage.tsx` (tentative)
+- **Status:** built (prototype-local)
+- **Purpose:** Right-pane state when a named analyst is selected and no chat is active.
+- **Lives at:** `src/prototypes/Spotter/components/AnalystLandingPage.tsx`
+- **Elements:** full-height centered page, radial glow, 80px avatar circle (brand-to-purple gradient, white initial), "Hi, I'm {analystName}" h1, `SpotterPrompt` with `placeholder="Ask {analystName} anything about your data"`.
+- **Props:** `analystName: string`, `promptProps?: SpotterPromptProps`
 
 ### AnalystListPage
-- **Status:** design pending
-- **Purpose:** Right-pane state when the user clicks "View all >" in the Analysts section. Full list of analysts with search / filter / sort.
-- **Will live at:** `src/spotter/page/AnalystListPage.tsx` (tentative)
+- **Status:** built (prototype-local)
+- **Purpose:** Right-pane state when the user clicks "View all >" in the Analysts section (`rightPaneOverride === 'analyst-list'`).
+- **Lives at:** `src/prototypes/Spotter/components/AnalystListPage.tsx`
+- **Elements:** "Analysts" header + "+ Create new" button, `SearchInput`, All/Yours/Shared `Tabs`, 3-column responsive grid of analyst cards (avatar circle with initial, name, description, author, integration chips). Clicking a card calls `onAnalystClick(id)` which triggers a full analyst-click navigation (sets selectedAnalyst, clears chat, clears rightPaneOverride).
+- **Props:** `analysts: Analyst[]`, `onAnalystClick: (id: string) => void`, `onCreateNew: () => void`
 
 ### ChatRowMenu
-- **Status:** design pending
-- **Purpose:** Hover menu that appears on each chat row in the left panel.
-- **Items:** Rename, Favorite / Star, Share, Delete.
-- **Will live at:** `src/spotter/page/ChatRowMenu.tsx` (tentative)
+- **Status:** built
+- **Lives at:** `src/spotter/page/ChatRowMenu.tsx`
+- **Purpose:** Hover menu that appears on each chat row in the left panel. Items: Rename, Favorite / Star, Share, Delete.
 
 ### SettingsMenu
-- **Status:** design pending
-- **Purpose:** Popover menu opened from the Settings button at the bottom of the left panel. Hosts 6 items in 4 dividered groups: Spotter instructions (modal) · Usage monitoring + Admin settings (new tab) · Manage memory sources (new tab) + Personal memory (inline toggle) · Spotter best practices (modal).
-- **Will live at:** `src/spotter/page/SettingsMenu.tsx` (tentative)
+- **Status:** built
+- **Lives at:** `src/spotter/page/SettingsMenu.tsx`
+- **Purpose:** Popover menu opened from the Settings button at the bottom of the left panel. Hosts 6 items in 4 divided groups: Spotter instructions (modal) · Usage monitoring + Admin settings (new tab) · Manage memory sources (new tab) + Personal memory (inline toggle) · Spotter best practices (modal).
 
 ### PersonalMemoryToggle
-- **Status:** design pending
+- **Status:** built
+- **Lives at:** `src/spotter/page/PersonalMemoryToggle.tsx`
 - **Purpose:** Inline toggle row inside `SettingsMenu` — no navigation, just on / off in place. Reads + writes a user preference.
-- **Will live at:** `src/spotter/page/PersonalMemoryToggle.tsx` (tentative)
 
 ### Spotter topbar variants
 - **Status:** design pending

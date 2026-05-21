@@ -27,7 +27,7 @@
 }
 
 .bottom {
-  padding: var(--spacing-3, 12px);
+  padding: 0;
   border-top: 1px solid var(--rd-sys-color-border-divider);
 }
 
@@ -57,4 +57,16 @@
 .actionButton:focus-visible {
   outline: 2px solid var(--rd-sys-color-border-focus);
   outline-offset: 2px;
+}
+
+.actionButtonFlat {
+  background-color: transparent;
+  border-radius: 0;
+  height: 48px;
+  justify-content: center;
+}
+
+.actionButtonFlat:hover {
+  filter: none;
+  background-color: var(--rd-sys-color-background-subtle);
 }

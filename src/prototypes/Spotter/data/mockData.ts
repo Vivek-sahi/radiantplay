@@ -6,17 +6,22 @@
  * loads a realistic conversation into the canvas.
  */
 
-import type { ChatMessage } from '@spotter/runtime';
+import type { ChatMessage, AnswerBlock } from '@spotter/runtime';
 
 export interface Analyst {
   id: string;
   name: string;
   canEdit: boolean;
+  description: string;
+  author: string;
+  integrations: string[];
 }
 
 export interface ChatEntry {
   id: string;
   title: string;
+  /** The analyst this chat belongs to. */
+  analystId: string;
   /** Pre-baked conversation shown when this chat is selected. */
   messages: ChatMessage[];
 }
@@ -42,7 +47,7 @@ const userMsg = (id: string, text: string, minutesAgo: number): ChatMessage => (
 const agentMsg = (
   id: string,
   minutesAgo: number,
-  blocks: ChatMessage['content']['blocks'],
+  blocks: AnswerBlock[],
 ): ChatMessage => ({
   id,
   role: 'agent',
@@ -63,14 +68,61 @@ const agentMsg = (
 // ---------- chat histories ----------
 
 export const analysts: Analyst[] = [
-  { id: 'customer-prep', name: 'Customer prep', canEdit: true },
-  { id: 'deal-accelerator', name: 'Deal accelerator', canEdit: false },
+  {
+    id: 'customer-prep',
+    name: 'Customer prep',
+    canEdit: true,
+    description: 'Prepare for customer meetings with data-backed insights on account health, purchase history, and growth opportunities.',
+    author: 'Priya Nair',
+    integrations: ['Salesforce', 'HubSpot'],
+  },
+  {
+    id: 'deal-accelerator',
+    name: 'Deal accelerator',
+    canEdit: false,
+    description: 'Identify high-value deals at risk and surface recommended actions to move them forward in the pipeline.',
+    author: 'Rahul Mehta',
+    integrations: ['Salesforce', 'Outreach'],
+  },
+  {
+    id: 'territory-planner',
+    name: 'Territory planner',
+    canEdit: true,
+    description: 'Analyse coverage gaps, dealer density, and demand signals to optimise territory assignments across regions.',
+    author: 'Divya Krishnan',
+    integrations: ['Google Sheets', 'Salesforce'],
+  },
+  {
+    id: 'product-pulse',
+    name: 'Product pulse',
+    canEdit: false,
+    description: 'Track feature adoption, user feedback trends, and NPS movements to prioritise your product roadmap.',
+    author: 'Arjun Sharma',
+    integrations: ['Mixpanel', 'Zendesk'],
+  },
+  {
+    id: 'support-triage',
+    name: 'Support triage',
+    canEdit: true,
+    description: 'Surface high-priority support tickets, detect escalation patterns, and track resolution SLA compliance.',
+    author: 'Meera Iyer',
+    integrations: ['Zendesk', 'Jira'],
+  },
+  {
+    id: 'revenue-forecaster',
+    name: 'Revenue forecaster',
+    canEdit: false,
+    description: 'Generate and compare revenue forecast scenarios using historical trends and pipeline data.',
+    author: 'Karthik Bose',
+    integrations: ['Salesforce', 'NetSuite'],
+  },
 ];
 
 export const chats: ChatEntry[] = [
   {
     id: 'chat-1',
     title: 'Total sales by monthly',
+    analystId: 'spotter-default',
     messages: [
       userMsg('c1-u1', 'Show me total sales by month', 45),
       agentMsg('c1-a1', 44, [
@@ -104,6 +156,7 @@ export const chats: ChatEntry[] = [
   {
     id: 'chat-2',
     title: 'Regions with lowest sales',
+    analystId: 'spotter-default',
     messages: [
       userMsg('c2-u1', 'Which regions have the lowest sales this quarter?', 120),
       agentMsg('c2-a1', 119, [
@@ -141,6 +194,7 @@ export const chats: ChatEntry[] = [
   {
     id: 'chat-3',
     title: 'Geographical zones exhibiting low engagement',
+    analystId: 'spotter-default',
     messages: [
       userMsg('c3-u1', 'Which geographical zones are showing low customer engagement?', 240),
       agentMsg('c3-a1', 239, [
@@ -156,6 +210,7 @@ export const chats: ChatEntry[] = [
   {
     id: 'chat-4',
     title: 'Sparsely populated areas with high product demand',
+    analystId: 'spotter-default',
     messages: [
       userMsg('c4-u1', 'Find sparsely populated areas where product demand is disproportionately high', 360),
       agentMsg('c4-a1', 359, [

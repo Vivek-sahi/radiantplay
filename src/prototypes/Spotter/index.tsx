@@ -19,10 +19,13 @@ import {
 } from '@spotter/page';
 import { SpotterChatProvider, useSpotterChat } from '@spotter/chat';
 import { ChatCanvas } from './components/ChatCanvas';
+import { AnalystLandingPage } from './components/AnalystLandingPage';
+import { AnalystListPage } from './components/AnalystListPage';
 import {
-  chats,
+  chats as initialChats,
   analysts,
   dataModels,
+  type ChatEntry,
 } from './data/mockData';
 
 const USER_AVATAR_URL = 'https://i.pravatar.cc/64?img=47';
@@ -45,8 +48,11 @@ const noop = (): void => {};
 
 const SpotterInner: React.FC = () => {
   const [mode, setMode] = useState<SpotterLeftMode>('panel');
-  const [selectedAnalyst, setSelectedAnalyst] = useState<string | null>(null);
+  const [selectedAnalyst, setSelectedAnalyst] = useState<string>('spotter-default');
   const [selectedChat, setSelectedChat] = useState<string | null>(null);
+  const [rightPaneOverride, setRightPaneOverride] = useState<'analyst-list' | null>(null);
+  const [localChats, setLocalChats] = useState<ChatEntry[]>(initialChats);
+  const [analystOrder, setAnalystOrder] = useState<string[]>(analysts.map((a) => a.id));
   const [promptValue, setPromptValue] = useState('');
   const [dataModelId, setDataModelId] = useState(dataModels[0].id);
   const [personalMemoryEnabled, setPersonalMemoryEnabled] = useState(true);
@@ -54,13 +60,34 @@ const SpotterInner: React.FC = () => {
   const [favoriteChats, setFavoriteChats] = useState<Set<string>>(new Set());
 
   const { state, send, clear, load } = useSpotterChat();
-  const isEmpty = state.messages.length === 0;
+
+  const isChatActive = selectedChat !== null || state.messages.length > 0;
+  const rightPane = isChatActive
+    ? 'chat'
+    : rightPaneOverride === 'analyst-list'
+    ? 'analyst-list'
+    : selectedAnalyst === 'spotter-default'
+    ? 'welcome'
+    : 'analyst-landing';
 
   const toggleMode = (): void => {
     setMode((prev) => (prev === 'rail' ? 'panel' : 'rail'));
   };
 
   const handleSubmit = (value: string): void => {
+    // Auto-name new chats on first message
+    if (selectedChat === null) {
+      const title = value.length > 45 ? `${value.slice(0, 45)}…` : value;
+      const newId = `chat-${Date.now()}`;
+      const newChat: ChatEntry = {
+        id: newId,
+        title,
+        analystId: selectedAnalyst,
+        messages: [],
+      };
+      setLocalChats((prev) => [newChat, ...prev]);
+      setSelectedChat(newId);
+    }
     send(value);
     setPromptValue('');
   };
@@ -73,11 +100,9 @@ const SpotterInner: React.FC = () => {
     };
     const text = promptByAction[id];
     if (!text) return;
-    // Pre-fill the input so the user sees what's being sent, then submit
     setPromptValue(text);
     requestAnimationFrame(() => {
-      send(text);
-      setPromptValue('');
+      handleSubmit(text);
     });
   };
 
@@ -85,7 +110,23 @@ const SpotterInner: React.FC = () => {
     clear();
     setPromptValue('');
     setSelectedChat(null);
-    setSelectedAnalyst(null);
+    setRightPaneOverride(null);
+    // Do NOT reset selectedAnalyst — keep current analyst selected
+  };
+
+  const handleAnalystClick = (id: string): void => {
+    setSelectedAnalyst(id);
+    setSelectedChat(null);
+    clear();
+    setRightPaneOverride(null);
+    setAnalystOrder((prev) => [id, ...prev.filter((a) => a !== id)]);
+  };
+
+  const handleChatClick = (chat: ChatEntry): void => {
+    setSelectedChat(chat.id);
+    setSelectedAnalyst(chat.analystId);
+    setRightPaneOverride(null);
+    load(chat.messages);
   };
 
   const handleToggleFavorite = (chatId: string): void => {
@@ -110,6 +151,12 @@ const SpotterInner: React.FC = () => {
     },
   };
 
+  const sortedAnalysts = [...analysts].sort(
+    (a, b) => analystOrder.indexOf(a.id) - analystOrder.indexOf(b.id),
+  );
+
+  const activeAnalyst = analysts.find((a) => a.id === selectedAnalyst);
+
   const railContent = (
     <SpotterRail
       top={
@@ -132,7 +179,7 @@ const SpotterInner: React.FC = () => {
       personalMemoryEnabled={personalMemoryEnabled}
       onPersonalMemoryChange={setPersonalMemoryEnabled}
     >
-      <SpotterPanelAction label="Settings" icon="settings" />
+      <SpotterPanelAction label="Settings" icon="settings" variant="flat" />
     </SettingsMenu>
   );
 
@@ -149,7 +196,18 @@ const SpotterInner: React.FC = () => {
       footer={settingsButton}
     >
       <SpotterPanelSection label="Analysts">
-        {analysts.slice(0, 2).map((analyst) => (
+        <SpotterPanelItem
+          label="Spotter (Default)"
+          icon="spotter"
+          selected={selectedAnalyst === 'spotter-default'}
+          onClick={() => {
+            setSelectedAnalyst('spotter-default');
+            setSelectedChat(null);
+            clear();
+            setRightPaneOverride(null);
+          }}
+        />
+        {sortedAnalysts.slice(0, 2).map((analyst) => (
           <AnalystRowMenu
             key={analyst.id}
             canEdit={analyst.canEdit}
@@ -161,24 +219,20 @@ const SpotterInner: React.FC = () => {
             <SpotterPanelItem
               label={analyst.name}
               selected={selectedAnalyst === analyst.id}
-              onClick={() => {
-                setSelectedAnalyst(analyst.id);
-                setSelectedChat(null);
-                clear();
-              }}
+              onClick={() => handleAnalystClick(analyst.id)}
             />
           </AnalystRowMenu>
         ))}
         <SpotterPanelItem
           label="View all"
           trailingIcon="chevron-right"
-          selected={selectedAnalyst === 'list'}
-          onClick={() => setSelectedAnalyst('list')}
+          selected={rightPaneOverride === 'analyst-list'}
+          onClick={() => setRightPaneOverride('analyst-list')}
         />
       </SpotterPanelSection>
 
       <SpotterPanelSection label="Chats">
-        {chats.map((chat) => (
+        {localChats.map((chat) => (
           <ChatRowMenu
             key={chat.id}
             isFavorite={favoriteChats.has(chat.id)}
@@ -190,11 +244,7 @@ const SpotterInner: React.FC = () => {
             <SpotterPanelItem
               label={chat.title}
               selected={selectedChat === chat.id}
-              onClick={() => {
-                setSelectedChat(chat.id);
-                setSelectedAnalyst(null);
-                load(chat.messages);
-              }}
+              onClick={() => handleChatClick(chat)}
             />
           </ChatRowMenu>
         ))}
@@ -226,18 +276,32 @@ const SpotterInner: React.FC = () => {
           />
         }
       >
-        {isEmpty ? (
+        {rightPane === 'welcome' && (
           <SpotterWelcome
             promptProps={promptProps}
             quickActionProps={{ onAction: handleQuickAction }}
           />
-        ) : (
+        )}
+        {rightPane === 'chat' && (
           <ChatCanvas
             messages={state.messages}
             promptProps={promptProps}
             userAvatarUrl={USER_AVATAR_URL}
             userInitial="A"
             agentAvatarIcon="ai"
+          />
+        )}
+        {rightPane === 'analyst-landing' && (
+          <AnalystLandingPage
+            analystName={activeAnalyst?.name ?? selectedAnalyst}
+            promptProps={promptProps}
+          />
+        )}
+        {rightPane === 'analyst-list' && (
+          <AnalystListPage
+            analysts={analysts}
+            onAnalystClick={(id) => handleAnalystClick(id)}
+            onCreateNew={noop}
           />
         )}
       </SpotterShell>
