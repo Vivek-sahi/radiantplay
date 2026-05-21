@@ -87,6 +87,10 @@ const SpotterInner: React.FC = () => {
       };
       setLocalChats((prev) => [newChat, ...prev]);
       setSelectedChat(newId);
+      // Reorder analyst MRU only when a chat is actually started
+      if (selectedAnalyst !== 'spotter-default') {
+        setAnalystOrder((prev) => [selectedAnalyst, ...prev.filter((a) => a !== selectedAnalyst)]);
+      }
     }
     send(value);
     setPromptValue('');
@@ -119,7 +123,7 @@ const SpotterInner: React.FC = () => {
     setSelectedChat(null);
     clear();
     setRightPaneOverride(null);
-    setAnalystOrder((prev) => [id, ...prev.filter((a) => a !== id)]);
+    // Order is updated only when a chat is started, not on mere navigation
   };
 
   const handleChatClick = (chat: ChatEntry): void => {
