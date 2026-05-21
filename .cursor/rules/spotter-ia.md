@@ -81,7 +81,6 @@ A "welcome state" is what the canvas shows before any user prompt is submitted. 
 The "first prompt" hero. No history, no model preselected, full attention on the prompt.
 
 **Elements:**
-- `spotter` icon (brand color, 48px) — above the greeting
 - Centred hero copy — "Lets make sense of your data together." with "make sense" in brand blue
 - Radial brand glow behind the hero (`spotterGlow` token)
 - Sticky `SpotterPrompt` at bottom (chat input)
@@ -166,10 +165,11 @@ SpotterPanel (260px)
 ├── Spotter title                          ← brand
 ├── SpotterLeftToggle                      ← collapse/expand icon button
 ├── SpotterPanelAction "+ New chat"        ← top-level action (variant='pill')
+├── ─── (unlabelled section) ──────────────
+│   └── SpotterPanelItem "Spotter (Default)" ← always present, selected by default
 ├── ─── Analysts section ──────────────────
-│   ├── SpotterPanelItem "Spotter (Default)" ← always present, spotter icon, selected by default
-│   ├── SpotterPanelItem (most recently used analyst #1) ← name + hover menu
-│   ├── SpotterPanelItem (most recently used analyst #2)
+│   ├── SpotterPanelItem (most recently chatted analyst #1) ← name + hover menu
+│   ├── SpotterPanelItem (most recently chatted analyst #2)
 │   └── SpotterPanelItem "View all >"       ← sets rightPaneOverride='analyst-list'
 ├── ─── Chats section ─────────────────────
 │   ├── Chat row (recency #1)               ← name + hover menu
@@ -186,14 +186,14 @@ Always shows: **"Spotter (Default)"** first, then the **2 most recently used nam
 
 **Selection rules:**
 - Clicking **"Spotter (Default)"**: `setSelectedAnalyst('spotter-default'); setSelectedChat(null); clear(); setRightPaneOverride(null)`. Right pane → welcome.
-- Clicking a **named analyst**: `setSelectedAnalyst(id); setSelectedChat(null); clear(); setRightPaneOverride(null)`. Also move the id to front of `analystOrder` (MRU reordering). Right pane → AnalystLandingPage.
-- Clicking **"View all >"**: `setRightPaneOverride('analyst-list')`. `selectedAnalyst` is unchanged. The "View all" row gets `selected` styling when `rightPaneOverride === 'analyst-list'`.
+- Clicking a **named analyst**: `setSelectedAnalyst(id); setSelectedChat(null); clear(); setRightPaneOverride(null)`. Does **not** reorder analysts — navigation alone does not count as recent use. Right pane → AnalystLandingPage.
+- Clicking **"View all >"**: `setRightPaneOverride('analyst-list')`. `selectedAnalyst` is unchanged. Only "View all" gets `selected` styling; all analyst rows (including "Spotter (Default)") lose their highlight while the analyst list is open.
 
 **Chat active + analyst highlight:** Analyst rows always reflect `selectedAnalyst` regardless of whether a chat is open. Both the analyst row and the chat row can be highlighted simultaneously.
 
 **Landing pages — no chat highlighted:** When `selectedChat === null` (on any landing page), no chat row is highlighted. Chats get highlighted only when clicked or when a new chat is started.
 
-**Recency ordering:** Named analysts are rendered sorted by `analystOrder` (most recently clicked first). The top 2 are displayed in the panel.
+**Recency ordering:** Named analysts are rendered sorted by `analystOrder` (most recently *chatted with* first). The top 2 are displayed in the panel. The order updates only when a new chat is started (first prompt sent with that analyst selected) — not on mere panel navigation.
 
 - **Hover menu** on each named analyst row:
   - **Edit** — only shown if the user has edit privilege on that analyst

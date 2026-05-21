@@ -87,7 +87,7 @@ To add a new block kind:
 | `SpotterPanelAction` | Action button in the panel. `variant='pill'` (default): rounded pill with subtle background — for "New chat". `variant='flat'`: transparent, full-width, centered, 48px height — for "Settings". Always use `variant='flat'` for the Settings button at the bottom of the panel. |
 | `SpotterPanelSection` | Section with optional uppercase label. **Top divider for full-width line breaks.** |
 | `SpotterPanelItem` | Full-width row with optional leading icon + label + optional trailing icon. **Selected state uses `background-information` + `content-brand`, no border-radius.** |
-| `SpotterWelcome` | Default-analyst landing canvas. Spotter `spotter` icon (48px, brand color) above the greeting. Greeting with brand-blue accent + radial glow + slot for prompt + slot for quick actions. |
+| `SpotterWelcome` | Default-analyst landing canvas. Greeting with brand-blue accent + radial glow + slot for prompt + slot for quick actions. No logo. |
 
 ## runtime/ — wire format + service
 
@@ -127,7 +127,7 @@ To add a new block kind:
 - **Prototype**: `src/prototypes/Spotter/` — wraps `<SpotterChatProvider>`. Right pane derived from `(selectedAnalyst, selectedChat, rightPaneOverride)` state — see `spotter-ia.md` for exact derivation.
 - **`ChatCanvas`** (prototype-local at `src/prototypes/Spotter/components/`) — chat-active layout: scrollable `<ChatThread>` + sticky `<SpotterPrompt>` + disclaimer.
 - **`AnalystLandingPage`** (prototype-local at `src/prototypes/Spotter/components/`) — right-pane view when a named analyst is selected and no chat is active. Full-height centered: radial glow + 80px avatar circle (brand gradient, white initial) + "Hi, I'm {name}" heading + `SpotterPrompt` with analyst-specific placeholder.
-- **`AnalystListPage`** (prototype-local at `src/prototypes/Spotter/components/`) — right-pane view when `rightPaneOverride === 'analyst-list'`. Full-width page: header ("Analysts" + "+ Create new") + search bar + All/Yours/Shared tabs + 3-column responsive grid of analyst cards (avatar, name, description, author, integration chips).
+- **`AnalystListPage`** (prototype-local at `src/prototypes/Spotter/components/`) — right-pane view when `rightPaneOverride === 'analyst-list'`. Full-width scrollable outer container; inner content centered at `936px` max-width (matching `--spotter-chat-max-width`). Contains: header ("Analysts" + "+ Create new") + search bar + All/Yours/Shared tabs + 3-column responsive grid of analyst cards (avatar, name, description, author, integration chips).
 
 When you change a Spotter DS component, that change ripples to every
 consumer. When you change a prototype-local component (like
