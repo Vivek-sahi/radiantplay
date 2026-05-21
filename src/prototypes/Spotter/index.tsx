@@ -18,9 +18,11 @@ import {
   type SpotterLeftMode,
 } from '@spotter/page';
 import { SpotterChatProvider, useSpotterChat } from '@spotter/chat';
+import type { SpotterPromptMode } from '@spotter/chat';
 import { ChatCanvas } from './components/ChatCanvas';
 import { AnalystLandingPage } from './components/AnalystLandingPage';
 import { AnalystListPage } from './components/AnalystListPage';
+import { PromptSuggestionsPanel } from './components/PromptSuggestionsPanel';
 import {
   chats as initialChats,
   analysts,
@@ -54,6 +56,8 @@ const SpotterInner: React.FC = () => {
   const [localChats, setLocalChats] = useState<ChatEntry[]>(initialChats);
   const [analystOrder, setAnalystOrder] = useState<string[]>(analysts.map((a) => a.id));
   const [promptValue, setPromptValue] = useState('');
+  const [promptMode, setPromptMode] = useState<SpotterPromptMode>('ask');
+  const [suggestionMode, setSuggestionMode] = useState<'quick-search' | 'deep-analysis' | null>(null);
   const [dataModelId, setDataModelId] = useState(dataModels[0].id);
   const [personalMemoryEnabled, setPersonalMemoryEnabled] = useState(true);
   const [openModal, setOpenModal] = useState<ModalKey>(null);
@@ -75,6 +79,7 @@ const SpotterInner: React.FC = () => {
   };
 
   const handleSubmit = (value: string): void => {
+    setSuggestionMode(null);
     // Auto-name new chats on first message
     if (selectedChat === null) {
       const title = value.length > 45 ? `${value.slice(0, 45)}…` : value;
@@ -97,17 +102,22 @@ const SpotterInner: React.FC = () => {
   };
 
   const handleQuickAction = (id: string): void => {
-    const promptByAction: Record<string, string> = {
-      'quick-search': 'Show me total sales by month',
-      'deep-analysis': 'Analyze sales for the upcoming fall and winter season',
-      'know-your-data': 'What are the most common questions asked about this data?',
-    };
-    const text = promptByAction[id];
-    if (!text) return;
+    if (id === 'quick-search' || id === 'deep-analysis') {
+      // Toggle the suggestion panel — clicking the same button again closes it
+      setSuggestionMode((prev) => (prev === id ? null : id));
+      return;
+    }
+    if (id === 'know-your-data') {
+      const text = 'Help me understand this data model and what can you do with it?';
+      setPromptValue(text);
+      requestAnimationFrame(() => { handleSubmit(text); });
+    }
+  };
+
+  const handleSuggestionSelect = (text: string): void => {
+    setSuggestionMode(null);
     setPromptValue(text);
-    requestAnimationFrame(() => {
-      handleSubmit(text);
-    });
+    requestAnimationFrame(() => { handleSubmit(text); });
   };
 
   const handleNewChat = (): void => {
@@ -144,15 +154,28 @@ const SpotterInner: React.FC = () => {
 
   const activeDataModel = dataModels.find((m) => m.id === dataModelId) ?? dataModels[0];
 
-  const promptProps = {
+  const basePromptProps = {
     value: promptValue,
     onChange: setPromptValue,
     onSubmit: handleSubmit,
+    mode: promptMode,
+    onModeChange: setPromptMode,
+  };
+
+  // Default Spotter + chat canvas: show the data model picker
+  const promptProps = {
+    ...basePromptProps,
     dataModelLabel: activeDataModel.name,
     onDataModelClick: () => {
       const next = dataModels[(dataModels.indexOf(activeDataModel) + 1) % dataModels.length];
       setDataModelId(next.id);
     },
+  };
+
+  // Named analyst landing pages: hide the data model picker
+  const analystPromptProps = {
+    ...basePromptProps,
+    showDataModel: false,
   };
 
   const sortedAnalysts = [...analysts].sort(
@@ -285,6 +308,15 @@ const SpotterInner: React.FC = () => {
         {rightPane === 'welcome' && (
           <SpotterWelcome
             promptProps={promptProps}
+            quickActions={
+              suggestionMode ? (
+                <PromptSuggestionsPanel
+                  mode={suggestionMode}
+                  onSelect={handleSuggestionSelect}
+                  onClose={() => setSuggestionMode(null)}
+                />
+              ) : undefined
+            }
             quickActionProps={{ onAction: handleQuickAction }}
           />
         )}
@@ -300,7 +332,7 @@ const SpotterInner: React.FC = () => {
         {rightPane === 'analyst-landing' && (
           <AnalystLandingPage
             analystName={activeAnalyst?.name ?? selectedAnalyst}
-            promptProps={promptProps}
+            promptProps={analystPromptProps}
           />
         )}
         {rightPane === 'analyst-list' && (
