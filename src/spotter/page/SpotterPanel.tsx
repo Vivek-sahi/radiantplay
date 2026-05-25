@@ -51,15 +51,21 @@ SpotterPanel.displayName = 'SpotterPanel';
 export interface SpotterPanelActionProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'type'> {
   label: string;
   icon?: IconName | React.ReactNode;
+  variant?: 'pill' | 'flat';
 }
 
 export const SpotterPanelAction: React.FC<SpotterPanelActionProps> = ({
   label,
   icon,
+  variant = 'pill',
   className,
   ...props
 }) => {
-  const classes = [styles.actionButton, className].filter(Boolean).join(' ');
+  const classes = [
+    styles.actionButton,
+    variant === 'flat' ? styles.actionButtonFlat : undefined,
+    className,
+  ].filter(Boolean).join(' ');
   const renderIcon = (): React.ReactNode => {
     if (!icon) return null;
     if (typeof icon === 'string') {

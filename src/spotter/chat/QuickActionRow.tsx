@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Horizontal } from '@components/Layout';
 import type { IconName } from '@components/icons';
 import { QuickAction } from './QuickAction';
@@ -26,6 +26,17 @@ export const QuickActionRow: React.FC<QuickActionRowProps> = ({
   onAction,
   className,
 }) => {
+  const [fired, setFired] = useState<string | null>(null);
+
+  const handleClick = (id: string): void => {
+    if (fired) return;
+    setFired(id);
+    // Let the press animation complete before triggering the action
+    requestAnimationFrame(() => {
+      onAction?.(id);
+    });
+  };
+
   return (
     <Horizontal gap={12} justify="center" align="center" wrap className={className}>
       {actions.map((action) => (
@@ -33,7 +44,8 @@ export const QuickActionRow: React.FC<QuickActionRowProps> = ({
           key={action.id}
           label={action.label}
           icon={action.icon}
-          onClick={() => onAction?.(action.id)}
+          disabled={fired !== null && fired !== action.id}
+          onClick={() => handleClick(action.id)}
         />
       ))}
     </Horizontal>

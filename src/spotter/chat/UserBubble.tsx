@@ -25,15 +25,17 @@ export const UserBubble: React.FC<UserBubbleProps> = ({
   initial = 'A',
 }) => {
   return (
-    <div className={styles.row}>
-      <div className={styles.avatar} aria-hidden="true">
-        {avatarUrl ? (
-          <img src={avatarUrl} alt="" className={styles.avatarImg} />
-        ) : (
-          <span className={styles.avatarFallback}>{initial}</span>
-        )}
+    <div className={styles.wrapper}>
+      <div className={styles.row}>
+        <div className={styles.avatar} aria-hidden="true">
+          {avatarUrl ? (
+            <img src={avatarUrl} alt="" className={styles.avatarImg} />
+          ) : (
+            <span className={styles.avatarFallback}>{initial}</span>
+          )}
+        </div>
+        <p className={styles.text}>{message.text}</p>
       </div>
-      <p className={styles.text}>{message.text}</p>
       <span className={styles.timestamp}>{formatTimestamp(message.createdAt)}</span>
     </div>
   );

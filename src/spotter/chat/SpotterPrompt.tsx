@@ -13,6 +13,12 @@ export interface SpotterPromptProps {
   placeholder?: string;
   dataModelLabel?: string;
   onDataModelClick?: () => void;
+  /**
+   * When false, the data model picker and the + source button are hidden.
+   * Use on named-analyst landing pages where no data model concept applies.
+   * Defaults to true.
+   */
+  showDataModel?: boolean;
   mode?: SpotterPromptMode;
   onModeChange?: (mode: SpotterPromptMode) => void;
   disabled?: boolean;
@@ -32,6 +38,7 @@ export const SpotterPrompt = forwardRef<HTMLDivElement, SpotterPromptProps>(
       placeholder = DEFAULT_PLACEHOLDER,
       dataModelLabel = DEFAULT_DATA_MODEL_LABEL,
       onDataModelClick,
+      showDataModel = true,
       mode = 'ask',
       onModeChange,
       disabled = false,
@@ -113,18 +120,22 @@ export const SpotterPrompt = forwardRef<HTMLDivElement, SpotterPromptProps>(
                 <OrbitsIcon size="l" />
               </button>
             </div>
-            <span className={styles.divider} aria-hidden="true" />
-            <button
-              type="button"
-              className={styles.modelPicker}
-              onClick={onDataModelClick}
-            >
-              <span>{dataModelLabel}</span>
-              <Icon name="chevron-down" size="s" />
-            </button>
-            <button type="button" className={styles.iconBtn} aria-label="Add data sources">
-              <Icon name="plus" size="s" />
-            </button>
+            {showDataModel && (
+              <>
+                <span className={styles.divider} aria-hidden="true" />
+                <button
+                  type="button"
+                  className={styles.modelPicker}
+                  onClick={onDataModelClick}
+                >
+                  <span>{dataModelLabel}</span>
+                  <Icon name="chevron-down" size="s" />
+                </button>
+                <button type="button" className={styles.iconBtn} aria-label="Add data sources">
+                  <Icon name="plus" size="s" />
+                </button>
+              </>
+            )}
           </div>
           <div className={styles.rightActions}>
             <button type="button" className={styles.iconBtn} aria-label="Prompt settings">
