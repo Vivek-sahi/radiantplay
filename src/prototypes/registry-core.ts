@@ -52,6 +52,7 @@ const MiniSpotters = React.lazy(() => import('./MiniSpotters'));
 const LiveboardTemplate = React.lazy(() => import('./_liveboard-template'));
 const DataModelEditorSample = React.lazy(() => import('./DataModelEditor'));
 const Spotter = React.lazy(() => import('./Spotter'));
+const NewUIAdmin2 = React.lazy(() => import('./NewUIAdmin2'));
 
 // ── Registry ──────────────────────────────────────────────────────────────────
 
@@ -139,6 +140,17 @@ export const coreRegistry: ProjectMeta[] = [
     component: Spotter,
     dsComponents: 14,
     customComponents: 1,
+    section: 'sample',
+  },
+  {
+    id: 'NewUIAdmin2',
+    name: 'AdminUI2.0',
+    description: 'Application Settings screen from Admin 2.0 — cluster settings, administration toggles, and downloads & schedules.',
+    author: 'Simran Pandit',
+    lastModified: '2026-05-25',
+    component: NewUIAdmin2,
+    dsComponents: 6,
+    customComponents: 4,
     section: 'sample',
   },
 ];
