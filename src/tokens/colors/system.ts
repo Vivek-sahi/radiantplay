@@ -22,7 +22,7 @@ export const systemColors = {
     'background-inset': '#C0C6CF',
     'background-brand': '#2770EF',
     'background-overlay': '#1F2632CC',          // was rgba(29,35,47,0.5) — Phase 2 fix
-    'background-base-inverse': '#323946',       // was #1D232F — Phase 2 fix (Gray/80)
+    'background-base-inverse': '#1D232F',       // Matches production --ts-var-liveboard-edit-bar-background (Gray/90). Phase 2 had #323946 but production never aligned.
     'background-raised-inverse': '#323946',
     'background-success': '#E0F8EF',
     'background-warning': '#FFF8E5',
