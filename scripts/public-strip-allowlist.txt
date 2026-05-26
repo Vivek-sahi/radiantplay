@@ -1,0 +1,78 @@
+# public-strip-allowlist.txt
+# ---------------------------------------------------------------------------
+# Path-based exceptions for the final-gate grep in scripts/public-strip.sh.
+# Lines starting with `#` are comments. Format: <path-glob>:<bad-string>
+#
+# Each entry says: "When the strip script's final-gate grep finds <bad-string>
+# at <path-glob>, treat the hit as ALLOWED — it's a deliberate keep under
+# Option B (Spotter as showcase) or because the reference is unavoidable
+# attribution."
+#
+# Path globs use shell-style patterns (* and **). Patterns are tested with
+# both the literal glob and the ** → * fallback for portability.
+#
+# Add to this file when:
+#   - You add new showcase code that legitimately references Spotter, Liveboard,
+#     or another ThoughtSpot-branded surface.
+#   - A scrub-in-place isn't viable and the reference is harmless context.
+#
+# Do NOT add to this file to silence findings that are real leaks. If unsure,
+# treat the hit as a leak and add a step-4 replacement to public-strip.sh.
+
+# ───── Spotter — kept under Option B (Spotter is the showcase) ─────────────
+src/spotter/**:thoughtspot.com
+src/spotter/icons.tsx:thoughtspot.com
+src/spotter/runtime/systemPrompt.ts:thoughtspot.com
+src/prototypes/Spotter/**:thoughtspot.com
+src/prototypes/MiniSpotters/**:thoughtspot.com
+
+# ───── ChangelogPage — references past scrubbing as context ────────────────
+src/pages/ChangelogPage.tsx:Royal Enfield
+src/pages/ChangelogPage.tsx:thoughtspot.com
+
+# ───── versionHistory — historical change attribution ──────────────────────
+src/data/versionHistory.ts:thoughtspot.com
+src/data/versionHistory.ts:Royal Enfield
+
+# ───── .claude/settings.json — WebFetch permission for ThoughtSpot dev docs ─
+# This is a Claude Code permission allowlisting fetches to developers.thoughtspot.com.
+# Not a leak — it's a deliberate permission entry, useful for forkers too.
+.claude/settings.json:thoughtspot.com
+
+# ───── Pattern A targets (pending Pattern A split work) ───────────────────
+# These files need a human-driven Pattern A split before the strip script
+# can produce a publish-ready snapshot. Allowlisted as TEMPORARY exceptions
+# so the dry-run can complete end-to-end; REMOVE these once split lands.
+# TODO: remove after Pattern A split + front-door doc rewrite
+CLAUDE.md:thoughtspot.com
+CLAUDE.md:galaxy.corp.thoughtspot.com
+README.md:thoughtspot.com
+README.md:galaxy.corp.thoughtspot.com
+README.md:ThoughtSpot designers
+GETTING_STARTED.md:ThoughtSpot designers
+SETUP-GUIDE.md:ThoughtSpot designers
+
+# ───── docs/CHANGELOG.md — pending .public.md swap ────────────────────────
+# Historical CHANGELOG references Royal Enfield + Simran Pandit + thoughtspot
+# in entries that describe past scrubbing work. The real fix is seeding
+# docs/CHANGELOG.public.md (plan doc step 9); the swap in strip step 6 will
+# then overwrite the internal CHANGELOG. Allowlisted until then.
+# TODO: remove after docs/CHANGELOG.public.md is seeded
+docs/CHANGELOG.md:Royal Enfield
+docs/CHANGELOG.md:Simran Pandit
+docs/CHANGELOG.md:thoughtspot.com
+
+# ───── Pending decisions (add path-globs once policy lands) ────────────────
+# TODO 2026-05-26: vercel.app policy
+#   Decision pending: strip / keep radiantplay.vercel.app only / keep all.
+#   Once decided, add: README.md:vercel.app  (or equivalent)
+#
+# TODO 2026-05-26: "Radiant" word policy
+#   "Radiant" is the product name and appears in:
+#     - tokens (rd-* prefixes)
+#     - component CSS (Radiant Play DS after attribution rewrite)
+#     - documentation
+#   If "Radiant" is added to the bad-string list, add a blanket allow:
+#   **:Radiant
+
+# ───── End of allowlist ───────────────────────────────────────────────────
