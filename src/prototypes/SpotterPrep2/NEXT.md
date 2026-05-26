@@ -1,6 +1,6 @@
 # SpotterPrep2 — Next session build spec
 
-_Updated end of session 19, 2026-05-26. Read this FIRST before any other file._
+_Updated end of session 20, 2026-05-26. Read this FIRST before any other file._
 
 ---
 
@@ -31,6 +31,40 @@ All three modes (Interactive / Batch / Autonomous) are fully wired in `QualitySe
 
 ### Script system
 `ScriptStep` union type drives all agent behavior. Steps: `tool-call`, `agent`, `wait`, `fix-partial`, `fix`, `clarify`, `scan-reveal`, `fix-table`. The `playScript` loop in `QualitySessionInner` executes these sequentially, pausing at `wait` and `clarify` until user input.
+
+---
+
+## Changes made in session 20
+
+### No-cache → Set up caching flow (`QualityTab.tsx`, `ModelDetail.tsx`, `CachingTab.tsx`)
+- "Go to Caching tab" button replaced with "Set up caching"
+- Clicking it switches to the Caching tab AND auto-opens `CacheSettingsModal` — user doesn't need to click again
+- `CachingTab` gains `autoOpenModal` + `onAutoOpenConsumed` props; `ModelDetail` owns `autoOpenCacheModal` state
+
+### Caching tab loading state (`CachingTab.tsx`)
+- After modal confirm: `isCachingSetup` local state shows "Setting up cache…" spinner card for ~2.2s before filled state appears
+
+### Quality details fade-in (`QualityTab.tsx`)
+- `quality-fadein` animation (0.4s ease) applied to scanned/wip and saved content so quality details ease in after scan
+
+### Saved state redesign (`QualityTab.tsx`, `mockData.ts`)
+- New `SavedState`: green "Rules saved" banner + same section header layout as scanned state (Rescan + Prep model buttons) + `~A` projected grade tile + clean column profile + Rules chain table
+- Added `COLUMNS_CLEAN` to mockData (all issues cleared, department nullPct fixed to 0)
+- Added `RULES_CHAIN` to mockData (7 rules with column, table, rule text, issueType)
+- New `RulesChainSection` component renders the rules chain table inline
+
+### Model name change after save (`index.tsx`, `ModelDetail.tsx`)
+- `handleSave` switches `activeModelId` to `'hr-analytics-clean'`
+- `ModelDetail` maps `'hr-analytics-clean'` → "hr-analytics · cleaned" in the header
+
+### Save modal — inherited caching section (`QualitySession.tsx`)
+- "Save as new model" modal gains a "Caching — Inherited from hr-analytics" section (read-only, not deselectable)
+- Shows cache window, date reference, refresh frequency rows from `CACHE_DISPLAY` / `MODEL`
+- Note: "Caching is required for quality rules to run automatically. You can adjust the schedule from the Caching tab."
+
+### Deployment
+- Branch `prototype/spotter-prep-2` pushed to GitHub (`github` remote)
+- Deployed to Vercel production: https://radiantplay-nine.vercel.app
 
 ---
 
