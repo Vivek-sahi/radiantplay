@@ -1,4 +1,5 @@
 import React, { forwardRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Icon } from '../icons';
 import { BrandMark } from '../BrandMark';
 import { referenceColors } from '../../tokens/colors';
@@ -111,6 +112,9 @@ export const GlobalHeader = forwardRef<HTMLElement, GlobalHeaderProps>(
       ...style,
     };
 
+    const navigate = useNavigate();
+    const handleLogoClick = onLogoClick ?? (() => navigate('/'));
+
     return (
       <header ref={ref} className={classNames(styles.header, className)} style={mergedStyle} {...props}>
         <div className={styles.leftSection}>
@@ -125,7 +129,7 @@ export const GlobalHeader = forwardRef<HTMLElement, GlobalHeaderProps>(
             </button>
           )}
 
-          <button type="button" className={styles.logoButton} onClick={onLogoClick} aria-label="Go to home">
+          <button type="button" className={styles.logoButton} onClick={handleLogoClick} aria-label="Go to home">
             {logo ?? (
               <BrandMark className={styles.logo} color={logoFill} aria-hidden />
             )}

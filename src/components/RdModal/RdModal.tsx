@@ -227,7 +227,7 @@ export const RdModal: React.FC<RdModalProps> = ({
                   style={{
                     height: '36px', padding: '0 24px', borderRadius: '20px',
                     border: 'none',
-                    backgroundColor: rdComponentColors['button-secondary-default'],
+                    backgroundColor: rdComponentColors.light['button-secondary-default'],
                     cursor: 'pointer', fontFamily: font, fontSize: '13.5px',
                     fontWeight: 500, color: '#374151', transition: 'opacity 0.15s',
                   }}

@@ -43,8 +43,9 @@
 
   /* Appearance */
   background: var(--rd-sys-color-background-base, #ffffff);
-  border: 1px solid var(--rd-sys-color-border-divider, #eaedf2);
+  border: 1px solid var(--tile-outer-border-color, var(--rd-sys-color-border-divider, #eaedf2));
   border-radius: 16px;
+  box-shadow: var(--tile-box-shadow, none);
 
   /* Allow selection handles to overflow the tile boundary */
   overflow: visible;

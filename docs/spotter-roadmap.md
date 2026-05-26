@@ -1,6 +1,6 @@
 # Spotter roadmap
 
-Last updated: 2026-05-19 (Stage B partial — Phase 1 components shipped via parallel agents · prototype integration done · visual fidelity passes to match real product · TS brand mark consolidated to `@components/BrandMark`. Phase 2 — right-pane state machine + Analyst pages — still pending).
+Last updated: 2026-05-25 (Stage B Phase 2 essentially complete. Right-pane state machine, AnalystLandingPage, AnalystListPage all shipped on staging. Prompt bar rebuilt with mode toggle, data-model picker hide, and PromptSuggestionsPanel. 12 IA polish corrections landed. Only Stage B item left: showcase previews on `/radiant/spotter` for the new menus + analyst pages).
 
 This is the **resume-here tracker** for all Spotter work across modes. If you open one Spotter doc, open this one. It absorbs the high-level status and points to deeper references.
 
@@ -27,7 +27,7 @@ There are **four Spotter surface modes**:
 
 | Mode | State | Where |
 |---|---|---|
-| Standalone Spotter | **Built (26.5.3)** — IA rewrite in progress (2026-05-19) | `src/prototypes/Spotter/` |
+| Standalone Spotter | **Built (26.5.3d).** Stage B Phase 2 shipped (2026-05-25); prompt-bar rebuild + 12 IA polish corrections landed | `src/prototypes/Spotter/` |
 | Spotter Model (embedded) | **Built** (as DataModelEditor's agent loop) | `src/prototypes/DataModelEditor/` + `_agentic/` |
 | Spotter Viz (embedded) | **Planned** — design pending | n/a |
 | Spotter Code (embedded) | **Planned** — design pending | n/a |
@@ -158,14 +158,22 @@ Visual fidelity passes (post-integration, to match real product):
 - ✅ Toolcall icons are semantic (database / ai / search), not branded
 - ✅ TS brand mark updated to Radiant 3.0 monogram + consolidated to `@components/BrandMark` (single source of truth — was duplicated in GlobalHeader, LiveboardHeader, EditToolbar, Spotter icons)
 
-**Phase 2 — pending ⏳**
+**Phase 2, mostly done ✅** (shipped on staging 2026-05-25; commits `55751eb`, `1ace38f`, `412f6e4`, `7f296f7`, `42f2d53`, `59b3340`)
 
-- ⏳ **Right-pane state machine** in `src/prototypes/Spotter/index.tsx` — swap the binary `isEmpty ? Welcome : ChatCanvas` for a `useState<RightPaneState>('chat' | 'analyst-landing' | 'analyst-list')`. Foundation for #2 and #3.
-- ⏳ **`AnalystLandingPage`** (`@spotter/page`) — right-pane state when an analyst row is clicked. About / recent activity / recent chats with this analyst / "Start new chat" action. (Phase 2 — Agent C in the fan-out plan.)
-- ⏳ **`AnalystListPage`** (`@spotter/page`) — right-pane state when "View all >" is clicked. Full list of analysts with search / filter / sort. (Phase 2 — Agent D.)
-- ⏳ Showcase previews on `/radiant/spotter` for SettingsMenu, ChatRowMenu, AnalystRowMenu (deferred — components testable in the actual prototype today).
+- ✅ **Right-pane state machine** in `src/prototypes/Spotter/index.tsx:55-75`. `rightPaneOverride` state ('analyst-list' | null) combined with derived `rightPane` ('chat' | 'analyst-list' | 'analyst-landing'). Replaced the binary `isEmpty ? Welcome : ChatCanvas` model.
+- ✅ **`AnalystLandingPage`** lives in `src/prototypes/Spotter/components/AnalystLandingPage.tsx`. Built as a prototype component, not lifted to `@spotter/page` yet. Fine for now; can lift later if reused.
+- ✅ **`AnalystListPage`** lives in `src/prototypes/Spotter/components/AnalystListPage.tsx`. Renders when "View all >" is selected; analyst grid centered at 936px.
+- ⏳ Showcase previews on `/radiant/spotter` for SettingsMenu, ChatRowMenu, AnalystRowMenu, AnalystLandingPage, AnalystListPage. Still pending (components testable in the prototype today).
 
-Estimated remaining effort: state machine ~1hr, each analyst page ~2–3hrs (can run in parallel), showcase previews ~30–60min.
+Estimated remaining effort: showcase previews ~60–90min (now covers 5 components, not 3).
+
+**Bonus work since 2026-05-19 (not in the original Stage B plan):**
+- ✅ Prompt bar rebuild. `94f32aa feat(spotter): prompt bar, mode toggle, data model hide, suggestion panels`
+- ✅ `PromptSuggestionsPanel` component (prototype-local) at `src/prototypes/Spotter/components/PromptSuggestionsPanel.tsx`
+- ✅ Sticky-position fix. `11ed1fc fix(spotter): keep prompt bar position fixed when suggestion panel opens`
+- ✅ 12 IA polish corrections: analyst selection, landing pages, recency, chat naming (`55751eb`); panel restructure, View-all highlight handling, analyst reorder timing
+- ✅ Cursor rules synced for all post-12-change corrections (`619c467`)
+- ✅ Token cleanup. PromptSuggestionsPanel border-radius now uses `var(--radius-2xl)` (`af1fd2a`, today)
 
 ---
 
@@ -186,11 +194,15 @@ Estimated remaining effort: state machine ~1hr, each analyst page ~2–3hrs (can
 - ✅ ReasoningBlock semi-collapsed-while-streaming behaviour + flat layout
 - ✅ TS brand mark refresh + consolidation (`@components/BrandMark` is the new single source of truth)
 
+**Done in Stage B Phase 2 (2026-05-25):**
+- ✅ Right-pane state machine. `rightPane` is derived from `rightPaneOverride` ('analyst-list' \| null) + chat-active flag
+- ✅ AnalystLandingPage component (prototype-local, may lift to `@spotter/page` if reused)
+- ✅ AnalystListPage component (prototype-local; analyst grid centered at 936px)
+- ✅ Prompt bar rebuild (mode toggle, data-model picker hide, PromptSuggestionsPanel, sticky-position fix)
+- ✅ 12 IA polish corrections (analyst selection, landing pages, recency, chat naming, panel restructure)
+
 **Still pending in Phase 2:**
-- ⏳ Right-pane state machine (chat / analyst landing / analyst list / settings modals)
-- ⏳ AnalystLandingPage component
-- ⏳ AnalystListPage component
-- ⏳ Showcase previews for the new components on `/radiant/spotter`
+- ⏳ Showcase previews for the new components on `/radiant/spotter` (SettingsMenu, ChatRowMenu, AnalystRowMenu, AnalystLandingPage, AnalystListPage)
 
 **Welcome variants (design backlog):**
 - ⏳ Welcome state — returning user (design pending — Figma reference needed)

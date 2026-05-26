@@ -12,7 +12,7 @@ interface Props { width?: number; height?: number; }
 
 export const LineChart: React.FC<Props> = ({ height }) => {
   const option = {
-    grid: { top: 8, bottom: 8, left: 8, right: 8, containLabel: true },
+    grid: { top: 8, bottom: 28, left: 8, right: 8, containLabel: true },
     tooltip: { trigger: 'axis' },
     legend: {
       bottom: 0,

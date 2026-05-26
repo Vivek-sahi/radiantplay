@@ -127,7 +127,7 @@ export const SpotterMemory: React.FC = () => {
         style={styles.shell}
         headerProps={headerProps}
         sidebarProps={sidebarProps}
-        contentBackground="#FFFFFF"
+        contentBackground="var(--rd-sys-color-background-base)"
       >
         <div style={styles.content}>
           <PageHeader

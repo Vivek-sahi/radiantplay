@@ -14,6 +14,10 @@ dist/
 *.swo
 .cursor/*.log
 
+# Claude Code — local config and worktrees (machine-specific, not for repo)
+.claude/settings.local.json
+.claude/worktrees/
+
 # Environment
 .env
 .env.local

@@ -170,7 +170,7 @@
   --rd-sys-color-background-inset: #C0C6CF;
   --rd-sys-color-background-brand: #2770EF;
   --rd-sys-color-background-overlay: #1F2632CC;             /* Phase 2 fix */
-  --rd-sys-color-background-base-inverse: #323946;          /* Phase 2 fix */
+  --rd-sys-color-background-base-inverse: #1D232F;          /* Matches production --ts-var-liveboard-edit-bar-background */
   --rd-sys-color-background-raised-inverse: #323946;
   --rd-sys-color-background-success: #E0F8EF;
   --rd-sys-color-background-warning: #FFF8E5;

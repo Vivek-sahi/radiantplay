@@ -18,7 +18,7 @@ export const SourcesBlock: React.FC<SourcesBlockProps> = ({ block }) => {
               key={item.id}
               href={item.url}
               target="_blank"
-              rel="noreferrer"
+              rel="noopener noreferrer"
               className={styles.pill}
             >
               <Icon name="answer" size="s" />

@@ -7,7 +7,7 @@ import {
   VersionEntry,
   VersionType
 } from '../data/versionHistory';
-import { getVisibleHighlights } from '../data/highlights';
+import { getGroupedVisibleHighlights } from '../data/highlights';
 import { SearchInput } from '../components/SearchInput';
 import styles from './VersionHistoryPage.module.css';
 
@@ -199,7 +199,7 @@ export const VersionHistoryPage: React.FC = () => {
     );
   }, [searchQuery]);
 
-  const highlights = useMemo(() => getVisibleHighlights(), []);
+  const highlightGroups = useMemo(() => getGroupedVisibleHighlights(), []);
 
   const jumpToVersion = (version: string) => {
     setExpandedVersions((prev) => new Set([...prev, version]));
@@ -219,33 +219,38 @@ export const VersionHistoryPage: React.FC = () => {
         </p>
       </header>
 
-      {/* Highlights — curated cherry-picks across recent releases */}
-      {highlights.length > 0 && (
+      {/* Highlights — curated cherry-picks grouped by sample prototypes + platform enhancements */}
+      {highlightGroups.length > 0 && (
         <section className={styles.highlights}>
           <div className={styles.highlightsHeader}>
             <h2 className={styles.highlightsLabel}>Highlights</h2>
             <span className={styles.newChip}>New</span>
           </div>
-          <ol className={styles.highlightsList}>
-            {highlights.map((h) => (
-              <li key={`${h.version}-${h.title}`} className={styles.highlightItem}>
-                <div className={styles.highlightBody}>
-                  <div className={styles.highlightHead}>
-                    <span className={styles.highlightTitle}>{h.title}</span>
-                    <button
-                      type="button"
-                      className={styles.highlightVersion}
-                      onClick={() => jumpToVersion(h.version)}
-                      aria-label={`Jump to changelog entry for v${h.version}`}
-                    >
-                      v{h.version}
-                    </button>
-                  </div>
-                  <p className={styles.highlightDescription}>{h.description}</p>
-                </div>
-              </li>
-            ))}
-          </ol>
+          {highlightGroups.map((group) => (
+            <div key={group.id} className={styles.highlightsGroup}>
+              <h3 className={styles.highlightsGroupLabel}>{group.label}</h3>
+              <ol className={styles.highlightsList}>
+                {group.items.map((h) => (
+                  <li key={`${h.version}-${h.title}`} className={styles.highlightItem}>
+                    <div className={styles.highlightBody}>
+                      <div className={styles.highlightHead}>
+                        <span className={styles.highlightTitle}>{h.title}</span>
+                        <button
+                          type="button"
+                          className={styles.highlightVersion}
+                          onClick={() => jumpToVersion(h.version)}
+                          aria-label={`Jump to changelog entry for v${h.version}`}
+                        >
+                          v{h.version}
+                        </button>
+                      </div>
+                      <p className={styles.highlightDescription}>{h.description}</p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          ))}
         </section>
       )}
 

@@ -78,6 +78,24 @@
   color: var(--rd-sys-color-content-primary);
 }
 
+.highlightsGroup {
+  margin-top: var(--spacing-6, 24px);
+}
+
+.highlightsGroup:first-of-type {
+  margin-top: 0;
+}
+
+.highlightsGroupLabel {
+  margin: 0 0 var(--spacing-3, 12px);
+  font-family: var(--font-family-primary, 'Plain', -apple-system, sans-serif);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--rd-sys-color-content-secondary);
+}
+
 .highlightsList {
   margin: 0;
   padding: 0;

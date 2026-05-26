@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@components/Button';
 import { Icon } from '@components/icons';
 import { BrandMark } from '@components/BrandMark';
@@ -9,6 +10,8 @@ interface EditToolbarProps {
   onCancel: () => void;
   onToggleSpotter?: () => void;
   spotterOpen?: boolean;
+  onToggleStyling?: () => void;
+  stylingOpen?: boolean;
 }
 
 const SpotterIcon: React.FC = () => (
@@ -18,10 +21,19 @@ const SpotterIcon: React.FC = () => (
   </svg>
 );
 
-export const EditToolbar: React.FC<EditToolbarProps> = ({ onSave, onCancel, onToggleSpotter, spotterOpen }) => (
+export const EditToolbar: React.FC<EditToolbarProps> = ({ onSave, onCancel, onToggleSpotter, spotterOpen, onToggleStyling, stylingOpen }) => {
+  const navigate = useNavigate();
+  return (
   <div style={s.toolbar}>
     <div style={s.left}>
-      <BrandMark pixelSize={24} color={colors.textOnDark} aria-hidden />
+      <button
+        type="button"
+        onClick={() => navigate('/')}
+        aria-label="Go to playground"
+        style={s.logoBtn}
+      >
+        <BrandMark pixelSize={24} color={colors.textOnDark} aria-hidden />
+      </button>
     </div>
 
     <div style={s.center}>
@@ -32,7 +44,11 @@ export const EditToolbar: React.FC<EditToolbarProps> = ({ onSave, onCancel, onTo
         <span style={s.toolLabel}>Add</span>
         <Icon name="chevron-down" size="xs" color={colors.textOnDarkMuted} />
       </button>
-      <button style={s.toolBtn}>
+      <button
+        type="button"
+        style={{ ...s.toolBtn, ...(stylingOpen ? s.toolBtnActive : {}) }}
+        onClick={onToggleStyling}
+      >
         <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
           <circle cx="9" cy="9" r="7" stroke="currentColor" strokeWidth="1.2" />
           <circle cx="9" cy="9" r="3" stroke="currentColor" strokeWidth="1.2" />
@@ -57,7 +73,8 @@ export const EditToolbar: React.FC<EditToolbarProps> = ({ onSave, onCancel, onTo
       </Button>
     </div>
   </div>
-);
+  );
+};
 
 const s: Record<string, React.CSSProperties> = {
   toolbar: {
@@ -74,6 +91,15 @@ const s: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     flex: 1,
+  },
+  logoBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    background: 'transparent',
+    border: 'none',
+    padding: 0,
+    cursor: 'pointer',
+    borderRadius: 4,
   },
   center: {
     display: 'flex',

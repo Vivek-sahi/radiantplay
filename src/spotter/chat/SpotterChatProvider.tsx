@@ -20,6 +20,8 @@ export interface SpotterChatContextValue {
   abort: () => void;
   /** Clear the entire conversation. Aborts any in-flight stream first. */
   clear: () => void;
+  /** Load a pre-built message history (e.g. selecting a chat from the panel). */
+  load: (messages: ChatMessage[]) => void;
 }
 
 export const SpotterChatContext = createContext<SpotterChatContextValue | null>(null);
@@ -107,7 +109,13 @@ export const SpotterChatProvider: React.FC<SpotterChatProviderProps> = ({
     dispatch({ type: 'CLEAR' });
   }, []);
 
-  const value: SpotterChatContextValue = { state, send, abort, clear };
+  const load = useCallback((messages: ChatMessage[]): void => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    dispatch({ type: 'LOAD', messages });
+  }, []);
+
+  const value: SpotterChatContextValue = { state, send, abort, clear, load };
 
   return (
     <SpotterChatContext.Provider value={value}>

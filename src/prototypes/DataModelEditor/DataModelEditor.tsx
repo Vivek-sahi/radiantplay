@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@components/Button';
 import { SearchInput } from '@components/SearchInput';
 import { Toggle } from '@components/Toggle';
@@ -7,6 +8,7 @@ import { Select } from '@components/Select';
 import { RdModal } from '@components/RdModal';
 import { Table } from '@components/Table';
 import './dme.css';
+// @ts-expect-error -- init-dme.js is a plain JS module without a .d.ts declaration
 import { initDME } from './init-dme.js';
 import { AgentPanel } from '../_agentic/index';
 import { TableCanvas, ColumnTree } from '../_datamodel/index';
@@ -55,6 +57,7 @@ const COL_TABLE_COLUMNS = [
 ];
 
 const DataModelEditor: React.FC = () => {
+  const navigate = useNavigate();
   const [tablesUnselected, setTablesUnselected] = useState(false);
   const [columnsUnselected, setColumnsUnselected] = useState(false);
   const [activeTab, setActiveTab] = useState('tables');
@@ -112,7 +115,15 @@ const DataModelEditor: React.FC = () => {
 
       {/* APP HEADER */}
       <div className="app-header">
-        <span className="app-title">Data model editor</span>
+        <button
+          type="button"
+          onClick={() => navigate('/')}
+          aria-label="Go to playground"
+          className="app-title"
+          style={{ background: 'transparent', border: 'none', padding: 0, margin: 0, cursor: 'pointer' }}
+        >
+          Data model editor
+        </button>
         <SegmentedControl options={TAB_OPTIONS} value={activeTab} onChange={handleTabChange} size="large" />
         <div className="tab-group" style={{ display: 'none' }}>
           <div className="tab-pill active" data-tab="tables">Tables</div>

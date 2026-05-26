@@ -1931,7 +1931,7 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
                 <div style={{ borderRadius: '8px', overflow: 'hidden', border: `1px solid ${referenceColors.gray['20']}` }}>
                   <GlobalHeader
                     theme={globalHeaderTheme}
-                    userName="Royal Enfield"
+                    userName="Acme Apparel"
                     notificationCount={3}
                     onSearchClick={() => alert('Search clicked — open command palette')}
                     onLogoClick={() => alert('Logo clicked — navigate home')}
@@ -2029,7 +2029,7 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
               <a
                 href="/preview/appshell"
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
                 style={{
                   color: systemColors.light['content-brand'],
                   textDecoration: 'none',
