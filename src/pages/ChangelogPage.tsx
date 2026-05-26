@@ -25,6 +25,30 @@ interface Highlight {
 
 const HIGHLIGHTS: Highlight[] = [
   {
+    title: 'Spotter prototype — Stage B Phase 2 + prompt-bar overhaul',
+    description: 'AnalystLandingPage, AnalystListPage, and the right-pane state machine landed. Prompt bar rebuilt with a mode toggle, hideable data-model picker, and a new PromptSuggestionsPanel. 12 IA polish corrections across analyst selection, recency-sorted chats, panel restructure, and chat naming. The Liveboard template SpotterViz side panel was also rebuilt to match the Figma design.',
+    version: '26.5.4a',
+    date: '2026-05-26',
+  },
+  {
+    title: 'Liveboard Styling panel restored',
+    description: 'Per-tile density, color theme, corner style, spacing, and highlight overrides via a right-side drawer. Shared tile CSS variables added to AnswerTile, NoteTile, GroupTile. The two integration bugs from the original PR (missing AnswerTileProps.highlighted and EditToolbar onToggleStyling wiring) are fixed.',
+    version: '26.5.4a',
+    date: '2026-05-26',
+  },
+  {
+    title: 'AdminUI 2.0 prototype',
+    description: 'Application Settings screen added to the shared sample registry. Cluster settings, administration toggles, downloads and schedules, version control, AI settings.',
+    version: '26.5.4a',
+    date: '2026-05-26',
+  },
+  {
+    title: 'Playground archive section + sidebar nav',
+    description: 'Gallery has a light left sidebar with Prototypes and Archived sections. Per-card 3-dot menu archives or restores any prototype in your session. Save-to-code modal generates a Claude-ready prompt to commit the layout permanently. MiniSpotters and AdminLang now appear as archived by default.',
+    version: '26.5.4a',
+    date: '2026-05-26',
+  },
+  {
     title: 'Spotter design system gets its own doc surface',
     description: 'New /radiant/spotter showcase with Chat, Blocks, Icons, and Tokens sections, plus a dedicated SpotterShell doc page peer to GlobalHeader / AppShell. Fullscreen previews land too for both SpotterShell and AppShell.',
     version: '26.5.3c',
@@ -75,6 +99,81 @@ const HIGHLIGHTS: Highlight[] = [
 ];
 
 const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '26.5.4a',
+    date: '2026-05-26',
+    title: 'Spotter Stage B Phase 2 + Styling panel + AdminUI 2.0 + Playground archive',
+    type: 'minor',
+    changes: [
+      {
+        category: 'added',
+        label: 'Prototypes',
+        items: [
+          'Liveboard - Styling panel (StylingPanel) — restored after the original PR #14 revert. Per-tile drawer with density, color theme, corner style, spacing, and highlight overrides. Shared tile CSS variables added to AnswerTile, NoteTile, GroupTile. Authored by Devanshi Behara.',
+          'AdminUI 2.0 (NewUIAdmin2) — Application Settings screen added to the shared sample registry. Cluster settings, administration toggles, downloads and schedules, version control, AI settings. Lands via PR #19.',
+        ],
+      },
+      {
+        category: 'added',
+        label: 'Spotter prototype + DS',
+        items: [
+          'AnalystLandingPage + AnalystListPage — right-pane state machine for the standalone Spotter prototype. Right pane now switches between chat, analyst landing, and analyst list states (matches the spotter-ia.md spec).',
+          'PromptSuggestionsPanel — new suggestion panel surfaced from the prompt bar. Hideable, mode-aware.',
+          'Prompt bar mode toggle + hideable data-model picker. Position stays fixed when the suggestion panel opens.',
+        ],
+      },
+      {
+        category: 'added',
+        label: 'Playground',
+        items: [
+          'Archive section + left sidebar — gallery now has a light left sidebar with Prototypes (default) and Archived sections. Per-card 3-dot menu archives or restores any prototype in your session (sessionStorage-backed).',
+          'Save-to-code modal — generates a Claude-ready prompt to commit the layout permanently.',
+          "ProjectMeta.section field ('sample' | 'mine' | 'archived') on registry-core.ts. MiniSpotters and AdminLang now appear as archived by default.",
+        ],
+      },
+      {
+        category: 'changed',
+        label: 'Liveboard template',
+        items: [
+          'SpotterViz side panel rebuilt to match the Figma side-panel overlay. position: fixed (not flex sibling), dark navy #1d232f, mascot + greeting + 3 suggestion chips + sticky prompt bar.',
+          'KPI cards shortened (default height 1 row); the first two (Revenue, Customers) now show chart variants instead of bare numbers.',
+        ],
+      },
+      {
+        category: 'fixed',
+        label: 'Styling panel integration bugs',
+        items: [
+          'AnswerTileProps was missing the highlighted prop. GroupTile was passing it through and tripping TS2322. Added to the props interface so the highlight-override path from the styling drawer works.',
+          'EditToolbar was missing the onToggleStyling + stylingOpen props wiring. The Styling button rendered but did nothing. Added the props, wired the click handler, and applied the active-state styling.',
+        ],
+      },
+      {
+        category: 'fixed',
+        label: 'Spotter IA polish + Logo nav + Tokens',
+        items: [
+          '12 IA polish corrections in the standalone Spotter prototype: analyst selection state, recency-sorted chats, panel restructure, chat naming, analyst reorder on chat start only, clear analyst highlights when "View all" opens, center analyst grid at 936px, move Spotter (Default) into its own panel section, drop the logo icon from the Default panel item and welcome page.',
+          'ThoughtSpot brand mark click in GlobalHeader, LiveboardHeader (PrimaryNav), EditToolbar, and the DataModelEditor title now all navigate back to / (the playground gallery).',
+          'background-base-inverse token reverted from #323946 back to #1D232F to match the production Liveboard edit-toolbar background (the Phase 2 token change had unintentionally muted it).',
+          'LineChart legend overlap in the Liveboard template.',
+        ],
+      },
+      {
+        category: 'fixed',
+        label: 'TypeScript + deps',
+        items: [
+          '43 TypeScript errors resolved across DS + NewUIAdmin2 + ChangelogPage (38 were in NewUIAdmin2, 4 pre-existing). 34 of the 38 were unused-var noise.',
+          'package-lock.json rewritten — 31 ThoughtSpot internal artifactory URLs swapped to the public npm registry so Vercel can install dependencies.',
+        ],
+      },
+      {
+        category: 'changed',
+        label: 'Content',
+        items: [
+          'Royal Enfield references scrubbed from prototypes and replaced with Acme Apparel.',
+        ],
+      },
+    ],
+  },
   {
     version: '26.5.3c',
     date: '2026-05-19',

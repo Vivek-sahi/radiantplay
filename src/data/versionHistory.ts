@@ -28,6 +28,27 @@ export interface VersionEntry {
  */
 export const versionHistory: VersionEntry[] = [
   {
+    version: '26.5.4a',
+    date: '2026-05-26',
+    type: 'minor',
+    changes: [
+      { type: 'added', group: 'Prototypes', component: 'StylingPanel (Liveboard - Styling panel)', description: 'Restored after the original PR #14 revert. Per-tile drawer with density, color theme, corner style, spacing, and highlight overrides. Shared tile CSS variables added to AnswerTile, NoteTile, GroupTile. Authored by Devanshi Behara. Two integration bugs from the original PR also fixed (missing AnswerTileProps.highlighted, EditToolbar onToggleStyling wiring)' },
+      { type: 'added', group: 'Prototypes', component: 'NewUIAdmin2 (AdminUI 2.0)', description: 'Application Settings screen added to the shared sample registry. Cluster settings, administration toggles, downloads and schedules, version control, AI settings. Lands via PR #19 from simran-pandit/feat/newuiadmin2' },
+      { type: 'added', group: 'Spotter prototype', component: 'Analyst right-pane state machine', description: 'AnalystLandingPage + AnalystListPage added. Right pane now switches between chat, analyst landing, and analyst list states (matches the spotter-ia.md spec)' },
+      { type: 'added', group: 'Spotter DS', component: 'PromptSuggestionsPanel', description: 'New panel surfaced from the prompt bar. Hideable, mode-aware. Prompt bar position stays fixed when the suggestion panel opens' },
+      { type: 'modified', group: 'Spotter prototype', component: '12 IA polish corrections', description: 'Analyst selection state, recency-sorted chats, chat naming, analyst reorder on chat start only, clear analyst highlights when View all opens, center analyst grid at 936px, move Spotter (Default) into its own panel section, drop the logo icon from the Default panel item and welcome page' },
+      { type: 'modified', group: 'Liveboard template', component: 'SpotterViz side panel', description: 'Full rebuild to match the Figma side-panel overlay. position: fixed (not flex sibling), dark navy #1d232f, mascot + greeting + 3 suggestion chips + sticky prompt bar' },
+      { type: 'added', group: 'Playground', component: 'Archive section + sidebar nav', description: 'Gallery has a light left sidebar with Prototypes (default) and Archived sections. Per-card 3-dot menu archives or restores any prototype in your session (sessionStorage-backed). Save-to-code modal generates a Claude-ready prompt to commit the layout permanently. MiniSpotters and AdminLang now appear as archived by default' },
+      { type: 'added', group: 'Registry', component: 'ProjectMeta.section field', description: "New 'sample' | 'mine' | 'archived' field on ProjectMeta. Drives the new archive section in the gallery" },
+      { type: 'modified', group: 'Liveboard template', component: 'KPI cards + LineChart legend', description: 'KPI cards shortened (default height 1 row), and the first two (Revenue, Customers) now show chart variants instead of bare numbers. LineChart legend overlap fixed' },
+      { type: 'modified', group: 'Brand', component: 'Logo navigates back to playground', description: 'ThoughtSpot brand mark click in GlobalHeader, LiveboardHeader (PrimaryNav), EditToolbar, and the DataModelEditor title now all navigate back to / (the playground gallery)' },
+      { type: 'modified', group: 'Tokens', component: 'background-base-inverse', description: 'Reverted from #323946 back to #1D232F to match the production Liveboard edit-toolbar background. The Phase 2 token change had unintentionally muted the dark header' },
+      { type: 'modified', group: 'Content', component: 'Customer references scrubbed', description: 'Royal Enfield references swapped to Acme Apparel across prototypes' },
+      { type: 'modified', group: 'TypeScript', component: '43 errors resolved', description: '38 were in NewUIAdmin2, 4 pre-existing across DS + ChangelogPage. 34 of the 38 were unused-var noise — switched to noUnusedLocals: false for the prototype layer' },
+      { type: 'modified', group: 'Dependencies', component: 'package-lock.json registry URLs', description: '31 ThoughtSpot internal artifactory URLs (jfrog-colo.corp.thoughtspot.com) rewritten to the public npm registry so Vercel can install dependencies on the open repo' },
+    ],
+  },
+  {
     version: '26.5.3d',
     date: '2026-05-19',
     type: 'patch',
