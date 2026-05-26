@@ -29,18 +29,16 @@ export interface ProjectMeta {
   dsComponents?: number;
   /** Number of custom/local components created for this prototype */
   customComponents?: number;
-  /** Which gallery section: 'sample' for built-in examples, 'mine' for user-created (default) */
-  section?: 'sample' | 'mine';
+  /** Which gallery section: 'sample' for built-in examples, 'mine' for user-created (default), 'archived' for deprecated prototypes kept for reference */
+  section?: 'sample' | 'mine' | 'archived';
 }
 
 // ── Thumbnails ────────────────────────────────────────────────────────────────
 
 import AdminGroupsThumbnail from './thumbnails/AdminGroups.svg';
 import SpotterMemoryThumbnail from './thumbnails/SpotterMemory.svg';
-// Hidden 2026-05-25: AdminLang removed from gallery. Files remain in src/prototypes/AdminLang/.
-// import AdminLangThumbnail from './thumbnails/AdminLang.svg';
-// Hidden 2026-05-25: MiniSpotters removed from gallery. Files remain in src/prototypes/MiniSpotters/.
-// import MiniSpottersThumbnail from './thumbnails/MiniSpotters.svg';
+import AdminLangThumbnail from './thumbnails/AdminLang.svg';
+import MiniSpottersThumbnail from './thumbnails/MiniSpotters.svg';
 import LiveboardTemplateThumbnail from './thumbnails/LiveboardTemplate.svg';
 import DataModelEditorThumbnail from './thumbnails/DataModelEditor.svg';
 import SpotterThumbnail from './thumbnails/Spotter.svg';
@@ -51,8 +49,8 @@ import StylingPanelThumbnail from './thumbnails/StylingPanel.svg';
 
 const SpotterMemory = React.lazy(() => import('./SpotterMemory'));
 const AdminGroups = React.lazy(() => import('./AdminGroups'));
-// const AdminLang = React.lazy(() => import('./AdminLang'));
-// const MiniSpotters = React.lazy(() => import('./MiniSpotters'));
+const AdminLang = React.lazy(() => import('./AdminLang'));
+const MiniSpotters = React.lazy(() => import('./MiniSpotters'));
 const LiveboardTemplate = React.lazy(() => import('./_liveboard-template'));
 const DataModelEditorSample = React.lazy(() => import('./DataModelEditor'));
 const Spotter = React.lazy(() => import('./Spotter'));
@@ -86,32 +84,30 @@ export const coreRegistry: ProjectMeta[] = [
     customComponents: 10,
     section: 'sample',
   },
-  // Hidden 2026-05-25: AdminLang removed from gallery. Uncomment + restore import/lazy above to revive.
-  // {
-  //   id: 'AdminLang',
-  //   name: 'Admin language settings',
-  //   description: 'Admin settings for CSV-based translation of Liveboards and Answers with upload, validation, and object picker.',
-  //   author: 'Design Team',
-  //   lastModified: '2026-03-12',
-  //   thumbnail: AdminLangThumbnail,
-  //   component: AdminLang,
-  //   dsComponents: 10,
-  //   customComponents: 4,
-  //   section: 'sample',
-  // },
-  // Hidden 2026-05-25: MiniSpotters removed from gallery. Uncomment + restore import/lazy above to revive.
-  // {
-  //   id: 'MiniSpotters',
-  //   name: 'MiniSpotters',
-  //   description: 'Curated, domain-specific Spotter instances with bounded context, prompt libraries, and simulated chat.',
-  //   author: 'Design Team',
-  //   lastModified: '2026-03-12',
-  //   thumbnail: MiniSpottersThumbnail,
-  //   component: MiniSpotters,
-  //   dsComponents: 8,
-  //   customComponents: 5,
-  //   section: 'sample',
-  // },
+  {
+    id: 'AdminLang',
+    name: 'Admin language settings',
+    description: 'Admin settings for CSV-based translation of Liveboards and Answers with upload, validation, and object picker.',
+    author: 'Design Team',
+    lastModified: '2026-03-12',
+    thumbnail: AdminLangThumbnail,
+    component: AdminLang,
+    dsComponents: 10,
+    customComponents: 4,
+    section: 'archived',
+  },
+  {
+    id: 'MiniSpotters',
+    name: 'MiniSpotters',
+    description: 'Curated, domain-specific Spotter instances with bounded context, prompt libraries, and simulated chat.',
+    author: 'Design Team',
+    lastModified: '2026-03-12',
+    thumbnail: MiniSpottersThumbnail,
+    component: MiniSpotters,
+    dsComponents: 8,
+    customComponents: 5,
+    section: 'archived',
+  },
   {
     id: '_liveboard-template',
     name: 'Liveboard template',
@@ -169,6 +165,8 @@ export const coreRegistry: ProjectMeta[] = [
     lastModified: '2026-04-23',
     thumbnail: StylingPanelThumbnail,
     component: StylingPanel,
+    dsComponents: 6,
+    customComponents: 4,
     section: 'sample',
   },
 ];
