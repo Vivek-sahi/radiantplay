@@ -1931,7 +1931,7 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
                 <div style={{ borderRadius: '8px', overflow: 'hidden', border: `1px solid ${referenceColors.gray['20']}` }}>
                   <GlobalHeader
                     theme={globalHeaderTheme}
-                    userName="Royal Enfield"
+                    userName="Acme Apparel"
                     notificationCount={3}
                     onSearchClick={() => alert('Search clicked — open command palette')}
                     onLogoClick={() => alert('Logo clicked — navigate home')}

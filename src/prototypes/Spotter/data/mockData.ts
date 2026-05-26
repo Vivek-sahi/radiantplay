@@ -253,4 +253,4 @@ export const dataModels: DataModel[] = [
   { id: 'product', name: 'Product analytics' },
 ];
 
-export const tenantName = 'Royal Enfield';
+export const tenantName = 'Acme Apparel';
