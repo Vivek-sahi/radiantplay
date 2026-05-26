@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { BrandMark } from '@components/BrandMark';
 import { ViewHeader } from './ViewHeader';
 import { EditToolbar } from './EditToolbar';
@@ -19,12 +20,23 @@ export interface LiveboardHeaderProps {
   spotterOpen?: boolean;
 }
 
-// ThoughtSpot primary nav bar (dark, 60px)
-const PrimaryNav: React.FC = () => (
-  <div style={s.primaryNav}>
-    <BrandMark pixelSize={24} aria-hidden />
-  </div>
-);
+// ThoughtSpot primary nav bar (dark, 60px). Clicking the brand mark returns
+// to the playground gallery — matches the GlobalHeader default behavior.
+const PrimaryNav: React.FC = () => {
+  const navigate = useNavigate();
+  return (
+    <div style={s.primaryNav}>
+      <button
+        type="button"
+        onClick={() => navigate('/')}
+        aria-label="Go to playground"
+        style={s.logoBtn}
+      >
+        <BrandMark pixelSize={24} aria-hidden />
+      </button>
+    </div>
+  );
+};
 
 export const LiveboardHeader: React.FC<LiveboardHeaderProps> = ({
   mode,
@@ -83,5 +95,14 @@ const s: Record<string, React.CSSProperties> = {
     background: colors.editHeaderBg,
     color: colors.textOnDark,
     flexShrink: 0,
+  },
+  logoBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    background: 'transparent',
+    border: 'none',
+    padding: 0,
+    cursor: 'pointer',
+    borderRadius: 4,
   },
 };
