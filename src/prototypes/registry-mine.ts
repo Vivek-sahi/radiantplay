@@ -33,6 +33,7 @@ import DataStudioThumbnail from './thumbnails/DataStudio.svg';
 
 const DataStudioV2 = React.lazy(() => import('./DataStudioV2'));
 const SpotterPrep = React.lazy(() => import('./SpotterPrep'));
+const SpotterPrep2 = React.lazy(() => import('./SpotterPrep2'));
 
 export const myRegistry: ProjectMeta[] = [
   {
@@ -43,6 +44,15 @@ export const myRegistry: ProjectMeta[] = [
     lastModified: '2026-04-23',
     thumbnail: DataStudioThumbnail,
     component: DataStudioV2,
+    section: 'mine',
+  },
+  {
+    id: 'SpotterPrep2',
+    name: 'SpotterPrep v2',
+    description: 'Data quality prep for ThoughtSpot — confidence-gated agentic flow with rules chain.',
+    author: 'Vivek Sahi',
+    lastModified: '2026-05-26',
+    component: SpotterPrep2,
     section: 'mine',
   },
   {

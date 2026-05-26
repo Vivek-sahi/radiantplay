@@ -62,6 +62,7 @@ import {
   CollectionIcon,
   SaveWorksheetIcon,
   SpotterIcon,
+  DatabaseIcon,
 } from './icons';
 
 /**
@@ -132,6 +133,7 @@ export const iconRegistry: Record<string, IconComponent> = {
   'collection': CollectionIcon,
   'save-worksheet': SaveWorksheetIcon,
   'spotter': SpotterIcon,
+  'database': DatabaseIcon,
 } as const;
 
 /**
