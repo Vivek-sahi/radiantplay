@@ -37,18 +37,21 @@ export interface ProjectMeta {
 
 import AdminGroupsThumbnail from './thumbnails/AdminGroups.svg';
 import SpotterMemoryThumbnail from './thumbnails/SpotterMemory.svg';
-import AdminLangThumbnail from './thumbnails/AdminLang.svg';
-import MiniSpottersThumbnail from './thumbnails/MiniSpotters.svg';
+// Hidden 2026-05-25: AdminLang removed from gallery. Files remain in src/prototypes/AdminLang/.
+// import AdminLangThumbnail from './thumbnails/AdminLang.svg';
+// Hidden 2026-05-25: MiniSpotters removed from gallery. Files remain in src/prototypes/MiniSpotters/.
+// import MiniSpottersThumbnail from './thumbnails/MiniSpotters.svg';
 import LiveboardTemplateThumbnail from './thumbnails/LiveboardTemplate.svg';
 import DataModelEditorThumbnail from './thumbnails/DataModelEditor.svg';
 import SpotterThumbnail from './thumbnails/Spotter.svg';
+import NewUIAdmin2Thumbnail from './thumbnails/NewUIAdmin2.svg';
 
 // ── Components (lazy-loaded) ──────────────────────────────────────────────────
 
 const SpotterMemory = React.lazy(() => import('./SpotterMemory'));
 const AdminGroups = React.lazy(() => import('./AdminGroups'));
-const AdminLang = React.lazy(() => import('./AdminLang'));
-const MiniSpotters = React.lazy(() => import('./MiniSpotters'));
+// const AdminLang = React.lazy(() => import('./AdminLang'));
+// const MiniSpotters = React.lazy(() => import('./MiniSpotters'));
 const LiveboardTemplate = React.lazy(() => import('./_liveboard-template'));
 const DataModelEditorSample = React.lazy(() => import('./DataModelEditor'));
 const Spotter = React.lazy(() => import('./Spotter'));
@@ -81,30 +84,32 @@ export const coreRegistry: ProjectMeta[] = [
     customComponents: 10,
     section: 'sample',
   },
-  {
-    id: 'AdminLang',
-    name: 'Admin language settings',
-    description: 'Admin settings for CSV-based translation of Liveboards and Answers with upload, validation, and object picker.',
-    author: 'Design Team',
-    lastModified: '2026-03-12',
-    thumbnail: AdminLangThumbnail,
-    component: AdminLang,
-    dsComponents: 10,
-    customComponents: 4,
-    section: 'sample',
-  },
-  {
-    id: 'MiniSpotters',
-    name: 'MiniSpotters',
-    description: 'Curated, domain-specific Spotter instances with bounded context, prompt libraries, and simulated chat.',
-    author: 'Design Team',
-    lastModified: '2026-03-12',
-    thumbnail: MiniSpottersThumbnail,
-    component: MiniSpotters,
-    dsComponents: 8,
-    customComponents: 5,
-    section: 'sample',
-  },
+  // Hidden 2026-05-25: AdminLang removed from gallery. Uncomment + restore import/lazy above to revive.
+  // {
+  //   id: 'AdminLang',
+  //   name: 'Admin language settings',
+  //   description: 'Admin settings for CSV-based translation of Liveboards and Answers with upload, validation, and object picker.',
+  //   author: 'Design Team',
+  //   lastModified: '2026-03-12',
+  //   thumbnail: AdminLangThumbnail,
+  //   component: AdminLang,
+  //   dsComponents: 10,
+  //   customComponents: 4,
+  //   section: 'sample',
+  // },
+  // Hidden 2026-05-25: MiniSpotters removed from gallery. Uncomment + restore import/lazy above to revive.
+  // {
+  //   id: 'MiniSpotters',
+  //   name: 'MiniSpotters',
+  //   description: 'Curated, domain-specific Spotter instances with bounded context, prompt libraries, and simulated chat.',
+  //   author: 'Design Team',
+  //   lastModified: '2026-03-12',
+  //   thumbnail: MiniSpottersThumbnail,
+  //   component: MiniSpotters,
+  //   dsComponents: 8,
+  //   customComponents: 5,
+  //   section: 'sample',
+  // },
   {
     id: '_liveboard-template',
     name: 'Liveboard template',
@@ -146,8 +151,9 @@ export const coreRegistry: ProjectMeta[] = [
     id: 'NewUIAdmin2',
     name: 'AdminUI2.0',
     description: 'Application Settings screen from Admin 2.0 — cluster settings, administration toggles, and downloads & schedules.',
-    author: 'Simran Pandit',
+    author: 'Design Team',
     lastModified: '2026-05-25',
+    thumbnail: NewUIAdmin2Thumbnail,
     component: NewUIAdmin2,
     dsComponents: 6,
     customComponents: 4,
