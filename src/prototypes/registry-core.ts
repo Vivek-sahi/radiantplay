@@ -33,22 +33,6 @@ export interface ProjectMeta {
   section?: 'sample' | 'mine';
 }
 
-// ── Core (sample) prototypes ──────────────────────────────────────────────────
-
-const StylingPanel = React.lazy(() => import('./StylingPanel'));
-
-export const coreRegistry: ProjectMeta[] = [
-  {
-    id: 'StylingPanel',
-    name: 'Styling panel',
-    description: 'Liveboard tile styling controls — density, color themes, corner style, spacing mode, and per-tile overrides with highlight and dark palette.',
-    author: 'Devanshi Behara',
-    lastModified: '2026-04-23',
-    component: StylingPanel,
-    section: 'sample',
-  },
-];
-
 // ── Thumbnails ────────────────────────────────────────────────────────────────
 
 import AdminGroupsThumbnail from './thumbnails/AdminGroups.svg';
@@ -61,6 +45,7 @@ import LiveboardTemplateThumbnail from './thumbnails/LiveboardTemplate.svg';
 import DataModelEditorThumbnail from './thumbnails/DataModelEditor.svg';
 import SpotterThumbnail from './thumbnails/Spotter.svg';
 import NewUIAdmin2Thumbnail from './thumbnails/NewUIAdmin2.svg';
+import StylingPanelThumbnail from './thumbnails/StylingPanel.svg';
 
 // ── Components (lazy-loaded) ──────────────────────────────────────────────────
 
@@ -72,6 +57,7 @@ const LiveboardTemplate = React.lazy(() => import('./_liveboard-template'));
 const DataModelEditorSample = React.lazy(() => import('./DataModelEditor'));
 const Spotter = React.lazy(() => import('./Spotter'));
 const NewUIAdmin2 = React.lazy(() => import('./NewUIAdmin2'));
+const StylingPanel = React.lazy(() => import('./StylingPanel'));
 
 // ── Registry ──────────────────────────────────────────────────────────────────
 
@@ -173,6 +159,16 @@ export const coreRegistry: ProjectMeta[] = [
     component: NewUIAdmin2,
     dsComponents: 6,
     customComponents: 4,
+    section: 'sample',
+  },
+  {
+    id: 'StylingPanel',
+    name: 'Liveboard - Styling panel',
+    description: 'Liveboard tile styling controls — density, color themes, corner style, spacing mode, and per-tile overrides with highlight and dark palette.',
+    author: 'Devanshi Behara',
+    lastModified: '2026-04-23',
+    thumbnail: StylingPanelThumbnail,
+    component: StylingPanel,
     section: 'sample',
   },
 ];

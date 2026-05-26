@@ -9,6 +9,8 @@ interface EditToolbarProps {
   onCancel: () => void;
   onToggleSpotter?: () => void;
   spotterOpen?: boolean;
+  onToggleStyling?: () => void;
+  stylingOpen?: boolean;
 }
 
 const SpotterIcon: React.FC = () => (
@@ -18,7 +20,7 @@ const SpotterIcon: React.FC = () => (
   </svg>
 );
 
-export const EditToolbar: React.FC<EditToolbarProps> = ({ onSave, onCancel, onToggleSpotter, spotterOpen }) => (
+export const EditToolbar: React.FC<EditToolbarProps> = ({ onSave, onCancel, onToggleSpotter, spotterOpen, onToggleStyling, stylingOpen }) => (
   <div style={s.toolbar}>
     <div style={s.left}>
       <BrandMark pixelSize={24} color={colors.textOnDark} aria-hidden />
@@ -32,7 +34,11 @@ export const EditToolbar: React.FC<EditToolbarProps> = ({ onSave, onCancel, onTo
         <span style={s.toolLabel}>Add</span>
         <Icon name="chevron-down" size="xs" color={colors.textOnDarkMuted} />
       </button>
-      <button style={s.toolBtn}>
+      <button
+        type="button"
+        style={{ ...s.toolBtn, ...(stylingOpen ? s.toolBtnActive : {}) }}
+        onClick={onToggleStyling}
+      >
         <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
           <circle cx="9" cy="9" r="7" stroke="currentColor" strokeWidth="1.2" />
           <circle cx="9" cy="9" r="3" stroke="currentColor" strokeWidth="1.2" />
