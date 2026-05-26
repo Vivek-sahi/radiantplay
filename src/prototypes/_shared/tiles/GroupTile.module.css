@@ -14,10 +14,11 @@
   box-sizing: border-box;
   position: relative;
   background: var(--rd-sys-color-background-base, #ffffff);
-  border: 1px solid var(--rd-sys-color-border-divider, #eaedf2);
+  border: 1px solid var(--tile-outer-border-color, var(--rd-sys-color-border-divider, #eaedf2));
   border-radius: 16px;
+  box-shadow: var(--tile-box-shadow, none);
   overflow: visible;
-  transition: border-color 150ms ease;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
 }
 
 .tile:not(.tileEdit):hover {
@@ -37,15 +38,15 @@
 
 .header {
   flex-shrink: 0;
-  /* pt-8 px-8 pb-4 */
-  padding: 8px 8px 4px 8px;
-  border-bottom: 1px solid var(--rd-sys-color-border-divider, #eaedf2);
+  /* pt-8 px-12 pb-4 — extra 4px sides aligns title with inner tile content */
+  padding: 8px 12px 4px 12px;
+  border-bottom: 1px solid var(--group-header-divider, var(--rd-sys-color-border-divider, #eaedf2));
   border-radius: 16px 16px 0 0;
   /* In edit mode the header is the drag handle — cursor is set by .tile-drag-handle global */
 }
 
 .textBlock {
-  padding: 4px;
+  /* padding is density-variable — set via inline style in GroupTile.tsx */
   display: flex;
   flex-direction: column;
 }

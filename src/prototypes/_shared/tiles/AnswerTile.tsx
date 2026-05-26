@@ -98,6 +98,14 @@ export interface AnswerTileProps extends React.HTMLAttributes<HTMLDivElement> {
    * @default 4
    */
   densityPadding?: number;
+
+  /**
+   * Whether the tile is in the highlighted/dark override state.
+   * Visual treatment is driven externally via CSS variables (`--tile-outer-border-color`,
+   * `--tile-box-shadow`) set by the parent. This prop is accepted so the parent can
+   * tag the tile semantically; AnswerTile itself doesn't apply any styling from it.
+   */
+  highlighted?: boolean;
 }
 
 // ─── Toolbar icons — inline SVG from Figma node 29:57904 ─────────────────────
