@@ -551,7 +551,7 @@ export const VariablesPageContent: React.FC = () => {
                 onBlur={(e) => { e.currentTarget.style.borderColor = '#D1D5DB'; e.currentTarget.style.boxShadow = 'none'; }}
               />
             </div>
-            <button onClick={openCreate} style={{ display: 'flex', alignItems: 'center', gap: '6px', height: '36px', padding: '0 18px', borderRadius: '20px', border: 'none', backgroundColor: rdComponentColors['button-secondary-default'], cursor: 'pointer', fontFamily: font, fontSize: '13px', fontWeight: 600, color: '#111827', transition: 'opacity 0.15s' }}
+            <button onClick={openCreate} style={{ display: 'flex', alignItems: 'center', gap: '6px', height: '36px', padding: '0 18px', borderRadius: '20px', border: 'none', backgroundColor: rdComponentColors.light['button-secondary-default'], cursor: 'pointer', fontFamily: font, fontSize: '13px', fontWeight: 600, color: '#111827', transition: 'opacity 0.15s' }}
               onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = '0.8'; }}
               onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = '1'; }}
             >

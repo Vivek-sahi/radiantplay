@@ -517,18 +517,6 @@ const ColorSwatch: React.FC<{ color: string }> = ({ color: initialColor }) => {
   );
 };
 
-const ColorRow: React.FC<{ label?: string; colors: string[] }> = ({ label, colors }) => (
-  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '4px 0' }}>
-    {label && (
-      <span style={{ fontSize: '13px', fontWeight: 500, color: '#374151', fontFamily: font, width: '140px', flexShrink: 0 }}>
-        {label}
-      </span>
-    )}
-    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-      {colors.map((c, i) => <ColorSwatch key={i} color={c} />)}
-    </div>
-  </div>
-);
 
 // ─── Checkbox ─────────────────────────────────────────────────────────────────
 
@@ -657,20 +645,6 @@ const AddNewFontModal: React.FC<{ onClose: () => void; onConfirm: () => void }> 
 
 // ─── Modal primitives removed — use RdModal directly ─────────────────────────
 
-const FormField: React.FC<{ label: string; required?: boolean; helper?: string; placeholder?: string }> = ({ label, required, helper, placeholder }) => (
-  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-    <label style={{ fontSize: '13px', fontWeight: 500, color: '#374151', fontFamily: font }}>
-      {label}{required && <span style={{ color: '#EF4444', marginLeft: '2px' }}>*</span>}
-    </label>
-    <input
-      type="text" placeholder={placeholder}
-      style={{ height: '36px', padding: '0 12px', border: '1px solid #D1D5DB', borderRadius: '6px', fontSize: '13px', fontFamily: font, color: '#111827', outline: 'none', width: '100%', boxSizing: 'border-box' }}
-      onFocus={(e) => { e.currentTarget.style.borderColor = brand; e.currentTarget.style.boxShadow = `0 0 0 2px ${brand}22`; }}
-      onBlur={(e) => { e.currentTarget.style.borderColor = '#D1D5DB'; e.currentTarget.style.boxShadow = 'none'; }}
-    />
-    {helper && <span style={{ fontSize: '12px', color: '#9CA3AF', fontFamily: font }}>{helper}</span>}
-  </div>
-);
 
 
 
@@ -741,19 +715,6 @@ const CustomiseHomepageModal: React.FC<{
 
 
 
-// ─── Add Action Button ────────────────────────────────────────────────────────
-
-const AddAction: React.FC<{ label: string }> = ({ label }) => (
-  <button style={{
-    display: 'flex', alignItems: 'center', gap: '5px', border: 'none', background: 'none',
-    fontSize: '13px', fontWeight: 500, color: brand, fontFamily: font, cursor: 'pointer', padding: 0,
-  }}>
-    <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-      <path d="M6.5 2v9M2 6.5h9" stroke={brand} strokeWidth="1.5" strokeLinecap="round" />
-    </svg>
-    {label}
-  </button>
-);
 
 // ─── Text Link ────────────────────────────────────────────────────────────────
 
@@ -826,28 +787,6 @@ const ChartAvatar: React.FC = () => (
   </div>
 );
 
-// ─── Color Display Row (Email) ────────────────────────────────────────────────
-
-const ColorDisplayRow: React.FC<{ label: string; color: string; hex: string }> = ({ label, color, hex }) => (
-  <div style={{
-    display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '24px',
-    padding: '14px 20px', backgroundColor: '#FFFFFF', border: '1px solid #E9EAEC', borderRadius: '8px',
-  }}>
-    <span style={{ fontSize: '14px', color: '#111827', fontFamily: font }}>{label}</span>
-    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: '5px',
-        height: '28px', padding: '0 8px', border: '1px solid #D1D5DB', borderRadius: '6px', backgroundColor: '#fff',
-      }}>
-        <div style={{ width: '16px', height: '16px', borderRadius: '3px', backgroundColor: color, flexShrink: 0 }} />
-        <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-          <path d="M2 4l3 3 3-3" stroke="#9CA3AF" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      </div>
-      <span style={{ fontSize: '13px', color: '#374151', fontFamily: font }}>{hex}</span>
-    </div>
-  </div>
-);
 
 // ─── Email Read-only Rows ─────────────────────────────────────────────────────
 
@@ -872,31 +811,6 @@ const EmailDotRow: React.FC<{ label: string }> = ({ label }) => (
   </div>
 );
 
-// ─── Object Table ─────────────────────────────────────────────────────────────
-
-const ObjectTable: React.FC<{
-  columns: { label: string; flex?: number }[];
-  rows: React.ReactNode[][];
-}> = ({ columns, rows }) => {
-  const gridCols = columns.map((c) => `${c.flex ?? 1}fr`).join(' ');
-  return (
-    <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #E9EAEC', borderRadius: '8px', overflow: 'hidden' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: gridCols, padding: '10px 20px', borderBottom: '1px solid #F3F4F6' }}>
-        {columns.map((col) => (
-          <span key={col.label} style={{ fontSize: '12.5px', fontWeight: 500, color: '#9CA3AF', fontFamily: font }}>{col.label}</span>
-        ))}
-      </div>
-      {rows.map((row, i) => (
-        <div key={i} style={{
-          display: 'grid', gridTemplateColumns: gridCols, padding: '13px 20px',
-          borderBottom: i < rows.length - 1 ? '1px solid #F3F4F6' : 'none', alignItems: 'center',
-        }}>
-          {row.map((cell, j) => <div key={j}>{cell}</div>)}
-        </div>
-      ))}
-    </div>
-  );
-};
 
 // ─── Help Menu Icons ──────────────────────────────────────────────────────────
 
@@ -1047,7 +961,7 @@ export const CustomisationPageContent: React.FC<{ scope?: 'all-orgs' | 'primary-
   const [chartTextOpen, setChartTextOpen] = useState(true);
   const [tableTextOpen, setTableTextOpen] = useState(true);
   const [navColourOpen, setNavColourOpen] = useState(true);
-  const [chartPaletteOpen, setChartPaletteOpen] = useState(true);
+  const [_chartPaletteOpen, _setChartPaletteOpen] = useState(true);
   const [footerTextOpen, setFooterTextOpen] = useState(true);
   const [disableColourRotation, setDisableColourRotation] = useState(false);
 
@@ -1071,8 +985,8 @@ export const CustomisationPageContent: React.FC<{ scope?: 'all-orgs' | 'primary-
 
   // ── Email tab ──
   const [emailOpen, setEmailOpen] = useState(true);
-  const [emailPreview, setEmailPreview] = useState(false);
-  const [emailToggles, setEmailToggles] = useState<Record<string, boolean>>({
+  const [_emailPreview, _setEmailPreview] = useState(false);
+  const [_emailToggles, _setEmailToggles] = useState<Record<string, boolean>>({
     productName: true, phoneNumber: true, address: true,
     mobileAppNudge: true, modifyAlert: true, unsubscribeLink: true,
     errorMessage: true, manageNotifications: true,

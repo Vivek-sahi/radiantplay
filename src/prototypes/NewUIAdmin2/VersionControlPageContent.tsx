@@ -366,11 +366,11 @@ const SetupWizardModal: React.FC<{
         {step === 2 && scope === 'primary-org' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             <div>
-              <label style={labelStyle}>Branch</label>
+              <label style={labelStyle(false)}>Branch</label>
               <Dropdown value="Select" options={['main', 'develop', 'staging', 'production']} width={656} />
             </div>
             <div>
-              <label style={labelStyle}>GUID</label>
+              <label style={labelStyle(false)}>GUID</label>
               <Dropdown value="Select GUID branch" options={['guid-main', 'guid-develop', 'guid-staging']} width={656} />
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -562,12 +562,12 @@ export const VersionControlPageContent: React.FC<{ scope?: 'all-orgs' | 'primary
   );
 
   // Credential field state (Primary Org)
-  const [credRepo, setCredRepo] = useState('TS_repotest');
-  const [credUsername, setCredUsername] = useState('TSdemo1234');
-  const [credToken, setCredToken] = useState('12wre:84hs64:2745s:g4534:4542');
-  const [credBranch, setCredBranch] = useState('Branch Name 1');
-  const [credGuidBranch, setCredGuidBranch] = useState('Branch Name 2');
-  const [credVersionHistory, setCredVersionHistory] = useState('Enabled');
+  const [credRepo, _setCredRepo] = useState('TS_repotest');
+  const [credUsername, _setCredUsername] = useState('TSdemo1234');
+  const [credToken, _setCredToken] = useState('12wre:84hs64:2745s:g4534:4542');
+  const [credBranch, _setCredBranch] = useState('Branch Name 1');
+  const [credGuidBranch, _setCredGuidBranch] = useState('Branch Name 2');
+  const [credVersionHistory, _setCredVersionHistory] = useState('Enabled');
 
   // Reset dialog
   const [resetDialog, setResetDialog] = useState(false);

@@ -114,7 +114,7 @@ export const versionHistory: VersionEntry[] = [
     changes: [
       { type: 'modified', group: 'Spotter chat', component: 'VizBlock — real ECharts rendering', description: 'Replaced the custom SVG sketch with echarts-for-react using the existing chart palette (chartColors / chartUi / chartFont) from _shared/tiles. Supports line / bar / pie / table chartKinds with axis labels, gridlines, tooltips, value labels on bars, multi-series legend' },
       { type: 'modified', group: 'Spotter chat', component: 'VizBlock M4 expand modal', description: 'Modal portaled to document.body to escape the chat tree containing block; M4 full-width override (max-width: none) so it covers the viewport edge-to-edge; "Expand"/"Close" header + chart title + view toggle + tokens row + chart slot + "Showing X of X data points" footer matching the figma' },
-      { type: 'fixed', group: 'Spotter chat', component: 'Streaming keyframes containing block', description: 'blockIn / reasoningIn / stepIn / workedForIn keyframes now end with transform: none instead of translateY(0). Translate(0) is a non-none transform that creates a containing block, which trapped Modal position: fixed' },
+      { type: 'modified', group: 'Spotter chat', component: 'Streaming keyframes containing block', description: 'blockIn / reasoningIn / stepIn / workedForIn keyframes now end with transform: none instead of translateY(0). Translate(0) is a non-none transform that creates a containing block, which trapped Modal position: fixed' },
     ],
   },
   {

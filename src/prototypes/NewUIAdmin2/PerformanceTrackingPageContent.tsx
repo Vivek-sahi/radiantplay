@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { systemColors } from '../../tokens/colors';
 
 const font = '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';

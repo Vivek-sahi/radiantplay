@@ -7,6 +7,7 @@ import { Select } from '@components/Select';
 import { RdModal } from '@components/RdModal';
 import { Table } from '@components/Table';
 import './dme.css';
+// @ts-expect-error -- init-dme.js is a plain JS module without a .d.ts declaration
 import { initDME } from './init-dme.js';
 import { AgentPanel } from '../_agentic/index';
 import { TableCanvas, ColumnTree } from '../_datamodel/index';

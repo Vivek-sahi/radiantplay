@@ -192,7 +192,6 @@ const BarChartCard: React.FC<{
   const chartH = 160;
   const chartW = 260;
   const barW = Math.floor(chartW / data.length) - 4;
-  const axisPad = 32;
 
   return (
     <div style={{

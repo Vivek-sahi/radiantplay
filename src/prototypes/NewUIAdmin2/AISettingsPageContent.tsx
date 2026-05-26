@@ -663,99 +663,6 @@ const ConnectorCard: React.FC<{ name: string; icon: React.ReactNode }> = ({ name
   );
 };
 
-// ─── SliderRow ────────────────────────────────────────────────────────────────
-
-const SliderRow: React.FC<{
-  label: string;
-  description?: string;
-  min: number;
-  max: number;
-  step?: number;
-  defaultValue: number;
-  unit?: string;
-}> = ({ label, description, min, max, step = 1, defaultValue, unit = '' }) => {
-  const [value, setValue] = useState(defaultValue);
-  return (
-    <div style={{
-      display: 'flex', alignItems: description ? 'flex-start' : 'center',
-      justifyContent: 'space-between', gap: '32px', padding: '18px 24px',
-      backgroundColor: '#FFFFFF', border: '1px solid #E9EAEC', borderRadius: '8px',
-    }}>
-      <div style={{ flex: 1 }}>
-        <div style={{ fontSize: '14px', fontWeight: 500, color: '#111827', fontFamily: font, lineHeight: 1.4 }}>
-          {label}
-        </div>
-        {description && (
-          <div style={{ fontSize: '12.5px', color: '#9CA3AF', fontFamily: font, marginTop: '4px', lineHeight: 1.6 }}>
-            {description}
-          </div>
-        )}
-      </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
-        <input type="range" min={min} max={max} step={step} value={value}
-          onChange={(e) => setValue(Number(e.target.value))}
-          style={{ width: '140px', accentColor: brand, cursor: 'pointer' }}
-        />
-        <span style={{ fontSize: '13px', fontWeight: 600, color: '#111827', fontFamily: font, minWidth: '52px', textAlign: 'right' }}>
-          {value}{unit}
-        </span>
-      </div>
-    </div>
-  );
-};
-
-// ─── RadioGroup ───────────────────────────────────────────────────────────────
-
-const RadioGroup: React.FC<{
-  options: { id: string; label: string; description?: string }[];
-  defaultValue: string;
-}> = ({ options, defaultValue }) => {
-  const [selected, setSelected] = useState(defaultValue);
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-      {options.map((opt) => (
-        <div key={opt.id} onClick={() => setSelected(opt.id)}
-          style={{
-            display: 'flex', alignItems: opt.description ? 'flex-start' : 'center',
-            gap: '12px', padding: '14px 20px', backgroundColor: '#FFFFFF',
-            border: `1px solid ${selected === opt.id ? brand : '#E9EAEC'}`,
-            borderRadius: '8px', cursor: 'pointer',
-            boxShadow: selected === opt.id ? `0 0 0 2px ${brand}22` : 'none',
-            transition: 'border-color 0.15s, box-shadow 0.15s',
-          }}
-        >
-          <div style={{
-            width: '16px', height: '16px', borderRadius: '50%', flexShrink: 0, marginTop: opt.description ? '2px' : '0',
-            border: `2px solid ${selected === opt.id ? brand : '#D1D5DB'}`,
-            backgroundColor: selected === opt.id ? brand : 'transparent',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            transition: 'border-color 0.15s, background-color 0.15s',
-          }}>
-            {selected === opt.id && <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#FFFFFF' }} />}
-          </div>
-          <div>
-            <div style={{ fontSize: '13.5px', fontWeight: 500, color: '#111827', fontFamily: font }}>{opt.label}</div>
-            {opt.description && (
-              <div style={{ fontSize: '12px', color: '#9CA3AF', fontFamily: font, marginTop: '3px', lineHeight: 1.5 }}>{opt.description}</div>
-            )}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-};
-
-// ─── SectionLabel ─────────────────────────────────────────────────────────────
-
-const SectionLabel: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <div style={{
-    fontSize: '11px', fontWeight: 700, color: '#6B7280', fontFamily: font,
-    letterSpacing: '0.08em', textTransform: 'uppercase', padding: '8px 4px 4px',
-  }}>
-    {children}
-  </div>
-);
-
 // ─── AISettingsPageContent ────────────────────────────────────────────────────
 
 export const AISettingsPageContent: React.FC = () => {
@@ -776,21 +683,21 @@ export const AISettingsPageContent: React.FC = () => {
   const [resetSection, setResetSection] = useState<string | null>(null);
 
   // ── General tab — collapsible sections ──
-  const [llmOpen, setLlmOpen] = useState(true);
-  const [uxOpen, setUxOpen] = useState(true);
+  const [_llmOpen, _setLlmOpen] = useState(true);
+  const [_uxOpen, _setUxOpen] = useState(true);
   const [otherOpen, setOtherOpen] = useState(true);
 
   // Configure user experience toggles
-  const [coachingFromConvo, setCoachingFromConvo] = useState(true);
-  const [sampleQuestions, setSampleQuestions] = useState(true);
+  const [_coachingFromConvo, _setCoachingFromConvo] = useState(true);
+  const [_sampleQuestions, _setSampleQuestions] = useState(true);
 
   // Other AI features toggles
   const [aiNarratives, setAiNarratives] = useState(true);
   const [aiHighlights, setAiHighlights] = useState(true);
-  const [memoryFromLiveboards, setMemoryFromLiveboards] = useState(true);
+  const [_memoryFromLiveboards, _setMemoryFromLiveboards] = useState(true);
 
   // Data Models
-  const [aiOnDataModels, setAiOnDataModels] = useState(true);
+  const [_aiOnDataModels, _setAiOnDataModels] = useState(true);
 
   // ── Spotter 3 tab ──
   const [spotterSectionOpen, setSpotterSectionOpen] = useState(true);
@@ -956,7 +863,7 @@ export const AISettingsPageContent: React.FC = () => {
                   </div>
                   <button onClick={() => setLlmModal(true)} style={{
                     height: '32px', padding: '0 18px', borderRadius: '999px', flexShrink: 0,
-                    border: 'none', backgroundColor: rdComponentColors['button-secondary-default'],
+                    border: 'none', backgroundColor: rdComponentColors.light['button-secondary-default'],
                     cursor: 'pointer', fontFamily: font, fontSize: '13px', fontWeight: 500, color: '#374151',
                   }}>
                     View
@@ -1097,7 +1004,7 @@ export const AISettingsPageContent: React.FC = () => {
                     action={
                       <button onClick={() => setAddConnectorModal(true)} style={{
                         height: '32px', padding: '0 14px', borderRadius: '999px',
-                        border: 'none', backgroundColor: rdComponentColors['button-secondary-default'],
+                        border: 'none', backgroundColor: rdComponentColors.light['button-secondary-default'],
                         cursor: 'pointer', fontFamily: font, fontSize: '13px',
                         fontWeight: 500, color: '#374151',
                       }}>

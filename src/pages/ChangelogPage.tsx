@@ -7,7 +7,7 @@ interface ChangelogEntry {
   title: string;
   type: 'major' | 'minor' | 'patch';
   changes: {
-    category: 'added' | 'changed' | 'fixed' | 'removed';
+    category: 'added' | 'changed' | 'fixed' | 'removed' | 'synced';
     label?: string; // overrides the default badge text (e.g. theme group names)
     items: string[];
   }[];
@@ -624,6 +624,7 @@ const categoryColors = {
   changed: { bg: systemColors.light['background-warning'], text: systemColors.light['content-warning'], label: 'Changed' },
   fixed: { bg: systemColors.light['background-information'], text: systemColors.light['content-information'], label: 'Fixed' },
   removed: { bg: systemColors.light['background-failure'], text: systemColors.light['content-failure'], label: 'Removed' },
+  synced: { bg: systemColors.light['background-information'], text: systemColors.light['content-information'], label: 'Synced' },
 };
 
 const typeColors = {
