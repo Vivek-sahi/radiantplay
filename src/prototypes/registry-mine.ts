@@ -33,6 +33,7 @@ import DataStudioThumbnail from './thumbnails/DataStudio.svg';
 
 const DataStudio = React.lazy(() => import('./DataStudio'));
 const SpotterPrep = React.lazy(() => import('./SpotterPrep'));
+const SpotterPrep2 = React.lazy(() => import('./SpotterPrep2'));
 
 export const myRegistry: ProjectMeta[] = [
   {
@@ -52,6 +53,15 @@ export const myRegistry: ProjectMeta[] = [
     author: 'Vivek Sahi',
     lastModified: '2026-04-09',
     component: SpotterPrep,
+    section: 'mine',
+  },
+  {
+    id: 'SpotterPrep2',
+    name: 'SpotterPrep v2',
+    description: 'HR analytics data quality session — tiered confidence (high/medium/low), three agent modes (interactive/batch/autonomous), save-as-new-model with inherited caching.',
+    author: 'Vivek Sahi',
+    lastModified: '2026-05-26',
+    component: SpotterPrep2,
     section: 'mine',
   },
 ];
