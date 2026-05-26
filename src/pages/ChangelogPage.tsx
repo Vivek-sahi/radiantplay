@@ -25,7 +25,7 @@ interface Highlight {
 
 const HIGHLIGHTS: Highlight[] = [
   {
-    title: 'Spotter prototype — Stage B Phase 2 + prompt-bar overhaul',
+    title: 'Spotter prototype',
     description: 'AnalystLandingPage, AnalystListPage, and the right-pane state machine landed. Prompt bar rebuilt with a mode toggle, hideable data-model picker, and a new PromptSuggestionsPanel. 12 IA polish corrections across analyst selection, recency-sorted chats, panel restructure, and chat naming. The Liveboard template SpotterViz side panel was also rebuilt to match the Figma design.',
     version: '26.5.4a',
     date: '2026-05-26',
@@ -79,12 +79,6 @@ const HIGHLIGHTS: Highlight[] = [
     date: '2026-04-28',
   },
   {
-    title: 'Modal redesign — Figma alignment',
-    description: 'Header padding restored, footer fixed at 72px with corrected CTA placement, wizard stepper rebuilt as discrete segments, RdModal absorbed into Modal.',
-    version: '26.4.4c',
-    date: '2026-04-27',
-  },
-  {
     title: 'Token system — Figma 3.0 alignment',
     description: 'Phases 1–5 of 8 shipped: primitive colors, light semantic colors, typography, shadows, layout. Dark mode (Phase 6) is next.',
     version: '26.4.4c',
@@ -102,7 +96,7 @@ const CHANGELOG: ChangelogEntry[] = [
   {
     version: '26.5.4a',
     date: '2026-05-26',
-    title: 'Spotter Stage B Phase 2 + Styling panel + AdminUI 2.0 + Playground archive',
+    title: 'Spotter prototype + Liveboard Styling panel + AdminUI 2.0 + Playground archive',
     type: 'minor',
     changes: [
       {
