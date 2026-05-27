@@ -1104,3 +1104,23 @@ Bugs fixed: hardcoded path in CLAUDE.md, scroll-offset misposition on highlight 
 UX changes: button is now a pixelated hand cursor icon (icon-only default, `✕ Exit` active); panel title removed; mode stays active after submit (annotate multiple elements without re-clicking); toast shows component name (`Button · queued`); button hidden outside `/playground/*` routes; send button black; all colors consistent.
 
 **Next:** Review feedback layer in browser, raise PR to upstream (`mohammed-faris/radiantplay`) with: `lib/feedback.*`, `feedback/server.py`, `vite.config.ts` plugin, `CLAUDE.md` session start, `README.md` section, `package.json` dev script.
+
+---
+
+### 2026-05-28 (session 115)
+
+**Notebook tab — Phase 1 (the build log).**
+
+Research + planning session before building. Explored the right mental model for exposing agent work to users. Key decision: the notebook is not a code editor you hand to an AI — it's **the agent's work, made inspectable and editable.** Framed 5 phases (build log → take control → extend → lineage → co-authoring). Plan doc: `2026-05-27-notebook-plan.md`.
+
+Built Phase 1 in `CenterPanel.tsx` (notebook section only, no other files touched):
+
+- **Cell status states** — `idle | running | success | error` with left-border color, `StatusDot` indicator (spinner / green check / red ✕)
+- **Cell output panel** — success: row count + 3-row data preview table; error: red-tinted message + "Edit and retry" CTA
+- **Run animation** — 1.4s `running` → `success` transition with code area dimmed during run
+- **Run all** — toolbar button runs all cells sequentially with staggered delays; status summary shown in toolbar
+- **Per-cell run button** — ▶ on hover alongside edit pencil
+- **Pre-failed cell** — cell 4 (Join: orders × campaigns) starts in `error` state with a believable column-name mismatch error; "Edit and retry" opens it for editing; on Run transitions to success with data preview
+- **Token cleanup** — replaced hardcoded `#2770EF` and `#16a34a` with `c['content-brand']` and green accent tokens
+
+Build clean ✓. Verified working in browser.

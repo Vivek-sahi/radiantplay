@@ -755,10 +755,11 @@ const NbPyLine: React.FC<{ line: string }> = ({ line }) => {
 
 // ── Notebook ──────────────────────────────────────────────────────────────────
 
-type NbCellType = 'sql' | 'python' | 'text';
+type NbCellType   = 'sql' | 'python' | 'text';
+type NbCellStatus = 'idle' | 'running' | 'success' | 'error';
 
 const NB_CELL_ACCENT: Record<NbCellType, string> = {
-  sql:    '#2770EF',
+  sql:    c['content-brand'],
   python: '#D97706',
   text:   c['border-divider'],
 };
@@ -769,7 +770,20 @@ interface NbCellDef {
   label: string;
   query: string;
   instruction?: string;
+  initialStatus?: NbCellStatus;
+  errorMessage?: string;
 }
+
+const NB_MOCK_OUTPUT: Record<number, { cols: string[]; rows: string[][]; rowCount: number }> = {
+  1: { cols: ['order_id', 'user_id', 'amount'],         rows: [['ORD-001', 'USR-101', '$420.00'], ['ORD-002', 'USR-205', '$89.50'],  ['ORD-003', 'USR-101', '$312.00']], rowCount: 3842 },
+  2: { cols: ['campaign_id', 'campaign_name', 'channel'], rows: [['C-01', 'Summer Sale', 'Email'], ['C-02', 'Retargeting Q3', 'Paid Social'], ['C-03', 'Brand Awareness', 'Display']], rowCount: 24 },
+  3: { cols: ['user_id', 'name', 'segment'],             rows: [['USR-101', 'Alex Kim', 'Enterprise'], ['USR-205', 'Priya Mehta', 'Mid-Market'], ['USR-312', 'Jordan Lee', 'SMB']], rowCount: 1205 },
+  4: { cols: ['order_id', 'campaign_name', 'channel'],   rows: [['ORD-001', 'Summer Sale', 'Email'], ['ORD-002', 'Retargeting Q3', 'Paid Social'], ['ORD-005', 'Brand Awareness', 'Display']], rowCount: 3842 },
+  5: { cols: ['order_id', 'user_name', 'segment'],       rows: [['ORD-001', 'Alex Kim', 'Enterprise'], ['ORD-002', 'Priya Mehta', 'Mid-Market'], ['ORD-003', 'Alex Kim', 'Enterprise']], rowCount: 3842 },
+  6: { cols: ['return_on_spend'],                        rows: [['4.32']], rowCount: 1 },
+  7: { cols: ['table', 'rows_normalized', 'status'],     rows: [['orders', '3,842', 'done'], ['campaigns', '24', 'done'], ['users', '1,205', 'done']], rowCount: 3 },
+  8: { cols: ['order_id', 'user_id', 'amount'],          rows: [['ORD-001', 'USR-101', '$420.00'], ['ORD-002', 'USR-205', '$89.50'], ['ORD-004', 'USR-312', '$150.00']], rowCount: 3797 },
+};
 
 function buildNotebookCells(project: ProjectState): NbCellDef[] {
   const joined      = ['joined', 'transformed', 'healthy'].includes(project.buildStep);
@@ -788,7 +802,9 @@ function buildNotebookCells(project: ProjectState): NbCellDef[] {
     ...(joined ? [
       { id: 4, type: 'sql' as NbCellType, label: 'Join: orders × campaigns',
         instruction: 'Joins orders with campaigns on campaign_id to combine transaction and marketing data.',
-        query: '-- Join orders with campaigns on campaign_id\nSELECT o.*, c.campaign_name, c.channel, c.budget, c.spend\nFROM orders o\nLEFT JOIN campaigns c ON o.campaign_id = c.campaign_id;' },
+        query: '-- Join orders with campaigns on campaign_id\nSELECT o.*, c.campaign_name, c.channel, c.budget, c.spend\nFROM orders o\nLEFT JOIN campaigns c ON o.campaign_id = c.cmp_id;',
+        initialStatus: 'error' as NbCellStatus,
+        errorMessage: 'column "cmp_id" does not exist in table "campaigns" — did you mean "campaign_id"?' },
       { id: 5, type: 'sql' as NbCellType, label: 'Join: orders × users',
         instruction: 'Joins orders with users on user_id to enrich transactions with user attributes.',
         query: '-- Join orders with users on user_id\nSELECT o.*, u.name, u.segment, u.region AS user_region, u.lifetime_value\nFROM orders o\nINNER JOIN users u ON o.user_id = u.user_id;' },
@@ -809,41 +825,361 @@ function buildNotebookCells(project: ProjectState): NbCellDef[] {
   ];
 }
 
+// ── Cell output panel ─────────────────────────────────────────────────────────
+
+const CellOutputPanel: React.FC<{
+  status: 'success' | 'error';
+  cellId: number;
+  errorMessage?: string;
+  onEditRetry: () => void;
+}> = ({ status, cellId, errorMessage, onEditRetry }) => {
+  if (status === 'error') {
+    return (
+      <div style={{
+        background: c['background-accent-red'],
+        borderTop: `1px solid ${c['border-accent-red']}`,
+        padding: `${sp.C}px ${sp.D}px`,
+        display: 'flex', flexDirection: 'column', gap: sp.B,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: sp.B }}>
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, marginTop: 1 }}>
+            <circle cx="8" cy="8" r="7" stroke={c['content-accent-red']} strokeWidth="1.5" />
+            <path d="M8 5v3.5M8 10.5v.5" stroke={c['content-accent-red']} strokeWidth="1.5" strokeLinecap="round" />
+          </svg>
+          <span style={{ fontFamily: ff.mono, fontSize: fs.xs, color: c['content-accent-red'], lineHeight: '18px' }}>
+            {errorMessage ?? 'An error occurred while running this cell.'}
+          </span>
+        </div>
+        <button
+          onClick={onEditRetry}
+          style={{
+            alignSelf: 'flex-start', padding: '3px 10px',
+            background: c['background-base'], border: `1px solid ${c['border-accent-red']}`,
+            borderRadius: 5, cursor: 'pointer',
+            fontSize: fs.xs, fontWeight: fw.medium, color: c['content-accent-red'], fontFamily: ff.primary,
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = c['background-accent-red']; }}
+          onMouseLeave={e => { e.currentTarget.style.background = c['background-base']; }}
+        >
+          Edit and retry
+        </button>
+      </div>
+    );
+  }
+
+  const output = NB_MOCK_OUTPUT[cellId];
+  if (!output) return null;
+
+  return (
+    <div style={{ borderTop: `1px solid ${c['border-divider']}`, backgroundColor: c['background-sunken'] }}>
+      <div style={{ padding: `${sp.B}px ${sp.D}px`, borderBottom: `1px solid ${c['border-divider']}` }}>
+        <span style={{ fontSize: fs.xs, color: c['content-secondary'], fontFamily: ff.mono }}>
+          ↳ {output.rowCount.toLocaleString()} rows
+        </span>
+      </div>
+      <div style={{ overflowX: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: fs.xs, fontFamily: ff.mono }}>
+          <thead>
+            <tr>
+              {output.cols.map(col => (
+                <th key={col} style={{
+                  padding: `${sp.A}px ${sp.C}px`, textAlign: 'left',
+                  color: c['content-secondary'], fontWeight: fw.medium,
+                  borderBottom: `1px solid ${c['border-divider']}`, whiteSpace: 'nowrap',
+                }}>{col}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {output.rows.map((row, ri) => (
+              <tr key={ri}>
+                {row.map((cell, ci) => (
+                  <td key={ci} style={{
+                    padding: `${sp.A}px ${sp.C}px`, color: c['content-primary'],
+                    borderBottom: ri < output.rows.length - 1 ? `1px solid ${c['border-divider']}` : 'none',
+                    whiteSpace: 'nowrap',
+                  }}>{cell}</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+// ── Status dot ────────────────────────────────────────────────────────────────
+
+const StatusDot: React.FC<{ status: NbCellStatus }> = ({ status }) => {
+  if (status === 'idle') return null;
+
+  if (status === 'running') {
+    return (
+      <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 14, height: 14, flexShrink: 0 }}>
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ animation: 'nb-spin 0.8s linear infinite' }}>
+          <style>{`@keyframes nb-spin { to { transform: rotate(360deg); } }`}</style>
+          <circle cx="6" cy="6" r="4.5" stroke={c['content-brand']} strokeWidth="1.5" strokeDasharray="14 8" strokeLinecap="round" />
+        </svg>
+      </span>
+    );
+  }
+
+  if (status === 'success') {
+    return (
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0 }}>
+        <circle cx="6" cy="6" r="5" fill={c['background-accent-green']} stroke={c['border-accent-green']} strokeWidth="1" />
+        <path d="M3.5 6l1.8 1.8 3.2-3.2" stroke={c['content-accent-green']} strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0 }}>
+      <circle cx="6" cy="6" r="5" fill={c['background-accent-red']} stroke={c['border-accent-red']} strokeWidth="1" />
+      <path d="M4 4l4 4M8 4l-4 4" stroke={c['content-accent-red']} strokeWidth="1.2" strokeLinecap="round" />
+    </svg>
+  );
+};
+
+// ── Notebook cell ─────────────────────────────────────────────────────────────
+
+interface NotebookCellProps {
+  type: NbCellType;
+  label: string;
+  value: string;
+  status: NbCellStatus;
+  isEditing: boolean;
+  draftValue: string;
+  errorMessage?: string;
+  cellId: number;
+  onEdit: () => void;
+  onRun: () => void;
+  onRunCell: () => void;
+  onCancel: () => void;
+  onDraftChange: (v: string) => void;
+}
+
+const NotebookCell: React.FC<NotebookCellProps> = ({
+  type, label, value, status, isEditing, draftValue, errorMessage, cellId,
+  onEdit, onRun, onRunCell, onCancel, onDraftChange,
+}) => {
+  const [headerHovered, setHeaderHovered] = useState(false);
+  const displayValue = isEditing ? draftValue : value;
+  const lineCount    = displayValue.split('\n').length;
+
+  const leftBorder = status === 'success' ? c['border-accent-green']
+                   : status === 'error'   ? c['border-accent-red']
+                   : status === 'running' ? c['content-brand']
+                   : NB_CELL_ACCENT[type];
+
+  return (
+    <div style={{
+      border: `1px solid ${c['border-divider']}`,
+      borderLeft: `3px solid ${leftBorder}`,
+      borderRadius: 8,
+      backgroundColor: c['background-base'],
+      overflow: 'hidden',
+      flexShrink: 0,
+      transition: 'border-left-color 0.2s',
+    }}>
+      {/* Header */}
+      <div
+        style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: `6px ${sp.C}px`, borderBottom: `1px solid ${c['border-divider']}`,
+          backgroundColor: headerHovered && !isEditing ? c['background-subtle'] : c['background-base'],
+          transition: 'background-color 0.1s',
+        }}
+        onMouseEnter={() => setHeaderHovered(true)}
+        onMouseLeave={() => setHeaderHovered(false)}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: sp.B }}>
+          <StatusDot status={status} />
+          <span style={{
+            fontSize: 10, fontWeight: fw.semibold,
+            color: type === 'sql' ? c['content-brand'] : type === 'python' ? '#D97706' : c['content-secondary'],
+            textTransform: 'uppercase', letterSpacing: '0.06em',
+          }}>{type}</span>
+          <span style={{ fontSize: fs.xs, color: c['content-primary'], fontWeight: fw.medium }}>{label}</span>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4, opacity: isEditing || headerHovered ? 1 : 0, transition: 'opacity 0.15s' }}>
+          {isEditing ? (
+            <>
+              <button
+                onClick={onCancel}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: fs.xs, color: c['content-secondary'], padding: '2px 6px', fontFamily: ff.primary }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={onRun}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 5,
+                  background: c['background-accent-green'], color: c['content-accent-green'],
+                  border: `1px solid ${c['border-accent-green']}`,
+                  borderRadius: 5, cursor: 'pointer',
+                  fontSize: fs.xs, fontWeight: fw.semibold, padding: '3px 10px', fontFamily: ff.primary,
+                }}
+              >
+                <svg width="7" height="8" viewBox="0 0 7 8" fill="currentColor"><polygon points="0,0 7,4 0,8" /></svg>
+                Run
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={onRunCell}
+                title="Run cell"
+                style={{
+                  width: 24, height: 24, border: 'none', background: 'transparent',
+                  cursor: 'pointer', display: 'flex', alignItems: 'center',
+                  justifyContent: 'center', borderRadius: 4, color: c['content-secondary'], padding: 0,
+                }}
+                onMouseEnter={e => (e.currentTarget.style.color = c['content-primary'])}
+                onMouseLeave={e => (e.currentTarget.style.color = c['content-secondary'])}
+              >
+                <svg width="9" height="10" viewBox="0 0 9 10" fill="currentColor"><polygon points="0,0 9,5 0,10" /></svg>
+              </button>
+              <button
+                onClick={onEdit}
+                title="Edit cell"
+                style={{
+                  width: 24, height: 24, border: 'none', background: 'transparent',
+                  cursor: 'pointer', display: 'flex', alignItems: 'center',
+                  justifyContent: 'center', borderRadius: 4, color: c['content-secondary'], padding: 0,
+                }}
+                onMouseEnter={e => (e.currentTarget.style.color = c['content-primary'])}
+                onMouseLeave={e => (e.currentTarget.style.color = c['content-secondary'])}
+              >
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M11.5 2.5a1.5 1.5 0 0 1 2.1 2.1L5 13.1l-3 .9.9-3 8.6-8.5z" />
+                </svg>
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Code body */}
+      {isEditing ? (
+        <textarea
+          autoFocus
+          value={draftValue}
+          onChange={e => onDraftChange(e.target.value)}
+          style={{
+            width: '100%', minHeight: Math.max(lineCount * 20 + 24, 80),
+            padding: sp.C, fontFamily: ff.mono, fontSize: fs.xs,
+            color: c['content-primary'], backgroundColor: c['background-sunken'],
+            border: 'none', outline: 'none', resize: 'vertical', lineHeight: '20px',
+            boxSizing: 'border-box',
+          }}
+        />
+      ) : (
+        <div style={{
+          padding: sp.C, fontFamily: ff.mono, fontSize: fs.xs, lineHeight: '20px',
+          backgroundColor: c['background-sunken'],
+          opacity: status === 'running' ? 0.5 : 1, transition: 'opacity 0.2s',
+        }}>
+          {displayValue.split('\n').map((line, i) => (
+            <div key={i} style={{ display: 'flex', gap: sp.C }}>
+              <span style={{ color: c['content-secondary'], userSelect: 'none', minWidth: 18, textAlign: 'right', flexShrink: 0, opacity: 0.5 }}>
+                {i + 1}
+              </span>
+              {type === 'sql' ? <NbSqlLine line={line} /> : <NbPyLine line={line} />}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Output panel */}
+      {(status === 'success' || status === 'error') && !isEditing && (
+        <CellOutputPanel
+          status={status}
+          cellId={cellId}
+          errorMessage={errorMessage}
+          onEditRetry={onEdit}
+        />
+      )}
+    </div>
+  );
+};
+
+// ── Notebook view ─────────────────────────────────────────────────────────────
+
 const NotebookView: React.FC<{ project: ProjectState }> = ({ project }) => {
   const hasData = project.addedTables.length > 0;
   const cells   = buildNotebookCells(project);
 
-  const [editingCell, setEditingCell] = useState<number | null>(null);
-  const [draftValue, setDraftValue]   = useState('');
-  const [cellValues, setCellValues]   = useState<Record<number, string>>({});
-  const [extraCells, setExtraCells]   = useState<NbCellDef[]>([]);
-  const [showAddMenu, setShowAddMenu] = useState(false);
+  const [cellStatuses, setCellStatuses] = useState<Record<number, NbCellStatus>>(() =>
+    Object.fromEntries(cells.map(cell => [cell.id, cell.initialStatus ?? 'idle']))
+  );
+  const [editingCell, setEditingCell]   = useState<number | null>(null);
+  const [draftValue, setDraftValue]     = useState('');
+  const [cellValues, setCellValues]     = useState<Record<number, string>>({});
+  const [extraCells, setExtraCells]     = useState<NbCellDef[]>([]);
+  const [showAddMenu, setShowAddMenu]   = useState(false);
+  const [runAllActive, setRunAllActive] = useState(false);
+
+  useEffect(() => {
+    setCellStatuses(prev => {
+      const next: Record<number, NbCellStatus> = {};
+      buildNotebookCells(project).forEach(cell => {
+        next[cell.id] = prev[cell.id] ?? cell.initialStatus ?? 'idle';
+      });
+      return next;
+    });
+  }, [project.buildStep]);
 
   const getValue = (cell: NbCellDef) => cellValues[cell.id] ?? cell.query;
 
-  const handleEdit = (cell: NbCellDef) => {
+  const runCell = (cellId: number, onDone?: () => void) => {
+    setCellStatuses(prev => ({ ...prev, [cellId]: 'running' }));
+    setTimeout(() => {
+      setCellStatuses(prev => ({ ...prev, [cellId]: 'success' }));
+      onDone?.();
+    }, 1400);
+  };
+
+  const handleEditRun = (cellId: number) => {
+    setCellValues(prev => ({ ...prev, [cellId]: draftValue }));
+    setEditingCell(null);
+    runCell(cellId);
+  };
+
+  const handleEditRetry = (cell: NbCellDef) => {
     setEditingCell(cell.id);
     setDraftValue(getValue(cell));
   };
-  const handleRun = (cellId: number) => {
-    setCellValues(prev => ({ ...prev, [cellId]: draftValue }));
-    setEditingCell(null);
+
+  const handleRunAll = () => {
+    if (runAllActive) return;
+    setRunAllActive(true);
+    const allCells = [...cells, ...extraCells];
+    let delay = 0;
+    allCells.forEach((cell, i) => {
+      setTimeout(() => {
+        setCellStatuses(prev => ({ ...prev, [cell.id]: 'running' }));
+        setTimeout(() => {
+          setCellStatuses(prev => ({ ...prev, [cell.id]: 'success' }));
+          if (i === allCells.length - 1) setRunAllActive(false);
+        }, 1200);
+      }, delay);
+      delay += 400;
+    });
   };
-  const handleCancel = () => setEditingCell(null);
 
   const addCell = (type: NbCellType) => {
     const defaults: Record<NbCellType, string> = {
-      sql:    '-- Write SQL here\n',
-      python: '# Write Python here\n',
-      text:   'Add description here',
+      sql: '-- Write SQL here\n', python: '# Write Python here\n', text: 'Add description here',
     };
     const labels: Record<NbCellType, string> = {
-      sql:    'New SQL cell',
-      python: 'New Python cell',
-      text:   'New text cell',
+      sql: 'New SQL cell', python: 'New Python cell', text: 'New text cell',
     };
     const newId = 100 + extraCells.length;
     setExtraCells(prev => [...prev, { id: newId, type, label: labels[type], query: defaults[type] }]);
+    setCellStatuses(prev => ({ ...prev, [newId]: 'idle' }));
     setShowAddMenu(false);
   };
 
@@ -859,29 +1195,84 @@ const NotebookView: React.FC<{ project: ProjectState }> = ({ project }) => {
     );
   }
 
+  const successCount = allCells.filter(cell => cellStatuses[cell.id] === 'success').length;
+  const errorCount   = allCells.filter(cell => cellStatuses[cell.id] === 'error').length;
+
   return (
-    <div style={{ flex: 1, overflowY: 'auto', padding: sp.D }}>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: sp.C }}>
+    <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+      {/* Toolbar */}
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: `${sp.B}px ${sp.D}px`,
+        borderBottom: `1px solid ${c['border-divider']}`,
+        backgroundColor: c['background-base'],
+        flexShrink: 0,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: sp.C }}>
+          {errorCount > 0 && (
+            <span style={{ fontSize: fs.xs, color: c['content-accent-red'], display: 'flex', alignItems: 'center', gap: 4 }}>
+              <svg width="10" height="10" viewBox="0 0 16 16" fill="none">
+                <circle cx="8" cy="8" r="7" stroke={c['content-accent-red']} strokeWidth="1.5" />
+                <path d="M8 5v3.5M8 10.5v.5" stroke={c['content-accent-red']} strokeWidth="1.5" strokeLinecap="round" />
+              </svg>
+              {errorCount} error{errorCount > 1 ? 's' : ''}
+            </span>
+          )}
+          {successCount > 0 && errorCount === 0 && (
+            <span style={{ fontSize: fs.xs, color: c['content-accent-green'] }}>
+              {successCount} / {allCells.length} cells ran successfully
+            </span>
+          )}
+        </div>
+        <button
+          onClick={handleRunAll}
+          disabled={runAllActive}
+          style={{
+            display: 'flex', alignItems: 'center', gap: sp.B,
+            padding: '4px 12px',
+            background: c['background-base'],
+            border: `1px solid ${c['border-default']}`,
+            borderRadius: 6, cursor: runAllActive ? 'default' : 'pointer',
+            fontSize: fs.xs, fontWeight: fw.medium,
+            color: runAllActive ? c['content-secondary'] : c['content-primary'],
+            fontFamily: ff.primary,
+          }}
+          onMouseEnter={e => { if (!runAllActive) e.currentTarget.style.background = c['background-subtle']; }}
+          onMouseLeave={e => { if (!runAllActive) e.currentTarget.style.background = c['background-base']; }}
+        >
+          <svg width="9" height="10" viewBox="0 0 9 10" fill="currentColor"><polygon points="0,0 9,5 0,10" /></svg>
+          Run all
+        </button>
+      </div>
+
+      {/* Cells */}
+      <div style={{ padding: sp.D, display: 'flex', flexDirection: 'column', gap: sp.C }}>
         {allCells.map(cell => (
           <div key={cell.id} style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
             {cell.instruction && (
-              <p style={{ margin: 0, fontSize: fs.xs, color: c['content-secondary'], lineHeight: '16px', paddingLeft: 4 }}>{cell.instruction}</p>
+              <p style={{ margin: 0, fontSize: fs.xs, color: c['content-secondary'], lineHeight: '16px', paddingLeft: 4 }}>
+                {cell.instruction}
+              </p>
             )}
             <NotebookCell
               type={cell.type}
               label={cell.label}
               value={getValue(cell)}
+              status={cellStatuses[cell.id] ?? 'idle'}
               isEditing={editingCell === cell.id}
               draftValue={editingCell === cell.id ? draftValue : ''}
-              onEdit={() => handleEdit(cell)}
-              onRun={() => handleRun(cell.id)}
-              onCancel={handleCancel}
+              errorMessage={cell.errorMessage}
+              cellId={cell.id}
+              onEdit={() => handleEditRetry(cell)}
+              onRun={() => handleEditRun(cell.id)}
+              onRunCell={() => runCell(cell.id)}
+              onCancel={() => setEditingCell(null)}
               onDraftChange={setDraftValue}
             />
           </div>
         ))}
 
-        {/* Add new code block */}
+        {/* Add cell */}
         <div style={{ position: 'relative', marginTop: sp.B }}>
           <button
             onClick={() => setShowAddMenu(prev => !prev)}
@@ -898,9 +1289,8 @@ const NotebookView: React.FC<{ project: ProjectState }> = ({ project }) => {
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
               <path d="M6 1v10M1 6h10" />
             </svg>
-            Add new code block
+            Add cell
           </button>
-
           {showAddMenu && (
             <div style={{
               position: 'absolute', bottom: '100%', left: 0, marginBottom: 4,
@@ -930,132 +1320,6 @@ const NotebookView: React.FC<{ project: ProjectState }> = ({ project }) => {
           )}
         </div>
       </div>
-    </div>
-  );
-};
-
-interface NotebookCellProps {
-  type: NbCellType;
-  label: string;
-  value: string;
-  isEditing: boolean;
-  draftValue: string;
-  onEdit: () => void;
-  onRun: () => void;
-  onCancel: () => void;
-  onDraftChange: (v: string) => void;
-}
-
-const NotebookCell: React.FC<NotebookCellProps> = ({
-  type, label, value, isEditing, draftValue, onEdit, onRun, onCancel, onDraftChange,
-}) => {
-  const [headerHovered, setHeaderHovered] = useState(false);
-  const displayValue = isEditing ? draftValue : value;
-  const lineCount    = displayValue.split('\n').length;
-
-  return (
-    <div style={{
-      border: `1px solid ${c['border-divider']}`,
-      borderLeft: `3px solid ${NB_CELL_ACCENT[type]}`,
-      borderRadius: 8,
-      backgroundColor: c['background-base'],
-      overflow: 'hidden',
-      flexShrink: 0,
-    }}>
-      {/* Header */}
-      <div
-        style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: `6px ${sp.C}px`, borderBottom: `1px solid ${c['border-divider']}`,
-          backgroundColor: headerHovered && !isEditing ? c['background-subtle'] : c['background-base'],
-          transition: 'background-color 0.1s',
-        }}
-        onMouseEnter={() => setHeaderHovered(true)}
-        onMouseLeave={() => setHeaderHovered(false)}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: sp.B }}>
-          <span style={{
-            fontSize: 10, fontWeight: fw.semibold,
-            color: type === 'sql' ? '#7C3AED' : type === 'python' ? '#D97706' : c['content-secondary'],
-            textTransform: 'uppercase', letterSpacing: '0.06em',
-          }}>{type}</span>
-          <span style={{ fontSize: fs.xs, color: c['content-primary'], fontWeight: fw.medium }}>{label}</span>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, opacity: isEditing || headerHovered ? 1 : 0, transition: 'opacity 0.15s' }}>
-          {isEditing ? (
-            <>
-              <button
-                onClick={onCancel}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: fs.xs, color: c['content-secondary'], padding: '2px 6px', fontFamily: ff.primary }}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={onRun}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 5,
-                  background: '#16a34a', color: '#fff', border: 'none',
-                  borderRadius: 5, cursor: 'pointer',
-                  fontSize: fs.xs, fontWeight: fw.semibold, padding: '3px 10px', fontFamily: ff.primary,
-                }}
-              >
-                <svg width="7" height="8" viewBox="0 0 7 8" fill="currentColor"><polygon points="0,0 7,4 0,8" /></svg>
-                Run
-              </button>
-            </>
-          ) : (
-            <button
-              onClick={onEdit}
-              title="Edit cell"
-              style={{
-                width: 24, height: 24, border: 'none', background: 'transparent',
-                cursor: 'pointer', display: 'flex', alignItems: 'center',
-                justifyContent: 'center', borderRadius: 4,
-                color: c['content-secondary'], padding: 0,
-              }}
-              onMouseEnter={e => (e.currentTarget.style.color = c['content-primary'])}
-              onMouseLeave={e => (e.currentTarget.style.color = c['content-secondary'])}
-            >
-              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M11.5 2.5a1.5 1.5 0 0 1 2.1 2.1L5 13.1l-3 .9.9-3 8.6-8.5z" />
-              </svg>
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Body */}
-      {isEditing ? (
-        <textarea
-          autoFocus
-          value={draftValue}
-          onChange={e => onDraftChange(e.target.value)}
-          style={{
-            width: '100%',
-            minHeight: Math.max(lineCount * 20 + 24, 80),
-            padding: sp.C,
-            fontFamily: ff.mono,
-            fontSize: fs.xs,
-            color: c['content-primary'],
-            backgroundColor: c['background-sunken'],
-            border: 'none', outline: 'none',
-            resize: 'vertical', lineHeight: '20px',
-            boxSizing: 'border-box',
-          }}
-        />
-      ) : (
-        <div style={{ padding: sp.C, fontFamily: ff.mono, fontSize: fs.xs, lineHeight: '20px', backgroundColor: c['background-sunken'] }}>
-          {displayValue.split('\n').map((line, i) => (
-            <div key={i} style={{ display: 'flex', gap: sp.C }}>
-              <span style={{ color: c['content-secondary'], userSelect: 'none', minWidth: 18, textAlign: 'right', flexShrink: 0, opacity: 0.5 }}>
-                {i + 1}
-              </span>
-              {type === 'sql' ? <NbSqlLine line={line} /> : <NbPyLine line={line} />}
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
 };

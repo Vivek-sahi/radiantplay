@@ -4,7 +4,7 @@ _Updated at the end of every session. For product context see `product.md`. For 
 
 ---
 
-## Current state (session 114, 2026-05-27)
+## Current state (session 115, 2026-05-28)
 
 **Branch:** `prototype/data-studio` on `origin` (vivek-sahi/radiantplay)  
 **Deployed:** https://radiantplay-nine.vercel.app  
@@ -19,6 +19,7 @@ _Updated at the end of every session. For product context see `product.md`. For 
 | Overview — landing + hero prompt + model cards + Pulse insight cards | ✅ |
 | Chat (from scratch) — clarify → plan → build → auto-transition to Workspace | ✅ |
 | Workspace — agent + columns/tables/preview/notebook + drag resize | ✅ |
+| Notebook — Phase 1: cell states, output panels, Run all, per-cell run, pre-failed cell, Edit and retry | ✅ |
 | Test mode — inline Spotter Q&A + coaching flow | ✅ |
 | Data quality — DQ chip, quality plan, prep transforms, Transformations section in LeftPanel | ✅ |
 | AI readiness (AIRS) — chip, panel, score, action items | ✅ |

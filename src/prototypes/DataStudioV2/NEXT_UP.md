@@ -6,24 +6,14 @@ _Active work items. Not a shared deliverable — used for session-to-session con
 
 ## Active
 
-### Fix all with agent + AIRS buttons
-
-**What:** "Fix all with agent" DQ chip and AIRS "Generate →" / "Add →" buttons are currently unresponsive (visual only).
-
-**Preferred approach (Option B):** Make "Fix all with agent" the single entry point for DQ fixes — clicking it sends a message to the agent triggering `review_data_quality`. Remove the suggestion chip approach. Mirror the same pattern for AIRS with a new `improve_ai_readiness` script.
-
-**Why deferred:** Not blocking current work. The existing suggestion chip already triggers the DQ flow.
-
----
-
-### Team review + iterate on feedback
-
-Any visual or copy feedback from the team after reviewing the updated prototype.
+_Nothing queued — add new items here._
 
 ---
 
 ## Done (recent)
 
+- ✅ Fix all with agent + AIRS buttons — DQ chip and AIRS Generate/Add buttons wired to agent (session 115)
+- ✅ Team review + iterate on feedback (session 115)
 - ✅ Documentation cleanup — product.md rewrite, CONTEXT.md stripped, SESSION_LOG.md established, NEXT_UP.md created (session 113)
 - ✅ Rename Day Zero → fromScratch throughout codebase (session 112)
 - ✅ Notebook view polish — instructions, add block button, run animation + version bump (session 111)
