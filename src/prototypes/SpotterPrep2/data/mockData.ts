@@ -17,7 +17,7 @@ export interface DataModel {
 export const MODEL: DataModel = {
   id: 'hr-analytics',
   name: 'hr-analytics',
-  connection: 'Snowflake',
+  connection: 'Databricks',
   tables: ['employees', 'payroll', 'performance_reviews'],
   totalRows: 12450,
   totalColumns: 17,

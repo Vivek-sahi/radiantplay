@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { c, sp, fs, fw, ff } from '../styles';
 import { DatabaseIcon } from '../../../components/icons';
+import { MagnifyingGlassIcon } from '@components/icons/icons/MagnifyingGlass';
 import type { QualityState } from './QualityTab';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -27,15 +28,15 @@ interface RecentItem {
 // ── Mock data ─────────────────────────────────────────────────────────────────
 
 const MODELS: ModelItem[] = [
-  { id: 'hr-analytics',         name: 'hr-analytics',         source: 'Snowflake', type: 'Model',   tags: ['HR'],              author: { name: 'vivek.sahi',      initials: 'VS', color: '#d97706' }, lastModified: '2026-05-19T10:00:00Z', isCached: true  },
-  { id: 'revenue-analytics',    name: 'revenue-analytics',    source: 'Snowflake', type: 'Model',   tags: ['Finance'],         author: { name: 'peeyush.vardhan', initials: 'PV', color: '#7c3aed' }, lastModified: '2026-05-18T14:00:00Z', isCached: true  },
-  { id: 'customer-360',         name: 'customer-360',         source: 'Snowflake', type: 'Model',   tags: ['Customer', 'CRM'], author: { name: 'pranov.kumar',    initials: 'PK', color: '#0369a1' }, lastModified: '2026-05-17T09:00:00Z', isCached: true  },
-  { id: 'campaign-performance', name: 'campaign-performance', source: 'Snowflake', type: 'Model',   tags: ['Marketing'],       author: { name: 'vivek.sahi',      initials: 'VS', color: '#d97706' }, lastModified: '2026-05-16T16:00:00Z', isCached: false },
-  { id: 'product-usage',        name: 'product-usage',        source: 'Snowflake', type: 'Model',   tags: ['Product'],         author: { name: 'pranov.kumar',    initials: 'PK', color: '#0369a1' }, lastModified: '2026-05-15T11:00:00Z', isCached: true  },
-  { id: 'logistics-ops',        name: 'logistics-ops',        source: 'Snowflake', type: 'Model',   tags: ['Operations'],      author: { name: 'peeyush.vardhan', initials: 'PV', color: '#7c3aed' }, lastModified: '2026-05-14T08:00:00Z', isCached: true  },
-  { id: 'pipeline-health',      name: 'pipeline-health',      source: 'Snowflake', type: 'Model',   tags: ['Sales'],           author: { name: 'vivek.sahi',      initials: 'VS', color: '#d97706' }, lastModified: '2026-05-13T17:00:00Z', isCached: false },
-  { id: 'support-tickets',      name: 'support-tickets',      source: 'Snowflake', type: 'Dataset', tags: ['Support'],         author: { name: 'pranov.kumar',    initials: 'PK', color: '#0369a1' }, lastModified: '2026-05-12T13:00:00Z', isCached: false },
-  { id: 'finance-summary',      name: 'finance-summary',      source: 'Snowflake', type: 'Model',   tags: ['Finance', 'Exec'], author: { name: 'peeyush.vardhan', initials: 'PV', color: '#7c3aed' }, lastModified: '2026-05-11T10:00:00Z', isCached: true  },
+  { id: 'hr-analytics',         name: 'hr-analytics',         source: 'Databricks', type: 'Model',   tags: ['HR'],              author: { name: 'vivek.sahi',      initials: 'VS', color: '#d97706' }, lastModified: '2026-05-19T10:00:00Z', isCached: true  },
+  { id: 'revenue-analytics',    name: 'revenue-analytics',    source: 'Databricks', type: 'Model',   tags: ['Finance'],         author: { name: 'peeyush.vardhan', initials: 'PV', color: '#7c3aed' }, lastModified: '2026-05-18T14:00:00Z', isCached: true  },
+  { id: 'customer-360',         name: 'customer-360',         source: 'Databricks', type: 'Model',   tags: ['Customer', 'CRM'], author: { name: 'pranov.kumar',    initials: 'PK', color: '#0369a1' }, lastModified: '2026-05-17T09:00:00Z', isCached: true  },
+  { id: 'campaign-performance', name: 'campaign-performance', source: 'Databricks', type: 'Model',   tags: ['Marketing'],       author: { name: 'vivek.sahi',      initials: 'VS', color: '#d97706' }, lastModified: '2026-05-16T16:00:00Z', isCached: false },
+  { id: 'product-usage',        name: 'product-usage',        source: 'Databricks', type: 'Model',   tags: ['Product'],         author: { name: 'pranov.kumar',    initials: 'PK', color: '#0369a1' }, lastModified: '2026-05-15T11:00:00Z', isCached: true  },
+  { id: 'logistics-ops',        name: 'logistics-ops',        source: 'Databricks', type: 'Model',   tags: ['Operations'],      author: { name: 'peeyush.vardhan', initials: 'PV', color: '#7c3aed' }, lastModified: '2026-05-14T08:00:00Z', isCached: true  },
+  { id: 'pipeline-health',      name: 'pipeline-health',      source: 'Databricks', type: 'Model',   tags: ['Sales'],           author: { name: 'vivek.sahi',      initials: 'VS', color: '#d97706' }, lastModified: '2026-05-13T17:00:00Z', isCached: false },
+  { id: 'support-tickets',      name: 'support-tickets',      source: 'Databricks', type: 'Dataset', tags: ['Support'],         author: { name: 'pranov.kumar',    initials: 'PK', color: '#0369a1' }, lastModified: '2026-05-12T13:00:00Z', isCached: false },
+  { id: 'finance-summary',      name: 'finance-summary',      source: 'Databricks', type: 'Model',   tags: ['Finance', 'Exec'], author: { name: 'peeyush.vardhan', initials: 'PV', color: '#7c3aed' }, lastModified: '2026-05-11T10:00:00Z', isCached: true  },
 ];
 
 const RECENT_ITEMS: RecentItem[] = [
@@ -168,9 +169,14 @@ const DataModelsPage: React.FC<DataModelsPageProps> = ({ onOpenModel, qualityOve
         </div>
       </div>
 
+      {/* Section header */}
+      <div style={{ padding: `${sp.D}px 24px ${sp.B}px`, flexShrink: 0, borderTop: `1px solid ${c['border-divider']}` }}>
+        <span style={{ fontSize: fs.lg, fontWeight: fw.semibold, color: c['content-primary'] }}>Data Objects</span>
+      </div>
+
       {/* Filter bar */}
       <div style={{
-        height: 48, borderTop: `1px solid ${c['border-divider']}`, borderBottom: `1px solid ${c['border-divider']}`,
+        height: 48, borderBottom: `1px solid ${c['border-divider']}`,
         padding: '0 24px', display: 'flex', alignItems: 'center', gap: sp.B, flexShrink: 0,
       }}>
         {/* Type filter pills */}
@@ -208,19 +214,24 @@ const DataModelsPage: React.FC<DataModelsPageProps> = ({ onOpenModel, qualityOve
           backgroundColor: 'transparent', color: c['content-secondary'],
           border: `1px solid ${c['border-default']}`, cursor: 'pointer',
         }}>All Authors ▾</button>
-        <input
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          placeholder="Search"
-          style={{
-            width: 200, padding: `${sp.A}px ${sp.C}px`, borderRadius: 6,
-            border: `1px solid ${c['border-default']}`,
-            fontSize: fs.sm, color: c['content-primary'],
-            fontFamily: ff.primary,
-            backgroundColor: c['background-sunken'],
-            outline: 'none',
-          }}
-        />
+        <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
+          <span style={{ position: 'absolute', left: 10, display: 'inline-flex', pointerEvents: 'none', color: c['content-secondary'] }}>
+            <MagnifyingGlassIcon size="s" />
+          </span>
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search"
+            style={{
+              width: 260, padding: `${sp.A}px ${sp.C}px ${sp.A}px 32px`, borderRadius: 6,
+              border: `1px solid ${c['border-default']}`,
+              fontSize: fs.sm, color: c['content-primary'],
+              fontFamily: ff.primary,
+              backgroundColor: c['background-sunken'],
+              outline: 'none',
+            }}
+          />
+        </div>
       </div>
 
       {/* Table */}
