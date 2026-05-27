@@ -2,8 +2,8 @@
 # generate-changelog.sh — Generate a CalVer changelog entry from git log
 #
 # Usage:
-#   bash scripts/generate-changelog.sh              # since last tag
-#   bash scripts/generate-changelog.sh 2026-03-31   # since specific date
+#   bash internal/scripts/generate-changelog.sh              # since last tag
+#   bash internal/scripts/generate-changelog.sh 2026-03-31   # since specific date
 #
 # Versioning: YY.M.Ws — Year.Month.Week + sub-release letter
 # Example: 26.4.1b = 2026, April, week 1, second release that week

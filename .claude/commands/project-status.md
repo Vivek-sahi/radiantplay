@@ -5,7 +5,7 @@ description: Generate and open a local HTML status dashboard for this repo (bran
 Run the status script and confirm it opened.
 
 ```bash
-bash scripts/status.sh
+bash internal/scripts/status.sh
 ```
 
 After it runs, tell the user the file path (`public/status.html`) and that it opened in the browser. Do not interpret or summarize the contents — the page is the deliverable.

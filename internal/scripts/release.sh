@@ -9,7 +9,7 @@
 #   5. Prints paste-ready drafts for versionHistory.ts + ChangelogPage.tsx
 #   6. Stages changed files ready for commit
 #
-# Usage: bash scripts/release.sh
+# Usage: bash internal/scripts/release.sh
 
 set -euo pipefail
 

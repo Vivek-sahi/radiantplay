@@ -7,10 +7,10 @@
 #      pollute every other designer's /sync-upstream flow.
 #   2. Remind on pushes to main if platformVersion.ts wasn't bumped.
 #
-# Install once: bash scripts/install-maintainer-hooks.sh
+# Install once: bash internal/scripts/install-maintainer-hooks.sh
 
 PLATFORM_VERSION_FILE="src/data/platformVersion.ts"
-RELEASE_SCRIPT="scripts/release.sh"
+RELEASE_SCRIPT="internal/scripts/release.sh"
 
 remote_name="$1"
 remote_url="$2"

@@ -108,8 +108,6 @@ declare -a FILES_TO_OMIT=(
 
   # Maintainer-only scripts
   "scripts/hooks/pre-push"
-  "scripts/install-maintainer-hooks.sh"
-  "scripts/status.sh"
 
   # The strip script and its allowlist (don't ship the export machinery)
   "scripts/public-strip.sh"
