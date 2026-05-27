@@ -19,6 +19,7 @@ Welcome! This guide is written for designers who have never used Git or code edi
 11. [Your First Prototype — Step by Step](#11-your-first-prototype--step-by-step)
 12. [Common Commands Cheat Sheet](#12-common-commands-cheat-sheet)
 13. [FAQ — Things That Confuse Everyone](#13-faq--things-that-confuse-everyone)
+14. [Project Reference](#14-project-reference)
 
 ---
 
@@ -531,6 +532,17 @@ YOUR JOURNEY:
 | "My branch is behind main" | `git checkout main` then `git pull` then `git checkout my-branch` then `git merge main` |
 | "I have merge conflicts" | Open the file, look for `<<<<<<<`, pick the version you want, delete the markers, save, and commit |
 
+### Setup & dev-server issues
+
+| Problem | Solution |
+|---------|----------|
+| `npm install` fails | Make sure Node.js is installed: run `node --version` (need 18+) |
+| `npm run dev` fails | Delete the `node_modules` folder, then run `npm install` again |
+| Browser shows a blank page | Check the terminal for errors — usually a typo in code |
+| AI doesn't know the components | Make sure you opened the `radiantplay` folder (not a parent) so Cursor loads `.cursor/rules/` |
+| Port 5173 already in use | Close other dev servers, or the terminal will show an alternate port |
+| Changes not showing in the browser | Make sure `npm run dev` is still running in the terminal |
+
 ---
 
 ## 13. FAQ — Things That Confuse Everyone
@@ -597,13 +609,74 @@ origin = https://github.com/your-username/radiantplay.git
 
 ---
 
+## 14. Project Reference
+
+Quick reference for building prototypes — components, mock data, and examples to study.
+
+### Tips for better AI results
+
+| Tip | Example |
+|-----|---------|
+| **Name specific components** | "Use a `Modal` with a `SearchInput` and `Checkbox` list" |
+| **Describe layout** | "Sidebar on the left, content area on the right" |
+| **Describe interactions** | "Clicking the row opens a detail panel" |
+| **Paste Figma screenshots** | Drop an image in the chat and say "Recreate this" |
+| **Reference existing prototypes** | "Similar to the AdminGroups prototype" |
+| **Use mock data** | "Use the mock user data for the table" |
+
+### Available components
+
+Radiant ships 70+ components across layout, inputs, feedback, overlays, data display, and navigation. Browse the full set with props and live previews:
+
+- **Live registry:** `localhost:5173/radiant`
+- **Full API reference:** `docs/component-api-reference.md`
+
+Import from the components barrel:
+
+```tsx
+import { Button, Modal, TextInput, Toggle } from '../../components';
+```
+
+### Using mock data
+
+Import realistic sample data for your prototypes:
+
+```tsx
+import { users, analytics, navigation, forms } from '../../mocks';
+```
+
+| Data | What's included |
+|------|----------------|
+| `users.profiles` | User objects with name, email, role |
+| `users.groups` | User groups |
+| `analytics.metrics` | KPI card data |
+| `analytics.revenueByMonth` | Chart data |
+| `navigation.sidebar` | Main nav items |
+| `navigation.settingsSidebar` | Settings nav items |
+| `forms.countries` | Country dropdown options |
+| `forms.departments` | Department options |
+| `forms.timeRanges` | Time period options |
+
+### Example prototypes to study
+
+| Prototype | Description | Location |
+|-----------|-------------|----------|
+| **AdminGroups** | Admin panel with table, wizard modal, sidebar | `src/prototypes/AdminGroups/` |
+| **SpotterMemory** | Data table with toolbar and navigation | `src/prototypes/SpotterMemory/` |
+| **SpotterModel** | Agent edit flow with onboarding and column editing | `src/prototypes/SpotterModel/` |
+| **AdminLang** | CSV-based translation admin with upload and validation | `src/prototypes/AdminLang/` |
+| **MiniSpotters** | Domain-specific Spotter instances with bounded context | `src/prototypes/MiniSpotters/` |
+| **Liveboard Template** | Starter for Liveboard prototypes (AnswerTile + SpotterViz) | `src/prototypes/_liveboard-template/` |
+| **Sales Dashboard** | Liveboard prototype with view/edit modes and SpotterViz panel | `src/prototypes/SalesDashboard/` |
+
+---
+
 ## What's Next?
 
 | Resource | What it covers |
 |----------|---------------|
 | [README.md](README.md) | Project overview, available components, tech stack |
 | [FORK-WORKFLOW.md](FORK-WORKFLOW.md) | Detailed fork setup and collaboration workflow |
-| [SETUP-GUIDE.md](SETUP-GUIDE.md) | Step-by-step environment setup |
 | `localhost:5173/radiant` | Browse all 35+ Radiant components live |
 | `localhost:5173/playground` | See existing prototypes for inspiration |
 

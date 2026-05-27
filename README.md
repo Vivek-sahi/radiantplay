@@ -181,8 +181,7 @@ radiantplay/
 ├── .claude/               # Claude Code skills, hooks, and commands
 ├── CLAUDE.md              # Project conventions — read by all AI tools
 ├── GETTING_STARTED.md     # Visual onboarding guide for beginners
-├── FORK-WORKFLOW.md       # Fork-based setup for designers
-└── SETUP-GUIDE.md         # Detailed step-by-step setup
+└── FORK-WORKFLOW.md       # Fork-based setup for designers
 ```
 
 ---

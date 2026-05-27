@@ -8,3 +8,6 @@ Files retired during the Radiant Play housekeeping reorg. Nothing here was delet
 | `radiantplay-overview.html` | repo root | PR 1 | Byte-identical duplicate of `public/radiantplay-overview.html` (the served copy) |
 | `radiantplay-guide.html` | repo root | PR 1 | Stale Cocoa-exported HTML; `public/guide.html` is the current guide |
 | `BACKLOG.md` | repo root | PR 1 | Superseded by `docs/backlog.md`; archived intact (older raw notes preserved here, not merged into the canonical tracker) |
+| `SETUP-GUIDE.md` | repo root | PR 8 | Consolidated — unique sections (AI tips, mock data, example prototypes, dev troubleshooting) woven into `GETTING_STARTED.md` §12 + §14; this is the full original |
+| `your-first-prototype.md` | `getting-started/` | PR 8 | Fully redundant with `GETTING_STARTED.md` §11; preserved here |
+| `your-first-git-branch.md` | `getting-started/` | PR 8 | Empty stub (0 bytes), preserved for completeness |

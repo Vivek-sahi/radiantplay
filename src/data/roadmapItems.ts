@@ -51,9 +51,9 @@ export const roadmapCategories: RoadmapCategory[] = [
           },
           {
             id: 'docs-setup-guide',
-            label: 'Update SETUP-GUIDE.md',
+            label: 'Consolidate onboarding into GETTING_STARTED.md',
             status: 'done',
-            description: 'Step-by-step guide for designers receiving the zip',
+            description: 'SETUP-GUIDE.md merged into GETTING_STARTED.md and archived',
           },
           {
             id: 'docs-claude-md',
