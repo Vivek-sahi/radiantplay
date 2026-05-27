@@ -308,6 +308,7 @@ PUBLIC_SWAPS=(
   "src/data/versionHistory.public.ts:src/data/versionHistory.ts"
   "src/data/highlights.public.ts:src/data/highlights.ts"
   "docs/CHANGELOG.public.md:docs/CHANGELOG.md"
+  "CLAUDE.public.md:CLAUDE.md"
 )
 
 PUBLIC_SWAP_MISSING=0
