@@ -3,7 +3,7 @@
 
 import json
 import os
-import fcntl
+import errno
 import time
 import random
 import string
@@ -31,17 +31,13 @@ def read_entries():
 
 def write_entries(entries):
     with open(INBOX, 'w') as f:
-        fcntl.flock(f, fcntl.LOCK_EX)
         for entry in entries:
             f.write(json.dumps(entry) + '\n')
-        fcntl.flock(f, fcntl.LOCK_UN)
 
 
 def append_entry(entry):
     with open(INBOX, 'a') as f:
-        fcntl.flock(f, fcntl.LOCK_EX)
         f.write(json.dumps(entry) + '\n')
-        fcntl.flock(f, fcntl.LOCK_UN)
 
 
 def make_id():
@@ -143,7 +139,14 @@ class FeedbackHandler(BaseHTTPRequestHandler):
 
 
 if __name__ == '__main__':
-    server = HTTPServer(('localhost', 3737), FeedbackHandler)
+    try:
+        server = HTTPServer(('localhost', 3737), FeedbackHandler)
+    except OSError as e:
+        if e.errno == errno.EADDRINUSE:
+            print('[feedback] Port 3737 is already in use — is the server already running?')
+        else:
+            print(f'[feedback] Could not start server: {e}')
+        raise SystemExit(1)
     print('[feedback] Server running at http://localhost:3737')
     try:
         server.serve_forever()

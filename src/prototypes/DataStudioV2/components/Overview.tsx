@@ -29,8 +29,8 @@ const CAPABILITY_CHIPS = [
     ],
   },
   {
-    icon: 'schema' as const, label: 'Start with a dbt model',
-    base: 'I want to start with an existing dbt model',
+    icon: 'schema' as const, label: 'Start with a DBT model',
+    base: 'I want to start with an existing DBT model',
     suffixes: [
       ' and publish it to ThoughtSpot with AI enrichment',
       ' for our revenue metrics and fix any translation issues',
@@ -45,7 +45,7 @@ const CAPABILITY_CHIPS = [
     ],
   },
   {
-    icon: 'cord' as const, label: 'Create a connection',
+    icon: 'database' as const, label: 'Create a connection',
     base: 'I want to create a new data connection',
     suffixes: [
       ' to our Snowflake warehouse for the marketing team',
@@ -53,7 +53,7 @@ const CAPABILITY_CHIPS = [
     ],
   },
   {
-    icon: 'sync' as const, label: 'Cache a model',
+    icon: 'save-worksheet' as const, label: 'Cache a model',
     base: 'I want to cache a model',
     suffixes: [
       ' to speed up Spotter queries on our executive dashboard',

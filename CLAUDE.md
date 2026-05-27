@@ -6,23 +6,20 @@
 
 ## Session Start
 
-At the start of every session, immediately start the feedback monitor without waiting to be asked:
-
-```
-tail -n 0 -f /Users/vivek.sahi/radiantplay/feedback/inbox.jsonl | grep --line-buffered '"status": "pending"'
-```
-
-Run this via Monitor (persistent: true). When it fires, read the full entry from `inbox.jsonl`, apply the change to the relevant prototype's source files, then mark it done. Do not wait for the user to say "process feedback" — act immediately.
-
-Also ensure the feedback server is running. Check with `curl -s http://localhost:3737/feedback`. If it's not responding, start it silently in the background:
-
+**Step 1 — ensure feedback server is running.**
+The feedback server starts automatically with `npm run dev`. If it's not running (e.g. the user started Vite separately), start it silently:
 ```bash
 python3 feedback/server.py &
 ```
 
-Do not ask the user to start it — just start it.
+**Step 2 — check for pending items from previous sessions.**
+Read `feedback/inbox.jsonl` and collect any entries with `"status": "pending"`. If any exist, list them to the user (one line each: id + comment + prototype) and ask: *"There are N pending feedback items from a previous session — want me to apply them?"* Wait for confirmation before touching any code.
 
-If the user says "start feedback", "feedback loop", or similar — start the server (if not running) and start the monitor. No clarification needed.
+**Step 3 — start the live feedback monitor.**
+```
+tail -n 0 -f ./feedback/inbox.jsonl | grep --line-buffered '"status": "pending"'
+```
+Run via Monitor (persistent: true). When it fires during a session, the user just submitted feedback and expects it to be applied — read the entry, apply the change, mark it done. No confirmation needed for live items.
 
 ## Behavior Rules
 

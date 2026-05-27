@@ -1084,3 +1084,23 @@ Built Spotter answer card reference design in `playground.html` Section 7. Cover
 **Built/fixed:** Columns view — sticky scroll shadow (gradient overlay, not box-shadow which is clipped in border-collapse tables), FK deduplication (campaign_id/user_id removed from orders.includedColumns, follows Looker/Hex pattern), flat alphabetical sort restored, table grouping removed. Auth settings fixed (apiKeyHelper removed, DISABLE_COMPACT added). CONTEXT.md restructured: demo script moved to SCRIPT.md, Next up + Session log sections added.
 
 **Research filed:** `research/fk-column-deduplication.md`
+
+---
+
+### 2026-05-27 (session 114)
+
+**Bug fix:** `iconSize.xs` (number `12`) was being passed as the `size` prop to `Icon`, which expects the string `'xs'`. Crashed the prototype on load. Fixed in `Overview.tsx` HeroChip. Deployed to Vercel via `vercel --prod`.
+
+**Feedback items applied (via annotation layer):**
+- "Start with a dbt model" → "Start with a DBT model" (label + base prompt text)
+- "Create a connection" chip icon: `cord` → `database` (consistent with ConnectionsPage)
+- "Cache a model" chip icon: `sync` → `save-worksheet`
+
+**Platform work — feedback annotation layer (PR-ready):**
+Full audit, bug fixes, and UX improvements to `lib/feedback.js`, `lib/feedback.css`, `feedback/server.py`, `vite.config.ts`, `CLAUDE.md`, `README.md`, `package.json`.
+
+Bugs fixed: hardcoded path in CLAUDE.md, scroll-offset misposition on highlight + panel, `fcntl` Windows incompatibility, Vite plugin crash on missing files, port-conflict silent failure, redundant `feedback-start.sh` removed.
+
+UX changes: button is now a pixelated hand cursor icon (icon-only default, `✕ Exit` active); panel title removed; mode stays active after submit (annotate multiple elements without re-clicking); toast shows component name (`Button · queued`); button hidden outside `/playground/*` routes; send button black; all colors consistent.
+
+**Next:** Review feedback layer in browser, raise PR to upstream (`mohammed-faris/radiantplay`) with: `lib/feedback.*`, `feedback/server.py`, `vite.config.ts` plugin, `CLAUDE.md` session start, `README.md` section, `package.json` dev script.

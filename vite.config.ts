@@ -10,12 +10,22 @@ function feedbackPlugin(): Plugin {
     apply: 'serve',
     configureServer(server) {
       server.middlewares.use('/lib/feedback.js', (_req, res) => {
-        res.setHeader('Content-Type', 'application/javascript');
-        res.end(fs.readFileSync(path.resolve(__dirname, 'lib/feedback.js'), 'utf-8'));
+        try {
+          res.setHeader('Content-Type', 'application/javascript');
+          res.end(fs.readFileSync(path.resolve(__dirname, 'lib/feedback.js'), 'utf-8'));
+        } catch {
+          res.statusCode = 404;
+          res.end('/* feedback.js not found */');
+        }
       });
       server.middlewares.use('/lib/feedback.css', (_req, res) => {
-        res.setHeader('Content-Type', 'text/css');
-        res.end(fs.readFileSync(path.resolve(__dirname, 'lib/feedback.css'), 'utf-8'));
+        try {
+          res.setHeader('Content-Type', 'text/css');
+          res.end(fs.readFileSync(path.resolve(__dirname, 'lib/feedback.css'), 'utf-8'));
+        } catch {
+          res.statusCode = 404;
+          res.end('/* feedback.css not found */');
+        }
       });
     },
     transformIndexHtml: {

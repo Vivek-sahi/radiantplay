@@ -220,11 +220,31 @@ Radiant Play ships with slash commands you can run directly in Claude Code (or d
 
 ---
 
+## Feedback annotation layer
+
+A built-in click-to-annotate tool for leaving feedback on prototypes during a live dev session. Only active on localhost — never bundled into production builds.
+
+**How it works:**
+1. `npm run dev` starts both Vite and the feedback server (port 3737) together
+2. A small **Edit** button appears in the bottom-right corner of every prototype page
+3. Click Edit, hover over any element, click it — a comment panel appears
+4. Type what you want changed and click Send
+5. The comment is written to `feedback/inbox.jsonl` with the element's selector, React component chain, and bounding box
+6. Your AI tool (Claude Code) monitors that file and applies the change
+
+**For Claude Code users:** the CLAUDE.md Session Start instructions wire this up automatically. At the start of each session, Claude checks for any unresolved items from the previous session and shows them to you before touching any code. New feedback submitted during a live session is applied immediately.
+
+**Requirements:** Python 3 (ships with macOS). No additional packages needed.
+
+`feedback/inbox.jsonl` is gitignored — feedback never leaves your machine.
+
+---
+
 ## Scripts
 
 | Command | Description |
 |---------|-------------|
-| `npm run dev` | Start development server at localhost:5173 |
+| `npm run dev` | Start Vite + feedback server at localhost:5173 / 3737 |
 | `npm run build` | Production build |
 | `npm run build:strict` | TypeScript check + production build |
 | `npm run typecheck` | TypeScript only, no build |
