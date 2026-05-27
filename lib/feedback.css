@@ -1,0 +1,162 @@
+/* Radiant Play — feedback annotation overlay (dev only) */
+
+#rdp-feedback-btn {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 99999;
+  padding: 8px 14px;
+  background: #1a1a1a;
+  color: #fff;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  user-select: none;
+  transition: background 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+#rdp-feedback-btn:hover {
+  background: #333;
+}
+
+#rdp-feedback-btn.active {
+  background: #f59e0b;
+  color: #000;
+}
+
+#rdp-feedback-highlight {
+  position: fixed;
+  pointer-events: none;
+  z-index: 99998;
+  outline: 2px solid #f59e0b;
+  outline-offset: 2px;
+  background: rgba(245, 158, 11, 0.08);
+  border-radius: 2px;
+  transition: all 0.08s ease;
+}
+
+#rdp-feedback-panel {
+  position: fixed;
+  z-index: 100000;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  width: 320px;
+  padding: 16px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 13px;
+  color: #111;
+}
+
+#rdp-feedback-panel .rdp-fp-title {
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 6px;
+  color: #374151;
+}
+
+#rdp-feedback-panel .rdp-fp-meta {
+  font-size: 11px;
+  color: #9ca3af;
+  margin-bottom: 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#rdp-feedback-panel textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 13px;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 72px;
+  outline: none;
+  color: #111;
+}
+
+#rdp-feedback-panel textarea:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 2px rgba(99,102,241,0.15);
+}
+
+#rdp-feedback-panel .rdp-fp-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  justify-content: flex-end;
+}
+
+#rdp-feedback-panel button {
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: none;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+#rdp-feedback-panel .rdp-fp-cancel {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+#rdp-feedback-panel .rdp-fp-cancel:hover {
+  background: #e5e7eb;
+}
+
+#rdp-feedback-panel .rdp-fp-submit {
+  background: #111;
+  color: #fff;
+}
+
+#rdp-feedback-panel .rdp-fp-submit:hover {
+  background: #333;
+}
+
+#rdp-feedback-panel .rdp-fp-submit:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+#rdp-feedback-toast {
+  position: fixed;
+  bottom: 60px;
+  right: 20px;
+  z-index: 100001;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  animation: rdp-toast-in 0.2s ease;
+}
+
+#rdp-feedback-toast.success {
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #6ee7b7;
+}
+
+#rdp-feedback-toast.error {
+  background: #fff7ed;
+  color: #92400e;
+  border: 1px solid #fcd34d;
+}
+
+@keyframes rdp-toast-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}

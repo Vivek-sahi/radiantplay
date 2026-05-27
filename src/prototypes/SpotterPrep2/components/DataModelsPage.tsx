@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { c, sp, fs, fw, ff } from '../styles';
+import { RefreshIcon } from '@components/icons/icons/Refresh';
+import { MagnifyingGlassIcon } from '@components/icons/icons/MagnifyingGlass';
 import type { QualityState } from './QualityTab';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -26,15 +28,15 @@ interface RecentItem {
 // ── Mock data ─────────────────────────────────────────────────────────────────
 
 const MODELS: ModelItem[] = [
-  { id: 'hr-analytics',         name: 'hr-analytics',         source: 'Snowflake', type: 'Model',   tags: ['HR'],              author: { name: 'vivek.sahi',      initials: 'VS', color: '#d97706' }, lastModified: '2026-05-19T10:00:00Z', isCached: true  },
-  { id: 'revenue-analytics',    name: 'revenue-analytics',    source: 'Snowflake', type: 'Model',   tags: ['Finance'],         author: { name: 'peeyush.vardhan', initials: 'PV', color: '#7c3aed' }, lastModified: '2026-05-18T14:00:00Z', isCached: true  },
-  { id: 'customer-360',         name: 'customer-360',         source: 'Snowflake', type: 'Model',   tags: ['Customer', 'CRM'], author: { name: 'pranov.kumar',    initials: 'PK', color: '#0369a1' }, lastModified: '2026-05-17T09:00:00Z', isCached: true  },
-  { id: 'campaign-performance', name: 'campaign-performance', source: 'Snowflake', type: 'Model',   tags: ['Marketing'],       author: { name: 'vivek.sahi',      initials: 'VS', color: '#d97706' }, lastModified: '2026-05-16T16:00:00Z', isCached: false },
-  { id: 'product-usage',        name: 'product-usage',        source: 'Snowflake', type: 'Model',   tags: ['Product'],         author: { name: 'pranov.kumar',    initials: 'PK', color: '#0369a1' }, lastModified: '2026-05-15T11:00:00Z', isCached: true  },
-  { id: 'logistics-ops',        name: 'logistics-ops',        source: 'Snowflake', type: 'Model',   tags: ['Operations'],      author: { name: 'peeyush.vardhan', initials: 'PV', color: '#7c3aed' }, lastModified: '2026-05-14T08:00:00Z', isCached: true  },
-  { id: 'pipeline-health',      name: 'pipeline-health',      source: 'Snowflake', type: 'Model',   tags: ['Sales'],           author: { name: 'vivek.sahi',      initials: 'VS', color: '#d97706' }, lastModified: '2026-05-13T17:00:00Z', isCached: false },
-  { id: 'support-tickets',      name: 'support-tickets',      source: 'Snowflake', type: 'Dataset', tags: ['Support'],         author: { name: 'pranov.kumar',    initials: 'PK', color: '#0369a1' }, lastModified: '2026-05-12T13:00:00Z', isCached: false },
-  { id: 'finance-summary',      name: 'finance-summary',      source: 'Snowflake', type: 'Model',   tags: ['Finance', 'Exec'], author: { name: 'peeyush.vardhan', initials: 'PV', color: '#7c3aed' }, lastModified: '2026-05-11T10:00:00Z', isCached: true  },
+  { id: 'hr-analytics',         name: 'hr-analytics',         source: 'Databricks', type: 'Model',   tags: ['Product Management'],              author: { name: 'vivek.sahi',      initials: 'VS', color: '#d97706' }, lastModified: '2026-05-19T10:00:00Z', isCached: true  },
+  { id: 'revenue-analytics',    name: 'revenue-analytics',    source: 'Databricks', type: 'Model',   tags: ['Finance'],         author: { name: 'peeyush.vardhan', initials: 'PV', color: '#7c3aed' }, lastModified: '2026-05-18T14:00:00Z', isCached: true  },
+  { id: 'customer-360',         name: 'customer-360',         source: 'Databricks', type: 'Model',   tags: ['Customer', 'CRM'], author: { name: 'pranov.kumar',    initials: 'PK', color: '#0369a1' }, lastModified: '2026-05-17T09:00:00Z', isCached: true  },
+  { id: 'campaign-performance', name: 'campaign-performance', source: 'Databricks', type: 'Model',   tags: ['Marketing'],       author: { name: 'vivek.sahi',      initials: 'VS', color: '#d97706' }, lastModified: '2026-05-16T16:00:00Z', isCached: false },
+  { id: 'product-usage',        name: 'product-usage',        source: 'Databricks', type: 'Model',   tags: ['Product'],         author: { name: 'pranov.kumar',    initials: 'PK', color: '#0369a1' }, lastModified: '2026-05-15T11:00:00Z', isCached: true  },
+  { id: 'logistics-ops',        name: 'logistics-ops',        source: 'Databricks', type: 'Model',   tags: ['Operations'],      author: { name: 'peeyush.vardhan', initials: 'PV', color: '#7c3aed' }, lastModified: '2026-05-14T08:00:00Z', isCached: true  },
+  { id: 'pipeline-health',      name: 'pipeline-health',      source: 'Databricks', type: 'Model',   tags: ['Sales'],           author: { name: 'vivek.sahi',      initials: 'VS', color: '#d97706' }, lastModified: '2026-05-13T17:00:00Z', isCached: false },
+  { id: 'support-tickets',      name: 'support-tickets',      source: 'Databricks', type: 'Dataset', tags: ['Support'],         author: { name: 'pranov.kumar',    initials: 'PK', color: '#0369a1' }, lastModified: '2026-05-12T13:00:00Z', isCached: false },
+  { id: 'finance-summary',      name: 'finance-summary',      source: 'Databricks', type: 'Model',   tags: ['Finance', 'Exec'], author: { name: 'peeyush.vardhan', initials: 'PV', color: '#7c3aed' }, lastModified: '2026-05-11T10:00:00Z', isCached: true  },
 ];
 
 const RECENT_ITEMS: RecentItem[] = [
@@ -167,9 +169,14 @@ const DataModelsPage: React.FC<DataModelsPageProps> = ({ onOpenModel, qualityOve
         </div>
       </div>
 
+      {/* Section header */}
+      <div style={{ padding: `${sp.D}px 24px ${sp.B}px`, flexShrink: 0, borderTop: `1px solid ${c['border-divider']}` }}>
+        <span style={{ fontSize: fs.lg, fontWeight: fw.semibold, color: c['content-primary'] }}>Data Objects</span>
+      </div>
+
       {/* Filter bar */}
       <div style={{
-        height: 48, borderTop: `1px solid ${c['border-divider']}`, borderBottom: `1px solid ${c['border-divider']}`,
+        height: 48, borderBottom: `1px solid ${c['border-divider']}`,
         padding: '0 24px', display: 'flex', alignItems: 'center', gap: sp.B, flexShrink: 0,
       }}>
         {/* Type filter pills */}
@@ -207,19 +214,24 @@ const DataModelsPage: React.FC<DataModelsPageProps> = ({ onOpenModel, qualityOve
           backgroundColor: 'transparent', color: c['content-secondary'],
           border: `1px solid ${c['border-default']}`, cursor: 'pointer',
         }}>All Authors ▾</button>
-        <input
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          placeholder="Search"
-          style={{
-            width: 200, padding: `${sp.A}px ${sp.C}px`, borderRadius: 6,
-            border: `1px solid ${c['border-default']}`,
-            fontSize: fs.sm, color: c['content-primary'],
-            fontFamily: ff.primary,
-            backgroundColor: c['background-sunken'],
-            outline: 'none',
-          }}
-        />
+        <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
+          <span style={{ position: 'absolute', left: 10, display: 'inline-flex', pointerEvents: 'none', color: c['content-secondary'] }}>
+            <MagnifyingGlassIcon size="s" />
+          </span>
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search"
+            style={{
+              width: 260, padding: `${sp.A}px ${sp.C}px ${sp.A}px 32px`, borderRadius: 6,
+              border: `1px solid ${c['border-default']}`,
+              fontSize: fs.sm, color: c['content-primary'],
+              fontFamily: ff.primary,
+              backgroundColor: c['background-sunken'],
+              outline: 'none',
+            }}
+          />
+        </div>
       </div>
 
       {/* Table */}
@@ -231,7 +243,7 @@ const DataModelsPage: React.FC<DataModelsPageProps> = ({ onOpenModel, qualityOve
                 <input type="checkbox" style={{ cursor: 'pointer' }} />
               </th>
               {[
-                { label: 'Name',          width: undefined },
+                { label: 'Name',          width: 200 },
                 { label: 'Source',        width: 120 },
                 { label: 'Type',          width: 80  },
                 { label: 'Tags',          width: 160 },
@@ -269,7 +281,6 @@ const DataModelsPage: React.FC<DataModelsPageProps> = ({ onOpenModel, qualityOve
                 {/* Name */}
                 <td style={{ padding: `${sp.D}px ${sp.D}px`, borderBottom: `1px solid ${c['border-divider']}` }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: 10, color: c['content-brand'], lineHeight: 1 }}>■</span>
                     <span style={{ fontWeight: fw.medium, color: c['content-brand'], cursor: 'pointer' }}>
                       {model.name}
                     </span>
@@ -277,12 +288,8 @@ const DataModelsPage: React.FC<DataModelsPageProps> = ({ onOpenModel, qualityOve
                       const qs = qualityOverride?.[model.id];
                       const isCached = qs !== undefined ? qs !== 'not-cached' : model.isCached;
                       return isCached ? (
-                        <span title="Cached" style={{ display: 'inline-flex', alignItems: 'center', flexShrink: 0, color: '#15803d' }}>
-                          <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-                            <path d="M2 4.5C2 3.12 3.12 2 4.5 2h4C9.88 2 11 3.12 11 4.5v.25" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
-                            <path d="M11 8.5C11 9.88 9.88 11 8.5 11h-4A2.5 2.5 0 0 1 2 8.5V8.25" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
-                            <path d="M9 6.5l2-2 2 2M4 6.5l-2 2-2-2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
-                          </svg>
+                        <span title="Cached" style={{ display: 'inline-flex', alignItems: 'center', flexShrink: 0 }}>
+                          <RefreshIcon size="s" color={c['content-secondary']} />
                         </span>
                       ) : null;
                     })()}
