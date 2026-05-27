@@ -42,5 +42,9 @@ articles/
 # Local task tracking (not for repo)
 BACKLOG.md
 
+# Feedback annotation inbox (local only)
+feedback/inbox.jsonl
+feedback/*.jsonl
+
 # Cmdk prototype — large Figma Make export (local only)
 src/prototypes/Cmdk/

@@ -4,6 +4,26 @@
 
 **Radiant Play** is a prototyping playground built on ThoughtSpot's **Radiant** design system. It uses Radiant components to create interactive prototypes with realistic data and interactions. It is NOT a designer-developer handoff tool, NOT a code learning platform, NOT a tutorial site, and NOT a generic React starter.
 
+## Session Start
+
+At the start of every session, immediately start the feedback monitor without waiting to be asked:
+
+```
+tail -n 0 -f /Users/vivek.sahi/radiantplay/feedback/inbox.jsonl | grep --line-buffered '"status": "pending"'
+```
+
+Run this via Monitor (persistent: true). When it fires, read the full entry from `inbox.jsonl`, apply the change to the relevant prototype's source files, then mark it done. Do not wait for the user to say "process feedback" — act immediately.
+
+Also ensure the feedback server is running. Check with `curl -s http://localhost:3737/feedback`. If it's not responding, start it silently in the background:
+
+```bash
+python3 feedback/server.py &
+```
+
+Do not ask the user to start it — just start it.
+
+If the user says "start feedback", "feedback loop", or similar — start the server (if not running) and start the monitor. No clarification needed.
+
 ## Behavior Rules
 
 - When asked to save or write content, write directly to the file. Do NOT create sub-tasks, todo items, or intermediate plans unless explicitly asked.
