@@ -1,5 +1,16 @@
 # Changelog
 
+## 26.5.4b — 2026-05-27
+
+Internal repository housekeeping and public-release groundwork. No user-facing changes.
+
+- Archived stale root files (old HTML exports, a duplicate page, the superseded root backlog) to `internal/archive/` with a manifest noting each move
+- Consolidated onboarding docs: `SETUP-GUIDE.md` and `getting-started/` merged into `GETTING_STARTED.md`
+- Grouped maintainer-only scripts under `internal/scripts/`
+- Dropped a redundant build-time `cp` of `cursor-to-claude-setup.html`
+- Stopped tracking the 11 MB Notion export (kept on disk, gitignored)
+- Added `public-strip.sh` (public-snapshot generator) and `housekeeping-check.sh` (reorg pre-merge checks)
+
 ## 26.5.4a — 2026-05-26
 
 ### Highlights

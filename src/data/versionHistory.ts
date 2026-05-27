@@ -28,6 +28,15 @@ export interface VersionEntry {
  */
 export const versionHistory: VersionEntry[] = [
   {
+    version: '26.5.4b',
+    date: '2026-05-27',
+    type: 'patch',
+    changes: [
+      { type: 'modified', group: 'Repository', component: 'Housekeeping', description: 'Archived stale root files to internal/archive/, consolidated onboarding docs (SETUP-GUIDE.md, getting-started/) into GETTING_STARTED.md, grouped maintainer scripts under internal/scripts/, dropped a redundant cp build step, and stopped tracking the 11 MB Notion export. No user-facing changes.' },
+      { type: 'added', group: 'Tooling', component: 'public-strip.sh + housekeeping-check.sh', description: 'public-strip.sh produces a clean public snapshot (omits internal files, scrubs strings, grep-gates the result). housekeeping-check.sh runs the reorg pre-merge checks in one command.' },
+    ],
+  },
+  {
     version: '26.5.4a',
     date: '2026-05-26',
     type: 'minor',

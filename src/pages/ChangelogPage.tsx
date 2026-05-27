@@ -94,6 +94,33 @@ const HIGHLIGHTS: Highlight[] = [
 
 const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '26.5.4b',
+    date: '2026-05-27',
+    title: 'Repository housekeeping + public-release groundwork',
+    type: 'patch',
+    changes: [
+      {
+        category: 'changed',
+        label: 'Repository structure',
+        items: [
+          'Archived stale root files (old HTML exports, a duplicate page, the superseded root backlog) to internal/archive/ with a manifest.',
+          'Consolidated onboarding: SETUP-GUIDE.md and getting-started/ merged into GETTING_STARTED.md.',
+          'Grouped maintainer-only scripts under internal/scripts/.',
+          'Dropped a redundant build-time cp of cursor-to-claude-setup.html.',
+          'Stopped tracking the 11 MB Notion export (kept on disk, gitignored).',
+        ],
+      },
+      {
+        category: 'added',
+        label: 'Tooling',
+        items: [
+          'public-strip.sh produces a clean public snapshot (omits internal files, scrubs strings, grep-gates the result).',
+          'housekeeping-check.sh runs the reorg pre-merge checks in one command.',
+        ],
+      },
+    ],
+  },
+  {
     version: '26.5.4a',
     date: '2026-05-26',
     title: 'Spotter prototype + Liveboard Styling panel + AdminUI 2.0 + Playground archive',
