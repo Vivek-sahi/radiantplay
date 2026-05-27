@@ -43,8 +43,8 @@ docs/what-is-radiant-play.md
 # Local articles (not for repo)
 articles/
 
-# Local task tracking (not for repo)
-BACKLOG.md
+# Canonical backlog tracker — kept local for now; reorg PR 5 moves it to internal/docs/
+docs/backlog.md
 
 # Cmdk prototype — large Figma Make export (local only)
 src/prototypes/Cmdk/

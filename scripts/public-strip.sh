@@ -103,9 +103,6 @@ declare -a FILES_TO_OMIT=(
   "Onepager.md"
   "CHANGES.md"
 
-  # Top-level guide HTML — Galaxy-shaped, exported from Pages/Notion
-  "radiantplay-guide.html"
-
   # Tracked HTML in public/ that ships in Vite builds
   "public/cursor-to-claude-setup.html"
 
@@ -263,8 +260,9 @@ replace_one "src/components/GlobalHeader/GlobalHeader.tsx" "'Search in ThoughtSp
 echo "      • ThoughtSpot Design → Radiant Play (hero eyebrow)"
 replace_one "src/pages/HomePage.tsx" "ThoughtSpot Design" "Radiant Play"
 
-# Tracked HTML files in repo root (GETTING_STARTED.html, radiantplay-overview.html)
-# carry "ThoughtSpot designer / Design System" framing — public-facing scrub.
+# Public-facing HTML (public/*.html, index.html) carries "ThoughtSpot designer /
+# Design System" framing — scrub to Radiant Play. (The old root HTML exports
+# GETTING_STARTED.html / radiantplay-overview.html now live in internal/archive/.)
 echo "      • HTML pages: ThoughtSpot designer/Design System framing → Radiant Play"
 replace_in "*.html" "ThoughtSpot · Radiant Design System" "Radiant Play · Radiant Design System"
 replace_in "*.html" "ThoughtSpot Design System"           "Radiant Play Design System"
