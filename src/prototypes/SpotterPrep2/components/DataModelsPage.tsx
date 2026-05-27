@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { c, sp, fs, fw, ff } from '../styles';
-import { RefreshIcon } from '@components/icons/icons/Refresh';
+import { SyncIcon } from '@components/icons/icons/Sync';
 import { MagnifyingGlassIcon } from '@components/icons/icons/MagnifyingGlass';
 import type { QualityState } from './QualityTab';
 
@@ -289,7 +289,7 @@ const DataModelsPage: React.FC<DataModelsPageProps> = ({ onOpenModel, qualityOve
                       const isCached = qs !== undefined ? qs !== 'not-cached' : model.isCached;
                       return isCached ? (
                         <span title="Cached" style={{ display: 'inline-flex', alignItems: 'center', flexShrink: 0 }}>
-                          <RefreshIcon size="s" color={c['content-secondary']} />
+                          <SyncIcon size="s" color={c['content-secondary']} />
                         </span>
                       ) : null;
                     })()}
