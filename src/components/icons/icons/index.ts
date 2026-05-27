@@ -58,6 +58,9 @@ export { HamburgerIcon } from './Hamburger';
 export { PlayIcon } from './Play';
 export { PauseIcon } from './Pause';
 
+// Data Icons
+export { DatabaseIcon } from './Database';
+
 // ThoughtSpot Product Icons
 export { AnswerIcon } from './Answer';
 export { LiveboardIcon } from './Liveboard';

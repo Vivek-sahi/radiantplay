@@ -842,7 +842,7 @@ const DataTable: React.FC<{ view: DataView; fixPhase: FixPhase }> = ({ view, fix
     textAlign: 'right', padding: `0 8px`,
     borderBottom: SS_BORDER, borderRight: SS_BORDER,
     fontSize: 11, height: SS_ROW_H, lineHeight: `${SS_ROW_H}px`,
-    userSelect: 'none', fontFamily: 'monospace',
+    userSelect: 'none', fontFamily: ff.mono,
   };
 
   const pageBtnStyle: React.CSSProperties = {
@@ -915,7 +915,7 @@ const DataTable: React.FC<{ view: DataView; fixPhase: FixPhase }> = ({ view, fix
                         borderBottom: SS_BORDER, borderRight: SS_BORDER,
                         height: SS_ROW_H, lineHeight: `${SS_ROW_H}px`,
                         overflow: 'hidden', textOverflow: 'ellipsis',
-                        color: '#374151', fontFamily: 'monospace',
+                        color: '#374151', fontFamily: ff.mono,
                         ...cellStyle,
                       }}>{cellText}</td>
                     );
@@ -943,7 +943,7 @@ const DataTable: React.FC<{ view: DataView; fixPhase: FixPhase }> = ({ view, fix
           defaultValue="1"
           style={{
             width: 36, height: 22, border: SS_BORDER, borderRadius: 4,
-            textAlign: 'center', fontSize: 11, fontFamily: 'monospace',
+            textAlign: 'center', fontSize: 11, fontFamily: ff.mono,
             color: '#374151', padding: 0, outline: 'none',
           }}
         />
@@ -1065,7 +1065,7 @@ const ScorePopover: React.FC<{ hasFixes: boolean; fixPhase: FixPhase; modelName:
               {col.issueType?.toUpperCase().slice(0, 4)}
             </span>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 11, fontWeight: fw.medium, color: c['content-primary'], fontFamily: 'monospace' }}>{col.name}</div>
+              <div style={{ fontSize: 11, fontWeight: fw.medium, color: c['content-primary'], fontFamily: ff.mono }}>{col.name}</div>
               <div style={{ fontSize: 10, color: c['content-tertiary'] }}>{col.table}</div>
             </div>
             <div style={{ fontSize: 10, color: c['content-secondary'], flexShrink: 0 }}>{col.tier}</div>
@@ -1372,7 +1372,7 @@ const ScanDocumentPanel: React.FC<{ data: ScanCardData; modelName: string; rowsS
 
       {/* Context bar */}
       <div style={{ height: 32, flexShrink: 0, borderBottom: `1px solid ${c['border-divider']}`, backgroundColor: c['background-sunken'], display: 'flex', alignItems: 'center', padding: `0 ${sp.D}px`, gap: sp.C }}>
-        <span style={{ fontSize: fs.xs, fontWeight: fw.semibold, fontFamily: 'monospace', color: c['content-primary'] }}>{modelName}</span>
+        <span style={{ fontSize: fs.xs, fontWeight: fw.semibold, fontFamily: ff.mono, color: c['content-primary'] }}>{modelName}</span>
         <span style={{ fontSize: fs.xs, color: c['border-divider'] }}>·</span>
         <span style={{ fontSize: fs.xs, color: c['content-secondary'] }}>Scanned 2 hours ago</span>
         <span style={{ fontSize: fs.xs, color: c['border-divider'] }}>·</span>
@@ -1410,15 +1410,15 @@ const ScanDocumentPanel: React.FC<{ data: ScanCardData; modelName: string; rowsS
                         : null;
               return (
                 <tr key={`${row.column}-${idx}`} style={{ backgroundColor: rowBg }}>
-                  <td style={{ ...TD_STYLE, fontFamily: 'monospace', fontWeight: fw.medium, color: c['content-primary'] }}>{row.column}</td>
-                  <td style={{ ...TD_STYLE, fontFamily: 'monospace', color: c['content-secondary'], fontSize: 11 }}>{row.table}</td>
+                  <td style={{ ...TD_STYLE, fontFamily: ff.mono, fontWeight: fw.medium, color: c['content-primary'] }}>{row.column}</td>
+                  <td style={{ ...TD_STYLE, fontFamily: ff.mono, color: c['content-secondary'], fontSize: 11 }}>{row.table}</td>
                   <td style={{ ...TD_STYLE }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: sp.B }}>
                       <span style={{ fontSize: 10, fontWeight: fw.semibold, padding: '1px 5px', borderRadius: 3, backgroundColor: tc.bg, color: tc.color, flexShrink: 0 }}>{tc.label}</span>
                       <span style={{ color: c['content-secondary'] }}>{row.issueType}</span>
                     </div>
                   </td>
-                  <td style={{ ...TD_STYLE, textAlign: 'right', fontFamily: 'monospace', color: c['content-primary'] }}>{row.affectedRows}</td>
+                  <td style={{ ...TD_STYLE, textAlign: 'right', fontFamily: ff.mono, color: c['content-primary'] }}>{row.affectedRows}</td>
                   <td style={{ ...TD_STYLE, color: c['content-primary'] }}>{row.proposedFix}</td>
                   <td style={{ ...TD_STYLE, textAlign: 'center', borderRight: 'none' }}>
                     {dec ? (
@@ -1537,7 +1537,7 @@ const RulesChainPanel: React.FC<{
 
       {/* Context bar */}
       <div style={{ height: 32, flexShrink: 0, borderBottom: `1px solid ${c['border-divider']}`, backgroundColor: c['background-sunken'], display: 'flex', alignItems: 'center', padding: `0 ${sp.D}px`, gap: sp.C }}>
-        <span style={{ fontSize: fs.xs, fontWeight: fw.semibold, fontFamily: 'monospace', color: c['content-primary'] }}>{modelName}</span>
+        <span style={{ fontSize: fs.xs, fontWeight: fw.semibold, fontFamily: ff.mono, color: c['content-primary'] }}>{modelName}</span>
         <span style={{ fontSize: fs.xs, color: c['border-divider'] }}>·</span>
         <span style={{ fontSize: fs.xs, color: c['content-secondary'] }}>Applies on next cache refresh</span>
       </div>
@@ -1584,8 +1584,8 @@ const RulesChainPanel: React.FC<{
                   const st = STATUS_STYLES[rule.status];
                   return (
                     <tr key={ri} style={{ backgroundColor: rowBg }}>
-                      <td style={{ ...TD_STYLE, fontFamily: 'monospace', fontWeight: fw.medium, color: c['content-primary'] }}>{rule.column}</td>
-                      <td style={{ ...TD_STYLE, fontFamily: 'monospace', color: c['content-secondary'], fontSize: 11 }}>{rule.table}</td>
+                      <td style={{ ...TD_STYLE, fontFamily: ff.mono, fontWeight: fw.medium, color: c['content-primary'] }}>{rule.column}</td>
+                      <td style={{ ...TD_STYLE, fontFamily: ff.mono, color: c['content-secondary'], fontSize: 11 }}>{rule.table}</td>
                       <td style={{ ...TD_STYLE, color: c['content-secondary'] }}>{rule.issueType}</td>
                       <td style={{ ...TD_STYLE }}>
                         <div style={{ color: c['content-primary'] }}>{rule.fixAction}</div>
@@ -1593,7 +1593,7 @@ const RulesChainPanel: React.FC<{
                           <div style={{ fontSize: 10, color: c['content-tertiary'], marginTop: 2 }}>↳ runs after {rule.dependsOn}</div>
                         )}
                       </td>
-                      <td style={{ ...TD_STYLE, textAlign: 'right', fontFamily: 'monospace', color: c['content-primary'] }}>{rule.affectedRows}</td>
+                      <td style={{ ...TD_STYLE, textAlign: 'right', fontFamily: ff.mono, color: c['content-primary'] }}>{rule.affectedRows}</td>
                       <td style={{ ...TD_STYLE, textAlign: 'center', borderRight: 'none' }}>
                         <span style={{ fontSize: 11, fontWeight: fw.semibold, padding: '2px 8px', borderRadius: 4, backgroundColor: st.bg, color: st.color, whiteSpace: 'nowrap' }}>
                           {st.label}
@@ -1706,7 +1706,7 @@ const ClarifyCard: React.FC<{
             border: `1px solid ${c['border-divider']}`,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: 11, fontWeight: fw.semibold, color: c['content-secondary'],
-            fontFamily: 'monospace', transition: 'background-color 0.1s',
+            fontFamily: ff.mono, transition: 'background-color 0.1s',
           }}>{idx + 1}</div>
           <span style={{ flex: 1, fontSize: fs.sm, color: c['content-primary'], lineHeight: '20px' }}>{opt}</span>
           <span style={{ color: c['content-secondary'], opacity: hoveredIdx === idx ? 1 : 0, transition: 'opacity 0.1s' }}>
@@ -2343,7 +2343,7 @@ const QualitySessionInner: React.FC<QualitySessionInnerProps> = ({ onSave, onExi
                               <tbody>
                                 {msg.fixTable.map((row, rowIdx) => (
                                   <tr key={rowIdx}>
-                                    <td style={{ ...TD_STYLE, fontFamily: 'monospace', fontSize: 11 }}>{row.column}</td>
+                                    <td style={{ ...TD_STYLE, fontFamily: ff.mono, fontSize: 11 }}>{row.column}</td>
                                     <td style={{ ...TD_STYLE, fontSize: 11 }}>{row.issue}</td>
                                     <td style={{ ...TD_STYLE, fontSize: 11 }}>{row.fix}</td>
                                     <td style={{ ...TD_STYLE, fontSize: 11, textAlign: 'right', borderRight: 'none' }}>{row.rows}</td>

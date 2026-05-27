@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { c, sp, fs, fw, ff } from '../styles';
+import { DatabaseIcon } from '../../../components/icons';
 import type { QualityState } from './QualityTab';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -277,12 +278,8 @@ const DataModelsPage: React.FC<DataModelsPageProps> = ({ onOpenModel, qualityOve
                       const qs = qualityOverride?.[model.id];
                       const isCached = qs !== undefined ? qs !== 'not-cached' : model.isCached;
                       return isCached ? (
-                        <span title="Cached" style={{ display: 'inline-flex', alignItems: 'center', flexShrink: 0, color: '#15803d' }}>
-                          <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-                            <path d="M2 4.5C2 3.12 3.12 2 4.5 2h4C9.88 2 11 3.12 11 4.5v.25" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
-                            <path d="M11 8.5C11 9.88 9.88 11 8.5 11h-4A2.5 2.5 0 0 1 2 8.5V8.25" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
-                            <path d="M9 6.5l2-2 2 2M4 6.5l-2 2-2-2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
-                          </svg>
+                        <span title="Cached" style={{ display: 'inline-flex', alignItems: 'center', flexShrink: 0, color: c['content-success'] }}>
+                          <DatabaseIcon size="xs" />
                         </span>
                       ) : null;
                     })()}

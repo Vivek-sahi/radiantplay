@@ -74,7 +74,7 @@ const DependentsTab: React.FC = () => {
                 <div key={item} style={{
                   padding: `${sp.A}px ${sp.E}px`,
                   fontSize: fs.sm,
-                  fontFamily: 'monospace',
+                  fontFamily: ff.mono,
                   color: c['content-brand'],
                   cursor: 'pointer',
                   overflow: 'hidden',
@@ -138,11 +138,11 @@ const ColumnsTab: React.FC = () => {
             const ic = col.issueType ? issueColors[col.issueType] : null;
             return (
               <tr key={col.id} style={{ backgroundColor: i % 2 === 0 ? c['background-base'] : c['background-sunken'] }}>
-                <td style={{ padding: `${sp.D}px ${sp.D}px`, borderBottom: `1px solid ${c['border-divider']}`, fontWeight: fw.medium, color: c['content-primary'], fontFamily: 'monospace' }}>
+                <td style={{ padding: `${sp.D}px ${sp.D}px`, borderBottom: `1px solid ${c['border-divider']}`, fontWeight: fw.medium, color: c['content-primary'], fontFamily: ff.mono }}>
                   {col.name}
                 </td>
                 <td style={{ padding: `${sp.D}px ${sp.D}px`, borderBottom: `1px solid ${c['border-divider']}` }}>
-                  <span style={{ fontSize: 10, fontFamily: 'monospace', fontWeight: fw.medium, color: '#7c3aed', backgroundColor: '#f5f3ff', borderRadius: 3, padding: '1px 5px' }}>
+                  <span style={{ fontSize: 10, fontFamily: ff.mono, fontWeight: fw.medium, color: '#7c3aed', backgroundColor: '#f5f3ff', borderRadius: 3, padding: '1px 5px' }}>
                     {col.dataType}
                   </span>
                 </td>

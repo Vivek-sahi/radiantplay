@@ -90,6 +90,9 @@ export {
   HamburgerIcon,
   PlayIcon,
   PauseIcon,
+  // Data Icons
+  DatabaseIcon,
+
   // ThoughtSpot Product Icons
   AnswerIcon,
   LiveboardIcon,

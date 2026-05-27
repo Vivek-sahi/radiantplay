@@ -239,13 +239,13 @@ const ColumnProfileTable: React.FC<{ columns: ColumnProfile[] }> = ({ columns })
                 <tr key={col.id}>
                   {/* Column name + table */}
                   <td style={{ ...tdBase, color: c['content-primary'] }}>
-                    <div style={{ fontWeight: fw.medium, fontFamily: 'monospace', fontSize: fs.sm }}>{col.name}</div>
-                    <div style={{ fontSize: 10, color: c['content-tertiary'], fontFamily: 'monospace', marginTop: 1 }}>{col.table}</div>
+                    <div style={{ fontWeight: fw.medium, fontFamily: ff.mono, fontSize: fs.sm }}>{col.name}</div>
+                    <div style={{ fontSize: 10, color: c['content-tertiary'], fontFamily: ff.mono, marginTop: 1 }}>{col.table}</div>
                   </td>
 
                   {/* Column type */}
                   <td style={tdBase}>
-                    <span style={{ fontSize: 10, fontFamily: 'monospace', fontWeight: fw.medium, color: '#7c3aed', backgroundColor: '#f5f3ff', borderRadius: 3, padding: '1px 5px' }}>
+                    <span style={{ fontSize: 10, fontFamily: ff.mono, fontWeight: fw.medium, color: '#7c3aed', backgroundColor: '#f5f3ff', borderRadius: 3, padding: '1px 5px' }}>
                       {col.dataType}
                     </span>
                   </td>
@@ -331,8 +331,8 @@ const RulesChainSection: React.FC = () => {
               return (
                 <tr key={rule.id}>
                   <td style={{ ...tdStyle, color: c['content-primary'] }}>
-                    <div style={{ fontWeight: fw.medium, fontFamily: 'monospace', fontSize: fs.sm }}>{rule.column}</div>
-                    <div style={{ fontSize: 10, color: c['content-tertiary'], fontFamily: 'monospace', marginTop: 1 }}>{rule.table}</div>
+                    <div style={{ fontWeight: fw.medium, fontFamily: ff.mono, fontSize: fs.sm }}>{rule.column}</div>
+                    <div style={{ fontSize: 10, color: c['content-tertiary'], fontFamily: ff.mono, marginTop: 1 }}>{rule.table}</div>
                   </td>
                   <td style={{ ...tdStyle, color: c['content-secondary'] }}>{rule.rule}</td>
                   <td style={tdStyle}>
