@@ -1,0 +1,10 @@
+.text {
+  margin: 0;
+  color: var(--rd-sys-color-content-primary);
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-md, 16px);
+  font-weight: var(--font-weight-light, 375);
+  line-height: var(--line-height-lg, 24px);
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}

@@ -1,6 +1,13 @@
 import React from 'react';
 import { BaseIconProps } from '../Icon.types';
-import { iconSize, iconStrokeWidth } from '../../../tokens/icons';
+import { iconSize } from '../../../tokens/icons';
+
+const VARIANTS: Record<'xs' | 's' | 'm' | 'l', { viewBox: string; inner: string }> = {
+  xs: { viewBox: '0 0 12 12', inner: `<path d="M1.99995 1.99998V9.99996H9.99993V1.99998H1.99995ZM1.33329 0.666655H10.6666C10.8434 0.666655 11.013 0.736892 11.138 0.861916C11.263 0.98694 11.3333 1.15651 11.3333 1.33332V10.6666C11.3333 10.8434 11.263 11.013 11.138 11.138C11.013 11.2631 10.8434 11.3333 10.6666 11.3333H1.33329C1.15648 11.3333 0.98691 11.2631 0.861886 11.138C0.736862 11.013 0.666624 10.8434 0.666624 10.6666V1.33332C0.666624 1.15651 0.736862 0.98694 0.861886 0.861916C0.98691 0.736892 1.15648 0.666655 1.33329 0.666655ZM3.33328 6.66664V5.33331H8.6666V6.66664H3.33328ZM5.33328 3.33331H6.66661V8.66663H5.33328V3.33331Z" fill="currentColor"/>` },
+  s: { viewBox: '0 0 14 14', inner: `<path d="M2.33338 2.33332V11.6666H11.6667V2.33332H2.33338ZM1.55561 0.777769H12.4445C12.6508 0.777769 12.8486 0.859713 12.9944 1.00557C13.1403 1.15144 13.2222 1.34927 13.2222 1.55555V12.4444C13.2222 12.6507 13.1403 12.8485 12.9944 12.9944C12.8486 13.1402 12.6508 13.2222 12.4445 13.2222H1.55561C1.34933 13.2222 1.1515 13.1402 1.00564 12.9944C0.859774 12.8485 0.77783 12.6507 0.77783 12.4444V1.55555C0.77783 1.34927 0.859774 1.15144 1.00564 1.00557C1.1515 0.859713 1.34933 0.777769 1.55561 0.777769ZM3.88893 7.77775V6.2222H10.1111V7.77775H3.88893ZM6.22226 3.88887H7.77781V10.1111H6.22226V3.88887Z" fill="currentColor"/>` },
+  m: { viewBox: '0 0 16 16', inner: `<path d="M2.66669 2.66666V13.3333H13.3333V2.66666H2.66669ZM1.7778 0.888884H14.2222C14.458 0.888884 14.6841 0.982534 14.8508 1.14923C15.0175 1.31593 15.1111 1.54202 15.1111 1.77777V14.2222C15.1111 14.4579 15.0175 14.684 14.8508 14.8507C14.6841 15.0174 14.458 15.1111 14.2222 15.1111H1.7778C1.54205 15.1111 1.31596 15.0174 1.14926 14.8507C0.982565 14.684 0.888914 14.4579 0.888914 14.2222V1.77777C0.888914 1.54202 0.982565 1.31593 1.14926 1.14923C1.31596 0.982534 1.54205 0.888884 1.7778 0.888884ZM4.44446 8.88887V7.11109H11.5556V8.88887H4.44446ZM7.11112 4.44443H8.8889V11.5555H7.11112V4.44443Z" fill="currentColor"/>` },
+  l: { viewBox: '0 0 18 18', inner: `<path d="M3 3V15H15V3H3ZM2 1H16C16.2652 1 16.5196 1.10536 16.7071 1.29289C16.8946 1.48043 17 1.73478 17 2V16C17 16.2652 16.8946 16.5196 16.7071 16.7071C16.5196 16.8946 16.2652 17 16 17H2C1.73478 17 1.48043 16.8946 1.29289 16.7071C1.10536 16.5196 1 16.2652 1 16V2C1 1.73478 1.10536 1.48043 1.29289 1.29289C1.48043 1.10536 1.73478 1 2 1ZM5 10V8H13V10H5ZM8 5H10V13H8V5Z" fill="currentColor"/>` },
+};
 
 export const SaveIcon: React.FC<BaseIconProps> = ({
   size = 'm',
@@ -8,33 +15,23 @@ export const SaveIcon: React.FC<BaseIconProps> = ({
   className,
   'aria-label': ariaLabel,
   'aria-hidden': ariaHidden,
-}) => (
-  <svg
-    width={iconSize[size]}
-    height={iconSize[size]}
-    viewBox="0 0 18 18"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-    className={className}
-    aria-label={ariaLabel}
-    aria-hidden={ariaHidden}
-    role={ariaLabel ? 'img' : undefined}
-  >
-    <path
-      d="M14.25 16.5H3.75C3.35218 16.5 2.97064 16.342 2.68934 16.0607C2.40804 15.7794 2.25 15.3978 2.25 15V3C2.25 2.60218 2.40804 2.22064 2.68934 1.93934C2.97064 1.65804 3.35218 1.5 3.75 1.5H12L15.75 5.25V15C15.75 15.3978 15.592 15.7794 15.3107 16.0607C15.0294 16.342 14.6478 16.5 14.25 16.5Z"
-      stroke={color}
-      strokeWidth={iconStrokeWidth[size]}
-      strokeLinecap="round"
-      strokeLinejoin="round"
+}) => {
+  const variant = VARIANTS[size];
+  return (
+    <svg
+      width={iconSize[size]}
+      height={iconSize[size]}
+      viewBox={variant.viewBox}
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+      aria-label={ariaLabel}
+      aria-hidden={ariaHidden}
+      role={ariaLabel ? 'img' : undefined}
+      style={{ color }}
+      dangerouslySetInnerHTML={{ __html: variant.inner }}
     />
-    <path
-      d="M13.5 16.5V10.5H4.5V16.5M4.5 1.5V5.25H10.5"
-      stroke={color}
-      strokeWidth={iconStrokeWidth[size]}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
+  );
+};
 
 export default SaveIcon;

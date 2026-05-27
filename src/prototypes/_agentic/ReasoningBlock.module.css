@@ -1,0 +1,259 @@
+@keyframes reasoningShimmer {
+  0%   { background-position: 150% center; }
+  100% { background-position: -50% center; }
+}
+@keyframes vlineExtend {
+  from { transform: scaleY(0); }
+  to   { transform: scaleY(1); }
+}
+@keyframes dotPop {
+  from { transform: scale(0); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+
+.block {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  padding: var(--spacing-1);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  width: fit-content;
+  user-select: none;
+  background: transparent;
+  transition: background var(--duration-normal) var(--easing-standard);
+}
+
+.boxOpen .header {
+  background: color-mix(in srgb, var(--rd-sys-color-content-brand-inverse) 12%, transparent);
+}
+
+.headerText {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-regular);
+  font-family: var(--font-family-primary);
+  background: linear-gradient(
+    90deg,
+    var(--rd-sys-color-content-secondary) 0%,
+    var(--rd-sys-color-content-secondary) 25%,
+    var(--rd-sys-color-content-brand) 42%,
+    var(--rd-sys-color-content-accent-purple) 52%,
+    var(--rd-sys-color-content-secondary) 68%,
+    var(--rd-sys-color-content-secondary) 100%
+  );
+  background-size: 250% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: reasoningShimmer 2.4s linear infinite;
+}
+
+.doneState .headerText {
+  animation: none;
+  background: none;
+  -webkit-background-clip: unset;
+  background-clip: unset;
+  -webkit-text-fill-color: var(--rd-sys-color-content-secondary);
+  color: var(--rd-sys-color-content-secondary);
+}
+
+.doneState.boxOpen .headerText {
+  -webkit-text-fill-color: var(--rd-sys-color-content-brand);
+  color: var(--rd-sys-color-content-brand);
+}
+
+.chevron {
+  width: 14px;
+  height: 14px;
+  color: var(--rd-sys-color-border-hover);
+  flex-shrink: 0;
+  transition: transform var(--duration-normal) var(--easing-standard);
+}
+
+.doneState.boxOpen .chevron {
+  color: var(--rd-sys-color-content-brand);
+}
+
+.boxOpen .chevron {
+  transform: rotate(180deg);
+}
+
+/* Inline body */
+.inlineBody {
+  display: flex;
+  overflow: hidden;
+  max-height: 300px;
+  opacity: 1;
+  transition: max-height var(--duration-slow) var(--easing-standard),
+    opacity var(--duration-normal) var(--easing-standard);
+}
+
+.inlineBody.hidden,
+.collapsed .inlineBody {
+  max-height: 0;
+  opacity: 0;
+}
+
+.inlineBodyInner {
+  display: flex;
+  gap: var(--spacing-3);
+  padding: var(--spacing-1) 0 var(--spacing-1) var(--spacing-1);
+  width: 100%;
+}
+
+.inlineVline {
+  width: 2px;
+  background: var(--rd-sys-color-border-default);
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+  align-self: stretch;
+  margin: var(--spacing-1);
+}
+
+.inlineContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  padding: var(--spacing-1) 0;
+}
+
+.inlineStepText {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-regular);
+  color: var(--rd-sys-color-content-secondary);
+  line-height: var(--line-height-sm);
+  letter-spacing: -0.072px;
+  font-family: var(--font-family-primary);
+}
+
+/* Box view */
+.boxView {
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  width: 100%;
+  transition: max-height var(--duration-slower) var(--easing-standard),
+    opacity var(--duration-normal) var(--easing-standard);
+}
+
+.boxViewOpen {
+  max-height: 1200px;
+  opacity: 1;
+}
+
+.box {
+  border: 1px solid var(--rd-sys-color-border-divider);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-2) var(--spacing-1);
+  margin-top: var(--spacing-1);
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Steps */
+.step {
+  display: flex;
+  flex-direction: column;
+  padding-right: var(--spacing-2);
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.stepTitle {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  padding: 0 var(--spacing-1);
+  height: var(--spacing-5);
+}
+
+.stepDot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  background: var(--rd-sys-color-border-default);
+  flex-shrink: 0;
+  transition: background var(--duration-slower) var(--easing-standard);
+}
+
+.stepDotPop {
+  animation: dotPop 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.currentDot { background: var(--rd-sys-color-content-warning); }
+.doneDot    { background: var(--rd-sys-color-content-success); }
+
+.stepName {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--rd-sys-color-content-primary);
+  font-family: var(--font-family-primary);
+  opacity: 0;
+  transition: opacity var(--duration-normal) var(--easing-standard);
+}
+
+.stepNameVisible {
+  opacity: 1;
+}
+
+.stepBody {
+  display: flex;
+  gap: var(--spacing-3);
+  padding: 0 var(--spacing-1);
+  min-width: 0;
+  overflow: hidden;
+}
+
+.stepVline {
+  width: 2px;
+  background: var(--rd-sys-color-border-default);
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+  align-self: stretch;
+  margin: var(--spacing-1);
+  transform: scaleY(0);
+  transform-origin: top center;
+}
+
+.extend {
+  animation: vlineExtend 0.45s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.stepContent {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  padding: var(--spacing-1) 0 var(--spacing-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.stepText {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-light);
+  color: var(--rd-sys-color-content-secondary);
+  line-height: var(--line-height-sm);
+  letter-spacing: -0.072px;
+  font-family: var(--font-family-primary);
+}
+
+/* Work done row */
+.workDone {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  padding: 0 var(--spacing-1);
+  height: var(--spacing-5);
+}

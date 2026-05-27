@@ -1,0 +1,54 @@
+.followups {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2, 8px);
+}
+
+.label {
+  color: var(--rd-sys-color-content-secondary);
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-xs, 12px);
+  font-weight: var(--font-weight-medium, 500);
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  line-height: var(--line-height-sm, 18px);
+}
+
+.list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-2, 8px);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1, 4px);
+  height: 32px;
+  padding: 0 var(--spacing-3, 12px);
+  background-color: var(--rd-sys-color-background-base);
+  border: 1px solid var(--rd-sys-color-border-divider);
+  border-radius: 999px;
+  color: var(--rd-sys-color-content-primary);
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-sm, 14px);
+  font-weight: var(--font-weight-light, 375);
+  line-height: var(--line-height-md, 20px);
+  cursor: pointer;
+  transition: border-color 120ms ease, background-color 120ms ease;
+}
+
+.chip:hover {
+  border-color: var(--rd-sys-color-content-brand);
+  color: var(--rd-sys-color-content-brand);
+}
+
+.chip:focus-visible {
+  outline: 2px solid var(--rd-sys-color-border-focus);
+  outline-offset: 2px;
+}
+
+.chip:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

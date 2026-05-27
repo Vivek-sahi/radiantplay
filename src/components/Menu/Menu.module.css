@@ -12,7 +12,7 @@
   background-color: var(--rd-sys-color-background-base);
   border: 1px solid var(--rd-sys-color-border-divider);
   border-radius: var(--radius-lg, 8px);
-  box-shadow: var(--shadow-lg, 0 4px 16px rgba(0, 0, 0, 0.12));
+  box-shadow: var(--shadow-menu);
   z-index: var(--z-index-dropdown, 100);
 }
 

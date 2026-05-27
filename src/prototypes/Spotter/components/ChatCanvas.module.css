@@ -1,0 +1,53 @@
+.canvas {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  background-color: var(--rd-sys-color-background-base);
+}
+
+.threadArea {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.promptArea {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-2, 8px);
+  /*
+   * No top padding — the chat thread should flow directly into the prompt
+   * with no visible gap, matching the real Spotter product's single-stream
+   * appearance. Sides + bottom keep breathing room for the prompt and
+   * disclaimer.
+   */
+  padding: 0 var(--spacing-4, 16px) var(--spacing-3, 12px);
+  background: transparent;
+}
+
+.promptWrapper {
+  width: 100%;
+  max-width: var(--spotter-chat-max-width, 936px);
+}
+
+.disclaimer {
+  color: var(--rd-sys-color-content-secondary);
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-xs, 12px);
+  font-weight: var(--font-weight-light, 375);
+  line-height: var(--line-height-sm, 18px);
+  text-align: center;
+}
+
+.disclaimerLink {
+  color: var(--rd-sys-color-content-brand);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.disclaimerLink:hover {
+  text-decoration: underline;
+}

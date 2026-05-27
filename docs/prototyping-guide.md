@@ -53,7 +53,7 @@ radiantplay/
 │   ├── components/       # Radiant components
 │   ├── prototypes/       # Your prototypes go here
 │   │   ├── _template/    # Starter template
-│   │   └── SalesDashboard/  # Example: liveboard prototype
+│   │   └── _liveboard-template/  # Example: liveboard prototype
 │   ├── mocks/           # Sample data
 │   └── tokens/          # Design tokens
 ├── .cursor/
@@ -343,7 +343,7 @@ Be more specific in your prompts:
 
 ## Getting Help
 
-- **Examples:** Browse `src/prototypes/` — SpotterMemory, AdminGroups, SalesDashboard are good references
+- **Examples:** Browse `src/prototypes/` — SpotterMemory, AdminGroups, DataModelEditor are good references
 - **Component Docs:** Browse the component showcase in the app
 - **AI Rules:** Read `.cursor/rules/prototype-generation.md`
 - **Design Tokens:** See `design-token-structure.md`

@@ -48,8 +48,11 @@ export const lineHeight = {
 } as const;
 
 // Letter Spacing
+// Phase 3: tight changed from '-0.01em' to '-0.4px' to match Figma absolute values.
+// At 32px font size the visual delta is ~0.08px (tighter) — imperceptible.
 export const letterSpacing = {
-  tight: '-0.01em',
+  tighter: '-0.6px',
+  tight: '-0.4px',
   normal: '0',
   wide: '0.01em',
   wider: '0.02em',
@@ -146,19 +149,19 @@ export const textStyles = {
     },
   },
 
-  // Body Styles
+  // Body Styles (Phase 3: large/normal weight light → regular per Figma)
   body: {
     large: {
       fontFamily: fontFamily.primary,
       fontSize: fontSize.md,
-      fontWeight: fontWeight.light,
+      fontWeight: fontWeight.regular,
       lineHeight: lineHeight.lg,
       letterSpacing: letterSpacing.normal,
     },
     normal: {
       fontFamily: fontFamily.primary,
       fontSize: fontSize.sm,
-      fontWeight: fontWeight.light,
+      fontWeight: fontWeight.regular,
       lineHeight: lineHeight.md,
       letterSpacing: letterSpacing.normal,
     },
@@ -276,8 +279,8 @@ export const v2TextStyles = {
   headlineLarge: {
     fontFamily: fontFamily.primary,
     fontSize: fontSize['3xl'],  // 32px
-    fontWeight: fontWeight.medium,
-    lineHeight: `${lineHeight['3xl']}px`,  // 40px
+    fontWeight: fontWeight.semibold,  // Phase 3: medium → semibold
+    lineHeight: lineHeight['3xl'],  // 40px
     letterSpacing: letterSpacing.tight,
   },
 
@@ -285,38 +288,38 @@ export const v2TextStyles = {
   pageTitle: {
     fontFamily: fontFamily.primary,
     fontSize: fontSize['2xl'],  // 24px
-    fontWeight: fontWeight.medium,
-    lineHeight: `${lineHeight['2xl']}px`,  // 32px
-    letterSpacing: letterSpacing.normal,
+    fontWeight: fontWeight.semibold,  // Phase 3: medium → semibold
+    lineHeight: lineHeight['2xl'],  // 32px
+    letterSpacing: letterSpacing.tight,  // Phase 3: normal → tight (Figma -0.4px)
   },
   modalTitle: {
     fontFamily: fontFamily.primary,
     fontSize: fontSize.xl,  // 20px
-    fontWeight: fontWeight.medium,
-    lineHeight: `${lineHeight.xl}px`,  // 28px
-    letterSpacing: letterSpacing.normal,
+    fontWeight: fontWeight.semibold,  // Phase 3: medium → semibold
+    lineHeight: lineHeight.xl,  // 28px
+    letterSpacing: letterSpacing.tight,  // Phase 3: normal → tight (Figma -0.4px)
   },
 
   // Labels - Section and content headers
   sectionLabel: {
     fontFamily: fontFamily.primary,
     fontSize: fontSize.lg,  // 18px
-    fontWeight: fontWeight.medium,
-    lineHeight: `${lineHeight.lg}px`,  // 24px
+    fontWeight: fontWeight.semibold,  // Phase 3: medium → semibold
+    lineHeight: lineHeight.lg,  // 24px
     letterSpacing: letterSpacing.normal,
   },
   contentLabel: {
     fontFamily: fontFamily.primary,
     fontSize: fontSize.md,  // 16px
-    fontWeight: fontWeight.medium,
-    lineHeight: `${lineHeight.lg}px`,  // 24px
+    fontWeight: fontWeight.semibold,  // Phase 3: medium → semibold
+    lineHeight: lineHeight.lg,  // 24px
     letterSpacing: letterSpacing.normal,
   },
   contentLabelSubhead: {
     fontFamily: fontFamily.primary,
     fontSize: fontSize.sm,  // 14px
-    fontWeight: fontWeight.medium,
-    lineHeight: `${lineHeight.md}px`,  // 20px
+    fontWeight: fontWeight.semibold,  // Phase 3: medium → semibold
+    lineHeight: lineHeight.md,  // 20px
     letterSpacing: letterSpacing.normal,
   },
 
@@ -336,27 +339,27 @@ export const v2TextStyles = {
     letterSpacing: letterSpacing.normal,
   },
 
-  // Small Text - Footnotes, captions, overlines
+  // Small Text - Footnotes, captions, overlines (Phase 3: tighter -0.6px per Figma)
   footnote: {
     fontFamily: fontFamily.primary,
     fontSize: fontSize.xs,  // 12px
     fontWeight: fontWeight.regular,
-    lineHeight: `${lineHeight.sm}px`,  // 18px
-    letterSpacing: letterSpacing.normal,
+    lineHeight: lineHeight.sm,  // 18px
+    letterSpacing: letterSpacing.tighter,
   },
   caption: {
     fontFamily: fontFamily.primary,
     fontSize: fontSize.xs,  // 12px
     fontWeight: fontWeight.regular,
-    lineHeight: `${lineHeight.sm}px`,  // 18px
-    letterSpacing: letterSpacing.normal,
+    lineHeight: lineHeight.sm,  // 18px
+    letterSpacing: letterSpacing.tighter,
   },
   overline: {
     fontFamily: fontFamily.primary,
     fontSize: fontSize.xs,  // 12px
     fontWeight: fontWeight.medium,
-    lineHeight: `${lineHeight.sm}px`,  // 18px
-    letterSpacing: letterSpacing.wider,
+    lineHeight: lineHeight.sm,  // 18px
+    letterSpacing: letterSpacing.tighter,
     textTransform: 'uppercase' as const,
   },
 } as const;

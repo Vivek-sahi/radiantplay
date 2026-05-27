@@ -15,7 +15,7 @@
   font-weight: var(--font-weight-regular);
   line-height: 1.4;
   border-radius: var(--radius-sm);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-surface);
   animation: fadeIn var(--duration-fast) var(--easing-standard);
   pointer-events: none;
 }

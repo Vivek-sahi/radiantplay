@@ -1,3 +1,7 @@
+---
+description: Scaffold a new Radiant-compliant prototype. Pass the prototype name and a brief description of what it should do.
+---
+
 Start a new prototype for: $ARGUMENTS
 
 ## Instructions
@@ -32,19 +36,99 @@ Wait for confirmation before continuing. Use the confirmed name for all remainin
 
 ### 3. Ask discovery questions
 
-Before writing any code, ask the designer these questions in a single message so they can answer all at once:
+Before writing any code, ask the designer all questions in a single message. Present each question with numbered selectable options — the last option is always for a custom answer. For free-text questions, indicate that clearly.
 
-> To get started, a few quick questions:
+> To get started, a few quick questions — pick an option or type a custom answer:
 >
-> 1. **Goal** — What problem does this prototype explore or demonstrate?
-> 2. **User** — Who is the target user? (e.g. admin, analyst, data manager, end user)
-> 3. **Key screens or flows** — What are the main screens or interaction flows to prototype? (bullet list is fine)
-> 4. **ThoughtSpot features** — Any specific ThoughtSpot features involved? (Answer, Liveboard, SpotIQ, Worksheet, Monitor, Spotter — or none)
-> 5. **Layout type** — Single page, multi-page, wizard/stepper, or dashboard?
-> 6. **Your name** — For the author field in the gallery (e.g. "Maya Chen")
-> 7. **References** — Any Figma links, screenshots, or existing prototypes to reference? (optional)
+> **1. Goal** — What problem does this prototype explore or demonstrate?
+> *(Free text — describe in one sentence)*
+>
+> **2. User** — Who is the target user?
+> 1. Admin
+> 2. Analyst
+> 3. Data manager
+> 4. End user
+> 5. Other — describe
+>
+> **3. Key screens or flows** — What are the main screens or interaction flows to prototype?
+> *(Free text — bullet list is fine)*
+>
+> **4. ThoughtSpot features** — Any specific ThoughtSpot features involved?
+> 1. Answer
+> 2. Liveboard
+> 3. SpotIQ
+> 4. Data model editor
+> 5. Monitor
+> 6. Spotter
+> 7. None
+> 8. Other — describe
+>
+> **5. Layout type** — *(Skip this question if you selected Data model editor above — its layout is fixed)*
+> 1. Single page
+> 2. Multi-page
+> 3. Wizard / stepper
+> 4. Dashboard
+> 5. Other — describe
+>
+> **6. Your name** — For the author field in the gallery (e.g. "Maya Chen")
+> *(Free text)*
+>
+> **7. References** — Any Figma links, screenshots, or existing prototypes to reference?
+> *(Optional — paste links or describe, or leave blank)*
 
 Wait for the designer's answers before continuing.
+
+**If the answer to question 4 is "Data model editor":** before proceeding to step 4, ask these follow-up questions in a single message. Do NOT ask for layout type — DME layout is fixed.
+
+> A few more questions to configure the Data model editor:
+>
+> **1. Mode** — Which canvas modes should the prototype include?
+> 1. Create only (blank canvas)
+> 2. Edit only (pre-populated model)
+> 3. Both (toggle between Create and Edit)
+>
+> **2. SpotterModel AI** — Do you want the AI agent panel?
+> 1. Yes — with AI agent panel
+> 2. No — canvas only, no AI panel
+>
+> **3. Dataset** — Which schema should be loaded?
+> 1. Default mock retail schema (12 tables)
+> 2. Custom — I'll describe it
+
+Wait for answers, then:
+
+**If SpotterModel = Yes (option 1):**
+
+Resolve the API key automatically — check in this order:
+
+1. Run `echo $ANTHROPIC_API_KEY` — if non-empty and not a placeholder, ask:
+   > Found `ANTHROPIC_API_KEY` in your shell environment. Use this for the prototype?
+   > 1. Yes — use the shell key
+   > 2. No — I'll provide a different key
+
+   - If "Yes": write it to `.env.local` → `echo "ANTHROPIC_API_KEY=<key>" > .env.local`
+   - If "No": ask them to paste their key, then write it to `.env.local`
+
+2. If no shell key: run `grep "^ANTHROPIC_API_KEY=" .env.local 2>/dev/null | cut -d'=' -f2- | tr -d '"' | tr -d "'"` — if non-empty and not a placeholder, say:
+   > Found an API key in `.env.local` — will use this.
+
+3. If neither found: ask:
+   > I need your Anthropic API key to enable the AI agent panel.
+   > You can get one at console.anthropic.com if you don't have one.
+   >
+   > Paste your API key:
+
+   Then write it to `.env.local`: `echo "ANTHROPIC_API_KEY=<key>" > .env.local`
+
+Default to `claude-haiku-4-5-20251001` (fastest, cheapest). The designer can switch models anytime using `/switch-model`.
+
+**If SpotterModel = No (option 2):** scaffold with `window.__DME_CONFIG__ = { spotterModel: false }`. No API key needed.
+
+**If custom dataset:** note the schema to replace `DATASOURCE_TABLES` in the init file.
+
+Load `data-model-editor-ia.md` + `data-model-editor-components.md` (always), and also `data-model-editor-interactions.md` if SpotterModel = Yes.
+
+Use the existing `SpotterModelCreate` / `SpotterModelEdit` components as the foundation — do NOT use the generic scaffolds in step 4.
 
 ---
 
@@ -64,7 +148,9 @@ git checkout -b prototype/<slug>
 
 Use the designer's **layout type** answer from step 3 to pick the right scaffold. All scaffolds share the same base files — the difference is the starter content in the main component.
 
-#### Base files (always created)
+**If the ThoughtSpot feature is "Data model editor":** skip the generic scaffold below and instead create a thin wrapper following the pattern of `src/prototypes/DataModelEditor/index.tsx`, importing from the existing `SpotterModelCreate` / `SpotterModelEdit` components.
+
+#### Base files (always created for generic prototypes)
 
 **`src/prototypes/<Name>/components/.gitkeep`**
 Empty file — reserves the components folder.
@@ -258,7 +344,7 @@ export default <Name>;
 Create a basic SVG thumbnail at `src/prototypes/thumbnails/<Name>.svg`:
 
 ```svg
-<svg width="800" height="450" viewBox="0 0 800 450" fill="none" xmlns="http://www.w3.org/2000/svg">
+<svg width="800" height="450" viewBox="0  0 800 450" fill="none" xmlns="http://www.w3.org/2000/svg">
   <!-- Background -->
   <rect width="800" height="450" fill="#F6F8FA"/>
 
@@ -331,6 +417,7 @@ Registered in registry-mine.ts — it will appear in the gallery under "My proto
 
 What's next:
   • Describe your UI or paste a Figma screenshot — Claude will build it using Radiant components
+  • To switch the AI model used in this prototype: /switch-model
   • To check design system compliance: /radiant-check
-  • To check for upstream updates: /check-upstream
+  • To pull in upstream updates: /sync-upstream (shows a preview first, then asks before merging)
 ```

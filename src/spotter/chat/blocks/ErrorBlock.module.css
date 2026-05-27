@@ -1,0 +1,21 @@
+.error {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-2, 8px);
+  padding: var(--spacing-3, 12px) var(--spacing-4, 16px);
+  background-color: var(--rd-sys-color-background-failure);
+  border: 1px solid var(--rd-sys-color-border-failure);
+  border-radius: var(--radius-md, 6px);
+  color: var(--rd-sys-color-content-failure);
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-sm, 14px);
+  font-weight: var(--font-weight-regular, 400);
+  line-height: var(--line-height-md, 20px);
+}
+
+.icon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  margin-top: 2px;
+}

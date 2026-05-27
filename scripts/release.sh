@@ -33,6 +33,22 @@ echo ""
 read -rp "Version to release [press Enter for $SUGGESTED]: " INPUT_VERSION
 VERSION="${INPUT_VERSION:-$SUGGESTED}"
 
+# ── 2b. Collect major highlights for the changelog hero ──────────────────────
+echo ""
+echo "─────────────────────────────────────────────────────"
+echo "What are the major highlights of this release?"
+echo "These bubble up to the 'What's new' hero section and"
+echo "the per-release Headline callout on the Changelog page."
+echo "Type one per line. Press Enter on a blank line to finish."
+echo "Skip if there are no major user-facing changes."
+echo "─────────────────────────────────────────────────────"
+HIGHLIGHTS=()
+while true; do
+  read -rp "  highlight: " H
+  if [ -z "$H" ]; then break; fi
+  HIGHLIGHTS+=("$H")
+done
+
 # ── 3. Show git log since last change to platformVersion.ts ──────────────────
 SINCE_COMMIT=$(git log --follow --format="%H" -- "$PLATFORM_FILE" | head -2 | tail -1)
 echo ""
@@ -100,10 +116,32 @@ echo "  {"
 echo "    version: '$VERSION',"
 echo "    date: '$TODAY',"
 echo "    title: 'Release $VERSION',"
+echo "    type: 'minor',"
 echo "    changes: ["
-echo "      // { category: 'added', description: '...' },"
+echo "      // { category: 'added', label: 'Section', items: ['...'] },"
 echo "    ],"
 echo "  },"
+
+if [ "${#HIGHLIGHTS[@]}" -gt 0 ]; then
+  echo ""
+  echo "═════════════════════════════════════════════════════"
+  echo "MANUAL STEP — prepend to HIGHLIGHTS array in ChangelogPage.tsx"
+  echo "(curated cherry-picks across releases — newest first)"
+  echo "═════════════════════════════════════════════════════"
+  for h in "${HIGHLIGHTS[@]}"; do
+    safe=$(printf '%s' "$h" | sed "s/'/\\\\'/g")
+    echo "  {"
+    echo "    title: '$safe',"
+    echo "    description: '...one-line context, why it matters...',"
+    echo "    version: '$VERSION',"
+    echo "    date: '$TODAY',"
+    echo "  },"
+  done
+  echo ""
+  echo "Tip: highlights show for 60 days OR the most recent 6 — older ones"
+  echo "drop off the page automatically. Prune the bottom of HIGHLIGHTS"
+  echo "occasionally if entries get stale before falling out of the window."
+fi
 echo ""
 echo "─────────────────────────────────────────────────────"
 echo "When ready:"

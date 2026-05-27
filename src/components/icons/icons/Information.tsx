@@ -2,31 +2,36 @@ import React from 'react';
 import { BaseIconProps } from '../Icon.types';
 import { iconSize } from '../../../tokens/icons';
 
+const VARIANTS: Record<'xs' | 's' | 'm' | 'l', { viewBox: string; inner: string }> = {
+  xs: { viewBox: '0 0 12 12', inner: `<path fill-rule="evenodd" clip-rule="evenodd" d="M6.66665 3.33333V10H8.66665V11.3333H3.33331V10H5.33331V4.66667H3.99998V3.33333H6.66665ZM6.66665 0V2H5.33331V0H6.66665Z" fill="currentColor"/>` },
+  s: { viewBox: '0 0 14 14', inner: `<path fill-rule="evenodd" clip-rule="evenodd" d="M7.7778 3.88889V11.6667H10.1111V13.2222H3.88892V11.6667H6.22225V5.44444H4.66669V3.88889H7.7778ZM7.7778 0V2.33333H6.22225V0H7.7778Z" fill="currentColor"/>` },
+  m: { viewBox: '0 0 16 16', inner: `<path fill-rule="evenodd" clip-rule="evenodd" d="M8.8889 4.44444V13.3333H11.5556V15.1111H4.44446V13.3333H7.11112V6.22222H5.33335V4.44444H8.8889ZM8.8889 0V2.66667H7.11112V0H8.8889Z" fill="currentColor"/>` },
+  l: { viewBox: '0 0 18 18', inner: `<path fill-rule="evenodd" clip-rule="evenodd" d="M10 5V15H13V17H5V15H8V7H6V5H10ZM10 0V3H8V0H10Z" fill="currentColor"/>` },
+};
+
 export const InformationIcon: React.FC<BaseIconProps> = ({
   size = 'm',
   color = 'currentColor',
   className,
   'aria-label': ariaLabel,
   'aria-hidden': ariaHidden,
-}) => (
-  <svg
-    width={iconSize[size]}
-    height={iconSize[size]}
-    viewBox="0 0 18 18"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-    className={className}
-    aria-label={ariaLabel}
-    aria-hidden={ariaHidden}
-    role={ariaLabel ? 'img' : undefined}
-  >
-    <path
-      fillRule="evenodd"
-      clipRule="evenodd"
-      d="M9 16.5C13.1421 16.5 16.5 13.1421 16.5 9C16.5 4.85786 13.1421 1.5 9 1.5C4.85786 1.5 1.5 4.85786 1.5 9C1.5 13.1421 4.85786 16.5 9 16.5ZM9 8.25C9.41421 8.25 9.75 8.58579 9.75 9V12C9.75 12.4142 9.41421 12.75 9 12.75C8.58579 12.75 8.25 12.4142 8.25 12V9C8.25 8.58579 8.58579 8.25 9 8.25ZM9 6.75C9.41421 6.75 9.75 6.41421 9.75 6C9.75 5.58579 9.41421 5.25 9 5.25C8.58579 5.25 8.25 5.58579 8.25 6C8.25 6.41421 8.58579 6.75 9 6.75Z"
-      fill={color}
+}) => {
+  const variant = VARIANTS[size];
+  return (
+    <svg
+      width={iconSize[size]}
+      height={iconSize[size]}
+      viewBox={variant.viewBox}
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+      aria-label={ariaLabel}
+      aria-hidden={ariaHidden}
+      role={ariaLabel ? 'img' : undefined}
+      style={{ color }}
+      dangerouslySetInnerHTML={{ __html: variant.inner }}
     />
-  </svg>
-);
+  );
+};
 
 export default InformationIcon;

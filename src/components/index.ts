@@ -38,9 +38,6 @@ export * from './AppShell';
 // New modal-related components
 export * from './ConfirmDialog';
 export * from './WizardModal';
-export * from './LoadingIndicator';
-export * from './Select';
-export * from './Popover';
 export * from './FilterDialog';
 export * from './FormModal';
 

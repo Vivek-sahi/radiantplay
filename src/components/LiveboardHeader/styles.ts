@@ -8,10 +8,12 @@ export const colors = {
   textPrimary: systemColors.light['content-primary'],
   textSecondary: systemColors.light['content-secondary'],
   textOnDark: systemColors.light['content-primary-inverse'],
-  textOnDarkMuted: systemColors.light['content-tertiary'],
+  textOnDarkMuted: systemColors.light['border-subtle-hover'],
   brand: systemColors.light['content-brand'],
   border: systemColors.light['border-divider'],
-  borderDark: systemColors.light['border-divider-inverse'],
+  borderDark: systemColors.light['border-default-inverse'],
+  divider: systemColors.light['border-default'],
+  actionPillBg: systemColors.light['background-subtle'],
 } as const;
 
 export const typography = {

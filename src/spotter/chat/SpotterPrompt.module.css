@@ -1,0 +1,183 @@
+.prompt {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3, 8px);
+  width: 100%;
+  max-width: var(--spotter-chat-max-width, 936px);
+  background-color: var(--rd-sys-color-background-base);
+  border: 1px solid var(--rd-sys-color-border-divider);
+  border-radius: 16px;
+  padding: var(--spacing-4, 16px);
+  box-shadow: 0 4px 12px rgba(25, 35, 49, 0.04);
+  transition: box-shadow 200ms ease;
+}
+
+/**
+ * Active state — when the prompt is focused, paint a purple→blue gradient
+ * border. Trick: layer two backgrounds — solid surface clipped to padding-box
+ * for the inner fill, gradient clipped to border-box for the visible edge.
+ * Border itself becomes transparent and the gradient shows through.
+ */
+.prompt:focus-within {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(
+      var(--rd-sys-color-background-base),
+      var(--rd-sys-color-background-base)
+    ) padding-box,
+    linear-gradient(
+      135deg,
+      var(--rd-sys-color-background-accent-purple-bold) 0%,
+      var(--rd-sys-color-content-brand) 100%
+    ) border-box;
+  box-shadow: 0 8px 24px rgba(140, 98, 245, 0.08);
+}
+
+.input {
+  width: 100%;
+  min-height: 24px;
+  border: none;
+  outline: none;
+  resize: none;
+  background: transparent;
+  color: var(--rd-sys-color-content-primary);
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-md, 16px);
+  font-weight: var(--font-weight-light, 375);
+  line-height: var(--line-height-lg, 24px);
+  padding: 0;
+}
+
+.input::placeholder {
+  color: var(--rd-sys-color-content-secondary);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-3, 8px);
+}
+
+.leftActions,
+.rightActions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2, 4px);
+}
+
+.divider {
+  width: 1px;
+  height: 20px;
+  background-color: var(--rd-sys-color-border-divider);
+  margin: 0 var(--spacing-2, 4px);
+}
+
+.modeToggle {
+  display: inline-flex;
+  align-items: center;
+  background-color: var(--rd-sys-color-background-subtle);
+  border-radius: 999px;
+  padding: 2px;
+  gap: 0;
+}
+
+.modeBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  border-radius: 999px;
+  color: var(--rd-sys-color-content-secondary);
+  cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+.modeBtn:hover {
+  color: var(--rd-sys-color-content-primary);
+}
+
+.modeBtn[data-active='true'] {
+  background-color: var(--rd-sys-color-background-base);
+  color: var(--rd-sys-color-content-brand);
+  box-shadow: 0 1px 2px rgba(25, 35, 49, 0.1);
+}
+
+.modelPicker {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1, 4px);
+  height: 32px;
+  padding: 0 var(--spacing-3, 8px);
+  background-color: var(--rd-sys-color-background-subtle);
+  border: none;
+  border-radius: 999px;
+  color: var(--rd-sys-color-content-primary);
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-sm, 14px);
+  font-weight: var(--font-weight-light, 375);
+  line-height: var(--line-height-md, 20px);
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.modelPicker:hover {
+  background-color: var(--rd-sys-color-background-subtle);
+  filter: brightness(0.97);
+}
+
+.iconBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  border-radius: 999px;
+  color: var(--rd-sys-color-content-secondary);
+  cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+.iconBtn:hover {
+  background-color: var(--rd-sys-color-background-subtle);
+  color: var(--rd-sys-color-content-primary);
+}
+
+.iconBtn:focus-visible {
+  outline: 2px solid var(--rd-sys-color-border-focus);
+  outline-offset: 2px;
+}
+
+.submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background-color: var(--rd-sys-color-content-brand);
+  border-radius: 999px;
+  color: #fff;
+  cursor: pointer;
+  transition: background-color 150ms ease, opacity 150ms ease;
+}
+
+.submit:hover {
+  filter: brightness(0.95);
+}
+
+.submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.submit:focus-visible {
+  outline: 2px solid var(--rd-sys-color-border-focus);
+  outline-offset: 2px;
+}

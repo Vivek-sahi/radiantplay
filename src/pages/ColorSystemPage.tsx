@@ -1,5 +1,6 @@
 import React from 'react';
 import { systemColors, referenceColors } from '../tokens/colors';
+import { fontFamily } from '../tokens/typography';
 import { Typography } from '../components/Typography';
 
 interface ColorSwatchProps {
@@ -174,14 +175,14 @@ export const ColorSystemPage: React.FC = () => {
 
       {/* System Tokens Section */}
       <section style={styles.systemSection}>
-        <Typography variant="modal-title" noMargin style={{ marginBottom: 20 }}>System Tokens (Light Mode)</Typography>
-        <Typography variant="body-normal" color="gray" noMargin style={{ marginBottom: 24 }}>
+        <Typography variant="modal-title" noMargin style={{ marginBottom: 8 }}>System tokens (light mode)</Typography>
+        <Typography variant="body-normal" color="gray" noMargin style={{ marginBottom: 32 }}>
           42 semantic tokens organized into background, content, and border groups. These automatically switch values in dark mode.
         </Typography>
 
         {/* Background Tokens */}
         <div style={styles.systemGroup}>
-          <Typography variant="section-label" noMargin style={{ marginBottom: 12 }}>Background (15 tokens)</Typography>
+          <Typography variant="section-label" noMargin style={{ marginBottom: 16 }}>Background (15 tokens)</Typography>
           <div style={styles.systemTokenGrid}>
             {systemBackgroundTokens.map(({ key, value, cssVar }) => {
               const isTransparent = value.includes('rgba');
@@ -205,7 +206,7 @@ export const ColorSystemPage: React.FC = () => {
 
         {/* Content Tokens */}
         <div style={styles.systemGroup}>
-          <Typography variant="section-label" noMargin style={{ marginBottom: 12 }}>Content (15 tokens)</Typography>
+          <Typography variant="section-label" noMargin style={{ marginBottom: 16 }}>Content (15 tokens)</Typography>
           <div style={styles.systemTokenGrid}>
             {systemContentTokens.map(({ key, value, cssVar }) => (
               <div key={key} style={styles.systemTokenItem}>
@@ -226,7 +227,7 @@ export const ColorSystemPage: React.FC = () => {
 
         {/* Border Tokens */}
         <div style={styles.systemGroup}>
-          <Typography variant="section-label" noMargin style={{ marginBottom: 12 }}>Border (12 tokens)</Typography>
+          <Typography variant="section-label" noMargin style={{ marginBottom: 16 }}>Border (12 tokens)</Typography>
           <div style={styles.systemTokenGrid}>
             {systemBorderTokens.map(({ key, value, cssVar }) => (
               <div key={key} style={styles.systemTokenItem}>
@@ -352,57 +353,63 @@ const styles: Record<string, React.CSSProperties> = {
   },
   systemSection: {
     marginBottom: 48,
-    padding: 24,
+    padding: 32,
     backgroundColor: systemColors.light['background-base'],
     borderRadius: 12,
     border: `1px solid ${systemColors.light['background-subtle']}`,
   },
   systemGroup: {
-    marginBottom: 28,
+    marginBottom: 32,
   },
   systemTokenGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(3, 1fr)',
-    gap: 10,
+    gridTemplateColumns: 'repeat(2, 1fr)',
+    gap: 12,
   },
   systemTokenItem: {
     display: 'flex',
     alignItems: 'center',
-    gap: 10,
-    padding: 10,
+    gap: 14,
+    padding: 14,
     backgroundColor: systemColors.light['background-sunken'],
     borderRadius: 8,
   },
   systemTokenSwatch: {
-    width: 36,
-    height: 36,
+    width: 40,
+    height: 40,
     borderRadius: 6,
     flexShrink: 0,
   },
   systemTokenInfo: {
     display: 'flex',
     flexDirection: 'column',
-    gap: 1,
+    gap: 3,
     minWidth: 0,
   },
   systemTokenName: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-    fontSize: 12,
+    fontFamily: fontFamily.primary,
+    fontSize: 14,
     fontWeight: 600,
     color: systemColors.light['content-primary'],
+    lineHeight: '20px',
   },
   systemTokenVar: {
-    fontFamily: '"SF Mono", Monaco, monospace',
-    fontSize: 9,
-    color: systemColors.light['content-tertiary'],
+    fontFamily: fontFamily.mono,
+    fontSize: 12,
+    color: systemColors.light['content-secondary'],
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
+    fontVariantLigatures: 'none',
+    lineHeight: '18px',
   },
   systemTokenValue: {
-    fontFamily: '"SF Mono", Monaco, monospace',
-    fontSize: 10,
-    color: systemColors.light['content-secondary'],
+    fontFamily: fontFamily.mono,
+    fontSize: 12,
+    color: systemColors.light['content-primary'],
+    fontVariantLigatures: 'none',
+    lineHeight: '18px',
+    fontWeight: 500,
   },
   title: {
     fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
@@ -519,7 +526,7 @@ const styles: Record<string, React.CSSProperties> = {
   swatchToken: {
     fontFamily: '"SF Mono", Monaco, monospace',
     fontSize: 10,
-    color: systemColors.light['content-tertiary'],
+    color: systemColors.light['content-secondary'],
   },
   baseSection: {
     marginBottom: 40,

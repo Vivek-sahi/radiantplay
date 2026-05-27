@@ -23,7 +23,7 @@
   max-height: 80vh;
   display: flex;
   flex-direction: column;
-  box-shadow: var(--shadow-2xl);
+  box-shadow: var(--shadow-modal);
   overflow: hidden;
 }
 

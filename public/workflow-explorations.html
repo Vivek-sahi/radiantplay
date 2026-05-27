@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RadiantPlay — AI Workflow</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100vh;overflow:hidden;-webkit-font-smoothing:antialiased;background:#080700;transition:background .3s ease}
+
+/* ── slide engine ── */
+.slides{width:100%;height:100vh;position:relative}
+.slide{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:60px 48px;opacity:0;transform:translateX(48px);transition:opacity .38s ease,transform .38s ease;pointer-events:none}
+.slide.active{opacity:1;transform:translateX(0);pointer-events:all}
+.slide.exit{opacity:0;transform:translateX(-48px)}
+
+/* ── chrome ── */
+.progress-bar{position:fixed;top:0;left:0;height:2px;background:#f59e0b;transition:width .4s ease,background .3s ease;z-index:200;box-shadow:0 0 10px rgba(245,158,11,.6)}
+.slide-badge{position:fixed;top:18px;right:28px;font-family:'JetBrains Mono',monospace;font-size:11px;color:rgba(245,158,11,.35);z-index:200;letter-spacing:.08em;transition:color .3s}
+.nav{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:12px;z-index:200}
+.nav-btn{width:36px;height:36px;border-radius:50%;border:1px solid rgba(245,158,11,.2);background:rgba(245,158,11,.05);color:rgba(245,158,11,.5);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .18s;font-family:'JetBrains Mono',monospace;font-size:16px}
+.nav-btn:hover{background:rgba(245,158,11,.12);border-color:rgba(245,158,11,.4);color:#f59e0b}
+.nav-btn:disabled{opacity:.2;cursor:not-allowed}
+.dots{display:flex;gap:5px}
+.dot{width:4px;height:4px;border-radius:50%;background:rgba(245,158,11,.2);cursor:pointer;transition:all .2s}
+.dot.active{background:#f59e0b;width:16px;border-radius:2px}
+.kbd-hint{position:fixed;bottom:24px;right:28px;font-size:10px;color:rgba(245,158,11,.2);font-family:'JetBrains Mono',monospace;letter-spacing:.04em;transition:color .3s}
+
+/* ── theme toggle ── */
+.theme-btn{position:fixed;top:14px;left:24px;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.06em;border:1px solid rgba(245,158,11,.2);background:rgba(245,158,11,.05);color:rgba(245,158,11,.45);padding:4px 10px;cursor:pointer;transition:all .18s;z-index:200}
+.theme-btn:hover{background:rgba(245,158,11,.1);color:rgba(245,158,11,.8);border-color:rgba(245,158,11,.4)}
+
+/* ── ASCII wrap base ── */
+.ascii-wrap{font-family:'JetBrains Mono',monospace;font-size:clamp(10px,.95vw,13px);line-height:1.6;color:rgba(245,158,11,.55);white-space:pre;max-width:min(880px,100%);transition:color .3s}
+
+/* ── Hero layout ── */
+.hero-layout{display:flex;align-items:center;gap:64px;width:100%;max-width:1140px}
+.hero-text{flex:0 0 auto}
+.prompt-matrix{flex:1;min-width:0;font-family:'JetBrains Mono',monospace;font-size:clamp(9px,.75vw,11px);line-height:1.9;color:rgba(245,158,11,.07);white-space:normal;word-break:break-word;overflow:hidden;max-height:420px;position:relative;user-select:none}
+.prompt-matrix::after{content:'';position:absolute;inset:0;background:linear-gradient(to right,#080700 0%,transparent 18%,transparent 82%,#080700 100%),linear-gradient(to bottom,#080700 0%,transparent 12%,transparent 88%,#080700 100%);pointer-events:none}
+.pm{display:inline;}
+.pm1,.pm2,.pm3{color:rgba(245,158,11,.45)}
+.pm-rp{color:rgba(245,158,11,.85);font-weight:700}
+
+body.light .prompt-matrix{color:rgba(90,60,10,.35)}
+body.light .prompt-matrix::after{background:linear-gradient(to right,#f5f1e8 0%,transparent 18%,transparent 82%,#f5f1e8 100%),linear-gradient(to bottom,#f5f1e8 0%,transparent 12%,transparent 88%,#f5f1e8 100%)}
+body.light .pm1,body.light .pm2,body.light .pm3{color:rgba(90,60,10,.40)}
+body.light .pm-rp{color:rgba(90,60,10,.85)}
+
+/* ════ DARK (default) ════ */
+.ac {color:#f59e0b}
+.ag {color:#fbbf24}
+.as {color:#e2c97e}
+.ad {color:rgba(245,158,11,.3)}
+.ap {color:#c4b5fd}
+.ab {color:#93c5fd}
+.ag2{color:#4ade80}
+.at0{color:rgba(255,255,255,.55)}
+.at1{color:#6ee7b7}
+.at2{color:#93c5fd}
+.at3{color:#fde68a}
+.brand{color:#fff;font-weight:700;font-size:1.35em;letter-spacing:.02em}
+.ts {color:#e879f9}
+.dim{color:rgba(245,158,11,.18)}
+.cmt{color:rgba(245,158,11,.3)}
+.fi {color:rgba(245,158,11,.55)}
+.fc {color:rgba(245,158,11,.28)}
+.fh {color:#fbbf24}
+.fs {color:#4ade80}
+
+/* ════ LIGHT ════ */
+body.light{background:#f5f1e8}
+
+body.light .ascii-wrap{color:rgba(120,80,10,.45)}
+
+body.light .progress-bar{background:#92600a;box-shadow:0 0 8px rgba(146,96,10,.3)}
+body.light .slide-badge{color:rgba(120,80,10,.4)}
+body.light .nav-btn{border-color:rgba(120,80,10,.2);background:rgba(120,80,10,.04);color:rgba(120,80,10,.45)}
+body.light .nav-btn:hover{background:rgba(120,80,10,.1);border-color:rgba(120,80,10,.35);color:#78500a}
+body.light .dot{background:rgba(120,80,10,.18)}
+body.light .dot.active{background:#92600a}
+body.light .kbd-hint{color:rgba(120,80,10,.2)}
+body.light .theme-btn{border-color:rgba(120,80,10,.2);background:rgba(120,80,10,.04);color:rgba(120,80,10,.4)}
+body.light .theme-btn:hover{background:rgba(120,80,10,.09);color:rgba(120,80,10,.75);border-color:rgba(120,80,10,.35)}
+
+body.light .ac {color:#92600a}
+body.light .ag {color:#6b4508}
+body.light .as {color:#4a3520}
+body.light .ad {color:rgba(90,60,10,.25)}
+body.light .ap {color:#6d28d9}
+body.light .ab {color:#1d4ed8}
+body.light .ag2{color:#166534}
+body.light .at0{color:rgba(15,23,42,.55)}
+body.light .at1{color:#065f46}
+body.light .at2{color:#1d4ed8}
+body.light .at3{color:#78350f}
+body.light .brand{color:#0f172a}
+body.light .ts {color:#86198f}
+body.light .dim{color:rgba(90,60,10,.15)}
+body.light .cmt{color:rgba(90,60,10,.28)}
+body.light .fi {color:rgba(15,23,42,.6)}
+body.light .fc {color:rgba(15,23,42,.32)}
+body.light .fh {color:#6b4508}
+body.light .fs {color:#166534}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progressBar" style="width:33.33%"></div>
+<div class="slide-badge" id="slideBadge">01 / 03</div>
+
+<div class="slides">
+
+<!-- ══════════ SLIDE 1 — HERO ══════════ -->
+<div class="slide active" data-index="0">
+<div class="hero-layout">
+
+  <!-- LEFT: text -->
+  <div class="ascii-wrap hero-text"><span class="ts">THOUGHTSPOT DESIGN</span>
+
+
+<span class="brand">RadiantPlay</span>
+
+
+<span class="as">A tool-agnostic playground for building interactive prototypes with</span>
+<span class="as">design system components so every screen stays consistent with the</span>
+<span class="as">design system and new patterns that follow the guidelines.</span>
+
+
+<span class="ad">╭──────────────────────╮  ╭──────────────────╮</span>
+<span class="ad">│</span>  <span class="ac">120+ components</span>      <span class="ad">│  │</span>  <span class="ac">Contextual rules</span>  <span class="ad">│</span>
+<span class="ad">╰──────────────────────╯  ╰──────────────────╯</span>
+<span class="ad">╭───────────────╮  ╭─────────────────────╮</span>
+<span class="ad">│</span>  <span class="ac">Tool agnostic</span>  <span class="ad">│  │</span>  <span class="ac">Task classification</span>  <span class="ad">│</span>
+<span class="ad">╰───────────────╯  ╰─────────────────────╯</span></div>
+
+  <!-- RIGHT: prompt wallpaper -->
+  <div class="prompt-matrix" aria-hidden="true"><script>
+(function(){
+  const prompts = [
+    'add a modal with form validation','build a dashboard with filters','create a sidebar with nested nav',
+    'add a delete confirmation dialog','show skeleton while data loads','add empty state with illustration',
+    'make the table sortable','add search with live results','build from this figma url',
+    'add a toast notification','create a multi-step wizard','add a date range picker',
+    'make the header sticky','add inline editing to the table','build a settings page layout',
+    'add a chart with real data','create a filter drawer','add breadcrumb navigation',
+    'make it work faster please','add error state for this form','build a card grid layout',
+    'add a context menu on right click','create a status badge component','add pagination to the list',
+    'you are wrong, try again','match this figma exactly','add hover and focus states',
+    'create a split panel layout','add a command palette','build a timeline component',
+    'just one more small change','add a progress indicator','create a collapsible section',
+    'RadiantPlay','build a notification centre','this should take 5 minutes',
+    'add a dropdown with search','create a kanban board column','add avatar with fallback',
+    'can you undo that last bit','add a number input with stepper','build a detail side panel',
+    'make it look more polished','add keyboard navigation','create an onboarding flow',
+    'why is it breaking again','add a copy-to-clipboard button','build a comparison table',
+    'add sticky column to the table','create a file upload dropzone','make it production ready',
+    'add a popover with actions','build a segmented control','almost there, one more tweak',
+  ];
+  const weights = [1,2,3,2,1,3,2,1,2,3,1,2,3,1,2,3,1,2,1,3,2,1,3,2,1,3,1,2,3,1];
+  let out = '';
+  const total = 260;
+  for(let i=0;i<total;i++){
+    const p = prompts[i % prompts.length];
+    const w = weights[i % weights.length];
+    if(p === 'RadiantPlay'){
+      out += '<span class="pm pm-rp">RadiantPlay&nbsp;&nbsp;&nbsp;</span>';
+    } else {
+      out += '<span class="pm pm'+w+'">'+p+'&nbsp;&nbsp;&nbsp;</span>';
+    }
+  }
+  document.currentScript.outerHTML = out;
+})();
+  </script></div>
+
+</div>
+</div>
+
+<!-- ══════════ SLIDE 2 — AI WORKFLOW ══════════ -->
+<div class="slide" data-index="1">
+<div class="ascii-wrap"><span class="ad">╔══════════════════════════════════════════════════════════════════════╗
+║</span>  <span class="brand">RadiantPlay</span>  <span class="ad">by</span>  <span class="ts">ThoughtSpot</span>  <span class="ad">·</span>  <span class="ag">AI × Design Workflow</span>                          <span class="ad">║
+╠══════════════════════════════════════════════════════════════════════╣</span>
+<span class="ad">║</span>                                                                      <span class="ad">║</span>
+<span class="ad">║</span>         <span class="ad">╭──────────────────────────────────────╮</span>                    <span class="ad">║</span>
+<span class="ad">║</span>         <span class="ad">│</span>  <span class="ag">describe what you want to build</span>      <span class="ad">│</span>                         <span class="ad">║</span>
+<span class="ad">║</span>         <span class="ad">╰──────────────────────┬───────────────╯</span>                    <span class="ad">║</span>
+<span class="ad">║</span>                                <span class="ad">│</span>                                      <span class="ad">║</span>
+<span class="ad">║</span>                                <span class="ad">▼</span>                                      <span class="ad">║</span>
+<span class="ad">║</span>         <span class="ap">╔══════════════════════════════════════╗</span>                    <span class="ad">║</span>
+<span class="ad">║</span>         <span class="ap">║</span>          <span class="ap">TOKEN CLASSIFIER</span>             <span class="ap">║</span>                    <span class="ad">║</span>
+<span class="ad">║</span>         <span class="ap">║</span>  <span class="as">reads intent · detects task scope</span>   <span class="ap">║</span>  <span class="ad">// mind reader</span>     <span class="ad">║</span>
+<span class="ad">║</span>         <span class="ap">╚══════════════════════╦═══════════════╝</span>                    <span class="ad">║</span>
+<span class="ad">║</span>                                <span class="ad">║</span>                                      <span class="ad">║</span>
+<span class="ad">║</span>                                <span class="ad">▼</span>                                      <span class="ad">║</span>
+<span class="ad">║</span>         <span class="ab">╔══════════════════════════════════════╗</span>                    <span class="ad">║</span>
+<span class="ad">║</span>         <span class="ab">║</span>            <span class="ab">ORCHESTRATOR</span>                <span class="ab">║</span>                    <span class="ad">║</span>
+<span class="ad">║</span>         <span class="ab">║</span>  <span class="as">routes to tier · loads guidelines</span>   <span class="ab">║</span>  <span class="ad">// the decider™</span>   <span class="ad">║</span>
+<span class="ad">║</span>         <span class="ab">╚════╤══════════╤═══════════╤══════╤════╝</span>                    <span class="ad">║</span>
+<span class="ad">║</span>              <span class="ad">│          │           │      │</span>                           <span class="ad">║</span>
+<span class="ad">║</span>              <span class="ad">▼          ▼           ▼      ▼</span>                           <span class="ad">║</span>
+<span class="ad">║</span>  <span class="at0">┌──────────┐</span> <span class="at1">┌──────────────┐</span> <span class="at2">┌──────────┐</span> <span class="at3">┌──────────────┐</span>          <span class="ad">║</span>
+<span class="ad">║</span>  <span class="at0">│  TIER 0  │</span> <span class="at1">│    TIER 1    │</span> <span class="at2">│  TIER 2  │</span> <span class="at3">│    TIER 3    │</span>          <span class="ad">║</span>
+<span class="ad">║</span>  <span class="at0">│──────────│</span> <span class="at1">│──────────────│</span> <span class="at2">│──────────│</span> <span class="at3">│──────────────│</span>          <span class="ad">║</span>
+<span class="ad">║</span>  <span class="at0">│</span> <span class="as">minor    </span><span class="at0">│</span> <span class="at1">│</span> <span class="as">feature     </span><span class="at1">│</span> <span class="at2">│</span> <span class="as">full     </span><span class="at2">│</span> <span class="at3">│</span> <span class="as">design       </span><span class="at3">│</span>          <span class="ad">║</span>
+<span class="ad">║</span>  <span class="at0">│</span> <span class="as">tweak    </span><span class="at0">│</span> <span class="at1">│</span> <span class="as">change      </span><span class="at1">│</span> <span class="at2">│</span> <span class="as">build    </span><span class="at2">│</span> <span class="at3">│</span> <span class="as">system       </span><span class="at3">│</span>          <span class="ad">║</span>
+<span class="ad">║</span>  <span class="at0">└──────────┘</span> <span class="at1">└──────────────┘</span> <span class="at2">└──────────┘</span> <span class="at3">└──────────────┘</span>          <span class="ad">║</span>
+<span class="ad">║</span>  <span class="ag">guideline</span>   <span class="ad">──────────────────────────────────</span> <span class="as">connection density</span> <span class="ad">──▶ ║</span>
+<span class="ad">║</span>                        <span class="at0">tier-0</span>    <span class="at1">tier-1</span>    <span class="at2">tier-2</span>    <span class="at3">tier-3</span>            <span class="ad">║</span>
+<span class="ad">║</span>  <span class="as">components </span>           <span class="at0">·</span>         <span class="at1">·</span>         <span class="at2">██████</span>    <span class="at3">·</span>                 <span class="ad">║</span>
+<span class="ad">║</span>  <span class="as">layout     </span>           <span class="ad">·</span>         <span class="at1">████</span>      <span class="at2">██████</span>    <span class="at3">·</span>                 <span class="ad">║</span>
+<span class="ad">║</span>  <span class="as">modals     </span>           <span class="ad">·</span>         <span class="at1">████</span>      <span class="at2">██████</span>    <span class="at3">·</span>                 <span class="ad">║</span>
+<span class="ad">║</span>  <span class="as">widgets    </span>           <span class="ad">·</span>         <span class="at1">████</span>      <span class="at2">██████</span>    <span class="at3">·</span>                 <span class="ad">║</span>
+<span class="ad">║</span>  <span class="as">figma map  </span>           <span class="ad">·</span>         <span class="at1">·</span>         <span class="at2">██████</span>    <span class="at3">█████</span>             <span class="ad">║</span>
+<span class="ad">║</span>  <span class="as">design sys </span>           <span class="ad">·</span>         <span class="at1">·</span>         <span class="at2">██████</span>    <span class="at3">█████</span>  <span class="ad">← scary</span>   <span class="ad">║</span>
+<span class="ad">║</span>                                                                      <span class="ad">║</span>
+<span class="ad">║</span>  <span class="ad">// * tier-2 may saturate your context window. you were warned.</span>       <span class="ad">║</span>
+<span class="ad">╠══════════════════════════════════════════════════════════════════════╣</span>
+<span class="ad">║</span>  <span class="ag2">▶</span>  <span class="ag2">load guidelines</span>  <span class="ad">───────────────────────────────▶</span>  <span class="ag2">generate code</span>        <span class="ad">║</span>
+<span class="ad">╚══════════════════════════════════════════════════════════════════════╝</span></div>
+</div>
+
+<!-- ══════════ SLIDE 3 — CONTEXTUAL RULES ══════════ -->
+<div class="slide" data-index="2">
+<div class="ascii-wrap"><span class="ad">╔══════════════════════════════════════════════════════════════════════╗
+║</span>  <span class="brand">RadiantPlay</span>  <span class="ad">by</span>  <span class="ts">ThoughtSpot</span>  <span class="ad">·</span>  <span class="ag">Reference System</span>  <span class="ad">·</span>  <span class="as">contextual rules</span>     <span class="ad">║
+╠══════════════════════════════════════════════════════════════════════╣</span>
+<span class="ad">║</span>                                                                      <span class="ad">║</span>
+<span class="ad">║</span>  <span class="fh">ALWAYS LOADED</span>                                                       <span class="ad">║</span>
+<span class="ad">║</span>  <span class="ad">└─</span> <span class="fi">_orchestration.md</span>                            <span class="fc"># router · always on</span> <span class="ad">║</span>
+<span class="ad">║</span>                                                                      <span class="ad">║</span>
+<span class="ad">║</span>  <span class="fh">LOADED ON DEMAND</span>  <span class="ad">·</span>  <span class="as">matched to the task's concern</span>                   <span class="ad">║</span>
+<span class="ad">║</span>                                                                      <span class="ad">║</span>
+<span class="ad">║</span>  <span class="ad">├─</span> <span class="fi">prototype-generation.md</span>                      <span class="fc"># build workflow</span>     <span class="ad">║</span>
+<span class="ad">║</span>  <span class="ad">├─</span> <span class="fi">component-inventory.md</span>                       <span class="fc"># ~100 components</span>    <span class="ad">║</span>
+<span class="ad">║</span>  <span class="ad">├─</span> <span class="fi">compliance-checklist.md</span>                      <span class="fc"># quality gate</span>       <span class="ad">║</span>
+<span class="ad">║</span>  <span class="ad">├─</span> <span class="fi">layout-patterns.md</span>                           <span class="fc"># page templates</span>     <span class="ad">║</span>
+<span class="ad">║</span>  <span class="ad">├─</span> <span class="fi">widget-patterns.md</span>                           <span class="fc"># tables, alerts, menus</span> <span class="ad">║</span>
+<span class="ad">║</span>  <span class="ad">├─</span> <span class="fi">modal-patterns.md</span>                            <span class="fc"># dialogs, wizards</span>   <span class="ad">║</span>
+<span class="ad">║</span>  <span class="ad">├─</span> <span class="fi">interaction-patterns.md</span>                      <span class="fc"># loading, errors</span>    <span class="ad">║</span>
+<span class="ad">║</span>  <span class="ad">├─</span> <span class="fi">token-usage.md</span>                               <span class="fc"># colors, spacing, type</span> <span class="ad">║</span>
+<span class="ad">║</span>  <span class="ad">├─</span> <span class="fi">content-guidelines.md</span>                        <span class="fc"># UX writing rules</span>   <span class="ad">║</span>
+<span class="ad">║</span>  <span class="ad">├─</span> <span class="fi">figma-mcp-workflow.md</span>                        <span class="fc"># Figma URL pipeline</span> <span class="ad">║</span>
+<span class="ad">║</span>  <span class="ad">├─</span> <span class="fi">figma-component-mapping.md</span>                   <span class="fc"># Figma → Radiant</span>    <span class="ad">║</span>
+<span class="ad">║</span>  <span class="ad">├─</span> <span class="fi">prototype-structure.md</span>                       <span class="fc"># folder conventions</span> <span class="ad">║</span>
+<span class="ad">║</span>  <span class="ad">├─</span> <span class="fi">product-knowledge.md</span>                         <span class="fc"># domain context</span>     <span class="ad">║</span>
+<span class="ad">║</span>  <span class="ad">├─</span> <span class="fi">design-system.md</span>                             <span class="fc"># component standards</span> <span class="ad">║</span>
+<span class="ad">║</span>  <span class="ad">│</span>                                                                    <span class="ad">║</span>
+<span class="ad">║</span>  <span class="ad">└─</span> <span class="fs">EXTENDED</span>  <span class="ad">·</span>  <span class="as">heavier set, loaded together for complex surfaces</span>    <span class="ad">║</span>
+<span class="ad">║</span>     <span class="ad">├─</span> <span class="fi">surface-ia.md</span>                             <span class="fc"># information arch</span>   <span class="ad">║</span>
+<span class="ad">║</span>     <span class="ad">├─</span> <span class="fi">surface-scaffolding.md</span>                    <span class="fc"># build scaffolding</span>  <span class="ad">║</span>
+<span class="ad">║</span>     <span class="ad">├─</span> <span class="fi">surface-core.md</span>                           <span class="fc"># grid, tiles, layout</span> <span class="ad">║</span>
+<span class="ad">║</span>     <span class="ad">├─</span> <span class="fi">surface-edit.md</span>                           <span class="fc"># drag, resize</span>       <span class="ad">║</span>
+<span class="ad">║</span>     <span class="ad">└─</span> <span class="fi">surface-advanced.md</span>                       <span class="fc"># groups, multi-select</span> <span class="ad">║</span>
+<span class="ad">║</span>                                                                      <span class="ad">║</span>
+<span class="ad">╠══════════════════════════════════════════════════════════════════════╣</span>
+<span class="ad">║</span>  <span class="ag2">20</span> <span class="as">rule files</span>  <span class="ad">·</span>  <span class="ag2">~5,000</span> <span class="as">lines</span>  <span class="ad">·</span>  <span class="as">only what's needed, when it's needed</span>  <span class="ad">║</span>
+<span class="ad">╚══════════════════════════════════════════════════════════════════════╝</span></div>
+</div>
+
+</div><!-- /slides -->
+
+<!-- chrome -->
+<button class="theme-btn" id="themeBtn">[ light ]</button>
+<nav class="nav">
+  <button class="nav-btn" id="prevBtn" disabled>←</button>
+  <div class="dots" id="dots"></div>
+  <button class="nav-btn" id="nextBtn">→</button>
+</nav>
+<div class="kbd-hint">← → to navigate</div>
+
+<script>
+const TOTAL = 3;
+let current = 0;
+let isLight = false;
+
+const themeBtn = document.getElementById('themeBtn');
+themeBtn.addEventListener('click', () => {
+  isLight = !isLight;
+  document.body.classList.toggle('light', isLight);
+  themeBtn.textContent = isLight ? '[ dark ]' : '[ light ]';
+});
+
+const slides = document.querySelectorAll('.slide');
+const dotsEl = document.getElementById('dots');
+const prevBtn = document.getElementById('prevBtn');
+const nextBtn = document.getElementById('nextBtn');
+const progressBar = document.getElementById('progressBar');
+const slideBadge = document.getElementById('slideBadge');
+
+// build dots
+for (let i = 0; i < TOTAL; i++) {
+  const d = document.createElement('div');
+  d.className = 'dot' + (i === 0 ? ' active' : '');
+  d.addEventListener('click', () => goTo(i));
+  dotsEl.appendChild(d);
+}
+
+function goTo(n) {
+  const prev = current;
+  current = Math.max(0, Math.min(TOTAL - 1, n));
+  if (prev === current) return;
+
+  slides[prev].classList.remove('active');
+  slides[prev].classList.add('exit');
+  setTimeout(() => slides[prev].classList.remove('exit'), 400);
+
+  slides[current].classList.add('active');
+
+  document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === current));
+  prevBtn.disabled = current === 0;
+  nextBtn.disabled = current === TOTAL - 1;
+  progressBar.style.width = ((current + 1) / TOTAL * 100) + '%';
+  slideBadge.textContent = String(current + 1).padStart(2, '0') + ' / ' + String(TOTAL).padStart(2, '0');
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') goTo(current + 1);
+  if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   goTo(current - 1);
+});
+prevBtn.addEventListener('click', () => goTo(current - 1));
+nextBtn.addEventListener('click', () => goTo(current + 1));
+</script>
+</body>
+</html>

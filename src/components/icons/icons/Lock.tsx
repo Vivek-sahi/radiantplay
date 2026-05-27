@@ -1,6 +1,13 @@
 import React from 'react';
 import { BaseIconProps } from '../Icon.types';
-import { iconSize, iconStrokeWidth } from '../../../tokens/icons';
+import { iconSize } from '../../../tokens/icons';
+
+const VARIANTS: Record<'xs' | 's' | 'm' | 'l', { viewBox: string; inner: string }> = {
+  xs: { viewBox: '0 0 12 12', inner: `<path fill-rule="evenodd" clip-rule="evenodd" d="M2.66671 4H1.33337V6.66667C1.33337 9.24399 3.42271 11.3333 6.00004 11.3333C8.57737 11.3333 10.6667 9.24399 10.6667 6.66667V4H9.33337V3.33333C9.33337 1.49238 7.84099 0 6.00004 0C4.15909 0 2.66671 1.49238 2.66671 3.33333V4ZM4.00004 4H8.00004V3.33333C8.00004 2.22876 7.10461 1.33333 6.00004 1.33333C4.89547 1.33333 4.00004 2.22876 4.00004 3.33333V4ZM7.00004 7.66667C7.00004 8.21895 6.55233 8.66667 6.00004 8.66667C5.44776 8.66667 5.00004 8.21895 5.00004 7.66667C5.00004 7.11438 5.44776 6.66667 6.00004 6.66667C6.55233 6.66667 7.00004 7.11438 7.00004 7.66667Z" fill="currentColor"/>` },
+  s: { viewBox: '0 0 14 14', inner: `<path fill-rule="evenodd" clip-rule="evenodd" d="M3.1111 4.66667H1.55554V7.77778C1.55554 10.7847 3.9931 13.2222 6.99999 13.2222C10.0069 13.2222 12.4444 10.7847 12.4444 7.77778V4.66667H10.8889V3.88889C10.8889 1.74111 9.14776 0 6.99999 0C4.85221 0 3.1111 1.74111 3.1111 3.88889V4.66667ZM4.66665 4.66667H9.33332V3.88889C9.33332 2.60022 8.28865 1.55556 6.99999 1.55556C5.71132 1.55556 4.66665 2.60022 4.66665 3.88889V4.66667ZM8.16665 8.94444C8.16665 9.58878 7.64432 10.1111 6.99999 10.1111C6.35565 10.1111 5.83332 9.58878 5.83332 8.94444C5.83332 8.30011 6.35565 7.77778 6.99999 7.77778C7.64432 7.77778 8.16665 8.30011 8.16665 8.94444Z" fill="currentColor"/>` },
+  m: { viewBox: '0 0 16 16', inner: `<path fill-rule="evenodd" clip-rule="evenodd" d="M3.55561 5.33333H1.77783V8.88889C1.77783 12.3253 4.56362 15.1111 8.00005 15.1111C11.4365 15.1111 14.2223 12.3253 14.2223 8.88889V5.33333H12.4445V4.44444C12.4445 1.98985 10.4547 0 8.00005 0C5.54546 0 3.55561 1.98985 3.55561 4.44444V5.33333ZM5.33339 5.33333H10.6667V4.44444C10.6667 2.97168 9.47281 1.77778 8.00005 1.77778C6.5273 1.77778 5.33339 2.97168 5.33339 4.44444V5.33333ZM9.33339 10.2222C9.33339 10.9586 8.73643 11.5556 8.00005 11.5556C7.26367 11.5556 6.66672 10.9586 6.66672 10.2222C6.66672 9.48584 7.26367 8.88889 8.00005 8.88889C8.73643 8.88889 9.33339 9.48584 9.33339 10.2222Z" fill="currentColor"/>` },
+  l: { viewBox: '0 0 18 18', inner: `<path fill-rule="evenodd" clip-rule="evenodd" d="M4 6H2V10C2 13.866 5.13401 17 9 17C12.866 17 16 13.866 16 10V6H14V5C14 2.23858 11.7614 0 9 0C6.23858 0 4 2.23858 4 5V6ZM6 6H12V5C12 3.34315 10.6569 2 9 2C7.34315 2 6 3.34315 6 5V6ZM10.5 11.5C10.5 12.3284 9.82843 13 9 13C8.17157 13 7.5 12.3284 7.5 11.5C7.5 10.6716 8.17157 10 9 10C9.82843 10 10.5 10.6716 10.5 11.5Z" fill="currentColor"/>` },
+};
 
 export const LockIcon: React.FC<BaseIconProps> = ({
   size = 'm',
@@ -8,33 +15,23 @@ export const LockIcon: React.FC<BaseIconProps> = ({
   className,
   'aria-label': ariaLabel,
   'aria-hidden': ariaHidden,
-}) => (
-  <svg
-    width={iconSize[size]}
-    height={iconSize[size]}
-    viewBox="0 0 18 18"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-    className={className}
-    aria-label={ariaLabel}
-    aria-hidden={ariaHidden}
-    role={ariaLabel ? 'img' : undefined}
-  >
-    <path
-      d="M14.25 8.25H3.75C2.92157 8.25 2.25 8.92157 2.25 9.75V15C2.25 15.8284 2.92157 16.5 3.75 16.5H14.25C15.0784 16.5 15.75 15.8284 15.75 15V9.75C15.75 8.92157 15.0784 8.25 14.25 8.25Z"
-      stroke={color}
-      strokeWidth={iconStrokeWidth[size]}
-      strokeLinecap="round"
-      strokeLinejoin="round"
+}) => {
+  const variant = VARIANTS[size];
+  return (
+    <svg
+      width={iconSize[size]}
+      height={iconSize[size]}
+      viewBox={variant.viewBox}
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+      aria-label={ariaLabel}
+      aria-hidden={ariaHidden}
+      role={ariaLabel ? 'img' : undefined}
+      style={{ color }}
+      dangerouslySetInnerHTML={{ __html: variant.inner }}
     />
-    <path
-      d="M5.25 8.25V5.25C5.25 4.25544 5.64509 3.30161 6.34835 2.59835C7.05161 1.89509 8.00544 1.5 9 1.5C9.99456 1.5 10.9484 1.89509 11.6517 2.59835C12.3549 3.30161 12.75 4.25544 12.75 5.25V8.25"
-      stroke={color}
-      strokeWidth={iconStrokeWidth[size]}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
+  );
+};
 
 export default LockIcon;

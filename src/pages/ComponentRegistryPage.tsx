@@ -398,7 +398,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   componentCategory: {
     fontSize: '11px',
-    color: systemColors.light['content-tertiary'],
+    color: systemColors.light['content-secondary'],
   },
   statesCell: {
     display: 'flex',
@@ -416,7 +416,7 @@ const styles: Record<string, React.CSSProperties> = {
   moreStates: {
     fontSize: '10px',
     padding: '2px 6px',
-    color: systemColors.light['content-tertiary'],
+    color: systemColors.light['content-secondary'],
     fontStyle: 'italic',
   },
   statusBadge: {

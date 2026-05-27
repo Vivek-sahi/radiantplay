@@ -1,0 +1,24 @@
+.badge {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  padding: 1px var(--spacing-1);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-regular);
+  color: var(--rd-sys-color-content-primary);
+  font-family: var(--font-family-primary);
+  white-space: nowrap;
+  flex-shrink: 0;
+  align-self: flex-start;
+  margin-top: var(--spacing-1);
+  height: 20px;
+}
+
+.badge svg {
+  flex-shrink: 0;
+}
+
+.green { background: var(--rd-sys-color-background-success); color: var(--rd-sys-color-content-success); }
+.amber { background: var(--rd-sys-color-background-warning); color: var(--rd-sys-color-content-warning); }
+.red   { background: var(--rd-sys-color-background-failure); color: var(--rd-sys-color-content-failure); }

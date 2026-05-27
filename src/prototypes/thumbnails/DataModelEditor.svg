@@ -1,0 +1,99 @@
+<svg width="800" height="450" viewBox="0 0 800 450" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="800" height="450" fill="#F6F8FA"/>
+
+  <!-- Left pane -->
+  <rect x="16" y="16" width="160" height="418" rx="8" fill="white" stroke="#E5E7EB" stroke-width="1"/>
+  <!-- Left pane header -->
+  <rect x="16" y="16" width="160" height="40" rx="8" fill="#F0F2F5"/>
+  <rect x="16" y="44" width="160" height="12" fill="#F0F2F5"/>
+  <!-- Table items -->
+  <rect x="24" y="72" width="144" height="28" rx="4" fill="#EEF2FF"/>
+  <rect x="28" y="80" width="80" height="12" rx="2" fill="#818CF8"/>
+  <rect x="24" y="108" width="144" height="28" rx="4" fill="white" stroke="#E5E7EB" stroke-width="1"/>
+  <rect x="28" y="116" width="96" height="12" rx="2" fill="#9CA3AF"/>
+  <rect x="24" y="144" width="144" height="28" rx="4" fill="white" stroke="#E5E7EB" stroke-width="1"/>
+  <rect x="28" y="152" width="72" height="12" rx="2" fill="#9CA3AF"/>
+  <rect x="24" y="180" width="144" height="28" rx="4" fill="white" stroke="#E5E7EB" stroke-width="1"/>
+  <rect x="28" y="188" width="88" height="12" rx="2" fill="#9CA3AF"/>
+  <rect x="24" y="216" width="144" height="28" rx="4" fill="white" stroke="#E5E7EB" stroke-width="1"/>
+  <rect x="28" y="224" width="64" height="12" rx="2" fill="#9CA3AF"/>
+
+  <!-- Canvas area -->
+  <rect x="192" y="16" width="390" height="418" rx="8" fill="white" stroke="#E5E7EB" stroke-width="1"/>
+  <!-- Tab bar -->
+  <rect x="192" y="16" width="390" height="40" rx="8" fill="#F8F9FB"/>
+  <rect x="192" y="44" width="390" height="12" fill="#F8F9FB"/>
+  <rect x="200" y="24" width="48" height="24" rx="4" fill="#1D232F"/>
+  <rect x="200" y="24" width="48" height="24" rx="4" fill="#1D232F"/>
+  <rect x="256" y="28" width="44" height="16" rx="3" fill="transparent"/>
+  <rect x="256" y="32" width="44" height="8" rx="2" fill="#9CA3AF"/>
+  <rect x="308" y="28" width="52" height="16" rx="3" fill="transparent"/>
+  <rect x="308" y="32" width="52" height="8" rx="2" fill="#9CA3AF"/>
+
+  <!-- Table cards on canvas -->
+  <!-- fact_sales card -->
+  <rect x="210" y="72" width="160" height="80" rx="6" fill="white" stroke="#E5E7EB" stroke-width="1.5"/>
+  <rect x="210" y="72" width="160" height="24" rx="6" fill="#1D232F"/>
+  <rect x="210" y="90" width="160" height="6" fill="#1D232F"/>
+  <rect x="218" y="78" width="80" height="10" rx="2" fill="white" opacity="0.8"/>
+  <rect x="218" y="104" width="60" height="8" rx="2" fill="#E5E7EB"/>
+  <rect x="218" y="118" width="80" height="8" rx="2" fill="#E5E7EB"/>
+  <rect x="218" y="132" width="48" height="8" rx="2" fill="#E5E7EB"/>
+
+  <!-- dim_product card -->
+  <rect x="390" y="72" width="160" height="80" rx="6" fill="white" stroke="#E5E7EB" stroke-width="1.5"/>
+  <rect x="390" y="72" width="160" height="24" rx="6" fill="#1D232F"/>
+  <rect x="390" y="90" width="160" height="6" fill="#1D232F"/>
+  <rect x="398" y="78" width="80" height="10" rx="2" fill="white" opacity="0.8"/>
+  <rect x="398" y="104" width="60" height="8" rx="2" fill="#E5E7EB"/>
+  <rect x="398" y="118" width="80" height="8" rx="2" fill="#E5E7EB"/>
+  <rect x="398" y="132" width="48" height="8" rx="2" fill="#E5E7EB"/>
+
+  <!-- Join line between cards -->
+  <path d="M 370 112 L 390 112" stroke="#1D232F" stroke-width="1.5"/>
+  <!-- Join badge -->
+  <rect x="371" y="106" width="18" height="12" rx="3" fill="#F0F4FF" stroke="#818CF8" stroke-width="1"/>
+  <rect x="374" y="110" width="12" height="4" rx="1" fill="#818CF8"/>
+
+  <!-- fact_customer card -->
+  <rect x="210" y="220" width="160" height="80" rx="6" fill="white" stroke="#E5E7EB" stroke-width="1.5"/>
+  <rect x="210" y="220" width="160" height="24" rx="6" fill="#374151"/>
+  <rect x="210" y="238" width="160" height="6" fill="#374151"/>
+  <rect x="218" y="226" width="80" height="10" rx="2" fill="white" opacity="0.8"/>
+  <rect x="218" y="252" width="60" height="8" rx="2" fill="#E5E7EB"/>
+  <rect x="218" y="266" width="80" height="8" rx="2" fill="#E5E7EB"/>
+  <rect x="218" y="280" width="48" height="8" rx="2" fill="#E5E7EB"/>
+
+  <!-- Join line vertical -->
+  <path d="M 290 152 L 290 220" stroke="#1D232F" stroke-width="1.5"/>
+
+  <!-- Agent panel -->
+  <rect x="598" y="16" width="186" height="418" rx="8" fill="white" stroke="#E5E7EB" stroke-width="1"/>
+  <!-- Agent header -->
+  <rect x="598" y="16" width="186" height="44" rx="8" fill="#F8F9FB"/>
+  <rect x="598" y="48" width="186" height="12" fill="#F8F9FB"/>
+  <circle cx="618" cy="38" r="10" fill="#E5E7EB"/>
+  <rect x="634" y="33" width="64" height="10" rx="3" fill="#374151"/>
+  <!-- Context chip -->
+  <rect x="720" y="28" width="52" height="20" rx="10" fill="#EEF2FF" stroke="#818CF8" stroke-width="1"/>
+  <rect x="726" y="34" width="36" height="8" rx="2" fill="#818CF8"/>
+
+  <!-- Welcome back card -->
+  <rect x="610" y="76" width="162" height="110" rx="6" fill="#F8F9FB"/>
+  <circle cx="691" cy="100" r="14" fill="#E5E7EB"/>
+  <rect x="660" y="120" width="62" height="10" rx="3" fill="#374151"/>
+  <rect x="648" y="136" width="86" height="8" rx="3" fill="#9CA3AF"/>
+  <!-- Check AI readiness button -->
+  <rect x="626" y="154" width="130" height="24" rx="12" fill="white" stroke="#818CF8" stroke-width="1.5"/>
+  <rect x="636" y="160" width="12" height="12" rx="2" fill="#818CF8"/>
+  <rect x="652" y="163" width="76" height="6" rx="2" fill="#4F46E5"/>
+
+  <!-- Chat input area -->
+  <rect x="606" y="360" width="174" height="40" rx="8" fill="white" stroke="#E5E7EB" stroke-width="1"/>
+  <rect x="614" y="374" width="100" height="12" rx="3" fill="#E5E7EB"/>
+  <circle cx="760" cy="380" r="12" fill="#1D232F"/>
+
+  <!-- Title -->
+  <text x="400" y="440" fill="#6B7280" font-family="system-ui, -apple-system, sans-serif" font-size="13" text-anchor="middle" font-weight="400">Data model editor</text>
+</svg>

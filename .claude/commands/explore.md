@@ -1,3 +1,7 @@
+---
+description: Suspend Radiant design system constraints for freeform UI exploration. Pass a scope or description of what you're exploring.
+---
+
 Suspend Radiant design system constraints for freeform UI exploration: $ARGUMENTS
 
 ## Instructions

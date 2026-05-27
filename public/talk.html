@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RadiantPlay. Cross-org talk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+/* ── TOKENS ── */
+:root {
+  --cream-00:#faf7ee;
+  --cream-10:#f5f1e8;
+  --cream-20:#ede7d6;
+  --cream-30:#e0d8c0;
+
+  --ink-90:#0f172a;
+  --ink-70:rgba(15,23,42,.72);
+  --ink-55:rgba(15,23,42,.55);
+  --ink-40:rgba(15,23,42,.40);
+  --ink-25:rgba(15,23,42,.25);
+
+  --amber:#92600a;
+  --amber-deep:#78500a;
+  --amber-bg:rgba(146,96,10,.08);
+  --amber-border:rgba(146,96,10,.22);
+
+  --green:#166534;
+  --green-bg:rgba(22,101,52,.09);
+  --green-border:rgba(22,101,52,.22);
+
+  --red:#991b1b;
+  --red-bg:rgba(153,27,27,.08);
+  --red-border:rgba(153,27,27,.2);
+
+  --blue:#1d4ed8;
+  --blue-bg:rgba(29,78,216,.08);
+  --blue-border:rgba(29,78,216,.2);
+
+  --purple:#6d28d9;
+  --purple-bg:rgba(109,40,217,.08);
+  --purple-border:rgba(109,40,217,.2);
+
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+  --sans:'Inter',system-ui,sans-serif;
+}
+
+html,body{height:100vh;overflow:hidden;-webkit-font-smoothing:antialiased;background:var(--cream-10);color:var(--ink-70);font-family:var(--sans)}
+
+/* ── slide engine ── */
+.slides{width:100%;height:100vh;position:relative}
+.slide{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:88px 72px 72px;opacity:0;transform:translateX(40px);transition:opacity .4s ease,transform .4s ease;pointer-events:none}
+.slide.active{opacity:1;transform:translateX(0);pointer-events:all}
+.slide.exit{opacity:0;transform:translateX(-40px)}
+
+/* ── CHROME ── */
+.progress-bar{position:fixed;top:0;left:0;height:2px;background:var(--amber);transition:width .4s ease;z-index:200;box-shadow:0 0 8px rgba(146,96,10,.3)}
+.slide-badge{position:fixed;top:18px;right:28px;font-family:var(--mono);font-size:12px;color:var(--ink-40);z-index:200;letter-spacing:.08em}
+.wordmark{position:fixed;top:16px;left:24px;z-index:200;display:flex;align-items:center;gap:8px;text-decoration:none;font-family:var(--mono);font-size:14px;font-weight:700;color:var(--ink-90);letter-spacing:.01em}
+.wordmark::before{content:'▸';color:var(--amber);font-size:12px}
+.wordmark em{font-style:normal;color:var(--amber)}
+.section-nav{position:fixed;top:18px;left:50%;transform:translateX(-50%);z-index:200;display:flex;align-items:center;gap:22px;font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap}
+.section-nav-item{color:var(--ink-25);transition:color .2s ease,font-weight .2s ease;cursor:pointer}
+.section-nav-item:hover{color:var(--amber-deep)}
+.section-nav-item.active{color:var(--amber);font-weight:700}
+.wordmark{cursor:pointer}
+.section-nav-sep{color:var(--ink-25);opacity:.4;font-size:9px}
+
+.nav{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:12px;z-index:200}
+.nav-btn{width:36px;height:36px;border-radius:50%;border:1px solid var(--amber-border);background:var(--amber-bg);color:var(--amber);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .18s;font-family:var(--mono);font-size:16px}
+.nav-btn:hover{background:rgba(146,96,10,.14);border-color:rgba(146,96,10,.45);color:var(--amber-deep)}
+.nav-btn:disabled{opacity:.25;cursor:not-allowed}
+.dots{display:flex;gap:5px}
+.dot{width:5px;height:5px;border-radius:50%;background:rgba(146,96,10,.2);cursor:pointer;transition:all .2s}
+.dot.active{background:var(--amber);width:18px;border-radius:3px}
+.kbd-hint{position:fixed;bottom:26px;right:28px;font-size:10px;color:var(--ink-25);font-family:var(--mono);letter-spacing:.04em}
+
+/* ══ LAYOUT SYSTEM ══ */
+.s-inner{width:100%;max-width:1120px;display:flex;flex-direction:column}
+.s-head{margin-bottom:14px}
+.s-rule{height:1px;background:linear-gradient(to right,var(--amber-border),transparent);margin-bottom:28px}
+.s-body.two-col{display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:start}
+.s-body.three-col{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.s-body.four-col{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+
+/* ── typography ── */
+.label{display:inline-block;font-family:var(--mono);font-size:11.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--amber);padding:4px 10px;background:var(--amber-bg);border:1px solid var(--amber-border);margin-bottom:16px}
+.h1{font-family:var(--sans);font-size:clamp(46px,5.2vw,72px);font-weight:900;letter-spacing:-.03em;line-height:1.04;color:var(--ink-90)}
+.h2{font-family:var(--sans);font-size:clamp(32px,3.4vw,48px);font-weight:800;letter-spacing:-.025em;line-height:1.1;color:var(--ink-90);margin-bottom:10px}
+.sub{font-family:var(--sans);font-size:17.5px;line-height:1.55;color:var(--ink-55);max-width:880px}
+em{font-style:normal;color:var(--amber-deep)}
+code{font-family:var(--mono);font-size:13.5px;font-weight:500;color:var(--amber-deep);background:var(--amber-bg);padding:1px 6px;border:1px solid var(--amber-border)}
+strong{color:var(--ink-90)}
+
+/* ── cards ── */
+.card{background:var(--cream-00);border:1px solid var(--amber-border);padding:22px 20px}
+.card-title{font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:14px;color:var(--amber-deep)}
+.card-title.green{color:var(--green)}
+.card-title.red{color:var(--red)}
+.card-title.purple{color:var(--purple)}
+.card-title.blue{color:var(--blue)}
+
+/* ── list items ── */
+.blist{display:flex;flex-direction:column;gap:12px}
+.bitem{display:flex;align-items:flex-start;gap:10px;font-size:15px;line-height:1.55;color:var(--ink-70)}
+.bitem strong{color:var(--ink-90);font-weight:700}
+.bdot{font-family:var(--mono);color:var(--amber);flex-shrink:0;font-weight:700;line-height:1.55}
+.bdot.green{color:var(--green)}
+.bdot.red{color:var(--red)}
+.bdot.blue{color:var(--blue)}
+.bdot.purple{color:var(--purple)}
+
+/* ── chip ── */
+.chip{display:inline-flex;font-family:var(--mono);font-size:13px;background:var(--cream-00);border:1px solid var(--amber-border);padding:6px 14px;color:var(--ink-70)}
+
+/* ── cta ── */
+.cta{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;color:var(--amber-deep);background:var(--amber-bg);border:1px solid var(--amber-border);padding:10px 22px;cursor:pointer;transition:all .2s;text-decoration:none}
+.cta:hover{background:rgba(146,96,10,.14);border-color:rgba(146,96,10,.45)}
+
+/* ── notes ── */
+.note{padding:14px 18px;background:var(--cream-00);border-left:3px solid var(--amber);font-size:14px;color:var(--ink-55);line-height:1.6;margin-top:16px}
+.note strong{color:var(--amber-deep)}
+
+/* ── highlight ── */
+.highlight{display:flex;align-items:center;gap:16px;padding:18px 22px;background:var(--amber-bg);border:1px solid var(--amber-border);font-size:15px;color:var(--ink-70);margin-top:20px;line-height:1.5}
+.highlight-num{font-family:var(--mono);font-weight:800;font-size:32px;color:var(--amber-deep);line-height:1;flex-shrink:0}
+
+/* ── agenda ── */
+.agenda-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.agenda-item{display:flex;align-items:flex-start;gap:14px;padding:18px 18px;background:var(--cream-00);border:1px solid var(--amber-border)}
+.agenda-num{font-family:var(--mono);font-size:15px;font-weight:800;color:var(--amber);line-height:1.2;flex-shrink:0}
+.agenda-label{font-size:15px;font-weight:700;color:var(--ink-90);margin-bottom:3px}
+.agenda-sub{font-size:13px;color:var(--ink-55);line-height:1.5}
+
+/* ── tier ── */
+.tier-card{padding:18px 16px;background:var(--cream-00);border:1px solid var(--amber-border)}
+.tier-card.t0{border-color:var(--blue-border);background:var(--blue-bg)}
+.tier-card.t1{border-color:var(--green-border);background:var(--green-bg)}
+.tier-card.t2{border-color:var(--amber-border);background:var(--amber-bg)}
+.tier-card.t3{border-color:var(--purple-border);background:var(--purple-bg)}
+.tier-badge{font-family:var(--mono);font-size:11.5px;font-weight:800;letter-spacing:.14em;margin-bottom:10px}
+.t0 .tier-badge{color:var(--blue)}
+.t1 .tier-badge{color:var(--green)}
+.t2 .tier-badge{color:var(--amber-deep)}
+.t3 .tier-badge{color:var(--purple)}
+.tier-name{font-size:16px;font-weight:700;color:var(--ink-90);margin-bottom:6px}
+.tier-desc{font-size:13.5px;color:var(--ink-55);line-height:1.5}
+.tier-ex{margin-top:8px;font-family:var(--mono);font-size:11.5px;color:var(--ink-40)}
+
+/* ── timeline ── */
+.ttrack{position:relative;padding-left:26px}
+.ttrack::before{content:'';position:absolute;left:0;top:6px;bottom:6px;width:1px;background:linear-gradient(to bottom,var(--amber),var(--amber-border),transparent)}
+.tentry{position:relative;margin-bottom:18px}
+.tentry:last-child{margin-bottom:0}
+.tdot{position:absolute;left:-30px;top:4px;width:9px;height:9px;background:var(--amber);border:2px solid var(--cream-10);border-radius:50%;box-shadow:0 0 0 2px var(--amber-border)}
+.tdot.green{background:var(--green);box-shadow:0 0 0 2px var(--green-border)}
+.tver{font-family:var(--mono);font-size:11.5px;font-weight:700;color:var(--amber);letter-spacing:.06em;margin-bottom:3px}
+.ttitle{font-size:15.5px;font-weight:700;color:var(--ink-90);margin-bottom:3px}
+.tdesc{font-size:13.5px;color:var(--ink-55);line-height:1.5}
+
+/* ── steps ── */
+.steps{display:flex;flex-direction:column;gap:8px}
+.step{display:flex;align-items:center;gap:16px;padding:13px 18px;background:var(--cream-00);border:1px solid var(--amber-border)}
+.step-num{font-family:var(--mono);font-size:14px;font-weight:800;color:var(--amber);flex-shrink:0;min-width:22px}
+.step-cmd{font-family:var(--mono);font-size:14px;color:var(--amber-deep);font-weight:600;min-width:200px}
+.step-desc{font-size:14px;color:var(--ink-55);line-height:1.5}
+
+/* ── flow ── */
+.flow{display:flex;align-items:stretch;gap:0}
+.flow-step{flex:1;padding:18px 14px;background:var(--cream-00);border:1px solid var(--amber-border);display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.flow-arrow{width:30px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--amber);font-family:var(--mono);font-size:14px}
+.flow-step-tag{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--amber);letter-spacing:.12em;text-transform:uppercase}
+.flow-step-title{font-size:15px;font-weight:700;color:var(--ink-90)}
+.flow-step-desc{font-size:13px;color:var(--ink-55);line-height:1.5}
+
+/* ── registry ── */
+.reg-card{padding:22px 20px;border:1px solid}
+.reg-card.core{background:var(--blue-bg);border-color:var(--blue-border)}
+.reg-card.mine{background:var(--green-bg);border-color:var(--green-border)}
+.reg-card.merger{background:var(--amber-bg);border-color:var(--amber-border)}
+.reg-file{font-family:var(--mono);font-size:15.5px;font-weight:700;color:var(--ink-90);margin-bottom:8px}
+.reg-desc{font-size:13.5px;color:var(--ink-70);line-height:1.55}
+
+/* ── recipe ── */
+.recipe-card{padding:22px 18px;background:var(--cream-00);border:1px solid var(--amber-border);display:flex;flex-direction:column;gap:8px}
+.recipe-num{font-family:var(--mono);font-size:14px;font-weight:800;color:var(--amber)}
+.recipe-title{font-size:15px;font-weight:700;color:var(--ink-90)}
+.recipe-desc{font-size:13.5px;color:var(--ink-55);line-height:1.5}
+.recipe-ex{font-family:var(--mono);font-size:11.5px;color:var(--ink-40);margin-top:4px}
+
+/* ── mvp ── */
+.mvp-item{display:flex;align-items:flex-start;gap:12px;padding:14px 18px;margin-bottom:8px;font-size:14px;line-height:1.55;color:var(--ink-70)}
+.mvp-item.inc{background:var(--green-bg);border:1px solid var(--green-border)}
+.mvp-item.skip{background:var(--amber-bg);border:1px solid var(--amber-border)}
+.mvp-item strong{display:block;font-size:14.5px;color:var(--ink-90);margin-bottom:3px}
+.mvp-marker{font-family:var(--mono);font-weight:800;flex-shrink:0;margin-top:1px}
+.mvp-marker.green{color:var(--green)}
+.mvp-marker.amber{color:var(--amber)}
+
+/* ── scaffold flow ── */
+.sflow{display:grid;grid-template-columns:1fr 28px 1fr 28px 1fr;gap:0;align-items:stretch}
+.sflow-arrow{display:flex;align-items:center;justify-content:center;color:var(--amber);font-family:var(--mono);font-size:14px}
+
+/* ── loom ── */
+.loom-card{display:flex;flex-direction:column;align-items:center;gap:18px;padding:48px 40px;background:var(--cream-00);border:1px solid var(--amber-border);cursor:pointer;transition:all .2s;text-decoration:none;max-width:580px;margin:28px auto 0}
+.loom-card:hover{background:rgba(146,96,10,.05);border-color:rgba(146,96,10,.4)}
+.loom-play{width:64px;height:64px;border-radius:50%;background:var(--amber);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 18px rgba(146,96,10,.28)}
+.loom-title{font-size:21px;font-weight:800;color:var(--ink-90)}
+.loom-sub{font-size:14px;color:var(--ink-55);font-family:var(--mono)}
+.loom-tag{font-family:var(--mono);font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--amber);padding:3px 10px;border:1px solid var(--amber-border);background:var(--amber-bg)}
+
+/* ── hero ── */
+.hero-eyebrow{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--amber);margin-bottom:22px}
+.hero-dot{width:6px;height:6px;background:var(--amber);border-radius:50%;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
+.hero-sub{font-size:22px;color:var(--ink-55);line-height:1.5;margin:16px 0 32px;max-width:580px}
+
+/* ── closing chips ── */
+.closing-chips{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:26px}
+
+/* ── pipeline diagram ── */
+.pipeline-box{font-family:var(--mono);font-size:15px;line-height:1.8;color:var(--ink-70);background:var(--cream-00);border:1px solid var(--amber-border);padding:28px 36px;white-space:pre;overflow-x:auto;margin:0}
+.pipeline-box .num{font-weight:800}
+.pipeline-box .num-1{color:var(--blue)}
+.pipeline-box .num-2{color:var(--purple)}
+.pipeline-box .num-3{color:var(--green)}
+.pipeline-box .num-4{color:var(--amber)}
+.pipeline-box .num-5{color:var(--red)}
+.pipeline-box .dim{color:var(--ink-40)}
+.pipeline-box .line{color:var(--amber-border)}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progressBar"></div>
+<div class="slide-badge" id="slideBadge">01 / 21</div>
+<a class="wordmark" onclick="goTo(0);return false;" href="#">Radiant<em>Play</em></a>
+<nav class="section-nav" id="sectionNav">
+  <span class="section-nav-item" data-section="Overview">Overview</span>
+  <span class="section-nav-sep">·</span>
+  <span class="section-nav-item" data-section="Day-to-day">Day-to-day</span>
+  <span class="section-nav-sep">·</span>
+  <span class="section-nav-item" data-section="Problem space">Problem space</span>
+  <span class="section-nav-sep">·</span>
+  <span class="section-nav-item" data-section="Orchestrator">Orchestrator</span>
+  <span class="section-nav-sep">·</span>
+  <span class="section-nav-item" data-section="Fork + clone">Fork + clone</span>
+  <span class="section-nav-sep">·</span>
+  <span class="section-nav-item" data-section="Repeatable patterns">Repeatable patterns</span>
+</nav>
+
+<div class="nav">
+  <button class="nav-btn" id="prevBtn">←</button>
+  <div class="dots" id="dots"></div>
+  <button class="nav-btn" id="nextBtn">→</button>
+</div>
+<div class="kbd-hint">← → to navigate</div>
+
+<div class="slides">
+
+<!-- ══ 1. HERO ══ -->
+<div class="slide active" data-section="Overview">
+  <div style="max-width:760px;width:100%">
+    <div class="hero-eyebrow"><div class="hero-dot"></div>ThoughtSpot design</div>
+    <h1 class="h1">Radiant<em>Play</em></h1>
+    <p class="hero-sub">How we built an AI-powered prototyping playground on our design system, and what it took.</p>
+    <div style="display:flex;flex-wrap:wrap;gap:9px;margin-bottom:36px">
+      <div class="chip">Design system at runtime</div>
+      <div class="chip">Fork-per-designer model</div>
+      <div class="chip">AI orchestration layer</div>
+    </div>
+    <button class="cta" onclick="goTo(1)">Start walkthrough →</button>
+  </div>
+</div>
+
+
+
+<!-- ══ 2. AGENDA ══ -->
+<div class="slide" data-section="Overview">
+  <div class="s-inner">
+    <div class="s-head">
+      <div class="label">What we'll cover</div>
+      <h2 class="h2">Agenda</h2>
+      </div>
+    <div class="s-rule"></div>
+    <div class="agenda-grid">
+      <div class="agenda-item"><div class="agenda-num">01</div><div><div class="agenda-label">What it is</div><div class="agenda-sub">What is ready in play</div></div></div>
+      <div class="agenda-item"><div class="agenda-num">02</div><div><div class="agenda-label">Day-to-day</div><div class="agenda-sub">How designers actually use it. Liveboard case</div></div></div>
+      <div class="agenda-item"><div class="agenda-num">03</div><div><div class="agenda-label">Why we built it</div><div class="agenda-sub">The prototyping gap and origin story</div></div></div>
+      <div class="agenda-item"><div class="agenda-num">04</div><div><div class="agenda-label">How it works</div><div class="agenda-sub">The AI orchestrator + instruction system</div></div></div>
+      <div class="agenda-item"><div class="agenda-num">05</div><div><div class="agenda-label">Fork + clone</div><div class="agenda-sub">Designer autonomy, live demo</div></div></div>
+      <div class="agenda-item"><div class="agenda-num">06</div><div><div class="agenda-label">Repeatable patterns and how we are scaling it</div><div class="agenda-sub">The common library approach</div></div></div>
+    </div>
+  </div>
+</div>
+
+
+
+<!-- ══ 3. WHAT IS IT ══ -->
+<div class="slide" data-section="Overview">
+  <div class="s-inner" style="max-width:900px">
+    <div class="s-head">
+      <div class="label">Section 1. Overview</div>
+      <h2 class="h2">What is RadiantPlay?</h2>
+    </div>
+    <div class="s-rule"></div>
+    <div style="font-size:22px;line-height:1.5;color:var(--ink-70);font-weight:500;max-width:820px;margin-bottom:32px">
+      A tool-agnostic prototyping playground where everyone can reach a realistic prototype without the effort usually put into product behaviour and wiring.
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:9px;margin-bottom:24px">
+      <div class="chip">Real components, not redraws</div>
+      <div class="chip">AI that knows the system</div>
+      <div class="chip">Fork-per-designer</div>
+    </div>
+    
+  </div>
+</div>
+
+
+
+<!-- ══ 4. LOOM ══ -->
+<div class="slide" data-section="Day-to-day">
+  <div class="s-inner" style="max-width:760px;text-align:center">
+    <div class="s-head" style="text-align:center">
+      <div class="label" style="margin:0 auto 16px">Demo 1</div>
+      <h2 class="h2">See it in action</h2>
+      <p class="sub" style="margin:0 auto">A designer-built Liveboard with view mode, edit mode, and SpotterViz, all using Radiant components.</p>
+    </div>
+    <a href="https://www.loom.com/share/90cc19fbbfe043ae9bb934e60d633589" target="_blank" class="loom-card">
+      <div class="loom-play">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M8 5.14v13.72a1 1 0 001.52.85l10.5-6.86a1 1 0 000-1.7L9.52 4.29A1 1 0 008 5.14z" fill="white"/></svg>
+      </div>
+      <div class="loom-title">Liveboard prototype walkthrough</div>
+      <div class="loom-sub">view · edit · spotter-viz · tile-interactions</div>
+      
+    </a>
+  </div>
+</div>
+
+
+
+<!-- ══ 5. DAY-TO-DAY ══ -->
+<div class="slide" data-section="Day-to-day">
+  <div class="s-inner">
+    <div class="s-head">
+      <div class="label">Section 5. Day-to-day</div>
+      <h2 class="h2">Project → prototype → pattern</h2>
+      <p class="sub">When a designer works on a real project, the work becomes a reusable pattern, not a one-off screen.</p>
+    </div>
+    <div class="s-rule"></div>
+    <div class="flow">
+      <div class="flow-step"><div class="flow-step-tag">01 · Need</div><div class="flow-step-title">Real project need</div><div class="flow-step-desc">Feature to explore, a new admin surface or editing experience</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step"><div class="flow-step-tag">02 · Build</div><div class="flow-step-title">Prototype it</div><div class="flow-step-desc">Describe to the AI. It builds using real components and context files</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step"><div class="flow-step-tag">03 · Test</div><div class="flow-step-title">Iterate + validate</div><div class="flow-step-desc">Deploy the prototype. Share with stakeholders. Refine with real feedback without rebuilding from scratch</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step"><div class="flow-step-tag">04 · Extract</div><div class="flow-step-title">Extract the pattern</div><div class="flow-step-desc">Context files and structure become a reusable scaffold for next time</div></div>
+    </div>
+    
+  </div>
+</div>
+
+
+
+<!-- ══ 6. LIVEBOARD ══ -->
+<div class="slide" data-section="Day-to-day">
+  <div class="s-inner">
+    <div class="s-head">
+      <div class="label">Case study</div>
+      <h2 class="h2">Liveboard, from prototype to system</h2>
+      <p class="sub">What started as a single prototype became a repeatable scaffolding system used across Liveboards and dashboards.</p>
+    </div>
+    <div class="s-rule"></div>
+    <div class="s-body two-col">
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div class="card">
+          <div class="card-title blue">View mode</div>
+          <div class="blist">
+            <div class="bitem"><span class="bdot blue">▸</span><div>Chart tiles with predefined chart library and templates</div></div>
+            <div class="bitem"><span class="bdot blue">▸</span><div>KPI tiles with real values</div></div>
+            <div class="bitem"><span class="bdot blue">▸</span><div>Modular panels</div></div>
+            <div class="bitem"><span class="bdot blue">▸</span><div>Modular AI panel</div></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Edit mode</div>
+          <div class="blist">
+            <div class="bitem"><span class="bdot">▸</span><div>Tile drag + resize handles</div></div>
+            <div class="bitem"><span class="bdot">▸</span><div>Add tile menu, delete / duplicate</div></div>
+            <div class="bitem"><span class="bdot">▸</span><div>Mode toggle interaction</div></div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="card">
+          <div class="card-title green">What became reusable</div>
+          <div class="blist">
+            <div class="bitem"><span class="bdot green">▸</span><div><code>liveboard-template/</code>, starter scaffold</div></div>
+            <div class="bitem"><span class="bdot green">▸</span><div><code>liveboard-ia.md</code>. IA guidelines</div></div>
+            <div class="bitem"><span class="bdot green">▸</span><div><code>liveboard-canvas-core/edit.md</code>, split rule files</div></div>
+            <div class="bitem"><span class="bdot green">▸</span><div><code>_shared/tiles/</code>. AnswerTile, ChartRenderer, 12 chart types</div></div>
+          </div>
+        </div>
+        <div class="note"><strong>Second designer:</strong> someone building a Liveboard-adjacent feature starts from this scaffold, not from a blank prototype.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+<!-- ══ 7. BEFORE ══ -->
+<div class="slide" data-section="Problem space">
+  <div class="s-inner">
+    <div class="s-head">
+      <div class="label">Section 2. Problem space</div>
+      <h2 class="h2">Before RadiantPlay</h2>
+      
+    </div>
+    <div class="s-rule"></div>
+    <div class="s-body two-col">
+      <div class="blist">
+        <div class="bitem"><span class="bdot red">×</span><div><strong>Figma fidelity gap</strong><br>Mockups looked right but didn't behave like the product. State and interactions were always approximate.</div></div>
+        <div class="bitem"><span class="bdot red">×</span><div><strong>Slow iteration loop</strong><br>Getting from "what if this worked differently" to something testable took days, not hours.</div></div>
+        <div class="bitem"><span class="bdot red">×</span><div><strong>Design ↔ eng disconnect</strong><br>Prototypes lived in Figma. The design system lived in code. Keeping them in sync was manual.</div></div>
+      </div>
+      <div class="blist">
+        <div class="bitem"><span class="bdot red">×</span><div><strong>No repeatable patterns for coded prototypes</strong><br>Each designer started from scratch. Good decisions weren't captured anywhere reusable.</div></div>
+        <div class="bitem"><span class="bdot red">×</span><div><strong>Fragmented shared memory</strong><br>If a designer solved something well, that solution lived in their head, not the system.</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+<!-- ══ 8. STORYBOOK ══ -->
+<div class="slide" data-section="Problem space">
+  <div class="s-inner">
+    <div class="s-head">
+      <div class="label">Tooling</div>
+      <h2 class="h2">Component recreation vs. using Storybook</h2>
+    </div>
+    <div class="s-rule"></div>
+    <div class="s-body two-col">
+      <div class="card">
+        <div class="card-title red">What we had</div>
+        <div class="blist">
+          <div class="bitem"><span class="bdot red">×</span><div>An older Storybook tied to internal dependencies and the monorepo — difficult for designers to work in without eng support</div></div>
+          <div class="bitem"><span class="bdot red">×</span><div>Isolated stories, not full-page flows with real data</div></div>
+          <div class="bitem"><span class="bdot red">×</span><div>Designers had to recreate components in Figma to explore ideas</div></div>
+          <div class="bitem"><span class="bdot red">×</span><div>Changes needed engineering involvement to test</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title green">What we needed instead</div>
+        <div class="blist">
+          <div class="bitem"><span class="bdot green">✓</span><div>Components using modern text tags and current patterns</div></div>
+          <div class="bitem"><span class="bdot green">✓</span><div>Mock data that behaves like real data</div></div>
+          <div class="bitem"><span class="bdot green">✓</span><div>Designers driving exploration without engineering dependency</div></div>
+          <div class="bitem"><span class="bdot green">✓</span><div>A ThoughtSpot-mimicking style layer with all required design styles, without affecting the design system engineering ships</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ 9. HYPOTHESIS ══ -->
+<div class="slide" data-section="Problem space">
+  <div class="s-inner" style="max-width:880px">
+    <div class="s-head">
+      <div class="label">Origin</div>
+      <h2 class="h2">The hypothesis</h2>
+    </div>
+    <div class="s-rule"></div>
+    <div style="background:var(--amber-bg);border:1px solid var(--amber-border);padding:32px 36px;margin-bottom:28px;font-size:20px;font-weight:500;color:var(--ink-70);line-height:1.55;font-style:italic">
+      "What if designers could build <em style="font-style:normal;font-weight:700">full functioning prototypes</em> using <em style="font-style:normal;font-weight:700">production-level components</em>, with an AI that already knows our design system, without giving context every time?"
+    </div>
+    <div>
+      <div class="card-title" style="margin-bottom:14px">Constraints that shaped every decision</div>
+      <div style="display:flex;flex-wrap:wrap;gap:9px">
+        <div class="chip">Use Radiant as much as possible</div>
+        <div class="chip">Tool-agnostic, not tied to one AI vendor</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+<!-- ══ 10. TIMELINE ══ -->
+<div class="slide" data-section="Problem space">
+  <div class="s-inner">
+    <div class="s-head">
+      <div class="label">Jan → Apr 2026</div>
+      <h2 class="h2">How we got here</h2>
+      <p class="sub">11 releases in 3 months. Each one solved a concrete pain we hit while using it.</p>
+    </div>
+    <div class="s-rule"></div>
+    <div class="s-body two-col">
+      <div class="ttrack">
+        <div class="tentry"><div class="tdot"></div><div class="tver">Jan 2026</div><div class="ttitle">Initial release</div><div class="tdesc">17 components, 3-tier tokens, first prototypes (Filter Dialog, Data Dashboard, Settings Panel)</div></div>
+        <div class="tentry"><div class="tdot green"></div><div class="tver">Feb 2026</div><div class="ttitle">73 components + token system</div><div class="tdesc">3-layer color tokens, dark mode, 35 new components including layout primitives</div></div>
+        <div class="tentry"><div class="tdot"></div><div class="tver">Feb 2026 (mid)</div><div class="ttitle">Skills + workflow commands</div><div class="tdesc">/ship, /release, gallery redesign, Cursor → Claude Code migration guide</div></div>
+      </div>
+      <div class="ttrack">
+        <div class="tentry"><div class="tdot"></div><div class="tver">Mar 2026</div><div class="ttitle">Liveboard system + team PRs</div><div class="tdesc">Liveboard template, IA scaffolding rules, first PRs contributed by team members</div></div>
+        <div class="tentry"><div class="tdot green"></div><div class="tver">Apr 2026</div><div class="ttitle">Fork architecture + orchestrator tiers</div><div class="tdesc">Registry split, Tier 0–3 routing, context reduction, password-gated deploys</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+<!-- ══ 11. HOW IT WAS ORIGINALLY MADE ══ -->
+<div class="slide" data-section="Problem space">
+  <div class="s-inner" style="max-width:920px">
+    <div class="s-head">
+      <div class="label">Origin</div>
+      <h2 class="h2">How it was originally built</h2>
+    </div>
+    <div class="s-rule"></div>
+    <div class="blist" style="margin-bottom:28px">
+      <div class="bitem"><span class="bdot">01</span><div><strong>Token architecture first</strong><br>Started by building out the token layer — color, spacing, typography — before any components were touched</div></div>
+      <div class="bitem"><span class="bdot">02</span><div><strong>Bringing initial components from Figma</strong><br>Mapped and extracted the initial set of components from Figma designs, converting them into code-based, usable building blocks</div></div>
+      <div class="bitem"><span class="bdot">03</span><div><strong>Connecting with the ThoughtSpot codebase</strong><br>Linked to the ThoughtSpot codebase to pull production-ready components directly from source, so they stay current</div></div>
+    </div>
+    <div class="note">This was necessary because our design system was not readily available, updated, or modern enough at the time. RadiantPlay was created as a more sophisticated and advanced layer that designers could actually work with.</div>
+  </div>
+</div>
+
+
+<!-- ══ 13. AI PIPELINE ══ -->
+<div class="slide" data-section="Orchestrator">
+  <div class="s-inner">
+    <div class="s-head">
+      <div class="label">Section 3. Orchestrator</div>
+      <h2 class="h2">The AI pipeline</h2>
+      <p class="sub">Every prompt flows through 5 steps, from description to working React code.</p>
+    </div>
+    <div class="s-rule"></div>
+<pre class="pipeline-box"><span class="num num-1">01</span>  <strong>Your prompt</strong>                      <span class="dim"># text, Figma screenshot, or context</span>
+      <span class="line">│</span>
+      <span class="line">▼</span>
+<span class="num num-2">02</span>  <strong>Orchestrator classifies</strong>          <span class="dim"># assigns Tier 0–3, picks rule files</span>
+      <span class="line">│</span>
+      <span class="line">▼</span>
+<span class="num num-3">03</span>  <strong>Loads relevant rules only</strong>        <span class="dim"># up to 10 files, on demand</span>
+      <span class="line">│</span>
+      <span class="line">▼</span>
+<span class="num num-4">04</span>  <strong>Pre-implementation gate</strong>          <span class="dim"># 4 checks before writing code</span>
+      <span class="line">│</span>
+      <span class="line">▼</span>
+<span class="num num-5">05</span>  <strong>Generates React + tokens</strong>         <span class="dim"># output already follows the system</span></pre>
+  </div>
+</div>
+
+
+
+<!-- ══ 13. TIERS ══ -->
+<div class="slide" data-section="Orchestrator">
+  <div class="s-inner">
+    <div class="s-head">
+      <div class="label">Intent classification</div>
+      <h2 class="h2">Tier 0–3 routing</h2>
+      <p class="sub">The orchestrator assigns every task a tier. Higher tiers load more context, but most tasks stay at Tier 0 or 1.</p>
+    </div>
+    <div class="s-rule"></div>
+    <div class="s-body four-col">
+      <div class="tier-card t0"><div class="tier-badge">TIER 0</div><div class="tier-name">Instant</div><div class="tier-desc">Answered from memory. No rule files loaded.</div><div class="tier-ex">Component exists? Token name?</div></div>
+      <div class="tier-card t1"><div class="tier-badge">TIER 1</div><div class="tier-name">Targeted</div><div class="tier-desc">1–3 rule files. Single component or small fix.</div><div class="tier-ex">Add a table row. Change spacing.</div></div>
+      <div class="tier-card t2"><div class="tier-badge">TIER 2</div><div class="tier-name">Contextual</div><div class="tier-desc">4–7 files. New section inside a prototype.</div><div class="tier-ex">Build a settings panel. Add a modal.</div></div>
+      <div class="tier-card t3"><div class="tier-badge">TIER 3</div><div class="tier-name">Full context</div><div class="tier-desc">All relevant files. New prototype from scratch.</div><div class="tier-ex">Build a Liveboard experience.</div></div>
+    </div>
+    <div class="highlight"><span class="highlight-num">~60%</span><span>Context reduction for median tasks. Most daily prompts skip heavy rule-loading entirely, resulting in faster and more accurate outputs.</span></div>
+  </div>
+</div>
+
+
+
+<!-- ══ 14. REFERENCE FILES ══ -->
+<div class="slide" data-section="Orchestrator">
+  <div class="s-inner">
+    <div class="s-head">
+      <div class="label">The instruction system</div>
+      <h2 class="h2">Reference files</h2>
+      <p class="sub">Around 20 rule files in total. Each loads on demand — only what the task needs, when it needs it. Here are the key ones.</p>
+    </div>
+    <div class="s-rule"></div>
+    <div class="s-body two-col">
+      <div class="blist">
+        <div class="bitem"><span class="bdot">▸</span><div><code>CLAUDE.md</code> <strong>, always loaded.</strong> Core conventions: component rules, token imports, forbidden patterns. ~135 lines.</div></div>
+        <div class="bitem"><span class="bdot">▸</span><div><code>_orchestration.md</code> <strong>, router.</strong> Reads intent and decides which other files to load.</div></div>
+        <div class="bitem"><span class="bdot">▸</span><div><code>component-inventory.md</code> <strong>, skill.</strong> 73+ components with props, usage, "use X not Y" mappings.</div></div>
+      </div>
+      <div class="blist">
+        <div class="bitem"><span class="bdot">▸</span><div><code>layout-patterns.md</code> <strong>, skill.</strong> Horizontal, Vertical, Grid, AppShell, correct primitives for every context.</div></div>
+        <div class="bitem"><span class="bdot">▸</span><div><code>token-usage.md</code> <strong>, skill.</strong> Color, spacing, typography. Enforces no hardcoded values.</div></div>
+        <div class="bitem"><span class="bdot">▸</span><div><code>modal-patterns.md</code> / <code>widget-patterns.md</code> <strong>, skills.</strong> Loaded only when the task needs them.</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+<!-- ══ 15. GATE ══ -->
+<div class="slide" data-section="Orchestrator">
+  <div class="s-inner">
+    <div class="s-head">
+      <div class="label">Quality guardrails</div>
+      <h2 class="h2">Pre-implementation gate</h2>
+      <p class="sub">Before any code is written, the AI runs 4 checks. It also monitors the session for inefficiency patterns.</p>
+    </div>
+    <div class="s-rule"></div>
+    <div class="s-body two-col">
+      <div class="card">
+        <div class="card-title green">4 checks before writing code</div>
+        <div class="blist">
+          <div class="bitem"><span class="bdot green">✓</span><div><strong>Component exists?</strong> Verify against inventory before creating custom</div></div>
+          <div class="bitem"><span class="bdot green">✓</span><div><strong>CSS anti-patterns?</strong> Reject hardcoded hex, magic spacing, inline flex</div></div>
+          <div class="bitem"><span class="bdot green">✓</span><div><strong>Icon name valid?</strong> Confirm it exists in the Radiant icon set</div></div>
+          <div class="bitem"><span class="bdot green">✓</span><div><strong>Forbidden words?</strong> Block pattern violations before output</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Session awareness</div>
+        <div class="blist">
+          <div class="bitem"><span class="bdot">▸</span><div>3+ single-property tweaks in a row, suggests batching into one prompt</div></div>
+          <div class="bitem"><span class="bdot">▸</span><div>Figma MCP overhead, flags the ~4,000 token cost when idle</div></div>
+          <div class="bitem"><span class="bdot">▸</span><div>Context budget, suggests /compact on topic switches</div></div>
+          <div class="bitem"><span class="bdot">▸</span><div>Session memory, tracks already-loaded rule files</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+<!-- ══ 16. FORK ══ -->
+<div class="slide" data-section="Fork + clone">
+  <div class="s-inner">
+    <div class="s-head">
+      <div class="label">Section 4. Fork + clone model</div>
+      <h2 class="h2">Why fork, not branch?</h2>
+      <p class="sub">Every designer gets their own full fork of RadiantPlay, not a branch. They own it completely.</p>
+    </div>
+    <div class="s-rule"></div>
+    <div class="s-body two-col">
+      <div class="card">
+        <div class="card-title red">Problems with a shared branch</div>
+        <div class="blist">
+          <div class="bitem"><span class="bdot red">×</span><div><strong>Merge conflicts on every sync</strong><br>Designer prototypes collide in the same registry file</div></div>
+          <div class="bitem"><span class="bdot red">×</span><div><strong>No isolation</strong><br>One broken prototype breaks everyone's dev server</div></div>
+          <div class="bitem"><span class="bdot red">×</span><div><strong>Unclear ownership</strong><br>Designer work mixed with platform work, hard to change safely</div></div>
+          <div class="bitem"><span class="bdot red">×</span><div><strong>Coordination overhead</strong><br>Everyone has to sync before they can merge</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title green">What fork gives us</div>
+        <div class="blist">
+          <div class="bitem"><span class="bdot green">✓</span><div><strong>Full autonomy</strong><br>Deploy independently to Vercel, no dependency on others</div></div>
+          <div class="bitem"><span class="bdot green">✓</span><div><strong>Clean upstream syncs</strong><br>Core library updates flow in without touching designer prototypes</div></div>
+          <div class="bitem"><span class="bdot green">✓</span><div><strong>Clear ownership</strong><br>Your fork = your prototypes. Contributing back is a deliberate choice</div></div>
+          <div class="bitem"><span class="bdot green">✓</span><div><strong>Scale without coordination</strong><br>15+ forks run independently, no sync meetings</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+<!-- ══ 17. REGISTRY ══ -->
+<div class="slide" data-section="Fork + clone">
+  <div class="s-inner">
+    <div class="s-head">
+      <div class="label">The technical solution</div>
+      <h2 class="h2">Registry split</h2>
+      <p class="sub">Split the prototype registry into three files so upstream and designer work never collide.</p>
+    </div>
+    <div class="s-rule"></div>
+    <div class="s-body three-col">
+      <div class="reg-card core">
+        <div class="card-title blue">Upstream</div>
+        <div class="reg-file">registry-core.ts</div>
+        <div class="reg-desc">Maintained by the platform team. Shared templates and reference prototypes. Syncs cleanly via <code>sync-upstream</code>.</div>
+      </div>
+      <div class="reg-card mine">
+        <div class="card-title green">Designer</div>
+        <div class="reg-file">registry-mine.ts</div>
+        <div class="reg-desc">Owned entirely by the designer. Upstream syncs never touch this file. Add, rename, delete freely, zero conflict risk.</div>
+      </div>
+      <div class="reg-card merger">
+        <div class="card-title">Merger</div>
+        <div class="reg-file">registry.ts</div>
+        <div class="reg-desc">Thin file that imports both and combines them. The app sees one registry. Identical across all forks, never changes.</div>
+      </div>
+    </div>
+    <div class="highlight"><span class="highlight-num">0</span><span><strong>Merge conflicts, ever.</strong> Before: every sync required manual conflict resolution. After: the split makes them structurally impossible.</span></div>
+  </div>
+</div>
+
+
+
+<!-- ══ 18. SKILLS ══ -->
+<div class="slide" data-section="Fork + clone">
+  <div class="s-inner">
+    <div class="s-head">
+      <div class="label">The toolkit</div>
+      <h2 class="h2">Skills designers use day-to-day</h2>
+      <p class="sub">Slash commands built into the workflow. Each one is a designer-facing shortcut that wraps a larger sequence.</p>
+    </div>
+    <div class="s-rule"></div>
+    <div class="s-body two-col">
+      <div class="steps">
+        <div class="step"><div class="step-num">01</div><div class="step-cmd">/new-prototype</div><div class="step-desc">Scaffold a new prototype folder with registry entry and starter files</div></div>
+        <div class="step"><div class="step-num">02</div><div class="step-cmd">/ship</div><div class="step-desc">Push current work to staging with a preview URL</div></div>
+        <div class="step"><div class="step-num">03</div><div class="step-cmd">/release</div><div class="step-desc">Cut a production release, update changelog and platform version</div></div>
+        <div class="step"><div class="step-num">04</div><div class="step-cmd">/status</div><div class="step-desc">Show current branch, remote, and recent activity</div></div>
+      </div>
+      <div class="steps">
+        <div class="step"><div class="step-num">05</div><div class="step-cmd">/check-upstream</div><div class="step-desc">See what the platform repo has shipped since your last sync</div></div>
+        <div class="step"><div class="step-num">06</div><div class="step-cmd">/sync-upstream</div><div class="step-desc">Pull upstream changes without touching your own prototypes</div></div>
+        <div class="step"><div class="step-num">07</div><div class="step-cmd">/radiant-check</div><div class="step-desc">Compliance health check on the current prototype</div></div>
+        <div class="step"><div class="step-num">08</div><div class="step-cmd">/explore</div><div class="step-desc">Temporarily suspend system constraints for freeform UI exploration</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ 19. COMPOUNDING ══ -->
+<div class="slide" data-section="Repeatable patterns">
+  <div class="s-inner">
+    <div class="s-head">
+      <div class="label">The accumulation effect</div>
+      <h2 class="h2">How patterns compound</h2>
+      <p class="sub">Each prototype adds to a shared library of context. The system gets smarter as more work happens inside it.</p>
+    </div>
+    <div class="s-rule"></div>
+    <div class="sflow">
+      <div class="card">
+        <div class="card-title blue">01 · Designer ships a feature</div>
+        <div class="blist">
+          <div class="bitem"><span class="bdot blue">▸</span><div>Builds prototype in their fork</div></div>
+          <div class="bitem"><span class="bdot blue">▸</span><div>Uses component inventory + context files</div></div>
+          <div class="bitem"><span class="bdot blue">▸</span><div>Iterates with real data and state</div></div>
+          <div class="bitem"><span class="bdot blue">▸</span><div>Ships to staging for review</div></div>
+        </div>
+      </div>
+      <div class="sflow-arrow">→</div>
+      <div class="card">
+        <div class="card-title purple">02 · Pattern extracted</div>
+        <div class="blist">
+          <div class="bitem"><span class="bdot purple">▸</span><div>Context file written for the domain</div></div>
+          <div class="bitem"><span class="bdot purple">▸</span><div>Shared components pulled into <code>_shared/</code></div></div>
+          <div class="bitem"><span class="bdot purple">▸</span><div>Template scaffold committed upstream</div></div>
+          <div class="bitem"><span class="bdot purple">▸</span><div>Rule file updated with learnings</div></div>
+        </div>
+      </div>
+      <div class="sflow-arrow">→</div>
+      <div class="card">
+        <div class="card-title green">03 · Next designer inherits</div>
+        <div class="blist">
+          <div class="bitem"><span class="bdot green">▸</span><div>Starts from scaffold, not blank page</div></div>
+          <div class="bitem"><span class="bdot green">▸</span><div>AI already knows the domain patterns</div></div>
+          <div class="bitem"><span class="bdot green">▸</span><div>Faster first prototype, better quality</div></div>
+          <div class="bitem"><span class="bdot green">▸</span><div>Adds their own patterns back</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="note">Context files document how each product function works. They help the broader team understand prototypes, work within guardrails, and see where rules are breaking. They also make scaling and replication much easier.</div>
+  </div>
+</div>
+
+
+
+<!-- ══ 20. RECIPE ══ -->
+<div class="slide" data-section="Repeatable patterns">
+  <div class="s-inner">
+    <div class="s-head">
+      <div class="label">Section 6. The common library approach</div>
+      <h2 class="h2">The recipe</h2>
+      <p class="sub">Four ingredients. You probably have most of them already.</p>
+    </div>
+    <div class="s-rule"></div>
+    <div class="s-body four-col">
+      <div class="recipe-card"><div class="recipe-num">01</div><div class="recipe-title">A component library</div><div class="recipe-desc">Your existing design system, imported as a real package, not duplicated.</div><div class="recipe-ex">Radiant / MUI / Chakra</div></div>
+      <div class="recipe-card"><div class="recipe-num">02</div><div class="recipe-title">An AI coding tool</div><div class="recipe-desc">Anything that reads files and writes code. Tool-agnostic.</div><div class="recipe-ex">Claude Code / Cursor / Copilot</div></div>
+      <div class="recipe-card"><div class="recipe-num">03</div><div class="recipe-title">An instruction file</div><div class="recipe-desc">CLAUDE.md or .cursorrules, which components to use, which to avoid.</div><div class="recipe-ex">CLAUDE.md / .cursorrules</div></div>
+      <div class="recipe-card"><div class="recipe-num">04</div><div class="recipe-title">Fork-per-designer</div><div class="recipe-desc">Each designer forks the base repo. Upstream flows in without conflict.</div><div class="recipe-ex">GitHub / GitLab / any host</div></div>
+    </div>
+  </div>
+</div>
+
+
+
+<!-- ══ 21. MVP ══ -->
+<div class="slide" data-section="Repeatable patterns">
+  <div class="s-inner">
+    <div class="s-head">
+      <div class="label">Starting point</div>
+      <h2 class="h2">How to get started</h2>
+      
+    </div>
+    <div class="s-rule"></div>
+    <div class="s-body two-col">
+      <div>
+        <div class="card-title green" style="margin-bottom:12px">Start with this</div>
+        <div class="mvp-item inc"><span class="mvp-marker green">✓</span><div><strong>CLAUDE.md with component rules</strong>100–150 lines. Which components exist, token imports, what to never do.</div></div>
+        <div class="mvp-item inc"><span class="mvp-marker green">✓</span><div><strong>Component library installed</strong>Real components from your design system, not wrappers, not duplicates.</div></div>
+        <div class="mvp-item inc"><span class="mvp-marker green">✓</span><div><strong>Template prototype</strong>A working example screen designers can copy and adapt. Sets the quality bar.</div></div>
+        <div class="mvp-item inc"><span class="mvp-marker green">✓</span><div><strong>Fork workflow documented</strong>One-page guide: fork, clone, run locally, push to preview.</div></div>
+      </div>
+      <div>
+        <div class="card-title" style="margin-bottom:12px">Defer until you need it</div>
+        <div class="mvp-item skip"><span class="mvp-marker amber">○</span><div><strong>Orchestrator tiers</strong>Only worth it once you have 5+ rule files.</div></div>
+        <div class="mvp-item skip"><span class="mvp-marker amber">○</span><div><strong>Registry split</strong>Only needed when 3+ designers work in parallel.</div></div>
+        <div class="mvp-item skip"><span class="mvp-marker amber">○</span><div><strong>Skills + slash commands</strong>Great DX, add when designers ask for them.</div></div>
+        <div class="mvp-item skip"><span class="mvp-marker amber">○</span><div><strong>Domain scaffolds</strong>Build after a prototype proves the pattern works.</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+<!-- ══ 22. CLOSING ══ -->
+<div class="slide" data-section="Closing">
+  <div style="max-width:680px;width:100%;text-align:center">
+    <div class="hero-eyebrow"><div class="hero-dot"></div>RadiantPlay</div>
+    <h1 class="h1">Thanks. Questions?</h1>
+  </div>
+</div>
+
+
+
+</div><!-- /slides -->
+
+<script>
+const slides = document.querySelectorAll('.slide');
+const TOTAL = slides.length;
+const navItems = document.querySelectorAll('.section-nav-item');
+let cur = 0, busy = false;
+
+// Section nav: click to jump to first slide of that section
+navItems.forEach(item => {
+  item.addEventListener('click', () => {
+    const target = item.dataset.section;
+    for (let i = 0; i < TOTAL; i++) {
+      if (slides[i].dataset.section === target) { goTo(i); break; }
+    }
+  });
+});
+
+const dotsEl = document.getElementById('dots');
+for (let i = 0; i < TOTAL; i++) {
+  const d = document.createElement('div');
+  d.className = 'dot' + (i === 0 ? ' active' : '');
+  d.addEventListener('click', () => goTo(i));
+  dotsEl.appendChild(d);
+}
+
+function updateUI() {
+  document.getElementById('progressBar').style.width = ((cur + 1) / TOTAL * 100) + '%';
+  document.getElementById('slideBadge').textContent = String(cur + 1).padStart(2, '0') + ' / ' + String(TOTAL).padStart(2, '0');
+  document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === cur));
+  document.getElementById('prevBtn').disabled = cur === 0;
+  document.getElementById('nextBtn').disabled = cur === TOTAL - 1;
+  const active = slides[cur].dataset.section || '';
+  navItems.forEach(el => el.classList.toggle('active', el.dataset.section === active));
+}
+
+function goTo(idx) {
+  if (busy || idx === cur) return;
+  busy = true;
+  const prev = slides[cur], next = slides[idx];
+  prev.classList.add('exit'); prev.classList.remove('active');
+  next.style.transform = idx > cur ? 'translateX(40px)' : 'translateX(-40px)';
+  next.style.opacity = '0';
+  next.classList.add('active');
+  requestAnimationFrame(() => requestAnimationFrame(() => { next.style.transform = ''; next.style.opacity = ''; }));
+  setTimeout(() => { prev.classList.remove('exit'); prev.style.transform = ''; prev.style.opacity = ''; busy = false; }, 420);
+  cur = idx; updateUI();
+}
+
+function navigate(dir) { const n = cur + dir; if (n >= 0 && n < TOTAL) goTo(n); }
+document.getElementById('prevBtn').addEventListener('click', () => navigate(-1));
+document.getElementById('nextBtn').addEventListener('click', () => navigate(1));
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') navigate(1);
+  if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   navigate(-1);
+});
+
+let tx = 0;
+document.addEventListener('touchstart', e => { tx = e.touches[0].clientX; });
+document.addEventListener('touchend',   e => { const d = tx - e.changedTouches[0].clientX; if (Math.abs(d) > 50) navigate(d > 0 ? 1 : -1); });
+
+updateUI();
+</script>
+</body>
+</html>

@@ -29,28 +29,33 @@ export interface ProjectMeta {
   dsComponents?: number;
   /** Number of custom/local components created for this prototype */
   customComponents?: number;
-  /** Which gallery section: 'sample' for built-in examples, 'mine' for user-created (default) */
-  section?: 'sample' | 'mine';
+  /** Which gallery section: 'sample' for built-in examples, 'mine' for user-created (default), 'archived' for deprecated prototypes kept for reference */
+  section?: 'sample' | 'mine' | 'archived';
 }
 
 // ── Thumbnails ────────────────────────────────────────────────────────────────
 
 import AdminGroupsThumbnail from './thumbnails/AdminGroups.svg';
 import SpotterMemoryThumbnail from './thumbnails/SpotterMemory.svg';
-import SpotterModelThumbnail from './thumbnails/SpotterModel.svg';
 import AdminLangThumbnail from './thumbnails/AdminLang.svg';
 import MiniSpottersThumbnail from './thumbnails/MiniSpotters.svg';
 import LiveboardTemplateThumbnail from './thumbnails/LiveboardTemplate.svg';
+import DataModelEditorThumbnail from './thumbnails/DataModelEditor.svg';
+import SpotterThumbnail from './thumbnails/Spotter.svg';
+import NewUIAdmin2Thumbnail from './thumbnails/NewUIAdmin2.svg';
+import StylingPanelThumbnail from './thumbnails/StylingPanel.svg';
 
 // ── Components (lazy-loaded) ──────────────────────────────────────────────────
 
 const SpotterMemory = React.lazy(() => import('./SpotterMemory'));
 const AdminGroups = React.lazy(() => import('./AdminGroups'));
-const SpotterModelProto = React.lazy(() => import('./SpotterModel'));
 const AdminLang = React.lazy(() => import('./AdminLang'));
 const MiniSpotters = React.lazy(() => import('./MiniSpotters'));
 const LiveboardTemplate = React.lazy(() => import('./_liveboard-template'));
-const SalesDashboard = React.lazy(() => import('./SalesDashboard'));
+const DataModelEditorSample = React.lazy(() => import('./DataModelEditor'));
+const Spotter = React.lazy(() => import('./Spotter'));
+const NewUIAdmin2 = React.lazy(() => import('./NewUIAdmin2'));
+const StylingPanel = React.lazy(() => import('./StylingPanel'));
 
 // ── Registry ──────────────────────────────────────────────────────────────────
 
@@ -80,18 +85,6 @@ export const coreRegistry: ProjectMeta[] = [
     section: 'sample',
   },
   {
-    id: 'SpotterModel',
-    name: 'Spotter Model',
-    description: 'SpotterModel agent edit flow — onboarding, table/join recommendations, columns editing, and impact-aware delete.',
-    author: 'Design Team',
-    lastModified: '2026-03-03',
-    thumbnail: SpotterModelThumbnail,
-    component: SpotterModelProto,
-    dsComponents: 5,
-    customComponents: 14,
-    section: 'sample',
-  },
-  {
     id: 'AdminLang',
     name: 'Admin language settings',
     description: 'Admin settings for CSV-based translation of Liveboards and Answers with upload, validation, and object picker.',
@@ -101,7 +94,7 @@ export const coreRegistry: ProjectMeta[] = [
     component: AdminLang,
     dsComponents: 10,
     customComponents: 4,
-    section: 'sample',
+    section: 'archived',
   },
   {
     id: 'MiniSpotters',
@@ -113,7 +106,7 @@ export const coreRegistry: ProjectMeta[] = [
     component: MiniSpotters,
     dsComponents: 8,
     customComponents: 5,
-    section: 'sample',
+    section: 'archived',
   },
   {
     id: '_liveboard-template',
@@ -128,14 +121,52 @@ export const coreRegistry: ProjectMeta[] = [
     section: 'sample',
   },
   {
-    id: 'SalesDashboard',
-    name: 'Sales Dashboard',
-    description: 'Liveboard prototype — view and edit modes with SpotterViz.',
+    id: 'DataModelEditor',
+    name: 'Data model editor',
+    description: 'Build and refine a SpotterModel schema with AI-assisted table, join, column, and formula suggestions.',
     author: 'Design Team',
-    lastModified: '2026-04-03',
-    component: SalesDashboard,
+    lastModified: '2026-04-30',
+    thumbnail: DataModelEditorThumbnail,
+    component: DataModelEditorSample,
+    dsComponents: 10,
+    customComponents: 13,
+    section: 'sample',
+  },
+  {
+    id: 'Spotter',
+    name: 'Spotter',
+    description:
+      'Agentic chat shell with reasoning steps, viz blocks, and follow-ups — the in-thread Spotter answer experience powered by the Spotter DS.',
+    author: 'Design Team',
+    lastModified: '2026-05-08',
+    thumbnail: SpotterThumbnail,
+    component: Spotter,
+    dsComponents: 14,
+    customComponents: 1,
+    section: 'sample',
+  },
+  {
+    id: 'NewUIAdmin2',
+    name: 'AdminUI2.0',
+    description: 'Application Settings screen from Admin 2.0 — cluster settings, administration toggles, and downloads & schedules.',
+    author: 'Design Team',
+    lastModified: '2026-05-25',
+    thumbnail: NewUIAdmin2Thumbnail,
+    component: NewUIAdmin2,
     dsComponents: 6,
-    customComponents: 3,
+    customComponents: 4,
+    section: 'sample',
+  },
+  {
+    id: 'StylingPanel',
+    name: 'Liveboard - Styling panel',
+    description: 'Liveboard tile styling controls — density, color themes, corner style, spacing mode, and per-tile overrides with highlight and dark palette.',
+    author: 'Devanshi Behara',
+    lastModified: '2026-04-23',
+    thumbnail: StylingPanelThumbnail,
+    component: StylingPanel,
+    dsComponents: 6,
+    customComponents: 4,
     section: 'sample',
   },
 ];

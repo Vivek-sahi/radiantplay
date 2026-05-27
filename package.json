@@ -9,7 +9,9 @@
     "typecheck": "tsc --noEmit",
     "preview": "vite preview",
     "new-prototype": "node scripts/create-prototype.js",
-    "feedback": "bash scripts/feedback-start.sh"
+    "feedback": "bash scripts/feedback-start.sh",
+    "sync-icons": "node scripts/sync-icons-from-figma.mjs",
+    "sync-icons:dry": "node scripts/sync-icons-from-figma.mjs --dry-run"
   },
   "keywords": [
     "design-system",

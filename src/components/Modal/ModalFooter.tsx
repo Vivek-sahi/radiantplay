@@ -44,34 +44,30 @@ export const ModalFooter: React.FC<ModalFooterProps> = ({
   children,
   className,
 }) => {
-  const footerClasses = [styles.footer, className].filter(Boolean).join(' ');
-
   // If children provided, use them directly (right-aligned by default)
   if (children) {
     return (
-      <div className={footerClasses}>
-        <div className={styles.primaryActions}>
-          {children}
-        </div>
+      <div className={[styles.primaryActions, className].filter(Boolean).join(' ')}>
+        {children}
       </div>
     );
   }
 
   return (
-    <div className={footerClasses}>
+    <>
       {/* Tertiary actions on left - only render if provided */}
       {tertiaryAction && (
         <div className={styles.tertiaryActions}>
           {tertiaryAction}
         </div>
       )}
-      
+
       {/* Primary actions on right - always right-aligned via margin-left: auto */}
-      <div className={styles.primaryActions}>
+      <div className={[styles.primaryActions, className].filter(Boolean).join(' ')}>
         {secondaryAction}
         {primaryAction}
       </div>
-    </div>
+    </>
   );
 };
 

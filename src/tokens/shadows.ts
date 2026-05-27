@@ -1,8 +1,34 @@
 /**
  * Shadow Tokens
- * 
+ *
  * Elevation and shadow values for depth and hierarchy.
  */
+
+/**
+ * Shadow Primitives — Figma 3.0 semantic levels (Phase 4).
+ *
+ * Replaces the generic 6-step xs–2xl scale with 3 semantic levels matched
+ * to the components that use them. Light mode uses colored ink tints
+ * (#192331); dark mode uses pure black so elevated surfaces stay readable
+ * on dark canvases.
+ *
+ * Mapping:
+ *   surface  → Card, Tooltip, Nav  (subtle, near-flat elevation)
+ *   menu     → Dropdown, Popover   (mid elevation, longer drop)
+ *   modal    → Modal, Dialog       (highest elevation, deepest drop)
+ */
+export const shadowPrimitives = {
+  light: {
+    surface: '0 0 4px #1923311a, 0 2px 4px #1923310a',
+    menu: '0 0 4px #19233114, 0 12px 24px #1923311f',
+    modal: '0 0 4px #1923311a, 0 24px 32px #19233129',
+  },
+  dark: {
+    surface: '0 0 4px rgba(0,0,0,0.24), 0 2px 8px rgba(0,0,0,0.2)',
+    menu: '0 0 6px rgba(0,0,0,0.16), 0 12px 28px rgba(0,0,0,0.32)',
+    modal: '0 0 4px rgba(0,0,0,0.4), 0 24px 32px rgba(0,0,0,0.6)',
+  },
+} as const;
 
 export const shadows = {
   // Base shadow scale
@@ -40,31 +66,31 @@ export const elevation = {
   level5: shadows.xl,        // Highest elevation (dialogs)
 } as const;
 
-// Component-specific shadows
+// Component-specific shadows (Phase 4: remapped to 3 semantic primitives)
 export const componentShadows = {
   // Cards
   card: {
-    default: shadows.xs,
-    hover: shadows.sm,
-    raised: shadows.md,
+    default: shadowPrimitives.light.surface,
+    hover: shadowPrimitives.light.surface,
+    raised: shadowPrimitives.light.menu,
   },
 
   // Dropdowns & Popovers
-  dropdown: shadows.lg,
-  popover: shadows.lg,
-  tooltip: shadows.md,
+  dropdown: shadowPrimitives.light.menu,
+  popover: shadowPrimitives.light.menu,
+  tooltip: shadowPrimitives.light.surface,
 
   // Modals & Dialogs
-  modal: shadows.xl,
-  dialog: shadows.xl,
+  modal: shadowPrimitives.light.modal,
+  dialog: shadowPrimitives.light.modal,
 
   // Navigation
   nav: {
-    header: shadows.sm,
-    sidebar: shadows.sm,
+    header: shadowPrimitives.light.surface,
+    sidebar: shadowPrimitives.light.surface,
   },
 
-  // Buttons (on hover/active)
+  // Buttons (on hover/active) — keep legacy values, no Figma 3.0 spec for these
   button: {
     hover: shadows.xs,
     active: shadows.inner,
@@ -81,4 +107,5 @@ export const componentShadows = {
 export type Shadow = keyof typeof shadows;
 export type Elevation = keyof typeof elevation;
 export type ComponentShadows = typeof componentShadows;
+export type ShadowPrimitive = keyof typeof shadowPrimitives.light;
 

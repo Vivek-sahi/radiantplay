@@ -6,6 +6,8 @@ export interface OverlayLoadingProps {
   text?: string;
   transparent?: boolean;
   className?: string;
+  variant?: 'spinner' | 'dots';
+  label?: string;
 }
 
 export const OverlayLoading: React.FC<OverlayLoadingProps> = ({
@@ -13,6 +15,8 @@ export const OverlayLoading: React.FC<OverlayLoadingProps> = ({
   text,
   transparent = false,
   className,
+  variant = 'spinner',
+  label,
 }) => {
   if (!isVisible) return null;
 
@@ -25,32 +29,40 @@ export const OverlayLoading: React.FC<OverlayLoadingProps> = ({
   return (
     <div className={overlayClasses} aria-busy="true" aria-live="polite">
       <div className={styles.content}>
-        <svg
-          className={styles.spinner}
-          width="32"
-          height="32"
-          viewBox="0 0 24 24"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          aria-hidden="true"
-        >
-          <circle
-            className={styles.track}
-            cx="12"
-            cy="12"
-            r="10"
-            stroke="currentColor"
-            strokeWidth="3"
-          />
-          <path
-            className={styles.arc}
-            d="M12 2C6.47715 2 2 6.47715 2 12"
-            stroke="currentColor"
-            strokeWidth="3"
-            strokeLinecap="round"
-          />
-        </svg>
-        {text && <span className={styles.text}>{text}</span>}
+        {variant === 'dots' ? (
+          <div className={styles.dots} aria-hidden="true">
+            <div className={styles.dot} />
+            <div className={styles.dot} />
+            <div className={styles.dot} />
+          </div>
+        ) : (
+          <svg
+            className={styles.spinner}
+            width="32"
+            height="32"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            aria-hidden="true"
+          >
+            <circle
+              className={styles.track}
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="3"
+            />
+            <path
+              className={styles.arc}
+              d="M12 2C6.47715 2 2 6.47715 2 12"
+              stroke="currentColor"
+              strokeWidth="3"
+              strokeLinecap="round"
+            />
+          </svg>
+        )}
+        {(label || text) && <span className={styles.text}>{label ?? text}</span>}
       </div>
     </div>
   );

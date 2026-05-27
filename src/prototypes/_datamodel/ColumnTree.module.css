@@ -1,0 +1,149 @@
+.list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  background: var(--rd-sys-color-background-base);
+  padding: var(--spacing-2) var(--spacing-4);
+  gap: var(--spacing-3);
+}
+
+.list::-webkit-scrollbar { width: 4px; }
+.list::-webkit-scrollbar-thumb {
+  background: var(--rd-sys-color-border-subtle-hover);
+  border-radius: var(--radius-xs);
+}
+
+.tableRow {
+  display: flex;
+  align-items: center;
+  padding: 0;
+  gap: var(--spacing-1);
+  cursor: pointer;
+}
+
+.tableRow:hover .tableChip {
+  background: var(--rd-sys-color-background-information);
+}
+
+.chevron {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chevron img {
+  transition: transform var(--duration-fast) var(--easing-standard);
+}
+
+.chevronExpanded img {
+  transform: rotate(90deg);
+}
+
+.tableChip {
+  width: fit-content;
+  height: 28px;
+  min-width: 0;
+  background: var(--rd-sys-color-background-information);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-surface);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-1) var(--spacing-2) var(--spacing-1) var(--spacing-1);
+  transition: background var(--duration-faster) var(--easing-standard);
+  overflow: hidden;
+}
+
+.dragHandle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.tableName {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-light);
+  color: var(--rd-sys-color-content-primary);
+  font-family: var(--font-family-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.colList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  padding: 0 0 0 var(--spacing-5);
+  align-items: flex-start;
+}
+
+.colItem {
+  width: fit-content;
+  height: 28px;
+  background: var(--rd-sys-color-background-base);
+  border: none;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-surface);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-1) var(--spacing-2) var(--spacing-1) var(--spacing-1);
+  overflow: hidden;
+  cursor: default;
+}
+
+.colDraggable {
+  cursor: grab;
+}
+
+.colDraggable:hover {
+  box-shadow: var(--shadow-sm);
+}
+
+.colAdded {
+  background: var(--rd-sys-color-background-sunken);
+  cursor: default;
+  box-shadow: none;
+}
+
+.colAdded .colName {
+  color: var(--rd-sys-color-border-hover);
+}
+
+.colDragging {
+  opacity: 0.35;
+  cursor: grabbing;
+}
+
+.colDragHandle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.colName {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-light);
+  color: var(--rd-sys-color-content-primary);
+  font-family: var(--font-family-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.empty {
+  padding: var(--spacing-8) var(--spacing-5);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-light);
+  color: var(--rd-sys-color-border-hover);
+  text-align: center;
+  line-height: var(--line-height-md);
+  font-family: var(--font-family-primary);
+}

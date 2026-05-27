@@ -1,0 +1,76 @@
+@property --gradientAngle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes rotateBorder {
+  to { --gradientAngle: 360deg; }
+}
+
+.chips {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--spacing-2);
+  margin-top: var(--spacing-3);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  height: 36px;
+  padding: 0 var(--spacing-3);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--rd-sys-color-border-divider);
+  background: transparent;
+  color: var(--rd-sys-color-border-default-inverse);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-light);
+  font-family: var(--font-family-primary);
+  line-height: var(--line-height-md);
+  cursor: pointer;
+  transition: border-color var(--duration-fast) var(--easing-standard),
+    background var(--duration-fast) var(--easing-standard);
+  white-space: nowrap;
+}
+
+.chip:hover {
+  border-color: var(--rd-sys-color-border-focus);
+  background: var(--rd-sys-color-background-sunken);
+}
+
+.chip:disabled {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.enrich {
+  border: 1px solid transparent;
+  background-image:
+    linear-gradient(var(--rd-sys-color-background-base), var(--rd-sys-color-background-base)),
+    conic-gradient(
+      from var(--gradientAngle),
+      var(--rd-sys-color-content-accent-purple),
+      #48D1E0,
+      var(--rd-sys-color-content-brand),
+      var(--rd-sys-color-content-accent-purple)
+    );
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+  animation: rotateBorder 3s linear infinite;
+}
+
+.enrich:hover {
+  background-image:
+    linear-gradient(var(--rd-sys-color-background-sunken), var(--rd-sys-color-background-sunken)),
+    conic-gradient(
+      from var(--gradientAngle),
+      var(--rd-sys-color-content-accent-purple),
+      #48D1E0,
+      var(--rd-sys-color-content-brand),
+      var(--rd-sys-color-content-accent-purple)
+    );
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+}

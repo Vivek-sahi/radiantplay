@@ -1,6 +1,13 @@
 import React from 'react';
 import { BaseIconProps } from '../Icon.types';
-import { iconSize, iconStrokeWidth } from '../../../tokens/icons';
+import { iconSize } from '../../../tokens/icons';
+
+const VARIANTS: Record<'xs' | 's' | 'm' | 'l', { viewBox: string; inner: string }> = {
+  xs: { viewBox: '0 0 12 12', inner: `<path fill-rule="evenodd" clip-rule="evenodd" d="M2.66669 3.33333H9.33335L8.22224 10.6667H3.7778L2.66669 3.33333ZM2.66669 2.66667V1.33333H9.33335V2.66667H2.66669Z" fill="currentColor"/>` },
+  s: { viewBox: '0 0 14 14', inner: `<path fill-rule="evenodd" clip-rule="evenodd" d="M3.11108 3.88889H10.8889L9.59257 12.4444H4.40738L3.11108 3.88889ZM3.11108 3.11111V1.55556H10.8889V3.11111H3.11108Z" fill="currentColor"/>` },
+  m: { viewBox: '0 0 16 16', inner: `<path fill-rule="evenodd" clip-rule="evenodd" d="M3.55554 4.44445H12.4444L10.9629 14.2222H5.03702L3.55554 4.44445ZM3.55554 3.55556V1.77778H12.4444V3.55556H3.55554Z" fill="currentColor"/>` },
+  l: { viewBox: '0 0 18 18', inner: `<path fill-rule="evenodd" clip-rule="evenodd" d="M4 5H14L12.3333 16H5.66667L4 5ZM4 4V2H14V4H4Z" fill="currentColor"/>` },
+};
 
 export const TrashCanIcon: React.FC<BaseIconProps> = ({
   size = 'm',
@@ -8,26 +15,23 @@ export const TrashCanIcon: React.FC<BaseIconProps> = ({
   className,
   'aria-label': ariaLabel,
   'aria-hidden': ariaHidden,
-}) => (
-  <svg
-    width={iconSize[size]}
-    height={iconSize[size]}
-    viewBox="0 0 18 18"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-    className={className}
-    aria-label={ariaLabel}
-    aria-hidden={ariaHidden}
-    role={ariaLabel ? 'img' : undefined}
-  >
-    <path
-      d="M2.25 4.5H15.75M6 4.5V3C6 2.60218 6.15804 2.22064 6.43934 1.93934C6.72064 1.65804 7.10218 1.5 7.5 1.5H10.5C10.8978 1.5 11.2794 1.65804 11.5607 1.93934C11.842 2.22064 12 2.60218 12 3V4.5M14.25 4.5V15C14.25 15.3978 14.092 15.7794 13.8107 16.0607C13.5294 16.342 13.1478 16.5 12.75 16.5H5.25C4.85218 16.5 4.47064 16.342 4.18934 16.0607C3.90804 15.7794 3.75 15.3978 3.75 15V4.5H14.25Z"
-      stroke={color}
-      strokeWidth={iconStrokeWidth[size]}
-      strokeLinecap="round"
-      strokeLinejoin="round"
+}) => {
+  const variant = VARIANTS[size];
+  return (
+    <svg
+      width={iconSize[size]}
+      height={iconSize[size]}
+      viewBox={variant.viewBox}
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+      aria-label={ariaLabel}
+      aria-hidden={ariaHidden}
+      role={ariaLabel ? 'img' : undefined}
+      style={{ color }}
+      dangerouslySetInnerHTML={{ __html: variant.inner }}
     />
-  </svg>
-);
+  );
+};
 
 export default TrashCanIcon;

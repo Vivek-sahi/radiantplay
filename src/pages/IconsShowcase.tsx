@@ -1,18 +1,27 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Icon, getIconNames } from '../components/icons';
 import type { IconName, IconSize } from '../components/icons';
 import { SearchInput } from '../components/SearchInput';
+import { LastUpdated } from '../components/LastUpdated';
 import { systemColors, referenceColors } from '../tokens/colors';
+import styles_module from './IconsShowcase.module.css';
 
 // Get all icon names from the registry
 const ALL_ICONS = getIconNames();
 
-// Group icons by category - only include icons that exist in the registry
+// Group icons by category. Aliases (search, settings, refresh) are intentionally
+// omitted so the same SVG isn't rendered twice; the search filter still finds them.
 const ICON_CATEGORIES: Record<string, IconName[]> = {
-  'Action': ['plus', 'minus', 'cross', 'checkmark', 'copy', 'share', 'download', 'upload', 'save', 'pencil', 'trash-can', 'search', 'magnifying-glass', 'cog', 'filter', 'funnel', 'sort', 'expand', 'fullscreen'],
-  'Navigation': ['chevron-down', 'chevron-up', 'chevron-left', 'chevron-right', 'arrow-down', 'arrow-up', 'arrow-left', 'arrow-right'],
-  'Status': ['information', 'info-circle', 'checkmark-circle', 'cross-circle', 'exclamation-point-circle', 'question-mark'],
-  'UI': ['eye', 'eye-undo', 'lock', 'pin', 'star', 'tag', 'folder', 'clock', 'profile', 'more', 'hamburger', 'play', 'pause'],
+  'Action': ['plus', 'minus', 'cross', 'checkmark', 'copy', 'copy-link', 'share', 'download', 'upload', 'upload-data', 'save', 'save-worksheet', 'pencil', 'edit-text', 'trash-can', 'magnifying-glass', 'cog', 'filter', 'funnel', 'funnel-line', 'sort', 'expand', 'fullscreen', 'fullscreen-undo', 'sync', 'reset', 'undo', 'redo', 'replay-search', 'drag', 'sign-out', 'enter', 'escape'],
+  'Navigation': ['chevron-down', 'chevron-up', 'chevron-left', 'chevron-right', 'arrow-down', 'arrow-up', 'arrow-left', 'arrow-right', 'arrow-down-circle', 'arrow-up-circle', 'arrow-left-circle', 'arrow-right-circle', 'caret-down', 'caret-up', 'caret-left', 'caret-right', 'navigate', 'hamburger', 'more', 'app-switcher', 'drill-down'],
+  'Status': ['information', 'info-circle', 'checkmark-circle', 'cross-circle', 'cross-circle2', 'exclamation-point-circle', 'question-mark', 'double-check', 'verified', 'curious', 'embrace'],
+  'UI': ['eye', 'eye-undo', 'lock', 'lock-undo', 'pin', 'star', 'star-undo', 'tag', 'folder', 'clock', 'calendar-cleaned', 'profile', 'add-user', 'play', 'pause', 'follow', 'follow-undo', 'follow-up', 'following', 'like-undo', 'thumb-up', 'thumb-up-undo', 'thumb-down', 'thumb-down-undo', 'group-undo', 'controls', 'key', 'brush', 'bulb', 'wrench', 'ai', 'agenda', 'rocket', 'explore', 'present', 'community', 'cord'],
+  'Text': ['text', 'text-undo', 'bold', 'italic', 'underline', 'strike-through', 'case', 'number-format', 'conditional-format'],
+  'Data': ['database', 'schema', 'formula', 'data-column', 'attribute', 'chart', 'table', 'grid-view', 'list-view', 'measure', 'zoom-area', 'show-underlying-data', 'r-analysis', 'create-pinboard', 'create-worksheet'],
+  'Joins': ['join-inner', 'join-left', 'join-outer', 'join-right'],
+  'Files': ['pdf', 'ppt', 'excel', 'doc', 'note', 'documentation', 'book', 'book-closed'],
+  'Product': ['liveboard', 'answer', 'spotter', 'pinboard', 'collection', 'paper-plane'],
+  'Media': ['video', 'microphone', 'camera', 'monitor'],
 };
 
 const SIZE_OPTIONS: { label: string; value: IconSize }[] = [
@@ -25,7 +34,6 @@ const SIZE_OPTIONS: { label: string; value: IconSize }[] = [
 export const IconsShowcase: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSize, setSelectedSize] = useState<IconSize>('m');
-  const [selectedIcon, setSelectedIcon] = useState<IconName | null>(null);
   const [copiedIcon, setCopiedIcon] = useState<string | null>(null);
 
   // Filter icons based on search
@@ -52,11 +60,23 @@ export const IconsShowcase: React.FC = () => {
     return Object.values(filteredCategories).flat().length;
   }, [filteredCategories]);
 
+  const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
+    };
+  }, []);
+
   const handleCopyIcon = (iconName: IconName) => {
     const code = `<Icon name="${iconName}" size="${selectedSize}" />`;
     navigator.clipboard.writeText(code);
+    if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
     setCopiedIcon(iconName);
-    setTimeout(() => setCopiedIcon(null), 2000);
+    copyTimeoutRef.current = setTimeout(() => {
+      setCopiedIcon(null);
+      copyTimeoutRef.current = null;
+    }, 2000);
   };
 
   const handleCopyImport = () => {
@@ -68,10 +88,10 @@ export const IconsShowcase: React.FC = () => {
     <div style={styles.container}>
       {/* Header */}
       <section style={styles.headerSection}>
+        <LastUpdated componentId="icongallery" />
         <h1 style={styles.pageTitle}>Icons</h1>
         <p style={styles.pageDescription}>
-          A comprehensive icon library with {ALL_ICONS.length} icons in 4 size variants (XS, S, M, L). 
-          Click any icon to copy the code snippet.
+          {Object.values(ICON_CATEGORIES).flat().length} icons synced from the Radiant 3.0 Figma library, each in 4 size variants (XS 12, S 14, M 16, L 18). Click any icon to copy the code snippet.
         </p>
       </section>
 
@@ -143,14 +163,8 @@ export const IconsShowcase: React.FC = () => {
             {icons.map((iconName) => (
               <div
                 key={iconName}
-                style={{
-                  ...styles.iconCard,
-                  ...(selectedIcon === iconName ? styles.iconCardSelected : {}),
-                  ...(copiedIcon === iconName ? styles.iconCardCopied : {}),
-                }}
+                className={`${styles_module.iconCard} ${copiedIcon === iconName ? styles_module.iconCardCopied : ''}`}
                 onClick={() => handleCopyIcon(iconName)}
-                onMouseEnter={() => setSelectedIcon(iconName)}
-                onMouseLeave={() => setSelectedIcon(null)}
               >
                 <div style={styles.iconPreview}>
                   <Icon name={iconName} size={selectedSize} />
@@ -292,7 +306,7 @@ const styles: Record<string, React.CSSProperties> = {
   resultCount: {
     fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
     fontSize: '13px',
-    color: systemColors.light['content-tertiary'],
+    color: systemColors.light['content-secondary'],
     marginTop: '16px',
   },
 
@@ -371,28 +385,6 @@ const styles: Record<string, React.CSSProperties> = {
     gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))',
     gap: '12px',
   },
-  iconCard: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '8px',
-    padding: '16px 12px',
-    backgroundColor: systemColors.light['background-sunken'],
-    borderRadius: '8px',
-    cursor: 'pointer',
-    transition: 'all 0.15s ease',
-    border: '2px solid transparent',
-    position: 'relative',
-  },
-  iconCardSelected: {
-    backgroundColor: referenceColors.blue['10'],
-    borderColor: referenceColors.brand['30'],
-  },
-  iconCardCopied: {
-    backgroundColor: referenceColors.green['10'],
-    borderColor: referenceColors.green['40'],
-  },
   iconPreview: {
     display: 'flex',
     alignItems: 'center',
@@ -404,7 +396,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
     fontSize: '10px',
     fontWeight: 400,
-    color: systemColors.light['content-tertiary'],
+    color: systemColors.light['content-secondary'],
     textAlign: 'center',
     wordBreak: 'break-word',
   },
@@ -435,7 +427,7 @@ const styles: Record<string, React.CSSProperties> = {
   noResultsText: {
     fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
     fontSize: '16px',
-    color: systemColors.light['content-tertiary'],
+    color: systemColors.light['content-secondary'],
     marginTop: '16px',
     marginBottom: '16px',
   },
@@ -483,7 +475,7 @@ const styles: Record<string, React.CSSProperties> = {
   sizeRefPixels: {
     fontFamily: '"SF Mono", Monaco, Inconsolata, monospace',
     fontSize: '12px',
-    color: systemColors.light['content-tertiary'],
+    color: systemColors.light['content-secondary'],
   },
   sizeRefPreview: {
     display: 'flex',
@@ -495,7 +487,7 @@ const styles: Record<string, React.CSSProperties> = {
   sizeRefUsage: {
     fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
     fontSize: '12px',
-    color: systemColors.light['content-tertiary'],
+    color: systemColors.light['content-secondary'],
     margin: 0,
   },
 };

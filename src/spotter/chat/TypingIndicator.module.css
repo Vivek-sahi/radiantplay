@@ -1,0 +1,26 @@
+.indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-3, 12px);
+  color: var(--rd-sys-color-content-secondary);
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-md, 16px);
+  font-weight: var(--font-weight-light, 375);
+  line-height: var(--line-height-lg, 24px);
+}
+
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 2.5px solid var(--rd-sys-color-background-subtle);
+  border-top-color: var(--rd-sys-color-content-brand);
+  border-right-color: var(--rd-sys-color-content-brand);
+  border-radius: 50%;
+  animation: spin 900ms linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

@@ -38,7 +38,7 @@ export function getRelativeTime(date: Date): string {
 export const liveboards: Liveboard[] = [
   {
     id: '1',
-    name: 'Liveboard name',
+    name: 'GTM Pipeline Overview',
     author: { name: 'Maya Angelou' },
     modelsWithMemory: ['GTM', '+4'],
     lastAdded: new Date(Date.now() - 4 * 60 * 1000), // 4 minutes ago
@@ -46,7 +46,7 @@ export const liveboards: Liveboard[] = [
   },
   {
     id: '2',
-    name: 'Liveboard name',
+    name: 'Retail Apparel Snapshot',
     author: { name: 'Maya Angelou' },
     modelsWithMemory: ['Sample retail apparel'],
     lastAdded: new Date(Date.now() - 4 * 60 * 1000),
@@ -54,7 +54,7 @@ export const liveboards: Liveboard[] = [
   },
   {
     id: '3',
-    name: 'Liveboard name',
+    name: 'GTM Waterfall Analysis',
     author: { name: 'Maya Angelou' },
     modelsWithMemory: ['GTM', 'GTM waterfall...', '+2'],
     lastAdded: new Date(Date.now() - 4 * 60 * 1000),
@@ -164,5 +164,5 @@ export const tabItems = [
 export const paginationData = {
   currentPage: 1,
   itemsPerPage: 20,
-  totalItems: 500,
+  totalItems: liveboards.length,
 };

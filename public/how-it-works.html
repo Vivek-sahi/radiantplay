@@ -126,8 +126,8 @@ kbd { background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);bor
   background:rgba(255,255,255,.03);
   border:1px solid rgba(255,255,255,.08);
   border-radius:var(--r-xl);
-  padding:40px 40px 32px;
-  margin-top:8px;
+  padding:20px 28px 16px;
+  margin-top:6px;
 }
 
 /* ════ SLIDE 3 — ROUTING ════ */
@@ -304,45 +304,118 @@ code { font-family:var(--mono);font-size:12px;font-weight:500;color:var(--blue-5
 ══════════════════════════════ -->
 <div class="slide s-pipeline" data-index="1">
   <div class="pipeline-inner">
-    <div class="label">Step by step</div>
-    <h2 class="h2">The AI pipeline</h2>
-    <p class="sub" style="margin-bottom:32px">Every request flows through a 5-step pipeline — from your prompt to working React code.</p>
+    <div class="label">How it works</div>
+    <h2 class="h2">The AI workflow</h2>
+    <p class="sub" style="margin-bottom:16px">A classifier reads your intent, the orchestrator picks a tier, then only the right guidelines are loaded.</p>
 
-    <div class="pipeline-wrap">
-      <svg viewBox="0 0 760 320" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block">
-        <path d="M 380 30 L 380 290" stroke="rgba(113,161,244,.2)" stroke-width="2" stroke-dasharray="6 4" />
-        <!-- Step 1 -->
-        <circle cx="380" cy="20" r="14" fill="#2770EF" opacity="0.15"/>
-        <circle cx="380" cy="20" r="8" fill="#2770EF"/>
-        <text x="350" y="25" fill="#2770EF" font-size="13" font-weight="800" font-family="Inter,sans-serif" text-anchor="end">1</text>
-        <text x="410" y="16" fill="#fff" font-size="14" font-weight="700" font-family="Inter,sans-serif">Your prompt</text>
-        <text x="410" y="34" fill="rgba(255,255,255,.4)" font-size="12" font-family="Inter,sans-serif">Describe what you want in plain English</text>
-        <!-- Step 2 -->
-        <circle cx="380" cy="88" r="14" fill="#7B61FF" opacity="0.15"/>
-        <circle cx="380" cy="88" r="8" fill="#7B61FF"/>
-        <text x="350" y="93" fill="#7B61FF" font-size="13" font-weight="800" font-family="Inter,sans-serif" text-anchor="end">2</text>
-        <text x="410" y="84" fill="#fff" font-size="14" font-weight="700" font-family="Inter,sans-serif">Orchestrator classifies</text>
-        <text x="410" y="102" fill="rgba(255,255,255,.4)" font-size="12" font-family="Inter,sans-serif">_orchestration.md reads your input type</text>
-        <!-- Step 3 -->
-        <circle cx="380" cy="156" r="14" fill="#06BF7F" opacity="0.15"/>
-        <circle cx="380" cy="156" r="8" fill="#06BF7F"/>
-        <text x="350" y="161" fill="#06BF7F" font-size="13" font-weight="800" font-family="Inter,sans-serif" text-anchor="end">3</text>
-        <text x="410" y="152" fill="#fff" font-size="14" font-weight="700" font-family="Inter,sans-serif">Loads guidelines</text>
-        <text x="410" y="170" fill="rgba(255,255,255,.4)" font-size="12" font-family="Inter,sans-serif">Up to 10 rule files consulted in order</text>
-        <!-- Step 4 -->
-        <circle cx="380" cy="224" r="14" fill="#F5A623" opacity="0.15"/>
-        <circle cx="380" cy="224" r="8" fill="#F5A623"/>
-        <text x="350" y="229" fill="#F5A623" font-size="13" font-weight="800" font-family="Inter,sans-serif" text-anchor="end">4</text>
-        <text x="410" y="220" fill="#fff" font-size="14" font-weight="700" font-family="Inter,sans-serif">Checks 73+ components</text>
-        <text x="410" y="238" fill="rgba(255,255,255,.4)" font-size="12" font-family="Inter,sans-serif">Reuses existing before creating new</text>
-        <!-- Step 5 -->
-        <circle cx="380" cy="292" r="14" fill="#EF4444" opacity="0.15"/>
-        <circle cx="380" cy="292" r="8" fill="#EF4444"/>
-        <text x="350" y="297" fill="#EF4444" font-size="13" font-weight="800" font-family="Inter,sans-serif" text-anchor="end">5</text>
-        <text x="410" y="288" fill="#fff" font-size="14" font-weight="700" font-family="Inter,sans-serif">Generates code</text>
-        <text x="410" y="306" fill="rgba(255,255,255,.4)" font-size="12" font-family="Inter,sans-serif">Outputs React + TypeScript + tokens</text>
-      </svg>
-    </div>
+    <svg viewBox="0 0 1000 480" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;max-height:60vh">
+
+      <!-- ── PROMPT ── -->
+      <rect x="370" y="12" width="260" height="40" rx="12" fill="rgba(255,255,255,.06)" stroke="rgba(255,255,255,.15)" stroke-width="1.5"/>
+      <text x="500" y="37" fill="rgba(255,255,255,.65)" font-size="12.5" font-weight="600" font-family="Inter,sans-serif" text-anchor="middle">Describe what you want to build</text>
+
+      <!-- arrow → classifier -->
+      <path d="M 500 52 L 500 78" stroke="rgba(123,97,255,.45)" stroke-width="1.5" stroke-dasharray="4 3"/>
+      <polygon points="495,78 505,78 500,86" fill="rgba(123,97,255,.55)"/>
+
+      <!-- ── TOKEN CLASSIFIER ── -->
+      <rect x="320" y="86" width="360" height="56" rx="15" fill="rgba(123,97,255,.11)" stroke="rgba(123,97,255,.5)" stroke-width="1.5"/>
+      <text x="500" y="109" fill="#9D8FFF" font-size="10.5" font-weight="800" font-family="Inter,sans-serif" text-anchor="middle" letter-spacing=".12em">TOKEN CLASSIFIER</text>
+      <text x="500" y="130" fill="rgba(255,255,255,.38)" font-size="11" font-family="Inter,sans-serif" text-anchor="middle">Reads intent — detects task type and scope</text>
+
+      <!-- arrow → orchestrator -->
+      <path d="M 500 142 L 500 168" stroke="rgba(39,112,239,.45)" stroke-width="1.5" stroke-dasharray="4 3"/>
+      <polygon points="495,168 505,168 500,176" fill="rgba(39,112,239,.55)"/>
+
+      <!-- ── ORCHESTRATOR ── -->
+      <rect x="320" y="176" width="360" height="56" rx="15" fill="rgba(39,112,239,.11)" stroke="rgba(39,112,239,.5)" stroke-width="1.5"/>
+      <text x="500" y="199" fill="#71A1F4" font-size="10.5" font-weight="800" font-family="Inter,sans-serif" text-anchor="middle" letter-spacing=".12em">ORCHESTRATOR</text>
+      <text x="500" y="220" fill="rgba(255,255,255,.38)" font-size="11" font-family="Inter,sans-serif" text-anchor="middle">Routes to the right tier and loads guidelines</text>
+
+      <!-- ── branch lines → tiers (tops at y=272, T0 cx=110 T1=330 T2=670 T3=890) ── -->
+      <path d="M 420 232 Q 370 250 110 272" stroke="rgba(255,255,255,.2)"  stroke-width="1.5" fill="none"/>
+      <path d="M 460 232 Q 430 255 330 272" stroke="rgba(6,191,127,.4)"    stroke-width="1.5" fill="none"/>
+      <path d="M 540 232 Q 570 255 670 272" stroke="rgba(39,112,239,.45)"  stroke-width="1.5" fill="none"/>
+      <path d="M 580 232 Q 630 250 890 272" stroke="rgba(245,166,35,.4)"   stroke-width="1.5" fill="none"/>
+
+      <!-- ── TIER 0 (cx=110) ── -->
+      <rect x="16" y="272" width="188" height="72" rx="14" fill="rgba(255,255,255,.04)" stroke="rgba(255,255,255,.13)" stroke-width="1.5"/>
+      <text x="110" y="295" fill="rgba(255,255,255,.45)" font-size="9.5" font-weight="800" font-family="Inter,sans-serif" text-anchor="middle" letter-spacing=".12em">TIER 0</text>
+      <text x="110" y="316" fill="#fff" font-size="13" font-weight="700" font-family="Inter,sans-serif" text-anchor="middle">Minor tweak</text>
+      <text x="110" y="333" fill="rgba(255,255,255,.32)" font-size="10" font-family="Inter,sans-serif" text-anchor="middle">Single prop, label, alignment</text>
+
+      <!-- ── TIER 1 (cx=330) ── -->
+      <rect x="236" y="272" width="188" height="72" rx="14" fill="rgba(6,191,127,.07)" stroke="rgba(6,191,127,.3)" stroke-width="1.5"/>
+      <text x="330" y="295" fill="#06BF7F" font-size="9.5" font-weight="800" font-family="Inter,sans-serif" text-anchor="middle" letter-spacing=".12em">TIER 1</text>
+      <text x="330" y="316" fill="#fff" font-size="13" font-weight="700" font-family="Inter,sans-serif" text-anchor="middle">Feature change</text>
+      <text x="330" y="333" fill="rgba(255,255,255,.32)" font-size="10" font-family="Inter,sans-serif" text-anchor="middle">New section, modal, interaction</text>
+
+      <!-- ── TIER 2 (cx=670) ── -->
+      <rect x="576" y="272" width="188" height="72" rx="14" fill="rgba(39,112,239,.07)" stroke="rgba(39,112,239,.3)" stroke-width="1.5"/>
+      <text x="670" y="295" fill="#71A1F4" font-size="9.5" font-weight="800" font-family="Inter,sans-serif" text-anchor="middle" letter-spacing=".12em">TIER 2</text>
+      <text x="670" y="316" fill="#fff" font-size="13" font-weight="700" font-family="Inter,sans-serif" text-anchor="middle">Full build</text>
+      <text x="670" y="333" fill="rgba(255,255,255,.32)" font-size="10" font-family="Inter,sans-serif" text-anchor="middle">New prototype from scratch</text>
+
+      <!-- ── TIER 3 (cx=890) ── -->
+      <rect x="796" y="272" width="188" height="72" rx="14" fill="rgba(245,166,35,.07)" stroke="rgba(245,166,35,.3)" stroke-width="1.5"/>
+      <text x="890" y="295" fill="#F5A623" font-size="9.5" font-weight="800" font-family="Inter,sans-serif" text-anchor="middle" letter-spacing=".12em">TIER 3</text>
+      <text x="890" y="316" fill="#fff" font-size="13" font-weight="700" font-family="Inter,sans-serif" text-anchor="middle">Design system</text>
+      <text x="890" y="333" fill="rgba(255,255,255,.32)" font-size="10" font-family="Inter,sans-serif" text-anchor="middle">Shared component or token</text>
+
+      <!-- ════ GUIDELINE CONNECTIONS (tier bottoms y=344 → guide tops y=384)
+           G centers: G1=80 G2=215 G3=345 G4=480 G5=610 G6=745
+           T0→G1 (1 faint) · T1→G2,G3,G4 · T2→all · T3→G5,G6
+      ════ -->
+      <path d="M 110 344 L 80  384" stroke="rgba(255,255,255,.13)" stroke-width="1.2" fill="none"/>
+
+      <path d="M 315 344 Q 275 364 215 384" stroke="rgba(6,191,127,.3)"   stroke-width="1.3" fill="none"/>
+      <path d="M 330 344 L 345 384"         stroke="rgba(6,191,127,.3)"   stroke-width="1.3" fill="none"/>
+      <path d="M 345 344 Q 390 364 480 384" stroke="rgba(6,191,127,.3)"   stroke-width="1.3" fill="none"/>
+
+      <path d="M 626 344 Q 490 360 80  384"  stroke="rgba(39,112,239,.3)" stroke-width="1.2" fill="none"/>
+      <path d="M 638 344 Q 520 362 215 384"  stroke="rgba(39,112,239,.3)" stroke-width="1.2" fill="none"/>
+      <path d="M 651 344 Q 560 363 345 384"  stroke="rgba(39,112,239,.3)" stroke-width="1.2" fill="none"/>
+      <path d="M 664 344 Q 606 364 480 384"  stroke="rgba(39,112,239,.3)" stroke-width="1.2" fill="none"/>
+      <path d="M 677 344 L 610 384"          stroke="rgba(39,112,239,.3)" stroke-width="1.2" fill="none"/>
+      <path d="M 690 344 Q 714 364 745 384"  stroke="rgba(39,112,239,.3)" stroke-width="1.2" fill="none"/>
+
+      <path d="M 876 344 Q 796 364 610 384"  stroke="rgba(245,166,35,.3)" stroke-width="1.3" fill="none"/>
+      <path d="M 890 344 L 745 384"          stroke="rgba(245,166,35,.3)" stroke-width="1.3" fill="none"/>
+
+      <!-- ── GUIDELINE PILLS (y=384, h=36) ── -->
+      <rect x="26"  y="384" width="108" height="36" rx="10" fill="rgba(255,255,255,.045)" stroke="rgba(255,255,255,.1)" stroke-width="1"/>
+      <text x="80"  y="407" fill="rgba(255,255,255,.5)" font-size="10" font-weight="700" font-family="Inter,sans-serif" text-anchor="middle">Components</text>
+
+      <rect x="159" y="384" width="112" height="36" rx="10" fill="rgba(255,255,255,.045)" stroke="rgba(255,255,255,.1)" stroke-width="1"/>
+      <text x="215" y="407" fill="rgba(255,255,255,.5)" font-size="10" font-weight="700" font-family="Inter,sans-serif" text-anchor="middle">Layout</text>
+
+      <rect x="292" y="384" width="106" height="36" rx="10" fill="rgba(255,255,255,.045)" stroke="rgba(255,255,255,.1)" stroke-width="1"/>
+      <text x="345" y="407" fill="rgba(255,255,255,.5)" font-size="10" font-weight="700" font-family="Inter,sans-serif" text-anchor="middle">Modals</text>
+
+      <rect x="425" y="384" width="110" height="36" rx="10" fill="rgba(255,255,255,.045)" stroke="rgba(255,255,255,.1)" stroke-width="1"/>
+      <text x="480" y="407" fill="rgba(255,255,255,.5)" font-size="10" font-weight="700" font-family="Inter,sans-serif" text-anchor="middle">Widgets</text>
+
+      <rect x="558" y="384" width="104" height="36" rx="10" fill="rgba(255,255,255,.045)" stroke="rgba(255,255,255,.1)" stroke-width="1"/>
+      <text x="610" y="407" fill="rgba(255,255,255,.5)" font-size="10" font-weight="700" font-family="Inter,sans-serif" text-anchor="middle">Figma map</text>
+
+      <rect x="691" y="384" width="108" height="36" rx="10" fill="rgba(255,255,255,.045)" stroke="rgba(255,255,255,.1)" stroke-width="1"/>
+      <text x="745" y="407" fill="rgba(255,255,255,.5)" font-size="10" font-weight="700" font-family="Inter,sans-serif" text-anchor="middle">Design system</text>
+
+      <text x="840" y="407" fill="rgba(255,255,255,.28)" font-size="15" font-weight="700" font-family="Inter,sans-serif" text-anchor="middle">···</text>
+
+      <!-- ── converge → output (guide bottoms y=420, output y=448) ── -->
+      <path d="M 80  420 Q  80 436 460 448" stroke="rgba(255,255,255,.05)" stroke-width="1" fill="none"/>
+      <path d="M 215 420 Q 215 436 472 448" stroke="rgba(255,255,255,.05)" stroke-width="1" fill="none"/>
+      <path d="M 345 420 Q 380 436 486 448" stroke="rgba(255,255,255,.05)" stroke-width="1" fill="none"/>
+      <path d="M 480 420 Q 480 436 500 448" stroke="rgba(255,255,255,.05)" stroke-width="1" fill="none"/>
+      <path d="M 610 420 Q 568 436 516 448" stroke="rgba(255,255,255,.05)" stroke-width="1" fill="none"/>
+      <path d="M 745 420 Q 684 436 540 448" stroke="rgba(255,255,255,.05)" stroke-width="1" fill="none"/>
+
+      <!-- ── OUTPUT ── -->
+      <rect x="300" y="448" width="400" height="32" rx="11" fill="rgba(6,191,127,.09)" stroke="rgba(6,191,127,.25)" stroke-width="1.5"/>
+      <text x="500" y="469" fill="rgba(6,191,127,.85)" font-size="10.5" font-weight="700" font-family="Inter,sans-serif" text-anchor="middle" letter-spacing=".07em">LOAD GUIDELINES → GENERATE CODE</text>
+
+    </svg>
   </div>
 </div>
 
@@ -353,79 +426,84 @@ code { font-family:var(--mono);font-size:12px;font-weight:500;color:var(--blue-5
   <div class="routing-inner">
     <div class="label">Intelligent routing</div>
     <h2 class="h2">Smart routing</h2>
-    <p class="sub" style="margin-bottom:36px">The orchestrator reads your input and routes to the right guideline files automatically.</p>
+    <p class="sub" style="margin-bottom:36px">The classifier detects your intent, then the orchestrator routes to the right guidelines for that tier.</p>
 
     <div class="routing-layout">
       <div class="routing-left">
         <div class="route-item">
           <div class="route-emoji" style="background:rgba(39,112,239,.12)">🎨</div>
-          <div><div class="route-label">Figma screenshot</div><div class="route-files">figma-component-mapping</div></div>
+          <div><div class="route-label">Figma screenshot or URL</div><div class="route-files">Tier 1 — component mapping</div></div>
         </div>
         <div class="route-item">
           <div class="route-emoji" style="background:rgba(6,191,127,.12)">💬</div>
-          <div><div class="route-label">Text description</div><div class="route-files">prototype-generation</div></div>
+          <div><div class="route-label">Text description of a new prototype</div><div class="route-files">Tier 2 — full prototype build</div></div>
         </div>
         <div class="route-item">
           <div class="route-emoji" style="background:rgba(123,97,255,.12)">📊</div>
-          <div><div class="route-label">Dashboard or admin page</div><div class="route-files">layout-patterns</div></div>
+          <div><div class="route-label">Dashboard or admin page</div><div class="route-files">Tier 2 — layout-heavy build</div></div>
         </div>
         <div class="route-item">
           <div class="route-emoji" style="background:rgba(245,166,35,.12)">🪟</div>
-          <div><div class="route-label">Modal or wizard</div><div class="route-files">modal-patterns</div></div>
+          <div><div class="route-label">Modal, wizard, or overlay</div><div class="route-files">Tier 1 — overlay feature</div></div>
         </div>
         <div class="route-item">
-          <div class="route-emoji" style="background:rgba(239,68,68,.12)">📋</div>
-          <div><div class="route-label">Table, menu, or alert</div><div class="route-files">widget-patterns</div></div>
+          <div class="route-emoji" style="background:rgba(239,68,68,.12)">🧩</div>
+          <div><div class="route-label">New shared component or token</div><div class="route-files">Tier 3 — design system</div></div>
         </div>
       </div>
 
       <div class="routing-visual">
-        <svg viewBox="0 0 320 280" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block">
+        <svg viewBox="0 0 320 310" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block">
           <!-- Input node -->
-          <rect x="90" y="10" width="140" height="44" rx="12" fill="rgba(255,255,255,.06)" stroke="rgba(255,255,255,.14)" stroke-width="1.5"/>
-          <text x="160" y="37" fill="rgba(255,255,255,.7)" font-size="13" font-weight="700" font-family="Inter,sans-serif" text-anchor="middle">Your prompt</text>
+          <rect x="90" y="10" width="140" height="40" rx="12" fill="rgba(255,255,255,.06)" stroke="rgba(255,255,255,.14)" stroke-width="1.5"/>
+          <text x="160" y="35" fill="rgba(255,255,255,.7)" font-size="12" font-weight="700" font-family="Inter,sans-serif" text-anchor="middle">Your prompt</text>
 
-          <!-- Arrow down -->
-          <path d="M 160 54 L 160 86" stroke="rgba(113,161,244,.3)" stroke-width="1.5" stroke-dasharray="4 3"/>
+          <!-- Arrow → classifier -->
+          <path d="M 160 50 L 160 76" stroke="rgba(123,97,255,.4)" stroke-width="1.5" stroke-dasharray="4 3"/>
+          <polygon points="156,76 164,76 160,84" fill="rgba(123,97,255,.5)"/>
+
+          <!-- Token Classifier node -->
+          <rect x="55" y="84" width="210" height="48" rx="14" fill="rgba(123,97,255,.1)" stroke="rgba(123,97,255,.45)" stroke-width="1.5"/>
+          <text x="160" y="104" fill="#9D8FFF" font-size="10" font-weight="800" font-family="Inter,sans-serif" text-anchor="middle" letter-spacing=".1em">TOKEN CLASSIFIER</text>
+          <text x="160" y="121" fill="rgba(255,255,255,.35)" font-size="10" font-family="Inter,sans-serif" text-anchor="middle">detects intent and task scope</text>
+
+          <!-- Arrow → orchestrator -->
+          <path d="M 160 132 L 160 158" stroke="rgba(39,112,239,.4)" stroke-width="1.5" stroke-dasharray="4 3"/>
+          <polygon points="156,158 164,158 160,166" fill="rgba(39,112,239,.5)"/>
 
           <!-- Orchestrator node -->
-          <rect x="60" y="86" width="200" height="52" rx="14" fill="rgba(39,112,239,.12)" stroke="rgba(39,112,239,.4)" stroke-width="1.5"/>
-          <text x="160" y="108" fill="#71A1F4" font-size="11" font-weight="700" font-family="Inter,sans-serif" text-anchor="middle" letter-spacing=".08em">ORCHESTRATOR</text>
-          <text x="160" y="126" fill="rgba(255,255,255,.35)" font-size="10" font-family="Inter,sans-serif" text-anchor="middle">classifies and routes</text>
+          <rect x="55" y="166" width="210" height="48" rx="14" fill="rgba(39,112,239,.1)" stroke="rgba(39,112,239,.45)" stroke-width="1.5"/>
+          <text x="160" y="186" fill="#71A1F4" font-size="10" font-weight="800" font-family="Inter,sans-serif" text-anchor="middle" letter-spacing=".1em">ORCHESTRATOR</text>
+          <text x="160" y="203" fill="rgba(255,255,255,.35)" font-size="10" font-family="Inter,sans-serif" text-anchor="middle">routes to the right tier + guidelines</text>
 
-          <!-- Branching lines -->
-          <path d="M 100 138 Q 100 160 60 180" stroke="rgba(123,97,255,.4)" stroke-width="1.5" fill="none"/>
-          <path d="M 130 138 Q 130 165 110 185" stroke="rgba(6,191,127,.4)" stroke-width="1.5" fill="none"/>
-          <path d="M 160 138 L 160 185" stroke="rgba(39,112,239,.4)" stroke-width="1.5" fill="none"/>
-          <path d="M 190 138 Q 190 165 210 185" stroke="rgba(245,166,35,.4)" stroke-width="1.5" fill="none"/>
-          <path d="M 220 138 Q 220 160 260 180" stroke="rgba(239,68,68,.4)" stroke-width="1.5" fill="none"/>
+          <!-- Branching lines → tiers -->
+          <path d="M 95 214 Q 85 234 60 246" stroke="rgba(255,255,255,.2)" stroke-width="1.5" fill="none"/>
+          <path d="M 130 214 Q 120 234 120 246" stroke="rgba(6,191,127,.35)" stroke-width="1.5" fill="none"/>
+          <path d="M 190 214 Q 200 234 200 246" stroke="rgba(39,112,239,.35)" stroke-width="1.5" fill="none"/>
+          <path d="M 225 214 Q 235 234 260 246" stroke="rgba(245,166,35,.35)" stroke-width="1.5" fill="none"/>
 
-          <!-- Output dots with labels -->
-          <circle cx="60" cy="188" r="5" fill="#7B61FF"/>
-          <text x="60" y="210" fill="rgba(255,255,255,.4)" font-size="9" font-weight="600" font-family="Inter,sans-serif" text-anchor="middle">Layout</text>
+          <!-- Tier pills -->
+          <rect x="20" y="246" width="72" height="24" rx="8" fill="rgba(255,255,255,.05)" stroke="rgba(255,255,255,.15)" stroke-width="1"/>
+          <text x="56" y="263" fill="rgba(255,255,255,.5)" font-size="9" font-weight="800" font-family="Inter,sans-serif" text-anchor="middle">TIER 0</text>
 
-          <circle cx="110" cy="193" r="5" fill="#06BF7F"/>
-          <text x="110" y="215" fill="rgba(255,255,255,.4)" font-size="9" font-weight="600" font-family="Inter,sans-serif" text-anchor="middle">Components</text>
+          <rect x="84" y="246" width="72" height="24" rx="8" fill="rgba(6,191,127,.07)" stroke="rgba(6,191,127,.3)" stroke-width="1"/>
+          <text x="120" y="263" fill="#06BF7F" font-size="9" font-weight="800" font-family="Inter,sans-serif" text-anchor="middle">TIER 1</text>
 
-          <circle cx="160" cy="193" r="5" fill="#2770EF"/>
-          <text x="160" y="215" fill="rgba(255,255,255,.4)" font-size="9" font-weight="600" font-family="Inter,sans-serif" text-anchor="middle">Tokens</text>
+          <rect x="164" y="246" width="72" height="24" rx="8" fill="rgba(39,112,239,.07)" stroke="rgba(39,112,239,.3)" stroke-width="1"/>
+          <text x="200" y="263" fill="#71A1F4" font-size="9" font-weight="800" font-family="Inter,sans-serif" text-anchor="middle">TIER 2</text>
 
-          <circle cx="210" cy="193" r="5" fill="#F5A623"/>
-          <text x="210" y="215" fill="rgba(255,255,255,.4)" font-size="9" font-weight="600" font-family="Inter,sans-serif" text-anchor="middle">Modals</text>
+          <rect x="228" y="246" width="72" height="24" rx="8" fill="rgba(245,166,35,.07)" stroke="rgba(245,166,35,.3)" stroke-width="1"/>
+          <text x="264" y="263" fill="#F5A623" font-size="9" font-weight="800" font-family="Inter,sans-serif" text-anchor="middle">TIER 3</text>
 
-          <circle cx="260" cy="188" r="5" fill="#EF4444"/>
-          <text x="260" y="210" fill="rgba(255,255,255,.4)" font-size="9" font-weight="600" font-family="Inter,sans-serif" text-anchor="middle">Widgets</text>
-
-          <!-- Converge lines -->
-          <path d="M 60 218 Q 60 240 120 252" stroke="rgba(255,255,255,.08)" stroke-width="1" fill="none"/>
-          <path d="M 110 222 Q 110 242 130 252" stroke="rgba(255,255,255,.08)" stroke-width="1" fill="none"/>
-          <path d="M 160 222 L 160 252" stroke="rgba(255,255,255,.08)" stroke-width="1" fill="none"/>
-          <path d="M 210 222 Q 210 242 190 252" stroke="rgba(255,255,255,.08)" stroke-width="1" fill="none"/>
-          <path d="M 260 218 Q 260 240 200 252" stroke="rgba(255,255,255,.08)" stroke-width="1" fill="none"/>
+          <!-- Converge → output -->
+          <path d="M 56 270 Q 56 284 140 284" stroke="rgba(255,255,255,.07)" stroke-width="1" fill="none"/>
+          <path d="M 120 270 Q 120 284 150 284" stroke="rgba(255,255,255,.07)" stroke-width="1" fill="none"/>
+          <path d="M 200 270 Q 200 284 175 284" stroke="rgba(255,255,255,.07)" stroke-width="1" fill="none"/>
+          <path d="M 264 270 Q 264 284 185 284" stroke="rgba(255,255,255,.07)" stroke-width="1" fill="none"/>
 
           <!-- Output node -->
-          <rect x="80" y="252" width="160" height="24" rx="8" fill="rgba(255,255,255,.04)" stroke="rgba(255,255,255,.08)" stroke-width="1"/>
-          <text x="160" y="268" fill="rgba(255,255,255,.35)" font-size="10" font-weight="600" font-family="Inter,sans-serif" text-anchor="middle">Generated code</text>
+          <rect x="80" y="284" width="160" height="26" rx="9" fill="rgba(6,191,127,.08)" stroke="rgba(6,191,127,.22)" stroke-width="1.5"/>
+          <text x="160" y="301" fill="rgba(6,191,127,.8)" font-size="10" font-weight="700" font-family="Inter,sans-serif" text-anchor="middle" letter-spacing=".05em">GENERATED CODE</text>
         </svg>
       </div>
     </div>

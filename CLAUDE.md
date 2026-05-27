@@ -34,13 +34,25 @@ If the user says "start feedback", "feedback loop", or similar — start the ser
 
 ## Git & Deployment
 
-**If `galaxy` remote exists** (main maintainer setup): push to BOTH `origin` and `galaxy` after every commit. Verify remote URLs are current before pushing.
+**Designer fork** (only `origin` exists): push to `origin` only. Do not attempt to add or push to `galaxy`.
 
-**If only `origin` exists** (designer fork): push to `origin` only. Do not attempt to add or push to `galaxy`.
+**Main maintainer setup** (both `origin` and `galaxy` exist): the branch determines which remotes to push to.
 
-Run `git remote -v` to determine which applies before pushing. Default deploy target is **staging**, not main — do not push to main unless explicitly asked.
+| Branch | Purpose | Push to |
+|---|---|---|
+| `main` | Shared library + samples (what other designers sync from) | origin + galaxy |
+| `staging` | Shared preview / QA | origin + galaxy |
+| `personal` | Maintainer's personal prototypes (in `registry-mine.ts`) | **origin only — never galaxy** |
+| `personal/<name>` | Feature branch for a specific personal exploration | **origin only — never galaxy** |
+| `feat/*`, `fix/*`, `chore/*` | Shared work branches | origin + galaxy |
 
-**Before pushing to main**: always ask whether to run `bash scripts/release.sh` first. This updates the platform version and changelog. If the user confirms they've already run it or wants to skip, proceed with the push.
+`personal` and `personal/*` are origin-only. A pre-push hook enforces this — pushing them to galaxy will be refused. Do not bypass the hook with `--no-verify` unless the user explicitly says to.
+
+**The maintainer's daily working branch is `personal`.** New personal prototypes are built on `personal/<name>` branches off `personal`, merged back to `personal`, and the feature branch is deleted after merge. Personal prototypes live in `registry-mine.ts`. To promote a personal prototype to the shared library: switch to `main`, move the entry from `registry-mine.ts` to `registry-core.ts`, commit, and push to both remotes.
+
+Run `git remote -v` to confirm which remotes exist. Default deploy target is **staging**, not main — do not push to main unless explicitly asked.
+
+**Before pushing to main (main maintainer only)**: if both `origin` and `galaxy` remotes exist, always ask whether to run `bash scripts/release.sh` first. This updates the platform version and changelog. If the user confirms they've already run it or wants to skip, proceed with the push. On designer forks (only `origin` exists), skip this prompt — the release ritual is a maintainer concern.
 
 ## Tech Stack
 
@@ -63,6 +75,35 @@ npm run new-prototype  # Scaffold a new prototype
 | `@/*` | `src/*` |
 | `@tokens/*` | `src/tokens/*` |
 | `@components/*` | `src/components/*` |
+| `@spotter/*` | `src/spotter/*` |
+
+## Two-layer DS — Radiant + Spotter
+
+`@components/*` is the **Radiant DS** — product-agnostic primitives. `@spotter/*` is the **Spotter DS** — agentic-domain blocks (chat, answers, viz, page shell) built on top of Radiant. Same conventions apply (tokens only, sentence case, layout primitives) but Spotter components encode AI-flavoured patterns.
+
+When working on Spotter surfaces, the orchestrator auto-loads the Spotter cursor rules. For a new Spotter prototype the orchestrator runs a Requirements Gate first (mode / welcome state / data). See `.cursor/rules/_orchestration.md` → Spotter Requirements Gate.
+
+**Spotter modes:**
+- **Standalone Spotter** — full-page agentic chat (`src/prototypes/Spotter/`)
+- **Spotter Model (embedded)** — canvas + chat for data-model editing (`DataModelEditor`)
+- **Spotter Viz (embedded)** — canvas + chat for dashboard generation (planned)
+- **Spotter Code (embedded)** — canvas + chat for code generation in an IDE-like surface (planned)
+
+**Resume-here tracker:** `docs/spotter-roadmap.md` — status per mode, active scope, planned components.
+
+**Active spec docs** (top of `docs/`):
+- `docs/2026-05-07-spotter-answer-card.md` — AnswerCard spec (unbuilt; VizBlock is the current stand-in)
+- `docs/2026-05-07-spotter-viz-block-behaviour.md` — VizBlock slot model and behaviour
+
+**Archived plans** (work is done — under `docs/archive/`): `spotter-ds-plan`, `spotter-prototype-shell`, `spotter-chat-extraction`.
+
+## Docs and planning conventions
+
+- **Topical folders in `docs/`:** Topics with **3+ related docs** earn their own subfolder (e.g. `collaboration/`, `testing/`, `archive/`). Topics with 1–2 docs stay flat at `docs/`.
+- **Date prefixes (`YYYY-MM-DD-*.md`)** apply to active planning / spec docs and capture the date of the **last meaningful update** — rename to today's date on every substantive edit so the filename reflects current state.
+- **Roadmap / status docs** (like `spotter-roadmap.md`) carry a `Last updated:` line at the top instead of a date in the filename. Bump it on every meaningful edit.
+- **Historical plans** (work done, content frozen) move to `docs/archive/` and keep their original date prefix.
+- **Plan docs are gitignored by default** (per `.gitignore` pattern `docs/*plan*.md`) — historical plans get tracked once moved to archive.
 
 ## Project Structure
 
@@ -140,18 +181,22 @@ Apply the 5 conventions above + verify `npm run build` passes before finishing a
 
 ### Branching Model
 
-| Branch | Purpose | Deploys to |
-|--------|---------|------------|
-| `main` | Production | radiantplay.vercel.app |
-| `staging` | Preview / QA | staging-radiantplay.vercel.app |
-| `feat/*`, `fix/*`, `chore/*` | Work branches | — |
+| Branch | Purpose | Deploys to | Pushed to |
+|--------|---------|------------|-----------|
+| `main` | Production (shared library) | radiantplay.vercel.app | origin + galaxy |
+| `staging` | Shared preview / QA | staging-radiantplay.vercel.app | origin + galaxy |
+| `personal` | Maintainer's daily working branch — personal prototypes in `registry-mine.ts` | Per-branch Vercel preview | **origin only** |
+| `personal/<name>` | Feature branch off `personal` for a specific personal exploration | Per-branch Vercel preview | **origin only** |
+| `feat/*`, `fix/*`, `chore/*` | Shared work branches | — | origin + galaxy |
+
+The `personal` and `personal/*` branches are enforced as origin-only by a pre-push hook (`scripts/hooks/pre-push`). Pushing them to galaxy is refused. To "promote" a personal prototype to the shared library, switch to `main`, move the entry from `registry-mine.ts` to `registry-core.ts`, commit, and push to both remotes.
 
 ### Remotes
 
 **Designer forks** have one remote:
 - `origin` — the designer's own fork (GitHub or galaxy)
 
-**Main maintainer** has two remotes that must stay in sync:
+**Main maintainer** has two remotes that must stay in sync (on shared branches):
 - `origin` — GitHub (`https://github.com/faris-ts/radiantplay.git`)
 - `galaxy` — ThoughtSpot (HTTPS: `https://galaxy.corp.thoughtspot.com/mohammed-faris/radiantplay.git` or SSH: `git@galaxy.corp.thoughtspot.com:mohammed-faris/radiantplay.git`)
 

@@ -89,9 +89,9 @@ export const ViewHeader: React.FC<ViewHeaderProps> = ({ title, activeTab, tabs, 
       <header style={s.headerRow}>
         {/* Identifier */}
         <div style={s.identifier}>
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" style={{ flexShrink: 0 }}>
-            <circle cx="9" cy="9" r="9" fill="#2770EF" />
-            <path d="M5.5 9.5L7.5 11.5L12.5 6.5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" style={{ flexShrink: 0, color: colors.brand }}>
+            <circle cx="9" cy="9" r="9" fill="currentColor" />
+            <path d="M5.5 9.5L7.5 11.5L12.5 6.5" stroke={colors.headerBg} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
           <span style={s.title}>{title}</span>
           <Tooltip content="Info" placement="bottom">
@@ -200,7 +200,7 @@ const s: Record<string, React.CSSProperties> = {
   identifier: {
     display: 'flex',
     alignItems: 'center',
-    gap: 12,
+    gap: 8,
     flexShrink: 0,
   },
   title: {
@@ -218,7 +218,7 @@ const s: Record<string, React.CSSProperties> = {
     justifyContent: 'center',
     width: 20,
     height: 20,
-    background: '#EAEDF2',
+    background: colors.actionPillBg,
     border: 'none',
     borderRadius: 10,
     cursor: 'pointer',
@@ -228,7 +228,7 @@ const s: Record<string, React.CSSProperties> = {
   vertSep: {
     width: 1,
     height: 20,
-    background: '#C0C6CF',
+    background: colors.divider,
     flexShrink: 0,
   },
   actions: {
@@ -311,7 +311,7 @@ const s: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    background: 'white',
+    background: colors.headerBg,
     border: 'none',
     cursor: 'pointer',
     zIndex: 2,
@@ -349,7 +349,7 @@ const s: Record<string, React.CSSProperties> = {
   vertSepShort: {
     width: 1,
     height: 20,
-    background: '#C0C6CF',
+    background: colors.divider,
     flexShrink: 0,
   },
   menuAnchor: {

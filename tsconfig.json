@@ -19,7 +19,8 @@
     "paths": {
       "@/*": ["src/*"],
       "@tokens/*": ["src/tokens/*"],
-      "@components/*": ["src/components/*"]
+      "@components/*": ["src/components/*"],
+      "@spotter/*": ["src/spotter/*"]
     }
   },
   "include": ["src"],

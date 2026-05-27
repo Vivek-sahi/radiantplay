@@ -127,7 +127,9 @@ export const MemorySourcesTable: React.FC<MemorySourcesTableProps> = ({
       minWidth: '48px',
       render: () => (
         <div style={styles.actionsCell}>
-          <button 
+          <button
+            type="button"
+            aria-label="Row actions"
             style={styles.moreButton}
             onClick={(e) => {
               e.stopPropagation();
