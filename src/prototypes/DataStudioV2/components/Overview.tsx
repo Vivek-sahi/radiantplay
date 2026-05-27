@@ -93,7 +93,7 @@ const HeroChip: React.FC<{ icon: React.ComponentProps<typeof Icon>['name']; labe
       e.currentTarget.style.backgroundColor = 'transparent';
     }}
   >
-    <Icon name={icon} size={iconSize.xs} />
+    <Icon name={icon} size="xs" />
     {label}
   </button>
 );
