@@ -1,8 +1,0 @@
-﻿Object,Number,Name,Description,Dynamic Behavior,Default State,Error State,Content Rules
-GL.0,1,ThoughtSpot logo ,Clicking on the logo will return the user to the Insight page.,,,,
-GL.0,2,Object Search ,The default state is to just show an icon of the object search,"Clicking on the icons will open the object search field. The user can then enter a text string into the field and press return or click the the icons to the far right of the field to iniate an object search.
-Initiating a search will refresh the page and show the object search results page.",The default state is to just show an icon of the object search,If the user does not enter a string in object search field then the page and show the object search results page with a zero results view.,
-GL.0,3,Nine dot menu,,"Clicking on the icons will show the menu for the nine dot menu. This will show between 1 and 4 main navigation options as well as a See all answer, liveboards and Search data links.
-",,,
-GL.0,4,Help Icon,Clicking on this will reveal the help menu. (This is powered by pendo),,,,
-GL.0,5,Profile Icon,"Click on this will reveal the profile menu. This will display the a sign out and profile link. ",,,,

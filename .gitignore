@@ -49,6 +49,9 @@ docs/backlog.md
 # Cmdk prototype — large Figma Make export (local only)
 src/prototypes/Cmdk/
 
+# Notion design-system export — 11 MB reference, kept local (untracked in reorg PR 3)
+notion-radiant-guidelines/
+
 # Local status dashboard (generated, not for repo)
 public/status.html
 

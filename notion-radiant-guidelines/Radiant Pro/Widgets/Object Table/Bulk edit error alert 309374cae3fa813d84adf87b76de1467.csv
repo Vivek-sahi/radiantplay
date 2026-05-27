@@ -1,8 +1,0 @@
-﻿Ref,Name,Description,Dynamic Behaviour,Default State,Error State,Content Rules
-1,Modal title,"This title let users know some columns were not updated ",N/A,N/A,N/A,Edit + column’s name
-2,Not updated label,This section includes all the columns that were not updated.,N/A,N/A,N/A,N/A
-3,Reason,This paragraph explains the reasons why these columns cannot be updated.,N/A,N/A,N/A,N/A
-4,Column name,These columns were not updated,,,,
-5,Updated lable,This section includes all the columns that has been updated.,,,,
-6,Column name,These columns has been updated,,,,
-7,Button,This button allows users to close the modal dialog box,,,,

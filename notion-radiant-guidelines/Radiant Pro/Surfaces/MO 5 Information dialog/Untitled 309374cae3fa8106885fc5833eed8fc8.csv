@@ -1,5 +1,0 @@
-﻿Object,Number,Name,Description,Dynamic Behavior,Default State,Error State,Content Rules
-MO.5 Information dialog,1,Header,The header describes the dialogs’s task or purpose.,-,-,-,The title should be brief and clearly describe the dialogs’s task or purpose.
-MO.5 Information dialog,2,Content area,Contains the information that read only or interact without second submit.,"When the content exceed the maximum allowed vertical space, the scrollbar appears and is limited the content area only.",-,We should wait to validate any and all inputs when the CTA is clicked and not before.,-
-MO.5 Information dialog,3,CTA bar,Contains the Done button.,-,-,-,-
-MO.5 Information dialog,4,Done button,Close the modal dialog.,-,-,-,Should be “Done”

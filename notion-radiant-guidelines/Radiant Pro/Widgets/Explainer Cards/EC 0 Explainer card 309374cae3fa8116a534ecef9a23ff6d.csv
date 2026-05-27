@@ -1,7 +1,0 @@
-﻿Ref,Name,Description,Dynamic Behaviour,Default State,Error State,Content Rules
-1,Title,N/A,Title is optional,N/A,N/A,N/A
-2,Description text block,Describe the object,restrict messages to 3 lines in length,N/A,N/A,N/A
-3,Explainer card container,N/A," at 340px wide",N/A,N/A,N/A
-4,Close button,This button allows the user to close the explainer card,Click this button to close the explainer card,N/A,N/A,N/A
-5,Media content,Media content could be image or video,Media content is optional,N/A,N/A,N/A
-6,Primary action,Main CTA,CTA or next / back buttons (optional),N/A,N/A,N/A

@@ -1,6 +1,0 @@
-﻿Name,Content Rules,Default State,Description,Dynamic Behaviour,Error State,Ref
-Single object list picker,N/A,N/A,The options has sub-layer options,"Click on this row will go to the deeper layer Object%20Table%20309374cae3fa8113b439c8bb096e0478.mdObject%20Table%20309374cae3fa8113b439c8bb096e0478.mdObject%20Table%20309374cae3fa8113b439c8bb096e0478.md
-1. The title would be the sub-layer options group title
-2. Click on “back” will return to the previous layer.",N/A,3
-Modal title,Edit + column’s name,N/A,"This title let users know they are editing which column property ",N/A,N/A,1
-Options title,N/A,N/A,The name of this group of options,N/A,N/A,2
