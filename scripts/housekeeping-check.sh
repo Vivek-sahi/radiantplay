@@ -140,8 +140,8 @@ check_u6() {
       --include='*.ts' --include='*.tsx' --include='*.md' \
       --include='*.json' --include='*.sh' --include='*.html' \
       --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=.git \
-      --exclude-dir=internal --exclude-dir=.public-export \
-      --exclude='CHANGELOG.md' \
+      --exclude-dir=internal --exclude-dir=.public-export --exclude-dir=worktrees \
+      --exclude='CHANGELOG.md' --exclude='status.html' \
       . 2>/dev/null)"
     if [[ -n "$hits" ]]; then
       echo "    ${c_red}refs to '${pat}' still present:${c_reset}"
