@@ -1,6 +1,17 @@
 import React from 'react';
 import { BaseIconProps } from '../Icon.types';
-import { iconSize, iconStrokeWidth } from '../../../tokens/icons';
+import { iconSize } from '../../../tokens/icons';
+
+const VARIANTS: Record<'xs' | 's' | 'm' | 'l', { viewBox: string; inner: string }> = {
+  xs: { viewBox: '0 0 12 12', inner: `<path d="M5.99998 7.66665C6.92045 7.66665 7.66665 6.92046 7.66665 5.99998C7.66665 5.07951 6.92045 4.33332 5.99998 4.33332C5.07951 4.33332 4.33332 5.07951 4.33332 5.99998C4.33332 6.92046 5.07951 7.66665 5.99998 7.66665Z" fill="currentColor"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M12 5.99998C11.055 3.85332 9.01497 1.99999 5.99998 1.99999C2.98499 1.99999 0.944997 3.85332 0 5.99998C0.944997 8.14664 3.02249 9.99997 5.99998 9.99997C8.97747 9.99997 11.055 8.14664 12 5.99998ZM5.99998 8.66664C7.47274 8.66664 8.66664 7.47274 8.66664 5.99998C8.66664 4.52723 7.47274 3.33332 5.99998 3.33332C4.52723 3.33332 3.33332 4.52723 3.33332 5.99998C3.33332 7.47274 4.52723 8.66664 5.99998 8.66664Z" fill="currentColor"/>` },
+  s: { viewBox: '0 0 14 14', inner: `<path d="M6.99998 8.94442C8.07386 8.94442 8.94442 8.07387 8.94442 6.99998C8.94442 5.9261 8.07386 5.05554 6.99998 5.05554C5.9261 5.05554 5.05554 5.9261 5.05554 6.99998C5.05554 8.07387 5.9261 8.94442 6.99998 8.94442Z" fill="currentColor"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M14 6.99998C12.8975 4.49554 10.5175 2.33333 6.99998 2.33333C3.48249 2.33333 1.1025 4.49554 0 6.99998C1.1025 9.50442 3.52624 11.6666 6.99998 11.6666C10.4737 11.6666 12.8975 9.50442 14 6.99998ZM6.99998 10.1111C8.7182 10.1111 10.1111 8.71819 10.1111 6.99998C10.1111 5.28177 8.7182 3.88888 6.99998 3.88888C5.28177 3.88888 3.88888 5.28177 3.88888 6.99998C3.88888 8.71819 5.28177 10.1111 6.99998 10.1111Z" fill="currentColor"/>` },
+  m: { viewBox: '0 0 16 16', inner: `<path d="M7.99998 10.2222C9.22727 10.2222 10.2222 9.22727 10.2222 7.99998C10.2222 6.77268 9.22727 5.77776 7.99998 5.77776C6.77268 5.77776 5.77776 6.77268 5.77776 7.99998C5.77776 9.22727 6.77268 10.2222 7.99998 10.2222Z" fill="currentColor"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M16 7.99997C14.74 5.13776 12.02 2.66666 7.99998 2.66666C3.97999 2.66666 1.26 5.13776 0 7.99997C1.26 10.8622 4.02999 13.3333 7.99998 13.3333C11.97 13.3333 14.74 10.8622 16 7.99997ZM7.99998 11.5555C9.96365 11.5555 11.5555 9.96365 11.5555 7.99997C11.5555 6.0363 9.96365 4.44443 7.99998 4.44443C6.0363 4.44443 4.44443 6.0363 4.44443 7.99997C4.44443 9.96365 6.0363 11.5555 7.99998 11.5555Z" fill="currentColor"/>` },
+  l: { viewBox: '0 0 18 18', inner: `<path d="M9 11.5C10.3807 11.5 11.5 10.3807 11.5 9C11.5 7.61929 10.3807 6.5 9 6.5C7.61929 6.5 6.5 7.61929 6.5 9C6.5 10.3807 7.61929 11.5 9 11.5Z" fill="currentColor"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M18 9C16.5825 5.78 13.5225 3 9 3C4.4775 3 1.4175 5.78 0 9C1.4175 12.22 4.53375 15 9 15C13.4662 15 16.5825 12.22 18 9ZM9 13C11.2091 13 13 11.2091 13 9C13 6.79086 11.2091 5 9 5C6.79086 5 5 6.79086 5 9C5 11.2091 6.79086 13 9 13Z" fill="currentColor"/>` },
+};
 
 export const EyeIcon: React.FC<BaseIconProps> = ({
   size = 'm',
@@ -8,33 +19,23 @@ export const EyeIcon: React.FC<BaseIconProps> = ({
   className,
   'aria-label': ariaLabel,
   'aria-hidden': ariaHidden,
-}) => (
-  <svg
-    width={iconSize[size]}
-    height={iconSize[size]}
-    viewBox="0 0 18 18"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-    className={className}
-    aria-label={ariaLabel}
-    aria-hidden={ariaHidden}
-    role={ariaLabel ? 'img' : undefined}
-  >
-    <path
-      d="M0.75 9C0.75 9 3.75 3 9 3C14.25 3 17.25 9 17.25 9C17.25 9 14.25 15 9 15C3.75 15 0.75 9 0.75 9Z"
-      stroke={color}
-      strokeWidth={iconStrokeWidth[size]}
-      strokeLinecap="round"
-      strokeLinejoin="round"
+}) => {
+  const variant = VARIANTS[size];
+  return (
+    <svg
+      width={iconSize[size]}
+      height={iconSize[size]}
+      viewBox={variant.viewBox}
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+      aria-label={ariaLabel}
+      aria-hidden={ariaHidden}
+      role={ariaLabel ? 'img' : undefined}
+      style={{ color }}
+      dangerouslySetInnerHTML={{ __html: variant.inner }}
     />
-    <path
-      d="M9 11.25C10.2426 11.25 11.25 10.2426 11.25 9C11.25 7.75736 10.2426 6.75 9 6.75C7.75736 6.75 6.75 7.75736 6.75 9C6.75 10.2426 7.75736 11.25 9 11.25Z"
-      stroke={color}
-      strokeWidth={iconStrokeWidth[size]}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
+  );
+};
 
 export default EyeIcon;

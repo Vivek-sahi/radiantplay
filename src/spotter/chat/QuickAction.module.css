@@ -1,0 +1,55 @@
+.quickAction {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2, 4px);
+  height: 36px;
+  padding: 0 var(--spacing-4, 12px);
+  background-color: var(--rd-sys-color-background-base);
+  border: 1px solid var(--rd-sys-color-border-divider);
+  border-radius: 999px;
+  color: var(--rd-sys-color-content-secondary);
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-sm, 14px);
+  font-weight: var(--font-weight-light, 375);
+  line-height: var(--line-height-md, 20px);
+  cursor: pointer;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease,
+    transform 80ms ease,
+    opacity 150ms ease;
+}
+
+.quickAction:hover {
+  background-color: var(--rd-sys-color-background-sunken);
+  border-color: var(--rd-sys-color-border-default);
+  color: var(--rd-sys-color-content-primary);
+}
+
+.quickAction:active {
+  background-color: var(--rd-sys-color-background-subtle);
+  border-color: var(--rd-sys-color-border-default);
+  color: var(--rd-sys-color-content-primary);
+  transform: scale(0.97);
+}
+
+.quickAction:focus-visible {
+  outline: 2px solid var(--rd-sys-color-border-focus);
+  outline-offset: 2px;
+}
+
+.quickAction:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  color: currentColor;
+}

@@ -1,38 +1,70 @@
 #!/bin/bash
 # pre-push hook — Radiant Play maintainer safety net
 #
-# Fires on every `git push`. If pushing to main, checks whether
-# platformVersion.ts was modified in the commits being pushed.
-# Prints a reminder if not — but never hard-blocks (use --no-verify to bypass).
+# Two responsibilities:
+#   1. Block personal branches from being pushed to galaxy (the shared upstream).
+#      Personal work stays on origin (GitHub) only — pushing it to galaxy would
+#      pollute every other designer's /sync-upstream flow.
+#   2. Remind on pushes to main if platformVersion.ts wasn't bumped.
 #
 # Install once: bash scripts/install-maintainer-hooks.sh
 
 PLATFORM_VERSION_FILE="src/data/platformVersion.ts"
 RELEASE_SCRIPT="scripts/release.sh"
 
-# Read push target from git's stdin (format: <local-ref> <local-sha> <remote-ref> <remote-sha>)
+remote_name="$1"
+remote_url="$2"
+
+# Detect whether this push targets galaxy
+is_galaxy_push=false
+if [[ "$remote_name" == "galaxy" ]] || [[ "$remote_url" == *"galaxy.corp.thoughtspot.com"* ]]; then
+  is_galaxy_push=true
+fi
+
+# Read push refs from stdin (format: <local-ref> <local-sha> <remote-ref> <remote-sha>)
 while read local_ref local_sha remote_ref remote_sha; do
-  # Only care about pushes to main
-  if [[ "$remote_ref" != "refs/heads/main" ]]; then
-    exit 0
+
+  branch="${local_ref#refs/heads/}"
+  remote_branch="${remote_ref#refs/heads/}"
+
+  # ── Block personal* pushes to galaxy ──────────────────────────────────────
+  if [[ "$is_galaxy_push" == true ]]; then
+    if [[ "$branch" == "personal" ]] || [[ "$branch" == personal/* ]] \
+       || [[ "$remote_branch" == "personal" ]] || [[ "$remote_branch" == personal/* ]]; then
+      echo ""
+      echo "Refusing to push '$branch' to galaxy."
+      echo ""
+      echo "Personal branches are origin-only. Galaxy is the shared upstream"
+      echo "that other designers fork from — pushing personal work there would"
+      echo "pollute everyone else's /sync-upstream."
+      echo ""
+      echo "If this is shared library work, switch to main:"
+      echo "  git checkout main"
+      echo "  # cherry-pick or rewrite the change, move registry entry from"
+      echo "  # registry-mine.ts to registry-core.ts, then push main to galaxy."
+      echo ""
+      echo "To bypass this hook (you almost never want to):"
+      echo "  git push --no-verify galaxy $branch"
+      echo ""
+      exit 1
+    fi
   fi
 
-  # Check if platformVersion.ts is modified in the commits being pushed
-  if git diff --name-only "$remote_sha" "$local_sha" 2>/dev/null | grep -q "$PLATFORM_VERSION_FILE"; then
-    echo "✓ platformVersion.ts updated — release looks good. Pushing to main."
-    exit 0
+  # ── Soft reminder on main pushes without a version bump ───────────────────
+  if [[ "$remote_ref" == "refs/heads/main" ]]; then
+    if git diff --name-only "$remote_sha" "$local_sha" 2>/dev/null | grep -q "$PLATFORM_VERSION_FILE"; then
+      echo "✓ platformVersion.ts updated — release looks good. Pushing to main."
+    else
+      echo ""
+      echo "⚠️  Pushing to main without a version bump."
+      echo "   platformVersion.ts was not changed in these commits."
+      echo ""
+      echo "   If this is a release, run: bash $RELEASE_SCRIPT"
+      echo "   To push anyway:           git push --no-verify"
+      echo ""
+    fi
   fi
 
-  # Not updated — print reminder, but allow push
-  echo ""
-  echo "⚠️  Pushing to main without a version bump."
-  echo "   platformVersion.ts was not changed in these commits."
-  echo ""
-  echo "   If this is a release, run: bash $RELEASE_SCRIPT"
-  echo "   To push anyway:           git push --no-verify"
-  echo ""
-  # Exit 0 = soft reminder, push still proceeds
-  exit 0
 done
 
 exit 0

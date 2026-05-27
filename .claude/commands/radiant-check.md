@@ -1,3 +1,7 @@
+---
+description: Radiant compliance health check — components, tokens, content guidelines, and layout. Pass a prototype name and/or focus area as arguments.
+---
+
 Run a Radiant compliance health check on the current prototype. Shows what's reused from the design system, what's been customised, what's hardcoded, and where easy improvements exist. This is a status check — not a blocker.
 
 Accepts optional arguments: `$ARGUMENTS`

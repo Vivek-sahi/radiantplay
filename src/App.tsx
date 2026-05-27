@@ -3,6 +3,10 @@ import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-
 import { Sidebar, NavItem } from './components/Sidebar';
 import { HomePage } from './pages/HomePage';
 import { RadiantHomePage } from './pages/RadiantHomePage';
+import { SpotterShowcase } from './pages/SpotterShowcase';
+import { SpotterShellPage } from './pages/SpotterShellPage';
+import { SpotterShellFullscreen } from './pages/SpotterShellPage/SpotterShellFullscreen';
+import { AppShellFullscreen } from './pages/Fullscreen/AppShellFullscreen';
 import { ComponentDocPage } from './pages/ComponentDocPage';
 import { ComponentRegistryPage } from './pages/ComponentRegistryPage';
 import { PlaygroundGallery } from './pages/PlaygroundGallery';
@@ -13,10 +17,12 @@ import { SurfacesShowcase } from './pages/SurfacesShowcase';
 import { VersionHistoryPage } from './pages/VersionHistoryPage';
 import { ColorSystemPage } from './pages/ColorSystemPage';
 import { TypographyPage } from './pages/TypographyPage';
+import RdModalDemo from './pages/RdModalDemo';
 // import { RoadmapPage } from './pages/RoadmapPage';
 
 import { systemColors } from './tokens/colors';
 import { getCurrentVersion } from './data/versionHistory';
+import { getIconCount } from './data/componentRegistry';
 
 // Navigation icons
 const HomeIcon = () => (
@@ -99,6 +105,8 @@ const ROUTES = {
   surfaces: '/radiant/surfaces',
   registry: '/radiant/registry',
   changelog: '/radiant/changelog',
+  'spotter-showcase': '/radiant/spotter',
+  spottershell: '/radiant/components/spottershell',
   // Widgets
   liveboardheader: '/radiant/components/liveboardheader',
   globalheader: '/radiant/components/globalheader',
@@ -222,6 +230,8 @@ const RadiantLayout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       'surfaces': '/radiant/surfaces',
       'registry': '/radiant/registry',
       'changelog': '/radiant/changelog',
+      'spotter-showcase': '/radiant/spotter',
+      'spottershell': '/radiant/components/spottershell',
       // 'roadmap': '/radiant/roadmap',
       // Widgets
       'liveboardheader': '/radiant/components/liveboardheader',
@@ -316,17 +326,19 @@ const RadiantLayout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     { id: 'radiant', label: 'Home', icon: <HomeIcon />, type: 'item' },
     { id: 'colours', label: 'Colours', icon: <ColorIcon />, type: 'item' },
     { id: 'typography-page', label: 'Typography', icon: <ArchitectureIcon />, type: 'item' },
-    { id: 'icons', label: 'Icons', icon: <IconsIcon />, type: 'item', badge: '46' },
+    { id: 'icons', label: 'Icons', icon: <IconsIcon />, type: 'item', badge: String(getIconCount()) },
     { id: 'surfaces', label: 'Surfaces', icon: <SurfacesIcon />, type: 'item' },
     { id: 'registry', label: 'Component Registry', icon: <TableIcon />, type: 'item' },
     { id: 'changelog', label: 'Changelog', icon: <ChangelogIcon />, type: 'item' },
+    { id: 'spotter-showcase', label: 'Spotter DS', icon: <ComponentIcon />, type: 'item', badge: 'New' },
     // { id: 'roadmap', label: 'Roadmap', icon: <RoadmapIcon />, type: 'item', badge: 'New' },
     { id: 'divider0', label: '', type: 'divider' },
     { id: 'widgets-section', label: 'Widgets', type: 'section' },
-    { id: 'liveboardheader', label: 'LiveboardHeader', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'globalheader', label: 'GlobalHeader', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'appsidebar', label: 'AppSidebar', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'appshell', label: 'AppShell', icon: <ComponentIcon />, type: 'item', badge: 'New' },
+    { id: 'liveboardheader', label: 'LiveboardHeader', icon: <ComponentIcon />, type: 'item' },
+    { id: 'globalheader', label: 'GlobalHeader', icon: <ComponentIcon />, type: 'item' },
+    { id: 'appsidebar', label: 'AppSidebar', icon: <ComponentIcon />, type: 'item' },
+    { id: 'appshell', label: 'AppShell', icon: <ComponentIcon />, type: 'item' },
+    { id: 'spottershell', label: 'SpotterShell', icon: <ComponentIcon />, type: 'item', badge: 'New' },
     { id: 'divider1', label: '', type: 'divider' },
     { id: 'components-section', label: 'Selection Controls', type: 'section' },
     { id: 'button', label: 'Button', icon: <ComponentIcon />, type: 'item', badge: '3' },
@@ -530,6 +542,12 @@ const App: React.FC = () => {
       <Route path="/radiant/surfaces" element={<RadiantLayout><SurfacesShowcase /></RadiantLayout>} />
       <Route path="/radiant/registry" element={<RadiantLayout><ComponentRegistryPage /></RadiantLayout>} />
       <Route path="/radiant/changelog" element={<RadiantLayout><VersionHistoryPage /></RadiantLayout>} />
+      <Route path="/radiant/spotter" element={<RadiantLayout><SpotterShowcase /></RadiantLayout>} />
+      <Route path="/radiant/components/spottershell" element={<RadiantLayout><SpotterShellPage /></RadiantLayout>} />
+
+      {/* Fullscreen preview routes — no RadiantLayout chrome */}
+      <Route path="/preview/spottershell" element={<SpotterShellFullscreen />} />
+      <Route path="/preview/appshell" element={<AppShellFullscreen />} />
       {/* <Route path="/radiant/roadmap" element={<RadiantLayout><RoadmapPage /></RadiantLayout>} /> */}
       <Route path="/radiant/architecture" element={<RadiantLayout><ArchitectureShowcase /></RadiantLayout>} />
       {/* Legacy redirect for old colors route */}
@@ -635,6 +653,9 @@ const App: React.FC = () => {
       {/* Redirect icongallery to icons page */}
       <Route path="/radiant/components/icongallery" element={<Navigate to="/radiant/icons" replace />} />
       
+      {/* Dev demos */}
+      <Route path="/dev/rdmodal" element={<RdModalDemo />} />
+
       {/* Playground Section - No sidebar */}
       <Route path="/playground" element={<Navigate to="/" replace />} />
       <Route path="/playground/:projectName" element={<PlaygroundProject />} />

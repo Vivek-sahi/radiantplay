@@ -1,0 +1,60 @@
+.item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 36px;
+  padding: 0 var(--spacing-4, 16px);
+  border: none;
+  background-color: transparent;
+  border-radius: 0;
+  color: var(--rd-sys-color-content-primary);
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-sm, 14px);
+  font-weight: var(--font-weight-light, 375);
+  line-height: var(--line-height-md, 20px);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+.item:hover {
+  background-color: var(--rd-sys-color-background-subtle);
+}
+
+.item:focus-visible {
+  outline: 2px solid var(--rd-sys-color-border-focus);
+  outline-offset: -2px;
+  border-radius: 0;
+}
+
+.item[data-selected='true'] {
+  background-color: var(--rd-sys-color-background-information);
+  color: var(--rd-sys-color-content-brand);
+  font-weight: var(--font-weight-regular, 400);
+}
+
+.label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.leadingIcon,
+.trailingIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: currentColor;
+}
+
+.leadingIcon {
+  margin-right: var(--spacing-2, 8px);
+}
+
+.trailingIcon {
+  margin-left: var(--spacing-2, 8px);
+}

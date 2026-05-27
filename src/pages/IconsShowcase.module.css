@@ -1,0 +1,35 @@
+.iconCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px 12px;
+  background-color: var(--rd-sys-color-background-sunken);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  position: relative;
+  border: none;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+.iconCard:hover {
+  background-color: var(--rd-sys-color-background-subtle);
+}
+
+.iconCard:focus,
+.iconCard:focus-visible,
+.iconCard:active {
+  outline: none;
+  background-color: var(--rd-sys-color-background-subtle);
+}
+
+.iconCardCopied,
+.iconCardCopied:hover,
+.iconCardCopied:focus,
+.iconCardCopied:active {
+  background-color: var(--rd-sys-color-background-success);
+}

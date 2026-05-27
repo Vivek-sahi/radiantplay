@@ -9,6 +9,7 @@ import {
   ModalType,
 } from '../components/Modal';
 import { Button } from '../components/Button';
+import { LastUpdated } from '../components/LastUpdated';
 import { systemColors, referenceColors } from '../tokens/colors';
 import { spacing } from '../tokens/spacing';
 
@@ -19,6 +20,8 @@ type ModalDemo = {
   title: string;
   description: string;
   width: string;
+  eyebrowText?: string;
+  totalSteps?: number;
 };
 
 const MODAL_SIZES: ModalDemo[] = [
@@ -30,9 +33,11 @@ const MODAL_SIZES: ModalDemo[] = [
 
 const MODAL_TYPES: ModalDemo[] = [
   { id: 'm2-simple', size: 'M2', type: 'simple', title: 'Simple', description: 'Header + Content + Footer', width: '788px' },
+  { id: 'm2-eyebrow', size: 'M2', type: 'simple', title: 'New connection', description: 'Small label above the title', width: '788px', eyebrowText: 'Eyebrow' },
   { id: 'm2-wizard', size: 'M2', type: 'wizard', title: 'Wizard', description: 'Multi-step with progress bar', width: '788px' },
   { id: 'm2-subnav', size: 'M2', type: 'subnavigation', title: 'Sub-navigation', description: 'Settings with left panel', width: '788px' },
   { id: 'm2-splash', size: 'M2', type: 'splashscreen', title: 'Splash Screen', description: 'Feature announcements', width: '788px' },
+  { id: 'm2-splash-multi', size: 'M2', type: 'splashscreen', title: 'Splash Screen Multi', description: 'Onboarding flow with step progress', width: '788px', totalSteps: 3 },
 ];
 
 export const SurfacesShowcase: React.FC = () => {
@@ -53,15 +58,32 @@ export const SurfacesShowcase: React.FC = () => {
     if (!activeModal) return null;
 
     if (activeModal.type === 'splashscreen') {
-      return (
-        <ModalSplashContent
-          title="Introducing Parameters"
-          bulletPoints={[
+      const splashSteps = [
+        {
+          title: 'Introducing parameters',
+          bulletPoints: [
             'Create formulas with adjustable values to run different scenarios',
             'Click the plus button to make your first parameter',
-          ]}
-        />
-      );
+          ],
+        },
+        {
+          title: 'Build your first scenario',
+          bulletPoints: [
+            'Combine parameters with formulas to model outcomes',
+            'Compare multiple scenarios side by side',
+          ],
+        },
+        {
+          title: 'Share with your team',
+          bulletPoints: [
+            'Save your scenarios to liveboards anyone can access',
+            'Add comments to start a conversation',
+          ],
+        },
+      ];
+      const idx = activeModal.totalSteps ? Math.min(wizardStep, activeModal.totalSteps) - 1 : 0;
+      const step = splashSteps[idx] ?? splashSteps[0];
+      return <ModalSplashContent title={step.title} bulletPoints={step.bulletPoints} />;
     }
 
     return (
@@ -80,22 +102,54 @@ export const SurfacesShowcase: React.FC = () => {
         <ModalFooter
           tertiaryAction={<Button variant="tertiary" onClick={closeModal}>Cancel</Button>}
           secondaryAction={
-            wizardStep > 1 ? (
-              <Button variant="secondary" onClick={() => setWizardStep(s => s - 1)}>Back</Button>
-            ) : undefined
+            <Button
+              variant="secondary"
+              onClick={() => setWizardStep(s => s - 1)}
+              disabled={wizardStep === 1}
+            >
+              Back
+            </Button>
           }
           primaryAction={
-            wizardStep < 3 ? (
-              <Button variant="primary" onClick={() => setWizardStep(s => s + 1)}>Next</Button>
-            ) : (
-              <Button variant="primary" onClick={closeModal}>Done</Button>
-            )
+            <Button
+              variant="primary"
+              onClick={wizardStep < 3 ? () => setWizardStep(s => s + 1) : closeModal}
+              style={{ minWidth: spacing.I * 2 }}
+            >
+              {wizardStep < 3 ? 'Next' : 'Done'}
+            </Button>
           }
         />
       );
     }
 
     if (activeModal.type === 'splashscreen') {
+      if (activeModal.totalSteps && activeModal.totalSteps >= 2) {
+        const isLast = wizardStep >= activeModal.totalSteps;
+        return (
+          <ModalFooter
+            tertiaryAction={<Button variant="tertiary" onClick={closeModal}>Skip</Button>}
+            secondaryAction={
+              <Button
+                variant="secondary"
+                onClick={() => setWizardStep(s => s - 1)}
+                disabled={wizardStep === 1}
+              >
+                Back
+              </Button>
+            }
+            primaryAction={
+              <Button
+                variant="primary"
+                onClick={isLast ? closeModal : () => setWizardStep(s => s + 1)}
+                style={{ minWidth: spacing.I * 2 }}
+              >
+                {isLast ? 'Done' : 'Next'}
+              </Button>
+            }
+          />
+        );
+      }
       return (
         <ModalFooter
           primaryAction={<Button variant="primary" onClick={closeModal}>Done</Button>}
@@ -116,6 +170,7 @@ export const SurfacesShowcase: React.FC = () => {
     <div style={styles.container}>
       {/* Header */}
       <section style={styles.headerSection}>
+        <LastUpdated componentId="modal" />
         <h1 style={styles.pageTitle}>Surfaces</h1>
         <p style={styles.pageDescription}>
           Overlay components including Modals (M1-M4), with Simple, Wizard, Sub-navigation, and Splash Screen variants.
@@ -258,6 +313,10 @@ import { Button } from '@/components/Button';
               <span style={styles.specLabel}>Border</span>
               <span style={styles.specValue}>1px gray-20</span>
             </div>
+            <div style={styles.specRow}>
+              <span style={styles.specLabel}>Close button</span>
+              <span style={styles.specValue}>M4 only (text)</span>
+            </div>
           </div>
           <div style={styles.specCard}>
             <h4 style={styles.specTitle}>Content</h4>
@@ -269,8 +328,12 @@ import { Button } from '@/components/Button';
           <div style={styles.specCard}>
             <h4 style={styles.specTitle}>Footer</h4>
             <div style={styles.specRow}>
+              <span style={styles.specLabel}>Height</span>
+              <span style={styles.specValue}>72px</span>
+            </div>
+            <div style={styles.specRow}>
               <span style={styles.specLabel}>Padding</span>
-              <span style={styles.specValue}>20px 24px</span>
+              <span style={styles.specValue}>0 24px</span>
             </div>
             <div style={styles.specRow}>
               <span style={styles.specLabel}>Background</span>
@@ -336,9 +399,9 @@ import { Button } from '@/components/Button';
           size={activeModal.size}
           type={activeModal.type}
           title={activeModal.title}
-          eyebrow={activeModal.type === 'wizard' ? `Step ${wizardStep} of 3` : undefined}
-          currentStep={wizardStep}
-          totalSteps={3}
+          eyebrow={activeModal.type === 'wizard' ? `Step ${wizardStep} of 3` : activeModal.eyebrowText}
+          currentStep={activeModal.type === 'wizard' || activeModal.totalSteps ? wizardStep : undefined}
+          totalSteps={activeModal.type === 'wizard' ? 3 : activeModal.totalSteps}
           navigation={
             activeModal.type === 'subnavigation' ? (
               <ModalNavPanel>
@@ -601,7 +664,7 @@ const styles: Record<string, React.CSSProperties> = {
   secondaryDemo: {
     fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
     fontSize: 12,
-    color: referenceColors.gray['70'],
+    color: systemColors.light['content-primary'],
     padding: '4px 12px',
     backgroundColor: systemColors.light['background-subtle'],
     borderRadius: 16,
@@ -609,7 +672,7 @@ const styles: Record<string, React.CSSProperties> = {
   primaryDemo: {
     fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
     fontSize: 12,
-    color: systemColors.light['background-base'],
+    color: systemColors.light['content-alternate'],
     padding: '4px 12px',
     backgroundColor: systemColors.light['content-brand'],
     borderRadius: 16,

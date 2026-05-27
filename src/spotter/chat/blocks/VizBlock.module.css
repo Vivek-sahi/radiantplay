@@ -1,0 +1,312 @@
+.viz {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3, 12px);
+}
+
+.title {
+  margin: 0;
+  color: var(--rd-sys-color-content-primary);
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-lg, 18px);
+  font-weight: var(--font-weight-semibold, 600);
+  line-height: var(--line-height-lg, 24px);
+  letter-spacing: -0.2px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--rd-sys-color-background-base);
+  border: 1px solid var(--rd-sys-color-border-divider);
+  border-radius: var(--radius-lg, 8px);
+  overflow: hidden;
+  box-shadow: 0 0 2px rgba(25, 35, 49, 0.08), 0 2px 4px rgba(25, 35, 49, 0.04);
+}
+
+.cardHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--spacing-3, 12px);
+  padding: var(--spacing-4, 16px) var(--spacing-5, 20px);
+}
+
+.tokens {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  gap: var(--spacing-2, 8px);
+  align-items: center;
+}
+
+.token {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1, 4px);
+  height: 24px;
+  padding: 0 var(--spacing-2, 8px);
+  border-radius: var(--radius-sm, 4px);
+  color: var(--rd-sys-color-content-primary);
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-sm, 14px);
+  font-weight: var(--font-weight-light, 375);
+  line-height: var(--line-height-md, 20px);
+  white-space: nowrap;
+}
+
+.token[data-kind='measure'] {
+  background-color: var(--rd-sys-color-background-success);
+}
+
+.token[data-kind='keyword'] {
+  background-color: var(--rd-sys-color-background-information);
+}
+
+.token[data-kind='filter'],
+.token[data-kind='formula'] {
+  background-color: var(--rd-sys-color-background-subtle);
+}
+
+.headerActions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2, 8px);
+  flex-shrink: 0;
+}
+
+.viewToggle {
+  display: inline-flex;
+  align-items: center;
+  background-color: var(--rd-sys-color-background-subtle);
+  border-radius: 999px;
+  padding: 2px;
+}
+
+.viewBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  border-radius: 999px;
+  color: var(--rd-sys-color-content-secondary);
+  cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+.viewBtn:hover {
+  color: var(--rd-sys-color-content-primary);
+}
+
+.viewBtn[data-active='true'] {
+  background-color: var(--rd-sys-color-background-base);
+  color: var(--rd-sys-color-content-brand);
+  box-shadow: 0 1px 2px rgba(25, 35, 49, 0.1);
+}
+
+.iconBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  border-radius: 999px;
+  color: var(--rd-sys-color-content-secondary);
+  cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+.iconBtn:hover {
+  background-color: var(--rd-sys-color-background-subtle);
+  color: var(--rd-sys-color-content-primary);
+}
+
+.iconBtn:focus-visible {
+  outline: 2px solid var(--rd-sys-color-border-focus);
+  outline-offset: 2px;
+}
+
+.cardBody {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  padding: 0 var(--spacing-5, 20px) var(--spacing-4, 16px);
+  min-height: 320px;
+}
+
+.slot {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
+  min-height: 280px;
+}
+
+.slotIframe {
+  width: 100%;
+  height: 100%;
+  min-height: 280px;
+  border: 0;
+  display: block;
+}
+
+.slotPlaceholder {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--rd-sys-color-background-sunken);
+  border-radius: var(--radius-md, 6px);
+  color: var(--rd-sys-color-content-secondary);
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-md, 16px);
+  font-weight: var(--font-weight-light, 375);
+  line-height: var(--line-height-lg, 24px);
+  text-align: center;
+  padding: var(--spacing-6, 24px);
+}
+
+.tableWrap {
+  flex: 1;
+  background-color: var(--rd-sys-color-background-base);
+  overflow: auto;
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-sm, 14px);
+  font-weight: var(--font-weight-light, 375);
+  line-height: var(--line-height-md, 20px);
+}
+
+.tableEl {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.tableEl th,
+.tableEl td {
+  padding: var(--spacing-2, 8px) var(--spacing-3, 12px);
+  text-align: left;
+  border-bottom: 1px solid var(--rd-sys-color-border-divider);
+}
+
+.tableEl th {
+  background-color: var(--rd-sys-color-background-sunken);
+  color: var(--rd-sys-color-content-secondary);
+  font-weight: var(--font-weight-medium, 500);
+}
+
+.cardFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-3, 12px);
+  height: 40px;
+  padding: 0 var(--spacing-5, 20px);
+  border-top: 1px solid var(--rd-sys-color-border-divider);
+  background-color: var(--rd-sys-color-background-base);
+}
+
+.footerLeft,
+.footerRight {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-3, 12px);
+}
+
+.footerAction {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1, 4px);
+  height: 24px;
+  padding: 0 var(--spacing-1, 4px);
+  background: transparent;
+  border: none;
+  color: var(--rd-sys-color-content-secondary);
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-sm, 14px);
+  font-weight: var(--font-weight-light, 375);
+  line-height: var(--line-height-md, 20px);
+  cursor: pointer;
+  border-radius: var(--radius-sm, 4px);
+  transition: color 120ms ease;
+}
+
+.footerAction:hover {
+  color: var(--rd-sys-color-content-primary);
+}
+
+.footerAction:focus-visible {
+  outline: 2px solid var(--rd-sys-color-border-focus);
+  outline-offset: 2px;
+}
+
+.footerActionBrand {
+  color: var(--rd-sys-color-content-brand);
+}
+
+.footerActionBrand:hover {
+  color: var(--rd-sys-color-content-brand);
+  filter: brightness(0.9);
+}
+
+/* M4 modal width override — Radiant default caps at 1440px; we want true full-width minus 8px gutter. */
+.expandModalFull {
+  max-width: none !important;
+}
+
+/* Layout for the M4 fullscreen expand modal contents. */
+.expandedView {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3, 12px);
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+.expandedHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-3, 12px);
+  flex-shrink: 0;
+}
+
+.expandedTitle {
+  margin: 0;
+  color: var(--rd-sys-color-content-primary);
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-xl, 20px);
+  font-weight: var(--font-weight-semibold, 600);
+  line-height: var(--line-height-xl, 28px);
+  letter-spacing: -0.2px;
+}
+
+.expandedTokens {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-2, 8px);
+  flex-shrink: 0;
+}
+
+.expandedChart {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: stretch;
+  background-color: var(--rd-sys-color-background-base);
+}
+
+.expandedFooter {
+  flex-shrink: 0;
+  color: var(--rd-sys-color-content-secondary);
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-sm, 14px);
+  font-weight: var(--font-weight-light, 375);
+  line-height: var(--line-height-md, 20px);
+}

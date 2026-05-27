@@ -1,6 +1,13 @@
 import React from 'react';
 import { BaseIconProps } from '../Icon.types';
-import { iconSize, iconStrokeWidth } from '../../../tokens/icons';
+import { iconSize } from '../../../tokens/icons';
+
+const VARIANTS: Record<'xs' | 's' | 'm' | 'l', { viewBox: string; inner: string }> = {
+  xs: { viewBox: '0 0 12 12', inner: `<path fill-rule="evenodd" clip-rule="evenodd" d="M5.10745 5.287L2.63725 5.41312L4.55976 6.93603L3.91609 9.28479L5.99998 7.95961L8.08388 9.28479L7.44021 6.93603L9.36272 5.41312L6.89251 5.287L5.99998 3.00981L5.10745 5.287ZM7.81989 3.99928L6.7025 1.1484C6.45075 0.506075 5.54922 0.506075 5.29746 1.1484L4.18008 3.99928L1.05171 4.15901C0.354222 4.19462 0.0740751 5.0837 0.623265 5.51874L3.04085 7.43381L2.2373 10.366C2.05346 11.0368 2.78456 11.5844 3.36835 11.2132L5.99998 9.5397L8.63161 11.2132C9.21541 11.5844 9.9465 11.0368 9.76267 10.366L8.95912 7.43381L11.3767 5.51874C11.9259 5.0837 11.6457 4.19462 10.9483 4.15901L7.81989 3.99928Z" fill="currentColor"/>` },
+  s: { viewBox: '0 0 14 14', inner: `<path fill-rule="evenodd" clip-rule="evenodd" d="M5.9587 6.16818L3.07679 6.31532L5.31972 8.09204L4.56878 10.8323L6.99998 9.28623L9.43119 10.8323L8.68025 8.09204L10.9232 6.31532L8.04127 6.16818L6.99998 3.51145L5.9587 6.16818ZM9.1232 4.66584L7.81959 1.3398C7.52588 0.590426 6.47409 0.590426 6.18038 1.3398L4.87676 4.66584L1.227 4.85219C0.413261 4.89373 0.0864229 5.93099 0.727144 6.43853L3.54766 8.67278L2.61018 12.0937C2.39571 12.8763 3.24866 13.5152 3.92975 13.0821L6.99998 11.1297L10.0702 13.0821C10.7513 13.5152 11.6043 12.8763 11.3898 12.0937L10.4523 8.67278L13.2728 6.43853C13.9135 5.93099 13.5867 4.89373 12.773 4.85219L9.1232 4.66584Z" fill="currentColor"/>` },
+  m: { viewBox: '0 0 16 16', inner: `<path fill-rule="evenodd" clip-rule="evenodd" d="M6.80994 7.04935L3.51633 7.21751L6.07968 9.24805L5.22146 12.3797L7.99998 10.6128L10.7785 12.3797L9.92029 9.24805L12.4836 7.21751L9.19002 7.04935L7.99998 4.01309L6.80994 7.04935ZM10.4265 5.33239L8.93668 1.53121C8.60101 0.674777 7.39896 0.674777 7.06329 1.53121L5.57344 5.33239L1.40228 5.54536C0.472297 5.59284 0.0987669 6.77828 0.83102 7.35833L4.05447 9.91176L2.98307 13.8214C2.73795 14.7158 3.71275 15.4459 4.49114 14.9509L7.99998 12.7196L11.5088 14.9509C12.2872 15.4459 13.262 14.7158 13.0169 13.8214L11.9455 9.91176L15.1689 7.35833C15.9012 6.77828 15.5277 5.59284 14.5977 5.54536L10.4265 5.33239Z" fill="currentColor"/>` },
+  l: { viewBox: '0 0 18 18', inner: `<path fill-rule="evenodd" clip-rule="evenodd" d="M7.6612 7.93054L3.95588 8.11972L6.83965 10.4041L5.87415 13.9272L9 11.9395L12.1258 13.9272L11.1603 10.4041L14.0441 8.11972L10.3388 7.93054L9 4.51474L7.6612 7.93054ZM11.7299 5.99896L10.0538 1.72261C9.67615 0.759129 8.32385 0.759129 7.94622 1.72261L6.27014 5.99896L1.57758 6.23855C0.531337 6.29197 0.111115 7.62558 0.934901 8.27814L4.56129 11.1508L3.35596 15.5491C3.08021 16.5553 4.17685 17.3767 5.05254 16.8198L9 14.3096L12.9475 16.8198C13.8231 17.3767 14.9198 16.5553 14.644 15.5491L13.4387 11.1508L17.0651 8.27814C17.8889 7.62558 17.4687 6.29197 16.4224 6.23855L11.7299 5.99896Z" fill="currentColor"/>` },
+};
 
 export const StarIcon: React.FC<BaseIconProps> = ({
   size = 'm',
@@ -8,26 +15,23 @@ export const StarIcon: React.FC<BaseIconProps> = ({
   className,
   'aria-label': ariaLabel,
   'aria-hidden': ariaHidden,
-}) => (
-  <svg
-    width={iconSize[size]}
-    height={iconSize[size]}
-    viewBox="0 0 18 18"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-    className={className}
-    aria-label={ariaLabel}
-    aria-hidden={ariaHidden}
-    role={ariaLabel ? 'img' : undefined}
-  >
-    <path
-      d="M9 1.5L11.3175 6.195L16.5 6.9525L12.75 10.605L13.635 15.765L9 13.3275L4.365 15.765L5.25 10.605L1.5 6.9525L6.6825 6.195L9 1.5Z"
-      stroke={color}
-      strokeWidth={iconStrokeWidth[size]}
-      strokeLinecap="round"
-      strokeLinejoin="round"
+}) => {
+  const variant = VARIANTS[size];
+  return (
+    <svg
+      width={iconSize[size]}
+      height={iconSize[size]}
+      viewBox={variant.viewBox}
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+      aria-label={ariaLabel}
+      aria-hidden={ariaHidden}
+      role={ariaLabel ? 'img' : undefined}
+      style={{ color }}
+      dangerouslySetInnerHTML={{ __html: variant.inner }}
     />
-  </svg>
-);
+  );
+};
 
 export default StarIcon;

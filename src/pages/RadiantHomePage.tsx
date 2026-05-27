@@ -1,6 +1,7 @@
 import React from 'react';
 import { systemColors, referenceColors } from '../tokens/colors';
 import { getComponentCount, getIconCount, getTokenCountLabel } from '../data/componentRegistry';
+import { PLATFORM_VERSION } from '../data/platformVersion';
 
 interface ComponentCardProps {
   name: string;
@@ -141,7 +142,7 @@ export const RadiantHomePage: React.FC<RadiantHomePageProps> = ({ onNavigate }) 
         <div style={styles.heroContent}>
           <div style={styles.heroBadge}>
             <span style={styles.heroBadgeIcon}>✨</span>
-            <span>Design System 26.4.1b</span>
+            <span>Design system {PLATFORM_VERSION}</span>
           </div>
           <h1 style={styles.heroTitle}>Radiant</h1>
           <p style={styles.heroSubtitle}>
@@ -298,6 +299,15 @@ export const RadiantHomePage: React.FC<RadiantHomePageProps> = ({ onNavigate }) 
             </p>
           </div>
         </div>
+        <div style={styles.quickLinkCard} onClick={() => onNavigate('spotter-showcase')}>
+          <div style={styles.quickLinkIcon}>💬</div>
+          <div style={styles.quickLinkContent}>
+            <h3 style={styles.quickLinkTitle}>Spotter showcase</h3>
+            <p style={styles.quickLinkDescription}>
+              Every Spotter component in one place — chat surface, blocks, page shell, icons, tokens.
+            </p>
+          </div>
+        </div>
       </section>
     </div>
   );
@@ -438,7 +448,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
     fontSize: '13px',
     fontWeight: 500,
-    color: systemColors.light['content-tertiary'],
+    color: systemColors.light['content-secondary'],
     textTransform: 'uppercase',
     letterSpacing: '0.5px',
   },
@@ -492,7 +502,7 @@ const styles: Record<string, React.CSSProperties> = {
   tokenLayerDesc: {
     fontFamily: '"SF Mono", Monaco, monospace',
     fontSize: '11px',
-    color: systemColors.light['content-tertiary'],
+    color: systemColors.light['content-secondary'],
     margin: 0,
   },
   tokenArrow: {
@@ -531,7 +541,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
     fontSize: '16px',
     fontWeight: 400,
-    color: systemColors.light['content-tertiary'],
+    color: systemColors.light['content-secondary'],
   },
   categorySection: {
     marginBottom: '32px',
@@ -601,7 +611,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
     fontSize: '13px',
     fontWeight: 400,
-    color: systemColors.light['content-tertiary'],
+    color: systemColors.light['content-secondary'],
     margin: 0,
     marginBottom: '8px',
     lineHeight: '18px',
@@ -658,7 +668,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
     fontSize: '14px',
     fontWeight: 400,
-    color: systemColors.light['content-tertiary'],
+    color: systemColors.light['content-secondary'],
     lineHeight: '22px',
     margin: 0,
   },

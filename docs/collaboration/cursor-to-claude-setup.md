@@ -156,23 +156,17 @@ Claude Code is now running inside the project. You can start prompting the same 
 
 New components, tokens, and rules are pushed to the upstream library regularly. Use these three commands to stay in sync.
 
-### Step 1 — Check what's changed
-
-```
-/check-upstream
-```
-
-Read-only diff of the upstream library — new components, token changes, rule updates, and how many commits behind you are. Nothing merges.
-
-### Step 2 — Pull in the changes
+### Step 1 — Preview and sync
 
 ```
 /sync-upstream
 ```
 
-Fetches, merges, resolves the `registry.ts` conflict automatically (your prototypes are preserved), verifies the build, then asks for your approval before pushing.
+Fetches upstream, shows you a preview of what's changed (new components, token changes, rule updates, files that overlap with your work), and tells you exactly what it will do on your current branch. Then it asks before merging.
 
-### Step 3 — Verify your fork is in sync
+When you say yes, it stashes any in-progress work, syncs `main` against upstream, resolves the `registry-core.ts` conflict automatically (your prototypes in `registry-mine.ts` are preserved), verifies the build, pushes `main` to your fork, forwards the changes into your feature branch, and restores your stashed work. You end up back on the branch you started on, with your WIP intact and the latest library available.
+
+### Step 2 — Verify your fork is in sync
 
 ```
 /fork-status
@@ -180,7 +174,7 @@ Fetches, merges, resolves the `registry.ts` conflict automatically (your prototy
 
 Reports sync status between origin (GitHub) and galaxy (ThoughtSpot) across all branches.
 
-> **When to sync:** Run `/check-upstream` at the start of any new prototype sprint. If new components are available that match what you're building, sync first.
+> **When to sync:** Run `/sync-upstream` at the start of any new prototype sprint. The preview shows you what's available before anything changes.
 
 ---
 

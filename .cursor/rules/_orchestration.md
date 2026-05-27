@@ -31,6 +31,16 @@ If a topic switch is detected → proactively say:
 
 Do not wait to be asked. Do not load any rule files until after the designer decides.
 
+## Step 0c: MCP plugin overhead check
+
+MCP plugins add a fixed overhead to every message in the session, whether they are used or not. The Figma MCP plugin alone adds **~4,000 tokens per message** — on a 20-message session that is ~80,000 tokens of overhead before any rule file gets loaded.
+
+If the current session is not doing Figma work and the Figma plugin is enabled, suggest disabling it:
+
+> *"Heads up — Figma MCP is on and adding ~4k tokens per message. If we are not pulling from Figma this session, you can disable it via `/config` or by setting `"figma@claude-plugins-official": false` in `~/.claude/settings.json`. Re-enable when starting a Figma session."*
+
+Do not nag once per session — say it once if the signal is clear (no Figma URL or screenshot in the last few exchanges) and let the designer decide.
+
 ---
 
 ## Step 1: Classify by intent
@@ -49,7 +59,7 @@ Single value, prop, or label. CLAUDE.md + component summary are sufficient. No a
 ### Tier 1 — Moderate change
 Adding or modifying a feature within an existing prototype.
 
-**Signals:** New section, panel, or interaction · replacing a component · adding a modal/dialog/confirmation · adding a table/filter/search · layout structure change · rewriting multiple UI strings
+**Signals:** New section, panel, or interaction · replacing a component · adding a modal/dialog/confirmation · adding a table/filter/search · layout structure change · rewriting multiple UI strings · copy review or UX writing task (even with no code changes)
 
 **Action:** Load **ALL** rule files matching the task's concerns below. Matching 3+ rows is expected for compound tasks.
 
@@ -70,7 +80,12 @@ Adding or modifying a feature within an existing prototype.
 | **Figma URL** | `figma-mcp-workflow.md` + `figma-component-mapping.md` | `figma.com/design/...` URL provided |
 | **Figma screenshot** | `figma-component-mapping.md` | Screenshot or Figma layer reference |
 | **Liveboard work** | `liveboard-ia.md` | Editing or adding to an existing Liveboard prototype |
+| **Liveboard styling panel** | `liveboard-styling.md` | Style button in edit toolbar, add styling panel, density controls, color themes, tile highlights, dark palette, corner radius, spacing mode, per-tile overrides, style drawer |
 | **Liveboard canvas (view)** | `liveboard-canvas-core.md` | Grid system, tile types, view mode, chart palette |
+| **DME structure / IA** | `data-model-editor-ia.md` | Editing layout variants, tabs, welcome state, or window bridge of an existing DME |
+| **DME components / agent panel** | `data-model-editor-components.md` | Modifying `_agentic` or `_datamodel` components used by DME (AgentPanel, TableCard, ColumnTree, etc.) |
+| **DME interactions / agent flow** | `data-model-editor-interactions.md` | Drag, column tree, agent panel flow, version history on existing DME |
+| **AI agent panel (any prototype)** | `data-model-editor-components.md` + `data-model-editor-interactions.md` | Adopting `_agentic` panel in a non-DME prototype |
 | **Liveboard canvas (edit)** | `liveboard-canvas-core.md` + `liveboard-canvas-edit.md` | Drag, resize, selection, toolbars |
 | **Liveboard canvas (full)** | All 3 canvas tiers + `liveboard-canvas-advanced.md` | Groups, multi-select, inline editing |
 | **Liveboard build** | `liveboard-ia.md` + `liveboard-scaffolding.md` + canvas tiers (see Liveboard Requirements Gate below) | Building a new Liveboard from scratch |
@@ -126,7 +141,7 @@ Valid sizes: `xs` · `s` · `m` · `l` — no `xl`, no numeric values.
 Always pass `iconPosition="leading"` or `"trailing"` when using the `icon` prop on Button.
 
 **4. Any UI text?**
-Check CLAUDE.md forbidden words before writing labels, buttons, or titles.
+Load `content-guidelines.md` before writing OR reviewing any labels, buttons, titles, body copy, or error messages. Do not rely on CLAUDE.md alone — the full rules are in the guidelines file.
 
 ---
 
@@ -135,7 +150,8 @@ Check CLAUDE.md forbidden words before writing labels, buttons, or titles.
 When the task is a **new Liveboard prototype** (Tier 2), BEFORE loading any liveboard canvas rules, ask the user:
 
 1. **Mode** — View-only (read-only dashboard), or edit mode with drag/resize?
-2. **Interactions** — Which do you need?
+2. **Styling panel** — Does edit mode need a styling panel (density, color themes, per-tile highlights)? If yes, load `liveboard-styling.md`.
+3. **Interactions** — Which do you need?
    - Drag and drop tiles
    - Resize tiles
    - Group tiles (mini-liveboard inside a container)
@@ -157,6 +173,72 @@ Based on answers, load ONLY the needed canvas tiers:
 Always load `liveboard-ia.md` + `liveboard-scaffolding.md` alongside the canvas tiers.
 
 **Skip the gate** for Tier 0/1 tasks (minor tweaks, modifications to existing Liveboards). Only gate Tier 2 new builds.
+
+---
+
+## Data Model Editor Requirements Gate
+
+When the task is a **new Data Model Editor prototype** (Tier 2), BEFORE loading any DME rule files, ask the user:
+
+1. **Starting state** — Blank canvas (`welcomeVariant: 'blank'`) or pre-loaded schema (`welcomeVariant: 'existing'`)?
+   - `'blank'` → empty canvas, "Let's build your model" welcome intro with central textarea
+   - `'existing'` → pre-populated tables/joins, "Welcome back" + "Check for AI readiness" button
+2. **SpotterModel AI?** — Yes or No.
+   - **If Yes:** Ask for the Anthropic API key. Write `ANTHROPIC_API_KEY=<key>` to `.env.local`. Then ask model preference:
+     - `claude-sonnet-4-6` — balanced speed and quality **(default, recommended)**
+     - `claude-opus-4-7` — most capable, slower and more expensive
+     - `claude-haiku-4-5-20251001` — fastest and cheapest
+     Update the `model` field in `window.__DME_CONFIG__` in `index.tsx`. `init-dme.js` reads it via `window.__DME_CONFIG__?.model`.
+   - **If No:** Set `window.__DME_CONFIG__ = { spotterModel: false, welcomeVariant: 'blank' }` in `index.tsx`. Agent panel will not render. No API key needed.
+3. **Dataset** — Mock retail schema (default `DATASOURCE_TABLES` — 12 tables) or custom?
+   - **If custom:** Replace the `DATASOURCE_TABLES` array in the init file with the user's schema (`{ name, columns: string[] }[]`).
+
+Based on answers, load:
+
+| User needs | Files to load |
+|-----------|--------------|
+| Any DME work | `data-model-editor-ia.md` + `data-model-editor-components.md` |
+| SpotterModel Yes | also `data-model-editor-interactions.md` |
+| SpotterModel No | skip interactions file (agent panel not used) |
+
+**Skip the gate** for Tier 0/1 tasks (minor tweaks or edits to existing DME prototypes). Only gate Tier 2 new builds.
+
+---
+
+### Spotter Requirements Gate
+
+When the task is **a new Spotter-flavoured prototype** (Tier 2), BEFORE loading any Spotter rule files, ask the user:
+
+1. **Which Spotter mode?**
+   - **Standalone** — Full-page agentic chat (canonical Spotter, like `src/prototypes/Spotter/`)
+   - **Spotter Model (embedded)** — Canvas + chat for data-model editing (like `DataModelEditor`)
+   - **Spotter Viz (embedded)** — Canvas + chat for visualization / dashboard generation
+   - **Spotter Code (embedded)** — Canvas + chat for code generation in an IDE-like surface
+2. **Welcome state** — `blank` (first prompt hero, current default), `returning` (recent chats list), `topical` (model-aware), `guided` (starter questions), or `embedded` (no welcome — drop into chat)?
+3. **Data** — Mock fixtures from `cannedResponses.ts` (default), or a custom canned dataset?
+
+Based on answers, load:
+
+| Mode | Files to load |
+|---|---|
+| Any Spotter work | `spotter-components.md` + `spotter-logic.md` + `spotter-response-style.md` + `spotter-scaffolding.md` |
+| Standalone | also `spotter-ia.md` |
+| Embedded (Model / Viz / Code) | also `spotter-agentic-chat-ia.md` |
+| Embedded Model specifically | also `data-model-editor-ia.md` + `data-model-editor-components.md` |
+| Embedded Viz | also `liveboard-ia.md` (host surface) |
+| Embedded Code | none extra (IDE conventions are TBD) |
+
+Globs auto-attach the inventory / logic / style rules when the active file is in `src/spotter/**` or `src/prototypes/Spotter*/**`. The IA / scaffolding rules need to be loaded explicitly per the table above.
+
+Spotter sits **on top of** the Radiant DS. Tier 3 design-system work that touches Spotter components also needs the Radiant rules (`design-system.md`, `token-usage.md`).
+
+**Skip the gate** for Tier 0/1 tasks (minor tweaks or edits to existing Spotter prototypes). Only gate Tier 2 new builds.
+
+**Reference docs:**
+- `docs/spotter-roadmap.md` — resume-here tracker, status per mode, open work
+- `docs/2026-05-07-spotter-answer-card.md` — AnswerCard spec (unbuilt; VizBlock is the current stand-in)
+- `docs/2026-05-07-spotter-viz-block-behaviour.md` — VizBlock slot model and behaviour
+- `docs/archive/2026-05-07-spotter-ds-plan.md`, `*-prototype-shell.md`, `*-chat-extraction.md` — historical scaffolding plans, work is done
 
 ---
 

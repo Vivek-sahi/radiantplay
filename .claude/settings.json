@@ -1,0 +1,113 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(awk *)",
+      "Bash(bash *)",
+      "Bash(bash .claude/hooks/post-compact-inject.sh)",
+      "Bash(bash scripts/generate-changelog.sh 2026-04-01)",
+      "Bash(brew upgrade:*)",
+      "Bash(cat \"src/prototypes/Cmdk/Cmd\\(figmamake\\)/package.json\")",
+      "Bash(chmod:*)",
+      "Bash(claude --version)",
+      "Bash(claude hooks:*)",
+      "Bash(claude settings:*)",
+      "Bash(curl *)",
+      "Bash(curl -s \"https://docs.anthropic.com/en/docs/claude-code/overview\")",
+      "Bash(curl -s -o /tmp/spotter-home.png \"https://www.figma.com/api/mcp/asset/6811da9d-09f5-42f2-9fda-da24da46b355\")",
+      "Bash(do echo:*)",
+      "Bash(do)",
+      "Bash(done)",
+      "Bash(echo \"Exit code: $?\")",
+      "Bash(echo \"removed: $f\")",
+      "Bash(echo \"skip \\(not tracked\\): $f\")",
+      "Bash(for f:*)",
+      "Bash(gh api:*)",
+      "Bash(gh issue:*)",
+      "Bash(git *)",
+      "Bash(git add:*)",
+      "Bash(git branch:*)",
+      "Bash(git checkout:*)",
+      "Bash(git log *)",
+      "Bash(git ls-tree:*)",
+      "Bash(git merge:*)",
+      "Bash(git push:*)",
+      "Bash(git reset:*)",
+      "Bash(git rm:*)",
+      "Bash(git stash:*)",
+      "Bash(git status:*)",
+      "Bash(grep \"\\\\.md$\")",
+      "Bash(grep -rn \"#[0-9A-Fa-f]\\\\{3,6\\\\}\\\\b\" src/prototypes/AdminUserManagement/ --include=\"*.tsx\" --include=\"*.ts\")",
+      "Bash(grep -rn \"#[0-9A-Fa-f]\\\\{3,6\\\\}\\\\b\" src/prototypes/SpotterMemory/ --include=\"*.tsx\" --include=\"*.ts\")",
+      "Bash(grep -rn \"#[0-9A-Fa-f]\\\\{3,6\\\\}\\\\|display.*flex\\\\|display.*grid\\\\|fontSize.*[0-9]px\\\\|padding.*[0-9]px\" src/prototypes/AdminUserManagement/ --include=\"*.tsx\")",
+      "Bash(grep -rn \"custom\\\\|<header\\\\|<nav\\\\|<input\\\\|<button\\\\|inline style\\\\|position.*absolute\\\\|#[0-9A-Fa-f]\\\\{3,6\\\\}\" src/prototypes/SpotterMemory/ --include=\"*.tsx\")",
+      "Bash(grep -v \"^$\")",
+      "Bash(grep:*)",
+      "Bash(head:*)",
+      "Bash(lsof -ti:5173)",
+      "Bash(lsof -ti:5173,5175)",
+      "Bash(mkdir:*)",
+      "Bash(node:*)",
+      "Bash(npm audit:*)",
+      "Bash(npm config *)",
+      "Bash(npm install:*)",
+      "Bash(open *)",
+      "Bash(open -e ~/.npmrc)",
+      "Bash(pkill -f \"npm run dev\")",
+      "Bash(pkill -f \"vite\")",
+      "Bash(pkill -f vite)",
+      "Bash(printf '//packagecloud.io/modeanalytics/npm/:_authToken=PASTE_TOKEN_HERE\\\\n@viz:registry=https://packagecloud.io/modeanalytics/npm/npm/\\\\n')",
+      "Bash(python3 -c ' *)",
+      "Bash(python3 -m json.tool)",
+      "Bash(sed -i '' 's/<Button variant=\"\"primary\"\" icon=\"\"plus\"\">Add item<\\\\/Button>/<Button variant=\"\"primary\"\" icon=\"\"plus\"\" iconPosition=\"\"leading\"\">Add item<\\\\/Button>/g' .cursor/rules/layout-patterns.md)",
+      "Bash(sed -i '' 's/<Button variant=\"\"secondary\"\" icon=\"\"filter\"\">Filter<\\\\/Button>/<Button variant=\"\"secondary\"\" icon=\"\"filter\"\" iconPosition=\"\"leading\"\">Filter<\\\\/Button>/g' .cursor/rules/layout-patterns.md)",
+      "Bash(sed -i '' 's/<Button variant=\"\"tertiary\"\" icon=\"\"filter\"\" aria-label=\"\"Filters\"\" \\\\/>/<Button variant=\"\"tertiary\"\" icon=\"\"filter\"\" iconPosition=\"\"leading\"\" aria-label=\"\"Filters\"\" \\\\/>/g' .cursor/rules/widget-patterns.md)",
+      "Bash(sed -i '' 's/<Button variant=\"\"tertiary\"\" icon=\"\"more\"\" \\\\/>/<Button variant=\"\"tertiary\"\" icon=\"\"more\"\" iconPosition=\"\"leading\"\" \\\\/>/g' .cursor/rules/widget-patterns.md .cursor/rules/figma-component-mapping.md)",
+      "Bash(sed -i '' 's/<Button variant=\"\"tertiary\"\" icon=\"\"more\"\" aria-label=\"\"More actions\"\" \\\\/>/<Button variant=\"\"tertiary\"\" icon=\"\"more\"\" iconPosition=\"\"leading\"\" aria-label=\"\"More actions\"\" \\\\/>/g' .cursor/rules/widget-patterns.md .cursor/rules/figma-component-mapping.md)",
+      "Bash(wc:*)",
+      "Bash(xargs -I {} basename {} .tsx)",
+      "Bash(xargs -n1 basename)",
+      "Bash(xargs kill *)",
+      "Bash(xargs ls:*)",
+      "Read(//tmp/**)",
+      "Skill(update-config)",
+      "WebFetch(domain:addyosmani.com)",
+      "WebFetch(domain:alexop.dev)",
+      "WebFetch(domain:arize.com)",
+      "WebFetch(domain:developers.thoughtspot.com)",
+      "WebFetch(domain:hackernoon.com)",
+      "WebFetch(domain:learn.thedesignsystem.guide)",
+      "WebFetch(domain:martinfowler.com)",
+      "WebFetch(domain:www.figma.com)",
+      "WebFetch(domain:yummy-design-sprint.notion.site)",
+      "WebSearch",
+      "mcp__plugin_figma_figma__generate_diagram",
+      "mcp__plugin_figma_figma__get_design_context",
+      "mcp__plugin_figma_figma__get_figjam",
+      "mcp__plugin_figma_figma__get_metadata",
+      "mcp__plugin_figma_figma__get_screenshot",
+      "mcp__plugin_figma_figma__use_figma"
+    ]
+  },
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/liveboard-gate.sh",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/post-compact-inject.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

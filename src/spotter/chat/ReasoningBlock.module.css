@@ -1,0 +1,394 @@
+.reasoning {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2, 8px);
+  animation: reasoningIn 320ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+@keyframes reasoningIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/*
+ * Unified brand-blue header — replaces the older trigger/peek split.
+ * Always brand-blue and clickable. Text varies by state: current step
+ * label while streaming, "Thought for X seconds" after settling.
+ */
+.header {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1, 4px);
+  align-self: flex-start;
+  border: none;
+  background: transparent;
+  padding: 0;
+  color: var(--rd-sys-color-content-brand);
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-sm, 14px);
+  font-weight: var(--font-weight-semibold, 600);
+  line-height: var(--line-height-md, 20px);
+  cursor: pointer;
+  transition: opacity 120ms ease;
+}
+
+.header:hover {
+  opacity: 0.85;
+}
+
+.header:focus-visible {
+  outline: 2px solid var(--rd-sys-color-border-focus);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm, 4px);
+}
+
+.headerTitle {
+  color: inherit;
+}
+
+.headerChevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--rd-sys-color-content-brand);
+  transition: transform 200ms ease;
+}
+
+.headerChevron[data-expanded='true'] {
+  transform: rotate(180deg);
+}
+
+/*
+ * Description shown under the header during the semi-collapsed peek
+ * state. Indented with a thin left guideline so it visually anchors
+ * to the header above. Stays mounted and uses data-visible + CSS
+ * transitions so the transition into the done state eases out instead
+ * of vanishing instantly.
+ */
+.peekDescription {
+  margin: 0;
+  position: relative;
+  padding-left: var(--spacing-4, 16px);
+  color: var(--rd-sys-color-content-primary);
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-sm, 14px);
+  font-weight: var(--font-weight-light, 375);
+  line-height: var(--line-height-md, 20px);
+  white-space: pre-wrap;
+  /* Animatable container — see data-visible='false' for collapsed state. */
+  max-height: 400px;
+  opacity: 1;
+  overflow: hidden;
+  transition:
+    opacity 240ms ease,
+    max-height 320ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.peekDescription::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  left: 0;
+  width: 2px;
+  background-color: var(--rd-sys-color-border-divider);
+  border-radius: 1px;
+  transition: opacity 240ms ease;
+}
+
+.peekDescription[data-visible='false'] {
+  opacity: 0;
+  max-height: 0;
+  pointer-events: none;
+}
+
+.peekDescription[data-visible='false']::before {
+  opacity: 0;
+}
+
+.steps {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  background: transparent;
+  border: none;
+  /* Collapse / expand without unmounting — see data-expanded='false'. */
+  max-height: 1200px;
+  opacity: 1;
+  overflow: hidden;
+  transition:
+    max-height 360ms cubic-bezier(0.32, 0.72, 0, 1),
+    opacity 200ms ease;
+}
+
+.steps[data-expanded='false'] {
+  max-height: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.step {
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  gap: var(--spacing-2, 8px);
+  padding: var(--spacing-2, 8px) 0;
+  position: relative;
+  opacity: 0;
+  animation: stepIn 280ms cubic-bezier(0.32, 0.72, 0, 1) forwards;
+}
+
+@keyframes stepIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.dotColumn {
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
+
+.connector {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  background-color: var(--rd-sys-color-border-divider);
+  transform: translateX(-50%);
+}
+
+.dot {
+  position: relative;
+  z-index: 1;
+  width: 10px;
+  height: 10px;
+  margin-top: 6px;
+  border-radius: 50%;
+  background-color: var(--rd-sys-color-border-default);
+  flex-shrink: 0;
+  transition: background-color 280ms ease;
+}
+
+.dot[data-status='current'] {
+  background-color: var(--rd-sys-color-content-brand);
+  animation: dotPulse 1200ms ease-in-out infinite;
+}
+
+.dot[data-status='done'] {
+  background-color: var(--rd-sys-color-content-tertiary);
+}
+
+@keyframes dotPulse {
+  0%, 100% {
+    transform: scale(0.85);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2, 8px);
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  color: var(--rd-sys-color-content-primary);
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-sm, 14px);
+  font-weight: var(--font-weight-semibold, 600);
+  line-height: var(--line-height-md, 20px);
+}
+
+.description {
+  margin: 0;
+  color: var(--rd-sys-color-content-secondary);
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-sm, 14px);
+  font-weight: var(--font-weight-light, 375);
+  line-height: var(--line-height-md, 20px);
+  white-space: pre-wrap;
+}
+
+/* Embedded toolcall card */
+.toolcall {
+  border: 1px solid var(--rd-sys-color-border-divider);
+  border-radius: var(--radius-md, 6px);
+  background-color: var(--rd-sys-color-background-base);
+  overflow: hidden;
+}
+
+.toolcallHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2, 8px);
+  width: 100%;
+  height: 40px;
+  padding: 0 var(--spacing-3, 12px);
+  background-color: var(--rd-sys-color-background-base);
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-sm, 14px);
+  font-weight: var(--font-weight-regular, 400);
+  line-height: var(--line-height-md, 20px);
+  color: var(--rd-sys-color-content-primary);
+}
+
+.toolcallHeader:hover {
+  background-color: var(--rd-sys-color-background-sunken);
+}
+
+.toolcallHeader:focus-visible {
+  outline: 2px solid var(--rd-sys-color-border-focus);
+  outline-offset: -2px;
+}
+
+.toolcallIcon {
+  display: inline-flex;
+  align-items: center;
+  color: var(--rd-sys-color-content-secondary);
+}
+
+.toolcallTitle {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.toolcallShowDetails {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1, 4px);
+  color: var(--rd-sys-color-content-brand);
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-sm, 14px);
+  font-weight: var(--font-weight-regular, 400);
+  line-height: var(--line-height-md, 20px);
+  flex-shrink: 0;
+}
+
+.toolcallChevron {
+  display: inline-flex;
+  align-items: center;
+  transition: transform 200ms ease;
+}
+
+.toolcallChevron[data-expanded='true'] {
+  transform: rotate(180deg);
+}
+
+.toolcallBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2, 8px);
+  padding: var(--spacing-3, 12px);
+  max-height: 600px;
+  opacity: 1;
+  overflow: hidden;
+  transition:
+    max-height 280ms cubic-bezier(0.32, 0.72, 0, 1),
+    opacity 180ms ease,
+    padding 280ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.toolcallBody[data-open='false'] {
+  max-height: 0;
+  opacity: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  pointer-events: none;
+}
+
+.toolcallSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1, 4px);
+}
+
+.toolcallLabel {
+  color: var(--rd-sys-color-content-secondary);
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-sm, 14px);
+  font-weight: var(--font-weight-regular, 400);
+  line-height: var(--line-height-md, 20px);
+}
+
+/*
+ * Code-block-styled value — light gray background, monospace, generous
+ * padding. Matches the real Spotter product's input/output rendering.
+ */
+.toolcallValue {
+  margin: 0;
+  padding: var(--spacing-3, 12px) var(--spacing-4, 16px);
+  background-color: var(--rd-sys-color-background-subtle);
+  border-radius: var(--radius-md, 6px);
+  color: var(--rd-sys-color-content-primary);
+  font-family: var(--font-family-mono, ui-monospace, 'SF Mono', Menlo, Monaco, Consolas, monospace);
+  font-size: var(--font-size-sm, 13px);
+  font-weight: var(--font-weight-regular, 400);
+  line-height: var(--line-height-md, 20px);
+  white-space: pre-wrap;
+  overflow-x: auto;
+}
+
+.toolcallValueLang {
+  display: block;
+  margin-bottom: var(--spacing-2, 8px);
+  color: var(--rd-sys-color-content-secondary);
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-sm, 14px);
+  font-weight: var(--font-weight-regular, 400);
+  line-height: var(--line-height-md, 20px);
+}
+
+.workedFor {
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  gap: var(--spacing-2, 8px);
+  padding: var(--spacing-2, 8px) 0;
+  align-items: center;
+  opacity: 0;
+  animation: workedForIn 320ms cubic-bezier(0.32, 0.72, 0, 1) 120ms forwards;
+}
+
+@keyframes workedForIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.workedForBody {
+  margin: 0;
+  color: var(--rd-sys-color-content-secondary);
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-sm, 14px);
+  font-weight: var(--font-weight-medium, 500);
+  line-height: var(--line-height-md, 20px);
+}

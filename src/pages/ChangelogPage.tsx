@@ -7,13 +7,372 @@ interface ChangelogEntry {
   title: string;
   type: 'major' | 'minor' | 'patch';
   changes: {
-    category: 'added' | 'changed' | 'fixed' | 'removed';
+    category: 'added' | 'changed' | 'fixed' | 'removed' | 'synced';
     label?: string; // overrides the default badge text (e.g. theme group names)
     items: string[];
   }[];
 }
 
+// Curated highlights — cherry-picked across releases. Newest first.
+// Visibility rule: items from the last 60 days, OR the most recent 6 items
+// if fewer than 6 fall inside that window.
+interface Highlight {
+  title: string;
+  description: string;
+  version: string; // links back to the corresponding CHANGELOG entry
+  date: string; // ISO date for the time-based window
+}
+
+const HIGHLIGHTS: Highlight[] = [
+  {
+    title: 'Spotter prototype',
+    description: 'AnalystLandingPage, AnalystListPage, and the right-pane state machine landed. Prompt bar rebuilt with a mode toggle, hideable data-model picker, and a new PromptSuggestionsPanel. 12 IA polish corrections across analyst selection, recency-sorted chats, panel restructure, and chat naming. The Liveboard template SpotterViz side panel was also rebuilt to match the Figma design.',
+    version: '26.5.4a',
+    date: '2026-05-26',
+  },
+  {
+    title: 'Liveboard Styling panel restored',
+    description: 'Per-tile density, color theme, corner style, spacing, and highlight overrides via a right-side drawer. Shared tile CSS variables added to AnswerTile, NoteTile, GroupTile. The two integration bugs from the original PR (missing AnswerTileProps.highlighted and EditToolbar onToggleStyling wiring) are fixed.',
+    version: '26.5.4a',
+    date: '2026-05-26',
+  },
+  {
+    title: 'AdminUI 2.0 prototype',
+    description: 'Application Settings screen added to the shared sample registry. Cluster settings, administration toggles, downloads and schedules, version control, AI settings.',
+    version: '26.5.4a',
+    date: '2026-05-26',
+  },
+  {
+    title: 'Playground archive section + sidebar nav',
+    description: 'Gallery has a light left sidebar with Prototypes and Archived sections. Per-card 3-dot menu archives or restores any prototype in your session. Save-to-code modal generates a Claude-ready prompt to commit the layout permanently. MiniSpotters and AdminLang now appear as archived by default.',
+    version: '26.5.4a',
+    date: '2026-05-26',
+  },
+  {
+    title: 'Spotter design system gets its own doc surface',
+    description: 'New /radiant/spotter showcase with Chat, Blocks, Icons, and Tokens sections, plus a dedicated SpotterShell doc page peer to GlobalHeader / AppShell. Fullscreen previews land too for both SpotterShell and AppShell.',
+    version: '26.5.3c',
+    date: '2026-05-19',
+  },
+  {
+    title: '/sync-upstream — feature-branch safe',
+    description: 'Preview-first, with a yes/no gate before anything destructive runs. Stash includes untracked files, so new prototypes you have not committed are no longer lost. Lands on main first, then merges forward into your branch.',
+    version: '26.5.3b',
+    date: '2026-05-18',
+  },
+  {
+    title: 'Spotter prototype',
+    description: 'In-thread agentic chat with reasoning trace, viz blocks (real ECharts), sources, follow-ups, and refine. Welcome → chat-active transition, sticky prompt with gradient focus border, M4 fullscreen expand on charts.',
+    version: '26.5.3',
+    date: '2026-05-08',
+  },
+  {
+    title: 'Spotter design system (in progress)',
+    description: 'New @spotter/* peer to @components/* — Spotter-domain blocks (chat, page, answer, viz, runtime) built on Radiant primitives. Auto-loading .cursor/rules so future sessions get the right context.',
+    version: '26.5.3',
+    date: '2026-05-08',
+  },
+  {
+    title: 'Project status dashboard',
+    description: 'A local HTML dashboard with overview, branches, forks/upstream, worktrees, and docs/plans tabs. Run /project-status; zero LLM token cost.',
+    version: '26.4.4c',
+    date: '2026-04-28',
+  },
+  {
+    title: 'Token system — Figma 3.0 alignment',
+    description: 'Phases 1–5 of 8 shipped: primitive colors, light semantic colors, typography, shadows, layout. Dark mode (Phase 6) is next.',
+    version: '26.4.4c',
+    date: '2026-04-28',
+  },
+  {
+    title: 'Changelog highlights',
+    description: 'Curated highlights at the top of this page surface major work across recent releases — like the section you are reading.',
+    version: '26.4.4c',
+    date: '2026-04-28',
+  },
+];
+
 const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '26.5.4a',
+    date: '2026-05-26',
+    title: 'Spotter prototype + Liveboard Styling panel + AdminUI 2.0 + Playground archive',
+    type: 'minor',
+    changes: [
+      {
+        category: 'added',
+        label: 'Prototypes',
+        items: [
+          'Liveboard - Styling panel (StylingPanel) — restored after the original PR #14 revert. Per-tile drawer with density, color theme, corner style, spacing, and highlight overrides. Shared tile CSS variables added to AnswerTile, NoteTile, GroupTile. Authored by Devanshi Behara.',
+          'AdminUI 2.0 (NewUIAdmin2) — Application Settings screen added to the shared sample registry. Cluster settings, administration toggles, downloads and schedules, version control, AI settings. Lands via PR #19.',
+        ],
+      },
+      {
+        category: 'added',
+        label: 'Spotter prototype + DS',
+        items: [
+          'AnalystLandingPage + AnalystListPage — right-pane state machine for the standalone Spotter prototype. Right pane now switches between chat, analyst landing, and analyst list states (matches the spotter-ia.md spec).',
+          'PromptSuggestionsPanel — new suggestion panel surfaced from the prompt bar. Hideable, mode-aware.',
+          'Prompt bar mode toggle + hideable data-model picker. Position stays fixed when the suggestion panel opens.',
+        ],
+      },
+      {
+        category: 'added',
+        label: 'Playground',
+        items: [
+          'Archive section + left sidebar — gallery now has a light left sidebar with Prototypes (default) and Archived sections. Per-card 3-dot menu archives or restores any prototype in your session (sessionStorage-backed).',
+          'Save-to-code modal — generates a Claude-ready prompt to commit the layout permanently.',
+          "ProjectMeta.section field ('sample' | 'mine' | 'archived') on registry-core.ts. MiniSpotters and AdminLang now appear as archived by default.",
+        ],
+      },
+      {
+        category: 'changed',
+        label: 'Liveboard template',
+        items: [
+          'SpotterViz side panel rebuilt to match the Figma side-panel overlay. position: fixed (not flex sibling), dark navy #1d232f, mascot + greeting + 3 suggestion chips + sticky prompt bar.',
+          'KPI cards shortened (default height 1 row); the first two (Revenue, Customers) now show chart variants instead of bare numbers.',
+        ],
+      },
+      {
+        category: 'fixed',
+        label: 'Styling panel integration bugs',
+        items: [
+          'AnswerTileProps was missing the highlighted prop. GroupTile was passing it through and tripping TS2322. Added to the props interface so the highlight-override path from the styling drawer works.',
+          'EditToolbar was missing the onToggleStyling + stylingOpen props wiring. The Styling button rendered but did nothing. Added the props, wired the click handler, and applied the active-state styling.',
+        ],
+      },
+      {
+        category: 'fixed',
+        label: 'Spotter IA polish + Logo nav + Tokens',
+        items: [
+          '12 IA polish corrections in the standalone Spotter prototype: analyst selection state, recency-sorted chats, panel restructure, chat naming, analyst reorder on chat start only, clear analyst highlights when "View all" opens, center analyst grid at 936px, move Spotter (Default) into its own panel section, drop the logo icon from the Default panel item and welcome page.',
+          'ThoughtSpot brand mark click in GlobalHeader, LiveboardHeader (PrimaryNav), EditToolbar, and the DataModelEditor title now all navigate back to / (the playground gallery).',
+          'background-base-inverse token reverted from #323946 back to #1D232F to match the production Liveboard edit-toolbar background (the Phase 2 token change had unintentionally muted it).',
+          'LineChart legend overlap in the Liveboard template.',
+        ],
+      },
+      {
+        category: 'fixed',
+        label: 'TypeScript + deps',
+        items: [
+          '43 TypeScript errors resolved across DS + NewUIAdmin2 + ChangelogPage (38 were in NewUIAdmin2, 4 pre-existing). 34 of the 38 were unused-var noise.',
+          'package-lock.json rewritten — 31 ThoughtSpot internal artifactory URLs swapped to the public npm registry so Vercel can install dependencies.',
+        ],
+      },
+      {
+        category: 'changed',
+        label: 'Content',
+        items: [
+          'Royal Enfield references scrubbed from prototypes and replaced with Acme Apparel.',
+        ],
+      },
+    ],
+  },
+  {
+    version: '26.5.3c',
+    date: '2026-05-19',
+    title: 'Spotter DS showcase + SpotterShell doc page',
+    type: 'patch',
+    changes: [
+      {
+        category: 'added',
+        label: 'Spotter design system doc surfaces',
+        items: [
+          '/radiant/spotter — Spotter DS showcase with 4 sections (Chat, Blocks, Icons, Tokens). Every shipped Spotter component has a static preview; planned components (AnswerCard, Source/Model picker, Analyst components, ChatRowMenu, SettingsMenu, PersonalMemoryToggle) appear as ghosted placeholders.',
+          '/radiant/components/spottershell — dedicated SpotterShell doc page peer to GlobalHeader / AppShell. SpotterLeftSide preview rolls rail + panel into one card (they are internal compositions of the same component, not separate things). SpotterShell preview uses real GlobalHeader theme="light", matching the AppShell composition pattern.',
+          'Fullscreen previews — /preview/spottershell and /preview/appshell render the shells at 100vh × 100vw with no Radiant chrome. Linked from each doc page via "View fullscreen ↗".',
+          'PreviewCard primitives — useTabs (Radiant Tabs for multi-variant cards, matches GlobalHeader doc-page pattern) and fullSizeHref (fullscreen link).',
+        ],
+      },
+      {
+        category: 'added',
+        label: 'Spotter cursor rules + tracker',
+        items: [
+          'spotter-ia.md — standalone IA: page layout with exact 260/936/844 widths, full left-panel structure (Analysts + Chats + Settings), right-pane states (chat / analyst landing / analyst list), 6-item Settings menu with mixed modal / new-tab / toggle behaviours, hover menus on chats and analysts.',
+          'spotter-agentic-chat-ia.md — shared embedded canvas+chat IA for Spotter Model / Viz / Code surfaces.',
+          'spotter-scaffolding.md — how to create a new Spotter prototype, file layout, provider wiring, registry rules, pre-flight checklist.',
+          'docs/spotter-roadmap.md — resume-here tracker with status per Spotter mode and per phase.',
+        ],
+      },
+      {
+        category: 'fixed',
+        label: 'Icons, copy, and stats accuracy',
+        items: [
+          'VizBlock expand button now uses the diagonal expand glyph (matches Figma node 852:7344) instead of the horizontal fullscreen icon. Affects every viz answer rendered in Spotter responses.',
+          'Home page hero reads PLATFORM_VERSION instead of the hardcoded 26.4.1b.',
+          'Sidebar Icons badge reads getIconCount() (151) instead of the hardcoded 46.',
+          'Design Tokens stat computes from generateCSSVariables + theme generators (373) instead of the hardcoded 290+.',
+          'Component count now includes RdModal (76 total).',
+          'Showcase pages render on the sunken layout bg (no own white background card-in-a-card) and match ComponentDocPage typography + spacing.',
+        ],
+      },
+      {
+        category: 'changed',
+        label: 'Sidebar + tokens + conventions',
+        items: [
+          'Sidebar: "Spotter" → "Spotter DS"; new "SpotterShell" entry under Widgets; "New" badges removed from LiveboardHeader / GlobalHeader / AppSidebar / AppShell.',
+          'spotterLayout tokens — chatMaxWidth 880 → 936; new textMaxWidth = 844.',
+          'ReasoningBlock streaming behaviour documented as a three-state model (semi-collapsed during, expanded → collapsing on done, settled "Thought for X seconds" trigger).',
+          'Spotter Requirements Gate in _orchestration.md upgraded to a mode-based Q&A flow with tiered rule loading.',
+          '3 historical Spotter plans moved to docs/archive/.',
+        ],
+      },
+    ],
+  },
+  {
+    version: '26.5.3b',
+    date: '2026-05-18',
+    title: '/sync-upstream rewrite + infrastructure fixes',
+    type: 'patch',
+    changes: [
+      {
+        category: 'fixed',
+        label: '/sync-upstream — feature-branch safe',
+        items: [
+          'No longer merges upstream/main directly into a feature branch. Always lands on main first, then merges main forward into your branch.',
+          'Stash now uses --include-untracked, so new files you have created are no longer lost during sync.',
+          'Preview is built in — phase one shows what is coming and asks before anything destructive runs. /check-upstream was removed.',
+          'Pre-flight refuses to run on broken git state (mid-merge, mid-rebase, detached HEAD, leftover sync stash).',
+        ],
+      },
+      {
+        category: 'fixed',
+        label: 'Deploy infrastructure',
+        items: [
+          'Middleware: staging branch is publicly accessible; other preview branches stay gated.',
+          'Vercel: X-Frame-Options SAMEORIGIN so same-origin iframes inside prototypes load correctly.',
+        ],
+      },
+      {
+        category: 'changed',
+        label: 'Maintainer branch model',
+        items: [
+          'CLAUDE.md split: personal and personal/* are origin-only; galaxy-bound branches are main, staging, and shared feat/fix/chore.',
+          'Pre-push hook in scripts/hooks/pre-push refuses to push personal* to galaxy.',
+        ],
+      },
+    ],
+  },
+  {
+    version: '26.5.3',
+    date: '2026-05-08',
+    title: 'Spotter prototype + Spotter design system (in progress)',
+    type: 'minor',
+    changes: [
+      {
+        category: 'added',
+        label: 'Spotter prototype — in-thread agentic chat',
+        items: [
+          'New sample prototype registered in registry-core.ts: agentic chat with welcome state and chat-active canvas',
+          'Streaming reasoning trace with description per step, embedded ToolcallCard ("Show details ⌄"), gray dots, and "Worked for X seconds" footer',
+          'Six block renderers — text, viz (real ECharts via the shared chart palette), sources, follow-ups (clickable chips), refine (clickable options), error',
+          'M4 fullscreen expand modal — portaled to body, edge-to-edge, with chart title + view toggle + tokens + chart slot + "Showing X of X data points" footer',
+          'Sticky prompt with purple → blue gradient border on focus, "Spotter responses should be reviewed. Learn more" disclaimer below',
+          'Feedback row (Is this useful? 👍 👎) on every completed agent message',
+        ],
+      },
+      {
+        category: 'added',
+        label: 'Spotter design system (in progress)',
+        items: [
+          '@spotter/* peer to @components/* — domain DS layered on Radiant',
+          'Subdomains: chat (state + thread + bubble + reasoning + blocks), page (shell + collapsible 64↔260 left panel + welcome), answer (reserved for AnswerCard), viz, runtime (schema + service + system prompt)',
+          'Spotter-local tokens (radial brand glow + chart-token bg aliases + chatMaxWidth)',
+          'Five custom icon glyphs not in Radiant: PanelToggle, Bell, ThoughtSpotMark, ChartSearch, Orbits',
+          'AsyncIterable streaming protocol (AnswerChunk) — same shape for canned mode and the live /api/chat path that lands later',
+        ],
+      },
+      {
+        category: 'added',
+        label: 'Spotter context for future sessions',
+        items: [
+          'Three .cursor/rules files (spotter-components, spotter-logic, spotter-response-style) auto-attach on src/spotter/** and src/prototypes/Spotter*/**',
+          'Spotter Requirements Gate in _orchestration.md classifies Spotter tasks and pre-loads the rules',
+          'CLAUDE.md two-layer DS section pointing to the four Spotter docs',
+          'Plans + behaviour guides under docs/: DS plan, prototype shell, AnswerCard spec, chat extraction, VizBlock behaviour',
+        ],
+      },
+      {
+        category: 'synced',
+        label: 'Radiant 3.0 icon sync + light GlobalHeader',
+        items: [
+          'Icon registry expanded 53 → 148 unique icons (151 entries with 3 backward-compat aliases: settings → cog, search → magnifying-glass, refresh → sync)',
+          'GlobalHeader gained a light theme variant — used as the Spotter prototype header',
+        ],
+      },
+    ],
+  },
+  {
+    version: '26.4.4c',
+    date: '2026-04-28',
+    title: 'Token system Figma alignment, Modal alignment, Project status dashboard',
+    type: 'minor',
+    changes: [
+      {
+        category: 'added',
+        label: 'Token system — Figma 3.0 alignment (Phases 1–5 of 8)',
+        items: [
+          'Phase 1 — Primitive colors: darkGray scale (12 stops), alpha variants, hex fixes for purple and teal',
+          'Phase 2 — Light semantic colors: 6 value fixes + 22 new accent tokens (background-accent, content-accent, border)',
+          'Phase 3 — Typography: letter-spacing aligned to Figma absolutes, 6 v2TextStyles bumped medium → semibold, body weight light → regular',
+          'Phase 4 — Elevation: shadowPrimitives with 3 semantic levels (surface, menu, modal) and light/dark variants; component CSS migrated to semantic vars',
+          'Phase 5 — Layout: AppSidebar/AppShell default width 261px → 260px',
+        ],
+      },
+      {
+        category: 'changed',
+        label: 'Modal alignment with Figma',
+        items: [
+          'Modal header padding restored to 20px 24px (variable height) so wizard variants grow correctly',
+          'Modal footer fixed at 72px with corrected tertiary-left / primary-right CTA placement',
+          'Wizard stepper rebuilt as discrete 4px segments with 6px gap and 2px radii; renders for splashscreen too',
+          'Close icon removed from M1/M2/M3 simple modals — only M4 keeps the Close text link, per Figma',
+          'New M2 eyebrow-only modal demo (no stepper)',
+          'Splash screen: header no longer renders (title moved to body)',
+          'Overlay z-index bumped to 1000 so M4 covers the sidebar',
+          'RdModal absorbed into Modal — single modal component going forward',
+        ],
+      },
+      {
+        category: 'added',
+        label: 'Project status dashboard (/project-status)',
+        items: [
+          'Local HTML dashboard with overview, branches, forks/upstream, and docs/plans tabs at zero LLM token cost',
+          'Worktree view — each checkout shown with branch, modified count, divergence vs main, locked/prunable badges',
+          'Branch divergence in three columns: vs main, vs staging, vs upstream/main, with last commit subject + relative age',
+          'Role-aware tabs — maintainers see all designer forks; designer forks see upstream sync state',
+          'Inline markdown viewer — click any .md row to open its rendered content in an in-page modal',
+          'Local-only badges — gitignored files (BACKLOG.md, plans/, articles/) tagged with a blue local chip',
+          'Forks sorted by last push descending (most recent first)',
+        ],
+      },
+      {
+        category: 'added',
+        label: 'Changelog highlights',
+        items: [
+          'Curated Highlights section at the top of the Changelog page surfaces major work across recent releases',
+          'Visibility rule: last 60 days OR last 6 items, whichever is longer',
+          'release.sh now prompts the maintainer for highlights interactively during release',
+        ],
+      },
+      {
+        category: 'changed',
+        label: 'AI orchestrator',
+        items: [
+          'New Step 0c — flags Figma MCP\'s ~4k tokens-per-message cost once per session when no Figma signal is detected',
+          'Tier 1 signals expanded to include copy review and UX writing tasks (even with no code changes)',
+          'UI text rule strengthened — load content-guidelines.md before writing or reviewing labels, buttons, titles, body copy, or error messages',
+        ],
+      },
+      {
+        category: 'fixed',
+        label: 'Security',
+        items: [
+          'postcss bumped 8.5.6 → 8.5.10 in lockfile (GHSA-qx2v-qp2m-jg93 — XSS via unescaped </style> in CSS stringify output)',
+        ],
+      },
+    ],
+  },
   {
     version: '26.4.1c',
     date: '2026-04-08',
@@ -358,6 +717,7 @@ const categoryColors = {
   changed: { bg: systemColors.light['background-warning'], text: systemColors.light['content-warning'], label: 'Changed' },
   fixed: { bg: systemColors.light['background-information'], text: systemColors.light['content-information'], label: 'Fixed' },
   removed: { bg: systemColors.light['background-failure'], text: systemColors.light['content-failure'], label: 'Removed' },
+  synced: { bg: systemColors.light['background-information'], text: systemColors.light['content-information'], label: 'Synced' },
 };
 
 const typeColors = {
@@ -365,6 +725,15 @@ const typeColors = {
   minor: systemColors.light['content-brand'],
   patch: systemColors.light['content-tertiary'],
 };
+
+// Visible highlights: items from the last 60 days, OR the most recent 6 if
+// fewer than 6 fall in that window.
+const SIXTY_DAYS_MS = 60 * 24 * 60 * 60 * 1000;
+const visibleHighlights = (() => {
+  const now = Date.now();
+  const recent = HIGHLIGHTS.filter((h) => now - new Date(h.date).getTime() <= SIXTY_DAYS_MS);
+  return recent.length >= 6 ? recent : HIGHLIGHTS.slice(0, Math.max(6, recent.length));
+})();
 
 export const ChangelogPage: React.FC = () => {
   return (
@@ -376,6 +745,24 @@ export const ChangelogPage: React.FC = () => {
           A detailed log of all changes, updates, and improvements to the Radiant Design System.
         </p>
       </div>
+
+      {/* Curated highlights — cherry-picked across recent releases */}
+      {visibleHighlights.length > 0 && (
+        <div style={styles.hero}>
+          <div style={styles.heroLabel}>Highlights</div>
+          <ul style={styles.heroList}>
+            {visibleHighlights.map((h, i) => (
+              <li key={i} style={styles.heroItem}>
+                <div style={styles.heroItemHead}>
+                  <span style={styles.heroTitle}>{h.title}</span>
+                  <span style={styles.heroVersion}>v{h.version}</span>
+                </div>
+                <p style={styles.heroDescription}>{h.description}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {/* Timeline */}
       <div style={styles.timeline}>
@@ -532,6 +919,71 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '14px',
     color: referenceColors.gray['70'],
     lineHeight: '22px',
+  },
+  hero: {
+    backgroundColor: systemColors.light['background-subtle'],
+    border: `1px solid ${systemColors.light['background-subtle']}`,
+    borderRadius: '12px',
+    padding: '24px 28px',
+    marginBottom: '40px',
+  },
+  heroLabel: {
+    fontFamily: '"SF Mono", Monaco, monospace',
+    fontSize: '11px',
+    fontWeight: 700,
+    letterSpacing: '0.16em',
+    textTransform: 'uppercase',
+    color: systemColors.light['content-brand'],
+    marginBottom: '16px',
+  },
+  heroList: {
+    margin: 0,
+    padding: 0,
+    listStyle: 'none',
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+    gap: '16px',
+  },
+  heroItem: {
+    backgroundColor: systemColors.light['background-base'],
+    border: `1px solid ${systemColors.light['background-subtle']}`,
+    borderRadius: '8px',
+    padding: '14px 16px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '6px',
+  },
+  heroItemHead: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: '12px',
+  },
+  heroTitle: {
+    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontSize: '15px',
+    fontWeight: 600,
+    color: systemColors.light['content-primary'],
+    lineHeight: '20px',
+  },
+  heroVersion: {
+    flexShrink: 0,
+    padding: '2px 8px',
+    borderRadius: '4px',
+    fontFamily: '"SF Mono", Monaco, monospace',
+    fontSize: '11px',
+    fontWeight: 600,
+    letterSpacing: '0.04em',
+    backgroundColor: systemColors.light['background-subtle'],
+    color: systemColors.light['content-secondary'],
+  },
+  heroDescription: {
+    margin: 0,
+    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontSize: '13px',
+    fontWeight: 400,
+    color: systemColors.light['content-secondary'],
+    lineHeight: '19px',
   },
   connector: {
     position: 'absolute',

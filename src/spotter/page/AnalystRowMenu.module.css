@@ -1,0 +1,10 @@
+/* AnalystRowMenu — hover menu wrapper for analyst rows in the Spotter left
+ * panel.
+ *
+ * Most of the layout/visibility comes from RowMenuAffordance.module.css.
+ * This file is reserved for analyst-row-specific tweaks if they emerge.
+ */
+
+.row {
+  width: 100%;
+}

@@ -155,8 +155,12 @@ export const Modal: React.FC<ModalProps> = ({
     className,
   ].filter(Boolean).join(' ');
 
-  // Determine if we should show wizard progress bar
-  const showWizardProgress = type === 'wizard' && totalSteps && totalSteps >= 2;
+  // Determine if we should show wizard progress bar (wizard or multi-step splash screen)
+  const showWizardProgress =
+    (type === 'wizard' || type === 'splashscreen') &&
+    currentStep !== undefined &&
+    totalSteps &&
+    totalSteps >= 2;
 
   // For M4 full screen, use text close button
   const isFullScreen = size === 'M4';
@@ -186,39 +190,26 @@ export const Modal: React.FC<ModalProps> = ({
             </div>
           )}
 
-          {/* Header */}
-          {(title || eyebrow) && (
+          {/* Header — splash screen has no header (title lives in the body) */}
+          {type !== 'splashscreen' && (title || eyebrow) && (
             <div className={styles.header}>
               <div className={styles.headerContent}>
-                {eyebrow && type === 'wizard' && (
+                {eyebrow && (
                   <span className={styles.eyebrow}>{eyebrow}</span>
                 )}
                 {title && (
                   <h2 id="modal-title" className={styles.title}>{title}</h2>
                 )}
               </div>
-              {showCloseButton && (
-                isFullScreen ? (
-                  <button 
-                    type="button" 
-                    className={styles.closeButtonText} 
-                    onClick={onClose}
-                    aria-label="Close modal"
-                  >
-                    Close
-                  </button>
-                ) : (
-                  <button 
-                    type="button" 
-                    className={styles.closeButton} 
-                    onClick={onClose}
-                    aria-label="Close modal"
-                  >
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M12 4L4 12M4 4L12 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  </button>
-                )
+              {showCloseButton && isFullScreen && (
+                <button
+                  type="button"
+                  className={styles.closeButtonText}
+                  onClick={onClose}
+                  aria-label="Close modal"
+                >
+                  Close
+                </button>
               )}
             </div>
           )}
@@ -238,12 +229,10 @@ export const Modal: React.FC<ModalProps> = ({
           {/* Wizard Progress Bar */}
           {showWizardProgress && (
             <div className={styles.wizardProgress}>
-              {Array.from({ length: totalSteps! }, (_, index) => (
+              {Array.from({ length: totalSteps! }, (_, i) => (
                 <div
-                  key={index}
-                  className={`${styles.progressStep} ${
-                    index < (currentStep || 1) ? styles.progressStepActive : styles.progressStepInactive
-                  }`}
+                  key={i}
+                  className={`${styles.wizardStep} ${i < currentStep! ? styles.wizardStepActive : ''}`}
                 />
               ))}
             </div>

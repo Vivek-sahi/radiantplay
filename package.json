@@ -8,7 +8,9 @@
     "build:strict": "cp docs/collaboration/cursor-to-claude-setup.html public/cursor-to-claude-setup.html && tsc && vite build",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview",
-    "new-prototype": "node scripts/create-prototype.js"
+    "new-prototype": "node scripts/create-prototype.js",
+    "sync-icons": "node scripts/sync-icons-from-figma.mjs",
+    "sync-icons:dry": "node scripts/sync-icons-from-figma.mjs --dry-run"
   },
   "keywords": [
     "design-system",

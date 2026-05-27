@@ -1,0 +1,15 @@
+<svg width="800" height="450" viewBox="0 0 800 450" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="800" height="450" fill="#F6F8FA"/>
+  <rect x="60" y="60" width="680" height="50" rx="6" fill="white" stroke="#EAEDF2"/>
+  <rect x="60" y="110" width="64" height="280" fill="white" stroke="#EAEDF2"/>
+  <rect x="124" y="110" width="616" height="280" fill="white" stroke="#EAEDF2"/>
+  <ellipse cx="432" cy="240" rx="220" ry="80" fill="#DEE8FA" opacity="0.5"/>
+  <text x="432" y="200" fill="#1D232F" font-family="system-ui, -apple-system, sans-serif" font-size="18" font-weight="500" text-anchor="middle">
+    Lets <tspan fill="#2770EF">make sense</tspan> of your data.
+  </text>
+  <rect x="252" y="220" width="360" height="56" rx="12" fill="white" stroke="#C0C6CF"/>
+  <circle cx="588" cy="248" r="14" fill="#2770EF"/>
+  <text x="432" y="420" fill="#1D232F" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="500" text-anchor="middle">
+    Spotter
+  </text>
+</svg>

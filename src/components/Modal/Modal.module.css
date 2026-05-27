@@ -14,7 +14,7 @@
   align-items: center;
   justify-content: center;
   background-color: var(--rd-sys-color-background-overlay, rgba(29, 35, 47, 0.5));
-  z-index: var(--z-index-modal, 1000);
+  z-index: 1000;
   padding: var(--spacing-6);
   animation: fadeIn var(--duration-fast, 150ms) var(--easing-decelerate, ease-out);
 }
@@ -47,7 +47,7 @@
   flex-direction: column;
   background-color: var(--rd-sys-color-background-base);
   border-radius: var(--radius-md, 6px);
-  box-shadow: 0px 0px 4px rgba(25, 35, 49, 0.08), 0px 24px 32px rgba(25, 35, 49, 0.16);
+  box-shadow: var(--shadow-modal);
   min-height: 230px;
   max-height: 690px;
   overflow: hidden;
@@ -268,7 +268,8 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--spacing-4, 16px);
-  padding: var(--spacing-5, 20px) var(--spacing-6, 24px);
+  height: 72px;
+  padding: 0 var(--spacing-6, 24px);
   border-top: 1px solid var(--rd-sys-color-border-divider);
   background-color: var(--rd-sys-color-background-sunken);
   border-radius: 0 0 var(--radius-md, 6px) var(--radius-md, 6px);
@@ -280,38 +281,27 @@
    ======================================== */
 .wizardProgress {
   display: flex;
-  height: 4px;
   gap: 6px;
+  height: 4px;
   flex-shrink: 0;
 }
 
-.progressStep {
-  flex: 1;
-  min-height: 4px;
-  min-width: 1px;
+.wizardStep {
+  flex: 1 0 0;
+  min-width: 0;
+  height: 4px;
+  background-color: var(--rd-sys-color-background-secondary-action, var(--rd-sys-color-background-subtle));
+  border-top-left-radius: var(--radius-xs, 2px);
+  border-bottom-left-radius: var(--radius-xs, 2px);
+  transition: background-color var(--duration-normal, 200ms) var(--easing-standard, ease);
 }
 
-/* First step - rounded on left */
-.progressStep:first-child {
-  border-radius: 0 2px 2px 0;
-}
-
-/* Last step - rounded on right */
-.progressStep:last-child {
-  border-radius: 2px 0 0 2px;
-}
-
-/* Single step (both first and last) */
-.progressStep:first-child:last-child {
-  border-radius: 2px;
-}
-
-.progressStepActive {
-  background-color: var(--rd-sys-color-background-brand);
-}
-
-.progressStepInactive {
-  background-color: var(--rd-sys-color-background-subtle);
+.wizardStepActive {
+  background-color: var(--rd-sys-color-content-brand);
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  border-top-right-radius: var(--radius-xs, 2px);
+  border-bottom-right-radius: var(--radius-xs, 2px);
 }
 
 /* ========================================

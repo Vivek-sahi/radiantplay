@@ -165,7 +165,7 @@ export const AppSidebar = forwardRef<HTMLElement, AppSidebarProps>(
       headerSlot,
       isOverlay = false,
       onClose,
-      width = 261,
+      width = 260,
       className,
       style,
     },

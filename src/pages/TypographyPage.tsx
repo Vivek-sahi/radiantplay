@@ -93,7 +93,7 @@ const styles: Record<string, React.CSSProperties> = {
   fontStack: {
     fontFamily: '"SF Mono", Monaco, monospace',
     fontSize: 11,
-    color: systemColors.light['content-tertiary'],
+    color: systemColors.light['content-secondary'],
     marginTop: 8,
     backgroundColor: systemColors.light['background-sunken'],
     padding: '6px 10px',
@@ -128,7 +128,7 @@ const styles: Record<string, React.CSSProperties> = {
   specsLabel: {
     fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
     fontSize: 11,
-    color: systemColors.light['content-tertiary'],
+    color: systemColors.light['content-secondary'],
   },
   typographySample: {
     flex: 1,
@@ -150,7 +150,7 @@ const styles: Record<string, React.CSSProperties> = {
   colorCode: {
     fontFamily: '"SF Mono", Monaco, monospace',
     fontSize: 11,
-    color: systemColors.light['content-tertiary'],
+    color: systemColors.light['content-secondary'],
   },
   guidelinesGrid: {
     display: 'grid',

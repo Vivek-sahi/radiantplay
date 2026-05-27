@@ -32,10 +32,34 @@ export type GroupInnerTile = {
   | { tileType: 'note'; noteVariant: NoteVariant }
 );
 
+export interface GroupInnerTileOverride {
+  highlighted?: boolean;
+  dark?: boolean;
+  resolvedBg?: string;
+}
+
 export interface GroupTileProps extends React.HTMLAttributes<HTMLDivElement> {
   groupId: string;
   title: string;
   description?: string;
+  /** Set false to hide the description row entirely (including edit placeholder) */
+  showDescription?: boolean;
+  /** Set false to hide the header border-bottom (used in no-gutter spacing mode) */
+  showDivider?: boolean;
+  /** Density-variable padding applied to the header text block (0/4/8px) */
+  densityPadding?: number;
+  /** Optional filter/control row rendered between title and inner-tile body (8px gap) */
+  headerControls?: React.ReactNode;
+  /** Show description on inner tiles */
+  innerTileShowDescription?: boolean;
+  /** Density-variable padding passed to inner AnswerTile (0/4/8px) */
+  innerTileDensityPadding?: number;
+  /** Density-variable gutter between inner tiles (default 8px) */
+  innerTileGutter?: number;
+  /** Per-inner-tile color + dark override from the StylingPanel */
+  innerTileOverrides?: Record<string, GroupInnerTileOverride>;
+  /** Called when hovering a color swatch for an inner tile in the drawer */
+  onInnerPreviewTileColor?: (hex: string | null) => void;
   innerTiles: GroupInnerTile[];
   mode?: TileMode;
   selected?: boolean;
@@ -58,8 +82,8 @@ export interface GroupTileProps extends React.HTMLAttributes<HTMLDivElement> {
 const MIN_INNER_ROW_H = 40; // px — prevents inner tiles becoming unreadable
 
 /** Inner column unit — scales with the group body width. */
-function innerCU(bodyW: number): number {
-  return (bodyW - 2 * G_PAD - G_GUTTER * (G_COLS - 1)) / G_COLS;
+function innerCU(bodyW: number, gutter: number = G_GUTTER): number {
+  return (bodyW - 2 * G_PAD - gutter * (G_COLS - 1)) / G_COLS;
 }
 
 /** Inner row height — scales proportionally with the group body height. */
@@ -69,12 +93,12 @@ function innerRH(bodyH: number, rows: number): number {
 }
 
 /** Pixel rect for an inner tile given the current column unit and row height. */
-function innerPx(tile: GroupInnerTile, cu: number, rh: number) {
+function innerPx(tile: GroupInnerTile, cu: number, rh: number, gutter: number = G_GUTTER) {
   return {
-    left:   G_PAD   + tile.x * (cu + G_GUTTER),
-    top:    G_PAD_I + tile.y * (rh + G_GUTTER),
-    width:  tile.w * cu + (tile.w - 1) * G_GUTTER,
-    height: tile.h * rh + (tile.h - 1) * G_GUTTER,
+    left:   G_PAD   + tile.x * (cu + gutter),
+    top:    G_PAD_I + tile.y * (rh + gutter),
+    width:  tile.w * cu + (tile.w - 1) * gutter,
+    height: tile.h * rh + (tile.h - 1) * gutter,
   };
 }
 
@@ -117,24 +141,24 @@ function compact(tiles: GroupInnerTile[]): GroupInnerTile[] {
 
 function applyInnerDisplacement(
   base: GroupInnerTile[], active: GroupInnerTile,
-  _cu: number, rh: number, bodyEl: HTMLElement
+  _cu: number, rh: number, bodyEl: HTMLElement, gutter: number = G_GUTTER
 ) {
   const resolved = compact(base.map(t => t.i === active.i ? active : t));
   for (const orig of base) {
     if (orig.i === active.i) continue;
     const r = resolved.find(t => t.i === orig.i);
     if (!r) continue;
-    const delta = (r.y - orig.y) * (rh + G_GUTTER);
+    const delta = (r.y - orig.y) * (rh + gutter);
     const el = bodyEl.querySelector(`[data-inner-tile-id="${orig.i}"]`) as HTMLElement | null;
     if (el) el.style.transform = delta ? `translateY(${delta}px)` : '';
   }
 }
 
-function commitInnerPositions(tiles: GroupInnerTile[], cu: number, rh: number, bodyEl: HTMLElement) {
+function commitInnerPositions(tiles: GroupInnerTile[], cu: number, rh: number, bodyEl: HTMLElement, gutter: number = G_GUTTER) {
   for (const t of tiles) {
     const el = bodyEl.querySelector(`[data-inner-tile-id="${t.i}"]`) as HTMLElement | null;
     if (!el) continue;
-    const p = innerPx(t, cu, rh);
+    const p = innerPx(t, cu, rh, gutter);
     el.style.left      = `${p.left}px`;
     el.style.top       = `${p.top}px`;
     el.style.width     = `${p.width}px`;
@@ -206,7 +230,11 @@ const innerShadow: React.CSSProperties = {
 
 export const GroupTile = forwardRef<HTMLDivElement, GroupTileProps>(
   ({
-    groupId, title, description, innerTiles,
+    groupId, title, description, showDescription = true, showDivider = true,
+    densityPadding = 4, headerControls,
+    innerTileShowDescription, innerTileDensityPadding, innerTileGutter = G_GUTTER,
+    innerTileOverrides, onInnerPreviewTileColor: _onInnerPreviewTileColor,
+    innerTiles,
     mode = 'view', selected = false, selectedInnerTileId,
     onSelect, onResizeHandleMouseDown,
     onInnerTileSelect, onInnerLayoutChange,
@@ -247,6 +275,7 @@ export const GroupTile = forwardRef<HTMLDivElement, GroupTileProps>(
     // Stable refs to live values used in event handlers
     const innerTilesRef   = useRef(innerTiles);     innerTilesRef.current = innerTiles;
     const layoutChangeRef = useRef(onInnerLayoutChange); layoutChangeRef.current = onInnerLayoutChange;
+    const gutterRef       = useRef(innerTileGutter); gutterRef.current = innerTileGutter;
 
     // Drag / resize state
     const innerDragRef   = useRef<InnerDragState | null>(null);
@@ -263,9 +292,10 @@ export const GroupTile = forwardRef<HTMLDivElement, GroupTileProps>(
       const update = () => {
         const bodyEl = bodyRef.current;
         if (!bodyEl) return;
-        const tiles = innerTilesRef.current;
-        const cu    = innerCU(bodyEl.offsetWidth);
-        const rh    = innerRH(bodyEl.offsetHeight, innerMaxRows(tiles));
+        const tiles  = innerTilesRef.current;
+        const gutter = gutterRef.current;
+        const cu     = innerCU(bodyEl.offsetWidth, gutter);
+        const rh     = innerRH(bodyEl.offsetHeight, innerMaxRows(tiles));
         cuRef.current = cu;
         rhRef.current = rh;
         for (const t of tiles) {
@@ -273,7 +303,7 @@ export const GroupTile = forwardRef<HTMLDivElement, GroupTileProps>(
           if (innerResizeRef.current?.tileId === t.i) continue;
           const el = bodyEl.querySelector(`[data-inner-tile-id="${t.i}"]`) as HTMLElement | null;
           if (!el) continue;
-          const p = innerPx(t, cu, rh);
+          const p = innerPx(t, cu, rh, gutter);
           el.style.left   = `${p.left}px`;
           el.style.top    = `${p.top}px`;
           el.style.width  = `${p.width}px`;
@@ -295,7 +325,7 @@ export const GroupTile = forwardRef<HTMLDivElement, GroupTileProps>(
       const br = bodyEl.getBoundingClientRect();
       const cu = cuRef.current;
       const rh = rhRef.current;
-      const px = innerPx(tile, cu, rh);
+      const px = innerPx(tile, cu, rh, gutterRef.current);
 
       innerDragRef.current = {
         tileId,
@@ -360,8 +390,9 @@ export const GroupTile = forwardRef<HTMLDivElement, GroupTileProps>(
     // ── Document mouse events — inner grid (same pattern as LiveboardNext) ──
     useEffect(() => {
       const onMove = (e: MouseEvent) => {
-        const cu = cuRef.current;
-        const rh = rhRef.current;
+        const cu     = cuRef.current;
+        const rh     = rhRef.current;
+        const gutter = gutterRef.current;
         const bodyEl = bodyRef.current;
 
         // ── Drag ────────────────────────────────────────────────────────
@@ -374,7 +405,7 @@ export const GroupTile = forwardRef<HTMLDivElement, GroupTileProps>(
           const tile = innerTilesRef.current.find(t => t.i === dr.tileId);
           if (!tile) return;
 
-          const px   = innerPx(tile, cu, rh);
+          const px   = innerPx(tile, cu, rh, gutter);
           const curL = e.clientX - al - dr.grabOffsetX;
           const curT = e.clientY - at - dr.grabOffsetY;
 
@@ -383,18 +414,18 @@ export const GroupTile = forwardRef<HTMLDivElement, GroupTileProps>(
 
           // Snap for shadow + live displacement
           const sx = Math.max(0, Math.min(G_COLS - tile.w,
-            Math.round((curL - G_PAD)   / (cu + G_GUTTER))));
+            Math.round((curL - G_PAD)   / (cu + gutter))));
           const sy = Math.max(0,
-            Math.round((curT - G_PAD_I) / (rh + G_GUTTER)));
+            Math.round((curT - G_PAD_I) / (rh + gutter)));
 
           const sh = dragShadowRef.current;
           if (sh) {
-            sh.style.left   = `${G_PAD   + sx * (cu + G_GUTTER)}px`;
-            sh.style.top    = `${G_PAD_I + sy * (rh + G_GUTTER)}px`;
-            sh.style.width  = `${tile.w * cu + (tile.w - 1) * G_GUTTER}px`;
-            sh.style.height = `${tile.h * rh + (tile.h - 1) * G_GUTTER}px`;
+            sh.style.left   = `${G_PAD   + sx * (cu + gutter)}px`;
+            sh.style.top    = `${G_PAD_I + sy * (rh + gutter)}px`;
+            sh.style.width  = `${tile.w * cu + (tile.w - 1) * gutter}px`;
+            sh.style.height = `${tile.h * rh + (tile.h - 1) * gutter}px`;
           }
-          applyInnerDisplacement(innerTilesRef.current, { ...tile, x: sx, y: sy }, cu, rh, bodyEl);
+          applyInnerDisplacement(innerTilesRef.current, { ...tile, x: sx, y: sy }, cu, rh, bodyEl, gutter);
           return;
         }
 
@@ -405,8 +436,8 @@ export const GroupTile = forwardRef<HTMLDivElement, GroupTileProps>(
         const dx  = e.clientX - r.startX;
         const dy  = e.clientY - r.startY;
         const { dir, origPixelW, origPixelH, minW, origX, origY, origW, origH } = r;
-        const minPxW = minW * cu + (minW - 1) * G_GUTTER;
-        const minPxH = INNER_ROW_H; // minimum 1 row
+        const minPxW = minW * cu + (minW - 1) * gutter;
+        const minPxH = INNER_ROW_H;
 
         let newPxW = r.currentPixelW;
         let newPxH = r.currentPixelH;
@@ -419,10 +450,10 @@ export const GroupTile = forwardRef<HTMLDivElement, GroupTileProps>(
         if (dir.includes('n')) { newPxH = Math.max(minPxH, origPixelH - dy); if (el) el.style.height = `${newPxH}px`; }
 
         if (dir.includes('w') && el) {
-          el.style.left = `${G_PAD + origX * (cu + G_GUTTER) + origPixelW - newPxW}px`;
+          el.style.left = `${G_PAD + origX * (cu + gutter) + origPixelW - newPxW}px`;
         }
         if (dir.includes('n') && el) {
-          el.style.top = `${G_PAD_I + origY * (rh + G_GUTTER) + origPixelH - newPxH}px`;
+          el.style.top = `${G_PAD_I + origY * (rh + gutter) + origPixelH - newPxH}px`;
         }
 
         r.currentPixelW = newPxW;
@@ -430,9 +461,9 @@ export const GroupTile = forwardRef<HTMLDivElement, GroupTileProps>(
 
         // Snap for shadow + live displacement
         const sw = Math.min(G_COLS, Math.max(minW,
-          Math.round((newPxW + G_GUTTER) / (cu + G_GUTTER))));
+          Math.round((newPxW + gutter) / (cu + gutter))));
         const sh = Math.max(1,
-          Math.round((newPxH + G_GUTTER) / (rh + G_GUTTER)));
+          Math.round((newPxH + gutter) / (rh + gutter)));
         let sx = origX, sy = origY;
         if (dir.includes('w')) sx = Math.max(0, origX + origW - sw);
         if (dir.includes('n')) sy = Math.max(0, origY + origH - sh);
@@ -440,16 +471,16 @@ export const GroupTile = forwardRef<HTMLDivElement, GroupTileProps>(
 
         const ph_el = resizeShadowRef.current;
         if (ph_el) {
-          ph_el.style.left   = `${G_PAD   + sx * (cu + G_GUTTER)}px`;
-          ph_el.style.top    = `${G_PAD_I + sy * (rh + G_GUTTER)}px`;
-          ph_el.style.width  = `${sw * cu + (sw - 1) * G_GUTTER}px`;
-          ph_el.style.height = `${sh * rh + (sh - 1) * G_GUTTER}px`;
+          ph_el.style.left   = `${G_PAD   + sx * (cu + gutter)}px`;
+          ph_el.style.top    = `${G_PAD_I + sy * (rh + gutter)}px`;
+          ph_el.style.width  = `${sw * cu + (sw - 1) * gutter}px`;
+          ph_el.style.height = `${sh * rh + (sh - 1) * gutter}px`;
         }
 
         const tile = innerTilesRef.current.find(t => t.i === r.tileId);
         if (tile) {
           applyInnerDisplacement(
-            innerTilesRef.current, { ...tile, x: sx, y: sy, w: sw, h: sh }, cu, rh, bodyEl
+            innerTilesRef.current, { ...tile, x: sx, y: sy, w: sw, h: sh }, cu, rh, bodyEl, gutter
           );
         }
       };
@@ -471,15 +502,16 @@ export const GroupTile = forwardRef<HTMLDivElement, GroupTileProps>(
             const sdy  = window.pageYOffset - dr.initScrollY;
             const curL = e.clientX - (dr.bodyLeft - sdx) - dr.grabOffsetX;
             const curT = e.clientY - (dr.bodyTop  - sdy) - dr.grabOffsetY;
+            const gutter = gutterRef.current;
             const sx   = Math.max(0, Math.min(G_COLS - tile.w,
-              Math.round((curL - G_PAD)   / (cu + G_GUTTER))));
+              Math.round((curL - G_PAD)   / (cu + gutter))));
             const sy   = Math.max(0,
-              Math.round((curT - G_PAD_I) / (rh + G_GUTTER)));
+              Math.round((curT - G_PAD_I) / (rh + gutter)));
 
             const final = compact(
               innerTilesRef.current.map(t => t.i === dr.tileId ? { ...t, x: sx, y: sy } : t)
             );
-            commitInnerPositions(final, cu, rh, bodyEl);
+            commitInnerPositions(final, cu, rh, bodyEl, gutter);
             layoutChangeRef.current?.(final);
           }
           return;
@@ -494,10 +526,11 @@ export const GroupTile = forwardRef<HTMLDivElement, GroupTileProps>(
         const el = bodyEl.querySelector(`[data-inner-tile-id="${r.tileId}"]`) as HTMLElement | null;
         el?.classList.remove('tile-is-resizing');
 
+        const gutter = gutterRef.current;
         const newW = Math.min(G_COLS, Math.max(r.minW,
-          Math.round((r.currentPixelW + G_GUTTER) / (cu + G_GUTTER))));
+          Math.round((r.currentPixelW + gutter) / (cu + gutter))));
         const newH = Math.max(1,
-          Math.round((r.currentPixelH + G_GUTTER) / (rh + G_GUTTER)));
+          Math.round((r.currentPixelH + gutter) / (rh + gutter)));
         let x = r.origX, y = r.origY, w = newW, h = newH;
         if (r.dir.includes('w')) x = Math.max(0, r.origX + r.origW - w);
         if (r.dir.includes('n')) y = Math.max(0, r.origY + r.origH - h);
@@ -506,7 +539,7 @@ export const GroupTile = forwardRef<HTMLDivElement, GroupTileProps>(
         const final = compact(
           innerTilesRef.current.map(t => t.i === r.tileId ? { ...t, x, y, w, h } : t)
         );
-        commitInnerPositions(final, cu, rh, bodyEl);
+        commitInnerPositions(final, cu, rh, bodyEl, gutter);
         layoutChangeRef.current?.(final);
       };
 
@@ -533,7 +566,7 @@ export const GroupTile = forwardRef<HTMLDivElement, GroupTileProps>(
 
     // Initial grid dims for first render (ResizeObserver corrects after mount)
     const bodyEl = bodyRef.current;
-    const cu = innerCU(bodyEl?.offsetWidth ?? 400);
+    const cu = innerCU(bodyEl?.offsetWidth ?? 400, innerTileGutter);
     const rh = bodyEl
       ? innerRH(bodyEl.offsetHeight, innerMaxRows(innerTiles))
       : INNER_ROW_H;
@@ -579,9 +612,10 @@ export const GroupTile = forwardRef<HTMLDivElement, GroupTileProps>(
         {/* ── Header — drag handle on the padding area; text fields are NOT drag handles ── */}
         <div
           className={`${styles.header} ${isEdit ? 'tile-drag-handle' : ''}`}
+          style={showDivider ? undefined : { borderBottom: 'none' }}
           onClick={isEdit ? (e) => { e.stopPropagation(); onSelect?.(); } : undefined}
         >
-          <div className={styles.textBlock}>
+          <div className={styles.textBlock} style={{ padding: densityPadding }}>
             {/* Title — editable wrapper (same pattern as AnswerTile) */}
             <div
               className={styles.title}
@@ -647,19 +681,29 @@ export const GroupTile = forwardRef<HTMLDivElement, GroupTileProps>(
           <div ref={resizeShadowRef} style={innerShadow} />
 
           {innerTiles.map(tile => {
-            const p = innerPx(tile, cu, rh);
+            const p  = innerPx(tile, cu, rh, innerTileGutter);
+            const ov = innerTileOverrides?.[tile.i];
+            const slotStyle: React.CSSProperties = {
+              position: 'absolute',
+              left: p.left, top: p.top,
+              width: p.width, height: p.height,
+              boxSizing: 'border-box',
+              overflow: 'visible',
+              borderRadius: 6,
+              ...(ov?.resolvedBg ? { background: ov.resolvedBg } : {}),
+              ...(ov?.dark ? {
+                '--rd-sys-color-content-primary':   '#DBDFE7',
+                '--rd-sys-color-content-secondary': '#A5ACB9',
+                '--rd-sys-color-border-divider':    'rgba(255,255,255,0.12)',
+                '--rd-sys-color-background-sunken': 'rgba(0,0,0,0.2)',
+                '--rd-sys-color-content-brand':     '#71A1F4',
+              } as React.CSSProperties : {}),
+            };
             return (
               <div
                 key={tile.i}
                 data-inner-tile-id={tile.i}
-                style={{
-                  position: 'absolute',
-                  left: p.left, top: p.top,
-                  width: p.width, height: p.height,
-                  boxSizing: 'border-box',
-                  overflow: 'visible',
-                  borderRadius: 6,
-                }}
+                style={slotStyle}
                 onMouseDown={e => {
                   if (!isEdit) return;
                   const target = e.target as HTMLElement;
@@ -676,6 +720,9 @@ export const GroupTile = forwardRef<HTMLDivElement, GroupTileProps>(
                     chartType={innerChartTypes?.[tile.i] ?? tile.chartType}
                     title={tile.title}
                     description={tile.description}
+                    showDescription={innerTileShowDescription}
+                    highlighted={ov?.dark}
+                    densityPadding={innerTileDensityPadding}
                     mode={mode}
                     selected={selectedInnerTileId === tile.i}
                     onSelect={() => onInnerTileSelect?.(tile.i)}
@@ -734,7 +781,7 @@ export const GroupTile = forwardRef<HTMLDivElement, GroupTileProps>(
                       layoutChangeRef.current?.(final);
                     }}
                     className={styles.innerTileFrame}
-                    style={{ width: '100%', height: '100%' }}
+                    style={{ width: '100%', height: '100%', borderColor: 'transparent' }}
                   />
                 )}
               </div>

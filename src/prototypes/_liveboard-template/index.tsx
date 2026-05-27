@@ -103,8 +103,8 @@ function commitPositions(layout: TileItem[], cu: number) {
 
 const TILE_DEFS: TileDef[] = [
   // KPI row
-  { id: 'kpi-revenue',    tileType: 'answer', title: 'Total revenue',       chartType: 'kpi-simple' },
-  { id: 'kpi-customers',  tileType: 'answer', title: 'Active customers',    chartType: 'kpi-simple' },
+  { id: 'kpi-revenue',    tileType: 'answer', title: 'Total revenue',       chartType: 'kpi'        },
+  { id: 'kpi-customers',  tileType: 'answer', title: 'Active customers',    chartType: 'kpi'        },
   { id: 'kpi-orders',     tileType: 'answer', title: 'Orders this quarter', chartType: 'kpi-simple' },
   { id: 'kpi-nps',        tileType: 'answer', title: 'NPS score',           chartType: 'kpi-simple' },
   // Chart row
@@ -116,17 +116,17 @@ const TILE_DEFS: TileDef[] = [
 ];
 
 const INITIAL_LAYOUT: TileItem[] = [
-  // Row 1: 4 KPI tiles (3 cols × 3 rows each)
-  { i: 'kpi-revenue',    x: 0, y: 0, w: 3, h: 3, minW: 2 },
-  { i: 'kpi-customers',  x: 3, y: 0, w: 3, h: 3, minW: 2 },
-  { i: 'kpi-orders',     x: 6, y: 0, w: 3, h: 3, minW: 2 },
-  { i: 'kpi-nps',        x: 9, y: 0, w: 3, h: 3, minW: 2 },
+  // Row 1: 4 KPI tiles (3 cols × 2 rows each)
+  { i: 'kpi-revenue',    x: 0, y: 0, w: 3, h: 2, minW: 2 },
+  { i: 'kpi-customers',  x: 3, y: 0, w: 3, h: 2, minW: 2 },
+  { i: 'kpi-orders',     x: 6, y: 0, w: 3, h: 2, minW: 2 },
+  { i: 'kpi-nps',        x: 9, y: 0, w: 3, h: 2, minW: 2 },
   // Row 2: 2 chart tiles (6 cols × 3 rows each)
-  { i: 'chart-revenue',  x: 0, y: 3, w: 6, h: 3, minW: 2 },
-  { i: 'chart-segment',  x: 6, y: 3, w: 6, h: 3, minW: 2 },
+  { i: 'chart-revenue',  x: 0, y: 2, w: 6, h: 3, minW: 2 },
+  { i: 'chart-segment',  x: 6, y: 2, w: 6, h: 3, minW: 2 },
   // Row 3: note (4 cols × 4 rows) + group (8 cols × 4 rows)
-  { i: 'note-summary',   x: 0, y: 6, w: 4, h: 4, minW: 2 },
-  { i: 'group-products', x: 4, y: 6, w: 8, h: 4, minW: 2 },
+  { i: 'note-summary',   x: 0, y: 5, w: 4, h: 4, minW: 2 },
+  { i: 'group-products', x: 4, y: 5, w: 8, h: 4, minW: 2 },
 ];
 
 const INITIAL_GROUP_LAYOUTS: Record<string, GroupInnerTile[]> = {

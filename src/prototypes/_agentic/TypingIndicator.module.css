@@ -1,0 +1,42 @@
+.row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  width: 100%;
+  padding: 0 var(--spacing-3) var(--spacing-6) var(--spacing-3);
+  box-sizing: border-box;
+}
+
+.avatar {
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.content {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  padding: var(--spacing-1) 0 0 var(--spacing-1);
+}
+
+@keyframes spinArc {
+  to { transform: rotate(360deg); }
+}
+
+.spinnerArc {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  animation: spinArc 0.8s linear infinite;
+}
+
+.label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-regular);
+  color: var(--rd-sys-color-content-secondary);
+  font-family: var(--font-family-primary);
+  white-space: nowrap;
+}

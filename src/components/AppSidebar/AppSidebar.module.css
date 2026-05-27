@@ -9,7 +9,7 @@
 }
 
 .overlaySidebar {
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+  box-shadow: var(--shadow-menu);
 }
 
 .tabSwitcher {

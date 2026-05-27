@@ -33,7 +33,7 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(
   ) => {
     const [isOverlaySidebarOpen, setIsOverlaySidebarOpen] = useState(false);
 
-    const sidebarWidth = sidebarProps.width ?? 261;
+    const sidebarWidth = sidebarProps.width ?? 260;
     const shouldShowHamburger = headerProps.showHamburger ?? hideSidebar;
 
     useEffect(() => {

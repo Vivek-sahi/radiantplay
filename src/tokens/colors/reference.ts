@@ -64,11 +64,11 @@ export const referenceColors = {
     '40': '#D1C0FB',
     '50': '#B094F8',
     '60': '#8C62F5',
-    '70': '#6847BA',
+    '70': '#6A4ABA',
     '80': '#422E75',
     '85': '#331F62',
     '90': '#210F4F',
-    '100': '#0D0030',
+    '100': '#0E0033',
   },
 
   blue: {
@@ -94,7 +94,7 @@ export const referenceColors = {
     '40': '#B5ECF2',
     '50': '#82DFE9',
     '60': '#48D1E0',
-    '70': '#359FAA',
+    '70': '#369FAA',
     '80': '#22636B',
     '85': '#175157',
     '90': '#0C3F45',
@@ -144,6 +144,38 @@ export const referenceColors = {
     '85': '#602E16',
     '90': '#471F0B',
     '100': '#331100',
+  },
+
+  /**
+   * Dark Gray — neutral (non-blue-tinted) scale used by dark mode surfaces.
+   * Foundation for Phase 6 dark mode remap; not yet referenced in light mode.
+   */
+  darkGray: {
+    '00': '#131416',
+    '05': '#1A1B1E',
+    '10': '#212326',
+    '15': '#282A2E',
+    '20': '#303136',
+    '30': '#43474B',
+    '40': '#585E64',
+    '50': '#73767D',
+    '60': '#8C9196',
+    '70': '#AAADB1',
+    '80': '#C4C6CA',
+    '90': '#DFE0E2',
+  },
+
+  /**
+   * Alpha variants — translucent values used for overlays, ghost states,
+   * and translucent highlights. Referenced by system tokens.
+   */
+  alpha: {
+    'gray-70a': '#1F2632CC',      // 80%
+    'gray-60a': '#20293A99',      // 60%
+    'gray-40a': '#16223A42',      // 26%
+    'gray-10a': '#C0C6CF1F',      // 12%
+    'blue-10a': '#71A1F41F',      // 12%
+    'dark-gray-30a': '#00030ABA', // 73%
   },
 
   black: '#000000',
