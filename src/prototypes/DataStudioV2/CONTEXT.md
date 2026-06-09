@@ -4,7 +4,7 @@ _Updated at the end of every session. For product context see `product.md`. For 
 
 ---
 
-## Current state (session 120, 2026-06-09)
+## Current state (session 121, 2026-06-09)
 
 **Branch:** `prototype/data-studio` on `origin` (vivek-sahi/radiantplay)  
 **Deployed:** https://radiantplay-nine.vercel.app  
@@ -40,11 +40,29 @@ _Updated at the end of every session. For product context see `product.md`. For 
 - **Notebook edit → stale flag** — when a notebook cell is edited and run, surface: "N column descriptions / AIRS items may be affected — review them?" Connects transforms to readiness docs.
 - **Unreviewed badge on agent-generated content** — agent-drafted column descriptions and AIRS items should be visually marked until a human confirms them.
 
-**Secondary task:** Remaining DE review quick wins from `research/2026-06-09-de-review-multi-source.md`
-- Step 1: Name 4 tables inline in scan proposal text
-- Step 7: Promote Pendo sentiment breakdown (61%/24%/15%) into completion message
-- Step 8: Show CSV column names in consent message ("account_id, csm_name, exec_sponsor, csm_region")
-- Step 12 recap line: "This staging table joins with your 4 Snowflake tables — all 5 sources in the model build."
+**Open DE quick wins** (from `research/2026-06-09-de-review-multi-source.md` — lower priority after flow rewrite)
+- Promote Pendo sentiment breakdown (61%/24%/15%) into completion message ← already done in session 121
+- Show CSV column names in consent message ("account_id, csm_name, exec_sponsor, csm_region")
+
+**Table card improvements** (surfaced during session 121 walkthrough)
+- Collapsed card: add last-synced freshness (most useful missing DE signal)
+- Expanded card: "X/N columns described" indicator in header; cardinality hint on STRING columns
+
+---
+
+## Session 121 changes (2026-06-09)
+
+**Multi-source flow — conversation rewrite (more realistic, less scripted)**
+- Scan completion: tables + "what other data?" now in one message; `tables_proposed` gate removed
+- "Apply this" button removed from all pending actions
+- `awaiting_pendo_write_consent` gate removed — "ready to run it?" was already consent; notebook now runs directly
+- Notebook added to Created panel at creation (not after write)
+- `awaiting_csv_prompt` phase: CSV upload only shown when user says they have a CSV
+- `awaiting_staging_decision` phase: staging table not auto-proposed — user says "create staging from these"
+- Pre-build confirmation message lists all 5 sources explicitly before model build
+
+**Staging table modal**
+- "View SQL" collapsible replaced with **Data | SQL** tabs (matching CDW table tab pattern)
 
 ---
 
