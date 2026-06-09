@@ -367,14 +367,28 @@ const TableSection: React.FC<{
         }}>{t.name}</span>
         <TypeBadge label={isFact ? 'Fact' : 'Dimension'} kind={isFact ? 'fact' : 'dimension'} />
         {t.connection && (
-          <span style={{
-            fontSize: 11, fontWeight: fw.medium,
-            color: c['content-secondary'],
-            backgroundColor: c['background-subtle'],
-            border: `1px solid ${c['border-divider']}`,
-            padding: '1px 6px', borderRadius: 4,
-            whiteSpace: 'nowrap' as const,
-          }}>{t.connection}</span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: fw.medium, color: c['content-secondary'], backgroundColor: c['background-subtle'], border: `1px solid ${c['border-divider']}`, padding: '1px 6px', borderRadius: 4, whiteSpace: 'nowrap' as const }}>
+            {t.connectionType === 'snowflake' && (
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+                <path d="M12 2v4M12 18v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M2 12h4M18 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83" stroke="#29B5E8" strokeWidth="2.2" strokeLinecap="round"/>
+              </svg>
+            )}
+            {t.connectionType === 'spotstore' && (
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+                <rect x="3" y="5" width="18" height="14" rx="2" stroke="#7C3AED" strokeWidth="2"/>
+                <path d="M3 9h18" stroke="#7C3AED" strokeWidth="2"/>
+                <circle cx="7" cy="7" r="1" fill="#7C3AED"/>
+                <circle cx="10" cy="7" r="1" fill="#7C3AED"/>
+              </svg>
+            )}
+            {t.connectionType === 'csv' && (
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="#16A34A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <polyline points="14 2 14 8 20 8" stroke="#16A34A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            )}
+            {t.connection}
+          </span>
         )}
         <span style={{ fontSize: fs.xs, color: c['content-secondary'] }}>·</span>
         <span style={{ fontSize: fs.xs, color: c['content-secondary'] }}>{indexedCols.length} columns</span>

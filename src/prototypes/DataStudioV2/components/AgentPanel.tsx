@@ -34,6 +34,7 @@ export interface PlanTable {
   description: string;
   rowCount?: string;
   connection?: string;
+  connectionType?: 'snowflake' | 'dbt' | 'bigquery' | 'redshift' | 'spotstore' | 'csv';
   confidence?: number;
   reasoning?: string;
 }
@@ -69,6 +70,8 @@ export interface PlanData {
   relationships: PlanRelationship[];
   columns: PlanColumn[];
   sampleQuestions: string[];
+  planSteps?: { title: string; detail: string }[];
+  confirmItems?: string[];
 }
 
 export interface AgentMessage {
@@ -77,6 +80,7 @@ export interface AgentMessage {
   content: string;
   steps?: WorkingStep[];
   stepsCollapsed?: boolean;
+  allStepsVisible?: boolean;
   duration?: string;
   pendingAction?: PendingAction;
   suggestions?: string[];
@@ -87,6 +91,7 @@ export interface AgentMessage {
   interactiveChips?: { label: string; value: string }[];
   planData?: PlanData;
   planBuildFlow?: 'from_scratch' | 'multi_source';
+  buildPlanCard?: boolean;
   genUI?: string;
   genUIResult?: string;
   inlineInput?: {
@@ -269,11 +274,11 @@ const MS_PLAN_DATA: PlanData = {
   modelName: 'Customer Health Scorecard',
   goal: 'Track customer health across NPS, support volume, call engagement, and engineering escalations to surface at-risk accounts before renewal.',
   tables: [
-    { schema: 'SNOWFLAKE', name: 'dim_accounts', description: 'Master account records — the driving table. All other sources join to account_id.', rowCount: '12,000 rows', connection: 'Snowflake CDW', confidence: 97, reasoning: 'Primary driving table — all joins fan out from here' },
-    { schema: 'SNOWFLAKE', name: 'support_cases', description: 'Support case history including priority, status, and resolution time.', rowCount: '84,312 rows', connection: 'Snowflake CDW', confidence: 91, reasoning: 'P1 open case count contributes 20% to health score' },
-    { schema: 'SNOWFLAKE', name: 'call_metrics', description: 'Per-account call sentiment and engagement signals.', rowCount: '31,089 rows', connection: 'Snowflake CDW', confidence: 88, reasoning: 'Avg sentiment contributes 25% to health score' },
-    { schema: 'SNOWFLAKE', name: 'customer_found_defects', description: 'Engineering defects reported by customers.', rowCount: '6,218 rows', connection: 'Snowflake CDW', confidence: 85, reasoning: 'Open defect count contributes 25% to health score' },
-    { schema: 'SPOTSTORE', name: 'customer_health_external', description: 'Pendo NPS + CSM mapping from staging. 24% account coverage — NPS components will be null for remaining accounts.', rowCount: '2,847 rows', connection: 'Spotstore', confidence: 93, reasoning: 'NPS score contributes 30% to health; partial coverage is expected' },
+    { schema: 'SNOWFLAKE', name: 'dim_accounts', description: 'Master account records — the driving table. All other sources join to account_id.', rowCount: '12,000 rows', connection: 'Snowflake CDW', connectionType: 'snowflake', confidence: 97, reasoning: 'Primary driving table — all joins fan out from here' },
+    { schema: 'SNOWFLAKE', name: 'support_cases', description: 'Support case history including priority, status, and resolution time.', rowCount: '84,312 rows', connection: 'Snowflake CDW', connectionType: 'snowflake', confidence: 91, reasoning: 'P1 open case count contributes 20% to health score' },
+    { schema: 'SNOWFLAKE', name: 'call_metrics', description: 'Per-account call sentiment and engagement signals.', rowCount: '31,089 rows', connection: 'Snowflake CDW', connectionType: 'snowflake', confidence: 88, reasoning: 'Avg sentiment contributes 25% to health score' },
+    { schema: 'SNOWFLAKE', name: 'customer_found_defects', description: 'Engineering defects reported by customers.', rowCount: '6,218 rows', connection: 'Snowflake CDW', connectionType: 'snowflake', confidence: 85, reasoning: 'Open defect count contributes 25% to health score' },
+    { schema: 'SPOTSTORE', name: 'customer_health_external', description: 'Pendo NPS + CSM mapping from staging. 24% account coverage — NPS components will be null for remaining accounts.', rowCount: '2,847 rows', connection: 'Spotstore', connectionType: 'spotstore', confidence: 93, reasoning: 'NPS score contributes 30% to health; partial coverage is expected' },
   ],
   relationships: [
     { fromTable: 'dim_accounts', toTable: 'customer_health_external', fromKey: 'account_id', toKey: 'account_id', joinType: 'LEFT JOIN', matchRate: '24% (2,847 of 12,000)', cardinality: 'One-to-one', confidence: 93, reasoning: 'Federated — Spotstore staging; NPS null for unmatched accounts is expected' },
@@ -309,6 +314,18 @@ const MS_PLAN_DATA: PlanData = {
     'Which CSMs have the most P1 cases open?',
     'Show me accounts at risk of churning in the next 90 days.',
     'How does call sentiment correlate with renewal outcomes?',
+  ],
+  planSteps: [
+    { title: 'Map joins', detail: 'Connect 5 sources via account_id — 4 LEFT JOINs driven from DIM_ACCOUNTS.' },
+    { title: 'Select columns', detail: '18 columns across 5 tables; remove 4 system fields and 2 raw text columns.' },
+    { title: 'Build health score formula', detail: 'Composite: NPS (30%) + support volume (20%) + call sentiment (25%) + defect rate (25%).' },
+    { title: '✦ Enrich for AI', detail: 'Write AI context and synonyms for 18 columns so Spotter can answer health questions.' },
+    { title: 'Validate build', detail: 'Verify join key coverage, row counts across all 5 sources, and DQ scores.' },
+  ],
+  confirmItems: [
+    'NPS data covers 24% of accounts — nulls are expected for the remaining 9,153 accounts.',
+    'resolution_time_hours is 14% null in SUPPORT_CASES — health score uses P1 case count, not resolution time.',
+    'account_tier appears in both DIM_ACCOUNTS and the CSM CSV — the CSM mapping version is used.',
   ],
 };
 
@@ -2856,7 +2873,8 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
 
     setMultiSourcePhase('done');
     setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user' as const, content: userText }]);
-    setMessages(prev => [...prev, { id: workingId, type: 'working' as const, content: '', duration: '', stepsCollapsed: false, steps: buildSteps }]);
+    setMessages(prev => [...prev, { id: `pc-${Date.now()}`, type: 'response' as const, content: '', planData: MS_PLAN_DATA, buildPlanCard: true }]);
+    setMessages(prev => [...prev, { id: workingId, type: 'working' as const, content: '', duration: '', stepsCollapsed: false, allStepsVisible: true, steps: buildSteps }]);
     onBuildStart?.();
 
     // Tables appear progressively in workspace
@@ -3651,6 +3669,20 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
           const isAfterWorking = (msg.type === 'response' || msg.type === 'execution') && prevMsg?.type === 'working';
           const isActivePending = msg.pendingAction != null && msg.pendingAction.key === pendingAction?.key;
 
+          if (msg.buildPlanCard && msg.planData) {
+            return (
+              <div key={msg.id} style={{ display: 'flex', gap: sp.B, alignItems: 'flex-start' }}>
+                <AgentAvatar />
+                <div style={{ flex: 1, minWidth: 0, paddingTop: 2 }}>
+                  {project.buildStep === 'healthy'
+                    ? <BuiltSummaryCard plan={msg.planData} />
+                    : <PlanCardV2 plan={msg.planData} onBuild={handleMsBuildStart} project={project} />
+                  }
+                </div>
+              </div>
+            );
+          }
+
           if (msg.planData) {
             const plan = msg.planData;
             const isExpanded = planExpandedId === msg.id;
@@ -4275,6 +4307,207 @@ const ModelArtifactCard: React.FC<{
   );
 };
 
+// ── PlanCardV2 — live build tracker shown in chat during model build ──────────
+// No DQ pause — DQ was completed during scan + upload before reaching this stage.
+
+const PlanCardV2: React.FC<{
+  plan: PlanData;
+  onBuild: () => void;
+  project: ProjectState;
+}> = ({ plan, onBuild, project }) => {
+  const [name, setName]               = React.useState(plan.modelName);
+  const [editingName, setEditingName] = React.useState(false);
+
+  const steps = plan.planSteps ?? [];
+
+  const completedCount = (() => {
+    if (project.buildStep === 'healthy') return steps.length;
+    if (Object.keys(project.includedColumns).length >= 4) return 4;
+    if (Object.keys(project.includedColumns).length >= 2) return 3;
+    if (Object.keys(project.includedColumns).length >= 1) return 2;
+    if (project.buildStep === 'joined' || project.addedTables.length >= 5) return 1;
+    return 0;
+  })();
+
+  const buildState: 'idle' | 'building' | 'done' =
+    project.buildStep === 'empty' ? 'idle' :
+    project.buildStep === 'healthy' ? 'done' : 'building';
+
+  return (
+    <>
+      <style>{`@keyframes plan-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+      <div style={{
+        border: `1px solid ${c['border-default']}`,
+        borderRadius: 14,
+        backgroundColor: c['background-base'],
+        width: '100%', maxWidth: 520,
+        boxShadow: '0 1px 3px rgba(0,0,0,0.05), 0 8px 24px rgba(0,0,0,0.07)',
+        overflow: 'hidden', fontFamily: ff.primary,
+      }}>
+        {/* Title + goal */}
+        <div style={{ padding: '20px 20px 0' }}>
+          <div style={{ marginBottom: 7 }}>
+            {editingName ? (
+              <input
+                autoFocus value={name}
+                onChange={e => setName(e.target.value)}
+                onBlur={() => setEditingName(false)}
+                onKeyDown={e => e.key === 'Enter' && setEditingName(false)}
+                style={{ fontSize: 19, fontWeight: fw.semibold, color: c['content-primary'], background: 'none', border: 'none', outline: 'none', width: '100%', borderBottom: `2px solid ${c['content-brand']}`, fontFamily: ff.primary, padding: '0 2px', lineHeight: 1.2 }}
+              />
+            ) : (
+              <span
+                onClick={() => buildState === 'idle' && setEditingName(true)}
+                title={buildState === 'idle' ? 'Click to rename' : undefined}
+                style={{ fontSize: 19, fontWeight: fw.semibold, color: c['content-primary'], cursor: buildState === 'idle' ? 'text' : 'default', display: 'block', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+              >{name}</span>
+            )}
+          </div>
+          <p style={{ margin: '0 0 20px', fontSize: 13, color: c['content-secondary'], lineHeight: '19px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+            {plan.goal}
+          </p>
+        </div>
+
+        {/* Build plan checklist */}
+        <div style={{ padding: '16px 20px 18px', borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+          <p style={{ margin: '0 0 13px', fontSize: 11, fontWeight: fw.medium, color: c['content-secondary'], letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+            Build plan
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {steps.map((step, i) => {
+              const done   = i < completedCount;
+              const active = buildState === 'building' && i === completedCount;
+              return (
+                <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                  <div style={{ flexShrink: 0, width: 18, height: 18, marginTop: 2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {done ? (
+                      <div style={{ width: 18, height: 18, borderRadius: '50%', backgroundColor: c['content-brand'], display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s ease' }}>
+                        <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4l2.5 2.5L9 1" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      </div>
+                    ) : active ? (
+                      <svg width="18" height="18" viewBox="0 0 18 18" style={{ animation: 'plan-spin 0.9s linear infinite' }}>
+                        <circle cx="9" cy="9" r="7.5" fill="none" stroke="rgba(0,0,0,0.1)" strokeWidth="2"/>
+                        <path d="M9 1.5 A7.5 7.5 0 0 1 16.5 9" fill="none" stroke={c['content-brand']} strokeWidth="2" strokeLinecap="round"/>
+                      </svg>
+                    ) : (
+                      <div style={{ width: 18, height: 18, borderRadius: '50%', border: '1.5px solid rgba(0,0,0,0.15)' }}/>
+                    )}
+                  </div>
+                  <div style={{ flex: 1, opacity: done ? 0.5 : 1, transition: 'opacity 0.3s ease' }}>
+                    <div style={{ fontSize: 13, fontWeight: fw.medium, lineHeight: '18px', color: c['content-primary'] }}>{step.title}</div>
+                    <div style={{ fontSize: 12, lineHeight: '17px', marginTop: 2, color: c['content-secondary'] }}>{step.detail}</div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* CTA */}
+        {buildState !== 'done' && (
+          <div style={{ padding: '0 20px 20px', display: 'flex', justifyContent: 'flex-end' }}>
+            {buildState === 'idle' ? (
+              <button
+                onClick={onBuild}
+                style={{ height: 34, paddingLeft: 14, paddingRight: 14, border: `1px solid ${c['border-default']}`, borderRadius: 8, backgroundColor: 'transparent', color: c['content-primary'], fontSize: 13, fontWeight: fw.medium, fontFamily: ff.primary, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, transition: 'background 0.12s' }}
+                onMouseEnter={e => { e.currentTarget.style.backgroundColor = c['background-subtle']; }}
+                onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+              >
+                Start building
+                <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M2.5 7h9M8.5 3.5l3.5 3.5-3.5 3.5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </button>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, height: 34, color: c['content-secondary'], fontSize: 12 }}>
+                <svg width="13" height="13" viewBox="0 0 18 18" style={{ animation: 'plan-spin 0.9s linear infinite', flexShrink: 0 }}>
+                  <circle cx="9" cy="9" r="7.5" fill="none" stroke="rgba(0,0,0,0.1)" strokeWidth="2"/>
+                  <path d="M9 1.5 A7.5 7.5 0 0 1 16.5 9" fill="none" stroke={c['content-brand']} strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+                Building model…
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </>
+  );
+};
+
+// ── BuiltSummaryCard — condensed post-build summary shown in chat ─────────────
+
+const fmtCol = (name: string) => name.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+
+const BuiltSummaryCard: React.FC<{ plan: PlanData }> = ({ plan }) => {
+  const [expanded, setExpanded] = React.useState(false);
+
+  const formulas   = plan.columns.filter(col => col.type === 'formula');
+  const topMetrics = plan.columns.filter(col => col.type === 'metric' && col.included).slice(0, 2);
+  const keyDims    = plan.columns.filter(col => col.type === 'dimension' && col.included && !col.name.endsWith('_id') && !col.name.endsWith('_date')).slice(0, 4);
+  const questions  = plan.sampleQuestions.slice(0, 3);
+  const steps      = plan.planSteps ?? [];
+  const metricChips = [...formulas.map(f => fmtCol(f.name)), ...topMetrics.map(m => fmtCol(m.name))];
+  const dimChips    = keyDims.map(d => fmtCol(d.name));
+
+  return (
+    <div style={{ border: `1px solid ${c['border-default']}`, borderRadius: 12, backgroundColor: c['background-base'], overflow: 'hidden', maxWidth: 520, fontFamily: ff.primary, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+      <div
+        onClick={() => setExpanded(o => !o)}
+        style={{ padding: '11px 14px', display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', borderBottom: expanded ? `1px solid ${c['border-divider']}` : 'none', userSelect: 'none' as const }}
+      >
+        <div style={{ width: 20, height: 20, borderRadius: '50%', flexShrink: 0, backgroundColor: 'rgba(22,163,74,0.1)', border: '1.5px solid #16A34A', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5l2.2 2.2 3.8-3.8" stroke="#16A34A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'], whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{plan.modelName}</div>
+          <div style={{ fontSize: 11, color: c['content-secondary'], marginTop: 1 }}>Model requirement · {steps.length} steps completed</div>
+        </div>
+        <span style={{ fontSize: 11, color: c['content-brand'], fontWeight: fw.medium, flexShrink: 0 }}>{expanded ? 'Collapse' : 'View details'}</span>
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke={c['content-secondary']} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: expanded ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.15s', flexShrink: 0 }}>
+          <polyline points="2,4 6,8 10,4"/>
+        </svg>
+      </div>
+      {expanded && (
+        <>
+          <div style={{ padding: '14px 16px', borderBottom: `1px solid ${c['border-divider']}` }}>
+            <div style={{ fontSize: 10, fontWeight: fw.semibold, color: c['content-secondary'], textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: 10 }}>Model requirement</div>
+            <div style={{ marginBottom: 10 }}>
+              <div style={{ fontSize: 11, fontWeight: fw.medium, color: c['content-secondary'], marginBottom: 5 }}>Questions to answer</div>
+              {questions.map((q, i) => (
+                <div key={i} style={{ display: 'flex', gap: 6, fontSize: fs.xs, color: c['content-primary'], lineHeight: '18px', marginBottom: 2 }}>
+                  <span style={{ color: c['content-secondary'], flexShrink: 0 }}>·</span><span>{q}</span>
+                </div>
+              ))}
+            </div>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: fw.medium, color: c['content-secondary'], marginBottom: 6 }}>Outputs needed</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 4 }}>
+                {metricChips.map(chip => (
+                  <span key={chip} style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, backgroundColor: 'rgba(39,112,239,0.08)', color: c['content-brand'], fontWeight: fw.medium }}>{chip}</span>
+                ))}
+                {dimChips.map(chip => (
+                  <span key={chip} style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, backgroundColor: c['background-subtle'], color: c['content-secondary'], border: `1px solid ${c['border-default']}` }}>{chip}</span>
+                ))}
+              </div>
+            </div>
+          </div>
+          <div style={{ padding: '14px 16px' }}>
+            <div style={{ fontSize: 10, fontWeight: fw.semibold, color: c['content-secondary'], textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: 10 }}>Build plan</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+              {steps.map((step, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{ width: 16, height: 16, borderRadius: '50%', flexShrink: 0, backgroundColor: 'rgba(22,163,74,0.1)', border: '1.5px solid #16A34A', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M1.5 4l1.8 1.8L6.5 2" stroke="#16A34A" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  </div>
+                  <span style={{ fontSize: fs.xs, color: c['content-secondary'] }}>{step.title}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
 // ── Suggestion chips ──────────────────────────────────────────────────────────
 
 const SuggestionChips: React.FC<{ suggestions: string[]; onSelect: (s: string) => void }> = ({ suggestions, onSelect }) => (
@@ -4576,7 +4809,7 @@ const MessageBubble: React.FC<{
           {/* Steps — shown while in-progress OR when expanded after done */}
           {msg.steps && (!allDone || !isCollapsed) && (
             <div style={{ display: 'flex', flexDirection: 'column' }}>
-              {msg.steps.filter(s => s.status !== 'pending').map((step, i, visible) => (
+              {(msg.allStepsVisible ? msg.steps : msg.steps.filter(s => s.status !== 'pending')).map((step, i, visible) => (
                 <div key={i} style={{ display: 'flex', gap: 12, animation: 'ag-step-in 0.22s ease' }}>
 
                   {/* Left: dot + connecting line */}
