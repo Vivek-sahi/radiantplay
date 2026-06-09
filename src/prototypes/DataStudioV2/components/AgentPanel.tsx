@@ -123,6 +123,7 @@ interface WorkingStep {
 interface PendingAction {
   key: string;
   nextStep: ProjectState['buildStep'];
+  label?: string;                              // button label override; defaults to "Apply this"
   dynamicTables?: string[];                    // tables Claude returned at runtime
   dynamicColumns?: Record<string, string[]>;   // column selection Claude returned at runtime
 }
@@ -2344,13 +2345,9 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
       setProcessing(true);
       setTimeout(() => {
         runFromScratchSteps('scan_multi_source', initialPrompt, setMessages, () => {
-          const proposalId = `r-${Date.now()}`;
-          const action: PendingAction = { key: 'scan_multi_source', nextStep: 'empty' };
-          setPending(action);
           setMessages(prev => [...prev, {
-            id: proposalId, type: 'response',
-            content: SCRIPTS.scan_multi_source.proposal,
-            pendingAction: action,
+            id: `r-${Date.now()}`, type: 'response',
+            content: "I found **4 tables** in your Snowflake environment — DIM_ACCOUNTS, SUPPORT_CASES, CALL_METRICS, and CUSTOMER_FOUND_DEFECTS — covering accounts, support history, call engagement, and engineering escalations. These are set as your core sources.\n\nWhat other data do you want to bring in?",
             artifactCards: [
               { type: 'table' as const, name: 'DIM_ACCOUNTS',           subLabel: 'ANALYTICS_DB · 12k rows · DQ 94' },
               { type: 'table' as const, name: 'SUPPORT_CASES',          subLabel: 'SFDC_RAW · 84k rows · DQ 81' },
@@ -2358,7 +2355,7 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
               { type: 'table' as const, name: 'CUSTOMER_FOUND_DEFECTS', subLabel: 'JIRA_WORKSPACE · 6.2k rows · DQ 91' },
             ],
           }]);
-          setMultiSourcePhase('tables_proposed');
+          setMultiSourcePhase('awaiting_sources');
           setProcessing(false);
         }, buildAbortRef);
       }, 300);
@@ -4452,16 +4449,6 @@ const MessageBubble: React.FC<{
           )}
           {msg.genUI === 'restore_point' && onGenUIAction && (
             <RestorePointCard msgId={msg.id} result={msg.genUIResult} onAction={onGenUIAction} onComplete={onComplete} />
-          )}
-          {msg.pendingAction && onConfirm && !msg.reviewPlanCTA && (
-            <div style={{ marginTop: sp.C }}>
-              <button
-                onClick={onConfirm}
-                style={{ padding: `6px 14px`, backgroundColor: c['content-brand'], color: '#fff', border: 'none', borderRadius: 6, fontSize: fs.xs, fontWeight: fw.semibold, cursor: 'pointer', fontFamily: ff.primary, lineHeight: '18px' }}
-              >
-                Apply this
-              </button>
-            </div>
           )}
           {/* ── Inline API key input ─────────────────────────────────────────── */}
           {msg.inlineInput?.type === 'api-key' && (
