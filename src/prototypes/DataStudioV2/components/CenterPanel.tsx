@@ -4,7 +4,7 @@ import { Select, SelectOption } from '../../../components/Select';
 import { Checkbox } from '../../../components/Checkbox';
 import { radius } from '../../../tokens/radius';
 import { ProjectState } from '../index';
-import { ordersData, campaignsData, usersData, tableMetadata, relationships } from '../data/mockData';
+import { ordersData, campaignsData, usersData, customerHealthData, tableMetadata, relationships } from '../data/mockData';
 import TableDetailModal from './TableDetailModal';
 
 interface CenterPanelProps {
@@ -124,7 +124,7 @@ const CheckboxCell: React.FC<{ defaultChecked: boolean; label: string }> = ({ de
   return <Checkbox checked={checked} label={label} onChange={setChecked} />;
 };
 
-export const DEFAULT_VISIBLE_COLS = ['sourceTable','dataType','description','aiContext','synonyms','columnType','nullPct','duplicates','blanks','anomalies'];
+export const DEFAULT_VISIBLE_COLS = ['sourceTable','sourceColumn','dataType','description','aiContext','synonyms','columnType','nullPct','duplicates','blanks','anomalies'];
 export const ADVANCED_COLS = [
   { key: 'aggregation', label: 'Aggregation' }, { key: 'additive', label: 'Additive' },
   { key: 'hidden', label: 'Hidden' },            { key: 'format', label: 'Format' },
@@ -135,7 +135,7 @@ export const ADVANCED_COLS = [
   { key: 'attribution', label: 'Attribution dimension' },
 ];
 export const COL_LABELS: Record<string, string> = {
-  sourceTable: 'Source table', dataType: 'Data type', description: 'Description',
+  sourceTable: 'Source table', sourceColumn: 'Source column', dataType: 'Data type', description: 'Description',
   aiContext: 'AI Context', synonyms: 'Synonyms', columnType: 'Column type',
   aggregation: 'Aggregation', additive: 'Additive', hidden: 'Hidden',
   format: 'Format', nullPct: 'Null %', duplicates: 'Duplicates', blanks: 'Blanks', anomalies: 'Anomalies',
@@ -198,6 +198,8 @@ const ColumnsView: React.FC<{ project: ProjectState; setProject: React.Dispatch<
     if (search && !r.col.name.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   });
+
+  const hasSourceColumn = filtered.some(r => r.col.sourceColumn);
 
   if (!project.columnsSelected || rows.length === 0) {
     return (
@@ -315,6 +317,7 @@ const ColumnsView: React.FC<{ project: ProjectState; setProject: React.Dispatch<
                 {isScrolled && <div style={{ position: 'absolute', top: 0, right: -14, bottom: 0, width: 14, background: 'linear-gradient(to right, rgba(0,0,0,0.09), transparent)', pointerEvents: 'none', zIndex: 5 }} />}
               </th>
               {show('sourceTable') && <th style={thStyle(110)}>Source table</th>}
+              {show('sourceColumn') && hasSourceColumn && <th style={thStyle(110)}>Source column</th>}
               {show('dataType')    && <th style={thStyle(90)}>Data type</th>}
               {show('description') && <th style={thStyle(220)}>Description</th>}
               {show('aiContext')   && <th style={thStyle(220)}>✦ AI Context</th>}
@@ -375,6 +378,7 @@ const ColumnsView: React.FC<{ project: ProjectState; setProject: React.Dispatch<
                     {isScrolled && <div style={{ position: 'absolute', top: 0, right: -14, bottom: 0, width: 14, background: 'linear-gradient(to right, rgba(0,0,0,0.09), transparent)', pointerEvents: 'none', zIndex: 5 }} />}
                   </td>
                   {show('sourceTable') && <td style={{ ...tdStyle(), color: c['content-secondary'] }}>{tableName}</td>}
+                  {show('sourceColumn') && hasSourceColumn && <td style={{ ...tdStyle(), fontFamily: ff.mono, fontSize: fs.xs, color: c['content-secondary'] }}>{col.sourceColumn ?? '—'}</td>}
                   {show('dataType')    && <td style={{ ...tdStyle(), fontFamily: ff.mono, fontSize: fs.xs, color: c['content-secondary'] }}>{TYPE_LABEL[col.type] ?? col.type.toUpperCase()}</td>}
                   {show('description') && <td style={{ ...tdStyle(), maxWidth: 220 }}><EditableCell rowKey={rowKey} colId={col.id} field="description" multiline={true} currentVal={desc} /></td>}
                   {show('aiContext')   && <td style={{ ...tdStyle(), maxWidth: 220 }}><EditableCell rowKey={rowKey} colId={col.id} field="aiContext"   multiline={true} currentVal={aiCtx} /></td>}
@@ -528,73 +532,7 @@ const DataPreviewView: React.FC<{ project: ProjectState }> = ({ project }) => {
     );
   }
 
-  // Build lookup maps for joins
-  const campaignMap = Object.fromEntries(campaignsData.map(c => [c.campaign_id, c]));
-  const userMap = Object.fromEntries(usersData.map(u => [u.user_id, u]));
-
-  const isHealthy = project.buildStep === 'healthy';
-  const isTransformed = project.buildStep === 'transformed' || isHealthy;
-
-  // Column definitions: orders base + campaign cols + user cols + computed
-  const ALL_ORDERS_COLS   = ['order_id', 'user_id', 'campaign_id', 'order_date', 'amount', 'product_category', 'status', 'region'];
-  const ALL_CAMPAIGN_COLS = ['campaign_name', 'channel', 'spend', 'budget', 'target_region'];
-  const ALL_USER_COLS     = ['segment', 'lifetime_value', 'age'];
-
-  const includedOrders   = project.includedColumns['orders']    ?? ALL_ORDERS_COLS;
-  const includedCampaign = project.includedColumns['campaigns'] ?? ALL_CAMPAIGN_COLS;
-  const includedUser     = project.includedColumns['users']     ?? ALL_USER_COLS;
-
-  const orderCols   = ALL_ORDERS_COLS.filter(col => includedOrders.includes(col) || col === 'campaign_id' || col === 'user_id');
-  const campaignCols = ALL_CAMPAIGN_COLS.filter(col => includedCampaign.includes(col));
-  const userCols    = ALL_USER_COLS.filter(col => includedUser.includes(col));
-  const computedCols = isTransformed ? ['return_on_spend', 'campaign_performance'] : [];
-
-  // Determine which column groups to show based on build state
-  const hasJoinedCampaigns = project.addedTables.includes('campaigns');
-  const hasJoinedUsers     = project.addedTables.includes('users');
-
-  const allCols = [
-    ...orderCols,
-    ...(hasJoinedCampaigns ? campaignCols : []),
-    ...(hasJoinedUsers     ? userCols     : []),
-    ...computedCols,
-  ];
-
-  const totalRows = ordersData.length;
-  const totalPages = Math.ceil(totalRows / PAGE_SIZE);
-  const start = (page - 1) * PAGE_SIZE;
-  const end = Math.min(start + PAGE_SIZE, totalRows);
-  const baseRows = ordersData.slice(start, end);
-
-  // Join each order row with its campaign and user
-  type JoinedRow = Record<string, unknown>;
-  const displayRows: JoinedRow[] = baseRows.map((row, i) => {
-    const campaignId = isHealthy && row.campaign_id == null ? 'organic' : row.campaign_id;
-    const campaign = campaignId != null ? campaignMap[campaignId as string] : undefined;
-    const user = userMap[row.user_id];
-    return {
-      ...row,
-      campaign_id: campaignId,
-      ...(campaign ? {
-        campaign_name:   campaign.campaign_name,
-        channel:         campaign.channel,
-        spend:           campaign.spend,
-        budget:          campaign.budget,
-        target_region:   campaign.target_region,
-      } : {
-        campaign_name: null, channel: null, spend: null, budget: null, target_region: null,
-      }),
-      ...(user ? {
-        segment:        user.segment,
-        lifetime_value: user.lifetime_value,
-        age:            user.age,
-      } : {
-        segment: null, lifetime_value: null, age: null,
-      }),
-      return_on_spend:       isTransformed ? ((row.amount / 18700) * 100).toFixed(2) : null,
-      campaign_performance:  isTransformed ? (i * 0.42 + 1.1).toFixed(3) : null,
-    };
-  });
+  const isCustomerHealth = project.addedTables.includes('dim_accounts');
 
   const cellPad = '3px 10px';
   const thStyle: React.CSSProperties = {
@@ -612,9 +550,173 @@ const DataPreviewView: React.FC<{ project: ProjectState }> = ({ project }) => {
     userSelect: 'none',
   };
 
+  if (isCustomerHealth) {
+    const CH_COLS: Array<{ key: keyof typeof customerHealthData[0]; label?: string; formula?: boolean; wide?: boolean }> = [
+      { key: 'account_id' },
+      { key: 'account_name', wide: true },
+      { key: 'region' },
+      { key: 'account_tier' },
+      { key: 'arr' },
+      { key: 'renewal_date' },
+      { key: 'p1_cases_open', formula: true },
+      { key: 'avg_call_sentiment', formula: true },
+      { key: 'deal_risk_flag' },
+      { key: 'nps_score' },
+      { key: 'sentiment' },
+      { key: 'csm_name', wide: true },
+      { key: 'exec_sponsor' },
+      { key: 'customer_health_score', formula: true },
+    ];
+
+    const totalRows = customerHealthData.length;
+    const totalPages = Math.ceil(totalRows / PAGE_SIZE);
+    const start = (page - 1) * PAGE_SIZE;
+    const end = Math.min(start + PAGE_SIZE, totalRows);
+    const displayRows = customerHealthData.slice(start, end);
+
+    return (
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <div style={{ flex: 1, overflow: 'auto' }}>
+          <table style={{ borderCollapse: 'collapse', fontSize: fs.xs, width: 'max-content', fontFamily: ff.primary }}>
+            <thead>
+              <tr style={{ position: 'sticky', top: 0, zIndex: 2 }}>
+                <th style={{ ...thStyle, width: 36, minWidth: 36, textAlign: 'right', borderRight: `2px solid ${c['border-divider']}`, fontWeight: fw.regular }}>#</th>
+                {CH_COLS.map(({ key, formula, wide }) => (
+                  <th key={key} style={{ ...thStyle, minWidth: key === 'customer_health_score' ? 160 : wide ? 160 : 120 }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                      <span style={{ fontFamily: ff.mono, fontSize: 10 }}>{key}</span>
+                      {formula && (
+                        <span style={{ fontSize: 9, fontFamily: ff.primary, backgroundColor: c['background-information'], color: c['content-brand'], padding: '1px 4px', borderRadius: 3, textTransform: 'none', letterSpacing: 0, fontWeight: fw.semibold }}>ƒx</span>
+                      )}
+                      <svg style={{ marginLeft: 'auto', opacity: 0.4, flexShrink: 0 }} width="8" height="8" viewBox="0 0 10 10" fill="none">
+                        <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+                      </svg>
+                    </span>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {displayRows.map((row, i) => (
+                <tr
+                  key={row.account_id}
+                  style={{ backgroundColor: c['background-base'] }}
+                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
+                  onMouseLeave={e => (e.currentTarget.style.backgroundColor = c['background-base'])}
+                >
+                  <td style={{ padding: cellPad, borderBottom: `1px solid ${c['border-divider']}`, borderRight: `2px solid ${c['border-divider']}`, color: c['content-secondary'], textAlign: 'right', fontFamily: ff.mono, fontSize: 10, userSelect: 'none', backgroundColor: c['background-sunken'] }}>
+                    {start + i + 1}
+                  </td>
+                  {CH_COLS.map(({ key, formula }) => {
+                    const val = row[key];
+                    const isNull = val === null || val === undefined;
+                    const isScore = key === 'customer_health_score';
+                    const scoreVal = isScore && typeof val === 'number' ? val : null;
+                    const scoreLow = scoreVal !== null && scoreVal < 0.6;
+                    return (
+                      <td key={key} style={{
+                        padding: cellPad,
+                        borderBottom: `1px solid ${c['border-divider']}`,
+                        borderRight: `1px solid ${c['border-divider']}`,
+                        whiteSpace: 'nowrap',
+                        fontFamily: ff.mono,
+                        color: isNull
+                          ? c['content-tertiary']
+                          : scoreLow ? c['content-warning']
+                          : formula ? c['content-brand']
+                          : c['content-primary'],
+                        fontWeight: isScore ? fw.semibold : fw.regular,
+                      }}>
+                        {isNull
+                          ? <em style={{ fontStyle: 'italic', opacity: 0.55 }}>null</em>
+                          : isScore
+                          ? `${Math.round((val as number) * 100)}%`
+                          : String(val)
+                        }
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div style={{ height: 36, borderTop: `1px solid ${c['border-divider']}`, backgroundColor: c['background-base'], display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: `0 ${sp.D}px`, flexShrink: 0 }}>
+          <span style={{ fontSize: fs.xs, color: c['content-secondary'] }}>
+            {totalRows} accounts · 5 sources joined
+          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: sp.A }}>
+            <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 26, height: 26, borderRadius: 5, border: `1px solid ${c['border-default']}`, backgroundColor: c['background-base'], cursor: page === 1 ? 'not-allowed' : 'pointer', opacity: page === 1 ? 0.4 : 1, color: c['content-primary'] }}>
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M7.5 2L4 6l3.5 4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </button>
+            <span style={{ fontSize: fs.xs, color: c['content-secondary'], minWidth: 48, textAlign: 'center' }}>{page} / {totalPages}</span>
+            <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 26, height: 26, borderRadius: 5, border: `1px solid ${c['border-default']}`, backgroundColor: c['background-base'], cursor: page === totalPages ? 'not-allowed' : 'pointer', opacity: page === totalPages ? 0.4 : 1, color: c['content-primary'] }}>
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4.5 2L8 6l-3.5 4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Campaign Performance preview (default)
+  const campaignMap = Object.fromEntries(campaignsData.map(c => [c.campaign_id, c]));
+  const userMap = Object.fromEntries(usersData.map(u => [u.user_id, u]));
+
+  const isHealthy = project.buildStep === 'healthy';
+  const isTransformed = project.buildStep === 'transformed' || isHealthy;
+
+  const ALL_ORDERS_COLS   = ['order_id', 'user_id', 'campaign_id', 'order_date', 'amount', 'product_category', 'status', 'region'];
+  const ALL_CAMPAIGN_COLS = ['campaign_name', 'channel', 'spend', 'budget', 'target_region'];
+  const ALL_USER_COLS     = ['segment', 'lifetime_value', 'age'];
+
+  const includedOrders   = project.includedColumns['orders']    ?? ALL_ORDERS_COLS;
+  const includedCampaign = project.includedColumns['campaigns'] ?? ALL_CAMPAIGN_COLS;
+  const includedUser     = project.includedColumns['users']     ?? ALL_USER_COLS;
+
+  const orderCols    = ALL_ORDERS_COLS.filter(col => includedOrders.includes(col) || col === 'campaign_id' || col === 'user_id');
+  const campaignCols = ALL_CAMPAIGN_COLS.filter(col => includedCampaign.includes(col));
+  const userCols     = ALL_USER_COLS.filter(col => includedUser.includes(col));
+  const computedCols = isTransformed ? ['return_on_spend', 'campaign_performance'] : [];
+
+  const hasJoinedCampaigns = project.addedTables.includes('campaigns');
+  const hasJoinedUsers     = project.addedTables.includes('users');
+
+  const allCols = [
+    ...orderCols,
+    ...(hasJoinedCampaigns ? campaignCols : []),
+    ...(hasJoinedUsers     ? userCols     : []),
+    ...computedCols,
+  ];
+
+  const totalRows = ordersData.length;
+  const totalPages = Math.ceil(totalRows / PAGE_SIZE);
+  const start = (page - 1) * PAGE_SIZE;
+  const end = Math.min(start + PAGE_SIZE, totalRows);
+  const baseRows = ordersData.slice(start, end);
+
+  type JoinedRow = Record<string, unknown>;
+  const displayRows: JoinedRow[] = baseRows.map((row, i) => {
+    const campaignId = isHealthy && row.campaign_id == null ? 'organic' : row.campaign_id;
+    const campaign = campaignId != null ? campaignMap[campaignId as string] : undefined;
+    const user = userMap[row.user_id];
+    return {
+      ...row,
+      campaign_id: campaignId,
+      ...(campaign ? {
+        campaign_name: campaign.campaign_name, channel: campaign.channel,
+        spend: campaign.spend, budget: campaign.budget, target_region: campaign.target_region,
+      } : { campaign_name: null, channel: null, spend: null, budget: null, target_region: null }),
+      ...(user ? {
+        segment: user.segment, lifetime_value: user.lifetime_value, age: user.age,
+      } : { segment: null, lifetime_value: null, age: null }),
+      return_on_spend:      isTransformed ? ((row.amount / 18700) * 100).toFixed(2) : null,
+      campaign_performance: isTransformed ? (i * 0.42 + 1.1).toFixed(3) : null,
+    };
+  });
+
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-      {/* Grid */}
       <div style={{ flex: 1, overflow: 'auto' }}>
         <table style={{ borderCollapse: 'collapse', fontSize: fs.xs, width: 'max-content', fontFamily: ff.primary }}>
           <thead>
@@ -656,7 +758,7 @@ const DataPreviewView: React.FC<{ project: ProjectState }> = ({ project }) => {
                   const val = row[col];
                   const isNull = val === null || val === undefined;
                   const isAnomaly = !isHealthy && col === 'amount' && typeof val === 'number' && (val < 0 || val > 10000);
-                  const isFlagged =  isHealthy && col === 'amount' && typeof val === 'number' && (val < 0 || val > 10000);
+                  const isFlagged  =  isHealthy && col === 'amount' && typeof val === 'number' && (val < 0 || val > 10000);
                   return (
                     <td key={col} style={{
                       padding: cellPad,
@@ -667,10 +769,7 @@ const DataPreviewView: React.FC<{ project: ProjectState }> = ({ project }) => {
                       color: isNull ? c['content-failure'] : isAnomaly || isFlagged ? c['content-warning'] : c['content-primary'],
                       backgroundColor: isAnomaly ? c['background-warning'] : undefined,
                     }}>
-                      {isNull
-                        ? <em style={{ fontStyle: 'italic', opacity: 0.55 }}>null</em>
-                        : String(val)
-                      }
+                      {isNull ? <em style={{ fontStyle: 'italic', opacity: 0.55 }}>null</em> : String(val)}
                       {isFlagged && <span style={{ marginLeft: 5, fontSize: 10, color: c['content-warning'] }}>⚠</span>}
                     </td>
                   );
@@ -681,27 +780,18 @@ const DataPreviewView: React.FC<{ project: ProjectState }> = ({ project }) => {
         </table>
       </div>
 
-      {/* Pagination bar */}
       <div style={{ height: 36, borderTop: `1px solid ${c['border-divider']}`, backgroundColor: c['background-base'], display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: `0 ${sp.D}px`, flexShrink: 0 }}>
         <span style={{ fontSize: fs.xs, color: c['content-secondary'] }}>
           {start + 1}–{end} of {totalRows} rows
         </span>
         <div style={{ display: 'flex', alignItems: 'center', gap: sp.A }}>
-          <button
-            onClick={() => setPage(p => Math.max(1, p - 1))}
-            disabled={page === 1}
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 26, height: 26, borderRadius: 5, border: `1px solid ${c['border-default']}`, backgroundColor: c['background-base'], cursor: page === 1 ? 'not-allowed' : 'pointer', opacity: page === 1 ? 0.4 : 1, color: c['content-primary'] }}
-          >
+          <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 26, height: 26, borderRadius: 5, border: `1px solid ${c['border-default']}`, backgroundColor: c['background-base'], cursor: page === 1 ? 'not-allowed' : 'pointer', opacity: page === 1 ? 0.4 : 1, color: c['content-primary'] }}>
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M7.5 2L4 6l3.5 4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
           </button>
           <span style={{ fontSize: fs.xs, color: c['content-secondary'], minWidth: 48, textAlign: 'center' }}>
             {page} / {totalPages}
           </span>
-          <button
-            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-            disabled={page === totalPages}
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 26, height: 26, borderRadius: 5, border: `1px solid ${c['border-default']}`, backgroundColor: c['background-base'], cursor: page === totalPages ? 'not-allowed' : 'pointer', opacity: page === totalPages ? 0.4 : 1, color: c['content-primary'] }}
-          >
+          <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 26, height: 26, borderRadius: 5, border: `1px solid ${c['border-default']}`, backgroundColor: c['background-base'], cursor: page === totalPages ? 'not-allowed' : 'pointer', opacity: page === totalPages ? 0.4 : 1, color: c['content-primary'] }}>
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4.5 2L8 6l-3.5 4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
           </button>
         </div>

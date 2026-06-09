@@ -175,7 +175,7 @@ const PromptBar = forwardRef<PromptBarRef, PromptBarProps>(({
     const cursor = e.target.selectionStart ?? 0;
     const before = val.slice(0, cursor);
     const match  = before.match(/@(\w*)$/);
-    if (match) { setQuery(match[1]); setMention(true); setMentionIdx(0); setBrowser(false); }
+    if (match) { setQuery(match[1]); setMention(true); setMentionIdx(0); }
     else         setMention(false);
     e.target.style.height = 'auto';
     e.target.style.height = Math.min(e.target.scrollHeight, 180) + 'px';

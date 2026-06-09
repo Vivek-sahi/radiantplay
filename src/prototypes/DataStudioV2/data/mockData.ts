@@ -56,6 +56,10 @@ export interface ColumnMeta {
 
   // ── Sync (dbt / external source status, read-only) ──────────────────────
   syncStatus?:     'ok' | 'broken' | 'degraded';
+
+  // ── Staging table lineage (multi-source flow) ────────────────────────────
+  sourceTable?:    string;   // which source table this column came from
+  sourceColumn?:   string;   // original column name in the source table
 }
 
 export interface TableMeta {
@@ -68,6 +72,10 @@ export interface TableMeta {
   rowCount: number;
   lastSynced: string;
   qualityIssues: QualityIssue[];
+  isStaging?: boolean;
+  owner?: string;
+  dqScore?: number;
+  sampleRows?: Record<string, string | number | boolean | null>[];
 }
 
 export interface QualityIssue {
@@ -411,7 +419,225 @@ export const tableMetadata: Record<string, TableMeta> = {
       { id: 'hire_date',        name: 'hire_date',        type: 'date',   description: null, nullable: false },
     ],
   },
+
+  // ─── Customer Health Scorecard tables (multi-source scenario) ────────────────
+
+  dim_accounts: {
+    id: 'dim_accounts', name: 'DIM_ACCOUNTS', connection: 'SF_PROD_CUSTOMER', connectionType: 'snowflake',
+    description: 'Master account dimension from Salesforce — one row per customer account with contract and tier data.',
+    rowCount: 12000, lastSynced: '2024-03-28T06:00:00Z', qualityIssues: [],
+    owner: 'Revenue Ops (Priya Nair)', dqScore: 94,
+    sampleRows: [
+      { account_id: 'ACC-0001', account_name: 'Acme Corp',        industry: 'Manufacturing', arr: 240000, region: 'APAC',    account_tier: 'Enterprise',  renewal_date: '2024-09-30' },
+      { account_id: 'ACC-0002', account_name: 'Globex Inc',       industry: 'Retail',        arr: 85000,  region: 'NA',      account_tier: 'Mid-Market',  renewal_date: '2024-11-15' },
+      { account_id: 'ACC-0003', account_name: 'Initech LLC',      industry: 'Technology',    arr: 420000, region: 'EMEA',    account_tier: 'Enterprise',  renewal_date: '2025-01-31' },
+      { account_id: 'ACC-0004', account_name: 'Umbrella Co',      industry: null,            arr: 32000,  region: 'NA',      account_tier: 'SMB',         renewal_date: '2024-08-20' },
+      { account_id: 'ACC-0005', account_name: 'Soylent Systems',  industry: 'Healthcare',    arr: 190000, region: 'APAC',    account_tier: 'Mid-Market',  renewal_date: null },
+    ],
+    columns: [
+      { id: 'account_id',       name: 'account_id',       type: 'string', nullable: false, classification: 'key', description: 'Unique account identifier across all systems.', aiContext: 'Primary join key for all customer health metrics.', nullRate: 0, duplicateCount: 0 },
+      { id: 'account_name',     name: 'account_name',     type: 'string', nullable: false, classification: 'attribute', description: 'Customer account display name.', aiContext: null, nullRate: 0, duplicateCount: 0 },
+      { id: 'industry',         name: 'industry',         type: 'string', nullable: true,  classification: 'attribute', description: 'Industry vertical for the account.', aiContext: null, nullRate: 4, duplicateCount: 0 },
+      { id: 'arr',              name: 'arr',              type: 'number', nullable: false, classification: 'measure', description: 'Annual recurring revenue in USD.', aiContext: 'Key financial metric for customer health scoring.', aggregation: 'SUM', isAdditive: true, nullRate: 0, duplicateCount: 0 },
+      { id: 'contract_start_date', name: 'contract_start_date', type: 'date', nullable: false, classification: 'attribute', description: null, aiContext: null, nullRate: 0, duplicateCount: 0 },
+      { id: 'contract_end_date',   name: 'contract_end_date',   type: 'date', nullable: true,  classification: 'attribute', description: null, aiContext: null, nullRate: 8, duplicateCount: 0 },
+      { id: 'region',           name: 'region',           type: 'string', nullable: false, classification: 'attribute', description: 'Sales region for the account.', aiContext: null, nullRate: 0, duplicateCount: 0 },
+      { id: 'account_tier',     name: 'account_tier',     type: 'string', nullable: false, classification: 'attribute', description: 'Account tier: Enterprise, Mid-Market, or SMB.', aiContext: null, nullRate: 0, duplicateCount: 0 },
+      { id: 'renewal_date',     name: 'renewal_date',     type: 'date',   nullable: true,  classification: 'attribute', description: 'Next contract renewal date.', aiContext: 'Use to identify accounts at renewal risk.', nullRate: 12, duplicateCount: 0 },
+    ],
+  },
+
+  support_cases: {
+    id: 'support_cases', name: 'SUPPORT_CASES', connection: 'SF_PROD_CUSTOMER', connectionType: 'snowflake',
+    description: 'Support case history from Salesforce — all tickets filed by customer accounts.',
+    rowCount: 84000, lastSynced: '2024-03-28T06:00:00Z', qualityIssues: [],
+    owner: 'Customer Success Eng (Rahul Mehta)', dqScore: 81,
+    sampleRows: [
+      { case_id: 'CS-10441', account_id: 'ACC-0001', created_date: '2024-03-01', closed_date: '2024-03-03', priority: 'P2', status: 'Closed',  case_category: 'Bug',         resolution_time_hours: 48,   reopened: false },
+      { case_id: 'CS-10442', account_id: 'ACC-0003', created_date: '2024-03-05', closed_date: null,          priority: 'P1', status: 'Open',    case_category: 'Performance', resolution_time_hours: null, reopened: false },
+      { case_id: 'CS-10443', account_id: 'ACC-0002', created_date: '2024-03-07', closed_date: '2024-03-10', priority: 'P3', status: 'Closed',  case_category: null,          resolution_time_hours: 72,   reopened: true  },
+      { case_id: 'CS-10444', account_id: 'ACC-0001', created_date: '2024-03-12', closed_date: '2024-03-13', priority: 'P2', status: 'Closed',  case_category: 'Data Loss',   resolution_time_hours: 24,   reopened: false },
+      { case_id: 'CS-10445', account_id: 'ACC-0005', created_date: '2024-03-14', closed_date: null,          priority: 'P1', status: 'Open',    case_category: 'Bug',         resolution_time_hours: null, reopened: false },
+    ],
+    columns: [
+      { id: 'case_id',            name: 'case_id',            type: 'string', nullable: false, classification: 'key', description: 'Unique support case identifier.', aiContext: null, nullRate: 0, duplicateCount: 0 },
+      { id: 'account_id',         name: 'account_id',         type: 'string', nullable: false, classification: 'key', description: 'Account that filed the case.', aiContext: 'Join to DIM_ACCOUNTS on account_id.', nullRate: 0, duplicateCount: 0 },
+      { id: 'created_date',       name: 'created_date',       type: 'date',   nullable: false, classification: 'attribute', description: null, aiContext: null, nullRate: 0, duplicateCount: 0 },
+      { id: 'closed_date',        name: 'closed_date',        type: 'date',   nullable: true,  classification: 'attribute', description: null, aiContext: null, nullRate: 22, duplicateCount: 0 },
+      { id: 'priority',           name: 'priority',           type: 'string', nullable: false, classification: 'attribute', description: 'Case priority: P1, P2, P3, P4.', aiContext: null, nullRate: 0, duplicateCount: 0 },
+      { id: 'status',             name: 'status',             type: 'string', nullable: false, classification: 'attribute', description: null, aiContext: null, nullRate: 0, duplicateCount: 0 },
+      { id: 'case_category',      name: 'case_category',      type: 'string', nullable: true,  classification: 'attribute', description: null, aiContext: null, nullRate: 9, duplicateCount: 0 },
+      { id: 'resolution_time_hours', name: 'resolution_time_hours', type: 'number', nullable: true, classification: 'measure', description: 'Hours from case creation to resolution.', aiContext: null, aggregation: 'AVG', isAdditive: false, nullRate: 22, duplicateCount: 0 },
+      { id: 'reopened',           name: 'reopened',           type: 'boolean', nullable: false, classification: 'attribute', description: null, aiContext: null, nullRate: 0, duplicateCount: 0 },
+    ],
+  },
+
+  call_metrics: {
+    id: 'call_metrics', name: 'CALL_METRICS', connection: 'SF_PROD_CUSTOMER', connectionType: 'snowflake',
+    description: 'Gong call recordings and sentiment analysis — one row per customer call.',
+    rowCount: 31000, lastSynced: '2024-03-28T06:00:00Z', qualityIssues: [],
+    owner: 'GTM Analytics (Sana Kapoor)', dqScore: 88,
+    sampleRows: [
+      { call_id: 'CALL-7701', account_id: 'ACC-0001', call_date: '2024-03-20', duration_minutes: 42, sentiment_score: 0.71, talk_ratio_rep: 0.48, next_steps_mentioned: true,  deal_risk_flag: false },
+      { call_id: 'CALL-7702', account_id: 'ACC-0003', call_date: '2024-03-21', duration_minutes: 28, sentiment_score: 0.34, talk_ratio_rep: 0.62, next_steps_mentioned: false, deal_risk_flag: true  },
+      { call_id: 'CALL-7703', account_id: 'ACC-0002', call_date: '2024-03-22', duration_minutes: 55, sentiment_score: null, talk_ratio_rep: null, next_steps_mentioned: true,  deal_risk_flag: false },
+      { call_id: 'CALL-7704', account_id: 'ACC-0005', call_date: '2024-03-23', duration_minutes: 18, sentiment_score: 0.58, talk_ratio_rep: 0.51, next_steps_mentioned: false, deal_risk_flag: false },
+      { call_id: 'CALL-7705', account_id: 'ACC-0001', call_date: '2024-03-24', duration_minutes: 37, sentiment_score: 0.82, talk_ratio_rep: 0.44, next_steps_mentioned: true,  deal_risk_flag: false },
+    ],
+    columns: [
+      { id: 'call_id',             name: 'call_id',             type: 'string', nullable: false, classification: 'key', description: null, aiContext: null, nullRate: 0, duplicateCount: 0 },
+      { id: 'account_id',          name: 'account_id',          type: 'string', nullable: false, classification: 'key', description: 'Account on the call.', aiContext: 'Join to DIM_ACCOUNTS on account_id.', nullRate: 0, duplicateCount: 0 },
+      { id: 'call_date',           name: 'call_date',           type: 'date',   nullable: false, classification: 'attribute', description: null, aiContext: null, nullRate: 0, duplicateCount: 0 },
+      { id: 'duration_minutes',    name: 'duration_minutes',    type: 'number', nullable: false, classification: 'measure', description: null, aiContext: null, aggregation: 'AVG', isAdditive: false, nullRate: 0, duplicateCount: 0 },
+      { id: 'sentiment_score',     name: 'sentiment_score',     type: 'number', nullable: true,  classification: 'measure', description: 'Gong sentiment score 0–1. Higher = more positive.', aiContext: 'Key health signal — low scores indicate at-risk accounts.', aggregation: 'AVG', isAdditive: false, nullRate: 3, duplicateCount: 0 },
+      { id: 'talk_ratio_rep',      name: 'talk_ratio_rep',      type: 'number', nullable: true,  classification: 'measure', description: null, aiContext: null, aggregation: 'AVG', isAdditive: false, nullRate: 3, duplicateCount: 0 },
+      { id: 'next_steps_mentioned', name: 'next_steps_mentioned', type: 'boolean', nullable: false, classification: 'attribute', description: null, aiContext: null, nullRate: 0, duplicateCount: 0 },
+      { id: 'deal_risk_flag',      name: 'deal_risk_flag',      type: 'boolean', nullable: false, classification: 'attribute', description: 'True if Gong detected deal risk language.', aiContext: null, nullRate: 0, duplicateCount: 0 },
+    ],
+  },
+
+  customer_found_defects: {
+    id: 'customer_found_defects', name: 'CUSTOMER_FOUND_DEFECTS', connection: 'SF_PROD_CUSTOMER', connectionType: 'snowflake',
+    description: 'Engineering bugs and defects reported by customers via JIRA.',
+    rowCount: 6200, lastSynced: '2024-03-28T06:00:00Z', qualityIssues: [],
+    owner: 'Engineering Ops (Dev Sharma)', dqScore: 91,
+    sampleRows: [
+      { defect_id: 'DEF-3301', account_id: 'ACC-0003', reported_date: '2024-02-10', severity: 'S1', status: 'Open',     resolution_days: null, escalated_to_engineering: true  },
+      { defect_id: 'DEF-3302', account_id: 'ACC-0001', reported_date: '2024-02-14', severity: 'S2', status: 'Resolved', resolution_days: 12,   escalated_to_engineering: false },
+      { defect_id: 'DEF-3303', account_id: 'ACC-0002', reported_date: '2024-02-18', severity: 'S3', status: 'Resolved', resolution_days: 5,    escalated_to_engineering: false },
+      { defect_id: 'DEF-3304', account_id: 'ACC-0005', reported_date: '2024-03-01', severity: 'S2', status: 'Open',     resolution_days: null, escalated_to_engineering: true  },
+      { defect_id: 'DEF-3305', account_id: 'ACC-0003', reported_date: '2024-03-05', severity: 'S1', status: 'Open',     resolution_days: null, escalated_to_engineering: true  },
+    ],
+    columns: [
+      { id: 'defect_id',           name: 'defect_id',           type: 'string', nullable: false, classification: 'key', description: null, aiContext: null, nullRate: 0, duplicateCount: 0 },
+      { id: 'account_id',          name: 'account_id',          type: 'string', nullable: false, classification: 'key', description: 'Account that reported the defect.', aiContext: 'Join to DIM_ACCOUNTS on account_id.', nullRate: 0, duplicateCount: 0 },
+      { id: 'reported_date',       name: 'reported_date',       type: 'date',   nullable: false, classification: 'attribute', description: null, aiContext: null, nullRate: 0, duplicateCount: 0 },
+      { id: 'severity',            name: 'severity',            type: 'string', nullable: false, classification: 'attribute', description: 'Defect severity: S1 (Critical), S2 (Major), S3 (Minor).', aiContext: null, nullRate: 0, duplicateCount: 0 },
+      { id: 'status',              name: 'status',              type: 'string', nullable: false, classification: 'attribute', description: null, aiContext: null, nullRate: 0, duplicateCount: 0 },
+      { id: 'resolution_days',     name: 'resolution_days',     type: 'number', nullable: true,  classification: 'measure', description: null, aiContext: null, aggregation: 'AVG', isAdditive: false, nullRate: 31, duplicateCount: 0 },
+      { id: 'escalated_to_engineering', name: 'escalated_to_engineering', type: 'boolean', nullable: false, classification: 'attribute', description: null, aiContext: null, nullRate: 0, duplicateCount: 0 },
+    ],
+  },
+
+  // ─── Spotstore tables (created by agent during multi-source ingestion) ─────────
+
+  pendo_nps_enriched: {
+    id: 'pendo_nps_enriched', name: 'pendo_nps_enriched', connection: 'ThoughtSpot CDW (Spotstore)', connectionType: 'thoughtspot',
+    description: 'Pendo NPS responses enriched with VADER sentiment scores — fetched and written by the ingestion notebook.',
+    rowCount: 2847, lastSynced: '2024-03-28T14:55:00Z', dqScore: 92, owner: 'Agent (pendo_nps_ingestion.ipynb)', qualityIssues: [],
+    sampleRows: [
+      { account_id: 'ACC-0001', nps_score: 9, nps_comments: 'Great support, very responsive team.', sentiment: 'positive', sentiment_score: 0.74, response_date: '2024-03-15' },
+      { account_id: 'ACC-0002', nps_score: 3, nps_comments: 'Onboarding was confusing, needed more help.', sentiment: 'negative', sentiment_score: -0.51, response_date: '2024-03-16' },
+      { account_id: 'ACC-0003', nps_score: 8, nps_comments: 'Good tool, occasional slowness in reports.', sentiment: 'positive', sentiment_score: 0.34, response_date: '2024-03-16' },
+      { account_id: 'ACC-0004', nps_score: 5, nps_comments: null, sentiment: 'neutral', sentiment_score: 0.0, response_date: '2024-03-17' },
+      { account_id: 'ACC-0005', nps_score: 10, nps_comments: 'Excellent product. We love the AI features.', sentiment: 'positive', sentiment_score: 0.89, response_date: '2024-03-17' },
+    ],
+    columns: [
+      { id: 'account_id',     name: 'account_id',     type: 'string', nullable: false, classification: 'key', description: null, aiContext: null, nullRate: 0, duplicateCount: 0 },
+      { id: 'nps_score',      name: 'nps_score',      type: 'number', nullable: false, classification: 'measure', description: 'NPS score 0–10.', aiContext: null, aggregation: 'AVG', isAdditive: false, nullRate: 0, duplicateCount: 0 },
+      { id: 'nps_comments',   name: 'nps_comments',   type: 'string', nullable: true,  classification: 'attribute', description: 'Raw verbatim NPS comment text.', aiContext: null, nullRate: 38, duplicateCount: 0 },
+      { id: 'sentiment',      name: 'sentiment',      type: 'string', nullable: false, classification: 'attribute', description: 'VADER sentiment label: positive, neutral, or negative.', aiContext: null, nullRate: 0, duplicateCount: 0 },
+      { id: 'sentiment_score', name: 'sentiment_score', type: 'number', nullable: false, classification: 'measure', description: 'VADER compound sentiment score −1 to 1.', aiContext: null, aggregation: 'AVG', isAdditive: false, nullRate: 0, duplicateCount: 0 },
+      { id: 'response_date',  name: 'response_date',  type: 'date',   nullable: false, classification: 'attribute', description: null, aiContext: null, nullRate: 0, duplicateCount: 0 },
+    ],
+  },
+
+  csm_account_mapping: {
+    id: 'csm_account_mapping', name: 'csm_account_mapping', connection: 'ThoughtSpot CDW (Spotstore)', connectionType: 'thoughtspot',
+    description: 'CSM and executive sponsor mapping per account — uploaded from CSM_MAPPING_Q2.csv.',
+    rowCount: 142, lastSynced: '2024-03-28T14:56:00Z', dqScore: 98, owner: 'Agent (CSV upload)', qualityIssues: [],
+    sampleRows: [
+      { account_id: 'ACC-0001', csm_name: 'Priya Sharma', exec_sponsor: 'Ravi Menon', csm_region: 'APAC', account_tier: 'Enterprise' },
+      { account_id: 'ACC-0002', csm_name: 'Liam Chen', exec_sponsor: null, csm_region: 'NA', account_tier: 'Mid-Market' },
+      { account_id: 'ACC-0003', csm_name: 'Fatima Al-Hassan', exec_sponsor: 'Mark Johansson', csm_region: 'EMEA', account_tier: 'Enterprise' },
+      { account_id: 'ACC-0004', csm_name: 'Carlos Medina', exec_sponsor: null, csm_region: 'NA', account_tier: 'SMB' },
+      { account_id: 'ACC-0005', csm_name: 'Priya Sharma', exec_sponsor: 'Ananya Rao', csm_region: 'APAC', account_tier: 'Mid-Market' },
+    ],
+    columns: [
+      { id: 'account_id',   name: 'account_id',   type: 'string', nullable: false, classification: 'key', description: null, aiContext: null, nullRate: 0, duplicateCount: 0 },
+      { id: 'csm_name',     name: 'csm_name',     type: 'string', nullable: false, classification: 'attribute', description: 'Name of the Customer Success Manager assigned to this account.', aiContext: null, nullRate: 0, duplicateCount: 0 },
+      { id: 'exec_sponsor', name: 'exec_sponsor', type: 'string', nullable: true,  classification: 'attribute', description: 'Executive sponsor from the customer side.', aiContext: null, nullRate: 14, duplicateCount: 0 },
+      { id: 'csm_region',   name: 'csm_region',   type: 'string', nullable: false, classification: 'attribute', description: null, aiContext: null, nullRate: 0, duplicateCount: 0 },
+      { id: 'account_tier', name: 'account_tier', type: 'string', nullable: false, classification: 'attribute', description: null, aiContext: null, nullRate: 0, duplicateCount: 0 },
+    ],
+  },
+
+  customer_health_external: {
+    id: 'customer_health_external', name: 'customer_health_external', connection: 'ThoughtSpot CDW (Spotstore)', connectionType: 'thoughtspot',
+    description: 'Unified staging table — Pendo NPS enriched with CSM mapping, compiled by the agent.',
+    rowCount: 2847, lastSynced: '2024-03-28T14:57:00Z', qualityIssues: [],
+    isStaging: true,
+    columns: [
+      { id: 'account_id',     name: 'account_id',     type: 'string', nullable: false, classification: 'key', description: null, aiContext: null, nullRate: 0, duplicateCount: 0, sourceTable: 'pendo_nps_enriched', sourceColumn: 'account_id' },
+      { id: 'nps_score',      name: 'nps_score',      type: 'number', nullable: false, classification: 'measure', description: null, aiContext: null, aggregation: 'AVG', isAdditive: false, nullRate: 0, duplicateCount: 0, sourceTable: 'pendo_nps_enriched', sourceColumn: 'nps_score' },
+      { id: 'nps_comments',   name: 'nps_comments',   type: 'string', nullable: true,  classification: 'attribute', description: null, aiContext: null, nullRate: 38, duplicateCount: 0, sourceTable: 'pendo_nps_enriched', sourceColumn: 'nps_comments' },
+      { id: 'sentiment',      name: 'sentiment',      type: 'string', nullable: false, classification: 'attribute', description: null, aiContext: null, nullRate: 0, duplicateCount: 0, sourceTable: 'pendo_nps_enriched', sourceColumn: 'sentiment' },
+      { id: 'sentiment_score', name: 'sentiment_score', type: 'number', nullable: false, classification: 'measure', description: null, aiContext: null, aggregation: 'AVG', isAdditive: false, nullRate: 0, duplicateCount: 0, sourceTable: 'pendo_nps_enriched', sourceColumn: 'sentiment_score' },
+      { id: 'csm_name',       name: 'csm_name',       type: 'string', nullable: false, classification: 'attribute', description: null, aiContext: null, nullRate: 0, duplicateCount: 0, sourceTable: 'csm_account_mapping', sourceColumn: 'csm_name' },
+      { id: 'exec_sponsor',   name: 'exec_sponsor',   type: 'string', nullable: true,  classification: 'attribute', description: null, aiContext: null, nullRate: 14, duplicateCount: 0, sourceTable: 'csm_account_mapping', sourceColumn: 'exec_sponsor' },
+      { id: 'csm_region',     name: 'csm_region',     type: 'string', nullable: false, classification: 'attribute', description: null, aiContext: null, nullRate: 0, duplicateCount: 0, sourceTable: 'csm_account_mapping', sourceColumn: 'csm_region' },
+      { id: 'account_tier',   name: 'account_tier',   type: 'string', nullable: false, classification: 'attribute', description: null, aiContext: null, nullRate: 0, duplicateCount: 0, sourceTable: 'csm_account_mapping', sourceColumn: 'account_tier' },
+    ],
+  },
 };
+
+// ─── Customer Health Scorecard — joined output (multi-source model) ───────────
+// Derived from: DIM_ACCOUNTS + SUPPORT_CASES + CALL_METRICS + CUSTOMER_FOUND_DEFECTS + customer_health_external
+// One row per account. p1_cases_open and open_defects are derived via COUNT() FILTER.
+// customer_health_score: NPS 30% + support 20% + call sentiment 25% + defect rate 25%
+
+export interface CustomerHealthRow {
+  account_id: string;
+  account_name: string;
+  industry: string | null;
+  arr: number;
+  region: string;
+  account_tier: string;           // from csm_account_mapping (overrides dim_accounts.account_tier)
+  renewal_date: string | null;
+  p1_cases_open: number;          // COUNT(*) FILTER (WHERE priority='P1' AND status='Open')
+  avg_call_sentiment: number | null;
+  deal_risk_flag: boolean;
+  nps_score: number;
+  sentiment: string;
+  sentiment_score: number;
+  csm_name: string;
+  exec_sponsor: string | null;
+  csm_region: string;
+  customer_health_score: number;  // composite 0.0–1.0
+}
+
+export const customerHealthData: CustomerHealthRow[] = [
+  {
+    account_id: 'ACC-0001', account_name: 'Acme Corp',       industry: 'Manufacturing', arr: 240000, region: 'APAC', account_tier: 'Enterprise',
+    renewal_date: '2024-09-30', p1_cases_open: 0, avg_call_sentiment: 0.77, deal_risk_flag: false,
+    nps_score: 9, sentiment: 'positive', sentiment_score: 0.74, csm_name: 'Priya Sharma', exec_sponsor: 'Ravi Menon',       csm_region: 'APAC',
+    customer_health_score: 0.94,
+  },
+  {
+    account_id: 'ACC-0002', account_name: 'Globex Inc',      industry: 'Retail',        arr: 85000,  region: 'NA',   account_tier: 'Mid-Market',
+    renewal_date: '2024-11-15', p1_cases_open: 0, avg_call_sentiment: null,  deal_risk_flag: false,
+    nps_score: 3, sentiment: 'negative', sentiment_score: -0.51, csm_name: 'Liam Chen',     exec_sponsor: null,              csm_region: 'NA',
+    customer_health_score: 0.64,
+  },
+  {
+    account_id: 'ACC-0003', account_name: 'Initech LLC',     industry: 'Technology',    arr: 420000, region: 'EMEA', account_tier: 'Enterprise',
+    renewal_date: '2025-01-31', p1_cases_open: 1, avg_call_sentiment: 0.34, deal_risk_flag: true,
+    nps_score: 8, sentiment: 'positive', sentiment_score: 0.34, csm_name: 'Fatima Al-Hassan', exec_sponsor: 'Mark Johansson', csm_region: 'EMEA',
+    customer_health_score: 0.52,
+  },
+  {
+    account_id: 'ACC-0004', account_name: 'Umbrella Co',     industry: null,            arr: 32000,  region: 'NA',   account_tier: 'SMB',
+    renewal_date: '2024-08-20', p1_cases_open: 0, avg_call_sentiment: null,  deal_risk_flag: false,
+    nps_score: 5, sentiment: 'neutral', sentiment_score: 0.0, csm_name: 'Carlos Medina', exec_sponsor: null,               csm_region: 'NA',
+    customer_health_score: 0.64,
+  },
+  {
+    account_id: 'ACC-0005', account_name: 'Soylent Systems', industry: 'Healthcare',    arr: 190000, region: 'APAC', account_tier: 'Mid-Market',
+    renewal_date: null,         p1_cases_open: 1, avg_call_sentiment: 0.58, deal_risk_flag: false,
+    nps_score: 10, sentiment: 'positive', sentiment_score: 0.89, csm_name: 'Priya Sharma', exec_sponsor: 'Ananya Rao',      csm_region: 'APAC',
+    customer_health_score: 0.70,
+  },
+];
 
 // ─── Orders Data (50 rows) ────────────────────────────────────────────────────
 // Date format: MM/DD/YYYY (intentional — conflicts with campaigns)

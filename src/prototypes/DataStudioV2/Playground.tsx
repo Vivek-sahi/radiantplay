@@ -5,7 +5,7 @@ import { ProjectState, emptyContext } from './index';
 import { AgentMessage } from './components/AgentPanel';
 import AgentPanel from './components/AgentPanel';
 import LeftPanel from './components/LeftPanel';
-import CenterPanel from './components/CenterPanel';
+import CenterPanel, { DEFAULT_VISIBLE_COLS } from './components/CenterPanel';
 
 
 // ── Seeded project state ──────────────────────────────────────────────────────
@@ -867,6 +867,7 @@ const Playground: React.FC = () => {
               setProject={setProject}
               onSendToAgent={() => {}}
               onInjectToAgent={() => {}}
+              search="" visibleCols={new Set(DEFAULT_VISIBLE_COLS)} showIssuesOnly={false}
             />
           </div>
 
@@ -922,6 +923,7 @@ const Playground: React.FC = () => {
                       setProject={setProject}
                       onSendToAgent={() => {}}
                       onInjectToAgent={() => {}}
+                      search="" visibleCols={new Set(DEFAULT_VISIBLE_COLS)} showIssuesOnly={false}
                     />
                   )}
                 </div>
@@ -1602,6 +1604,7 @@ export const PlaygroundV2: React.FC = () => {
               setProject={setProject}
               onSendToAgent={() => {}}
               onInjectToAgent={() => {}}
+              search="" visibleCols={new Set(DEFAULT_VISIBLE_COLS)} showIssuesOnly={false}
             />
           </div>
 
@@ -1901,7 +1904,7 @@ export const PlaygroundV3: React.FC = () => {
         <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
           <CanvasHeader activePane={activePane} onToggle={togglePane} iterLabel="horizontal" />
           <div style={{ flex: 1, overflow: 'hidden' }}>
-            <CenterPanel project={{ ...project, activeTab: 'columns' }} setProject={setProject} onSendToAgent={() => {}} onInjectToAgent={() => {}} />
+            <CenterPanel project={{ ...project, activeTab: 'columns' }} setProject={setProject} onSendToAgent={() => {}} onInjectToAgent={() => {}} search="" visibleCols={new Set(DEFAULT_VISIBLE_COLS)} showIssuesOnly={false} />
           </div>
 
           {activePane && (
@@ -1981,7 +1984,7 @@ export const PlaygroundV4: React.FC = () => {
           <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', minWidth: 0 }}>
             <CanvasHeader activePane={activePane} onToggle={togglePane} iterLabel="vertical" />
             <div style={{ flex: 1, overflow: 'hidden' }}>
-              <CenterPanel project={{ ...project, activeTab: 'columns' }} setProject={setProject} onSendToAgent={() => {}} onInjectToAgent={() => {}} />
+              <CenterPanel project={{ ...project, activeTab: 'columns' }} setProject={setProject} onSendToAgent={() => {}} onInjectToAgent={() => {}} search="" visibleCols={new Set(DEFAULT_VISIBLE_COLS)} showIssuesOnly={false} />
             </div>
           </div>
 
@@ -2079,7 +2082,7 @@ const HorizPlayground: React.FC<{
         <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
           <CanvasHeader activePane={activePane} onToggle={togglePane} iterLabel={iterLabel.split('·')[1]?.trim() ?? ''} />
           <div style={{ flex: 1, overflow: 'hidden' }}>
-            <CenterPanel project={{ ...project, activeTab: 'columns' }} setProject={setProject} onSendToAgent={() => {}} onInjectToAgent={() => {}} />
+            <CenterPanel project={{ ...project, activeTab: 'columns' }} setProject={setProject} onSendToAgent={() => {}} onInjectToAgent={() => {}} search="" visibleCols={new Set(DEFAULT_VISIBLE_COLS)} showIssuesOnly={false} />
           </div>
           {activePane && renderSecPane({
             pane: activePane, table: paneTable, onTable: setPaneTable,
@@ -2159,6 +2162,18 @@ const LightLineagePan: React.FC = () => (
     ))}
   </div>
 );
+
+const SQL_QUERY = `SELECT
+  c.campaign_name,
+  c.channel,
+  c.spend,
+  SUM(o.amount)                          AS revenue,
+  ROUND(SUM(o.amount) / NULLIF(c.spend, 0), 2) AS roi
+FROM campaigns c
+LEFT JOIN orders o ON o.region = c.target_region
+WHERE c.spend > 0
+GROUP BY 1, 2, 3
+LIMIT 100`;
 
 const LightCodePan: React.FC = () => (
   <div style={{ flex: 1, overflow: 'auto', backgroundColor: c['background-sunken'], padding: '16px 20px' }}>
@@ -2397,7 +2412,7 @@ export const PlaygroundV6: React.FC = () => {
         )}
         <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
           <div style={{ flex: 1, overflow: 'hidden' }}>
-            <CenterPanel project={{ ...project, activeTab: 'columns' }} setProject={setProject} onSendToAgent={() => {}} onInjectToAgent={() => {}} />
+            <CenterPanel project={{ ...project, activeTab: 'columns' }} setProject={setProject} onSendToAgent={() => {}} onInjectToAgent={() => {}} search="" visibleCols={new Set(DEFAULT_VISIBLE_COLS)} showIssuesOnly={false} />
           </div>
           {activePane && renderDarkPane({
             pane: activePane, table: paneTable, onTable: setPaneTable,

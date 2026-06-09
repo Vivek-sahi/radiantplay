@@ -546,6 +546,28 @@ When done, I'll close and reopen this tab to clear my session state.`;
 // Project Card
 // ─────────────────────────────────────────────────────────────────────────────
 
+const TILE_GRADIENTS = [
+  'linear-gradient(135deg, #2770EF 0%, #1E5BBB 100%)',
+  'linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%)',
+  'linear-gradient(135deg, #0891B2 0%, #0E7490 100%)',
+  'linear-gradient(135deg, #059669 0%, #047857 100%)',
+  'linear-gradient(135deg, #D97706 0%, #B45309 100%)',
+  'linear-gradient(135deg, #DC2626 0%, #B91C1C 100%)',
+  'linear-gradient(135deg, #DB2777 0%, #BE185D 100%)',
+  'linear-gradient(135deg, #65758B 0%, #475569 100%)',
+];
+
+function hashId(id: string): number {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  return h;
+}
+
+function getCardTileStyle(id: string): React.CSSProperties {
+  const gradient = TILE_GRADIENTS[hashId(id) % TILE_GRADIENTS.length];
+  return { ...styles.cardTile, background: gradient };
+}
+
 interface ProjectCardProps {
   project: ProjectMeta;
   onClick: () => void;
@@ -635,8 +657,8 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
         {project.thumbnail ? (
           <img src={project.thumbnail} alt={project.name} style={styles.cardImage} />
         ) : (
-          <div style={styles.cardPlaceholder}>
-            <Icon name="folder" size="l" />
+          <div style={getCardTileStyle(project.id)}>
+            <span style={styles.cardTileInitial}>{project.name.charAt(0).toUpperCase()}</span>
           </div>
         )}
       </div>
@@ -1053,6 +1075,21 @@ const styles: Record<string, React.CSSProperties> = {
   },
   cardPlaceholder: {
     color: systemColors.light['border-default'],
+  },
+  cardTile: {
+    width: '100%',
+    height: '100%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cardTileInitial: {
+    fontSize: '36px',
+    fontWeight: 700,
+    color: 'rgba(255,255,255,0.9)',
+    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    letterSpacing: '-1px',
+    userSelect: 'none',
   },
   cardContent: {
     padding: `${spacing.D}px`,

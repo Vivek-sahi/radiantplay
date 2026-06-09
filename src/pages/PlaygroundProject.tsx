@@ -4,6 +4,27 @@ import { systemColors, referenceColors } from '../tokens/colors';
 import { getProject } from '../prototypes/registry';
 import { Icon } from '../components/icons';
 
+class PrototypeErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { error: Error | null }
+> {
+  state = { error: null };
+  static getDerivedStateFromError(error: Error) { return { error }; }
+  render() {
+    if (this.state.error) {
+      const err = this.state.error as Error;
+      return (
+        <div style={{ padding: 32, fontFamily: 'monospace', fontSize: 13 }}>
+          <div style={{ color: '#dc2626', fontWeight: 700, marginBottom: 8 }}>Prototype render error</div>
+          <div style={{ color: '#1d232f', marginBottom: 16 }}>{err.message}</div>
+          <pre style={{ background: '#f6f8fa', padding: 16, borderRadius: 8, overflow: 'auto', fontSize: 11, color: '#374151' }}>{err.stack}</pre>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 /**
  * PlaygroundProject
  * 
@@ -62,9 +83,11 @@ export const PlaygroundProject: React.FC = () => {
     <div style={styles.container}>
       {/* Project Content */}
       <div style={styles.projectContainer}>
-        <Suspense fallback={<LoadingState />}>
-          <ProjectComponent />
-        </Suspense>
+        <PrototypeErrorBoundary>
+          <Suspense fallback={<LoadingState />}>
+            <ProjectComponent />
+          </Suspense>
+        </PrototypeErrorBoundary>
       </div>
     </div>
   );

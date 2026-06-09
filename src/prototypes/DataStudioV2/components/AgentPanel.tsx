@@ -1606,30 +1606,30 @@ ORDER BY row_count DESC
       { label: 'Reviewing your data sources', detail: 'Reading 4 Snowflake tables + customer_health_external staging table.' },
       {
         label: 'Mapping joins across all sources',
-        detail: 'customer_health_external.account_id → dim_accounts.account_id (100% match). 3 additional joins via account_id.',
-        collapsible: `LEFT JOIN dim_accounts da ON che.account_id = da.account_id\nLEFT JOIN support_cases sc ON da.account_id = sc.account_id\nLEFT JOIN call_metrics cm ON da.account_id = cm.account_id\nLEFT JOIN customer_found_defects cfd ON da.account_id = cfd.account_id`,
+        detail: 'DIM_ACCOUNTS is the driving table. Pendo staging covers 2,847 of 12,000 accounts (24%) — accounts with no NPS response will have null NPS components.',
+        collapsible: `FROM dim_accounts da\nLEFT JOIN customer_health_external che ON da.account_id = che.account_id\nLEFT JOIN support_cases sc           ON da.account_id = sc.account_id\nLEFT JOIN call_metrics cm            ON da.account_id = cm.account_id\nLEFT JOIN customer_found_defects cfd ON da.account_id = cfd.account_id`,
       },
       {
         label: 'Selecting columns for customer health scoring',
-        detail: 'Selected 18 columns across 5 tables. Removed 4 system fields and 2 raw text columns.',
+        detail: 'Selected 18 columns across 5 tables. Removed 4 system fields and 2 raw text columns. Both DIM_ACCOUNTS and the CSM CSV have account_tier — using the CSM mapping version.',
       },
       {
         label: 'Building health score formula',
         detail: 'Composite health score: NPS (30%) + support volume (20%) + call sentiment (25%) + defect rate (25%).',
-        collapsible: `-- Customer Health Score (composite)\n(\n  CASE WHEN nps_score >= 9 THEN 1.0\n       WHEN nps_score >= 7 THEN 0.6\n       ELSE 0.2 END * 0.30\n) +\n(\n  CASE WHEN p1_cases_open = 0 THEN 1.0\n       WHEN p1_cases_open <= 2 THEN 0.5\n       ELSE 0.0 END * 0.20\n) +\n(\n  COALESCE(avg_sentiment_score, 0.5) * 0.25\n) +\n(\n  CASE WHEN open_defects = 0 THEN 1.0\n       WHEN open_defects <= 3 THEN 0.6\n       ELSE 0.2 END * 0.25\n)`,
+        collapsible: `-- p1_cases_open  = COUNT(*) FILTER (WHERE priority = 'P1' AND status = 'Open')\n-- open_defects    = COUNT(*) FILTER (WHERE status != 'Resolved')\n\n-- Customer Health Score (composite)\n(\n  CASE WHEN nps_score >= 9 THEN 1.0\n       WHEN nps_score >= 7 THEN 0.6\n       ELSE 0.2 END * 0.30\n) +\n(\n  CASE WHEN p1_cases_open = 0 THEN 1.0\n       WHEN p1_cases_open <= 2 THEN 0.5\n       ELSE 0.0 END * 0.20\n) +\n(\n  COALESCE(avg_sentiment_score, 0.5) * 0.25\n) +\n(\n  CASE WHEN open_defects = 0 THEN 1.0\n       WHEN open_defects <= 3 THEN 0.6\n       ELSE 0.2 END * 0.25\n)`,
       },
       { label: '✦ Enriching for AI', detail: 'Writing AI context and synonyms for 18 columns. Spotter needs this to answer questions about customer health well.' },
       {
         label: 'Validating data quality',
-        detail: 'Row counts verified · join key coverage 97% · staging table 2,847 rows · null check passed · all sources healthy',
-        collapsible: `-- Validation summary\nDIM_ACCOUNTS       12,041 rows · DQ 94\nSUPPORT_CASES      84,312 rows · DQ 81  (14% null resolution_time — flagged)\nCALL_METRICS       31,089 rows · DQ 88\nCUSTOMER_FOUND_DEFECTS  6,218 rows · DQ 91\ncustomer_health_external 2,847 rows · DQ 96\n\n-- Join key: account_id\nCoverage: 97% (2,761 of 2,847 staging rows match DIM_ACCOUNTS)\nUnmatched: 86 rows — account_id not in DIM_ACCOUNTS (test/churned accounts)\n\nAll checks passed. Proceeding to publish.`,
+        detail: 'Row counts verified · DIM_ACCOUNTS is the driving table (12,000 accounts) · one DQ flag in SUPPORT_CASES',
+        collapsible: `-- Validation summary\nDIM_ACCOUNTS            12,000 rows · DQ 94\nSUPPORT_CASES           84,312 rows · DQ 81  (14% null resolution_time — flagged)\nCALL_METRICS            31,089 rows · DQ 88\nCUSTOMER_FOUND_DEFECTS   6,218 rows · DQ 91\ncustomer_health_external 2,847 rows · DQ 96   (Pendo — 24% account coverage)\n\n-- Join key: account_id\n12,000 accounts in model · 2,847 have NPS data · 9,153 will have null NPS components`,
       },
     ],
     stepDelay: 5000,
     duration: '~25 seconds',
     autoComplete: true,
     proposal: '',
-    execution: `Done. I connected 5 sources — 4 Snowflake tables and 1 Spotstore staging table — and created a composite Customer Health Score that blends NPS sentiment, support volume, call engagement, and defect rate.\n\nAll data quality checks passed. Ready to test whenever you are — or make any changes first.`,
+    execution: `Done. I connected 5 sources — 4 Snowflake tables and 1 Spotstore staging table — and built a composite Customer Health Score.\n\nOne flag: \`resolution_time_hours\` in SUPPORT_CASES is 14% null — the health score uses P1 case count, not resolution time, so it won't affect results. Ready to test.`,
     nextStep: 'healthy',
     tablesToAdd: ['dim_accounts', 'support_cases', 'call_metrics', 'customer_found_defects', 'customer_health_external'],
     defaultColumns: {
@@ -2828,8 +2828,7 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
         setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: input }]);
         setMessages(prev => [...prev, {
           id: `r-${Date.now()}`, type: 'response',
-          content: "To pull your Pendo NPS data I'll need to create a Python notebook. It'll authenticate with Pendo's API, fetch NPS responses, run VADER sentiment analysis, and write the results to your Spotstore as `pendo_nps_enriched`. Should I set it up?",
-          suggestions: ["Yes, set it up"],
+          content: "To pull Pendo NPS data I need to create a Python notebook. Should I set it up?",
         }]);
         setMultiSourcePhase('awaiting_notebook_consent');
         break;
@@ -2842,7 +2841,10 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
           runFromScratchSteps('create_pendo_notebook', undefined, setMessages, () => {
             setMessages(prev => [...prev, {
               id: `r-${Date.now()}`, type: 'response',
-              content: "Notebook is ready. To run it I need your Pendo Integration Key to authenticate.",
+              content: "Notebook created. To run it I need your Pendo Integration Key.",
+              artifactCards: [
+                { type: 'notebook' as const, name: 'pendo_nps_ingestion.ipynb', subLabel: 'Python · 5 cells' },
+              ],
               inlineInput: { type: 'api-key' as const, label: 'Pendo Integration Key', placeholder: 'Enter your key…' },
             }]);
             setMultiSourcePhase('awaiting_api_key');
@@ -2905,6 +2907,11 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
           setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: input }]);
           setMultiSourcePhase('csv_running');
           setProcessing(true);
+          // CSV is confirmed — add it to Created now (before it was only shown as an attachment)
+          setProject(p => ({
+            ...p,
+            multiSourceCreated: [...(p.multiSourceCreated ?? []), { type: 'csv-dataset' as const, name: 'CSM_MAPPING_Q2.csv' }],
+          }));
           runFromScratchSteps('process_csv_upload', undefined, setMessages, () => {
             setProject(p => ({
               ...p,
@@ -2923,7 +2930,6 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
                 setMessages(prev => [...prev, {
                   id: `r-${Date.now()}`, type: 'response',
                   content: "I'll compile the Pendo NPS data and CSM mapping into a unified staging table called `customer_health_external`. Ready to compile?",
-                  suggestions: ["Yes, compile the staging table"],
                 }]);
                 setMultiSourcePhase('awaiting_staging_consent');
                 setProcessing(false);
@@ -2949,11 +2955,10 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
             setTimeout(() => {
               setMessages(prev => [...prev, {
                 id: `r-${Date.now()}`, type: 'response',
-                content: "`customer_health_external` is compiled and ready in the Spotstore. Pendo ingestion refreshes **daily at 6 AM UTC** by default — you can change this in model settings. The CSM mapping is a one-time upload.\n\nWhen you're ready, tell me and I'll build the model.",
+                content: "`customer_health_external` is ready — Pendo NPS + CSM mapping joined on account_id, 2,847 rows. This joins your 4 Snowflake tables at build time. Pendo ingestion refreshes daily at 6 AM UTC. Ready to build the model?",
                 artifactCards: [
                   { type: 'staging-table' as const, name: 'customer_health_external', subLabel: 'Spotstore · staging · 2,847 rows' },
                 ],
-                suggestions: ["Ready. Build the model."],
               }]);
               setMultiSourcePhase('ready_to_build');
               setProcessing(false);
@@ -2988,7 +2993,7 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
       setPending(action);
       setMessages(prev => [...prev, {
         id: `r-${Date.now()}`, type: 'response',
-        content: "Got it. Please confirm — I'm predicting the NPS text column is `nps_comments`. Is that right?",
+        content: "The notebook targets `nps_comments` for sentiment analysis. Ready to run it?",
         pendingAction: action,
       }]);
       setMultiSourcePhase('awaiting_nps_confirm');
@@ -3007,12 +3012,7 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
       content: file.name,
       attachment: { type: 'CSV', label: file.name },
     }]);
-    // Add the CSV to Created so it's visible immediately
-    setProject(p => ({
-      ...p,
-      multiSourceCreated: [...(p.multiSourceCreated ?? []), { type: 'csv-dataset' as const, name: file.name }],
-    }));
-    // Ask consent before writing to Spotstore
+    // Ask consent before writing to Spotstore (CSV added to Created only after confirmation)
     setMessages(prev => [...prev, {
       id: `r-${Date.now()}`, type: 'response',
       content: `Got it — **142 rows, 4 columns** detected in \`${file.name}\`. I'll write this to your Spotstore as \`csm_account_mapping\`. OK to proceed?`,
