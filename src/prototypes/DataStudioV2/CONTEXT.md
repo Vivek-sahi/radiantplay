@@ -4,7 +4,7 @@ _Updated at the end of every session. For product context see `product.md`. For 
 
 ---
 
-## Current state (session 122, 2026-06-09)
+## Current state (session 123, 2026-06-09)
 
 **Branch:** `prototype/data-studio` on `origin` (vivek-sahi/radiantplay)  
 **Deployed:** https://radiantplay-nine.vercel.app  
@@ -30,24 +30,45 @@ _Updated at the end of every session. For product context see `product.md`. For 
 | Connections — connection management | ✅ |
 | dbt import — full flow with broken/degraded column indicators + fix scripts | ✅ |
 | Multi-source model flow — scan → Pendo notebook → CSV upload → staging table → model build | ✅ |
+| Multi-source build — live animated workspace + PlanCardV2 tracker + BuiltSummaryCard | ✅ |
 
 ---
 
 ## Next session
 
-**Fix review issues** — session 122 merged Komal's modeling flow; any issues raised during review should be fixed first.
+**Pending feedback items (carried from session 122, not yet resolved):**
+- `fbk_1780998388_qzc2` — Remove "Apply this" button (unclear CTA)
+- `fbk_1780998467_hi33` — Empty notebook should be created at the notebook consent step, not later
 
 **Primary task:** 3 Anthropic article learnings to build
 - **Provenance chip in Test mode** — every Spotter answer should show source tier (semantic layer / governed / raw), last synced, owner. Small component added to the Test mode message renderer.
 - **Notebook edit → stale flag** — when a notebook cell is edited and run, surface: "N column descriptions / AIRS items may be affected — review them?" Connects transforms to readiness docs.
 - **Unreviewed badge on agent-generated content** — agent-drafted column descriptions and AIRS items should be visually marked until a human confirms them.
 
-**Open DE quick wins** (from `research/2026-06-09-de-review-multi-source.md` — lower priority after flow rewrite)
+**Open DE quick wins** (from `research/2026-06-09-de-review-multi-source.md` — lower priority)
 - Show CSV column names in consent message ("account_id, csm_name, exec_sponsor, csm_region")
 
 **Table card improvements** (surfaced during session 121 walkthrough)
 - Collapsed card: add last-synced freshness (most useful missing DE signal)
 - Expanded card: "X/N columns described" indicator in header; cardinality hint on STRING columns
+
+---
+
+## Session 123 changes (2026-06-09)
+
+**Live animated model build + plan UX from Komal's proto**
+
+- **`runLiveBuildMultiSource`** — replaces `runFlow('ms_build_project')`. Tables appear one by one in workspace (dim_accounts → support_cases → call_metrics → customer_found_defects → customer_health_external, ~1.4s apart). Joins form at ~6.5s. Columns populate table-by-table at ~7.5–12s. Chat steps advance in sync. `awaiting_ms_build` typed-confirm also routes here.
+- **`allStepsVisible: true`** — all 6 working steps visible upfront (ghosted); renderer updated to respect this flag.
+- **`buildPlanCard` message** — emitted at build start; renders `PlanCardV2` during build and auto-transitions to `BuiltSummaryCard` once `buildStep === 'healthy'`.
+- **`ModelArtifactCard`** — clickable card in final execution message (name + "Semantic model" + 5 sources · 18 columns · 1 metric). Clicking navigates to workspace.
+- **`PlanCardV2`** — live build tracker: 5-step checklist, progress from ProjectState, editable name (idle only), "Start building" / spinner / done states. No DQ pause — DQ completed at scan+upload stage.
+- **`BuiltSummaryCard`** — post-build collapsed plan (green check + model name + "5 steps completed"). Expanding shows sample questions, metric/dimension chips, full step checklist in green.
+- **`planSteps` on `MS_PLAN_DATA`** — 5 steps (no DQ): Map joins → Select columns → Build health score formula → ✦ Enrich for AI → Validate build.
+- **`confirmItems` on `MS_PLAN_DATA`** — 3 known edge cases (NPS 24% coverage, null resolution_time_hours, account_tier shadowing).
+- **`connectionType` on `PlanTable`** — new optional field; `MS_PLAN_DATA` tables updated (4× snowflake, 1× spotstore). PlanPanelV3 renders inline icon (Snowflake blue, Spotstore purple, CSV green) beside connection label.
+- **Type additions:** `AgentMessage` gets `allStepsVisible`, `buildPlanCard`; `PlanData` gets `planSteps`, `confirmItems`; `PlanTable` gets `connectionType`.
+- Build: clean ✓
 
 ---
 

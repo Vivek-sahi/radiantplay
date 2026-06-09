@@ -1231,3 +1231,60 @@ Clicking "Multi-source model" chip on Overview now prefills the prompt bar with 
 **Not built this session:** DE review fixes (deferred to next session — see CONTEXT.md for build order).
 
 Build clean ✓.
+
+---
+
+## Session 123 — 2026-06-09
+
+**Goal:** Port Komal's modeling flow updates — live animated build, PlanCardV2, BuiltSummaryCard, planSteps, connection icons.
+
+**Context:** Session 122 had merged Komal's plan flow (PlanPanelV3, inline plan card). This session brought in the model building side that was still on the old `runFlow('ms_build_project')` approach.
+
+**Pending feedback items carried in (not yet resolved):**
+- `fbk_1780998388_qzc2` — "What is apply this? let's remove the button." (Apply this button)
+- `fbk_1780998467_hi33` — "empty notebook should get created at this step right?"
+
+**Live animated build — `runLiveBuildMultiSource`:**
+- Replaced `handleMsBuildStart` → `runFlow('ms_build_project')` with `runLiveBuildMultiSource()`
+- Tables now appear progressively in workspace: `dim_accounts` → `support_cases` → `call_metrics` → `customer_found_defects` → `customer_health_external` (every ~1.4s)
+- Joins form at ~6.5s; columns populate table-by-table at ~7.5–12s; steps in chat advance in sync
+- `allStepsVisible: true` on working message — all 6 steps visible upfront (ghosted)
+- Emits a `buildPlanCard: true` message before working steps so `PlanCardV2` is visible in chat during build
+- Final execution message now includes `modelArtifact` card (name + 5 sources · 18 columns · 1 metric)
+- `awaiting_ms_build` typed-confirm path also routes to `runLiveBuildMultiSource`
+
+**`ModelArtifactCard` component:**
+- Clickable card in chat after build completes — model name + "Semantic model" label + stats row
+- Hover: brand border + shadow; clicking calls `onBuildStart` to navigate to workspace
+
+**`PlanCardV2` component (simplified — no DQ):**
+- Live build tracker shown via `buildPlanCard: true` message
+- 5-step checklist driven by `plan.planSteps`; progress derived from `ProjectState` (addedTables, includedColumns, buildStep)
+- States: idle ("Start building" button) → building (spinner) → done (auto-transitions to BuiltSummaryCard)
+- Editable model name while idle; locked during build
+- No DQ pause/amber state — DQ is complete by the time modeling starts (happens at scan + upload)
+
+**`BuiltSummaryCard` component:**
+- Collapsed post-build artifact: green check + model name + "5 steps completed"
+- Expanding shows: Model requirement (sample questions + metric/dimension output chips) + Build plan (all steps checked green)
+- Replaces PlanCardV2 in the same chat message slot once `buildStep === 'healthy'`
+
+**`planSteps` on `MS_PLAN_DATA`:**
+- 5 steps (no DQ): Map joins → Select columns → Build health score formula → ✦ Enrich for AI → Validate build
+- `confirmItems` added: 3 known edge cases (NPS 24% coverage, resolution_time_hours null, account_tier shadowing)
+
+**`connectionType` on `PlanTable` + connection icons in PlanPanelV3:**
+- New optional field: `'snowflake' | 'dbt' | 'bigquery' | 'redshift' | 'spotstore' | 'csv'`
+- `MS_PLAN_DATA` tables updated: 4 Snowflake CDW + 1 Spotstore
+- PlanPanelV3 table header: inline SVG icon alongside connection label (Snowflake blue, Spotstore purple, CSV green)
+
+**Type additions to `AgentMessage`:**
+- `allStepsVisible?: boolean` — shows all steps upfront in working message
+- `buildPlanCard?: boolean` — renders PlanCardV2/BuiltSummaryCard instead of inline expandable plan
+- `modelArtifact?: { name, tableCount, columnCount, metricCount }` — drives ModelArtifactCard
+
+**`PlanData` type additions:**
+- `planSteps?: { title: string; detail: string }[]`
+- `confirmItems?: string[]`
+
+Build clean ✓.
