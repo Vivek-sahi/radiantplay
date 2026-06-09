@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Shell, { NavSection } from './components/Shell';
 import Overview from './components/Overview';
 import ModelView from './components/ModelView';
@@ -38,6 +38,11 @@ export interface PrepTransform {
   sql: string;
 }
 
+export interface MultiSourceCreatedItem {
+  type: 'table' | 'spotstore-table' | 'notebook' | 'csv-dataset' | 'staging-table';
+  name: string;
+}
+
 export interface ProjectState {
   id: string;
   name: string;
@@ -46,12 +51,16 @@ export interface ProjectState {
   publishedVersion: number;       // 0 = never published; 1, 2, … = version number
   hasUnpublishedChanges: boolean; // true when working copy diverges from published
   projectSource: 'warehouse' | 'dbt'; // entry path — affects column view indicators
+  scenario?: 'warehouse' | 'multi-source';
   context: ProjectContext;
   addedTables: string[];
   columnsSelected: boolean;
   includedColumns: Record<string, string[]>; // tableId → [colName, ...]
   columnOverrides: Record<string, { description?: string | null; aiContext?: string | null; synonyms?: string[]; syncStatus?: 'ok' | 'broken' | 'degraded' }>;
   prepTransforms?: PrepTransform[];
+  spotStoreTables?: string[];          // tables written to ThoughtSpot CDW
+  stagingTableId?: string;             // the unified staging table id
+  multiSourceCreated?: MultiSourceCreatedItem[];  // items created during multi-source ingestion
 }
 
 type AppView = 'overview' | 'models' | 'chat' | 'new-project' | 'model-view' | 'workspace' | 'data-browser' | 'connections' | 'placeholder' | 'full-chat';
@@ -88,12 +97,14 @@ const DataStudio: React.FC = () => {
   const [activeNav, setActiveNav] = useState<NavSection>('overview');
   const [initialPrompt, setInitialPrompt] = useState<string>('');
   const [isFromScratch, setIsFromScratch] = useState(false);
+  const [isMultiSource, setIsMultiSource] = useState(false);
   const [instructionsCreated, setInstructionsCreated] = useState(false);
   const [isDbtReview, setIsDbtReview] = useState(false);
   const [dbtImported, setDbtImported] = useState(false);
   const [dataBrowserInitialTab, setDataBrowserInitialTab] = useState<'warehouses' | 'external-models'>('warehouses');
   const [messages, setMessages]       = useState<AgentMessage[]>([]);
   const [isAgentMode, setIsAgentMode] = useState(false);
+  const multiSourcePendingRef         = useRef(false);
   const [initialFlow, setInitialFlow]         = useState<string>('');
   const [initialMessage, setInitialMessage]   = useState<string>('');
   const [resolvedInsightIds, setResolvedInsightIds] = useState<string[]>([]);
@@ -285,6 +296,31 @@ const DataStudio: React.FC = () => {
 
   // User submitted the hero prompt on the overview page → go to chat
   const handleOverviewPromptSubmit = (prompt: string) => {
+    if (multiSourcePendingRef.current) {
+      multiSourcePendingRef.current = false;
+      setProject({
+        id: `proj-${Date.now()}`,
+        name: 'Customer Health Scorecard',
+        buildStep: 'empty',
+        activeTab: 'tables',
+        publishedVersion: 0,
+        hasUnpublishedChanges: true,
+        projectSource: 'warehouse',
+        scenario: 'multi-source',
+        context: emptyContext,
+        addedTables: [],
+        columnsSelected: false,
+        includedColumns: {},
+        columnOverrides: {},
+      });
+      setInitialPrompt(prompt);
+      setIsFromScratch(false);
+      setIsMultiSource(true);
+      setIsAgentMode(true);
+      setMessages([]);
+      navigateTo('chat');
+      return;
+    }
     setProject({
       id: `proj-${Date.now()}`,
       name: deriveModelName(prompt),
@@ -305,6 +341,11 @@ const DataStudio: React.FC = () => {
     navigateTo('chat');
   };
 
+  // Multi-source model pill → prefill the prompt bar, don't navigate yet
+  const handleMultiSourceClick = () => {
+    multiSourcePendingRef.current = true;
+  };
+
   // Start manually → empty workspace, no agent auto-trigger
   const handleStartManually = () => {
     setInitialPrompt('');
@@ -315,6 +356,7 @@ const DataStudio: React.FC = () => {
     setInitialPrompt('');
     setActiveAlert(null);
     setIsFromScratch(false);
+    setIsMultiSource(false);
     setIsDbtReview(false);
     setIsAgentMode(false);
     setMessages([]);
@@ -350,6 +392,7 @@ const DataStudio: React.FC = () => {
             onNewProject={newProject}
             onOpenProject={openModelView}
             onPromptSubmit={handleOverviewPromptSubmit}
+            onMultiSourceClick={handleMultiSourceClick}
             onOpenProjectAtMonitoring={(proj) => openModelView(proj, 'monitoring')}
             onFixWithAgent={handleFixWithAgent}
             resolvedInsightIds={resolvedInsightIds}
@@ -396,6 +439,7 @@ const DataStudio: React.FC = () => {
             setMessages={setMessages}
             initialPrompt={initialPrompt}
             isFromScratch={isFromScratch}
+            isMultiSource={isMultiSource}
             isDbtReview={isDbtReview}
             instructionsCreated={instructionsCreated}
             onBuildStart={() => setInstructionsCreated(true)}

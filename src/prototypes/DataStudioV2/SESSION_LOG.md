@@ -1124,3 +1124,110 @@ Built Phase 1 in `CenterPanel.tsx` (notebook section only, no other files touche
 - **Token cleanup** — replaced hardcoded `#2770EF` and `#16a34a` with `c['content-brand']` and green accent tokens
 
 Build clean ✓. Verified working in browser.
+
+---
+
+### 2026-06-08 (session 116)
+
+**Multi-source model flow — design + spec.**
+
+Design session (no code written). Analyzed a new product team script showing a data agent that blends data from multiple sources (Snowflake warehouse, Pendo API, CSV file) into a single ThoughtSpot model. Mapped gaps between the script, the existing prototype, and real-world data engineering workflows (Netflix/Meta analogy).
+
+Key decisions:
+- New scenario pill: "Multi-source model" on the Overview hero prompt
+- Extends the existing from-scratch flow — same ChatView shell, new ingestion phase before the plan surfaces
+- All external data (Pendo, CSV) lands in ThoughtSpot CDW (Spotstore), not back to Snowflake
+- Snowflake tables are cached into ThoughtSpot CDW — no federated query needed
+- One unified staging table (`customer_health_external`) compiled from Pendo + CSV via SQL
+- Agent asks "what other sources?" after Snowflake — user specifies Pendo + CSV (agent doesn't discover this)
+- Staging table view = standard DataPreview, columns carry `sourceTable` + `sourceColumn` metadata
+- Two new inline UI patterns: masked API key input field in chat, file drop zone in chat
+
+Full spec written at `2026-06-08-multi-source-flow.md`. Covers: 6 new scripts, 4 new CreatedItem types, new mock data schema (6 tables), new ColumnMeta/TableMeta fields, 13-step build order.
+
+No code changes. Build still clean ✓.
+
+---
+
+## Session 117 — 2026-06-08
+
+**Goal:** Complete the multi-source model flow (all 13 steps from the spec).
+
+**Session started by auditing** what was built in session 116 before context ran out. 11/13 steps were done — the two blockers were the inline input components (steps 7 + 10), which had data structures wired but no UI rendering.
+
+**Built:**
+- **Inline API key input** (`AgentPanel.tsx`): masked password input with Submit button, renders inside a response message when `inlineInput.type === 'api-key'`. After submit, switches to `••••••• · Saved ✓` confirmation state (matching Zapier/n8n pattern). Added `onApiKeySubmit` + `onFileUpload` props to `MessageBubble`.
+- **Inline file drop zone** (`AgentPanel.tsx`): drag-and-drop + click-to-browse, renders when `inlineInput.type === 'file-upload'`. Disappears after file is dropped (user message bubble shows the filename). Drag-over highlight state included.
+- **sourceColumn in ColumnsView** (`CenterPanel.tsx`): added `sourceColumn` to `DEFAULT_VISIBLE_COLS` and `COL_LABELS`. Renders conditionally — header + cells only appear when any visible row has `sourceColumn` populated (so it's invisible for regular tables, visible for `customer_health_external` columns after model build).
+- **MultiSourcePreviewPanel** (`ChatView.tsx`): clicking any created item (table, notebook, csv-dataset, staging-table) in ChatContextPanel opens a schema preview panel in the right pane. Shows column list with sourceTable/sourceColumn for data tables; shows notebook cells for the Pendo ingestion notebook. Follows same open/close pattern as PlanPanel/InstructionsPanel.
+
+Build clean ✓. All 13 steps complete.
+
+**Next session:** Review the multi-source flow end-to-end.
+
+---
+
+## Session 118 — 2026-06-09
+
+**Goal:** End-to-end review of multi-source flow — found UX issues, redesigned the flow.
+
+**Issues identified (user feedback):**
+1. Source Tables was a standalone section above Created/Context — breaks agent panel pattern
+2. CDW tables in scan proposal text not clickable (plain markdown bold)
+3. No way to view NPS responses after Pendo fetch — pendo_nps_enriched not added to Created
+4. CSV upload steps compressed: "Detecting join key" + "Schema alignment" don't belong at upload time
+5. No consent gates — notebook created and Spotstore writes happened automatically
+6. Artifact objects in chat were plain text — no card UI to indicate they're interactive
+
+**Built:**
+- **Consent gates throughout multi-source flow:** agent proposes at each Spotstore-write step — notebook creation, pendo_nps_enriched write, csm_account_mapping write, staging table compilation. Each gate has a suggestion chip so user can confirm with one click. New phases: `awaiting_notebook_consent`, `awaiting_pendo_write_consent`, `awaiting_csv_write_consent`, `awaiting_staging_consent`.
+- **Artifact cards in messages** (`AgentPanel.tsx`): added `artifactCards` field to `AgentMessage`. Rendered as compact clickable cards in response message bubbles — icon, name, sub-label, arrow. Clicking opens the preview panel via `onOpenMsItem` prop. Cards shown after pendo fetch (notebook + pendo_nps_enriched), after CSV write (csm_account_mapping), after staging compile (customer_health_external).
+- **`'spotstore-table'` type** added to `MultiSourceCreatedItem` and `CreatedItem`. Used for pendo_nps_enriched and csm_account_mapping — appears in Created section. CDW tables stay as `'table'` type in Context → Source tables sub-section.
+- **Source Tables moved inside Context section** (`ChatContextPanel.tsx`): removed standalone top-level section; CDW tables now render as a sub-section within Context alongside Models/Tables/Skills.
+- **process_csv_upload stripped to 2 steps**: Read CSV → Write to Spotstore. Removed "Detecting join key" and "Schema alignment" steps (those are staging-compile concerns).
+- **Sample rows added** to `pendo_nps_enriched` and `csm_account_mapping` in `mockData.ts` — enables "Sample data" tab in preview panel.
+- **pendo_nps_enriched and csm_account_mapping** now added to `multiSourceCreated` after their respective writes, with `type: 'spotstore-table'`.
+- **CSV added to Created immediately on upload** (before consent gate), so it's visible in the panel as soon as the file is dropped.
+
+**Not built this session:** clickable table names in scan proposal text (chip/link renderer in markdown — next session item).
+
+Build clean ✓.
+
+---
+
+## Session 119 — 2026-06-09
+
+**Goal:** Article research → feedback backlog → multi-source chip UX → DE review of the full flow.
+
+**Research — Anthropic self-service analytics article:**
+Mapped 9 learnings from Anthropic's internal analytics article to Data Studio. Most relevant to current workflow: (1) provenance chip in Test mode — agent answers should show source tier + last synced, (2) colocate skill docs with transform code — notebook edits should flag AIRS/descriptions as potentially stale, (3) agent-drafted content needs "unreviewed" badge. Full mapping saved in `project_datastudio_anthropic_article.md`.
+
+**Feedback backlog (9 items resolved):**
+All items from sessions 118/118b that were missed when sessions ended mid-review:
+- `fbk_1780997486_oz2n` — Scan proposal tables now render as artifact cards (DIM_ACCOUNTS, SUPPORT_CASES, CALL_METRICS, CUSTOMER_FOUND_DEFECTS) with connection source, row count, and DQ score. Proposal text simplified.
+- `fbk_1780997332_iari` — "Yes, set it up" chip was not matching `OBVIOUS_CONFIRM_MS`. Added `/set it up/i` check to `awaiting_notebook_consent` case.
+- `fbk_1780997455_ryos`, `fbk_1780997591_hr3w`, `fbk_1780997657_vodm` — Suggestion chips were rendering before artifact cards (line 4460 in MessageBubble). Moved `suggestions` render block to after artifact cards.
+- `fbk_1780997553_f5or` — Removed hardcoded "2,847 NPS responses" from pendo write consent (count not known before fetch runs).
+- `fbk_1780997535_cqop`, `fbk_1780997638_ebvn` — Staging consent message cleaned: removed `pendo_nps_enriched`/`csm_account_mapping` internal names and federated query explanation.
+- `fbk_1780997617_a82h` — DQ 92 was already present in artifact card subLabel; marked done.
+
+**Multi-source chip UX change:**
+Clicking "Multi-source model" chip on Overview now prefills the prompt bar with "I want to generate a customer health score card based on data from multiple sources" and focuses it — user sends manually. Previously auto-navigated.
+- `Overview.tsx`: chip onClick calls `promptBarRef.current?.setValue(...)` + `focus()`
+- `index.tsx`: `handleMultiSourceClick` sets `multiSourcePendingRef = true`; `handleOverviewPromptSubmit` branches on flag to run multi-source setup
+
+**DE review — multi-source flow:**
+4-agent workflow reviewed the flow for: step clarity, bugs, Netflix/Meta DE credibility, agent-context consistency.
+
+**5 critical issues found** (saved at `research/2026-06-09-de-review-multi-source.md`):
+1. Join SQL drives from Pendo table (2,847 rows) not DIM_ACCOUNTS (12,000 rows) — silently excludes 75% of customer base
+2. `p1_cases_open` and `open_defects` referenced in formula don't exist as columns
+3. "All checks passed" message contradicts visible SUPPORT_CASES DQ flag
+4. `account_tier` silently shadowed (present in both DIM_ACCOUNTS and CSM CSV)
+5. CSV added to Created panel before user consents
+
+**6 quick wins** also identified — mostly copy changes in `AgentPanel.tsx` scripts.
+
+**Not built this session:** DE review fixes (deferred to next session — see CONTEXT.md for build order).
+
+Build clean ✓.

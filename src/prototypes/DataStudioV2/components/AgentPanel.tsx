@@ -78,6 +78,18 @@ export interface AgentMessage {
   planData?: PlanData;
   genUI?: string;
   genUIResult?: string;
+  inlineInput?: {
+    type: 'api-key' | 'file-upload';
+    label: string;
+    placeholder?: string;
+    submitted?: boolean;
+    savedCredentials?: boolean;
+  };
+  artifactCards?: Array<{
+    type: 'table' | 'spotstore-table' | 'notebook' | 'csv-dataset' | 'staging-table';
+    name: string;
+    subLabel?: string;
+  }>;
   // spotter-answer fields
   answerTitle?: string;
   answerDesc?: string;
@@ -1476,6 +1488,180 @@ Want me to go ahead — add the table, create the join, and populate the columns
     nextStep: 'empty',
     stepDelay: 900,
   },
+
+  // ── Multi-source flow scripts ─────────────────────────────────────────────────
+
+  scan_multi_source: {
+    steps: [
+      { label: 'Scanning data environment', detail: '1 connection found: SF_PROD_CUSTOMER (Snowflake)' },
+      {
+        label: 'Analyzing schema for customer health indicators',
+        detail: '240 tables scanned · 4 matches across ANALYTICS_DB, SFDC_RAW, GONG_INTEGRATION, JIRA_WORKSPACE',
+        collapsible: `SELECT table_name, row_count, last_modified
+FROM information_schema.tables
+WHERE table_schema IN ('ANALYTICS_DB','SFDC_RAW','GONG_INTEGRATION','JIRA_WORKSPACE')
+  AND table_name SIMILAR TO '%(ACCOUNT|CUSTOMER|SUPPORT|CALL|DEFECT|HEALTH)%'
+ORDER BY row_count DESC
+-- Matched: DIM_ACCOUNTS, SUPPORT_CASES, CALL_METRICS, CUSTOMER_FOUND_DEFECTS`,
+      },
+      {
+        label: 'Profiling matched tables',
+        detail: 'DIM_ACCOUNTS 12k rows · SUPPORT_CASES 84k rows · CALL_METRICS 31k rows · CUSTOMER_FOUND_DEFECTS 6.2k rows',
+      },
+    ],
+    duration: '~4 seconds',
+    stepDelay: 1200,
+    autoComplete: false,
+    proposal: `I found **4 tables** in your Snowflake environment that cover customer accounts, support history, engagement, and engineering escalations. Do these look right?`,
+    execution: `These 4 tables are set as your core sources. What other data do you want to bring in?`,
+    nextStep: 'empty',
+    preserveStep: true,
+  },
+
+  create_pendo_notebook: {
+    steps: [
+      { label: 'Creating Python notebook container', detail: 'pendo_nps_ingestion.ipynb ready' },
+      { label: 'Configuring Pendo API endpoint', detail: 'GET /v2/nps · target column: nps_comments' },
+      { label: 'Preparing sentiment analysis pipeline', detail: 'VADER sentiment classifier loaded' },
+    ],
+    duration: '~3 seconds',
+    stepDelay: 1000,
+    autoComplete: false,
+    proposal: '',
+    execution: '',
+    nextStep: 'empty',
+    preserveStep: true,
+  },
+
+  execute_pendo_fetch: {
+    steps: [
+      {
+        label: 'Authenticating with Pendo API',
+        detail: '200 OK',
+        collapsible: `import requests\n\nendpoint = "https://app.pendo.io/api/v2/aggregation"\nheaders = {"X-Pendo-Integration-Key": PENDO_API_KEY, "Content-Type": "application/json"}\nresponse = requests.get(endpoint, headers=headers)\nassert response.status_code == 200`,
+      },
+      {
+        label: 'Fetching NPS responses',
+        detail: '2,847 records fetched',
+        collapsible: `data = response.json()["results"]\ndf = pd.DataFrame(data)[["accountId","npsScore","npsComments","responseDate"]]\ndf.columns = ["account_id","nps_score","nps_comments","response_date"]`,
+      },
+      {
+        label: 'Running sentiment classification',
+        detail: 'positive: 61% · neutral: 24% · negative: 15%',
+        collapsible: `from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer\nsia = SentimentIntensityAnalyzer()\ndf["sentiment_score"] = df["nps_comments"].fillna("").apply(\n    lambda t: sia.polarity_scores(t)["compound"]\n)\ndf["sentiment"] = df["sentiment_score"].apply(\n    lambda s: "positive" if s > 0.05 else "negative" if s < -0.05 else "neutral"\n)`,
+      },
+      {
+        label: 'Writing to ThoughtSpot CDW (Spotstore)',
+        detail: 'pendo_nps_enriched · 2,847 rows · 6 columns',
+        collapsible: `CREATE TABLE spotstore.pendo_nps_enriched AS\nSELECT account_id, nps_score, nps_comments,\n       sentiment, sentiment_score, response_date\nFROM pendo_staging\n-- Written via TQL import`,
+      },
+    ],
+    duration: '~8 seconds',
+    stepDelay: 2000,
+    autoComplete: true,
+    proposal: '',
+    execution: 'Pendo NPS data is cached in the Spotstore. Notebook is available in the panel — open it to review or edit the cells.\n\nDQ 92 — 2,847 rows · 3% null comments (treated as no response) · sentiment coverage 97%.',
+    nextStep: 'empty',
+    preserveStep: true,
+  },
+
+  process_csv_upload: {
+    steps: [
+      { label: 'Reading CSV file', detail: '142 rows · 4 columns · all types clean' },
+      {
+        label: 'Writing to ThoughtSpot CDW (Spotstore)',
+        detail: 'csm_account_mapping · 142 rows · 4 columns',
+      },
+    ],
+    duration: '~3 seconds',
+    stepDelay: 1400,
+    autoComplete: true,
+    proposal: '',
+    execution: '',
+    nextStep: 'empty',
+    preserveStep: true,
+  },
+
+  compile_staging_table: {
+    steps: [
+      { label: 'Identifying join key across external sources', detail: 'account_id present in both sources · 100% overlap' },
+      {
+        label: 'Running SQL compilation query',
+        detail: 'Joining pendo_nps_enriched + csm_account_mapping',
+        collapsible: `CREATE TABLE spotstore.customer_health_external AS\nSELECT\n  p.account_id,\n  p.nps_score,\n  p.nps_comments,\n  p.sentiment,\n  p.sentiment_score,\n  c.csm_name,\n  c.exec_sponsor,\n  c.csm_region,\n  c.account_tier\nFROM spotstore.pendo_nps_enriched p\nLEFT JOIN spotstore.csm_account_mapping c\n  ON p.account_id = c.account_id`,
+      },
+      { label: 'Writing unified staging table to ThoughtSpot CDW', detail: 'customer_health_external · 2,847 rows · 9 columns' },
+    ],
+    duration: '~4 seconds',
+    stepDelay: 1300,
+    autoComplete: true,
+    proposal: '',
+    execution: 'All external sources are compiled into a single staging table — `customer_health_external` is ready in the Spotstore. Open it in the panel to review the schema and SQL.\n\nPendo ingestion will refresh **daily at 6 AM UTC** by default — change this anytime in model settings. The CSM mapping is a one-time upload.\n\nWhen you\'re ready, tell me and I\'ll build the model.',
+    nextStep: 'empty',
+    preserveStep: true,
+  },
+
+  ms_build_project: {
+    steps: [
+      { label: 'Reviewing your data sources', detail: 'Reading 4 Snowflake tables + customer_health_external staging table.' },
+      {
+        label: 'Mapping joins across all sources',
+        detail: 'customer_health_external.account_id → dim_accounts.account_id (100% match). 3 additional joins via account_id.',
+        collapsible: `LEFT JOIN dim_accounts da ON che.account_id = da.account_id\nLEFT JOIN support_cases sc ON da.account_id = sc.account_id\nLEFT JOIN call_metrics cm ON da.account_id = cm.account_id\nLEFT JOIN customer_found_defects cfd ON da.account_id = cfd.account_id`,
+      },
+      {
+        label: 'Selecting columns for customer health scoring',
+        detail: 'Selected 18 columns across 5 tables. Removed 4 system fields and 2 raw text columns.',
+      },
+      {
+        label: 'Building health score formula',
+        detail: 'Composite health score: NPS (30%) + support volume (20%) + call sentiment (25%) + defect rate (25%).',
+        collapsible: `-- Customer Health Score (composite)\n(\n  CASE WHEN nps_score >= 9 THEN 1.0\n       WHEN nps_score >= 7 THEN 0.6\n       ELSE 0.2 END * 0.30\n) +\n(\n  CASE WHEN p1_cases_open = 0 THEN 1.0\n       WHEN p1_cases_open <= 2 THEN 0.5\n       ELSE 0.0 END * 0.20\n) +\n(\n  COALESCE(avg_sentiment_score, 0.5) * 0.25\n) +\n(\n  CASE WHEN open_defects = 0 THEN 1.0\n       WHEN open_defects <= 3 THEN 0.6\n       ELSE 0.2 END * 0.25\n)`,
+      },
+      { label: '✦ Enriching for AI', detail: 'Writing AI context and synonyms for 18 columns. Spotter needs this to answer questions about customer health well.' },
+      {
+        label: 'Validating data quality',
+        detail: 'Row counts verified · join key coverage 97% · staging table 2,847 rows · null check passed · all sources healthy',
+        collapsible: `-- Validation summary\nDIM_ACCOUNTS       12,041 rows · DQ 94\nSUPPORT_CASES      84,312 rows · DQ 81  (14% null resolution_time — flagged)\nCALL_METRICS       31,089 rows · DQ 88\nCUSTOMER_FOUND_DEFECTS  6,218 rows · DQ 91\ncustomer_health_external 2,847 rows · DQ 96\n\n-- Join key: account_id\nCoverage: 97% (2,761 of 2,847 staging rows match DIM_ACCOUNTS)\nUnmatched: 86 rows — account_id not in DIM_ACCOUNTS (test/churned accounts)\n\nAll checks passed. Proceeding to publish.`,
+      },
+    ],
+    stepDelay: 5000,
+    duration: '~25 seconds',
+    autoComplete: true,
+    proposal: '',
+    execution: `Done. I connected 5 sources — 4 Snowflake tables and 1 Spotstore staging table — and created a composite Customer Health Score that blends NPS sentiment, support volume, call engagement, and defect rate.\n\nAll data quality checks passed. Ready to test whenever you are — or make any changes first.`,
+    nextStep: 'healthy',
+    tablesToAdd: ['dim_accounts', 'support_cases', 'call_metrics', 'customer_found_defects', 'customer_health_external'],
+    defaultColumns: {
+      dim_accounts:             ['account_id', 'account_name', 'industry', 'arr', 'region', 'account_tier', 'renewal_date'],
+      support_cases:            ['account_id', 'priority', 'status', 'case_category', 'resolution_time_hours', 'reopened'],
+      call_metrics:             ['account_id', 'sentiment_score', 'next_steps_mentioned', 'deal_risk_flag'],
+      customer_found_defects:   ['account_id', 'severity', 'resolution_days', 'escalated_to_engineering'],
+      customer_health_external: ['account_id', 'nps_score', 'sentiment', 'sentiment_score', 'csm_name', 'exec_sponsor'],
+    },
+    setsColumnsSelected: true,
+    newName: 'Customer Health Scorecard',
+    executionSuggestions: ['Review data quality', 'Switch to test mode'],
+    outcomeCard: {
+      title: 'Customer Health Scorecard',
+      chips: ['5 sources', '4 joins', '18 columns', '1 health score'],
+      note: 'Your model is ready. Start testing or make any changes first.',
+    },
+    contextUpdate: {
+      purpose: 'Understand customer health across NPS, support, call engagement, and engineering escalations.',
+      persona: 'Customer Success Manager tracking at-risk accounts and renewal health.',
+      sampleQuestions: 'Which accounts have the lowest health scores this quarter?\nWhat is the NPS trend for our Enterprise accounts?\nWhich CSMs have the most P1 cases open?',
+    },
+  },
+
+  pendo_confirm_column: {
+    steps: [],
+    duration: '',
+    proposal: '',
+    execution: '',
+    nextStep: 'empty',
+    preserveStep: true,
+  },
 };
 
 // ── Coaching script key map ───────────────────────────────────────────────────
@@ -1803,6 +1989,26 @@ type FromScratchPhase =
   | 'confirm_build'
   | 'done';
 
+// ── Multi-source state type ───────────────────────────────────────────────────
+
+type MultiSourcePhase =
+  | 'scan_running'
+  | 'tables_proposed'
+  | 'awaiting_sources'
+  | 'awaiting_notebook_consent'
+  | 'notebook_running'
+  | 'awaiting_api_key'
+  | 'awaiting_nps_confirm'
+  | 'awaiting_pendo_write_consent'
+  | 'pendo_running'
+  | 'awaiting_csv'
+  | 'awaiting_csv_write_consent'
+  | 'csv_running'
+  | 'awaiting_staging_consent'
+  | 'staging_running'
+  | 'ready_to_build'
+  | 'done';
+
 // Runs working steps for a from-scratch script, then calls onComplete.
 // Does not use the normal proposal/confirm path — callers handle the follow-up.
 function runFromScratchSteps(
@@ -2079,6 +2285,7 @@ interface AgentPanelProps {
   selectedColumns?: string[];
   onColumnRemove?: (name: string) => void;
   isFromScratch?: boolean;
+  isMultiSource?: boolean;
   isDbtReview?: boolean;
   onOpenPlan?: (plan: PlanData) => void;
   onOpenQualityPlan?: () => void;
@@ -2089,9 +2296,10 @@ interface AgentPanelProps {
   initialMessage?: string;
   onInsightResolved?: (id: string) => void;
   onOpenObject?: (name: string, highlightCol?: string) => void;
+  onOpenMsItem?: (item: { type: string; name: string }) => void;
 }
 
-const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, setMessages, initialPrompt, onBuildComplete, externalMessage, onExternalMessageHandled, externalMessageAttachment, injectInput, onInjectInputHandled, width = 340, selectedColumns, onColumnRemove, isFromScratch, isDbtReview, onOpenPlan, onOpenQualityPlan, onBuildStart, fullPage = false, onBack, initialFlow, initialMessage, onInsightResolved, onOpenObject }) => {
+const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, setMessages, initialPrompt, onBuildComplete, externalMessage, onExternalMessageHandled, externalMessageAttachment, injectInput, onInjectInputHandled, width = 340, selectedColumns, onColumnRemove, isFromScratch, isMultiSource, isDbtReview, onOpenPlan, onOpenQualityPlan, onBuildStart, fullPage = false, onBack, initialFlow, initialMessage, onInsightResolved, onOpenObject, onOpenMsItem }) => {
   const [pendingAction, setPending]     = useState<PendingAction | null>(null);
   const [isProcessing, setProcessing]   = useState(false);
   const [planModalOpen, setPlanModalOpen] = useState(false);
@@ -2099,6 +2307,7 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
     PREP_SUGGESTIONS.map(s => ({ ...s }))
   );
   const [fromScratchPhase, setFromScratchPhase] = useState<FromScratchPhase | null>(isFromScratch ? 'use_case_prompt' : null);
+  const [multiSourcePhase, setMultiSourcePhase] = useState<MultiSourcePhase | null>(isMultiSource ? 'scan_running' : null);
   const [planVersion, setPlanVersion]    = useState(1);
   const [agentMode, setAgentMode]        = useState<'build' | 'test'>('build');
   const [connFilter, setConnFilter]      = useState<string | null>(null);
@@ -2129,7 +2338,31 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
   useEffect(() => {
     if (!initialPrompt || initialPromptFiredRef.current) return;
     initialPromptFiredRef.current = true;
-    if (isFromScratch) {
+    if (isMultiSource) {
+      // Multi-source flow: show user message, auto-run scan_multi_source
+      setMessages([{ id: `u-${Date.now()}`, type: 'user', content: initialPrompt }]);
+      setProcessing(true);
+      setTimeout(() => {
+        runFromScratchSteps('scan_multi_source', initialPrompt, setMessages, () => {
+          const proposalId = `r-${Date.now()}`;
+          const action: PendingAction = { key: 'scan_multi_source', nextStep: 'empty' };
+          setPending(action);
+          setMessages(prev => [...prev, {
+            id: proposalId, type: 'response',
+            content: SCRIPTS.scan_multi_source.proposal,
+            pendingAction: action,
+            artifactCards: [
+              { type: 'table' as const, name: 'DIM_ACCOUNTS',           subLabel: 'ANALYTICS_DB · 12k rows · DQ 94' },
+              { type: 'table' as const, name: 'SUPPORT_CASES',          subLabel: 'SFDC_RAW · 84k rows · DQ 81' },
+              { type: 'table' as const, name: 'CALL_METRICS',           subLabel: 'GONG_INTEGRATION · 31k rows · DQ 88' },
+              { type: 'table' as const, name: 'CUSTOMER_FOUND_DEFECTS', subLabel: 'JIRA_WORKSPACE · 6.2k rows · DQ 91' },
+            ],
+          }]);
+          setMultiSourcePhase('tables_proposed');
+          setProcessing(false);
+        }, buildAbortRef);
+      }, 300);
+    } else if (isFromScratch) {
       setMessages([{ id: `u-${Date.now()}`, type: 'user', content: initialPrompt }]);
       setProcessing(true);
       setTimeout(() => {
@@ -2313,6 +2546,45 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
 
   const handleConfirm = () => {
     if (!pendingAction) return;
+
+    // ── Multi-source special cases ────────────────────────────────────────────
+    if (pendingAction.key === 'scan_multi_source') {
+      setPending(null);
+      setProject(p => ({
+        ...p,
+        addedTables: [...new Set([...p.addedTables, 'dim_accounts', 'support_cases', 'call_metrics', 'customer_found_defects'])],
+        multiSourceCreated: [
+          ...(p.multiSourceCreated ?? []),
+          { type: 'table' as const, name: 'DIM_ACCOUNTS' },
+          { type: 'table' as const, name: 'SUPPORT_CASES' },
+          { type: 'table' as const, name: 'CALL_METRICS' },
+          { type: 'table' as const, name: 'CUSTOMER_FOUND_DEFECTS' },
+        ],
+      }));
+      setMessages(prev => [...prev, {
+        id: `r-${Date.now()}`, type: 'response',
+        content: "These 4 tables are set as your core sources. What other data do you want to bring in?",
+      }]);
+      setMultiSourcePhase('awaiting_sources');
+      setProcessing(false);
+      return;
+    }
+
+    if (pendingAction.key === 'pendo_confirm_column') {
+      // Column confirmed — ask consent before writing to Spotstore
+      setPending(null);
+      setMessages(prev => [...prev, {
+        id: `r-${Date.now()}`, type: 'response',
+        content: "I'll run the notebook now and write the NPS responses to your Spotstore as `pendo_nps_enriched`. This creates a new table in your ThoughtSpot CDW. OK to go ahead?",
+        suggestions: ["Yes, run it"],
+      }]);
+      setMultiSourcePhase('awaiting_pendo_write_consent');
+      setProcessing(false);
+      return;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+
     const script   = SCRIPTS[pendingAction.key];
     const captured = pendingAction;
     setPending(null);
@@ -2537,6 +2809,221 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
     }
   };
 
+  // ── Multi-source phase handlers ───────────────────────────────────────────────
+
+  const OBVIOUS_CONFIRM_MS = /^(yes|yeah|yep|yup|ya|yea|sure|ok|okay|cool|great|perfect|sounds good|let'?s go|go ahead|proceed|do it|add it|add them|looks good|correct|confirmed|confirm|apply|absolutely|good to go|that works|makes sense|right)[\s!.,?]*$/i;
+
+  const handleMultiSourceInput = (input: string) => {
+    switch (multiSourcePhase) {
+      case 'tables_proposed': {
+        if (OBVIOUS_CONFIRM_MS.test(input.trim()) || pendingAction?.key === 'scan_multi_source') {
+          setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: input }]);
+          handleConfirm();
+        }
+        break;
+      }
+
+      case 'awaiting_sources': {
+        // User specifies Pendo + CSV — show notebook consent first, don't auto-create
+        setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: input }]);
+        setMessages(prev => [...prev, {
+          id: `r-${Date.now()}`, type: 'response',
+          content: "To pull your Pendo NPS data I'll need to create a Python notebook. It'll authenticate with Pendo's API, fetch NPS responses, run VADER sentiment analysis, and write the results to your Spotstore as `pendo_nps_enriched`. Should I set it up?",
+          suggestions: ["Yes, set it up"],
+        }]);
+        setMultiSourcePhase('awaiting_notebook_consent');
+        break;
+      }
+
+      case 'awaiting_notebook_consent': {
+        if (OBVIOUS_CONFIRM_MS.test(input.trim()) || /set it up/i.test(input)) {
+          setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: input }]);
+          setProcessing(true);
+          runFromScratchSteps('create_pendo_notebook', undefined, setMessages, () => {
+            setMessages(prev => [...prev, {
+              id: `r-${Date.now()}`, type: 'response',
+              content: "Notebook is ready. To run it I need your Pendo Integration Key to authenticate.",
+              inlineInput: { type: 'api-key' as const, label: 'Pendo Integration Key', placeholder: 'Enter your key…' },
+            }]);
+            setMultiSourcePhase('awaiting_api_key');
+            setProcessing(false);
+          }, buildAbortRef);
+        }
+        break;
+      }
+
+      case 'awaiting_nps_confirm': {
+        if (OBVIOUS_CONFIRM_MS.test(input.trim()) || pendingAction?.key === 'pendo_confirm_column') {
+          setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: input }]);
+          handleConfirm();
+        }
+        break;
+      }
+
+      case 'awaiting_pendo_write_consent': {
+        if (OBVIOUS_CONFIRM_MS.test(input.trim())) {
+          setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: input }]);
+          setPending(null);
+          setMultiSourcePhase('pendo_running');
+          setProcessing(true);
+          runFromScratchSteps('execute_pendo_fetch', undefined, setMessages, () => {
+            setProject(p => ({
+              ...p,
+              spotStoreTables: [...(p.spotStoreTables ?? []), 'pendo_nps_enriched'],
+              multiSourceCreated: [
+                ...(p.multiSourceCreated ?? []),
+                { type: 'notebook' as const, name: 'pendo_nps_ingestion.ipynb' },
+                { type: 'spotstore-table' as const, name: 'pendo_nps_enriched' },
+              ],
+            }));
+            setTimeout(() => {
+              setMessages(prev => [...prev, {
+                id: `r-${Date.now()}`, type: 'response',
+                content: "Pendo NPS data is in the Spotstore. The notebook and the table are in the panel — open either to inspect.",
+                artifactCards: [
+                  { type: 'notebook' as const, name: 'pendo_nps_ingestion.ipynb', subLabel: 'Python · 5 cells' },
+                  { type: 'spotstore-table' as const, name: 'pendo_nps_enriched', subLabel: 'Spotstore · 2,847 rows · DQ 92' },
+                ],
+              }]);
+              setTimeout(() => {
+                setMessages(prev => [...prev, {
+                  id: `r-${Date.now()}`, type: 'response',
+                  content: "Now I need the CSM mapping file you mentioned. Please upload it.",
+                  inlineInput: { type: 'file-upload' as const, label: 'Drop CSV here or click to browse' },
+                }]);
+                setMultiSourcePhase('awaiting_csv');
+                setProcessing(false);
+              }, 800);
+            }, 600);
+          }, buildAbortRef);
+        }
+        break;
+      }
+
+      case 'awaiting_csv_write_consent': {
+        if (OBVIOUS_CONFIRM_MS.test(input.trim())) {
+          setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: input }]);
+          setMultiSourcePhase('csv_running');
+          setProcessing(true);
+          runFromScratchSteps('process_csv_upload', undefined, setMessages, () => {
+            setProject(p => ({
+              ...p,
+              spotStoreTables: [...(p.spotStoreTables ?? []), 'csm_account_mapping'],
+              multiSourceCreated: [...(p.multiSourceCreated ?? []), { type: 'spotstore-table' as const, name: 'csm_account_mapping' }],
+            }));
+            setTimeout(() => {
+              setMessages(prev => [...prev, {
+                id: `r-${Date.now()}`, type: 'response',
+                content: "`csm_account_mapping` is in the Spotstore — 142 rows, DQ 98.",
+                artifactCards: [
+                  { type: 'spotstore-table' as const, name: 'csm_account_mapping', subLabel: 'Spotstore · 142 rows · DQ 98' },
+                ],
+              }]);
+              setTimeout(() => {
+                setMessages(prev => [...prev, {
+                  id: `r-${Date.now()}`, type: 'response',
+                  content: "I'll compile the Pendo NPS data and CSM mapping into a unified staging table called `customer_health_external`. Ready to compile?",
+                  suggestions: ["Yes, compile the staging table"],
+                }]);
+                setMultiSourcePhase('awaiting_staging_consent');
+                setProcessing(false);
+              }, 700);
+            }, 600);
+          }, buildAbortRef);
+        }
+        break;
+      }
+
+      case 'awaiting_staging_consent': {
+        if (OBVIOUS_CONFIRM_MS.test(input.trim())) {
+          setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: input }]);
+          setMultiSourcePhase('staging_running');
+          setProcessing(true);
+          runFromScratchSteps('compile_staging_table', undefined, setMessages, () => {
+            setProject(p => ({
+              ...p,
+              stagingTableId: 'customer_health_external',
+              spotStoreTables: [...(p.spotStoreTables ?? []), 'customer_health_external'],
+              multiSourceCreated: [...(p.multiSourceCreated ?? []), { type: 'staging-table' as const, name: 'customer_health_external' }],
+            }));
+            setTimeout(() => {
+              setMessages(prev => [...prev, {
+                id: `r-${Date.now()}`, type: 'response',
+                content: "`customer_health_external` is compiled and ready in the Spotstore. Pendo ingestion refreshes **daily at 6 AM UTC** by default — you can change this in model settings. The CSM mapping is a one-time upload.\n\nWhen you're ready, tell me and I'll build the model.",
+                artifactCards: [
+                  { type: 'staging-table' as const, name: 'customer_health_external', subLabel: 'Spotstore · staging · 2,847 rows' },
+                ],
+                suggestions: ["Ready. Build the model."],
+              }]);
+              setMultiSourcePhase('ready_to_build');
+              setProcessing(false);
+            }, 600);
+          }, buildAbortRef);
+        }
+        break;
+      }
+
+      case 'ready_to_build': {
+        setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: input }]);
+        setMultiSourcePhase('done');
+        setTimeout(() => {
+          runFlow('ms_build_project', setMessages, setPending, setProcessing, setProject, input, buildAbortRef);
+        }, 300);
+        break;
+      }
+
+      default:
+        break;
+    }
+  };
+
+  const handleApiKeySubmit = (msgId: string, key: string) => {
+    const usedSaved = key === '__saved__';
+    setMessages(prev => prev.map(m =>
+      m.id === msgId ? { ...m, inlineInput: { ...m.inlineInput!, submitted: true, savedCredentials: usedSaved } } : m
+    ));
+    setProcessing(true);
+    setTimeout(() => {
+      const action: PendingAction = { key: 'pendo_confirm_column', nextStep: 'empty' };
+      setPending(action);
+      setMessages(prev => [...prev, {
+        id: `r-${Date.now()}`, type: 'response',
+        content: "Got it. Please confirm — I'm predicting the NPS text column is `nps_comments`. Is that right?",
+        pendingAction: action,
+      }]);
+      setMultiSourcePhase('awaiting_nps_confirm');
+      setProcessing(false);
+    }, 500);
+  };
+
+  const handleFileUpload = (msgId: string, file: File) => {
+    // Mark the inline input as submitted
+    setMessages(prev => prev.map(m =>
+      m.id === msgId ? { ...m, inlineInput: { ...m.inlineInput!, submitted: true } } : m
+    ));
+    // Show user message with attachment chip
+    setMessages(prev => [...prev, {
+      id: `u-${Date.now()}`, type: 'user',
+      content: file.name,
+      attachment: { type: 'CSV', label: file.name },
+    }]);
+    // Add the CSV to Created so it's visible immediately
+    setProject(p => ({
+      ...p,
+      multiSourceCreated: [...(p.multiSourceCreated ?? []), { type: 'csv-dataset' as const, name: file.name }],
+    }));
+    // Ask consent before writing to Spotstore
+    setMessages(prev => [...prev, {
+      id: `r-${Date.now()}`, type: 'response',
+      content: `Got it — **142 rows, 4 columns** detected in \`${file.name}\`. I'll write this to your Spotstore as \`csm_account_mapping\`. OK to proceed?`,
+      artifactCards: [
+        { type: 'csv-dataset' as const, name: file.name, subLabel: 'CSV · 142 rows · 4 columns' },
+      ],
+      suggestions: ["Yes, write to Spotstore"],
+    }]);
+    setMultiSourcePhase('awaiting_csv_write_consent');
+  };
+
   // ── Core processing ──────────────────────────────────────────────────────────
 
   const processText = async (text: string, mentionedTables?: string[], attachment?: { type: string; label: string }) => {
@@ -2554,6 +3041,11 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
     // Test mode — route to Spotter, skip build agent
     if (agentMode === 'test') {
       handleSpotterQuestion(text);
+      return;
+    }
+    // Multi-source flow — route through dedicated handler, skip normal matchScript
+    if (multiSourcePhase && multiSourcePhase !== 'done') {
+      handleMultiSourceInput(text);
       return;
     }
     // From-scratch flow — route through dedicated handler, skip normal matchScript
@@ -3220,6 +3712,9 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
                 onGenUIAction={handleGenUIAction}
                 onOpenObject={onOpenObject}
                 publishedVersion={project.publishedVersion}
+                onApiKeySubmit={handleApiKeySubmit}
+                onFileUpload={handleFileUpload}
+                onArtifactClick={onOpenMsItem}
                 onComplete={msg.genUI === 'drift_complete' ? () => {
                   onInsightResolved?.('ins-d2');
                   setTimeout(() => {
@@ -3734,8 +4229,13 @@ const MessageBubble: React.FC<{
   onComplete?: () => void;
   publishedVersion?: number;
   onOpenObject?: (name: string, highlightCol?: string) => void;
-}> = ({ msg, showAvatar, onToggleSteps, onToggleCollapsible, onSuggestion, onConfirm, onOpenQualityPlan, onChipClick, onGenUIAction, onComplete, publishedVersion, onOpenObject }) => {
+  onApiKeySubmit?: (msgId: string, key: string) => void;
+  onFileUpload?: (msgId: string, file: File) => void;
+  onArtifactClick?: (card: { type: string; name: string }) => void;
+}> = ({ msg, showAvatar, onToggleSteps, onToggleCollapsible, onSuggestion, onConfirm, onOpenQualityPlan, onChipClick, onGenUIAction, onComplete, publishedVersion, onOpenObject, onApiKeySubmit, onFileUpload, onArtifactClick }) => {
   const [chipUsed, setChipUsed] = React.useState(false);
+  const [apiKeyValue, setApiKeyValue] = React.useState('');
+  const [isDragOver, setIsDragOver] = React.useState(false);
 
   // ── User bubble ────────────────────────────────────────────────────────────
   if (msg.type === 'user') {
@@ -3747,7 +4247,8 @@ const MessageBubble: React.FC<{
         {msg.attachment && (
           <div style={{ marginBottom: sp.B }}>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: sp.A, fontSize: fs.xs, fontWeight: fw.medium, padding: '2px 8px', borderRadius: 4, border: `1px solid ${c['border-default']}`, backgroundColor: c['background-base'], color: c['content-secondary'] }}>
-              ⚠ {msg.attachment.type} · {msg.attachment.label}
+              <svg width="11" height="11" viewBox="0 0 11 11" fill="none" style={{ flexShrink: 0 }}><rect x="1" y="1" width="9" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.2" fill="none"/><line x1="3" y1="4" x2="8" y2="4" stroke="currentColor" strokeWidth="1" strokeLinecap="round"/><line x1="3" y1="6" x2="8" y2="6" stroke="currentColor" strokeWidth="1" strokeLinecap="round"/><line x1="3" y1="8" x2="6" y2="8" stroke="currentColor" strokeWidth="1" strokeLinecap="round"/></svg>
+              {msg.attachment.type} · {msg.attachment.label}
             </span>
           </div>
         )}
@@ -3960,6 +4461,113 @@ const MessageBubble: React.FC<{
               >
                 Apply this
               </button>
+            </div>
+          )}
+          {/* ── Inline API key input ─────────────────────────────────────────── */}
+          {msg.inlineInput?.type === 'api-key' && (
+            <div style={{ marginTop: sp.C, padding: `${sp.C}px ${sp.D}px`, borderRadius: 8, border: `1px solid ${c['border-default']}`, backgroundColor: c['background-subtle'] }}>
+              {msg.inlineInput.submitted ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: sp.B }}>
+                  <span style={{ fontSize: fs.xs, color: c['content-secondary'] }}>
+                    {msg.inlineInput.savedCredentials ? 'Saved Pendo credentials' : '•••••••••••'}
+                  </span>
+                  <span style={{ fontSize: fs.xs, fontWeight: fw.medium, color: '#16A34A', display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="6" fill="#16A34A" /><polyline points="3.5,6 5.5,8 8.5,4" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                    Saved ✓
+                  </span>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: sp.C }}>
+                  {/* Primary: use saved credentials from org secret store */}
+                  <button
+                    onClick={() => onApiKeySubmit?.(msg.id, '__saved__')}
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: sp.B, padding: '7px 14px', fontSize: fs.xs, fontWeight: fw.semibold, backgroundColor: c['content-brand'], color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontFamily: ff.primary }}
+                  >
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="2" y="5" width="8" height="6" rx="1" stroke="#fff" strokeWidth="1.3" fill="none"/><path d="M4 5V3.5a2 2 0 014 0V5" stroke="#fff" strokeWidth="1.3" strokeLinecap="round"/></svg>
+                    Use saved Pendo credentials
+                  </button>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: sp.B }}>
+                    <div style={{ flex: 1, height: 1, backgroundColor: c['border-divider'] }} />
+                    <span style={{ fontSize: fs.xs, color: c['content-tertiary'] }}>or enter manually</span>
+                    <div style={{ flex: 1, height: 1, backgroundColor: c['border-divider'] }} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: fs.xs, fontWeight: fw.medium, color: c['content-secondary'], display: 'block', marginBottom: sp.B }}>{msg.inlineInput.label}</label>
+                    <div style={{ display: 'flex', gap: sp.B }}>
+                      <input
+                        type="password"
+                        placeholder={msg.inlineInput.placeholder ?? 'Enter key…'}
+                        value={apiKeyValue}
+                        onChange={e => setApiKeyValue(e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter' && apiKeyValue.trim()) { onApiKeySubmit?.(msg.id, apiKeyValue); setApiKeyValue(''); } }}
+                        style={{ flex: 1, padding: '6px 10px', fontSize: fs.xs, border: `1px solid ${c['border-default']}`, borderRadius: 6, backgroundColor: c['background-base'], color: c['content-primary'], fontFamily: ff.primary, outline: 'none' }}
+                      />
+                      <button
+                        disabled={!apiKeyValue.trim()}
+                        onClick={() => { if (apiKeyValue.trim()) { onApiKeySubmit?.(msg.id, apiKeyValue); setApiKeyValue(''); } }}
+                        style={{ padding: '6px 14px', fontSize: fs.xs, fontWeight: fw.semibold, backgroundColor: apiKeyValue.trim() ? c['content-brand'] : c['background-subtle'], color: apiKeyValue.trim() ? '#fff' : c['content-tertiary'], border: 'none', borderRadius: 6, cursor: apiKeyValue.trim() ? 'pointer' : 'default', fontFamily: ff.primary }}
+                      >
+                        Submit
+                      </button>
+                    </div>
+                    <div style={{ fontSize: fs.xs, color: c['content-tertiary'], marginTop: sp.A }}>Stored in your org's credential vault — never visible in chat</div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+          {/* ── Inline file upload ───────────────────────────────────────────── */}
+          {msg.inlineInput?.type === 'file-upload' && !msg.inlineInput.submitted && (
+            <div
+              onDragOver={e => { e.preventDefault(); setIsDragOver(true); }}
+              onDragLeave={() => setIsDragOver(false)}
+              onDrop={e => { e.preventDefault(); setIsDragOver(false); const file = e.dataTransfer.files[0]; if (file) onFileUpload?.(msg.id, file); }}
+              style={{ marginTop: sp.C, padding: `${sp.H}px ${sp.D}px`, borderRadius: 8, border: `1.5px dashed ${isDragOver ? c['content-brand'] : c['border-default']}`, backgroundColor: isDragOver ? c['background-information'] : c['background-subtle'], textAlign: 'center', cursor: 'pointer', transition: 'all 0.15s' }}
+              onClick={() => { const input = document.createElement('input'); input.type = 'file'; input.accept = '.csv'; input.onchange = ev => { const f = (ev.target as HTMLInputElement).files?.[0]; if (f) onFileUpload?.(msg.id, f); }; input.click(); }}
+            >
+              <div style={{ fontSize: fs.xs, color: isDragOver ? c['content-brand'] : c['content-secondary'], fontWeight: fw.medium }}>{msg.inlineInput.label}</div>
+              <div style={{ fontSize: fs.xs, color: c['content-tertiary'], marginTop: 2 }}>CSV · max 10 MB</div>
+            </div>
+          )}
+          {/* ── Artifact cards ──────────────────────────────────────────────── */}
+          {msg.artifactCards && msg.artifactCards.length > 0 && (
+            <div style={{ marginTop: sp.C, display: 'flex', flexDirection: 'column', gap: sp.B }}>
+              {msg.artifactCards.map((card, i) => {
+                const cardIcon = card.type === 'notebook'
+                  ? <svg width="13" height="13" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0 }}><rect x="3" y="1" width="9" height="12" rx="1.5" stroke="currentColor" strokeWidth="1.3" fill="none"/><line x1="1.5" y1="4" x2="3" y2="4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/><line x1="1.5" y1="7" x2="3" y2="7" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/><line x1="5.5" y1="4" x2="9.5" y2="4" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/><line x1="6.5" y1="5.6" x2="10" y2="5.6" stroke="currentColor" strokeWidth="0.9" strokeLinecap="round" strokeOpacity="0.6"/><line x1="5.5" y1="7" x2="8.5" y2="7" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/></svg>
+                  : card.type === 'csv-dataset'
+                  ? <svg width="13" height="13" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0 }}><rect x="2" y="1" width="10" height="12" rx="1.5" stroke="currentColor" strokeWidth="1.3" fill="none"/><line x1="2" y1="5" x2="12" y2="5" stroke="currentColor" strokeWidth="1.1"/><line x1="2" y1="8" x2="12" y2="8" stroke="currentColor" strokeWidth="1.1"/><line x1="5.5" y1="5" x2="5.5" y2="13" stroke="currentColor" strokeWidth="1.1"/><line x1="8.5" y1="5" x2="8.5" y2="13" stroke="currentColor" strokeWidth="1.1"/></svg>
+                  : card.type === 'staging-table'
+                  ? <svg width="13" height="13" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0 }}><rect x="1" y="1" width="12" height="5" rx="1.2" stroke="currentColor" strokeWidth="1.3" fill="none"/><rect x="1" y="8" width="12" height="5" rx="1.2" stroke="currentColor" strokeWidth="1.3" fill="none"/><line x1="7" y1="6" x2="7" y2="8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/><path d="M5 7.2L7 8.8L9 7.2" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  : <svg width="13" height="13" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0 }}><rect x="1" y="1" width="12" height="12" rx="1.5" stroke="currentColor" strokeWidth="1.3" fill="none"/><line x1="1" y1="4.5" x2="13" y2="4.5" stroke="currentColor" strokeWidth="1.1"/><line x1="5" y1="4.5" x2="5" y2="13" stroke="currentColor" strokeWidth="1.1"/></svg>;
+                return (
+                  <button
+                    key={i}
+                    onClick={() => onArtifactClick?.(card)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: sp.B,
+                      padding: `${sp.B}px ${sp.C}px`,
+                      borderRadius: 6, border: `1px solid ${c['border-default']}`,
+                      backgroundColor: c['background-base'], cursor: onArtifactClick ? 'pointer' : 'default',
+                      textAlign: 'left', fontFamily: ff.primary, width: '100%',
+                      transition: 'background-color 0.1s ease, border-color 0.1s ease',
+                    }}
+                    onMouseEnter={e => { if (onArtifactClick) { e.currentTarget.style.backgroundColor = c['background-subtle']; e.currentTarget.style.borderColor = c['border-default']; } }}
+                    onMouseLeave={e => { e.currentTarget.style.backgroundColor = c['background-base']; e.currentTarget.style.borderColor = c['border-default']; }}
+                  >
+                    <div style={{ color: c['content-secondary'], display: 'flex', alignItems: 'center' }}>{cardIcon}</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: fs.xs, fontWeight: fw.medium, color: c['content-primary'], overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{card.name}</div>
+                      {card.subLabel && <div style={{ fontSize: 11, color: c['content-secondary'], marginTop: 1 }}>{card.subLabel}</div>}
+                    </div>
+                    {onArtifactClick && (
+                      <svg width="11" height="11" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0, color: c['content-tertiary'] }}>
+                        <path d="M2 10L10 2M10 2H5M10 2v5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           )}
           {msg.suggestions && msg.suggestions.length > 0 && (
