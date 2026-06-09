@@ -9,6 +9,7 @@ import PromptBar, { PromptBarRef } from './PromptBar';
 import ConnectionPill from './ConnectionPill';
 import DataQualityPlanModal from './DataQualityPlanModal';
 import { Icon } from '../../../components/icons';
+import PlanPanelV3 from './PlanPanelV3';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -32,6 +33,9 @@ export interface PlanTable {
   name: string;
   description: string;
   rowCount?: string;
+  connection?: string;
+  confidence?: number;
+  reasoning?: string;
 }
 
 export interface PlanRelationship {
@@ -41,6 +45,9 @@ export interface PlanRelationship {
   toKey: string;
   joinType: string;
   matchRate: string;
+  cardinality?: string;
+  confidence?: number;
+  reasoning?: string;
 }
 
 export interface PlanColumn {
@@ -50,6 +57,8 @@ export interface PlanColumn {
   description: string;
   formula?: string;
   included: boolean;
+  confidence?: number;
+  reasoning?: string;
 }
 
 export interface PlanData {
@@ -72,10 +81,11 @@ export interface AgentMessage {
   pendingAction?: PendingAction;
   suggestions?: string[];
   attachment?: { type: string; label: string };
-  outcomeCard?: { title: string; chips: string[]; note: string };
+  outcomeCard?: { title: string; chips: string[]; errorChips?: string[]; note: string };
   reviewPlanCTA?: boolean;
   interactiveChips?: { label: string; value: string }[];
   planData?: PlanData;
+  planBuildFlow?: 'from_scratch' | 'multi_source';
   genUI?: string;
   genUIResult?: string;
   inlineInput?: {
@@ -250,6 +260,54 @@ const MOCK_PLAN_BASE: Omit<PlanData, 'version'> = {
     'What is the average order value for social vs email campaigns?',
     'Which campaigns have the highest conversion rate this quarter?',
     'How has campaign performance trended over the last 6 months?',
+  ],
+};
+
+const MS_PLAN_DATA: PlanData = {
+  version: 1,
+  modelName: 'Customer Health Scorecard',
+  goal: 'Track customer health across NPS, support volume, call engagement, and engineering escalations to surface at-risk accounts before renewal.',
+  tables: [
+    { schema: 'SNOWFLAKE', name: 'dim_accounts', description: 'Master account records — the driving table. All other sources join to account_id.', rowCount: '12,000 rows', connection: 'Snowflake CDW', confidence: 97, reasoning: 'Primary driving table — all joins fan out from here' },
+    { schema: 'SNOWFLAKE', name: 'support_cases', description: 'Support case history including priority, status, and resolution time.', rowCount: '84,312 rows', connection: 'Snowflake CDW', confidence: 91, reasoning: 'P1 open case count contributes 20% to health score' },
+    { schema: 'SNOWFLAKE', name: 'call_metrics', description: 'Per-account call sentiment and engagement signals.', rowCount: '31,089 rows', connection: 'Snowflake CDW', confidence: 88, reasoning: 'Avg sentiment contributes 25% to health score' },
+    { schema: 'SNOWFLAKE', name: 'customer_found_defects', description: 'Engineering defects reported by customers.', rowCount: '6,218 rows', connection: 'Snowflake CDW', confidence: 85, reasoning: 'Open defect count contributes 25% to health score' },
+    { schema: 'SPOTSTORE', name: 'customer_health_external', description: 'Pendo NPS + CSM mapping from staging. 24% account coverage — NPS components will be null for remaining accounts.', rowCount: '2,847 rows', connection: 'Spotstore', confidence: 93, reasoning: 'NPS score contributes 30% to health; partial coverage is expected' },
+  ],
+  relationships: [
+    { fromTable: 'dim_accounts', toTable: 'customer_health_external', fromKey: 'account_id', toKey: 'account_id', joinType: 'LEFT JOIN', matchRate: '24% (2,847 of 12,000)', cardinality: 'One-to-one', confidence: 93, reasoning: 'Federated — Spotstore staging; NPS null for unmatched accounts is expected' },
+    { fromTable: 'dim_accounts', toTable: 'support_cases', fromKey: 'account_id', toKey: 'account_id', joinType: 'LEFT JOIN', matchRate: '~100%', cardinality: 'One-to-many', confidence: 96 },
+    { fromTable: 'dim_accounts', toTable: 'call_metrics', fromKey: 'account_id', toKey: 'account_id', joinType: 'LEFT JOIN', matchRate: '~100%', cardinality: 'One-to-many', confidence: 94 },
+    { fromTable: 'dim_accounts', toTable: 'customer_found_defects', fromKey: 'account_id', toKey: 'account_id', joinType: 'LEFT JOIN', matchRate: '~100%', cardinality: 'One-to-many', confidence: 91 },
+  ],
+  columns: [
+    { table: 'dim_accounts', name: 'account_id', type: 'dimension', description: 'Unique account identifier (join key).', included: true, confidence: 99 },
+    { table: 'dim_accounts', name: 'account_name', type: 'dimension', description: 'Account display name.', included: true, confidence: 97 },
+    { table: 'dim_accounts', name: 'industry', type: 'dimension', description: 'Industry vertical.', included: true, confidence: 88 },
+    { table: 'dim_accounts', name: 'arr', type: 'metric', description: 'Annual recurring revenue in USD.', included: true, confidence: 95 },
+    { table: 'dim_accounts', name: 'region', type: 'dimension', description: 'Geographic region.', included: true, confidence: 90 },
+    { table: 'dim_accounts', name: 'account_tier', type: 'dimension', description: 'CSM mapping version used — shadows the CDW field of the same name.', included: true, confidence: 87, reasoning: 'Two sources have account_tier — CSM CSV version preferred per DE decision' },
+    { table: 'dim_accounts', name: 'renewal_date', type: 'dimension', description: 'Next renewal date.', included: true, confidence: 92 },
+    { table: 'support_cases', name: 'priority', type: 'dimension', description: 'Case priority level (P1–P4).', included: true, confidence: 94 },
+    { table: 'support_cases', name: 'status', type: 'dimension', description: 'Case resolution status.', included: true, confidence: 94 },
+    { table: 'support_cases', name: 'case_category', type: 'dimension', description: 'Issue category.', included: true, confidence: 89 },
+    { table: 'support_cases', name: 'resolution_time_hours', type: 'metric', description: '14% null — not used in health score formula. Kept for ad-hoc analysis.', included: true, confidence: 72, reasoning: 'High null rate flagged; health formula uses P1 case count, not resolution time' },
+    { table: 'call_metrics', name: 'avg_sentiment_score', type: 'metric', description: 'Average call sentiment score per account (0–1). Contributes 25% to health score.', included: true, confidence: 91 },
+    { table: 'call_metrics', name: 'next_steps_mentioned', type: 'metric', description: 'Whether next steps were discussed on the call.', included: true, confidence: 85 },
+    { table: 'call_metrics', name: 'deal_risk_flag', type: 'dimension', description: 'Agent-flagged deal risk indicator.', included: true, confidence: 88 },
+    { table: 'customer_found_defects', name: 'severity', type: 'dimension', description: 'Defect severity level.', included: true, confidence: 90 },
+    { table: 'customer_found_defects', name: 'resolution_days', type: 'metric', description: 'Days to resolve defect.', included: true, confidence: 87 },
+    { table: 'customer_health_external', name: 'nps_score', type: 'metric', description: 'NPS score (0–10). Contributes 30% to health score.', included: true, confidence: 93 },
+    { table: 'customer_health_external', name: 'csm_name', type: 'dimension', description: 'Customer success manager name.', included: true, confidence: 95 },
+    { table: 'customer_health_external', name: 'exec_sponsor', type: 'dimension', description: 'Executive sponsor name.', included: true, confidence: 90 },
+    { table: 'dim_accounts', name: 'customer_health_score', type: 'formula', description: 'Composite score: NPS 30% + support 20% + call sentiment 25% + defects 25%.', formula: '(CASE WHEN nps_score >= 9 THEN 1.0 WHEN nps_score >= 7 THEN 0.6 ELSE 0.2 END * 0.30)\n+ (CASE WHEN p1_cases_open = 0 THEN 1.0 WHEN p1_cases_open <= 2 THEN 0.5 ELSE 0.0 END * 0.20)\n+ (COALESCE(avg_sentiment_score, 0.5) * 0.25)\n+ (CASE WHEN open_defects = 0 THEN 1.0 WHEN open_defects <= 3 THEN 0.6 ELSE 0.2 END * 0.25)', included: true, confidence: 88 },
+  ],
+  sampleQuestions: [
+    'Which accounts have the lowest health scores this quarter?',
+    'What is the NPS trend for our Enterprise accounts?',
+    'Which CSMs have the most P1 cases open?',
+    'Show me accounts at risk of churning in the next 90 days.',
+    'How does call sentiment correlate with renewal outcomes?',
   ],
 };
 
@@ -1646,6 +1704,7 @@ ORDER BY row_count DESC
     outcomeCard: {
       title: 'Customer Health Scorecard',
       chips: ['5 sources', '4 joins', '18 columns', '1 health score'],
+      errorChips: ['⚠ 1 DQ flag'],
       note: 'Your model is ready. Start testing or make any changes first.',
     },
     contextUpdate: {
@@ -2009,6 +2068,7 @@ type MultiSourcePhase =
   | 'awaiting_staging_consent'
   | 'staging_running'
   | 'ready_to_build'
+  | 'awaiting_ms_build'
   | 'done';
 
 // Runs working steps for a from-scratch script, then calls onComplete.
@@ -2311,6 +2371,7 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
   const [fromScratchPhase, setFromScratchPhase] = useState<FromScratchPhase | null>(isFromScratch ? 'use_case_prompt' : null);
   const [multiSourcePhase, setMultiSourcePhase] = useState<MultiSourcePhase | null>(isMultiSource ? 'scan_running' : null);
   const [planVersion, setPlanVersion]    = useState(1);
+  const [planExpandedId, setPlanExpandedId] = useState<string | null>(null);
   const [agentMode, setAgentMode]        = useState<'build' | 'test'>('build');
   const [connFilter, setConnFilter]      = useState<string | null>(null);
   const [coachingPrompt, setCoachingPrompt] = useState<{ sourceQuestion: string } | null>(null);
@@ -2751,6 +2812,7 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
         id: `r-${Date.now()}`, type: 'response',
         content: "Here's the plan for your model. Review it — once you're happy, I'll start building.",
         planData: plan,
+        planBuildFlow: 'from_scratch' as const,
       }]);
       setFromScratchPhase('plan_ready');
       setProcessing(false);
@@ -2775,6 +2837,14 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
         content: "What would you like to change?",
       }]);
     }, 400);
+  };
+
+  const handleMsBuildStart = () => {
+    setMultiSourcePhase('done');
+    setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: 'Build the model' }]);
+    setTimeout(() => {
+      runFlow('ms_build_project', setMessages, setPending, setProcessing, setProject, 'Build the model', buildAbortRef);
+    }, 300);
   };
 
   const handlePlanCardClick = (plan: PlanData) => {
@@ -2809,6 +2879,7 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
             id: `r-${Date.now()}`, type: 'response',
             content: `Updated. Here's Plan v${newVersion} with your changes.`,
             planData: updatedPlan,
+            planBuildFlow: 'from_scratch' as const,
           }]);
           setFromScratchPhase('plan_ready');
           setProcessing(false);
@@ -2975,6 +3046,43 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
       }
 
       case 'ready_to_build': {
+        setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: input }]);
+        setProcessing(true);
+        const wId = `w-${Date.now()}`;
+        setMessages(prev => [...prev, {
+          id: wId, type: 'working' as const,
+          steps: [
+            { label: 'Reviewing data sources', detail: 'Mapping 5 sources across Snowflake CDW and Spotstore.', status: 'running' as const },
+            { label: 'Resolving columns and joins', detail: 'Identified 4 joins, 18 columns, and 1 composite health score formula.', status: 'pending' as const },
+          ],
+          duration: '~3 seconds',
+        }]);
+        setTimeout(() => {
+          setMessages(prev => prev.map(m => m.id === wId
+            ? { ...m, steps: m.steps?.map((s, i) => ({ ...s, status: i === 0 ? 'done' as const : 'running' as const })) }
+            : m
+          ));
+          setTimeout(() => {
+            setMessages(prev => prev.map(m => m.id === wId
+              ? { ...m, stepsCollapsed: true, steps: m.steps?.map(s => ({ ...s, status: 'done' as const })) }
+              : m
+            ));
+            setTimeout(() => {
+              setMessages(prev => [...prev, {
+                id: `r-${Date.now()}`, type: 'response' as const,
+                content: "Here's the model plan — 5 sources, 4 joins, 18 columns, and a composite health score formula. Review and edit anything before I build.",
+                planData: MS_PLAN_DATA,
+                planBuildFlow: 'multi_source' as const,
+              }]);
+              setMultiSourcePhase('awaiting_ms_build');
+              setProcessing(false);
+            }, 300);
+          }, 1200);
+        }, 1200);
+        break;
+      }
+
+      case 'awaiting_ms_build': {
         setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: input }]);
         setMultiSourcePhase('done');
         setTimeout(() => {
@@ -3470,7 +3578,8 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
 
           if (msg.planData) {
             const plan = msg.planData;
-            const isLatest = plan.version === planVersion;
+            const isExpanded = planExpandedId === msg.id;
+            const buildHandler = msg.planBuildFlow === 'multi_source' ? handleMsBuildStart : handleStartBuilding;
             return (
               <div key={msg.id} style={{ marginTop: isAfterWorking ? -sp.B : 0, display: 'flex', gap: sp.B, alignItems: 'flex-start' }}>
                 {!isAfterWorking && <AgentAvatar />}
@@ -3479,27 +3588,57 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
                   {msg.content && (
                     <p style={{ margin: 0, fontSize: fs.sm, color: c['content-primary'], lineHeight: '20px' }}>{msg.content}</p>
                   )}
-                  <PlanCard plan={plan} onClick={() => handlePlanCardClick(plan)} />
-                  {isLatest && (
-                    <div style={{ display: 'flex', gap: sp.B }}>
-                      <button
-                        onClick={handleStartBuilding}
-                        style={{ height: 34, padding: `0 ${sp.D}px`, border: 'none', borderRadius: 7, backgroundColor: c['content-brand'], color: 'white', fontSize: fs.xs, fontWeight: fw.semibold, fontFamily: ff.primary, cursor: 'pointer' }}
-                        onMouseEnter={e => (e.currentTarget.style.opacity = '0.88')}
-                        onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
-                      >
-                        Start building →
-                      </button>
-                      <button
-                        onClick={handleEditPlan}
-                        style={{ height: 34, padding: `0 ${sp.D}px`, border: `1px solid ${c['border-default']}`, borderRadius: 7, backgroundColor: 'transparent', color: c['content-primary'], fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, cursor: 'pointer' }}
-                        onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
-                        onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
-                      >
-                        Edit the plan
-                      </button>
-                    </div>
-                  )}
+                  {/* Inline-expandable plan card */}
+                  <div style={{
+                    border: `1px solid ${c['border-divider']}`,
+                    borderRadius: 10,
+                    backgroundColor: c['background-base'],
+                    overflow: 'hidden',
+                  }}>
+                    <button
+                      onClick={() => setPlanExpandedId(isExpanded ? null : msg.id)}
+                      style={{
+                        display: 'flex', alignItems: 'center', width: '100%',
+                        padding: `${sp.C}px ${sp.D}px`, gap: sp.C,
+                        background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' as const,
+                        fontFamily: ff.primary,
+                      }}
+                      onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
+                      onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+                    >
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'], lineHeight: '20px' }}>
+                          {plan.modelName}
+                        </div>
+                        {plan.goal && (
+                          <div style={{ fontSize: fs.xs, color: c['content-secondary'], marginTop: 2, lineHeight: '16px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
+                            {plan.goal}
+                          </div>
+                        )}
+                      </div>
+                      <span style={{
+                        fontSize: 11, fontWeight: fw.medium, color: c['content-secondary'],
+                        backgroundColor: c['background-subtle'], border: `1px solid ${c['border-divider']}`,
+                        borderRadius: 4, padding: '2px 7px', whiteSpace: 'nowrap' as const, flexShrink: 0,
+                      }}>
+                        Draft plan
+                      </span>
+                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke={c['content-secondary']} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
+                        style={{ flexShrink: 0, transform: isExpanded ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.15s' }}>
+                        <polyline points="2,4 6,8 10,4" />
+                      </svg>
+                    </button>
+                    {isExpanded && (
+                      <div style={{ height: '68vh', borderTop: `1px solid ${c['border-divider']}`, display: 'flex', flexDirection: 'column' }}>
+                        <PlanPanelV3
+                          plan={plan}
+                          onClose={() => setPlanExpandedId(null)}
+                          onBuildModel={buildHandler}
+                          hideClose
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             );
