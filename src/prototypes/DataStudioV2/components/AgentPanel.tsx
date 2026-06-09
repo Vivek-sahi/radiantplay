@@ -2000,11 +2000,12 @@ type MultiSourcePhase =
   | 'notebook_running'
   | 'awaiting_api_key'
   | 'awaiting_nps_confirm'
-  | 'awaiting_pendo_write_consent'
   | 'pendo_running'
+  | 'awaiting_csv_prompt'
   | 'awaiting_csv'
   | 'awaiting_csv_write_consent'
   | 'csv_running'
+  | 'awaiting_staging_decision'
   | 'awaiting_staging_consent'
   | 'staging_running'
   | 'ready_to_build'
@@ -2568,15 +2569,35 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
     }
 
     if (pendingAction.key === 'pendo_confirm_column') {
-      // Column confirmed — ask consent before writing to Spotstore
+      // User already confirmed "ready to run it" — run directly, no extra gate
       setPending(null);
-      setMessages(prev => [...prev, {
-        id: `r-${Date.now()}`, type: 'response',
-        content: "I'll run the notebook now and write the NPS responses to your Spotstore as `pendo_nps_enriched`. This creates a new table in your ThoughtSpot CDW. OK to go ahead?",
-        suggestions: ["Yes, run it"],
-      }]);
-      setMultiSourcePhase('awaiting_pendo_write_consent');
-      setProcessing(false);
+      setMultiSourcePhase('pendo_running');
+      setProcessing(true);
+      runFromScratchSteps('execute_pendo_fetch', undefined, setMessages, () => {
+        setProject(p => ({
+          ...p,
+          spotStoreTables: [...(p.spotStoreTables ?? []), 'pendo_nps_enriched'],
+          multiSourceCreated: [...(p.multiSourceCreated ?? []), { type: 'spotstore-table' as const, name: 'pendo_nps_enriched' }],
+        }));
+        setTimeout(() => {
+          setMessages(prev => [...prev, {
+            id: `r-${Date.now()}`, type: 'response',
+            content: "Pendo NPS data is in the Spotstore — positive: 61% · neutral: 24% · negative: 15%.",
+            artifactCards: [
+              { type: 'notebook' as const, name: 'pendo_nps_ingestion.ipynb', subLabel: 'Python · 5 cells' },
+              { type: 'spotstore-table' as const, name: 'pendo_nps_enriched', subLabel: 'Spotstore · 2,847 rows · DQ 92' },
+            ],
+          }]);
+          setTimeout(() => {
+            setMessages(prev => [...prev, {
+              id: `r-${Date.now()}`, type: 'response',
+              content: "Any other data sources you want to add?",
+            }]);
+            setMultiSourcePhase('awaiting_csv_prompt');
+            setProcessing(false);
+          }, 800);
+        }, 600);
+      }, buildAbortRef);
       return;
     }
 
@@ -2836,6 +2857,10 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
           setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: input }]);
           setProcessing(true);
           runFromScratchSteps('create_pendo_notebook', undefined, setMessages, () => {
+            setProject(p => ({
+              ...p,
+              multiSourceCreated: [...(p.multiSourceCreated ?? []), { type: 'notebook' as const, name: 'pendo_nps_ingestion.ipynb' }],
+            }));
             setMessages(prev => [...prev, {
               id: `r-${Date.now()}`, type: 'response',
               content: "Notebook created. To run it I need your Pendo Integration Key.",
@@ -2859,42 +2884,21 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
         break;
       }
 
-      case 'awaiting_pendo_write_consent': {
-        if (OBVIOUS_CONFIRM_MS.test(input.trim())) {
-          setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: input }]);
-          setPending(null);
-          setMultiSourcePhase('pendo_running');
-          setProcessing(true);
-          runFromScratchSteps('execute_pendo_fetch', undefined, setMessages, () => {
-            setProject(p => ({
-              ...p,
-              spotStoreTables: [...(p.spotStoreTables ?? []), 'pendo_nps_enriched'],
-              multiSourceCreated: [
-                ...(p.multiSourceCreated ?? []),
-                { type: 'notebook' as const, name: 'pendo_nps_ingestion.ipynb' },
-                { type: 'spotstore-table' as const, name: 'pendo_nps_enriched' },
-              ],
-            }));
-            setTimeout(() => {
-              setMessages(prev => [...prev, {
-                id: `r-${Date.now()}`, type: 'response',
-                content: "Pendo NPS data is in the Spotstore. The notebook and the table are in the panel — open either to inspect.",
-                artifactCards: [
-                  { type: 'notebook' as const, name: 'pendo_nps_ingestion.ipynb', subLabel: 'Python · 5 cells' },
-                  { type: 'spotstore-table' as const, name: 'pendo_nps_enriched', subLabel: 'Spotstore · 2,847 rows · DQ 92' },
-                ],
-              }]);
-              setTimeout(() => {
-                setMessages(prev => [...prev, {
-                  id: `r-${Date.now()}`, type: 'response',
-                  content: "Now I need the CSM mapping file you mentioned. Please upload it.",
-                  inlineInput: { type: 'file-upload' as const, label: 'Drop CSV here or click to browse' },
-                }]);
-                setMultiSourcePhase('awaiting_csv');
-                setProcessing(false);
-              }, 800);
-            }, 600);
-          }, buildAbortRef);
+      case 'awaiting_csv_prompt': {
+        setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: input }]);
+        if (/csv|upload|file|mapping|csm/i.test(input)) {
+          setMessages(prev => [...prev, {
+            id: `r-${Date.now()}`, type: 'response',
+            content: "Upload the file and I'll read the schema before writing anything.",
+            inlineInput: { type: 'file-upload' as const, label: 'Drop CSV here or click to browse' },
+          }]);
+          setMultiSourcePhase('awaiting_csv');
+        } else {
+          setMessages(prev => [...prev, {
+            id: `r-${Date.now()}`, type: 'response',
+            content: "Alright. Tell me when you want to build the model.",
+          }]);
+          setMultiSourcePhase('awaiting_staging_decision');
         }
         break;
       }
@@ -2904,7 +2908,6 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
           setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: input }]);
           setMultiSourcePhase('csv_running');
           setProcessing(true);
-          // CSV is confirmed — add it to Created now (before it was only shown as an attachment)
           setProject(p => ({
             ...p,
             multiSourceCreated: [...(p.multiSourceCreated ?? []), { type: 'csv-dataset' as const, name: 'CSM_MAPPING_Q2.csv' }],
@@ -2923,16 +2926,22 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
                   { type: 'spotstore-table' as const, name: 'csm_account_mapping', subLabel: 'Spotstore · 142 rows · DQ 98' },
                 ],
               }]);
-              setTimeout(() => {
-                setMessages(prev => [...prev, {
-                  id: `r-${Date.now()}`, type: 'response',
-                  content: "I'll compile the Pendo NPS data and CSM mapping into a unified staging table called `customer_health_external`. Ready to compile?",
-                }]);
-                setMultiSourcePhase('awaiting_staging_consent');
-                setProcessing(false);
-              }, 700);
+              setMultiSourcePhase('awaiting_staging_decision');
+              setProcessing(false);
             }, 600);
           }, buildAbortRef);
+        }
+        break;
+      }
+
+      case 'awaiting_staging_decision': {
+        setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: input }]);
+        if (/staging|compile|join|combine|merge|create.*table|build.*table|account.?id/i.test(input) || OBVIOUS_CONFIRM_MS.test(input.trim())) {
+          setMessages(prev => [...prev, {
+            id: `r-${Date.now()}`, type: 'response',
+            content: "I'll join `pendo_nps_enriched` and `csm_account_mapping` on `account_id` and write the result to Spotstore as `customer_health_external`. OK to proceed?",
+          }]);
+          setMultiSourcePhase('awaiting_staging_consent');
         }
         break;
       }
@@ -2952,7 +2961,7 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
             setTimeout(() => {
               setMessages(prev => [...prev, {
                 id: `r-${Date.now()}`, type: 'response',
-                content: "`customer_health_external` is ready — Pendo NPS + CSM mapping joined on account_id, 2,847 rows. This joins your 4 Snowflake tables at build time. Pendo ingestion refreshes daily at 6 AM UTC. Ready to build the model?",
+                content: "`customer_health_external` is ready — Pendo NPS + CSM mapping joined on `account_id`, 2,847 rows.\n\nThe model will use:\n- **DIM_ACCOUNTS, SUPPORT_CASES, CALL_METRICS, CUSTOMER_FOUND_DEFECTS** — Snowflake CDW (federated query)\n- **customer_health_external** — Spotstore staging\n\nReady to build?",
                 artifactCards: [
                   { type: 'staging-table' as const, name: 'customer_health_external', subLabel: 'Spotstore · staging · 2,847 rows' },
                 ],

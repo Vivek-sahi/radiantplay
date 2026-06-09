@@ -253,8 +253,7 @@ const MultiSourcePreviewPanel: React.FC<{ item: MultiSourceCreatedItem; onClose:
 
   const tableId = item.name.replace('.ipynb', '').toLowerCase().replace(/ /g, '_');
   const meta = tableMetadata[tableId];
-  const [sqlExpanded, setSqlExpanded] = useState(false);
-  const [activeTab, setActiveTab] = useState<'schema' | 'sample'>('schema');
+  const [activeTab, setActiveTab] = useState<'schema' | 'sample' | 'data' | 'sql'>('schema');
 
   const STAGING_SQL = `CREATE TABLE spotstore.customer_health_external AS
 SELECT
@@ -335,35 +334,31 @@ LEFT JOIN spotstore.csm_account_mapping c
               <svg width="13" height="13" viewBox="0 0 13 13" fill="none" style={{ flexShrink: 0, marginTop: 1 }}><circle cx="6.5" cy="6.5" r="5.5" stroke="currentColor" strokeWidth="1.2" fill="none"/><line x1="6.5" y1="4" x2="6.5" y2="7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><circle cx="6.5" cy="9" r="0.7" fill="currentColor"/></svg>
               <span>CDW tables (DIM_ACCOUNTS, SUPPORT_CASES, CALL_METRICS, CUSTOMER_FOUND_DEFECTS) are joined via federated query at runtime — they are not copied into this staging table.</span>
             </div>
-            {/* SQL expandable */}
-            <div style={{ borderBottom: `1px solid ${c['border-divider']}` }}>
-              <button
-                onClick={() => setSqlExpanded(o => !o)}
-                style={{ display: 'flex', alignItems: 'center', gap: sp.B, width: '100%', padding: `${sp.B}px ${sp.D}px`, background: 'none', border: 'none', cursor: 'pointer', fontSize: fs.xs, fontWeight: fw.medium, color: c['content-secondary'], fontFamily: ff.primary }}
-              >
-                <span style={{ display: 'inline-flex', transition: 'transform 0.15s', transform: sqlExpanded ? 'rotate(0deg)' : 'rotate(-90deg)' }}>
-                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                </span>
-                View SQL
-              </button>
-              {sqlExpanded && (
-                <div style={{ padding: `0 ${sp.D}px ${sp.C}px`, position: 'relative' }}>
-                  <pre style={{ margin: 0, fontFamily: ff.mono, fontSize: 11, color: c['content-primary'], backgroundColor: c['background-sunken'], padding: sp.C, borderRadius: 4, overflowX: 'auto', lineHeight: 1.6, whiteSpace: 'pre' }}>
-                    {STAGING_SQL}
-                  </pre>
-                  <button
-                    onClick={() => navigator.clipboard.writeText(STAGING_SQL)}
-                    style={{ position: 'absolute', top: sp.B, right: sp.H, background: c['background-base'], border: `1px solid ${c['border-default']}`, borderRadius: 4, padding: '2px 8px', fontSize: fs.xs, color: c['content-secondary'], cursor: 'pointer', fontFamily: ff.primary }}
-                  >
-                    Copy
-                  </button>
-                </div>
-              )}
+            {/* Tabs: Data | SQL */}
+            <div style={{ display: 'flex', borderBottom: `1px solid ${c['border-divider']}`, padding: `0 ${sp.D}px` }}>
+              {(['data', 'sql'] as const).map(tab => (
+                <button key={tab} onClick={() => setActiveTab(tab)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: `${sp.B}px ${sp.C}px`, fontSize: fs.xs, fontWeight: (activeTab === tab || (tab === 'data' && activeTab === 'schema')) ? fw.semibold : fw.regular, color: (activeTab === tab || (tab === 'data' && activeTab === 'schema')) ? c['content-brand'] : c['content-secondary'], borderBottom: (activeTab === tab || (tab === 'data' && activeTab === 'schema')) ? `2px solid ${c['content-brand']}` : '2px solid transparent', marginBottom: -1, fontFamily: ff.primary }}>
+                  {tab === 'data' ? 'Data' : 'SQL'}
+                </button>
+              ))}
             </div>
           </>
         )}
-        {/* Sample data tab */}
-        {isCdw && activeTab === 'sample' && meta.sampleRows ? (
+        {/* SQL tab (staging only) */}
+        {isStaging && activeTab === 'sql' ? (
+          <div style={{ padding: `${sp.C}px ${sp.D}px`, position: 'relative' }}>
+            <pre style={{ margin: 0, fontFamily: ff.mono, fontSize: 11, color: c['content-primary'], backgroundColor: c['background-sunken'], padding: sp.C, borderRadius: 4, overflowX: 'auto', lineHeight: 1.6, whiteSpace: 'pre' }}>
+              {STAGING_SQL}
+            </pre>
+            <button
+              onClick={() => navigator.clipboard.writeText(STAGING_SQL)}
+              style={{ position: 'absolute', top: sp.C + 4, right: sp.H + 4, background: c['background-base'], border: `1px solid ${c['border-default']}`, borderRadius: 4, padding: '2px 8px', fontSize: fs.xs, color: c['content-secondary'], cursor: 'pointer', fontFamily: ff.primary }}
+            >
+              Copy
+            </button>
+          </div>
+        ) : /* Sample data tab */
+        isCdw && activeTab === 'sample' && meta.sampleRows ? (
           <div style={{ overflowX: 'auto' }}>
             <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: fs.xs }}>
               <thead>
