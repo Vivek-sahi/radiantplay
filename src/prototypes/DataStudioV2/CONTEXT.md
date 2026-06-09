@@ -45,6 +45,22 @@ Suggested order (start here):
 5. **Critical #4 (copy):** Silent `account_tier` shadowing — add one sentence during build
 6. **Quick wins sweep (copy):** 6 copy changes in `AgentPanel.tsx` scripts — see research doc for exact text
 
+**Secondary task:** 3 Anthropic article learnings to build (after DE fixes are done)
+- **Provenance chip in Test mode** — every Spotter answer should show source tier (semantic layer / governed / raw), last synced, owner. Small component added to the Test mode message renderer.
+- **Notebook edit → stale flag** — when a notebook cell is edited and run, surface: "N column descriptions / AIRS items may be affected — review them?" Connects transforms to readiness docs.
+- **Unreviewed badge on agent-generated content** — agent-drafted column descriptions and AIRS items should be visually marked until a human confirms them.
+
+---
+
+## Session 119 changes (2026-06-09)
+
+- Scan proposal: 4 Snowflake tables now render as **artifact cards** with connection, row count, DQ score (not plain markdown bold)
+- Suggestion chips now render **after** artifact cards in MessageBubble (were before — caused #2/#6/#9 from feedback)
+- "Yes, set it up" chip fixed — `awaiting_notebook_consent` check broadened with `/set it up/i`
+- Pendo write consent: removed hardcoded "2,847" count (not known before fetch runs)
+- Staging consent: simplified — removed internal table names and federated query explanation
+- **Multi-source chip UX changed:** chip now prefills prompt bar with the suggested text and focuses it — user sends manually. Was: auto-navigate to chat. `multiSourcePendingRef` in `index.tsx` gates the submit handler.
+
 ---
 
 ## Multi-source model flow — details (session 118b, 2026-06-09)
