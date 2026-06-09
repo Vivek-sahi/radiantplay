@@ -4,7 +4,7 @@ _Updated at the end of every session. For product context see `product.md`. For 
 
 ---
 
-## Current state (session 119, 2026-06-09)
+## Current state (session 120, 2026-06-09)
 
 **Branch:** `prototype/data-studio` on `origin` (vivek-sahi/radiantplay)  
 **Deployed:** https://radiantplay-nine.vercel.app  
@@ -35,20 +35,32 @@ _Updated at the end of every session. For product context see `product.md`. For 
 
 ## Next session
 
-**Primary task:** Fix DE review gaps in multi-source flow. Full findings at `research/2026-06-09-de-review-multi-source.md`.
-
-Suggested order (start here):
-1. **Critical #5 (code):** CSV added to Created before consent — move `multiSourceCreated` csv-dataset push from `handleFileUpload` to `awaiting_csv_write_consent` confirm path in `AgentPanel.tsx`
-2. **Critical #1 (mockData):** Join SQL drives from wrong table — change `ms_build_project` join SQL to drive from `dim_accounts`, not `customer_health_external`
-3. **Critical #2 (mockData):** `p1_cases_open` and `open_defects` don't exist as columns — add derivation comments in formula collapsible
-4. **Critical #3 (copy):** "All checks passed" contradicts visible DQ flag in SUPPORT_CASES
-5. **Critical #4 (copy):** Silent `account_tier` shadowing — add one sentence during build
-6. **Quick wins sweep (copy):** 6 copy changes in `AgentPanel.tsx` scripts — see research doc for exact text
-
-**Secondary task:** 3 Anthropic article learnings to build (after DE fixes are done)
+**Primary task:** 3 Anthropic article learnings to build
 - **Provenance chip in Test mode** — every Spotter answer should show source tier (semantic layer / governed / raw), last synced, owner. Small component added to the Test mode message renderer.
 - **Notebook edit → stale flag** — when a notebook cell is edited and run, surface: "N column descriptions / AIRS items may be affected — review them?" Connects transforms to readiness docs.
 - **Unreviewed badge on agent-generated content** — agent-drafted column descriptions and AIRS items should be visually marked until a human confirms them.
+
+**Secondary task:** Remaining DE review quick wins from `research/2026-06-09-de-review-multi-source.md`
+- Step 1: Name 4 tables inline in scan proposal text
+- Step 7: Promote Pendo sentiment breakdown (61%/24%/15%) into completion message
+- Step 8: Show CSV column names in consent message ("account_id, csm_name, exec_sponsor, csm_region")
+- Step 12 recap line: "This staging table joins with your 4 Snowflake tables — all 5 sources in the model build."
+
+---
+
+## Session 120 changes (2026-06-09)
+
+- **customerHealthData** — 5-account joined output rows with health scores (94%, 64%, 52%, 64%, 70%), wired into `DataPreviewView` in CenterPanel
+- **DataPreviewView** — branches on `addedTables.includes('dim_accounts')`: customer health gets its own grid with ƒx-tagged formula columns and % health score; campaign perf untouched
+- **C1:** join SQL in `ms_build_project` now drives from `DIM_ACCOUNTS`; Pendo 24% account coverage called out explicitly
+- **C2:** derivation comments for `p1_cases_open` and `open_defects` added to formula collapsible
+- **C3:** "all data quality checks passed" → one flag message (`resolution_time_hours` null won't affect results)
+- **C4:** `account_tier` shadowing noted in column selection step detail
+- **C5:** CSV pushed to `multiSourceCreated` only after `awaiting_csv_write_consent` confirm, not on file drop
+- **Step 3:** notebook consent trimmed — removed pipeline over-explanation
+- **Step 4:** notebook artifact card rendered at point of creation
+- **Step 5:** "predicting nps_comments" → "notebook targets nps_comments — ready to run it?"
+- Removed navigation suggestion chips from staging compile and CSV consent messages
 
 ---
 
