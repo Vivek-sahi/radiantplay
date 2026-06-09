@@ -82,6 +82,7 @@ export interface AgentMessage {
   suggestions?: string[];
   attachment?: { type: string; label: string };
   outcomeCard?: { title: string; chips: string[]; errorChips?: string[]; note: string };
+  modelArtifact?: { name: string; tableCount: number; columnCount: number; metricCount: number };
   reviewPlanCTA?: boolean;
   interactiveChips?: { label: string; value: string }[];
   planData?: PlanData;
@@ -2839,13 +2840,91 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
     }, 400);
   };
 
-  const handleMsBuildStart = () => {
+  const runLiveBuildMultiSource = (userText = 'Build the model') => {
+    const script = SCRIPTS['ms_build_project'];
+    const cols = script.defaultColumns!;
+
+    const workingId = `w-${Date.now()}`;
+    const buildSteps: WorkingStep[] = [
+      { label: 'Reviewing your data sources', detail: 'Reading 4 Snowflake tables + customer_health_external staging table.', status: 'running' as const, collapsibleOpen: false },
+      { label: 'Mapping joins across all sources', detail: 'DIM_ACCOUNTS is the driving table. Pendo staging covers 24% of accounts — nulls expected for NPS components.', status: 'pending' as const, collapsibleOpen: false },
+      { label: 'Selecting columns for customer health scoring', detail: 'Selected 18 columns across 5 tables. Removed 4 system fields and 2 raw text columns.', status: 'pending' as const, collapsibleOpen: false },
+      { label: 'Building health score formula', detail: 'Composite: NPS (30%) + support volume (20%) + call sentiment (25%) + defect rate (25%).', status: 'pending' as const, collapsibleOpen: false },
+      { label: '✦ Enriching for AI', detail: 'Writing AI context and synonyms for 18 columns.', status: 'pending' as const, collapsibleOpen: false },
+      { label: 'Validating data quality', detail: 'Row counts verified · one DQ flag in SUPPORT_CASES (14% null resolution_time_hours).', status: 'pending' as const, collapsibleOpen: false },
+    ];
+
     setMultiSourcePhase('done');
-    setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: 'Build the model' }]);
+    setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user' as const, content: userText }]);
+    setMessages(prev => [...prev, { id: workingId, type: 'working' as const, content: '', duration: '', stepsCollapsed: false, steps: buildSteps }]);
+    onBuildStart?.();
+
+    // Tables appear progressively in workspace
+    setProject(p => ({ ...p, buildStep: 'tables', activeTab: 'tables', addedTables: ['dim_accounts'] }));
+    setTimeout(() => setProject(p => ({ ...p, addedTables: [...p.addedTables, 'support_cases'] })), 1400);
+    setTimeout(() => setProject(p => ({ ...p, addedTables: [...p.addedTables, 'call_metrics'] })), 2800);
+    setTimeout(() => setProject(p => ({ ...p, addedTables: [...p.addedTables, 'customer_found_defects'] })), 4200);
+    setTimeout(() => setProject(p => ({ ...p, addedTables: [...p.addedTables, 'customer_health_external'] })), 5600);
+
+    // Step 0 done → Step 1 running
+    setTimeout(() => setMessages(prev => prev.map(m => m.id !== workingId ? m : {
+      ...m, steps: m.steps?.map((s, i) => i === 0 ? { ...s, status: 'done' as const } : i === 1 ? { ...s, status: 'running' as const } : s),
+    })), 2500);
+
+    // Joins form
+    setTimeout(() => setProject(p => ({ ...p, buildStep: 'joined' })), 6500);
+
+    // Step 1 done → Step 2 running
+    setTimeout(() => setMessages(prev => prev.map(m => m.id !== workingId ? m : {
+      ...m, steps: m.steps?.map((s, i) => i === 1 ? { ...s, status: 'done' as const } : i === 2 ? { ...s, status: 'running' as const } : s),
+    })), 7000);
+
+    // Columns appear table by table
+    setTimeout(() => setProject(p => ({ ...p, activeTab: 'columns', columnsSelected: true, includedColumns: { ...p.includedColumns, dim_accounts: cols.dim_accounts } })), 7500);
+    setTimeout(() => setProject(p => ({ ...p, includedColumns: { ...p.includedColumns, support_cases: cols.support_cases } })), 8800);
+    setTimeout(() => setProject(p => ({ ...p, includedColumns: { ...p.includedColumns, call_metrics: cols.call_metrics } })), 10000);
+    setTimeout(() => setProject(p => ({ ...p, includedColumns: { ...p.includedColumns, customer_found_defects: cols.customer_found_defects } })), 11000);
+    setTimeout(() => setProject(p => ({ ...p, includedColumns: { ...p.includedColumns, customer_health_external: cols.customer_health_external } })), 12000);
+
+    // Step 2 done → Step 3 running
+    setTimeout(() => setMessages(prev => prev.map(m => m.id !== workingId ? m : {
+      ...m, steps: m.steps?.map((s, i) => i === 2 ? { ...s, status: 'done' as const } : i === 3 ? { ...s, status: 'running' as const } : s),
+    })), 8500);
+
+    // Step 3 done → Step 4 running
+    setTimeout(() => setMessages(prev => prev.map(m => m.id !== workingId ? m : {
+      ...m, steps: m.steps?.map((s, i) => i === 3 ? { ...s, status: 'done' as const } : i === 4 ? { ...s, status: 'running' as const } : s),
+    })), 11500);
+
+    // Step 4 done → Step 5 running
+    setTimeout(() => setMessages(prev => prev.map(m => m.id !== workingId ? m : {
+      ...m, steps: m.steps?.map((s, i) => i === 4 ? { ...s, status: 'done' as const } : i === 5 ? { ...s, status: 'running' as const } : s),
+    })), 14000);
+
+    // Steps collapse
+    setTimeout(() => setMessages(prev => prev.map(m => m.id !== workingId ? m : {
+      ...m, stepsCollapsed: true, duration: '~16s',
+      steps: m.steps?.map(s => ({ ...s, status: 'done' as const })),
+    })), 15500);
+
+    // Finalize — set project state + show execution message with model artifact card
     setTimeout(() => {
-      runFlow('ms_build_project', setMessages, setPending, setProcessing, setProject, 'Build the model', buildAbortRef);
-    }, 300);
+      setProject(p => ({
+        ...p, buildStep: 'healthy',
+        name: p.name === 'Untitled Model' ? 'Customer Health Scorecard' : p.name,
+        ...(script.contextUpdate ? { context: { ...p.context, ...script.contextUpdate } } : {}),
+      }));
+      setMessages(prev => [...prev, {
+        id: `r-${Date.now()}`, type: 'response' as const,
+        content: script.execution,
+        modelArtifact: { name: 'Customer Health Scorecard', tableCount: 5, columnCount: 18, metricCount: 1 },
+        suggestions: script.executionSuggestions,
+      }]);
+      setProcessing(false);
+    }, 16000);
   };
+
+  const handleMsBuildStart = () => runLiveBuildMultiSource();
 
   const handlePlanCardClick = (plan: PlanData) => {
     if (onOpenPlan) onOpenPlan(plan);
@@ -3083,11 +3162,7 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
       }
 
       case 'awaiting_ms_build': {
-        setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: input }]);
-        setMultiSourcePhase('done');
-        setTimeout(() => {
-          runFlow('ms_build_project', setMessages, setPending, setProcessing, setProject, input, buildAbortRef);
-        }, 300);
+        runLiveBuildMultiSource(input);
         break;
       }
 
@@ -4130,6 +4205,76 @@ const OutcomeCard: React.FC<{ card: { title: string; chips: string[]; errorChips
   </div>
 );
 
+// ── ModelArtifactCard — created model object shown in chat after build ────────
+
+const ModelArtifactCard: React.FC<{
+  artifact: NonNullable<AgentMessage['modelArtifact']>;
+  onClick: () => void;
+}> = ({ artifact, onClick }) => {
+  const [hovered, setHovered] = React.useState(false);
+  return (
+    <div
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        border: `1px solid ${hovered ? c['content-brand'] : c['border-default']}`,
+        borderRadius: 10,
+        backgroundColor: c['background-base'],
+        overflow: 'hidden',
+        maxWidth: 340,
+        cursor: 'pointer',
+        transition: 'border-color 0.15s, box-shadow 0.15s',
+        boxShadow: hovered ? '0 2px 12px rgba(39,112,239,0.12)' : '0 1px 3px rgba(0,0,0,0.05)',
+      }}
+    >
+      <div style={{ padding: `${sp.C}px ${sp.D}px`, display: 'flex', alignItems: 'center', gap: sp.B }}>
+        <div style={{
+          width: 30, height: 30, borderRadius: 8, flexShrink: 0,
+          background: 'linear-gradient(135deg, rgba(39,112,239,0.13) 0%, rgba(99,102,241,0.10) 100%)',
+          border: '1px solid rgba(39,112,239,0.2)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+            <rect x="1.5" y="3.5" width="12" height="8" rx="1.5" stroke={c['content-brand']} strokeWidth="1.25"/>
+            <path d="M1.5 6h12" stroke={c['content-brand']} strokeWidth="1.25"/>
+            <path d="M4.5 9h4" stroke={c['content-brand']} strokeWidth="1.25" strokeLinecap="round"/>
+          </svg>
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: fs.xs, fontWeight: fw.semibold, color: c['content-primary'], lineHeight: 1.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {artifact.name}
+          </div>
+          <div style={{ fontSize: 10, color: c['content-secondary'], marginTop: 2 }}>Semantic model</div>
+        </div>
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none" style={{ flexShrink: 0, color: hovered ? c['content-brand'] : c['content-secondary'], transition: 'color 0.15s' }}>
+          <path d="M2.5 6.5h8M7 3l3.5 3.5L7 10" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      </div>
+      <div style={{
+        padding: `${sp.B}px ${sp.D}px`,
+        borderTop: `1px solid ${c['border-divider']}`,
+        display: 'flex', gap: sp.C, alignItems: 'center',
+        backgroundColor: c['background-sunken'],
+      }}>
+        {[
+          { label: 'sources', value: artifact.tableCount },
+          { label: 'columns', value: artifact.columnCount },
+          { label: 'metrics', value: artifact.metricCount },
+        ].map((stat, i) => (
+          <React.Fragment key={stat.label}>
+            {i > 0 && <span style={{ fontSize: 10, color: c['border-default'] }}>·</span>}
+            <span style={{ fontSize: 10, color: c['content-secondary'] }}>
+              <span style={{ fontWeight: fw.semibold, color: c['content-primary'] }}>{stat.value}</span>
+              {' '}{stat.label}
+            </span>
+          </React.Fragment>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 // ── Suggestion chips ──────────────────────────────────────────────────────────
 
 const SuggestionChips: React.FC<{ suggestions: string[]; onSelect: (s: string) => void }> = ({ suggestions, onSelect }) => (
@@ -4535,6 +4680,11 @@ const MessageBubble: React.FC<{
           {msg.outcomeCard && (
             <div style={{ marginTop: msg.content ? sp.C : 0 }}>
               <OutcomeCard card={msg.outcomeCard} />
+            </div>
+          )}
+          {msg.modelArtifact && (
+            <div style={{ marginTop: msg.content ? sp.C : 0 }}>
+              <ModelArtifactCard artifact={msg.modelArtifact} onClick={() => onBuildStart?.()} />
             </div>
           )}
           {/* ── GenUI cards ─────────────────────────────────────────────────── */}
