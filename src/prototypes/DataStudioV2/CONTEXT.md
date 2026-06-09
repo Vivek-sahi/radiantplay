@@ -4,7 +4,7 @@ _Updated at the end of every session. For product context see `product.md`. For 
 
 ---
 
-## Current state (session 121, 2026-06-09)
+## Current state (session 122, 2026-06-09)
 
 **Branch:** `prototype/data-studio` on `origin` (vivek-sahi/radiantplay)  
 **Deployed:** https://radiantplay-nine.vercel.app  
@@ -35,18 +35,34 @@ _Updated at the end of every session. For product context see `product.md`. For 
 
 ## Next session
 
+**Fix review issues** — session 122 merged Komal's modeling flow; any issues raised during review should be fixed first.
+
 **Primary task:** 3 Anthropic article learnings to build
 - **Provenance chip in Test mode** — every Spotter answer should show source tier (semantic layer / governed / raw), last synced, owner. Small component added to the Test mode message renderer.
 - **Notebook edit → stale flag** — when a notebook cell is edited and run, surface: "N column descriptions / AIRS items may be affected — review them?" Connects transforms to readiness docs.
 - **Unreviewed badge on agent-generated content** — agent-drafted column descriptions and AIRS items should be visually marked until a human confirms them.
 
 **Open DE quick wins** (from `research/2026-06-09-de-review-multi-source.md` — lower priority after flow rewrite)
-- Promote Pendo sentiment breakdown (61%/24%/15%) into completion message ← already done in session 121
 - Show CSV column names in consent message ("account_id, csm_name, exec_sponsor, csm_region")
 
 **Table card improvements** (surfaced during session 121 walkthrough)
 - Collapsed card: add last-synced freshness (most useful missing DE signal)
 - Expanded card: "X/N columns described" indicator in header; cardinality hint on STRING columns
+
+---
+
+## Session 122 changes (2026-06-09)
+
+**Komal's modeling flow merged into multi-source (and from-scratch) journeys**
+- Reviewed Komal's DataStudioV2 folder; identified 3 diffs: PlanPanelV3, inline plan card, errorChips on OutcomeCard
+- Copied `PlanPanelV3.tsx` from Komal's branch; updated `AVAILABLE_COLS` to our 5 Customer Health tables
+- Plan card in chat is now inline-expandable (collapsed: model name + goal + "Draft plan" badge; expanded: `PlanPanelV3` at 68vh with 4 tabs: Tables & Columns, Relationships, Formulas, Sample questions — all editable)
+- "Build model" button inside PlanPanelV3 footer routes to the correct handler per flow (`multi_source` → `ms_build_project`, `from_scratch` → `build_project`)
+- Multi-source `ready_to_build` phase now runs a 2-step working animation, then shows the plan card; new `awaiting_ms_build` phase catches typed confirmations
+- `MS_PLAN_DATA` constant added: all 5 Customer Health sources, 4 joins, 18 columns + health score formula, confidence badges, sample questions
+- Extended `PlanTable`, `PlanRelationship`, `PlanColumn` types with optional `confidence`, `reasoning`, `cardinality`, `connection` fields
+- `ms_build_project` outcomeCard gains `errorChips: ['⚠ 1 DQ flag']`
+- Build: clean ✓
 
 ---
 
