@@ -10,6 +10,15 @@ export interface CreatedItem {
   actions?: { label: string; onClick: () => void }[];
 }
 
+export interface NotebookCell {
+  id: string;
+  type: 'sql' | 'python' | 'file-upload' | 'markdown';
+  label: string;
+  code: string;
+  status: 'pending' | 'running' | 'done' | 'error';
+  output?: string;
+}
+
 interface ChatContextPanelProps {
   created: CreatedItem[];
   /** Existing models the agent is working with — renders in Context, not Created. */

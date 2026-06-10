@@ -13,6 +13,7 @@ interface OverviewProps {
   onOpenProject: (project: OverviewProject) => void;
   onPromptSubmit: (prompt: string) => void;
   onMultiSourceClick?: () => void;
+  onNotebookFlowClick?: () => void;
   onOpenProjectAtMonitoring: (project: OverviewProject) => void;
   onFixWithAgent: (insight: ActiveInsight, project: OverviewProject) => void;
   resolvedInsightIds?: string[];
@@ -371,7 +372,7 @@ const RecentRow: React.FC<{
 // ── Overview ──────────────────────────────────────────────────────────────────
 
 const Overview: React.FC<OverviewProps> = ({
-  onNewProject, onOpenProject, onPromptSubmit, onMultiSourceClick,
+  onNewProject, onOpenProject, onPromptSubmit, onMultiSourceClick, onNotebookFlowClick,
   onOpenProjectAtMonitoring, onFixWithAgent, resolvedInsightIds = [],
 }) => {
   const promptBarRef = useRef<PromptBarRef>(null);
@@ -464,6 +465,17 @@ const Overview: React.FC<OverviewProps> = ({
                   label="Multi-source model"
                   onClick={() => {
                     onMultiSourceClick();
+                    promptBarRef.current?.setValue("I want to generate a customer health score card based on data from multiple sources");
+                    promptBarRef.current?.focus();
+                  }}
+                />
+              )}
+              {onNotebookFlowClick && (
+                <HeroChip
+                  icon="code"
+                  label="Multi-source model, single notebook"
+                  onClick={() => {
+                    onNotebookFlowClick();
                     promptBarRef.current?.setValue("I want to generate a customer health score card based on data from multiple sources");
                     promptBarRef.current?.focus();
                   }}

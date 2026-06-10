@@ -98,6 +98,7 @@ const DataStudio: React.FC = () => {
   const [initialPrompt, setInitialPrompt] = useState<string>('');
   const [isFromScratch, setIsFromScratch] = useState(false);
   const [isMultiSource, setIsMultiSource] = useState(false);
+  const [isNotebookFlow, setIsNotebookFlow] = useState(false);
   const [instructionsCreated, setInstructionsCreated] = useState(false);
   const [isDbtReview, setIsDbtReview] = useState(false);
   const [dbtImported, setDbtImported] = useState(false);
@@ -105,6 +106,7 @@ const DataStudio: React.FC = () => {
   const [messages, setMessages]       = useState<AgentMessage[]>([]);
   const [isAgentMode, setIsAgentMode] = useState(false);
   const multiSourcePendingRef         = useRef(false);
+  const notebookFlowPendingRef        = useRef(false);
   const [initialFlow, setInitialFlow]         = useState<string>('');
   const [initialMessage, setInitialMessage]   = useState<string>('');
   const [resolvedInsightIds, setResolvedInsightIds] = useState<string[]>([]);
@@ -321,6 +323,31 @@ const DataStudio: React.FC = () => {
       navigateTo('chat');
       return;
     }
+    if (notebookFlowPendingRef.current) {
+      notebookFlowPendingRef.current = false;
+      setProject({
+        id: `proj-${Date.now()}`,
+        name: 'Customer Health Scorecard',
+        buildStep: 'empty',
+        activeTab: 'tables',
+        publishedVersion: 0,
+        hasUnpublishedChanges: true,
+        projectSource: 'warehouse',
+        scenario: 'multi-source',
+        context: emptyContext,
+        addedTables: [],
+        columnsSelected: false,
+        includedColumns: {},
+        columnOverrides: {},
+      });
+      setInitialPrompt(prompt);
+      setIsFromScratch(false);
+      setIsNotebookFlow(true);
+      setIsAgentMode(true);
+      setMessages([]);
+      navigateTo('chat');
+      return;
+    }
     setProject({
       id: `proj-${Date.now()}`,
       name: deriveModelName(prompt),
@@ -346,6 +373,11 @@ const DataStudio: React.FC = () => {
     multiSourcePendingRef.current = true;
   };
 
+  // Single-notebook flow pill → prefill the prompt bar, don't navigate yet
+  const handleNotebookFlowClick = () => {
+    notebookFlowPendingRef.current = true;
+  };
+
   // Start manually → empty workspace, no agent auto-trigger
   const handleStartManually = () => {
     setInitialPrompt('');
@@ -357,6 +389,7 @@ const DataStudio: React.FC = () => {
     setActiveAlert(null);
     setIsFromScratch(false);
     setIsMultiSource(false);
+    setIsNotebookFlow(false);
     setIsDbtReview(false);
     setIsAgentMode(false);
     setMessages([]);
@@ -393,6 +426,7 @@ const DataStudio: React.FC = () => {
             onOpenProject={openModelView}
             onPromptSubmit={handleOverviewPromptSubmit}
             onMultiSourceClick={handleMultiSourceClick}
+            onNotebookFlowClick={handleNotebookFlowClick}
             onOpenProjectAtMonitoring={(proj) => openModelView(proj, 'monitoring')}
             onFixWithAgent={handleFixWithAgent}
             resolvedInsightIds={resolvedInsightIds}
@@ -440,6 +474,7 @@ const DataStudio: React.FC = () => {
             initialPrompt={initialPrompt}
             isFromScratch={isFromScratch}
             isMultiSource={isMultiSource}
+            isNotebookFlow={isNotebookFlow}
             isDbtReview={isDbtReview}
             instructionsCreated={instructionsCreated}
             onBuildStart={() => setInstructionsCreated(true)}

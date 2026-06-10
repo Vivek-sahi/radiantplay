@@ -2090,6 +2090,20 @@ type MultiSourcePhase =
   | 'awaiting_ms_build'
   | 'done';
 
+type NotebookFlowPhase =
+  | 'env_init'
+  | 'scan_running'
+  | 'awaiting_sources'
+  | 'awaiting_api_key'
+  | 'pendo_running'
+  | 'awaiting_csv'
+  | 'csv_running'
+  | 'awaiting_staging'
+  | 'staging_running'
+  | 'awaiting_build'
+  | 'building'
+  | 'done';
+
 // Runs working steps for a from-scratch script, then calls onComplete.
 // Does not use the normal proposal/confirm path — callers handle the follow-up.
 function runFromScratchSteps(
@@ -2367,7 +2381,9 @@ interface AgentPanelProps {
   onColumnRemove?: (name: string) => void;
   isFromScratch?: boolean;
   isMultiSource?: boolean;
+  isNotebookFlow?: boolean;
   isDbtReview?: boolean;
+  onNotebookUpdate?: (cells: import('./ChatContextPanel').NotebookCell[]) => void;
   onOpenPlan?: (plan: PlanData) => void;
   onOpenQualityPlan?: () => void;
   onBuildStart?: () => void;
@@ -2380,7 +2396,7 @@ interface AgentPanelProps {
   onOpenMsItem?: (item: { type: string; name: string }) => void;
 }
 
-const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, setMessages, initialPrompt, onBuildComplete, externalMessage, onExternalMessageHandled, externalMessageAttachment, injectInput, onInjectInputHandled, width = 340, selectedColumns, onColumnRemove, isFromScratch, isMultiSource, isDbtReview, onOpenPlan, onOpenQualityPlan, onBuildStart, fullPage = false, onBack, initialFlow, initialMessage, onInsightResolved, onOpenObject, onOpenMsItem }) => {
+const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, setMessages, initialPrompt, onBuildComplete, externalMessage, onExternalMessageHandled, externalMessageAttachment, injectInput, onInjectInputHandled, width = 340, selectedColumns, onColumnRemove, isFromScratch, isMultiSource, isNotebookFlow, isDbtReview, onNotebookUpdate, onOpenPlan, onOpenQualityPlan, onBuildStart, fullPage = false, onBack, initialFlow, initialMessage, onInsightResolved, onOpenObject, onOpenMsItem }) => {
   const [pendingAction, setPending]     = useState<PendingAction | null>(null);
   const [isProcessing, setProcessing]   = useState(false);
   const [planModalOpen, setPlanModalOpen] = useState(false);
@@ -2389,6 +2405,8 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
   );
   const [fromScratchPhase, setFromScratchPhase] = useState<FromScratchPhase | null>(isFromScratch ? 'use_case_prompt' : null);
   const [multiSourcePhase, setMultiSourcePhase] = useState<MultiSourcePhase | null>(isMultiSource ? 'scan_running' : null);
+  const [notebookFlowPhase, setNotebookFlowPhase] = useState<NotebookFlowPhase | null>(isNotebookFlow ? 'env_init' : null);
+  const notebookCellsRef = useRef<import('./ChatContextPanel').NotebookCell[]>([]);
   const [planVersion, setPlanVersion]    = useState(1);
   const [planExpandedId, setPlanExpandedId] = useState<string | null>(null);
   const [agentMode, setAgentMode]        = useState<'build' | 'test'>('build');
@@ -2420,7 +2438,70 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
   useEffect(() => {
     if (!initialPrompt || initialPromptFiredRef.current) return;
     initialPromptFiredRef.current = true;
-    if (isMultiSource) {
+    if (isNotebookFlow) {
+      // Notebook flow: show user message, init environment, then scan
+      setMessages([{ id: `u-${Date.now()}`, type: 'user', content: initialPrompt }]);
+      setProcessing(true);
+      // Immediately signal environment is initializing
+      onNotebookUpdate?.([]);
+      setTimeout(() => {
+        setMessages(prev => [...prev, {
+          id: `r-env-${Date.now()}`, type: 'working' as const, content: '',
+          duration: '', stepsCollapsed: false,
+          steps: [{ label: 'Initializing Python 3.11 environment', detail: 'Starting Snowflake session · loading pandas, requests', status: 'running' as const, collapsibleOpen: false }],
+        }]);
+        setTimeout(() => {
+          setMessages(prev => prev.map(m =>
+            m.steps ? { ...m, steps: m.steps.map(s => ({ ...s, status: 'done' as const })) } : m
+          ));
+          onNotebookUpdate?.([]);
+          setNotebookFlowPhase('scan_running');
+          setProcessing(false);
+
+          // Short pause then start scanning
+          setTimeout(() => {
+            setProcessing(true);
+            const scanCells: import('./ChatContextPanel').NotebookCell[] = [
+              { id: 'sql-1', type: 'sql', label: 'Query DIM_ACCOUNTS', code: 'SELECT account_id, account_name, arr, tier, csm_owner\nFROM ANALYTICS_DB.DIM_ACCOUNTS\nLIMIT 10000', status: 'running', output: '12,431 rows' },
+            ];
+            notebookCellsRef.current = scanCells;
+            onNotebookUpdate?.(notebookCellsRef.current);
+
+            setTimeout(() => {
+              notebookCellsRef.current = notebookCellsRef.current.map(c => c.id === 'sql-1' ? { ...c, status: 'done' as const } : c);
+              const cell2: import('./ChatContextPanel').NotebookCell = { id: 'sql-2', type: 'sql', label: 'Query SUPPORT_CASES', code: 'SELECT account_id, case_id, priority, status, resolution_time_hours\nFROM SFDC_RAW.SUPPORT_CASES\nLIMIT 10000', status: 'running', output: '84,203 rows' };
+              notebookCellsRef.current = [...notebookCellsRef.current, cell2];
+              onNotebookUpdate?.([...notebookCellsRef.current]);
+
+              setTimeout(() => {
+                notebookCellsRef.current = notebookCellsRef.current.map(c => c.id === 'sql-2' ? { ...c, status: 'done' as const } : c);
+                const cell3: import('./ChatContextPanel').NotebookCell = { id: 'sql-3', type: 'sql', label: 'Query CALL_METRICS', code: 'SELECT account_id, call_sentiment_score, meetings_last_90d\nFROM GONG_INTEGRATION.CALL_METRICS\nLIMIT 10000', status: 'running', output: '31,847 rows' };
+                notebookCellsRef.current = [...notebookCellsRef.current, cell3];
+                onNotebookUpdate?.([...notebookCellsRef.current]);
+
+                setTimeout(() => {
+                  notebookCellsRef.current = notebookCellsRef.current.map(c => c.id === 'sql-3' ? { ...c, status: 'done' as const } : c);
+                  const cell4: import('./ChatContextPanel').NotebookCell = { id: 'sql-4', type: 'sql', label: 'Query CUSTOMER_FOUND_DEFECTS', code: 'SELECT account_id, defect_id, severity, open_defects\nFROM JIRA_WORKSPACE.CUSTOMER_FOUND_DEFECTS\nLIMIT 10000', status: 'running', output: '6,214 rows' };
+                  notebookCellsRef.current = [...notebookCellsRef.current, cell4];
+                  onNotebookUpdate?.([...notebookCellsRef.current]);
+
+                  setTimeout(() => {
+                    notebookCellsRef.current = notebookCellsRef.current.map(c => c.id === 'sql-4' ? { ...c, status: 'done' as const } : c);
+                    onNotebookUpdate?.([...notebookCellsRef.current]);
+                    setMessages(prev => [...prev, {
+                      id: `r-scan-${Date.now()}`, type: 'response',
+                      content: "Found 4 tables in your Snowflake environment — queried directly in the notebook. Each SQL cell is live in the environment.\n\nWhat other data do you want to bring in?",
+                    }]);
+                    setNotebookFlowPhase('awaiting_sources');
+                    setProcessing(false);
+                  }, 700);
+                }, 700);
+              }, 700);
+            }, 700);
+          }, 600);
+        }, 1800);
+      }, 400);
+    } else if (isMultiSource) {
       // Multi-source flow: show user message, auto-run scan_multi_source
       setMessages([{ id: `u-${Date.now()}`, type: 'user', content: initialPrompt }]);
       setProcessing(true);
@@ -2910,6 +2991,168 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
     if (onOpenPlan) onOpenPlan(plan);
   };
 
+  const addNotebookCell = (cell: import('./ChatContextPanel').NotebookCell) => {
+    notebookCellsRef.current = [...notebookCellsRef.current, cell];
+    onNotebookUpdate?.([...notebookCellsRef.current]);
+  };
+
+  const updateNotebookCell = (id: string, update: Partial<import('./ChatContextPanel').NotebookCell>) => {
+    notebookCellsRef.current = notebookCellsRef.current.map(c => c.id === id ? { ...c, ...update } : c);
+    onNotebookUpdate?.([...notebookCellsRef.current]);
+  };
+
+  const handleNotebookFlowInput = (input: string) => {
+    switch (notebookFlowPhase) {
+
+      case 'awaiting_sources': {
+        setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: input }]);
+        setProcessing(true);
+        // Add Python cell for Pendo (pending)
+        const pendoCell: import('./ChatContextPanel').NotebookCell = {
+          id: 'py-pendo', type: 'python', label: 'Fetch Pendo NPS via API',
+          code: `import requests, pandas as pd\n\nPENDO_API_KEY = os.environ["PENDO_API_KEY"]  # set below\nresp = requests.get(\n  "https://app.pendo.io/api/v2/aggregation",\n  headers={"x-pendo-integration-key": PENDO_API_KEY},\n  json={"request": {"pipeline": [{"source": {"events": {}}}]}}\n)\ndf_nps = pd.DataFrame(resp.json()["results"])`,
+          status: 'pending',
+        };
+        addNotebookCell(pendoCell);
+        setTimeout(() => {
+          setMessages(prev => [...prev, {
+            id: `r-${Date.now()}`, type: 'response',
+            content: "Added a Python cell to the notebook to fetch NPS data from Pendo. I need your Pendo API key to run it — you can use saved credentials or enter it manually.\n\nWhat's your Pendo API key?",
+          }]);
+          setNotebookFlowPhase('awaiting_api_key');
+          setProcessing(false);
+        }, 800);
+        break;
+      }
+
+      case 'awaiting_api_key': {
+        setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: input }]);
+        setProcessing(true);
+        // Mark Pendo cell as running
+        updateNotebookCell('py-pendo', { status: 'running' });
+        setTimeout(() => {
+          updateNotebookCell('py-pendo', { status: 'done', output: '2,847 NPS responses · 24% account coverage' });
+          // Add Spotstore write SQL cell
+          const writeCell: import('./ChatContextPanel').NotebookCell = {
+            id: 'sql-pendo-write', type: 'sql', label: 'Write Pendo NPS to Spotstore',
+            code: `CREATE OR REPLACE TABLE spotstore.pendo_nps_enriched AS\nSELECT account_id, nps_score, nps_comments\nFROM df_nps`,
+            status: 'running', output: '2,847 rows written to spotstore.pendo_nps_enriched',
+          };
+          addNotebookCell(writeCell);
+          setTimeout(() => {
+            updateNotebookCell('sql-pendo-write', { status: 'done' });
+            setMessages(prev => [...prev, {
+              id: `r-${Date.now()}`, type: 'response',
+              content: "Pendo cell ran — 2,847 NPS responses fetched. Written to `spotstore.pendo_nps_enriched`.\n\nDo you have a CSV you want to bring in?",
+              inlineInput: { type: 'file-upload' as const, label: 'Drop CSV here or click to browse' },
+            }]);
+            setNotebookFlowPhase('awaiting_csv');
+            setProcessing(false);
+          }, 900);
+        }, 1600);
+        break;
+      }
+
+      case 'awaiting_csv': {
+        // Triggered by file drop — attachment will contain file name
+        const fileName = (input.match(/uploaded? (.+\.csv)/i) || [])[1] || 'CSM_MAPPING_Q2.csv';
+        setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: input }]);
+        setProcessing(true);
+        const uploadCell: import('./ChatContextPanel').NotebookCell = {
+          id: 'upload-csv', type: 'file-upload', label: 'Upload CSV file',
+          code: fileName, status: 'running', output: '312 rows · 4 columns',
+        };
+        addNotebookCell(uploadCell);
+        setTimeout(() => {
+          updateNotebookCell('upload-csv', { status: 'done' });
+          const csvWriteCell: import('./ChatContextPanel').NotebookCell = {
+            id: 'sql-csv-write', type: 'sql', label: 'Write CSV to Spotstore',
+            code: `CREATE OR REPLACE TABLE spotstore.csm_account_mapping AS\nSELECT account_id, csm_name, exec_sponsor, csm_region\nFROM uploaded_csv`,
+            status: 'running', output: '312 rows written to spotstore.csm_account_mapping',
+          };
+          addNotebookCell(csvWriteCell);
+          setTimeout(() => {
+            updateNotebookCell('sql-csv-write', { status: 'done' });
+            setMessages(prev => [...prev, {
+              id: `r-${Date.now()}`, type: 'response',
+              content: "CSV loaded and written to `spotstore.csm_account_mapping`.\n\nNow I can build the staging table — joining your 4 Snowflake tables with the two Spotstore tables. Want me to create it?",
+            }]);
+            setNotebookFlowPhase('awaiting_staging');
+            setProcessing(false);
+          }, 900);
+        }, 1200);
+        break;
+      }
+
+      case 'awaiting_staging': {
+        setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: input }]);
+        setProcessing(true);
+        const stagingCell: import('./ChatContextPanel').NotebookCell = {
+          id: 'sql-staging', type: 'sql', label: 'Create staging table (federated join)',
+          code: `CREATE OR REPLACE TABLE spotstore.customer_health_external AS\nSELECT\n  a.account_id, a.account_name, a.arr, a.tier,\n  s.p1_cases_open, s.avg_resolution_days,\n  c.call_sentiment_score, c.meetings_last_90d,\n  d.open_defects,\n  n.nps_score, n.nps_comments,\n  m.csm_name, m.exec_sponsor\nFROM ANALYTICS_DB.DIM_ACCOUNTS a\nLEFT JOIN SFDC_RAW.SUPPORT_CASES s ON a.account_id = s.account_id\nLEFT JOIN GONG_INTEGRATION.CALL_METRICS c ON a.account_id = c.account_id\nLEFT JOIN JIRA_WORKSPACE.CUSTOMER_FOUND_DEFECTS d ON a.account_id = d.account_id\nLEFT JOIN spotstore.pendo_nps_enriched n ON a.account_id = n.account_id\nLEFT JOIN spotstore.csm_account_mapping m ON a.account_id = m.account_id`,
+          status: 'running', output: '12,431 rows · 5 sources joined',
+        };
+        addNotebookCell(stagingCell);
+        setTimeout(() => {
+          updateNotebookCell('sql-staging', { status: 'done' });
+          setMessages(prev => [...prev, {
+            id: `r-${Date.now()}`, type: 'response',
+            content: "`customer_health_external` created — 12,431 rows across 5 sources. Ready to add the health score formula and build the model?",
+          }]);
+          setNotebookFlowPhase('awaiting_build');
+          setProcessing(false);
+        }, 1400);
+        break;
+      }
+
+      case 'awaiting_build': {
+        setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: input }]);
+        setProcessing(true);
+        const formulaCell: import('./ChatContextPanel').NotebookCell = {
+          id: 'py-formula', type: 'python', label: 'Compute health score formula',
+          code: `df['health_score'] = (\n  df['nps_score'].fillna(50) * 0.30 +\n  (100 - df['p1_cases_open'].clip(0, 10) * 10) * 0.20 +\n  df['call_sentiment_score'] * 0.25 +\n  (100 - df['open_defects'].clip(0, 5) * 20) * 0.25\n)`,
+          status: 'running', output: 'Score range: 52–94% across 12,431 accounts',
+        };
+        addNotebookCell(formulaCell);
+        onBuildStart?.();
+        setTimeout(() => {
+          updateNotebookCell('py-formula', { status: 'done' });
+          setMessages(prev => [...prev, {
+            id: `r-${Date.now()}`, type: 'response',
+            content: "Health score computed. Building the semantic model now — all cells in the notebook become the lineage record for this model.",
+            planData: MS_PLAN_DATA,
+            buildPlanCard: true,
+          }]);
+          setNotebookFlowPhase('building');
+
+          // Trigger workspace build animation
+          setTimeout(() => {
+            setProject(p => ({ ...p, addedTables: [...p.addedTables, 'dim_accounts'] }));
+            setTimeout(() => setProject(p => ({ ...p, addedTables: [...p.addedTables, 'support_cases'] })), 1400);
+            setTimeout(() => setProject(p => ({ ...p, addedTables: [...p.addedTables, 'call_metrics'] })), 2800);
+            setTimeout(() => setProject(p => ({ ...p, addedTables: [...p.addedTables, 'customer_found_defects'] })), 4200);
+            setTimeout(() => setProject(p => ({ ...p, addedTables: [...p.addedTables, 'customer_health_external'] })), 5600);
+            setTimeout(() => setProject(p => ({ ...p, buildStep: 'joined' })), 6500);
+            setTimeout(() => setProject(p => ({ ...p, activeTab: 'columns', columnsSelected: true, buildStep: 'healthy', name: 'Customer Health Scorecard' })), 9000);
+            setTimeout(() => {
+              setMessages(prev => [...prev, {
+                id: `r-done-${Date.now()}`, type: 'response',
+                content: "Model built. The notebook has 10 cells and is saved as the full lineage record — every SQL query, the Pendo fetch, the CSV upload, the join, and the health score formula are all there.\n\nYou can open the notebook from the Environment section anytime to review or edit any step.",
+              }]);
+              setNotebookFlowPhase('done');
+              setProcessing(false);
+            }, 10000);
+          }, 500);
+        }, 1200);
+        break;
+      }
+
+      default:
+        setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: input }]);
+        break;
+    }
+  };
+
   const handleFromScratchInput = (input: string) => {
     switch (fromScratchPhase) {
       case 'use_case_prompt': {
@@ -3186,6 +3429,11 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
     setMessages(prev => prev.map(m =>
       m.id === msgId ? { ...m, inlineInput: { ...m.inlineInput!, submitted: true } } : m
     ));
+    // Notebook flow — route directly to cell-based CSV handling
+    if (notebookFlowPhase === 'awaiting_csv') {
+      handleNotebookFlowInput(`Uploaded ${file.name}`);
+      return;
+    }
     // Show user message with attachment chip
     setMessages(prev => [...prev, {
       id: `u-${Date.now()}`, type: 'user',
@@ -3226,6 +3474,11 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
     // Multi-source flow — route through dedicated handler, skip normal matchScript
     if (multiSourcePhase && multiSourcePhase !== 'done') {
       handleMultiSourceInput(text);
+      return;
+    }
+    // Notebook flow — route through dedicated handler
+    if (notebookFlowPhase && notebookFlowPhase !== 'done') {
+      handleNotebookFlowInput(text);
       return;
     }
     // From-scratch flow — route through dedicated handler, skip normal matchScript

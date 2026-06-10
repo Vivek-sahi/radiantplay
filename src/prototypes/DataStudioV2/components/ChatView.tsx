@@ -5,7 +5,8 @@ import { AgentMessage, PlanData } from './AgentPanel';
 import AgentPanel from './AgentPanel';
 import PlanPanel from './PlanPanel';
 import QualityPlanPanel from './QualityPlanPanel';
-import ChatContextPanel, { CreatedItem } from './ChatContextPanel';
+import ChatContextPanel, { CreatedItem, NotebookCell } from './ChatContextPanel';
+import NotebookView from './NotebookView';
 import InstructionsPanel from './InstructionsPanel';
 import { tableMetadata } from '../data/mockData';
 
@@ -17,6 +18,7 @@ interface ChatViewProps {
   initialPrompt: string;
   isFromScratch?: boolean;
   isMultiSource?: boolean;
+  isNotebookFlow?: boolean;
   isDbtReview?: boolean;
   instructionsCreated: boolean;
   onBuildStart: () => void;
@@ -29,7 +31,7 @@ const CHAT_PANEL_PCT = 0.4;
 
 const ChatView: React.FC<ChatViewProps> = ({
   project, setProject, messages, setMessages,
-  initialPrompt, isFromScratch, isMultiSource, isDbtReview, instructionsCreated, onBuildStart, onBack, onNavigateToTable,
+  initialPrompt, isFromScratch, isMultiSource, isNotebookFlow, isDbtReview, instructionsCreated, onBuildStart, onBack, onNavigateToTable,
 }) => {
   const [activePlan, setActivePlan] = useState<PlanData | null>(null);
   const [qualityPlanOpen, setQualityPlanOpen] = useState(false);
@@ -38,8 +40,10 @@ const ChatView: React.FC<ChatViewProps> = ({
   const [contextPanelOpen, setContextPanelOpen] = useState(true);
   const [mounted, setMounted] = useState(false);
   const [contextVisible, setContextVisible] = useState(false);
+  const [notebookCells, setNotebookCells] = useState<NotebookCell[]>([]);
+  const [notebookPanelOpen, setNotebookPanelOpen] = useState(false);
 
-  const isPlanOpen = activePlan !== null || qualityPlanOpen || instructionsPanelOpen || openedMsItem !== null;
+  const isPlanOpen = activePlan !== null || qualityPlanOpen || instructionsPanelOpen || openedMsItem !== null || notebookPanelOpen;
 
   const openMsItem = (item: MultiSourceCreatedItem) => {
     setOpenedMsItem(item);
@@ -64,6 +68,13 @@ const ChatView: React.FC<ChatViewProps> = ({
       name: 'instructions.md',
       onClick: () => { setInstructionsPanelOpen(true); setActivePlan(null); setQualityPlanOpen(false); },
     }] : []),
+    // Notebook flow: notebook artifact appears in Created as soon as cells exist
+    ...(isNotebookFlow && notebookCells.length > 0 ? [{
+      type: 'notebook' as const,
+      name: 'customer_health_analysis',
+      subLabel: `Python · ${notebookCells.length} cell${notebookCells.length === 1 ? '' : 's'}`,
+      onClick: () => { setNotebookPanelOpen(true); setActivePlan(null); setQualityPlanOpen(false); setOpenedMsItem(null); },
+    }] : []),
     ...(project.buildStep !== 'empty' ? [{
       type: 'model' as const,
       name: project.name,
@@ -78,7 +89,7 @@ const ChatView: React.FC<ChatViewProps> = ({
                 item.type === 'staging-table' ? 'Spotstore · staging' : undefined,
       onClick: () => openMsItem(item),
     })),
-  ], [instructionsCreated, project.buildStep, project.name, project.multiSourceCreated]);
+  ], [instructionsCreated, isNotebookFlow, notebookCells.length, notebookCells, project.buildStep, project.name, project.multiSourceCreated]);
 
   const contextTables = useMemo(() => planMsg?.planData?.tables.map(t => t.name) ?? [], [planMsg]);
   const contextSkills = useMemo(() => project.buildStep !== 'empty' ? ['create-data-model'] : [], [project.buildStep]);
@@ -150,7 +161,9 @@ const ChatView: React.FC<ChatViewProps> = ({
               initialPrompt={initialPrompt}
               isFromScratch={isFromScratch}
               isMultiSource={isMultiSource}
+              isNotebookFlow={isNotebookFlow}
               isDbtReview={isDbtReview}
+              onNotebookUpdate={(cells) => setNotebookCells(cells)}
               width={isPlanOpen ? Math.max(340, Math.round(window.innerWidth * CHAT_PANEL_PCT)) : CHAT_WIDTH}
               onOpenPlan={plan => setActivePlan(plan)}
               onOpenQualityPlan={() => setQualityPlanOpen(true)}
@@ -196,6 +209,14 @@ const ChatView: React.FC<ChatViewProps> = ({
           <div style={{ flex: 1, padding: '8px 8px 8px 0', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
             <MultiSourcePreviewPanel item={openedMsItem} onClose={() => setOpenedMsItem(null)} />
           </div>
+        )}
+
+        {/* Notebook panel — same layout as other panels */}
+        {isPlanOpen && notebookPanelOpen && (
+          <NotebookView
+            cells={notebookCells}
+            onClose={() => setNotebookPanelOpen(false)}
+          />
         )}
 
         {/* Context panel — slides in from right after main content */}
