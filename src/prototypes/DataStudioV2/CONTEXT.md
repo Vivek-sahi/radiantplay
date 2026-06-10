@@ -4,7 +4,7 @@ _Updated at the end of every session. For product context see `product.md`. For 
 
 ---
 
-## Current state (session 124, 2026-06-10)
+## Current state (session 125, 2026-06-10)
 
 **Branch:** `prototype/data-studio` on `origin` (vivek-sahi/radiantplay)  
 **Deployed:** https://radiantplay-nine.vercel.app  
@@ -36,7 +36,12 @@ _Updated at the end of every session. For product context see `product.md`. For 
 
 ## Next session
 
-**Deploy to Vercel** — push `prototype/data-studio` to `origin`, confirm build on https://radiantplay-nine.vercel.app.
+**Deploy:** push to both `origin` (galaxy) AND `github` remote, then run `vercel --prod` from the radiantplay directory. Vercel watches GitHub, not galaxy — both pushes are required.
+
+**Single-notebook flow — polish needed:**
+- The notebook panel currently opens alongside the chat (flex layout). Confirm the visual feels right; may need width tuning.
+- The `awaiting_csv` phase in the notebook flow uses `handleNotebookFlowInput("Uploaded filename.csv")` — test the file drop path end to end.
+- The env-init working message briefly shows then gets updated to done — verify the transition feels smooth in the browser.
 
 **Primary task:** 3 Anthropic article learnings to build
 - **Provenance chip in Test mode** — every Spotter answer should show source tier (semantic layer / governed / raw), last synced, owner. Small component added to the Test mode message renderer.
@@ -49,6 +54,35 @@ _Updated at the end of every session. For product context see `product.md`. For 
 **Table card improvements**
 - Collapsed card: add last-synced freshness (most useful missing DE signal)
 - Expanded card: "X/N columns described" indicator in header; cardinality hint on STRING columns
+
+---
+
+## Session 125 changes (2026-06-10)
+
+**Single-notebook multi-source flow**
+
+New chip "Multi-source model, single notebook" on Overview — completely separate entry point, existing multi-source flow untouched.
+
+Mental model: the agent drives a shared notebook. Every step it takes (SQL queries, Python API call, CSV upload, staging join, formula) becomes a cell. The notebook is the lineage record. The user can also add cells manually and edit any agent cell.
+
+**Files changed:**
+- `NotebookView.tsx` — new component, pixel-matches the CenterPanel notebook tab: SQL/Python cells with run/edit buttons, line numbers, syntax highlighting (SQL keywords in purple, Python imports in purple), output text row, "Add cell" button with SQL/Python/Text options
+- `ChatContextPanel.tsx` — exports `NotebookCell` type; no Environment section (was wrong design)
+- `ChatView.tsx` — `notebookPanelOpen` state; notebook appears as `CreatedItem` once cells exist; `NotebookView` renders as flex panel (same layout as MultiSourcePreviewPanel)
+- `AgentPanel.tsx` — `isNotebookFlow` prop + `NotebookFlowPhase` type + `handleNotebookFlowInput` handler; `notebookCellsRef` accumulates cells and calls `onNotebookUpdate`
+- `Overview.tsx` — `onNotebookFlowClick` prop + new chip
+- `index.tsx` — `isNotebookFlow` state + `notebookFlowPendingRef` + `handleNotebookFlowClick`
+
+**Notebook flow phases:** `env_init → scan_running → awaiting_sources → awaiting_api_key → pendo_running → awaiting_csv → csv_running → awaiting_staging → staging_running → awaiting_build → building → done`
+
+**Cell types added per phase:**
+- scan: 4 SQL cells (one per Snowflake table), each runs sequentially
+- awaiting_api_key: Python cell (Pendo fetch) added as pending → runs on key submit
+- awaiting_csv: file-upload cell + SQL write cell
+- awaiting_staging: SQL JOIN cell (all 5 sources → staging table)
+- awaiting_build: Python formula cell (health score) → model builds in workspace
+
+**Build:** clean ✓
 
 ---
 
