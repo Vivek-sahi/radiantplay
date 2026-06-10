@@ -4,7 +4,7 @@ _Updated at the end of every session. For product context see `product.md`. For 
 
 ---
 
-## Current state (session 123, 2026-06-09)
+## Current state (session 124, 2026-06-10)
 
 **Branch:** `prototype/data-studio` on `origin` (vivek-sahi/radiantplay)  
 **Deployed:** https://radiantplay-nine.vercel.app  
@@ -36,21 +36,39 @@ _Updated at the end of every session. For product context see `product.md`. For 
 
 ## Next session
 
-**Pending feedback items (carried from session 122, not yet resolved):**
-- `fbk_1780998388_qzc2` — Remove "Apply this" button (unclear CTA)
-- `fbk_1780998467_hi33` — Empty notebook should be created at the notebook consent step, not later
+**Deploy to Vercel** — push `prototype/data-studio` to `origin`, confirm build on https://radiantplay-nine.vercel.app.
 
 **Primary task:** 3 Anthropic article learnings to build
 - **Provenance chip in Test mode** — every Spotter answer should show source tier (semantic layer / governed / raw), last synced, owner. Small component added to the Test mode message renderer.
 - **Notebook edit → stale flag** — when a notebook cell is edited and run, surface: "N column descriptions / AIRS items may be affected — review them?" Connects transforms to readiness docs.
 - **Unreviewed badge on agent-generated content** — agent-drafted column descriptions and AIRS items should be visually marked until a human confirms them.
 
-**Open DE quick wins** (from `research/2026-06-09-de-review-multi-source.md` — lower priority)
+**Open DE quick wins** (lower priority)
 - Show CSV column names in consent message ("account_id, csm_name, exec_sponsor, csm_region")
 
-**Table card improvements** (surfaced during session 121 walkthrough)
+**Table card improvements**
 - Collapsed card: add last-synced freshness (most useful missing DE signal)
 - Expanded card: "X/N columns described" indicator in header; cardinality hint on STRING columns
+
+---
+
+## Session 124 changes (2026-06-10)
+
+**Multi-source flow polish**
+
+- **Old build progress removed** — `working` message with inline step list removed from `runLiveBuildMultiSource`; only `PlanCardV2` → `BuiltSummaryCard` now tracks build progress
+- **Staging step split** — staging-complete message now only shows `customer_health_external` card and stops (phase `awaiting_build_initiation`). User triggers next step; agent then shows "The model will use: ... Ready to build?" with chip (phase `ready_to_build`). Actual build unchanged.
+- **CSM_MAPPING_Q2.csv removed from Created panel** — CSV no longer added to Created on consent; only `csm_account_mapping` appears after the Spotstore write completes
+- **Duplicate header removed from PlanPanelV3** — "Customer Health Scorecard / v1 · Semantic model plan" hero stripped; tabs now appear immediately when panel opens (building-state progress header retained)
+- **Post-build chips hidden** — "Review data quality" and "Switch to test mode" chips no longer appear after multi-source model build
+
+**Feedback items resolved**
+- Scan message split: "What other data do you want to bring in?" is now a separate message after the 4 table cards
+- DQ chip on artifact cards: "DQ 94" renders as a colored badge (green ≥90, amber 80–89) separated from the base label
+- Notebook card now renders before API key input block (render order swapped in MessageBubble)
+- `nps_comments` message rephrased: "The notebook pulls NPS responses from Pendo and runs sentiment analysis on the comment text."
+
+**Build:** clean ✓
 
 ---
 

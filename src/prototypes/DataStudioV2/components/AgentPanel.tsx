@@ -1718,7 +1718,7 @@ ORDER BY row_count DESC
     },
     setsColumnsSelected: true,
     newName: 'Customer Health Scorecard',
-    executionSuggestions: ['Review data quality', 'Switch to test mode'],
+    executionSuggestions: [],
     outcomeCard: {
       title: 'Customer Health Scorecard',
       chips: ['5 sources', '4 joins', '18 columns', '1 health score'],
@@ -2085,6 +2085,7 @@ type MultiSourcePhase =
   | 'awaiting_staging_decision'
   | 'awaiting_staging_consent'
   | 'staging_running'
+  | 'awaiting_build_initiation'
   | 'ready_to_build'
   | 'awaiting_ms_build'
   | 'done';
@@ -2427,13 +2428,16 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
         runFromScratchSteps('scan_multi_source', initialPrompt, setMessages, () => {
           setMessages(prev => [...prev, {
             id: `r-${Date.now()}`, type: 'response',
-            content: "I found **4 tables** in your Snowflake environment — DIM_ACCOUNTS, SUPPORT_CASES, CALL_METRICS, and CUSTOMER_FOUND_DEFECTS — covering accounts, support history, call engagement, and engineering escalations. These are set as your core sources.\n\nWhat other data do you want to bring in?",
+            content: "I found **4 tables** in your Snowflake environment — DIM_ACCOUNTS, SUPPORT_CASES, CALL_METRICS, and CUSTOMER_FOUND_DEFECTS — covering accounts, support history, call engagement, and engineering escalations. These are set as your core sources.",
             artifactCards: [
               { type: 'table' as const, name: 'DIM_ACCOUNTS',           subLabel: 'ANALYTICS_DB · 12k rows · DQ 94' },
               { type: 'table' as const, name: 'SUPPORT_CASES',          subLabel: 'SFDC_RAW · 84k rows · DQ 81' },
               { type: 'table' as const, name: 'CALL_METRICS',           subLabel: 'GONG_INTEGRATION · 31k rows · DQ 88' },
               { type: 'table' as const, name: 'CUSTOMER_FOUND_DEFECTS', subLabel: 'JIRA_WORKSPACE · 6.2k rows · DQ 91' },
             ],
+          }, {
+            id: `r2-${Date.now()}`, type: 'response',
+            content: "What other data do you want to bring in?",
           }]);
           setMultiSourcePhase('awaiting_sources');
           setProcessing(false);
@@ -2861,20 +2865,9 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
     const script = SCRIPTS['ms_build_project'];
     const cols = script.defaultColumns!;
 
-    const workingId = `w-${Date.now()}`;
-    const buildSteps: WorkingStep[] = [
-      { label: 'Reviewing your data sources', detail: 'Reading 4 Snowflake tables + customer_health_external staging table.', status: 'running' as const, collapsibleOpen: false },
-      { label: 'Mapping joins across all sources', detail: 'DIM_ACCOUNTS is the driving table. Pendo staging covers 24% of accounts — nulls expected for NPS components.', status: 'pending' as const, collapsibleOpen: false },
-      { label: 'Selecting columns for customer health scoring', detail: 'Selected 18 columns across 5 tables. Removed 4 system fields and 2 raw text columns.', status: 'pending' as const, collapsibleOpen: false },
-      { label: 'Building health score formula', detail: 'Composite: NPS (30%) + support volume (20%) + call sentiment (25%) + defect rate (25%).', status: 'pending' as const, collapsibleOpen: false },
-      { label: '✦ Enriching for AI', detail: 'Writing AI context and synonyms for 18 columns.', status: 'pending' as const, collapsibleOpen: false },
-      { label: 'Validating data quality', detail: 'Row counts verified · one DQ flag in SUPPORT_CASES (14% null resolution_time_hours).', status: 'pending' as const, collapsibleOpen: false },
-    ];
-
     setMultiSourcePhase('done');
     setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user' as const, content: userText }]);
     setMessages(prev => [...prev, { id: `pc-${Date.now()}`, type: 'response' as const, content: '', planData: MS_PLAN_DATA, buildPlanCard: true }]);
-    setMessages(prev => [...prev, { id: workingId, type: 'working' as const, content: '', duration: '', stepsCollapsed: false, allStepsVisible: true, steps: buildSteps }]);
     onBuildStart?.();
 
     // Tables appear progressively in workspace
@@ -2884,18 +2877,8 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
     setTimeout(() => setProject(p => ({ ...p, addedTables: [...p.addedTables, 'customer_found_defects'] })), 4200);
     setTimeout(() => setProject(p => ({ ...p, addedTables: [...p.addedTables, 'customer_health_external'] })), 5600);
 
-    // Step 0 done → Step 1 running
-    setTimeout(() => setMessages(prev => prev.map(m => m.id !== workingId ? m : {
-      ...m, steps: m.steps?.map((s, i) => i === 0 ? { ...s, status: 'done' as const } : i === 1 ? { ...s, status: 'running' as const } : s),
-    })), 2500);
-
     // Joins form
     setTimeout(() => setProject(p => ({ ...p, buildStep: 'joined' })), 6500);
-
-    // Step 1 done → Step 2 running
-    setTimeout(() => setMessages(prev => prev.map(m => m.id !== workingId ? m : {
-      ...m, steps: m.steps?.map((s, i) => i === 1 ? { ...s, status: 'done' as const } : i === 2 ? { ...s, status: 'running' as const } : s),
-    })), 7000);
 
     // Columns appear table by table
     setTimeout(() => setProject(p => ({ ...p, activeTab: 'columns', columnsSelected: true, includedColumns: { ...p.includedColumns, dim_accounts: cols.dim_accounts } })), 7500);
@@ -2903,27 +2886,6 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
     setTimeout(() => setProject(p => ({ ...p, includedColumns: { ...p.includedColumns, call_metrics: cols.call_metrics } })), 10000);
     setTimeout(() => setProject(p => ({ ...p, includedColumns: { ...p.includedColumns, customer_found_defects: cols.customer_found_defects } })), 11000);
     setTimeout(() => setProject(p => ({ ...p, includedColumns: { ...p.includedColumns, customer_health_external: cols.customer_health_external } })), 12000);
-
-    // Step 2 done → Step 3 running
-    setTimeout(() => setMessages(prev => prev.map(m => m.id !== workingId ? m : {
-      ...m, steps: m.steps?.map((s, i) => i === 2 ? { ...s, status: 'done' as const } : i === 3 ? { ...s, status: 'running' as const } : s),
-    })), 8500);
-
-    // Step 3 done → Step 4 running
-    setTimeout(() => setMessages(prev => prev.map(m => m.id !== workingId ? m : {
-      ...m, steps: m.steps?.map((s, i) => i === 3 ? { ...s, status: 'done' as const } : i === 4 ? { ...s, status: 'running' as const } : s),
-    })), 11500);
-
-    // Step 4 done → Step 5 running
-    setTimeout(() => setMessages(prev => prev.map(m => m.id !== workingId ? m : {
-      ...m, steps: m.steps?.map((s, i) => i === 4 ? { ...s, status: 'done' as const } : i === 5 ? { ...s, status: 'running' as const } : s),
-    })), 14000);
-
-    // Steps collapse
-    setTimeout(() => setMessages(prev => prev.map(m => m.id !== workingId ? m : {
-      ...m, stepsCollapsed: true, duration: '~16s',
-      steps: m.steps?.map(s => ({ ...s, status: 'done' as const })),
-    })), 15500);
 
     // Finalize — set project state + show execution message with model artifact card
     setTimeout(() => {
@@ -3076,10 +3038,6 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
           setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: input }]);
           setMultiSourcePhase('csv_running');
           setProcessing(true);
-          setProject(p => ({
-            ...p,
-            multiSourceCreated: [...(p.multiSourceCreated ?? []), { type: 'csv-dataset' as const, name: 'CSM_MAPPING_Q2.csv' }],
-          }));
           runFromScratchSteps('process_csv_upload', undefined, setMessages, () => {
             setProject(p => ({
               ...p,
@@ -3129,16 +3087,31 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
             setTimeout(() => {
               setMessages(prev => [...prev, {
                 id: `r-${Date.now()}`, type: 'response',
-                content: "`customer_health_external` is ready — Pendo NPS + CSM mapping joined on `account_id`, 2,847 rows.\n\nThe model will use:\n- **DIM_ACCOUNTS, SUPPORT_CASES, CALL_METRICS, CUSTOMER_FOUND_DEFECTS** — Snowflake CDW (federated query)\n- **customer_health_external** — Spotstore staging\n\nReady to build?",
+                content: "`customer_health_external` is ready — Pendo NPS + CSM mapping joined on `account_id`, 2,847 rows.",
                 artifactCards: [
                   { type: 'staging-table' as const, name: 'customer_health_external', subLabel: 'Spotstore · staging · 2,847 rows' },
                 ],
               }]);
-              setMultiSourcePhase('ready_to_build');
+              setMultiSourcePhase('awaiting_build_initiation');
               setProcessing(false);
             }, 600);
           }, buildAbortRef);
         }
+        break;
+      }
+
+      case 'awaiting_build_initiation': {
+        setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: input }]);
+        setProcessing(true);
+        setTimeout(() => {
+          setMessages(prev => [...prev, {
+            id: `r-${Date.now()}`, type: 'response',
+            content: "The model will use:\n- **DIM_ACCOUNTS, SUPPORT_CASES, CALL_METRICS, CUSTOMER_FOUND_DEFECTS** — Snowflake CDW (federated query)\n- **customer_health_external** — Spotstore staging\n\nReady to build?",
+            suggestions: ["Ready. Build the model."],
+          }]);
+          setMultiSourcePhase('ready_to_build');
+          setProcessing(false);
+        }, 400);
         break;
       }
 
@@ -3200,7 +3173,7 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
       setPending(action);
       setMessages(prev => [...prev, {
         id: `r-${Date.now()}`, type: 'response',
-        content: "The notebook targets `nps_comments` for sentiment analysis. Ready to run it?",
+        content: "The notebook pulls NPS responses from Pendo and runs sentiment analysis on the comment text. Ready to run it?",
         pendingAction: action,
       }]);
       setMultiSourcePhase('awaiting_nps_confirm');
@@ -4981,6 +4954,62 @@ const MessageBubble: React.FC<{
           {msg.genUI === 'restore_point' && onGenUIAction && (
             <RestorePointCard msgId={msg.id} result={msg.genUIResult} onAction={onGenUIAction} onComplete={onComplete} />
           )}
+          {/* ── Artifact cards ──────────────────────────────────────────────── */}
+          {msg.artifactCards && msg.artifactCards.length > 0 && (
+            <div style={{ marginTop: sp.C, display: 'flex', flexDirection: 'column', gap: sp.B }}>
+              {msg.artifactCards.map((card, i) => {
+                const cardIcon = card.type === 'notebook'
+                  ? <svg width="13" height="13" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0 }}><rect x="3" y="1" width="9" height="12" rx="1.5" stroke="currentColor" strokeWidth="1.3" fill="none"/><line x1="1.5" y1="4" x2="3" y2="4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/><line x1="1.5" y1="7" x2="3" y2="7" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/><line x1="5.5" y1="4" x2="9.5" y2="4" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/><line x1="6.5" y1="5.6" x2="10" y2="5.6" stroke="currentColor" strokeWidth="0.9" strokeLinecap="round" strokeOpacity="0.6"/><line x1="5.5" y1="7" x2="8.5" y2="7" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/></svg>
+                  : card.type === 'csv-dataset'
+                  ? <svg width="13" height="13" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0 }}><rect x="2" y="1" width="10" height="12" rx="1.5" stroke="currentColor" strokeWidth="1.3" fill="none"/><line x1="2" y1="5" x2="12" y2="5" stroke="currentColor" strokeWidth="1.1"/><line x1="2" y1="8" x2="12" y2="8" stroke="currentColor" strokeWidth="1.1"/><line x1="5.5" y1="5" x2="5.5" y2="13" stroke="currentColor" strokeWidth="1.1"/><line x1="8.5" y1="5" x2="8.5" y2="13" stroke="currentColor" strokeWidth="1.1"/></svg>
+                  : card.type === 'staging-table'
+                  ? <svg width="13" height="13" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0 }}><rect x="1" y="1" width="12" height="5" rx="1.2" stroke="currentColor" strokeWidth="1.3" fill="none"/><rect x="1" y="8" width="12" height="5" rx="1.2" stroke="currentColor" strokeWidth="1.3" fill="none"/><line x1="7" y1="6" x2="7" y2="8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/><path d="M5 7.2L7 8.8L9 7.2" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  : <svg width="13" height="13" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0 }}><rect x="1" y="1" width="12" height="12" rx="1.5" stroke="currentColor" strokeWidth="1.3" fill="none"/><line x1="1" y1="4.5" x2="13" y2="4.5" stroke="currentColor" strokeWidth="1.1"/><line x1="5" y1="4.5" x2="5" y2="13" stroke="currentColor" strokeWidth="1.1"/></svg>;
+                const dqMatch = card.subLabel?.match(/^(.*?)\s*·\s*DQ\s*(\d+)$/);
+                const dqScore = dqMatch ? parseInt(dqMatch[2]) : null;
+                const baseLabel = dqMatch ? dqMatch[1] : card.subLabel;
+                return (
+                  <button
+                    key={i}
+                    onClick={() => onArtifactClick?.(card)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: sp.B,
+                      padding: `${sp.B}px ${sp.C}px`,
+                      borderRadius: 6, border: `1px solid ${c['border-default']}`,
+                      backgroundColor: c['background-base'], cursor: onArtifactClick ? 'pointer' : 'default',
+                      textAlign: 'left', fontFamily: ff.primary, width: '100%',
+                      transition: 'background-color 0.1s ease, border-color 0.1s ease',
+                    }}
+                    onMouseEnter={e => { if (onArtifactClick) { e.currentTarget.style.backgroundColor = c['background-subtle']; e.currentTarget.style.borderColor = c['border-default']; } }}
+                    onMouseLeave={e => { e.currentTarget.style.backgroundColor = c['background-base']; e.currentTarget.style.borderColor = c['border-default']; }}
+                  >
+                    <div style={{ color: c['content-secondary'], display: 'flex', alignItems: 'center' }}>{cardIcon}</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: fs.xs, fontWeight: fw.medium, color: c['content-primary'], overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{card.name}</div>
+                      {card.subLabel && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 1, flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: 11, color: c['content-secondary'] }}>{baseLabel}</span>
+                          {dqScore !== null && (
+                            <span style={{
+                              fontSize: 10, fontWeight: 600, lineHeight: 1,
+                              color: dqScore >= 90 ? '#16A34A' : dqScore >= 80 ? '#D97706' : '#DC2626',
+                              backgroundColor: dqScore >= 90 ? '#F0FDF4' : dqScore >= 80 ? '#FFFBEB' : '#FEF2F2',
+                              padding: '2px 5px', borderRadius: 4,
+                            }}>DQ {dqScore}</span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    {onArtifactClick && (
+                      <svg width="11" height="11" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0, color: c['content-tertiary'] }}>
+                        <path d="M2 10L10 2M10 2H5M10 2v5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
           {/* ── Inline API key input ─────────────────────────────────────────── */}
           {msg.inlineInput?.type === 'api-key' && (
             <div style={{ marginTop: sp.C, padding: `${sp.C}px ${sp.D}px`, borderRadius: 8, border: `1px solid ${c['border-default']}`, backgroundColor: c['background-subtle'] }}>
@@ -5045,47 +5074,6 @@ const MessageBubble: React.FC<{
             >
               <div style={{ fontSize: fs.xs, color: isDragOver ? c['content-brand'] : c['content-secondary'], fontWeight: fw.medium }}>{msg.inlineInput.label}</div>
               <div style={{ fontSize: fs.xs, color: c['content-tertiary'], marginTop: 2 }}>CSV · max 10 MB</div>
-            </div>
-          )}
-          {/* ── Artifact cards ──────────────────────────────────────────────── */}
-          {msg.artifactCards && msg.artifactCards.length > 0 && (
-            <div style={{ marginTop: sp.C, display: 'flex', flexDirection: 'column', gap: sp.B }}>
-              {msg.artifactCards.map((card, i) => {
-                const cardIcon = card.type === 'notebook'
-                  ? <svg width="13" height="13" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0 }}><rect x="3" y="1" width="9" height="12" rx="1.5" stroke="currentColor" strokeWidth="1.3" fill="none"/><line x1="1.5" y1="4" x2="3" y2="4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/><line x1="1.5" y1="7" x2="3" y2="7" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/><line x1="5.5" y1="4" x2="9.5" y2="4" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/><line x1="6.5" y1="5.6" x2="10" y2="5.6" stroke="currentColor" strokeWidth="0.9" strokeLinecap="round" strokeOpacity="0.6"/><line x1="5.5" y1="7" x2="8.5" y2="7" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/></svg>
-                  : card.type === 'csv-dataset'
-                  ? <svg width="13" height="13" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0 }}><rect x="2" y="1" width="10" height="12" rx="1.5" stroke="currentColor" strokeWidth="1.3" fill="none"/><line x1="2" y1="5" x2="12" y2="5" stroke="currentColor" strokeWidth="1.1"/><line x1="2" y1="8" x2="12" y2="8" stroke="currentColor" strokeWidth="1.1"/><line x1="5.5" y1="5" x2="5.5" y2="13" stroke="currentColor" strokeWidth="1.1"/><line x1="8.5" y1="5" x2="8.5" y2="13" stroke="currentColor" strokeWidth="1.1"/></svg>
-                  : card.type === 'staging-table'
-                  ? <svg width="13" height="13" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0 }}><rect x="1" y="1" width="12" height="5" rx="1.2" stroke="currentColor" strokeWidth="1.3" fill="none"/><rect x="1" y="8" width="12" height="5" rx="1.2" stroke="currentColor" strokeWidth="1.3" fill="none"/><line x1="7" y1="6" x2="7" y2="8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/><path d="M5 7.2L7 8.8L9 7.2" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                  : <svg width="13" height="13" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0 }}><rect x="1" y="1" width="12" height="12" rx="1.5" stroke="currentColor" strokeWidth="1.3" fill="none"/><line x1="1" y1="4.5" x2="13" y2="4.5" stroke="currentColor" strokeWidth="1.1"/><line x1="5" y1="4.5" x2="5" y2="13" stroke="currentColor" strokeWidth="1.1"/></svg>;
-                return (
-                  <button
-                    key={i}
-                    onClick={() => onArtifactClick?.(card)}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: sp.B,
-                      padding: `${sp.B}px ${sp.C}px`,
-                      borderRadius: 6, border: `1px solid ${c['border-default']}`,
-                      backgroundColor: c['background-base'], cursor: onArtifactClick ? 'pointer' : 'default',
-                      textAlign: 'left', fontFamily: ff.primary, width: '100%',
-                      transition: 'background-color 0.1s ease, border-color 0.1s ease',
-                    }}
-                    onMouseEnter={e => { if (onArtifactClick) { e.currentTarget.style.backgroundColor = c['background-subtle']; e.currentTarget.style.borderColor = c['border-default']; } }}
-                    onMouseLeave={e => { e.currentTarget.style.backgroundColor = c['background-base']; e.currentTarget.style.borderColor = c['border-default']; }}
-                  >
-                    <div style={{ color: c['content-secondary'], display: 'flex', alignItems: 'center' }}>{cardIcon}</div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: fs.xs, fontWeight: fw.medium, color: c['content-primary'], overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{card.name}</div>
-                      {card.subLabel && <div style={{ fontSize: 11, color: c['content-secondary'], marginTop: 1 }}>{card.subLabel}</div>}
-                    </div>
-                    {onArtifactClick && (
-                      <svg width="11" height="11" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0, color: c['content-tertiary'] }}>
-                        <path d="M2 10L10 2M10 2H5M10 2v5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    )}
-                  </button>
-                );
-              })}
             </div>
           )}
           {msg.suggestions && msg.suggestions.length > 0 && (

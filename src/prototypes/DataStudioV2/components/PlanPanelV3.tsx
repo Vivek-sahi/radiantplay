@@ -736,10 +736,9 @@ const PlanPanelV3: React.FC<PlanPanelProps> = ({ plan, onClose, buildingMode = f
         animation: 'ds-slide-in 0.2s ease-out',
       }}>
 
-        {/* ── Hero ──────────────────────────────────────────────────────────── */}
-        {!hideHeader && <div style={{ padding: `${sp.D}px 20px`, borderBottom: `1px solid ${c['border-divider']}`, flexShrink: 0 }}>
-          {buildingMode && !buildComplete ? (
-            /* Progress header */
+        {/* ── Hero (building state only) ─────────────────────────────────── */}
+        {!hideHeader && buildingMode && !buildComplete && (
+          <div style={{ padding: `${sp.D}px 20px`, borderBottom: `1px solid ${c['border-divider']}`, flexShrink: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: sp.B }}>
@@ -766,47 +765,8 @@ const PlanPanelV3: React.FC<PlanPanelProps> = ({ plan, onClose, buildingMode = f
                 </button>
               )}
             </div>
-          ) : (
-            /* Normal hero */
-            <>
-              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: sp.C, marginBottom: sp.C }}>
-                <div>
-                  <div style={{ fontSize: 16, fontWeight: fw.semibold, color: c['content-primary'], lineHeight: '22px' }}>
-                    {plan.modelName}
-                  </div>
-                  <div style={{ fontSize: fs.xs, color: c['content-secondary'], marginTop: 2 }}>
-                    v{plan.version} · Semantic model plan
-                  </div>
-                </div>
-                <div style={{ display: 'flex', gap: 4, flexShrink: 0, alignItems: 'center' }}>
-                  <button
-                    title="Download plan"
-                    style={iconBtn}
-                    onMouseEnter={e => { e.currentTarget.style.backgroundColor = c['background-subtle']; }}
-                    onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; }}
-                  >
-                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M8 2v8" /><polyline points="5,7 8,10 11,7" /><path d="M3 13h10" />
-                    </svg>
-                  </button>
-                  {!hideClose && (
-                    <button
-                      onClick={onClose}
-                      title="Close"
-                      style={iconBtn}
-                      onMouseEnter={e => { e.currentTarget.style.backgroundColor = c['background-subtle']; }}
-                      onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; }}
-                    >
-                      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-                        <line x1="4" y1="4" x2="12" y2="12" /><line x1="12" y1="4" x2="4" y2="12" />
-                      </svg>
-                    </button>
-                  )}
-                </div>
-              </div>
-            </>
-          )}
-        </div>}
+          </div>
+        )}
 
         {/* ── Tab bar ───────────────────────────────────────────────────────── */}
         <div style={{
