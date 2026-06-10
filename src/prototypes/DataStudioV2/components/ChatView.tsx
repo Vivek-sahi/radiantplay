@@ -15,6 +15,8 @@ interface ChatViewProps {
   setProject: React.Dispatch<React.SetStateAction<ProjectState>>;
   messages: AgentMessage[];
   setMessages: React.Dispatch<React.SetStateAction<AgentMessage[]>>;
+  notebookCells: NotebookCell[];
+  setNotebookCells: React.Dispatch<React.SetStateAction<NotebookCell[]>>;
   initialPrompt: string;
   isFromScratch?: boolean;
   isMultiSource?: boolean;
@@ -22,6 +24,7 @@ interface ChatViewProps {
   isDbtReview?: boolean;
   instructionsCreated: boolean;
   onBuildStart: () => void;
+  onNavigateToWorkspace?: () => void;
   onBack: () => void;
   onNavigateToTable?: (tableName: string) => void;
 }
@@ -31,7 +34,8 @@ const CHAT_PANEL_PCT = 0.4;
 
 const ChatView: React.FC<ChatViewProps> = ({
   project, setProject, messages, setMessages,
-  initialPrompt, isFromScratch, isMultiSource, isNotebookFlow, isDbtReview, instructionsCreated, onBuildStart, onBack, onNavigateToTable,
+  notebookCells, setNotebookCells,
+  initialPrompt, isFromScratch, isMultiSource, isNotebookFlow, isDbtReview, instructionsCreated, onBuildStart, onNavigateToWorkspace, onBack, onNavigateToTable,
 }) => {
   const [activePlan, setActivePlan] = useState<PlanData | null>(null);
   const [qualityPlanOpen, setQualityPlanOpen] = useState(false);
@@ -40,8 +44,8 @@ const ChatView: React.FC<ChatViewProps> = ({
   const [contextPanelOpen, setContextPanelOpen] = useState(true);
   const [mounted, setMounted] = useState(false);
   const [contextVisible, setContextVisible] = useState(false);
-  const [notebookCells, setNotebookCells] = useState<NotebookCell[]>([]);
   const [notebookPanelOpen, setNotebookPanelOpen] = useState(false);
+  const [notebookHighlightCellId, setNotebookHighlightCellId] = useState<string | null>(null);
 
   const isPlanOpen = activePlan !== null || qualityPlanOpen || instructionsPanelOpen || openedMsItem !== null || notebookPanelOpen;
 
@@ -68,16 +72,21 @@ const ChatView: React.FC<ChatViewProps> = ({
       name: 'instructions.md',
       onClick: () => { setInstructionsPanelOpen(true); setActivePlan(null); setQualityPlanOpen(false); },
     }] : []),
-    // Notebook flow: notebook artifact appears in Created as soon as cells exist
-    ...(isNotebookFlow && notebookCells.length > 0 ? [{
+    // Notebook flow: show from flow start; subLabel reflects state
+    ...(isNotebookFlow ? [{
       type: 'notebook' as const,
       name: 'customer_health_analysis',
-      subLabel: `Python · ${notebookCells.length} cell${notebookCells.length === 1 ? '' : 's'}`,
-      onClick: () => { setNotebookPanelOpen(true); setActivePlan(null); setQualityPlanOpen(false); setOpenedMsItem(null); },
+      subLabel: notebookCells.length > 0
+        ? `Python · ${notebookCells.length} cell${notebookCells.length === 1 ? '' : 's'}`
+        : 'Initializing…',
+      onClick: notebookCells.length > 0
+        ? () => { setNotebookPanelOpen(true); setActivePlan(null); setQualityPlanOpen(false); setOpenedMsItem(null); }
+        : undefined,
     }] : []),
     ...(project.buildStep !== 'empty' ? [{
       type: 'model' as const,
       name: project.name,
+      onClick: onNavigateToWorkspace,
     }] : []),
     ...(project.multiSourceCreated ?? []).map(item => ({
       type: item.type as CreatedItem['type'],
@@ -89,10 +98,31 @@ const ChatView: React.FC<ChatViewProps> = ({
                 item.type === 'staging-table' ? 'Spotstore · staging' : undefined,
       onClick: () => openMsItem(item),
     })),
-  ], [instructionsCreated, isNotebookFlow, notebookCells.length, notebookCells, project.buildStep, project.name, project.multiSourceCreated]);
+  ], [instructionsCreated, isNotebookFlow, notebookCells.length, notebookCells, project.buildStep, project.name, project.multiSourceCreated, onNavigateToWorkspace]);
+
 
   const contextTables = useMemo(() => planMsg?.planData?.tables.map(t => t.name) ?? [], [planMsg]);
   const contextSkills = useMemo(() => project.buildStep !== 'empty' ? ['create-data-model'] : [], [project.buildStep]);
+
+  const NOTEBOOK_CARD_TO_CELL: Record<string, string> = {
+    'DIM_ACCOUNTS': 'sql-1',
+    'SUPPORT_CASES': 'sql-2',
+    'CALL_METRICS': 'sql-3',
+    'CUSTOMER_FOUND_DEFECTS': 'sql-4',
+    'pendo_nps_enriched': 'sql-pendo-write',
+    'customer_health_analysis': 'sql-1',
+    'csm_account_mapping': 'sql-csv-write',
+    'customer_health_external': 'sql-staging',
+  };
+
+  const handleNotebookCardClick = (card: { type: string; name: string }) => {
+    const cellId = NOTEBOOK_CARD_TO_CELL[card.name] ?? null;
+    setNotebookHighlightCellId(cellId);
+    setNotebookPanelOpen(true);
+    setActivePlan(null);
+    setQualityPlanOpen(false);
+    setOpenedMsItem(null);
+  };
 
   return (
     <div style={{
@@ -168,7 +198,8 @@ const ChatView: React.FC<ChatViewProps> = ({
               onOpenPlan={plan => setActivePlan(plan)}
               onOpenQualityPlan={() => setQualityPlanOpen(true)}
               onBuildStart={onBuildStart}
-              onOpenMsItem={openMsItem}
+              onNavigateToWorkspace={onNavigateToWorkspace}
+              onOpenMsItem={isNotebookFlow ? handleNotebookCardClick : openMsItem as (item: { type: string; name: string }) => void}
             />
           </div>
         </div>
@@ -216,6 +247,7 @@ const ChatView: React.FC<ChatViewProps> = ({
           <NotebookView
             cells={notebookCells}
             onClose={() => setNotebookPanelOpen(false)}
+            highlightCellId={notebookHighlightCellId}
           />
         )}
 
@@ -240,6 +272,7 @@ const ChatView: React.FC<ChatViewProps> = ({
     </div>
   );
 };
+
 
 const NOTEBOOK_CELLS = [
   { label: 'import requests, os', kind: 'code' as const },

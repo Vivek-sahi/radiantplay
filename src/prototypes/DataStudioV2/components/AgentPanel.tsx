@@ -2096,11 +2096,17 @@ type NotebookFlowPhase =
   | 'awaiting_sources'
   | 'awaiting_api_key'
   | 'pendo_running'
+  | 'awaiting_csv_prompt'
   | 'awaiting_csv'
+  | 'awaiting_csv_write_consent'
   | 'csv_running'
-  | 'awaiting_staging'
+  | 'awaiting_staging_decision'
+  | 'awaiting_staging_consent'
   | 'staging_running'
+  | 'awaiting_build_initiation'
+  | 'awaiting_source_selection'
   | 'awaiting_build'
+  | 'awaiting_build_confirm'
   | 'building'
   | 'done';
 
@@ -2387,6 +2393,7 @@ interface AgentPanelProps {
   onOpenPlan?: (plan: PlanData) => void;
   onOpenQualityPlan?: () => void;
   onBuildStart?: () => void;
+  onNavigateToWorkspace?: () => void;
   fullPage?: boolean;
   onBack?: () => void;
   initialFlow?: string;
@@ -2396,7 +2403,7 @@ interface AgentPanelProps {
   onOpenMsItem?: (item: { type: string; name: string }) => void;
 }
 
-const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, setMessages, initialPrompt, onBuildComplete, externalMessage, onExternalMessageHandled, externalMessageAttachment, injectInput, onInjectInputHandled, width = 340, selectedColumns, onColumnRemove, isFromScratch, isMultiSource, isNotebookFlow, isDbtReview, onNotebookUpdate, onOpenPlan, onOpenQualityPlan, onBuildStart, fullPage = false, onBack, initialFlow, initialMessage, onInsightResolved, onOpenObject, onOpenMsItem }) => {
+const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, setMessages, initialPrompt, onBuildComplete, externalMessage, onExternalMessageHandled, externalMessageAttachment, injectInput, onInjectInputHandled, width = 340, selectedColumns, onColumnRemove, isFromScratch, isMultiSource, isNotebookFlow, isDbtReview, onNotebookUpdate, onOpenPlan, onOpenQualityPlan, onBuildStart, onNavigateToWorkspace, fullPage = false, onBack, initialFlow, initialMessage, onInsightResolved, onOpenObject, onOpenMsItem }) => {
   const [pendingAction, setPending]     = useState<PendingAction | null>(null);
   const [isProcessing, setProcessing]   = useState(false);
   const [planModalOpen, setPlanModalOpen] = useState(false);
@@ -2439,66 +2446,100 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
     if (!initialPrompt || initialPromptFiredRef.current) return;
     initialPromptFiredRef.current = true;
     if (isNotebookFlow) {
-      // Notebook flow: show user message, init environment, then scan
+      // Notebook flow: show user message, init environment, scan connections, then query tables
       setMessages([{ id: `u-${Date.now()}`, type: 'user', content: initialPrompt }]);
       setProcessing(true);
-      // Immediately signal environment is initializing
       onNotebookUpdate?.([]);
+      // Step 1: Show env init working step
       setTimeout(() => {
+        const envWorkingId = `w-env-${Date.now()}`;
         setMessages(prev => [...prev, {
-          id: `r-env-${Date.now()}`, type: 'working' as const, content: '',
+          id: envWorkingId, type: 'working' as const, content: '',
           duration: '', stepsCollapsed: false,
           steps: [{ label: 'Initializing Python 3.11 environment', detail: 'Starting Snowflake session · loading pandas, requests', status: 'running' as const, collapsibleOpen: false }],
         }]);
+        // Step 2: Mark env done, add connection scan step
         setTimeout(() => {
           setMessages(prev => prev.map(m =>
-            m.steps ? { ...m, steps: m.steps.map(s => ({ ...s, status: 'done' as const })) } : m
+            m.id === envWorkingId
+              ? { ...m, stepsCollapsed: true, steps: m.steps?.map(s => ({ ...s, status: 'done' as const })) }
+              : m
           ));
-          onNotebookUpdate?.([]);
-          setNotebookFlowPhase('scan_running');
-          setProcessing(false);
-
-          // Short pause then start scanning
+          const connWorkingId = `w-conn-${Date.now()}`;
+          setMessages(prev => [...prev, {
+            id: connWorkingId, type: 'working' as const, content: '',
+            duration: '', stepsCollapsed: false,
+            steps: [{ label: 'Scanning active connections', detail: 'Checking ANALYTICS_DB, SFDC_RAW, GONG_INTEGRATION, JIRA_WORKSPACE', status: 'running' as const, collapsibleOpen: false }],
+          }]);
+          // Step 3: Mark connection scan done, add response, set scan_running
           setTimeout(() => {
-            setProcessing(true);
-            const scanCells: import('./ChatContextPanel').NotebookCell[] = [
-              { id: 'sql-1', type: 'sql', label: 'Query DIM_ACCOUNTS', code: 'SELECT account_id, account_name, arr, tier, csm_owner\nFROM ANALYTICS_DB.DIM_ACCOUNTS\nLIMIT 10000', status: 'running', output: '12,431 rows' },
-            ];
-            notebookCellsRef.current = scanCells;
-            onNotebookUpdate?.(notebookCellsRef.current);
-
+            setMessages(prev => prev.map(m =>
+              m.id === connWorkingId
+                ? { ...m, stepsCollapsed: true, steps: m.steps?.map(s => ({ ...s, status: 'done' as const })) }
+                : m
+            ));
+            setMessages(prev => [...prev, {
+              id: `r-conn-${Date.now()}`, type: 'response',
+              content: "Found 4 active connections. Querying available tables from each.",
+            }]);
+            onNotebookUpdate?.([]);
+            setNotebookFlowPhase('scan_running');
+            // Step 4: Start running the 4 SQL cells
             setTimeout(() => {
-              notebookCellsRef.current = notebookCellsRef.current.map(c => c.id === 'sql-1' ? { ...c, status: 'done' as const } : c);
-              const cell2: import('./ChatContextPanel').NotebookCell = { id: 'sql-2', type: 'sql', label: 'Query SUPPORT_CASES', code: 'SELECT account_id, case_id, priority, status, resolution_time_hours\nFROM SFDC_RAW.SUPPORT_CASES\nLIMIT 10000', status: 'running', output: '84,203 rows' };
-              notebookCellsRef.current = [...notebookCellsRef.current, cell2];
-              onNotebookUpdate?.([...notebookCellsRef.current]);
+              setProcessing(true);
+              const scanCells: import('./ChatContextPanel').NotebookCell[] = [
+                { id: 'sql-1', type: 'sql', label: 'Query DIM_ACCOUNTS', code: 'SELECT account_id, account_name, arr, tier, csm_owner\nFROM ANALYTICS_DB.DIM_ACCOUNTS\nLIMIT 10000', status: 'running', output: '12,431 rows' },
+              ];
+              notebookCellsRef.current = scanCells;
+              onNotebookUpdate?.(notebookCellsRef.current);
 
               setTimeout(() => {
-                notebookCellsRef.current = notebookCellsRef.current.map(c => c.id === 'sql-2' ? { ...c, status: 'done' as const } : c);
-                const cell3: import('./ChatContextPanel').NotebookCell = { id: 'sql-3', type: 'sql', label: 'Query CALL_METRICS', code: 'SELECT account_id, call_sentiment_score, meetings_last_90d\nFROM GONG_INTEGRATION.CALL_METRICS\nLIMIT 10000', status: 'running', output: '31,847 rows' };
-                notebookCellsRef.current = [...notebookCellsRef.current, cell3];
+                notebookCellsRef.current = notebookCellsRef.current.map(c => c.id === 'sql-1' ? { ...c, status: 'done' as const } : c);
+                const cell2: import('./ChatContextPanel').NotebookCell = { id: 'sql-2', type: 'sql', label: 'Query SUPPORT_CASES', code: 'SELECT account_id, case_id, priority, status, resolution_time_hours\nFROM SFDC_RAW.SUPPORT_CASES\nLIMIT 10000', status: 'running', output: '84,203 rows' };
+                notebookCellsRef.current = [...notebookCellsRef.current, cell2];
                 onNotebookUpdate?.([...notebookCellsRef.current]);
 
                 setTimeout(() => {
-                  notebookCellsRef.current = notebookCellsRef.current.map(c => c.id === 'sql-3' ? { ...c, status: 'done' as const } : c);
-                  const cell4: import('./ChatContextPanel').NotebookCell = { id: 'sql-4', type: 'sql', label: 'Query CUSTOMER_FOUND_DEFECTS', code: 'SELECT account_id, defect_id, severity, open_defects\nFROM JIRA_WORKSPACE.CUSTOMER_FOUND_DEFECTS\nLIMIT 10000', status: 'running', output: '6,214 rows' };
-                  notebookCellsRef.current = [...notebookCellsRef.current, cell4];
+                  notebookCellsRef.current = notebookCellsRef.current.map(c => c.id === 'sql-2' ? { ...c, status: 'done' as const } : c);
+                  const cell3: import('./ChatContextPanel').NotebookCell = { id: 'sql-3', type: 'sql', label: 'Query CALL_METRICS', code: 'SELECT account_id, call_sentiment_score, meetings_last_90d\nFROM GONG_INTEGRATION.CALL_METRICS\nLIMIT 10000', status: 'running', output: '31,847 rows' };
+                  notebookCellsRef.current = [...notebookCellsRef.current, cell3];
                   onNotebookUpdate?.([...notebookCellsRef.current]);
 
                   setTimeout(() => {
-                    notebookCellsRef.current = notebookCellsRef.current.map(c => c.id === 'sql-4' ? { ...c, status: 'done' as const } : c);
+                    notebookCellsRef.current = notebookCellsRef.current.map(c => c.id === 'sql-3' ? { ...c, status: 'done' as const } : c);
+                    const cell4: import('./ChatContextPanel').NotebookCell = { id: 'sql-4', type: 'sql', label: 'Query CUSTOMER_FOUND_DEFECTS', code: 'SELECT account_id, defect_id, severity, open_defects\nFROM JIRA_WORKSPACE.CUSTOMER_FOUND_DEFECTS\nLIMIT 10000', status: 'running', output: '6,214 rows' };
+                    notebookCellsRef.current = [...notebookCellsRef.current, cell4];
                     onNotebookUpdate?.([...notebookCellsRef.current]);
-                    setMessages(prev => [...prev, {
-                      id: `r-scan-${Date.now()}`, type: 'response',
-                      content: "Found 4 tables in your Snowflake environment — queried directly in the notebook. Each SQL cell is live in the environment.\n\nWhat other data do you want to bring in?",
-                    }]);
-                    setNotebookFlowPhase('awaiting_sources');
-                    setProcessing(false);
+
+                    setTimeout(() => {
+                      notebookCellsRef.current = notebookCellsRef.current.map(c => c.id === 'sql-4' ? { ...c, status: 'done' as const } : c);
+                      onNotebookUpdate?.([...notebookCellsRef.current]);
+                      // Step 5: Results response with artifact cards
+                      setMessages(prev => [...prev, {
+                        id: `r-scan-${Date.now()}`, type: 'response',
+                        content: "Queried 4 tables from your Snowflake connections.",
+                        artifactCards: [
+                          { type: 'table' as const, name: 'DIM_ACCOUNTS',           subLabel: 'ANALYTICS_DB · 12k rows · DQ 94' },
+                          { type: 'table' as const, name: 'SUPPORT_CASES',          subLabel: 'SFDC_RAW · 84k rows · DQ 81' },
+                          { type: 'table' as const, name: 'CALL_METRICS',           subLabel: 'GONG_INTEGRATION · 31k rows · DQ 88' },
+                          { type: 'table' as const, name: 'CUSTOMER_FOUND_DEFECTS', subLabel: 'JIRA_WORKSPACE · 6.2k rows · DQ 91' },
+                        ],
+                      }]);
+                      // Step 6: Follow-up question
+                      setTimeout(() => {
+                        setMessages(prev => [...prev, {
+                          id: `r-ask-${Date.now()}`, type: 'response',
+                          content: "What other data do you want to bring in?",
+                        }]);
+                        setNotebookFlowPhase('awaiting_sources');
+                        setProcessing(false);
+                      }, 600);
+                    }, 700);
                   }, 700);
                 }, 700);
               }, 700);
-            }, 700);
-          }, 600);
+            }, 600);
+          }, 1000);
         }, 1800);
       }, 400);
     } else if (isMultiSource) {
@@ -2596,6 +2637,13 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
       onBuildComplete?.();
     }
   }, [messages, onBuildComplete]);
+
+  // Collapse any expanded inline plan card when the notebook flow build starts
+  useEffect(() => {
+    if (notebookFlowPhase === 'building') {
+      setPlanExpandedId(null);
+    }
+  }, [notebookFlowPhase]);
 
   // Greeting for expand flow — fires once on mount when opening a healthy project with no prompt
   useEffect(() => {
@@ -3017,7 +3065,8 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
         setTimeout(() => {
           setMessages(prev => [...prev, {
             id: `r-${Date.now()}`, type: 'response',
-            content: "Added a Python cell to the notebook to fetch NPS data from Pendo. I need your Pendo API key to run it — you can use saved credentials or enter it manually.\n\nWhat's your Pendo API key?",
+            content: "Added a Python cell to the notebook for the Pendo NPS fetch. I need your API key to run it.",
+            inlineInput: { type: 'api-key' as const, label: 'Pendo Integration Key', placeholder: 'Enter your key...' },
           }]);
           setNotebookFlowPhase('awaiting_api_key');
           setProcessing(false);
@@ -3026,11 +3075,15 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
       }
 
       case 'awaiting_api_key': {
-        setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: input }]);
+        // '__key_submitted__' sentinel = came from the widget, no user bubble needed
+        // Any other input = user typed key manually, show masked
+        if (input !== '__key_submitted__') {
+          setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: '••••••••' }]);
+        }
         setProcessing(true);
         // Mark Pendo cell as running
         updateNotebookCell('py-pendo', { status: 'running' });
-        setTimeout(() => {
+        runFromScratchSteps('execute_pendo_fetch', undefined, setMessages, () => {
           updateNotebookCell('py-pendo', { status: 'done', output: '2,847 NPS responses · 24% account coverage' });
           // Add Spotstore write SQL cell
           const writeCell: import('./ChatContextPanel').NotebookCell = {
@@ -3041,77 +3094,260 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
           addNotebookCell(writeCell);
           setTimeout(() => {
             updateNotebookCell('sql-pendo-write', { status: 'done' });
+            setProject(p => ({ ...p, multiSourceCreated: [...(p.multiSourceCreated ?? []), { type: 'spotstore-table' as const, name: 'pendo_nps_enriched', subLabel: 'Spotstore · 2,847 rows · DQ 92' }] }));
             setMessages(prev => [...prev, {
               id: `r-${Date.now()}`, type: 'response',
-              content: "Pendo cell ran — 2,847 NPS responses fetched. Written to `spotstore.pendo_nps_enriched`.\n\nDo you have a CSV you want to bring in?",
-              inlineInput: { type: 'file-upload' as const, label: 'Drop CSV here or click to browse' },
+              content: "Pendo NPS data loaded — 2,847 responses · positive: 61% · neutral: 24% · negative: 15%.",
+              artifactCards: [
+                { type: 'spotstore-table' as const, name: 'pendo_nps_enriched', subLabel: 'Spotstore · 2,847 rows · DQ 92' },
+              ],
             }]);
-            setNotebookFlowPhase('awaiting_csv');
-            setProcessing(false);
+            setTimeout(() => {
+              setMessages(prev => [...prev, {
+                id: `r-${Date.now()}`, type: 'response',
+                content: "What else do you want to bring in?",
+              }]);
+              setNotebookFlowPhase('awaiting_csv_prompt');
+              setProcessing(false);
+            }, 700);
           }, 900);
-        }, 1600);
+        }, buildAbortRef);
+        break;
+      }
+
+      case 'awaiting_csv_prompt': {
+        setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: input }]);
+        if (/csv|upload|file|mapping|csm/i.test(input)) {
+          setMessages(prev => [...prev, {
+            id: `r-${Date.now()}`, type: 'response',
+            content: "Upload the file and I'll read the schema before writing anything.",
+            inlineInput: { type: 'file-upload' as const, label: 'Drop CSV here or click to browse' },
+          }]);
+          setNotebookFlowPhase('awaiting_csv');
+        } else {
+          setMessages(prev => [...prev, {
+            id: `r-${Date.now()}`, type: 'response',
+            content: "Got it. Let me know when you want to bring in more data or build the model.",
+          }]);
+        }
         break;
       }
 
       case 'awaiting_csv': {
-        // Triggered by file drop — attachment will contain file name
-        const fileName = (input.match(/uploaded? (.+\.csv)/i) || [])[1] || 'CSM_MAPPING_Q2.csv';
+        // Triggered by file drop — extract file name from input
+        const fileName = (input.match(/[Uu]pload(?:ed)?\s+(.+\.csv)/i) || [])[1] || 'CSM_MAPPING_Q2.csv';
         setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: input }]);
         setProcessing(true);
         const uploadCell: import('./ChatContextPanel').NotebookCell = {
           id: 'upload-csv', type: 'file-upload', label: 'Upload CSV file',
-          code: fileName, status: 'running', output: '312 rows · 4 columns',
+          code: fileName, status: 'running', output: '142 rows · 4 columns',
         };
         addNotebookCell(uploadCell);
         setTimeout(() => {
           updateNotebookCell('upload-csv', { status: 'done' });
-          const csvWriteCell: import('./ChatContextPanel').NotebookCell = {
-            id: 'sql-csv-write', type: 'sql', label: 'Write CSV to Spotstore',
-            code: `CREATE OR REPLACE TABLE spotstore.csm_account_mapping AS\nSELECT account_id, csm_name, exec_sponsor, csm_region\nFROM uploaded_csv`,
-            status: 'running', output: '312 rows written to spotstore.csm_account_mapping',
-          };
-          addNotebookCell(csvWriteCell);
-          setTimeout(() => {
-            updateNotebookCell('sql-csv-write', { status: 'done' });
-            setMessages(prev => [...prev, {
-              id: `r-${Date.now()}`, type: 'response',
-              content: "CSV loaded and written to `spotstore.csm_account_mapping`.\n\nNow I can build the staging table — joining your 4 Snowflake tables with the two Spotstore tables. Want me to create it?",
-            }]);
-            setNotebookFlowPhase('awaiting_staging');
-            setProcessing(false);
-          }, 900);
-        }, 1200);
+          setMessages(prev => [...prev, {
+            id: `r-${Date.now()}`, type: 'response',
+            content: `Got it — 142 rows, 4 columns detected in \`${fileName}\`. I'll write this to your Spotstore as \`csm_account_mapping\`. OK to proceed?`,
+            artifactCards: [
+              { type: 'csv-dataset' as const, name: fileName, subLabel: 'CSV · 142 rows · 4 columns' },
+            ],
+            suggestions: ["Yes, write to Spotstore"],
+          }]);
+          setNotebookFlowPhase('awaiting_csv_write_consent');
+          setProcessing(false);
+        }, 1000);
         break;
       }
 
-      case 'awaiting_staging': {
+      case 'awaiting_csv_write_consent': {
+        setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: input }]);
+        setProcessing(true);
+        const csvWriteCell: import('./ChatContextPanel').NotebookCell = {
+          id: 'sql-csv-write', type: 'sql', label: 'Write CSV to Spotstore',
+          code: `CREATE OR REPLACE TABLE spotstore.csm_account_mapping AS\nSELECT account_id, csm_name, exec_sponsor, csm_region\nFROM uploaded_csv`,
+          status: 'running', output: '142 rows written to spotstore.csm_account_mapping',
+        };
+        addNotebookCell(csvWriteCell);
+        setTimeout(() => {
+          updateNotebookCell('sql-csv-write', { status: 'done' });
+          setProject(p => ({ ...p, multiSourceCreated: [...(p.multiSourceCreated ?? []), { type: 'spotstore-table' as const, name: 'csm_account_mapping', subLabel: 'Spotstore · 142 rows · DQ 98' }] }));
+          setMessages(prev => [...prev, {
+            id: `r-${Date.now()}`, type: 'response',
+            content: "`csm_account_mapping` is in the Spotstore — 142 rows, DQ 98.",
+            artifactCards: [
+              { type: 'spotstore-table' as const, name: 'csm_account_mapping', subLabel: 'Spotstore · 142 rows · DQ 98' },
+            ],
+          }]);
+          setNotebookFlowPhase('awaiting_staging_decision');
+          setProcessing(false);
+        }, 1100);
+        break;
+      }
+
+      case 'awaiting_staging_decision': {
+        setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: input }]);
+        if (/staging|compile|join|combine|merge|create.*table|build.*table/i.test(input) || /yes|ok|go|sure|proceed/i.test(input)) {
+          setMessages(prev => [...prev, {
+            id: `r-${Date.now()}`, type: 'response',
+            content: "I'll join `pendo_nps_enriched` and `csm_account_mapping` on `account_id` and write the result to Spotstore as `customer_health_external`. OK to proceed?",
+            suggestions: ["Yes, create the staging table"],
+          }]);
+          setNotebookFlowPhase('awaiting_staging_consent');
+        } else if (/model|build/i.test(input)) {
+          setMessages(prev => [...prev, {
+            id: `r-${Date.now()}`, type: 'response',
+            content: "Before building the model I need to create the staging table — joining `pendo_nps_enriched` and `csm_account_mapping` on `account_id`. Want me to create it?",
+            suggestions: ["Yes, create it"],
+          }]);
+          setNotebookFlowPhase('awaiting_staging_consent');
+        } else {
+          setMessages(prev => [...prev, {
+            id: `r-${Date.now()}`, type: 'response',
+            content: "What would you like to do next?",
+          }]);
+        }
+        break;
+      }
+
+      case 'awaiting_staging_consent': {
         setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: input }]);
         setProcessing(true);
         const stagingCell: import('./ChatContextPanel').NotebookCell = {
-          id: 'sql-staging', type: 'sql', label: 'Create staging table (federated join)',
-          code: `CREATE OR REPLACE TABLE spotstore.customer_health_external AS\nSELECT\n  a.account_id, a.account_name, a.arr, a.tier,\n  s.p1_cases_open, s.avg_resolution_days,\n  c.call_sentiment_score, c.meetings_last_90d,\n  d.open_defects,\n  n.nps_score, n.nps_comments,\n  m.csm_name, m.exec_sponsor\nFROM ANALYTICS_DB.DIM_ACCOUNTS a\nLEFT JOIN SFDC_RAW.SUPPORT_CASES s ON a.account_id = s.account_id\nLEFT JOIN GONG_INTEGRATION.CALL_METRICS c ON a.account_id = c.account_id\nLEFT JOIN JIRA_WORKSPACE.CUSTOMER_FOUND_DEFECTS d ON a.account_id = d.account_id\nLEFT JOIN spotstore.pendo_nps_enriched n ON a.account_id = n.account_id\nLEFT JOIN spotstore.csm_account_mapping m ON a.account_id = m.account_id`,
-          status: 'running', output: '12,431 rows · 5 sources joined',
+          id: 'sql-staging', type: 'sql', label: 'Create staging table (Pendo NPS + CSM mapping)',
+          code: `CREATE OR REPLACE TABLE spotstore.customer_health_external AS\nSELECT\n  p.account_id,\n  p.nps_score, p.nps_comments,\n  c.csm_name, c.exec_sponsor, c.csm_region\nFROM spotstore.pendo_nps_enriched p\nLEFT JOIN spotstore.csm_account_mapping c ON p.account_id = c.account_id`,
+          status: 'running', output: '2,847 rows · 2 sources joined',
         };
         addNotebookCell(stagingCell);
         setTimeout(() => {
           updateNotebookCell('sql-staging', { status: 'done' });
+          setProject(p => ({ ...p, multiSourceCreated: [...(p.multiSourceCreated ?? []), { type: 'staging-table' as const, name: 'customer_health_external', subLabel: 'Spotstore · staging · 2,847 rows' }] }));
           setMessages(prev => [...prev, {
             id: `r-${Date.now()}`, type: 'response',
-            content: "`customer_health_external` created — 12,431 rows across 5 sources. Ready to add the health score formula and build the model?",
+            content: "Your staging table is ready — all 5 sources are now accessible from the notebook.",
+            artifactCards: [
+              { type: 'staging-table' as const, name: 'customer_health_external', subLabel: 'Spotstore · staging · 2,847 rows' },
+            ],
           }]);
-          setNotebookFlowPhase('awaiting_build');
+          setNotebookFlowPhase('awaiting_build_initiation');
           setProcessing(false);
         }, 1400);
+        break;
+      }
+
+      case 'awaiting_build_initiation': {
+        setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: input }]);
+        if (!/\?$/.test(input.trim()) && !/^(no\b|wait|stop|cancel|not yet|hold on)/i.test(input.trim())) {
+          setProcessing(true);
+          setTimeout(() => {
+            setMessages(prev => [...prev, {
+              id: `r-${Date.now()}`, type: 'response',
+              content: "Here are the data sources available in this notebook. Which would you like to include in the model?",
+              artifactCards: [
+                { type: 'table' as const, name: 'DIM_ACCOUNTS', subLabel: 'Snowflake · ANALYTICS_DB · 12k rows' },
+                { type: 'table' as const, name: 'SUPPORT_CASES', subLabel: 'Snowflake · SFDC_RAW · 84k rows' },
+                { type: 'table' as const, name: 'CALL_METRICS', subLabel: 'Snowflake · GONG_INTEGRATION · 31k rows' },
+                { type: 'table' as const, name: 'CUSTOMER_FOUND_DEFECTS', subLabel: 'Snowflake · JIRA_WORKSPACE · 6.2k rows' },
+                { type: 'spotstore-table' as const, name: 'customer_health_external', subLabel: 'Spotstore · staging · 2,847 rows' },
+              ],
+              suggestions: ["Use all of them"],
+            }]);
+            setNotebookFlowPhase('awaiting_source_selection');
+            setProcessing(false);
+          }, 400);
+        } else {
+          setMessages(prev => [...prev, {
+            id: `r-${Date.now()}`, type: 'response',
+            content: "Let me know when you're ready to build the model.",
+          }]);
+        }
+        break;
+      }
+
+      case 'awaiting_source_selection': {
+        setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: input }]);
+        setProcessing(true);
+        const wId2 = `w-${Date.now()}`;
+        setTimeout(() => {
+          setMessages(prev => [...prev, {
+            id: wId2, type: 'working' as const, content: '',
+            duration: '~3 seconds', stepsCollapsed: false,
+            steps: [
+              { label: 'Reviewing data sources', detail: 'Mapping 5 sources across Snowflake CDW and Spotstore.', status: 'running' as const, collapsibleOpen: false },
+              { label: 'Resolving columns and joins', detail: 'Identified 4 joins, 18 columns, and 1 composite health score formula.', status: 'pending' as const, collapsibleOpen: false },
+            ],
+          }]);
+          setTimeout(() => {
+            setMessages(prev => prev.map(m => m.id === wId2
+              ? { ...m, steps: m.steps?.map((s, i) => ({ ...s, status: i === 0 ? 'done' as const : 'running' as const })) }
+              : m
+            ));
+            setTimeout(() => {
+              setMessages(prev => prev.map(m => m.id === wId2
+                ? { ...m, stepsCollapsed: true, steps: m.steps?.map(s => ({ ...s, status: 'done' as const })) }
+                : m
+              ));
+              setTimeout(() => {
+                setMessages(prev => [...prev, {
+                  id: `r-${Date.now()}`, type: 'response' as const,
+                  content: "Here's the model plan — 5 sources, 4 joins, 18 columns. Review and edit anything, then confirm to build.",
+                  planData: MS_PLAN_DATA,
+                  planBuildFlow: 'multi_source' as const,
+                }]);
+                setNotebookFlowPhase('awaiting_build_confirm');
+                setProcessing(false);
+              }, 300);
+            }, 1200);
+          }, 1200);
+        }, 400);
         break;
       }
 
       case 'awaiting_build': {
         setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: input }]);
         setProcessing(true);
+        const buildWId = `w-${Date.now()}`;
+        setTimeout(() => {
+          setMessages(prev => [...prev, {
+            id: buildWId, type: 'working' as const, content: '',
+            duration: '~3 seconds', stepsCollapsed: false,
+            steps: [
+              { label: 'Reviewing data sources', detail: 'Mapping 5 sources across Snowflake CDW and Spotstore.', status: 'running' as const, collapsibleOpen: false },
+              { label: 'Resolving columns and joins', detail: 'Identified 4 joins, 18 columns, and 1 composite health score formula.', status: 'pending' as const, collapsibleOpen: false },
+            ],
+          }]);
+          setTimeout(() => {
+            setMessages(prev => prev.map(m => m.id === buildWId
+              ? { ...m, steps: m.steps?.map((s, i) => ({ ...s, status: i === 0 ? 'done' as const : 'running' as const })) }
+              : m
+            ));
+            setTimeout(() => {
+              setMessages(prev => prev.map(m => m.id === buildWId
+                ? { ...m, stepsCollapsed: true, steps: m.steps?.map(s => ({ ...s, status: 'done' as const })) }
+                : m
+              ));
+              setTimeout(() => {
+                setMessages(prev => [...prev, {
+                  id: `r-${Date.now()}`, type: 'response' as const,
+                  content: "Here's the model plan — 5 sources, 4 joins, 18 columns. Review and edit anything, then confirm to build.",
+                  planData: MS_PLAN_DATA,
+                  planBuildFlow: 'multi_source' as const,
+                }]);
+                setNotebookFlowPhase('awaiting_build_confirm');
+                setProcessing(false);
+              }, 300);
+            }, 1200);
+          }, 1200);
+        }, 400);
+        break;
+      }
+
+      case 'awaiting_build_confirm': {
+        setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: input }]);
+        setProcessing(true);
         const formulaCell: import('./ChatContextPanel').NotebookCell = {
           id: 'py-formula', type: 'python', label: 'Compute health score formula',
           code: `df['health_score'] = (\n  df['nps_score'].fillna(50) * 0.30 +\n  (100 - df['p1_cases_open'].clip(0, 10) * 10) * 0.20 +\n  df['call_sentiment_score'] * 0.25 +\n  (100 - df['open_defects'].clip(0, 5) * 20) * 0.25\n)`,
-          status: 'running', output: 'Score range: 52–94% across 12,431 accounts',
+          status: 'running', output: 'Score range: 52–94%...',
         };
         addNotebookCell(formulaCell);
         onBuildStart?.();
@@ -3119,15 +3355,13 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
           updateNotebookCell('py-formula', { status: 'done' });
           setMessages(prev => [...prev, {
             id: `r-${Date.now()}`, type: 'response',
-            content: "Health score computed. Building the semantic model now — all cells in the notebook become the lineage record for this model.",
-            planData: MS_PLAN_DATA,
-            buildPlanCard: true,
+            content: "Health score computed. Building the semantic model now — all cells in the notebook become the lineage record.",
           }]);
           setNotebookFlowPhase('building');
 
-          // Trigger workspace build animation
+          // Trigger workspace build animation (buildStep: 'tables' fires immediately so PlanCardV2 shows 'building')
           setTimeout(() => {
-            setProject(p => ({ ...p, addedTables: [...p.addedTables, 'dim_accounts'] }));
+            setProject(p => ({ ...p, buildStep: 'tables', addedTables: [...p.addedTables, 'dim_accounts'] }));
             setTimeout(() => setProject(p => ({ ...p, addedTables: [...p.addedTables, 'support_cases'] })), 1400);
             setTimeout(() => setProject(p => ({ ...p, addedTables: [...p.addedTables, 'call_metrics'] })), 2800);
             setTimeout(() => setProject(p => ({ ...p, addedTables: [...p.addedTables, 'customer_found_defects'] })), 4200);
@@ -3363,10 +3597,10 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
         setProcessing(true);
         const wId = `w-${Date.now()}`;
         setMessages(prev => [...prev, {
-          id: wId, type: 'working' as const,
+          id: wId, type: 'working' as const, content: '',
           steps: [
-            { label: 'Reviewing data sources', detail: 'Mapping 5 sources across Snowflake CDW and Spotstore.', status: 'running' as const },
-            { label: 'Resolving columns and joins', detail: 'Identified 4 joins, 18 columns, and 1 composite health score formula.', status: 'pending' as const },
+            { label: 'Reviewing data sources', detail: 'Mapping 5 sources across Snowflake CDW and Spotstore.', status: 'running' as const, collapsibleOpen: false },
+            { label: 'Resolving columns and joins', detail: 'Identified 4 joins, 18 columns, and 1 composite health score formula.', status: 'pending' as const, collapsibleOpen: false },
           ],
           duration: '~3 seconds',
         }]);
@@ -3410,6 +3644,10 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
     setMessages(prev => prev.map(m =>
       m.id === msgId ? { ...m, inlineInput: { ...m.inlineInput!, submitted: true, savedCredentials: usedSaved } } : m
     ));
+    if (notebookFlowPhase === 'awaiting_api_key') {
+      handleNotebookFlowInput('__key_submitted__');
+      return;
+    }
     setProcessing(true);
     setTimeout(() => {
       const action: PendingAction = { key: 'pendo_confirm_column', nextStep: 'empty' };
@@ -3429,9 +3667,33 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
     setMessages(prev => prev.map(m =>
       m.id === msgId ? { ...m, inlineInput: { ...m.inlineInput!, submitted: true } } : m
     ));
-    // Notebook flow — route directly to cell-based CSV handling
+    // Notebook flow — show user message with attachment chip, then handle inline
     if (notebookFlowPhase === 'awaiting_csv') {
-      handleNotebookFlowInput(`Uploaded ${file.name}`);
+      const nbFileName = file.name;
+      setMessages(prev => [...prev, {
+        id: `u-${Date.now()}`, type: 'user',
+        content: nbFileName,
+        attachment: { type: 'CSV', label: nbFileName },
+      }]);
+      setProcessing(true);
+      const nbUploadCell: import('./ChatContextPanel').NotebookCell = {
+        id: 'upload-csv', type: 'file-upload', label: 'Upload CSV file',
+        code: nbFileName, status: 'running', output: '142 rows · 4 columns',
+      };
+      addNotebookCell(nbUploadCell);
+      setTimeout(() => {
+        updateNotebookCell('upload-csv', { status: 'done' });
+        setMessages(prev => [...prev, {
+          id: `r-${Date.now()}`, type: 'response',
+          content: `Got it — 142 rows, 4 columns detected in \`${nbFileName}\`. I'll write this to your Spotstore as \`csm_account_mapping\`. OK to proceed?`,
+          artifactCards: [
+            { type: 'csv-dataset' as const, name: nbFileName, subLabel: 'CSV · 142 rows · 4 columns' },
+          ],
+          suggestions: ["Yes, write to Spotstore"],
+        }]);
+        setNotebookFlowPhase('awaiting_csv_write_consent');
+        setProcessing(false);
+      }, 1000);
       return;
     }
     // Show user message with attachment chip
@@ -3901,7 +4163,7 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
                 <AgentAvatar />
                 <div style={{ flex: 1, minWidth: 0, paddingTop: 2 }}>
                   {project.buildStep === 'healthy'
-                    ? <BuiltSummaryCard plan={msg.planData} />
+                    ? <BuiltSummaryCard plan={msg.planData} onNavigate={onNavigateToWorkspace} />
                     : <PlanCardV2 plan={msg.planData} onBuild={handleMsBuildStart} project={project} />
                   }
                 </div>
@@ -4662,7 +4924,7 @@ const PlanCardV2: React.FC<{
 
 const fmtCol = (name: string) => name.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 
-const BuiltSummaryCard: React.FC<{ plan: PlanData }> = ({ plan }) => {
+const BuiltSummaryCard: React.FC<{ plan: PlanData; onNavigate?: () => void }> = ({ plan, onNavigate }) => {
   const [expanded, setExpanded] = React.useState(false);
 
   const formulas   = plan.columns.filter(col => col.type === 'formula');
@@ -4676,7 +4938,7 @@ const BuiltSummaryCard: React.FC<{ plan: PlanData }> = ({ plan }) => {
   return (
     <div style={{ border: `1px solid ${c['border-default']}`, borderRadius: 12, backgroundColor: c['background-base'], overflow: 'hidden', maxWidth: 520, fontFamily: ff.primary, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
       <div
-        onClick={() => setExpanded(o => !o)}
+        onClick={() => { if (onNavigate) { onNavigate(); } else { setExpanded(o => !o); } }}
         style={{ padding: '11px 14px', display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', borderBottom: expanded ? `1px solid ${c['border-divider']}` : 'none', userSelect: 'none' as const }}
       >
         <div style={{ width: 20, height: 20, borderRadius: '50%', flexShrink: 0, backgroundColor: 'rgba(22,163,74,0.1)', border: '1.5px solid #16A34A', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -4686,10 +4948,19 @@ const BuiltSummaryCard: React.FC<{ plan: PlanData }> = ({ plan }) => {
           <div style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'], whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{plan.modelName}</div>
           <div style={{ fontSize: 11, color: c['content-secondary'], marginTop: 1 }}>Model requirement · {steps.length} steps completed</div>
         </div>
-        <span style={{ fontSize: 11, color: c['content-brand'], fontWeight: fw.medium, flexShrink: 0 }}>{expanded ? 'Collapse' : 'View details'}</span>
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke={c['content-secondary']} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: expanded ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.15s', flexShrink: 0 }}>
-          <polyline points="2,4 6,8 10,4"/>
-        </svg>
+        {onNavigate ? (
+          <span style={{ fontSize: 11, color: c['content-brand'], fontWeight: fw.medium, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 3 }}>
+            Open model
+            <svg width="11" height="11" viewBox="0 0 13 13" fill="none"><path d="M2.5 6.5h8M7 3l3.5 3.5L7 10" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          </span>
+        ) : (
+          <>
+            <span style={{ fontSize: 11, color: c['content-brand'], fontWeight: fw.medium, flexShrink: 0 }}>{expanded ? 'Collapse' : 'View details'}</span>
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke={c['content-secondary']} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: expanded ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.15s', flexShrink: 0 }}>
+              <polyline points="2,4 6,8 10,4"/>
+            </svg>
+          </>
+        )}
       </div>
       {expanded && (
         <>
@@ -5143,7 +5414,7 @@ const MessageBubble: React.FC<{
           )}
           {msg.modelArtifact && (
             <div style={{ marginTop: msg.content ? sp.C : 0 }}>
-              <ModelArtifactCard artifact={msg.modelArtifact} onClick={() => onBuildStart?.()} />
+              <ModelArtifactCard artifact={msg.modelArtifact} onClick={() => onNavigateToWorkspace?.()} />
             </div>
           )}
           {/* ── GenUI cards ─────────────────────────────────────────────────── */}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { c, ff, fs, fw, sp } from '../styles';
 import { NotebookCell as NotebookCellDef } from './ChatContextPanel';
 
@@ -210,15 +210,109 @@ function toNbCell(def: NotebookCellDef): NbCell {
   };
 }
 
+// ── Mock run results ──────────────────────────────────────────────────────────
+
+interface MockResultRow { [col: string]: string }
+interface MockResult { columns: string[]; rows: MockResultRow[]; footer: string }
+
+const NB_MOCK_RESULTS: Record<string, MockResult> = {
+  'sql-1': {
+    columns: ['account_id', 'account_name', 'account_tier', 'account_status', 'arr'],
+    rows: [
+      { account_id: 'ACC-001', account_name: 'Acme Corp',  account_tier: 'Enterprise', account_status: 'Active',  arr: '125,000' },
+      { account_id: 'ACC-002', account_name: 'Beta Inc',   account_tier: 'Growth',     account_status: 'Active',  arr: '48,000'  },
+      { account_id: 'ACC-003', account_name: 'Gamma Ltd',  account_tier: 'Starter',    account_status: 'Churned', arr: '8,500'   },
+    ],
+    footer: '3 rows returned',
+  },
+  'sql-2': {
+    columns: ['case_id', 'account_id', 'status', 'priority'],
+    rows: [
+      { case_id: 'CS-001', account_id: 'ACC-001', status: 'Open',   priority: 'P1' },
+      { case_id: 'CS-002', account_id: 'ACC-002', status: 'Closed', priority: 'P2' },
+      { case_id: 'CS-003', account_id: 'ACC-001', status: 'Open',   priority: 'P1' },
+    ],
+    footer: '3 rows returned',
+  },
+  'sql-3': {
+    columns: ['call_id', 'account_id', 'duration_min', 'outcome'],
+    rows: [
+      { call_id: 'CALL-001', account_id: 'ACC-001', duration_min: '42', outcome: 'Escalated' },
+      { call_id: 'CALL-002', account_id: 'ACC-003', duration_min: '18', outcome: 'Resolved'  },
+      { call_id: 'CALL-003', account_id: 'ACC-002', duration_min: '27', outcome: 'Resolved'  },
+    ],
+    footer: '3 rows returned',
+  },
+  'sql-4': {
+    columns: ['defect_id', 'account_id', 'severity', 'status'],
+    rows: [
+      { defect_id: 'DEF-001', account_id: 'ACC-001', severity: 'High',     status: 'Open'   },
+      { defect_id: 'DEF-002', account_id: 'ACC-003', severity: 'Medium',   status: 'Closed' },
+      { defect_id: 'DEF-003', account_id: 'ACC-001', severity: 'Critical', status: 'Open'   },
+    ],
+    footer: '3 rows returned',
+  },
+};
+
+const CellRunResults: React.FC<{ cellId: string }> = ({ cellId }) => {
+  const result = NB_MOCK_RESULTS[cellId];
+  const monoFont = 'ui-monospace, "SF Mono", Menlo, Consolas, monospace';
+
+  if (!result) {
+    return (
+      <div style={{ borderTop: `1px solid ${c['border-divider']}`, backgroundColor: c['background-sunken'], padding: '5px 12px' }}>
+        <span style={{ fontSize: 11, fontFamily: monoFont, color: c['content-secondary'] }}>3 rows returned</span>
+      </div>
+    );
+  }
+
+  const colCount = result.columns.length;
+  const cellPad = '3px 8px';
+
+  return (
+    <div style={{ borderTop: `1px solid ${c['border-divider']}`, backgroundColor: c['background-sunken'], maxHeight: 120, overflow: 'hidden' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11, fontFamily: monoFont, tableLayout: 'fixed' }}>
+        <colgroup>
+          {result.columns.map((_, i) => <col key={i} style={{ width: `${100 / colCount}%` }} />)}
+        </colgroup>
+        <thead>
+          <tr style={{ borderBottom: `1px solid ${c['border-divider']}` }}>
+            {result.columns.map(col => (
+              <th key={col} style={{ padding: cellPad, textAlign: 'left', fontWeight: 600, color: c['content-secondary'], whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {col}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {result.rows.map((row, ri) => (
+            <tr key={ri} style={{ borderBottom: ri < result.rows.length - 1 ? `1px solid ${c['border-divider']}` : 'none' }}>
+              {result.columns.map(col => (
+                <td key={col} style={{ padding: cellPad, color: c['content-primary'], whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {row[col]}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <div style={{ padding: '3px 8px 5px', borderTop: `1px solid ${c['border-divider']}` }}>
+        <span style={{ fontSize: 11, fontFamily: monoFont, color: c['content-secondary'] }}>{result.footer}</span>
+      </div>
+    </div>
+  );
+};
+
 // ── Public component ──────────────────────────────────────────────────────────
 
 interface NotebookViewProps {
   cells: NotebookCellDef[];
   notebookName?: string;
   onClose: () => void;
+  highlightCellId?: string | null;
 }
 
-const NotebookView: React.FC<NotebookViewProps> = ({ cells, notebookName = 'customer_health_analysis', onClose }) => {
+const NotebookView: React.FC<NotebookViewProps> = ({ cells, notebookName = 'customer_health_analysis', onClose, highlightCellId }) => {
   const nbCells = cells.map(toNbCell);
 
   const [cellStatuses, setCellStatuses] = useState<Record<string, NbCellStatus>>(() =>
@@ -230,6 +324,20 @@ const NotebookView: React.FC<NotebookViewProps> = ({ cells, notebookName = 'cust
   const [extraCells, setExtraCells]   = useState<NbCell[]>([]);
   const [showAddMenu, setShowAddMenu] = useState(false);
   const [runAllActive, setRunAllActive] = useState(false);
+  const [activePulse, setActivePulse] = useState<string | null>(null);
+  const [ranCells, setRanCells] = useState<Set<string>>(new Set());
+  const cellRefMap = useRef<Map<string, HTMLDivElement>>(new Map());
+
+  useEffect(() => {
+    if (!highlightCellId) return;
+    const el = cellRefMap.current.get(highlightCellId);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setActivePulse(highlightCellId);
+      const t = setTimeout(() => setActivePulse(null), 1600);
+      return () => clearTimeout(t);
+    }
+  }, [highlightCellId]);
 
   // Sync statuses when new cells arrive from agent
   const latestStatuses = Object.fromEntries(nbCells.map(c => [c.id, c.initialStatus ?? 'idle']));
@@ -239,7 +347,10 @@ const NotebookView: React.FC<NotebookViewProps> = ({ cells, notebookName = 'cust
 
   const runCell = (cellId: string) => {
     setCellStatuses(prev => ({ ...prev, [cellId]: 'running' }));
-    setTimeout(() => setCellStatuses(prev => ({ ...prev, [cellId]: 'success' })), 1400);
+    setTimeout(() => {
+      setCellStatuses(prev => ({ ...prev, [cellId]: 'success' }));
+      setRanCells(prev => new Set([...prev, cellId]));
+    }, 1400);
   };
 
   const handleEditRun = (cellId: string) => {
@@ -258,6 +369,7 @@ const NotebookView: React.FC<NotebookViewProps> = ({ cells, notebookName = 'cust
         setCellStatuses(prev => ({ ...prev, [cell.id]: 'running' }));
         setTimeout(() => {
           setCellStatuses(prev => ({ ...prev, [cell.id]: 'success' }));
+          setRanCells(prev => new Set([...prev, cell.id]));
           if (i === all.length - 1) setRunAllActive(false);
         }, 1200);
       }, delay);
@@ -328,18 +440,30 @@ const NotebookView: React.FC<NotebookViewProps> = ({ cells, notebookName = 'cust
       {/* Cells */}
       <div style={{ flex: 1, overflowY: 'auto', padding: sp.D, display: 'flex', flexDirection: 'column', gap: sp.C }}>
         {allCells.map(cell => (
-          <NbCellComponent
+          <div
             key={cell.id}
-            cell={{ ...cell, agentOutput: nbCells.find(c => c.id === cell.id)?.agentOutput ?? cell.agentOutput }}
-            status={mergedStatuses[cell.id] ?? 'idle'}
-            isEditing={editingCell === cell.id}
-            draftValue={editingCell === cell.id ? draftValue : ''}
-            onEdit={() => { setEditingCell(cell.id); setDraftValue(getValue(cell)); }}
-            onRun={() => handleEditRun(cell.id)}
-            onRunCell={() => runCell(cell.id)}
-            onCancel={() => setEditingCell(null)}
-            onDraftChange={setDraftValue}
-          />
+            ref={el => { if (el) cellRefMap.current.set(cell.id, el); else cellRefMap.current.delete(cell.id); }}
+            style={{
+              borderRadius: 9,
+              outline: activePulse === cell.id ? `2px solid ${c['content-brand']}` : '2px solid transparent',
+              transition: 'outline 0.3s ease',
+            }}
+          >
+            <NbCellComponent
+              cell={{ ...cell, agentOutput: nbCells.find(c => c.id === cell.id)?.agentOutput ?? cell.agentOutput }}
+              status={mergedStatuses[cell.id] ?? 'idle'}
+              isEditing={editingCell === cell.id}
+              draftValue={editingCell === cell.id ? draftValue : ''}
+              onEdit={() => { setEditingCell(cell.id); setDraftValue(getValue(cell)); }}
+              onRun={() => handleEditRun(cell.id)}
+              onRunCell={() => runCell(cell.id)}
+              onCancel={() => setEditingCell(null)}
+              onDraftChange={setDraftValue}
+            />
+            {cell.type === 'sql' && ranCells.has(cell.id) && !editingCell && (
+              <CellRunResults cellId={cell.id} />
+            )}
+          </div>
         ))}
 
         {/* Add cell */}

@@ -15,8 +15,9 @@ import { CacheModal } from '../CacheDiscoverability';
 import QualityPlanPanel from './QualityPlanPanel';
 import PlanPanel from './PlanPanel';
 import { Icon } from '../../../components/icons';
-import ChatContextPanel, { CreatedItem } from './ChatContextPanel';
+import ChatContextPanel, { CreatedItem, NotebookCell } from './ChatContextPanel';
 import InstructionsPanel from './InstructionsPanel';
+import NotebookView from './NotebookView';
 
 interface WorkspaceProps {
   project: ProjectState;
@@ -29,6 +30,8 @@ interface WorkspaceProps {
   isDbtReview?: boolean;
   isAgentMode?: boolean;
   instructionsCreated?: boolean;
+  isNotebookFlow?: boolean;
+  notebookCells?: NotebookCell[];
   onNavigateToTable?: (tableName: string) => void;
 }
 
@@ -95,9 +98,10 @@ const MH_AIRS_DIMS: MhAirsDim[] = [
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, setMessages, onBack, initialPrompt, isFromScratch, isDbtReview, isAgentMode, instructionsCreated, onNavigateToTable }) => {
+const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, setMessages, onBack, initialPrompt, isFromScratch, isDbtReview, isAgentMode, instructionsCreated, isNotebookFlow, notebookCells, onNavigateToTable }) => {
   const [mounted, setMounted] = useState(false);
   const [isBuilding, setIsBuilding] = useState(!!initialPrompt);
+  const [notebookPanelOpen, setNotebookPanelOpen] = useState(false);
   const [externalAgentMessage, setExternalAgentMessage] = useState<string | null>(null);
   const [externalAgentAttachment, setExternalAgentAttachment] = useState<{ type: string; label: string } | null>(null);
   const [externalInputInject, setExternalInputInject] = useState<string | null>(null);
@@ -124,6 +128,12 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
 
   const contextCreated = useMemo((): CreatedItem[] => [
     ...(instructionsCreated ? [{ type: 'instructions' as const, name: 'instructions.md', onClick: () => { setInstructionsPanelOpen(true); setPlanPanelOpen(false); setQualityPlanOpen(false); setCanvasVisible(true); } }] : []),
+    ...(isNotebookFlow && (notebookCells?.length ?? 0) > 0 ? [{
+      type: 'notebook' as const,
+      name: 'customer_health_analysis',
+      subLabel: `Python · ${notebookCells!.length} cell${notebookCells!.length === 1 ? '' : 's'}`,
+      onClick: () => { setNotebookPanelOpen(true); setPlanPanelOpen(false); setQualityPlanOpen(false); setInstructionsPanelOpen(false); },
+    }] : []),
     ...(planMsg ? [{ type: 'plan' as const, name: 'Build plan', onClick: () => { setPlanPanelOpen(true); setQualityPlanOpen(false); setInstructionsPanelOpen(false); setCanvasVisible(true); } }] : []),
     ...(project.prepTransforms !== undefined ? [{
       type: 'quality-plan' as const,
@@ -135,7 +145,12 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
       name: project.name,
       onClick: () => { setQualityPlanOpen(false); setPlanPanelOpen(false); setInstructionsPanelOpen(false); setCanvasVisible(true); },
     }] : []),
-  ], [instructionsCreated, planMsg, project.prepTransforms, project.buildStep, project.name]);
+    ...(isNotebookFlow ? (project.multiSourceCreated ?? []).map(item => ({
+      type: item.type as CreatedItem['type'],
+      name: item.name,
+      subLabel: item.type === 'spotstore-table' ? 'Spotstore' : item.type === 'staging-table' ? 'Spotstore · staging' : undefined,
+    })) : []),
+  ], [instructionsCreated, isNotebookFlow, notebookCells, planMsg, project.prepTransforms, project.buildStep, project.name, project.multiSourceCreated]);
 
   const contextTables = useMemo(() => planMsg?.planData?.tables.map(t => t.name) ?? project.addedTables, [planMsg, project.addedTables]);
   const contextSkills = useMemo(() => project.buildStep !== 'empty' ? ['create-data-model'] : [], [project.buildStep]);
@@ -407,6 +422,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
             selectedColumns={selectedColumns}
             onColumnRemove={(name) => setSelectedColumns(prev => prev.filter(c => c !== name))}
             onOpenQualityPlan={() => setQualityPlanOpen(true)}
+            onNavigateToWorkspace={() => { setCanvasVisible(true); setPlanPanelOpen(false); setQualityPlanOpen(false); setInstructionsPanelOpen(false); }}
           />
         </div>
 
@@ -524,7 +540,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
 
               {/* Tab bar */}
               <div style={{ height: 40, borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', paddingLeft: sp.D, paddingRight: sp.D, gap: sp.B, flexShrink: 0 }}>
-                {(['columns', 'tables', 'preview', 'notebook'] as ProjectState['activeTab'][]).map(id => {
+                {(['columns', 'tables', 'preview', 'notebook'] as ProjectState['activeTab'][]).filter(id => !(isNotebookFlow && id === 'notebook')).map(id => {
                   const active = project.activeTab === id;
                   const label = id === 'columns' ? 'Columns' : id === 'tables' ? 'Tables' : id === 'preview' ? 'Preview' : 'Notebook';
                   return (
@@ -815,8 +831,16 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
         </div>
         </div>}
 
+        {/* Notebook panel — notebook flow only */}
+        {notebookPanelOpen && isNotebookFlow && (notebookCells?.length ?? 0) > 0 && (
+          <NotebookView
+            cells={notebookCells!}
+            onClose={() => setNotebookPanelOpen(false)}
+          />
+        )}
+
         {/* Context panel */}
-        {contextPanelOpen && (
+        {contextPanelOpen && !notebookPanelOpen && (
           <ChatContextPanel
             created={contextCreated}
             tables={contextTables}

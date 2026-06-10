@@ -1288,3 +1288,29 @@ Build clean ✓.
 - `confirmItems?: string[]`
 
 Build clean ✓.
+
+---
+
+### 2026-06-10 (session 129)
+
+**Model build panel — inline artifact view for notebook flow**
+
+**ChatView.tsx:**
+- `modelBuildPanelOpen` state + `modelPanelAutoOpenedRef` added
+- useEffect auto-opens model build panel when `isNotebookFlow && buildStep !== 'empty'`; clears all other side panels (activePlan, notebookPanel, qualityPlan, etc.) at the same time
+- `isPlanOpen` now includes `modelBuildPanelOpen`
+- Model entry in Created section opens model panel (not workspace) when in notebook flow
+- `onOpenModelPanel` callback passed to AgentPanel for notebook flow
+- `ModelBuildPanel` component added: spinner during build → green check after done; live build steps checklist (5 steps, marks all done on `buildStep === 'healthy'`); source list with colored dots lighting up as tables are added; sample questions section (post-build); "Open in workspace" CTA button
+
+**AgentPanel.tsx:**
+- `onOpenModelPanel?: () => void` prop added
+- `ModelArtifactCard` click: calls `onOpenModelPanel()` if provided, else falls back to `onNavigateToWorkspace`
+- `BuiltSummaryCard` `onNavigate`: prefers `onOpenModelPanel` over `onNavigateToWorkspace`
+- useEffect: clears `planExpandedId` when `notebookFlowPhase === 'building'` (prevents inline plan card from staying expanded when build starts)
+
+**Bug fixes:**
+- `awaiting_build_initiation` regex: `^(no|...)` → `^(no\b|...)` — was matching "now" as "no", blocking build initiation
+- Plan showing in artifact space on build start: inline plan card now auto-collapses when building; model build panel clears all other side panels on open
+
+Build clean ✓.

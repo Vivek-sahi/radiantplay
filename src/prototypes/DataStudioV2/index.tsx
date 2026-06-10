@@ -10,6 +10,7 @@ import ConnectionsPage from './components/ConnectionsPage';
 import ModelsPage from './components/ModelsPage';
 import FullChatView from './components/FullChatView';
 import { AgentMessage } from './components/AgentPanel';
+import { NotebookCell } from './components/ChatContextPanel';
 import { OverviewProject, OverviewAlert, ActiveInsight } from './data/mockData';
 import { c, sp, ff, fs, fw } from './styles';
 
@@ -104,6 +105,7 @@ const DataStudio: React.FC = () => {
   const [dbtImported, setDbtImported] = useState(false);
   const [dataBrowserInitialTab, setDataBrowserInitialTab] = useState<'warehouses' | 'external-models'>('warehouses');
   const [messages, setMessages]       = useState<AgentMessage[]>([]);
+  const [notebookCells, setNotebookCells] = useState<NotebookCell[]>([]);
   const [isAgentMode, setIsAgentMode] = useState(false);
   const multiSourcePendingRef         = useRef(false);
   const notebookFlowPendingRef        = useRef(false);
@@ -134,14 +136,15 @@ const DataStudio: React.FC = () => {
   };
 
   // Auto-transition: chat → workspace when the build starts (buildStep leaves 'empty')
+  // Notebook flow stays in chat — build completes there and user navigates manually.
   useEffect(() => {
-    if (view === 'chat' && project.buildStep !== 'empty') {
+    if (view === 'chat' && project.buildStep !== 'empty' && !isNotebookFlow) {
       setInitialPrompt('');
       setIsFromScratch(false);
       navigateTo('workspace');
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [project.buildStep, view]);
+  }, [project.buildStep, view, isNotebookFlow]);
 
   const [modelViewInitialTab, setModelViewInitialTab] = useState<'info' | 'usage' | 'cache' | 'quality' | 'monitoring' | undefined>(undefined);
 
@@ -471,6 +474,8 @@ const DataStudio: React.FC = () => {
             setProject={setProject}
             messages={messages}
             setMessages={setMessages}
+            notebookCells={notebookCells}
+            setNotebookCells={setNotebookCells}
             initialPrompt={initialPrompt}
             isFromScratch={isFromScratch}
             isMultiSource={isMultiSource}
@@ -478,6 +483,7 @@ const DataStudio: React.FC = () => {
             isDbtReview={isDbtReview}
             instructionsCreated={instructionsCreated}
             onBuildStart={() => setInstructionsCreated(true)}
+            onNavigateToWorkspace={() => { setInitialPrompt(''); navigateTo('workspace'); }}
             onBack={goBack}
             onNavigateToTable={() => {
               setDataBrowserInitialTab('warehouses');
@@ -514,6 +520,8 @@ const DataStudio: React.FC = () => {
             isDbtReview={isDbtReview}
             isAgentMode={isAgentMode}
             instructionsCreated={instructionsCreated}
+            isNotebookFlow={isNotebookFlow}
+            notebookCells={notebookCells}
             onNavigateToTable={(tableName) => {
               setDataBrowserInitialTab('warehouses');
               navigateTo('data-browser');

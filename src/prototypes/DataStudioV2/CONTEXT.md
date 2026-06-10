@@ -4,7 +4,7 @@ _Updated at the end of every session. For product context see `product.md`. For 
 
 ---
 
-## Current state (session 125, 2026-06-10)
+## Current state (session 131, 2026-06-10)
 
 **Branch:** `prototype/data-studio` on `origin` (vivek-sahi/radiantplay)  
 **Deployed:** https://radiantplay-nine.vercel.app  
@@ -36,24 +36,198 @@ _Updated at the end of every session. For product context see `product.md`. For 
 
 ## Next session
 
-**Deploy:** push to both `origin` (galaxy) AND `github` remote, then run `vercel --prod` from the radiantplay directory. Vercel watches GitHub, not galaxy — both pushes are required.
+**Deploy when ready:** push to both `origin` (galaxy) AND `github` remote, then `vercel --prod`.
 
-**Single-notebook flow — polish needed:**
-- The notebook panel currently opens alongside the chat (flex layout). Confirm the visual feels right; may need width tuning.
-- The `awaiting_csv` phase in the notebook flow uses `handleNotebookFlowInput("Uploaded filename.csv")` — test the file drop path end to end.
-- The env-init working message briefly shows then gets updated to done — verify the transition feels smooth in the browser.
+**Remaining polish from this sprint:**
+- Context panel "Source tables" section: wire clicks to notebook cell highlight (same as artifact card clicks in chat)
+- 3 Anthropic article builds (lower priority): provenance chip in Test mode, notebook edit → stale flag, unreviewed badge on agent-generated content
 
-**Primary task:** 3 Anthropic article learnings to build
-- **Provenance chip in Test mode** — every Spotter answer should show source tier (semantic layer / governed / raw), last synced, owner. Small component added to the Test mode message renderer.
-- **Notebook edit → stale flag** — when a notebook cell is edited and run, surface: "N column descriptions / AIRS items may be affected — review them?" Connects transforms to readiness docs.
-- **Unreviewed badge on agent-generated content** — agent-drafted column descriptions and AIRS items should be visually marked until a human confirms them.
+---
 
-**Open DE quick wins** (lower priority)
-- Show CSV column names in consent message ("account_id, csm_name, exec_sponsor, csm_region")
+## Session 131 changes (2026-06-10)
 
-**Table card improvements**
-- Collapsed card: add last-synced freshness (most useful missing DE signal)
-- Expanded card: "X/N columns described" indicator in header; cardinality hint on STRING columns
+**Notebook flow — model card bugs**
+
+**AgentPanel.tsx:**
+- Removed duplicate `ModelArtifactCard` from notebook flow done message — `BuiltSummaryCard` (from plan message) is the only model card shown after build
+- Renamed "Open workspace" → "Open model" on `BuiltSummaryCard`
+
+**Workspace.tsx:**
+- Notebook item onClick: removed `setCanvasVisible(true)` — opening the notebook panel no longer forces the model artifact open
+- `onNavigateToWorkspace` prop to AgentPanel now also clears `planPanelOpen`, `qualityPlanOpen`, `instructionsPanelOpen` — model card click in workspace properly shows the model artifact even when another canvas panel is open
+
+**Build:** clean ✓
+
+---
+
+## Session 130 changes (2026-06-10)
+
+**Notebook flow polish — created panel + workspace nav + ModelBuildPanel removal**
+
+**AgentPanel.tsx:**
+- Notebook flow: added `setProject` calls when `pendo_nps_enriched`, `csm_account_mapping`, and `customer_health_external` are written — these now appear in the Created section of the right panel
+- Removed `onOpenModelPanel` prop entirely; `BuiltSummaryCard` and `ModelArtifactCard` both navigate to workspace directly via `onNavigateToWorkspace`
+- `ModelArtifactCard` click: removed `onBuildStart` call (was causing unnecessary state churn/scroll side effect)
+- Notebook flow build: removed `buildPlanCard: true` from the build-start message — fixes 2 artifacts being visible; only `ModelArtifactCard` shows at end
+
+**ChatView.tsx:**
+- Removed `ModelBuildPanel` component and all supporting constants (`MODEL_BUILD_STEPS`, `MODEL_BUILD_SOURCES`, `MODEL_SAMPLE_QUESTIONS`)
+- Removed `modelBuildPanelOpen` state, `modelPanelAutoOpenedRef`, auto-open useEffect
+- Model item in Created section now always calls `onNavigateToWorkspace` (not the old model panel)
+- `notebookCells` and `setNotebookCells` lifted to props (state moved to index.tsx)
+- Instructions + plan types filtered out of `createdItems` in `ChatContextPanel`
+
+**ChatContextPanel.tsx:**
+- `createdItems` filter now excludes `instructions` and `plan` types
+
+**index.tsx:**
+- Added `notebookCells` / `setNotebookCells` state (lifted from ChatView); passed to both ChatView and Workspace
+- Workspace now receives `isNotebookFlow` and `notebookCells` props
+
+**Workspace.tsx:**
+- Added `isNotebookFlow` and `notebookCells` props
+- `contextCreated` includes notebook item + Spotstore tables when `isNotebookFlow` — Environment section persists after navigating from chat to workspace
+- Renders `NotebookView` panel when `notebookPanelOpen` (right panel; hides context panel while open)
+- AgentPanel now gets `onNavigateToWorkspace={() => setCanvasVisible(true)}` — clicking model artifact card in workspace chat history shows the model canvas
+- Notebook tab hidden from center panel tab bar when `isNotebookFlow` (notebook accessible from Environment in right panel)
+
+**Build:** clean ✓
+
+---
+
+## Session 129 changes (2026-06-10)
+
+**Model build panel — inline artifact view for notebook flow**
+
+**ChatView.tsx:**
+- `modelBuildPanelOpen` state + `modelPanelAutoOpenedRef`; useEffect auto-opens when `isNotebookFlow && buildStep !== 'empty'`, clearing all other side panels
+- `ModelBuildPanel` component: live build steps (5 steps, all done on `buildStep === 'healthy'`), source dots light up as tables are added, sample questions post-build, "Open in workspace" CTA
+- Model entry in Created section → opens model panel (not workspace) in notebook flow
+- `onOpenModelPanel` prop passed to AgentPanel
+
+**AgentPanel.tsx:**
+- `onOpenModelPanel` prop; ModelArtifactCard + BuiltSummaryCard use it instead of `onNavigateToWorkspace`
+- useEffect clears `planExpandedId` when `notebookFlowPhase === 'building'`
+- `awaiting_build_initiation` regex: `^no` → `^no\b` (was matching "now", blocking build start)
+
+**Build:** clean ✓
+
+---
+
+## Session 128 changes (2026-06-10)
+
+**Single-notebook flow — post-review polish + bug fixes**
+
+**AgentPanel.tsx:**
+- `awaiting_build_initiation` regex broadened: now matches ANY input that isn't a question (`?`) or a clear negative (`no/wait/stop/cancel`) — fixes "Great now we're ready to model" not triggering build
+- `modelArtifact` added to `awaiting_build_confirm` done message — `ModelArtifactCard` now renders at end of notebook flow build
+- `ModelArtifactCard` click made unconditional: `onNavigateToWorkspace?.(); onBuildStart?.()` (no falsy guard)
+
+**ChatView.tsx:**
+- Model item in `created` array now has `onClick: onNavigateToWorkspace` — clicking "Customer Health Scorecard" in Created panel navigates to workspace
+- `onNavigateToWorkspace` added to `created` useMemo deps
+- Notebook item in `created` shown from flow start (not gated on `notebookCells.length > 0`): subLabel shows "Initializing…" until first cell arrives, then "Python · N cells"
+- Notebook item also shows after remount when `project.buildStep !== 'empty'` (survives workspace → back-to-chat view switch)
+
+**ChatContextPanel.tsx:**
+- Green live indicator is now dynamic: grey "Initializing…" when notebook subLabel is "Initializing…", green "Initialized" once cells exist
+
+**index.tsx:**
+- `onNavigateToWorkspace` now clears `initialPrompt` before navigating: `() => { setInitialPrompt(''); navigateTo('workspace'); }` — fixes restart loop (ChatView unmounts on workspace nav; if initialPrompt was still set it would restart the flow on remount)
+
+**Build:** clean ✓
+
+---
+
+## Session 127 changes (2026-06-10)
+
+**Single-notebook flow — 9-item review pass**
+
+**AgentPanel.tsx:**
+- Removed "Customer Health Analysis" notebook artifact card from chat messages (notebook pre-exists, shouldn't re-appear)
+- Env init sequence: 2 working steps now (env init → connection scan) before SQL cells appear; artifact cards for all 4 tables in scan response
+- Pre-build flow overhauled: after staging compiles, agent shows neutral "staging table is ready" message, no auto-ask. New `awaiting_build_initiation` phase waits for user to say "build model" etc. → agent lists all 5 sources + "Use all of them" chip → `awaiting_source_selection` → plan card → build
+- Added `onNavigateToWorkspace` prop; ModelArtifactCard and BuiltSummaryCard both call it
+
+**ChatView.tsx:**
+- Removed notebook auto-open (notebook panel starts closed; user opens via Created section)
+- Added `NOTEBOOK_CARD_TO_CELL` map + `handleNotebookCardClick`: DIM_ACCOUNTS→sql-1, SUPPORT_CASES→sql-2, CALL_METRICS→sql-3, CUSTOMER_FOUND_DEFECTS→sql-4, pendo_nps_enriched→sql-pendo-write, csm_account_mapping→sql-csv-write, customer_health_external→sql-staging
+
+**Single-notebook flow overhaul — based on review feedback**
+
+**AgentPanel.tsx:**
+- `NotebookFlowPhase` type expanded: added `awaiting_csv_prompt`, `awaiting_csv_write_consent`, `awaiting_staging_decision`, `awaiting_staging_consent`, `awaiting_build_confirm`; removed `awaiting_staging`
+- Scan sequence: two working steps (env init → connection scan) before SQL cells; artifact cards shown for all 4 tables at end; "What other data?" is a separate follow-up message
+- Pendo API key: uses masked `inlineInput: { type: 'api-key' }` — notebook artifact card removed from this message (was showing 5 cells before key ran); card appears after Pendo completes
+- API key fix: `handleApiKeySubmit` passes sentinel `'__key_submitted__'` so raw key never appears in chat; typed key shows `'••••••••'`
+- Pendo processing: goes through `execute_pendo_fetch` working steps, shows artifact cards (notebook + pendo_nps_enriched); no auto-CSV prompt — waits for user
+- CSV flow: file drop shows attachment chip + consent gate before writing to Spotstore; artifact card for csm_account_mapping after write
+- Staging table: SQL joins **only** `pendo_nps_enriched + csm_account_mapping` (CDW tables stay federated); pre-build message lists all 5 sources and asks "use all of them?"
+- Model plan: `awaiting_build` shows plan card for review; `awaiting_build_confirm` runs the build after user confirms
+- `handleFileUpload`: notebook flow shows attachment chip + consent gate
+- `handleApiKeySubmit`: routes to notebook flow when `notebookFlowPhase === 'awaiting_api_key'`
+
+**index.tsx:**
+- Auto-transition chat → workspace skips notebook flow (`&& !isNotebookFlow`); build completes in chat, user navigates to workspace manually
+
+**ChatView.tsx:**
+- Notebook panel auto-opens when first cell arrives (`notebookAutoOpenedRef` guards single-fire)
+- Table/artifact card clicks in notebook flow route to `handleNotebookCardClick` → opens notebook panel + sets `notebookHighlightCellId` (no MultiSourcePreviewPanel)
+- `NOTEBOOK_CARD_TO_CELL` map: DIM_ACCOUNTS→sql-1, SUPPORT_CASES→sql-2, CALL_METRICS→sql-3, CUSTOMER_FOUND_DEFECTS→sql-4, pendo_nps_enriched→py-pendo, csm_account_mapping→upload-csv, customer_health_external→sql-staging
+
+**ChatContextPanel.tsx:**
+- "Environment" section renders above "Created" when notebook items exist; notebook items filtered out of `createdItems`
+
+**NotebookView.tsx:**
+- `highlightCellId?: string | null` prop; scrolls to + pulses blue ring on matching cell for 1.6s; `cellRefMap` ref resolves DOM nodes
+
+**Build:** clean ✓
+
+---
+
+## Session 127 changes (2026-06-10)
+
+**Single-notebook flow — 9-item review pass**
+
+**AgentPanel.tsx:**
+- Removed "Customer Health Analysis" notebook artifact card from chat messages (notebook pre-exists, shouldn't re-appear)
+- Env init sequence: 2 working steps now (env init → connection scan) before SQL cells appear; artifact cards for all 4 tables in scan response
+- Pre-build flow overhauled: after staging compiles, agent shows neutral "staging table is ready" message, no auto-ask. New `awaiting_build_initiation` phase waits for user to say "build model" etc. → agent lists all 5 sources + "Use all of them" chip → `awaiting_source_selection` → plan card → build
+- Added `onNavigateToWorkspace` prop; ModelArtifactCard and BuiltSummaryCard both call it
+
+**ChatView.tsx:**
+- Removed notebook auto-open (notebook panel starts closed; user opens via Created section)
+- Added `NOTEBOOK_CARD_TO_CELL` map + `handleNotebookCardClick`: DIM_ACCOUNTS→sql-1, SUPPORT_CASES→sql-2, CALL_METRICS→sql-3, CUSTOMER_FOUND_DEFECTS→sql-4, pendo_nps_enriched→sql-pendo-write, csm_account_mapping→sql-csv-write, customer_health_external→sql-staging
+- `onOpenMsItem` in notebook flow routes to `handleNotebookCardClick` (opens notebook + scrolls to cell)
+- Passes `onNavigateToWorkspace` through to AgentPanel
+
+**NotebookView.tsx:**
+- Added `CellRunResults` component: appears below SQL cells after clicking Run. DIM_ACCOUNTS shows 3 mock account rows; SUPPORT_CASES, CALL_METRICS, CUSTOMER_FOUND_DEFECTS show appropriate 3-row mock tables; other cells show "3 rows returned"
+- `ranCells` state tracks which cells have been run
+- `highlightCellId` prop now uses `cellRefMap` refs to scroll + pulse (was already built in session 126, now integrated)
+
+**ChatContextPanel.tsx:**
+- New "Environment" section: notebook items (type:'notebook') move here; shows green live indicator dot ("Initialized")
+- Context section: Snowflake tables now grouped under "Snowflake · N tables" sub-header + "Federated query" note; Pendo API entry appears after pendo_nps_enriched is written (derived from `created` state)
+- Created section: notebook and csv-dataset items excluded (notebook → Environment; CSV file not persisted)
+- Context tables timing: source tables appear after scan_running phase completes (when AgentPanel emits the 4 table artifact cards and they're added to notebookCreated state via index.tsx)
+
+**index.tsx:**
+- `onNavigateToWorkspace={() => navigateTo('workspace')}` passed to ChatView → AgentPanel
+- Auto-transition guard confirmed: `&& !isNotebookFlow` correct
+
+**Build:** clean ✓
+
+---
+
+## Next session
+
+**Deploy when ready:** push to both `origin` (galaxy) AND `github` remote, then `vercel --prod`. Vercel watches GitHub, not galaxy — both pushes required.
+
+**3 Anthropic article builds** (still pending, lower priority this sprint):
+- Provenance chip in Test mode
+- Notebook edit → stale flag
+- Unreviewed badge on agent-generated content
 
 ---
 

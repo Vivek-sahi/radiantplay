@@ -123,14 +123,22 @@ const ChatContextPanel: React.FC<ChatContextPanelProps> = ({ created, models = [
   const [hoveredModel, setHoveredModel] = useState<number | null>(null);
   const [hoveredCreated, setHoveredCreated] = useState<number | null>(null);
   const [hoveredSource, setHoveredSource] = useState<number | null>(null);
+  const [environmentOpen, setEnvironmentOpen] = useState(true);
+  const [hoveredEnv, setHoveredEnv] = useState<number | null>(null);
 
   const secondaryColor = c['content-secondary'];
 
   // CDW ref tables (type:'table') live in Context → Source tables sub-section
   const sourceTableItems = created.filter(item => item.type === 'table');
-  // Everything else (spotstore-table, notebook, csv-dataset, staging-table, model, etc.) goes in Created
-  const createdItems = created.filter(item => item.type !== 'table');
-  const hasContext = models.length > 0 || tables.length > 0 || skills.length > 0 || sourceTableItems.length > 0;
+  // Notebook goes to Environment; csv-dataset and table are excluded from Created
+  const environmentItems = created.filter(item => item.type === 'notebook');
+  const createdItems = created.filter(item =>
+    item.type !== 'table' && item.type !== 'notebook' && item.type !== 'csv-dataset'
+    && item.type !== 'instructions' && item.type !== 'plan'
+  );
+  // Pendo API entry appears once pendo_nps_enriched has been written to Spotstore
+  const pendoFetchComplete = created.some(item => item.name === 'pendo_nps_enriched');
+  const hasContext = models.length > 0 || tables.length > 0 || skills.length > 0 || sourceTableItems.length > 0 || pendoFetchComplete;
 
   const renderItem = (item: CreatedItem, i: number, hovered: number | null, setHovered: (v: number | null) => void) => (
     <div key={i}>
@@ -187,6 +195,29 @@ const ChatContextPanel: React.FC<ChatContextPanelProps> = ({ created, models = [
       display: 'flex', flexDirection: 'column',
       overflowY: 'auto', backgroundColor: c['background-base'],
     }}>
+
+      {environmentItems.length > 0 && (
+        <>
+          <SectionHeader label="Environment" open={environmentOpen} onToggle={() => setEnvironmentOpen(o => !o)} />
+          {environmentOpen && (
+            <div style={{ padding: `0 ${sp.C}px ${sp.C}px`, display: 'flex', flexDirection: 'column' }}>
+              {environmentItems.map((item, i) => renderItem(item, i, hoveredEnv, setHoveredEnv))}
+              {(() => {
+                const ready = environmentItems.some(item => item.subLabel && item.subLabel !== 'Initializing…');
+                return (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: `2px ${sp.B}px`, marginTop: 1 }}>
+                    <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: ready ? c['content-success'] : c['content-secondary'], flexShrink: 0 }} />
+                    <span style={{ fontSize: fs.xs, color: ready ? c['content-success'] : c['content-secondary'] }}>
+                      {ready ? 'Initialized' : 'Initializing…'}
+                    </span>
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+          <div style={{ height: 1, backgroundColor: c['border-divider'], margin: `0 ${sp.C}px` }} />
+        </>
+      )}
 
       {/* Created this session */}
       <SectionHeader label="Created" open={createdOpen} onToggle={() => setCreatedOpen(o => !o)} />
@@ -274,34 +305,55 @@ const ChatContextPanel: React.FC<ChatContextPanelProps> = ({ created, models = [
               )}
 
               {/* Source tables sub-section — CDW refs, accessible via federated query */}
-              {sourceTableItems.length > 0 && (
+              {(sourceTableItems.length > 0 || pendoFetchComplete) && (
                 <div>
                   <div style={{ fontSize: fs.xs, color: secondaryColor, fontWeight: fw.medium, padding: `0 ${sp.B}px`, marginBottom: 2 }}>Source tables</div>
-                  {sourceTableItems.map((item, i) => (
+                  {sourceTableItems.length > 0 && (
+                    <>
+                      <div style={{ fontSize: fs.xs, color: c['content-tertiary'], fontWeight: fw.medium, padding: `2px ${sp.B}px`, marginBottom: 1, letterSpacing: '0.01em' }}>
+                        Snowflake · {sourceTableItems.length} table{sourceTableItems.length === 1 ? '' : 's'}
+                      </div>
+                      {sourceTableItems.map((item, i) => (
+                        <div
+                          key={i}
+                          onClick={item.onClick}
+                          onMouseEnter={() => setHoveredSource(i)}
+                          onMouseLeave={() => setHoveredSource(null)}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: 6,
+                            padding: `4px ${sp.B}px`, borderRadius: 4,
+                            cursor: item.onClick ? 'pointer' : 'default',
+                            backgroundColor: hoveredSource === i && item.onClick ? c['background-subtle'] : 'transparent',
+                            transition: 'background-color 0.1s ease',
+                          }}
+                        >
+                          <TableIcon color={secondaryColor} />
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: fs.sm, color: c['content-primary'], overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</div>
+                            {item.subLabel && <div style={{ fontSize: fs.xs, color: c['content-secondary'], marginTop: 1 }}>{item.subLabel}</div>}
+                          </div>
+                          <span style={{ fontSize: 9, fontWeight: fw.semibold, color: c['content-secondary'], backgroundColor: c['background-subtle'], border: `1px solid ${c['border-default']}`, borderRadius: 3, padding: '1px 4px', flexShrink: 0, letterSpacing: '0.02em' }}>CDW</span>
+                        </div>
+                      ))}
+                      <div style={{ fontSize: fs.xs, color: c['content-tertiary'], padding: `2px ${sp.B}px`, marginTop: 2, marginBottom: pendoFetchComplete ? sp.B : 0 }}>
+                        Federated query — not copied to staging
+                      </div>
+                    </>
+                  )}
+                  {pendoFetchComplete && (
                     <div
-                      key={i}
-                      onClick={item.onClick}
-                      onMouseEnter={() => setHoveredSource(i)}
-                      onMouseLeave={() => setHoveredSource(null)}
                       style={{
                         display: 'flex', alignItems: 'center', gap: 6,
                         padding: `4px ${sp.B}px`, borderRadius: 4,
-                        cursor: item.onClick ? 'pointer' : 'default',
-                        backgroundColor: hoveredSource === i && item.onClick ? c['background-subtle'] : 'transparent',
-                        transition: 'background-color 0.1s ease',
                       }}
                     >
-                      <TableIcon color={secondaryColor} />
+                      <DocIcon color={secondaryColor} />
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: fs.sm, color: c['content-primary'], overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</div>
-                        {item.subLabel && <div style={{ fontSize: fs.xs, color: c['content-secondary'], marginTop: 1 }}>{item.subLabel}</div>}
+                        <div style={{ fontSize: fs.sm, color: c['content-primary'] }}>Pendo API</div>
                       </div>
-                      <span style={{ fontSize: 9, fontWeight: fw.semibold, color: c['content-secondary'], backgroundColor: c['background-subtle'], border: `1px solid ${c['border-default']}`, borderRadius: 3, padding: '1px 4px', flexShrink: 0, letterSpacing: '0.02em' }}>CDW</span>
+                      <span style={{ fontSize: 9, fontWeight: fw.semibold, color: c['content-secondary'], backgroundColor: c['background-subtle'], border: `1px solid ${c['border-default']}`, borderRadius: 3, padding: '1px 4px', flexShrink: 0, letterSpacing: '0.02em' }}>API</span>
                     </div>
-                  ))}
-                  <div style={{ fontSize: fs.xs, color: c['content-tertiary'], padding: `2px ${sp.B}px`, marginTop: 2 }}>
-                    Federated query — not copied to staging
-                  </div>
+                  )}
                 </div>
               )}
 
