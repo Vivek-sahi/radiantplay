@@ -1314,3 +1314,21 @@ Build clean ✓.
 - Plan showing in artifact space on build start: inline plan card now auto-collapses when building; model build panel clears all other side panels on open
 
 Build clean ✓.
+
+---
+
+### 2026-06-10 (session 131)
+
+**Model card bugs + Environment section scope fix**
+
+Two bugs fixed and deployed:
+
+1. **Duplicate model cards in notebook flow** — after build, both `BuiltSummaryCard` (from plan message) and `ModelArtifactCard` (from done message) were rendering. Removed `modelArtifact` from the notebook flow done message; `BuiltSummaryCard` is now the only post-build card. Also renamed its CTA from "Open workspace" to "Open model".
+
+2. **Model card click was dead in workspace** — clicking `ModelArtifactCard` in the workspace chat panel only called `setCanvasVisible(true)` but didn't clear `planPanelOpen` / `qualityPlanOpen` / `instructionsPanelOpen`. If any panel was open, the model artifact couldn't show. Fixed `onNavigateToWorkspace` in Workspace to clear all canvas panels.
+
+3. **Notebook item click opened model** — notebook item onClick in Workspace had `setCanvasVisible(true)`, so opening the notebook also forced the model artifact open. Removed that call; notebook panel now opens independently.
+
+4. **Environment section appearing in multi-source flow** — `ChatContextPanel` showed any `type:'notebook'` item in Environment regardless of flow. Multi-source flow adds `pendo_nps_ingestion.ipynb` to `multiSourceCreated`, which was leaking into Environment. Added `isNotebookFlow` prop to `ChatContextPanel`; Environment section now only renders in the single-notebook flow.
+
+Deployed to https://radiantplay-nine.vercel.app ✓

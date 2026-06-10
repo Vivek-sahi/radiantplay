@@ -36,9 +36,9 @@ _Updated at the end of every session. For product context see `product.md`. For 
 
 ## Next session
 
-**Deploy when ready:** push to both `origin` (galaxy) AND `github` remote, then `vercel --prod`.
+**Deployed:** https://radiantplay-nine.vercel.app ✓
 
-**Remaining polish from this sprint:**
+**Remaining polish:**
 - Context panel "Source tables" section: wire clicks to notebook cell highlight (same as artifact card clicks in chat)
 - 3 Anthropic article builds (lower priority): provenance chip in Test mode, notebook edit → stale flag, unreviewed badge on agent-generated content
 
