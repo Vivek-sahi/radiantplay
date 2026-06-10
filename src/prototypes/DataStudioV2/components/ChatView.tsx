@@ -263,6 +263,7 @@ const ChatView: React.FC<ChatViewProps> = ({
               created={created}
               tables={contextTables}
               skills={contextSkills}
+              isNotebookFlow={isNotebookFlow}
               onNavigateToTable={onNavigateToTable}
             />
           </div>

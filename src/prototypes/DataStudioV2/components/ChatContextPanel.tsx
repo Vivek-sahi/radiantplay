@@ -25,6 +25,7 @@ interface ChatContextPanelProps {
   models?: string[];
   tables: string[];
   skills: string[];
+  isNotebookFlow?: boolean;
   onNavigateToTable?: (tableName: string) => void;
 }
 
@@ -115,7 +116,7 @@ const SectionHeader: React.FC<{ label: string; open: boolean; onToggle: () => vo
   </button>
 );
 
-const ChatContextPanel: React.FC<ChatContextPanelProps> = ({ created, models = [], tables, skills, onNavigateToTable }) => {
+const ChatContextPanel: React.FC<ChatContextPanelProps> = ({ created, models = [], tables, skills, isNotebookFlow = false, onNavigateToTable }) => {
   const [createdOpen, setCreatedOpen] = useState(true);
   const [sourceTablesOpen, setSourceTablesOpen] = useState(true);
   const [contextOpen, setContextOpen] = useState(true);
@@ -130,11 +131,12 @@ const ChatContextPanel: React.FC<ChatContextPanelProps> = ({ created, models = [
 
   // CDW ref tables (type:'table') live in Context → Source tables sub-section
   const sourceTableItems = created.filter(item => item.type === 'table');
-  // Notebook goes to Environment; csv-dataset and table are excluded from Created
-  const environmentItems = created.filter(item => item.type === 'notebook');
+  // Notebook goes to Environment only in the single-notebook flow; in multi-source it stays in Created
+  const environmentItems = isNotebookFlow ? created.filter(item => item.type === 'notebook') : [];
   const createdItems = created.filter(item =>
-    item.type !== 'table' && item.type !== 'notebook' && item.type !== 'csv-dataset'
+    item.type !== 'table' && item.type !== 'csv-dataset'
     && item.type !== 'instructions' && item.type !== 'plan'
+    && !(isNotebookFlow && item.type === 'notebook')
   );
   // Pendo API entry appears once pendo_nps_enriched has been written to Spotstore
   const pendoFetchComplete = created.some(item => item.name === 'pendo_nps_enriched');
