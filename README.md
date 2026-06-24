@@ -13,7 +13,7 @@ A tool-agnostic prototyping playground built on ThoughtSpot's Radiant design sys
 
 ## What is this?
 
-Radiant Play is a fork-ready repository for ThoughtSpot designers, PMs, and anyone building product prototypes. It ships with 120+ Radiant UI components, design tokens, mock data, and an AI rule system — so you can describe a UI in plain language and get working, compliant code in seconds.
+Radiant Play is a fork-ready repository for ThoughtSpot designers, PMs, and anyone building product prototypes. It ships with 75+ Radiant UI components, design tokens, mock data, and an AI rule system — so you can describe a UI in plain language and get working, compliant code in seconds.
 
 Works with any AI coding tool: **Claude Code**, **Cursor**, **Codex**, or any tool that reads project-level instructions.
 
@@ -141,7 +141,7 @@ The same rules work across tools — `.cursor/rules/` for Cursor, `.claude/skill
 
 ## Available components
 
-120+ production-quality Radiant components ready to use.
+75+ production-quality Radiant components ready to use.
 
 | Category | Components |
 |----------|------------|
@@ -249,6 +249,7 @@ Radiant Play ships with slash commands you can run directly in Claude Code (or d
 |--------|-----|---------|
 | `origin` | `github.com/faris-ts/radiantplay` | Primary — Vercel deploys from here |
 | `galaxy` | `galaxy.corp.thoughtspot.com/mohammed-faris/radiantplay` | Internal ThoughtSpot access |
+| `public` | `github.com/thoughtspot/radiant-play` | Public release mirror — curated snapshot, publish-only |
 
 ---
 

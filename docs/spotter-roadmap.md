@@ -1,6 +1,6 @@
 # Spotter roadmap
 
-Last updated: 2026-05-25 (Stage B Phase 2 essentially complete. Right-pane state machine, AnalystLandingPage, AnalystListPage all shipped on staging. Prompt bar rebuilt with mode toggle, data-model picker hide, and PromptSuggestionsPanel. 12 IA polish corrections landed. Only Stage B item left: showcase previews on `/radiant/spotter` for the new menus + analyst pages).
+Last updated: 2026-06-25 (Stage B Phase 2 essentially complete. Right-pane state machine, AnalystLandingPage, AnalystListPage all shipped on staging. Prompt bar rebuilt with mode toggle, data-model picker hide, and PromptSuggestionsPanel. 12 IA polish corrections landed. Only Stage B item left: showcase previews on `/radiant/spotter` for the new menus + analyst pages).
 
 This is the **resume-here tracker** for all Spotter work across modes. If you open one Spotter doc, open this one. It absorbs the high-level status and points to deeper references.
 
@@ -132,7 +132,7 @@ Detailed information architecture rewrite for the **standalone** Spotter page. T
 
 #### Stage B — Prototype updates to match IA
 
-Status: 🟡 **partial — Phase 1 done, Phase 2 pending**. Shipped on branch `feat/spotter-ia-stage-b` (2026-05-19). Work was fanned out across 3 parallel worktree agents for the isolated components, then integrated serially.
+Status: 🟢 **Phase 1 + Phase 2 shipped; one item left** (showcase previews on `/radiant/spotter`). Phase 1 shipped on branch `feat/spotter-ia-stage-b` (2026-05-19); Phase 2 shipped on staging (2026-05-25). Work was fanned out across 3 parallel worktree agents for the isolated components, then integrated serially.
 
 **Phase 1 — done ✅** (`feat/spotter-ia-stage-b` head)
 

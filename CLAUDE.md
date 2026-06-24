@@ -28,6 +28,8 @@
 
 `personal` and `personal/*` are origin-only. A pre-push hook enforces this — pushing them to galaxy will be refused. Do not bypass the hook with `--no-verify` unless the user explicitly says to.
 
+There is also a `public` remote (`github.com/thoughtspot/radiant-play`), the curated public release mirror. **Never push to it directly.** The public snapshot is published separately, and only with explicit per-push approval for that specific push.
+
 **The maintainer's daily working branch is `personal`.** New personal prototypes are built on `personal/<name>` branches off `personal`, merged back to `personal`, and the feature branch is deleted after merge. Personal prototypes live in `registry-mine.ts`. To promote a personal prototype to the shared library: switch to `main`, move the entry from `registry-mine.ts` to `registry-core.ts`, commit, and push to both remotes.
 
 Run `git remote -v` to confirm which remotes exist. Default deploy target is **staging**, not main — do not push to main unless explicitly asked.
@@ -176,8 +178,11 @@ The `personal` and `personal/*` branches are enforced as origin-only by a pre-pu
 **Designer forks** have one remote:
 - `origin` — the designer's own fork (GitHub or galaxy)
 
-**Main maintainer** has two remotes that must stay in sync (on shared branches):
+**Main maintainer** has three remotes:
 - `origin` — GitHub (`https://github.com/faris-ts/radiantplay.git`)
 - `galaxy` — ThoughtSpot (HTTPS: `https://galaxy.corp.thoughtspot.com/mohammed-faris/radiantplay.git` or SSH: `git@galaxy.corp.thoughtspot.com:mohammed-faris/radiantplay.git`)
+- `public` — the public mirror (`https://github.com/thoughtspot/radiant-play.git`). A curated, stripped snapshot, not a sync peer. **Never push to it directly without explicit per-push approval for that specific push.**
+
+`origin` and `galaxy` must stay in sync on shared branches. `public` is a one-way publish target.
 
 Always run `git remote -v` to confirm which remotes exist before pushing.
