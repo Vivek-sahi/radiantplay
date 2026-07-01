@@ -46,13 +46,16 @@ const chartMap: Record<ChartType, React.FC<any>> = {
 
 interface ChartRendererProps {
   type: ChartType;
+  /** Optional per-instance color override. Charts that support it use these
+   *  instead of the default sequential `chartColors`. */
+  colors?: string[];
 }
 
 /**
  * Measures its container via ResizeObserver and passes the actual
  * pixel dimensions to the chart component so it can fill the tile.
  */
-export const ChartRenderer: React.FC<ChartRendererProps> = ({ type }) => {
+export const ChartRenderer: React.FC<ChartRendererProps> = ({ type, colors }) => {
   const [containerRef, { width, height }] = useContainerSize();
   const Chart = chartMap[type];
 
@@ -61,7 +64,7 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ type }) => {
       ref={containerRef}
       style={{ width: '100%', height: '100%', display: 'flex', flex: 1, minHeight: 0 }}
     >
-      {Chart ? <Chart width={width} height={height} /> : null}
+      {Chart ? <Chart width={width} height={height} colors={colors} /> : null}
     </div>
   );
 };

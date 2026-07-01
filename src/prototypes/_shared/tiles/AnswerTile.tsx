@@ -30,6 +30,12 @@ export interface AnswerTileProps extends React.HTMLAttributes<HTMLDivElement> {
   chartType: ChartType;
 
   /**
+   * Optional per-tile color override for the chart. Charts that support it
+   * use these colors instead of the default sequential palette.
+   */
+  colors?: string[];
+
+  /**
    * Tile title. Optional — omit to hide the title entirely.
    */
   title?: string;
@@ -202,6 +208,7 @@ export const AnswerTile = forwardRef<HTMLDivElement, AnswerTileProps>(
   (
     {
       chartType,
+      colors,
       title,
       description,
       mode = 'view',
@@ -470,7 +477,7 @@ export const AnswerTile = forwardRef<HTMLDivElement, AnswerTileProps>(
           {/* chart area is the drag handle — large, safe to drag from */}
           <div className={isEdit ? `${styles.chartArea} tile-drag-handle` : styles.chartArea}>
             <Suspense fallback={<div style={{ width: '100%', height: '100%' }} />}>
-              <ChartRenderer type={chartType} />
+              <ChartRenderer type={chartType} colors={colors} />
             </Suspense>
           </div>
         </div>

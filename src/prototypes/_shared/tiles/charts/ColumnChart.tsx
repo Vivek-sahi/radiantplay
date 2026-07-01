@@ -5,9 +5,10 @@ import { chartColors, chartUi, chartFont } from '../chartPalette';
 const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'];
 const values = [42, 68, 55, 81, 47, 73, 60, 88];
 
-interface Props { width?: number; height?: number; }
+interface Props { width?: number; height?: number; colors?: string[]; }
 
-export const ColumnChart: React.FC<Props> = ({ height }) => {
+export const ColumnChart: React.FC<Props> = ({ height, colors }) => {
+  const palette = colors ?? chartColors;
   const option = {
     grid: { top: 8, bottom: 8, left: 8, right: 8, containLabel: true },
     tooltip: { trigger: 'axis' },
@@ -29,7 +30,7 @@ export const ColumnChart: React.FC<Props> = ({ height }) => {
       {
         type: 'bar',
         data: values,
-        itemStyle: { color: chartColors[0], borderRadius: [2, 2, 0, 0] },
+        itemStyle: { color: palette[0], borderRadius: [2, 2, 0, 0] },
         barMaxWidth: 32,
       },
     ],
