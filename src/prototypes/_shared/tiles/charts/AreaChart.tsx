@@ -8,9 +8,10 @@ const seriesData = [
   { name: 'Returns', data: [10, 15, 12, 18, 14, 20, 16, 22] },
 ];
 
-interface Props { width?: number; height?: number; }
+interface Props { width?: number; height?: number; colors?: string[]; }
 
-export const AreaChart: React.FC<Props> = ({ height }) => {
+export const AreaChart: React.FC<Props> = ({ height, colors }) => {
+  const palette = colors ?? chartColors;
   const option = {
     grid: { top: 8, bottom: 8, left: 8, right: 8, containLabel: true },
     tooltip: { trigger: 'axis' },
@@ -33,9 +34,9 @@ export const AreaChart: React.FC<Props> = ({ height }) => {
       type: 'line',
       data: s.data,
       smooth: true,
-      lineStyle: { color: chartColors[i], width: 2 },
-      itemStyle: { color: chartColors[i] },
-      areaStyle: { color: chartColors[i], opacity: 0.15 },
+      lineStyle: { color: palette[i % palette.length], width: 2 },
+      itemStyle: { color: palette[i % palette.length] },
+      areaStyle: { color: palette[i % palette.length], opacity: 0.15 },
       symbol: 'none',
     })),
   };

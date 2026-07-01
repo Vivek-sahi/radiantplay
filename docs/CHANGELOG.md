@@ -1,5 +1,15 @@
 # Changelog
 
+## 26.7.1a — 2026-07-01
+
+Maintainer tooling and a small design-system addition. No breaking changes.
+
+- Added an opt-in prototype census (`/prototype-census`) that counts prototypes across every fork, with API-based fork auto-discovery, surfaced in the local status dashboard
+- Added an optional per-tile chart color override to AnswerTile and the chart renderer, falling back to the default palette
+- Removed the Vercel Analytics dependency and bumped echarts to 6.1
+- Fixed the public snapshot to omit `.claude/settings.json` and the post-compact hook, avoiding a hook error on public clones
+- Removed the personal Revefi talk deck from main (it now lives on the personal branch)
+
 ## 26.5.4b — 2026-05-27
 
 Internal repository housekeeping and public-release groundwork. No user-facing changes.
