@@ -28,6 +28,14 @@ export interface VersionEntry {
  */
 export const versionHistory: VersionEntry[] = [
   {
+    version: '26.7.1b',
+    date: '2026-07-01',
+    type: 'patch',
+    changes: [
+      { type: 'modified', group: 'Components', component: 'SegmentedControl', description: 'Aligned visual style to the Radiant 3.0 Figma: pill-shaped track and segments, brand-blue active label, Elevation/100 shadow, lighter font weight, unified disabled opacity. CSS-only; propagates everywhere SegmentedControl is used.' },
+    ],
+  },
+  {
     version: '26.7.1a',
     date: '2026-07-01',
     type: 'minor',

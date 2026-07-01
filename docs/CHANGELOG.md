@@ -1,5 +1,11 @@
 # Changelog
 
+## 26.7.1b — 2026-07-01
+
+SegmentedControl visual refresh. CSS-only, no breaking changes.
+
+- Aligned SegmentedControl to the Radiant 3.0 Figma: pill-shaped track and segments, brand-blue active label, Elevation/100 shadow, lighter font weight, unified disabled opacity. Propagates everywhere SegmentedControl is used.
+
 ## 26.7.1a — 2026-07-01
 
 Maintainer tooling and a small design-system addition. No breaking changes.

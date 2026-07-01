@@ -94,6 +94,21 @@ const HIGHLIGHTS: Highlight[] = [
 
 const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '26.7.1b',
+    date: '2026-07-01',
+    title: 'SegmentedControl — Radiant 3.0 visual alignment',
+    type: 'patch',
+    changes: [
+      {
+        category: 'changed',
+        label: 'Components',
+        items: [
+          'SegmentedControl aligned to the Radiant 3.0 Figma: pill-shaped track and segments, brand-blue active label, Elevation/100 shadow, lighter font weight, unified disabled opacity. CSS-only; propagates everywhere SegmentedControl is used.',
+        ],
+      },
+    ],
+  },
+  {
     version: '26.7.1a',
     date: '2026-07-01',
     title: 'Prototype census + chart color override + tooling cleanup',
