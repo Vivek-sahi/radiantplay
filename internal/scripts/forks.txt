@@ -1,10 +1,12 @@
-# Canonical RadiantPlay fork list — one `owner/repo` per line.
-# Read by internal/scripts/status.sh and internal/scripts/prototype-census.sh.
-# Lines starting with # and blank lines are ignored.
-# Add new forks here (host is galaxy.corp.thoughtspot.com).
+# RadiantPlay fork list — one `owner/repo` per line.
 #
-# The maintainer repo (mohammed-faris/radiantplay) is handled separately as the
-# upstream baseline — do not list it here.
+# prototype-census.sh now AUTO-DISCOVERS forks from the galaxy API on every run.
+# This file is a fallback (used when the API is unreachable) and a supplement
+# (list any fork the API misses here — it's unioned with the discovered set).
+# You normally do NOT need to edit this; it will not go stale on its own.
+#
+# Lines starting with # and blank lines are ignored.
+# The maintainer repo (mohammed-faris/radiantplay) is the baseline — not listed here.
 
 suraj-boro/radiantplay
 umesh-indoriya/radiantplay

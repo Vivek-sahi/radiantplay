@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # prototype-census.sh — SLOW, opt-in. Counts every prototype across every fork.
 #
-# Fetches all forks listed in internal/scripts/forks.txt (plus the maintainer
-# repo), counts prototypes (folders + registry entries by section, per creator,
+# Auto-discovers forks from the galaxy GitHub Enterprise API (falling back to
+# internal/scripts/forks.txt if the API is unreachable), plus the maintainer
+# repo, counts prototypes (folders + registry entries by section, per creator,
 # archived included), and writes a cache that /project-status displays cheaply:
 #
 #   internal/cache/prototype-census.json   — machine-readable data
@@ -26,19 +27,62 @@ NOW="$(date '+%Y-%m-%d %H:%M')"
 
 mkdir -p "$CACHE_DIR"
 
-if [ ! -f "$FORKS_FILE" ]; then
-  echo "✗ fork list not found: $FORKS_FILE" >&2
+# Discover forks live from the galaxy GitHub Enterprise API, using the token git
+# already has for the host. Prints one `owner/repo` per line; empty on failure.
+discover_forks() {
+  local token page=1 got
+  token=$(printf "protocol=https\nhost=%s\n\n" "$HOST" | git credential fill 2>/dev/null \
+          | awk -F= '/^password=/{print $2}')
+  [ -z "$token" ] && return 1
+  while :; do
+    got=$(curl -s -H "Authorization: token $token" -H "Accept: application/vnd.github+json" \
+      "https://$HOST/api/v3/repos/$MAINTAINER/forks?per_page=100&page=$page" 2>/dev/null \
+      | python3 -c "import json,sys
+try: d=json.load(sys.stdin)
+except Exception: sys.exit(1)
+[print(x['full_name']) for x in d]" 2>/dev/null)
+    [ -z "$got" ] && break
+    echo "$got"
+    [ "$(echo "$got" | wc -l | tr -d ' ')" -lt 100 ] && break   # last page
+    page=$((page + 1))
+  done
+}
+
+# Build the target list: maintainer first, then the union of API-discovered forks
+# and forks.txt (the file is now a fallback/supplement, not the source of truth).
+LIST_TMP=$(mktemp -t rp-forklist)
+trap 'rm -f "$LIST_TMP"' EXIT
+
+DISCOVERED="$(discover_forks)"
+if [ -n "$DISCOVERED" ]; then
+  echo "$DISCOVERED" >> "$LIST_TMP"
+  echo "Discovered $(echo "$DISCOVERED" | wc -l | tr -d ' ') forks via galaxy API."
+else
+  echo "API discovery unavailable — falling back to $FORKS_FILE."
+fi
+if [ -f "$FORKS_FILE" ]; then
+  while IFS= read -r line; do
+    line="${line%%#*}"; line="$(echo "$line" | tr -d '[:space:]')"
+    [ -n "$line" ] && echo "$line" >> "$LIST_TMP"
+  done < "$FORKS_FILE"
+fi
+
+TARGETS=("$MAINTAINER")
+while IFS= read -r f; do
+  [ "$f" = "$MAINTAINER" ] && continue    # maintainer handled as baseline
+  TARGETS+=("$f")
+done < <(sort -u "$LIST_TMP")
+
+if [ "${#TARGETS[@]}" -le 1 ]; then
+  echo "✗ no forks discovered and no $FORKS_FILE — nothing to count." >&2
   exit 1
 fi
 
-# Build the full target list: maintainer first, then forks.txt (comments stripped).
-TARGETS=("$MAINTAINER")
-while IFS= read -r line; do
-  line="${line%%#*}"                     # strip trailing comments
-  line="$(echo "$line" | tr -d '[:space:]')"
-  [ -z "$line" ] && continue
-  TARGETS+=("$line")
-done < "$FORKS_FILE"
+# Hand the resolved target list to the Python counter so it counts exactly what
+# we fetched (not a stale re-read of forks.txt).
+TARGETS_FILE=$(mktemp -t rp-targets)
+printf '%s\n' "${TARGETS[@]}" > "$TARGETS_FILE"
+trap 'rm -f "$LIST_TMP" "$TARGETS_FILE"' EXIT
 
 sanitize() { echo "$1" | tr '/' '_'; }   # owner/repo -> owner_repo (ref-path safe)
 
@@ -63,26 +107,26 @@ done
 
 echo "Counting prototypes…"
 
-RP_NOW="$NOW" RP_FORKS_FILE="$FORKS_FILE" RP_MAINTAINER="$MAINTAINER" \
+RP_NOW="$NOW" RP_TARGETS_FILE="$TARGETS_FILE" RP_MAINTAINER="$MAINTAINER" \
 RP_CACHE_DIR="$CACHE_DIR" RP_HOST="$HOST" python3 - <<'PY'
 import subprocess, re, os, json, html
 from collections import defaultdict
 
-NOW        = os.environ["RP_NOW"]
-FORKS_FILE = os.environ["RP_FORKS_FILE"]
-MAINTAINER = os.environ["RP_MAINTAINER"]
-CACHE_DIR  = os.environ["RP_CACHE_DIR"]
-HOST       = os.environ["RP_HOST"]
+NOW          = os.environ["RP_NOW"]
+TARGETS_FILE = os.environ["RP_TARGETS_FILE"]
+MAINTAINER   = os.environ["RP_MAINTAINER"]
+CACHE_DIR    = os.environ["RP_CACHE_DIR"]
+HOST         = os.environ["RP_HOST"]
 
 def sh(args): return subprocess.run(args, capture_output=True, text=True).stdout
 
 def sanitize(t): return t.replace("/", "_")
 
-# Intended target list (maintainer + forks.txt), for reporting unreachable ones.
-targets = [MAINTAINER]
-with open(FORKS_FILE) as f:
+# Exact target list bash resolved and fetched (maintainer first, then all forks).
+targets = []
+with open(TARGETS_FILE) as f:
     for ln in f:
-        ln = ln.split("#", 1)[0].strip()
+        ln = ln.strip()
         if ln:
             targets.append(ln)
 
