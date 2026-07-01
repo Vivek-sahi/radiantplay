@@ -6,7 +6,10 @@
 #         bash internal/scripts/status.sh --no-open
 
 set -u
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+# Repo root, resolved via git so it stays correct no matter where this script
+# lives (it moved into internal/scripts/ during the reorg — a hardcoded ../ broke
+# it). Falls back to two-levels-up if git is unavailable.
+ROOT="$(git -C "$(dirname "$0")" rev-parse --show-toplevel 2>/dev/null || (cd "$(dirname "$0")/../.." && pwd))"
 cd "$ROOT"
 
 OUT="public/status.html"
