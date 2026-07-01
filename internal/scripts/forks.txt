@@ -1,0 +1,24 @@
+# Canonical RadiantPlay fork list — one `owner/repo` per line.
+# Read by internal/scripts/status.sh and internal/scripts/prototype-census.sh.
+# Lines starting with # and blank lines are ignored.
+# Add new forks here (host is galaxy.corp.thoughtspot.com).
+#
+# The maintainer repo (mohammed-faris/radiantplay) is handled separately as the
+# upstream baseline — do not list it here.
+
+suraj-boro/radiantplay
+umesh-indoriya/radiantplay
+vivek-sahi/radiantplay
+jason-knight/radiantplay
+irene-ren/radiantplay
+jayant-mishra/radiantplay
+simran-pandit/radiantplay
+aditya-wadher/radiantplay
+devanshi-behera/radiantplay
+akshay-mohankar/radiantplay
+komal-bains/radiantplay_komal
+abhinav-gupta/radiantplay
+yash-chauhan/radiantplay
+tarun-bhandari/radiantplay
+kshipra-sharma/radiantplay
+sneharsh-damani/radiantplay

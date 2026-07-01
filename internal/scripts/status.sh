@@ -165,6 +165,17 @@ MODIFIED_LIST=$(git diff --name-only | head -30 | esc)
 # Prototype count
 PROTOTYPE_COUNT=$(ls -1 src/prototypes 2>/dev/null | wc -l | tr -d ' ')
 
+# Prototype census cache (populated by internal/scripts/prototype-census.sh).
+# Displayed cheaply here — never recomputed by this script.
+# Anchor to the real repo root so it resolves no matter what cwd this runs from.
+REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || echo "$ROOT")"
+CENSUS_CACHE="$REPO_ROOT/internal/cache/prototype-census.html"
+if [ -f "$CENSUS_CACHE" ]; then
+  CENSUS_BLOCK=$(cat "$CENSUS_CACHE")
+else
+  CENSUS_BLOCK="<p class='empty'>No census yet. Run <code>/prototype-census</code> (slow — fetches every fork) to count prototypes across all forks.</p>"
+fi
+
 # Build size (last dist if exists)
 BUILD_SIZE="—"
 [ -d dist ] && BUILD_SIZE=$(du -sh dist 2>/dev/null | awk '{print $1}')
@@ -786,9 +797,14 @@ HTML
 HTML
   else
     cat >> "$OUT" <<HTML
-  <p class="empty">Not authenticated to ${HOST}. Run <code>gh auth login --hostname ${HOST}</code> and re-run this script.</p>
+  <p class="empty">Not authenticated to ${HOST}. Run <code>gh auth login --hostname ${HOST}</code> and re-run this script for live ahead/behind numbers.</p>
 HTML
   fi
+  # Census is git-based (not gh) — render it whether or not gh auth works.
+  cat >> "$OUT" <<HTML
+  <h2>Prototype census</h2>
+  ${CENSUS_BLOCK}
+HTML
 elif [ -n "$DESIGNER_UPSTREAM_REMOTE" ]; then
   cat >> "$OUT" <<HTML
   <h2>Upstream sync</h2>
