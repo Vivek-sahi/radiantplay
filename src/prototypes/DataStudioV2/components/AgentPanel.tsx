@@ -2,14 +2,16 @@ import React, { useState, useRef, useEffect } from 'react';
 import ReactECharts from 'echarts-for-react';
 import { c, sp, ff, fs, fw } from '../styles';
 import { shadows } from '@/tokens/shadows';
-import { ProjectState, ProjectContext } from '../index';
+import { ProjectState, ProjectContext, PrepTransform } from '../index';
 // agent.ts: skills registry (no API calls — all execution is scripted)
 import { tableMetadata, relationships, CACHE_STATS, CONNECTIONS } from '../data/mockData';
 import PromptBar, { PromptBarRef } from './PromptBar';
 import ConnectionPill from './ConnectionPill';
 import DataQualityPlanModal from './DataQualityPlanModal';
-import { Icon } from '../../../components/icons';
 import PlanPanelV3 from './PlanPanelV3';
+import { FlowOption } from './Shell';
+import { Icon } from '../../../components/icons';
+import { Button } from '../../../components/Button';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -233,31 +235,31 @@ const MOCK_PLAN_BASE: Omit<PlanData, 'version'> = {
   modelName: 'Campaign Performance',
   goal: 'Understand campaign ROI and ad spend efficiency across channels, regions, and user segments — enabling full-funnel analysis from impression to first conversion.',
   tables: [
-    { schema: 'marketing_db', name: 'orders', description: 'Transactional records for every order placed, including amount, region, and attribution to a campaign and user.', rowCount: '150 rows' },
-    { schema: 'marketing_db', name: 'campaigns', description: 'Campaign metadata — channel, spend, budget, impressions, and target region for each campaign run.', rowCount: '45 rows' },
-    { schema: 'marketing_db', name: 'users', description: 'Registered user profiles with segment classification, lifetime value, and signup date.', rowCount: '90 rows' },
+    { schema: 'marketing_db', name: 'orders', description: 'Transactional records for every order placed, including amount, region, and attribution to a campaign and user.', rowCount: '150 rows', connection: 'Snowflake', connectionType: 'snowflake' as const, confidence: 97, reasoning: 'Core fact table — covers 100% of revenue and attribution events. No missing keys, consistent schema across all 150 rows.' },
+    { schema: 'marketing_db', name: 'campaigns', description: 'Campaign metadata — channel, spend, budget, impressions, and target region for each campaign run.', rowCount: '45 rows', connection: 'Pendo', connectionType: 'snowflake' as const, confidence: 94, reasoning: 'All required spend and channel fields present. 3 archived campaigns have null target_region — included with flag, not dropped.' },
+    { schema: 'marketing_db', name: 'users', description: 'Registered user profiles with segment classification, lifetime value, and signup date.', rowCount: '90 rows', connection: 'CSV Upload', connectionType: 'snowflake' as const, confidence: 89, reasoning: 'Strong user_id integrity against orders. segment field has 12% null rate — unclassified users preserved as a distinct group.' },
   ],
   relationships: [
-    { fromTable: 'orders', toTable: 'campaigns', fromKey: 'campaign_id', toKey: 'campaign_id', joinType: 'LEFT JOIN', matchRate: '82% match · 27 nulls = organic orders, preserved' },
-    { fromTable: 'orders', toTable: 'users', fromKey: 'user_id', toKey: 'user_id', joinType: 'LEFT JOIN', matchRate: '100% match' },
+    { fromTable: 'orders', toTable: 'campaigns', fromKey: 'campaign_id', toKey: 'campaign_id', joinType: 'LEFT JOIN', matchRate: '82% match · 27 nulls = organic orders, preserved', cardinality: 'Many-to-one', confidence: 82, reasoning: '27 null campaign_id rows confirmed as organic traffic, not data loss. LEFT JOIN preserves them — removing them would undercount revenue by ~18%.' },
+    { fromTable: 'orders', toTable: 'users', fromKey: 'user_id', toKey: 'user_id', joinType: 'LEFT JOIN', matchRate: '100% match', cardinality: 'Many-to-one', confidence: 98, reasoning: 'Perfect referential integrity — zero orphaned order records. Safest join in the model, no edge cases detected.' },
   ],
   columns: [
-    { table: 'orders', name: 'order_date', type: 'dimension', description: 'Date the order was placed, normalised to YYYY-MM-DD. Use for time-series and trend analysis.', included: true },
-    { table: 'orders', name: 'amount', type: 'metric', description: 'Order value in USD at time of purchase. Use SUM for total revenue, AVG for average order value.', included: true },
-    { table: 'orders', name: 'region', type: 'dimension', description: 'Geographic region where the order was placed. Values: North, South, East, West, APAC.', included: true },
-    { table: 'campaigns', name: 'campaign_id', type: 'dimension', description: 'Unique campaign identifier. Join key — use campaign_name for display in charts.', included: true },
-    { table: 'campaigns', name: 'campaign_name', type: 'dimension', description: 'Human-readable name for this campaign. Use for labelling in charts and comparisons.', included: true },
-    { table: 'campaigns', name: 'channel', type: 'dimension', description: 'Marketing channel used for this campaign. Values: paid_search, social, email, display.', included: true },
-    { table: 'campaigns', name: 'spend', type: 'metric', description: 'Total amount spent running this campaign in USD. Denominator in ROAS = revenue ÷ spend.', included: true },
-    { table: 'campaigns', name: 'budget', type: 'metric', description: 'Total approved spend limit for this campaign in USD. Compare against spend for budget utilisation.', included: true },
-    { table: 'campaigns', name: 'impressions', type: 'metric', description: 'Number of times campaign ads were shown. Divide by spend for CPM reach metric.', included: true },
-    { table: 'campaigns', name: 'target_region', type: 'dimension', description: 'Geographic region this campaign was targeted at. May differ from where orders actually originated.', included: true },
-    { table: 'users', name: 'user_id', type: 'dimension', description: 'Unique identifier for each registered user. Join key linking orders to user profiles.', included: true },
-    { table: 'users', name: 'segment', type: 'dimension', description: 'Customer tier based on company size and revenue. Values: Enterprise, Mid-market, SMB. Null = unclassified.', included: true },
-    { table: 'users', name: 'lifetime_value', type: 'metric', description: 'Cumulative revenue from this user since signup. Use AVG to compare segments, SUM for cohort totals.', included: true },
-    { table: 'users', name: 'signup_date', type: 'dimension', description: 'Date the user registered, normalised to YYYY-MM-DD. Use for cohort analysis and churn calculations.', included: true },
-    { table: 'Formulas', name: 'campaign_roas', type: 'formula', description: 'Return on Ad Spend. Higher = more efficient use of budget.', formula: 'SUM(orders.amount) / NULLIF(SUM(campaigns.spend), 0)', included: true },
-    { table: 'Formulas', name: 'conversion_rate', type: 'formula', description: 'Percentage of exposed users who placed an order after campaign exposure.', formula: 'COUNT(DISTINCT orders.user_id) / NULLIF(COUNT(DISTINCT users.user_id), 0) * 100', included: true },
+    { table: 'orders', name: 'order_date', type: 'dimension', description: 'Date the order was placed, normalised to YYYY-MM-DD. Use for time-series and trend analysis.', included: true, confidence: 99, reasoning: 'Zero nulls, consistent YYYY-MM-DD format across all rows. Safe to use as primary time axis.' },
+    { table: 'orders', name: 'amount', type: 'metric', description: 'Order value in USD at time of purchase. Use SUM for total revenue, AVG for average order value.', included: true, confidence: 96, reasoning: '4 rows with amount = 0 — likely comp orders. Included; recommend filtering in dashboards where appropriate.' },
+    { table: 'orders', name: 'region', type: 'dimension', description: 'Geographic region where the order was placed. Values: North, South, East, West, APAC.', included: true, confidence: 98, reasoning: 'Exactly 5 known values, no unexpected entries, zero nulls. Clean filter dimension with full cardinality.' },
+    { table: 'campaigns', name: 'campaign_id', type: 'dimension', description: 'Unique campaign identifier. Join key — use campaign_name for display in charts.', included: true, confidence: 91, reasoning: '27 nulls on this join key represent organic orders — this is expected, not a data quality issue. Preserve nulls downstream.' },
+    { table: 'campaigns', name: 'campaign_name', type: 'dimension', description: 'Human-readable name for this campaign. Use for labelling in charts and comparisons.', included: true, confidence: 99, reasoning: 'Unique per campaign ID, zero duplicates, zero nulls. Ready to use as a chart label dimension.' },
+    { table: 'campaigns', name: 'channel', type: 'dimension', description: 'Marketing channel used for this campaign. Values: paid_search, social, email, display.', included: true, confidence: 95, reasoning: '4 consistent values, uniform casing, zero nulls. Primary slice dimension for channel-level ROAS analysis.' },
+    { table: 'campaigns', name: 'spend', type: 'metric', description: 'Total amount spent running this campaign in USD. Denominator in ROAS = revenue ÷ spend.', included: true, confidence: 93, reasoning: '3 campaigns show spend exceeding budget — likely over-paced. Included; flag these rows if budget compliance is in scope.' },
+    { table: 'campaigns', name: 'budget', type: 'metric', description: 'Total approved spend limit for this campaign in USD. Compare against spend for budget utilisation.', included: true, confidence: 97, reasoning: 'Complete, no nulls, values in expected range across all 45 campaigns. Safe reference for budget utilisation ratio.' },
+    { table: 'campaigns', name: 'impressions', type: 'metric', description: 'Number of times campaign ads were shown. Divide by spend for CPM reach metric.', included: true, confidence: 88, reasoning: '12 rows with impressions = 0 — campaigns that were paused before launch. Included; CPM calculations should exclude zero-impression rows.' },
+    { table: 'campaigns', name: 'target_region', type: 'dimension', description: 'Geographic region this campaign was targeted at. May differ from where orders actually originated.', included: true, confidence: 82, reasoning: '7% null rate on 3 archived campaigns. Intentionally distinct from orders.region — do not use these interchangeably in filters.' },
+    { table: 'users', name: 'user_id', type: 'dimension', description: 'Unique identifier for each registered user. Join key linking orders to user profiles.', included: true, confidence: 100, reasoning: 'Zero nulls, one row per user, perfect join key. No data quality concerns — highest confidence in the model.' },
+    { table: 'users', name: 'segment', type: 'dimension', description: 'Customer tier based on company size and revenue. Values: Enterprise, Mid-market, SMB. Null = unclassified.', included: true, confidence: 78, reasoning: '12% null rate — users with no CRM classification. Preserved as null segment, not dropped. Affects any filter that excludes nulls.' },
+    { table: 'users', name: 'lifetime_value', type: 'metric', description: 'Cumulative revenue from this user since signup. Use AVG to compare segments, SUM for cohort totals.', included: true, confidence: 91, reasoning: 'Users with LTV = 0 are recent signups, not missing data. Cohort analysis should pair this with signup_date to avoid misleading averages.' },
+    { table: 'users', name: 'signup_date', type: 'dimension', description: 'Date the user registered, normalised to YYYY-MM-DD. Use for cohort analysis and churn calculations.', included: true, confidence: 99, reasoning: 'Complete and consistently formatted. Safe anchor for cohort windows and time-to-first-order calculations.' },
+    { table: 'Formulas', name: 'campaign_roas', type: 'formula', description: 'Return on Ad Spend. Higher = more efficient use of budget.', formula: 'SUM(orders.amount) / NULLIF(SUM(campaigns.spend), 0)', included: true, confidence: 95, reasoning: 'NULLIF guard correctly handles zero-spend edge cases. Computed at query time from raw rows — not pre-aggregated, so all filters stay accurate.' },
+    { table: 'Formulas', name: 'conversion_rate', type: 'formula', description: 'Percentage of exposed users who placed an order after campaign exposure.', formula: 'COUNT(DISTINCT orders.user_id) / NULLIF(COUNT(DISTINCT users.user_id), 0) * 100', included: true, confidence: 90, reasoning: 'Depends on user_id match quality (~100%). Minor exposure-to-order timing lag possible for same-day conversions — acceptable for weekly reporting.' },
   ],
   sampleQuestions: [
     'What is the ROAS by campaign and channel last month?',
@@ -266,6 +268,19 @@ const MOCK_PLAN_BASE: Omit<PlanData, 'version'> = {
     'What is the average order value for social vs email campaigns?',
     'Which campaigns have the highest conversion rate this quarter?',
     'How has campaign performance trended over the last 6 months?',
+  ],
+  planSteps: [
+    { title: 'Scan tables', detail: 'Evaluate all 120 tables in marketing_db — surface the 3 that cover your complete use case with no gaps' },
+    { title: 'Map joins', detail: 'Test referential integrity on every key, detect nulls, and pick join types that won\'t silently drop rows' },
+    { title: 'Check data quality', detail: 'Scan every column for nulls, duplicates, and schema issues — surface problems in raw data before they compound into broken metrics' },
+    { title: 'Build metrics', detail: 'Derive ROAS, spend efficiency, and conversion rate from raw transactions — not summaries — so every filter stays accurate' },
+    { title: 'Wire dimensions', detail: 'Register channel, region, and user segment as queryable dimensions across the full funnel, ready to slice any metric from day one' },
+    { title: 'Check AI readiness', detail: 'Write synonyms, AI context, and descriptions for every column so Spotter can answer natural language questions accurately from day one' },
+  ],
+  confirmItems: [
+    `campaign_roas computed at query time (revenue ÷ spend) — not pre-aggregated per campaign`,
+    `Revenue = gross order value — returns excluded separately, not netted against totals`,
+    `"Last month" = most recent complete calendar month, not rolling 30 days`,
   ],
 };
 
@@ -1740,6 +1755,125 @@ ORDER BY row_count DESC
     nextStep: 'empty',
     preserveStep: true,
   },
+  // ── Snowflake connection agentic flow ─────────────────────────────────────────
+  snowflake_connect_reason: {
+    steps: [
+      { label: 'Understanding your request', detail: 'Snowflake connection setup detected.' },
+      { label: 'Checking existing connections', detail: '1 active connection found: dbt Cloud (prod).' },
+      { label: 'Identifying setup options', detail: 'Raw tables, semantic layer, or both are available.' },
+    ],
+    duration: '~3s',
+    stepDelay: 800,
+    proposal: '',
+    execution: '',
+    nextStep: 'empty',
+  },
+
+  snowflake_connect_init: {
+    steps: [
+      { label: 'Checking configured integrations', detail: 'Workspace has 1 active connection (dbt Cloud).' },
+      { label: 'Preparing Snowflake authenticator', detail: 'Account + password auth ready. Key-pair also supported.' },
+    ],
+    duration: '4 seconds',
+    autoComplete: true,
+    stepDelay: 900,
+    proposal: '',
+    execution: "I'll help you connect to Snowflake. Fill in your credentials below — I'll test the connection before saving anything.",
+    nextStep: 'empty',
+    executionGenUI: 'sf_connect_form',
+  },
+
+  snowflake_connect_schemas: {
+    steps: [
+      { label: 'Connection verified', detail: 'Account: acme.us-east-1 · Latency: 112ms.' },
+      { label: 'Scanning available schemas', detail: 'Found 8 schemas across 2 databases (PROD, DEV).' },
+      { label: 'Reading table counts and row estimates', detail: '312 columns indexed and ready for search.' },
+    ],
+    duration: '6 seconds',
+    autoComplete: true,
+    stepDelay: 900,
+    proposal: '',
+    execution: "Connected! I found 8 schemas in your Snowflake account. Choose which ones to include — you can always add more later.",
+    nextStep: 'empty',
+    executionGenUI: 'sf_connect_schemas',
+  },
+
+  snowflake_connect_complete: {
+    steps: [
+      { label: 'Importing ANALYTICS schema', detail: '14 tables, 847K rows — complete.' },
+      { label: 'Importing MARKETING schema', detail: '6 tables, 218K rows — complete.' },
+      { label: 'Indexing 312 columns for search', detail: 'Column descriptions, types, and sample values cached.' },
+      { label: 'Saving connection', detail: 'Snowflake (acme.us-east-1) is now active in your workspace.' },
+    ],
+    duration: '12 seconds',
+    autoComplete: true,
+    stepDelay: 800,
+    proposal: '',
+    execution: "Your Snowflake connection is live. 2 schemas and 312 columns are indexed and ready. Here's what you can do next.",
+    nextStep: 'empty',
+    executionGenUI: 'sf_connect_done',
+  },
+
+  snowflake_connect_complete_both: {
+    steps: [
+      { label: 'Importing ANALYTICS schema', detail: '14 tables, 847K rows — complete.' },
+      { label: 'Importing MARKETING schema', detail: '6 tables, 218K rows — complete.' },
+      { label: 'Indexing 312 columns for search', detail: 'Column descriptions, types, and sample values cached.' },
+      { label: 'Saving connection', detail: 'Snowflake (acme.us-east-1) is now active in your workspace.' },
+    ],
+    duration: '12 seconds',
+    autoComplete: true,
+    stepDelay: 800,
+    proposal: '',
+    execution: "CDW connection is live — 2 schemas and 312 columns indexed. Next, let's bring in your semantic layer.",
+    nextStep: 'empty',
+    executionGenUI: 'sf_connect_done_both',
+  },
+
+  snowflake_semantic_init: {
+    steps: [
+      { label: 'Checking available semantic sources', detail: 'dbt Cloud and Snowflake Cortex integrations detected.' },
+      { label: 'Preparing semantic layer importer', detail: 'Metric and dimension schema reader ready.' },
+    ],
+    duration: '4 seconds',
+    autoComplete: true,
+    stepDelay: 900,
+    proposal: '',
+    execution: "Let's connect your semantic layer. Enter your dbt Cloud credentials to get started.",
+    nextStep: 'empty',
+    executionGenUI: 'sf_semantic_form',
+  },
+
+  snowflake_semantic_models: {
+    steps: [
+      { label: 'Authenticating with dbt Cloud', detail: 'Project: analytics-prod · Environment: Production.' },
+      { label: 'Fetching semantic models', detail: 'Found 4 models: Sales Analytics, Revenue Forecast, Pipeline Health, Marketing Attribution.' },
+      { label: 'Reading metric and dimension definitions', detail: '47 metrics and 112 dimensions mapped.' },
+    ],
+    duration: '7 seconds',
+    autoComplete: true,
+    stepDelay: 900,
+    proposal: '',
+    execution: "Found 4 semantic models in your dbt project. Select the ones you want to import.",
+    nextStep: 'empty',
+    executionGenUI: 'sf_semantic_models',
+  },
+
+  snowflake_semantic_complete: {
+    steps: [
+      { label: 'Importing Sales Analytics', detail: '12 metrics, 34 dimensions — complete.' },
+      { label: 'Importing Revenue Forecast', detail: '8 metrics, 18 dimensions — complete.' },
+      { label: 'Validating metric definitions', detail: '47 metrics validated against source SQL.' },
+      { label: 'Semantic layer connection saved', detail: 'Ready for AI enrichment.' },
+    ],
+    duration: '11 seconds',
+    autoComplete: true,
+    stepDelay: 800,
+    proposal: '',
+    execution: "Your semantic layer is connected — 2 models and 47 metrics imported. They're ready to make Spotter-ready.",
+    nextStep: 'empty',
+    executionGenUI: 'sf_semantic_done',
+  },
 };
 
 // ── Coaching script key map ───────────────────────────────────────────────────
@@ -2394,7 +2528,9 @@ interface AgentPanelProps {
   onOpenQualityPlan?: () => void;
   onBuildStart?: () => void;
   onNavigateToWorkspace?: () => void;
+  onStartBuild?: (plan: PlanData) => void;
   fullPage?: boolean;
+  flowOption?: FlowOption;
   onBack?: () => void;
   initialFlow?: string;
   initialMessage?: string;
@@ -2403,7 +2539,7 @@ interface AgentPanelProps {
   onOpenMsItem?: (item: { type: string; name: string }) => void;
 }
 
-const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, setMessages, initialPrompt, onBuildComplete, externalMessage, onExternalMessageHandled, externalMessageAttachment, injectInput, onInjectInputHandled, width = 340, selectedColumns, onColumnRemove, isFromScratch, isMultiSource, isNotebookFlow, isDbtReview, onNotebookUpdate, onOpenPlan, onOpenQualityPlan, onBuildStart, onNavigateToWorkspace, fullPage = false, onBack, initialFlow, initialMessage, onInsightResolved, onOpenObject, onOpenMsItem }) => {
+const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, setMessages, initialPrompt, onBuildComplete, externalMessage, onExternalMessageHandled, externalMessageAttachment, injectInput, onInjectInputHandled, width = 340, selectedColumns, onColumnRemove, isFromScratch, isMultiSource, isNotebookFlow, isDbtReview, onNotebookUpdate, onOpenPlan, onOpenQualityPlan, onBuildStart, onNavigateToWorkspace, onStartBuild, fullPage = false, onBack, initialFlow, initialMessage, onInsightResolved, onOpenObject, onOpenMsItem, flowOption = 'option3' }) => {
   const [pendingAction, setPending]     = useState<PendingAction | null>(null);
   const [isProcessing, setProcessing]   = useState(false);
   const [planModalOpen, setPlanModalOpen] = useState(false);
@@ -2416,11 +2552,14 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
   const notebookCellsRef = useRef<import('./ChatContextPanel').NotebookCell[]>([]);
   const [planVersion, setPlanVersion]    = useState(1);
   const [planExpandedId, setPlanExpandedId] = useState<string | null>(null);
+  const [planExpanded, setPlanExpanded]  = useState(false);
   const [agentMode, setAgentMode]        = useState<'build' | 'test'>('build');
   const [connFilter, setConnFilter]      = useState<string | null>(null);
   const [coachingPrompt, setCoachingPrompt] = useState<{ sourceQuestion: string } | null>(null);
   const [sampleQOpen, setSampleQOpen]       = useState(false);
   const [sampleQOffset, setSampleQOffset]   = useState(0);
+  const [sfConnectIntent, setSfConnectIntent] = useState<'clarify' | null>(null);
+  const sfConnectBothRef = useRef(false);
   const messagesEndRef           = useRef<HTMLDivElement>(null);
   const scrollContainerRef       = useRef<HTMLDivElement>(null);
   const isNearBottomRef          = useRef(true);
@@ -2743,6 +2882,65 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
       }]), 700);
       return;
     }
+    // Snowflake connection flow actions
+    if (action === 'sf_connect_credentials') {
+      addUser('Connect →');
+      runNext('snowflake_connect_schemas');
+      return;
+    }
+    if (action === 'sf_connect_schemas_import') {
+      addUser('Import selected schemas →');
+      const completeFlow = sfConnectBothRef.current ? 'snowflake_connect_complete_both' : 'snowflake_connect_complete';
+      runNext(completeFlow);
+      return;
+    }
+    if (action === 'sf_connect_done_both_continue') {
+      sfConnectBothRef.current = false;
+      addUser('Import semantic layer →');
+      setTimeout(() => {
+        setMessages(prev => [...prev, { id: `r-${Date.now()}`, type: 'response', content: "CDW connection is live. Now let's connect your semantic layer." }]);
+        setTimeout(() => { setProcessing(true); runFlow('snowflake_semantic_init', setMessages, setPending, setProcessing, setProject); }, 500);
+      }, 400);
+      return;
+    }
+    if (action === 'sf_connect_done_explore') {
+      addUser('Start building a model →');
+      setTimeout(() => setMessages(prev => [...prev, {
+        id: `r-${Date.now()}`, type: 'response',
+        content: "Your Snowflake data is ready. Use **@** to add tables from ANALYTICS or MARKETING to your model — or tell me what you want to analyze and I'll find the right tables.",
+        suggestions: ['@orders', '@campaigns', 'Find tables for revenue analysis'],
+      }]), 700);
+      return;
+    }
+    if (action === 'sf_connect_done_view') { return; }
+    if (action === 'sf_semantic_connect') {
+      addUser('Authenticate →');
+      runNext('snowflake_semantic_models');
+      return;
+    }
+    if (action === 'sf_semantic_models_import') {
+      addUser('Import selected models →');
+      runNext('snowflake_semantic_complete');
+      return;
+    }
+    if (action === 'sf_semantic_done_enrich') {
+      addUser('Make Spotter-ready →');
+      setTimeout(() => setMessages(prev => [...prev, {
+        id: `r-${Date.now()}`, type: 'response',
+        content: "Open any imported model and run **Make Spotter-ready** to add descriptions, synonyms, and verified answers — so Spotter responds with precision.",
+        suggestions: ['Open Sales Analytics', 'Open Revenue Forecast'],
+      }]), 700);
+      return;
+    }
+  };
+
+  const handleSfClarify = (choice: 'raw' | 'semantic' | 'both') => {
+    setSfConnectIntent(null);
+    const label = choice === 'raw' ? 'Raw tables — cloud data warehouse' : choice === 'semantic' ? 'Semantic layer' : 'Both — CDW first, then semantic';
+    setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: label }]);
+    if (choice === 'both') sfConnectBothRef.current = true;
+    const flowKey = choice === 'semantic' ? 'snowflake_semantic_init' : 'snowflake_connect_init';
+    setTimeout(() => { setProcessing(true); runFlow(flowKey, setMessages, setPending, setProcessing, setProject); }, 200);
   };
 
   const toggleCollapsible = (msgId: string, stepIdx: number) => {
@@ -2969,6 +3167,7 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
       setProcessing(false);
     }, buildAbortRef);
   };
+
 
   const handleStartBuilding = () => {
     setFromScratchPhase('done');
@@ -3758,6 +3957,16 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
       return;
     }
 
+    // 0a-sf. Snowflake connection — reason first, then ask clarifying question
+    if (/connect.{0,20}snowflake|snowflake.{0,20}connect|set[\s-]up.{0,10}snowflake|add.{0,20}snowflake\b/i.test(text)) {
+      runDayZeroSteps('snowflake_connect_reason', text, setMessages, () => {
+        setMessages(prev => [...prev, { id: `r-${Date.now()}`, type: 'response', content: "What are you trying to import from Snowflake?" }]);
+        setProcessing(false);
+        setSfConnectIntent('clarify');
+      }, buildAbortRef);
+      return;
+    }
+
     // 0b. Debug from test mode — route to coaching script
     if (/found a context issue during testing/i.test(text)) {
       runFlow('debug_context', setMessages, setPending, setProcessing, setProject, text);
@@ -4488,6 +4697,13 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
         </div>
       )}
 
+      {/* Snowflake intent clarify — floats above prompt bar */}
+      {sfConnectIntent === 'clarify' && (
+        <div style={{ padding: `0 ${sp.C}px`, flexShrink: 0 }}>
+          <SfConnectionClarifyCard onSelect={handleSfClarify} />
+        </div>
+      )}
+
       {/* Coaching clarify card — floats above prompt bar when user flags a Spotter answer */}
       {coachingPrompt && (
         <div style={{ padding: `0 ${sp.C}px`, flexShrink: 0 }}>
@@ -4562,7 +4778,7 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
         <PromptBar
           ref={promptBarRef}
           onSubmit={(text, tables) => processText(text, tables)}
-          disabled={(isProcessing && project.buildStep !== 'empty') || fromScratchPhase === 'clarify_q1' || !!coachingPrompt}
+          disabled={(isProcessing && project.buildStep !== 'empty') || fromScratchPhase === 'clarify_q1' || !!coachingPrompt || sfConnectIntent === 'clarify'}
           isProcessing={isProcessing}
           onStop={() => {
             buildAbortRef.current = true;
@@ -5192,50 +5408,6 @@ const CoachingClarifyCard: React.FC<{ onSelect: (option: string) => void }> = ({
   </div>
 );
 
-// ── PlanCard — collapsed plan artifact shown in chat ─────────────────────────
-
-const PlanCard: React.FC<{ plan: PlanData; onClick: () => void }> = ({ plan, onClick }) => {
-  const tableCount = plan.tables.length;
-  const relCount   = plan.relationships.length;
-  const colCount   = plan.columns.filter(col => col.included).length;
-
-  return (
-    <div
-      onClick={onClick}
-      style={{
-        border: `1px solid ${c['border-default']}`,
-        borderRadius: 10,
-        backgroundColor: c['background-base'],
-        cursor: 'pointer',
-        overflow: 'hidden',
-        transition: 'border-color 0.15s',
-        maxWidth: 460,
-      }}
-      onMouseEnter={e => (e.currentTarget.style.borderColor = c['content-brand'])}
-      onMouseLeave={e => (e.currentTarget.style.borderColor = c['border-default'])}
-    >
-      {/* Header — model name + version */}
-      <div style={{ padding: `${sp.C}px ${sp.D}px ${sp.B}px`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: sp.B }}>
-          <span style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'] }}>{plan.modelName}</span>
-          <span style={{ fontSize: 10, fontWeight: fw.medium, padding: '1px 6px', borderRadius: 4, backgroundColor: c['background-subtle'], color: c['content-secondary'] }}>v{plan.version}</span>
-        </div>
-        <span style={{ fontSize: fs.xs, color: c['content-brand'], fontWeight: fw.medium, flexShrink: 0 }}>View plan →</span>
-      </div>
-      {/* Goal */}
-      <div style={{ padding: `0 ${sp.D}px ${sp.C}px` }}>
-        <p style={{ margin: 0, fontSize: fs.xs, color: c['content-secondary'], lineHeight: '18px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{plan.goal}</p>
-      </div>
-      {/* Stats — tables, relationships, columns only */}
-      <div style={{ padding: `${sp.B}px ${sp.D}px`, borderTop: `1px solid ${c['border-divider']}`, display: 'flex', gap: sp.D }}>
-        {[`${tableCount} tables`, `${relCount} relationships`, `${colCount} columns`].map(stat => (
-          <span key={stat} style={{ fontSize: 11, color: c['content-secondary'], fontWeight: fw.medium }}>{stat}</span>
-        ))}
-      </div>
-    </div>
-  );
-};
-
 const MessageBubble: React.FC<{
   msg: AgentMessage;
   showAvatar: boolean;
@@ -5310,8 +5482,17 @@ const MessageBubble: React.FC<{
                 <div key={i} style={{ display: 'flex', gap: 12, animation: 'ag-step-in 0.22s ease' }}>
 
                   {/* Left: dot + connecting line */}
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 10, flexShrink: 0 }}>
-                    <div style={{ width: 10, height: 10, borderRadius: '50%', backgroundColor: c['content-secondary'], opacity: step.status === 'running' ? 1 : 0.4, flexShrink: 0, marginTop: 5 }} />
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 12, flexShrink: 0 }}>
+                    {step.status === 'done' ? (
+                      <svg width="12" height="12" viewBox="0 0 12 12" style={{ flexShrink: 0, marginTop: 4 }}>
+                        <circle cx="6" cy="6" r="6" fill={c['content-success']} />
+                        <path d="M3 6l2 2 4-4" stroke="white" strokeWidth="1.6" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    ) : step.status === 'running' ? (
+                      <div style={{ width: 12, height: 12, borderRadius: '50%', border: `2px solid ${c['border-default']}`, borderTop: `2px solid ${c['content-brand']}`, flexShrink: 0, marginTop: 4, animation: 'ag-spin 0.75s linear infinite' }} />
+                    ) : (
+                      <div style={{ width: 8, height: 8, borderRadius: '50%', border: `1.5px solid ${c['content-secondary']}`, opacity: 0.3, flexShrink: 0, marginTop: 6 }} />
+                    )}
                     {i < visible.length - 1 && (
                       <div style={{ flex: 1, width: 1, minHeight: 10, marginTop: 3, backgroundColor: c['border-default'] }} />
                     )}
@@ -5319,7 +5500,14 @@ const MessageBubble: React.FC<{
 
                   {/* Right: step content */}
                   <div style={{ flex: 1, paddingBottom: i < visible.length - 1 ? sp.D : 0 }}>
-                    <span style={{ fontSize: fs.sm, fontWeight: fw.semibold, lineHeight: '20px', color: c['content-primary'] }}>
+                    <span style={{
+                      fontSize: fs.sm,
+                      fontWeight: step.status === 'pending' ? fw.regular : fw.semibold,
+                      lineHeight: '20px',
+                      color: step.status === 'running' ? c['content-brand'] : step.status === 'pending' ? c['content-secondary'] : c['content-primary'],
+                      opacity: step.status === 'pending' ? 0.45 : 1,
+                      transition: 'color 0.2s',
+                    }}>
                       {step.label}
                     </span>
 
@@ -5598,6 +5786,37 @@ const MessageBubble: React.FC<{
             >
               <div style={{ fontSize: fs.xs, color: isDragOver ? c['content-brand'] : c['content-secondary'], fontWeight: fw.medium }}>{msg.inlineInput.label}</div>
               <div style={{ fontSize: fs.xs, color: c['content-tertiary'], marginTop: 2 }}>CSV · max 10 MB</div>
+            </div>
+          )}
+          {msg.genUI === 'sf_connect_form' && onGenUIAction && (
+            <SnowflakeConnectFormCard msgId={msg.id} result={msg.genUIResult} onAction={onGenUIAction} />
+          )}
+          {msg.genUI === 'sf_connect_schemas' && onGenUIAction && (
+            <SnowflakeConnectSchemasCard msgId={msg.id} result={msg.genUIResult} onAction={onGenUIAction} />
+          )}
+          {msg.genUI === 'sf_connect_done' && onGenUIAction && (
+            <SnowflakeConnectDoneCard msgId={msg.id} result={msg.genUIResult} onAction={onGenUIAction} />
+          )}
+          {msg.genUI === 'sf_connect_done_both' && onGenUIAction && (
+            <SnowflakeConnectDoneBothCard msgId={msg.id} result={msg.genUIResult} onAction={onGenUIAction} />
+          )}
+          {msg.genUI === 'sf_semantic_form' && onGenUIAction && (
+            <SfSemanticFormCard msgId={msg.id} result={msg.genUIResult} onAction={onGenUIAction} />
+          )}
+          {msg.genUI === 'sf_semantic_models' && onGenUIAction && (
+            <SfSemanticModelsCard msgId={msg.id} result={msg.genUIResult} onAction={onGenUIAction} />
+          )}
+          {msg.genUI === 'sf_semantic_done' && onGenUIAction && (
+            <SfSemanticDoneCard msgId={msg.id} result={msg.genUIResult} onAction={onGenUIAction} />
+          )}
+          {msg.pendingAction && onConfirm && !msg.reviewPlanCTA && (
+            <div style={{ marginTop: sp.C }}>
+              <button
+                onClick={onConfirm}
+                style={{ padding: `6px 14px`, backgroundColor: c['content-brand'], color: '#fff', border: 'none', borderRadius: 6, fontSize: fs.xs, fontWeight: fw.semibold, cursor: 'pointer', fontFamily: ff.primary, lineHeight: '18px' }}
+              >
+                Apply this
+              </button>
             </div>
           )}
           {msg.suggestions && msg.suggestions.length > 0 && (
@@ -6616,7 +6835,7 @@ const AVAILABLE_COLUMNS: ColumnOption[] = [
 ];
 const TYPE_COLORS: Record<string, { text: string; bg: string }> = {
   string: { text: '#6b7280', bg: '#f3f4f6' }, number: { text: '#2563eb', bg: '#eff6ff' },
-  date:   { text: '#7c3aed', bg: '#f5f3ff' }, boolean:{ text: '#d97706', bg: '#fef3c7' },
+  date:   { text: c['content-brand'], bg: '#f5f3ff' }, boolean:{ text: '#d97706', bg: '#fef3c7' },
 };
 const TypeBadge: React.FC<{ type: string; mismatch?: boolean }> = ({ type, mismatch }) => {
   const { text, bg } = TYPE_COLORS[type] ?? { text: '#6b7280', bg: '#f3f4f6' };
@@ -6667,7 +6886,7 @@ const SchemaDriftResolutionCard: React.FC<{ msgId: string; result?: string; onAc
   ];
   const dependentGroups = [
     { label: 'Answers',    dot: '#2563eb', mono: false, items: ['Q4 Cost Analysis', 'Budget Variance Report', 'FY Spend Summary', 'Regional Cost Breakdown'], highlightCol: 'cost_center' },
-    { label: 'Liveboards', dot: '#7c3aed', mono: false, items: ['Finance Operations Dashboard', 'Executive Cost View', 'FnOps Monthly Review'], highlightCol: 'cost_center' },
+    { label: 'Liveboards', dot: c['content-brand'], mono: false, items: ['Finance Operations Dashboard', 'Executive Cost View', 'FnOps Monthly Review'], highlightCol: 'cost_center' },
     { label: 'Formulas',   dot: '#d97706', mono: true,  items: ['channel_cost_ratio', 'cost_per_campaign'], highlightCol: 'cost_center' },
   ];
   const suggested: Record<string, string> = { cost_center: 'cost_bucket', allocation_type: 'cost_category' };
@@ -6878,12 +7097,12 @@ const DriftMultiResolutionCard: React.FC<{ msgId: string; result?: string; onAct
   const modelGroups = [
     { label: 'Revenue Forecast', total: 6, contents: [
       { label: 'Answers', count: 3, dot: '#2563eb', mono: false, examples: ['Q1 Revenue Projection', 'YoY Growth Analysis', 'Regional Forecast Summary'] },
-      { label: 'Liveboards', count: 2, dot: '#7c3aed', mono: false, examples: ['Revenue Dashboard', 'Executive Forecast'] },
+      { label: 'Liveboards', count: 2, dot: c['content-brand'], mono: false, examples: ['Revenue Dashboard', 'Executive Forecast'] },
       { label: 'Formulas', count: 1, dot: '#d97706', mono: true, examples: ['target_attainment_rate'] },
     ]},
     { label: 'Pipeline Health', total: 6, contents: [
       { label: 'Answers', count: 2, dot: '#2563eb', mono: false, examples: ['Pipeline Velocity Report', 'Stage Conversion Analysis'] },
-      { label: 'Liveboards', count: 2, dot: '#7c3aed', mono: false, examples: ['Sales Pipeline Overview', 'Deal Progress Tracker'] },
+      { label: 'Liveboards', count: 2, dot: c['content-brand'], mono: false, examples: ['Sales Pipeline Overview', 'Deal Progress Tracker'] },
       { label: 'Formulas', count: 2, dot: '#d97706', mono: true, examples: ['pipeline_coverage_ratio', 'stage_conversion_rate'] },
     ]},
   ];
@@ -7342,6 +7561,686 @@ const NextIssueCard: React.FC<{ msgId: string; result?: string; onAction: (actio
         </div>
       </GenUISection>
       {!locked && <GenUIActions locked={false} secondary={{ label: 'Later', action: 'next_issue_dismiss', msgId, onAction }} primary={{ label: 'View connection →', action: 'next_issue_view_connection', msgId, onAction }} />}
+    </GenUICard>
+  );
+};
+
+// ── Snowflake Intent Clarify Card ─────────────────────────────────────────────
+
+const SF_INTENT_OPTIONS: { value: 'raw' | 'semantic' | 'both'; label: string; sub: string }[] = [
+  { value: 'raw',      label: 'Raw tables',      sub: 'Connect a cloud data warehouse and build models from raw tables.' },
+  { value: 'semantic', label: 'Semantic layer',   sub: 'Import pre-built metrics and dimensions from dbt or Snowflake Cortex.' },
+  { value: 'both',     label: 'Both',             sub: 'Set up both connections — raw tables first, then semantic layer.' },
+];
+
+const SfConnectionClarifyCard: React.FC<{ onSelect: (choice: 'raw' | 'semantic' | 'both') => void }> = ({ onSelect }) => (
+  <div style={{ border: `1px solid ${c['border-divider']}`, borderRadius: 12, backgroundColor: c['background-base'], marginBottom: sp.C, overflow: 'hidden' }}>
+    <div style={{ padding: `${sp.D}px ${sp.D}px ${sp.C}px` }}>
+      <p style={{ margin: 0, fontSize: fs.md, fontWeight: fw.semibold, color: c['content-primary'], lineHeight: '24px' }}>
+        What are you trying to import?
+      </p>
+    </div>
+    <div style={{ borderTop: `1px solid ${c['border-divider']}` }}>
+      {SF_INTENT_OPTIONS.map((opt, idx) => (
+        <div
+          key={opt.value}
+          onClick={() => onSelect(opt.value)}
+          style={{
+            display: 'flex', alignItems: 'center', gap: sp.C,
+            padding: `${sp.C}px ${sp.D}px`,
+            borderBottom: idx < SF_INTENT_OPTIONS.length - 1 ? `1px solid ${c['border-divider']}` : 'none',
+            backgroundColor: c['background-base'], cursor: 'pointer', transition: 'background-color 0.1s',
+          }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = c['background-subtle']; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = c['background-base']; }}
+        >
+          <div style={{ width: 26, height: 26, borderRadius: 7, flexShrink: 0, backgroundColor: c['background-subtle'], border: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: fw.medium, fontFamily: ff.mono, color: c['content-secondary'] }}>
+            {idx + 1}
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: fs.sm, fontWeight: fw.medium, color: c['content-primary'], fontFamily: ff.primary }}>{opt.label}</div>
+            <div style={{ fontSize: fs.xs, color: c['content-secondary'], fontFamily: ff.primary, marginTop: 1 }}>{opt.sub}</div>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+// ── Snowflake Connection GenUI Cards ──────────────────────────────────────────
+
+const SnowflakeConnectFormCard: React.FC<{
+  msgId: string;
+  result?: string;
+  onAction: (action: string, msgId: string) => void;
+}> = ({ msgId, result, onAction }) => {
+  const locked = !!result;
+  const [phase, setPhase] = React.useState<'idle' | 'testing' | 'connected'>('idle');
+
+  const handleTest = () => {
+    setPhase('testing');
+    setTimeout(() => setPhase('connected'), 2200);
+  };
+
+  if (locked) {
+    return (
+      <GenUICard locked>
+        <GenUISection>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <GenUIBadge variant="green">✓ Connected</GenUIBadge>
+            <span style={{ fontSize: 11, color: '#999' }}>Snowflake · us-east-1</span>
+          </div>
+        </GenUISection>
+        <GenUISection last>
+          <span style={{ fontSize: 12, color: '#555', fontFamily: ff.mono }}>acme.us-east-1 · analytics · COMPUTE_WH</span>
+        </GenUISection>
+      </GenUICard>
+    );
+  }
+
+  if (phase === 'testing') {
+    return (
+      <GenUICard>
+        <GenUISection last>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 0' }}>
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" style={{ animation: 'spin 0.85s linear infinite', flexShrink: 0 }}>
+              <circle cx="9" cy="9" r="7" stroke="#e2e8f0" strokeWidth="2"/>
+              <path d="M9 2a7 7 0 0 1 7 7" stroke="#2563eb" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
+            <span style={{ fontSize: 13, color: '#555', fontFamily: ff.primary }}>Testing connection to Snowflake…</span>
+          </div>
+        </GenUISection>
+      </GenUICard>
+    );
+  }
+
+  if (phase === 'connected') {
+    return (
+      <GenUICard>
+        <GenUISection>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <GenUIBadge variant="green">✓ Connection verified</GenUIBadge>
+            <span style={{ fontSize: 11, color: '#999' }}>Snowflake · us-east-1</span>
+          </div>
+        </GenUISection>
+        <GenUISection>
+          <div style={{ fontSize: 11.5, fontFamily: ff.mono, color: '#334155' }}>acme.us-east-1.snowflakecomputing.com</div>
+          <div style={{ marginTop: 8, display: 'flex', gap: 16, flexWrap: 'wrap' as const }}>
+            <span style={{ fontSize: 11.5, color: '#64748b' }}>User: <strong style={{ color: '#1e293b' }}>analytics</strong></span>
+            <span style={{ fontSize: 11.5, color: '#64748b' }}>Warehouse: <strong style={{ color: '#1e293b' }}>COMPUTE_WH</strong></span>
+            <span style={{ fontSize: 11.5, color: '#64748b' }}>Role: <strong style={{ color: '#1e293b' }}>ACCOUNTADMIN</strong></span>
+          </div>
+        </GenUISection>
+        <GenUIActions locked={false} primary={{ label: 'Connect →', action: 'sf_connect_credentials', msgId, onAction }} />
+      </GenUICard>
+    );
+  }
+
+  // idle — credential form
+  const inputStyle: React.CSSProperties = {
+    width: '100%',
+    fontSize: 12.5,
+    padding: '6px 10px',
+    border: '1px solid #e2e8f0',
+    borderRadius: 6,
+    color: '#222',
+    background: '#fff',
+    outline: 'none',
+    boxSizing: 'border-box',
+    fontFamily: ff.primary,
+  };
+  return (
+    <GenUICard>
+      <GenUISection>
+        <div style={{ fontSize: 11, fontWeight: fw.semibold, color: '#888', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Snowflake credentials</div>
+      </GenUISection>
+      <GenUISection>
+        <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 10 }}>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: fw.semibold, color: '#888', marginBottom: 4 }}>Account identifier</div>
+            <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #e2e8f0', borderRadius: 6, overflow: 'hidden', background: '#fff' }}>
+              <input
+                defaultValue="acme.us-east-1"
+                style={{ flex: 1, fontSize: 12.5, padding: '6px 10px', border: 'none', outline: 'none', fontFamily: ff.mono, color: '#222', background: 'transparent' }}
+              />
+              <span style={{ fontSize: 12, color: '#aaa', padding: '6px 10px', background: '#f8fafc', borderLeft: '1px solid #e2e8f0', fontFamily: ff.mono, whiteSpace: 'nowrap' as const }}>.snowflakecomputing.com</span>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 11, fontWeight: fw.semibold, color: '#888', marginBottom: 4 }}>Username</div>
+              <input defaultValue="analytics" style={inputStyle} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 11, fontWeight: fw.semibold, color: '#888', marginBottom: 4 }}>Password</div>
+              <input type="password" defaultValue="HorseBattery42" style={inputStyle} />
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 11, fontWeight: fw.semibold, color: '#888', marginBottom: 4 }}>Warehouse <span style={{ fontWeight: fw.regular }}>optional</span></div>
+              <input defaultValue="COMPUTE_WH" style={{ ...inputStyle, fontFamily: ff.mono }} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 11, fontWeight: fw.semibold, color: '#888', marginBottom: 4 }}>Role <span style={{ fontWeight: fw.regular }}>optional</span></div>
+              <input defaultValue="ACCOUNTADMIN" style={{ ...inputStyle, fontFamily: ff.mono }} />
+            </div>
+          </div>
+        </div>
+      </GenUISection>
+      <div style={{ padding: '10px 14px', display: 'flex', justifyContent: 'flex-end' }}>
+        <button
+          onClick={handleTest}
+          style={{ padding: '6px 14px', borderRadius: 6, border: 'none', background: '#2563eb', cursor: 'pointer', fontSize: 12.5, fontWeight: fw.semibold, color: '#fff', fontFamily: ff.primary }}
+          onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#1d4ed8')}
+          onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#2563eb')}
+        >
+          Test connection
+        </button>
+      </div>
+    </GenUICard>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+const SF_SCHEMAS = [
+  { name: 'ANALYTICS', tables: 14, rows: '847K', defaultChecked: true },
+  { name: 'MARKETING', tables: 6, rows: '218K', defaultChecked: true },
+  { name: 'RAW_DATA', tables: 22, rows: '4.2M', defaultChecked: false },
+  { name: 'STAGING', tables: 8, rows: '1.1M', defaultChecked: false },
+  { name: 'REPORTING', tables: 5, rows: '95K', defaultChecked: false },
+  { name: 'FINANCE', tables: 11, rows: '320K', defaultChecked: false },
+  { name: 'HR', tables: 4, rows: '12K', defaultChecked: false },
+  { name: 'DEV', tables: 3, rows: '—', defaultChecked: false },
+];
+
+const SnowflakeConnectSchemasCard: React.FC<{
+  msgId: string;
+  result?: string;
+  onAction: (action: string, msgId: string) => void;
+}> = ({ msgId, result, onAction }) => {
+  const locked = !!result;
+  const [checked, setChecked] = React.useState<Set<string>>(
+    new Set(SF_SCHEMAS.filter(s => s.defaultChecked).map(s => s.name))
+  );
+
+  const toggle = (name: string) => {
+    setChecked(prev => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name);
+      else next.add(name);
+      return next;
+    });
+  };
+
+  if (locked) {
+    return (
+      <GenUICard locked>
+        <GenUISection>
+          <GenUIBadge variant="green">✓ {checked.size} schema{checked.size !== 1 ? 's' : ''} imported</GenUIBadge>
+        </GenUISection>
+        <GenUISection last>
+          <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 6 }}>
+            {[...checked].map(name => (
+              <span key={name} style={{ fontSize: 11.5, fontFamily: ff.mono, background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#166534', borderRadius: 4, padding: '2px 8px' }}>{name}</span>
+            ))}
+          </div>
+        </GenUISection>
+      </GenUICard>
+    );
+  }
+
+  return (
+    <GenUICard>
+      <GenUISection>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <GenUIBadge variant="blue">{SF_SCHEMAS.length} schemas found</GenUIBadge>
+          <span style={{ fontSize: 11, color: '#999' }}>acme.us-east-1</span>
+        </div>
+      </GenUISection>
+      <GenUISection>
+        <div style={{ display: 'flex', flexDirection: 'column' as const }}>
+          {SF_SCHEMAS.map((schema, i) => (
+            <div
+              key={schema.name}
+              onClick={() => toggle(schema.name)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 10,
+                padding: '7px 0',
+                borderBottom: i < SF_SCHEMAS.length - 1 ? '1px solid #f1f5f9' : 'none',
+                cursor: 'pointer',
+              }}
+            >
+              <div style={{
+                width: 14, height: 14, borderRadius: 3, flexShrink: 0,
+                border: `1.5px solid ${checked.has(schema.name) ? '#2563eb' : '#cbd5e1'}`,
+                background: checked.has(schema.name) ? '#2563eb' : '#fff',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                {checked.has(schema.name) && (
+                  <svg width="9" height="9" viewBox="0 0 10 10" fill="none">
+                    <path d="M2 5l2.5 2.5L8 3" stroke="white" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                )}
+              </div>
+              <span style={{ flex: 1, fontSize: 12.5, fontFamily: ff.mono, color: '#1e293b', fontWeight: checked.has(schema.name) ? fw.semibold : fw.regular }}>{schema.name}</span>
+              <span style={{ fontSize: 11, color: '#94a3b8' }}>{schema.tables} tables</span>
+              <span style={{ fontSize: 11, color: '#cbd5e1', margin: '0 2px' }}>·</span>
+              <span style={{ fontSize: 11, color: '#94a3b8' }}>{schema.rows} rows</span>
+            </div>
+          ))}
+        </div>
+      </GenUISection>
+      <div style={{ padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span style={{ fontSize: 12, color: '#64748b' }}>{checked.size} selected</span>
+        <button
+          onClick={() => onAction('sf_connect_schemas_import', msgId)}
+          disabled={checked.size === 0}
+          style={{
+            padding: '6px 14px', borderRadius: 6, border: 'none',
+            background: checked.size > 0 ? '#2563eb' : '#e2e8f0',
+            cursor: checked.size > 0 ? 'pointer' : 'default',
+            fontSize: 12.5, fontWeight: fw.semibold,
+            color: checked.size > 0 ? '#fff' : '#94a3b8',
+            fontFamily: ff.primary,
+          }}
+          onMouseEnter={e => { if (checked.size > 0) e.currentTarget.style.backgroundColor = '#1d4ed8'; }}
+          onMouseLeave={e => { if (checked.size > 0) e.currentTarget.style.backgroundColor = '#2563eb'; }}
+        >
+          Import {checked.size > 0 ? `${checked.size} schema${checked.size !== 1 ? 's' : ''}` : 'schemas'} →
+        </button>
+      </div>
+    </GenUICard>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+const SnowflakeConnectDoneCard: React.FC<{
+  msgId: string;
+  result?: string;
+  onAction: (action: string, msgId: string) => void;
+}> = ({ msgId, result, onAction }) => {
+  const locked = !!result;
+  return (
+    <GenUICard locked={locked}>
+      <GenUISection>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <GenUIBadge variant="green">✓ Connection live</GenUIBadge>
+          <span style={{ fontSize: 11, color: '#999' }}>Snowflake · us-east-1</span>
+        </div>
+      </GenUISection>
+      <GenUISection>
+        <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 5 }}>
+          {[
+            { label: 'ANALYTICS', sub: '14 tables · 847K rows' },
+            { label: 'MARKETING', sub: '6 tables · 218K rows' },
+          ].map(item => (
+            <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <circle cx="6" cy="6" r="5" stroke="#22c55e" strokeWidth="1.5"/>
+                <path d="M3.5 6l1.5 1.5L8.5 4" stroke="#22c55e" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              <span style={{ fontSize: 12.5, fontFamily: ff.primary, fontWeight: fw.semibold, color: '#1e293b' }}>{item.label}</span>
+              <span style={{ fontSize: 11.5, color: '#94a3b8' }}>{item.sub}</span>
+            </div>
+          ))}
+        </div>
+        <div style={{ marginTop: 10, padding: '8px 10px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 6 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+            <span style={{ fontSize: 11.5, color: '#64748b' }}>Columns indexed</span>
+            <span style={{ fontSize: 12, fontWeight: fw.semibold, color: '#1e293b' }}>312</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: 11.5, color: '#64748b' }}>Search ready</span>
+            <span style={{ fontSize: 12, fontWeight: fw.semibold, color: '#16a34a' }}>Yes</span>
+          </div>
+        </div>
+      </GenUISection>
+      {!locked && (
+        <GenUIActions
+          locked={false}
+          secondary={{ label: 'View connection', action: 'sf_connect_done_view', msgId, onAction }}
+          primary={{ label: 'Start building a model →', action: 'sf_connect_done_explore', msgId, onAction }}
+        />
+      )}
+      {locked && <GenUISection last><span style={{ fontSize: 12, color: '#888' }}>Done</span></GenUISection>}
+    </GenUICard>
+  );
+};
+
+// ── Snowflake Done (Both) Card ────────────────────────────────────────────────
+
+const SnowflakeConnectDoneBothCard: React.FC<{
+  msgId: string;
+  result?: string;
+  onAction: (action: string, msgId: string) => void;
+}> = ({ msgId, result, onAction }) => {
+  const locked = !!result;
+  return (
+    <GenUICard locked={locked}>
+      <GenUISection>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <GenUIBadge variant="green">✓ CDW connection live</GenUIBadge>
+          <span style={{ fontSize: 11, color: '#999' }}>Snowflake · us-east-1</span>
+        </div>
+      </GenUISection>
+      <GenUISection>
+        <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 5 }}>
+          {[
+            { label: 'ANALYTICS', sub: '14 tables · 847K rows' },
+            { label: 'MARKETING', sub: '6 tables · 218K rows' },
+          ].map(item => (
+            <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <circle cx="6" cy="6" r="5" stroke="#22c55e" strokeWidth="1.5"/>
+                <path d="M3.5 6l1.5 1.5L8.5 4" stroke="#22c55e" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              <span style={{ fontSize: 12.5, fontFamily: ff.primary, fontWeight: fw.semibold, color: '#1e293b' }}>{item.label}</span>
+              <span style={{ fontSize: 11.5, color: '#94a3b8' }}>{item.sub}</span>
+            </div>
+          ))}
+        </div>
+      </GenUISection>
+      {!locked && (
+        <GenUIActions locked={false} primary={{ label: 'Import semantic layer →', action: 'sf_connect_done_both_continue', msgId, onAction }} />
+      )}
+      {locked && <GenUISection last><span style={{ fontSize: 12, color: '#888' }}>Done</span></GenUISection>}
+    </GenUICard>
+  );
+};
+
+// ── Semantic Layer GenUI Cards ────────────────────────────────────────────────
+
+const SfSemanticFormCard: React.FC<{
+  msgId: string;
+  result?: string;
+  onAction: (action: string, msgId: string) => void;
+}> = ({ msgId, result, onAction }) => {
+  const locked = !!result;
+  const [phase, setPhase] = React.useState<'idle' | 'testing' | 'connected'>('idle');
+
+  const handleAuth = () => {
+    setPhase('testing');
+    setTimeout(() => setPhase('connected'), 2000);
+  };
+
+  if (locked) {
+    return (
+      <GenUICard locked>
+        <GenUISection>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <GenUIBadge variant="green">✓ Authenticated</GenUIBadge>
+            <span style={{ fontSize: 11, color: '#999' }}>dbt Cloud · analytics-prod</span>
+          </div>
+        </GenUISection>
+        <GenUISection last>
+          <span style={{ fontSize: 12, color: '#555', fontFamily: ff.primary }}>analytics-prod · Production environment</span>
+        </GenUISection>
+      </GenUICard>
+    );
+  }
+
+  if (phase === 'testing') {
+    return (
+      <GenUICard>
+        <GenUISection last>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 0' }}>
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" style={{ animation: 'spin 0.85s linear infinite', flexShrink: 0 }}>
+              <circle cx="9" cy="9" r="7" stroke="#e2e8f0" strokeWidth="2"/>
+              <path d="M9 2a7 7 0 0 1 7 7" stroke="c['content-brand']" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
+            <span style={{ fontSize: 13, color: '#555', fontFamily: ff.primary }}>Authenticating with dbt Cloud…</span>
+          </div>
+        </GenUISection>
+      </GenUICard>
+    );
+  }
+
+  if (phase === 'connected') {
+    return (
+      <GenUICard>
+        <GenUISection>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <GenUIBadge variant="green">✓ Authenticated</GenUIBadge>
+            <span style={{ fontSize: 11, color: '#999' }}>dbt Cloud · analytics-prod</span>
+          </div>
+        </GenUISection>
+        <GenUISection>
+          <div style={{ fontSize: 11.5, color: '#334155', fontFamily: ff.primary }}>analytics-prod · Production environment</div>
+          <div style={{ marginTop: 8, display: 'flex', gap: 16, flexWrap: 'wrap' as const }}>
+            <span style={{ fontSize: 11.5, color: '#64748b' }}>Project: <strong style={{ color: '#1e293b' }}>analytics-prod</strong></span>
+            <span style={{ fontSize: 11.5, color: '#64748b' }}>Environment: <strong style={{ color: '#1e293b' }}>Production</strong></span>
+          </div>
+        </GenUISection>
+        <GenUIActions locked={false} primary={{ label: 'Import models →', action: 'sf_semantic_connect', msgId, onAction }} />
+      </GenUICard>
+    );
+  }
+
+  const inputStyle: React.CSSProperties = {
+    width: '100%', fontSize: 12.5, padding: '6px 10px',
+    border: '1px solid #e2e8f0', borderRadius: 6, color: '#222',
+    background: '#fff', outline: 'none', boxSizing: 'border-box', fontFamily: ff.primary,
+  };
+  return (
+    <GenUICard>
+      <GenUISection>
+        <div style={{ fontSize: 11, fontWeight: fw.semibold, color: '#888', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>dbt Cloud credentials</div>
+      </GenUISection>
+      <GenUISection>
+        <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 10 }}>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: fw.semibold, color: '#888', marginBottom: 4 }}>Account URL</div>
+            <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #e2e8f0', borderRadius: 6, overflow: 'hidden', background: '#fff' }}>
+              <span style={{ fontSize: 12, color: '#aaa', padding: '6px 10px', background: '#f8fafc', borderRight: '1px solid #e2e8f0', fontFamily: ff.mono, whiteSpace: 'nowrap' as const }}>https://</span>
+              <input defaultValue="cloud.getdbt.com/accounts/48291" style={{ flex: 1, fontSize: 12.5, padding: '6px 10px', border: 'none', outline: 'none', fontFamily: ff.mono, color: '#222', background: 'transparent' }} />
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: fw.semibold, color: '#888', marginBottom: 4 }}>API token</div>
+            <input type="password" defaultValue="dbtc_xK9mRtY2vBqPzNsL" style={{ ...inputStyle, fontFamily: ff.mono }} />
+          </div>
+        </div>
+      </GenUISection>
+      <div style={{ padding: '10px 14px', display: 'flex', justifyContent: 'flex-end' }}>
+        <button onClick={handleAuth} style={{ padding: '6px 14px', borderRadius: 6, border: 'none', background: c['content-brand'], cursor: 'pointer', fontSize: 12.5, fontWeight: fw.semibold, color: '#fff', fontFamily: ff.primary }}
+          onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['content-brand'])}
+          onMouseLeave={e => (e.currentTarget.style.backgroundColor = c['content-brand'])}>
+          Authenticate
+        </button>
+      </div>
+    </GenUICard>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+const SF_SEMANTIC_TREE = [
+  {
+    folder: 'Core',
+    models: [
+      { name: 'Sales Analytics',       metrics: 12, dims: 34, defaultChecked: true },
+      { name: 'Revenue Forecast',      metrics: 8,  dims: 18, defaultChecked: true },
+    ],
+  },
+  {
+    folder: 'Marketing',
+    models: [
+      { name: 'Marketing Attribution', metrics: 12, dims: 33, defaultChecked: false },
+      { name: 'Campaign Performance',  metrics: 7,  dims: 21, defaultChecked: false },
+    ],
+  },
+  {
+    folder: 'Operations',
+    models: [
+      { name: 'Pipeline Health',       metrics: 15, dims: 27, defaultChecked: false },
+      { name: 'Headcount & Capacity',  metrics: 6,  dims: 14, defaultChecked: false },
+    ],
+  },
+];
+
+const ALL_SF_MODELS = SF_SEMANTIC_TREE.flatMap(f => f.models);
+
+const SfSemanticModelsCard: React.FC<{
+  msgId: string;
+  result?: string;
+  onAction: (action: string, msgId: string) => void;
+}> = ({ msgId, result, onAction }) => {
+  const locked = !!result;
+  const [checked, setChecked] = React.useState<Set<string>>(
+    new Set(ALL_SF_MODELS.filter(m => m.defaultChecked).map(m => m.name))
+  );
+  const [collapsed, setCollapsed] = React.useState<Set<string>>(new Set());
+
+  const toggleModel = (name: string) => setChecked(prev => {
+    const next = new Set(prev);
+    if (next.has(name)) next.delete(name); else next.add(name);
+    return next;
+  });
+
+  const toggleFolder = (models: typeof SF_SEMANTIC_TREE[0]['models']) => {
+    const allChecked = models.every(m => checked.has(m.name));
+    setChecked(prev => {
+      const next = new Set(prev);
+      models.forEach(m => { if (allChecked) next.delete(m.name); else next.add(m.name); });
+      return next;
+    });
+  };
+
+  const toggleCollapse = (folder: string) => setCollapsed(prev => {
+    const next = new Set(prev);
+    if (next.has(folder)) next.delete(folder); else next.add(folder);
+    return next;
+  });
+
+  if (locked) {
+    const imported = ALL_SF_MODELS.filter(m => checked.has(m.name));
+    return (
+      <GenUICard locked>
+        <GenUISection>
+          <GenUIBadge variant="green">✓ {imported.length} model{imported.length !== 1 ? 's' : ''} imported</GenUIBadge>
+        </GenUISection>
+        <GenUISection last>
+          <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 4 }}>
+            {imported.map(m => (
+              <span key={m.name} style={{ fontSize: 12, fontFamily: ff.primary, color: '#166534' }}>✓ {m.name}</span>
+            ))}
+          </div>
+        </GenUISection>
+      </GenUICard>
+    );
+  }
+
+  const Checkbox = ({ name, indeterminate }: { name: string; indeterminate?: boolean }) => (
+    <div style={{ width: 14, height: 14, borderRadius: 3, flexShrink: 0, border: `1.5px solid ${(checked.has(name) || indeterminate) ? c['content-brand'] : '#cbd5e1'}`, background: checked.has(name) ? c['content-brand'] : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      {checked.has(name) && !indeterminate && <svg width="9" height="9" viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5L8 3" stroke="white" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+      {indeterminate && <div style={{ width: 7, height: 2, background: c['content-brand'], borderRadius: 1 }} />}
+    </div>
+  );
+
+  return (
+    <GenUICard>
+      <GenUISection>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <GenUIBadge variant="blue">{ALL_SF_MODELS.length} models · {SF_SEMANTIC_TREE.length} folders</GenUIBadge>
+          <span style={{ fontSize: 11, color: '#999' }}>analytics-prod · Production</span>
+        </div>
+      </GenUISection>
+      <GenUISection>
+        <div style={{ display: 'flex', flexDirection: 'column' as const }}>
+          {SF_SEMANTIC_TREE.map((group, gi) => {
+            const isOpen = !collapsed.has(group.folder);
+            const allChecked = group.models.every(m => checked.has(m.name));
+            const someChecked = group.models.some(m => checked.has(m.name));
+            return (
+              <div key={group.folder} style={{ borderBottom: gi < SF_SEMANTIC_TREE.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 0' }}>
+                  <div onClick={() => toggleFolder(group.models)} style={{ cursor: 'pointer' }}>
+                    <Checkbox name={allChecked ? group.folder : '__never__'} indeterminate={someChecked && !allChecked} />
+                  </div>
+                  <div onClick={() => toggleCollapse(group.folder)} style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0, transform: isOpen ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.15s' }}>
+                      <path d="M2.5 4.5l3.5 3 3.5-3" stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    <span style={{ fontSize: 12, fontWeight: fw.semibold, color: '#1e293b', fontFamily: ff.primary }}>{group.folder}</span>
+                    <span style={{ fontSize: 11, color: '#94a3b8' }}>{group.models.length} models</span>
+                  </div>
+                </div>
+                {isOpen && group.models.map(model => (
+                  <div key={model.name} onClick={() => toggleModel(model.name)}
+                    style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0 6px 22px', cursor: 'pointer' }}>
+                    <Checkbox name={model.name} />
+                    <span style={{ flex: 1, fontSize: 12.5, fontFamily: ff.primary, color: '#1e293b', fontWeight: checked.has(model.name) ? fw.semibold : fw.regular }}>{model.name}</span>
+                    <span style={{ fontSize: 11, color: '#94a3b8' }}>{model.metrics}M</span>
+                    <span style={{ fontSize: 11, color: '#cbd5e1', margin: '0 2px' }}>·</span>
+                    <span style={{ fontSize: 11, color: '#94a3b8' }}>{model.dims}D</span>
+                  </div>
+                ))}
+              </div>
+            );
+          })}
+        </div>
+      </GenUISection>
+      <div style={{ padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span style={{ fontSize: 12, color: '#64748b' }}>{checked.size} selected</span>
+        <button onClick={() => onAction('sf_semantic_models_import', msgId)} disabled={checked.size === 0}
+          style={{ padding: '6px 14px', borderRadius: 6, border: 'none', background: checked.size > 0 ? c['content-brand'] : '#e2e8f0', cursor: checked.size > 0 ? 'pointer' : 'default', fontSize: 12.5, fontWeight: fw.semibold, color: checked.size > 0 ? '#fff' : '#94a3b8', fontFamily: ff.primary }}>
+          Import {checked.size > 0 ? `${checked.size} model${checked.size !== 1 ? 's' : ''}` : 'models'} →
+        </button>
+      </div>
+    </GenUICard>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+const SfSemanticDoneCard: React.FC<{
+  msgId: string;
+  result?: string;
+  onAction: (action: string, msgId: string) => void;
+}> = ({ msgId, result, onAction }) => {
+  const locked = !!result;
+  return (
+    <GenUICard locked={locked}>
+      <GenUISection>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <GenUIBadge variant="green">✓ Semantic layer connected</GenUIBadge>
+          <span style={{ fontSize: 11, color: '#999' }}>dbt Cloud · analytics-prod</span>
+        </div>
+      </GenUISection>
+      <GenUISection>
+        <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 5 }}>
+          {[
+            { label: 'Sales Analytics',   sub: '12 metrics · 34 dimensions' },
+            { label: 'Revenue Forecast',  sub: '8 metrics · 18 dimensions' },
+          ].map(item => (
+            <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <circle cx="6" cy="6" r="5" stroke="#22c55e" strokeWidth="1.5"/>
+                <path d="M3.5 6l1.5 1.5L8.5 4" stroke="#22c55e" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              <span style={{ fontSize: 12.5, fontFamily: ff.primary, fontWeight: fw.semibold, color: '#1e293b' }}>{item.label}</span>
+              <span style={{ fontSize: 11.5, color: '#94a3b8' }}>{item.sub}</span>
+            </div>
+          ))}
+        </div>
+        <div style={{ marginTop: 10, padding: '8px 10px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 6 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+            <span style={{ fontSize: 11.5, color: '#64748b' }}>Total metrics</span>
+            <span style={{ fontSize: 12, fontWeight: fw.semibold, color: '#1e293b' }}>47</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: 11.5, color: '#64748b' }}>Spotter-ready</span>
+            <span style={{ fontSize: 12, fontWeight: fw.semibold, color: '#d97706' }}>Not yet</span>
+          </div>
+        </div>
+      </GenUISection>
+      {!locked && (
+        <GenUIActions locked={false} primary={{ label: 'Make Spotter-ready →', action: 'sf_semantic_done_enrich', msgId, onAction }} />
+      )}
+      {locked && <GenUISection last><span style={{ fontSize: 12, color: '#888' }}>Done</span></GenUISection>}
     </GenUICard>
   );
 };

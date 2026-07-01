@@ -55,6 +55,14 @@ const CAPABILITY_CHIPS = [
     ],
   },
   {
+    icon: 'cord' as const, label: 'Connect Snowflake',
+    base: 'Connect Snowflake',
+    suffixes: [
+      ' to my workspace',
+      ' and import schemas for the analytics team',
+    ],
+  },
+  {
     icon: 'save-worksheet' as const, label: 'Cache a model',
     base: 'I want to cache a model',
     suffixes: [

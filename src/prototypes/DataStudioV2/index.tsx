@@ -62,6 +62,7 @@ export interface ProjectState {
   spotStoreTables?: string[];          // tables written to ThoughtSpot CDW
   stagingTableId?: string;             // the unified staging table id
   multiSourceCreated?: MultiSourceCreatedItem[];  // items created during multi-source ingestion
+  dqStatus?: 'idle' | 'scanning' | 'issues_found' | 'fixing' | 'done';
 }
 
 type AppView = 'overview' | 'models' | 'chat' | 'new-project' | 'model-view' | 'workspace' | 'data-browser' | 'connections' | 'placeholder' | 'full-chat';
@@ -127,6 +128,7 @@ const DataStudio: React.FC = () => {
     columnsSelected: false,
     includedColumns: {},
     columnOverrides: {},
+    dqStatus: 'idle',
   });
 
   // Helper: navigate to a view while tracking history
@@ -288,6 +290,7 @@ const DataStudio: React.FC = () => {
       columnsSelected: false,
       includedColumns: {},
       columnOverrides: {},
+      dqStatus: 'idle',
     });
     setInitialPrompt('');
     navigateTo('new-project');
@@ -351,6 +354,7 @@ const DataStudio: React.FC = () => {
       navigateTo('chat');
       return;
     }
+    const isConnectionFlow = /connect.{0,20}snowflake|snowflake.{0,20}connect|set[\s-]up.{0,10}snowflake|add.{0,20}snowflake\b/i.test(prompt);
     setProject({
       id: `proj-${Date.now()}`,
       name: deriveModelName(prompt),
@@ -364,9 +368,10 @@ const DataStudio: React.FC = () => {
       columnsSelected: false,
       includedColumns: {},
       columnOverrides: {},
+      dqStatus: 'idle',
     });
     setInitialPrompt(prompt);
-    setIsFromScratch(true);
+    setIsFromScratch(!isConnectionFlow);
     setIsAgentMode(true);
     navigateTo('chat');
   };

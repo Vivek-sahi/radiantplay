@@ -4,6 +4,7 @@ import type { AppSidebarProps, SidebarTab, SidebarCategory } from '../../../comp
 import type { GlobalHeaderProps } from '../../../components/GlobalHeader';
 
 export type NavSection = 'overview' | 'projects' | 'data' | 'connections';
+export type FlowOption = 'option1' | 'option2' | 'option3';
 
 // ── Sidebar config ────────────────────────────────────────────────────────────
 
