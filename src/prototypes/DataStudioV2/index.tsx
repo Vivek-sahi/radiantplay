@@ -354,7 +354,7 @@ const DataStudio: React.FC = () => {
       navigateTo('chat');
       return;
     }
-    const isConnectionFlow = /connect.{0,20}snowflake|snowflake.{0,20}connect|set[\s-]up.{0,10}snowflake|add.{0,20}snowflake\b/i.test(prompt);
+    const isConnectionFlow = /connect.{0,20}snowflake|snowflake.{0,20}connect|set[\s-]up.{0,10}snowflake|add.{0,20}snowflake\b|new data connection/i.test(prompt);
     setProject({
       id: `proj-${Date.now()}`,
       name: deriveModelName(prompt),

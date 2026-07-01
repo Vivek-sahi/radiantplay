@@ -3958,8 +3958,8 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
     }
 
     // 0a-sf. Snowflake connection — reason first, then ask clarifying question
-    if (/connect.{0,20}snowflake|snowflake.{0,20}connect|set[\s-]up.{0,10}snowflake|add.{0,20}snowflake\b/i.test(text)) {
-      runDayZeroSteps('snowflake_connect_reason', text, setMessages, () => {
+    if (/connect.{0,20}snowflake|snowflake.{0,20}connect|set[\s-]up.{0,10}snowflake|add.{0,20}snowflake\b|new data connection/i.test(text)) {
+      runFromScratchSteps('snowflake_connect_reason', text, setMessages, () => {
         setMessages(prev => [...prev, { id: `r-${Date.now()}`, type: 'response', content: "What are you trying to import from Snowflake?" }]);
         setProcessing(false);
         setSfConnectIntent('clarify');
