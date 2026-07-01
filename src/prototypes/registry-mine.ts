@@ -32,6 +32,7 @@ import { ProjectMeta } from './registry-core';
 import DataStudioThumbnail from './thumbnails/DataStudio.svg';
 
 const DataStudioV2 = React.lazy(() => import('./DataStudioV2'));
+const DataNotebook = React.lazy(() => import('./DataNotebook'));
 const SpotterPrep = React.lazy(() => import('./SpotterPrep'));
 const SpotterPrep2 = React.lazy(() => import('./SpotterPrep2'));
 
@@ -44,6 +45,15 @@ export const myRegistry: ProjectMeta[] = [
     lastModified: '2026-04-23',
     thumbnail: DataStudioThumbnail,
     component: DataStudioV2,
+    section: 'mine',
+  },
+  {
+    id: 'DataNotebook',
+    name: 'Data Notebook — Hex-style',
+    description: 'Reactive multi-source data notebook with a notebook agent — real in-browser SQL (DuckDB) and Python (Pyodide).',
+    author: 'Vivek Sahi',
+    lastModified: '2026-06-11',
+    component: DataNotebook,
     section: 'mine',
   },
   {
