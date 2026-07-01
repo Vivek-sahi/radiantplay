@@ -133,6 +133,12 @@ declare -a FILES_TO_OMIT=(
   # Internal Claude commands and hooks
   ".claude/commands/sync-upstream.md"
   ".claude/hooks/liveboard-gate.sh"
+  ".claude/hooks/post-compact-inject.sh"
+
+  # Maintainer Claude config — permissions allowlist + internal hook wiring.
+  # Public users get default Claude Code behavior; CLAUDE.md carries the conventions.
+  # (Omitting this fixes the "liveboard-gate.sh: No such file" hook error on clone.)
+  ".claude/settings.json"
 )
 
 for f in "${FILES_TO_OMIT[@]}"; do
