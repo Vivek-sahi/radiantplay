@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import React, { useState } from 'react';
 import { c, sp, fs, fw, ff } from '../styles';
 import { Button } from '../../../components/Button';
 import { Card } from '../../../components/Card';
@@ -8,8 +8,8 @@ import { Tabs } from '../../../components/Tabs';
 import { Modal } from '../../../components/Modal';
 import { Checkbox } from '../../../components/Checkbox';
 import { Icon } from '../../../components/icons';
-import { WizardModal, type WizardStep } from '../../../components/WizardModal';
 import { CONNECTIONS, Connection, ConnectionType } from '../data/mockData';
+import NewConnectionPage from './NewConnectionPage';
 
 // ── Connection type meta ─────────────────────────────────────────────────────
 
@@ -156,318 +156,6 @@ const ListView: React.FC<{
   </>
 );
 
-// ── Wizard step content components ───────────────────────────────────────────
-
-const TYPE_TILES: { kind: ConnectionType; tagline: string }[] = [
-  { kind: 'snowflake',  tagline: 'Cloud data warehouse'        },
-  { kind: 'bigquery',   tagline: "Google's serverless warehouse" },
-  { kind: 'databricks', tagline: 'Lakehouse platform'          },
-  { kind: 'redshift',   tagline: 'AWS data warehouse'          },
-  { kind: 'postgres',   tagline: 'Relational database'         },
-];
-
-const PickStepContent: React.FC<{
-  selectedType: ConnectionType | null;
-  onSelect:     (t: ConnectionType) => void;
-}> = ({ selectedType, onSelect }) => (
-  <div>
-    <p style={{ margin: `0 0 ${sp.D}px`, fontSize: fs.sm, color: c['content-secondary'], fontFamily: ff.primary }}>
-      Pick the source type — the configuration fields adjust to match.
-    </p>
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: sp.C }}>
-      {TYPE_TILES.map(t => {
-        const selected = selectedType === t.kind;
-        return (
-          <div
-            key={t.kind}
-            onClick={() => onSelect(t.kind)}
-            style={{
-              padding: sp.D, borderRadius: 6, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: sp.C,
-              border: `1.5px solid ${selected ? c['content-brand'] : c['border-default']}`,
-              backgroundColor: selected ? c['background-information'] : c['background-base'],
-            }}
-          >
-            <ConnIcon type={t.kind} size="m" />
-            <div>
-              <div style={{ fontSize: fs.sm, fontWeight: fw.medium, color: selected ? c['content-brand'] : c['content-primary'], fontFamily: ff.primary }}>
-                {CONN_LABEL[t.kind]}
-              </div>
-              <div style={{ fontSize: fs.xs, color: c['content-tertiary'], fontFamily: ff.primary, marginTop: 2 }}>
-                {t.tagline}
-              </div>
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  </div>
-);
-
-const ConfigureStepContent: React.FC<{
-  type:         ConnectionType;
-  name:         string;
-  onNameChange: (v: string) => void;
-}> = ({ type, name, onNameChange }) => (
-  <div style={{ display: 'flex', flexDirection: 'column', gap: sp.D }}>
-    <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, marginBottom: sp.A }}>
-      <ConnIcon type={type} size="m" />
-      <span style={{ fontSize: fs.sm, fontWeight: fw.medium, color: c['content-primary'], fontFamily: ff.primary }}>
-        {CONN_LABEL[type]}
-      </span>
-    </div>
-    <TextInput
-      label="Connection name"
-      placeholder={`${type}-prod`}
-      value={name}
-      onChange={(e) => onNameChange(e.target.value)}
-    />
-    <TextInput
-      label={type === 'bigquery' ? 'Project ID' : 'Account'}
-      placeholder={type === 'bigquery' ? 'my-gcp-project' : 'mycompany.us-east-1'}
-      defaultValue="mycompany.us-east-1"
-    />
-    <Select
-      label="Auth method"
-      fullWidth
-      options={[
-        { id: 'oauth',   label: 'OAuth (recommended)'  },
-        { id: 'keypair', label: 'Key pair'              },
-        { id: 'pat',     label: 'Personal access token' },
-        { id: 'service', label: 'Service account'       },
-      ]}
-      value="oauth"
-    />
-    {type === 'snowflake' && (
-      <>
-        <TextInput label="Default warehouse" placeholder="COMPUTE_WH"  defaultValue="COMPUTE_WH"   />
-        <TextInput label="Default role"      placeholder="ANALYST_ROLE" defaultValue="ANALYST_ROLE" />
-      </>
-    )}
-  </div>
-);
-
-const TEST_CHECKS = [
-  'Authenticating with OAuth',
-  'Verifying warehouse access',
-  'Listing accessible schemas (6 found)',
-  'Validating role permissions',
-];
-
-const TestStepContent: React.FC<{ onAllPassed: () => void }> = ({ onAllPassed }) => {
-  const [visibleCount, setVisibleCount] = useState(0);
-  const cbRef = useRef(onAllPassed);
-  cbRef.current = onAllPassed;
-
-  useEffect(() => {
-    if (visibleCount < TEST_CHECKS.length) {
-      const t = setTimeout(() => setVisibleCount(v => v + 1), 700);
-      return () => clearTimeout(t);
-    } else {
-      cbRef.current();
-    }
-  }, [visibleCount]);
-
-  return (
-    <div>
-      <p style={{ margin: `0 0 ${sp.D}px`, fontSize: fs.sm, color: c['content-secondary'], fontFamily: ff.primary }}>
-        Verifying your credentials and warehouse access.
-      </p>
-      <Card>
-        <div style={{ padding: `${sp.B}px 0` }}>
-          {TEST_CHECKS.map((check, i) => {
-            const visible = i < visibleCount;
-            const pending = i === visibleCount;
-            return (
-              <div key={check} style={{
-                display: 'flex', alignItems: 'center', gap: sp.C,
-                padding: `${sp.C}px ${sp.D}px`,
-                borderTop: i > 0 ? `1px solid ${c['border-divider']}` : 'none',
-                opacity: visible || pending ? 1 : 0.3,
-                transition: 'opacity 0.25s ease',
-              }}>
-                {visible ? (
-                  <span style={{
-                    width: 18, height: 18, borderRadius: 9, flexShrink: 0,
-                    backgroundColor: c['content-success'], color: 'white',
-                    fontSize: 10, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}>✓</span>
-                ) : pending ? (
-                  <span style={{
-                    width: 18, height: 18, borderRadius: 9, flexShrink: 0,
-                    border: `2px solid ${c['content-brand']}`,
-                    borderTopColor: 'transparent',
-                    display: 'inline-block',
-                    animation: 'spin 0.7s linear infinite',
-                  }} />
-                ) : (
-                  <span style={{
-                    width: 18, height: 18, borderRadius: 9, flexShrink: 0,
-                    backgroundColor: c['background-subtle'],
-                    display: 'inline-block',
-                  }} />
-                )}
-                <span style={{ fontSize: fs.sm, color: visible ? c['content-primary'] : c['content-secondary'], fontFamily: ff.primary }}>
-                  {check}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-      </Card>
-    </div>
-  );
-};
-
-const IMPORT_SCHEMAS = [
-  { name: 'ANALYTICS', tables: 84,  restricted: false },
-  { name: 'FINANCE',   tables: 32,  restricted: false },
-  { name: 'MARKETING', tables: 28,  restricted: false },
-  { name: 'PRODUCT',   tables: 22,  restricted: false },
-  { name: 'STAGING',   tables: 18,  restricted: false },
-  { name: 'RAW',       tables: 0,   restricted: true  },
-];
-
-const ImportStepContent: React.FC<{
-  exclusions: string[];
-  onToggle:   (schema: string) => void;
-}> = ({ exclusions, onToggle }) => {
-  const includedCount = IMPORT_SCHEMAS.filter(s => !s.restricted && !exclusions.includes(s.name)).length;
-
-  return (
-    <div>
-      <p style={{ margin: `0 0 ${sp.D}px`, fontSize: fs.sm, color: c['content-secondary'], fontFamily: ff.primary }}>
-        We'll import all accessible schemas. Uncheck any you'd like to exclude — you can change this later.
-      </p>
-      <Card>
-        <div style={{ padding: `${sp.B}px 0` }}>
-          {IMPORT_SCHEMAS.map((s, i) => {
-            const checked = !s.restricted && !exclusions.includes(s.name);
-            return (
-              <div key={s.name} style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: `${sp.C}px ${sp.D}px`,
-                borderTop: i > 0 ? `1px solid ${c['border-divider']}` : 'none',
-                opacity: s.restricted ? 0.45 : 1,
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: sp.B }}>
-                  <Checkbox
-                    checked={checked}
-                    disabled={s.restricted}
-                    onChange={() => !s.restricted && onToggle(s.name)}
-                  />
-                  <span style={{ fontSize: fs.sm, fontFamily: ff.mono, color: c['content-primary'] }}>{s.name}</span>
-                  <span style={{ fontSize: fs.xs, color: c['content-tertiary'], fontFamily: ff.primary }}>
-                    · {s.tables > 0 ? `${s.tables} tables` : 'no permission'}
-                  </span>
-                </div>
-                {checked && !s.restricted && (
-                  <span style={{ fontSize: fs.xs, color: c['content-success'], fontFamily: ff.primary, fontWeight: fw.medium }}>
-                    Will import
-                  </span>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </Card>
-      <div style={{ marginTop: sp.C, fontSize: fs.xs, color: c['content-tertiary'], fontFamily: ff.primary }}>
-        {includedCount} of {IMPORT_SCHEMAS.filter(s => !s.restricted).length} schemas will be imported.
-      </div>
-    </div>
-  );
-};
-
-// ── New connection wizard (uses WizardModal) ─────────────────────────────────
-
-const NewConnectionWizard: React.FC<{
-  isOpen:   boolean;
-  onCancel: () => void;
-  onDone:   (conn: Connection) => void;
-}> = ({ isOpen, onCancel, onDone }) => {
-  const [wizardStep,    setWizardStep]    = useState(0);
-  const [selectedType,  setSelectedType]  = useState<ConnectionType | null>(null);
-  const [connName,      setConnName]      = useState('');
-  const [testAllPassed, setTestAllPassed] = useState(false);
-  const [exclusions,    setExclusions]    = useState<string[]>([]);
-
-  // Reset when wizard opens
-  useEffect(() => {
-    if (isOpen) {
-      setWizardStep(0);
-      setSelectedType(null);
-      setConnName('');
-      setTestAllPassed(false);
-      setExclusions([]);
-    }
-  }, [isOpen]);
-
-  const handleSelectType = useCallback((t: ConnectionType) => {
-    setSelectedType(t);
-    setConnName(`${t}-prod`);
-  }, []);
-
-  const handleTestAllPassed = useCallback(() => setTestAllPassed(true), []);
-
-  const handleToggleExclusion = useCallback((schema: string) => {
-    setExclusions(prev => prev.includes(schema) ? prev.filter(s => s !== schema) : [...prev, schema]);
-  }, []);
-
-  const steps: WizardStep[] = useMemo(() => [
-    {
-      id:             'pick',
-      title:          'Choose source',
-      content:        <PickStepContent selectedType={selectedType} onSelect={handleSelectType} />,
-      hideNextButton: !selectedType,
-    },
-    {
-      id:      'configure',
-      title:   'Configure',
-      content: selectedType
-        ? <ConfigureStepContent type={selectedType} name={connName} onNameChange={setConnName} />
-        : <div />,
-    },
-    {
-      id:             'test',
-      title:          'Test connection',
-      content:        <TestStepContent onAllPassed={handleTestAllPassed} />,
-      hideNextButton: !testAllPassed,
-      nextButtonText: 'Looks good, continue',
-    },
-    {
-      id:             'import',
-      title:          'Import data',
-      content:        <ImportStepContent exclusions={exclusions} onToggle={handleToggleExclusion} />,
-      nextButtonText: 'Connect & import',
-    },
-  ], [selectedType, connName, testAllPassed, exclusions, handleSelectType, handleTestAllPassed, handleToggleExclusion]);
-
-  const handleComplete = useCallback(() => {
-    if (!selectedType) return;
-    onDone({
-      id:         `conn-${Date.now()}`,
-      name:       connName || `${selectedType}-prod`,
-      type:       selectedType,
-      status:     'connected',
-      lastSync:   'Just now',
-      ownerEmail: 'vivek@example.com',
-      tables:     184,
-    });
-  }, [selectedType, connName, onDone]);
-
-  return (
-    <WizardModal
-      isOpen={isOpen}
-      onClose={onCancel}
-      title="New connection"
-      steps={steps}
-      onComplete={handleComplete}
-      currentStep={wizardStep}
-      onStepChange={setWizardStep}
-      showProgress
-      size="large"
-    />
-  );
-};
 
 // ── Connection detail ────────────────────────────────────────────────────────
 
@@ -697,10 +385,10 @@ const DbtSetupView: React.FC<{ conn: Connection; onCancel: () => void; onDone: (
 type SubView = 'list' | 'detail' | 'dbt-setup';
 
 const ConnectionsPage: React.FC = () => {
-  const [view,        setView]        = useState<SubView>('list');
-  const [connections, setConnections] = useState<Connection[]>(CONNECTIONS);
-  const [selectedConn, setSelectedConn] = useState<Connection>(CONNECTIONS[0]);
-  const [wizardOpen,  setWizardOpen]  = useState(false);
+  const [view,           setView]           = useState<SubView>('list');
+  const [connections,    setConnections]    = useState<Connection[]>(CONNECTIONS);
+  const [selectedConn,   setSelectedConn]   = useState<Connection>(CONNECTIONS[0]);
+  const [newConnOpen,    setNewConnOpen]    = useState(false);
 
   const openDetail = (conn: Connection) => {
     setSelectedConn(conn);
@@ -709,8 +397,7 @@ const ConnectionsPage: React.FC = () => {
 
   const handleNewDone = (conn: Connection) => {
     setConnections(prev => [...prev, conn]);
-    setWizardOpen(false);
-    openDetail(conn);
+    // success screen handles closing via onClose
   };
 
   return (
@@ -718,7 +405,7 @@ const ConnectionsPage: React.FC = () => {
       {view === 'list' && (
         <ListView
           connections={connections}
-          onNew={() => setWizardOpen(true)}
+          onNew={() => setNewConnOpen(true)}
           onDetail={openDetail}
         />
       )}
@@ -737,11 +424,12 @@ const ConnectionsPage: React.FC = () => {
         />
       )}
 
-      <NewConnectionWizard
-        isOpen={wizardOpen}
-        onCancel={() => setWizardOpen(false)}
-        onDone={handleNewDone}
-      />
+      {newConnOpen && (
+        <NewConnectionPage
+          onClose={() => { setNewConnOpen(false); setView('list'); }}
+          onDone={handleNewDone}
+        />
+      )}
     </div>
   );
 };
