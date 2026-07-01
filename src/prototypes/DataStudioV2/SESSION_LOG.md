@@ -1332,3 +1332,34 @@ Two bugs fixed and deployed:
 4. **Environment section appearing in multi-source flow** — `ChatContextPanel` showed any `type:'notebook'` item in Environment regardless of flow. Multi-source flow adds `pendo_nps_ingestion.ipynb` to `multiSourceCreated`, which was leaking into Environment. Added `isNotebookFlow` prop to `ChatContextPanel`; Environment section now only renders in the single-notebook flow.
 
 Deployed to https://radiantplay-nine.vercel.app ✓
+
+---
+
+### 2026-06-29 (session 132)
+
+**Data Studio proposal — positioning & strategy (no code).** Built `2026-06-29-data-studio-proposal.md`, a problem-first leadership-alignment doc.
+
+- **Positioning:** DS is ThoughtSpot's product for the *data team* — turns any data into AI-ready data (semantics + context), kept trustworthy. Business users reached only indirectly via SpotterX.
+- **The bet (non-consensus thesis, head of doc):** trustworthy data isn't generated once — it's a *living loop* proven against real use; we own both *build* (DS) and *consume* (Spotter) → close the loop, keep AI accurate as it decays. "The loop is the moat; almost no one builds for decay."
+- **4 value props, ranked:** P2 (semantics & context) + P3 (prove & keep trustworthy) = **core/wedge**; P1 (works with your stack) = table-stakes; P4 (optimize cost: query + AI) = emerging. Pains→value-props table with a "what customers say" anecdote column. Feature modules P1–P4 tagged New/Change/Port (build P2+P3 first). Use cases written for P1 (add data: warehouse / apps / semantic models / files) and P2 (worked Customer Health example: CDW + Pendo + CSV → transform → join → model → enrich → test).
+- **Risks:** (1) agents invent context on the fly, (2) warehouses absorb the layer — both external; (3) PMF gap — ours to fix.
+- **Research (web):** "the model is table stakes; context is the moat" (Gartner 2026); Lakeflow/Snowflake validate the visual-builder direction but stop at the transformed table (we extend: model → enrich → test → loop); continuous-eval/decay-monitoring is mature in LLMOps (Arize/LangSmith/Braintrust) and data observability, but *semantic-drift tied to the consumption surface* is under-served = our angle. A 3-agent workflow confirmed our "member of data staff" ≈ the analytics engineer; reframe = DS is the *workbench on top of* existing engines, not an owner.
+- **Strategic critique (founder + org-buy-in lenses):** convergence (market + first-principles + pains) validates *direction*; open = *magnitude* (need data) + *defensibility* (it's consensus → win on execution/the loop). Org gaps before leadership: turf/ownership map, the ask, SpotterX coherence, business case, migration cost, coalition. (Captured in `CONTEXT.md` → Next session.)
+
+Working notes: `2026-06-22-builder-starting-point-discussion.md` (manual start · canvas+code builder · accept/reject · 11-part workflow) — distilled into the proposal. Backup before restructure: `2026-06-29-data-studio-proposal--backup-pre-restructure.md`.
+
+**Build:** not run — Markdown docs only, no prototype code changed.
+
+---
+
+### 2026-07-01 (session 133)
+
+**Merged Komal's agentic connection flow (connections-only) + committed DataNotebook + deployed.**
+
+- **DataNotebook backup:** committed the previously-uncommitted DataNotebook prototype (23 files, ~3,600 lines; real DuckDB + Pyodide) + its `registry-mine.ts` entry + deps (`@duckdb/duckdb-wasm`, `@uiw/react-codemirror`, `@codemirror/lang-sql|python`). It only existed on the laptop.
+- **Komal merge:** her connection work lives on **galaxy** (`komal-bains/radiantplay_komal`, branch `dsv/komal-2`, commits `16a5e4b` + `02381b2`) — not GitHub. Her branch had diverged ~178 commits and bundled model work with connection work. Cherry-picked **connection work only** — connections tab, New Connection workflow (CDW / business app / semantic model), agentic Snowflake connect pill flow. Removed her bundled model draft-plan work (duplicate `PlanCardV2`/`BuiltSummaryCard`/`ModelArtifactCard`/`fmtCol`, `DraftPlanCardMRD`, MRD/DQ handlers, `ModelCanvas`) so our modeling flow is unchanged.
+- **3 runtime crashes fixed** (all pass `vite build` but crash at runtime — caught via `tsc --noEmit`): `runDayZeroSteps`→`runFromScratchSteps` (session-112 rename her code missed — killed the connect flow); orphaned `setVerifyState` in `NewConnectionPage` (business-app auth-toggle crash); a `node_modules` symlink committed from the merge worktree that clobbered the real `node_modules` (recovered via `npm install`). Defined the ghost `FlowOption` type in `Shell`.
+- **Trigger:** broadened the connection detector (`AgentPanel` + `index`) with `|new data connection` so both the "Create a connection" and "Connect Snowflake" pills route to the agentic flow.
+- Landed via fast-forward → `prototype/data-studio` (`a6d5dcd`); pushed origin (galaxy) + github; `vercel --prod` → https://radiantplay-nine.vercel.app.
+
+**Build:** clean ✓ (`vite build`). Process + hazards saved to memory: `reference_komal_merge_process`. Note: tell Komal to run `npm run build:strict` before sharing — her branch has ghost refs (`FlowOption`, `ModelCanvas`) that pass a normal build but crash at runtime.

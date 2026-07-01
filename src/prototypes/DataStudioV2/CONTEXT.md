@@ -4,7 +4,18 @@ _Updated at the end of every session. For product context see `product.md`. For 
 
 ---
 
-## Current state (session 131, 2026-06-10)
+## Current state (session 133, 2026-07-01)
+
+_Merged Komal's **agentic Snowflake connection flow** + New Connection workflow into `prototype/data-studio` — **connection work only** (her bundled model draft-plan work excluded; the modeling/from-scratch flow is byte-for-byte unchanged). Fixed 3 runtime crashes her code carried (`runDayZeroSteps`→`runFromScratchSteps`, orphaned `setVerifyState`, a committed `node_modules` symlink). Also committed the **DataNotebook** prototype (was uncommitted-only). Deployed to production._
+
+**Deployed:** https://radiantplay-nine.vercel.app ✓ (`a6d5dcd`, in sync on origin/galaxy + github)
+**Build:** clean ✓ (`vite build`)
+_Komal-merge process + hazards saved to memory: `reference_komal_merge_process`._
+
+### Prior: session 132 (2026-06-29) — strategy/proposal
+_Markdown docs only, no prototype code changed. New doc: `2026-06-29-data-studio-proposal.md` (leadership-alignment proposal). Working notes: `2026-06-22-builder-starting-point-discussion.md`._
+
+### Prior build state (session 131, 2026-06-10)
 
 **Branch:** `prototype/data-studio` on `origin` (vivek-sahi/radiantplay)  
 **Deployed:** https://radiantplay-nine.vercel.app  
@@ -27,7 +38,7 @@ _Updated at the end of every session. For product context see `product.md`. For 
 | Model view — Info / Cache / Monitoring tabs | ✅ |
 | Pulse monitoring — 6 flows wired (ins-d1/d2/d3/d6/o3/o4); object-click → read-only artifact in FullChatView | ✅ |
 | Data browser — warehouse explorer + dbt import wizard | ✅ |
-| Connections — connection management | ✅ |
+| Connections — management + New Connection workflow (CDW / business app / semantic model) + agentic Snowflake connect pill flow (from Komal, s133) | ✅ |
 | dbt import — full flow with broken/degraded column indicators + fix scripts | ✅ |
 | Multi-source model flow — scan → Pendo notebook → CSV upload → staging table → model build | ✅ |
 | Multi-source build — live animated workspace + PlanCardV2 tracker + BuiltSummaryCard | ✅ |
@@ -38,7 +49,19 @@ _Updated at the end of every session. For product context see `product.md`. For 
 
 **Deployed:** https://radiantplay-nine.vercel.app ✓
 
-**Remaining polish:**
+### Data Studio proposal — open items (`2026-06-29-data-studio-proposal.md`)
+
+**Locked:** positioning (DS = ThoughtSpot's product for the *data team*; turn any data into AI-ready data = semantics + context, kept trustworthy) · the bet/thesis (trustworthy data is a *living loop* proven against real use; we own build (DS) + consume (Spotter) → close the loop, keep AI accurate as it decays; "the loop is the moat, no one builds for decay") · 4 value props ranked: **P2 semantics&context + P3 trust = core/wedge; P1 works-with-your-stack = table-stakes; P4 cost = emerging** · pains→value-props table w/ customer anecdotes · feature modules P1–P4 (tagged New/Change/Port; build P2+P3 first) · use cases for P1 (add data) + P2 (worked Customer Health example) · risks (agents-invent-context, warehouses-absorb [both external], PMF-gap [ours to fix]).
+
+**Data points to fill:** time-to-first-model `[X]` · % of base on external semantic models · verify Anthropic 90→60 source · verify Gartner "context is the moat" + Spotter Semantics/OSI claims · an AI-cost stat.
+
+**Not yet done:** P3 + P4 *use cases* (deliberately skipped the deep Monitor/Improve mechanism — user not yet comfortable with the "how") · tidy Outcomes to align 1:1 with the 4 props · purge stray "model" (use "join tables" for the action).
+
+**Org-buy-in gaps to close before showing leadership** (strategic critique): ownership/turf map (frame DS as the *workbench on top of* Spotter Semantics / SpotterX / connections, not an owner) · the explicit *ask* · SpotterX-coherence answer (DS = supply side of agents) · business case ($ — retention/expansion/deals lost to Sigma/Omni) · unification execution + migration cost · defensibility stress-test vs. warehouses · validation plan · coalition map.
+
+**Settled framing:** direction = validated (market + first-principles + pains converge); what's open = magnitude (data) + defensibility (it's *consensus*, so win on execution/the loop, not the idea).
+
+### Prototype polish (unchanged from session 131)
 - Context panel "Source tables" section: wire clicks to notebook cell highlight (same as artifact card clicks in chat)
 - 3 Anthropic article builds (lower priority): provenance chip in Test mode, notebook edit → stale flag, unreviewed badge on agent-generated content
 
