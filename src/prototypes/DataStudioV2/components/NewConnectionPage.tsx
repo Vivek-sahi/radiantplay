@@ -1038,7 +1038,7 @@ const AppsAuthScreen: React.FC<{ appName: string }> = ({ appName }) => {
         <div style={{ background: bBase, border: `1px solid ${bdiv}`, borderRadius: 12, overflow: 'hidden', marginBottom: sp.D }}>
           <div style={{ display: 'flex', padding: sp.C, gap: sp.B, background: bSunk, borderBottom: `1px solid ${bdiv}` }}>
             {(['oauth', 'apikey'] as const).map(m => (
-              <button key={m} onClick={() => { setMethod(m); setVerifyState('idle'); }} style={{
+              <button key={m} onClick={() => { setMethod(m); }} style={{
                 flex: 1, padding: '7px 0', borderRadius: 7, border: 'none', cursor: 'pointer',
                 fontSize: fs.sm, fontFamily: ff.primary, fontWeight: method === m ? fw.medium : 400,
                 background: method === m ? bBase : 'transparent',
