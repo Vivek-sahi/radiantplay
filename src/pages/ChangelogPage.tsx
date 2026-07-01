@@ -94,6 +94,50 @@ const HIGHLIGHTS: Highlight[] = [
 
 const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '26.7.1a',
+    date: '2026-07-01',
+    title: 'Prototype census + chart color override + tooling cleanup',
+    type: 'minor',
+    changes: [
+      {
+        category: 'added',
+        label: 'Tooling',
+        items: [
+          'Prototype census (/prototype-census) counts prototypes across every fork (folders + registry entries by section, per creator, archived included), with API-based fork auto-discovery. Surfaced in the local status dashboard, refreshed only on demand.',
+        ],
+      },
+      {
+        category: 'added',
+        label: 'Tiles',
+        items: [
+          'Optional per-tile chart color override on AnswerTile and the chart renderer. AreaChart and ColumnChart use it, falling back to the default sequential palette. Additive and backward-compatible.',
+        ],
+      },
+      {
+        category: 'changed',
+        label: 'Dependencies',
+        items: [
+          'Removed the Vercel Analytics dependency and its inject() wiring in main.tsx.',
+          'Bumped echarts to 6.1.',
+        ],
+      },
+      {
+        category: 'fixed',
+        label: 'Public release',
+        items: [
+          'public-strip.sh now omits .claude/settings.json and the post-compact hook, avoiding the liveboard-gate.sh hook error on public clones.',
+        ],
+      },
+      {
+        category: 'removed',
+        label: 'Repository',
+        items: [
+          'Removed the personal Revefi talk deck from main; it now lives on the personal branch (dated).',
+        ],
+      },
+    ],
+  },
+  {
     version: '26.5.4b',
     date: '2026-05-27',
     title: 'Repository housekeeping + public-release groundwork',

@@ -28,6 +28,18 @@ export interface VersionEntry {
  */
 export const versionHistory: VersionEntry[] = [
   {
+    version: '26.7.1a',
+    date: '2026-07-01',
+    type: 'minor',
+    changes: [
+      { type: 'added', group: 'Tooling', component: 'Prototype census', description: 'Opt-in /prototype-census counts prototypes across all forks (folders + registry entries by section, per creator, archived included) with API-based fork auto-discovery. The status dashboard displays the cached result without refetching.' },
+      { type: 'added', group: 'Tiles', component: 'Chart color override', description: 'AnswerTile and ChartRenderer accept an optional colors prop; AreaChart and ColumnChart use it, falling back to the default sequential palette. Additive and backward-compatible.' },
+      { type: 'removed', group: 'Dependencies', component: '@vercel/analytics', description: 'Dropped the Vercel Analytics dependency and its inject() wiring in main.tsx. Bumped echarts to 6.1.' },
+      { type: 'modified', group: 'Tooling', component: 'public-strip.sh', description: 'Omits .claude/settings.json and the post-compact hook from the public snapshot, avoiding the liveboard-gate.sh hook error on public clones.' },
+      { type: 'removed', group: 'Repository', component: 'Revefi talk deck', description: 'Removed the personal talk deck from main; it now lives on the personal branch (dated).' },
+    ],
+  },
+  {
     version: '26.5.4b',
     date: '2026-05-27',
     type: 'patch',
