@@ -164,7 +164,7 @@ export const CachingTab: React.FC<{ model: DataModel; onChange: (next: DataModel
               By caching this model, you can reduce your live query cost and improve loading performance.
             </Typography>
           </div>
-          <Link href="#" onClick={(e) => e.preventDefault()}>Learn more about caching</Link>
+          <Link href="/agentdb-overview.html" target="_blank" rel="noopener">Learn more about caching</Link>
         </Vertical>
         {modalOpen && (
           <CachingSettingsModal model={model} isEdit={false} onClose={() => setModalOpen(false)} onSave={(d) => handleSaveConfig(d, false)} />

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Table, ProgressBar, Link, Typography, Horizontal, Vertical } from '../../../components';
+import { Table, ProgressBar, Link, Button, Typography, Horizontal, Vertical } from '../../../components';
 import type { TableColumn } from '../../../components';
 import { StatCard, SourceCacheIcon, SectionHeader } from './primitives';
 import { c, spacing, radius, fontWeight } from '../styles';
@@ -65,7 +65,19 @@ export const DataStoreView: React.FC<{
       >
         <SectionHeader
           title="Data store"
-          actions={<Link href="#" onClick={(e) => e.preventDefault()}>How to upgrade plan</Link>}
+          actions={
+            <>
+              <Button
+                variant="secondary"
+                size="small"
+                icon="information"
+                onClick={() => window.open('/agentdb-overview.html', '_blank', 'noopener')}
+              >
+                How caching works
+              </Button>
+              <Link href="#" onClick={(e) => e.preventDefault()}>How to upgrade plan</Link>
+            </>
+          }
         />
         <div style={{ maxWidth: '640px' }}>
           <Typography variant="body-normal" color="gray" noMargin>
