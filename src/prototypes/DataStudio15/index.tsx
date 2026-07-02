@@ -3,7 +3,6 @@ import Shell, { NavSection } from './components/Shell';
 import Overview from './components/Overview';
 import ModelView from './components/ModelView';
 import Workspace from './components/Workspace';
-import ModelCanvas from './components/ModelCanvas';
 import ChatView from './components/ChatView';
 import NewProjectPrompt from './components/NewProjectPrompt';
 import DataBrowserPage from './components/DataBrowserPage';
@@ -66,7 +65,7 @@ export interface ProjectState {
   dqStatus?: 'idle' | 'scanning' | 'issues_found' | 'fixing' | 'done';
 }
 
-type AppView = 'overview' | 'models' | 'chat' | 'new-project' | 'model-view' | 'workspace' | 'data-browser' | 'connections' | 'placeholder' | 'full-chat' | 'canvas';
+type AppView = 'overview' | 'models' | 'chat' | 'new-project' | 'model-view' | 'workspace' | 'data-browser' | 'connections' | 'placeholder' | 'full-chat';
 
 // Derives a short model name from the user's intent prompt.
 const deriveModelName = (prompt: string): string => {
@@ -294,9 +293,7 @@ const DataStudio: React.FC = () => {
       dqStatus: 'idle',
     });
     setInitialPrompt('');
-    // Pivot: "New model" now opens the no-code visual canvas (Komal's ModelCanvas).
-    // The old high-code new-project prompt lives in the frozen "Data Studio 1.5" prototype.
-    navigateTo('canvas');
+    navigateTo('new-project');
   };
 
   // User submitted the prompt → go to workspace with agent auto-trigger
@@ -535,11 +532,6 @@ const DataStudio: React.FC = () => {
               navigateTo('data-browser');
             }}
           />
-        </div>
-      )}
-      {view === 'canvas' && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 50 }}>
-          <ModelCanvas onBack={goBack} />
         </div>
       )}
     </>

@@ -32,11 +32,22 @@ import { ProjectMeta } from './registry-core';
 import DataStudioThumbnail from './thumbnails/DataStudio.svg';
 
 const DataStudioV2 = React.lazy(() => import('./DataStudioV2'));
+const DataStudio15 = React.lazy(() => import('./DataStudio15'));
 const DataNotebook = React.lazy(() => import('./DataNotebook'));
 const SpotterPrep = React.lazy(() => import('./SpotterPrep'));
 const SpotterPrep2 = React.lazy(() => import('./SpotterPrep2'));
+const AgentDB = React.lazy(() => import('./AgentDB'));
 
 export const myRegistry: ProjectMeta[] = [
+  {
+    id: 'AgentDB',
+    name: 'Agent DB',
+    description: 'ThoughtSpot data caching offering — cache live Snowflake model data into ThoughtSpot to cut query costs.',
+    author: 'Vivek Sahi',
+    lastModified: '2026-07-02',
+    component: AgentDB,
+    section: 'mine',
+  },
   {
     id: 'DataStudioV2',
     name: 'Data Studio — Agentic UX',
@@ -45,6 +56,16 @@ export const myRegistry: ProjectMeta[] = [
     lastModified: '2026-04-23',
     thumbnail: DataStudioThumbnail,
     component: DataStudioV2,
+    section: 'mine',
+  },
+  {
+    id: 'DataStudio15',
+    name: 'Data Studio 1.5 — high-code notebook',
+    description: 'Frozen snapshot of the high-code, notebook-based modeling UX — preserved for stakeholder comparison against the V2 no-code canvas approach.',
+    author: 'Vivek Sahi',
+    lastModified: '2026-07-02',
+    thumbnail: DataStudioThumbnail,
+    component: DataStudio15,
     section: 'mine',
   },
   {
