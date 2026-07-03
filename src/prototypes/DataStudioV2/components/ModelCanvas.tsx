@@ -703,9 +703,7 @@ const CanvasNodeCard: React.FC<{
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 10px 7px', borderBottom: BORDER }}>
           <div style={{ width: 20, height: 20, borderRadius: 4, background: isCsv ? 'rgba(22,163,74,0.10)' : '#F6F8FA', display: 'flex', alignItems: 'center', justifyContent: 'center', color: isCsv ? '#16A34A' : '#8B96A5', flexShrink: 0 }}>
-            {isCsv
-              ? <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M4 1.5h5l3 3V13.5a.5.5 0 01-.5.5h-7a.5.5 0 01-.5-.5v-11a.5.5 0 01.5-.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/><path d="M9 1.5V4.5h3" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/></svg>
-              : <IconTable size={11} color="#8B96A5" />}
+            <IconTable size={11} color={isCsv ? '#16A34A' : '#8B96A5'} />
           </div>
           <span style={{ fontSize: 12, fontWeight: fw.semibold, color: '#1D232F', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {group.tableName}
@@ -732,7 +730,7 @@ const CanvasNodeCard: React.FC<{
               {meta.label}
             </span>
           )}
-          {cached && !isCsv && (
+          {cached && (
             <span title="Cached in ThoughtSpot" style={{
               fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em',
               padding: '1px 5px', borderRadius: 3, flexShrink: 0,
