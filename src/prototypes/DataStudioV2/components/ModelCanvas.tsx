@@ -5,13 +5,23 @@ import { ProjectState, emptyContext } from '../index';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type OpType = 'source' | 'join' | 'filter' | 'agg' | 'formula' | 'rename' | 'sort' | 'union' | 'limit' | 'sql';
+type OpType = 'source' | 'join' | 'filter' | 'agg' | 'formula' | 'rename' | 'sort' | 'union' | 'limit' | 'sql' | 'nullfix';
 
 interface PipelineStep {
   type: OpType;
   label: string;
   desc: string;
   cols: [string, string][];
+  prep?: boolean; // materialization-requiring prep step (blocks switching back to live)
+  nullFix?: { column: string; value: string }; // per-step null remediation (for version-aware preview)
+}
+
+interface CsvSettings {
+  fileName: string;
+  delimiter: string;
+  quote: string;
+  encoding: string;
+  header: boolean;
 }
 
 interface CanvasGroup {
@@ -22,6 +32,8 @@ interface CanvasGroup {
   y: number;
   expanded: boolean;
   activeStep: number;
+  sourceKind?: 'warehouse' | 'csv';
+  csv?: CsvSettings;
 }
 
 interface CanvasJoin {
@@ -54,6 +66,7 @@ const TABLE_COLS: Record<string, [string, string][]> = {
   conversions:  [['conv_id','INT'],['campaign_id','VARCHAR'],['customer_id','INT'],['revenue','FLOAT']],
   fct_orders:   [['order_id','INT'],['date','DATE'],['amount','FLOAT'],['segment','VARCHAR'],['channel','VARCHAR']],
   dim_customers:[['customer_id','INT'],['name','VARCHAR'],['segment','VARCHAR'],['ltv','FLOAT']],
+  customer_regions:[['customer_id','INT'],['region','VARCHAR'],['csm_owner','VARCHAR'],['tier','VARCHAR']],
 };
 
 type Row = (string | number | boolean | null)[];
@@ -77,6 +90,16 @@ const MOCK_DATA: Record<string, Row[]> = {
     [72,'Frank Chen','Enterprise',22100.00,'2021-06-15'],
     [9,'Grace Park','Startup',1200.00,'2023-12-01'],
     [54,'Henry Moore','SMB',4300.00,'2022-05-18'],
+  ],
+  customer_regions: [
+    [42,'West','Dana Wu','Enterprise'],
+    [17,'East',null,'SMB'],
+    [5,null,'Priya Shah','Enterprise'],
+    [31,'South','Dana Wu',null],
+    [88,null,null,'SMB'],
+    [72,'North','Sam Okafor','Enterprise'],
+    [9,'West',null,'Startup'],
+    [54,'East','Priya Shah','SMB'],
   ],
   products: [
     [101,'Analytics Pro','Software',299.00],
@@ -162,6 +185,7 @@ const OP_META: Record<OpType, { label: string; tag: string; desc: string }> = {
   union:   { label: 'Union',     tag: 'union',   desc: 'Union tables' },
   limit:   { label: 'Limit',     tag: 'limit',   desc: 'Limit rows' },
   sql:     { label: 'SQL',       tag: 'sql',     desc: 'Custom SQL' },
+  nullfix: { label: 'Fix nulls', tag: 'prep',    desc: 'Remediate null values' },
 };
 
 const OP_ICON: Record<string, React.ReactNode> = {
@@ -175,6 +199,7 @@ const OP_ICON: Record<string, React.ReactNode> = {
   limit:   <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M2 4h10M2 7h7M2 10h4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>,
   sql:     <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M3 4l3 3-3 3M7.5 10h3.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>,
   join:    <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><circle cx="5" cy="7" r="3" stroke="currentColor" strokeWidth="1.2"/><circle cx="9" cy="7" r="3" stroke="currentColor" strokeWidth="1.2"/></svg>,
+  nullfix: <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M7 2C4.8 5 3.5 7 3.5 9a3.5 3.5 0 007 0c0-2-1.3-4-3.5-7z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/></svg>,
 };
 
 const OP_TAG_COLORS: Record<string, { bg: string; fg: string }> = {
@@ -182,6 +207,7 @@ const OP_TAG_COLORS: Record<string, { bg: string; fg: string }> = {
   filter:  { bg: 'rgba(252,200,56,0.15)',  fg: '#92640A' },
   agg:     { bg: 'rgba(140,98,245,0.1)',   fg: '#6B4FBF' },
   join:    { bg: 'rgba(72,209,224,0.12)',  fg: '#0E7D8B' },
+  prep:    { bg: 'rgba(236,72,153,0.10)',  fg: '#BE185D' },
   rename:  { bg: 'rgba(100,116,139,0.1)', fg: '#475569' },
   formula: { bg: 'rgba(6,191,127,0.1)',   fg: '#047857' },
   sort:    { bg: 'rgba(255,129,66,0.1)',  fg: '#C05621' },
@@ -614,16 +640,18 @@ const JoinBlockCard: React.FC<{
 const CanvasNodeCard: React.FC<{
   group: CanvasGroup;
   selected: boolean;
+  cached?: boolean;
   onClick: (multi: boolean) => void;
   onStepClick: (index: number) => void;
   onMove: (x: number, y: number) => void;
   onRemove: () => void;
   onRemoveStep: (index: number) => void;
-}> = ({ group, selected, onClick, onStepClick, onMove, onRemove, onRemoveStep }) => {
+}> = ({ group, selected, cached, onClick, onStepClick, onMove, onRemove, onRemoveStep }) => {
   const lastStep = group.steps[group.steps.length - 1];
   const meta = OP_META[lastStep.type];
   const tagColors = OP_TAG_COLORS[meta.tag] || OP_TAG_COLORS.source;
   const hasSteps = group.steps.length > 1;
+  const isCsv = group.sourceKind === 'csv';
   const [hoveredStep, setHoveredStep] = useState<number | null>(null);
 
   const dragRef = useRef<{ startPx: number; startPy: number; ox: number; oy: number; moved: boolean } | null>(null);
@@ -674,8 +702,10 @@ const CanvasNodeCard: React.FC<{
       }}>
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 10px 7px', borderBottom: BORDER }}>
-          <div style={{ width: 20, height: 20, borderRadius: 4, background: '#F6F8FA', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8B96A5', flexShrink: 0 }}>
-            <IconTable size={11} color="#8B96A5" />
+          <div style={{ width: 20, height: 20, borderRadius: 4, background: isCsv ? 'rgba(22,163,74,0.10)' : '#F6F8FA', display: 'flex', alignItems: 'center', justifyContent: 'center', color: isCsv ? '#16A34A' : '#8B96A5', flexShrink: 0 }}>
+            {isCsv
+              ? <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M4 1.5h5l3 3V13.5a.5.5 0 01-.5.5h-7a.5.5 0 01-.5-.5v-11a.5.5 0 01.5-.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/><path d="M9 1.5V4.5h3" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/></svg>
+              : <IconTable size={11} color="#8B96A5" />}
           </div>
           <span style={{ fontSize: 12, fontWeight: fw.semibold, color: '#1D232F', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {group.tableName}
@@ -685,13 +715,32 @@ const CanvasNodeCard: React.FC<{
               {group.steps.length} steps
             </span>
           )}
-          <span style={{
-            fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em',
-            padding: '1px 5px', borderRadius: 3, flexShrink: 0,
-            background: tagColors.bg, color: tagColors.fg,
-          }}>
-            {meta.label}
-          </span>
+          {isCsv ? (
+            <span style={{
+              fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em',
+              padding: '1px 5px', borderRadius: 3, flexShrink: 0,
+              background: 'rgba(22,163,74,0.10)', color: '#16A34A',
+            }}>
+              CSV
+            </span>
+          ) : (
+            <span style={{
+              fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em',
+              padding: '1px 5px', borderRadius: 3, flexShrink: 0,
+              background: tagColors.bg, color: tagColors.fg,
+            }}>
+              {meta.label}
+            </span>
+          )}
+          {cached && !isCsv && (
+            <span title="Cached in ThoughtSpot" style={{
+              fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em',
+              padding: '1px 5px', borderRadius: 3, flexShrink: 0,
+              background: 'rgba(140,98,245,0.12)', color: '#7C3AED',
+            }}>
+              Cached
+            </span>
+          )}
           {/* Remove node */}
           <button
             onPointerDown={e => e.stopPropagation()}
@@ -783,8 +832,37 @@ const CanvasNodeCard: React.FC<{
 
 // ── Main ModelCanvas ──────────────────────────────────────────────────────────
 
+// Columns of a table that contain null values (for the Fix-nulls prep operator).
+const nullColumnsOf = (tableName: string): { name: string; count: number }[] => {
+  const cols = TABLE_COLS[tableName] ?? [];
+  const rows = MOCK_DATA[tableName] ?? [];
+  return cols
+    .map(([name], i) => ({ name, count: rows.filter(r => r[i] === null).length }))
+    .filter(c => c.count > 0);
+};
+
+// AI-suggested fill for a column's nulls (mirrors the Formula operator's Build-using-AI).
+const suggestNullFill = (column: string, desc: string): string => {
+  const d = desc.toLowerCase();
+  if (/\b0\b|zero/.test(d)) return '0';
+  if (d.includes('unassign') || d.includes('unknown') || d.includes('n/a')) return 'Unassigned';
+  if (d.includes('blank') || d.includes('empty')) return "''";
+  if (column === 'csm_owner') return 'CRM account owner (fallback: region lead)';
+  if (column === 'region') return "back-filled from account's other records";
+  if (column === 'tier') return 'derived from segment';
+  return 'Unassigned';
+};
+
 const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack }) => {
   const [modelName, setModelName] = useState('Untitled model');
+  const [dataMode, setDataMode] = useState<'live' | 'cached'>('live');
+  const [cacheConfirm, setCacheConfirm] = useState<null | { onConfirm: () => void }>(null);
+  const [dataModeMenuOpen, setDataModeMenuOpen] = useState(false);
+  const [cacheSettingsOpen, setCacheSettingsOpen] = useState(false);
+  const [cacheScope, setCacheScope] = useState<'Full model' | 'Custom'>('Full model');
+  const [cacheFreq, setCacheFreq] = useState('Daily');
+  const [cacheHour, setCacheHour] = useState('9:00 AM');
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [agentMessages, setAgentMessages] = useState<AgentMessage[]>([]);
   const [agentProject, setAgentProject] = useState<ProjectState>({
     id: 'canvas-proj',
@@ -868,6 +946,15 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack }) => {
     expr: '',
   });
 
+  const [nullFixConfig, setNullFixConfig] = useState<{
+    column: string;
+    aiActive: boolean;
+    aiDesc: string;
+    aiGenerating: boolean;
+    value: string;
+    applied: boolean;
+  }>({ column: '', aiActive: false, aiDesc: '', aiGenerating: false, value: '', applied: false });
+
   const toggleExpanded = useCallback((id: string) => {
     setExpanded(prev => {
       const next = new Set(prev);
@@ -924,7 +1011,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack }) => {
     setResizingPanel(null);
   }, []);
 
-  const addToCanvas = useCallback((tableName: string) => {
+  const addToCanvas = useCallback((tableName: string, sourceKind: 'warehouse' | 'csv' = 'warehouse', fileName?: string) => {
     const i = nodeCountRef.current % NODE_POSITIONS.length;
     nodeCountRef.current++;
     const pos = NODE_POSITIONS[i];
@@ -932,7 +1019,11 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack }) => {
     const id = `ng_${nodeCountRef.current}`;
     setGroups(prev => [...prev, {
       id, tableName,
-      steps: [{ type: 'source', label: tableName, desc: 'Raw table', cols }],
+      sourceKind,
+      csv: sourceKind === 'csv'
+        ? { fileName: fileName ?? `${tableName}.csv`, delimiter: 'comma', quote: '"', encoding: 'UTF-8', header: true }
+        : undefined,
+      steps: [{ type: 'source', label: tableName, desc: sourceKind === 'csv' ? 'Uploaded file' : 'Raw table', cols }],
       x: pos.x + (nodeCountRef.current > NODE_POSITIONS.length ? Math.floor(nodeCountRef.current / NODE_POSITIONS.length) * 30 : 0),
       y: pos.y,
       expanded: false,
@@ -944,6 +1035,21 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack }) => {
       setExpandedTableRows(prev => new Set([...prev, tableName]));
     }
   }, []);
+
+  // ── CSV upload + data-mode caching gate ──────────────────────────────────────
+  const handleCsvFile = (file?: File) => {
+    const fileName = file?.name ?? 'customer_regions.csv';
+    const add = () => addToCanvas('customer_regions', 'csv', fileName);
+    const hasWarehouse = groups.some(g => (g.sourceKind ?? 'warehouse') === 'warehouse');
+    if (dataMode === 'live' && hasWarehouse) {
+      // Warehouse data present → must migrate it into the store to join with the file.
+      setCacheConfirm({ onConfirm: () => { setDataMode('cached'); add(); setCacheConfirm(null); } });
+    } else {
+      // Nothing to migrate — the file lands in-store, so the model is inherently cached.
+      setDataMode('cached');
+      add();
+    }
+  };
 
   const setActiveStep = useCallback((id: string, step: number) => {
     setGroups(prev => prev.map(g => g.id === id ? { ...g, activeStep: step } : g));
@@ -966,10 +1072,15 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack }) => {
     }));
   }, []);
 
-  const addStep = useCallback((opType: OpType) => {
+  const addStep = useCallback((opType: OpType, isPrep = false) => {
     if (!selectedId) return;
     if (opType === 'formula') {
       setFormulaConfig({ colName: '', colNameTouched: false, aiDesc: '', aiActive: false, aiGenerating: false, expr: '' });
+    }
+    if (opType === 'nullfix') {
+      const g = groups.find(gr => gr.id === selectedId);
+      const firstNull = g ? (nullColumnsOf(g.tableName)[0]?.name ?? '') : '';
+      setNullFixConfig({ column: firstNull, aiActive: false, aiDesc: '', aiGenerating: false, value: '', applied: false });
     }
     setGroups(prev => prev.map(g => {
       if (g.id !== selectedId) return g;
@@ -977,11 +1088,22 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack }) => {
       const cols = g.steps[g.steps.length - 1].cols;
       return {
         ...g,
-        steps: [...g.steps, { type: opType, label: `${meta.label}: ${g.tableName}`, desc: meta.desc, cols }],
+        steps: [...g.steps, { type: opType, label: `${meta.label}: ${g.tableName}`, desc: meta.desc, cols, prep: isPrep || opType === 'nullfix' }],
         activeStep: g.steps.length,
       };
     }));
-  }, [selectedId]);
+  }, [selectedId, groups]);
+
+  // Prep transforms materialize data → they require caching. (Join/filter/formula/aggregate stay live.)
+  const handlePrepStep = (op: OpType) => {
+    const hasWarehouse = groups.some(g => (g.sourceKind ?? 'warehouse') === 'warehouse');
+    if (dataMode === 'live' && hasWarehouse) {
+      setCacheConfirm({ onConfirm: () => { setDataMode('cached'); addStep(op, true); setCacheConfirm(null); } });
+    } else {
+      setDataMode('cached');
+      addStep(op, true);
+    }
+  };
 
   const applyJoin = useCallback(() => {
     const table1Id = multiJoinActive
@@ -1014,6 +1136,11 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack }) => {
   const selectedGroup = groups.find(g => g.id === selectedId) ?? null;
 
   // ── Topbar ──────────────────────────────────────────────────────────────────
+
+  // Switching Cached → Live is only allowed with no CSV and no prep transformations.
+  const modelHasCsv = groups.some(g => g.sourceKind === 'csv');
+  const modelHasPrep = groups.some(g => g.steps.some(s => s.prep));
+  const canSwitchToLive = !modelHasCsv && !modelHasPrep;
 
   const topbar = (
     <div style={{
@@ -1048,6 +1175,83 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack }) => {
       <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 9px', borderRadius: 99, background: '#F6F8FA', color: '#8B96A5', border: BORDER, letterSpacing: '0.01em', userSelect: 'none', flexShrink: 0 }}>
         Draft
       </span>
+      {/* Data mode dropdown — one-way status: Live → Cached */}
+      <div style={{ position: 'relative', marginLeft: 4, flexShrink: 0 }}>
+        <button
+          onClick={e => { e.stopPropagation(); setDataModeMenuOpen(o => !o); }}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 7,
+            fontSize: 12.5, fontWeight: 600, padding: '5px 9px 5px 12px', borderRadius: 99, cursor: 'pointer',
+            fontFamily: ff.primary,
+            background: dataMode === 'cached' ? 'rgba(140,98,245,0.10)' : 'rgba(22,163,74,0.10)',
+            color: dataMode === 'cached' ? '#7C3AED' : '#16A34A',
+            border: `1px solid ${dataMode === 'cached' ? 'rgba(140,98,245,0.32)' : 'rgba(22,163,74,0.30)'}`,
+          }}
+        >
+          <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'currentColor', flexShrink: 0 }} />
+          {dataMode === 'cached' ? 'Cached model' : 'Live query'}
+          <svg width="10" height="10" viewBox="0 0 12 12" fill="none" style={{ transform: dataModeMenuOpen ? 'rotate(180deg)' : 'none', transition: 'transform 120ms' }}><path d="M3 4.5l3 3 3-3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        </button>
+        {dataModeMenuOpen && (
+          <div onClick={e => e.stopPropagation()} style={{ position: 'absolute', top: 'calc(100% + 6px)', left: 0, width: 290, background: '#fff', border: BORDER, borderRadius: RADIUS8, boxShadow: '0 8px 28px rgba(25,35,49,0.16)', zIndex: 120, padding: 14 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+              <span style={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0, background: dataMode === 'cached' ? '#7C3AED' : '#16A34A' }} />
+              <span style={{ fontSize: 13, fontWeight: 700, color: '#1D232F' }}>{dataMode === 'cached' ? 'Cached model' : 'Live query'}</span>
+              {dataMode === 'cached' && (
+                <>
+                  <div style={{ flex: 1 }} />
+                  <button
+                    onClick={() => { setDataModeMenuOpen(false); setCacheSettingsOpen(true); }}
+                    title="Cache settings"
+                    style={{ width: 24, height: 24, border: 'none', background: 'transparent', borderRadius: 5, color: '#8B96A5', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}
+                    onMouseEnter={e => (e.currentTarget.style.background = '#F0F2F6')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="2" stroke="currentColor" strokeWidth="1.2"/><path d="M8 1.6l.85 1.55 1.72-.38.32 1.73 1.53.87-.83 1.55.83 1.55-1.53.87-.32 1.73-1.72-.38L8 14.4l-.85-1.55-1.72.38-.32-1.73-1.53-.87.83-1.55-.83-1.55 1.53-.87.32-1.73 1.72.38L8 1.6z" stroke="currentColor" strokeWidth="1" strokeLinejoin="round"/></svg>
+                  </button>
+                </>
+              )}
+            </div>
+            {dataMode === 'cached' ? (
+              <>
+                <div style={{ fontSize: 12, lineHeight: 1.5, color: '#5B6472', marginBottom: 10 }}>
+                  Materialized in ThoughtSpot&rsquo;s data store — required to join uploaded files and run transformations.
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}><span style={{ color: '#8B96A5' }}>Scope</span><span style={{ color: '#1D232F', fontWeight: 500 }}>{cacheScope}</span></div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}><span style={{ color: '#8B96A5' }}>Refresh</span><span style={{ color: '#1D232F', fontWeight: 500 }}>{cacheFreq} · {cacheHour}</span></div>
+                </div>
+                <div style={{ marginTop: 12, paddingTop: 12, borderTop: BORDER }}>
+                  <button
+                    onClick={() => { if (canSwitchToLive) { setDataMode('live'); setDataModeMenuOpen(false); } }}
+                    disabled={!canSwitchToLive}
+                    style={{ width: '100%', padding: '7px 0', borderRadius: 7, border: `1px solid ${canSwitchToLive ? '#C0C6CF' : '#EAEDF2'}`, background: '#fff', color: canSwitchToLive ? '#1D232F' : '#BFC6D0', fontSize: 12, fontWeight: 600, cursor: canSwitchToLive ? 'pointer' : 'default', fontFamily: ff.primary }}
+                  >
+                    Switch to live query
+                  </button>
+                  {!canSwitchToLive && (
+                    <div style={{ fontSize: 11, lineHeight: 1.45, color: '#8B96A5', marginTop: 7 }}>
+                      Remove {modelHasCsv ? 'uploaded files' : ''}{modelHasCsv && modelHasPrep ? ' and ' : ''}{modelHasPrep ? 'prep transformations' : ''} to switch back to live query.
+                    </div>
+                  )}
+                </div>
+              </>
+            ) : (
+              <>
+                <div style={{ fontSize: 12, lineHeight: 1.5, color: '#5B6472', marginBottom: 12 }}>
+                  Queries run live against your warehouse. Uploading a file or a prep transformation will cache this model into ThoughtSpot&rsquo;s data store.
+                </div>
+                <button
+                  onClick={() => { setDataModeMenuOpen(false); setCacheConfirm({ onConfirm: () => { setDataMode('cached'); setCacheConfirm(null); } }); }}
+                  style={{ width: '100%', padding: '7px 0', borderRadius: 7, border: '1px solid #C0C6CF', background: '#fff', color: '#1D232F', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: ff.primary }}
+                >
+                  Switch to cached
+                </button>
+              </>
+            )}
+          </div>
+        )}
+      </div>
       <div style={{ flex: 1 }} />
       {/* Controls */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
@@ -1161,7 +1365,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack }) => {
             <div style={{ position: 'relative' }}>
               <button
                 style={{ width: 22, height: 22, border: BORDER, background: '#fff', borderRadius: 4, color: '#64748B', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                onClick={() => setAddDataOpen(o => !o)}
+                onClick={e => { e.stopPropagation(); setAddDataOpen(o => !o); }}
                 title="Add data"
               >
                 <IconPlus size={10} />
@@ -1176,7 +1380,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack }) => {
                       style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '9px 12px', fontSize: 12, color: '#1D232F', cursor: 'pointer' }}
                       onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#F6F8FA'}
                       onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
-                      onClick={() => setAddDataOpen(false)}
+                      onClick={() => { setAddDataOpen(false); if (item.label === 'Upload file') fileInputRef.current?.click(); }}
                     >
                       <div style={{ width: 26, height: 26, borderRadius: 6, background: item.color, color: item.fg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                         {item.icon}
@@ -1454,6 +1658,8 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack }) => {
       backgroundSize: '24px 24px',
     }}
       onClick={() => setSelectedIds(new Set())}
+      onDragOver={e => { e.preventDefault(); }}
+      onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files?.[0]; if (f && /\.csv$/i.test(f.name)) handleCsvFile(f); }}
     >
       {/* Floating operator toolbar */}
       <div style={{ position: 'absolute', top: 16, left: '50%', transform: 'translateX(-50%)', zIndex: 20, display: 'flex', alignItems: 'center', gap: 6, width: 'max-content' }}>
@@ -1507,7 +1713,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack }) => {
               {[
                 { label: 'Change type',    desc: 'Convert a column to another data type.',      op: 'formula' as OpType, icon: <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><text x="1" y="11" fontSize="7" fontWeight="700" fill="currentColor">1</text><path d="M6 4l2-2 2 2M8 2v5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/><text x="8" y="15" fontSize="7" fontWeight="700" fill="currentColor">3</text></svg> },
                 { label: 'Replace value', desc: 'Find and replace values in a column.',         op: 'formula' as OpType, icon: <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M11.5 2.5l2 2-7 7-2.5.5.5-2.5 7-7z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/><path d="M3 14h10" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg> },
-                { label: 'Fill nulls',    desc: 'Replace null values with a constant.',         op: 'formula' as OpType, icon: <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.2"/><line x1="4" y1="12" x2="12" y2="4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg> },
+                { label: 'Fix nulls',     desc: 'AI-assisted or manual fix for null values.',   op: 'nullfix' as OpType, icon: <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.2"/><line x1="4" y1="12" x2="12" y2="4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg> },
                 { label: 'Text case',     desc: 'Change case to lower, upper, or title.',       op: 'formula' as OpType, icon: <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><text x="4" y="12" fontSize="11" fontWeight="700" fill="currentColor" fontFamily="serif">T</text></svg> },
                 { label: 'Trim',          desc: 'Remove whitespace from one or both ends.',     op: 'formula' as OpType, icon: <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M10 3l-4 5 4 5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/><path d="M6 8h4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg> },
                 { label: 'Regex replace', desc: 'Replace text matching a regex pattern.',       op: 'formula' as OpType, icon: <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M4 6L2 8l2 2M12 6l2 2-2 2M7 11l2-6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg> },
@@ -1516,7 +1722,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack }) => {
               ].map(item => (
                 <button
                   key={item.label}
-                  onClick={e => { e.stopPropagation(); addStep(item.op); }}
+                  onClick={e => { e.stopPropagation(); handlePrepStep(item.op); }}
                   style={{ display: 'flex', alignItems: 'flex-start', gap: 10, width: '100%', padding: '8px 14px', border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left', fontFamily: ff.primary }}
                   onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#F6F8FA'}
                   onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
@@ -1586,6 +1792,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack }) => {
           key={group.id}
           group={group}
           selected={selectedIds.has(group.id)}
+          cached={dataMode === 'cached'}
           onClick={(multi) => {
             if (multi) {
               setSelectedIds(prev => { const next = new Set(prev); if (next.has(group.id)) next.delete(group.id); else next.add(group.id); return next; });
@@ -1994,6 +2201,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack }) => {
                       return (
                         <div>
                           <div style={{ fontSize: 10, fontWeight: 700, color: '#BFC6D0', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>Source</div>
+                          {sg.sourceKind !== 'csv' && (
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 10px', background: '#F6F8FA', borderRadius: 6, border: BORDER }}>
                               <span style={{ fontSize: 12, color: '#8B96A5', fontWeight: 500 }}>Table</span>
@@ -2008,6 +2216,25 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack }) => {
                               <span style={{ fontSize: 12, color: '#1D232F', fontWeight: 600 }}>Snowflake</span>
                             </div>
                           </div>
+                          )}
+                          {sg.sourceKind === 'csv' && sg.csv && (
+                            <div>
+                              <div style={{ fontSize: 10, fontWeight: 700, color: '#BFC6D0', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>CSV import</div>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                <div><label style={labelStyle}>File</label><div style={{ padding: '6px 10px', background: '#F6F8FA', borderRadius: 6, border: BORDER, fontSize: 12, color: '#8B96A5', fontFamily: ff.primary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sg.csv.fileName}</div></div>
+                                <div style={{ display: 'flex', gap: 8 }}>
+                                  <div style={{ flex: 1 }}><label style={labelStyle}>Rows</label><div style={{ padding: '6px 10px', background: '#F6F8FA', borderRadius: 6, border: BORDER, fontSize: 12, color: '#1D232F', fontWeight: 600, fontFamily: ff.primary }}>{MOCK_DATA[sg.tableName]?.length ?? '—'}</div></div>
+                                  <div style={{ flex: 1 }}><label style={labelStyle}>Columns</label><div style={{ padding: '6px 10px', background: '#F6F8FA', borderRadius: 6, border: BORDER, fontSize: 12, color: '#1D232F', fontWeight: 600, fontFamily: ff.primary }}>{step.cols.length}</div></div>
+                                </div>
+                                <div><label style={labelStyle}>Delimiter</label><div style={selectWrap}><select value={sg.csv.delimiter} onChange={e => setGroups(prev => prev.map(g => g.id === sg.id ? { ...g, csv: { ...g.csv!, delimiter: e.target.value } } : g))} style={selectStyle}><option value="comma">Comma ( , )</option><option value="tab">Tab</option><option value="semicolon">Semicolon ( ; )</option><option value="pipe">Pipe ( | )</option></select>{selectArrow}</div></div>
+                                <div><label style={labelStyle}>Quote character</label><div style={selectWrap}><select value={sg.csv.quote} onChange={e => setGroups(prev => prev.map(g => g.id === sg.id ? { ...g, csv: { ...g.csv!, quote: e.target.value } } : g))} style={selectStyle}><option value={'"'}>Double ( &quot; )</option><option value={"'"}>Single ( &apos; )</option></select>{selectArrow}</div></div>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: '#1D232F', cursor: 'pointer', fontFamily: ff.primary }}>
+                                  <input type="checkbox" checked={sg.csv.header} onChange={e => setGroups(prev => prev.map(g => g.id === sg.id ? { ...g, csv: { ...g.csv!, header: e.target.checked } } : g))} />
+                                  First row is header
+                                </label>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       );
                     }
@@ -2045,6 +2272,82 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack }) => {
                             </div>
                           </div>
                           <button style={{ width: '100%', padding: '8px 0', borderRadius: 7, border: 'none', background: '#2770EF', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>Apply Join</button>
+                        </div>
+                      );
+                    }
+
+                    if (step.type === 'nullfix') {
+                      const nc = nullFixConfig;
+                      const nullCols = nullColumnsOf(sg.tableName);
+                      const nfInputStyle: React.CSSProperties = { width: '100%', boxSizing: 'border-box', border: BORDER, borderRadius: 6, padding: '6px 10px', fontSize: 12, color: '#1D232F', fontFamily: ff.primary, outline: 'none', background: '#fff' };
+                      const nfFocus = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => { e.currentTarget.style.borderColor = '#2770EF'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(39,112,239,0.10)'; };
+                      const nfBlur = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => { e.currentTarget.style.borderColor = '#EAEDF2'; e.currentTarget.style.boxShadow = 'none'; };
+                      return (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                          {/* Column to fix */}
+                          <div>
+                            <label style={labelStyle}>Column to fix</label>
+                            <div style={selectWrap}>
+                              <select value={nc.column} onChange={e => setNullFixConfig(c => ({ ...c, column: e.target.value, applied: false }))} style={selectStyle}>
+                                {nullCols.length === 0 && <option value="">No columns with nulls</option>}
+                                {nullCols.map(c => <option key={c.name} value={c.name}>{c.name} · {c.count} null{c.count === 1 ? '' : 's'}</option>)}
+                              </select>
+                              {selectArrow}
+                            </div>
+                          </div>
+
+                          {/* Fix using AI */}
+                          <div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 6 }}>
+                              <span style={labelStyle}>Fix using AI</span>
+                              <div title="Describe how to fill the nulls — AI suggests a value or expression" style={{ width: 14, height: 14, borderRadius: 99, border: '1.5px solid #BFC6D0', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'help', flexShrink: 0 }}>
+                                <svg width="8" height="8" viewBox="0 0 10 10" fill="none"><text x="3.2" y="8" fontSize="8" fontWeight="700" fill="#BFC6D0">i</text></svg>
+                              </div>
+                            </div>
+                            {nc.aiActive ? (
+                              <div>
+                                <textarea autoFocus value={nc.aiDesc} onChange={e => setNullFixConfig(c => ({ ...c, aiDesc: e.target.value }))} onFocus={nfFocus} onBlur={nfBlur} placeholder="e.g. use the account's region from CRM, or set to 0" rows={3} style={{ ...nfInputStyle, resize: 'none', lineHeight: 1.5 }} />
+                                <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+                                  <button disabled={!nc.aiDesc.trim() || nc.aiGenerating} onClick={() => { setNullFixConfig(c => ({ ...c, aiGenerating: true })); setTimeout(() => setNullFixConfig(c => ({ ...c, aiGenerating: false, aiActive: false, value: suggestNullFill(c.column, c.aiDesc), applied: false })), 1100); }} style={{ flex: 1, padding: '6px 0', borderRadius: 6, border: 'none', background: nc.aiDesc.trim() && !nc.aiGenerating ? '#2770EF' : '#E8ECEF', color: nc.aiDesc.trim() && !nc.aiGenerating ? '#fff' : '#A0A8B5', fontSize: 12, fontWeight: 600, cursor: nc.aiDesc.trim() && !nc.aiGenerating ? 'pointer' : 'default', fontFamily: ff.primary, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                                    {nc.aiGenerating
+                                      ? <><svg width="11" height="11" viewBox="0 0 24 24" fill="none" style={{ animation: 'spin 0.8s linear infinite' }}><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2.5" strokeDasharray="20 40" strokeLinecap="round"/></svg>Generating…</>
+                                      : <><svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M8 2l1.3 3.7L13 7l-3.7 1.3L8 12l-1.3-3.7L3 7l3.7-1.3L8 2z" fill="currentColor"/></svg>Generate fix</>
+                                    }
+                                  </button>
+                                  <button onClick={() => setNullFixConfig(c => ({ ...c, aiActive: false, aiDesc: '' }))} style={{ padding: '6px 10px', borderRadius: 6, border: BORDER, background: '#fff', color: '#8B96A5', fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: ff.primary }}>Cancel</button>
+                                </div>
+                              </div>
+                            ) : (
+                              <button onClick={() => setNullFixConfig(c => ({ ...c, aiActive: true }))} style={{ width: '100%', textAlign: 'left', padding: '8px 10px', border: '1.5px dashed #D6DBE5', borderRadius: 7, background: '#FAFBFC', color: '#A0A8B5', fontSize: 12, fontStyle: 'italic', cursor: 'pointer', fontFamily: ff.primary, display: 'flex', alignItems: 'center', gap: 6 }} onMouseEnter={e => e.currentTarget.style.borderColor = '#2770EF'} onMouseLeave={e => e.currentTarget.style.borderColor = '#D6DBE5'}>
+                                <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M8 2l1.3 3.7L13 7l-3.7 1.3L8 12l-1.3-3.7L3 7l3.7-1.3L8 2z" fill="#BFC6D0"/></svg>
+                                {nc.aiDesc || 'Describe how to fill the nulls…'}
+                              </button>
+                            )}
+                          </div>
+
+                          <div style={{ borderTop: BORDER }} />
+
+                          {/* Manual fill value / expression */}
+                          <div>
+                            <label style={labelStyle}>Fill value or expression</label>
+                            <input value={nc.value} onChange={e => setNullFixConfig(c => ({ ...c, value: e.target.value, applied: false }))} onFocus={nfFocus} onBlur={nfBlur} placeholder="e.g. 0, Unassigned, or an expression" style={nfInputStyle} />
+                          </div>
+
+                          {/* Apply */}
+                          <button
+                            onClick={() => {
+                              if (!nc.value.trim()) return;
+                              setGroups(prev => prev.map(g => g.id === sg.id ? { ...g, steps: g.steps.map((s, i) => i === g.activeStep ? { ...s, nullFix: { column: nc.column, value: nc.value.trim() } } : s) } : g));
+                              setNullFixConfig(c => ({ ...c, applied: true }));
+                            }}
+                            disabled={!nc.value.trim() || nc.applied}
+                            style={{ width: '100%', padding: '9px 0', borderRadius: 7, border: 'none', background: nc.applied ? 'rgba(22,163,74,0.12)' : nc.value.trim() ? '#2770EF' : '#E8ECEF', color: nc.applied ? '#16A34A' : nc.value.trim() ? '#fff' : '#A0A8B5', fontSize: 13, fontWeight: 600, cursor: nc.value.trim() && !nc.applied ? 'pointer' : 'default', fontFamily: ff.primary, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7 }}
+                          >
+                            {nc.applied
+                              ? <><svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M3 8.5l3.5 3.5L13 4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>Fix applied</>
+                              : 'Apply fix'
+                            }
+                          </button>
                         </div>
                       );
                     }
@@ -2527,7 +2830,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack }) => {
         }
 
         const step = selectedGroup.steps[selectedGroup.activeStep];
-        const inputStep = selectedGroup.steps[0];
+        const inputStep = selectedGroup.steps[Math.max(0, selectedGroup.activeStep - 1)];
         const cols = step.cols;
         const inputCols = inputStep.cols;
 
@@ -2591,6 +2894,11 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack }) => {
         // ── Data mode ──
         const rows = (MOCK_DATA[selectedGroup.tableName] ?? []).slice(0, rowCap);
         const tblName = selectedGroup.tableName;
+        // Version-aware null-fix overlay: OUTPUT = fixes up to & incl. the active step; INPUT (source pane) = up to the previous step.
+        const outputFixes: Record<string, string> = {};
+        selectedGroup.steps.slice(1, selectedGroup.activeStep + 1).forEach(s => { if (s.nullFix) outputFixes[s.nullFix.column] = s.nullFix.value; });
+        const inputFixes: Record<string, string> = {};
+        selectedGroup.steps.slice(1, selectedGroup.activeStep).forEach(s => { if (s.nullFix) inputFixes[s.nullFix.column] = s.nullFix.value; });
 
         const renderDataTable = (
           tableCols: [string, string][],
@@ -2636,9 +2944,13 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack }) => {
                       const val = row[ci];
                       const isNum = numericTypes.includes(type);
                       const isNew = !isInput && col === highlightedCol;
+                      const activeFixes = isInput ? inputFixes : outputFixes;
+                      const fixVal = (val === null || val === undefined) ? activeFixes[col] : undefined;
                       const display = isNew
                         ? <span style={{ color: '#1B58D4', fontStyle: 'italic' }}>—</span>
-                        : val === null || val === undefined ? <span style={{ color: '#C0C6CF' }}>null</span> : String(val);
+                        : fixVal !== undefined
+                          ? <span style={{ color: '#15803D', fontWeight: 600 }}>{fixVal}</span>
+                          : val === null || val === undefined ? <span style={{ color: '#C0C6CF' }}>null</span> : String(val);
                       return (
                         <td key={col} style={{
                           padding: '4px 12px', borderRight: BORDER,
@@ -2646,6 +2958,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack }) => {
                           color: '#1D232F', fontVariantNumeric: 'tabular-nums',
                           whiteSpace: 'nowrap', maxWidth: 200,
                           overflow: 'hidden', textOverflow: 'ellipsis',
+                          background: fixVal !== undefined ? 'rgba(22,163,74,0.08)' : undefined,
                           animation: isNew ? 'colFade 2.4s ease forwards' : 'none',
                         }}>{display}</td>
                       );
@@ -2721,9 +3034,16 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack }) => {
   return (
     <div
       style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', fontFamily: ff.primary, background: '#EFF1F5' }}
-      onClick={() => setAddDataOpen(false)}
+      onClick={() => { setAddDataOpen(false); setDataModeMenuOpen(false); }}
     >
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".csv"
+        style={{ display: 'none' }}
+        onChange={e => { handleCsvFile(e.target.files?.[0] ?? undefined); e.currentTarget.value = ''; }}
+      />
       {topbar}
       <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
         {agentPanel}
@@ -2734,6 +3054,70 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack }) => {
           {previewPanel}
         </div>
       </div>
+      {cacheConfirm && (
+        <div onClick={() => setCacheConfirm(null)} style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(25,35,49,0.38)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div onClick={e => e.stopPropagation()} style={{ width: 440, background: '#fff', borderRadius: 12, boxShadow: '0 12px 48px rgba(25,35,49,0.24)', padding: 24 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+              <div style={{ width: 34, height: 34, borderRadius: 8, background: 'rgba(140,98,245,0.12)', color: '#7C3AED', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <svg width="17" height="17" viewBox="0 0 16 16" fill="none"><ellipse cx="8" cy="4" rx="5" ry="2" stroke="currentColor" strokeWidth="1.3"/><path d="M3 4v8c0 1.1 2.2 2 5 2s5-.9 5-2V4" stroke="currentColor" strokeWidth="1.3"/><path d="M3 8c0 1.1 2.2 2 5 2s5-.9 5-2" stroke="currentColor" strokeWidth="1.3"/></svg>
+              </div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: '#1D232F' }}>Cache this model?</div>
+            </div>
+            <div style={{ fontSize: 13, lineHeight: 1.55, color: '#5B6472', marginBottom: 20 }}>
+              To join uploaded files and run transformations, ThoughtSpot will cache this model&rsquo;s warehouse data into its data store. The model will run on cached data (refreshed on a schedule). <strong style={{ color: '#1D232F', fontWeight: 600 }}>This can&rsquo;t be switched back to live query.</strong>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+              <button onClick={() => setCacheConfirm(null)} style={{ padding: '8px 16px', borderRadius: RADIUS6, border: '1px solid #C0C6CF', background: '#fff', color: '#1D232F', fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: ff.primary }}>Cancel</button>
+              <button onClick={() => cacheConfirm.onConfirm()} style={{ padding: '8px 16px', borderRadius: RADIUS6, border: 'none', background: '#2770EF', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: ff.primary }}>Cache &amp; continue</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {cacheSettingsOpen && (
+        <div onClick={() => setCacheSettingsOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(25,35,49,0.38)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div onClick={e => e.stopPropagation()} style={{ width: 440, background: '#fff', borderRadius: 12, boxShadow: '0 12px 48px rgba(25,35,49,0.24)', padding: 24 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 3 }}>
+              <div style={{ width: 30, height: 30, borderRadius: 7, background: 'rgba(140,98,245,0.12)', color: '#7C3AED', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="2" stroke="currentColor" strokeWidth="1.2"/><path d="M8 1.6l.85 1.55 1.72-.38.32 1.73 1.53.87-.83 1.55.83 1.55-1.53.87-.32 1.73-1.72-.38L8 14.4l-.85-1.55-1.72.38-.32-1.73-1.53-.87.83-1.55-.83-1.55 1.53-.87.32-1.73 1.72.38L8 1.6z" stroke="currentColor" strokeWidth="1" strokeLinejoin="round"/></svg>
+              </div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: '#1D232F' }}>Cache settings</div>
+            </div>
+            <div style={{ fontSize: 12.5, color: '#8B96A5', marginBottom: 18, paddingLeft: 39 }}>Control how this model is materialized in ThoughtSpot.</div>
+
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: '#1D232F', marginBottom: 7 }}>Scope</div>
+              <div style={{ display: 'flex', gap: 6 }}>
+                {(['Full model', 'Custom'] as const).map(s => (
+                  <button key={s} onClick={() => setCacheScope(s)} style={{ flex: 1, padding: '8px 0', borderRadius: 7, cursor: 'pointer', fontFamily: ff.primary, fontSize: 12.5, fontWeight: 600, border: `1.5px solid ${cacheScope === s ? '#2770EF' : '#EAEDF2'}`, background: cacheScope === s ? 'rgba(39,112,239,0.05)' : '#fff', color: cacheScope === s ? '#2770EF' : '#64748B' }}>{s}</button>
+                ))}
+              </div>
+              {cacheScope === 'Custom' && <div style={{ fontSize: 11.5, color: '#8B96A5', marginTop: 7 }}>Choose which tables and how much history to cache per table.</div>}
+            </div>
+
+            <div style={{ marginBottom: 22 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: '#1D232F', marginBottom: 7 }}>Refresh</div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <div style={{ flex: 1, position: 'relative' }}>
+                  <select value={cacheFreq} onChange={e => setCacheFreq(e.target.value)} style={{ width: '100%', appearance: 'none', WebkitAppearance: 'none', border: BORDER, borderRadius: 7, padding: '8px 28px 8px 10px', fontSize: 12.5, color: '#1D232F', background: '#fff', cursor: 'pointer', fontFamily: ff.primary, fontWeight: 500, outline: 'none' }}>
+                    {['Daily', 'Hourly', 'Weekly'].map(f => <option key={f} value={f}>{f}</option>)}
+                  </select>
+                  <div style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#BFC6D0' }}><svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M3 4.5l3 3 3-3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg></div>
+                </div>
+                <div style={{ flex: 1, position: 'relative', opacity: cacheFreq === 'Hourly' ? 0.5 : 1 }}>
+                  <select value={cacheHour} disabled={cacheFreq === 'Hourly'} onChange={e => setCacheHour(e.target.value)} style={{ width: '100%', appearance: 'none', WebkitAppearance: 'none', border: BORDER, borderRadius: 7, padding: '8px 28px 8px 10px', fontSize: 12.5, color: '#1D232F', background: '#fff', cursor: cacheFreq === 'Hourly' ? 'default' : 'pointer', fontFamily: ff.primary, fontWeight: 500, outline: 'none' }}>
+                    {['12:00 AM', '6:00 AM', '9:00 AM', '12:00 PM', '6:00 PM'].map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                  <div style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#BFC6D0' }}><svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M3 4.5l3 3 3-3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg></div>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <button onClick={() => setCacheSettingsOpen(false)} style={{ padding: '8px 18px', borderRadius: RADIUS6, border: 'none', background: '#2770EF', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: ff.primary }}>Done</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
