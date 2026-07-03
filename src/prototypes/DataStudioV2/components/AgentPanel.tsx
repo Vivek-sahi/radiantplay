@@ -4265,7 +4265,7 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
   return (
     <div style={fullPage
       ? { height: '100%', display: 'flex', flexDirection: 'column', backgroundColor: '#f7f8fa' }
-      : { width, flexShrink: 0, borderLeft: 'none', backgroundColor: c['background-base'], display: 'flex', flexDirection: 'column' }
+      : { width, height: '100%', minHeight: 0, flexShrink: 0, borderLeft: 'none', backgroundColor: c['background-base'], display: 'flex', flexDirection: 'column' }
     }>
 
       {/* fullPage header: ← Overview + centered Agent identity */}
@@ -5606,6 +5606,12 @@ const MessageBubble: React.FC<{
             </div>
           )}
           {/* ── GenUI cards ─────────────────────────────────────────────────── */}
+          {msg.genUI === 'air_readiness' && (
+            <AIReadinessCard result={msg.genUIResult} />
+          )}
+          {msg.genUI === 'air_tune_eval' && (
+            <AITuneEvalCard />
+          )}
           {msg.genUI === 'semantic_gaps' && onGenUIAction && (
             <SemanticGapsCard msgId={msg.id} result={msg.genUIResult} onAction={onGenUIAction} onOpenObject={onOpenObject} />
           )}
@@ -6106,6 +6112,162 @@ const GenUICard: React.FC<{ children: React.ReactNode; locked?: boolean }> = ({ 
     {children}
   </div>
 );
+
+// ── AI readiness card (rendered in the agent panel from ModelCanvas's air scan) ──
+const AIReadinessCard: React.FC<{ result?: string }> = ({ result }) => {
+  type AirCheck = { id: string; name: string; sev: string; detail: string };
+  let items: AirCheck[] = [];
+  try { items = result ? (JSON.parse(result) as AirCheck[]) : []; } catch { items = []; }
+  const [applied, setApplied] = useState<Set<string>>(new Set());
+  const sevMeta: Record<string, { color: string; bg: string; label: string }> = {
+    miss: { color: '#E22B3D', bg: 'rgba(226,43,61,0.08)', label: 'Missing' },
+    warn: { color: '#B8860B', bg: 'rgba(252,200,56,0.14)', label: 'Partial' },
+    good: { color: '#06BF7F', bg: 'rgba(6,191,127,0.10)', label: 'Good' },
+  };
+  const readyCount = items.filter(i => i.sev === 'good' || applied.has(i.id)).length;
+  const pct = items.length ? Math.round((readyCount / items.length) * 100) : 0;
+  const pending = items.filter(i => i.sev !== 'good' && !applied.has(i.id));
+  if (!items.length) return null;
+  return (
+    <GenUICard>
+      <div style={{ padding: '11px 14px', borderBottom: '1px solid #EEF1F4', display: 'flex', alignItems: 'center', gap: 8 }}>
+        <svg width="13" height="13" viewBox="0 0 12 12" fill="none"><path d="M6 1l1.2 3.6H11l-3 2.3 1.1 3.5L6 8.5l-3.1 1.9 1.1-3.5-3-2.3h3.8z" fill="#2770EF"/></svg>
+        <span style={{ fontSize: 13, fontWeight: 600, color: '#1D232F', flex: 1, fontFamily: ff.primary }}>AI readiness</span>
+        <span style={{ fontSize: 11, fontWeight: 600, color: '#8B96A5', fontFamily: ff.primary }}>{readyCount}/{items.length} ready</span>
+      </div>
+      <div style={{ padding: '9px 14px 4px' }}>
+        <div style={{ height: 5, borderRadius: 99, background: '#EEF1F4', overflow: 'hidden' }}>
+          <div style={{ height: '100%', width: `${pct}%`, borderRadius: 99, background: pct <= 40 ? '#E22B3D' : pct <= 75 ? '#FCC838' : '#06BF7F', transition: 'width 500ms cubic-bezier(0.4,0,0.2,1)' }} />
+        </div>
+      </div>
+      <div>
+        {items.map(it => {
+          const m = sevMeta[it.sev] ?? sevMeta.miss;
+          const done = it.sev === 'good' || applied.has(it.id);
+          return (
+            <div key={it.id} style={{ padding: '9px 14px', borderTop: '1px solid #F4F6F8', display: 'flex', gap: 9, alignItems: 'flex-start' }}>
+              <span style={{ width: 15, height: 15, borderRadius: '50%', flexShrink: 0, marginTop: 1, border: `1.5px solid ${done ? '#06BF7F' : m.color}`, background: done ? '#06BF7F' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {done && <svg width="8" height="8" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#fff" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+              </span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: 12.5, fontWeight: 600, color: '#1D232F', fontFamily: ff.primary }}>{it.name}</span>
+                  <span style={{ fontSize: 9.5, fontWeight: 700, padding: '1px 6px', borderRadius: 3, color: done ? '#06BF7F' : m.color, background: done ? 'rgba(6,191,127,0.10)' : m.bg, fontFamily: ff.primary }}>{done ? 'Fixed' : m.label}</span>
+                </div>
+                <div style={{ fontSize: 11.5, color: '#64748B', marginTop: 2, lineHeight: 1.45, fontFamily: ff.primary }}>{it.detail}</div>
+              </div>
+              {it.sev !== 'good' && !done && (
+                <button
+                  onClick={() => (window as any).__airShowFixReview__?.(it.id)}
+                  style={{ flexShrink: 0, fontSize: 11, fontWeight: 600, color: '#2770EF', background: 'none', border: '1px solid #D6E0F5', borderRadius: 5, padding: '3px 9px', cursor: 'pointer', fontFamily: ff.primary }}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(39,112,239,0.06)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+                >Review</button>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      {pending.length > 0 && (
+        <div style={{ padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#FAFBFC', borderTop: '1px solid #F4F6F8' }}>
+          <span style={{ fontSize: 11, color: '#8B96A5', fontFamily: ff.primary }}>{pending.length} improvement{pending.length === 1 ? '' : 's'} pending</span>
+          <button
+            onClick={() => { (window as any).__airApplyFix__?.('__all__'); setApplied(new Set(items.map(i => i.id))); }}
+            style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11.5, fontWeight: 600, color: '#fff', background: '#2770EF', border: 'none', borderRadius: 6, padding: '5px 11px', cursor: 'pointer', fontFamily: ff.primary }}
+            onMouseEnter={e => (e.currentTarget.style.background = '#2359B6')}
+            onMouseLeave={e => (e.currentTarget.style.background = '#2770EF')}
+          >
+            <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M6 1l1.2 3.6H11l-3 2.3 1.1 3.5L6 8.5l-3.1 1.9 1.1-3.5-3-2.3h3.8z" fill="currentColor"/></svg>
+            Fix all with AI
+          </button>
+        </div>
+      )}
+    </GenUICard>
+  );
+};
+
+// ── Tuning eval card — rate simulated Spotter answers → generate metadata fixes ──
+const TUNE_QUESTIONS: { q: string; a: string }[] = [
+  { q: 'What was total revenue by region last quarter?', a: 'Returned SUM of amount grouped by region for the last 3 months (West, East, North, South).' },
+  { q: 'Which campaigns had the highest ROAS?', a: 'Ranked campaigns by total revenue — but did not divide by spend, so this is revenue, not ROAS.' },
+  { q: 'Show me churn rate by customer segment', a: "Spotter couldn't find a churn or account-status field on this model." },
+];
+
+const AITuneEvalCard: React.FC = () => {
+  const [ratings, setRatings] = useState<Record<number, 'correct' | 'incorrect' | 'oos'>>({});
+  const [reasons, setReasons] = useState<Record<number, string>>({});
+  const [submitted, setSubmitted] = useState(false);
+  const allRated = TUNE_QUESTIONS.every((_, i) => ratings[i]);
+  const recCount = TUNE_QUESTIONS.filter((_, i) => ratings[i] === 'incorrect' || ratings[i] === 'oos').length;
+
+  if (submitted) {
+    return (
+      <GenUICard>
+        <div style={{ padding: 14, display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+          <span style={{ width: 22, height: 22, borderRadius: '50%', flexShrink: 0, background: recCount > 0 ? 'rgba(252,200,56,0.16)' : 'rgba(6,191,127,0.14)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            {recCount > 0
+              ? <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M6 3v3.3l2 1.4" stroke="#B8860B" strokeWidth="1.4" strokeLinecap="round"/><circle cx="6" cy="6" r="5" stroke="#B8860B" strokeWidth="1.2"/></svg>
+              : <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#06BF7F" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+          </span>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: '#1D232F', fontFamily: ff.primary }}>{recCount > 0 ? `${recCount} metadata fix${recCount === 1 ? '' : 'es'} generated` : 'All answers correct'}</div>
+            <div style={{ fontSize: 12, color: '#64748B', marginTop: 4, lineHeight: 1.5, fontFamily: ff.primary }}>{recCount > 0 ? 'Applied targeted improvements from your ratings. Re-run AI readiness to see the updated score.' : 'This model is well-tuned for Spotter.'}</div>
+          </div>
+        </div>
+      </GenUICard>
+    );
+  }
+
+  const RATE_OPTS: { val: 'correct' | 'incorrect' | 'oos'; label: string; color: string }[] = [
+    { val: 'correct', label: 'Correct', color: '#06BF7F' },
+    { val: 'incorrect', label: 'Incorrect', color: '#E22B3D' },
+    { val: 'oos', label: 'Out of scope', color: '#8B96A5' },
+  ];
+
+  return (
+    <GenUICard>
+      <div style={{ padding: '11px 14px', borderBottom: '1px solid #EEF1F4' }}>
+        <span style={{ fontSize: 13, fontWeight: 600, color: '#1D232F', fontFamily: ff.primary }}>Rate Spotter&rsquo;s answers</span>
+        <div style={{ fontSize: 11.5, color: '#64748B', marginTop: 2, fontFamily: ff.primary }}>3 sample questions · mark each correct, incorrect, or out of scope</div>
+      </div>
+      {TUNE_QUESTIONS.map((item, i) => {
+        const r = ratings[i];
+        return (
+          <div key={i} style={{ padding: '12px 14px', borderBottom: i < TUNE_QUESTIONS.length - 1 ? '1px solid #F4F6F8' : 'none' }}>
+            <div style={{ fontSize: 12.5, fontWeight: 600, color: '#1D232F', marginBottom: 6, fontFamily: ff.primary }}>{item.q}</div>
+            <div style={{ fontSize: 12, color: '#5B6472', lineHeight: 1.5, padding: '8px 10px', background: '#F6F8FA', borderRadius: 6, marginBottom: 8, fontFamily: ff.primary }}>{item.a}</div>
+            <div style={{ display: 'flex', gap: 6 }}>
+              {RATE_OPTS.map(opt => {
+                const active = r === opt.val;
+                return (
+                  <button key={opt.val} onClick={() => setRatings(p => ({ ...p, [i]: opt.val }))}
+                    style={{ fontSize: 11.5, fontWeight: 600, padding: '4px 10px', borderRadius: 6, cursor: 'pointer', fontFamily: ff.primary, border: `1px solid ${active ? opt.color : '#E2E6EC'}`, color: active ? '#fff' : '#4A5568', background: active ? opt.color : '#fff' }}>
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
+            {r === 'incorrect' && (
+              <input value={reasons[i] ?? ''} onChange={e => setReasons(p => ({ ...p, [i]: e.target.value }))}
+                placeholder="What was wrong? (optional)"
+                style={{ marginTop: 8, width: '100%', boxSizing: 'border-box', fontSize: 12, fontFamily: ff.primary, color: '#1D232F', border: '1px solid #E2E6EC', borderRadius: 6, padding: '6px 9px', outline: 'none' }}
+                onFocus={e => (e.currentTarget.style.borderColor = '#2770EF')}
+                onBlur={e => (e.currentTarget.style.borderColor = '#E2E6EC')}
+              />
+            )}
+          </div>
+        );
+      })}
+      <div style={{ padding: '10px 14px', display: 'flex', justifyContent: 'flex-end', background: '#FAFBFC' }}>
+        <button disabled={!allRated}
+          onClick={() => { setSubmitted(true); (window as any).__airTuneComplete__?.(recCount); }}
+          style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11.5, fontWeight: 600, color: '#fff', background: allRated ? '#2770EF' : '#C0C6CF', border: 'none', borderRadius: 6, padding: '6px 13px', cursor: allRated ? 'pointer' : 'default', fontFamily: ff.primary }}>
+          Generate fixes
+        </button>
+      </div>
+    </GenUICard>
+  );
+};
 
 const GenUISection: React.FC<{ children: React.ReactNode; last?: boolean; bg?: string }> = ({ children, last, bg }) => (
   <div style={{

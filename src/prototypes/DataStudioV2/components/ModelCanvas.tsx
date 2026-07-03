@@ -1,11 +1,11 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { ff, fw } from '../styles';
 import AgentPanel, { AgentMessage } from './AgentPanel';
 import { ProjectState, emptyContext } from '../index';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type OpType = 'source' | 'join' | 'filter' | 'agg' | 'formula' | 'rename' | 'sort' | 'union' | 'limit' | 'sql' | 'nullfix';
+type OpType = 'source' | 'join' | 'filter' | 'agg' | 'formula' | 'rename' | 'sort' | 'union' | 'limit' | 'sql' | 'python' | 'nullfix';
 
 interface PipelineStep {
   type: OpType;
@@ -51,6 +51,7 @@ interface CanvasJoin {
 
 interface ModelCanvasProps {
   onBack: () => void;
+  onPublished?: () => void;
 }
 
 // ── Data ──────────────────────────────────────────────────────────────────────
@@ -66,7 +67,13 @@ const TABLE_COLS: Record<string, [string, string][]> = {
   conversions:  [['conv_id','INT'],['campaign_id','VARCHAR'],['customer_id','INT'],['revenue','FLOAT']],
   fct_orders:   [['order_id','INT'],['date','DATE'],['amount','FLOAT'],['segment','VARCHAR'],['channel','VARCHAR']],
   dim_customers:[['customer_id','INT'],['name','VARCHAR'],['segment','VARCHAR'],['ltv','FLOAT']],
-  customer_regions:[['customer_id','INT'],['region','VARCHAR'],['csm_owner','VARCHAR'],['tier','VARCHAR']],
+  customer_regions:[['customer_id','INT'],['region','VARCHAR'],['csm_owner','VARCHAR'],['tier','VARCHAR'],['comment','VARCHAR']],
+  mp_events:    [['event_id','VARCHAR'],['event_name','VARCHAR'],['user_id','VARCHAR'],['timestamp','TIMESTAMP'],['properties','VARCHAR']],
+  mp_users:     [['user_id','VARCHAR'],['email','VARCHAR'],['plan','VARCHAR'],['signup_date','DATE'],['last_seen','TIMESTAMP']],
+  mp_cohorts:   [['cohort_id','VARCHAR'],['name','VARCHAR'],['size','INT'],['created_at','DATE']],
+  pendo_nps:    [['response_id','VARCHAR'],['visitor_id','VARCHAR'],['score','INT'],['comment','VARCHAR'],['submitted_at','DATE']],
+  pendo_feature_usage:[['visitor_id','VARCHAR'],['feature','VARCHAR'],['clicks','INT'],['last_used','TIMESTAMP']],
+  pendo_visitors:[['visitor_id','VARCHAR'],['account_id','VARCHAR'],['first_seen','DATE'],['region','VARCHAR']],
 };
 
 type Row = (string | number | boolean | null)[];
@@ -92,14 +99,14 @@ const MOCK_DATA: Record<string, Row[]> = {
     [54,'Henry Moore','SMB',4300.00,'2022-05-18'],
   ],
   customer_regions: [
-    [42,'West','Dana Wu','Enterprise'],
-    [17,'East',null,'SMB'],
-    [5,null,'Priya Shah','Enterprise'],
-    [31,'South','Dana Wu',null],
-    [88,null,null,'SMB'],
-    [72,'North','Sam Okafor','Enterprise'],
-    [9,'West',null,'Startup'],
-    [54,'East','Priya Shah','SMB'],
+    [42,'West','Dana Wu','Enterprise','Love the new dashboards — huge time saver.'],
+    [17,'East',null,'SMB','Support was slow to respond last month.'],
+    [5,null,'Priya Shah','Enterprise','Works well overall, a few small bugs.'],
+    [31,'South','Dana Wu',null,'The product keeps crashing during export.'],
+    [88,null,null,'SMB','Pricing feels high for what we actually use.'],
+    [72,'North','Sam Okafor','Enterprise','Fantastic onboarding — very happy so far.'],
+    [9,'West',null,'Startup','It is okay, nothing special.'],
+    [54,'East','Priya Shah','SMB','Renewed because the analytics are excellent.'],
   ],
   products: [
     [101,'Analytics Pro','Software',299.00],
@@ -185,6 +192,7 @@ const OP_META: Record<OpType, { label: string; tag: string; desc: string }> = {
   union:   { label: 'Union',     tag: 'union',   desc: 'Union tables' },
   limit:   { label: 'Limit',     tag: 'limit',   desc: 'Limit rows' },
   sql:     { label: 'SQL',       tag: 'sql',     desc: 'Custom SQL' },
+  python:  { label: 'Python',    tag: 'python',  desc: 'Custom Python' },
   nullfix: { label: 'Fix nulls', tag: 'prep',    desc: 'Remediate null values' },
 };
 
@@ -200,6 +208,7 @@ const OP_ICON: Record<string, React.ReactNode> = {
   sql:     <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M3 4l3 3-3 3M7.5 10h3.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>,
   join:    <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><circle cx="5" cy="7" r="3" stroke="currentColor" strokeWidth="1.2"/><circle cx="9" cy="7" r="3" stroke="currentColor" strokeWidth="1.2"/></svg>,
   nullfix: <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M7 2C4.8 5 3.5 7 3.5 9a3.5 3.5 0 007 0c0-2-1.3-4-3.5-7z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/></svg>,
+  python:  <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M6 2c-1.1 0-2 .4-2 1v2h4V4H6V3h4c1.1 0 2 .4 2 1v2c0 1.1-.9 2-2 2H6c-1.1 0-2 .9-2 2v2c0 .6.9 1 2 1h4c1.1 0 2-.4 2-1v-2H8v1h2v1H6v-1h4c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2H6c-1.1 0-2-.9-2-2V3c0-.6.9-1 2-1z" stroke="currentColor" strokeWidth="1.1" fill="none" strokeLinejoin="round"/></svg>,
 };
 
 const OP_TAG_COLORS: Record<string, { bg: string; fg: string }> = {
@@ -214,7 +223,77 @@ const OP_TAG_COLORS: Record<string, { bg: string; fg: string }> = {
   union:   { bg: 'rgba(100,116,139,0.1)', fg: '#475569' },
   limit:   { bg: 'rgba(100,116,139,0.1)', fg: '#475569' },
   sql:     { bg: 'rgba(140,98,245,0.1)',  fg: '#6B4FBF' },
+  python:  { bg: 'rgba(43,108,176,0.10)', fg: '#2B6CB0' },
 };
+
+// ── AI Fix Review data (shown in preview panel when a fix is being reviewed) ──
+const AIR_FIX_REVIEW: Record<string, { title: string; rows: { col: string; current: string; proposed: string }[] }> = {
+  desc: {
+    title: 'Column AI context',
+    rows: [
+      { col: 'amount',      current: '—', proposed: 'Use SUM for total revenue. Denominator in ROAS calculations.' },
+      { col: 'segment',     current: '—', proposed: 'Customer tier. Nulls = unclassified users, not missing data.' },
+      { col: 'channel',     current: '—', proposed: 'Marketing channel. Primary slice for ROAS analysis.' },
+      { col: 'order_date',  current: '—', proposed: 'Primary time axis. Use for trends and time-series queries.' },
+      { col: 'campaign_id', current: '—', proposed: 'Join key to campaigns. Null = organic order, not an error.' },
+      { col: 'user_id',     current: '—', proposed: 'Join key to users. Always present, no nulls expected.' },
+      { col: 'spend',       current: '—', proposed: 'Denominator in ROAS. Use with SUM; compare against budget.' },
+      { col: 'region',      current: '—', proposed: 'Geographic dimension. 5 known values, no nulls.' },
+    ],
+  },
+  synonyms: {
+    title: 'Column synonyms',
+    rows: [
+      { col: 'customer_id', current: '—',             proposed: 'client, account, buyer' },
+      { col: 'order_date',  current: 'purchase date', proposed: 'purchase date, transaction date, order placed' },
+      { col: 'amount',      current: '—',             proposed: 'sales, income, earnings, GMV' },
+    ],
+  },
+  coldesc: {
+    title: 'Column descriptions',
+    rows: [
+      { col: 'customer_id', current: '—', proposed: 'Unique identifier for each registered customer.' },
+      { col: 'order_date',  current: '—', proposed: 'Date the order was placed, normalised to YYYY-MM-DD.' },
+      { col: 'amount',      current: '—', proposed: 'Order value in USD at time of purchase.' },
+      { col: 'segment',     current: '—', proposed: 'Customer tier (Enterprise, SMB, Mid-market). Null = unclassified.' },
+    ],
+  },
+  indexing: {
+    title: 'Enable indexing',
+    rows: [
+      { col: 'region',   current: 'Off', proposed: 'On' },
+      { col: 'segment',  current: 'Off', proposed: 'On' },
+      { col: 'channel',  current: 'Off', proposed: 'On' },
+      { col: 'status',   current: 'Off', proposed: 'On' },
+    ],
+  },
+  col_types: {
+    title: 'Column type corrections',
+    rows: [
+      { col: 'impressions', current: 'TEXT',   proposed: 'BIGINT (measure)' },
+      { col: 'campaign_id', current: 'BIGINT', proposed: 'VARCHAR (attribute)' },
+      { col: 'user_id',     current: 'BIGINT', proposed: 'VARCHAR (attribute)' },
+    ],
+  },
+  date_vals: {
+    title: 'Date value issues',
+    rows: [
+      { col: 'order_date', current: 'TEXT — MM/DD/YYYY', proposed: 'DATE — ISO 8601 (YYYY-MM-DD)' },
+    ],
+  },
+};
+
+const AIR_ITEMS = [
+  { id: 'desc',      name: 'Column AI context',         detail: 'Missing on 8 of 12 columns — Spotter uses this to know how to apply each field.', sev: 'miss', tag: 'Missing' },
+  { id: 'synonyms',  name: 'Column synonyms',           detail: '2 of 12 columns mapped — low coverage reduces search accuracy.',      sev: 'warn', tag: 'Partial' },
+  { id: 'coldesc',   name: 'Column descriptions',       detail: '4 of 12 columns described — improves answer quality significantly.', sev: 'warn', tag: 'Partial' },
+  { id: 'indexing',  name: 'Enable indexing',           detail: 'Not enabled — Spotter can\'t retrieve attribute values during search.', sev: 'miss', tag: 'Missing' },
+  { id: 'col_types', name: 'Column type mismatches',    detail: '3 columns typed incorrectly — aggregations may be applied wrong.',   sev: 'warn', tag: 'Partial' },
+  { id: 'date_vals', name: 'Date value issues',         detail: 'order_date uses text format — time filters won\'t work correctly.',  sev: 'miss', tag: 'Missing' },
+  { id: 'joins',     name: 'Data relationships',        detail: '3 joins detected — model structure looks good.',                      sev: 'good', tag: 'Good'    },
+] as const;
+type AirItemId = typeof AIR_ITEMS[number]['id'];
+type AirItemState = 'pending' | 'fixing' | 'awaiting' | 'done' | 'oos' | 'manual';
 
 const NODE_POSITIONS = [
   { x: 80,  y: 60  }, { x: 300, y: 60  }, { x: 520, y: 60  },
@@ -851,8 +930,10 @@ const suggestNullFill = (column: string, desc: string): string => {
   return 'Unassigned';
 };
 
-const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack }) => {
+const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished }) => {
   const [modelName, setModelName] = useState('Untitled model');
+  const [publishOpen, setPublishOpen] = useState(false);
+  const [published, setPublished] = useState(false);
   const [dataMode, setDataMode] = useState<'live' | 'cached'>('live');
   const [cacheConfirm, setCacheConfirm] = useState<null | { onConfirm: () => void }>(null);
   const [dataModeMenuOpen, setDataModeMenuOpen] = useState(false);
@@ -884,7 +965,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack }) => {
   const [previewMode, setPreviewMode] = useState<'data' | 'semantic'>('data');
   const [previewView, setPreviewView] = useState<'output' | 'input' | 'both'>('both');
   const [previewLimit, setPreviewLimit] = useState(25);
-  const [activeBrowserTab, setActiveBrowserTab] = useState<'warehouse' | 'semantic' | 'business'>('warehouse');
+  const [activeBrowserTab, setActiveBrowserTab] = useState<'warehouse' | 'business'>('warehouse');
   const [addDataOpen, setAddDataOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
   const [filterConns, setFilterConns] = useState(new Set(['sf', 'bq']));
@@ -944,6 +1025,22 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack }) => {
     expr: '',
   });
 
+  const [sqlConfig, setSqlConfig] = useState({
+    sql: '',
+    aiActive: false,
+    aiDesc: '',
+    aiGenerating: false,
+  });
+
+  const [pythonConfig, setPythonConfig] = useState({
+    colName: '',
+    colNameTouched: false,
+    code: '',
+    aiActive: false,
+    aiDesc: '',
+    aiGenerating: false,
+  });
+
   const [nullFixConfig, setNullFixConfig] = useState<{
     column: string;
     aiActive: boolean;
@@ -952,6 +1049,200 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack }) => {
     value: string;
     applied: boolean;
   }>({ column: '', aiActive: false, aiDesc: '', aiGenerating: false, value: '', applied: false });
+
+  // ── AI Readiness Pill ──────────────────────────────────────────────────────
+  const [airOpen, setAirOpen] = useState(false);
+  const [airPillTooltip, setAirPillTooltip] = useState(false);
+  const [airDropView, setAirDropView] = useState<'intro' | 'results'>('intro');
+  const [airItemStates, setAirItemStates] = useState<Record<AirItemId, AirItemState>>({} as Record<AirItemId, AirItemState>);
+  const [airTuneRecsCount, setAirTuneRecsCount] = useState<number | null>(null);
+  const [airFixReview, setAirFixReview] = useState<string | null>(null);
+  const [airAccepted, setAirAccepted] = useState<Record<string, Record<string, string>>>({});
+  const [airIgnoredIds, setAirIgnoredIds] = useState<Set<string>>(new Set());
+  const airPillRef = useRef<HTMLDivElement>(null);
+
+  // ── Canvas / Columns view switcher ───────────────────────────────────────────
+  const [viewMode, setViewMode] = useState<'canvas' | 'columns'>('canvas');
+  const [colEdits, setColEdits] = useState<Record<string, string>>({});
+  const [editingCell, setEditingCell] = useState<string | null>(null);
+  const [indexedCols, setIndexedCols] = useState<Set<string>>(new Set());
+
+  // Fixes always show in the Columns view. Auto-switch if currently on Canvas.
+  (window as any).__airShowFixReview__ = (checkId: string) => {
+    setAirFixReview(checkId);
+    setViewMode('columns');
+  };
+  (window as any).__airSetIgnored__ = (checkId: string, ignored: boolean) =>
+    setAirIgnoredIds(prev => {
+      const next = new Set(prev);
+      if (ignored) next.add(checkId); else next.delete(checkId);
+      return next;
+    });
+  const hasTable = groups.length > 0;
+
+  const airGetState = (id: AirItemId): AirItemState => airItemStates[id] ?? 'pending';
+  const airPassCount = AIR_ITEMS.filter(it => airGetState(it.id) === 'done' || it.sev === 'good').length;
+  const airPendingCount = AIR_ITEMS.filter(it => it.sev !== 'good' && airGetState(it.id) !== 'done' && !airIgnoredIds.has(it.id)).length;
+  const airPct = Math.round((airPassCount / AIR_ITEMS.length) * 100);
+  const airColor = airPct <= 30 ? '#E22B3D' : airPct <= 65 ? '#FCC838' : '#06BF7F';
+  const airSubText = `${airPassCount} of ${AIR_ITEMS.length} checks passed${airPassCount < AIR_ITEMS.length ? ' — fix the items below to progress.' : ' — ready to tune!'}`;
+  const airPillLabel = airDropView === 'intro'
+    ? 'Check AI readiness'
+    : airPendingCount > 0
+      ? `${airPendingCount} improvement${airPendingCount === 1 ? '' : 's'} pending`
+      : airTuneRecsCount === null
+        ? 'Needs tuning'
+        : airTuneRecsCount > 0
+          ? `${airTuneRecsCount} tuning fix${airTuneRecsCount === 1 ? '' : 'es'}`
+          : 'Spotter ready';
+  const airPillDotColor = airDropView === 'intro'
+    ? '#BFC6D0'
+    : airPendingCount > 0
+      ? '#FCC838'
+      : airTuneRecsCount === null
+        ? '#06BF7F'
+        : airTuneRecsCount > 0
+          ? '#FCC838'
+          : '#06BF7F';
+
+  const airRunScan = () => {
+    if (agentCollapsed) setAgentCollapsed(false);
+    (window as any).__airRunScan__ = airRunScan;
+    (window as any).__airApplyFix__ = (checkId: string) => {
+      const saveAccepted = (ids: string[]) => {
+        setAirAccepted(prev => {
+          const next = { ...prev };
+          ids.forEach(id => {
+            next[id] = Object.fromEntries((AIR_FIX_REVIEW[id]?.rows ?? []).map(r => [r.col, r.proposed]));
+          });
+          return next;
+        });
+      };
+      if (checkId === '__all__') {
+        saveAccepted(Object.keys(AIR_FIX_REVIEW));
+        setAirItemStates(prev => {
+          const next = { ...prev } as Record<AirItemId, AirItemState>;
+          AIR_ITEMS.forEach(item => { if (item.sev !== 'good') next[item.id] = 'done'; });
+          return next;
+        });
+      } else {
+        saveAccepted([checkId]);
+        setAirItemStates(prev => ({ ...prev, [checkId]: 'done' } as Record<AirItemId, AirItemState>));
+      }
+      setAirFixReview(null);
+    };
+    // Clear any previous air readiness conversation
+    setAgentMessages(prev => prev.filter(m => !m.id.startsWith('air-')));
+
+    const ts = Date.now();
+
+    // User trigger message
+    setAgentMessages(prev => [...prev, {
+      id: `air-user-${ts}`,
+      type: 'user' as const,
+      content: 'Check for AI readiness',
+    }]);
+
+    // Working message — one reasoning step per check
+    const workingId = `air-work-${ts}`;
+    setAgentMessages(prev => [...prev, {
+      id: workingId,
+      type: 'working' as const,
+      content: '',
+      stepsCollapsed: false,
+      allStepsVisible: true,
+      steps: AIR_ITEMS.map(item => ({
+        label: `Analyzing ${item.name.toLowerCase()}`,
+        status: 'pending' as const,
+      })),
+    }]);
+
+    // Animate each step: pending → running → done
+    AIR_ITEMS.forEach((_, idx) => {
+      setTimeout(() => {
+        setAgentMessages(prev => prev.map(m =>
+          m.id !== workingId || !m.steps ? m : {
+            ...m,
+            steps: m.steps!.map((s, i) => i === idx ? { ...s, status: 'running' as const } : s),
+          }
+        ));
+        setTimeout(() => {
+          setAgentMessages(prev => prev.map(m =>
+            m.id !== workingId || !m.steps ? m : {
+              ...m,
+              steps: m.steps!.map((s, i) => i === idx ? { ...s, status: 'done' as const } : s),
+            }
+          ));
+        }, 300);
+      }, idx * 320);
+    });
+
+    // After all steps complete: collapse steps, transition dropdown, add diagnostics card
+    const totalMs = AIR_ITEMS.length * 320 + 450;
+    setTimeout(() => {
+      setAirDropView('results');
+      const failCount = AIR_ITEMS.filter(it => it.sev !== 'good').length;
+      const summaryText = failCount === 0
+        ? 'All 5 checks passed — this model is AI-ready.'
+        : `${failCount} of ${AIR_ITEMS.length} checks need attention before this model is ready for Spotter.`;
+      setAgentMessages(prev => prev.map(m =>
+        m.id !== workingId ? m : { ...m, stepsCollapsed: true }
+      ));
+      setAgentMessages(prev => [...prev, {
+        id: `air-resp-${Date.now()}`,
+        type: 'response' as const,
+        content: summaryText,
+        genUI: 'air_readiness',
+        genUIResult: JSON.stringify(AIR_ITEMS.map(item => ({
+          id: item.id, name: item.name, sev: item.sev, detail: item.detail,
+        }))),
+      }]);
+    }, totalMs);
+  };
+
+  const airStartTuning = () => {
+    setAirOpen(false);
+    if (agentCollapsed) setAgentCollapsed(false);
+    (window as any).__airTuneComplete__ = (recCount: number) => setAirTuneRecsCount(recCount);
+    const ts = Date.now();
+    setAgentMessages(prev => [...prev, { id: `tune-user-${ts}`, type: 'user' as const, content: 'Tune model with sample questions' }]);
+    const workingId = `tune-work-${ts}`;
+    const tuneSteps = ['Generating sample questions', 'Simulating Spotter answers', 'Preparing evaluation'];
+    setAgentMessages(prev => [...prev, {
+      id: workingId, type: 'working' as const, content: '',
+      stepsCollapsed: false, allStepsVisible: true,
+      steps: tuneSteps.map(label => ({ label, status: 'pending' as const })),
+    }]);
+    tuneSteps.forEach((_, idx) => {
+      setTimeout(() => {
+        setAgentMessages(prev => prev.map(m =>
+          m.id !== workingId || !m.steps ? m : { ...m, steps: m.steps!.map((s, i) => i === idx ? { ...s, status: 'running' as const } : s) }
+        ));
+        setTimeout(() => {
+          setAgentMessages(prev => prev.map(m =>
+            m.id !== workingId || !m.steps ? m : { ...m, steps: m.steps!.map((s, i) => i === idx ? { ...s, status: 'done' as const } : s) }
+          ));
+        }, 280);
+      }, idx * 320);
+    });
+    const totalMs = tuneSteps.length * 320 + 450;
+    setTimeout(() => {
+      setAgentMessages(prev => prev.map(m => m.id !== workingId ? m : { ...m, stepsCollapsed: true }));
+      setAgentMessages(prev => [...prev, {
+        id: `tune-resp-${Date.now()}`, type: 'response' as const,
+        content: 'I simulated Spotter answers for your 3 sample questions. Rate each one — mark it correct, incorrect (with a reason), or out of scope.',
+        genUI: 'air_tune_eval', genUIResult: 'ready',
+      }]);
+    }, totalMs);
+  };
+
+  useEffect(() => {
+    if (!airOpen) return;
+    const handler = (e: MouseEvent) => { if (airPillRef.current && !airPillRef.current.contains(e.target as Node)) setAirOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [airOpen]);
+
 
   const toggleExpanded = useCallback((id: string) => {
     setExpanded(prev => {
@@ -1080,6 +1371,12 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack }) => {
       const firstNull = g ? (nullColumnsOf(g.tableName)[0]?.name ?? '') : '';
       setNullFixConfig({ column: firstNull, aiActive: false, aiDesc: '', aiGenerating: false, value: '', applied: false });
     }
+    if (opType === 'sql') {
+      setSqlConfig({ sql: '', aiActive: false, aiDesc: '', aiGenerating: false });
+    }
+    if (opType === 'python') {
+      setPythonConfig({ colName: '', colNameTouched: false, code: '', aiActive: false, aiDesc: '', aiGenerating: false });
+    }
     setGroups(prev => prev.map(g => {
       if (g.id !== selectedId) return g;
       const meta = OP_META[opType];
@@ -1142,6 +1439,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack }) => {
 
   const topbar = (
     <div style={{
+      position: 'relative',
       height: 48, background: '#fff', borderBottom: BORDER,
       display: 'flex', alignItems: 'center', padding: '0 16px', gap: 6, flexShrink: 0,
     }}>
@@ -1152,9 +1450,8 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack }) => {
         onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#F6F8FA'; (e.currentTarget as HTMLElement).style.color = '#1D232F'; }}
         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'none'; (e.currentTarget as HTMLElement).style.color = '#64748B'; }}
       >
-        <IconChevronLeft /> Models
+        <IconChevronLeft />
       </button>
-      <span style={{ color: '#C0C6CF', fontSize: 13, userSelect: 'none' }}>/</span>
       {/* Model name */}
       <input
         value={modelName}
@@ -1169,102 +1466,342 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack }) => {
         onMouseEnter={e => { if (document.activeElement !== e.currentTarget) { e.currentTarget.style.borderColor = '#C0C6CF'; e.currentTarget.style.background = '#F6F8FA'; } }}
         onMouseLeave={e => { if (document.activeElement !== e.currentTarget) { e.currentTarget.style.borderColor = 'transparent'; e.currentTarget.style.background = 'transparent'; } }}
       />
-      {/* Draft pill */}
-      <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 9px', borderRadius: 99, background: '#F6F8FA', color: '#8B96A5', border: BORDER, letterSpacing: '0.01em', userSelect: 'none', flexShrink: 0 }}>
-        Draft
-      </span>
-      {/* Data mode dropdown — one-way status: Live → Cached */}
-      <div style={{ position: 'relative', marginLeft: 4, flexShrink: 0 }}>
+      {/* Draft / Published pill */}
+      {published ? (
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 600, padding: '2px 9px', borderRadius: 99, background: 'rgba(6,191,127,0.10)', color: '#06BF7F', border: '1px solid rgba(6,191,127,0.30)', letterSpacing: '0.01em', userSelect: 'none', flexShrink: 0 }}>
+          <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#06BF7F' }} />
+          Published · v1
+        </span>
+      ) : (
+        <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 9px', borderRadius: 99, background: '#F6F8FA', color: '#8B96A5', border: BORDER, letterSpacing: '0.01em', userSelect: 'none', flexShrink: 0 }}>
+          Draft
+        </span>
+      )}
+      {/* Canvas / Columns view switcher — centered over main content (right of browser panel) */}
+      <div style={{ position: 'absolute', left: `calc(50% + ${(browserCollapsed ? 48 : browserWidth) / 2}px)`, transform: 'translateX(-50%)', display: 'flex', alignItems: 'center', background: '#F0F2F6', borderRadius: 8, padding: 3, gap: 1 }}>
+        {(['canvas', 'columns'] as const).map(v => (
+          <button
+            key={v}
+            onClick={() => setViewMode(v)}
+            style={{
+              fontSize: 12, fontWeight: 500, padding: '4px 14px', borderRadius: 5,
+              border: 'none', cursor: 'pointer', fontFamily: ff.primary,
+              background: viewMode === v ? '#fff' : 'transparent',
+              color: viewMode === v ? '#1D232F' : '#8B96A5',
+              boxShadow: viewMode === v ? '0 1px 3px rgba(25,35,49,0.10)' : 'none',
+              transition: 'all 130ms', whiteSpace: 'nowrap', userSelect: 'none',
+            }}
+          >{v === 'canvas' ? 'Canvas' : 'Columns'}</button>
+        ))}
+      </div>
+
+      <div style={{ flex: 1 }} />
+      {/* AI Readiness Pill */}
+      <div ref={airPillRef} style={{ position: 'relative', flexShrink: 0 }}>
+        {airPillTooltip && !hasTable && (
+          <div style={{ position: 'absolute', bottom: 'calc(100% + 7px)', left: '50%', transform: 'translateX(-50%)', background: '#1D232F', color: '#fff', fontSize: 11, fontWeight: 500, padding: '5px 9px', borderRadius: 5, whiteSpace: 'nowrap', zIndex: 300, pointerEvents: 'none', boxShadow: '0 2px 8px rgba(0,0,0,0.18)' }}>
+            Add at least one table to check AI readiness
+          </div>
+        )}
         <button
-          onClick={e => { e.stopPropagation(); setDataModeMenuOpen(o => !o); }}
+          onClick={() => { if (hasTable) setAirOpen(o => !o); }}
+          disabled={!hasTable}
           style={{
-            display: 'flex', alignItems: 'center', gap: 7,
-            fontSize: 12.5, fontWeight: 600, padding: '5px 9px 5px 12px', borderRadius: 99, cursor: 'pointer',
-            fontFamily: ff.primary,
-            background: dataMode === 'cached' ? 'rgba(140,98,245,0.10)' : 'rgba(22,163,74,0.10)',
-            color: dataMode === 'cached' ? '#7C3AED' : '#16A34A',
-            border: `1px solid ${dataMode === 'cached' ? 'rgba(140,98,245,0.32)' : 'rgba(22,163,74,0.30)'}`,
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            padding: '4px 10px 4px 8px', borderRadius: 99,
+            border: `1px solid ${!hasTable ? '#E2E6EC' : airOpen ? '#2770EF' : '#C0C6CF'}`,
+            background: '#fff', fontFamily: ff.primary,
+            fontSize: 12, fontWeight: 500,
+            color: !hasTable ? '#BFC6D0' : airOpen ? '#2770EF' : '#4B5563',
+            boxShadow: airOpen ? '0 0 0 3px rgba(39,112,239,0.10)' : 'none',
+            whiteSpace: 'nowrap', transition: 'border-color 130ms, box-shadow 130ms, color 130ms',
+            cursor: hasTable ? 'pointer' : 'not-allowed', opacity: 1,
+          }}
+          onMouseEnter={e => {
+            if (!hasTable) { setAirPillTooltip(true); return; }
+            if (!airOpen) { e.currentTarget.style.borderColor = '#A5ACB9'; e.currentTarget.style.boxShadow = '0 1px 4px rgba(25,35,49,0.08)'; }
+          }}
+          onMouseLeave={e => {
+            setAirPillTooltip(false);
+            if (!airOpen) { e.currentTarget.style.borderColor = hasTable ? '#C0C6CF' : '#E2E6EC'; e.currentTarget.style.boxShadow = 'none'; }
           }}
         >
-          <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'currentColor', flexShrink: 0 }} />
-          {dataMode === 'cached' ? 'Cached model' : 'Live query'}
-          <svg width="10" height="10" viewBox="0 0 12 12" fill="none" style={{ transform: dataModeMenuOpen ? 'rotate(180deg)' : 'none', transition: 'transform 120ms' }}><path d="M3 4.5l3 3 3-3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          <span style={{ width: 7, height: 7, borderRadius: '50%', flexShrink: 0, display: 'inline-block', transition: 'background 150ms', background: !hasTable ? '#E2E6EC' : airOpen ? '#2770EF' : airPillDotColor }} />
+          <span>{airPillLabel}</span>
+          <svg style={{ color: !hasTable ? '#D1D5DB' : airOpen ? '#71A1F4' : '#C0C6CF', transform: airOpen ? 'rotate(180deg)' : 'none', transition: 'transform 150ms cubic-bezier(0.4,0,0.2,1)', flexShrink: 0 }} width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M5 7l3 3 3-3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </button>
-        {dataModeMenuOpen && (
-          <div onClick={e => e.stopPropagation()} style={{ position: 'absolute', top: 'calc(100% + 6px)', left: 0, width: 290, background: '#fff', border: BORDER, borderRadius: RADIUS8, boxShadow: '0 8px 28px rgba(25,35,49,0.16)', zIndex: 120, padding: 14 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-              <span style={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0, background: dataMode === 'cached' ? '#7C3AED' : '#16A34A' }} />
-              <span style={{ fontSize: 13, fontWeight: 700, color: '#1D232F' }}>{dataMode === 'cached' ? 'Cached model' : 'Live query'}</span>
-              {dataMode === 'cached' && (
+
+        {/* Dropdown */}
+        {airOpen && (() => {
+          const starSVG = <svg width="9" height="9" viewBox="0 0 12 12" fill="none"><path d="M6 1l1.2 3.6H11l-3 2.3 1.1 3.5L6 8.5l-3.1 1.9 1.1-3.5-3-2.3h3.8z" fill="currentColor"/></svg>;
+
+          const AirTaskCompact = ({ item }: { item: typeof AIR_ITEMS[number] }) => {
+            const state = airGetState(item.id);
+            const isDone = state === 'done'; const isOOS = state === 'oos'; const isGood = item.sev === 'good';
+            const tagText = isDone ? 'Fixed' : isOOS ? 'Skipped' : state === 'awaiting' ? 'Reviewing' : state === 'manual' ? 'Manual' : item.tag;
+            const tagColors: Record<string, { color: string; bg: string }> = { miss: { color: '#E22B3D', bg: 'rgba(226,43,61,0.08)' }, warn: { color: '#B8860B', bg: 'rgba(252,200,56,0.10)' }, good: { color: '#06BF7F', bg: 'rgba(6,191,127,0.09)' }, done: { color: '#06BF7F', bg: 'rgba(6,191,127,0.09)' }, oos: { color: '#BFC6D0', bg: '#F6F8FA' }, Reviewing: { color: '#B8860B', bg: 'rgba(252,200,56,0.10)' }, Manual: { color: '#2770EF', bg: 'rgba(39,112,239,0.08)' } };
+            const tagKey = isDone ? 'done' : isOOS ? 'oos' : item.sev;
+            const tc = tagColors[tagKey] || tagColors.miss;
+            const cbCls = state === 'fixing' || state === 'awaiting' ? 'spin' : isDone ? 'done' : isOOS ? 'oos' : item.sev;
+            const cbBg = isDone || isGood ? '#06BF7F' : isOOS ? '#F6F8FA' : 'transparent';
+            const cbBorder = cbCls === 'spin' ? '#2770EF' : isDone || isGood ? '#06BF7F' : isOOS ? '#E2E6EC' : item.sev === 'miss' ? '#E22B3D' : item.sev === 'warn' ? '#FCC838' : '#06BF7F';
+            return (
+              <div style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 9, borderBottom: '1px solid #F6F8FA' }}>
+                <div style={{ width: 16, height: 16, borderRadius: '50%', border: `1.5px solid ${cbBorder}`, background: cbBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, animation: (state === 'fixing' || state === 'awaiting') ? 'air-spin 700ms linear infinite' : 'none' }}>
+                  {(isDone || isGood) && <svg width="8" height="8" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                </div>
+                <span style={{ fontSize: 12, fontWeight: 600, color: isOOS ? '#BFC6D0' : '#1D232F', flex: 1, textDecoration: isOOS ? 'line-through' : 'none' }}>{item.name}</span>
+                <span style={{ fontSize: 9.5, fontWeight: 700, padding: '1px 6px', borderRadius: 3, color: tc.color, background: tc.bg, flexShrink: 0 }}>{tagText}</span>
+              </div>
+            );
+          };
+
+          return (
+            <div style={{
+              position: 'absolute', top: 'calc(100% + 7px)', right: 0, width: 292,
+              background: '#fff', border: '1px solid #E2E6EC', borderRadius: 10,
+              boxShadow: '0 8px 28px rgba(25,35,49,0.12), 0 1px 4px rgba(25,35,49,0.06)',
+              overflow: 'hidden', zIndex: 200,
+              animation: 'air-fadeIn 140ms cubic-bezier(0,0,0.2,1) both',
+            }}>
+              <style>{`@keyframes air-fadeIn{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:translateY(0)}} @keyframes air-spin{to{transform:rotate(360deg)}}`}</style>
+
+              {airDropView === 'intro' ? (
                 <>
-                  <div style={{ flex: 1 }} />
+                  <div style={{ padding: '15px 16px 13px', borderBottom: '1px solid #EAEDF2' }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: '#BFC6D0', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 7 }}>AI readiness</div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: '#1D232F', marginBottom: 6, letterSpacing: '-0.3px', lineHeight: 1.3 }}>Make this model work with Spotter</div>
+                    <div style={{ fontSize: 12, color: '#64748B', lineHeight: 1.55, marginBottom: 12 }}>Run a 10-second check. Get a precise diagnosis — and fix every gap with a single click.</div>
+                    {/* Journey dots */}
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                      <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#BFC6D0', border: '1.5px solid #A5ACB9', flexShrink: 0 }} />
+                      <span style={{ fontSize: 9.5, fontWeight: 500, color: '#BFC6D0', marginLeft: 4, marginRight: 6, whiteSpace: 'nowrap' }}>Not configured</span>
+                      {[0,1,2,3].map(i => <React.Fragment key={i}><div style={{ width: 18, height: 1.5, background: '#EAEDF2', flexShrink: 0 }} /><div style={{ width: 7, height: 7, borderRadius: '50%', background: i === 3 ? 'rgba(6,191,127,0.35)' : '#E2E6EC', flexShrink: 0 }} /></React.Fragment>)}
+                      <span style={{ fontSize: 9.5, fontWeight: 500, color: 'rgba(6,191,127,0.6)', marginLeft: 4, whiteSpace: 'nowrap' }}>Spotter enabled</span>
+                    </div>
+                  </div>
+                  <div style={{ padding: '13px 16px 14px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 }}>
+                      {[
+                        { icon: <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="5.5" stroke="currentColor" strokeWidth="1.3"/><path d="M5.5 8l2 2 3-3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>, label: '5 metadata dimensions', sub: 'Descriptions, synonyms, questions, columns, joins' },
+                        { icon: <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M8 2l1.4 4.2H14l-3.7 2.7 1.4 4.3L8 10.5l-3.7 2.7 1.4-4.3L2 6.9h4.6z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/></svg>, label: 'AI fixes, one click each', sub: 'Or apply manually — your choice' },
+                        { icon: <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M2 11l3-5 3 3.5 2-2 3 3.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/><rect x="2" y="2" width="12" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.3"/></svg>, label: 'Readiness tracked over time', sub: 'See how the model improves each run' },
+                      ].map(({ icon, label, sub }) => (
+                        <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+                          <div style={{ width: 24, height: 24, borderRadius: 6, background: '#F6F8FA', color: '#8B96A5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{icon}</div>
+                          <div style={{ flex: 1 }}>
+                            <span style={{ fontSize: 12, fontWeight: 600, color: '#1D232F', display: 'block' }}>{label}</span>
+                            <span style={{ fontSize: 11, color: '#A5ACB9', display: 'block', marginTop: 1 }}>{sub}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <button
+                        onClick={() => { setAirOpen(false); setAirItemStates({} as Record<AirItemId, AirItemState>); airRunScan(); }}
+                        style={{ flex: 1, padding: 8, borderRadius: 7, border: 'none', background: '#2770EF', color: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: ff.primary, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7 }}
+                        onMouseEnter={e => { e.currentTarget.style.background = '#2359B6'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = '#2770EF'; }}
+                      >
+                        {starSVG} Check AI readiness
+                      </button>
+                      <span style={{ fontSize: 10.5, color: '#BFC6D0', whiteSpace: 'nowrap', flexShrink: 0 }}>~10 sec</span>
+                    </div>
+                  </div>
+                </>
+              ) : airPendingCount > 0 ? (
+                <>
+                  <div style={{ padding: '11px 16px 10px', borderBottom: '1px solid #EAEDF2' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 3 }}>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: '#1D232F', flex: 1 }}>AI readiness check</span>
+                      <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 99, background: '#F6F8FA', color: '#8B96A5', border: '1px solid #EAEDF2' }}>Not configured</span>
+                    </div>
+                    <div style={{ fontSize: 11, color: '#64748B' }}>{airSubText}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 7 }}>
+                      <div style={{ flex: 1, height: 4, background: '#EAEDF2', borderRadius: 99, overflow: 'hidden' }}>
+                        <div style={{ height: '100%', width: `${airPct}%`, borderRadius: 99, background: airColor, transition: 'width 700ms cubic-bezier(0.4,0,0.2,1) 200ms' }} />
+                      </div>
+                      <span style={{ fontSize: 10, fontWeight: 700, color: '#8B96A5', whiteSpace: 'nowrap' }}>{airPct}%</span>
+                    </div>
+                  </div>
+                  <div style={{ maxHeight: 200, overflowY: 'auto' }}>
+                    {AIR_ITEMS.map(item => <AirTaskCompact key={item.id} item={item} />)}
+                  </div>
+                  <div style={{ padding: '10px 16px', borderTop: '1px solid #EAEDF2', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <button
+                      onClick={() => { setAirOpen(false); setAirItemStates(prev => { const n = { ...prev } as Record<AirItemId, AirItemState>; AIR_ITEMS.forEach(it => { if (n[it.id] !== 'oos') n[it.id] = 'pending'; }); return n; }); airRunScan(); }}
+                      style={{ fontSize: 11, color: '#64748B', background: 'none', border: '1px solid #EAEDF2', borderRadius: 5, padding: '4px 10px', cursor: 'pointer', fontFamily: ff.primary, fontWeight: 500 }}
+                      onMouseEnter={e => { e.currentTarget.style.borderColor = '#C0C6CF'; }}
+                      onMouseLeave={e => { e.currentTarget.style.borderColor = '#EAEDF2'; }}
+                    >Run again</button>
+                    <button
+                      onClick={() => {
+                        setAirOpen(false);
+                        setAirItemStates(prev => { const n = { ...prev } as Record<AirItemId, AirItemState>; AIR_ITEMS.forEach(it => { if (it.sev !== 'good' && (n[it.id] === 'pending' || !n[it.id])) n[it.id] = 'fixing'; }); return n; });
+                        setTimeout(() => { setAirItemStates(prev => { const n = { ...prev } as Record<AirItemId, AirItemState>; AIR_ITEMS.forEach(it => { if (n[it.id] === 'fixing') n[it.id] = 'done'; }); return n; }); }, 1500);
+                      }}
+                      style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#fff', background: '#2770EF', border: 'none', borderRadius: 5, padding: '4px 10px', cursor: 'pointer', fontFamily: ff.primary, fontWeight: 600 }}
+                      onMouseEnter={e => { e.currentTarget.style.background = '#2359B6'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = '#2770EF'; }}
+                    >
+                      {starSVG} Fix all with AI
+                    </button>
+                  </div>
+                </>
+              ) : airTuneRecsCount === null ? (
+                <>
+                  <div style={{ padding: '15px 16px 13px', borderBottom: '1px solid #EAEDF2' }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: '#BFC6D0', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 7 }}>Model tuning</div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: '#1D232F', marginBottom: 6, letterSpacing: '-0.3px', lineHeight: 1.3 }}>Tune Spotter with sample questions</div>
+                    <div style={{ fontSize: 12, color: '#64748B', lineHeight: 1.55 }}>Simulate how Spotter answers your sample questions. Rate each answer to identify gaps and get targeted metadata fixes.</div>
+                  </div>
+                  <div style={{ padding: '13px 16px 14px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 }}>
+                      {[
+                        { icon: <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="5.5" stroke="currentColor" strokeWidth="1.3"/><path d="M5 8l2 2.5 4-4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>, label: '3 sample questions', sub: 'Generated from your model schema' },
+                        { icon: <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><rect x="2" y="4" width="12" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><path d="M5 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1" stroke="currentColor" strokeWidth="1.3"/><path d="M5 8h6M5 11h4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>, label: 'Rate each Spotter answer', sub: 'Correct, incorrect, or out of scope' },
+                        { icon: <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M2 11l3-5 3 3.5 2-2 3 3.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/><rect x="2" y="2" width="12" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.3"/></svg>, label: 'Get metadata improvements', sub: 'Targeted fixes based on your ratings' },
+                      ].map(({ icon, label, sub }) => (
+                        <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+                          <div style={{ width: 24, height: 24, borderRadius: 6, background: '#F6F8FA', color: '#8B96A5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{icon}</div>
+                          <div style={{ flex: 1 }}>
+                            <span style={{ fontSize: 12, fontWeight: 600, color: '#1D232F', display: 'block' }}>{label}</span>
+                            <span style={{ fontSize: 11, color: '#A5ACB9', display: 'block', marginTop: 1 }}>{sub}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <button
+                      onClick={airStartTuning}
+                      style={{ width: '100%', padding: 8, borderRadius: 7, border: 'none', background: '#2770EF', color: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: ff.primary, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7 }}
+                      onMouseEnter={e => { e.currentTarget.style.background = '#2359B6'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = '#2770EF'; }}
+                    >
+                      {starSVG} Tune model
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div style={{ padding: '15px 16px 14px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                      <div style={{ width: 20, height: 20, borderRadius: '50%', background: airTuneRecsCount > 0 ? 'rgba(252,200,56,0.15)' : 'rgba(6,191,127,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        {airTuneRecsCount > 0
+                          ? <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M6 3v3.5l2 1.5" stroke="#B8860B" strokeWidth="1.4" strokeLinecap="round"/><circle cx="6" cy="6" r="5" stroke="#B8860B" strokeWidth="1.2"/></svg>
+                          : <svg width="9" height="9" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#06BF7F" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        }
+                      </div>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: '#1D232F' }}>
+                        {airTuneRecsCount > 0 ? `${airTuneRecsCount} tuning fix${airTuneRecsCount === 1 ? '' : 'es'} found` : 'All answers correct'}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: 12, color: '#64748B', lineHeight: 1.5, marginBottom: 12 }}>
+                      {airTuneRecsCount > 0
+                        ? 'Review the metadata recommendations in the agent panel and apply them to improve Spotter accuracy.'
+                        : 'Spotter answered all sample questions correctly. The model is well-tuned.'}
+                    </div>
+                    <button
+                      onClick={airStartTuning}
+                      style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#64748B', background: 'none', border: '1px solid #EAEDF2', borderRadius: 5, padding: '5px 11px', cursor: 'pointer', fontFamily: ff.primary, fontWeight: 500 }}
+                      onMouseEnter={e => { e.currentTarget.style.borderColor = '#C0C6CF'; }}
+                      onMouseLeave={e => { e.currentTarget.style.borderColor = '#EAEDF2'; }}
+                    >
+                      {starSVG} Tune again
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          );
+        })()}
+      </div>
+
+      {/* Controls */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+        {/* Data mode dropdown — one-way status: Live → Cached */}
+        <div style={{ position: 'relative', flexShrink: 0 }}>
+          <button
+            onClick={e => { e.stopPropagation(); setDataModeMenuOpen(o => !o); }}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 7,
+              fontSize: 12.5, fontWeight: 600, padding: '5px 9px 5px 12px', borderRadius: 99, cursor: 'pointer',
+              fontFamily: ff.primary,
+              background: dataMode === 'cached' ? 'rgba(140,98,245,0.10)' : 'rgba(22,163,74,0.10)',
+              color: dataMode === 'cached' ? '#7C3AED' : '#16A34A',
+              border: `1px solid ${dataMode === 'cached' ? 'rgba(140,98,245,0.32)' : 'rgba(22,163,74,0.30)'}`,
+            }}
+          >
+            <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'currentColor', flexShrink: 0 }} />
+            {dataMode === 'cached' ? 'Cached model' : 'Live query'}
+            <svg width="10" height="10" viewBox="0 0 12 12" fill="none" style={{ transform: dataModeMenuOpen ? 'rotate(180deg)' : 'none', transition: 'transform 120ms' }}><path d="M3 4.5l3 3 3-3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          </button>
+          {dataModeMenuOpen && (
+            <div onClick={e => e.stopPropagation()} style={{ position: 'absolute', top: 'calc(100% + 6px)', right: 0, width: 290, background: '#fff', border: BORDER, borderRadius: RADIUS8, boxShadow: '0 8px 28px rgba(25,35,49,0.16)', zIndex: 120, padding: 14 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                <span style={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0, background: dataMode === 'cached' ? '#7C3AED' : '#16A34A' }} />
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#1D232F' }}>{dataMode === 'cached' ? 'Cached model' : 'Live query'}</span>
+                {dataMode === 'cached' && (
+                  <>
+                    <div style={{ flex: 1 }} />
+                    <button
+                      onClick={() => { setDataModeMenuOpen(false); setCacheSettingsOpen(true); }}
+                      title="Cache settings"
+                      style={{ width: 24, height: 24, border: 'none', background: 'transparent', borderRadius: 5, color: '#8B96A5', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}
+                      onMouseEnter={e => (e.currentTarget.style.background = '#F0F2F6')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="2" stroke="currentColor" strokeWidth="1.2"/><path d="M8 1.6l.85 1.55 1.72-.38.32 1.73 1.53.87-.83 1.55.83 1.55-1.53.87-.32 1.73-1.72-.38L8 14.4l-.85-1.55-1.72.38-.32-1.73-1.53-.87.83-1.55-.83-1.55 1.53-.87.32-1.73 1.72.38L8 1.6z" stroke="currentColor" strokeWidth="1" strokeLinejoin="round"/></svg>
+                    </button>
+                  </>
+                )}
+              </div>
+              {dataMode === 'cached' ? (
+                <>
+                  <div style={{ fontSize: 12, lineHeight: 1.5, color: '#5B6472', marginBottom: 10 }}>
+                    Materialized in ThoughtSpot&rsquo;s data store — required to join uploaded files and run transformations.
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}><span style={{ color: '#8B96A5' }}>Scope</span><span style={{ color: '#1D232F', fontWeight: 500 }}>{cacheScope}</span></div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}><span style={{ color: '#8B96A5' }}>Refresh</span><span style={{ color: '#1D232F', fontWeight: 500 }}>{cacheFreq} · {cacheHour}</span></div>
+                  </div>
+                  <div style={{ marginTop: 12, paddingTop: 12, borderTop: BORDER }}>
+                    <button
+                      onClick={() => { if (canSwitchToLive) { setDataMode('live'); setDataModeMenuOpen(false); } }}
+                      disabled={!canSwitchToLive}
+                      style={{ width: '100%', padding: '7px 0', borderRadius: 7, border: `1px solid ${canSwitchToLive ? '#C0C6CF' : '#EAEDF2'}`, background: '#fff', color: canSwitchToLive ? '#1D232F' : '#BFC6D0', fontSize: 12, fontWeight: 600, cursor: canSwitchToLive ? 'pointer' : 'default', fontFamily: ff.primary }}
+                    >
+                      Switch to live query
+                    </button>
+                    {!canSwitchToLive && (
+                      <div style={{ fontSize: 11, lineHeight: 1.45, color: '#8B96A5', marginTop: 7 }}>
+                        Remove {modelHasCsv ? 'uploaded files' : ''}{modelHasCsv && modelHasPrep ? ' and ' : ''}{modelHasPrep ? 'prep transformations' : ''} to switch back to live query.
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div style={{ fontSize: 12, lineHeight: 1.5, color: '#5B6472', marginBottom: 12 }}>
+                    Queries run live against your warehouse. Uploading a file or a prep transformation will cache this model into ThoughtSpot&rsquo;s data store.
+                  </div>
                   <button
-                    onClick={() => { setDataModeMenuOpen(false); setCacheSettingsOpen(true); }}
-                    title="Cache settings"
-                    style={{ width: 24, height: 24, border: 'none', background: 'transparent', borderRadius: 5, color: '#8B96A5', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}
-                    onMouseEnter={e => (e.currentTarget.style.background = '#F0F2F6')}
-                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                    onClick={() => { setDataModeMenuOpen(false); setCacheConfirm({ onConfirm: () => { setDataMode('cached'); setCacheConfirm(null); } }); }}
+                    style={{ width: '100%', padding: '7px 0', borderRadius: 7, border: '1px solid #C0C6CF', background: '#fff', color: '#1D232F', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: ff.primary }}
                   >
-                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="2" stroke="currentColor" strokeWidth="1.2"/><path d="M8 1.6l.85 1.55 1.72-.38.32 1.73 1.53.87-.83 1.55.83 1.55-1.53.87-.32 1.73-1.72-.38L8 14.4l-.85-1.55-1.72.38-.32-1.73-1.53-.87.83-1.55-.83-1.55 1.53-.87.32-1.73 1.72.38L8 1.6z" stroke="currentColor" strokeWidth="1" strokeLinejoin="round"/></svg>
+                    Switch to cached
                   </button>
                 </>
               )}
             </div>
-            {dataMode === 'cached' ? (
-              <>
-                <div style={{ fontSize: 12, lineHeight: 1.5, color: '#5B6472', marginBottom: 10 }}>
-                  Materialized in ThoughtSpot&rsquo;s data store — required to join uploaded files and run transformations.
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}><span style={{ color: '#8B96A5' }}>Scope</span><span style={{ color: '#1D232F', fontWeight: 500 }}>{cacheScope}</span></div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}><span style={{ color: '#8B96A5' }}>Refresh</span><span style={{ color: '#1D232F', fontWeight: 500 }}>{cacheFreq} · {cacheHour}</span></div>
-                </div>
-                <div style={{ marginTop: 12, paddingTop: 12, borderTop: BORDER }}>
-                  <button
-                    onClick={() => { if (canSwitchToLive) { setDataMode('live'); setDataModeMenuOpen(false); } }}
-                    disabled={!canSwitchToLive}
-                    style={{ width: '100%', padding: '7px 0', borderRadius: 7, border: `1px solid ${canSwitchToLive ? '#C0C6CF' : '#EAEDF2'}`, background: '#fff', color: canSwitchToLive ? '#1D232F' : '#BFC6D0', fontSize: 12, fontWeight: 600, cursor: canSwitchToLive ? 'pointer' : 'default', fontFamily: ff.primary }}
-                  >
-                    Switch to live query
-                  </button>
-                  {!canSwitchToLive && (
-                    <div style={{ fontSize: 11, lineHeight: 1.45, color: '#8B96A5', marginTop: 7 }}>
-                      Remove {modelHasCsv ? 'uploaded files' : ''}{modelHasCsv && modelHasPrep ? ' and ' : ''}{modelHasPrep ? 'prep transformations' : ''} to switch back to live query.
-                    </div>
-                  )}
-                </div>
-              </>
-            ) : (
-              <>
-                <div style={{ fontSize: 12, lineHeight: 1.5, color: '#5B6472', marginBottom: 12 }}>
-                  Queries run live against your warehouse. Uploading a file or a prep transformation will cache this model into ThoughtSpot&rsquo;s data store.
-                </div>
-                <button
-                  onClick={() => { setDataModeMenuOpen(false); setCacheConfirm({ onConfirm: () => { setDataMode('cached'); setCacheConfirm(null); } }); }}
-                  style={{ width: '100%', padding: '7px 0', borderRadius: 7, border: '1px solid #C0C6CF', background: '#fff', color: '#1D232F', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: ff.primary }}
-                >
-                  Switch to cached
-                </button>
-              </>
-            )}
-          </div>
-        )}
-      </div>
-      <div style={{ flex: 1 }} />
-      {/* Controls */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-        {/* Run */}
-        <button style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', borderRadius: RADIUS6, border: BORDER, background: '#fff', color: '#1D232F', fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: ff.primary, whiteSpace: 'nowrap' }}>
-          <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M4 3l10 5-10 5V3z" fill="currentColor"/></svg>
-          Run
-        </button>
+          )}
+        </div>
         {/* Save */}
         <button style={{ padding: '6px 14px', borderRadius: RADIUS6, border: '1px solid #C0C6CF', background: '#fff', color: '#1D232F', fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: ff.primary }}>
           Save
         </button>
         {/* Publish */}
-        <button style={{ padding: '6px 16px', borderRadius: RADIUS6, border: 'none', background: '#2770EF', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: ff.primary }}>
-          Publish
+        <button onClick={() => setPublishOpen(true)} style={{ padding: '6px 16px', borderRadius: RADIUS6, border: 'none', background: '#2770EF', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: ff.primary }}>
+          {published ? 'Republish' : 'Publish'}
         </button>
       </div>
     </div>
@@ -1409,9 +1946,9 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack }) => {
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           {/* Browser tabs */}
           <div style={{ display: 'flex', borderBottom: BORDER, flexShrink: 0, background: '#fff', padding: '0 10px', gap: 16 }}>
-            {(['warehouse', 'semantic', 'business'] as const).map(tab => {
+            {(['warehouse', 'business'] as const).map(tab => {
               const isActive = activeBrowserTab === tab;
-              const label = tab === 'warehouse' ? 'Warehouse' : tab === 'semantic' ? 'Semantic Models' : 'Business Apps';
+              const label = tab === 'warehouse' ? 'Warehouse' : 'Business Apps';
               return (
                 <button key={tab}
                   onClick={() => setActiveBrowserTab(tab)}
@@ -1550,20 +2087,35 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack }) => {
                 )}
               </>
             ) : (
-              /* Semantic Models */
-              <TreeConn id="dbt" icon={<IconDbt />} label="dbt (imported)" count={2} open={expanded.has('dbt')} onToggle={toggleExpanded}>
-                {['fct_orders','dim_customers'].map(t => (
-                  <TreeTableRow
-                    key={t} name={t} isDbt depthPad={28}
-                    onCanvas={groups.some(g => g.tableName === t)}
-                    onAdd={addToCanvas}
-                    expanded={expandedTableRows.has(t)}
-                    onToggleExpand={toggleExpandTableRow}
-                    deselectedCols={deselectedCols[t]}
-                    onToggleCol={toggleCol}
-                  />
-                ))}
-              </TreeConn>
+              /* Business Apps — each app is a schema with its tables inside */
+              <>
+                <TreeConn id="mixpanel" icon={<IconSchema />} label="Mixpanel" count={3} open={expanded.has('mixpanel')} onToggle={toggleExpanded}>
+                  {['mp_events','mp_users','mp_cohorts'].map(t => (
+                    <TreeTableRow
+                      key={t} name={t} depthPad={28}
+                      onCanvas={groups.some(g => g.tableName === t)}
+                      onAdd={addToCanvas}
+                      expanded={expandedTableRows.has(t)}
+                      onToggleExpand={toggleExpandTableRow}
+                      deselectedCols={deselectedCols[t]}
+                      onToggleCol={toggleCol}
+                    />
+                  ))}
+                </TreeConn>
+                <TreeConn id="pendo" icon={<IconSchema />} label="Pendo" count={3} open={expanded.has('pendo')} onToggle={toggleExpanded}>
+                  {['pendo_nps','pendo_feature_usage','pendo_visitors'].map(t => (
+                    <TreeTableRow
+                      key={t} name={t} depthPad={28}
+                      onCanvas={groups.some(g => g.tableName === t)}
+                      onAdd={addToCanvas}
+                      expanded={expandedTableRows.has(t)}
+                      onToggleExpand={toggleExpandTableRow}
+                      deselectedCols={deselectedCols[t]}
+                      onToggleCol={toggleCol}
+                    />
+                  ))}
+                </TreeConn>
+              </>
             )}
           </div>
         </div>
@@ -1634,6 +2186,12 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack }) => {
     conversions:  { conn: 'bigquery-prod',  db: 'marketing', schema: 'raw' },
     fct_orders:   { conn: 'snowflake-prod', db: 'analytics', schema: 'dbt' },
     dim_customers:{ conn: 'snowflake-prod', db: 'analytics', schema: 'dbt' },
+    mp_events:    { conn: 'mixpanel', db: 'mixpanel', schema: 'events' },
+    mp_users:     { conn: 'mixpanel', db: 'mixpanel', schema: 'events' },
+    mp_cohorts:   { conn: 'mixpanel', db: 'mixpanel', schema: 'events' },
+    pendo_nps:    { conn: 'pendo', db: 'pendo', schema: 'analytics' },
+    pendo_feature_usage: { conn: 'pendo', db: 'pendo', schema: 'analytics' },
+    pendo_visitors:{ conn: 'pendo', db: 'pendo', schema: 'analytics' },
   };
 
   // ── Canvas viewport ─────────────────────────────────────────────────────────
@@ -1645,7 +2203,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack }) => {
     { label: 'Formula',   op: 'formula', icon: <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M5.5 3.5c0-1 1.5-1 2 0V5c0 .5.5 1 1 1" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><path d="M7.5 5.5v7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><path d="M5 8.5h5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg> },
     { label: 'Sort',      op: 'sort',    icon: <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M5 3v10M5 13l-2-2M5 13l2-2M11 3v10M11 3l-2 2M11 3l2 2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg> },
     { label: 'SQL',       op: 'sql',     icon: <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M4.5 5L2 8l2.5 3M11.5 5L14 8l-2.5 3M9.5 3.5l-3 9" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg> },
-    { label: 'Python',    op: 'sql',     icon: <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M6 2c-1.1 0-2 .4-2 1v2h4V4H6V3h4c1.1 0 2 .4 2 1v2c0 1.1-.9 2-2 2H6c-1.1 0-2 .9-2 2v2c0 .6.9 1 2 1h4c1.1 0 2-.4 2-1v-2H8v1h2v1H6v-1h4c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2H6c-1.1 0-2-.9-2-2V3c0-.6.9-1 2-1z" stroke="currentColor" strokeWidth="1.1" fill="none" strokeLinejoin="round"/></svg> },
+    { label: 'Python',    op: 'python',  icon: <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M6 2c-1.1 0-2 .4-2 1v2h4V4H6V3h4c1.1 0 2 .4 2 1v2c0 1.1-.9 2-2 2H6c-1.1 0-2 .9-2 2v2c0 .6.9 1 2 1h4c1.1 0 2-.4 2-1v-2H8v1h2v1H6v-1h4c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2H6c-1.1 0-2-.9-2-2V3c0-.6.9-1 2-1z" stroke="currentColor" strokeWidth="1.1" fill="none" strokeLinejoin="round"/></svg> },
   ];
 
   const canvasViewport = (
@@ -2511,6 +3069,287 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack }) => {
                       );
                     }
 
+                    if (step.type === 'sql') {
+                      const sc = sqlConfig;
+                      const SAMPLE_SQL = [
+                        { label: 'Latest order per customer', sql: 'SELECT customer_id, order_id, order_date, amount, status\nFROM (\n  SELECT *,\n    ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY order_date DESC) AS rn\n  FROM orders\n)\nWHERE rn = 1' },
+                        { label: 'Recent orders', sql: 'SELECT * FROM orders\nWHERE order_date >= current_date - 30' },
+                        { label: 'Revenue by region', sql: 'SELECT region, SUM(amount) AS revenue\nFROM orders\nGROUP BY region\nORDER BY revenue DESC' },
+                        { label: 'Join customers', sql: 'SELECT o.*, c.segment\nFROM orders o\nJOIN customers c ON o.customer_id = c.customer_id' },
+                      ];
+                      const inputStyle: React.CSSProperties = { width: '100%', boxSizing: 'border-box', border: BORDER, borderRadius: 6, padding: '6px 10px', fontSize: 12, color: '#1D232F', fontFamily: ff.primary, outline: 'none', background: '#fff' };
+                      const inputFocus = (e: React.FocusEvent<HTMLTextAreaElement>) => { e.currentTarget.style.borderColor = '#2770EF'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(39,112,239,0.10)'; };
+                      const inputBlur = (e: React.FocusEvent<HTMLTextAreaElement>) => { e.currentTarget.style.borderColor = '#EAEDF2'; e.currentTarget.style.boxShadow = 'none'; };
+                      return (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                          {/* Build using AI */}
+                          <div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 6 }}>
+                              <span style={labelStyle}>Build using AI</span>
+                              <div title="Describe the query in plain language — AI will write the SQL for you" style={{ width: 14, height: 14, borderRadius: 99, border: '1.5px solid #BFC6D0', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'help', flexShrink: 0 }}>
+                                <svg width="8" height="8" viewBox="0 0 10 10" fill="none"><text x="3.2" y="8" fontSize="8" fontWeight="700" fill="#BFC6D0">i</text></svg>
+                              </div>
+                            </div>
+                            {sc.aiActive ? (
+                              <div>
+                                <textarea
+                                  autoFocus
+                                  value={sc.aiDesc}
+                                  onChange={e => setSqlConfig(s => ({ ...s, aiDesc: e.target.value }))}
+                                  onFocus={inputFocus}
+                                  onBlur={inputBlur}
+                                  placeholder="e.g. total revenue by region for the last 30 days"
+                                  rows={3}
+                                  style={{ ...inputStyle, resize: 'none', lineHeight: 1.5 }}
+                                />
+                                <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+                                  <button
+                                    disabled={!sc.aiDesc.trim() || sc.aiGenerating}
+                                    onClick={() => {
+                                      setSqlConfig(s => ({ ...s, aiGenerating: true }));
+                                      setTimeout(() => {
+                                        const d = sc.aiDesc.toLowerCase();
+                                        const gen = d.includes('per customer') || d.includes('most recent') || d.includes('latest') || d.includes('window') || d.includes('dedup') || d.includes('rank')
+                                          ? 'SELECT customer_id, order_id, order_date, amount, status\nFROM (\n  SELECT *,\n    ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY order_date DESC) AS rn\n  FROM orders\n)\nWHERE rn = 1'
+                                          : d.includes('region') || d.includes('revenue')
+                                          ? 'SELECT region, SUM(amount) AS revenue\nFROM orders\nGROUP BY region\nORDER BY revenue DESC'
+                                          : d.includes('join') || d.includes('customer') || d.includes('segment')
+                                          ? 'SELECT o.*, c.segment\nFROM orders o\nJOIN customers c ON o.customer_id = c.customer_id'
+                                          : d.includes('recent') || d.includes('last') || d.includes('30') || d.includes('day')
+                                          ? 'SELECT * FROM orders\nWHERE order_date >= current_date - 30'
+                                          : `-- ${sc.aiDesc}\nSELECT * FROM ${selectedGroup?.tableName ?? 'orders'}`;
+                                        setSqlConfig(s => ({ ...s, aiGenerating: false, aiActive: false, sql: gen }));
+                                      }, 1200);
+                                    }}
+                                    style={{ flex: 1, padding: '6px 0', borderRadius: 6, border: 'none', background: sc.aiDesc.trim() && !sc.aiGenerating ? '#2770EF' : '#E8ECEF', color: sc.aiDesc.trim() && !sc.aiGenerating ? '#fff' : '#A0A8B5', fontSize: 12, fontWeight: 600, cursor: sc.aiDesc.trim() && !sc.aiGenerating ? 'pointer' : 'default', fontFamily: ff.primary, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                                  >
+                                    {sc.aiGenerating
+                                      ? <><svg width="11" height="11" viewBox="0 0 24 24" fill="none" style={{ animation: 'spin 0.8s linear infinite' }}><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2.5" strokeDasharray="20 40" strokeLinecap="round"/></svg>Generating…</>
+                                      : <><svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M8 2l1.3 3.7L13 7l-3.7 1.3L8 12l-1.3-3.7L3 7l3.7-1.3L8 2z" fill="currentColor"/></svg>Generate SQL</>
+                                    }
+                                  </button>
+                                  <button onClick={() => setSqlConfig(s => ({ ...s, aiActive: false, aiDesc: '' }))} style={{ padding: '6px 10px', borderRadius: 6, border: BORDER, background: '#fff', color: '#8B96A5', fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: ff.primary }}>Cancel</button>
+                                </div>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => setSqlConfig(s => ({ ...s, aiActive: true }))}
+                                style={{ width: '100%', textAlign: 'left', padding: '8px 10px', border: '1.5px dashed #D6DBE5', borderRadius: 7, background: '#FAFBFC', color: '#A0A8B5', fontSize: 12, fontStyle: 'italic', cursor: 'pointer', fontFamily: ff.primary, display: 'flex', alignItems: 'center', gap: 6 }}
+                                onMouseEnter={e => e.currentTarget.style.borderColor = '#2770EF'}
+                                onMouseLeave={e => e.currentTarget.style.borderColor = '#D6DBE5'}
+                              >
+                                <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M8 2l1.3 3.7L13 7l-3.7 1.3L8 12l-1.3-3.7L3 7l3.7-1.3L8 2z" fill="#BFC6D0"/></svg>
+                                {sc.aiDesc || 'Describe the query in plain language…'}
+                              </button>
+                            )}
+                          </div>
+
+                          <div style={{ borderTop: BORDER }} />
+
+                          {/* SQL editor */}
+                          <div style={{ position: 'relative' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                              <span style={labelStyle}>SQL</span>
+                              {sc.sql && <button onClick={() => setSqlConfig(s => ({ ...s, sql: '' }))} style={{ background: 'none', border: 'none', color: '#BFC6D0', fontSize: 11, cursor: 'pointer', padding: 0, fontFamily: ff.primary }}>Clear</button>}
+                            </div>
+                            <textarea
+                              value={sc.sql}
+                              onChange={e => setSqlConfig(s => ({ ...s, sql: e.target.value }))}
+                              onFocus={inputFocus}
+                              onBlur={inputBlur}
+                              placeholder={'SELECT ...\nFROM ...'}
+                              rows={8}
+                              style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.6, fontFamily: "'SF Mono', 'Fira Mono', 'Menlo', monospace", background: '#F6F8FA', minHeight: 150 }}
+                            />
+                            {sc.aiGenerating && (
+                              <div style={{ position: 'absolute', inset: 0, borderRadius: 6, background: 'rgba(245,248,255,0.88)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ color: '#2770EF', animation: 'spin 0.8s linear infinite' }}><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2.5" strokeDasharray="20 40" strokeLinecap="round"/></svg>
+                                <span style={{ fontSize: 11, color: '#2770EF', fontWeight: 600, fontFamily: ff.primary }}>Generating SQL…</span>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Quick examples */}
+                          {!sc.sql && (
+                            <div>
+                              <div style={{ fontSize: 10, fontWeight: 700, color: '#BFC6D0', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6, fontFamily: ff.primary }}>Examples</div>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                {SAMPLE_SQL.map(s => (
+                                  <button key={s.label} onClick={() => setSqlConfig(cfg => ({ ...cfg, sql: s.sql }))}
+                                    style={{ textAlign: 'left', padding: '7px 10px', borderRadius: 6, border: BORDER, background: '#F6F8FA', cursor: 'pointer', fontFamily: ff.primary, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}
+                                    onMouseEnter={e => { e.currentTarget.style.borderColor = '#2770EF'; e.currentTarget.style.background = '#EEF2FF'; }}
+                                    onMouseLeave={e => { e.currentTarget.style.borderColor = '#EAEDF2'; e.currentTarget.style.background = '#F6F8FA'; }}>
+                                    <span style={{ fontSize: 11, fontWeight: 500, color: '#475569' }}>{s.label}</span>
+                                    <code style={{ fontSize: 10, color: '#8B96A5', fontFamily: "'SF Mono', 'Fira Mono', monospace", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 120 }}>{s.sql.split('\n')[0]}</code>
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    }
+
+                    if (step.type === 'python') {
+                      const pc = pythonConfig;
+                      const showColError = pc.colNameTouched && !pc.colName.trim();
+                      const SAMPLE_PY = [
+                        { label: 'Sentiment from comments', col: 'nps_sentiment', code: 'from transformers import pipeline\nclf = pipeline("sentiment-analysis")\ndf["nps_sentiment"] = df["comment"].apply(\n    lambda c: clf(c)[0]["label"].lower() if c else "neutral"\n)' },
+                        { label: 'Churn risk score', col: 'churn_risk', code: 'import joblib\nmodel = joblib.load("churn_v3.pkl")\ndf["churn_risk"] = model.predict_proba(df[FEATURES])[:, 1]' },
+                        { label: 'Enrich industry (API)', col: 'industry', code: 'import requests\ndf["industry"] = df["domain"].apply(\n    lambda d: requests.get(f"https://api.enrich.co/{d}").json().get("industry")\n)' },
+                      ];
+                      const inputStyle: React.CSSProperties = { width: '100%', boxSizing: 'border-box', border: BORDER, borderRadius: 6, padding: '6px 10px', fontSize: 12, color: '#1D232F', fontFamily: ff.primary, outline: 'none', background: '#fff' };
+                      const inputFocus = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => { e.currentTarget.style.borderColor = '#2770EF'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(39,112,239,0.10)'; };
+                      const inputBlur = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => { e.currentTarget.style.borderColor = '#EAEDF2'; e.currentTarget.style.boxShadow = 'none'; };
+                      return (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                          {/* New column name */}
+                          <div>
+                            <label style={labelStyle}>New column name</label>
+                            <input
+                              value={pc.colName}
+                              onChange={e => setPythonConfig(p => ({ ...p, colName: e.target.value }))}
+                              onBlur={e => { setPythonConfig(p => ({ ...p, colNameTouched: true })); inputBlur(e); }}
+                              onFocus={inputFocus}
+                              placeholder="e.g. nps_sentiment"
+                              style={{ ...inputStyle, borderColor: showColError ? '#E53E3E' : '#EAEDF2' }}
+                            />
+                            {showColError && <div style={{ fontSize: 11, color: '#E53E3E', marginTop: 4, fontWeight: 500, fontFamily: ff.primary }}>Required</div>}
+                          </div>
+
+                          {/* Build using AI */}
+                          <div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 6 }}>
+                              <span style={labelStyle}>Build using AI</span>
+                              <div title="Describe what you want in plain language — AI will write the Python for you" style={{ width: 14, height: 14, borderRadius: 99, border: '1.5px solid #BFC6D0', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'help', flexShrink: 0 }}>
+                                <svg width="8" height="8" viewBox="0 0 10 10" fill="none"><text x="3.2" y="8" fontSize="8" fontWeight="700" fill="#BFC6D0">i</text></svg>
+                              </div>
+                            </div>
+                            {pc.aiActive ? (
+                              <div>
+                                <textarea
+                                  autoFocus
+                                  value={pc.aiDesc}
+                                  onChange={e => setPythonConfig(p => ({ ...p, aiDesc: e.target.value }))}
+                                  onFocus={inputFocus}
+                                  onBlur={inputBlur}
+                                  placeholder="e.g. run sentiment analysis on the comment column"
+                                  rows={3}
+                                  style={{ ...inputStyle, resize: 'none', lineHeight: 1.5 }}
+                                />
+                                <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+                                  <button
+                                    disabled={!pc.aiDesc.trim() || pc.aiGenerating}
+                                    onClick={() => {
+                                      setPythonConfig(p => ({ ...p, aiGenerating: true }));
+                                      setTimeout(() => {
+                                        const d = pc.aiDesc.toLowerCase();
+                                        const gen = d.includes('sentiment')
+                                          ? 'from transformers import pipeline\nclf = pipeline("sentiment-analysis")\ndf["nps_sentiment"] = df["comment"].apply(\n    lambda c: clf(c)[0]["label"].lower() if c else "neutral"\n)'
+                                          : d.includes('churn') || d.includes('score') || d.includes('predict')
+                                          ? 'import joblib\nmodel = joblib.load("churn_v3.pkl")\ndf["churn_risk"] = model.predict_proba(df[FEATURES])[:, 1]'
+                                          : d.includes('industry') || d.includes('enrich') || d.includes('api')
+                                          ? 'import requests\ndf["industry"] = df["domain"].apply(\n    lambda d: requests.get(f"https://api.enrich.co/{d}").json().get("industry")\n)'
+                                          : `# ${pc.aiDesc}\ndf["new_col"] = ...`;
+                                        const suggestedCol = d.includes('sentiment') ? 'nps_sentiment' : d.includes('churn') || d.includes('score') ? 'churn_risk' : d.includes('industry') || d.includes('enrich') ? 'industry' : '';
+                                        setPythonConfig(p => ({ ...p, aiGenerating: false, aiActive: false, code: gen, colName: p.colName || suggestedCol }));
+                                      }, 1300);
+                                    }}
+                                    style={{ flex: 1, padding: '6px 0', borderRadius: 6, border: 'none', background: pc.aiDesc.trim() && !pc.aiGenerating ? '#2770EF' : '#E8ECEF', color: pc.aiDesc.trim() && !pc.aiGenerating ? '#fff' : '#A0A8B5', fontSize: 12, fontWeight: 600, cursor: pc.aiDesc.trim() && !pc.aiGenerating ? 'pointer' : 'default', fontFamily: ff.primary, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                                  >
+                                    {pc.aiGenerating
+                                      ? <><svg width="11" height="11" viewBox="0 0 24 24" fill="none" style={{ animation: 'spin 0.8s linear infinite' }}><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2.5" strokeDasharray="20 40" strokeLinecap="round"/></svg>Generating…</>
+                                      : <><svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M8 2l1.3 3.7L13 7l-3.7 1.3L8 12l-1.3-3.7L3 7l3.7-1.3L8 2z" fill="currentColor"/></svg>Generate Python</>
+                                    }
+                                  </button>
+                                  <button onClick={() => setPythonConfig(p => ({ ...p, aiActive: false, aiDesc: '' }))} style={{ padding: '6px 10px', borderRadius: 6, border: BORDER, background: '#fff', color: '#8B96A5', fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: ff.primary }}>Cancel</button>
+                                </div>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => setPythonConfig(p => ({ ...p, aiActive: true }))}
+                                style={{ width: '100%', textAlign: 'left', padding: '8px 10px', border: '1.5px dashed #D6DBE5', borderRadius: 7, background: '#FAFBFC', color: '#A0A8B5', fontSize: 12, fontStyle: 'italic', cursor: 'pointer', fontFamily: ff.primary, display: 'flex', alignItems: 'center', gap: 6 }}
+                                onMouseEnter={e => e.currentTarget.style.borderColor = '#2770EF'}
+                                onMouseLeave={e => e.currentTarget.style.borderColor = '#D6DBE5'}
+                              >
+                                <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M8 2l1.3 3.7L13 7l-3.7 1.3L8 12l-1.3-3.7L3 7l3.7-1.3L8 2z" fill="#BFC6D0"/></svg>
+                                {pc.aiDesc || 'Describe what you want in plain language…'}
+                              </button>
+                            )}
+                          </div>
+
+                          <div style={{ borderTop: BORDER }} />
+
+                          {/* Python editor */}
+                          <div style={{ position: 'relative' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                              <span style={labelStyle}>Python</span>
+                              {pc.code && <button onClick={() => setPythonConfig(p => ({ ...p, code: '' }))} style={{ background: 'none', border: 'none', color: '#BFC6D0', fontSize: 11, cursor: 'pointer', padding: 0, fontFamily: ff.primary }}>Clear</button>}
+                            </div>
+                            <textarea
+                              value={pc.code}
+                              onChange={e => setPythonConfig(p => ({ ...p, code: e.target.value }))}
+                              onFocus={inputFocus}
+                              onBlur={inputBlur}
+                              placeholder={'# df is the current table\ndf["new_col"] = ...'}
+                              rows={8}
+                              style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.6, fontFamily: "'SF Mono', 'Fira Mono', 'Menlo', monospace", background: '#F6F8FA', minHeight: 150 }}
+                            />
+                            {pc.aiGenerating && (
+                              <div style={{ position: 'absolute', inset: 0, borderRadius: 6, background: 'rgba(245,248,255,0.88)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ color: '#2770EF', animation: 'spin 0.8s linear infinite' }}><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2.5" strokeDasharray="20 40" strokeLinecap="round"/></svg>
+                                <span style={{ fontSize: 11, color: '#2770EF', fontWeight: 600, fontFamily: ff.primary }}>Generating Python…</span>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Quick examples */}
+                          {!pc.code && (
+                            <div>
+                              <div style={{ fontSize: 10, fontWeight: 700, color: '#BFC6D0', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6, fontFamily: ff.primary }}>Examples</div>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                {SAMPLE_PY.map(s => (
+                                  <button key={s.label} onClick={() => setPythonConfig(p => ({ ...p, code: s.code, colName: p.colName || s.col }))}
+                                    style={{ textAlign: 'left', padding: '7px 10px', borderRadius: 6, border: BORDER, background: '#F6F8FA', cursor: 'pointer', fontFamily: ff.primary, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}
+                                    onMouseEnter={e => { e.currentTarget.style.borderColor = '#2770EF'; e.currentTarget.style.background = '#EEF2FF'; }}
+                                    onMouseLeave={e => { e.currentTarget.style.borderColor = '#EAEDF2'; e.currentTarget.style.background = '#F6F8FA'; }}>
+                                    <span style={{ fontSize: 11, fontWeight: 500, color: '#475569' }}>{s.label}</span>
+                                    <code style={{ fontSize: 10, color: '#8B96A5', fontFamily: "'SF Mono', 'Fira Mono', monospace" }}>{s.col}</code>
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          <button
+                            disabled={!pc.colName.trim() || !pc.code.trim()}
+                            onClick={() => {
+                              if (!pc.colName.trim() || !pc.code.trim() || !selectedId) return;
+                              const colName = pc.colName.trim();
+                              setGroups(prev => prev.map(g => {
+                                if (g.id !== selectedId) return g;
+                                const steps = g.steps.map((s, i) =>
+                                  i === g.activeStep ? { ...s, cols: [...s.cols, [colName, 'VARCHAR'] as [string, string]] } : s
+                                );
+                                return { ...g, steps };
+                              }));
+                              setPythonConfig({ colName: '', colNameTouched: false, code: '', aiActive: false, aiDesc: '', aiGenerating: false });
+                              setPreviewOpen(true);
+                              setHighlightedCol(colName);
+                              setTimeout(() => {
+                                const el = previewScrollRef.current?.querySelector(`[data-col="${colName}"]`);
+                                el?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                              }, 60);
+                              setTimeout(() => setHighlightedCol(null), 2500);
+                            }}
+                            style={{ width: '100%', padding: '8px 0', borderRadius: 7, border: 'none', background: pc.colName.trim() && pc.code.trim() ? '#2770EF' : '#E8ECEF', color: pc.colName.trim() && pc.code.trim() ? '#fff' : '#A0A8B5', fontSize: 13, fontWeight: 600, cursor: pc.colName.trim() && pc.code.trim() ? 'pointer' : 'default', fontFamily: ff.primary }}
+                          >
+                            Add column
+                          </button>
+                        </div>
+                      );
+                    }
+
                     /* All other step types — generic config placeholder */
                     return (
                       <div>
@@ -3029,6 +3868,247 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack }) => {
 
   // ── Root render ─────────────────────────────────────────────────────────────
 
+  // ── Columns view ─────────────────────────────────────────────────────────────
+
+  const allModelCols = groups.flatMap(g => {
+    const srcCols = g.steps[0]?.cols ?? [];
+    return srcCols.map(([col, type]) => ({ table: g.tableName, col, type }));
+  });
+
+  const colEditKey = (table: string, col: string, field: string) => `${table}__${col}__${field}`;
+
+  const COL_TYPE_DEFAULTS: Record<string, string> = {
+    INT: 'MEASURE', FLOAT: 'MEASURE', BIGINT: 'MEASURE',
+    VARCHAR: 'ATTRIBUTE', TEXT: 'ATTRIBUTE', TIMESTAMP: 'ATTRIBUTE', DATE: 'ATTRIBUTE',
+  };
+
+  // Helpers for inline diffs in the columns view
+  const airIsAllReview = airFixReview === '__all__';
+  const airCheckActive = (checkId: string) => airFixReview === checkId || airIsAllReview;
+  const airGetRowForCheck = (checkId: string, col: string) =>
+    (AIR_FIX_REVIEW[checkId]?.rows ?? []).find(r => r.col === col);
+  // Maps the editable field name to the AIR check that affects it
+  const FIELD_TO_CHECK: Record<string, string> = { desc: 'coldesc', aicontext: 'desc', synonyms: 'synonyms' };
+
+  const columnsView = (
+    <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', background: '#F6F8FA' }}>
+      {/* Review action bar — shown inline at top of column view when a fix is under review */}
+      {airFixReview && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 16px', background: 'rgba(252,200,56,0.07)', borderBottom: '1px solid rgba(252,200,56,0.22)', flexShrink: 0 }}>
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" style={{ color: '#92640A', flexShrink: 0 }}><circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeWidth="1.3"/><path d="M8 5v4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/><circle cx="8" cy="11" r="0.8" fill="currentColor"/></svg>
+          <span style={{ fontSize: 12, color: '#92640A', flex: 1, lineHeight: '16px' }}>
+            {airFixReview === '__all__'
+              ? 'Review all suggested changes — highlighted cells show proposed values. Accept to apply everything.'
+              : `Review suggested changes for "${AIR_FIX_REVIEW[airFixReview]?.title ?? airFixReview}" — highlighted cells show proposed values.`}
+          </span>
+          <button
+            onClick={() => {
+              (window as any).__airApplyFix__?.(airFixReview);
+              (window as any).__airFixAccepted__?.(airFixReview);
+            }}
+            style={{ padding: '5px 14px', borderRadius: 5, border: 'none', background: '#06BF7F', color: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: ff.primary, whiteSpace: 'nowrap' }}
+            onMouseEnter={e => (e.currentTarget.style.opacity = '0.88')}
+            onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
+          >{airFixReview === '__all__' ? 'Accept all' : 'Accept'}</button>
+          <button
+            onClick={() => {
+              (window as any).__airFixRejected__?.(airFixReview);
+              setAirFixReview(null);
+            }}
+            style={{ padding: '5px 12px', borderRadius: 5, border: '1px solid #E2E6EC', background: '#fff', color: '#4A5568', fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: ff.primary, whiteSpace: 'nowrap' }}
+            onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#F6F8FA')}
+            onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#fff')}
+          >{airFixReview === '__all__' ? 'Reject all' : 'Reject'}</button>
+        </div>
+      )}
+
+      {groups.length === 0 ? (
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 10 }}>
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none" style={{ opacity: 0.3 }}><rect x="3" y="5" width="26" height="22" rx="3" stroke="#64748B" strokeWidth="1.8"/><path d="M3 11h26M11 11v16" stroke="#64748B" strokeWidth="1.5"/></svg>
+          <span style={{ fontSize: 13, color: '#A5ACB9', fontFamily: ff.primary }}>Add tables to the model to see columns here</span>
+        </div>
+      ) : (
+        <div style={{ flex: 1, overflow: 'auto', padding: '12px 16px' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: ff.primary, fontSize: 12 }}>
+            <thead>
+              <tr style={{ background: '#fff', boxShadow: '0 1px 0 #EAEDF2' }}>
+                {[
+                  { label: 'Column name', width: 160 },
+                  { label: 'Table', width: 100 },
+                  { label: 'Data type', width: 90 },
+                  { label: 'Column type', width: 100 },
+                  { label: 'Indexed', width: 70 },
+                  { label: 'Description', width: 200 },
+                  { label: 'AI context', width: 200 },
+                  { label: 'Synonyms', width: 180 },
+                ].map(({ label, width }) => {
+                  // Highlight header if any active review touches this column
+                  const checkForLabel: Record<string, string> = {
+                    'Description': 'coldesc', 'AI context': 'desc', 'Synonyms': 'synonyms',
+                    'Indexed': 'indexing', 'Column type': 'col_types', 'Data type': 'date_vals',
+                  };
+                  const hdrCheck = checkForLabel[label];
+                  const hdrActive = hdrCheck && airCheckActive(hdrCheck);
+                  return (
+                    <th key={label} style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 700, fontSize: 11, color: hdrActive ? '#92640A' : '#8B96A5', whiteSpace: 'nowrap', borderBottom: hdrActive ? '2px solid rgba(252,200,56,0.5)' : '1px solid #EAEDF2', width, minWidth: width, letterSpacing: '0.02em', background: hdrActive ? 'rgba(252,200,56,0.06)' : 'transparent', transition: 'all 150ms' }}>
+                      {label.toUpperCase()}
+                    </th>
+                  );
+                })}
+              </tr>
+            </thead>
+            <tbody>
+              {allModelCols.map(({ table, col, type }, idx) => {
+                const indexed = indexedCols.has(`${table}__${col}`);
+                const colType = COL_TYPE_DEFAULTS[type] ?? 'ATTRIBUTE';
+                const rowBg = idx % 2 === 0 ? '#fff' : '#FAFBFC';
+
+                // Per-row diff helpers
+                const indexingRow = airCheckActive('indexing') ? airGetRowForCheck('indexing', col) : null;
+                const indexingAccepted = airAccepted['indexing']?.[col];
+                const colTypeRow = airCheckActive('col_types') ? airGetRowForCheck('col_types', col) : null;
+                const colTypeAccepted = airAccepted['col_types']?.[col];
+                const dateValsRow = airCheckActive('date_vals') ? airGetRowForCheck('date_vals', col) : null;
+                const dateValsAccepted = airAccepted['date_vals']?.[col];
+
+                const renderEditCell = (field: string, placeholder: string) => {
+                  const checkId = FIELD_TO_CHECK[field];
+                  const key = colEditKey(table, col, field);
+                  const val = colEdits[key] ?? '';
+                  const isEditing = editingCell === key;
+
+                  // Accepted value: show as plain text (no indicator)
+                  const accepted = checkId ? airAccepted[checkId]?.[col] : undefined;
+                  if (accepted) {
+                    return (
+                      <td key={field} style={{ padding: '8px 12px', borderBottom: '1px solid #EAEDF2', verticalAlign: 'top', maxWidth: 200 }}>
+                        <span style={{ fontSize: 12, color: '#1D232F', lineHeight: 1.45 }}>{accepted}</span>
+                      </td>
+                    );
+                  }
+
+                  // Active review: show amber diff
+                  const reviewRow = checkId && airCheckActive(checkId) ? airGetRowForCheck(checkId, col) : null;
+                  if (reviewRow) {
+                    return (
+                      <td key={field} style={{ padding: '8px 12px', borderBottom: '1px solid #EAEDF2', verticalAlign: 'top', maxWidth: 200, background: 'rgba(252,200,56,0.10)' }}>
+                        {reviewRow.current !== '—' && (
+                          <div style={{ fontSize: 10.5, color: '#BFC6D0', textDecoration: 'line-through', lineHeight: '14px', marginBottom: 3 }}>{reviewRow.current}</div>
+                        )}
+                        <span style={{ fontSize: 12, color: '#1D232F', lineHeight: 1.45 }}>{reviewRow.proposed}</span>
+                      </td>
+                    );
+                  }
+
+                  // Editing
+                  if (isEditing) {
+                    return (
+                      <td key={field} style={{ padding: '4px 8px', borderBottom: '1px solid #EAEDF2', verticalAlign: 'top' }}>
+                        <textarea
+                          autoFocus
+                          defaultValue={val}
+                          onBlur={e => {
+                            setColEdits(prev => ({ ...prev, [key]: e.target.value }));
+                            setEditingCell(null);
+                          }}
+                          onKeyDown={e => {
+                            if (e.key === 'Escape') setEditingCell(null);
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                              e.preventDefault();
+                              setColEdits(prev => ({ ...prev, [key]: (e.target as HTMLTextAreaElement).value }));
+                              setEditingCell(null);
+                            }
+                          }}
+                          style={{ width: '100%', minHeight: 52, resize: 'vertical', fontFamily: ff.primary, fontSize: 12, color: '#1D232F', border: '1.5px solid #2770EF', borderRadius: 5, padding: '5px 8px', outline: 'none', boxShadow: '0 0 0 3px rgba(39,112,239,0.10)', background: '#fff', lineHeight: 1.45 }}
+                        />
+                      </td>
+                    );
+                  }
+
+                  // Normal read / placeholder
+                  return (
+                    <td key={field} onClick={() => setEditingCell(key)}
+                      style={{ padding: '8px 12px', borderBottom: '1px solid #EAEDF2', cursor: 'text', verticalAlign: 'top', maxWidth: 200 }}
+                    >
+                      {val
+                        ? <span style={{ color: '#1D232F', lineHeight: 1.45, display: 'block' }}>{val}</span>
+                        : <span style={{ color: '#C0C6CF', fontStyle: 'italic' }}>{placeholder}</span>}
+                    </td>
+                  );
+                };
+
+                // Derive display values with diff awareness
+                const displayColType = colTypeAccepted ?? (colTypeRow ? colTypeRow.proposed : colType);
+                const colTypeDiffed = !!(colTypeRow && !colTypeAccepted);
+
+                const displayDataType = dateValsAccepted ?? (dateValsRow ? dateValsRow.proposed : type);
+                const dataTypeDiffed = !!(dateValsRow && !dateValsAccepted);
+
+                const displayIndexed = indexingAccepted
+                  ? indexingAccepted === 'On'
+                  : indexingRow
+                    ? indexingRow.proposed === 'On'
+                    : indexed;
+                const indexDiffed = !!(indexingRow && !indexingAccepted);
+                const indexAcceptedVal = !!indexingAccepted;
+
+                return (
+                  <tr key={`${table}-${col}-${idx}`} style={{ background: rowBg }}
+                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#F0F5FF'}
+                    onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = rowBg}
+                  >
+                    {/* Column name */}
+                    <td style={{ padding: '8px 12px', borderBottom: '1px solid #EAEDF2', fontWeight: 600, color: '#1D232F', whiteSpace: 'nowrap', verticalAlign: 'middle' }}>{col}</td>
+                    {/* Table badge */}
+                    <td style={{ padding: '8px 12px', borderBottom: '1px solid #EAEDF2', verticalAlign: 'middle' }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10.5, fontWeight: 600, padding: '2px 7px', borderRadius: 4, background: 'rgba(39,112,239,0.07)', color: '#2770EF', whiteSpace: 'nowrap' }}>
+                        <svg width="9" height="9" viewBox="0 0 12 12" fill="none"><rect x="1" y="2" width="10" height="8" rx="1" stroke="currentColor" strokeWidth="1.2"/><path d="M1 5h10M1 8h10M4 5v5M8 5v5" stroke="currentColor" strokeWidth="1"/></svg>
+                        {table}
+                      </span>
+                    </td>
+                    {/* Data type — diff-aware */}
+                    <td style={{ padding: '8px 12px', borderBottom: '1px solid #EAEDF2', verticalAlign: 'middle', background: dataTypeDiffed ? 'rgba(252,200,56,0.10)' : 'transparent' }}>
+                      {dataTypeDiffed && <div style={{ fontSize: 10, color: '#BFC6D0', textDecoration: 'line-through', marginBottom: 2 }}>{type}</div>}
+                      <span style={{ fontSize: 11, fontWeight: 600, color: '#64748B', padding: '2px 6px', borderRadius: 3, background: '#F0F2F6', whiteSpace: 'nowrap' }}>{displayDataType}</span>
+                    </td>
+                    {/* Column type — diff-aware */}
+                    <td style={{ padding: '8px 12px', borderBottom: '1px solid #EAEDF2', verticalAlign: 'middle', background: colTypeDiffed ? 'rgba(252,200,56,0.10)' : 'transparent' }}>
+                      {colTypeDiffed && <div style={{ fontSize: 10, color: '#BFC6D0', textDecoration: 'line-through', marginBottom: 2 }}>{colType}</div>}
+                      <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 6px', borderRadius: 3, whiteSpace: 'nowrap', color: displayColType.includes('MEASURE') || displayColType.includes('measure') ? '#047857' : '#4B5563', background: displayColType.includes('MEASURE') || displayColType.includes('measure') ? 'rgba(6,191,127,0.09)' : '#F0F2F6' }}>{displayColType}</span>
+                    </td>
+                    {/* Indexed toggle — diff-aware */}
+                    <td style={{ padding: '8px 12px', borderBottom: '1px solid #EAEDF2', verticalAlign: 'middle', background: indexDiffed ? 'rgba(252,200,56,0.10)' : 'transparent' }}>
+                      {indexDiffed && <div style={{ fontSize: 10, color: '#BFC6D0', textDecoration: 'line-through', marginBottom: 3 }}>Off</div>}
+                      <div>
+                        <button
+                          onClick={() => {
+                            if (indexDiffed || indexAcceptedVal) return;
+                            setIndexedCols(prev => {
+                              const next = new Set(prev);
+                              const k = `${table}__${col}`;
+                              if (next.has(k)) next.delete(k); else next.add(k);
+                              return next;
+                            });
+                          }}
+                          style={{ width: 32, height: 18, borderRadius: 9, border: 'none', cursor: indexDiffed || indexAcceptedVal ? 'default' : 'pointer', background: displayIndexed ? '#2770EF' : '#D1D5DB', position: 'relative', transition: 'background 150ms', padding: 0 }}
+                        >
+                          <span style={{ position: 'absolute', top: 2, left: displayIndexed ? 16 : 2, width: 14, height: 14, borderRadius: '50%', background: '#fff', transition: 'left 150ms', boxShadow: '0 1px 2px rgba(0,0,0,0.18)', display: 'block' }} />
+                        </button>
+                      </div>
+                    </td>
+                    {renderEditCell('desc', 'Click to add description')}
+                    {renderEditCell('aicontext', 'Click to add AI context')}
+                    {renderEditCell('synonyms', 'Click to add synonyms')}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <div
       style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', fontFamily: ff.primary, background: '#EFF1F5' }}
@@ -3048,8 +4128,8 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack }) => {
         {browserPanel}
         {/* Canvas column */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-          {canvasViewport}
-          {previewPanel}
+          {viewMode === 'canvas' ? canvasViewport : columnsView}
+          {viewMode === 'canvas' && previewPanel}
         </div>
       </div>
       {cacheConfirm && (
@@ -3067,6 +4147,40 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack }) => {
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
               <button onClick={() => setCacheConfirm(null)} style={{ padding: '8px 16px', borderRadius: RADIUS6, border: '1px solid #C0C6CF', background: '#fff', color: '#1D232F', fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: ff.primary }}>Cancel</button>
               <button onClick={() => cacheConfirm.onConfirm()} style={{ padding: '8px 16px', borderRadius: RADIUS6, border: 'none', background: '#2770EF', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: ff.primary }}>Cache &amp; continue</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {publishOpen && (
+        <div onClick={() => setPublishOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(25,35,49,0.38)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div onClick={e => e.stopPropagation()} style={{ width: 420, background: '#fff', borderRadius: 12, boxShadow: '0 12px 48px rgba(25,35,49,0.24)', padding: 24 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 11, marginBottom: 4 }}>
+              <div style={{ width: 34, height: 34, borderRadius: 8, background: 'rgba(39,112,239,0.10)', color: '#2770EF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <svg width="17" height="17" viewBox="0 0 16 16" fill="none"><path d="M8 2.5l4 4M8 2.5l-4 4M8 2.5v8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/><path d="M3 13h10" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>
+              </div>
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: '#1D232F' }}>Publish model</div>
+                <div style={{ fontSize: 12, color: '#8B96A5' }}>{modelName} → your organization</div>
+              </div>
+            </div>
+            <div style={{ margin: '16px 0 20px', border: BORDER, borderRadius: 9, overflow: 'hidden' }}>
+              {[
+                { label: 'Status', value: 'Spotter ready', color: '#06BF7F', check: true },
+                { label: 'Source', value: 'Snowflake', color: '#1D232F', check: false },
+                { label: 'Cache', value: 'Yes · weekly refresh', color: '#1D232F', check: false },
+              ].map((row, i) => (
+                <div key={row.label} style={{ display: 'flex', alignItems: 'center', padding: '11px 14px', borderTop: i > 0 ? '1px solid #F0F2F6' : 'none' }}>
+                  <span style={{ fontSize: 12.5, color: '#8B96A5', flex: 1, fontFamily: ff.primary }}>{row.label}</span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: row.color, fontFamily: ff.primary }}>
+                    {row.check && <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" fill="rgba(6,191,127,0.14)"/><path d="M5 8l2 2 4-4" stroke="#06BF7F" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                    {row.value}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+              <button onClick={() => setPublishOpen(false)} style={{ padding: '8px 16px', borderRadius: RADIUS6, border: '1px solid #C0C6CF', background: '#fff', color: '#1D232F', fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: ff.primary }}>Cancel</button>
+              <button onClick={() => { setPublished(true); setPublishOpen(false); onPublished?.(); }} style={{ padding: '8px 18px', borderRadius: RADIUS6, border: 'none', background: '#2770EF', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: ff.primary }}>Publish</button>
             </div>
           </div>
         </div>

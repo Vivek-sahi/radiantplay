@@ -539,7 +539,7 @@ const DataStudio: React.FC = () => {
       )}
       {view === 'canvas' && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 50 }}>
-          <ModelCanvas onBack={goBack} />
+          <ModelCanvas onBack={goBack} onPublished={() => navigateTo('models')} />
         </div>
       )}
     </>
