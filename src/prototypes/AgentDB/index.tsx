@@ -28,7 +28,7 @@ type View =
 
 export const AgentDB: React.FC = () => {
   const [models, setModels] = useState<DataModel[]>(seedModels);
-  const [view, setView] = useState<View>({ kind: 'datastore' });
+  const [view, setView] = useState<View>({ kind: 'objects' });
 
   const updateModel = (next: DataModel) =>
     setModels((prev) => prev.map((m) => (m.id === next.id ? next : m)));

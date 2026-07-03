@@ -4,6 +4,8 @@ import {
   Select,
   SegmentedControl,
   Checkbox,
+  TextInput,
+  Tooltip,
   Alert,
   Button,
   Link,
@@ -12,13 +14,14 @@ import {
   Horizontal,
   Vertical,
 } from '../../../components';
-import { c, spacing, radius } from '../styles';
+import { c, spacing, radius, fontFamily, fontSize, fontWeight } from '../styles';
 import type {
   CacheWindow,
   DataModel,
   Frequency,
   Schedule,
   TableCacheSetting,
+  Weekday,
   WindowMonths,
 } from '../types';
 
@@ -43,13 +46,29 @@ const MONTHS_OPTIONS: { id: string; label: string }[] = [1, 3, 6, 13].map((m) =>
 /** Shared left-column width so labels + table names align, and all controls line up. */
 const LABEL_W = '240px';
 
+const WEEKDAYS: Weekday[] = ['M', 'T', 'W', 'Th', 'F', 'Sa', 'S'];
+
+const dayChip = (on: boolean): React.CSSProperties => ({
+  minWidth: '34px',
+  height: '32px',
+  padding: `0 ${spacing.B}px`,
+  border: 'none',
+  borderRadius: `${radius.md}px`,
+  cursor: 'pointer',
+  fontFamily: fontFamily.primary,
+  fontSize: `${fontSize.sm}px`,
+  fontWeight: fontWeight.medium,
+  backgroundColor: on ? c['background-information'] : c['background-subtle'],
+  color: on ? c['content-brand'] : c['content-secondary'],
+});
+
 const FieldLabel: React.FC<{ title: string; help?: string }> = ({ title, help }) => (
   <Vertical gap={spacing.A} style={{ width: LABEL_W, flexShrink: 0 }}>
     <Typography variant="content-label" color="base" noMargin>
       {title}
     </Typography>
     {help && (
-      <Typography variant="body-normal" color="gray" noMargin>
+      <Typography variant="body-normal" color="gray-light" noMargin>
         {help}
       </Typography>
     )}
@@ -57,7 +76,7 @@ const FieldLabel: React.FC<{ title: string; help?: string }> = ({ title, help })
 );
 
 const Connector: React.FC<{ children: string }> = ({ children }) => (
-  <Typography variant="body-normal" color="gray" as="span" noMargin>
+  <Typography variant="body-normal" color="gray-light" as="span" noMargin>
     {children}
   </Typography>
 );
@@ -85,10 +104,11 @@ export const CachingSettingsModal: React.FC<{
   const updateTable = (tableId: string, patch: Partial<TableCacheSetting>) =>
     setTableSettings((prev) => prev.map((ts) => (ts.tableId === tableId ? { ...ts, ...patch } : ts)));
 
-  // Validation: any windowed table needs a reference column.
-  const invalid =
-    window === 'custom' &&
-    tableSettings.some((ts) => ts.mode === 'window' && !ts.referenceColumnId);
+  const toggleWeekday = (day: Weekday) =>
+    setSchedule((s) => {
+      const cur = s.weekdays ?? [];
+      return { ...s, weekdays: cur.includes(day) ? cur.filter((d) => d !== day) : [...cur, day] };
+    });
 
   const changed =
     JSON.stringify({ window, schedule, tableSettings }) !== JSON.stringify(initial ?? {});
@@ -106,7 +126,7 @@ export const CachingSettingsModal: React.FC<{
           <Button variant="secondary" onClick={onClose}>
             Cancel
           </Button>
-          <Button variant="primary" onClick={handleSave} disabled={invalid}>
+          <Button variant="primary" onClick={handleSave}>
             Save
           </Button>
         </>
@@ -138,7 +158,7 @@ export const CachingSettingsModal: React.FC<{
                 <Typography variant="content-label" color="base" noMargin>
                   Custom settings
                 </Typography>
-                <Typography variant="body-normal" color="gray" noMargin>
+                <Typography variant="body-normal" color="gray-light" noMargin>
                   Set how much history each table caches. Everything older is queried live from Snowflake.
                 </Typography>
               </Vertical>
@@ -146,14 +166,25 @@ export const CachingSettingsModal: React.FC<{
               {/* Header row */}
               <Horizontal gap={spacing.F} align="center" style={{ paddingBottom: `${spacing.A}px`, borderBottom: `1px solid ${c['border-divider']}` }}>
                 <div style={{ width: LABEL_W, flexShrink: 0 }}>
-                  <Typography variant="overline" color="gray" noMargin>Table</Typography>
+                  <Typography variant="overline" color="gray-light" noMargin>Table</Typography>
                 </div>
-                <Typography variant="overline" color="gray" noMargin>Cache setting</Typography>
+                <Horizontal gap={spacing.A} align="center">
+                  <Typography variant="overline" color="gray-light" noMargin>Cache setting</Typography>
+                  <Tooltip
+                    maxWidth={300}
+                    content="“Time window” caches only recent data (e.g. the last 13 months) in ThoughtSpot; anything older is queried live from Snowflake. Changing a table's window re-caches it on the next run and drops the old snapshot."
+                  >
+                    <span style={{ display: 'inline-flex', cursor: 'help' }}>
+                      <Icon name="info-circle" size="s" color={c['content-secondary']} />
+                    </span>
+                  </Tooltip>
+                </Horizontal>
               </Horizontal>
 
               {model.tables.map((t, idx, arr) => {
                 const ts = tableSettings.find((x) => x.tableId === t.id)!;
                 const dateCols = t.columns.filter((col) => col.type === 'date');
+                const noDate = dateCols.length === 0;
                 return (
                   <Horizontal
                     key={t.id}
@@ -177,20 +208,24 @@ export const CachingSettingsModal: React.FC<{
                       <SegmentedControl
                         options={[
                           { id: 'full_table', label: 'All history' },
-                          { id: 'window', label: 'Time window' },
+                          { id: 'window', label: 'Time window', disabled: noDate },
                         ]}
                         value={ts.mode}
                         onChange={(v) =>
                           updateTable(t.id, {
                             mode: v as TableCacheSetting['mode'],
                             windowMonths: v === 'window' ? ts.windowMonths ?? 13 : undefined,
-                            referenceColumnId: v === 'window' ? ts.referenceColumnId : undefined,
+                            referenceColumnId: v === 'window' ? (ts.referenceColumnId ?? dateCols[0]?.id) : undefined,
                           })
                         }
                         size="small"
                         aria-label={`Cache mode for ${t.name}`}
                       />
-                      {ts.mode === 'window' && (
+                      {noDate ? (
+                        <Typography variant="footnote" color="gray-light" noMargin>
+                          No date column — caches all history
+                        </Typography>
+                      ) : ts.mode === 'window' ? (
                         <>
                           <Select
                             options={MONTHS_OPTIONS}
@@ -208,7 +243,7 @@ export const CachingSettingsModal: React.FC<{
                             aria-label={`Reference column for ${t.name}`}
                           />
                         </>
-                      )}
+                      ) : null}
                     </Horizontal>
                   </Horizontal>
                 );
@@ -224,7 +259,17 @@ export const CachingSettingsModal: React.FC<{
                 <Select
                   options={FREQ_OPTIONS}
                   value={schedule.frequency}
-                  onChange={(v) => setSchedule((s) => ({ ...s, frequency: v as Frequency }))}
+                  onChange={(v) =>
+                    setSchedule((s) => {
+                      const frequency = v as Frequency;
+                      return {
+                        ...s,
+                        frequency,
+                        weekdays: frequency === 'weekly' ? s.weekdays ?? ['M'] : s.weekdays,
+                        monthDays: frequency === 'monthly' ? s.monthDays ?? '1' : s.monthDays,
+                      };
+                    })
+                  }
                   aria-label="Frequency"
                 />
                 <Connector>at</Connector>
@@ -245,12 +290,38 @@ export const CachingSettingsModal: React.FC<{
                 />
                 <Connector>hours</Connector>
               </Horizontal>
-              <Checkbox
-                checked={schedule.excludeWeekends}
-                onChange={(checked) => setSchedule((s) => ({ ...s, excludeWeekends: checked }))}
-                label="Exclude weekends"
-                showLabel
-              />
+              {schedule.frequency === 'daily' && (
+                <Checkbox
+                  checked={schedule.excludeWeekends}
+                  onChange={(checked) => setSchedule((s) => ({ ...s, excludeWeekends: checked }))}
+                  label="Exclude weekends"
+                  showLabel
+                />
+              )}
+              {schedule.frequency === 'weekly' && (
+                <Horizontal gap={spacing.A} wrap>
+                  {WEEKDAYS.map((d) => {
+                    const on = (schedule.weekdays ?? []).includes(d);
+                    return (
+                      <button key={d} type="button" onClick={() => toggleWeekday(d)} style={dayChip(on)} aria-pressed={on}>
+                        {d}
+                      </button>
+                    );
+                  })}
+                </Horizontal>
+              )}
+              {schedule.frequency === 'monthly' && (
+                <Vertical gap={spacing.A} style={{ maxWidth: '320px' }}>
+                  <TextInput
+                    value={schedule.monthDays ?? ''}
+                    onChange={(e) => setSchedule((s) => ({ ...s, monthDays: e.target.value }))}
+                    placeholder="e.g. 1,10,20"
+                  />
+                  <Typography variant="footnote" color="gray-light" noMargin>
+                    Enter dates separated by comma e.g. 2,5,10…
+                  </Typography>
+                </Vertical>
+              )}
               <Link href="#" onClick={(e) => e.preventDefault()}>
                 {schedule.timezone}
               </Link>
@@ -265,7 +336,7 @@ export const CachingSettingsModal: React.FC<{
               style={{ width: '100%', padding: `${spacing.C}px ${spacing.D}px`, backgroundColor: c['background-subtle'], borderRadius: `${radius.md}px` }}
             >
               <Icon name="info-circle" size="s" color={c['content-secondary']} />
-              <Typography variant="body-normal" color="gray" noMargin>
+              <Typography variant="body-normal" color="gray-light" noMargin>
                 First Cache will be done today. Future refreshes will follow the schedule above.
               </Typography>
             </Horizontal>
@@ -277,15 +348,6 @@ export const CachingSettingsModal: React.FC<{
               message="Saving will refresh the cache now and delete the existing snapshot."
             />
           ) : null}
-
-          {invalid && (
-            <Horizontal gap={spacing.A} align="center">
-              <Icon name="exclamation-point-circle" size="s" color={c['content-warning']} />
-              <Typography variant="body-normal" color="gray" noMargin>
-                Select a reference column for each table using a time window.
-              </Typography>
-            </Horizontal>
-          )}
         </Vertical>
       </div>
     </Modal>

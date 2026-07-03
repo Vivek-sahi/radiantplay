@@ -1,7 +1,7 @@
 import React from 'react';
-import { Table, ProgressBar, Link, Button, Typography, Horizontal, Vertical } from '../../../components';
+import { Table, ProgressBar, Link, Button, Icon, Typography, Horizontal, Vertical } from '../../../components';
 import type { TableColumn } from '../../../components';
-import { StatCard, SourceCacheIcon, SectionHeader } from './primitives';
+import { StatCard, SectionHeader } from './primitives';
 import { c, spacing, radius, fontWeight } from '../styles';
 import { capacitySummary, formatGB, formatSizeMB } from '../utils';
 import type { DataModel } from '../types';
@@ -22,7 +22,7 @@ export const DataStoreView: React.FC<{
       label: 'Model',
       render: (_v, row) => (
         <Horizontal gap={spacing.C} align="center">
-          <SourceCacheIcon cached />
+          <Icon name="table" size="l" color={c['content-secondary']} />
           <span style={{ fontWeight: fontWeight.medium, color: c['content-primary'] }}>{row.name}</span>
         </Horizontal>
       ),
@@ -80,7 +80,7 @@ export const DataStoreView: React.FC<{
           }
         />
         <div style={{ maxWidth: '640px' }}>
-          <Typography variant="body-normal" color="gray" noMargin>
+          <Typography variant="body-normal" color="gray-light" noMargin>
             Cached model data lives in your ThoughtSpot data store. Track how much of your purchased
             space is in use and which models are consuming it.
           </Typography>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Icon, Typography, Horizontal, Vertical } from '../../../components';
+import { Typography, Horizontal, Vertical } from '../../../components';
 import { c, radius, spacing, fontSize, fontWeight, fontFamily, lineHeight } from '../styles';
 import type { RunStatus } from '../types';
 
@@ -60,14 +60,14 @@ export const StatCard: React.FC<{ label: string; value: string; sub?: string }> 
       flex: 1,
     }}
   >
-    <Typography variant="overline" color="gray" noMargin>
+    <Typography variant="overline" color="gray-light" noMargin>
       {label}
     </Typography>
     <Typography variant="page-title" color="base" noMargin>
       {value}
     </Typography>
     {sub && (
-      <Typography variant="footnote" color="gray" noMargin>
+      <Typography variant="footnote" color="gray-light" noMargin>
         {sub}
       </Typography>
     )}
@@ -78,7 +78,7 @@ export const StatCard: React.FC<{ label: string; value: string; sub?: string }> 
 export const KeyValue: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
   <Horizontal align="start" gap={spacing.D} style={{ padding: `${spacing.A}px 0` }}>
     <div style={{ width: '180px', flexShrink: 0 }}>
-      <Typography variant="body-normal" color="gray" noMargin>
+      <Typography variant="body-normal" color="gray-light" noMargin>
         {label}
       </Typography>
     </div>
@@ -98,33 +98,3 @@ export const SectionHeader: React.FC<{ title: string; actions?: React.ReactNode 
   </Horizontal>
 );
 
-// ── SourceCacheIcon ─────────────────────────────────────────────────────────────
-/**
- * Data-source indicator in a fixed 18×18 box so lists stay aligned. Not cached →
- * just the Snowflake logo. Cached → Snowflake with a small link badge in the corner:
- * "source is Snowflake, data is also linked/cached in ThoughtSpot".
- */
-export const SourceCacheIcon: React.FC<{ cached: boolean }> = ({ cached }) => (
-  <span
-    style={{ position: 'relative', display: 'inline-flex', width: '18px', height: '18px', flexShrink: 0, alignItems: 'center', justifyContent: 'center' }}
-    aria-label={cached ? 'Snowflake source, cached in ThoughtSpot' : 'Snowflake'}
-  >
-    <img src="/logos/snowflake.svg" width={18} height={18} alt="" style={{ display: 'block' }} />
-    {cached && (
-      <span
-        style={{
-          position: 'absolute',
-          right: '-4px',
-          bottom: '-4px',
-          display: 'inline-flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: c['background-base'],
-          borderRadius: `${radius.full}px`,
-        }}
-      >
-        <Icon name="copy-link" size="xs" color={c['content-brand']} />
-      </span>
-    )}
-  </span>
-);

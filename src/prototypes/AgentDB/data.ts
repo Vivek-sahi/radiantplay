@@ -320,7 +320,7 @@ export const models: DataModel[] = [
     cache: {
       status: 'purged',
       window: 'full',
-      schedule: { ...dailyNineAm, frequency: 'weekly' },
+      schedule: { ...dailyNineAm, frequency: 'weekly', weekdays: ['M'] },
       cacheSizeMB: 0,
       rowCount: 0,
       nextRunAt: '—',

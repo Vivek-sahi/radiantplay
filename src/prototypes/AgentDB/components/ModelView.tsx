@@ -30,9 +30,9 @@ export const ModelView: React.FC<{
       {/* Model header */}
       <Horizontal justify="space-between" align="start" style={{ width: '100%' }}>
         <Vertical gap={spacing.B} style={{ maxWidth: '640px' }}>
-          <Typography variant="overline" color="gray" noMargin>Model</Typography>
+          <Typography variant="overline" color="gray-light" noMargin>Model</Typography>
           <Typography variant="page-title" color="base" noMargin>{model.name}</Typography>
-          <Typography variant="body-normal" color="gray" ellipsis={{ rows: 2 }} noMargin>
+          <Typography variant="body-normal" color="gray-light" ellipsis={{ rows: 2 }} noMargin>
             {model.description}
           </Typography>
         </Vertical>

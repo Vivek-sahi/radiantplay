@@ -3,7 +3,7 @@
  */
 
 import { capacity } from './data';
-import type { DataModel, Frequency, Schedule, WindowMonths } from './types';
+import type { DataModel, Frequency, Schedule, Weekday, WindowMonths } from './types';
 
 /** 256 → "256 MB"; 35020 → "34.2 GB" */
 export function formatSizeMB(mb: number): string {
@@ -52,6 +52,22 @@ export function scheduleLabel(s: Schedule): string {
 
 export function windowMonthsLabel(m: WindowMonths): string {
   return `Last ${m} months`;
+}
+
+const WEEKDAY_FULL: Record<Weekday, string> = {
+  M: 'Mon', T: 'Tue', W: 'Wed', Th: 'Thu', F: 'Fri', Sa: 'Sat', S: 'Sun',
+};
+
+/** Secondary line under the refresh frequency: weekends / weekdays / month-days. */
+export function scheduleDetail(s: Schedule): string | null {
+  if (s.frequency === 'weekly') {
+    const days = (s.weekdays ?? []).map((d) => WEEKDAY_FULL[d]);
+    return days.length ? `On ${days.join(', ')}` : null;
+  }
+  if (s.frequency === 'monthly') {
+    return s.monthDays ? `On day ${s.monthDays}` : null;
+  }
+  return s.excludeWeekends ? 'Excluding weekends' : null;
 }
 
 // ── Capacity ─────────────────────────────────────────────────────────────────

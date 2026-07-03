@@ -34,11 +34,15 @@ export interface TableCacheSetting {
   referenceColumnId?: string; // required when mode === 'window'
 }
 
+export type Weekday = 'M' | 'T' | 'W' | 'Th' | 'F' | 'Sa' | 'S';
+
 export interface Schedule {
   frequency: Frequency;
   hour: number; // 0-23
   minute: number; // 0-59
-  excludeWeekends: boolean;
+  excludeWeekends: boolean; // daily only
+  weekdays?: Weekday[]; // weekly only
+  monthDays?: string; // monthly only — comma-separated day numbers, e.g. "1,10,20"
   timezone: string; // e.g. 'Asia/Calcutta'
 }
 

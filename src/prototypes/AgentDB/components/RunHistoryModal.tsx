@@ -61,7 +61,7 @@ export const RunHistoryModal: React.FC<{ model: DataModel; onClose: () => void }
             </Typography>
             <StatusPill kind={runStatusPillKind(selectedRun.status)} label={selectedRun.status} />
           </Horizontal>
-          <Typography variant="body-normal" color="gray" noMargin>
+          <Typography variant="body-normal" color="gray-light" noMargin>
             Per-table results for this run — useful for debugging failures and seeing where cache space is going.
           </Typography>
           <Table
@@ -73,7 +73,7 @@ export const RunHistoryModal: React.FC<{ model: DataModel; onClose: () => void }
         </Vertical>
       ) : (
         <Vertical gap={spacing.C}>
-          <Typography variant="body-normal" color="gray" noMargin>
+          <Typography variant="body-normal" color="gray-light" noMargin>
             Every scheduled and manual cache run, newest first. Open a run for its per-table breakdown.
           </Typography>
           <Table

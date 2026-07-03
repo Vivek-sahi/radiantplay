@@ -19,7 +19,7 @@ import { KeyValue, SectionHeader } from './primitives';
 import { CachingSettingsModal, type CacheConfigDraft } from './CachingSettingsModal';
 import { RunHistoryModal } from './RunHistoryModal';
 import { c, spacing } from '../styles';
-import { formatSizeMB, scheduleLabel, windowMonthsLabel } from '../utils';
+import { formatSizeMB, scheduleDetail, scheduleLabel, windowMonthsLabel } from '../utils';
 import type { CacheRun, DataModel, TableCacheSetting, TableRunResult, WindowMonths } from '../types';
 
 const REBUILD_MS = 6000; // simulated cache build time
@@ -65,7 +65,7 @@ export const CachingTab: React.FC<{ model: DataModel; onChange: (next: DataModel
   const [confirm, setConfirm] = useState<null | 'purge' | 'disable'>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [busy, setBusy] = useState<null | 'caching' | 'refreshing'>(null);
-  const [toast, setToast] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' } | null>(null);
   const timerRef = useRef<number | null>(null);
 
   useEffect(() => () => { if (timerRef.current) window.clearTimeout(timerRef.current); }, []);
@@ -111,6 +111,7 @@ export const CachingTab: React.FC<{ model: DataModel; onChange: (next: DataModel
     if (!cache) return;
     onChange({ ...model, cache: { ...cache, status: 'purged', cacheSizeMB: 0, rowCount: 0 } });
     setConfirm(null);
+    setToast({ message: 'Cache purged — configuration retained. Run “Refresh Cache” to rebuild.', type: 'info' });
   };
 
   const disableCache = () => {
@@ -124,7 +125,7 @@ export const CachingTab: React.FC<{ model: DataModel; onChange: (next: DataModel
     timerRef.current = window.setTimeout(() => {
       fn();
       setBusy(null);
-      setToast('Cache completed successfully');
+      setToast({ message: 'Cache completed successfully', type: 'success' });
     }, REBUILD_MS);
   };
 
@@ -143,7 +144,7 @@ export const CachingTab: React.FC<{ model: DataModel; onChange: (next: DataModel
             centered
             text={busy === 'caching' ? `Caching ${model.name}…` : 'Refreshing cache…'}
           />
-          <Typography variant="body-normal" color="gray" noMargin>
+          <Typography variant="body-normal" color="gray-light" noMargin>
             Copying data from Snowflake into the ThoughtSpot data store. This can take a few moments.
           </Typography>
         </Vertical>
@@ -160,7 +161,7 @@ export const CachingTab: React.FC<{ model: DataModel; onChange: (next: DataModel
             {`Cache ${model.name}`}
           </Button>
           <div style={{ maxWidth: '480px' }}>
-            <Typography variant="body-normal" color="gray" noMargin>
+            <Typography variant="body-normal" color="gray-light" noMargin>
               By caching this model, you can reduce your live query cost and improve loading performance.
             </Typography>
           </div>
@@ -169,7 +170,7 @@ export const CachingTab: React.FC<{ model: DataModel; onChange: (next: DataModel
         {modalOpen && (
           <CachingSettingsModal model={model} isEdit={false} onClose={() => setModalOpen(false)} onSave={(d) => handleSaveConfig(d, false)} />
         )}
-        {toast && <Toast message={toast} type="success" position="bottom-right" onDismiss={() => setToast(null)} />}
+        {toast && <Toast message={toast.message} type={toast.type} position="bottom-right" onDismiss={() => setToast(null)} />}
       </>
     );
   }
@@ -198,10 +199,8 @@ export const CachingTab: React.FC<{ model: DataModel; onChange: (next: DataModel
   return (
     <>
       <Vertical gap={spacing.H}>
-        {/* Persistent alerts only for states that need attention (purged / failed). */}
-        {purged ? (
-          <Alert status="info" variant="section-multiline" dismissible={false} message="Cache purged — configuration retained. Run “Refresh Cache” to rebuild the snapshot." />
-        ) : cache.lastRunStatus === 'Failure' ? (
+        {/* Persistent alert only for the failed state (purge feedback is a toast). */}
+        {!purged && cache.lastRunStatus === 'Failure' ? (
           <Alert
             status="failure"
             variant="section-multiline"
@@ -224,7 +223,7 @@ export const CachingTab: React.FC<{ model: DataModel; onChange: (next: DataModel
                   trigger={<Button variant="tertiary" size="small" icon="more">More</Button>}
                 >
                   <ActionMenuItem label="Refresh Cache" icon={<Icon name="refresh" size="s" />} onClick={() => scheduleRebuild(doRefresh, 'refreshing')} />
-                  <ActionMenuItem label="Purge Cache" icon={<Icon name="eye-undo" size="s" />} onClick={() => setConfirm('purge')} disabled={purged} />
+                  <ActionMenuItem label="Purge current cache" icon={<Icon name="eye-undo" size="s" />} onClick={() => setConfirm('purge')} disabled={purged} />
                   <ActionMenuItem label="Disable Cache" icon={<Icon name="trash-can" size="s" />} destructive onClick={() => setConfirm('disable')} />
                 </ActionMenu>
               </>
@@ -235,8 +234,8 @@ export const CachingTab: React.FC<{ model: DataModel; onChange: (next: DataModel
             <KeyValue label="Refresh frequency">
               <Vertical gap={spacing.A / 2}>
                 <span>{scheduleLabel(cache.schedule)}</span>
-                {cache.schedule.excludeWeekends && (
-                  <Typography variant="footnote" color="gray" noMargin>Excluding weekends</Typography>
+                {scheduleDetail(cache.schedule) && (
+                  <Typography variant="footnote" color="gray-light" noMargin>{scheduleDetail(cache.schedule)}</Typography>
                 )}
               </Vertical>
             </KeyValue>
@@ -276,9 +275,9 @@ export const CachingTab: React.FC<{ model: DataModel; onChange: (next: DataModel
 
       <ConfirmDialog
         isOpen={confirm === 'purge'}
-        title="Purge cache data?"
+        title="Purge current cache?"
         message="This removes the latest cache snapshot to free up data store space. Your caching configuration and schedule are kept — the next scheduled run (or Refresh Cache) will rebuild the snapshot."
-        confirmText="Purge cache"
+        confirmText="Purge current cache"
         status="warning"
         onConfirm={purgeCache}
         onCancel={() => setConfirm(null)}
@@ -293,7 +292,7 @@ export const CachingTab: React.FC<{ model: DataModel; onChange: (next: DataModel
         onCancel={() => setConfirm(null)}
       />
 
-      {toast && <Toast message={toast} type="success" position="bottom-right" onDismiss={() => setToast(null)} />}
+      {toast && <Toast message={toast.message} type={toast.type} position="bottom-right" onDismiss={() => setToast(null)} />}
     </>
   );
 };
