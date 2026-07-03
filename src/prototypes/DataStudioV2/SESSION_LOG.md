@@ -1363,3 +1363,21 @@ Working notes: `2026-06-22-builder-starting-point-discussion.md` (manual start �
 - Landed via fast-forward → `prototype/data-studio` (`a6d5dcd`); pushed origin (galaxy) + github; `vercel --prod` → https://radiantplay-nine.vercel.app.
 
 **Build:** clean ✓ (`vite build`). Process + hazards saved to memory: `reference_komal_merge_process`. Note: tell Komal to run `npm run build:strict` before sharing — her branch has ghost refs (`FlowOption`, `ModelCanvas`) that pass a normal build but crash at runtime.
+
+---
+
+### 2026-07-03 (session 134)
+
+**Vision pivot → no-code visual canvas; froze the notebook as "Data Studio 1.5".**
+
+- **Merged Komal's `ModelCanvas.tsx`** (`dae7d78` on `komal/dsv/komal-2`) — single new file, no conflict. Fixed `isDayZero`→`isFromScratch`, unused imports, a row type. Wired **"New model"** (Overview + Models page) → the canvas view.
+- **Data Studio 1.5** — cloned the pre-canvas V2 runtime → `src/prototypes/DataStudio15/` (docs excluded); registered in `registry-mine.ts` (V2 + SpotterPrep2 entries untouched). Frozen high-code notebook for stakeholder comparison.
+- **CSV upload** — file picker (Add data → Upload file) + drag-drop → first-class CSV node (green table icon + `CSV`/`Cached` badges); preview + CSV-import Properties (delimiter/quote/header). Canned mock `customer_regions` (nulls for the prep demo).
+- **Fix nulls prep operator** (Prep dropdown, op `nullfix`) — mirrors Formula: manual value/expression + AI-assist (describe → generate); applied fix overlays green in the output preview.
+- **Live/Cached data mode** — prominent header dropdown, two-way toggle + confirm gate. Caching required for **CSV + prep** only (join/filter/formula/aggregate stay **live**); Cached→Live guarded while a CSV/prep step exists. Cache-settings modal (scope + refresh).
+- **Version-aware preview** — per-step null-fix lineage (output = fixes up to the active step; source = up to the previous step).
+- Commits `d5b77cf` + `d4c8b5e` on origin + github. **Not deployed to prod** — a `vercel --prod` would ship uncommitted AgentDB WIP from a parallel chat. AgentDB caching-UI fixes handed off: `AgentDB/CACHING-UI-FIXES.md`. Spec: `2026-07-02-csv-upload-canvas.md`.
+
+**Next:** pull latest from `komal/dsv/komal-2` and merge new canvas work; mock-data swap (generic e-commerce → Customer Health); "enrich for AI" step after joins.
+
+**Build:** clean ✓ (`vite build`).

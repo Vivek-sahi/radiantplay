@@ -4,13 +4,26 @@ _Updated at the end of every session. For product context see `product.md`. For 
 
 ---
 
-## Current state (session 133, 2026-07-01)
+## Current state (session 134, 2026-07-03)
 
-_Merged Komal's **agentic Snowflake connection flow** + New Connection workflow into `prototype/data-studio` — **connection work only** (her bundled model draft-plan work excluded; the modeling/from-scratch flow is byte-for-byte unchanged). Fixed 3 runtime crashes her code carried (`runDayZeroSteps`→`runFromScratchSteps`, orphaned `setVerifyState`, a committed `node_modules` symlink). Also committed the **DataNotebook** prototype (was uncommitted-only). Deployed to production._
+**Vision pivot — DataStudio V2 = no-code visual canvas.** The Workspace modeling surface is moving from the high-code notebook to Komal's visual **ModelCanvas**. The old high-code notebook is preserved as a frozen **"Data Studio 1.5"** prototype (`src/prototypes/DataStudio15/`, registered in `registry-mine.ts`) for stakeholder comparison. V2 is the canvas collab hub — Komal's team is building on the canvas and future merges land there.
 
-**Deployed:** https://radiantplay-nine.vercel.app ✓ (`a6d5dcd`, in sync on origin/galaxy + github)
-**Build:** clean ✓ (`vite build`)
-_Komal-merge process + hazards saved to memory: `reference_komal_merge_process`._
+**Merged + wired:** Komal's `ModelCanvas.tsx` (`dae7d78` on `komal/dsv/komal-2`) merged; **"New model"** (Overview + Models page) now opens the canvas.
+
+**Built this session (all in `components/ModelCanvas.tsx`):**
+- **CSV upload** — file picker (Add data → Upload file) + drag-drop → first-class CSV node (green **table** icon + `CSV`/`Cached` badges); preview + Properties CSV-import settings (delimiter, quote, header). Canned mock table `customer_regions` (has nulls for the prep demo).
+- **Fix nulls prep operator** — in the **Prep dropdown** (op `nullfix`). Panel mirrors Formula: manual **Fill value or expression** + **AI-assist** (describe → generate). Applied fix overlays green in the output preview.
+- **Live/Cached data mode** — prominent header **dropdown**; two-way toggle w/ confirm gate. Caching required for **CSV + prep** transforms only (join/filter/formula/aggregate stay **live**). Guard blocks Cached→Live while a CSV/prep step exists. Cache-settings modal (scope + refresh).
+- **Version-aware preview** — per-step null-fix lineage: output pane = fixes up to & incl. the active step; source pane = up to the previous step.
+
+**Committed:** `d4c8b5e` (+ `d5b77cf`) on origin + github. **NOT deployed to prod** — a `vercel --prod` would also ship uncommitted AgentDB WIP from a parallel chat, so deploy is deferred.
+**Build:** clean ✓ (`vite build`).
+
+**Next session:** **pull latest from Komal's branch** (`komal/dsv/komal-2`) and merge new canvas work. Then: **mock-data swap** (canvas uses generic e-commerce data → swap to Customer Health), and the **"enrich for AI"** step after joins. Spec: `2026-07-02-csv-upload-canvas.md`. AgentDB caching-UI fixes were handed off to a parallel chat: `src/prototypes/AgentDB/CACHING-UI-FIXES.md`.
+
+### Prior: session 133 (2026-07-01)
+
+_Merged Komal's **agentic Snowflake connection flow** + New Connection workflow (connection work only). Fixed 3 runtime crashes (`runDayZeroSteps`, orphaned `setVerifyState`, `node_modules` symlink). Committed **DataNotebook**. Deployed `a6d5dcd`. Komal-merge process saved to memory: `reference_komal_merge_process`._
 
 ### Prior: session 132 (2026-06-29) — strategy/proposal
 _Markdown docs only, no prototype code changed. New doc: `2026-06-29-data-studio-proposal.md` (leadership-alignment proposal). Working notes: `2026-06-22-builder-starting-point-discussion.md`._
