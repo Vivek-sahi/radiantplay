@@ -203,9 +203,11 @@ export const CachingTab: React.FC<{ model: DataModel; onChange: (next: DataModel
         {!purged && cache.lastRunStatus === 'Failure' ? (
           <Alert
             status="failure"
-            variant="section-multiline"
+            variant="page"
             dismissible={false}
-            message="The last cache run failed. Queries are routing to the live warehouse until the next successful run. Open the run log for per-table details."
+            message="The last cache run failed. Queries are routing to the live warehouse until the next successful run."
+            buttonText="View details"
+            onButtonClick={() => setShowHistory(true)}
           />
         ) : null}
 

@@ -311,34 +311,6 @@ export const models: DataModel[] = [
     },
   },
   {
-    id: 'product-telemetry',
-    name: 'Product Telemetry',
-    description:
-      'Event-level product usage: feature adoption, session depth, and error rates. High-volume clickstream joined to the account dimension.',
-    source: 'Snowflake',
-    tables: marketingTables,
-    cache: {
-      status: 'purged',
-      window: 'full',
-      schedule: { ...dailyNineAm, frequency: 'weekly', weekdays: ['M'] },
-      cacheSizeMB: 0,
-      rowCount: 0,
-      nextRunAt: '—',
-      lastRunStatus: 'Success',
-      runs: [
-        {
-          id: 'pr1',
-          runType: 'Scheduled',
-          startTime: '9 days ago',
-          endTime: '9 days ago',
-          rows: 44_800_000,
-          status: 'Success',
-          tableResults: [],
-        },
-      ],
-    },
-  },
-  {
     id: 'hr-headcount',
     name: 'HR Headcount',
     description:
