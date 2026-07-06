@@ -4,7 +4,27 @@ _Updated at the end of every session. For product context see `product.md`. For 
 
 ---
 
-## Current state (session 134, 2026-07-03)
+## Current state (session 135, 2026-07-06)
+
+**Merged Komal's AI-readiness/tuning + built the panel cards, SQL/Python blocks, publish flow — verified end-to-end.** Re-fetched `komal/dsv/komal-2` and confirmed across all 3 of her branches that the `air_readiness`/`air_tune_eval` genUI cards were **never wired into the agent panel** (only message tags). So merged her readiness pill/panel + **Columns (model-preview) view**, and **built the readiness + tuning cards in the agent panel ourselves** (`AgentPanel.tsx`) — including the **tuning rating card** (rate correct/incorrect/out-of-scope → Generate fixes → **Spotter ready**), driven via the `__air*` window globals.
+
+**Built this session:**
+- **Publish flow** — status modal (Spotter ready · Snowflake · Cached) → Draft→Published pill → navigates to the **Models page** (`onPublished` in `index.tsx`).
+- **Data browser** — removed the **Semantic Models** tab; **Business Apps** shows Mixpanel + Pendo as schemas with tables (mock `TABLE_COLS`/`TABLE_PATH`).
+- **SQL block** — properties panel mirroring Formula (manual editor + Build-using-AI), window-function dedup example, **Apply** button, and a **mock SQL result** (an applied SQL step reduces the preview 8→6 rows, one per customer).
+- **Python block** — first-class `op:'python'`, Formula-style panel, produces an `nps_sentiment` column via Add column.
+- **Topbar** — removed **Run**; moved **Live/Cached** into Controls (right-aligned menu); trimmed breadcrumb to an icon-only back chevron + editable model name. Examples chips removed from the SQL/Python panels.
+- **CSV mock** (`customer_regions`) gained a `comment` column (feeds the Python sentiment demo). **AgentPanel** non-fullPage root height fixed (composer pins to the bottom).
+
+**Committed:** `3b21499` on **`prototype/data-studio`** (fast-forward merge; git identity corrected to vivek.sahi@thoughtspot.com) + a follow-up commit for the SQL Apply/examples/result-mock polish and these context docs. **NOT pushed** to origin/github; **NOT deployed**. AgentDB WIP (`CachingTab.tsx`, `data.ts`) remains uncommitted — parallel chat.
+
+**Verified end-to-end (Playwright, headless — zero runtime errors):** add source → CSV upload (cache gate → whole model cached) → SQL dedup 8→6 → Python add column 7→8 → AI-readiness card + Fix all → tuning rate-correct → **Spotter ready** → Publish → **Models page**. *Not auto-driven:* the two Prep→Fix-nulls clicks + completing joins (both UIs confirmed rendering; recommend a quick manual pass).
+
+**Demo assets:** walkthrough doc at `/Users/vivek.sahi/ds-demo-walkthrough/WALKTHROUGH.md` (14 screenshots + narration beats). A temp Playwright + Chromium install was added to `node_modules` (`--no-save`, not in package.json) for verification — remove if undesired.
+
+**Next session:** mock-data swap (generic e-commerce → Customer Health); the "enrich for AI" step after joins; complete the tuning fix→apply loop (recommendation card + Apply); business-app sample rows; then push origin+github + `vercel --prod` when ready (deploy still gated by uncommitted AgentDB WIP).
+
+### Prior: session 134 (2026-07-03)
 
 **Vision pivot — DataStudio V2 = no-code visual canvas.** The Workspace modeling surface is moving from the high-code notebook to Komal's visual **ModelCanvas**. The old high-code notebook is preserved as a frozen **"Data Studio 1.5"** prototype (`src/prototypes/DataStudio15/`, registered in `registry-mine.ts`) for stakeholder comparison. V2 is the canvas collab hub — Komal's team is building on the canvas and future merges land there.
 

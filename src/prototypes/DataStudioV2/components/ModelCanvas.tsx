@@ -14,6 +14,7 @@ interface PipelineStep {
   cols: [string, string][];
   prep?: boolean; // materialization-requiring prep step (blocks switching back to live)
   nullFix?: { column: string; value: string }; // per-step null remediation (for version-aware preview)
+  sql?: string; // saved query for a SQL step
 }
 
 interface CsvSettings {
@@ -1030,6 +1031,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished }) => {
     aiActive: false,
     aiDesc: '',
     aiGenerating: false,
+    applied: false,
   });
 
   const [pythonConfig, setPythonConfig] = useState({
@@ -1372,7 +1374,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished }) => {
       setNullFixConfig({ column: firstNull, aiActive: false, aiDesc: '', aiGenerating: false, value: '', applied: false });
     }
     if (opType === 'sql') {
-      setSqlConfig({ sql: '', aiActive: false, aiDesc: '', aiGenerating: false });
+      setSqlConfig({ sql: '', aiActive: false, aiDesc: '', aiGenerating: false, applied: false });
     }
     if (opType === 'python') {
       setPythonConfig({ colName: '', colNameTouched: false, code: '', aiActive: false, aiDesc: '', aiGenerating: false });
@@ -3071,12 +3073,6 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished }) => {
 
                     if (step.type === 'sql') {
                       const sc = sqlConfig;
-                      const SAMPLE_SQL = [
-                        { label: 'Latest order per customer', sql: 'SELECT customer_id, order_id, order_date, amount, status\nFROM (\n  SELECT *,\n    ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY order_date DESC) AS rn\n  FROM orders\n)\nWHERE rn = 1' },
-                        { label: 'Recent orders', sql: 'SELECT * FROM orders\nWHERE order_date >= current_date - 30' },
-                        { label: 'Revenue by region', sql: 'SELECT region, SUM(amount) AS revenue\nFROM orders\nGROUP BY region\nORDER BY revenue DESC' },
-                        { label: 'Join customers', sql: 'SELECT o.*, c.segment\nFROM orders o\nJOIN customers c ON o.customer_id = c.customer_id' },
-                      ];
                       const inputStyle: React.CSSProperties = { width: '100%', boxSizing: 'border-box', border: BORDER, borderRadius: 6, padding: '6px 10px', fontSize: 12, color: '#1D232F', fontFamily: ff.primary, outline: 'none', background: '#fff' };
                       const inputFocus = (e: React.FocusEvent<HTMLTextAreaElement>) => { e.currentTarget.style.borderColor = '#2770EF'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(39,112,239,0.10)'; };
                       const inputBlur = (e: React.FocusEvent<HTMLTextAreaElement>) => { e.currentTarget.style.borderColor = '#EAEDF2'; e.currentTarget.style.boxShadow = 'none'; };
@@ -3169,23 +3165,26 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished }) => {
                             )}
                           </div>
 
-                          {/* Quick examples */}
-                          {!sc.sql && (
-                            <div>
-                              <div style={{ fontSize: 10, fontWeight: 700, color: '#BFC6D0', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6, fontFamily: ff.primary }}>Examples</div>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                                {SAMPLE_SQL.map(s => (
-                                  <button key={s.label} onClick={() => setSqlConfig(cfg => ({ ...cfg, sql: s.sql }))}
-                                    style={{ textAlign: 'left', padding: '7px 10px', borderRadius: 6, border: BORDER, background: '#F6F8FA', cursor: 'pointer', fontFamily: ff.primary, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}
-                                    onMouseEnter={e => { e.currentTarget.style.borderColor = '#2770EF'; e.currentTarget.style.background = '#EEF2FF'; }}
-                                    onMouseLeave={e => { e.currentTarget.style.borderColor = '#EAEDF2'; e.currentTarget.style.background = '#F6F8FA'; }}>
-                                    <span style={{ fontSize: 11, fontWeight: 500, color: '#475569' }}>{s.label}</span>
-                                    <code style={{ fontSize: 10, color: '#8B96A5', fontFamily: "'SF Mono', 'Fira Mono', monospace", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 120 }}>{s.sql.split('\n')[0]}</code>
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                          )}
+                          <button
+                            disabled={!sc.sql.trim()}
+                            onClick={() => {
+                              if (!sc.sql.trim() || !selectedId) return;
+                              const sqlText = sc.sql;
+                              setGroups(prev => prev.map(g => {
+                                if (g.id !== selectedId) return g;
+                                const steps = g.steps.map((s, i) => i === g.activeStep ? { ...s, sql: sqlText } : s);
+                                return { ...g, steps };
+                              }));
+                              setSqlConfig(s => ({ ...s, applied: true }));
+                              setPreviewOpen(true);
+                              setTimeout(() => setSqlConfig(s => ({ ...s, applied: false })), 2000);
+                            }}
+                            style={{ width: '100%', padding: '8px 0', borderRadius: 7, border: 'none', background: sc.applied ? '#06BF7F' : sc.sql.trim() ? '#2770EF' : '#E8ECEF', color: (sc.sql.trim() || sc.applied) ? '#fff' : '#A0A8B5', fontSize: 13, fontWeight: 600, cursor: sc.sql.trim() ? 'pointer' : 'default', fontFamily: ff.primary, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                          >
+                            {sc.applied
+                              ? <><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#fff" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg>Applied</>
+                              : 'Apply'}
+                          </button>
                         </div>
                       );
                     }
@@ -3193,11 +3192,6 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished }) => {
                     if (step.type === 'python') {
                       const pc = pythonConfig;
                       const showColError = pc.colNameTouched && !pc.colName.trim();
-                      const SAMPLE_PY = [
-                        { label: 'Sentiment from comments', col: 'nps_sentiment', code: 'from transformers import pipeline\nclf = pipeline("sentiment-analysis")\ndf["nps_sentiment"] = df["comment"].apply(\n    lambda c: clf(c)[0]["label"].lower() if c else "neutral"\n)' },
-                        { label: 'Churn risk score', col: 'churn_risk', code: 'import joblib\nmodel = joblib.load("churn_v3.pkl")\ndf["churn_risk"] = model.predict_proba(df[FEATURES])[:, 1]' },
-                        { label: 'Enrich industry (API)', col: 'industry', code: 'import requests\ndf["industry"] = df["domain"].apply(\n    lambda d: requests.get(f"https://api.enrich.co/{d}").json().get("industry")\n)' },
-                      ];
                       const inputStyle: React.CSSProperties = { width: '100%', boxSizing: 'border-box', border: BORDER, borderRadius: 6, padding: '6px 10px', fontSize: 12, color: '#1D232F', fontFamily: ff.primary, outline: 'none', background: '#fff' };
                       const inputFocus = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => { e.currentTarget.style.borderColor = '#2770EF'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(39,112,239,0.10)'; };
                       const inputBlur = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => { e.currentTarget.style.borderColor = '#EAEDF2'; e.currentTarget.style.boxShadow = 'none'; };
@@ -3302,24 +3296,6 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished }) => {
                               </div>
                             )}
                           </div>
-
-                          {/* Quick examples */}
-                          {!pc.code && (
-                            <div>
-                              <div style={{ fontSize: 10, fontWeight: 700, color: '#BFC6D0', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6, fontFamily: ff.primary }}>Examples</div>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                                {SAMPLE_PY.map(s => (
-                                  <button key={s.label} onClick={() => setPythonConfig(p => ({ ...p, code: s.code, colName: p.colName || s.col }))}
-                                    style={{ textAlign: 'left', padding: '7px 10px', borderRadius: 6, border: BORDER, background: '#F6F8FA', cursor: 'pointer', fontFamily: ff.primary, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}
-                                    onMouseEnter={e => { e.currentTarget.style.borderColor = '#2770EF'; e.currentTarget.style.background = '#EEF2FF'; }}
-                                    onMouseLeave={e => { e.currentTarget.style.borderColor = '#EAEDF2'; e.currentTarget.style.background = '#F6F8FA'; }}>
-                                    <span style={{ fontSize: 11, fontWeight: 500, color: '#475569' }}>{s.label}</span>
-                                    <code style={{ fontSize: 10, color: '#8B96A5', fontFamily: "'SF Mono', 'Fira Mono', monospace" }}>{s.col}</code>
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                          )}
 
                           <button
                             disabled={!pc.colName.trim() || !pc.code.trim()}
@@ -3731,6 +3707,24 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished }) => {
         // ── Data mode ──
         const rows = (MOCK_DATA[selectedGroup.tableName] ?? []).slice(0, rowCap);
         const tblName = selectedGroup.tableName;
+        // Mock a SQL result: an applied SQL step reduces rows (window-function dedup —
+        // keep each customer's most recent row). Output pane shows the reduced set; input stays raw.
+        let outputRows = rows;
+        const activeStepObj = selectedGroup.steps[selectedGroup.activeStep];
+        if (activeStepObj?.type === 'sql' && activeStepObj.sql) {
+          const srcCols = (selectedGroup.steps[0]?.cols ?? []).map(c => c[0]);
+          const custIdx = srcCols.indexOf('customer_id');
+          const dateIdx = srcCols.findIndex(n => n.toLowerCase().includes('date'));
+          if (custIdx >= 0 && dateIdx >= 0) {
+            const latest = new Map<string, Row>();
+            (MOCK_DATA[selectedGroup.tableName] ?? []).forEach(r => {
+              const k = String(r[custIdx]);
+              const cur = latest.get(k);
+              if (!cur || String(r[dateIdx]) > String(cur[dateIdx])) latest.set(k, r);
+            });
+            outputRows = [...latest.values()].slice(0, rowCap);
+          }
+        }
         // Version-aware null-fix overlay: OUTPUT = fixes up to & incl. the active step; INPUT (source pane) = up to the previous step.
         const outputFixes: Record<string, string> = {};
         selectedGroup.steps.slice(1, selectedGroup.activeStep + 1).forEach(s => { if (s.nullFix) outputFixes[s.nullFix.column] = s.nullFix.value; });
@@ -3769,9 +3763,9 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished }) => {
                 </tr>
               </thead>
               <tbody>
-                {rows.length === 0 ? (
+                {(isInput ? rows : outputRows).length === 0 ? (
                   <tr><td colSpan={tableCols.length + 1} style={{ padding: '20px', textAlign: 'center', color: '#A5ACB9', fontSize: 12 }}>No rows</td></tr>
-                ) : rows.map((row, ri) => (
+                ) : (isInput ? rows : outputRows).map((row, ri) => (
                   <tr key={ri} style={{ background: ri % 2 === 1 ? '#FAFBFC' : '#fff' }}
                     onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#EEF2FF'}
                     onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = ri % 2 === 1 ? '#FAFBFC' : '#fff'}

@@ -1381,3 +1381,22 @@ Working notes: `2026-06-22-builder-starting-point-discussion.md` (manual start �
 **Next:** pull latest from `komal/dsv/komal-2` and merge new canvas work; mock-data swap (generic e-commerce → Customer Health); "enrich for AI" step after joins.
 
 **Build:** clean ✓ (`vite build`).
+
+---
+
+### 2026-07-06 (session 135)
+
+**Merged Komal readiness/tuning + built the AI-readiness/tuning cards, SQL/Python blocks, publish flow; verified end-to-end.**
+
+- **Re-fetched `komal/dsv/komal-2`** (+ checked her `Test`/`main`): the `air_readiness`/`air_tune_eval` genUI cards were **never wired into the agent panel on any branch** — only message tags. Merged her AI-readiness pill/panel + **Columns (model-preview) view**.
+- **Built the readiness + tuning cards in the agent panel** (`AgentPanel.tsx`; rendered unconditionally since ModelCanvas mounts AgentPanel without `onGenUIAction`), incl. the **tuning rating card** (3 sample Qs → correct/incorrect/out-of-scope → Generate fixes → **Spotter ready**), driven via `__air*` window globals.
+- **Publish flow** — status modal (Spotter ready · Snowflake · Cached) → Draft→Published pill → **Models page** (`onPublished` in `index.tsx`).
+- **5 UI changes** — removed Semantic Models tab; Business Apps = Mixpanel/Pendo schemas (+ mock cols); **SQL block** (Formula-style panel + window-function example + **Apply** + mock result 8→6 rows); **Python block** (`op:'python'` → `nps_sentiment` column); removed **Run** + moved **Live/Cached** into Controls; trimmed breadcrumb. Later removed the SQL/Python examples chips.
+- **CSV mock** gained a `comment` column (Python sentiment demo). **AgentPanel** non-fullPage height fix (composer pins to bottom).
+- **Committed + fast-forward merged to `prototype/data-studio`** (`3b21499`; git identity → vivek.sahi@thoughtspot.com) + a follow-up commit (SQL Apply/examples/result-mock + context docs). **Not pushed; not deployed.** AgentDB WIP still uncommitted (parallel chat).
+- **Verified end-to-end via Playwright (headless, zero errors):** add source → CSV upload (cache gate → cached) → SQL dedup 8→6 → Python 7→8 cols → readiness card + Fix all → tuning correct → Spotter ready → Publish → Models. *Not auto-driven:* 2× Prep→Fix-nulls + full joins (UIs confirmed rendering).
+- **Demo walkthrough** doc: `/Users/vivek.sahi/ds-demo-walkthrough/WALKTHROUGH.md` (14 screenshots + narration). Temp Playwright+Chromium added to `node_modules` (`--no-save`) for verification.
+
+**Next:** mock-data swap (→ Customer Health); "enrich for AI" after joins; complete the tuning fix→apply loop; push + `vercel --prod` when ready.
+
+**Build:** clean ✓ (`vite build`).
