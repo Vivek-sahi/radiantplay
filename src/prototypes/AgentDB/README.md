@@ -1,14 +1,54 @@
 # AgentDB — build spec (prototype, not Figma)
 
-For AgentDB, **use this prototype as the source of truth instead of Figma.** It's built in
-Radiant Play on the real Radiant design system, so the components, tokens, and layouts you see in
-the code are the ones to ship. Read the code as the spec — not just the visuals.
+For AgentDB, **use this prototype as the source of truth instead of Figma.** It's built in Radiant
+Play on the real Radiant design system, so the components, tokens, and layouts you see in the code
+are the ones to ship. Read the code as the spec — not just the visuals.
 
 ## Run it
 
 - Repo: `github.com/Vivek-sahi/radiantplay` · branch `prototype/data-studio`
 - `npm install` → `npx vite` → open **`/playground/AgentDB`**
 - Code lives in `src/prototypes/AgentDB/`
+- Live demo: `https://radiantplay-nine.vercel.app/playground/AgentDB`
+
+## Demo scenarios — what to open to see each state
+
+Each seed model is deliberately in a different caching state, so you can see every state without
+setup. Open a model from the Data objects list → **Caching** tab.
+
+| To see… | Open | What it demonstrates |
+|---|---|---|
+| **Healthy full-model cache** | **Dunder Mifflin Sales** | Full-model cache, hit/miss analytics (75% / 25%), an in-progress scheduled run, and full run history (scheduled / purge / model-update events) |
+| **Custom per-table caching** | **Marketing Attribution** → also click **Edit** | Custom scope with time windows: `web_sessions` last 13 mo, `touchpoints` last 6 mo, `campaigns` all history |
+| **Failed cache run (errors)** | **Financial Ledger** | Full-width failure alert → **View details** → per-table failure with a Snowflake timeout note |
+| **Caching an uncached model (enable flow)** | **HR Headcount** | "Cache HR Headcount" CTA → settings modal (10-table scrollable list) → ~6s loading → cached + success toast |
+| **Model changed → caching paused** | **Supply Chain Inventory** | Warning alert ("model changed, serving live from Snowflake") → **Refresh now** |
+| **Capacity / admin view** | Left nav → **AgentDB** (Governance) | Storage-utilisation bar + cached-models table |
+
+**Workflows reached via actions** (on any cached model):
+- **Edit** cache settings; **More →** Refresh / Purge (toast) / Disable (confirm dialog); **View run history** (list ↔ per-table detail).
+- In the settings modal, switch **Refresh frequency** to see: Daily (exclude-weekends), Weekly (day chips), Monthly (days-of-month input); and toggle **"Also cache now"** (cache immediately vs. wait for the next scheduled run).
+
+> State is in-memory — **reload the page to reset** every model to its seed state (e.g. to re-run the HR Headcount enable flow).
+
+## Build coverage checklist
+
+Everything the prototype demonstrates — tick each off while building so nothing's missed:
+
+- [ ] Not-cached **empty state** + "learn more" link
+- [ ] Settings modal — **Full** vs **Custom** scope
+- [ ] Custom scope — per-table **All history / Time window**, window length, reference **date column**, and the **no-date-column** disabled case
+- [ ] **Refresh frequency** — Daily (exclude weekends) / Weekly (day chips) / Monthly (days input) + timezone
+- [ ] **"Also cache now"** checked vs unchecked (cache now vs schedule-only)
+- [ ] **Loading** state on enable / refresh
+- [ ] **Cached-healthy** — settings summary + analytics (hit/miss)
+- [ ] **Failure** — page-level alert + run-history failure detail
+- [ ] **Paused** (model changed) — warning alert + Refresh now
+- [ ] **Purge** (toast) and **Disable** (confirm dialog)
+- [ ] **Run history** — event types, run list + per-table detail view
+- [ ] **Data objects** list — cached-indicator icon, filter tabs, pagination
+- [ ] **Data store / AgentDB** — capacity bar + cached-models table
+- [ ] Cross-cutting — toasts (success/info), status pills
 
 ## How to read it as the spec
 
@@ -37,7 +77,7 @@ the code are the ones to ship. Read the code as the spec — not just the visual
 
 - Data is mock (`data.ts`); the cache build is **simulated with `setTimeout`**.
 - On the landing, the **recently-opened carousel, filter pills, Tags/Authors dropdowns, and
-  pagination are static / visual-only.**
+  pagination are static / visual-only**.
 - Only the **Caching** tab is real; the other model tabs (Columns/Joins/Data samples/Dependents/
   Instructions) are placeholders shown for context.
 
