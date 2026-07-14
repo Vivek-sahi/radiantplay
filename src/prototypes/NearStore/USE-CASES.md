@@ -1,4 +1,4 @@
-# Agent DB — Use-cases & cache-settings tree
+# Near Store — Use-cases & cache-settings tree
 A discussion + clarification artifact (not a spec). Two parts: the use-cases we're supporting, and a tree of every cache setting showing **what's available at which level** and **what's in MVP vs. later**.
 
 Legend: ✅ in MVP · 🚫 not in MVP (future)

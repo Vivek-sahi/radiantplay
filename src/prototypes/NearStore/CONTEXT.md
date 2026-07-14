@@ -16,13 +16,13 @@ the folder `src/prototypes/NearStore/`, and the component symbol `NearStore`. No
 this prototype. (The `agentdb` connection label inside DataStudioV2 is a separate prototype — unrelated.)
 
 ## Where it lives / how to run
-- Code: `src/prototypes/AgentDB/`. Registered in `src/prototypes/registry-mine.ts` (id `NearStore`).
+- Code: `src/prototypes/NearStore/`. Registered in `src/prototypes/registry-mine.ts` (id `NearStore`).
 - Route: `/playground/NearStore`. Standalone explainer page: `/near-store-overview.html` (in `public/`).
 - Run: the combined `npm run dev` dies if the feedback server's port 3737 is already taken
   (`--kill-others`). Run **`npx vite`** directly instead. Ports 5173–5179 were busy last
   session so it landed on **5180** — the port varies; check the vite output.
 - Verify: `npx tsc --noEmit` (whole repo has pre-existing DataStudioV2/SpotterPrep errors —
-  filter to `AgentDB`) and `npm run build` (Vite, passes).
+  filter to `NearStore`) and `npm run build` (Vite, passes).
 
 ## Surfaces
 - **Data objects** (default landing) — model list: object icon (`table`) + `Source` (Snowflake)
@@ -61,7 +61,7 @@ table defaults to **All history**; windowing is a deliberate per-table opt-in.
 
 ## Design-system gotchas
 - **Typography `color="gray"` resolves to `content-primary` (black)** in this DS — a naming
-  quirk. Use **`color="gray-light"`** for secondary/grey text. All AgentDB text uses gray-light.
+  quirk. Use **`color="gray-light"`** for secondary/grey text. All Near Store text uses gray-light.
 - Tokens only (no hardcoded hex/spacing). Text via `Typography`; a few bespoke bits use tokens
   from `styles.ts`. Object/source icons use Radiant `Icon` (`table`), not fake logos.
 
@@ -80,4 +80,4 @@ this session's commit (full-width failure banner + Product Telemetry removed fro
 ## Possible next steps
 - Push to `origin` if desired.
 - Column-level caching is the open scope question (see DECISION-MEMO §open questions).
-- The overview page (`/agentdb-overview.html`) could gain a "why this scope" section.
+- The overview page (`/near-store-overview.html`) could gain a "why this scope" section.

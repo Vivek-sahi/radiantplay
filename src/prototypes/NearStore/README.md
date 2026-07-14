@@ -1,15 +1,15 @@
-# AgentDB — build spec (prototype, not Figma)
+# Near Store — build spec (prototype, not Figma)
 
-For AgentDB, **use this prototype as the source of truth instead of Figma.** It's built in Radiant
+For Near Store, **use this prototype as the source of truth instead of Figma.** It's built in Radiant
 Play on the real Radiant design system, so the components, tokens, and layouts you see in the code
 are the ones to ship. Read the code as the spec — not just the visuals.
 
 ## Run it
 
 - Repo: `github.com/Vivek-sahi/radiantplay` · branch `prototype/data-studio`
-- `npm install` → `npx vite` → open **`/playground/AgentDB`**
-- Code lives in `src/prototypes/AgentDB/`
-- Live demo: `https://radiantplay-nine.vercel.app/playground/AgentDB`
+- `npm install` → `npx vite` → open **`/playground/NearStore`**
+- Code lives in `src/prototypes/NearStore/`
+- Live demo: `https://radiantplay-nine.vercel.app/playground/NearStore`
 
 ## Demo scenarios — what to open to see each state
 
@@ -23,7 +23,7 @@ setup. Open a model from the Data objects list → **Caching** tab.
 | **Failed cache run (errors)** | **Financial Ledger** | Full-width failure alert → **View details** → per-table failure with a Snowflake timeout note |
 | **Caching an uncached model (enable flow)** | **HR Headcount** | "Cache HR Headcount" CTA → settings modal (10-table scrollable list) → ~6s loading → cached + success toast |
 | **Model changed → caching paused** | **Supply Chain Inventory** | Warning alert ("model changed, serving live from Snowflake") → **Refresh now** |
-| **Capacity / admin view** | Left nav → **AgentDB** (Governance) | Storage-utilisation bar + cached-models table |
+| **Capacity / admin view** | Left nav → **Near Store** (Governance) | Storage-utilisation bar + cached-models table |
 
 **Workflows reached via actions** (on any cached model):
 - **Edit** cache settings; **More →** Refresh / Purge (toast) / Disable (confirm dialog); **View run history** (list ↔ per-table detail).
@@ -47,7 +47,7 @@ Everything the prototype demonstrates — tick each off while building so nothin
 - [ ] **Purge** (toast) and **Disable** (confirm dialog)
 - [ ] **Run history** — event types, run list + per-table detail view
 - [ ] **Data objects** list — cached-indicator icon, filter tabs, pagination
-- [ ] **Data store / AgentDB** — capacity bar + cached-models table
+- [ ] **Data store / Near Store** — capacity bar + cached-models table
 - [ ] Cross-cutting — toasts (success/info), status pills
 
 ## How to read it as the spec
@@ -64,7 +64,7 @@ Everything the prototype demonstrates — tick each off while building so nothin
 | Surface | Files |
 |---|---|
 | Data workspace **landing** (object list) | `components/DataObjectsView.tsx` |
-| **AgentDB** capacity/admin view | `components/DataStoreView.tsx` |
+| **Near Store** capacity/admin view | `components/DataStoreView.tsx` |
 | Model page → **Caching** tab (the feature) | `components/ModelView.tsx`, `components/CachingTab.tsx`, `components/CachingSettingsModal.tsx`, `components/RunHistoryModal.tsx` |
 | App shell / nav | `components/Shell.tsx` |
 | Shell state + view routing | `index.tsx` |
@@ -86,7 +86,7 @@ Everything the prototype demonstrates — tick each off while building so nothin
 These live in `components/` because Radiant has no equivalent — decide with the DS team whether to
 upstream them or keep local. **Everything else is standard Radiant.**
 
-- `DatabaseZapIcon` — the "cached in AgentDB" icon
+- `DatabaseZapIcon` — the "cached in Near Store" icon
 - `StatusPill` — semantic status badge (success/failure/warning/info/neutral)
 - `KeyValue` — label → value detail rows
 - `FloatingToast` — positions the **real** Radiant `Toast` (Radiant's `Toast` has no positioning /

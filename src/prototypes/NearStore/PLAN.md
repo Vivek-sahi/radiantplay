@@ -1,6 +1,6 @@
-# Agent DB — Technical Implementation Plan (v2, mock-aligned)
+# Near Store — Technical Implementation Plan (v2, mock-aligned)
 
-Radiant Play prototype · `src/prototypes/AgentDB/` · registered in `registry-mine.ts`
+Radiant Play prototype · `src/prototypes/NearStore/` · registered in `registry-mine.ts`
 
 ---
 
@@ -20,8 +20,8 @@ Radiant Play prototype · `src/prototypes/AgentDB/` · registered in `registry-m
 
 ## 1. Product context
 
-**Agent DB** is ThoughtSpot's data caching offering. Customers query models live from
-Snowflake; Agent DB caches that model data inside ThoughtSpot to cut live query cost and
+**Near Store** is ThoughtSpot's data caching offering. Customers query models live from
+Snowflake; Near Store caches that model data inside ThoughtSpot to cut live query cost and
 improve load performance. This prototype covers the **admin capacity view** (Data store)
 and the **modeler caching experience** (model → Caching tab), both inside the Data workspace.
 
@@ -167,7 +167,7 @@ Local `SourceCacheIcon`. Clicking a model → its Caching tab.
 ## 7. File structure
 
 ```
-src/prototypes/AgentDB/
+src/prototypes/NearStore/
   index.tsx              # shell (rail + sidebar), view state, all cache mutations
   types.ts · data.ts · styles.ts
   components/

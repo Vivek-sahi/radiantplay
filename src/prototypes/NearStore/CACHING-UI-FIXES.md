@@ -1,11 +1,11 @@
-# AgentDB — Caching UI fixes (handoff)
+# Near Store — Caching UI fixes (handoff)
 
-Five UI tweaks in the AgentDB caching surfaces, found during a live review. All locations pinned below. Nothing here is applied yet.
+Five UI tweaks in the Near Store caching surfaces, found during a live review. All locations pinned below. Nothing here is applied yet.
 
 Files involved:
-- `src/prototypes/AgentDB/components/CachingTab.tsx`
-- `src/prototypes/AgentDB/components/CachingSettingsModal.tsx`
-- `src/prototypes/AgentDB/components/primitives.tsx`
+- `src/prototypes/NearStore/components/CachingTab.tsx`
+- `src/prototypes/NearStore/components/CachingSettingsModal.tsx`
+- `src/prototypes/NearStore/components/primitives.tsx`
 
 Conventions: tokens only (no hard-coded hex/spacing), Radiant components, sentence case. `c` and `spacing` come from `../styles`. Verify with `npm run build` when done.
 
@@ -58,7 +58,7 @@ The info Alert (~lines 248–255, the `else` branch) is blue and doesn't span fu
   </div>
 )}
 ```
-Leave the `warning` Alert (the `isEdit && changed` branch) as-is. Optional info icon: the AgentDB icon set has no "info" glyph — safest is text-only, or reuse an existing neutral one.
+Leave the `warning` Alert (the `isEdit && changed` branch) as-is. Optional info icon: the Near Store icon set has no "info" glyph — safest is text-only, or reuse an existing neutral one.
 
 ---
 
@@ -119,7 +119,7 @@ In the cached state (~lines 219–224) the success line is a permanent on-screen
 </Horizontal>
 ```
 
-**Do:** remove this permanent row and instead fire a transient toast when a cache run completes. AgentDB has **no toast system yet**, so:
-- Use the Radiant `Toast` from `@components` (add a provider/host at the AgentDB root if needed).
+**Do:** remove this permanent row and instead fire a transient toast when a cache run completes. Near Store has **no toast system yet**, so:
+- Use the Radiant `Toast` from `@components` (add a provider/host at the Near Store root if needed).
 - Trigger it on the busy → done transition — see `scheduleRebuild` / `applyConfig` in `CachingTab.tsx` (the completion callback after `REBUILD_MS`). Show "Cache completed successfully" there.
 - The persistent success state should no longer render; keep the `purged` / `Failure` alerts as they are (those are meaningful persistent states, not transient success).

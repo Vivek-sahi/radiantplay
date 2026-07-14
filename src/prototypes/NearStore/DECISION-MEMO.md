@@ -1,4 +1,4 @@
-# Agent DB — caching scope: decision memo
+# Near Store — caching scope: decision memo
 
 **Date:** 2026-07-02 · **Status:** for review · **Owner:** Vivek Sahi
 **Audience:** product + eng leadership (scope sign-off)
@@ -7,7 +7,7 @@
 
 ## TL;DR
 
-Agent DB caches a model's Snowflake data into the ThoughtSpot data store to cut live
+Near Store caches a model's Snowflake data into the ThoughtSpot data store to cut live
 query cost and speed up loads. For the MVP we support **two caching modes — Full Model and
 Custom per-table time windows — on a single model-level refresh schedule.** We deliberately
 defer table selection, per-table refresh, and row filters.
@@ -127,4 +127,4 @@ Table (Custom only)
 └─ Row filter .......... e.g. region = 'US' ..................... 🚫 deferred (correctness)
 ```
 
-See `USE-CASES.md` for the full tree and `agentdb-overview.html` for the visual walkthrough.
+See `USE-CASES.md` for the full tree and `near-store-overview.html` for the visual walkthrough.
