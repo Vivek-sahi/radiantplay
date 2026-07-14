@@ -1,41 +1,16 @@
 import React from 'react';
-import { Typography, Horizontal, Vertical } from '../../../components';
-import { c, radius, spacing, fontSize, fontWeight, fontFamily, lineHeight } from '../styles';
+import { createPortal } from 'react-dom';
+import { Toast, Typography, Horizontal, Vertical, Card } from '@/components';
+import { spacing } from '../styles';
+import styles from './primitives.module.css';
 import type { RunStatus } from '../types';
 
 // ── StatusPill ────────────────────────────────────────────────────────────────
 export type PillKind = 'success' | 'failure' | 'warning' | 'info' | 'neutral';
 
-const PILL: Record<PillKind, { bg: string; fg: string }> = {
-  success: { bg: c['background-success'], fg: c['content-success'] },
-  failure: { bg: c['background-failure'], fg: c['content-failure'] },
-  warning: { bg: c['background-warning'], fg: c['content-primary'] },
-  info: { bg: c['background-information'], fg: c['content-information'] },
-  neutral: { bg: c['background-subtle'], fg: c['content-secondary'] },
-};
-
-export const StatusPill: React.FC<{ kind: PillKind; label: string }> = ({ kind, label }) => {
-  const { bg, fg } = PILL[kind];
-  return (
-    <span
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        backgroundColor: bg,
-        color: fg,
-        borderRadius: `${radius.badge}px`,
-        padding: `2px ${spacing.B}px`,
-        fontFamily: fontFamily.primary,
-        fontSize: `${fontSize.xs}px`,
-        lineHeight: `${lineHeight.sm}px`,
-        fontWeight: fontWeight.medium,
-        whiteSpace: 'nowrap',
-      }}
-    >
-      {label}
-    </span>
-  );
-};
+export const StatusPill: React.FC<{ kind: PillKind; label: string }> = ({ kind, label }) => (
+  <span className={`${styles.pill} ${styles[kind]}`}>{label}</span>
+);
 
 export function runStatusPillKind(status: RunStatus): PillKind {
   if (status === 'Success') return 'success';
@@ -49,52 +24,56 @@ export const StatCard: React.FC<{ label: string; value: string; sub?: string }> 
   value,
   sub,
 }) => (
-  <Vertical
-    gap={spacing.A}
-    style={{
-      backgroundColor: c['background-base'],
-      border: `1px solid ${c['border-divider']}`,
-      borderRadius: `${radius.card}px`,
-      padding: `${spacing.D}px ${spacing.E}px`,
-      minWidth: '160px',
-      flex: 1,
-    }}
-  >
-    <Typography variant="overline" color="gray-light" noMargin>
-      {label}
-    </Typography>
-    <Typography variant="page-title" color="base" noMargin>
-      {value}
-    </Typography>
-    {sub && (
-      <Typography variant="footnote" color="gray-light" noMargin>
-        {sub}
+  <Card className={styles.statCard}>
+    <Vertical gap={spacing.A} className={styles.statCardBody}>
+      <Typography variant="overline" color="gray-light" noMargin>
+        {label}
       </Typography>
-    )}
-  </Vertical>
+      <Typography variant="page-title" color="base" noMargin>
+        {value}
+      </Typography>
+      {sub && (
+        <Typography variant="footnote" color="gray-light" noMargin>
+          {sub}
+        </Typography>
+      )}
+    </Vertical>
+  </Card>
 );
 
-// ── KeyValue (label → value grid rows) ─────────────────────────────────────────
+// ── FloatingToast ───────────────────────────────────────────────────────────
+// The DS Toast has no positioning of its own (the position-* classes only swap
+// the animation), so we portal it to the body and pin it bottom-center.
+export const FloatingToast: React.FC<{ message: string; type: 'success' | 'info'; onDismiss: () => void }> = ({
+  message,
+  type,
+  onDismiss,
+}) =>
+  createPortal(
+    <div className={styles.toastAnchor}>
+      <Toast message={message} type={type} position="bottom" onDismiss={onDismiss} />
+    </div>,
+    document.body,
+  );
+
+// ── KeyValue (label → value rows) ───────────────────────────────────────────────
 export const KeyValue: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
-  <Horizontal align="start" gap={spacing.D} style={{ padding: `${spacing.A}px 0` }}>
-    <div style={{ width: '180px', flexShrink: 0 }}>
+  <Horizontal align="start" gap={spacing.D} className={styles.keyValueRow}>
+    <div className={styles.keyValueLabel}>
       <Typography variant="body-normal" color="gray-light" noMargin>
         {label}
       </Typography>
     </div>
-    <div style={{ fontFamily: fontFamily.primary, fontSize: `${fontSize.sm}px`, lineHeight: `${lineHeight.md}px`, color: c['content-primary'] }}>
-      {children}
-    </div>
+    <div className={styles.keyValueValue}>{children}</div>
   </Horizontal>
 );
 
 // ── SectionHeader ──────────────────────────────────────────────────────────────
 export const SectionHeader: React.FC<{ title: string; actions?: React.ReactNode }> = ({ title, actions }) => (
-  <Horizontal justify="space-between" align="center" style={{ width: '100%' }}>
+  <Horizontal justify="space-between" align="center" className={styles.sectionHeader}>
     <Typography variant="section-label" color="base" noMargin>
       {title}
     </Typography>
     {actions && <Horizontal gap={spacing.E}>{actions}</Horizontal>}
   </Horizontal>
 );
-

@@ -1,0 +1,23 @@
+/* Model page tabs sit directly on the page background — paint the bar with the
+   page's own background token (no white bar), keeping only the bottom divider. */
+.transparentTabs {
+  background-color: var(--rd-sys-color-background-sunken) !important;
+}
+
+/* Faithful 1:1 port of the inline styles previously in ModelView.tsx. */
+.page {
+  max-width: 1200px;
+  padding: var(--spacing-8, 32px);
+}
+.headerRow {
+  width: 100%;
+}
+.headerText {
+  max-width: 640px;
+}
+.headerActions {
+  flex-shrink: 0;
+}
+.tabContent {
+  padding-top: var(--spacing-3, 12px);
+}

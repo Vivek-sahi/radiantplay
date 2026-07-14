@@ -8,19 +8,18 @@ import {
   ConfirmDialog,
   ActionMenu,
   ActionMenuItem,
-  LoadingIndicator,
-  Toast,
   Typography,
   Horizontal,
   Vertical,
-} from '../../../components';
-import type { TableColumn } from '../../../components';
-import { KeyValue, SectionHeader } from './primitives';
+} from '@/components';
+import type { TableColumn } from '@/components';
+import { KeyValue, SectionHeader, StatCard, FloatingToast, StatusPill, runStatusPillKind } from './primitives';
 import { CachingSettingsModal, type CacheConfigDraft } from './CachingSettingsModal';
 import { RunHistoryModal } from './RunHistoryModal';
-import { c, spacing } from '../styles';
-import { formatSizeMB, scheduleDetail, scheduleLabel, windowMonthsLabel } from '../utils';
-import type { CacheRun, DataModel, TableCacheSetting, TableRunResult, WindowMonths } from '../types';
+import { spacing } from '../styles';
+import styles from './CachingTab.module.css';
+import { formatRowsFull, formatSizeMB, scheduleDetail, scheduleLabel, windowMonthsLabel } from '../utils';
+import type { CacheRun, CacheState, DataModel, TableCacheSetting, TableRunResult, WindowMonths } from '../types';
 
 const REBUILD_MS = 6000; // simulated cache build time
 
@@ -53,10 +52,8 @@ function computeStats(model: DataModel, draft: CacheConfigDraft) {
 }
 
 let runSeq = 1000;
-function buildRun(runType: CacheRun['runType'], rows: number, tableResults: TableRunResult[]): CacheRun {
-  runSeq += 1;
-  return { id: `nr-${runSeq}`, runType, startTime: 'Just now', endTime: 'Just now', rows, status: 'Success', tableResults };
-}
+const nextRunId = () => `nr-${(runSeq += 1)}`;
+const pct = (n: number, total: number) => (total > 0 ? Math.round((n / total) * 100) : 0);
 
 // ── Caching tab ─────────────────────────────────────────────────────────────
 export const CachingTab: React.FC<{ model: DataModel; onChange: (next: DataModel) => void }> = ({ model, onChange }) => {
@@ -64,32 +61,109 @@ export const CachingTab: React.FC<{ model: DataModel; onChange: (next: DataModel
   const [modalIsEdit, setModalIsEdit] = useState(false);
   const [confirm, setConfirm] = useState<null | 'purge' | 'disable'>(null);
   const [showHistory, setShowHistory] = useState(false);
-  const [busy, setBusy] = useState<null | 'caching' | 'refreshing'>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' } | null>(null);
   const timerRef = useRef<number | null>(null);
+
+  // Latest model, so a caching timer that fires later flips the right run.
+  const modelRef = useRef(model);
+  useEffect(() => { modelRef.current = model; }, [model]);
 
   useEffect(() => () => { if (timerRef.current) window.clearTimeout(timerRef.current); }, []);
 
   const cache = model.cache;
 
   // ── mutations ──
-  const applyConfig = (draft: CacheConfigDraft, isEdit: boolean) => {
+  // Caching is async and can take minutes — it never blocks the screen. We add an
+  // "In progress" run to run history + a toast, then flip that run to Success when
+  // the (simulated) build finishes. The latest model is read from modelRef so the
+  // completion lands on the right run even if state changed meanwhile.
+  const completeRun = (runId: string, stats: ReturnType<typeof computeStats>) => {
+    const m = modelRef.current;
+    if (!m.cache) return;
+    onChange({
+      ...m,
+      cache: {
+        ...m.cache,
+        status: 'cached',
+        cacheSizeMB: stats.sizeMB,
+        rowCount: stats.rows,
+        lastRunStatus: 'Success',
+        runs: m.cache.runs.map((r) =>
+          r.id === runId
+            ? { ...r, endTime: 'Just now', rows: stats.rows, status: 'Success', tableResults: stats.tableResults }
+            : r,
+        ),
+      },
+    });
+    setToast({ message: 'Cache completed successfully', type: 'success' });
+  };
+
+  const startRun = (
+    runType: CacheRun['runType'],
+    draft: CacheConfigDraft,
+    baseCache: CacheState,
+    startMessage: string,
+  ) => {
     const stats = computeStats(model, draft);
-    const run = buildRun(isEdit ? 'Config change' : 'Scheduled', stats.rows, stats.tableResults);
+    const runId = nextRunId();
+    const inProgress: CacheRun = { id: runId, runType, startTime: 'Just now', status: 'In progress', tableResults: [] };
     onChange({
       ...model,
       cache: {
+        ...baseCache,
         status: 'cached',
-        window: draft.window,
-        tableSettings: draft.window === 'custom' ? draft.tableSettings : undefined,
-        schedule: draft.schedule,
         cacheSizeMB: stats.sizeMB,
         rowCount: stats.rows,
-        nextRunAt: 'Tomorrow, 9:00 AM',
-        lastRunStatus: 'Success',
-        runs: isEdit && cache ? [run, ...cache.runs] : [run],
+        lastRunStatus: 'In progress',
+        runs: [inProgress, ...baseCache.runs],
       },
     });
+    setToast({ message: startMessage, type: 'info' });
+    timerRef.current = window.setTimeout(() => completeRun(runId, stats), REBUILD_MS);
+  };
+
+  const applyConfig = (draft: CacheConfigDraft, isEdit: boolean) => {
+    const baseCache: CacheState = {
+      status: 'cached',
+      window: draft.window,
+      tableSettings: draft.window === 'custom' ? draft.tableSettings : undefined,
+      schedule: draft.schedule,
+      cacheSizeMB: 0,
+      rowCount: 0,
+      nextRunAt: 'Tomorrow, 9:00 AM',
+      lastRunStatus: 'Success',
+      runs: isEdit && cache ? cache.runs : [],
+      analytics: isEdit ? cache?.analytics : undefined,
+    };
+
+    // "Also cache now" unchecked → don't rebuild now.
+    if (draft.alsoCacheNow === false) {
+      if (isEdit && cache) {
+        // Keep the existing snapshot; the new settings apply on the next scheduled run.
+        onChange({
+          ...model,
+          cache: {
+            ...cache,
+            window: draft.window,
+            tableSettings: draft.window === 'custom' ? draft.tableSettings : undefined,
+            schedule: draft.schedule,
+          },
+        });
+        setToast({ message: 'Settings saved — changes apply on the next scheduled run.', type: 'info' });
+      } else {
+        // Enable, schedule-only → pending first run.
+        onChange({ ...model, cache: { ...baseCache, lastRunStatus: 'In progress', runs: [] } });
+        setToast({ message: 'Caching scheduled — the first run will follow the schedule above.', type: 'info' });
+      }
+      return;
+    }
+
+    startRun(
+      isEdit ? 'Config change' : 'Scheduled',
+      draft,
+      baseCache,
+      'Caching is in progress and may take up to a few mins. View status in run history.',
+    );
   };
 
   const doRefresh = () => {
@@ -99,12 +173,7 @@ export const CachingTab: React.FC<{ model: DataModel; onChange: (next: DataModel
       schedule: cache.schedule,
       tableSettings: cache.tableSettings ?? model.tables.map((t) => ({ tableId: t.id, mode: 'full_table' })),
     };
-    const stats = computeStats(model, draft);
-    const run = buildRun('Ad-hoc', stats.rows, stats.tableResults);
-    onChange({
-      ...model,
-      cache: { ...cache, status: 'cached', cacheSizeMB: stats.sizeMB, rowCount: stats.rows, lastRunStatus: 'Success', nextRunAt: 'Tomorrow, 9:00 AM', runs: [run, ...cache.runs] },
-    });
+    startRun('Ad-hoc', draft, cache, 'Caching is in progress and may take up to a few mins. View status in run history.');
   };
 
   const purgeCache = () => {
@@ -119,48 +188,20 @@ export const CachingTab: React.FC<{ model: DataModel; onChange: (next: DataModel
     setConfirm(null);
   };
 
-  // Run a simulated build, showing a loading state first.
-  const scheduleRebuild = (fn: () => void, mode: 'caching' | 'refreshing') => {
-    setBusy(mode);
-    timerRef.current = window.setTimeout(() => {
-      fn();
-      setBusy(null);
-      setToast({ message: 'Cache completed successfully', type: 'success' });
-    }, REBUILD_MS);
-  };
-
   const handleSaveConfig = (draft: CacheConfigDraft, isEdit: boolean) => {
     setModalOpen(false);
-    scheduleRebuild(() => applyConfig(draft, isEdit), isEdit ? 'refreshing' : 'caching');
+    applyConfig(draft, isEdit);
   };
-
-  // ── busy: loading state (enable / refresh) ──
-  if (busy) {
-    return (
-      <Vertical gap={spacing.F}>
-        <Vertical align="center" justify="center" gap={spacing.D} style={{ padding: `${spacing.J}px 0` }}>
-          <LoadingIndicator
-            size="large"
-            centered
-            text={busy === 'caching' ? `Caching ${model.name}…` : 'Refreshing cache…'}
-          />
-          <Typography variant="body-normal" color="gray-light" noMargin>
-            Copying data from Snowflake into the ThoughtSpot data store. This can take a few moments.
-          </Typography>
-        </Vertical>
-      </Vertical>
-    );
-  }
 
   // ── 5a: not cached ──
   if (!cache) {
     return (
       <>
-        <Vertical align="center" justify="center" gap={spacing.D} style={{ padding: `${spacing.I}px 0`, textAlign: 'center' }}>
+        <Vertical align="center" justify="center" gap={spacing.D} className={styles.emptyState}>
           <Button variant="primary" onClick={() => { setModalIsEdit(false); setModalOpen(true); }}>
             {`Cache ${model.name}`}
           </Button>
-          <div style={{ maxWidth: '480px' }}>
+          <div className={styles.emptyStateText}>
             <Typography variant="body-normal" color="gray-light" noMargin>
               By caching this model, you can reduce your live query cost and improve loading performance.
             </Typography>
@@ -170,13 +211,15 @@ export const CachingTab: React.FC<{ model: DataModel; onChange: (next: DataModel
         {modalOpen && (
           <CachingSettingsModal model={model} isEdit={false} onClose={() => setModalOpen(false)} onSave={(d) => handleSaveConfig(d, false)} />
         )}
-        {toast && <Toast message={toast.message} type={toast.type} position="bottom-right" onDismiss={() => setToast(null)} />}
+        {toast && <FloatingToast message={toast.message} type={toast.type} onDismiss={() => setToast(null)} />}
       </>
     );
   }
 
   // ── 5b: cached ──
   const purged = cache.status === 'purged';
+  const paused = cache.status === 'paused';
+  const pendingFirstRun = cache.status === 'cached' && cache.runs.length === 0;
   const editDraft: CacheConfigDraft = {
     window: cache.window,
     schedule: cache.schedule,
@@ -199,8 +242,18 @@ export const CachingTab: React.FC<{ model: DataModel; onChange: (next: DataModel
   return (
     <>
       <Vertical gap={spacing.H}>
-        {/* Persistent alert only for the failed state (purge feedback is a toast). */}
-        {!purged && cache.lastRunStatus === 'Failure' ? (
+        {/* Paused = warning (model changed → serving live); failure = error. Two
+            distinct patterns. Purge feedback is a toast, not a persistent alert. */}
+        {paused ? (
+          <Alert
+            status="warning"
+            variant="page"
+            dismissible={false}
+            message="This model changed after it was last cached, so caching is paused — queries are running live from Snowflake until the cache is rebuilt."
+            buttonText="Refresh now"
+            onButtonClick={doRefresh}
+          />
+        ) : !purged && cache.lastRunStatus === 'Failure' ? (
           <Alert
             status="failure"
             variant="page"
@@ -224,29 +277,42 @@ export const CachingTab: React.FC<{ model: DataModel; onChange: (next: DataModel
                   placement="bottom-end"
                   trigger={<Button variant="tertiary" size="small" icon="more">More</Button>}
                 >
-                  <ActionMenuItem label="Refresh Cache" icon={<Icon name="refresh" size="s" />} onClick={() => scheduleRebuild(doRefresh, 'refreshing')} />
+                  <ActionMenuItem label="Refresh Cache" icon={<Icon name="refresh" size="s" />} onClick={doRefresh} />
                   <ActionMenuItem label="Purge current cache" icon={<Icon name="eye-undo" size="s" />} onClick={() => setConfirm('purge')} disabled={purged} />
                   <ActionMenuItem label="Disable Cache" icon={<Icon name="trash-can" size="s" />} destructive onClick={() => setConfirm('disable')} />
                 </ActionMenu>
               </>
             }
           />
-          <div style={{ borderTop: `1px solid ${c['border-divider']}`, paddingTop: `${spacing.C}px` }}>
+          <div className={styles.settingsBlock}>
             <KeyValue label="Cache scope">{cache.window === 'full' ? 'Full Model' : 'Custom'}</KeyValue>
             <KeyValue label="Refresh frequency">
-              <Vertical gap={spacing.A / 2}>
+              <Vertical gap={spacing.A}>
                 <span>{scheduleLabel(cache.schedule)}</span>
                 {scheduleDetail(cache.schedule) && (
                   <Typography variant="footnote" color="gray-light" noMargin>{scheduleDetail(cache.schedule)}</Typography>
                 )}
               </Vertical>
             </KeyValue>
-            <KeyValue label="Cache size">{purged ? '—' : formatSizeMB(cache.cacheSizeMB)}</KeyValue>
+            <KeyValue label="Cache size">
+              {purged ? '—' : pendingFirstRun ? 'Pending first run' : formatSizeMB(cache.cacheSizeMB)}
+            </KeyValue>
+            {(() => {
+              const lastRun = cache.runs.find((r) => r.runType === 'Scheduled' || r.runType === 'Ad-hoc');
+              return lastRun ? (
+                <KeyValue label="Last run">
+                  <Horizontal gap={spacing.B} align="center">
+                    <span>{lastRun.startTime}</span>
+                    <StatusPill kind={runStatusPillKind(lastRun.status)} label={lastRun.status} />
+                  </Horizontal>
+                </KeyValue>
+              ) : null;
+            })()}
             <KeyValue label="Next scheduled run">{cache.nextRunAt}</KeyValue>
           </div>
 
           {cache.window === 'custom' && cache.tableSettings && (
-            <Vertical gap={spacing.B} style={{ marginTop: `${spacing.C}px` }}>
+            <Vertical gap={spacing.B} className={styles.perTableBlock}>
               <Typography variant="content-label" color="base" noMargin>
                 Per-table settings
               </Typography>
@@ -254,6 +320,32 @@ export const CachingTab: React.FC<{ model: DataModel; onChange: (next: DataModel
             </Vertical>
           )}
         </Vertical>
+
+        {/* Analytics — cache hit / miss. Always shown for a live cache; empty
+            (zeroed) until queries have run against it. */}
+        {!purged && !pendingFirstRun && (
+          <Vertical gap={spacing.C}>
+            <SectionHeader title="Analytics" />
+            <Typography variant="footnote" color="gray-light" noMargin>
+              {cache.analytics
+                ? `Based on the last cache run · ${cache.analytics.basedOn}`
+                : 'No queries have run against this cache yet — stats appear once they do.'}
+            </Typography>
+            <Horizontal gap={spacing.D} align="stretch" wrap>
+              <StatCard label="Total queries fired" value={cache.analytics ? formatRowsFull(cache.analytics.totalQueries) : '0'} />
+              <StatCard
+                label="Queries on cached data"
+                value={cache.analytics ? `${pct(cache.analytics.cachedQueries, cache.analytics.totalQueries)}%` : '—'}
+                sub={`${cache.analytics ? formatRowsFull(cache.analytics.cachedQueries) : 0} queries`}
+              />
+              <StatCard
+                label="Queries on live data"
+                value={cache.analytics ? `${pct(cache.analytics.liveQueries, cache.analytics.totalQueries)}%` : '—'}
+                sub={`${cache.analytics ? formatRowsFull(cache.analytics.liveQueries) : 0} queries`}
+              />
+            </Horizontal>
+          </Vertical>
+        )}
 
         {/* Run history entry point */}
         <Horizontal>
@@ -294,7 +386,7 @@ export const CachingTab: React.FC<{ model: DataModel; onChange: (next: DataModel
         onCancel={() => setConfirm(null)}
       />
 
-      {toast && <Toast message={toast.message} type={toast.type} position="bottom-right" onDismiss={() => setToast(null)} />}
+      {toast && <FloatingToast message={toast.message} type={toast.type} onDismiss={() => setToast(null)} />}
     </>
   );
 };

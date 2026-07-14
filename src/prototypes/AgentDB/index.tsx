@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
-import { Horizontal, Vertical } from '../../components';
-import { TopBar, Sidebar, pageBg, type NavKey } from './components/Shell';
+import { Shell, type NavKey } from './components/Shell';
 import { DataStoreView } from './components/DataStoreView';
 import { DataObjectsView } from './components/DataObjectsView';
 import { ModelView } from './components/ModelView';
 import { models as seedModels } from './data';
-import { spacing, fontFamily } from './styles';
 import type { DataModel } from './types';
 
 /**
@@ -48,25 +46,14 @@ export const AgentDB: React.FC = () => {
     const model = models.find((m) => m.id === view.modelId);
     if (!model) return null;
     return (
-      <ModelView
-        model={model}
-        backLabel={view.origin === 'datastore' ? 'Data store' : 'Data objects'}
-        onBack={() => setView(view.origin === 'datastore' ? { kind: 'datastore' } : { kind: 'objects' })}
-        onChange={updateModel}
-      />
+      <ModelView model={model} onChange={updateModel} />
     );
   };
 
   return (
-    <Vertical style={{ height: '100vh', overflow: 'hidden', fontFamily: fontFamily.primary }}>
-      <TopBar />
-      <Horizontal align="stretch" style={{ flex: 1, minHeight: 0 }}>
-        <Sidebar active={activeNav} onNavigate={navigate} />
-        <div style={{ flex: 1, minWidth: 0, overflowY: 'auto', backgroundColor: pageBg, padding: `${spacing.H}px` }}>
-          {renderContent()}
-        </div>
-      </Horizontal>
-    </Vertical>
+    <Shell active={activeNav} onNavigate={navigate}>
+      {renderContent()}
+    </Shell>
   );
 };
 

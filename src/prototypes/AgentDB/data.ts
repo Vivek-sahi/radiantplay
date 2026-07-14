@@ -146,6 +146,21 @@ const ledgerTables: ModelTable[] = [
   },
 ];
 
+// A wide model (10 tables) — exercises the scrollable per-table list in the
+// Caching Settings modal (custom scope).
+const hrTables: ModelTable[] = [
+  { id: 'employees', name: 'employees', rowCount: 48_000, columns: [col('employee_id', 'employee_id', 'string'), col('hire_date', 'hire_date', 'date'), col('department_id', 'department_id', 'string')] },
+  { id: 'departments', name: 'departments', rowCount: 320, columns: [col('department_id', 'department_id', 'string'), col('name', 'name', 'string')] },
+  { id: 'compensation', name: 'compensation', rowCount: 210_000, columns: [col('employee_id', 'employee_id', 'string'), col('effective_date', 'effective_date', 'date'), col('base_salary', 'base_salary', 'number')] },
+  { id: 'org_hierarchy', name: 'org_hierarchy', rowCount: 48_000, columns: [col('employee_id', 'employee_id', 'string'), col('manager_id', 'manager_id', 'string')] },
+  { id: 'attrition', name: 'attrition', rowCount: 12_400, columns: [col('employee_id', 'employee_id', 'string'), col('term_date', 'term_date', 'date'), col('reason', 'reason', 'string')] },
+  { id: 'reviews', name: 'performance_reviews', rowCount: 96_000, columns: [col('review_id', 'review_id', 'string'), col('review_date', 'review_date', 'date'), col('rating', 'rating', 'number')] },
+  { id: 'leave', name: 'leave_requests', rowCount: 180_000, columns: [col('leave_id', 'leave_id', 'string'), col('start_date', 'start_date', 'date'), col('days', 'days', 'number')] },
+  { id: 'headcount_snap', name: 'headcount_snapshots', rowCount: 560_000, columns: [col('snapshot_date', 'snapshot_date', 'date'), col('department_id', 'department_id', 'string'), col('headcount', 'headcount', 'number')] },
+  { id: 'locations', name: 'locations', rowCount: 140, columns: [col('location_id', 'location_id', 'string'), col('country', 'country', 'string')] },
+  { id: 'benefits', name: 'benefits_enrollment', rowCount: 132_000, columns: [col('employee_id', 'employee_id', 'string'), col('enrolled_date', 'enrolled_date', 'date'), col('plan', 'plan', 'string')] },
+];
+
 // ── Run history builders ────────────────────────────────────────────────────
 const salesRun = (
   id: string,
@@ -173,9 +188,19 @@ const salesRun = (
 
 const dunderRuns: CacheRun[] = [
   { id: 'r0', runType: 'Scheduled', startTime: '1 hr ago', status: 'In progress', tableResults: [] },
+  { id: 'r0p', runType: 'Purge', startTime: '3 hrs ago', endTime: '3 hrs ago', status: 'Success', tableResults: [] },
+  { id: 'r0m', runType: 'Model update', startTime: 'Yesterday', endTime: 'Yesterday', status: 'Success', tableResults: [] },
   salesRun('r1', 'Scheduled', 'Yesterday', 'Success', 1_500_000, 'Yesterday'),
   salesRun('r2', 'Scheduled', '2 days ago', 'Success', 1_498_220, '2 days ago'),
   salesRun('r3', 'Scheduled', '10 May 2026', 'Success', 1_495_010, '10 May 2026'),
+];
+
+// Paused model: a model change was detected, so serving fell back to live. The
+// newest event is the model update that triggered the pause.
+const supplyRuns: CacheRun[] = [
+  { id: 'sc0', runType: 'Model update', startTime: '20 min ago', endTime: '20 min ago', status: 'Success', tableResults: [] },
+  salesRun('sc1', 'Scheduled', 'Yesterday', 'Success', 1_500_000, 'Yesterday'),
+  salesRun('sc2', 'Scheduled', '2 days ago', 'Success', 1_499_500, '2 days ago'),
 ];
 
 const ledgerRuns: CacheRun[] = [
@@ -258,6 +283,9 @@ export const models: DataModel[] = [
       'The Dunder Mifflin Sales worksheet provides a comprehensive overview of sales data, capturing details about customers, orders, and products. It includes revenue, margins, and fulfillment metrics across regions.',
     source: 'Snowflake',
     tables: salesTables,
+    tags: ['Revenue', 'Sales'],
+    author: { name: 'Vivek Sahi' },
+    lastModified: '2 hours ago',
     cache: {
       status: 'cached',
       window: 'full',
@@ -267,6 +295,7 @@ export const models: DataModel[] = [
       nextRunAt: '20 May 2026, 9:00 AM',
       lastRunStatus: 'Success',
       runs: dunderRuns,
+      analytics: { totalQueries: 12_000, cachedQueries: 9_000, liveQueries: 3_000, basedOn: '15 May 2026, 9:00 AM' },
     },
   },
   {
@@ -276,6 +305,9 @@ export const models: DataModel[] = [
       'Multi-touch attribution across paid, organic, and email channels. Joins web sessions, campaigns, and touchpoints to model pipeline influence and spend efficiency.',
     source: 'Snowflake',
     tables: marketingTables,
+    tags: ['Marketing', 'Attribution'],
+    author: { name: 'Aastha Sharma' },
+    lastModified: 'Yesterday',
     cache: {
       status: 'cached',
       window: 'custom',
@@ -290,6 +322,7 @@ export const models: DataModel[] = [
       nextRunAt: '19 May 2026, 3:00 AM',
       lastRunStatus: 'Success',
       runs: marketingRuns,
+      analytics: { totalQueries: 48_200, cachedQueries: 41_000, liveQueries: 7_200, basedOn: '18 May 2026, 3:00 AM' },
     },
   },
   {
@@ -299,6 +332,9 @@ export const models: DataModel[] = [
       'General ledger, chart of accounts, and daily FX rates. Powers close reporting, variance analysis, and multi-currency consolidation.',
     source: 'Snowflake',
     tables: ledgerTables,
+    tags: ['Finance', 'DO NOT DELETE'],
+    author: { name: 'Devin McPherson' },
+    lastModified: '3 days ago',
     cache: {
       status: 'cached',
       window: 'full',
@@ -316,7 +352,10 @@ export const models: DataModel[] = [
     description:
       'Headcount, org hierarchy, and compensation bands. Monthly snapshots for workforce planning and attrition analysis.',
     source: 'Snowflake',
-    tables: ledgerTables,
+    tables: hrTables,
+    tags: ['HR', 'People'],
+    author: { name: 'Ramkumar Natarajan' },
+    lastModified: '4 days ago',
   },
   {
     id: 'supply-chain-inventory',
@@ -325,6 +364,19 @@ export const models: DataModel[] = [
       'On-hand inventory, purchase orders, and supplier lead times across distribution centers. Feeds replenishment and stockout risk models.',
     source: 'Snowflake',
     tables: salesTables,
+    tags: ['Operations'],
+    author: { name: 'Bharath Kumar' },
+    lastModified: '5 days ago',
+    cache: {
+      status: 'paused',
+      window: 'full',
+      schedule: { ...dailyNineAm, hour: 5 },
+      cacheSizeMB: 512,
+      rowCount: 1_500_000,
+      nextRunAt: '21 May 2026, 5:00 AM',
+      lastRunStatus: 'Success',
+      runs: supplyRuns,
+    },
   },
 ];
 

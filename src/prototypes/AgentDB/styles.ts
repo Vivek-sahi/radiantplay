@@ -6,10 +6,10 @@
  * few bespoke surfaces (dark shell, status pills, data-row values).
  */
 
-import { systemColors } from '../../tokens/colors';
-import { spacing } from '../../tokens/spacing';
-import { radius } from '../../tokens/radius';
-import { fontFamily, fontSize, fontWeight, lineHeight } from '../../tokens/typography';
+import { systemColors } from '@tokens/colors';
+import { spacing } from '@tokens/spacing';
+import { radius } from '@tokens/radius';
+import { fontFamily, fontSize, fontWeight, lineHeight } from '@tokens/typography';
 
 export const c = systemColors.light;
 export { spacing, radius, fontFamily, fontSize, fontWeight, lineHeight };

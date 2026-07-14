@@ -1,0 +1,8 @@
+/* Faithful 1:1 port of the inline styles previously in Shell.tsx. */
+.shell {
+  height: 100vh;
+}
+.content {
+  height: 100%;
+  overflow-y: auto;
+}

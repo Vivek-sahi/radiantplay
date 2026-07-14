@@ -1,8 +1,9 @@
 import React from 'react';
-import { Table, ProgressBar, Link, Button, Icon, Typography, Horizontal, Vertical } from '../../../components';
-import type { TableColumn } from '../../../components';
+import { Table, ProgressBar, Link, Icon, Typography, Horizontal, Vertical } from '@/components';
+import type { TableColumn } from '@/components';
 import { StatCard, SectionHeader } from './primitives';
-import { c, spacing, radius, fontWeight } from '../styles';
+import { c, spacing } from '../styles';
+import styles from './DataStoreView.module.css';
 import { capacitySummary, formatGB, formatSizeMB } from '../utils';
 import type { DataModel } from '../types';
 
@@ -23,7 +24,7 @@ export const DataStoreView: React.FC<{
       render: (_v, row) => (
         <Horizontal gap={spacing.C} align="center">
           <Icon name="table" size="l" color={c['content-secondary']} />
-          <span style={{ fontWeight: fontWeight.medium, color: c['content-primary'] }}>{row.name}</span>
+          <Typography variant="content-label-subhead" color="base" as="span" noMargin>{row.name}</Typography>
         </Horizontal>
       ),
     },
@@ -31,7 +32,6 @@ export const DataStoreView: React.FC<{
     {
       key: 'size',
       label: 'Cache size',
-      align: 'right',
       render: (_v, row) => formatSizeMB(row.cache!.cacheSizeMB),
     },
     {
@@ -52,46 +52,21 @@ export const DataStoreView: React.FC<{
   ];
 
   return (
-    <Vertical gap={spacing.H} style={{ maxWidth: '1200px' }}>
+    <Vertical gap={spacing.H} className={styles.page}>
       {/* Capacity overview */}
-      <Vertical
-        gap={spacing.F}
-        style={{
-          backgroundColor: c['background-base'],
-          border: `1px solid ${c['border-divider']}`,
-          borderRadius: `${radius.card}px`,
-          padding: `${spacing.F}px`,
-        }}
-      >
+      <Vertical gap={spacing.F} className={styles.capacityPanel}>
         <SectionHeader
-          title="Data store"
-          actions={
-            <>
-              <Button
-                variant="secondary"
-                size="small"
-                icon="information"
-                onClick={() => window.open('/agentdb-overview.html', '_blank', 'noopener')}
-              >
-                How caching works
-              </Button>
-              <Link href="#" onClick={(e) => e.preventDefault()}>How to upgrade plan</Link>
-            </>
-          }
+          title="AgentDB"
+          actions={<Link href="#" onClick={(e) => e.preventDefault()}>How to upgrade plan</Link>}
         />
-        <div style={{ maxWidth: '640px' }}>
+        <div className={styles.narrow}>
           <Typography variant="body-normal" color="gray-light" noMargin>
-            Cached model data lives in your ThoughtSpot data store. Track how much of your purchased
-            space is in use and which models are consuming it.
+            Cached model data lives in AgentDB, your ThoughtSpot data store. Track how much of your
+            purchased space is in use and which models are consuming it.
           </Typography>
         </div>
 
-        <Horizontal gap={spacing.D} align="stretch" wrap>
-          <StatCard label="Purchased" value={formatGB(summary.purchasedGB)} />
-          <StatCard label="Used" value={formatGB(summary.usedGB)} />
-          <StatCard label="Available" value={formatGB(summary.availableGB)} />
-        </Horizontal>
-
+        {/* Visualisation first, then the data points read left-to-right into it. */}
         <ProgressBar
           value={summary.usedPct}
           color={barColor(summary.usedPct)}
@@ -100,6 +75,12 @@ export const DataStoreView: React.FC<{
           showValue
           valueFormatter={() => `${formatGB(summary.usedGB)} of ${formatGB(summary.purchasedGB)} · ${Math.round(summary.usedPct)}%`}
         />
+
+        <Horizontal gap={spacing.D} align="stretch" wrap>
+          <StatCard label="Used" value={formatGB(summary.usedGB)} />
+          <StatCard label="Available" value={formatGB(summary.availableGB)} />
+          <StatCard label="Total" value={formatGB(summary.purchasedGB)} />
+        </Horizontal>
       </Vertical>
 
       {/* Cached models */}

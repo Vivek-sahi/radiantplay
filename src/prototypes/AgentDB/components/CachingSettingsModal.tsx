@@ -1,20 +1,21 @@
 import React, { useMemo, useState } from 'react';
 import {
   Modal,
+  ModalFooter,
   Select,
   SegmentedControl,
   Checkbox,
   TextInput,
   Tooltip,
-  Alert,
   Button,
   Link,
   Icon,
   Typography,
   Horizontal,
   Vertical,
-} from '../../../components';
-import { c, spacing, radius, fontFamily, fontSize, fontWeight } from '../styles';
+} from '@/components';
+import { c, spacing } from '../styles';
+import styles from './CachingSettingsModal.module.css';
 import type {
   CacheWindow,
   DataModel,
@@ -29,6 +30,8 @@ export interface CacheConfigDraft {
   window: CacheWindow;
   schedule: Schedule;
   tableSettings: TableCacheSetting[];
+  /** Enable flow only: cache immediately on save, or wait for the first scheduled run. */
+  alsoCacheNow?: boolean;
 }
 
 const FREQ_OPTIONS = [
@@ -43,27 +46,10 @@ const MONTHS_OPTIONS: { id: string; label: string }[] = [1, 3, 6, 13].map((m) =>
   label: `Last ${m} months`,
 }));
 
-/** Shared left-column width so labels + table names align, and all controls line up. */
-const LABEL_W = '240px';
-
 const WEEKDAYS: Weekday[] = ['M', 'T', 'W', 'Th', 'F', 'Sa', 'S'];
 
-const dayChip = (on: boolean): React.CSSProperties => ({
-  minWidth: '34px',
-  height: '32px',
-  padding: `0 ${spacing.B}px`,
-  border: 'none',
-  borderRadius: `${radius.md}px`,
-  cursor: 'pointer',
-  fontFamily: fontFamily.primary,
-  fontSize: `${fontSize.sm}px`,
-  fontWeight: fontWeight.medium,
-  backgroundColor: on ? c['background-information'] : c['background-subtle'],
-  color: on ? c['content-brand'] : c['content-secondary'],
-});
-
 const FieldLabel: React.FC<{ title: string; help?: string }> = ({ title, help }) => (
-  <Vertical gap={spacing.A} style={{ width: LABEL_W, flexShrink: 0 }}>
+  <Vertical gap={spacing.A} className={styles.labelCol}>
     <Typography variant="content-label" color="base" noMargin>
       {title}
     </Typography>
@@ -100,6 +86,9 @@ export const CachingSettingsModal: React.FC<{
     initial?.schedule ?? { frequency: 'daily', hour: 9, minute: 0, excludeWeekends: true, timezone: 'Asia/Calcutta' },
   );
   const [tableSettings, setTableSettings] = useState<TableCacheSetting[]>(defaultTableSettings);
+  // Default: cache now when first enabling; leave unchecked when editing an
+  // existing cache (edits apply on the next scheduled run unless opted in).
+  const [alsoCacheNow, setAlsoCacheNow] = useState(!isEdit);
 
   const updateTable = (tableId: string, patch: Partial<TableCacheSetting>) =>
     setTableSettings((prev) => prev.map((ts) => (ts.tableId === tableId ? { ...ts, ...patch } : ts)));
@@ -110,10 +99,7 @@ export const CachingSettingsModal: React.FC<{
       return { ...s, weekdays: cur.includes(day) ? cur.filter((d) => d !== day) : [...cur, day] };
     });
 
-  const changed =
-    JSON.stringify({ window, schedule, tableSettings }) !== JSON.stringify(initial ?? {});
-
-  const handleSave = () => onSave({ window, schedule, tableSettings });
+  const handleSave = () => onSave({ window, schedule, tableSettings, alsoCacheNow });
 
   return (
     <Modal
@@ -122,18 +108,21 @@ export const CachingSettingsModal: React.FC<{
       title="Caching Settings"
       size="M3"
       footer={
-        <>
-          <Button variant="secondary" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button variant="primary" onClick={handleSave}>
-            Save
-          </Button>
-        </>
+        <ModalFooter
+          secondaryAction={
+            <Button variant="secondary" onClick={onClose}>
+              Cancel
+            </Button>
+          }
+          primaryAction={
+            <Button variant="primary" onClick={handleSave}>
+              Save
+            </Button>
+          }
+        />
       }
     >
-      <div style={{ maxHeight: '58vh', overflowY: 'auto', paddingRight: `${spacing.B}px` }}>
-        <Vertical gap={spacing.F} style={{ paddingBottom: `${spacing.B}px` }}>
+      <Vertical gap={spacing.F}>
           {/* Cache window */}
           <Horizontal align="start" gap={spacing.F}>
             <FieldLabel
@@ -164,8 +153,8 @@ export const CachingSettingsModal: React.FC<{
               </Vertical>
 
               {/* Header row */}
-              <Horizontal gap={spacing.F} align="center" style={{ paddingBottom: `${spacing.A}px`, borderBottom: `1px solid ${c['border-divider']}` }}>
-                <div style={{ width: LABEL_W, flexShrink: 0 }}>
+              <Horizontal gap={spacing.F} align="center" className={styles.tableHeaderRow}>
+                <div className={styles.labelCol}>
                   <Typography variant="overline" color="gray-light" noMargin>Table</Typography>
                 </div>
                 <Horizontal gap={spacing.A} align="center">
@@ -174,7 +163,7 @@ export const CachingSettingsModal: React.FC<{
                     maxWidth={300}
                     content="“Time window” caches only recent data (e.g. the last 13 months) in ThoughtSpot; anything older is queried live from Snowflake. Changing a table's window re-caches it on the next run and drops the old snapshot."
                   >
-                    <span style={{ display: 'inline-flex', cursor: 'help' }}>
+                    <span className={styles.helpTrigger}>
                       <Icon name="info-circle" size="s" color={c['content-secondary']} />
                     </span>
                   </Tooltip>
@@ -190,13 +179,9 @@ export const CachingSettingsModal: React.FC<{
                     key={t.id}
                     gap={spacing.F}
                     align="center"
-                    style={{
-                      minHeight: '40px',
-                      paddingBottom: `${spacing.C}px`,
-                      borderBottom: idx < arr.length - 1 ? `1px solid ${c['border-divider']}` : 'none',
-                    }}
+                    className={`${styles.tableRow} ${idx < arr.length - 1 ? styles.tableRowBordered : ''}`}
                   >
-                    <div style={{ width: LABEL_W, flexShrink: 0 }}>
+                    <div className={styles.labelCol}>
                       <Horizontal gap={spacing.B} align="center">
                         <Icon name="table" size="s" color={c['content-secondary']} />
                         <Typography variant="body-normal" color="base" noMargin>
@@ -277,7 +262,6 @@ export const CachingSettingsModal: React.FC<{
                   options={HOUR_OPTIONS}
                   value={String(schedule.hour)}
                   onChange={(v) => setSchedule((s) => ({ ...s, hour: Number(v) }))}
-                  size="small"
                   aria-label="Hour"
                 />
                 <Connector>:</Connector>
@@ -285,7 +269,6 @@ export const CachingSettingsModal: React.FC<{
                   options={MINUTE_OPTIONS}
                   value={String(schedule.minute)}
                   onChange={(v) => setSchedule((s) => ({ ...s, minute: Number(v) }))}
-                  size="small"
                   aria-label="Minute"
                 />
                 <Connector>hours</Connector>
@@ -303,7 +286,7 @@ export const CachingSettingsModal: React.FC<{
                   {WEEKDAYS.map((d) => {
                     const on = (schedule.weekdays ?? []).includes(d);
                     return (
-                      <button key={d} type="button" onClick={() => toggleWeekday(d)} style={dayChip(on)} aria-pressed={on}>
+                      <button key={d} type="button" onClick={() => toggleWeekday(d)} className={`${styles.dayChip} ${on ? styles.dayChipOn : ''}`} aria-pressed={on}>
                         {d}
                       </button>
                     );
@@ -311,7 +294,7 @@ export const CachingSettingsModal: React.FC<{
                 </Horizontal>
               )}
               {schedule.frequency === 'monthly' && (
-                <Vertical gap={spacing.A} style={{ maxWidth: '320px' }}>
+                <Vertical gap={spacing.A} className={styles.monthlyInput}>
                   <TextInput
                     value={schedule.monthDays ?? ''}
                     onChange={(e) => setSchedule((s) => ({ ...s, monthDays: e.target.value }))}
@@ -328,28 +311,22 @@ export const CachingSettingsModal: React.FC<{
             </Vertical>
           </Horizontal>
 
-          {/* Info / warning banner */}
-          {!isEdit ? (
-            <Horizontal
-              gap={spacing.B}
-              align="center"
-              style={{ width: '100%', padding: `${spacing.C}px ${spacing.D}px`, backgroundColor: c['background-subtle'], borderRadius: `${radius.md}px` }}
-            >
-              <Icon name="info-circle" size="s" color={c['content-secondary']} />
-              <Typography variant="body-normal" color="gray-light" noMargin>
-                First Cache will be done today. Future refreshes will follow the schedule above.
-              </Typography>
-            </Horizontal>
-          ) : changed ? (
-            <Alert
-              status="warning"
-              variant="section-multiline"
-              dismissible={false}
-              message="Saving will refresh the cache now and delete the existing snapshot."
+          {/* "Also cache now" — cache on save, or leave unchecked to apply on the
+              next scheduled run. Replaces the old edit-mode refresh warning. */}
+          <Vertical gap={spacing.A}>
+            <Checkbox
+              checked={alsoCacheNow}
+              onChange={setAlsoCacheNow}
+              label="Also cache now"
+              showLabel
             />
-          ) : null}
+            <Typography variant="footnote" color="gray-light" noMargin>
+              {isEdit
+                ? 'Rebuild the cache now so your new settings take effect immediately. If unchecked, they’re saved but the current cache keeps serving until the next scheduled run.'
+                : 'Cache immediately on save. If left unchecked, the first cache runs at the next scheduled time.'}
+            </Typography>
+          </Vertical>
         </Vertical>
-      </div>
     </Modal>
   );
 };

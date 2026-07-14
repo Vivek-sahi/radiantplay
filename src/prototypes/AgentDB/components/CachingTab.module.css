@@ -1,0 +1,15 @@
+/* Faithful 1:1 port of the inline styles previously in CachingTab.tsx. */
+.emptyState {
+  padding: var(--spacing-10, 40px) 0;
+  text-align: center;
+}
+.emptyStateText {
+  max-width: 480px;
+}
+.settingsBlock {
+  border-top: 1px solid var(--rd-sys-color-border-divider);
+  padding-top: var(--spacing-3, 12px);
+}
+.perTableBlock {
+  margin-top: var(--spacing-3, 12px);
+}

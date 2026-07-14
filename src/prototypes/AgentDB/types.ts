@@ -6,10 +6,12 @@
  */
 
 export type CacheWindow = 'full' | 'custom'; // "Full Model" | "Custom"
-export type CacheStatus = 'not_cached' | 'cached' | 'refreshing' | 'purged';
+// 'paused' = cache snapshot exists but serving is paused (e.g. a model change was
+// detected). Serving falls back to live until the cache is rebuilt.
+export type CacheStatus = 'not_cached' | 'cached' | 'refreshing' | 'purged' | 'paused';
 export type Frequency = 'hourly' | 'daily' | 'weekly' | 'monthly';
 export type WindowMonths = 1 | 3 | 6 | 13;
-export type RunType = 'Scheduled' | 'Ad-hoc' | 'Config change';
+export type RunType = 'Scheduled' | 'Ad-hoc' | 'Config change' | 'Purge' | 'Model update';
 export type RunStatus = 'In progress' | 'Success' | 'Failure';
 export type ColumnType = 'string' | 'number' | 'date' | 'boolean';
 
@@ -67,6 +69,14 @@ export interface CacheRun {
   tableResults: TableRunResult[];
 }
 
+/** Cache-utilisation stats (the Analytics block on the Caching tab). */
+export interface CacheAnalytics {
+  totalQueries: number;
+  cachedQueries: number; // served from the cache
+  liveQueries: number; // fell through to a live Snowflake query
+  basedOn: string; // display string, e.g. '15 May 2026, 9:00 AM'
+}
+
 export interface CacheState {
   status: CacheStatus;
   window: CacheWindow;
@@ -77,6 +87,12 @@ export interface CacheState {
   nextRunAt: string; // display string, e.g. '20 May 2026'
   lastRunStatus: RunStatus; // drives the prominent banner
   runs: CacheRun[]; // newest first
+  analytics?: CacheAnalytics; // cache hit/miss stats, when available
+}
+
+export interface ModelAuthor {
+  name: string;
+  imageUrl?: string;
 }
 
 export interface DataModel {
@@ -86,6 +102,9 @@ export interface DataModel {
   source: 'Snowflake';
   tables: ModelTable[];
   cache?: CacheState; // undefined = never cached (shows CTA)
+  tags?: string[];
+  author?: ModelAuthor;
+  lastModified?: string;
 }
 
 export interface Capacity {

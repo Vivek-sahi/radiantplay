@@ -1,20 +1,41 @@
 import React, { useState } from 'react';
-import { Modal, Table, Button, Link, Typography, Horizontal, Vertical } from '../../../components';
-import type { TableColumn } from '../../../components';
+import { Modal, ModalFooter, Table, Button, Link, Icon, Typography, Horizontal, Vertical } from '@/components';
+import type { TableColumn } from '@/components';
 import { StatusPill, runStatusPillKind } from './primitives';
-import { spacing } from '../styles';
+import { c, spacing } from '../styles';
 import { formatRowsFull, formatSizeMB } from '../utils';
-import type { CacheRun, DataModel, TableRunResult } from '../types';
+import type { CacheRun, DataModel, RunType, TableRunResult } from '../types';
+
+// Each run history row carries an event-type icon so scheduled builds, ad-hoc
+// refreshes, config/model changes, and purges are distinguishable at a glance.
+const RUN_TYPE_ICON: Record<RunType, React.ComponentProps<typeof Icon>['name']> = {
+  Scheduled: 'clock',
+  'Ad-hoc': 'refresh',
+  'Config change': 'pencil',
+  'Model update': 'pencil',
+  Purge: 'eye-undo',
+};
+
+const RunTypeCell: React.FC<{ runType: RunType }> = ({ runType }) => (
+  <Horizontal gap={spacing.B} align="center">
+    <Icon name={RUN_TYPE_ICON[runType]} size="s" color={c['content-secondary']} />
+    <span>{runType}</span>
+  </Horizontal>
+);
+
+// Run history lists cache builds only — Scheduled and Ad-hoc runs. Purge and
+// model-update events are tracked elsewhere and excluded here.
+const CACHE_RUN_TYPES: RunType[] = ['Scheduled', 'Ad-hoc'];
 
 export const RunHistoryModal: React.FC<{ model: DataModel; onClose: () => void }> = ({ model, onClose }) => {
-  const runs = model.cache?.runs ?? [];
+  const runs = (model.cache?.runs ?? []).filter((r) => CACHE_RUN_TYPES.includes(r.runType));
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
   const selectedRun = selectedRunId ? runs.find((r) => r.id === selectedRunId) ?? null : null;
 
   const tableName = (id: string) => model.tables.find((t) => t.id === id)?.name ?? id;
 
   const runColumns: TableColumn<CacheRun>[] = [
-    { key: 'runType', label: 'Run type', render: (_v, row) => row.runType },
+    { key: 'runType', label: 'Event type', render: (_v, row) => <RunTypeCell runType={row.runType} /> },
     { key: 'start', label: 'Start time', render: (_v, row) => row.startTime },
     { key: 'end', label: 'End time', render: (_v, row) => row.endTime ?? '—' },
     { key: 'rows', label: 'No. of rows', align: 'right', render: (_v, row) => (row.rows != null ? formatRowsFull(row.rows) : '—') },
@@ -35,9 +56,9 @@ export const RunHistoryModal: React.FC<{ model: DataModel; onClose: () => void }
   const resultColumns: TableColumn<TableRunResult>[] = [
     { key: 'table', label: 'Table', render: (_v, row) => tableName(row.tableId) },
     { key: 'status', label: 'Status', render: (_v, row) => <StatusPill kind={runStatusPillKind(row.status)} label={row.status} /> },
-    { key: 'rows', label: 'Rows', align: 'right', render: (_v, row) => formatRowsFull(row.rows) },
-    { key: 'size', label: 'Size', align: 'right', render: (_v, row) => formatSizeMB(row.sizeMB) },
-    { key: 'duration', label: 'Duration', align: 'right', render: (_v, row) => `${row.durationSec}s` },
+    { key: 'rows', label: 'Rows', render: (_v, row) => formatRowsFull(row.rows) },
+    { key: 'size', label: 'Size', render: (_v, row) => formatSizeMB(row.sizeMB) },
+    { key: 'duration', label: 'Duration', render: (_v, row) => `${row.durationSec}s` },
     { key: 'window', label: 'Cached', render: (_v, row) => row.windowApplied },
     { key: 'note', label: 'Note', render: (_v, row) => row.note ?? '—' },
   ];
@@ -48,7 +69,7 @@ export const RunHistoryModal: React.FC<{ model: DataModel; onClose: () => void }
       onClose={onClose}
       title={selectedRun ? 'Run details' : 'Run history'}
       size="M3"
-      footer={<Button variant="secondary" onClick={onClose}>Close</Button>}
+      footer={<ModalFooter primaryAction={<Button variant="primary" onClick={onClose}>Close</Button>} />}
     >
       {selectedRun ? (
         <Vertical gap={spacing.D}>
