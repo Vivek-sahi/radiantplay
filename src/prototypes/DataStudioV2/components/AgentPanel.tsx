@@ -128,6 +128,9 @@ export interface AgentMessage {
   debugSteps?: Array<{ label: string; detail: string }>;
   debugRevealedSteps?: number;
   debugResultRevealed?: boolean;
+  // canvas-agent fields (isCanvasAgent)
+  profileReport?: Array<{ table: string; ok: boolean; issues?: string[] }>;
+  canvasPlan?: { rows: Array<{ op: string; label: string; target: string; evidence: string }>; status: 'pending' | 'applied' };
 }
 
 interface WorkingStep {
@@ -2537,9 +2540,92 @@ interface AgentPanelProps {
   onInsightResolved?: (id: string) => void;
   onOpenObject?: (name: string, highlightCol?: string) => void;
   onOpenMsItem?: (item: { type: string; name: string }) => void;
+  /** Optional CSS background for the panel root (e.g. a gradient). Defaults to the base surface color. */
+  rootBackground?: string;
+  /** Canvas agent: intent-routed handler + canvas bridges (ModelCanvas embed). */
+  isCanvasAgent?: boolean;
+  /** Source tables currently on the canvas — drives the empty-state starters. */
+  canvasTableCount?: number;
 }
 
-const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, setMessages, initialPrompt, onBuildComplete, externalMessage, onExternalMessageHandled, externalMessageAttachment, injectInput, onInjectInputHandled, width = 340, selectedColumns, onColumnRemove, isFromScratch, isMultiSource, isNotebookFlow, isDbtReview, onNotebookUpdate, onOpenPlan, onOpenQualityPlan, onBuildStart, onNavigateToWorkspace, onStartBuild, fullPage = false, onBack, initialFlow, initialMessage, onInsightResolved, onOpenObject, onOpenMsItem, flowOption = 'option3' }) => {
+// ── Canvas agent (isCanvasAgent) — canned profile data + genUI cards ───────────
+
+const CANVAS_TABLE_ISSUES: Record<string, { issues: string[]; fixes: Array<{ op: string; label: string; evidence: string }> }> = {
+  support_cases: {
+    issues: ['12 null values in resolution_time_hours'],
+    fixes: [{ op: 'nullfix', label: 'Fill 12 nulls in resolution_time_hours', evidence: 'median of non-null values = 4.2h' }],
+  },
+  customer_regions: {
+    issues: ['3 null region values', '2 duplicate account rows'],
+    fixes: [
+      { op: 'nullfix', label: 'Fill 3 null region values', evidence: 'inferred from account country — 100% match' },
+      { op: 'filter', label: 'Drop 2 duplicate account rows', evidence: 'exact duplicates on account_id + region' },
+    ],
+  },
+  pendo_nps_enriched: {
+    issues: ['NPS responses cover only 24% of accounts', '1 out-of-range score'],
+    fixes: [{ op: 'filter', label: 'Drop 1 out-of-range NPS score', evidence: 'score −12; valid range is 0–10' }],
+  },
+};
+
+const ProfileReportCard: React.FC<{ rows: NonNullable<AgentMessage['profileReport']> }> = ({ rows }) => (
+  <div style={{ border: `1px solid ${c['border-default']}`, borderRadius: 10, overflow: 'hidden', backgroundColor: c['background-base'] }}>
+    <div style={{ padding: `${sp.B}px ${sp.C}px`, borderBottom: `1px solid ${c['border-divider']}`, fontSize: fs.xs, fontWeight: fw.semibold, color: c['content-secondary'] }}>
+      Data quality check · {rows.length} table{rows.length === 1 ? '' : 's'}
+    </div>
+    {rows.map((r, i) => (
+      <div key={r.table} style={{ display: 'flex', alignItems: 'flex-start', gap: sp.B, padding: `${sp.B}px ${sp.C}px`, borderBottom: i === rows.length - 1 ? 'none' : `1px solid ${c['border-divider']}` }}>
+        <span style={{ marginTop: 2, width: 14, height: 14, borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: r.ok ? '#E7F6EC' : '#FEF3E2' }}>
+          {r.ok
+            ? <svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M1 4.5l2 2 4-4" stroke="#16A34A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            : <svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M4 1.5v3M4 6v.5" stroke="#D97706" strokeWidth="1.4" strokeLinecap="round"/></svg>}
+        </span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: fs.xs, fontWeight: fw.medium, color: c['content-primary'], fontFamily: ff.mono }}>{r.table}</div>
+          {r.ok
+            ? <div style={{ fontSize: fs.xs, color: c['content-secondary'] }}>No issues found</div>
+            : r.issues?.map(iss => <div key={iss} style={{ fontSize: fs.xs, color: '#B45309' }}>{iss}</div>)}
+        </div>
+      </div>
+    ))}
+  </div>
+);
+
+const CanvasPlanCard: React.FC<{ plan: NonNullable<AgentMessage['canvasPlan']>; onApply: () => void }> = ({ plan, onApply }) => {
+  const applied = plan.status === 'applied';
+  return (
+    <div style={{ border: `1px solid ${applied ? '#BBE3C5' : c['border-default']}`, borderRadius: 10, overflow: 'hidden', backgroundColor: c['background-base'] }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: `${sp.B}px ${sp.C}px`, borderBottom: `1px solid ${c['border-divider']}`, fontSize: fs.xs, fontWeight: fw.semibold, color: applied ? '#16A34A' : c['content-secondary'] }}>
+        {applied && <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5.4" fill="#16A34A"/><path d="M3.6 6.2l1.7 1.7 3.1-3.4" stroke="#fff" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+        {applied ? 'Applied' : 'Plan'} · {plan.rows.length} change{plan.rows.length === 1 ? '' : 's'}
+      </div>
+      {plan.rows.map((row, i) => (
+        <div key={i} style={{ display: 'flex', gap: sp.B, alignItems: 'flex-start', padding: `${sp.B}px ${sp.C}px`, borderBottom: (applied && i === plan.rows.length - 1) ? 'none' : `1px solid ${c['border-divider']}` }}>
+          <span style={{ marginTop: 5, width: 6, height: 6, borderRadius: '50%', backgroundColor: applied ? '#16A34A' : c['content-brand'], flexShrink: 0 }} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: fs.xs, fontWeight: fw.medium, color: c['content-primary'] }}>{row.label}</div>
+            <div style={{ fontSize: fs.xs, color: c['content-secondary'] }}>
+              <span style={{ fontFamily: ff.mono }}>{row.target}</span> · {row.evidence}
+            </div>
+          </div>
+        </div>
+      ))}
+      {!applied && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: sp.C, padding: `${sp.B}px ${sp.C}px` }}>
+          <button
+            onClick={onApply}
+            style={{ padding: '5px 16px', borderRadius: 7, border: 'none', backgroundColor: c['content-brand'], color: '#fff', fontSize: fs.xs, fontWeight: fw.medium, cursor: 'pointer', fontFamily: ff.primary }}
+          >
+            Apply
+          </button>
+          <span style={{ fontSize: fs.xs, color: c['content-secondary'] }}>or reply to adjust the plan</span>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, setMessages, initialPrompt, onBuildComplete, externalMessage, onExternalMessageHandled, externalMessageAttachment, injectInput, onInjectInputHandled, width = 340, selectedColumns, onColumnRemove, isFromScratch, isMultiSource, isNotebookFlow, isDbtReview, onNotebookUpdate, onOpenPlan, onOpenQualityPlan, onBuildStart, onNavigateToWorkspace, onStartBuild, fullPage = false, onBack, initialFlow, initialMessage, onInsightResolved, onOpenObject, onOpenMsItem, flowOption = 'option3', rootBackground, isCanvasAgent, canvasTableCount }) => {
   const [pendingAction, setPending]     = useState<PendingAction | null>(null);
   const [isProcessing, setProcessing]   = useState(false);
   const [planModalOpen, setPlanModalOpen] = useState(false);
@@ -2564,6 +2650,7 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
   const scrollContainerRef       = useRef<HTMLDivElement>(null);
   const isNearBottomRef          = useRef(true);
   const promptBarRef             = useRef<PromptBarRef>(null);
+  const [pythonFixPending, setPythonFixPending] = useState<string | null>(null);
   const buildCalledRef           = useRef(false);
   const initialPromptFiredRef    = useRef(false);
   const initialFlowFiredRef      = useRef(false);
@@ -3915,6 +4002,218 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
 
   // ── Core processing ──────────────────────────────────────────────────────────
 
+  // ── Agentic "Fix with AI" for a Python run error ──────────────────────────────
+  // ModelCanvas' results-panel Fix button calls __dsRequestPythonFix__ → we drop the error
+  // into the prompt bar as a chip + prefill; the user presses send to run the fix (no auto-run).
+  useEffect(() => {
+    (window as any).__dsRequestPythonFix__ = (summary: string) => {
+      setPythonFixPending(summary || 'Python run error');
+      promptBarRef.current?.setErrorChip('Python error · 401 Unauthorized');
+      promptBarRef.current?.setValue('Fix this Python error');
+      setTimeout(() => promptBarRef.current?.focus(), 30);
+    };
+    return () => { try { delete (window as any).__dsRequestPythonFix__; } catch { /* noop */ } };
+  }, []);
+
+  const runPythonFixFlow = (userText: string) => {
+    setPythonFixPending(null);
+    promptBarRef.current?.setErrorChip(null);
+    promptBarRef.current?.setValue('');
+    const wid = `w-${Date.now()}`;
+    const fixSteps: WorkingStep[] = [
+      { label: 'Reading the traceback',        detail: 'HTTPError 401 raised at response.raise_for_status() (line 8).',                                                    status: 'running' },
+      { label: 'Diagnosing the auth failure',  detail: 'Pendo rejects Bearer tokens in the Authorization header — it authenticates with an ?apiKey= query param instead.', status: 'pending' },
+      { label: 'Rewriting the request',        detail: 'Move the key into params={"apiKey": …} and drop the Authorization header.',                                        status: 'pending' },
+      { label: 'Re-running the block',         detail: 'Executing the corrected code against the Pendo aggregation endpoint.',                                             status: 'pending' },
+    ];
+    setMessages(prev => [...prev,
+      { id: `u-${Date.now()}`, type: 'user', content: userText?.trim() || 'Fix this Python error' },
+      { id: wid, type: 'working', content: '', steps: fixSteps, stepsCollapsed: false },
+    ]);
+    setProcessing(true);
+    const n = fixSteps.length;
+    for (let i = 0; i < n; i++) {
+      setTimeout(() => {
+        setMessages(prev => prev.map(m => {
+          if (m.id !== wid || !m.steps) return m;
+          return { ...m, steps: m.steps.map((s, idx) => idx === i ? { ...s, status: 'done' as const } : idx === i + 1 ? { ...s, status: 'running' as const } : s) };
+        }));
+        if (i === n - 1) {
+          setTimeout(() => {
+            setMessages(prev => prev.map(m => m.id === wid ? { ...m, stepsCollapsed: true, steps: m.steps?.map(s => ({ ...s, status: 'done' as const })) } : m));
+            (window as any).__dsApplyPythonFix__?.();
+            setMessages(prev => [...prev, { id: `r-${Date.now()}`, type: 'response', content: "Fixed the authentication — Pendo uses an `apiKey` query param, not a Bearer token. I pasted the corrected code into the block and re-ran it: it returned **5 rows**. Review the change below the code and **accept** or **reject** it." }]);
+            setProcessing(false);
+          }, 650);
+        }
+      }, 520 * (i + 1));
+    }
+  };
+
+  // ── Canvas agent (isCanvasAgent): autonomy mode + intent-routed handler ───────
+  // No '/' skills menu in v1 — the agent does intent analysis on free text.
+  const [autonomyMode, setAutonomyMode] = useState<'review' | 'auto'>('review');
+  const [autonomyMenuOpen, setAutonomyMenuOpen] = useState(false);
+  const autonomyMenuRef = useRef<HTMLDivElement>(null);
+  const canvasFixesRef = useRef<Array<{ op: string; label: string; target: string; evidence: string }>>([]);
+  const canvasMsgCount = useRef(0);
+
+  // Pick-mode results (ModelCanvas) land in the composer through this bridge.
+  useEffect(() => {
+    if (!isCanvasAgent) return;
+    (window as any).__dsAddPromptRef__ = (ref: { kind: 'table' | 'column' | 'chip' | 'join'; label: string }) =>
+      promptBarRef.current?.addReference(ref);
+    return () => { delete (window as any).__dsAddPromptRef__; };
+  }, [isCanvasAgent]);
+
+  useEffect(() => {
+    if (!autonomyMenuOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (autonomyMenuRef.current && !autonomyMenuRef.current.contains(e.target as Node)) setAutonomyMenuOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [autonomyMenuOpen]);
+
+  const canvasDelay = (ms: number) => new Promise<void>(r => setTimeout(r, ms));
+
+  const runCanvasSteps = async (steps: Array<{ label: string; detail?: string }>, stepMs = 1000) => {
+    const wid = `cvw-${Date.now()}`;
+    setMessages(prev => [...prev, {
+      id: wid, type: 'working', content: '',
+      steps: steps.map((s, i) => ({ label: s.label, detail: s.detail, status: i === 0 ? 'running' as const : 'pending' as const })),
+      stepsCollapsed: false,
+    }]);
+    for (let i = 0; i < steps.length; i++) {
+      await canvasDelay(stepMs);
+      setMessages(prev => prev.map(m => m.id !== wid || !m.steps ? m : {
+        ...m,
+        steps: m.steps.map((s, si) => si === i ? { ...s, status: 'done' as const } : si === i + 1 ? { ...s, status: 'running' as const } : s),
+      }));
+    }
+    await canvasDelay(300);
+    setMessages(prev => prev.map(m => m.id === wid ? { ...m, stepsCollapsed: true } : m));
+  };
+
+  const handleCanvasAgentInput = async (text: string) => {
+    const mkId = () => `cv-${Date.now()}-${canvasMsgCount.current++}`;
+    const say = (content: string, extra?: Partial<AgentMessage>) =>
+      setMessages(prev => [...prev, { id: mkId(), type: 'response' as const, content, ...extra }]);
+
+    setMessages(prev => [...prev, { id: mkId(), type: 'user', content: text }]);
+    setProcessing(true);
+    const lower = text.toLowerCase();
+    const canvas: { tables: string[]; joins: number } = (window as any).__dsAgentCanvasState__?.() ?? { tables: [], joins: 0 };
+
+    // A2 — capability discovery, grounded in canvas state
+    if (/what can you do|what do you do|your (skills|capabilities)/i.test(text)) {
+      say(canvas.tables.length === 0
+        ? 'I work on this canvas with you. I can bring in data (warehouse tables, files, APIs via Python), check quality (nulls, duplicates, outliers), clean and transform, and join tables into a model. Everything I do lands on the canvas as steps you can review, edit, or undo.\n\nStart by naming tables — e.g. "fetch dim_accounts, support_cases and call_metrics".'
+        : `You have ${canvas.tables.length} table${canvas.tables.length === 1 ? '' : 's'} on the canvas. I can check their quality (nulls, duplicates, outliers), clean and transform them, or join them into a model. Everything lands on the canvas as steps you can review, edit, or undo.`,
+        { suggestions: canvas.tables.length === 0 ? ['Fetch dim_accounts, support_cases and call_metrics'] : ['Are these tables clean?', 'Join these into a model'] });
+      setProcessing(false);
+      return;
+    }
+
+    // A2 — data discovery
+    if (/what data|which tables|data can i access|available (data|tables)/.test(lower)) {
+      say("You're connected to snowflake-prod (ANALYTICS.PUBLIC: dim_accounts, support_cases, call_metrics, customer_found_defects) and bigquery-product (product_db.raw: pendo_nps_enriched, csm_account_mapping), plus Google Drive and SharePoint. Name any of these and I'll add them to the canvas.",
+        { suggestions: ['Fetch dim_accounts, support_cases and call_metrics'] });
+      setProcessing(false);
+      return;
+    }
+
+    // B1 — fetch named tables: user named them, so no gate (instruction, not decision)
+    const KNOWN_TABLES = ['dim_accounts', 'support_cases', 'call_metrics', 'customer_found_defects', 'pendo_nps_enriched', 'csm_account_mapping', 'orders', 'customer_regions'];
+    const wanted = KNOWN_TABLES.filter(t => lower.includes(t) && !canvas.tables.includes(t));
+    if (wanted.length > 0 && /fetch|add|bring|get|pull|import|load/.test(lower)) {
+      await runCanvasSteps([
+        { label: 'Looking up tables in your connections', detail: wanted.join(', ') },
+        { label: `Adding ${wanted.length} table${wanted.length === 1 ? '' : 's'} to the canvas` },
+      ], 900);
+      for (const t of wanted) { (window as any).__dsAgentAddNode__?.(t); await canvasDelay(650); }
+      say(`Added ${wanted.join(', ')} to the canvas — you named them, so I didn't ask. Each card shows its columns; click one to preview the data.`,
+        { suggestions: ['Are these tables clean?', 'Join these into a model'] });
+      setProcessing(false);
+      return;
+    }
+
+    // B4 — profile on demand: reads are never gated
+    if (/clean\?|are (these|the|all|my).*clean|check.*(quality|issue)|any issues|profile/.test(lower)) {
+      if (canvas.tables.length === 0) {
+        say("There's nothing on the canvas yet — fetch some tables first and I'll check them.", { suggestions: ['Fetch dim_accounts, support_cases and call_metrics'] });
+        setProcessing(false);
+        return;
+      }
+      await runCanvasSteps([
+        { label: `Sampling ${canvas.tables.length} table${canvas.tables.length === 1 ? '' : 's'} (500 rows each)` },
+        { label: 'Checking nulls, duplicates, and out-of-range values' },
+        { label: 'Checking key coverage across tables' },
+      ], 1100);
+      const report = canvas.tables.map(t => ({ table: t, ok: !CANVAS_TABLE_ISSUES[t], issues: CANVAS_TABLE_ISSUES[t]?.issues }));
+      const withIssues = report.filter(r => !r.ok);
+      canvasFixesRef.current = canvas.tables.flatMap(t => (CANVAS_TABLE_ISSUES[t]?.fixes ?? []).map(f => ({ ...f, target: t })));
+      say(withIssues.length === 0
+        ? `All ${report.length} table${report.length === 1 ? ' looks' : 's look'} clean — no nulls, duplicates, or out-of-range values in the samples.`
+        : `${report.length - withIssues.length} of ${report.length} look clean. ${withIssues.length} ${withIssues.length === 1 ? 'has' : 'have'} issues worth fixing — details below.`);
+      setMessages(prev => [...prev, { id: mkId(), type: 'response', content: '', profileReport: report,
+        ...(withIssues.length > 0 ? { suggestions: ['Fix these issues'] } : { suggestions: ['Join these into a model'] }) }]);
+      setProcessing(false);
+      return;
+    }
+
+    // B5 — fix: a decision → plan card in Review mode, direct-with-log in Auto
+    if (/^fix\b|fix (these|those|the|them|it)|resolve/.test(lower)) {
+      if (canvasFixesRef.current.length === 0) {
+        say('Let me check the tables first — ask "are these tables clean?" and I\'ll come back with what needs fixing.', { suggestions: ['Are these tables clean?'] });
+        setProcessing(false);
+        return;
+      }
+      const fixes = canvasFixesRef.current;
+      if (autonomyMode === 'review') {
+        say(`Here's what I'll do — ${fixes.length} change${fixes.length === 1 ? '' : 's'}, each with the evidence behind it. Apply, or reply to adjust (e.g. "use mean instead of median").`);
+        setMessages(prev => [...prev, { id: mkId(), type: 'response', content: '', canvasPlan: { rows: fixes, status: 'pending' } }]);
+        setProcessing(false);
+      } else {
+        await runCanvasSteps([{ label: `Applying ${fixes.length} fix${fixes.length === 1 ? '' : 'es'}` }], 800);
+        for (const f of fixes) { (window as any).__dsAgentApplyChip__?.(f.target, f.op); await canvasDelay(600); }
+        canvasFixesRef.current = [];
+        say(`Applied ${fixes.length} fix${fixes.length === 1 ? '' : 'es'} — the chips are on ${[...new Set(fixes.map(f => f.target))].join(', ')}. Auto mode is on, so I didn't ask; every chip can still be edited or removed.`,
+          { suggestions: ['Are these tables clean?', 'Join these into a model'] });
+        setProcessing(false);
+      }
+      return;
+    }
+
+    // B7 — joins: next build; be honest about it
+    if (/join|combine|merge|build.*model/.test(lower)) {
+      say("Join proposals with evidence (key, coverage, cardinality, preview rows) are the next thing I learn — coming in the next build. For now, drag from one card's edge onto another to create a join manually.");
+      setProcessing(false);
+      return;
+    }
+
+    // Fallback — steer to what works
+    say('I can bring in data, check quality, clean and transform tables, and join them into a model. Try "are these tables clean?" — or ask "what can you do?"',
+      { suggestions: ['What can you do?'] });
+    setProcessing(false);
+  };
+
+  const handleCanvasPlanApply = async (msgId: string) => {
+    const fixes = canvasFixesRef.current;
+    if (fixes.length === 0) return;
+    setMessages(prev => prev.map(m => m.id === msgId && m.canvasPlan ? { ...m, canvasPlan: { ...m.canvasPlan, status: 'applied' as const } } : m));
+    setProcessing(true);
+    await canvasDelay(400);
+    for (const f of fixes) { (window as any).__dsAgentApplyChip__?.(f.target, f.op); await canvasDelay(650); }
+    canvasFixesRef.current = [];
+    setMessages(prev => [...prev, {
+      id: `cv-${Date.now()}-applied`, type: 'response',
+      content: `Done — ${fixes.length} chip${fixes.length === 1 ? '' : 's'} added to the canvas (${[...new Set(fixes.map(f => f.target))].join(', ')}). Each one is a normal step: click to inspect, edit, or remove it.`,
+      suggestions: ['Are these tables clean?', 'Join these into a model'],
+    }]);
+    setProcessing(false);
+  };
+
   const processText = async (text: string, mentionedTables?: string[], attachment?: { type: string; label: string }) => {
     // Abort a running build when user types during the one-shot flow
     if (isProcessing && project.buildStep === 'empty') {
@@ -3927,6 +4226,10 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
       return;
     }
     if (!text || isProcessing) return;
+    // Python "Fix with AI" — the error is sitting in the prompt bar as a chip; run the fix flow.
+    if (pythonFixPending) { runPythonFixFlow(text); return; }
+    // Canvas agent — intent analysis over free text (no phase machine)
+    if (isCanvasAgent) { handleCanvasAgentInput(text); return; }
     // Test mode — route to Spotter, skip build agent
     if (agentMode === 'test') {
       handleSpotterQuestion(text);
@@ -4265,7 +4568,7 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
   return (
     <div style={fullPage
       ? { height: '100%', display: 'flex', flexDirection: 'column', backgroundColor: '#f7f8fa' }
-      : { width, height: '100%', minHeight: 0, flexShrink: 0, borderLeft: 'none', backgroundColor: c['background-base'], display: 'flex', flexDirection: 'column' }
+      : { width, height: '100%', minHeight: 0, flexShrink: 0, borderLeft: 'none', ...(rootBackground ? { background: rootBackground } : { backgroundColor: c['background-base'] }), display: 'flex', flexDirection: 'column' }
     }>
 
       {/* fullPage header: ← Overview + centered Agent identity */}
@@ -4331,7 +4634,30 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: sp.B }}>
                   {['Add AI context to improve Spotter answers', 'Enable query caching for faster results', 'Track how this model is being used'].map(hint => (
                     <button key={hint} onClick={() => promptBarRef.current?.setValue(hint)}
-                      style={{ padding: `${sp.B}px ${sp.C}px`, border: `1px solid ${c['border-default']}`, borderRadius: 8, backgroundColor: 'transparent', color: c['content-secondary'], fontSize: fs.xs, cursor: 'pointer', fontFamily: ff.primary, textAlign: 'left' }}
+                      style={{ padding: `${sp.B}px ${sp.C}px`, border: `1px solid ${c['border-default']}`, borderRadius: 8, backgroundColor: 'transparent', color: c['content-primary'], fontSize: fs.xs, cursor: 'pointer', fontFamily: ff.primary, textAlign: 'left' }}
+                      onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
+                      onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+                    >
+                      {hint}
+                    </button>
+                  ))}
+                </div>
+              </>
+            ) : isCanvasAgent ? (
+              <>
+                <p style={{ fontSize: fs.sm, color: c['content-primary'], margin: `${sp.C}px 0 ${sp.A}px`, lineHeight: '20px' }}>
+                  I build data with you — bring it in, clean it, join it into a model.
+                </p>
+                <p style={{ fontSize: fs.xs, color: c['content-secondary'], margin: `0 0 ${sp.E}px`, lineHeight: '17px' }}>
+                  Everything I do lands on the canvas as steps you can review, edit, or undo.
+                </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: sp.B }}>
+                  {((canvasTableCount ?? 0) === 0
+                    ? ['Fetch dim_accounts, support_cases and call_metrics', 'What data can I access?', 'What can you do?']
+                    : ['Are these tables clean?', 'Fix the issues you find', 'Join these tables into a model']
+                  ).map(hint => (
+                    <button key={hint} onClick={() => promptBarRef.current?.setValue(hint)}
+                      style={{ padding: `${sp.B}px ${sp.C}px`, border: `1px solid ${c['border-default']}`, borderRadius: 8, backgroundColor: 'transparent', color: c['content-primary'], fontSize: fs.xs, cursor: 'pointer', fontFamily: ff.primary, textAlign: 'left' }}
                       onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
                       onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
                     >
@@ -4342,13 +4668,13 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
               </>
             ) : (
               <>
-                <p style={{ fontSize: fs.sm, color: c['content-secondary'], margin: `${sp.C}px 0 ${sp.F}px`, lineHeight: '20px' }}>
+                <p style={{ fontSize: fs.sm, color: c['content-primary'], margin: `${sp.C}px 0 ${sp.F}px`, lineHeight: '20px' }}>
                   Describe what you want to build. I'll find the right data and set everything up.
                 </p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: sp.B }}>
-                  {['Analyze campaign performance by channel and region', 'Measure campaign ROI across channels and segments', 'Track P&L by department using finance data'].map(hint => (
+                  {['Build a customer health score from usage, support, and NPS', 'Find accounts at risk of churn this quarter', 'Track product adoption by segment and plan'].map(hint => (
                     <button key={hint} onClick={() => promptBarRef.current?.setValue(hint)}
-                      style={{ padding: `${sp.B}px ${sp.C}px`, border: `1px solid ${c['border-default']}`, borderRadius: 8, backgroundColor: 'transparent', color: c['content-secondary'], fontSize: fs.xs, cursor: 'pointer', fontFamily: ff.primary, textAlign: 'left' }}
+                      style={{ padding: `${sp.B}px ${sp.C}px`, border: `1px solid ${c['border-default']}`, borderRadius: 8, backgroundColor: 'transparent', color: c['content-primary'], fontSize: fs.xs, cursor: 'pointer', fontFamily: ff.primary, textAlign: 'left' }}
                       onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
                       onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
                     >
@@ -4365,6 +4691,41 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
           const prevMsg = idx > 0 ? messages[idx - 1] : null;
           const isAfterWorking = (msg.type === 'response' || msg.type === 'execution') && prevMsg?.type === 'working';
           const isActivePending = msg.pendingAction != null && msg.pendingAction.key === pendingAction?.key;
+
+          // Canvas-agent genUI cards (profile report / plan-with-evidence)
+          if (msg.profileReport) {
+            return (
+              <div key={msg.id} style={{ display: 'flex', gap: sp.B, alignItems: 'flex-start' }}>
+                <div style={{ width: 28, flexShrink: 0 }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <ProfileReportCard rows={msg.profileReport} />
+                  {msg.suggestions && msg.suggestions.length > 0 && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: sp.A, marginTop: sp.B }}>
+                      {msg.suggestions.map(s => (
+                        <button key={s} onClick={() => processText(s)}
+                          style={{ padding: `4px ${sp.C}px`, border: `1px solid ${c['border-default']}`, borderRadius: 999, backgroundColor: 'transparent', color: c['content-primary'], fontSize: fs.xs, cursor: 'pointer', fontFamily: ff.primary }}
+                          onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
+                          onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+                        >
+                          {s}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          }
+          if (msg.canvasPlan) {
+            return (
+              <div key={msg.id} style={{ display: 'flex', gap: sp.B, alignItems: 'flex-start' }}>
+                <div style={{ width: 28, flexShrink: 0 }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <CanvasPlanCard plan={msg.canvasPlan} onApply={() => handleCanvasPlanApply(msg.id)} />
+                </div>
+              </div>
+            );
+          }
 
           if (msg.buildPlanCard && msg.planData) {
             return (
@@ -4785,39 +5146,72 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
             setProcessing(false);
             setMessages(prev => [...prev, { id: `r-${Date.now()}`, type: 'response', content: "Stopped. What would you like to change?" }]);
           }}
-          placeholder={agentMode === 'test' ? "Ask anything about your model…" : fromScratchPhase === 'plan_ready' ? "Ask me to change anything in the plan…" : "Describe a task, or '@' to mention tables."}
+          placeholder={agentMode === 'test' ? "Ask anything about your model…" : isCanvasAgent ? "Give me a task. Use '@' to add context, or point at the canvas." : fromScratchPhase === 'plan_ready' ? "Ask me to change anything in the plan…" : "Press '/' for skills and '@' to add context."}
           autoFocus
           dropDirection="up"
           onColumnRemove={onColumnRemove}
+          showUpload={false}
           leftSlot={
-            <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, flexShrink: 0 }}>
-              <ConnectionPill connections={CONNECTIONS} value={connFilter} onChange={setConnFilter} dropDirection="up" />
-              <div style={{ display: 'flex', padding: 2, background: c['background-subtle'], border: `1px solid ${c['border-default']}`, borderRadius: 20, gap: 2, flexShrink: 0 }}>
-              {(['build', 'test'] as const).map(m => {
-                const isActive = agentMode === m;
-                const canSwitch = m === 'build' || project.buildStep !== 'empty';
-                return (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0 }}>
+              {/* Autonomy mode — deliberately tiny; a discussion-starter, not a settled control */}
+              {isCanvasAgent && (
+                <div ref={autonomyMenuRef} style={{ position: 'relative' }}>
                   <button
-                    key={m}
-                    onClick={() => canSwitch && setAgentMode(m)}
-                    title={m === 'build' ? 'Build mode' : project.buildStep === 'empty' ? 'Test mode (available after model is built)' : 'Test mode'}
-                    style={{ width: 26, height: 26, display: 'flex', alignItems: 'center', justifyContent: 'center', background: isActive ? c['background-base'] : 'transparent', border: isActive ? `1px solid ${c['border-default']}` : '1px solid transparent', borderRadius: '50%', cursor: canSwitch ? 'pointer' : 'default', boxShadow: isActive ? '0 1px 2px rgba(0,0,0,0.08)' : 'none', transition: 'all 0.12s', opacity: canSwitch ? 1 : 0.35 }}
+                    onClick={() => setAutonomyMenuOpen(o => !o)}
+                    title={autonomyMode === 'review' ? 'Autonomy: Review — I propose, you approve' : 'Autonomy: Auto — I apply changes and keep a log'}
+                    style={{ height: 30, display: 'flex', alignItems: 'center', gap: 3, padding: '0 6px', borderRadius: 7, border: 'none', background: autonomyMenuOpen ? c['background-subtle'] : 'transparent', color: c['content-secondary'], cursor: 'pointer', flexShrink: 0 }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = c['background-subtle']; (e.currentTarget as HTMLElement).style.color = c['content-primary']; }}
+                    onMouseLeave={e => { if (!autonomyMenuOpen) { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = c['content-secondary']; } }}
                   >
-                    {m === 'build' ? (
-                      <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-                        <rect x="1" y="8" width="2.5" height="4" rx="0.8" fill={isActive ? '#2770EF' : c['content-tertiary']}/>
-                        <rect x="5.25" y="5" width="2.5" height="7" rx="0.8" fill={isActive ? '#2770EF' : c['content-tertiary']}/>
-                        <rect x="9.5" y="1" width="2.5" height="11" rx="0.8" fill={isActive ? '#2770EF' : c['content-tertiary']}/>
-                      </svg>
-                    ) : (
-                      <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-                        <path d="M4.5 1.5h4M6.5 1.5v5l3 5.5a.9.9 0 01-.8 1.3H4.3a.9.9 0 01-.8-1.3l3-5.5V1.5z" stroke={isActive ? '#7C3AED' : c['content-tertiary']} strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    )}
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                      <path d="M8 1.8l5 1.9v3.8c0 3-2 5.4-5 6.7-3-1.3-5-3.7-5-6.7V3.7l5-1.9z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/>
+                      <circle cx="8" cy="7.5" r="1.7" fill={autonomyMode === 'review' ? '#2770EF' : '#16A34A'} />
+                    </svg>
+                    <svg width="8" height="8" viewBox="0 0 10 10" fill="none"><path d="M2 3.5l3 3 3-3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
                   </button>
-                );
-              })}
-              </div>
+                  {autonomyMenuOpen && (
+                    <div style={{ position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, width: 252, background: c['background-base'], border: `1px solid ${c['border-default']}`, borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', zIndex: 300, padding: '4px 0' }}>
+                      {([
+                        { key: 'review' as const, label: 'Review', desc: 'I propose; you approve every change.', dot: '#2770EF' },
+                        { key: 'auto' as const, label: 'Auto', desc: 'I apply changes and keep a log. Irreversible actions still need you.', dot: '#16A34A' },
+                      ]).map(m => (
+                        <button key={m.key}
+                          onClick={() => { setAutonomyMode(m.key); setAutonomyMenuOpen(false); }}
+                          style={{ display: 'flex', gap: sp.B, width: '100%', padding: `${sp.B}px ${sp.C}px`, border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left', fontFamily: ff.primary, alignItems: 'flex-start' }}
+                          onMouseEnter={e => (e.currentTarget.style.background = c['background-subtle'])}
+                          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                        >
+                          <span style={{ marginTop: 4, width: 7, height: 7, borderRadius: '50%', background: m.dot, flexShrink: 0, opacity: autonomyMode === m.key ? 1 : 0.25 }} />
+                          <span style={{ flex: 1 }}>
+                            <span style={{ display: 'block', fontSize: fs.xs, fontWeight: autonomyMode === m.key ? fw.semibold : fw.medium, color: c['content-primary'] }}>{m.label}</span>
+                            <span style={{ display: 'block', fontSize: fs.xs, color: c['content-secondary'], lineHeight: '15px' }}>{m.desc}</span>
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+              {/* Add — focuses the composer ('@' / '/' add context + skills) */}
+              <button
+                onClick={() => promptBarRef.current?.focus()}
+                title="Add"
+                style={{ width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 7, border: 'none', background: 'transparent', color: c['content-secondary'], cursor: 'pointer', flexShrink: 0 }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = c['background-subtle']; (e.currentTarget as HTMLElement).style.color = c['content-primary']; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = c['content-secondary']; }}
+              >
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg>
+              </button>
+              {/* Reference — point at a canvas element to reference it (pick mode in ModelCanvas) */}
+              <button
+                onClick={() => (window as any).__dsEnterPickMode__?.()}
+                title="Reference an element"
+                style={{ width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 7, border: 'none', background: 'transparent', color: c['content-secondary'], cursor: 'pointer', flexShrink: 0 }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = c['background-subtle']; (e.currentTarget as HTMLElement).style.color = c['content-primary']; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = c['content-secondary']; }}
+              >
+                <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M3 2.5l3.6 9 1.35-3.65L11.6 6.4z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/><path d="M10 10.5h3.5V14" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </button>
             </div>
           }
         />

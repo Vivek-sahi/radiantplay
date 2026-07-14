@@ -21,6 +21,13 @@ const ALL_TABLES: FlatTable[] = WAREHOUSE_TREE.flatMap(conn =>
   )
 );
 
+// ── Canvas references (point-and-select tokens) ────────────────────────────────
+// NOTE: no '/' skills menu in v1 — the agent does intent analysis on free text
+// and routes to the right capability itself. Discovery = empty state + "what can you do?"
+
+export interface PromptRef { kind: 'table' | 'column' | 'chip' | 'join'; label: string }
+const REF_GLYPH: Record<PromptRef['kind'], string> = { table: '⊞', column: '✦', chip: '⧉', join: '⋈' };
+
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
 function mirrorText(text: string): string {
@@ -54,6 +61,8 @@ export interface PromptBarRef {
   setValue: (v: string) => void;
   focus: () => void;
   setColumns: (cols: string[]) => void;
+  setErrorChip: (label: string | null) => void;
+  addReference: (ref: PromptRef) => void;
   startTypewriter: (base: string, suffixes: string[]) => void;
 }
 
@@ -71,6 +80,8 @@ export interface PromptBarProps {
   onColumnRemove?: (name: string) => void;
   /** Rendered at the far left of the toolbar — use for mode toggles or custom actions */
   leftSlot?: React.ReactNode;
+  /** Show the built-in upload/attach button (default true). */
+  showUpload?: boolean;
 }
 
 // ── Component ──────────────────────────────────────────────────────────────────
@@ -86,11 +97,14 @@ const PromptBar = forwardRef<PromptBarRef, PromptBarProps>(({
   landingPage = false,
   onColumnRemove,
   leftSlot,
+  showUpload = true,
 }, ref) => {
 
   const [value, setValue]                     = useState('');
   const [attachedTables, setAttached]         = useState<string[]>([]);
   const [attachedColumns, setAttachedColumns] = useState<string[]>([]);
+  const [attachedRefs, setAttachedRefs]       = useState<PromptRef[]>([]);
+  const [errorChip, setErrorChip]             = useState<string | null>(null);
   const [focused, setFocused]           = useState(false);
   const [mentionActive, setMention]     = useState(false);
   const [mentionQuery, setQuery]        = useState('');
@@ -106,6 +120,11 @@ const PromptBar = forwardRef<PromptBarRef, PromptBarProps>(({
     setValue:   (v: string)    => { setValue(v); textareaRef.current?.focus(); },
     focus:      ()             => textareaRef.current?.focus(),
     setColumns: (cols: string[]) => setAttachedColumns(cols),
+    setErrorChip: (label: string | null) => setErrorChip(label),
+    addReference: (r: PromptRef) => {
+      setAttachedRefs(prev => prev.some(x => x.kind === r.kind && x.label === r.label) ? prev : [...prev, r]);
+      textareaRef.current?.focus();
+    },
     startTypewriter: (base: string, suffixes: string[]) => {
       if (animTimerRef.current) clearTimeout(animTimerRef.current);
       setValue(base);
@@ -212,11 +231,13 @@ const PromptBar = forwardRef<PromptBarRef, PromptBarProps>(({
 
   const handleSubmit = () => {
     if (!canSubmit) return;
+    const refPrefix = attachedRefs.map(r => `@${r.label}`).join(' ');
     const colPrefix = attachedColumns.map(c => `@${c}`).join(' ');
-    const text = colPrefix ? `${colPrefix} ${value.trim()}` : value.trim();
+    const text = [refPrefix, colPrefix, value.trim()].filter(Boolean).join(' ');
     setValue('');
     setAttached([]);
     setAttachedColumns([]);
+    setAttachedRefs([]);
     if (textareaRef.current) textareaRef.current.style.height = 'auto';
     onSubmit(text, attachedTables);
   };
@@ -253,7 +274,7 @@ const PromptBar = forwardRef<PromptBarRef, PromptBarProps>(({
             value={value}
             onChange={handleChange}
             onKeyDown={handleKey}
-            placeholder={placeholder}
+            placeholder={attachedRefs.length > 0 ? `What should I do with ${attachedRefs[attachedRefs.length - 1].label}?` : placeholder}
             rows={landingPage ? 2 : 2}
             autoFocus={autoFocus}
             disabled={disabled}
@@ -288,6 +309,18 @@ const PromptBar = forwardRef<PromptBarRef, PromptBarProps>(({
           </div>
         )}
 
+        {/* ── Canvas reference chips (point-and-select) ── */}
+        {attachedRefs.length > 0 && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: sp.A, padding: `0 ${sp.C}px ${sp.A}px` }}>
+            {attachedRefs.map(r => (
+              <span key={`${r.kind}-${r.label}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: fs.xs, backgroundColor: c['background-information'], color: c['content-brand'], padding: `2px ${sp.B}px`, borderRadius: 6, fontFamily: ff.mono }}>
+                {REF_GLYPH[r.kind]} {r.label}
+                <span onClick={() => setAttachedRefs(prev => prev.filter(x => !(x.kind === r.kind && x.label === r.label)))} style={{ cursor: 'pointer', opacity: 0.6, fontSize: 12, lineHeight: 1 }}>×</span>
+              </span>
+            ))}
+          </div>
+        )}
+
         {/* ── Attached column chips ── */}
         {attachedColumns.length > 0 && (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: sp.A, padding: `0 ${sp.C}px ${sp.A}px` }}>
@@ -297,6 +330,17 @@ const PromptBar = forwardRef<PromptBarRef, PromptBarProps>(({
                 <span onClick={() => { setAttachedColumns(prev => prev.filter(c => c !== name)); onColumnRemove?.(name); }} style={{ cursor: 'pointer', opacity: 0.6, fontSize: 12, lineHeight: 1 }}>×</span>
               </span>
             ))}
+          </div>
+        )}
+
+        {/* ── Error context chip (from "Fix with AI") ── */}
+        {errorChip && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: sp.A, padding: `0 ${sp.C}px ${sp.A}px` }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: fs.xs, backgroundColor: '#FEF2F2', color: '#DC2626', border: '1px solid #FECACA', padding: `2px ${sp.B}px`, borderRadius: 6, fontFamily: ff.mono }}>
+              <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="#DC2626" strokeWidth="1.3"/><path d="M8 5v4M8 11v.5" stroke="#DC2626" strokeWidth="1.5" strokeLinecap="round"/></svg>
+              {errorChip}
+              <span onClick={() => setErrorChip(null)} style={{ cursor: 'pointer', opacity: 0.6, fontSize: 12, lineHeight: 1 }}>×</span>
+            </span>
           </div>
         )}
 
@@ -317,15 +361,17 @@ const PromptBar = forwardRef<PromptBarRef, PromptBarProps>(({
           <div style={{ display: 'flex', gap: sp.A, alignItems: 'center', position: 'relative' }}>
             {leftSlot}
 
-            <button
-              onClick={() => setUpload(true)}
-              title="Upload a file"
-              style={{ width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', borderRadius: 6, backgroundColor: 'transparent', color: c['content-secondary'], cursor: 'pointer', flexShrink: 0 }}
-              onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
-              onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
-            >
-              <Icon name="upload" size="s" color={c['content-secondary']} />
-            </button>
+            {showUpload && (
+              <button
+                onClick={() => setUpload(true)}
+                title="Upload a file"
+                style={{ width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', borderRadius: 6, backgroundColor: 'transparent', color: c['content-secondary'], cursor: 'pointer', flexShrink: 0 }}
+                onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
+                onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+              >
+                <Icon name="upload" size="s" color={c['content-secondary']} />
+              </button>
+            )}
           </div>
 
           {/* Send / Stop */}

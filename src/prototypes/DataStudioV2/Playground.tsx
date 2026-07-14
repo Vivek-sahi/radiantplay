@@ -4682,7 +4682,7 @@ const ModelHealthPanels5: React.FC = () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-type NavId = 'v1' | 'v2' | 'v3' | 'v4' | 'v5' | 'v6' | 'tm1' | 'tm2' | 'tm3' | 'p2-dbt' | 'clarify-bar' | 'artifact-chat' | 'context-panel' | 'tma1' | 'tma2' | 'tma3' | 'tma4' | 'airs1' | 'airs2' | 'airs3' | 'airs4' | 'mh1' | 'mh2' | 'mhp1' | 'mhp2' | 'mhp3' | 'mhp4' | 'mhp5';
+type NavId = 'v1' | 'v2' | 'v3' | 'v4' | 'v5' | 'v6' | 'tm1' | 'tm2' | 'tm3' | 'p2-dbt' | 'clarify-bar' | 'artifact-chat' | 'context-panel' | 'tma1' | 'tma2' | 'tma3' | 'tma4' | 'airs1' | 'airs2' | 'airs3' | 'airs4' | 'mh1' | 'mh2' | 'mhp1' | 'mhp2' | 'mhp3' | 'mhp4' | 'mhp5' | 'nb1';
 
 interface PGNavItem {
   id: NavId;
@@ -4762,11 +4762,542 @@ const PG_NAV: { section: string; items: PGNavItem[] }[] = [
       { id: 'airs4', label: 'Models list',        meta: 'two signals · 3 layout approaches',                tag: 'NEW' },
     ],
   },
+  {
+    section: 'Notebook',
+    items: [
+      { id: 'nb1', label: 'Working environment', meta: 'TS Answer cell · data flow · table output', tag: 'NEW' },
+    ],
+  },
 ];
 
 const CACHE_SECTION = 'Cache discoverability';
 const QUALITY_SECTION = 'Data quality discoverability';
 const COMBINED_SECTION = 'Combined model status';
+
+// ═══════════════════════════════════════════════════════════════════════════
+// nb1 — Notebook working environment
+// New cell types: TS Answer (NL → Spotter viz), data flow badges, table output
+// ═══════════════════════════════════════════════════════════════════════════
+
+type NBXCellType = 'sql' | 'python' | 'ts-answer';
+type NBXStatus   = 'idle' | 'running' | 'success';
+
+interface NBXCell {
+  id: string;
+  type: NBXCellType;
+  label: string;
+  content: string;
+}
+
+const NBX_ACCENT: Record<NBXCellType, string> = {
+  sql:         c['content-brand'],
+  python:      '#D97706',
+  'ts-answer': '#6366F1',
+};
+
+const NBX_TYPE_LABEL: Record<NBXCellType, string> = {
+  sql:         'SQL',
+  python:      'Python',
+  'ts-answer': '✦  TS Answer',
+};
+
+const monoFont = 'ui-monospace, "SF Mono", Menlo, Consolas, monospace';
+
+const NbxSqlKwRe = /\b(SELECT|FROM|JOIN|LEFT|INNER|RIGHT|OUTER|ON|WHERE|AS|DISTINCT|OVER|PARTITION|BY|ORDER|GROUP|HAVING|WITH|SUM|COUNT|AVG|MAX|MIN|NULLIF|AND|OR|NOT|NULL|CASE|WHEN|THEN|ELSE|END|COALESCE|CREATE|REPLACE|TABLE|INSERT|UPDATE|DELETE|DROP|ALTER|LIMIT|OFFSET|UNION|ALL|FILTER)\b/g;
+const NbxSqlKwSet = new Set(['SELECT','FROM','JOIN','LEFT','INNER','RIGHT','OUTER','ON','WHERE','AS','DISTINCT','OVER','PARTITION','BY','ORDER','GROUP','HAVING','WITH','SUM','COUNT','AVG','MAX','MIN','NULLIF','AND','OR','NOT','NULL','CASE','WHEN','THEN','ELSE','END','COALESCE','CREATE','REPLACE','TABLE','INSERT','UPDATE','DELETE','DROP','ALTER','LIMIT','OFFSET','UNION','ALL','FILTER']);
+
+const NbxSqlLine: React.FC<{ line: string }> = ({ line }) => {
+  const parts = line.split(new RegExp(NbxSqlKwRe.source, 'g'));
+  return (
+    <span>
+      {parts.map((part, i) =>
+        NbxSqlKwSet.has(part)
+          ? <span key={i} style={{ color: '#7C3AED', fontWeight: fw.semibold }}>{part}</span>
+          : <span key={i} style={{ color: c['content-primary'] }}>{part}</span>
+      )}
+    </span>
+  );
+};
+
+const NbxPyLine: React.FC<{ line: string }> = ({ line }) => {
+  if (line.trimStart().startsWith('#')) return <span style={{ color: c['content-secondary'] }}>{line}</span>;
+  if (line.startsWith('import') || line.startsWith('from')) return <span style={{ color: '#7C3AED' }}>{line}</span>;
+  return <span style={{ color: c['content-primary'] }}>{line}</span>;
+};
+
+// ── Mock outputs ──────────────────────────────────────────────────────────────
+
+const NBX_SQL_RESULTS: Record<string, { columns: string[]; rows: Record<string, string>[]; footer: string }> = {
+  'sql-accounts': {
+    columns: ['account_id', 'account_name', 'tier', 'arr', 'csm_owner'],
+    rows: [
+      { account_id: 'ACC-001', account_name: 'Acme Corp',  tier: 'Enterprise', arr: '$125,000', csm_owner: 'Sarah Chen' },
+      { account_id: 'ACC-002', account_name: 'Beta Inc',   tier: 'Growth',     arr: '$48,000',  csm_owner: 'James Lee'  },
+      { account_id: 'ACC-003', account_name: 'Gamma Ltd',  tier: 'Starter',    arr: '$8,500',   csm_owner: 'Sarah Chen' },
+    ],
+    footer: '12,431 rows · 5 columns · 0.34s',
+  },
+  'sql-cases': {
+    columns: ['account_id', 'open_cases', 'p1_cases', 'avg_resolution_hrs'],
+    rows: [
+      { account_id: 'ACC-001', open_cases: '3', p1_cases: '2', avg_resolution_hrs: '—'  },
+      { account_id: 'ACC-002', open_cases: '1', p1_cases: '0', avg_resolution_hrs: '18' },
+      { account_id: 'ACC-003', open_cases: '2', p1_cases: '1', avg_resolution_hrs: '—'  },
+    ],
+    footer: '84,203 rows · 4 columns · 0.51s',
+  },
+  'py-health': {
+    columns: ['account_name', 'health_score', 'status'],
+    rows: [
+      { account_name: 'Acme Corp', health_score: '94%', status: 'Healthy'           },
+      { account_name: 'Beta Inc',  health_score: '64%', status: 'Needs attention'   },
+      { account_name: 'Gamma Ltd', health_score: '52%', status: 'At risk'           },
+    ],
+    footer: '12,431 rows · 3 columns · 1.2s',
+  },
+};
+
+const TsAnswerAtRisk: React.FC = () => (
+  <div style={{ padding: `${sp.C}px ${sp.D}px`, borderTop: `1px solid ${c['border-divider']}`, backgroundColor: c['background-sunken'], display: 'flex', flexDirection: 'column', gap: sp.B }}>
+    {[
+      { name: 'Gamma Ltd',  score: 52, label: 'At risk',          color: c['content-accent-red'],   bg: c['background-accent-red']   },
+      { name: 'Beta Inc',   score: 64, label: 'Needs attention',  color: '#92400E',                  bg: '#FFF8E5'                    },
+      { name: 'Acme Corp',  score: 94, label: 'Healthy',          color: c['content-accent-green'],  bg: c['background-accent-green'] },
+    ].map(row => (
+      <div key={row.name} style={{ display: 'flex', alignItems: 'center', gap: sp.C }}>
+        <span style={{ fontSize: fs.xs, color: c['content-primary'], width: 88, flexShrink: 0 }}>{row.name}</span>
+        <div style={{ flex: 1, height: 14, backgroundColor: c['background-subtle'], borderRadius: 3, overflow: 'hidden' }}>
+          <div style={{ width: `${row.score}%`, height: '100%', backgroundColor: row.color, opacity: 0.55, borderRadius: 3 }} />
+        </div>
+        <span style={{ fontSize: fs.xs, fontWeight: fw.semibold, color: c['content-primary'], width: 32, textAlign: 'right', flexShrink: 0 }}>{row.score}%</span>
+        <span style={{ fontSize: 10, padding: '1px 7px', borderRadius: 4, background: row.bg, color: row.color, flexShrink: 0, minWidth: 108, textAlign: 'center' }}>{row.label}</span>
+      </div>
+    ))}
+    <div style={{ fontSize: 10, color: c['content-secondary'], paddingTop: sp.A, borderTop: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', gap: 5 }}>
+      <svg width="10" height="10" viewBox="0 0 16 16" fill="none"><path d="M8 1.5L9.1 6.4L14.5 8L9.1 9.6L8 14.5L6.9 9.6L1.5 8L6.9 6.4Z" fill="#6366F1"/></svg>
+      Queried Customer Health Scorecard · 0.2s
+    </div>
+  </div>
+);
+
+const TsAnswerARR: React.FC = () => (
+  <div style={{ padding: `${sp.C}px ${sp.D}px`, borderTop: `1px solid ${c['border-divider']}`, backgroundColor: c['background-sunken'], display: 'flex', flexDirection: 'column', gap: sp.B }}>
+    <div style={{ display: 'flex', gap: sp.C }}>
+      <div style={{ flex: 1, padding: sp.C, borderRadius: 8, border: `1px solid ${c['border-divider']}`, background: c['background-base'] }}>
+        <div style={{ fontSize: 10, color: c['content-secondary'], marginBottom: 4 }}>ARR at risk</div>
+        <div style={{ fontSize: 22, fontWeight: fw.bold, color: c['content-accent-red'], lineHeight: 1 }}>$56,500</div>
+        <div style={{ fontSize: 10, color: c['content-secondary'], marginTop: 4 }}>2 accounts · below 70% health</div>
+      </div>
+      <div style={{ flex: 1, padding: sp.C, borderRadius: 8, border: `1px solid ${c['border-divider']}`, background: c['background-base'] }}>
+        <div style={{ fontSize: 10, color: c['content-secondary'], marginBottom: 4 }}>Total monitored ARR</div>
+        <div style={{ fontSize: 22, fontWeight: fw.bold, color: c['content-primary'], lineHeight: 1 }}>$181,500</div>
+        <div style={{ fontSize: 10, color: c['content-secondary'], marginTop: 4 }}>3 accounts</div>
+      </div>
+    </div>
+    <div style={{ fontSize: 10, color: c['content-secondary'], paddingTop: sp.A, borderTop: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', gap: 5 }}>
+      <svg width="10" height="10" viewBox="0 0 16 16" fill="none"><path d="M8 1.5L9.1 6.4L14.5 8L9.1 9.6L8 14.5L6.9 9.6L1.5 8L6.9 6.4Z" fill="#6366F1"/></svg>
+      Queried Customer Health Scorecard · 0.3s
+    </div>
+  </div>
+);
+
+const NBX_TS_OUTPUTS: Record<string, React.FC> = {
+  'ts-at-risk': TsAnswerAtRisk,
+  'ts-arr':     TsAnswerARR,
+};
+
+// ── Seed cells ────────────────────────────────────────────────────────────────
+
+const NBX_SEED: NBXCell[] = [
+  {
+    id: 'sql-accounts',
+    type: 'sql',
+    label: 'Query DIM_ACCOUNTS',
+    content: `SELECT
+  account_id,
+  account_name,
+  account_tier  AS tier,
+  arr,
+  csm_owner
+FROM ANALYTICS_DB.DIM_ACCOUNTS
+LIMIT 10000`,
+  },
+  {
+    id: 'sql-cases',
+    type: 'sql',
+    label: 'Query SUPPORT_CASES — open + P1 count per account',
+    content: `SELECT
+  account_id,
+  COUNT(*)        FILTER (WHERE status = 'Open')   AS open_cases,
+  COUNT(*)        FILTER (WHERE priority = 'P1')   AS p1_cases,
+  AVG(resolution_time_hours)                       AS avg_resolution_hrs
+FROM SFDC_RAW.SUPPORT_CASES
+GROUP BY account_id`,
+  },
+  {
+    id: 'py-health',
+    type: 'python',
+    label: 'Compute composite health score',
+    content: `# df_accounts  ←  sql-accounts   (12,431 rows)
+# df_cases      ←  sql-cases      (84,203 rows)
+
+df = df_accounts.merge(df_cases, on='account_id', how='left')
+
+df['health_score'] = (
+    df['arr'].rank(pct=True)                                       * 0.30 +
+    (1 - df['p1_cases']   / df['p1_cases'].max().clip(lower=1))   * 0.40 +
+    (1 - df['open_cases'] / df['open_cases'].max().clip(lower=1)) * 0.30
+) * 100
+
+df['status'] = df['health_score'].apply(
+    lambda s: 'Healthy' if s >= 80 else 'Needs attention' if s >= 65 else 'At risk'
+)
+
+df[['account_name', 'health_score', 'status']].sort_values('health_score')`,
+  },
+  {
+    id: 'ts-at-risk',
+    type: 'ts-answer',
+    label: 'Which accounts have declining health scores?',
+    content: 'Which accounts have declining health scores?',
+  },
+  {
+    id: 'ts-arr',
+    type: 'ts-answer',
+    label: 'What is the ARR at risk for accounts below 70% health?',
+    content: 'What is the ARR at risk for accounts below 70% health?',
+  },
+];
+
+// ── Cell component ────────────────────────────────────────────────────────────
+
+const NBXCellComponent: React.FC<{
+  cell: NBXCell;
+  status: NBXStatus;
+  ranCells: Set<string>;
+  isEditing: boolean;
+  draftValue: string;
+  activePulse: string | null;
+  onEdit: () => void;
+  onRunCell: () => void;
+  onSaveRun: () => void;
+  onCancel: () => void;
+  onDraftChange: (v: string) => void;
+  cellRef: (el: HTMLDivElement | null) => void;
+}> = ({ cell, status, ranCells, isEditing, draftValue, activePulse, onEdit, onRunCell, onSaveRun, onCancel, onDraftChange, cellRef }) => {
+  const [hovered, setHovered] = useState(false);
+  const isTs    = cell.type === 'ts-answer';
+  const accent  = NBX_ACCENT[cell.type];
+  const display = isEditing ? draftValue : cell.content;
+  const lines   = display.split('\n');
+
+  const leftColor = status === 'success' ? c['border-accent-green']
+                  : status === 'running' ? accent
+                  : accent;
+
+  // Parse "# df_var ← cell-id  (N rows)" comments from Python cells
+  const bindings = cell.type === 'python'
+    ? [...cell.content.matchAll(/^# (df_\w+)\s+←\s+(\S+)\s+\(([^)]+)\)/mg)]
+        .map(m => ({ variable: m[1], source: m[2], rows: m[3] }))
+    : [];
+
+  const SqlResult: React.FC<{ result: typeof NBX_SQL_RESULTS[string] }> = ({ result }) => (
+    <div style={{ borderTop: `1px solid ${c['border-divider']}`, backgroundColor: c['background-sunken'] }}>
+      <div style={{ overflowX: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11, fontFamily: monoFont, tableLayout: 'auto' }}>
+          <thead>
+            <tr style={{ borderBottom: `1px solid ${c['border-divider']}` }}>
+              {result.columns.map(col => (
+                <th key={col} style={{ padding: '4px 10px', textAlign: 'left', fontWeight: 600, color: c['content-secondary'], whiteSpace: 'nowrap', background: c['background-sunken'] }}>{col}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {result.rows.map((row, ri) => (
+              <tr key={ri} style={{ borderBottom: ri < result.rows.length - 1 ? `1px solid ${c['border-divider']}` : 'none' }}>
+                {result.columns.map(col => (
+                  <td key={col} style={{ padding: '4px 10px', color: c['content-primary'], whiteSpace: 'nowrap' }}>{row[col]}</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div style={{ padding: '3px 10px 5px', borderTop: `1px solid ${c['border-divider']}` }}>
+        <span style={{ fontSize: 10, fontFamily: monoFont, color: c['content-secondary'] }}>{result.footer}</span>
+      </div>
+    </div>
+  );
+
+  const ran = ranCells.has(cell.id);
+  const TsOut = ran && cell.id in NBX_TS_OUTPUTS ? NBX_TS_OUTPUTS[cell.id] : null;
+  const SqlOut = ran && cell.id in NBX_SQL_RESULTS ? NBX_SQL_RESULTS[cell.id] : null;
+  const pyOut = ran && cell.id === 'py-health' ? NBX_SQL_RESULTS['py-health'] : null;
+
+  return (
+    <div
+      ref={cellRef}
+      style={{ borderRadius: 9, outline: activePulse === cell.id ? `2px solid ${accent}` : '2px solid transparent', transition: 'outline 0.3s ease' }}
+    >
+      <div style={{ border: `1px solid ${c['border-divider']}`, borderLeft: `3px solid ${leftColor}`, borderRadius: 8, backgroundColor: c['background-base'], overflow: 'hidden', transition: 'border-left-color 0.25s' }}>
+
+        {/* Header */}
+        <div
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: `6px ${sp.C}px`, borderBottom: `1px solid ${c['border-divider']}`, backgroundColor: hovered ? c['background-subtle'] : c['background-base'], transition: 'background-color 0.1s', cursor: 'default' }}
+          onMouseEnter={() => setHovered(true)}
+          onMouseLeave={() => setHovered(false)}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, flex: 1, minWidth: 0 }}>
+            {status === 'running' ? (
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0, animation: 'nb-spin 0.8s linear infinite' }}>
+                <style>{`@keyframes nb-spin { to { transform: rotate(360deg); } }`}</style>
+                <circle cx="6" cy="6" r="4.5" stroke={accent} strokeWidth="1.5" strokeDasharray="14 8" strokeLinecap="round" />
+              </svg>
+            ) : status === 'success' ? (
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0 }}>
+                <circle cx="6" cy="6" r="5" fill={c['background-accent-green']} stroke={c['border-accent-green']} strokeWidth="1" />
+                <path d="M3.5 6l1.8 1.8 3.2-3.2" stroke={c['content-accent-green']} strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            ) : <div style={{ width: 12, height: 12, flexShrink: 0 }} />}
+            <span style={{ fontSize: 10, fontWeight: fw.bold, color: accent, textTransform: 'uppercase', letterSpacing: '0.07em', flexShrink: 0 }}>{NBX_TYPE_LABEL[cell.type]}</span>
+            <span style={{ fontSize: fs.xs, color: isTs ? c['content-primary'] : c['content-secondary'], fontWeight: isTs ? fw.medium : fw.regular, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cell.label}</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, opacity: hovered || isEditing ? 1 : 0, transition: 'opacity 0.15s', flexShrink: 0, marginLeft: sp.B }}>
+            {isEditing ? (
+              <>
+                <button onClick={onCancel} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: fs.xs, color: c['content-secondary'], padding: '2px 6px', fontFamily: ff.primary }}>Cancel</button>
+                <button onClick={onSaveRun} style={{ display: 'flex', alignItems: 'center', gap: 4, background: c['background-accent-green'], color: c['content-accent-green'], border: `1px solid ${c['border-accent-green']}`, borderRadius: 5, cursor: 'pointer', fontSize: fs.xs, fontWeight: fw.semibold, padding: '3px 10px', fontFamily: ff.primary }}>
+                  <svg width="7" height="8" viewBox="0 0 7 8" fill="currentColor"><polygon points="0,0 7,4 0,8" /></svg>
+                  Run
+                </button>
+              </>
+            ) : (
+              <>
+                <button onClick={onRunCell} title="Run cell" style={{ width: 24, height: 24, border: 'none', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 4, color: c['content-secondary'], padding: 0 }} onMouseEnter={e => (e.currentTarget.style.color = c['content-primary'])} onMouseLeave={e => (e.currentTarget.style.color = c['content-secondary'])}>
+                  <svg width="9" height="10" viewBox="0 0 9 10" fill="currentColor"><polygon points="0,0 9,5 0,10" /></svg>
+                </button>
+                {!isTs && (
+                  <button onClick={onEdit} title="Edit cell" style={{ width: 24, height: 24, border: 'none', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 4, color: c['content-secondary'], padding: 0 }} onMouseEnter={e => (e.currentTarget.style.color = c['content-primary'])} onMouseLeave={e => (e.currentTarget.style.color = c['content-secondary'])}>
+                    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11.5 2.5a1.5 1.5 0 0 1 2.1 2.1L5 13.1l-3 .9.9-3 8.6-8.5z" /></svg>
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Data binding badges (Python) */}
+        {bindings.length > 0 && !isEditing && (
+          <div style={{ display: 'flex', gap: sp.B, flexWrap: 'wrap', padding: `4px ${sp.C}px`, backgroundColor: '#FFFBF0', borderBottom: `1px solid ${c['border-divider']}` }}>
+            {bindings.map((b, i) => (
+              <span key={i} style={{ fontSize: 10, fontFamily: monoFont, display: 'flex', alignItems: 'center', gap: 4, color: '#92400E', background: '#FEF3C7', border: '1px solid #FDE68A', borderRadius: 4, padding: '1px 7px' }}>
+                <span style={{ fontWeight: fw.semibold }}>{b.variable}</span>
+                <span style={{ color: c['content-secondary'] }}>← {b.source} · {b.rows}</span>
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Code body (SQL / Python) */}
+        {!isTs && (
+          isEditing ? (
+            <textarea
+              autoFocus
+              value={draftValue}
+              onChange={e => onDraftChange(e.target.value)}
+              style={{ width: '100%', minHeight: Math.max(lines.length * 20 + 24, 80), padding: sp.C, fontFamily: monoFont, fontSize: fs.xs, color: c['content-primary'], backgroundColor: c['background-sunken'], border: 'none', outline: 'none', resize: 'vertical', lineHeight: '20px', boxSizing: 'border-box' }}
+            />
+          ) : (
+            <div style={{ padding: sp.C, fontFamily: monoFont, fontSize: fs.xs, lineHeight: '20px', backgroundColor: c['background-sunken'], opacity: status === 'running' ? 0.45 : 1, transition: 'opacity 0.2s' }}>
+              {lines.map((line, i) => (
+                <div key={i} style={{ display: 'flex', gap: sp.C }}>
+                  <span style={{ color: c['content-secondary'], userSelect: 'none', minWidth: 18, textAlign: 'right', flexShrink: 0, opacity: 0.5 }}>{i + 1}</span>
+                  {cell.type === 'sql' ? <NbxSqlLine line={line} /> : <NbxPyLine line={line} />}
+                </div>
+              ))}
+            </div>
+          )
+        )}
+
+        {/* TS Answer content — editable question, no line numbers */}
+        {isTs && !ran && (
+          <div style={{ padding: `${sp.C}px ${sp.D}px`, backgroundColor: c['background-sunken'], opacity: status === 'running' ? 0.45 : 1, transition: 'opacity 0.2s' }}>
+            <span style={{ fontSize: fs.sm, color: c['content-secondary'], fontStyle: 'italic' }}>{cell.content}</span>
+          </div>
+        )}
+
+        {/* TS Answer output */}
+        {TsOut && <TsOut />}
+
+        {/* SQL / Python output */}
+        {(SqlOut || pyOut) && <SqlResult result={(SqlOut ?? pyOut)!} />}
+
+        {/* Generic Python done (non-tabular) */}
+        {ran && cell.type === 'python' && !pyOut && (
+          <div style={{ padding: '4px 10px 6px', borderTop: `1px solid ${c['border-divider']}`, backgroundColor: c['background-sunken'] }}>
+            <span style={{ fontSize: 10, fontFamily: monoFont, color: c['content-secondary'] }}>✓ Done · 0.9s</span>
+          </div>
+        )}
+
+      </div>
+    </div>
+  );
+};
+
+// ── NotebookExploration root ──────────────────────────────────────────────────
+
+const NotebookExploration: React.FC = () => {
+  const [statuses, setStatuses] = useState<Record<string, NBXStatus>>({});
+  const [ranCells, setRanCells] = useState<Set<string>>(new Set());
+  const [editingCell, setEditingCell] = useState<string | null>(null);
+  const [draftValue, setDraftValue]   = useState('');
+  const [activePulse] = useState<string | null>(null);
+  const [runAllActive, setRunAllActive] = useState(false);
+  const [extraCells, setExtraCells]   = useState<NBXCell[]>([]);
+  const [showAddMenu, setShowAddMenu] = useState(false);
+  const cellRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+
+  const allCells = [...NBX_SEED, ...extraCells];
+  const successCount = allCells.filter(cell => (statuses[cell.id] ?? 'idle') === 'success').length;
+
+  const runCell = (id: string) => {
+    setStatuses(p => ({ ...p, [id]: 'running' }));
+    const delay = id.startsWith('ts-') ? 900 : id.startsWith('py-') ? 1400 : 1200;
+    setTimeout(() => {
+      setStatuses(p => ({ ...p, [id]: 'success' }));
+      setRanCells(p => new Set([...p, id]));
+    }, delay);
+  };
+
+  const handleRunAll = () => {
+    if (runAllActive) return;
+    setRunAllActive(true);
+    allCells.forEach((cell, i) => {
+      setTimeout(() => {
+        setStatuses(p => ({ ...p, [cell.id]: 'running' }));
+        const dur = cell.id.startsWith('ts-') ? 900 : cell.id.startsWith('py-') ? 1400 : 1200;
+        setTimeout(() => {
+          setStatuses(p => ({ ...p, [cell.id]: 'success' }));
+          setRanCells(p => new Set([...p, cell.id]));
+          if (i === allCells.length - 1) setRunAllActive(false);
+        }, dur);
+      }, i * 700);
+    });
+  };
+
+  const addCell = (type: NBXCellType) => {
+    const defaults: Record<NBXCellType, string> = {
+      sql: '-- Write SQL here\n',
+      python: '# Write Python here\n',
+      'ts-answer': 'Ask a question about your data…',
+    };
+    const labels: Record<NBXCellType, string> = {
+      sql: 'New SQL cell', python: 'New Python cell', 'ts-answer': 'New question',
+    };
+    const id = `user-${Date.now()}`;
+    setExtraCells(p => [...p, { id, type, label: labels[type], content: defaults[type] }]);
+    setStatuses(p => ({ ...p, [id]: 'idle' }));
+    setShowAddMenu(false);
+    setTimeout(() => {
+      const el = cellRefs.current.get(id);
+      el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 80);
+  };
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, display: 'flex', flexDirection: 'column', background: c['background-sunken'], fontFamily: ff.primary }}>
+
+      {/* Header */}
+      <div style={{ height: 44, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: `0 ${sp.E}px`, background: c['background-base'], borderBottom: `1px solid ${c['border-divider']}` }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: sp.C }}>
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ color: c['content-secondary'], flexShrink: 0 }}>
+            <rect x="3" y="1" width="9" height="12" rx="1.5" stroke="currentColor" strokeWidth="1.3" fill="none"/>
+            <line x1="1.5" y1="4"   x2="3" y2="4"   stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+            <line x1="1.5" y1="7"   x2="3" y2="7"   stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+            <line x1="1.5" y1="10"  x2="3" y2="10"  stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+            <line x1="5.5" y1="4"   x2="9.5" y2="4" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/>
+            <line x1="5.5" y1="7"   x2="8.5" y2="7" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/>
+            <line x1="5.5" y1="10.5" x2="9" y2="10.5" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/>
+          </svg>
+          <span style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'] }}>customer_health_analysis</span>
+          <span style={{ fontSize: 10, color: c['content-secondary'], background: c['background-subtle'], border: `1px solid ${c['border-divider']}`, borderRadius: 4, padding: '1px 6px' }}>v1</span>
+          {successCount > 0 && (
+            <span style={{ fontSize: 10, color: c['content-accent-green'] }}>{successCount} / {allCells.length} ran successfully</span>
+          )}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: sp.B }}>
+          <div style={{ display: 'flex', gap: 6, marginRight: sp.B }}>
+            {(['sql', 'python', 'ts-answer'] as NBXCellType[]).map(t => (
+              <span key={t} style={{ fontSize: 10, display: 'flex', alignItems: 'center', gap: 4, color: c['content-secondary'] }}>
+                <span style={{ width: 8, height: 8, borderRadius: 2, background: NBX_ACCENT[t], flexShrink: 0 }} />
+                {t === 'ts-answer' ? '✦ TS Answer' : t === 'sql' ? 'SQL' : 'Python'}
+              </span>
+            ))}
+          </div>
+          <button
+            onClick={handleRunAll}
+            disabled={runAllActive}
+            style={{ display: 'flex', alignItems: 'center', gap: sp.B, height: 28, padding: `0 ${sp.C}px`, background: runAllActive ? c['background-subtle'] : c['content-brand'], color: runAllActive ? c['content-secondary'] : 'white', border: 'none', borderRadius: 6, cursor: runAllActive ? 'default' : 'pointer', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary }}
+          >
+            <svg width="9" height="10" viewBox="0 0 9 10" fill="currentColor"><polygon points="0,0 9,5 0,10" /></svg>
+            Run all
+          </button>
+        </div>
+      </div>
+
+      {/* Cells */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: sp.D, display: 'flex', flexDirection: 'column', gap: sp.C, maxWidth: 880, width: '100%', margin: '0 auto' }}>
+        {allCells.map(cell => (
+          <NBXCellComponent
+            key={cell.id}
+            cell={cell}
+            status={statuses[cell.id] ?? 'idle'}
+            ranCells={ranCells}
+            isEditing={editingCell === cell.id}
+            draftValue={draftValue}
+            activePulse={activePulse}
+            onEdit={() => { setEditingCell(cell.id); setDraftValue(cell.content); }}
+            onRunCell={() => runCell(cell.id)}
+            onSaveRun={() => { setEditingCell(null); runCell(cell.id); }}
+            onCancel={() => setEditingCell(null)}
+            onDraftChange={setDraftValue}
+            cellRef={el => { if (el) cellRefs.current.set(cell.id, el); else cellRefs.current.delete(cell.id); }}
+          />
+        ))}
+
+        {/* Add cell */}
+        <div style={{ position: 'relative', marginTop: sp.B }}>
+          <button
+            onClick={() => setShowAddMenu(p => !p)}
+            style={{ width: '100%', padding: `${sp.B}px`, border: `1px dashed ${c['border-divider']}`, borderRadius: 8, background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: sp.B, fontSize: fs.xs, color: c['content-secondary'], fontFamily: ff.primary }}
+            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = c['border-default']; (e.currentTarget as HTMLButtonElement).style.color = c['content-primary']; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = c['border-divider']; (e.currentTarget as HTMLButtonElement).style.color = c['content-secondary']; }}
+          >
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M6 1v10M1 6h10" /></svg>
+            Add cell
+          </button>
+          {showAddMenu && (
+            <div style={{ position: 'absolute', bottom: '100%', left: 0, marginBottom: 4, background: c['background-base'], border: `1px solid ${c['border-divider']}`, borderRadius: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.1)', overflow: 'hidden', minWidth: 180, zIndex: 10 }}>
+              {(['sql', 'python', 'ts-answer'] as NBXCellType[]).map(type => (
+                <button
+                  key={type}
+                  onClick={() => addCell(type)}
+                  style={{ width: '100%', padding: `${sp.B}px ${sp.C}px`, border: 'none', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: sp.B, fontSize: fs.xs, color: c['content-primary'], fontFamily: ff.primary, textAlign: 'left' }}
+                  onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = c['background-subtle']}
+                  onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = 'transparent'}
+                >
+                  <span style={{ width: 8, height: 8, borderRadius: 2, background: NBX_ACCENT[type], flexShrink: 0 }} />
+                  {type === 'sql' ? 'SQL' : type === 'python' ? 'Python' : '✦ TS Answer'}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        <div style={{ height: 48 }} />
+      </div>
+    </div>
+  );
+};
 
 const renderNavIteration = (id: NavId): React.ReactNode => {
   switch (id) {
@@ -4798,6 +5329,7 @@ const renderNavIteration = (id: NavId): React.ReactNode => {
     case 'mhp3': return <ModelHealthPanels3 />;
     case 'mhp4': return <ModelHealthPanels4 />;
     case 'mhp5': return <ModelHealthPanels5 />;
+    case 'nb1':  return <NotebookExploration />;
   }
 };
 

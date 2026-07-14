@@ -127,6 +127,12 @@
   overflow: hidden;
 }
 
+/* Opens above the trigger when there isn't room below. */
+.dropdownUp {
+  top: auto;
+  bottom: calc(100% + 4px);
+}
+
 /* Search */
 .searchContainer {
   display: flex;

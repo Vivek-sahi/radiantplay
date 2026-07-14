@@ -93,6 +93,7 @@ export const Select = forwardRef<HTMLDivElement, SelectProps>(({
   ...props
 }, ref) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [openUp, setOpenUp] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -127,6 +128,17 @@ export const Select = forwardRef<HTMLDivElement, SelectProps>(({
       searchInputRef.current.focus();
     }
   }, [isOpen, searchable]);
+
+  // Flip the menu above the trigger when there isn't room below (e.g. inside a
+  // scrollable modal). Defaults to opening downward.
+  useEffect(() => {
+    if (!isOpen || !containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const estimatedMenuHeight = Math.min(280, filteredOptions.length * 36 + (searchable ? 52 : 8) + 8);
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const spaceAbove = rect.top;
+    setOpenUp(spaceBelow < estimatedMenuHeight && spaceAbove > spaceBelow);
+  }, [isOpen, filteredOptions.length, searchable]);
 
   // Handle keyboard navigation
   const handleKeyDown = useCallback((event: React.KeyboardEvent) => {
@@ -234,7 +246,7 @@ export const Select = forwardRef<HTMLDivElement, SelectProps>(({
       </div>
 
       {isOpen && (
-        <div className={styles.dropdown} role="listbox">
+        <div className={[styles.dropdown, openUp && styles.dropdownUp].filter(Boolean).join(' ')} role="listbox">
           {searchable && (
             <div className={styles.searchContainer}>
               <Icon name="magnifying-glass" size="s" className={styles.searchIcon} />

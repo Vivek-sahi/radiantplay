@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import Shell, { NavSection } from './components/Shell';
+import Shell, { NavSection, CanvasMode } from './components/Shell';
 import Overview from './components/Overview';
 import ModelView from './components/ModelView';
 import Workspace from './components/Workspace';
@@ -98,6 +98,7 @@ const DataStudio: React.FC = () => {
   const [view, setView]           = useState<AppView>('overview');
   const [prevView, setPrevView]   = useState<AppView>('overview');
   const [activeNav, setActiveNav] = useState<NavSection>('overview');
+  const [canvasMode, setCanvasMode] = useState<CanvasMode>('dataset');
   const [initialPrompt, setInitialPrompt] = useState<string>('');
   const [isFromScratch, setIsFromScratch] = useState(false);
   const [isMultiSource, setIsMultiSource] = useState(false);
@@ -424,7 +425,7 @@ const DataStudio: React.FC = () => {
 
   return (
     <>
-      <Shell activeNav={activeNav} onNavChange={handleNavChange} hideSidebar={view === 'chat' || view === 'workspace' || view === 'full-chat'}>
+      <Shell activeNav={activeNav} onNavChange={handleNavChange} canvasMode={canvasMode} onCanvasModeChange={setCanvasMode} hideSidebar={view === 'chat' || view === 'workspace' || view === 'full-chat' || view === 'canvas'}>
         {view === 'models' && (
           <ModelsPage
             onOpenProject={openModelView}
@@ -539,7 +540,7 @@ const DataStudio: React.FC = () => {
       )}
       {view === 'canvas' && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 50 }}>
-          <ModelCanvas onBack={goBack} onPublished={() => navigateTo('models')} />
+          <ModelCanvas mode={canvasMode} onBack={goBack} onPublished={() => navigateTo('models')} />
         </div>
       )}
     </>
