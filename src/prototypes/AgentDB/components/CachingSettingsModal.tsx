@@ -123,6 +123,12 @@ export const CachingSettingsModal: React.FC<{
       }
     >
       <Vertical gap={spacing.F}>
+          <Horizontal align="center" gap={spacing.B} className={styles.disclaimer}>
+            <Icon name="info-circle" size="s" color={c['content-secondary']} />
+            <Typography variant="body-normal" color="gray-light" noMargin>
+              Caching includes every column in a table, even those not used in this model.
+            </Typography>
+          </Horizontal>
           {/* Cache window */}
           <Horizontal align="start" gap={spacing.F}>
             <FieldLabel

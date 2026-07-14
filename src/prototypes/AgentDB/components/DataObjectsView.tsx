@@ -123,7 +123,7 @@ export const DataObjectsView: React.FC<{
             {row.name}
           </Typography>
           {isCached(row) && (
-            <Tooltip content="This model is cached in AgentDB">
+            <Tooltip content="This model is cached in Near Store">
               <span className={styles.zapWrap}>
                 <DatabaseZapIcon size={15} color={c['content-brand']} />
               </span>

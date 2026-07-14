@@ -34,7 +34,7 @@ const SIDEBAR_CATEGORIES: Record<string, SidebarCategory[]> = {
       title: 'Governance',
       items: [
         { id: 'dbt', label: 'dbt' },
-        { id: 'datastore', label: 'AgentDB' },
+        { id: 'datastore', label: 'Near Store' },
       ],
     },
   ],

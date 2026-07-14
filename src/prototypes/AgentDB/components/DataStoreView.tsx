@@ -56,12 +56,12 @@ export const DataStoreView: React.FC<{
       {/* Capacity overview */}
       <Vertical gap={spacing.F} className={styles.capacityPanel}>
         <SectionHeader
-          title="AgentDB"
+          title="Near Store"
           actions={<Link href="#" onClick={(e) => e.preventDefault()}>How to upgrade plan</Link>}
         />
         <div className={styles.narrow}>
           <Typography variant="body-normal" color="gray-light" noMargin>
-            Cached model data lives in AgentDB, your ThoughtSpot data store. Track how much of your
+            Cached model data lives in Near Store, your ThoughtSpot data store. Track how much of your
             purchased space is in use and which models are consuming it.
           </Typography>
         </div>

@@ -40,8 +40,8 @@ const AgentDB = React.lazy(() => import('./AgentDB'));
 
 export const myRegistry: ProjectMeta[] = [
   {
-    id: 'AgentDB',
-    name: 'Agent DB',
+    id: 'NearStore',
+    name: 'Near Store',
     description: 'ThoughtSpot data caching offering — cache live Snowflake model data into ThoughtSpot to cut query costs.',
     author: 'Vivek Sahi',
     lastModified: '2026-07-02',
