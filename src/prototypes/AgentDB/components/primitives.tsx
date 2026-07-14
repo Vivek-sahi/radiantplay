@@ -69,9 +69,9 @@ export const KeyValue: React.FC<{ label: string; children: React.ReactNode }> = 
 );
 
 // ── SectionHeader ──────────────────────────────────────────────────────────────
-export const SectionHeader: React.FC<{ title: string; actions?: React.ReactNode }> = ({ title, actions }) => (
+export const SectionHeader: React.FC<{ title: string; actions?: React.ReactNode; size?: 'default' | 'small' }> = ({ title, actions, size = 'default' }) => (
   <Horizontal justify="space-between" align="center" className={styles.sectionHeader}>
-    <Typography variant="section-label" color="base" noMargin>
+    <Typography variant={size === 'small' ? 'content-label' : 'section-label'} color="base" noMargin>
       {title}
     </Typography>
     {actions && <Horizontal gap={spacing.E}>{actions}</Horizontal>}

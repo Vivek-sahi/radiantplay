@@ -268,15 +268,17 @@ export const CachingTab: React.FC<{ model: DataModel; onChange: (next: DataModel
         <Vertical gap={spacing.C}>
           <SectionHeader
             title="Cache Settings"
+            size="small"
             actions={
               <>
-                <Button variant="tertiary" size="small" icon="pencil" onClick={() => { setModalIsEdit(true); setModalOpen(true); }}>
-                  Edit
+                <Button variant="secondary" size="small" icon="clock" onClick={() => setShowHistory(true)}>
+                  View run history
                 </Button>
                 <ActionMenu
                   placement="bottom-end"
-                  trigger={<Button variant="tertiary" size="small" icon="more">More</Button>}
+                  trigger={<Button variant="secondary" size="small" icon="more" iconOnly aria-label="More cache actions">More</Button>}
                 >
+                  <ActionMenuItem label="Edit cache settings" icon={<Icon name="pencil" size="s" />} onClick={() => { setModalIsEdit(true); setModalOpen(true); }} />
                   <ActionMenuItem label="Refresh Cache" icon={<Icon name="refresh" size="s" />} onClick={doRefresh} />
                   <ActionMenuItem label="Purge current cache" icon={<Icon name="eye-undo" size="s" />} onClick={() => setConfirm('purge')} disabled={purged} />
                   <ActionMenuItem label="Disable Cache" icon={<Icon name="trash-can" size="s" />} destructive onClick={() => setConfirm('disable')} />
@@ -284,7 +286,7 @@ export const CachingTab: React.FC<{ model: DataModel; onChange: (next: DataModel
               </>
             }
           />
-          <div className={styles.settingsBlock}>
+          <div>
             <KeyValue label="Cache scope">{cache.window === 'full' ? 'Full Model' : 'Custom'}</KeyValue>
             <KeyValue label="Refresh frequency">
               <Vertical gap={spacing.A}>
@@ -325,7 +327,7 @@ export const CachingTab: React.FC<{ model: DataModel; onChange: (next: DataModel
             (zeroed) until queries have run against it. */}
         {!purged && !pendingFirstRun && (
           <Vertical gap={spacing.C}>
-            <SectionHeader title="Analytics" />
+            <SectionHeader title="Analytics" size="small" />
             <Typography variant="footnote" color="gray-light" noMargin>
               {cache.analytics
                 ? `Based on the last cache run · ${cache.analytics.basedOn}`
@@ -347,12 +349,6 @@ export const CachingTab: React.FC<{ model: DataModel; onChange: (next: DataModel
           </Vertical>
         )}
 
-        {/* Run history entry point */}
-        <Horizontal>
-          <Button variant="secondary" size="small" icon="clock" onClick={() => setShowHistory(true)}>
-            View run history
-          </Button>
-        </Horizontal>
       </Vertical>
 
       {modalOpen && (

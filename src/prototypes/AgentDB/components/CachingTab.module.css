@@ -6,10 +6,6 @@
 .emptyStateText {
   max-width: 480px;
 }
-.settingsBlock {
-  border-top: 1px solid var(--rd-sys-color-border-divider);
-  padding-top: var(--spacing-3, 12px);
-}
 .perTableBlock {
   margin-top: var(--spacing-3, 12px);
 }
