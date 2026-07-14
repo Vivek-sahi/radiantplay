@@ -1,5 +1,5 @@
 /**
- * Agent DB — mock data
+ * Near Store — mock data
  *
  * A spread of caching states so every screen has something real to show:
  * full-cached (healthy), custom-cached (healthy), cached with a failed last run,

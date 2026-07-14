@@ -36,7 +36,7 @@ const DataStudio15 = React.lazy(() => import('./DataStudio15'));
 const DataNotebook = React.lazy(() => import('./DataNotebook'));
 const SpotterPrep = React.lazy(() => import('./SpotterPrep'));
 const SpotterPrep2 = React.lazy(() => import('./SpotterPrep2'));
-const AgentDB = React.lazy(() => import('./AgentDB'));
+const NearStore = React.lazy(() => import('./NearStore'));
 
 export const myRegistry: ProjectMeta[] = [
   {
@@ -45,7 +45,7 @@ export const myRegistry: ProjectMeta[] = [
     description: 'ThoughtSpot data caching offering — cache live Snowflake model data into ThoughtSpot to cut query costs.',
     author: 'Vivek Sahi',
     lastModified: '2026-07-02',
-    component: AgentDB,
+    component: NearStore,
     section: 'mine',
   },
   {

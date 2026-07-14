@@ -14,7 +14,7 @@ const SIDEBAR_TABS: SidebarTab[] = [
   { id: 'data', label: 'Data', headerTitle: 'Data workspace', showAddButton: true },
 ];
 
-// Nav groups shown under the Data tab. AgentDB is our added feature under Governance.
+// Nav groups shown under the Data tab. Near Store is our added feature under Governance.
 const SIDEBAR_CATEGORIES: Record<string, SidebarCategory[]> = {
   insights: [],
   data: [

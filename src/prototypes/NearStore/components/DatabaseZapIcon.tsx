@@ -1,6 +1,6 @@
 import React from 'react';
 
-/** lucide:database-zap — indicates a model is cached in AgentDB. */
+/** lucide:database-zap — indicates a model is cached in Near Store. */
 export const DatabaseZapIcon: React.FC<{ size?: number; color?: string }> = ({
   size = 16,
   color = 'currentColor',

@@ -1,5 +1,5 @@
 /**
- * Agent DB — domain types
+ * Near Store — domain types
  *
  * ThoughtSpot's data caching offering: cache model data queried live from
  * Snowflake into ThoughtSpot to cut live query cost.

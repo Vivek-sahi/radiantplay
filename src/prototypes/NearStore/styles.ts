@@ -1,5 +1,5 @@
 /**
- * Agent DB — shared token references
+ * Near Store — shared token references
  *
  * Everything routes through Radiant tokens: no hard-coded hex / rgba / magic px.
  * Text is rendered via the Radiant `Typography` component; these tokens cover the

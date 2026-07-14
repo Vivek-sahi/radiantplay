@@ -1,5 +1,5 @@
 /**
- * Agent DB — formatting + capacity helpers
+ * Near Store — formatting + capacity helpers
  */
 
 import { capacity } from './data';

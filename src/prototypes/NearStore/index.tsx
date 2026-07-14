@@ -7,7 +7,7 @@ import { models as seedModels } from './data';
 import type { DataModel } from './types';
 
 /**
- * Agent DB
+ * Near Store
  *
  * ThoughtSpot's data caching offering. Customers cache model data they query
  * live from Snowflake into ThoughtSpot to reduce their querying costs.
@@ -24,7 +24,7 @@ type View =
   | { kind: 'datastore' }
   | { kind: 'model'; modelId: string; origin: Origin };
 
-export const AgentDB: React.FC = () => {
+export const NearStore: React.FC = () => {
   const [models, setModels] = useState<DataModel[]>(seedModels);
   const [view, setView] = useState<View>({ kind: 'objects' });
 
@@ -57,4 +57,4 @@ export const AgentDB: React.FC = () => {
   );
 };
 
-export default AgentDB;
+export default NearStore;

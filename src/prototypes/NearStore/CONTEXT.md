@@ -1,4 +1,4 @@
-# Agent DB — session context (read at session start)
+# Near Store — session context (read at session start)
 
 Radiant Play prototype. Read this first, then `DECISION-MEMO.md` and `USE-CASES.md` for
 product rationale/scope. `PLAN.md` = original build plan; `CACHING-UI-FIXES.md` = a fix
@@ -9,9 +9,15 @@ ThoughtSpot's data caching offering. Customers cache model data they query live 
 **Snowflake** into the ThoughtSpot **data store** to cut live query cost + speed up loads.
 Lives inside the Data workspace.
 
+## Naming
+Renamed **Agent DB → Near Store** (2026-07-14). "Near Store" is the name everywhere now: user-facing
+copy (nav, titles, tooltips, overview page), registry id `NearStore`, route `/playground/NearStore`,
+the folder `src/prototypes/NearStore/`, and the component symbol `NearStore`. No `AgentDB` left in
+this prototype. (The `agentdb` connection label inside DataStudioV2 is a separate prototype — unrelated.)
+
 ## Where it lives / how to run
-- Code: `src/prototypes/AgentDB/`. Registered in `src/prototypes/registry-mine.ts` (id `AgentDB`).
-- Route: `/playground/AgentDB`. Standalone explainer page: `/agentdb-overview.html` (in `public/`).
+- Code: `src/prototypes/AgentDB/`. Registered in `src/prototypes/registry-mine.ts` (id `NearStore`).
+- Route: `/playground/NearStore`. Standalone explainer page: `/near-store-overview.html` (in `public/`).
 - Run: the combined `npm run dev` dies if the feedback server's port 3737 is already taken
   (`--kill-others`). Run **`npx vite`** directly instead. Ports 5173–5179 were busy last
   session so it landed on **5180** — the port varies; check the vite output.
