@@ -33,9 +33,9 @@ export const ModelView: React.FC<{
           </Typography>
         </Vertical>
         <Horizontal gap={spacing.B} align="center" className={styles.headerActions}>
-          <Button variant="secondary" size="small">Search on this model</Button>
-          <Button variant="secondary" size="small">Edit model</Button>
-          <Button variant="tertiary" size="small" icon="more" iconOnly aria-label="More model actions">More</Button>
+          <Button variant="secondary">Search on this model</Button>
+          <Button variant="secondary">Edit model</Button>
+          <Button variant="tertiary" icon="more" iconOnly aria-label="More model actions">More</Button>
         </Horizontal>
       </Horizontal>
 
