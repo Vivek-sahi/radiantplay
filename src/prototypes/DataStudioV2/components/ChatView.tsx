@@ -4,10 +4,12 @@ import { ProjectState, MultiSourceCreatedItem } from '../index';
 import { AgentMessage, PlanData } from './AgentPanel';
 import AgentPanel from './AgentPanel';
 import PlanPanel from './PlanPanel';
+import PlanPanelV3 from './PlanPanelV3';
 import QualityPlanPanel from './QualityPlanPanel';
 import ChatContextPanel, { CreatedItem, NotebookCell } from './ChatContextPanel';
 import NotebookView from './NotebookView';
 import InstructionsPanel from './InstructionsPanel';
+import { FlowOption } from './Shell';
 import { tableMetadata } from '../data/mockData';
 
 interface ChatViewProps {
@@ -21,12 +23,14 @@ interface ChatViewProps {
   isFromScratch?: boolean;
   isMultiSource?: boolean;
   isNotebookFlow?: boolean;
+  isMrdFlow?: boolean;
   isDbtReview?: boolean;
   instructionsCreated: boolean;
   onBuildStart: () => void;
   onNavigateToWorkspace?: () => void;
   onBack: () => void;
   onNavigateToTable?: (tableName: string) => void;
+  flowOption?: FlowOption;
 }
 
 const CHAT_WIDTH = 860;
@@ -35,9 +39,11 @@ const CHAT_PANEL_PCT = 0.4;
 const ChatView: React.FC<ChatViewProps> = ({
   project, setProject, messages, setMessages,
   notebookCells, setNotebookCells,
-  initialPrompt, isFromScratch, isMultiSource, isNotebookFlow, isDbtReview, instructionsCreated, onBuildStart, onNavigateToWorkspace, onBack, onNavigateToTable,
+  initialPrompt, isFromScratch, isMultiSource, isNotebookFlow, isMrdFlow, isDbtReview, instructionsCreated, onBuildStart, onNavigateToWorkspace, onBack, onNavigateToTable,
+  flowOption = 'option3',
 }) => {
   const [activePlan, setActivePlan] = useState<PlanData | null>(null);
+  const [draftModelBuilding, setDraftModelBuilding] = useState(false);
   const [qualityPlanOpen, setQualityPlanOpen] = useState(false);
   const [instructionsPanelOpen, setInstructionsPanelOpen] = useState(false);
   const [openedMsItem, setOpenedMsItem] = useState<MultiSourceCreatedItem | null>(null);
@@ -54,6 +60,25 @@ const ChatView: React.FC<ChatViewProps> = ({
     setActivePlan(null);
     setQualityPlanOpen(false);
     setInstructionsPanelOpen(false);
+  };
+
+  const handleApproveModel = () => {
+    if (!activePlan) { onBuildStart(); return; }
+    const plan = activePlan;
+    setMessages(prev => [...prev, {
+      id: `a-${Date.now()}`,
+      type: 'response' as const,
+      content: 'Draft model created. Click to open it.',
+      modelArtifact: {
+        name: plan.modelName,
+        tableCount: plan.tables.length,
+        columnCount: plan.columns.filter(col => col.included).length,
+        metricCount: plan.columns.filter(col => col.type === 'metric' || col.type === 'formula').length,
+      },
+    }]);
+    setActivePlan(null);
+    setDraftModelBuilding(false);
+    onBuildStart();
   };
 
   // Staggered entrance: main content fades in immediately, context panel follows after a delay
@@ -192,12 +217,17 @@ const ChatView: React.FC<ChatViewProps> = ({
               isFromScratch={isFromScratch}
               isMultiSource={isMultiSource}
               isNotebookFlow={isNotebookFlow}
+              isMrdFlow={isMrdFlow}
               isDbtReview={isDbtReview}
               onNotebookUpdate={(cells) => setNotebookCells(cells)}
               width={isPlanOpen ? Math.max(340, Math.round(window.innerWidth * CHAT_PANEL_PCT)) : CHAT_WIDTH}
-              onOpenPlan={plan => setActivePlan(plan)}
+              onOpenPlan={plan => {
+                if (flowOption === 'option3') return; // plan is shown inline in chat for option3
+                setActivePlan(plan);
+              }}
               onOpenQualityPlan={() => setQualityPlanOpen(true)}
               onBuildStart={onBuildStart}
+              flowOption={flowOption}
               onNavigateToWorkspace={onNavigateToWorkspace}
               onOpenMsItem={isNotebookFlow ? handleNotebookCardClick : openMsItem as (item: { type: string; name: string }) => void}
             />
@@ -207,10 +237,20 @@ const ChatView: React.FC<ChatViewProps> = ({
         {/* Plan panel */}
         {isPlanOpen && activePlan && (
           <div style={{ flex: 1, padding: '8px 8px 8px 0', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-            <PlanPanel
-              plan={activePlan}
-              onClose={() => setActivePlan(null)}
-            />
+            {true ? (
+              <PlanPanelV3
+                plan={activePlan}
+                onClose={() => { setActivePlan(null); setDraftModelBuilding(false); }}
+                buildingMode={draftModelBuilding}
+                onBuildComplete={() => setDraftModelBuilding(false)}
+                onBuildModel={handleApproveModel}
+              />
+            ) : (
+              <PlanPanel
+                plan={activePlan}
+                onClose={() => setActivePlan(null)}
+              />
+            )}
           </div>
         )}
 

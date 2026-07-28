@@ -1,10 +1,14 @@
 import React, { useState, useRef, useCallback, useEffect, useLayoutEffect } from 'react';
-import { ff, fw } from '../styles';
+import { c, sp, ff, fs, fw } from '../styles';
 import { GlobalHeader } from '../../../components';
+import { Button } from '../../../components/Button';
+import { Icon } from '../../../components/icons';
 import { BrandMark } from '../../../components/BrandMark';
 import AgentPanel, { AgentMessage } from './AgentPanel';
-import { SpreadsheetGrid, SpreadsheetSkeleton, SpreadsheetColumnMenu, SpreadsheetToolbar } from './Spreadsheet';
+import { SpreadsheetGrid, SpreadsheetSkeleton, SpreadsheetColumnMenu, DataSheetToolbar } from './Spreadsheet';
 import { AnchoredMenu } from './AnchoredMenu';
+import TestView from './TestView';
+import { useVariant } from '../variant';
 import { ProjectState, emptyContext } from '../index';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -19,8 +23,10 @@ interface PipelineStep {
   prep?: boolean; // materialization-requiring prep step (blocks switching back to live)
   nullFix?: { column: string; value: string }; // per-step null remediation (for version-aware preview)
   sql?: string; // saved query for a SQL step
-  filter?: { column: string; operator: string; value: string }; // per-step filter predicate
+  filter?: { name: string; column: string; operator: string; value: string }; // per-step filter predicate
   title?: string; // user-given block name (shown in the properties-panel header)
+  formulas?: { col: string; expr: string }[]; // computed columns added via this step (cumulative)
+  pythonCode?: string; // saved script for a Python step
 }
 
 interface CsvSettings {
@@ -57,10 +63,36 @@ interface CanvasJoin {
   y: number;
 }
 
+export interface InitialCanvasJoin {
+  table1: string;
+  table2: string;
+  col1: string;
+  col2: string;
+  joinType: 'inner' | 'full_outer' | 'left_outer' | 'right_outer';
+  cardinality: 'many_to_one' | 'one_to_many' | 'one_to_one';
+}
+
 interface ModelCanvasProps {
   onBack: () => void;
   onPublished?: () => void;
   mode?: 'dataset' | 'blocks' | 'dataset2';
+  // Pre-populate the canvas with tables/joins (MRD flow, SpotterX embed).
+  initialTables?: string[];
+  initialJoins?: InitialCanvasJoin[];
+  // SpotterX embed hooks. Accepted so the shell type-checks; the wired ones
+  // (hideAgentPanel, embedHeaderLeft/Right) take effect, the rest are no-ops on
+  // this canvas until re-implemented here.
+  hideAgentPanel?: boolean;
+  embedHeaderLeft?: React.ReactNode;
+  embedHeaderRight?: React.ReactNode;
+  hideSemanticModelsTab?: boolean;
+  contextualToolbar?: boolean;
+  showTestTab?: boolean;
+  onTestFixWithAI?: (items: unknown[]) => void;
+  // POC: scoped data browser — no source tabs / filter (data connections only),
+  // multi-connection selectable, with expandable tick-based column selection and
+  // explicit + add icons. Unset (Vision / SpotterX) = full browser, unchanged.
+  poc?: boolean;
 }
 
 // ── Per-op icon for the properties-panel header ─────────────────────────────────
@@ -72,9 +104,24 @@ function stepIcon(type: string) {
     case 'join': return <svg {...p}><circle cx="6" cy="8" r="4" stroke="currentColor" strokeWidth="1.3"/><circle cx="10" cy="8" r="4" stroke="currentColor" strokeWidth="1.3"/></svg>;
     case 'filter': return <svg {...p}><path d="M2 4.5h12l-4.5 5.5v3l-3-1.5V10L2 4.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/></svg>;
     case 'agg': return <svg {...p}><path d="M11.5 4h-7l5 4-5 4h7" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>;
-    case 'formula': return <svg {...p}><path d="M5.5 3.5c0-1 1.5-1 2 0V5c0 .5.5 1 1 1" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><path d="M7.5 5.5v7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><path d="M5 8.5h5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>;
+    case 'formula': return <svg {...p}><path d="M4 13V6a2 2 0 0 1 2-2h1" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><path d="M2.5 8.5H7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><path d="M9 8l4 5M13 8l-4 5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>;
     case 'nullfix': return <svg {...p}><circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.2"/><line x1="4" y1="12" x2="12" y2="4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>;
     default: return <svg {...p}><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" strokeWidth="1.3"/><path d="M5 6h6M5 8.5h4M5 11h5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>;
+  }
+}
+
+// ── Properties-panel header icon — Radiant icons where an equivalent exists;
+// bespoke (refined to match Radiant's stroke/size) for concepts Radiant has no icon for.
+function panelHeaderIcon(type: string, color: string) {
+  switch (type) {
+    case 'join':   return <Icon name="join-inner" size="xs" color={color} />;
+    case 'filter': return <Icon name="filter" size="xs" color={color} />;
+    case 'formula':return <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M4 13V6a2 2 0 0 1 2-2h1" stroke={color} strokeWidth="1.3" strokeLinecap="round"/><path d="M2.5 8.5H7" stroke={color} strokeWidth="1.3" strokeLinecap="round"/><path d="M9 8l4 5M13 8l-4 5" stroke={color} strokeWidth="1.2" strokeLinecap="round"/></svg>;
+    case 'python': return <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M6 2c-1.1 0-2 .4-2 1v2h4V4H6V3h4c1.1 0 2 .4 2 1v2c0 1.1-.9 2-2 2H6c-1.1 0-2 .9-2 2v2c0 .6.9 1 2 1h4c1.1 0 2-.4 2-1v-2H8v1h2v1H6v-1h4c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2H6c-1.1 0-2-.9-2-2V3c0-.6.9-1 2-1z" stroke={color} strokeWidth="1.1" strokeLinejoin="round"/></svg>;
+    case 'sql':    return <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M4.5 5L2 8l2.5 3M11.5 5L14 8l-2.5 3M9.5 3.5l-3 9" stroke={color} strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>;
+    case 'agg':    return <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M11.5 4h-7l5 4-5 4h7" stroke={color} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>;
+    case 'nullfix':return <Icon name="wrench" size="xs" color={color} />;
+    default:       return <Icon name="table" size="xs" color={color} />; // source
   }
 }
 
@@ -413,11 +460,26 @@ const OP_META: Record<OpType, { label: string; tag: string; desc: string }> = {
   nullfix: { label: 'Fix nulls', tag: 'prep',    desc: 'Remediate null values' },
 };
 
+// A step only earns its place in the card's pipeline chip row once its properties-panel
+// form has actually been saved — not the instant it's added via the "+" menu. "Source"
+// isn't an action the user configures, so it's always considered saved.
+function isStepSaved(s: PipelineStep): boolean {
+  switch (s.type) {
+    case 'source':  return true;
+    case 'filter':  return !!s.filter;
+    case 'nullfix': return !!s.nullFix;
+    case 'formula': return (s.formulas?.length ?? 0) > 0;
+    case 'sql':     return !!s.sql;
+    case 'python':  return !!s.pythonCode;
+    default:        return true;
+  }
+}
+
 const OP_ICON: Record<string, React.ReactNode> = {
   source:  <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><rect x="1" y="2" width="12" height="10" rx="1.5" stroke="currentColor" strokeWidth="1.2"/><path d="M1 5.5h12M4.5 5.5v6.5" stroke="currentColor" strokeWidth="1.2"/></svg>,
   filter:  <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M1.5 3.5h11L8 8.5v3.5L6 11V8.5L1.5 3.5z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/></svg>,
   agg:     <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M2 11V3M2 7h4M2 3l2 2M2 11l2-2M8 3h3a1 1 0 010 4h-3M8 7h4a1 1 0 010 4H8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>,
-  formula: <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M4 2.5c0-1 2 0 2 1V5c0 .5.5 1 1 1" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/><path d="M6 5v6.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/><path d="M4 8h4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>,
+  formula: <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M4 13V6a2 2 0 0 1 2-2h1" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/><path d="M2.5 8.5H7" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/><path d="M9 8l4 5M13 8l-4 5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>,
   rename:  <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M9.5 2.5l2 2-7 7H2.5v-2l7-7z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>,
   sort:    <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M2 3h10M2 7h7M2 11h4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/><path d="M11 7v5.5M9 10.5l2 2 2-2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>,
   union:   <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><circle cx="5" cy="7" r="3.5" stroke="currentColor" strokeWidth="1.2"/><circle cx="9" cy="7" r="3.5" stroke="currentColor" strokeWidth="1.2"/></svg>,
@@ -429,6 +491,7 @@ const OP_ICON: Record<string, React.ReactNode> = {
 };
 
 const BLOCK_MENU_ACTIONS: { op: OpType; label: string }[] = [
+  { op: 'join',    label: 'Join' },
   { op: 'filter',  label: 'Filter' },
   { op: 'formula', label: 'Formula' },
 ];
@@ -547,10 +610,8 @@ const IconTrash = ({ size = 11 }: { size?: number }) => (
     <path d="M1.5 3h9M4.5 3V2h3v1M5 5.5v3M7 5.5v3M2.5 3l.7 7h5.6l.7-7" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
 );
-const IconChevronRight = ({ size = 10, color = '#A5ACB9' }: { size?: number; color?: string }) => (
-  <svg width={size} height={size} viewBox="0 0 12 12" fill="none">
-    <path d="M4 3l3 3-3 3" stroke={color} strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
-  </svg>
+const IconChevronRight = ({ color = '#A5ACB9' }: { size?: number; color?: string }) => (
+  <Icon name="chevron-right" size="xs" color={color} />
 );
 const IconChevronLeft = ({ size = 12 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 16 16" fill="none">
@@ -562,59 +623,9 @@ const IconChevronDown = ({ size = 11 }: { size?: number }) => (
     <path d="M3 4.5l3 3 3-3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
 );
-const IconTable = ({ size = 11, color = '#8B96A5' }: { size?: number; color?: string }) => (
-  <svg width={size} height={size} viewBox="0 0 12 12" fill="none">
-    <rect x="1" y="2" width="10" height="8" rx="1" stroke={color} strokeWidth="1.2"/>
-    <path d="M1 5h10M1 8h10M4 5v5M8 5v5" stroke={color} strokeWidth="1"/>
-  </svg>
-);
-// Neutral file-source icons (no brand logos, per the icon guideline).
-const IconCloud = ({ size = 11 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 16 16" fill="none">
-    <path d="M4.6 12.5A2.6 2.6 0 0 1 4 7.4 3.5 3.5 0 0 1 11 6.6a2.8 2.8 0 0 1 .5 5.9H4.6z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/>
-  </svg>
-);
-const IconFolder = ({ size = 11 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 16 16" fill="none">
-    <path d="M2 4.8A1 1 0 0 1 3 3.8h3L7.5 5.3H13a1 1 0 0 1 1 1v5.4a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4.8z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/>
-  </svg>
-);
-const IconDb = ({ size = 11 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 12 12" fill="none">
-    <ellipse cx="6" cy="3" rx="4" ry="1.5" stroke="#777E8B" strokeWidth="1.1"/>
-    <path d="M2 3v6c0 .83 1.79 1.5 4 1.5s4-.67 4-1.5V3" stroke="#777E8B" strokeWidth="1.1"/>
-    <path d="M2 6c0 .83 1.79 1.5 4 1.5S10 6.83 10 6" stroke="#777E8B" strokeWidth="1.1"/>
-  </svg>
-);
-const IconSchema = ({ size = 11 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 12 12" fill="none">
-    <rect x="1" y="1" width="4" height="4" rx="0.8" stroke="#A5ACB9" strokeWidth="1.1"/>
-    <rect x="7" y="1" width="4" height="4" rx="0.8" stroke="#A5ACB9" strokeWidth="1.1"/>
-    <rect x="1" y="7" width="4" height="4" rx="0.8" stroke="#A5ACB9" strokeWidth="1.1"/>
-    <path d="M9 5v2M3 5v2M3 7h6" stroke="#A5ACB9" strokeWidth="1"/>
-  </svg>
-);
-const IconDbt = ({ size = 11 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 12 12" fill="none">
-    <polygon points="6,1 11,3.5 11,8.5 6,11 1,8.5 1,3.5" stroke="#8C62F5" strokeWidth="1.1" fill="none"/>
-  </svg>
-);
-const IconSnowflake = ({ size = 11 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 14 14" fill="none">
-    <path d="M7 1.5c-1.5 0-2.5.7-2.5 1.5V4c0 .8-1 1.5-1 2.5S4.5 8 5 8s.5.5.5 1v1.5C5.5 11.8 6 12.5 7 12.5s1.5-.7 1.5-2V9c0-.5 0-1 .5-1s1.5-1 1.5-2S9.5 4 9.5 4V3C9.5 2.2 8.5 1.5 7 1.5z" stroke="#8B96A5" strokeWidth="1.2"/>
-  </svg>
-);
-const IconBigquery = ({ size = 11 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 14 14" fill="none">
-    <path d="M7 2l3.5 5.5H7V12L3.5 6.5H7V2z" stroke="#8B96A5" strokeWidth="1.2" strokeLinejoin="round"/>
-  </svg>
-);
-
-const IconPlus = ({ size = 10, color = 'currentColor' }: { size?: number; color?: string }) => (
-  <svg width={size} height={size} viewBox="0 0 12 12" fill="none">
-    <path d="M6 2v8M2 6h8" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
-  </svg>
-);
+// Vision-only tree-row affordances. The POC replaced these with a single explicit
+// "+" control (see TreeTableRow's showColumns branch); Vision keeps the original
+// hover pair so its data browser is unchanged.
 const IconInfo = ({ size = 12 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 16 16" fill="none">
     <circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeWidth="1.3"/>
@@ -628,6 +639,57 @@ const IconAddToCanvas = ({ size = 12 }: { size?: number }) => (
     <path d="M8 5.5v5M5.5 8h5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
   </svg>
 );
+const IconTable = ({ size = 11, color = '#8B96A5' }: { size?: number; color?: string }) => (
+  <svg width={size} height={size} viewBox="0 0 12 12" fill="none">
+    <rect x="1" y="2" width="10" height="8" rx="1" stroke={color} strokeWidth="1.2"/>
+    <path d="M1 5h10M1 8h10M4 5v5M8 5v5" stroke={color} strokeWidth="1"/>
+  </svg>
+);
+// Data-browser source marks — refined to a consistent, muted line style (uniform
+// stroke, 16px viewBox, distinctive silhouettes). No Radiant brand logos exist, so
+// these stay bespoke but read as one clean set alongside the Radiant structural icons.
+const IconCloud = () => (
+  <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+    <path d="M5 12.5A3 3 0 0 1 4.5 6.55 3.8 3.8 0 0 1 11.8 7a2.75 2.75 0 0 1-.55 5.5H5z" stroke="#8B96A5" strokeWidth="1.3" strokeLinejoin="round"/>
+  </svg>
+);
+const IconFolder = () => (
+  <Icon name="folder" size="xs" color="#8B96A5" />
+);
+const IconDb = () => (
+  <Icon name="database" size="xs" color="#777E8B" />
+);
+const IconSchema = () => (
+  <Icon name="schema" size="xs" color="#A5ACB9" />
+);
+const IconDbt = () => (
+  <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+    <path d="M8 2.2l5.2 3v5.6L8 13.8l-5.2-3V5.2z" stroke="#8B96A5" strokeWidth="1.3" strokeLinejoin="round"/>
+  </svg>
+);
+const IconSnowflake = () => (
+  <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+    <path d="M8 2v12M2.8 5l10.4 6M13.2 5L2.8 11" stroke="#8B96A5" strokeWidth="1.3" strokeLinecap="round"/>
+  </svg>
+);
+const IconBigquery = () => (
+  <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+    <path d="M8 2.4l5 5-5 5-5-5z" stroke="#8B96A5" strokeWidth="1.3" strokeLinejoin="round"/>
+    <path d="M8 5.6v4.8M5.6 8h4.8" stroke="#8B96A5" strokeWidth="1.1" strokeLinecap="round"/>
+  </svg>
+);
+
+const IconDatabricks = () => (
+  <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+    <path d="M2 6l6 3.2L14 6M2 9.2l6 3.2 6-3.2M8 3l6 3.2L8 9.4 2 6.2 8 3z" stroke="#8B96A5" strokeWidth="1.15" strokeLinejoin="round" strokeLinecap="round"/>
+  </svg>
+);
+
+const IconPlus = ({ size = 10, color = 'currentColor' }: { size?: number; color?: string }) => (
+  <svg width={size} height={size} viewBox="0 0 12 12" fill="none">
+    <path d="M6 2v8M2 6h8" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+  </svg>
+);
 const IconDagEmpty = () => (
   <svg width="24" height="24" viewBox="0 0 28 28" fill="none">
     <rect x="2" y="10" width="9" height="8" rx="2" stroke="currentColor" strokeWidth="1.5"/>
@@ -637,49 +699,72 @@ const IconDagEmpty = () => (
   </svg>
 );
 
+// ── Spotter readiness panel (POC) — the tests a user can run on the model ──────
+const SPOTTER_TESTS = [
+  { id: 'physical', title: 'Physical schema', lead: 'Structure & data.', rest: 'Tables, joins, columns, formulas etc.' },
+  { id: 'semantics', title: 'Semantics', lead: 'Language & meaning.', rest: 'Names, descriptions, AI context etc.' },
+  { id: 'answers', title: 'Spotter answers', lead: 'Answers in practice.', rest: 'Rate actual Spotter responses.' },
+];
+
+const SpotterReadinessPanel: React.FC<{ onRun: (id: string) => void }> = ({ onRun }) => {
+  const [checked, setChecked] = useState<Set<string>>(new Set());
+  const toggle = (id: string) => setChecked(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  return (
+    <div style={{ padding: `${sp.C}px ${sp.D}px ${sp.A}px`, fontFamily: ff.primary }}>
+      <div style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'], letterSpacing: '-0.1px', padding: `${sp.A}px 0 ${sp.C}px` }}>Check for</div>
+      {SPOTTER_TESTS.map((t, i) => {
+        const isChecked = checked.has(t.id);
+        return (
+          <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: sp.C, padding: `${sp.C}px 0`, borderTop: i > 0 ? `1px solid ${c['border-divider']}` : 'none' }}>
+            <button
+              onClick={() => toggle(t.id)}
+              title={isChecked ? 'Selected' : 'Select'}
+              style={{ width: 16, height: 16, flexShrink: 0, borderRadius: 4, border: `1.5px solid ${isChecked ? c['content-brand'] : c['border-default']}`, background: isChecked ? c['content-brand'] : c['background-base'], cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, transition: 'border-color 120ms, background 120ms' }}
+            >
+              {isChecked && <svg width="10" height="10" viewBox="0 0 14 14" fill="none"><path d="M2.5 7.5l3 3 6-7" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+            </button>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'], lineHeight: '20px' }}>{t.title}</div>
+              <div style={{ fontSize: fs.xs, lineHeight: '17px', marginTop: 1 }}>
+                <span style={{ color: c['content-secondary'] }}>{t.lead}</span> <span style={{ color: c['content-tertiary'] }}>{t.rest}</span>
+              </div>
+            </div>
+            <button
+              onClick={() => onRun(t.id)}
+              style={{ flexShrink: 0, padding: `6px ${sp.D}px`, borderRadius: RADIUS6, border: 'none', background: c['background-subtle'], color: c['content-primary'], fontSize: fs.xs, fontWeight: fw.medium, cursor: 'pointer', fontFamily: ff.primary, transition: 'background 120ms' }}
+              onMouseEnter={e => (e.currentTarget.style.background = c['background-sunken'])}
+              onMouseLeave={e => (e.currentTarget.style.background = c['background-subtle'])}
+            >
+              Run
+            </button>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
 // ── Tree row ──────────────────────────────────────────────────────────────────
 
-function getColTypeBadge(type: string): { bg: string; color: string } {
-  if (['INT','FLOAT','DECIMAL','NUMERIC','INTEGER','BIGINT'].includes(type))
-    return { bg: 'rgba(27,88,212,0.08)', color: '#2770EF' };
-  if (['VARCHAR','TEXT','STRING','CHAR'].includes(type))
-    return { bg: 'rgba(107,79,191,0.08)', color: '#8C62F5' };
-  if (['DATE','TIMESTAMP','DATETIME','TIME'].includes(type))
-    return { bg: 'rgba(14,125,139,0.08)', color: '#0E7D8B' };
-  if (['BOOLEAN','BOOL'].includes(type))
-    return { bg: 'rgba(4,120,87,0.08)', color: '#06BF7F' };
-  return { bg: 'rgba(100,116,139,0.08)', color: '#64748B' };
-}
-
-function getColSemanticMeta(col: string, type: string): { description: string; nullable: boolean; isPk: boolean } {
-  const isPk = col === 'id' || (col.endsWith('_id') && !col.includes('_') === false && col.split('_').length <= 2 && col === col.split('_')[0] + '_id');
-  if (col === 'id') return { description: 'Primary key, auto-incremented', nullable: false, isPk: true };
-  if (col.endsWith('_id')) return { description: `Foreign key → ${col.slice(0, -3)}s`, nullable: false, isPk: false };
-  if (col === 'name' || col.endsWith('_name')) return { description: 'Human-readable display name', nullable: false, isPk: false };
-  if (col === 'email') return { description: 'Email address, must be unique', nullable: false, isPk: false };
-  if (col === 'phone') return { description: 'Contact phone number', nullable: true, isPk: false };
-  if (col === 'status') return { description: 'Current status of the record', nullable: false, isPk: false };
-  if (col === 'type') return { description: 'Classification type', nullable: false, isPk: false };
-  if (col === 'channel') return { description: 'Marketing or acquisition channel', nullable: true, isPk: false };
-  if (col === 'region' || col === 'geo') return { description: 'Geographic region or market', nullable: true, isPk: false };
-  if (col === 'country') return { description: 'ISO 3166-1 country code', nullable: true, isPk: false };
-  if (col === 'city') return { description: 'City name', nullable: true, isPk: false };
-  if (col === 'segment') return { description: 'Customer segment classification', nullable: true, isPk: false };
-  if (['amount','revenue','spend','budget','price','cost','fee','ltv','mrr','margin','unit_price','line_total','net_amount','refund_amount','total_amount','lifetime_value','conversion_value'].includes(col))
-    return { description: 'Monetary value in USD', nullable: true, isPk: false };
-  if (['impressions','clicks','conversions','qty','stock_qty'].includes(col))
-    return { description: 'Aggregate count metric', nullable: false, isPk: false };
-  if (col.endsWith('_at') || col === 'ts' || col === 'date') return { description: 'Timestamp of the event', nullable: true, isPk: false };
-  if (col.endsWith('_date')) return { description: 'Date value (no time component)', nullable: true, isPk: false };
-  if (col === 'description' || col === 'notes') return { description: 'Free-text description or notes', nullable: true, isPk: false };
-  if (col === 'tags') return { description: 'Comma-separated tag list', nullable: true, isPk: false };
-  if (type === 'BOOLEAN') return { description: 'Boolean flag, true/false', nullable: false, isPk: false };
-  if (type === 'TIMESTAMP') return { description: 'UTC timestamp', nullable: true, isPk: false };
-  if (type === 'DATE') return { description: 'Calendar date', nullable: true, isPk: false };
-  if (type === 'INT' || type === 'BIGINT') return { description: 'Integer value', nullable: false, isPk };
-  if (type === 'FLOAT' || type === 'DECIMAL') return { description: 'Decimal numeric value', nullable: true, isPk: false };
-  return { description: 'String value', nullable: true, isPk: false };
-}
+// Column type glyph — clean `123` / `Abc` / date affordance (per the metrics-list
+// UI inspiration), tinted brand blue.
+const ColTypeIcon: React.FC<{ type: string }> = ({ type }) => {
+  const t = (type || '').toUpperCase();
+  if (/DATE|TIME/.test(t)) {
+    return (
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="none" style={{ color: '#2770EF' }}>
+        <rect x="2.5" y="3.5" width="11" height="10" rx="1.5" stroke="currentColor" strokeWidth="1.3"/>
+        <path d="M2.5 6.5h11M5.5 2.5v2M10.5 2.5v2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+      </svg>
+    );
+  }
+  const numeric = /INT|FLOAT|NUMBER|DECIMAL|DOUBLE|BIGINT/.test(t);
+  return (
+    <span style={{ fontSize: 9, fontWeight: 700, color: '#2770EF', fontFamily: "'SF Mono','Fira Mono',monospace", letterSpacing: '0.02em', lineHeight: 1, whiteSpace: 'nowrap' }}>
+      {numeric ? '123' : 'Abc'}
+    </span>
+  );
+};
 
 const TreeTableRow: React.FC<{
   name: string;
@@ -691,15 +776,15 @@ const TreeTableRow: React.FC<{
   onToggleExpand?: (name: string) => void;
   deselectedCols?: Set<string>;
   onToggleCol?: (tableName: string, col: string) => void;
-}> = ({ name, isDbt, onCanvas, onAdd, depthPad = 28 }) => {
+  // POC: reveal a chevron that expands the table into its selectable columns.
+  showColumns?: boolean;
+}> = ({ name, isDbt, onCanvas, onAdd, depthPad = 28, expanded, onToggleExpand, deselectedCols, onToggleCol, showColumns }) => {
   const [hovered, setHovered] = useState(false);
-  const showActions = hovered || onCanvas;
-
   return (
     <div>
       <div
         style={{
-          display: 'flex', alignItems: 'center', gap: 7,
+          display: 'flex', alignItems: 'center', gap: 6,
           padding: `4px 10px 4px ${depthPad}px`,
           fontSize: 12,
           color: onCanvas ? '#2770EF' : hovered ? '#1D232F' : '#64748B',
@@ -710,21 +795,35 @@ const TreeTableRow: React.FC<{
         }}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
-        title={onCanvas ? 'Already on canvas' : 'Click to add to canvas'}
+        title={onCanvas ? 'Already on canvas' : 'Add to canvas'}
         onClick={() => { if (!onCanvas) onAdd(name); }}
       >
         <span style={{ color: onCanvas ? '#2770EF' : undefined, flexShrink: 0, display: 'flex' }}>
-          {isDbt ? <IconDbt /> : <IconTable />}
+          {isDbt ? <IconDbt /> : <Icon name="table" size="xs" color="#8B96A5" />}
         </span>
         <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: onCanvas ? 500 : undefined }}>
           {name}
         </span>
-        {showActions && (
+        {showColumns ? (
+          // Explicit add control: + to add, check once on canvas.
+          <button
+            onClick={e => { e.stopPropagation(); if (!onCanvas) onAdd(name); }}
+            title={onCanvas ? 'Added to canvas' : 'Add table to canvas'}
+            style={{ width: 22, height: 22, borderRadius: 5, border: 'none', background: 'transparent', cursor: onCanvas ? 'default' : 'pointer', color: onCanvas ? '#2770EF' : '#8B96A5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background 110ms, color 110ms' }}
+            onMouseEnter={e => { if (!onCanvas) { e.currentTarget.style.background = 'rgba(39,112,239,0.10)'; e.currentTarget.style.color = '#2770EF'; } }}
+            onMouseLeave={e => { if (!onCanvas) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#8B96A5'; } }}
+          >
+            {onCanvas
+              ? <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M2.5 7.5l3 3 6-7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              : <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M7 2.5v9M2.5 7h9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>}
+          </button>
+        ) : (hovered || onCanvas) && (
+          // Vision: original hover pair (info + add), unchanged from pre-POC.
           <div style={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
             {onCanvas ? (
               <div
                 title="Already on canvas"
-                style={{ width: 22, height: 22, borderRadius: 4, color: '#2770EF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                style={{ width: 22, height: 22, borderRadius: 4, color: '#2770EF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
                 onClick={e => e.stopPropagation()}
               >
                 <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M2.5 7.5l3 3 6-7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
@@ -770,8 +869,12 @@ const TreeConn: React.FC<{
   open: boolean;
   onToggle: (id: string) => void;
   children: React.ReactNode;
-}> = ({ id, icon, label, count, muted, depth = 0, open, onToggle, children }) => {
+  // POC: render only the children (no header row) — used to drop the redundant
+  // connection-level node when the browser is already scoped to one connection.
+  bare?: boolean;
+}> = ({ id, icon, label, count, muted, depth = 0, open, onToggle, children, bare }) => {
   const pad = 14 + depth * 10;
+  if (bare) return <>{children}</>;
   return (
     <div>
       <div
@@ -852,16 +955,17 @@ const JoinBlockCard: React.FC<{
       title={`${join.name} · ${joinLabel} join`}
     >
       {/* Compact join icon on the relationship — click to edit join details */}
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
         <div style={{
-          position: 'relative', width: 40, height: 40, borderRadius: 11, background: '#fff',
-          border: `1.5px solid ${selected ? '#2770EF' : '#C0C6CF'}`,
-          boxShadow: selected ? '0 0 0 3px rgba(39,112,239,0.16), 0 2px 8px rgba(25,35,49,0.10)' : '0 2px 8px rgba(25,35,49,0.10)',
+          position: 'relative', width: 34, height: 34, borderRadius: 10, background: '#fff',
+          border: `1px solid ${selected ? '#2770EF' : '#D5DAE1'}`,
+          boxShadow: selected ? '0 0 0 3px rgba(39,112,239,0.14), 0 1px 4px rgba(25,35,49,0.06)' : (hover ? '0 1px 4px rgba(25,35,49,0.08)' : 'none'),
+          transition: 'box-shadow 120ms, border-color 120ms',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
-          <svg width="20" height="20" viewBox="0 0 22 22" fill="none">
-            <circle cx="9" cy="11" r="4.5" fill={jc.bg} stroke={jc.fg} strokeWidth="1.4"/>
-            <circle cx="13" cy="11" r="4.5" fill="none" stroke="#2770EF" strokeWidth="1.4"/>
+          <svg width="17" height="17" viewBox="0 0 22 22" fill="none">
+            <circle cx="9" cy="11" r="4.5" fill={jc.bg} stroke={jc.fg} strokeWidth="1.2"/>
+            <circle cx="13" cy="11" r="4.5" fill="none" stroke="#2770EF" strokeWidth="1.2"/>
           </svg>
           {hover && (
             <button
@@ -876,7 +980,12 @@ const JoinBlockCard: React.FC<{
             </button>
           )}
         </div>
-        <span style={{ fontSize: 9.5, fontWeight: 700, color: selected ? '#2770EF' : '#64748B', letterSpacing: '0.02em' }}>{cardinalityLabel}</span>
+        <span style={{
+          fontSize: 10, fontWeight: 700, letterSpacing: '0.02em', lineHeight: 1,
+          padding: '2px 6px', borderRadius: 99,
+          color: selected ? '#2770EF' : '#475569',
+          background: selected ? 'rgba(39,112,239,0.10)' : '#F0F2F6',
+        }}>{cardinalityLabel}</span>
       </div>
     </div>
   );
@@ -935,7 +1044,7 @@ const CanvasNodeCard: React.FC<{
       onClick={e => e.stopPropagation()}
     >
       {/* Main card */}
-      <div style={{
+      <div data-block-id={group.id} style={{
         position: 'relative', zIndex: 1,
         background: '#fff',
         border: `1.5px solid ${selected ? '#2770EF' : '#C0C6CF'}`,
@@ -1087,6 +1196,11 @@ const nullColumnsOf = (tableName: string): { name: string; count: number }[] => 
 // ── Block-flow node (mode === 'blocks'): one action per node, wired by edges ────
 const BLOCK_W = 180;
 const BLOCK_H = 46;
+// BlockNode's card is minWidth: BLOCK_W, maxWidth: CARD_W — an empty/idle card (just
+// Source, no transformations) stays at its natural, narrow width; adding chips lets it
+// grow wider up to CARD_W, and only past that cap does the chip row wrap onto a new
+// line, growing the card's HEIGHT instead of pushing width past the cap.
+const CARD_W = 300;
 
 const BlockNode: React.FC<{
   group: CanvasGroup;
@@ -1101,22 +1215,26 @@ const BlockNode: React.FC<{
   onAction?: (op: OpType, isPrep?: boolean) => void;
   onStepClick?: (index: number) => void;
   onRemoveStep?: (index: number) => void;
-}> = ({ group, selected, wiring, onSelect, onMove, onRemove, onWireStart, onWireMove, onWireEnd, onAction, onStepClick, onRemoveStep }) => {
+  // POC: hides the Clean and Code actions from the node menu.
+  poc?: boolean;
+}> = ({ group, selected, wiring, onSelect, onMove, onRemove, onWireStart, onWireMove, onWireEnd, onAction, onStepClick, onRemoveStep, poc }) => {
   const step = group.steps[0];
   const meta = OP_META[step.type];
   const tag = OP_TAG_COLORS[meta.tag] || OP_TAG_COLORS.source;
   const name = step.title?.trim() || (step.type === 'source' ? group.tableName : meta.label);
   const isSource = step.type === 'source';
-  const hasSteps = group.steps.length > 1;
+  // A step only earns a chip once its properties-panel form is actually saved — not the
+  // instant it's added via the "+" menu. Original indices are kept so onStepClick/
+  // onRemoveStep still address the real position in group.steps.
+  const visibleSteps = group.steps.map((s, i) => ({ s, i })).filter(({ s }) => isStepSaved(s));
+  const hasSteps = visibleSteps.length > 1;
   const lastStep = group.steps[group.steps.length - 1];
   const lastMeta = OP_META[lastStep.type];
   const lastTag = OP_TAG_COLORS[lastMeta.tag] || OP_TAG_COLORS.source;
-  const [hover, setHover] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [cleanOpen, setCleanOpen] = useState(false);
   const [codeOpen, setCodeOpen] = useState(false);
   const [hoveredChip, setHoveredChip] = useState<number | null>(null);
-  const [wireDragging, setWireDragging] = useState(false);
   const menuBtnRef = useRef<HTMLButtonElement>(null);
   const dragRef = useRef<{ px: number; py: number; ox: number; oy: number; moved: boolean } | null>(null);
   // Outside-click / Esc close is handled by AnchoredMenu (the menu is portaled).
@@ -1140,16 +1258,14 @@ const BlockNode: React.FC<{
 
   return (
     <div
-      style={{ position: 'absolute', left: group.x, top: group.y, minWidth: BLOCK_W, cursor: 'grab', userSelect: 'none' }}
+      style={{ position: 'absolute', left: group.x, top: group.y, minWidth: BLOCK_W, maxWidth: CARD_W, cursor: 'grab', userSelect: 'none' }}
       onPointerDown={onDown}
       onPointerMove={onMovePt}
       onPointerUp={onUp}
       onClick={e => e.stopPropagation()}
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
     >
       <div data-block-id={group.id} style={{
-        position: 'relative', background: '#fff', minWidth: BLOCK_W,
+        position: 'relative', background: '#fff', minWidth: BLOCK_W, maxWidth: CARD_W,
         border: `1.5px solid ${selected ? '#2770EF' : wiring ? '#71A1F4' : '#C0C6CF'}`,
         borderRadius: RADIUS8,
         boxShadow: selected ? '0 0 0 3px rgba(39,112,239,0.14), 0 2px 10px rgba(25,35,49,0.08)' : '0 2px 10px rgba(25,35,49,0.08)',
@@ -1161,11 +1277,13 @@ const BlockNode: React.FC<{
           </span>
           <span style={{ flex: 1, minWidth: 0, fontSize: 12, fontWeight: fw.semibold, color: '#1D232F', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
         </div>
-        {/* Inline pipeline — steps live as chips inside the card (Option 1 schema) */}
+        {/* Inline pipeline — steps live as chips inside the card, ordered left-to-right,
+            wrapping to a new row (growing the card's height) once a row fills up rather
+            than growing the card wider. Only saved actions (+ Source) get a chip. */}
         {hasSteps && (
-          <div style={{ borderTop: BORDER, padding: '8px 10px', overflowX: 'auto' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
-              {group.steps.map((s, i) => {
+          <div style={{ borderTop: BORDER, padding: '8px 10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px 0' }}>
+              {visibleSteps.map(({ s, i }, vi) => {
                 const m = OP_META[s.type];
                 const tc = OP_TAG_COLORS[m.tag] || OP_TAG_COLORS.source;
                 const active = selected && group.activeStep === i;
@@ -1186,7 +1304,7 @@ const BlockNode: React.FC<{
                       <span style={{ display: 'flex', flexShrink: 0 }}>{OP_ICON[s.type]}</span>
                       <span style={{ fontSize: 11, fontWeight: 600, whiteSpace: 'nowrap' }}>{label}</span>
                     </div>
-                    {i < group.steps.length - 1 && (
+                    {vi < visibleSteps.length - 1 && (
                       <div style={{ display: 'flex', alignItems: 'center', color: '#A5ACB9', flexShrink: 0 }}>
                         <svg width="16" height="10" viewBox="0 0 16 10" fill="none"><path d="M1 5h12M9 1l4 4-4 4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
                       </div>
@@ -1197,31 +1315,30 @@ const BlockNode: React.FC<{
             </div>
           </div>
         )}
-        {hover && (
-          <button
-            onPointerDown={e => e.stopPropagation()}
-            onClick={e => { e.stopPropagation(); onRemove(); }}
-            title="Delete block"
-            style={{ position: 'absolute', top: -8, right: -8, width: 16, height: 16, border: 'none', background: '#fff', borderRadius: 4, color: '#777E8B', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, boxShadow: '0 1px 3px rgba(0,0,0,0.14)' }}
-            onMouseEnter={e => (e.currentTarget.style.color = '#E5484D')}
-            onMouseLeave={e => (e.currentTarget.style.color = '#777E8B')}
-          >
-            <IconTrash size={9} />
-          </button>
-        )}
-        {onAction && (hover || menuOpen) && (
-          <div style={{ position: 'absolute', top: -8, right: 12 }}>
+        {/* Anchored above vertical-center on purpose — a level join's connector line
+            exits near the card's mid-height, so centering here would sit the button
+            directly on top of that line. */}
+        {onAction && (selected || menuOpen) && (
+          <div style={{ position: 'absolute', right: -10, top: BLOCK_H * 0.3, transform: 'translateY(-50%)' }}>
             <button
               ref={menuBtnRef}
               onPointerDown={e => e.stopPropagation()}
               onClick={e => { e.stopPropagation(); setMenuOpen(o => !o); }}
-              title="Add action"
-              style={{ width: 16, height: 16, border: 'none', background: menuOpen ? '#E8EFFE' : '#fff', borderRadius: 4, color: menuOpen ? '#2770EF' : '#777E8B', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, boxShadow: '0 1px 3px rgba(0,0,0,0.14)' }}
-              onMouseEnter={e => { if (!menuOpen) { e.currentTarget.style.color = '#1D232F'; } }}
-              onMouseLeave={e => { if (!menuOpen) { e.currentTarget.style.color = '#777E8B'; } }}
+              title="Actions"
+              style={{
+                width: 20, height: 20, borderRadius: '50%',
+                border: `1px solid ${menuOpen ? '#2770EF' : '#C0C6CF'}`,
+                background: menuOpen ? '#EEF2FF' : '#fff',
+                color: menuOpen ? '#2770EF' : '#8B96A5',
+                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0,
+                boxShadow: '0 1px 3px rgba(25,35,49,0.10)',
+                transition: 'background 120ms, border-color 120ms, color 120ms',
+              }}
+              onMouseEnter={e => { if (!menuOpen) { e.currentTarget.style.borderColor = '#2770EF'; e.currentTarget.style.background = '#EEF2FF'; e.currentTarget.style.color = '#2770EF'; } }}
+              onMouseLeave={e => { if (!menuOpen) { e.currentTarget.style.borderColor = '#C0C6CF'; e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#8B96A5'; } }}
             >
-              <svg width="9" height="9" viewBox="0 0 9 9" fill="none">
-                <path d="M4.5 1.5v6M1.5 4.5h6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+              <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
+                <path d="M2 3h8M2 6h8M2 9h8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
               </svg>
             </button>
             {menuOpen && (
@@ -1229,7 +1346,7 @@ const BlockNode: React.FC<{
                 open={menuOpen}
                 anchorRef={menuBtnRef}
                 onClose={() => { setMenuOpen(false); setCleanOpen(false); setCodeOpen(false); }}
-                placement="bottom-end"
+                placement="right-start"
                 style={{ background: '#fff', border: '1px solid #E2E6EC', borderRadius: 8, boxShadow: '0 6px 24px rgba(25,35,49,0.13)', minWidth: 164, padding: '4px 0' }}
               >
                 {BLOCK_MENU_ACTIONS.map(({ op, label }) => (
@@ -1243,6 +1360,8 @@ const BlockNode: React.FC<{
                     {label}
                   </button>
                 ))}
+                {/* POC hides Clean + Code — only Join/Filter/Formula + Delete remain */}
+                {!poc && (<>
                 <div style={{ height: 1, background: '#EAEDF2', margin: '3px 0' }} />
                 {/* Clean — single entry; the individual operators live one level down */}
                 <div
@@ -1306,37 +1425,59 @@ const BlockNode: React.FC<{
                     </div>
                   )}
                 </div>
+                </>)}
+                <div style={{ height: 1, background: '#EAEDF2', margin: '3px 0' }} />
+                <button
+                  onClick={() => { setMenuOpen(false); onRemove(); }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '6px 12px', border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit', fontSize: 12, fontWeight: 500, color: '#E5484D' }}
+                  onMouseEnter={e => (e.currentTarget.style.background = '#FDF2F2')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                >
+                  <span style={{ display: 'flex', flexShrink: 0 }}><Icon name="trash-can" size="xs" color="currentColor" /></span>
+                  Delete
+                </button>
               </AnchoredMenu>
             )}
           </div>
         )}
-        {(hover || wireDragging) && <button
-          onPointerDown={e => { e.stopPropagation(); try { (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId); } catch { /* noop */ } setWireDragging(true); onWireStart(e.clientX, e.clientY); }}
-          onPointerMove={e => { if (wireDragging) { e.stopPropagation(); onWireMove?.(e.clientX, e.clientY); } }}
-          onPointerUp={e => { if (!wireDragging) return; e.stopPropagation(); try { (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId); } catch { /* noop */ } setWireDragging(false); onWireEnd?.(e.clientX, e.clientY); }}
-          onClick={e => e.stopPropagation()}
-          title="Drag to join another table"
-          style={{ position: 'absolute', right: -14, top: BLOCK_H / 2, transform: 'translateY(-50%)', width: 26, height: 20, borderRadius: 5, background: wireDragging ? '#2770EF' : '#fff', border: `1.5px solid ${wireDragging ? '#2770EF' : '#8B96A5'}`, cursor: 'crosshair', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: wireDragging ? '#fff' : '#8B96A5', zIndex: 5 }}
-          onMouseEnter={e => { if (!wireDragging) { e.currentTarget.style.borderColor = '#2770EF'; e.currentTarget.style.color = '#2770EF'; } }}
-          onMouseLeave={e => { if (!wireDragging) { e.currentTarget.style.borderColor = '#8B96A5'; e.currentTarget.style.color = '#8B96A5'; } }}
-        >
-          <svg width="14" height="10" viewBox="0 0 14 10" fill="none">
-            <circle cx="3" cy="5" r="2.2" stroke="currentColor" strokeWidth="1.2"/>
-            <circle cx="11" cy="5" r="2.2" stroke="currentColor" strokeWidth="1.2"/>
-            <path d="M5.2 5h3.6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
-          </svg>
-        </button>}
       </div>
     </div>
   );
 };
 
-const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = 'dataset' }) => {
+// Radiance wash + grain — copied from SpotterXShell so the +Model canvas backdrop
+// matches SpotterX exactly. Applied only when the canvas renders its own agent panel
+// (+Model flow); the SpotterX embed passes hideAgentPanel and keeps its shell's wash.
+const RADIANCE_WASH = [
+  'linear-gradient(180deg, rgba(236,199,203,0.50) 0px, rgba(236,199,203,0.22) 140px, rgba(236,199,203,0) 420px)',
+  'radial-gradient(900px 500px at 12% 0%, rgba(244,181,178,0.35), transparent 70%)',
+  'radial-gradient(700px 480px at 45% 5%, rgba(228,190,214,0.25), transparent 70%)',
+  'radial-gradient(640px 420px at 92% 0%, rgba(205,218,246,0.30), transparent 70%)',
+].join(', ');
+const GRAIN_URI =
+  "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E\")";
+
+// POC: which connection each browser table belongs to. Adding a table from a
+// second connection requires caching first (you can only model across
+// connections once the model is cached).
+const POC_TABLE_CONN: Record<string, string> = {
+  dim_accounts: 'snowflake-prod', support_cases: 'snowflake-prod', call_metrics: 'snowflake-prod', customer_found_defects: 'snowflake-prod',
+  pendo_nps_enriched: 'databricks', csm_account_mapping: 'databricks',
+};
+
+const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = 'dataset', initialTables, initialJoins, hideAgentPanel = false, embedHeaderLeft, embedHeaderRight, showTestTab = false, onTestFixWithAI, poc = false }) => {
+  const { variant } = useVariant();
+  // POC: node-level vs model-level data preview. Scoped to the +Model canvas
+  // (hideAgentPanel is only true for the SpotterX embed) so SpotterX and Vision
+  // are both unaffected regardless of the active variant.
+  const showModelLevelPreview = variant === 'poc' && !hideAgentPanel;
   const [modelName, setModelName] = useState('Untitled model');
+  const [editingName, setEditingName] = useState(false);
+  const [nameDraft, setNameDraft] = useState(modelName);
   const [publishOpen, setPublishOpen] = useState(false);
   const [published, setPublished] = useState(false);
   const [dataMode, setDataMode] = useState<'live' | 'cached'>('live');
-  const [cacheConfirm, setCacheConfirm] = useState<null | { onConfirm: () => void }>(null);
+  const [cacheConfirm, setCacheConfirm] = useState<null | { onConfirm: () => void; title?: string; body?: string; cancelLabel?: string }>(null);
   const [dataModeMenuOpen, setDataModeMenuOpen] = useState(false);
   const [cacheSettingsOpen, setCacheSettingsOpen] = useState(false);
   const [cacheScope, setCacheScope] = useState<'Full model' | 'Custom'>('Full model');
@@ -1365,6 +1506,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
   const [previewFull, setPreviewFull] = useState(false);
   const [previewHeight, setPreviewHeight] = useState(224);
   const [previewMode, setPreviewMode] = useState<'data' | 'semantic'>('data');
+  const [previewScope, setPreviewScope] = useState<'node' | 'model'>('node');
   const [previewView] = useState<'output' | 'input' | 'both'>('output');
   const [previewLimit, setPreviewLimit] = useState(1000);
   const [colsMenuOpen, setColsMenuOpen] = useState(false);
@@ -1376,6 +1518,24 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
   const [previewLoading, setPreviewLoading] = useState(false);
   const triggerPreviewLoad = () => { setPreviewLoading(true); setTimeout(() => setPreviewLoading(false), 3500); };
   const [colCleanSub, setColCleanSub] = useState(false); // column ▾ menu — Clean submenu open
+
+  // ── Data tab state — kept independent from the preview panel's equivalents above.
+  // The Data tab shows a different dataset (every table on the canvas, merged), so
+  // sharing state would cross-contaminate the two views (e.g. sorting in one would
+  // silently re-sort the other, a stray column menu could open in the wrong view).
+  const [dataSort, setDataSort] = useState<{ col: string; dir: 'asc' | 'desc' } | null>(null);
+  const [dataColMenu, setDataColMenu] = useState<{ col: string; x: number; y: number } | null>(null);
+  const [dataCleanSub, setDataCleanSub] = useState(false);
+  const [dataHiddenCols, setDataHiddenCols] = useState<Set<string>>(new Set());
+  const [dataLimit, setDataLimit] = useState(1000);
+  const dataScrollRef = useRef<HTMLDivElement | null>(null);
+  // Value is read straight from the clicked cell's rendered DOM text (not looked
+  // up by row index into mergedRows) so it's correct regardless of the grid's own
+  // internal sort order or which columns are currently hidden.
+  const [dataSelectedCell, setDataSelectedCell] = useState<{ col: string; value: string } | null>(null);
+  // Toolbar Filter/Formula on the merged Data sheet need a target table — this holds
+  // the pending action while a small "which table?" picker is shown.
+  const [dataActionPicker, setDataActionPicker] = useState<'filter' | 'formula' | null>(null);
   const [prepMenuOpen, setPrepMenuOpen] = useState(false);
   const prepMenuRef = useRef<HTMLDivElement>(null);
   const [codeMenuOpen, setCodeMenuOpen] = useState(false);
@@ -1400,7 +1560,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
     document.addEventListener('keydown', swallowEscape, true);
     return () => document.removeEventListener('keydown', swallowEscape, true);
   }, []);
-  const [activeBrowserTab, setActiveBrowserTab] = useState<'warehouse' | 'business'>('warehouse');
+  const [activeBrowserTab, setActiveBrowserTab] = useState<'warehouse' | 'business' | 'external'>('warehouse');
   const [addDataOpen, setAddDataOpen] = useState(false);
   const [toolbarAddOpen, setToolbarAddOpen] = useState(false);
   const [browserAddOpen, setBrowserAddOpen] = useState(false);
@@ -1411,6 +1571,69 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
   const [wiring, setWiring] = useState<{ fromId: string; cx: number; cy: number; overId: string | null } | null>(null);
   const wireTargetRef = useRef<string | null>(null);
   const canvasAreaRef = useRef<HTMLDivElement>(null);
+  // Measured card boxes for the join-connector layer. Reading offsetWidth/offsetHeight
+  // directly during render always reflects the PREVIOUS commit — a card that just grew
+  // (e.g. a step chip row appeared) would leave the connector anchored to its old,
+  // shorter height for one frame and, if nothing else re-renders, forever. Re-measuring
+  // in useLayoutEffect (after the DOM updates, before the browser paints) keeps it correct.
+  const [cardSizes, setCardSizes] = useState<Record<string, { w: number; h: number }>>({});
+  const prevCardSizesRef = useRef<Record<string, { w: number; h: number }>>({});
+  useLayoutEffect(() => {
+    const next: Record<string, { w: number; h: number }> = {};
+    groups.forEach(g => {
+      const el = canvasAreaRef.current?.querySelector(`[data-block-id="${g.id}"]`) as HTMLElement | null;
+      if (el) next[g.id] = { w: el.offsetWidth, h: el.offsetHeight };
+    });
+    setCardSizes(next);
+
+    // Block-flow mode only (BlockNode) — CanvasNodeCard/SpotterX is untouched.
+    // When a card's measured box GREW since the last pass (a transformation chip
+    // was saved, wrapping onto a new row), nudge any neighbor it now overlaps just
+    // far enough to clear it, along whichever axis needs the smaller push. Only
+    // genuine growth triggers a push — dragging a card near another (position-only
+    // change) never does. Single-pass: doesn't chase secondary collisions caused
+    // by the push itself, which is the deliberately simple version of this.
+    if (mode !== 'dataset') {
+      const prev = prevCardSizesRef.current;
+      const grown = groups.filter(g => {
+        const p = prev[g.id], n = next[g.id];
+        return p && n && (n.w > p.w || n.h > p.h);
+      });
+      if (grown.length > 0) {
+        const GAP = 24;
+        const deltas: Record<string, { dx: number; dy: number }> = {};
+        grown.forEach(g => {
+          const gs = next[g.id]; if (!gs) return;
+          const gBox = { left: g.x, top: g.y, right: g.x + gs.w, bottom: g.y + gs.h };
+          groups.forEach(c => {
+            if (c.id === g.id) return;
+            const cs = next[c.id]; if (!cs) return;
+            const d = deltas[c.id] ?? { dx: 0, dy: 0 };
+            const cBox = { left: c.x + d.dx, top: c.y + d.dy, right: c.x + d.dx + cs.w, bottom: c.y + d.dy + cs.h };
+            const overlapX = Math.min(gBox.right, cBox.right) - Math.max(gBox.left, cBox.left);
+            const overlapY = Math.min(gBox.bottom, cBox.bottom) - Math.max(gBox.top, cBox.top);
+            if (overlapX <= 0 || overlapY <= 0) return;
+            const gCx = (gBox.left + gBox.right) / 2, gCy = (gBox.top + gBox.bottom) / 2;
+            const cCx = (cBox.left + cBox.right) / 2, cCy = (cBox.top + cBox.bottom) / 2;
+            if (overlapX < overlapY) {
+              const dir = cCx >= gCx ? 1 : -1;
+              deltas[c.id] = { dx: d.dx + dir * (overlapX + GAP), dy: d.dy };
+            } else {
+              const dir = cCy >= gCy ? 1 : -1;
+              deltas[c.id] = { dx: d.dx, dy: d.dy + dir * (overlapY + GAP) };
+            }
+          });
+        });
+        if (Object.keys(deltas).length > 0) {
+          setGroups(prevGroups => prevGroups.map(gr => {
+            const d = deltas[gr.id];
+            return d ? { ...gr, x: gr.x + d.dx, y: gr.y + d.dy } : gr;
+          }));
+        }
+      }
+    }
+    prevCardSizesRef.current = next;
+  }, [groups, mode]);
   // Canvas pan offset — shifts the node+edge layer so the selected node stays centered
   // in the visible canvas area when the properties panel opens.
   const [pan, setPan] = useState({ x: 0, y: 0 });
@@ -1423,19 +1646,32 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
   // Derived: primary selected (single) and selectedGroup
   const selectedId: string | null = selectedIds.size === 1 ? [...selectedIds][0] : null;
 
-  // Empty state — browse tree starts collapsed (connection + database open, schema closed)
-  // so the user expands to the data they want. See Image #7.
-  const [expanded, setExpanded] = useState(new Set([
-    'sf', 'sf-analytics',
-  ]));
+  // +Model flow: connection + database + first schema all start open, so tables are
+  // immediately visible for quick selection on "New model" — no extra clicks to drill
+  // in. SpotterX embed (hideAgentPanel) keeps its original collapsed-schema default.
+  const [expanded, setExpanded] = useState(new Set(
+    hideAgentPanel ? ['sf', 'sf-analytics'] : ['sf', 'sf-analytics', 'sf-public']
+  ));
 
   const [expandedTableRows, setExpandedTableRows] = useState<Set<string>>(new Set());
+  // Which connection subtrees show — driven by the connection filter.
+  const showConn = (id: string) => filterConns.has(id);
   const [deselectedCols, setDeselectedCols] = useState<Record<string, Set<string>>>({});
 
   const [multiJoinActive, setMultiJoinActive] = useState(false);
   const [multiJoinTable1, setMultiJoinTable1] = useState('');
   const [singleJoinActive, setSingleJoinActive] = useState(false);
   const [editingJoinId, setEditingJoinId] = useState<string | null>(null);
+  // Shared "which step is currently in its editable form" state for the properties
+  // panel's summary/edit pattern (mirrors editingJoinId, applied uniformly across
+  // filter/nullfix/formula/sql/python). Key = `${groupId}_${stepIndex}`.
+  const [editingStepKey, setEditingStepKey] = useState<string | null>(null);
+  const stepKey = (groupId: string, stepIndex: number) => `${groupId}_${stepIndex}`;
+  // Panel-header title — click-to-rename (same pattern as the topbar model name).
+  // Defaults to displaying the action name (e.g. "Filter") when no custom title is
+  // set, matching Join's plain-text header instead of a generic "Untitled block".
+  const [editingTitleFor, setEditingTitleFor] = useState<string | null>(null);
+  const [titleDraft, setTitleDraft] = useState('');
   const [canvasJoins, setCanvasJoins] = useState<CanvasJoin[]>([]);
   const joinCountRef = useRef(0);
   // Derive edges: directional data-flow arrows from a source card → a SQL-derived card
@@ -1518,7 +1754,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
     value: string;
     applied: boolean;
   }>({ column: '', aiActive: false, aiDesc: '', aiGenerating: false, value: '', applied: false });
-  const [filterConfig, setFilterConfig] = useState<{ column: string; operator: string; value: string; applied: boolean }>({ column: '', operator: '=', value: '', applied: false });
+  const [filterConfig, setFilterConfig] = useState<{ name: string; column: string; operator: string; value: string; applied: boolean }>({ name: '', column: '', operator: '=', value: '', applied: false });
 
   // ── AI Readiness Pill ──────────────────────────────────────────────────────
   const [airOpen, setAirOpen] = useState(false);
@@ -1535,10 +1771,21 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
   const browserAddBtnRef = useRef<HTMLButtonElement>(null);
 
   // ── Canvas / Columns view switcher ───────────────────────────────────────────
-  const [viewMode, setViewMode] = useState<'canvas' | 'columns' | 'test'>('canvas');
+  const [viewMode, setViewMode] = useState<'canvas' | 'columns' | 'data' | 'test'>('canvas');
   const [colEdits, setColEdits] = useState<Record<string, string>>({});
   const [editingCell, setEditingCell] = useState<string | null>(null);
   const [indexedCols, setIndexedCols] = useState<Set<string>>(new Set());
+  // Columns tab. `removedModelCols` = columns taken out of the model (they leave the
+  // table and become available again under "Add column"). `selectedModelCols` = the
+  // rows currently ticked for a bulk Remove. Both keyed `${table}__${col}`.
+  const [removedModelCols, setRemovedModelCols] = useState<Set<string>>(new Set());
+  const [selectedModelCols, setSelectedModelCols] = useState<Set<string>>(new Set());
+  const [addColMenuOpen, setAddColMenuOpen] = useState(false);
+  // Model-level formulas: calculated columns that belong to the whole model rather
+  // than one source table's transform step. Shown as their own rows in the Columns tab.
+  const [modelFormulas, setModelFormulas] = useState<{ id: string; name: string; expr: string }[]>([]);
+  const [formulaModalOpen, setFormulaModalOpen] = useState(false);
+  const [modelFormulaDraft, setModelFormulaDraft] = useState<{ id: string | null; name: string; expr: string }>({ id: null, name: '', expr: '' });
 
   // Fixes always show in the Columns view. Auto-switch if currently on Canvas.
   (window as any).__airShowFixReview__ = (checkId: string) => {
@@ -1559,7 +1806,9 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
   const airPct = Math.round((airPassCount / AIR_ITEMS.length) * 100);
   const airColor = airPct <= 30 ? '#E22B3D' : airPct <= 65 ? '#FCC838' : '#06BF7F';
   const airSubText = `${airPassCount} of ${AIR_ITEMS.length} checks passed${airPassCount < AIR_ITEMS.length ? ' — fix the items below to progress.' : ' — ready to tune!'}`;
-  const airPillLabel = airDropView === 'intro'
+  const airPillLabel = poc
+    ? 'Spotter readiness'
+    : airDropView === 'intro'
     ? 'AI readiness'
     : airPendingCount > 0
       ? `${airPendingCount} improvement${airPendingCount === 1 ? '' : 's'} pending`
@@ -1769,30 +2018,77 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
   }, []);
 
   const addToCanvas = useCallback((tableName: string, sourceKind: 'warehouse' | 'csv' = 'warehouse', fileName?: string) => {
-    const i = nodeCountRef.current % NODE_POSITIONS.length;
-    nodeCountRef.current++;
-    const pos = NODE_POSITIONS[i];
-    const cols = TABLE_COLS[tableName] ?? [['id', 'INT'], ['value', 'VARCHAR']];
-    const id = `ng_${nodeCountRef.current}`;
-    setGroups(prev => [...prev, {
-      id, tableName,
-      sourceKind,
-      csv: sourceKind === 'csv'
-        ? { fileName: fileName ?? `${tableName}.csv`, delimiter: 'comma', quote: '"', encoding: 'UTF-8', header: true }
-        : undefined,
-      steps: [{ type: 'source', label: tableName, desc: sourceKind === 'csv' ? 'Uploaded file' : 'Raw table', cols }],
-      x: pos.x + (nodeCountRef.current > NODE_POSITIONS.length ? Math.floor(nodeCountRef.current / NODE_POSITIONS.length) * 30 : 0),
-      y: pos.y,
-      expanded: false,
-      activeStep: 0,
-    }]);
-    setSelectedIds(new Set([id]));
-    setPreviewOpen(true);
-    triggerPreviewLoad();
-    if (TABLE_COLS[tableName]) {
-      setExpandedTableRows(prev => new Set([...prev, tableName]));
+    const doAdd = () => {
+      const i = nodeCountRef.current % NODE_POSITIONS.length;
+      nodeCountRef.current++;
+      const pos = NODE_POSITIONS[i];
+      const cols = TABLE_COLS[tableName] ?? [['id', 'INT'], ['value', 'VARCHAR']];
+      const id = `ng_${nodeCountRef.current}`;
+      setGroups(prev => [...prev, {
+        id, tableName,
+        sourceKind,
+        csv: sourceKind === 'csv'
+          ? { fileName: fileName ?? `${tableName}.csv`, delimiter: 'comma', quote: '"', encoding: 'UTF-8', header: true }
+          : undefined,
+        steps: [{ type: 'source', label: tableName, desc: sourceKind === 'csv' ? 'Uploaded file' : 'Raw table', cols }],
+        x: pos.x + (nodeCountRef.current > NODE_POSITIONS.length ? Math.floor(nodeCountRef.current / NODE_POSITIONS.length) * 30 : 0),
+        y: pos.y,
+        expanded: false,
+        activeStep: 0,
+      }]);
+      setSelectedIds(new Set([id]));
+      setPreviewOpen(true);
+      triggerPreviewLoad();
+      if (TABLE_COLS[tableName]) {
+        setExpandedTableRows(prev => new Set([...prev, tableName]));
+      }
+    };
+    // POC: modeling across connections requires caching. If this table comes from
+    // a different connection than what's already on the canvas (and we're still
+    // live), confirm caching first — accepting caches the model, then adds.
+    if (poc && sourceKind === 'warehouse' && dataMode !== 'cached') {
+      const newConn = POC_TABLE_CONN[tableName];
+      const existingConns = new Set(groups.map(g => POC_TABLE_CONN[g.tableName]).filter(Boolean));
+      if (newConn && existingConns.size > 0 && !existingConns.has(newConn)) {
+        setCacheConfirm({
+          title: 'Caching required to combine connections',
+          body: 'This table is from a different connection. To model across connections, the model must be cached into ThoughtSpot’s data store. It will run on cached data, refreshed on a schedule.',
+          cancelLabel: 'Cancel',
+          onConfirm: () => { setDataMode('cached'); doAdd(); setCacheConfirm(null); },
+        });
+        return;
+      }
     }
-  }, []);
+    doAdd();
+  }, [poc, dataMode, groups]);
+
+  // Seed the canvas from initialTables/initialJoins (MRD flow, SpotterX embed) — once.
+  const seededRef = useRef(false);
+  useEffect(() => {
+    if (seededRef.current || !initialTables || initialTables.length === 0) return;
+    seededRef.current = true;
+    const seededGroups: CanvasGroup[] = initialTables.map((tableName, idx) => {
+      const pos = NODE_POSITIONS[idx % NODE_POSITIONS.length];
+      const cols = TABLE_COLS[tableName] ?? [['id', 'INT'], ['value', 'VARCHAR']];
+      return {
+        id: `seed_${idx + 1}`, tableName, sourceKind: 'warehouse' as const,
+        steps: [{ type: 'source' as OpType, label: tableName, desc: 'Raw table', cols }],
+        x: pos.x, y: pos.y, expanded: false, activeStep: 0,
+      };
+    });
+    setGroups(seededGroups);
+    nodeCountRef.current = seededGroups.length;
+    if (initialJoins && initialJoins.length) {
+      const idByName: Record<string, string> = {};
+      seededGroups.forEach(g => { idByName[g.tableName] = g.id; });
+      setCanvasJoins(initialJoins.filter(j => idByName[j.table1]).map((j, idx) => ({
+        id: `seedjoin_${idx + 1}`, name: `${j.table1} × ${j.table2}`,
+        table1Id: idByName[j.table1], table2Name: j.table2,
+        col1: j.col1, col2: j.col2, joinType: j.joinType, cardinality: j.cardinality,
+        x: 0, y: 0,
+      })));
+    }
+  }, [initialTables, initialJoins]);
 
   // ── CSV upload + data-mode caching gate ──────────────────────────────────────
   const handleCsvFile = (file?: File) => {
@@ -1846,6 +2142,10 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
     if (opType === 'python') {
       setPythonConfig({ colName: '', colNameTouched: false, code: '', aiActive: false, aiDesc: '', aiGenerating: false, pyVersion: '3.11', ran: false, error: null, fixing: false, apiData: false });
     }
+    // A brand-new step has nothing to summarize yet — open it straight into its
+    // editable form, same as how a dragged join opens straight into edit mode.
+    const g0 = groups.find(gr => gr.id === gid);
+    setEditingStepKey(stepKey(gid, g0 ? g0.steps.length : 0));
     setGroups(prev => prev.map(g => {
       if (g.id !== gid) return g;
       const meta = OP_META[opType];
@@ -1874,7 +2174,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
     const parents = standalone ? [] : groups.filter(g => selectedIds.has(g.id));
     let x: number, y: number, inputIds: string[];
     if (parents.length > 0) {
-      x = Math.max(...parents.map(p => p.x)) + BLOCK_W + 64;
+      x = Math.max(...parents.map(p => p.x)) + CARD_W + 64;
       y = parents.reduce((sum, p) => sum + p.y, 0) / parents.length;
       inputIds = parents.map(p => p.id);
     } else {
@@ -1994,34 +2294,69 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
       setDataMode('cached');
       addStep(op as OpType, true, g.id);
     };
+    // Agent-created join — commits a join between two named tables directly (no
+    // manual wiring / edit panel), used by the join-recommendation "Add" flow.
+    (window as any).__dsAgentAddJoin__ = (t1Name: string, t2Name: string, key: string, joinType: string, cardinality: string) => {
+      const t1 = groups.find(g => g.tableName === t1Name);
+      const t2 = groups.find(g => g.tableName === t2Name);
+      if (!t1 || !t2) return;
+      if (canvasJoins.some(j => (j.table1Id === t1.id && j.table2Name === t2.tableName) || (j.table1Id === t2.id && j.table2Name === t1.tableName))) return;
+      joinCountRef.current++;
+      const jid = `join_${joinCountRef.current}`;
+      setCanvasJoins(prev => [...prev, {
+        id: jid, name: `${t1.tableName} × ${t2.tableName}`,
+        table1Id: t1.id, table2Name: t2.tableName,
+        col1: key, col2: key,
+        joinType: ((joinType || 'inner').toLowerCase().replace(/[ -]/g, '_')) as CanvasJoin['joinType'],
+        cardinality: ((cardinality || 'many_to_one').toLowerCase().replace(/[ -]/g, '_')) as CanvasJoin['cardinality'],
+        x: Math.round((t1.x + t2.x) / 2) + 70,
+        y: Math.round((t1.y + t2.y) / 2) + 34,
+      } as CanvasJoin]);
+    };
     (window as any).__dsEnterPickMode__ = () => setPickMode(true);
+    (window as any).__dsTogglePickMode__ = () => setPickMode(p => !p);
     return () => {
       delete (window as any).__dsAgentCanvasState__;
       delete (window as any).__dsAgentAddNode__;
       delete (window as any).__dsAgentApplyChip__;
       delete (window as any).__dsEnterPickMode__;
+      delete (window as any).__dsTogglePickMode__;
+      delete (window as any).__dsAgentAddJoin__;
     };
   }, [groups, canvasJoins, addToCanvas, addStep]);
 
-  // Pick mode (A4) — click a canvas card → reference token in the composer. Esc cancels.
+  // Keep the composer's reference button in sync with pick mode (active highlight).
+  useEffect(() => { (window as any).__dsPickModeChanged__?.(pickMode); }, [pickMode]);
+
+  // Pick mode (A4) — click canvas cards to reference them in the composer. In the
+  // POC you can reference many nodes in one session (click card after card);
+  // Esc or a click on empty canvas ends it. Vision references one, then exits.
   useEffect(() => {
     if (!pickMode) return;
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setPickMode(false); };
     const onClick = (e: MouseEvent) => {
-      const el = (e.target as HTMLElement).closest?.('[data-block-id]') as HTMLElement | null;
+      const t = e.target as HTMLElement;
+      // The card's drag wrapper uses pointer capture, so the click target can be the
+      // wrapper (no data-block-id) or a child. Resolve via closest → descendant →
+      // the actual element under the cursor, so any click on a node references it.
+      const el = (t.closest?.('[data-block-id]') as HTMLElement | null)
+        || (t.querySelector?.('[data-block-id]') as HTMLElement | null)
+        || ((document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null)?.closest?.('[data-block-id]') as HTMLElement | null);
       if (el) {
         e.preventDefault();
         e.stopPropagation();
         const gid = el.getAttribute('data-block-id');
         const g = groups.find(gr => gr.id === gid);
         if (g) (window as any).__dsAddPromptRef__?.({ kind: 'table', label: g.tableName });
+        if (!poc) setPickMode(false); // vision: one reference per activation
+      } else {
+        setPickMode(false); // clicking empty canvas ends multi-select
       }
-      setPickMode(false);
     };
     document.addEventListener('keydown', onKey);
     document.addEventListener('click', onClick, true); // capture — beat the card's own select handler
     return () => { document.removeEventListener('keydown', onKey); document.removeEventListener('click', onClick, true); };
-  }, [pickMode, groups]);
+  }, [pickMode, groups, poc]);
 
   // Agentic Python fix — the agent (AgentPanel) calls __dsApplyPythonFix__ after its working steps.
   const PENDO_FIX_CODE = `import requests\nimport pandas as pd\n\n# Fixed: Pendo uses apiKey as a query param, not a Bearer token\napi_key = "your-pendo-integration-key"\nbase_url = "https://app.pendo.io/api/v1"\nparams = {"apiKey": api_key}\n\nresponse = requests.get(\n    f"{base_url}/aggregation",\n    params=params,\n    headers={"Content-Type": "application/json"},\n)\nrecords = response.json().get("results", [])\ndf = pd.DataFrame(records)`;
@@ -2141,10 +2476,44 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
       height: 48, background: '#fff', borderBottom: BORDER,
       display: 'flex', alignItems: 'center', padding: '0 16px', gap: 6, flexShrink: 0,
     }}>
-      {/* Model identity — display only (name is edited in the agent panel header) */}
-      <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0, minWidth: 0, maxWidth: 300, marginRight: 4 }}>
-        <span style={{ fontSize: 16, fontWeight: 700, color: modelName === 'Untitled model' ? '#A5ACB9' : '#1D232F', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', letterSpacing: '-0.2px' }}>{modelName}</span>
-      </div>
+      {/* Model identity — click to rename inline.
+          SpotterX embed can replace the left slot with its own header node. */}
+      {embedHeaderLeft ?? (
+        <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0, minWidth: 0, maxWidth: 300, marginRight: 4 }}>
+          {editingName ? (
+            <input
+              autoFocus
+              value={nameDraft}
+              onChange={e => setNameDraft(e.target.value)}
+              onFocus={e => e.currentTarget.select()}
+              onBlur={() => { setModelName(nameDraft.trim() || modelName); setEditingName(false); }}
+              onKeyDown={e => {
+                if (e.key === 'Enter') { setModelName(nameDraft.trim() || modelName); setEditingName(false); }
+                if (e.key === 'Escape') { setNameDraft(modelName); setEditingName(false); }
+              }}
+              style={{
+                fontSize: 16, fontWeight: 700, color: '#1D232F', letterSpacing: '-0.2px',
+                fontFamily: ff.primary, width: '100%', minWidth: 120, boxSizing: 'border-box',
+                border: '1.5px solid #2770EF', borderRadius: 6, padding: '2px 6px', outline: 'none',
+                background: '#fff',
+              }}
+            />
+          ) : (
+            <span
+              onClick={() => { setNameDraft(modelName); setEditingName(true); }}
+              title="Click to rename"
+              style={{
+                fontSize: 16, fontWeight: 700, color: modelName === 'Untitled model' ? '#A5ACB9' : '#1D232F',
+                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', letterSpacing: '-0.2px',
+                cursor: 'pointer', borderRadius: 6, padding: '2px 6px', margin: '0 -6px',
+                transition: 'background 100ms',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#F6F8FA'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+            >{modelName}</span>
+          )}
+        </div>
+      )}
       {/* Collapsed data browser — icon moves into the topbar (mirrors the collapsed agent panel); click to reopen */}
       {browserCollapsed && (
         <button
@@ -2233,7 +2602,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
                   onClick={() => { setDataModeMenuOpen(false); setCacheConfirm({ onConfirm: () => { setDataMode('cached'); setCacheConfirm(null); } }); }}
                   style={{ width: '100%', padding: '7px 0', borderRadius: 7, border: '1px solid #C0C6CF', background: '#fff', color: '#1D232F', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: ff.primary }}
                 >
-                  Switch to cached
+                  Cache model
                 </button>
               </>
             )}
@@ -2242,10 +2611,15 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
       </div>
       {/* Canvas / Columns view switcher — centered over main content (right of browser panel) */}
       <div style={{ position: 'absolute', left: `calc(50% + ${(browserCollapsed ? 48 : browserWidth) / 2}px)`, transform: 'translateX(-50%)', display: 'flex', alignItems: 'center', background: '#F0F2F6', borderRadius: 8, padding: 3, gap: 1 }}>
-        {(['canvas', 'columns', 'test'] as const).map(v => (
+        {(['canvas', 'data', 'columns', 'test'] as const).filter(v => (v !== 'test' || showTestTab) && (v !== 'columns' || !showModelLevelPreview)).map(v => (
           <button
             key={v}
-            onClick={() => setViewMode(v)}
+            onClick={() => {
+              // POC: switching to the spreadsheet shouldn't carry the canvas
+              // selection's properties panel over — it opens on demand only.
+              if (poc && v === 'data') { setSelectedIds(new Set()); setDataActionPicker(null); setEditingStepKey(null); }
+              setViewMode(v);
+            }}
             style={{
               fontSize: 12, fontWeight: 500, padding: '4px 14px', borderRadius: 5,
               border: 'none', cursor: 'pointer', fontFamily: ff.primary,
@@ -2254,7 +2628,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
               boxShadow: viewMode === v ? '0 1px 3px rgba(25,35,49,0.10)' : 'none',
               transition: 'all 130ms', whiteSpace: 'nowrap', userSelect: 'none',
             }}
-          >{v === 'canvas' ? 'Canvas' : v === 'columns' ? 'Columns' : 'Test'}</button>
+          >{v === 'canvas' ? 'Canvas' : v === 'columns' ? 'Columns' : v === 'data' ? 'Spreadsheet' : 'Test'}</button>
         ))}
       </div>
 
@@ -2320,15 +2694,17 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
 
           return (
             <AnchoredMenu open={airOpen} anchorRef={airPillRef} onClose={() => setAirOpen(false)} placement="bottom-end" gap={7} style={{
-              width: 292,
-              background: '#fff', border: '1px solid #E2E6EC', borderRadius: 10,
+              width: poc ? 400 : 292,
+              background: '#fff', border: '1px solid #E2E6EC', borderRadius: poc ? 16 : 10,
               boxShadow: '0 8px 28px rgba(25,35,49,0.12), 0 1px 4px rgba(25,35,49,0.06)',
               overflow: 'hidden',
               animation: 'air-fadeIn 140ms cubic-bezier(0,0,0.2,1) both',
             }}>
               <style>{`@keyframes air-fadeIn{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:translateY(0)}} @keyframes air-spin{to{transform:rotate(360deg)}}`}</style>
 
-              {airDropView === 'intro' ? (
+              {poc ? (
+                <SpotterReadinessPanel onRun={() => { setAirOpen(false); if (hasTable) { setAirItemStates({} as Record<AirItemId, AirItemState>); airRunScan(); } }} />
+              ) : airDropView === 'intro' ? (
                 <>
                   <div style={{ padding: '15px 16px 13px', borderBottom: '1px solid #EAEDF2' }}>
                     <div style={{ fontSize: 10, fontWeight: 700, color: '#A5ACB9', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 7 }}>AI readiness</div>
@@ -2496,13 +2872,15 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
         <button onClick={() => setPublishOpen(true)} style={{ padding: '6px 16px', borderRadius: RADIUS6, border: 'none', background: '#2770EF', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: ff.primary }}>
           {published ? 'Republish' : 'Publish'}
         </button>
+        {/* SpotterX embed: close button (or any right-slot node) */}
+        {embedHeaderRight}
       </div>
     </div>
   );
 
   // ── Agent panel ─────────────────────────────────────────────────────────────
 
-  const agentPanel = agentCollapsed ? null : (
+  const agentPanel = (agentCollapsed || hideAgentPanel) ? null : (
     <div style={{
       position: 'relative', flexShrink: 0,
       width: agentWidth,
@@ -2538,6 +2916,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
           setMessages={setAgentMessages}
           isFromScratch={true}
           isCanvasAgent={true}
+          poc={poc}
           canvasTableCount={groups.filter(g => g.steps[0]?.type === 'source').length}
           width={agentWidth}
           rootBackground="transparent"
@@ -2555,14 +2934,9 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
         onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(39,112,239,0.18)'; }}
         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
       />
-      {/* Pick mode (A4) — hint pill + hover outline on canvas cards */}
+      {/* Pick mode (A4) — hover outline on canvas cards (no hint pill) */}
       {pickMode && (
-        <>
-          <style>{`[data-block-id] { cursor: crosshair !important; } [data-block-id]:hover { outline: 2px solid #2770EF; outline-offset: 2px; border-radius: 14px; }`}</style>
-          <div style={{ position: 'fixed', top: 62, left: '50%', transform: 'translateX(-50%)', zIndex: 600, background: '#1D232F', color: '#fff', fontSize: 12, fontFamily: ff.primary, padding: '7px 14px', borderRadius: 999, boxShadow: '0 6px 24px rgba(25,35,49,0.3)', display: 'flex', alignItems: 'center', gap: 6, pointerEvents: 'none' }}>
-            Click a card to reference it <span style={{ opacity: 0.55 }}>· Esc to cancel</span>
-          </div>
-        </>
+        <style>{`[data-block-id] { cursor: crosshair !important; } [data-block-id]:hover { outline: 2px solid #2770EF; outline-offset: 2px; border-radius: 14px; }`}</style>
       )}
     </div>
   );
@@ -2593,7 +2967,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
   const browserPanel = (
     <div style={{
       position: 'relative', flexShrink: 0,
-      width: browserCollapsed ? 0 : browserWidth,
+      width: browserCollapsed ? 44 : browserWidth,
       transition: resizingPanel === 'browser' ? 'none' : 'width 220ms cubic-bezier(0.4,0,0.2,1)',
     }}>
     <div style={{
@@ -2604,21 +2978,30 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
     }}>
       {/* Header */}
       <div style={{ height: 40, display: 'flex', alignItems: 'center', padding: browserCollapsed ? '0' : '0 14px', gap: 8, borderBottom: BORDER, flexShrink: 0, justifyContent: browserCollapsed ? 'center' : undefined }}>
-        <div style={{ color: '#777E8B', flexShrink: 0 }}>
-          <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><ellipse cx="8" cy="5" rx="5.5" ry="2" stroke="currentColor" strokeWidth="1.3"/><path d="M2.5 5v6c0 1.1 2.5 2 5.5 2s5.5-.9 5.5-2V5" stroke="currentColor" strokeWidth="1.3"/><path d="M2.5 8c0 1.1 2.5 2 5.5 2s5.5-.9 5.5-2" stroke="currentColor" strokeWidth="1.3"/></svg>
-        </div>
+        {/* Single database icon — the one control that toggles the panel open/closed */}
+        <button onClick={() => setBrowserCollapsed(c => !c)} title={browserCollapsed ? 'Expand data browser' : 'Collapse data browser'}
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, borderRadius: RADIUS6, border: 'none', background: 'transparent', color: '#777E8B', cursor: 'pointer', flexShrink: 0 }}
+          onMouseEnter={e => (e.currentTarget.style.background = '#F0F2F6')}
+          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+        >
+          <Icon name="database" size="s" color="#777E8B" />
+        </button>
         {!browserCollapsed && (
           <>
-            <span style={{ fontSize: 12, fontWeight: 600, color: '#1D232F', flex: 1, whiteSpace: 'nowrap' }}>Data browser</span>
+            <span style={{ fontSize: 12, fontWeight: 600, color: '#1D232F', flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              Data browser
+            </span>
+            {/* POC: no cross-source "Add" — only the existing data connections */}
+            {!poc && (
             <div style={{ position: 'relative', flexShrink: 0 }}>
               <button
                 ref={browserAddBtnRef}
                 onClick={() => setBrowserAddOpen(o => !o)}
                 style={{ display: 'flex', alignItems: 'center', gap: 3, height: 24, padding: '0 8px', borderRadius: RADIUS6, border: '1px solid #C0C6CF', background: browserAddOpen ? '#F6F8FA' : '#fff', color: '#1D232F', fontSize: 11.5, fontWeight: 500, cursor: 'pointer', whiteSpace: 'nowrap', fontFamily: ff.primary }}
               >
-                <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M8 3.5v9M3.5 8h9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                <Icon name="plus" size="xs" color="#1D232F" />
                 Add
-                <svg width="8" height="8" viewBox="0 0 10 10" fill="none"><path d="M2 3.5l3 3 3-3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                <Icon name="chevron-down" size="xs" color="#1D232F" />
               </button>
               {browserAddOpen && (
                 <AnchoredMenu open={browserAddOpen} anchorRef={browserAddBtnRef} onClose={() => setBrowserAddOpen(false)} placement="bottom-end" style={{ background: '#fff', border: '1px solid #E2E6EC', borderRadius: RADIUS8, boxShadow: '0 6px 24px rgba(25,35,49,0.13)', minWidth: 232, padding: '4px 0' }}>
@@ -2638,26 +3021,19 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
                 </AnchoredMenu>
               )}
             </div>
-            <button onClick={() => setBrowserCollapsed(true)} style={phdrBtnStyle} title="Collapse">
-              <IconChevronLeft size={12} />
-            </button>
+            )}
           </>
         )}
       </div>
 
-      {browserCollapsed ? (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '6px 0', gap: 2 }}>
-          <button onClick={() => setBrowserCollapsed(false)} style={railBtnStyle} title="Expand data browser">
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><ellipse cx="8" cy="5" rx="5.5" ry="2" stroke="currentColor" strokeWidth="1.3"/><path d="M2.5 5v6c0 1.1 2.5 2 5.5 2s5.5-.9 5.5-2V5" stroke="currentColor" strokeWidth="1.3"/></svg>
-          </button>
-        </div>
-      ) : (
+      {browserCollapsed ? null : (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          {/* Browser tabs */}
+          {/* Browser tabs — hidden when locked to a single connection (POC) */}
+          {!poc && (
           <div style={{ display: 'flex', borderBottom: BORDER, flexShrink: 0, background: '#fff', padding: '0 10px', gap: 16 }}>
-            {(['warehouse', 'business'] as const).map(tab => {
+            {(['warehouse', 'business', 'external'] as const).map(tab => {
               const isActive = activeBrowserTab === tab;
-              const label = tab === 'warehouse' ? 'Warehouse' : 'Business Apps';
+              const label = tab === 'warehouse' ? 'Warehouse' : tab === 'business' ? 'Business Apps' : 'External sources';
               return (
                 <button key={tab}
                   onClick={() => setActiveBrowserTab(tab)}
@@ -2681,6 +3057,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
               );
             })}
           </div>
+          )}
           {/* Search + filter */}
           <div style={{ padding: '9px 12px 8px', borderBottom: BORDER, flexShrink: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -2691,8 +3068,8 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
                 <svg width="11" height="11" viewBox="0 0 16 16" fill="none" style={{ color: '#777E8B', flexShrink: 0 }}><circle cx="7" cy="7" r="5" stroke="currentColor" strokeWidth="1.5"/><path d="M11 11l3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
                 <input type="text" placeholder="Find tables, columns..." style={{ border: 'none', background: 'transparent', fontSize: 12, color: '#1D232F', outline: 'none', flex: 1, minWidth: 0, fontFamily: ff.primary }} />
               </div>
-              {/* Filter toggle */}
-              <button
+              {/* Filter toggle — hidden when locked to a single connection (POC) */}
+              {!poc && <button
                 onClick={() => setFilterOpen(o => !o)}
                 title="Filter connections"
                 style={{
@@ -2705,7 +3082,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
                 }}
               >
                 <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M4.5 8h7M7 12h2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>
-              </button>
+              </button>}
             </div>
             {/* Filter panel */}
             {filterOpen && (
@@ -2758,7 +3135,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
             {activeBrowserTab === 'warehouse' ? (
               <>
                 {/* snowflake-prod */}
-                {filterConns.has('sf') && (
+                {showConn('sf') && (
                   <TreeConn id="sf" icon={<IconSnowflake />} label="snowflake-prod" open={expanded.has('sf')} onToggle={toggleExpanded}>
                     <TreeConn id="sf-analytics" icon={<IconDb />} label="ANALYTICS" muted depth={1} open={expanded.has('sf-analytics')} onToggle={toggleExpanded}>
                       <TreeConn id="sf-public" icon={<IconSchema />} label="PUBLIC" muted depth={2} open={expanded.has('sf-public')} onToggle={toggleExpanded}>
@@ -2771,6 +3148,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
                             onToggleExpand={toggleExpandTableRow}
                             deselectedCols={deselectedCols[t]}
                             onToggleCol={toggleCol}
+                          showColumns={poc}
                           />
                         ))}
                       </TreeConn>
@@ -2778,9 +3156,9 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
                   </TreeConn>
                 )}
                 {/* bigquery-marketing */}
-                {filterConns.has('bq') && (
-                  <TreeConn id="bq" icon={<IconBigquery />} label="bigquery-product" open={expanded.has('bq')} onToggle={toggleExpanded}>
-                    <TreeConn id="bq-db" icon={<IconDb />} label="product_db" muted depth={1} open={expanded.has('bq-db')} onToggle={toggleExpanded}>
+                {showConn('bq') && (
+                  <TreeConn id="bq" icon={poc ? <IconDatabricks /> : <IconBigquery />} label={poc ? 'databricks' : 'bigquery-product'} open={expanded.has('bq')} onToggle={toggleExpanded}>
+                    <TreeConn id="bq-db" icon={<IconDb />} label={poc ? 'product_catalog' : 'product_db'} muted depth={1} open={expanded.has('bq-db')} onToggle={toggleExpanded}>
                       <TreeConn id="bq-raw" icon={<IconSchema />} label="raw" muted depth={2} open={expanded.has('bq-raw')} onToggle={toggleExpanded}>
                         {['pendo_nps_enriched','csm_account_mapping'].map(t => (
                           <TreeTableRow
@@ -2791,50 +3169,15 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
                             onToggleExpand={toggleExpandTableRow}
                             deselectedCols={deselectedCols[t]}
                             onToggleCol={toggleCol}
+                          showColumns={poc}
                           />
                         ))}
                       </TreeConn>
                     </TreeConn>
                   </TreeConn>
                 )}
-                {/* Google Drive */}
-                {filterConns.has('gdrive') && (
-                  <TreeConn id="gdrive" icon={<IconCloud />} label="Google Drive" open={expanded.has('gdrive')} onToggle={toggleExpanded}>
-                    <TreeConn id="gdrive-cs" icon={<IconFolder />} label="Customer Success" muted depth={1} open={expanded.has('gdrive-cs')} onToggle={toggleExpanded}>
-                      {['qbr_notes'].map(t => (
-                        <TreeTableRow
-                          key={t} name={t} depthPad={50}
-                          onCanvas={groups.some(g => g.tableName === t)}
-                          onAdd={addToCanvas}
-                          expanded={expandedTableRows.has(t)}
-                          onToggleExpand={toggleExpandTableRow}
-                          deselectedCols={deselectedCols[t]}
-                          onToggleCol={toggleCol}
-                        />
-                      ))}
-                    </TreeConn>
-                  </TreeConn>
-                )}
-                {/* SharePoint */}
-                {filterConns.has('sharepoint') && (
-                  <TreeConn id="sharepoint" icon={<IconFolder />} label="SharePoint" open={expanded.has('sharepoint')} onToggle={toggleExpanded}>
-                    <TreeConn id="sp-renewals" icon={<IconFolder />} label="Renewals" muted depth={1} open={expanded.has('sp-renewals')} onToggle={toggleExpanded}>
-                      {['renewal_tracker'].map(t => (
-                        <TreeTableRow
-                          key={t} name={t} depthPad={50}
-                          onCanvas={groups.some(g => g.tableName === t)}
-                          onAdd={addToCanvas}
-                          expanded={expandedTableRows.has(t)}
-                          onToggleExpand={toggleExpandTableRow}
-                          deselectedCols={deselectedCols[t]}
-                          onToggleCol={toggleCol}
-                        />
-                      ))}
-                    </TreeConn>
-                  </TreeConn>
-                )}
                 {/* AgentDB — ThoughtSpot's own data store */}
-                {filterConns.has('agentdb') && (
+                {!poc && showConn('agentdb') && (
                   <TreeConn id="agentdb" icon={<svg width="13" height="13" viewBox="0 0 14 14" fill="none"><ellipse cx="7" cy="3.5" rx="4.5" ry="1.5" stroke="#2770EF" strokeWidth="1.2"/><path d="M2.5 3.5v7c0 .83 2 1.5 4.5 1.5s4.5-.67 4.5-1.5v-7" stroke="#2770EF" strokeWidth="1.2"/><path d="M2.5 7c0 .83 2 1.5 4.5 1.5S11.5 7.83 11.5 7" stroke="#2770EF" strokeWidth="1.2"/></svg>} label="AgentDB" open={expanded.has('agentdb')} onToggle={toggleExpanded}>
                     <TreeConn id="agentdb-cached" icon={<IconSchema />} label="cached" muted depth={1} open={expanded.has('agentdb-cached')} onToggle={toggleExpanded}>
                       {['customer_regions', 'csm_account_mapping', 'pendo_nps_enriched', 'customer_health_external'].map(t => (
@@ -2846,6 +3189,49 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
                           onToggleExpand={toggleExpandTableRow}
                           deselectedCols={deselectedCols[t]}
                           onToggleCol={toggleCol}
+                        showColumns={poc}
+                        />
+                      ))}
+                    </TreeConn>
+                  </TreeConn>
+                )}
+              </>
+            ) : activeBrowserTab === 'external' ? (
+              /* External sources — file/folder-based connections, distinct from the warehouse */
+              <>
+                {/* Google Drive */}
+                {showConn('gdrive') && (
+                  <TreeConn id="gdrive" icon={<IconCloud />} label="Google Drive" open={expanded.has('gdrive')} onToggle={toggleExpanded}>
+                    <TreeConn id="gdrive-cs" icon={<IconFolder />} label="Customer Success" muted depth={1} open={expanded.has('gdrive-cs')} onToggle={toggleExpanded}>
+                      {['qbr_notes'].map(t => (
+                        <TreeTableRow
+                          key={t} name={t} depthPad={50}
+                          onCanvas={groups.some(g => g.tableName === t)}
+                          onAdd={addToCanvas}
+                          expanded={expandedTableRows.has(t)}
+                          onToggleExpand={toggleExpandTableRow}
+                          deselectedCols={deselectedCols[t]}
+                          onToggleCol={toggleCol}
+                        showColumns={poc}
+                        />
+                      ))}
+                    </TreeConn>
+                  </TreeConn>
+                )}
+                {/* SharePoint */}
+                {showConn('sharepoint') && (
+                  <TreeConn id="sharepoint" icon={<IconFolder />} label="SharePoint" open={expanded.has('sharepoint')} onToggle={toggleExpanded}>
+                    <TreeConn id="sp-renewals" icon={<IconFolder />} label="Renewals" muted depth={1} open={expanded.has('sp-renewals')} onToggle={toggleExpanded}>
+                      {['renewal_tracker'].map(t => (
+                        <TreeTableRow
+                          key={t} name={t} depthPad={50}
+                          onCanvas={groups.some(g => g.tableName === t)}
+                          onAdd={addToCanvas}
+                          expanded={expandedTableRows.has(t)}
+                          onToggleExpand={toggleExpandTableRow}
+                          deselectedCols={deselectedCols[t]}
+                          onToggleCol={toggleCol}
+                        showColumns={poc}
                         />
                       ))}
                     </TreeConn>
@@ -2865,6 +3251,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
                       onToggleExpand={toggleExpandTableRow}
                       deselectedCols={deselectedCols[t]}
                       onToggleCol={toggleCol}
+                    showColumns={poc}
                     />
                   ))}
                 </TreeConn>
@@ -2878,6 +3265,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
                       onToggleExpand={toggleExpandTableRow}
                       deselectedCols={deselectedCols[t]}
                       onToggleCol={toggleCol}
+                    showColumns={poc}
                     />
                   ))}
                 </TreeConn>
@@ -2909,9 +3297,6 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
   const activeStep = selectedGroup ? selectedGroup.steps[selectedGroup.activeStep] : null;
   void activeStep; // used via selectedGroup.steps[activeStep] inside panel
 
-  const table1Cols: [string, string][] = selectedGroup ? (TABLE_COLS[selectedGroup.tableName] ?? []) : [];
-  const table2Cols: [string, string][] = joinConfig.table2 ? (TABLE_COLS[joinConfig.table2] ?? []) : [];
-
   const joinTypePills: Array<{ key: 'inner' | 'full_outer' | 'left_outer' | 'right_outer'; label: string }> = [
     { key: 'inner', label: 'Inner' },
     { key: 'full_outer', label: 'Full Outer' },
@@ -2941,6 +3326,41 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
     </div>
   );
 
+  // ── Shared summary/edit pattern — same shape for every action (Join/Filter/
+  // Nullfix/Formula/SQL/Python): a read-only summary of key values once saved,
+  // with a single "Edit <action>" affordance that reopens the form.
+  const summaryRow = (label: string, value: React.ReactNode, key?: string) => (
+    <div key={key ?? label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, padding: '7px 0', borderBottom: '1px solid #F3F5F8' }}>
+      <span style={{ fontSize: 12, color: '#777E8B', fontWeight: 500, flexShrink: 0 }}>{label}</span>
+      <span style={{ fontSize: 12, color: '#1D232F', fontWeight: 600, textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>{value}</span>
+    </div>
+  );
+  const EDIT_PENCIL_ICON = <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M9.5 2.5l2 2-7 7H2.5v-2l7-7z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>;
+  const ADD_PLUS_ICON = <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M6 1.5v9M1.5 6h9" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg>;
+  const editActionButton = (label: string, onClick: () => void, icon: React.ReactNode = EDIT_PENCIL_ICON) => (
+    <button
+      onClick={onClick}
+      style={{ width: '100%', padding: '7px 0', borderRadius: 7, border: BORDER, background: '#fff', color: '#1D232F', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: ff.primary, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+      onMouseEnter={e => { e.currentTarget.style.borderColor = '#2770EF'; e.currentTarget.style.color = '#2770EF'; }}
+      onMouseLeave={e => { e.currentTarget.style.borderColor = '#EAEDF2'; e.currentTarget.style.color = '#1D232F'; }}
+    >
+      {icon}
+      {label}
+    </button>
+  );
+  const saveCancelRow = (opts: { onSave: () => void; onCancel?: () => void; disabled?: boolean; saveLabel?: string }) => (
+    <div style={{ display: 'flex', gap: 6 }}>
+      <button
+        onClick={opts.onSave}
+        disabled={opts.disabled}
+        style={{ flex: 1, padding: '8px 0', borderRadius: 7, border: 'none', background: opts.disabled ? '#E8ECEF' : '#2770EF', color: opts.disabled ? '#A5ACB9' : '#fff', fontSize: 13, fontWeight: 600, cursor: opts.disabled ? 'default' : 'pointer', fontFamily: ff.primary }}
+      >{opts.saveLabel ?? 'Save'}</button>
+      {opts.onCancel && (
+        <button onClick={opts.onCancel} style={{ padding: '8px 14px', borderRadius: 7, border: BORDER, background: '#fff', color: '#64748B', fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: ff.primary }}>Cancel</button>
+      )}
+    </div>
+  );
+
   const TABLE_PATH: Record<string, { conn: string; db: string; schema: string }> = {
     orders:       { conn: 'snowflake-prod', db: 'analytics', schema: 'public' },
     customers:    { conn: 'snowflake-prod', db: 'analytics', schema: 'public' },
@@ -2967,7 +3387,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
     { label: 'Join',      op: 'join',    icon: <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><circle cx="6" cy="8" r="4" stroke="currentColor" strokeWidth="1.3"/><circle cx="10" cy="8" r="4" stroke="currentColor" strokeWidth="1.3"/></svg> },
     { label: 'Filter',    op: 'filter',  icon: <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M2 4.5h12l-4.5 5.5v3l-3-1.5V10L2 4.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/></svg> },
     { label: 'Aggregate', op: 'agg',     icon: <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M11.5 4h-7l5 4-5 4h7" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg> },
-    { label: 'Formula',   op: 'formula', icon: <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M5.5 3.5c0-1 1.5-1 2 0V5c0 .5.5 1 1 1" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><path d="M7.5 5.5v7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><path d="M5 8.5h5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg> },
+    { label: 'Formula',   op: 'formula', icon: <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M4 13V6a2 2 0 0 1 2-2h1" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><path d="M2.5 8.5H7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><path d="M9 8l4 5M13 8l-4 5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg> },
     { label: 'SQL',       op: 'sql',     icon: <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M4.5 5L2 8l2.5 3M11.5 5L14 8l-2.5 3M9.5 3.5l-3 9" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg> },
     { label: 'Python',    op: 'python',  icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M14.25.18l.9.2.73.26.59.3.45.32.34.34.25.34.16.33.1.3.04.26.02.2-.01.13V8.5l-.05.63-.13.55-.21.46-.26.38-.3.31-.33.25-.35.19-.35.14-.33.1-.3.07-.26.04-.21.02H8.77l-.69.05-.59.14-.5.22-.41.27-.33.32-.27.35-.2.36-.15.37-.1.35-.07.32-.04.27-.02.21v3.06H3.17l-.21-.03-.28-.07-.32-.12-.35-.18-.36-.26-.36-.36-.35-.46-.32-.59-.28-.73-.21-.88-.14-1.05-.05-1.23.06-1.22.16-1.04.24-.87.32-.71.36-.57.4-.44.42-.33.42-.24.4-.16.36-.1.32-.05.24-.01h.16l.06.01h8.16v-.83H6.18l-.01-2.75-.02-.37.05-.34.11-.31.17-.28.25-.26.31-.23.38-.2.44-.18.51-.15.58-.12.64-.1.71-.06.77-.04.84-.02 1.27.05zm-6.3 1.98l-.23.33-.08.41.08.41.23.34.33.22.41.09.41-.09.33-.22.23-.34.08-.41-.08-.41-.23-.33-.33-.22-.41-.09-.41.09zM21.1 6.11l.28.06.32.12.35.18.36.27.36.35.35.47.32.59.28.73.21.88.14 1.04.05 1.23-.06 1.23-.16 1.04-.24.86-.32.71-.36.57-.4.45-.42.33-.42.24-.4.16-.36.09-.32.05-.24.02-.16-.01h-8.22v.82h5.84l.01 2.76.02.36-.05.34-.11.31-.17.29-.25.25-.31.24-.38.2-.44.17-.51.15-.58.13-.64.09-.71.07-.77.04-.84.01-1.27-.04-1.07-.14-.9-.2-.73-.25-.59-.3-.45-.33-.34-.34-.25-.34-.16-.33-.1-.3-.04-.25-.02-.2.01-.13v-5.34l.05-.64.13-.54.21-.46.26-.38.3-.32.33-.24.35-.2.35-.14.33-.1.3-.06.26-.04.21-.02.13-.01h5.84l.69-.05.59-.14.5-.21.41-.28.33-.32.27-.35.2-.36.15-.36.1-.35.07-.32.04-.28.02-.21V6.07h2.09l.14.01zm-6.47 14.25l-.23.33-.08.41.08.41.23.33.33.23.41.08.41-.08.33-.23.23-.33.08-.41-.08-.41-.23-.33-.33-.22-.41-.09-.41.09z"/></svg> },
   ];
@@ -2975,312 +3395,41 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
   // so the only standalone op-button is Join (a combine). Filter/Sort/Aggregate/Formula are chips.
   const opButtons = mode === 'dataset2' ? opButtonsAll.filter(() => false) : opButtonsAll;
 
-  const canvasViewport = (
-    <div style={{ flex: 1, display: 'flex', minWidth: 0, minHeight: 0 }}>
-    <div ref={canvasAreaRef} style={{
-      flex: 1, position: 'relative', overflow: 'hidden',
-      backgroundColor: '#EFF1F5',
-      backgroundImage: 'radial-gradient(circle, #C2C9D4 1.2px, transparent 1.2px)',
-      backgroundSize: '24px 24px',
-    }}
-      onClick={() => { setSelectedIds(new Set()); }}
-      onDragOver={e => { e.preventDefault(); }}
-      onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files?.[0]; if (f && /\.csv$/i.test(f.name)) handleCsvFile(f); }}
-    >
-      {/* Floating operator toolbar — hidden in dataset2 mode (no op buttons, no Clean menu) */}
-      {(opButtons.length > 0 || mode !== 'dataset2') && (
-      <div style={{ position: 'absolute', top: 16, left: '50%', transform: 'translateX(-50%)', zIndex: 20, display: 'flex', alignItems: 'center', gap: 6, width: 'max-content' }}>
-        <div style={{ background: '#fff', border: '1px solid #E2E6EC', borderRadius: 10, boxShadow: '0 4px 20px rgba(25,35,49,0.12), 0 1px 4px rgba(25,35,49,0.06)', padding: '4px 8px', display: 'flex', alignItems: 'center', gap: 1, whiteSpace: 'nowrap' }}>
-          {opButtons.map(({ label, op, icon }) => (
-            <button key={label}
-              onClick={e => {
-                e.stopPropagation();
-                if (op === 'join') {
-                  // A join is a relationship between cards (an edge), never a block.
-                  if (selectedIds.size >= 2) {
-                    const selGroups = [...selectedIds].map(id => groups.find(g => g.id === id)).filter(Boolean) as CanvasGroup[];
-                    setMultiJoinTable1(selGroups[0]?.tableName ?? '');
-                    setJoinConfig({ name: '', table2: selGroups[1]?.tableName ?? '', col1: '', col2: '', joinType: 'inner', cardinality: 'many_to_one', extraPairs: [] });
-                    setMultiJoinActive(true);
-                    setSingleJoinActive(false);
-                  } else if (selectedId) {
-                    setJoinConfig({ name: '', table2: '', col1: '', col2: '', joinType: 'inner', cardinality: 'many_to_one', extraPairs: [] });
-                    setSingleJoinActive(true);
-                    setMultiJoinActive(false);
-                  }
-                  return;
-                }
-                // SQL / Python produce their own data → a new card. Every other transform
-                // is table-level → it attaches as a chip on the selected card (Option 1 schema).
-                if (isBlockMode && (op === 'sql' || op === 'python')) { addBlock(op); return; }
-                setSingleJoinActive(false);
-                setMultiJoinActive(false);
-                addStep(op);
-              }}
-              style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 9px', borderRadius: RADIUS6, border: 'none', background: 'transparent', color: '#64748B', fontSize: 11.5, fontWeight: 500, cursor: 'pointer', whiteSpace: 'nowrap', fontFamily: ff.primary }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#F6F8FA'; (e.currentTarget as HTMLElement).style.color = '#1D232F'; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#64748B'; }}
-            >
-              {icon}{label}
+  // Docked properties panel — shared by the Canvas viewport and the Data tab,
+  // so filter/formula actions from either surface open the same edit form.
+  // When a Data-tab toolbar action is pending (dataActionPicker set), the panel
+  // first shows a table chooser; picking a table adds the step and flips to its form.
+  const propertiesPanel = dataActionPicker ? (
+        <div
+          onClick={e => e.stopPropagation()}
+          style={{ width: 360, flexShrink: 0, zIndex: 30, background: '#fff', borderLeft: BORDER, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+        >
+          <div style={{ height: 38, display: 'flex', alignItems: 'center', padding: '0 12px', gap: 8, borderBottom: BORDER, flexShrink: 0 }}>
+            <div style={{ color: '#64748B', display: 'flex', flexShrink: 0 }}>{panelHeaderIcon(dataActionPicker, '#64748B')}</div>
+            <span style={{ fontSize: 12.5, fontWeight: 600, color: '#1D232F', flex: 1 }}>{dataActionPicker === 'filter' ? 'Add filter' : 'Add formula'}</span>
+            <button onClick={() => setDataActionPicker(null)} style={{ width: 20, height: 20, border: 'none', background: 'transparent', borderRadius: 4, color: '#777E8B', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }} onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#1D232F'; }} onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#777E8B'; }}>
+              <Icon name="cross" size="xs" color="currentColor" />
             </button>
-          ))}
-          {mode !== 'dataset2' && (<>
-          <div style={{ width: 1, height: 18, background: '#EAEDF2', margin: '0 2px', flexShrink: 0 }} />
-          {/* Prep dropdown */}
-          <div style={{ position: 'relative' }}
-            onMouseEnter={e => { const menu = e.currentTarget.querySelector('[data-prep-menu]') as HTMLElement; if (menu) menu.style.display = 'block'; }}
-            onMouseLeave={e => { const menu = e.currentTarget.querySelector('[data-prep-menu]') as HTMLElement; if (menu) menu.style.display = 'none'; }}
-          >
-            <button
-              onClick={e => e.stopPropagation()}
-              style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 9px', borderRadius: RADIUS6, border: 'none', background: 'transparent', color: '#64748B', fontSize: 11.5, fontWeight: 500, cursor: 'pointer', whiteSpace: 'nowrap', fontFamily: ff.primary }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#F6F8FA'; (e.currentTarget as HTMLElement).style.color = '#1D232F'; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#64748B'; }}
-            >
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path fillRule="evenodd" clipRule="evenodd" d="M3.26665 4.13194H10.7333L10.3933 6.26547C10.3752 6.3502 10.3353 6.43034 10.2764 6.49997C10.2176 6.56959 10.1413 6.62692 10.0533 6.66771L8.26664 7.50093C8.15398 7.55241 8.06082 7.63066 7.99819 7.72639C7.93557 7.82213 7.90611 7.93134 7.91331 8.04107L8.29331 13.3909C8.29877 13.4692 8.28557 13.5476 8.25452 13.6214C8.22347 13.6951 8.17523 13.7626 8.11277 13.8197C8.05031 13.8767 7.97496 13.9222 7.89136 13.9532C7.80775 13.9842 7.71766 14.0001 7.62664 14H6.36665C6.27622 14.0001 6.18672 13.9843 6.10358 13.9536C6.02045 13.923 5.94542 13.8781 5.88306 13.8216C5.82069 13.7652 5.7723 13.6984 5.74083 13.6253C5.70936 13.5523 5.69546 13.4745 5.69998 13.3966L6.03331 8.03533C6.04049 7.92773 6.01241 7.82057 5.95229 7.72607C5.89217 7.63157 5.80243 7.55356 5.69332 7.50093L3.95332 6.67921C3.86495 6.63659 3.78901 6.57719 3.73126 6.5055C3.6735 6.43381 3.63545 6.35173 3.61999 6.26547L3.26665 4.13194ZM2.33332 0H4.01999L5.13332 0.826387L6.06665 0H11.6666L10.7333 3.30555H3.26665L2.33332 0Z" fill="currentColor"/></svg>
-              Clean
-              <svg width="9" height="9" viewBox="0 0 10 10" fill="none" style={{ marginLeft: 1 }}><path d="M2 3.5l3 3 3-3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            </button>
-            <div data-prep-menu="" style={{ display: 'none', position: 'absolute', top: '100%', left: 0, marginTop: 4, background: '#fff', border: '1px solid #E2E6EC', borderRadius: RADIUS8, boxShadow: '0 6px 24px rgba(25,35,49,0.13)', minWidth: 280, zIndex: 100, overflow: 'hidden', padding: '4px 0' }}>
-              {[
-                { label: 'Change type',    desc: 'Convert a column to another data type.',      op: 'formula' as OpType, icon: <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><text x="1" y="11" fontSize="7" fontWeight="700" fill="currentColor">1</text><path d="M6 4l2-2 2 2M8 2v5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/><text x="8" y="15" fontSize="7" fontWeight="700" fill="currentColor">3</text></svg> },
-                { label: 'Replace value', desc: 'Find and replace values in a column.',         op: 'formula' as OpType, icon: <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M11.5 2.5l2 2-7 7-2.5.5.5-2.5 7-7z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/><path d="M3 14h10" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg> },
-                { label: 'Fix nulls',     desc: 'AI-assisted or manual fix for null values.',   op: 'nullfix' as OpType, icon: <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.2"/><line x1="4" y1="12" x2="12" y2="4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg> },
-                { label: 'Text case',     desc: 'Change case to lower, upper, or title.',       op: 'formula' as OpType, icon: <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><text x="4" y="12" fontSize="11" fontWeight="700" fill="currentColor" fontFamily="serif">T</text></svg> },
-                { label: 'Trim',          desc: 'Remove whitespace from one or both ends.',     op: 'formula' as OpType, icon: <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M10 3l-4 5 4 5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/><path d="M6 8h4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg> },
-                { label: 'Regex replace', desc: 'Replace text matching a regex pattern.',       op: 'formula' as OpType, icon: <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M4 6L2 8l2 2M12 6l2 2-2 2M7 11l2-6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg> },
-                { label: 'Extract',       desc: 'Extract a substring matching a regex group.',  op: 'formula' as OpType, icon: <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="4.5" stroke="currentColor" strokeWidth="1.2"/><path d="M10.5 10.5l3 3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg> },
-                { label: 'Parse date',    desc: 'Parse a string into a date or timestamp.',     op: 'formula' as OpType, icon: <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.2"/><path d="M2 7h12M5 2v2M11 2v2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg> },
-              ].map(item => (
-                <button
-                  key={item.label}
-                  onClick={e => { e.stopPropagation(); handlePrepStep(item.op); }}
-                  style={{ display: 'flex', alignItems: 'flex-start', gap: 10, width: '100%', padding: '8px 14px', border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left', fontFamily: ff.primary }}
-                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#F6F8FA'}
-                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
+          </div>
+          <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '12px' }}>
+            <label style={labelStyle}>Table</label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 4 }}>
+              {groups.map(g => (
+                <button key={g.id}
+                  onClick={() => { const op = dataActionPicker; setDataActionPicker(null); addStep(op, false, g.id); }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '9px 10px', border: BORDER, borderRadius: 7, background: '#fff', cursor: 'pointer', textAlign: 'left', fontFamily: ff.primary, fontSize: 12.5, fontWeight: 500, color: '#1D232F' }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = '#2770EF'; e.currentTarget.style.background = '#F5F8FF'; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = '#EAEDF2'; e.currentTarget.style.background = '#fff'; }}
                 >
-                  <span style={{ color: '#64748B', flexShrink: 0, marginTop: 1, display: 'flex' }}>{item.icon}</span>
-                  <span style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                    <span style={{ fontSize: 12, fontWeight: 600, color: '#1D232F' }}>{item.label}</span>
-                    <span style={{ fontSize: 11, color: '#777E8B', fontWeight: 400 }}>{item.desc}</span>
-                  </span>
+                  <span style={{ color: '#8B96A5', display: 'flex', flexShrink: 0 }}><Icon name="table" size="xs" color="#8B96A5" /></span>
+                  {g.tableName}
                 </button>
               ))}
             </div>
-          </div>
-          </>)}
-        </div>
-      </div>
-      )}
-
-      {/* Undo / Redo + Zoom — bottom-right */}
-      <div style={{ position: 'absolute', bottom: 16, right: 16, zIndex: 20, display: 'flex', alignItems: 'center', gap: 6 }}>
-        {/* Undo / Redo */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 2, background: '#fff', border: '1px solid #E2E6EC', borderRadius: 7, padding: '3px 4px', boxShadow: '0 2px 8px rgba(25,35,49,0.08)' }}>
-          <button style={{ width: 26, height: 26, border: 'none', borderRadius: 4, background: 'transparent', color: '#64748B', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Undo"
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#F6F8FA'; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
-          >
-            {/* Undo: counter-clockwise arrow */}
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 14H4V9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><path d="M4 14a9 9 0 1 1 2.34 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
-          </button>
-          <button style={{ width: 26, height: 26, border: 'none', borderRadius: 4, background: 'transparent', color: '#64748B', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Redo"
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#F6F8FA'; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
-          >
-            {/* Redo: clockwise arrow */}
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M15 14h5V9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><path d="M20 14a9 9 0 1 0-2.34 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
-          </button>
-        </div>
-        {/* Zoom */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 2, background: '#fff', border: '1px solid #E2E6EC', borderRadius: 7, padding: '3px 4px', boxShadow: '0 2px 8px rgba(25,35,49,0.08)' }}>
-          <button style={{ width: 22, height: 22, border: 'none', borderRadius: 4, background: 'transparent', color: '#64748B', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 300 }}>−</button>
-          <span style={{ fontSize: 11, color: '#A5ACB9', padding: '0 4px', minWidth: 32, textAlign: 'center' }}>100%</span>
-          <button style={{ width: 22, height: 22, border: 'none', borderRadius: 4, background: 'transparent', color: '#64748B', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 300 }}>+</button>
-        </div>
-      </div>
-
-      {/* Empty state */}
-      {groups.length === 0 && (
-        <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
-          <div style={{ width: 54, height: 54, borderRadius: 16, background: '#fff', border: '1px solid #E2E6EC', boxShadow: '0 2px 14px rgba(25,35,49,0.09)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#777E8B', marginBottom: 2 }}>
-            <IconDagEmpty />
-          </div>
-          <div style={{ fontSize: 16, fontWeight: 600, color: '#1D232F' }}>Make your data AI ready</div>
-          <div style={{ fontSize: 13, color: '#64748B', textAlign: 'center', lineHeight: 1.65, maxWidth: 288 }}>
-            Start by adding data from the data browser, or use the agent to look across your data.
+            <div style={{ fontSize: 11, color: '#A5ACB9', marginTop: 10, lineHeight: 1.5 }}>Choose which table this {dataActionPicker} applies to.</div>
           </div>
         </div>
-      )}
-
-      {/* Pannable layer — nodes + edges translated together so the selected node stays centered when the panel opens */}
-      <div style={{ position: 'absolute', inset: 0, transform: `translate(${pan.x}px, ${pan.y}px)`, transition: 'transform 280ms cubic-bezier(0.4,0,0.2,1)' }}>
-      {/* Canvas nodes (dataset mode — Option 1 only) */}
-      {!isBlockMode && groups.map(group => (
-        <CanvasNodeCard
-          key={group.id}
-          group={group}
-          selected={selectedIds.has(group.id)}
-          cached={dataMode === 'cached'}
-          onClick={(multi) => {
-            if (multi) {
-              setSelectedIds(prev => { const next = new Set(prev); if (next.has(group.id)) next.delete(group.id); else next.add(group.id); return next; });
-            } else {
-              setSelectedIds(new Set([group.id]));
-            }
-          }}
-          onStepClick={(i) => setActiveStep(group.id, i)}
-          onMove={(x, y) => moveNode(group.id, x, y)}
-          onRemove={() => removeNode(group.id)}
-          onRemoveStep={(i) => removeNodeStep(group.id, i)}
-        />
-      ))}
-
-      {/* Canvas nodes + edges (block-flow mode — Options 2 & 3) */}
-      {isBlockMode && (
-        <>
-          <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', overflow: 'visible' }}>
-            <defs>
-              <marker id="blk-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-                <path d="M0 0 L10 5 L0 10 z" fill="#8B96A5" />
-              </marker>
-            </defs>
-            {groups.flatMap(g => (g.inputIds ?? []).map(srcId => {
-              const s = groups.find(x => x.id === srcId);
-              if (!s) return null;
-              const sx = s.x + BLOCK_W, sy = s.y + BLOCK_H / 2;
-              const tx = g.x, ty = g.y + BLOCK_H / 2;
-              // Short horizontal nub out of each boundary (capped) so the wire leaves the card cleanly
-              // without swooping when the target is to the left or above.
-              const k = Math.min(72, Math.max(30, Math.abs(tx - sx) / 2));
-              return <path key={`${srcId}-${g.id}`} d={`M ${sx} ${sy} C ${sx + k} ${sy}, ${tx - k} ${ty}, ${tx} ${ty}`} stroke="#8B96A5" strokeWidth={1.6} fill="none" markerEnd="url(#blk-arrow)" />;
-            }))}
-            {wiring && (() => {
-              const s = groups.find(x => x.id === wiring.fromId);
-              if (!s) return null;
-              const sx = s.x + BLOCK_W, sy = s.y + BLOCK_H / 2;
-              // Cursor coords are canvas-area-relative; this wire is drawn inside the panned
-              // wrapper, so shift the endpoint by -pan to land under the actual cursor.
-              const ex = wiring.cx - pan.x, ey = wiring.cy - pan.y;
-              // Cap the control offset so dragging up/left gives a clean curve, not a big swoop.
-              const k = Math.min(72, Math.max(30, Math.abs(ex - sx) / 2));
-              return <path d={`M ${sx} ${sy} C ${sx + k} ${sy}, ${ex - k} ${ey}, ${ex} ${ey}`} stroke="#2770EF" strokeWidth={1.8} strokeDasharray="5 3" fill="none" />;
-            })()}
-          </svg>
-          {groups.map(group => (
-            <BlockNode
-              key={group.id}
-              group={group}
-              selected={selectedIds.has(group.id)}
-              wiring={wiring?.overId === group.id}
-              onSelect={(shift) => {
-                if (shift) setSelectedIds(prev => { const next = new Set(prev); if (next.has(group.id)) next.delete(group.id); else next.add(group.id); return next; });
-                // Clicking the block opens the block's own details (step 0); chip clicks open the chip's details.
-                else { setSelectedIds(new Set([group.id])); setActiveStep(group.id, 0); setPreviewOpen(true); }
-              }}
-              onMove={(x, y) => moveNode(group.id, x, y)}
-              onRemove={() => { removeNode(group.id); setGroups(prev => prev.map(g => ({ ...g, inputIds: (g.inputIds ?? []).filter(id => id !== group.id) }))); }}
-              onWireStart={(cx, cy) => wireStart(group.id, cx, cy)}
-              onWireMove={(cx, cy) => wireMove(cx, cy)}
-              onWireEnd={(cx, cy) => wireEnd(group.id, cx, cy)}
-              onAction={(op, isPrep) => { if (isPrep) handlePrepStep(op, group.id); else if (op === 'sql' || op === 'python') handleCodeStep(op, group.id); else addStep(op, false, group.id); }}
-              onStepClick={(i) => { setActiveStep(group.id, i); setSelectedIds(new Set([group.id])); setPreviewOpen(true); }}
-              onRemoveStep={(i) => removeNodeStep(group.id, i)}
-            />
-          ))}
-        </>
-      )}
-
-      {/* SVG connector layer */}
-      {canvasJoins.length > 0 && (
-        <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', overflow: 'visible' }}>
-          {canvasJoins.map(j => {
-            const t1 = groups.find(g => g.id === j.table1Id);
-            const t2 = groups.find(g => g.tableName === j.table2Name);
-            const jcx = j.x + 20; // join icon center x (icon ~40px)
-            const jcy = j.y + 20; // join icon center y
-            const lines = [];
-            if (t1) {
-              const sx = jcx < t1.x + 90 ? t1.x : t1.x + 180, sy = t1.y + 20;
-              const mx = (sx + jcx) / 2;
-              lines.push(<path key="t1" d={`M ${sx} ${sy} C ${mx} ${sy}, ${mx} ${jcy}, ${jcx} ${jcy}`} stroke="#2770EF" strokeWidth="1.5" fill="none"/>);
-              lines.push(<circle key="t1d" cx={sx} cy={sy} r="2.5" fill="#2770EF"/>);
-            }
-            if (t2) {
-              const sx = jcx < t2.x + 90 ? t2.x : t2.x + 180, sy = t2.y + 20;
-              const mx = (sx + jcx) / 2;
-              lines.push(<path key="t2" d={`M ${sx} ${sy} C ${mx} ${sy}, ${mx} ${jcy}, ${jcx} ${jcy}`} stroke="#2770EF" strokeWidth="1.5" fill="none"/>);
-              lines.push(<circle key="t2d" cx={sx} cy={sy} r="2.5" fill="#2770EF"/>);
-            }
-            return <g key={j.id}>{lines}</g>;
-          })}
-        </svg>
-      )}
-
-      {/* Derive edges — directional data-flow arrows (source card → SQL-derived card). Blue + arrowhead, distinct from the gray join connectors. */}
-      {deriveEdges.length > 0 && (
-        <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', overflow: 'visible' }}>
-          <defs>
-            <marker id="ds-derive-arrow" markerWidth="9" markerHeight="9" refX="6.5" refY="3" orient="auto" markerUnits="userSpaceOnUse">
-              <path d="M0 0 L6.5 3 L0 6 Z" fill="#D0D6DF" />
-            </marker>
-          </defs>
-          {deriveEdges.map((e, i) => {
-            const from = groups.find(g => g.id === e.fromId);
-            const to = groups.find(g => g.id === e.toId);
-            if (!from || !to) return null;
-            // Measure the cards' real widths so the arrow starts at the actual edge (cards grow past 180px).
-            const area = canvasAreaRef.current;
-            const fromW = (area?.querySelector(`[data-block-id="${from.id}"]`) as HTMLElement | null)?.offsetWidth ?? 180;
-            const toW = (area?.querySelector(`[data-block-id="${to.id}"]`) as HTMLElement | null)?.offsetWidth ?? 180;
-            const fromLeftOfTo = from.x + fromW / 2 <= to.x + toW / 2;
-            const sx = fromLeftOfTo ? from.x + fromW : from.x;
-            const sy = from.y + 20;
-            const tx = fromLeftOfTo ? to.x : to.x + toW;
-            const ty = to.y + 20;
-            const mx = (sx + tx) / 2;
-            return (
-              <g key={`${e.fromId}-${e.toId}-${i}`}>
-                <path d={`M ${sx} ${sy} C ${mx} ${sy}, ${mx} ${ty}, ${tx} ${ty}`} stroke="#D0D6DF" strokeWidth="1.6" fill="none" markerEnd="url(#ds-derive-arrow)" />
-              </g>
-            );
-          })}
-        </svg>
-      )}
-
-      {/* Join blocks */}
-      {canvasJoins.map(j => {
-        const joinLabel: Record<string, string> = { inner: 'Inner', full_outer: 'Full Outer', left_outer: 'Left Outer', right_outer: 'Right Outer' };
-        const cardLabel: Record<string, string> = { many_to_one: 'M:1', one_to_many: '1:M', one_to_one: '1:1' };
-        const selected = selectedIds.has(j.id);
-        return (
-          <JoinBlockCard
-            key={j.id}
-            join={j}
-            selected={selected}
-            joinLabel={joinLabel[j.joinType]}
-            cardinalityLabel={cardLabel[j.cardinality]}
-            onClick={(multi) => {
-              setSingleJoinActive(false);
-              setMultiJoinActive(false);
-              if (multi) {
-                setSelectedIds(prev => { const next = new Set(prev); if (next.has(j.id)) next.delete(j.id); else next.add(j.id); return next; });
-              } else {
-                setSelectedIds(new Set([j.id]));
-              }
-            }}
-            onMove={(x, y) => setCanvasJoins(prev => prev.map(jj => jj.id === j.id ? { ...jj, x, y } : jj))}
-            onRemove={() => { setCanvasJoins(prev => prev.filter(jj => jj.id !== j.id)); setSelectedIds(new Set()); }}
-          />
-        );
-      })}
-      </div>
-
-      {/* Overview minimap removed */}
-    </div>
-
-      {/* Docked properties panel — only when nodes selected */}
-      {selectedIds.size > 0 && (
+  ) : selectedIds.size > 0 ? (
         <div
           onClick={e => e.stopPropagation()}
           style={{
@@ -3295,9 +3444,9 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
             {(singleJoinActive || multiJoinActive) ? (
               <>
                 <button onClick={() => { setSingleJoinActive(false); setMultiJoinActive(false); }} style={{ width: 20, height: 20, border: 'none', background: 'transparent', borderRadius: 4, color: '#777E8B', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }} onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#1D232F'; }} onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#777E8B'; }}>
-                  <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M8 2L4 6l4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  <Icon name="chevron-left" size="xs" color="currentColor" />
                 </button>
-                <div style={{ color: '#2770EF' }}><svg width="13" height="13" viewBox="0 0 16 16" fill="none"><circle cx="6" cy="8" r="4" stroke="currentColor" strokeWidth="1.3"/><circle cx="10" cy="8" r="4" stroke="currentColor" strokeWidth="1.3"/></svg></div>
+                <div style={{ color: '#2770EF', display: 'flex' }}><Icon name="join-inner" size="xs" color="#2770EF" /></div>
                 <span style={{ fontSize: 12, fontWeight: 600, color: '#1D232F', flex: 1 }}>Create Join</span>
               </>
             ) : (() => {
@@ -3308,9 +3457,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
                 return (
                   <>
                     <div style={{ color: selJoin ? '#2770EF' : '#777E8B', display: 'flex', flexShrink: 0 }}>
-                      {selJoin
-                        ? <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="6" cy="8" r="4" stroke="currentColor" strokeWidth="1.3"/><circle cx="10" cy="8" r="4" stroke="currentColor" strokeWidth="1.3"/></svg>
-                        : stepIcon('source')}
+                      {panelHeaderIcon(selJoin ? 'join' : 'source', selJoin ? '#2770EF' : '#777E8B')}
                     </div>
                     <span style={{ fontSize: 12.5, fontWeight: 600, color: '#1D232F', flex: 1 }}>{selJoin ? 'Join' : 'Properties'}</span>
                   </>
@@ -3318,17 +3465,39 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
               }
               return (
                 <>
-                  <div style={{ color: '#64748B', display: 'flex', flexShrink: 0 }}>{stepIcon(hstep.type)}</div>
+                  <div style={{ color: '#64748B', display: 'flex', flexShrink: 0 }}>{panelHeaderIcon(hstep.type, '#64748B')}</div>
                   {hstep.type === 'source' ? (
                     <span style={{ fontSize: 12.5, fontWeight: 600, color: '#1D232F', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{hg.tableName}</span>
-                  ) : (
-                    <input
-                      value={hstep.title ?? ''}
-                      placeholder="Untitled block"
-                      onChange={e => { const v = e.target.value; setGroups(prev => prev.map(g => g.id === selectedId ? { ...g, steps: g.steps.map((s, i) => i === g.activeStep ? { ...s, title: v } : s) } : g)); }}
-                      style={{ flex: 1, minWidth: 0, border: 'none', outline: 'none', background: 'transparent', fontSize: 12.5, fontWeight: 600, color: '#1D232F', fontFamily: ff.primary, padding: 0 }}
-                    />
-                  )}
+                  ) : (() => {
+                    const thisTitleKey = stepKey(hg.id, hg.activeStep);
+                    const defaultLabel = OP_META[hstep.type]?.label ?? 'Step';
+                    if (editingTitleFor === thisTitleKey) {
+                      return (
+                        <input
+                          autoFocus
+                          value={titleDraft}
+                          onChange={e => setTitleDraft(e.target.value)}
+                          onFocus={e => e.currentTarget.select()}
+                          onBlur={() => { const v = titleDraft; setGroups(prev => prev.map(g => g.id === hg.id ? { ...g, steps: g.steps.map((s, i) => i === hg.activeStep ? { ...s, title: v } : s) } : g)); setEditingTitleFor(null); }}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') { const v = titleDraft; setGroups(prev => prev.map(g => g.id === hg.id ? { ...g, steps: g.steps.map((s, i) => i === hg.activeStep ? { ...s, title: v } : s) } : g)); setEditingTitleFor(null); }
+                            if (e.key === 'Escape') { setEditingTitleFor(null); }
+                          }}
+                          placeholder={defaultLabel}
+                          style={{ flex: 1, minWidth: 0, border: 'none', outline: 'none', background: 'transparent', fontSize: 12.5, fontWeight: 600, color: '#1D232F', fontFamily: ff.primary, padding: 0 }}
+                        />
+                      );
+                    }
+                    return (
+                      <span
+                        onClick={() => { setTitleDraft(hstep.title ?? ''); setEditingTitleFor(thisTitleKey); }}
+                        title="Click to rename"
+                        style={{ fontSize: 12.5, fontWeight: 600, color: '#1D232F', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'text' }}
+                      >
+                        {hstep.title?.trim() || defaultLabel}
+                      </span>
+                    );
+                  })()}
                   {/* Expand removed from code block header */}
                 </>
               );
@@ -3345,7 +3514,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
               onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#E22B3D'; }}
               onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#777E8B'; }}
             >
-              <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M3 4.5h10M6.5 4.5V3.2A1.2 1.2 0 0 1 7.7 2h.6a1.2 1.2 0 0 1 1.2 1.2V4.5M5 4.5l.5 8a1 1 0 0 0 1 .95h3a1 1 0 0 0 1-.95l.5-8M7 7v4M9 7v4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              <Icon name="trash-can" size="xs" color="currentColor" />
             </button>
             <button
               onClick={() => { setSelectedIds(new Set()); setSingleJoinActive(false); setMultiJoinActive(false); }}
@@ -3353,7 +3522,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
               onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#1D232F'; }}
               onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#777E8B'; }}
             >
-              <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>
+              <Icon name="cross" size="xs" color="currentColor" />
             </button>
           </div>
           <div style={{ flex: 1, minHeight: 0, overflowY: activeStepIsCode ? 'hidden' : 'auto', display: activeStepIsCode ? 'flex' : 'block', flexDirection: 'column' }}>
@@ -3609,7 +3778,6 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
                     if (step.type === 'source') {
                       return (
                         <div>
-                          <div style={{ fontSize: 10, fontWeight: 700, color: '#A5ACB9', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>Source</div>
                           {sg.sourceKind !== 'csv' && (() => {
                             const rowN = MOCK_DATA[sg.tableName]?.length ?? 0;
                             const colN = step.cols.length;
@@ -3652,54 +3820,57 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
                       );
                     }
 
-                    if (step.type === 'join') {
-                      return (
-                        <div>
-                          <div style={{ fontSize: 10, fontWeight: 700, color: '#A5ACB9', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>Join Configuration</div>
-                          <div style={{ marginBottom: 10 }}>
-                            <label style={labelStyle}>Join name</label>
-                            <input value={joinConfig.name} onChange={e => setJoinConfig(c => ({ ...c, name: e.target.value }))} placeholder="e.g. orders_customers" style={{ width: '100%', boxSizing: 'border-box', border: BORDER, borderRadius: 6, padding: '6px 10px', fontSize: 12, color: '#1D232F', fontFamily: 'inherit', outline: 'none', background: '#fff' }} onFocus={e => { e.currentTarget.style.borderColor = '#2770EF'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(39,112,239,0.12)'; }} onBlur={e => { e.currentTarget.style.borderColor = '#EAEDF2'; e.currentTarget.style.boxShadow = 'none'; }} />
-                          </div>
-                          <div style={{ borderTop: BORDER, margin: '10px 0' }} />
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
-                            <div><label style={labelStyle}>Table 1</label><div style={selectWrap}><select value={sg.tableName} disabled style={{ ...selectStyle, background: '#F6F8FA', color: '#777E8B', cursor: 'default' }}><option>{sg.tableName}</option></select>{selectArrow}</div></div>
-                            <div><label style={labelStyle}>Table 2</label><div style={selectWrap}><select value={joinConfig.table2} onChange={e => setJoinConfig(c => ({ ...c, table2: e.target.value, col2: '' }))} style={selectStyle}><option value="">Select table</option>{Object.keys(TABLE_COLS).filter(t => t !== sg.tableName).map(t => <option key={t} value={t}>{t}</option>)}</select>{selectArrow}</div></div>
-                          </div>
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 4 }}>
-                            <div><label style={labelStyle}>Col (T1)</label><div style={selectWrap}><select value={joinConfig.col1} onChange={e => setJoinConfig(c => ({ ...c, col1: e.target.value }))} style={selectStyle}><option value="">Select</option>{table1Cols.map(([col]) => <option key={col} value={col}>{col}</option>)}</select>{selectArrow}</div></div>
-                            <div><label style={labelStyle}>Col (T2)</label><div style={selectWrap}><select value={joinConfig.col2} onChange={e => setJoinConfig(c => ({ ...c, col2: e.target.value }))} style={selectStyle} disabled={!joinConfig.table2}><option value="">Select</option>{table2Cols.map(([col]) => <option key={col} value={col}>{col}</option>)}</select>{selectArrow}</div></div>
-                          </div>
-                          <button onClick={() => setJoinConfig(c => ({ ...c, extraPairs: [...c.extraPairs, { col1: '', col2: '' }] }))} style={{ background: 'none', border: 'none', color: '#2770EF', fontSize: 12, fontWeight: 500, cursor: 'pointer', padding: '4px 0', marginBottom: 10, fontFamily: 'inherit' }}>+ Add column</button>
-                          <div style={{ borderTop: BORDER, margin: '10px 0' }} />
-                          <div style={{ marginBottom: 10 }}>
-                            <label style={labelStyle}>Join Type</label>
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                              {joinTypePills.map(({ key, label }) => { const active = joinConfig.joinType === key; return <button key={key} onClick={() => setJoinConfig(c => ({ ...c, joinType: key }))} style={{ padding: '4px 9px', borderRadius: 99, border: `1px solid ${active ? '#2770EF' : '#E2E6EC'}`, background: active ? '#2770EF' : '#F6F8FA', color: active ? '#fff' : '#64748B', fontSize: 11, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>{label}</button>; })}
-                            </div>
-                          </div>
-                          <div style={{ borderTop: BORDER, margin: '10px 0' }} />
-                          <div style={{ marginBottom: 12 }}>
-                            <label style={labelStyle}>Cardinality</label>
-                            <div style={{ display: 'flex', gap: 4 }}>
-                              {cardinalityPills.map(({ key, label }) => { const active = joinConfig.cardinality === key; return <button key={key} onClick={() => setJoinConfig(c => ({ ...c, cardinality: key }))} style={{ padding: '4px 9px', borderRadius: 99, border: `1px solid ${active ? '#2770EF' : '#E2E6EC'}`, background: active ? '#2770EF' : '#F6F8FA', color: active ? '#fff' : '#64748B', fontSize: 11, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit' }}>{label}</button>; })}
-                            </div>
-                          </div>
-                          <button style={{ width: '100%', padding: '8px 0', borderRadius: 7, border: 'none', background: '#2770EF', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>Apply Join</button>
-                        </div>
-                      );
-                    }
-
                     if (step.type === 'filter') {
                       const fc = filterConfig;
+                      const savedFilter = step.filter;
+                      const thisKey = stepKey(sg.id, sg.activeStep);
+                      const isEditing = editingStepKey === thisKey || !savedFilter;
+                      const OPERATOR_LABEL: Record<string, string> = {
+                        '=': 'equals', '!=': 'does not equal', '>': 'greater than', '<': 'less than',
+                        '>=': 'greater or equal', '<=': 'less or equal', contains: 'contains',
+                        'is null': 'is null', 'is not null': 'is not null',
+                      };
+                      if (!isEditing && savedFilter) {
+                        const rows: [string, string][] = [];
+                        if (savedFilter.name) rows.push(['Name', savedFilter.name]);
+                        rows.push(['Column', savedFilter.column]);
+                        rows.push(['Condition', OPERATOR_LABEL[savedFilter.operator] ?? savedFilter.operator]);
+                        if (savedFilter.operator !== 'is null' && savedFilter.operator !== 'is not null') rows.push(['Value', savedFilter.value]);
+                        return (
+                          <div style={{ padding: '12px' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 14 }}>
+                              {rows.map(([label, value]) => summaryRow(label, value))}
+                            </div>
+                            {editActionButton('Edit filter', () => {
+                              setFilterConfig({ name: savedFilter.name ?? '', column: savedFilter.column, operator: savedFilter.operator, value: savedFilter.value, applied: true });
+                              setEditingStepKey(thisKey);
+                            })}
+                          </div>
+                        );
+                      }
                       const fcols = (TABLE_COLS[sg.tableName] ?? sg.steps[0]?.cols ?? []) as [string, string][];
                       const needsValue = fc.operator !== 'is null' && fc.operator !== 'is not null';
                       const fInput: React.CSSProperties = { width: '100%', boxSizing: 'border-box', border: BORDER, borderRadius: 6, padding: '6px 10px', fontSize: 12, color: '#1D232F', fontFamily: ff.primary, outline: 'none', background: '#fff' };
+                      // Distinct sample values for the selected column, sourced from the same mock
+                      // rows the preview uses — so Value is a pick-list, not free text.
+                      const colIdx = fcols.findIndex(([c]) => c === fc.column);
+                      const valueOptions = colIdx < 0 ? [] : Array.from(new Set(
+                        (MOCK_DATA[sg.tableName] ?? [])
+                          .map(r => r[colIdx])
+                          .filter((v): v is string | number => v !== null && v !== undefined)
+                          .map(v => String(v))
+                      )).sort();
                       return (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                           <div>
+                            <label style={labelStyle}>Filter name</label>
+                            <input value={fc.name} onChange={e => setFilterConfig(c => ({ ...c, name: e.target.value }))} placeholder="e.g. Enterprise accounts only" style={fInput} onFocus={e => { e.currentTarget.style.borderColor = '#2770EF'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(39,112,239,0.12)'; }} onBlur={e => { e.currentTarget.style.borderColor = '#EAEDF2'; e.currentTarget.style.boxShadow = 'none'; }} />
+                          </div>
+                          <div style={{ borderTop: BORDER }} />
+                          <div>
                             <label style={labelStyle}>Column</label>
                             <div style={selectWrap}>
-                              <select value={fc.column} onChange={e => setFilterConfig(c => ({ ...c, column: e.target.value, applied: false }))} style={selectStyle}>
+                              <select value={fc.column} onChange={e => setFilterConfig(c => ({ ...c, column: e.target.value, value: '' }))} style={selectStyle}>
                                 {fcols.length === 0 && <option value="">No columns</option>}
                                 {fc.column === '' && <option value="">Select a column</option>}
                                 {fcols.map(([c]) => <option key={c} value={c}>{c}</option>)}
@@ -3710,7 +3881,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
                           <div>
                             <label style={labelStyle}>Condition</label>
                             <div style={selectWrap}>
-                              <select value={fc.operator} onChange={e => setFilterConfig(c => ({ ...c, operator: e.target.value, applied: false }))} style={selectStyle}>
+                              <select value={fc.operator} onChange={e => setFilterConfig(c => ({ ...c, operator: e.target.value }))} style={selectStyle}>
                                 <option value="=">equals</option>
                                 <option value="!=">does not equal</option>
                                 <option value=">">greater than</option>
@@ -3727,29 +3898,47 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
                           {needsValue && (
                             <div>
                               <label style={labelStyle}>Value</label>
-                              <input value={fc.value} onChange={e => setFilterConfig(c => ({ ...c, value: e.target.value, applied: false }))} onFocus={e => { e.currentTarget.style.borderColor = '#2770EF'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(39,112,239,0.10)'; }} onBlur={e => { e.currentTarget.style.borderColor = '#EAEDF2'; e.currentTarget.style.boxShadow = 'none'; }} placeholder="e.g. Enterprise, 100000" style={fInput} />
+                              <div style={selectWrap}>
+                                <select value={fc.value} onChange={e => setFilterConfig(c => ({ ...c, value: e.target.value }))} style={selectStyle} disabled={!fc.column}>
+                                  <option value="">{fc.column ? 'Select a value' : 'Select a column first'}</option>
+                                  {valueOptions.map(v => <option key={v} value={v}>{v}</option>)}
+                                </select>
+                                {selectArrow}
+                              </div>
                             </div>
                           )}
-                          <button
-                            onClick={() => {
+                          {saveCancelRow({
+                            disabled: !fc.column || (needsValue && !fc.value.trim()),
+                            onSave: () => {
                               if (!fc.column || (needsValue && !fc.value.trim())) return;
-                              setGroups(prev => prev.map(g => g.id === sg.id ? { ...g, steps: g.steps.map((s, i) => i === g.activeStep ? { ...s, filter: { column: fc.column, operator: fc.operator, value: fc.value.trim() } } : s) } : g));
-                              setFilterConfig(c => ({ ...c, applied: true }));
-                            }}
-                            disabled={!fc.column || (needsValue && !fc.value.trim()) || fc.applied}
-                            style={{ width: '100%', padding: '9px 0', borderRadius: 7, border: 'none', background: fc.applied ? 'rgba(22,163,74,0.12)' : (fc.column && (!needsValue || fc.value.trim()) ? '#2770EF' : '#E8ECEF'), color: fc.applied ? '#16A34A' : (fc.column && (!needsValue || fc.value.trim()) ? '#fff' : '#A5ACB9'), fontSize: 13, fontWeight: 600, cursor: fc.column && (!needsValue || fc.value.trim()) && !fc.applied ? 'pointer' : 'default', fontFamily: ff.primary, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7 }}
-                          >
-                            {fc.applied
-                              ? <><svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M3 8.5l3.5 3.5L13 4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>Filter applied</>
-                              : 'Apply filter'
-                            }
-                          </button>
+                              setGroups(prev => prev.map(g => g.id === sg.id ? { ...g, steps: g.steps.map((s, i) => i === g.activeStep ? { ...s, filter: { name: fc.name.trim(), column: fc.column, operator: fc.operator, value: fc.value.trim() } } : s) } : g));
+                              setEditingStepKey(null);
+                            },
+                            onCancel: savedFilter ? () => setEditingStepKey(null) : undefined,
+                          })}
                         </div>
                       );
                     }
 
                     if (step.type === 'nullfix') {
                       const nc = nullFixConfig;
+                      const savedFix = step.nullFix;
+                      const thisKey = stepKey(sg.id, sg.activeStep);
+                      const isEditing = editingStepKey === thisKey || !savedFix;
+                      if (!isEditing && savedFix) {
+                        return (
+                          <div style={{ padding: '12px' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 14 }}>
+                              {summaryRow('Column', savedFix.column)}
+                              {summaryRow('Fill value', savedFix.value)}
+                            </div>
+                            {editActionButton('Edit fix', () => {
+                              setNullFixConfig(c => ({ ...c, column: savedFix.column, value: savedFix.value, applied: true }));
+                              setEditingStepKey(thisKey);
+                            })}
+                          </div>
+                        );
+                      }
                       const nullCols = nullColumnsOf(sg.tableName);
                       const nfInputStyle: React.CSSProperties = { width: '100%', boxSizing: 'border-box', border: BORDER, borderRadius: 6, padding: '6px 10px', fontSize: 12, color: '#1D232F', fontFamily: ff.primary, outline: 'none', background: '#fff' };
                       const nfFocus = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => { e.currentTarget.style.borderColor = '#2770EF'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(39,112,239,0.10)'; };
@@ -3760,7 +3949,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
                           <div>
                             <label style={labelStyle}>Column to fix</label>
                             <div style={selectWrap}>
-                              <select value={nc.column} onChange={e => setNullFixConfig(c => ({ ...c, column: e.target.value, applied: false }))} style={selectStyle}>
+                              <select value={nc.column} onChange={e => setNullFixConfig(c => ({ ...c, column: e.target.value }))} style={selectStyle}>
                                 {nullCols.length === 0 && <option value="">No columns with nulls</option>}
                                 {nullCols.map(c => <option key={c.name} value={c.name}>{c.name} · {c.count} null{c.count === 1 ? '' : 's'}</option>)}
                               </select>
@@ -3771,30 +3960,41 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
                           {/* Manual fill value / expression */}
                           <div>
                             <label style={labelStyle}>Fill value or expression</label>
-                            <input value={nc.value} onChange={e => setNullFixConfig(c => ({ ...c, value: e.target.value, applied: false }))} onFocus={nfFocus} onBlur={nfBlur} placeholder="e.g. 0, Unassigned, or an expression" style={nfInputStyle} />
+                            <input value={nc.value} onChange={e => setNullFixConfig(c => ({ ...c, value: e.target.value }))} onFocus={nfFocus} onBlur={nfBlur} placeholder="e.g. 0, Unassigned, or an expression" style={nfInputStyle} />
                           </div>
 
-                          {/* Apply */}
-                          <button
-                            onClick={() => {
+                          {saveCancelRow({
+                            disabled: !nc.value.trim(),
+                            saveLabel: 'Save',
+                            onSave: () => {
                               if (!nc.value.trim()) return;
                               setGroups(prev => prev.map(g => g.id === sg.id ? { ...g, steps: g.steps.map((s, i) => i === g.activeStep ? { ...s, nullFix: { column: nc.column, value: nc.value.trim() } } : s) } : g));
-                              setNullFixConfig(c => ({ ...c, applied: true }));
-                            }}
-                            disabled={!nc.value.trim() || nc.applied}
-                            style={{ width: '100%', padding: '9px 0', borderRadius: 7, border: 'none', background: nc.applied ? 'rgba(22,163,74,0.12)' : nc.value.trim() ? '#2770EF' : '#E8ECEF', color: nc.applied ? '#16A34A' : nc.value.trim() ? '#fff' : '#A5ACB9', fontSize: 13, fontWeight: 600, cursor: nc.value.trim() && !nc.applied ? 'pointer' : 'default', fontFamily: ff.primary, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7 }}
-                          >
-                            {nc.applied
-                              ? <><svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M3 8.5l3.5 3.5L13 4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>Fix applied</>
-                              : 'Apply fix'
-                            }
-                          </button>
+                              setEditingStepKey(null);
+                            },
+                            onCancel: savedFix ? () => setEditingStepKey(null) : undefined,
+                          })}
                         </div>
                       );
                     }
 
                     if (step.type === 'formula') {
                       const fc = formulaConfig;
+                      const savedFormulas = step.formulas ?? [];
+                      const thisKey = stepKey(sg.id, sg.activeStep);
+                      const isEditing = editingStepKey === thisKey || savedFormulas.length === 0;
+                      if (!isEditing) {
+                        return (
+                          <div style={{ padding: '12px' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 14 }}>
+                              {savedFormulas.map((f, i) => summaryRow(f.col, <code style={{ fontFamily: "'SF Mono','Fira Mono',monospace" }}>{f.expr}</code>, `${f.col}_${i}`))}
+                            </div>
+                            {editActionButton('Add another column', () => {
+                              setFormulaConfig({ colName: '', colNameTouched: false, aiDesc: '', aiActive: false, aiGenerating: false, expr: '' });
+                              setEditingStepKey(thisKey);
+                            }, ADD_PLUS_ICON)}
+                          </div>
+                        );
+                      }
                       const showColError = fc.colNameTouched && !fc.colName.trim();
                       const SAMPLE_EXPRS = [
                         { label: 'Profit margin', expr: '(revenue - cost) / revenue' },
@@ -3922,21 +4122,22 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
                             </div>
                           )}
 
-                          <button
-                            disabled={!fc.colName.trim() || !fc.expr.trim()}
-                            onClick={() => {
+                          {saveCancelRow({
+                            disabled: !fc.colName.trim() || !fc.expr.trim(),
+                            saveLabel: 'Add column',
+                            onSave: () => {
                               if (!fc.colName.trim() || !fc.expr.trim() || !selectedId) return;
                               const colName = fc.colName.trim();
-                              // Add column to active step's cols
+                              const expr = fc.expr.trim();
+                              // Add column to active step's cols + record it for the summary view
                               setGroups(prev => prev.map(g => {
                                 if (g.id !== selectedId) return g;
                                 const steps = g.steps.map((s, i) =>
-                                  i === g.activeStep ? { ...s, cols: [...s.cols, [colName, 'FLOAT'] as [string, string]] } : s
+                                  i === g.activeStep ? { ...s, cols: [...s.cols, [colName, 'FLOAT'] as [string, string]], formulas: [...(s.formulas ?? []), { col: colName, expr }] } : s
                                 );
                                 return { ...g, steps };
                               }));
-                              // Reset formula form
-                              setFormulaConfig({ colName: '', colNameTouched: false, aiDesc: '', aiActive: false, aiGenerating: false, expr: '' });
+                              setEditingStepKey(null);
                               // Open preview + scroll/highlight new column
                               setPreviewOpen(true);
                               setHighlightedCol(colName);
@@ -3945,17 +4146,31 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
                                 el?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
                               }, 60);
                               setTimeout(() => setHighlightedCol(null), 2500);
-                            }}
-                            style={{ width: '100%', padding: '8px 0', borderRadius: 7, border: 'none', background: fc.colName.trim() && fc.expr.trim() ? '#2770EF' : '#E8ECEF', color: fc.colName.trim() && fc.expr.trim() ? '#fff' : '#A5ACB9', fontSize: 13, fontWeight: 600, cursor: fc.colName.trim() && fc.expr.trim() ? 'pointer' : 'default', fontFamily: ff.primary }}
-                          >
-                            Add column
-                          </button>
+                            },
+                            onCancel: savedFormulas.length > 0 ? () => setEditingStepKey(null) : undefined,
+                          })}
                         </div>
                       );
                     }
 
                     if (step.type === 'sql') {
                       const sc = sqlConfig;
+                      const thisKey = stepKey(sg.id, sg.activeStep);
+                      const isEditing = editingStepKey === thisKey || !step.sql;
+                      if (!isEditing && step.sql) {
+                        return (
+                          <div style={{ padding: '12px' }}>
+                            <div style={{ marginBottom: 14 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#06BF7F', fontWeight: 500, marginBottom: 8 }}>
+                                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#06BF7F' }} />
+                                Last run 1.28s ago
+                              </div>
+                              <pre style={{ margin: 0, padding: '10px 12px', background: '#F6F8FA', border: BORDER, borderRadius: 6, fontSize: 11.5, fontFamily: "'SF Mono','Fira Mono',monospace", color: '#1D232F', whiteSpace: 'pre-wrap', wordBreak: 'break-word', maxHeight: 140, overflow: 'auto' }}>{step.sql}</pre>
+                            </div>
+                            {editActionButton('Edit query', () => { setSqlConfig(s => ({ ...s, sql: step.sql ?? '', applied: true })); setEditingStepKey(thisKey); })}
+                          </div>
+                        );
+                      }
                       const inputStyle: React.CSSProperties = { width: '100%', boxSizing: 'border-box', border: BORDER, borderRadius: 6, padding: '6px 10px', fontSize: 12, color: '#1D232F', fontFamily: ff.primary, outline: 'none', background: '#fff' };
                       const inputFocus = (e: React.FocusEvent<HTMLTextAreaElement>) => { e.currentTarget.style.borderColor = '#2770EF'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(39,112,239,0.10)'; };
                       const inputBlur = (e: React.FocusEvent<HTMLTextAreaElement>) => { e.currentTarget.style.borderColor = '#EAEDF2'; e.currentTarget.style.boxShadow = 'none'; };
@@ -4007,12 +4222,16 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
                                 ]);
                                 setSqlConfig(s => ({ ...s, applied: true }));
                                 setPreviewOpen(true);
+                                setEditingStepKey(null);
                               }}
                               style={{ padding: '6px 16px', borderRadius: 7, border: 'none', background: sc.sql.trim() ? '#2770EF' : '#E8ECEF', color: sc.sql.trim() ? '#fff' : '#A5ACB9', fontSize: 12.5, fontWeight: 600, cursor: sc.sql.trim() ? 'pointer' : 'default', fontFamily: ff.primary, display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}
                             >
                               <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M4 3l9 5-9 5V3z" fill="currentColor"/></svg>
                               Run
                             </button>
+                            {step.sql && (
+                              <button onClick={() => setEditingStepKey(null)} style={{ padding: '6px 10px', borderRadius: 7, border: BORDER, background: '#fff', color: '#64748B', fontSize: 12.5, fontWeight: 500, cursor: 'pointer', fontFamily: ff.primary, flexShrink: 0 }}>Cancel</button>
+                            )}
                           </div>
                           {/* Build using AI — REMOVED */}
                           {false && (<>
@@ -4137,6 +4356,22 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
 
                     if (step.type === 'python') {
                       const pc = pythonConfig;
+                      const thisKey = stepKey(sg.id, sg.activeStep);
+                      const isEditing = editingStepKey === thisKey || !step.pythonCode;
+                      if (!isEditing && step.pythonCode) {
+                        return (
+                          <div style={{ padding: '12px' }}>
+                            <div style={{ marginBottom: 14 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#06BF7F', fontWeight: 500, marginBottom: 8 }}>
+                                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#06BF7F' }} />
+                                Last run 4.2s ago
+                              </div>
+                              <pre style={{ margin: 0, padding: '10px 12px', background: '#F6F8FA', border: BORDER, borderRadius: 6, fontSize: 11.5, fontFamily: "'SF Mono','Fira Mono',monospace", color: '#1D232F', whiteSpace: 'pre-wrap', wordBreak: 'break-word', maxHeight: 140, overflow: 'auto' }}>{step.pythonCode}</pre>
+                            </div>
+                            {editActionButton('Edit code', () => { setPythonConfig(p => ({ ...p, code: step.pythonCode ?? '', ran: true })); setEditingStepKey(thisKey); })}
+                          </div>
+                        );
+                      }
                       const inputStyle: React.CSSProperties = { width: '100%', boxSizing: 'border-box', border: BORDER, borderRadius: 6, padding: '6px 10px', fontSize: 12, color: '#1D232F', fontFamily: ff.primary, outline: 'none', background: '#fff' };
                       const inputFocus = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => { e.currentTarget.style.borderColor = '#2770EF'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(39,112,239,0.10)'; };
                       const inputBlur = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => { e.currentTarget.style.borderColor = '#EAEDF2'; e.currentTarget.style.boxShadow = 'none'; };
@@ -4247,13 +4482,18 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
                                   setTimeout(() => setHighlightedCol(null), 2500);
                                 }
                                 setPythonConfig(p => ({ ...p, ran: true, error: null, apiData: isApiDataBlock }));
+                                setGroups(prev => prev.map(g => g.id === selectedId ? { ...g, steps: g.steps.map((s, i) => i === g.activeStep ? { ...s, pythonCode: pc.code } : s) } : g));
                                 setPreviewOpen(true);
+                                setEditingStepKey(null);
                               }}
                               style={{ padding: '6px 16px', borderRadius: 7, border: 'none', background: pc.code.trim() ? '#2770EF' : '#E8ECEF', color: pc.code.trim() ? '#fff' : '#A5ACB9', fontSize: 12.5, fontWeight: 600, cursor: pc.code.trim() ? 'pointer' : 'default', fontFamily: ff.primary, display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}
                             >
                               <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M4 3l9 5-9 5V3z" fill="currentColor"/></svg>
                               Run
                             </button>
+                            {step.pythonCode && (
+                              <button onClick={() => setEditingStepKey(null)} style={{ padding: '6px 10px', borderRadius: 7, border: BORDER, background: '#fff', color: '#64748B', fontSize: 12.5, fontWeight: 500, cursor: 'pointer', fontFamily: ff.primary, flexShrink: 0 }}>Cancel</button>
+                            )}
                           </div>
                           {/* On error the code editor stays code — full traceback + Fix with AI live in the results/preview panel (like any code editor). */}
                           {/* Build using AI — REMOVED */}
@@ -4369,11 +4609,836 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
             )}
           </div>
         </div>
+  ) : null;
+
+  const canvasViewport = (
+    <div style={{ flex: 1, display: 'flex', minWidth: 0, minHeight: 0 }}>
+    <div ref={canvasAreaRef} style={{
+      flex: 1, position: 'relative', overflow: 'hidden',
+      backgroundColor: '#EFF1F5',
+      backgroundImage: 'radial-gradient(circle, #C2C9D4 1.2px, transparent 1.2px)',
+      backgroundSize: '24px 24px',
+    }}
+      onClick={() => { setSelectedIds(new Set()); }}
+      onDragOver={e => { e.preventDefault(); }}
+      onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files?.[0]; if (f && /\.csv$/i.test(f.name)) handleCsvFile(f); }}
+    >
+      {/* Floating operator toolbar — hidden in dataset2 mode (no op buttons, no Clean menu) */}
+      {(opButtons.length > 0 || mode !== 'dataset2') && (
+      <div style={{ position: 'absolute', top: 16, left: '50%', transform: 'translateX(-50%)', zIndex: 20, display: 'flex', alignItems: 'center', gap: 6, width: 'max-content' }}>
+        <div style={{ background: '#fff', border: '1px solid #E2E6EC', borderRadius: 10, boxShadow: '0 4px 20px rgba(25,35,49,0.12), 0 1px 4px rgba(25,35,49,0.06)', padding: '4px 8px', display: 'flex', alignItems: 'center', gap: 1, whiteSpace: 'nowrap' }}>
+          {opButtons.map(({ label, op, icon }) => (
+            <button key={label}
+              onClick={e => {
+                e.stopPropagation();
+                if (op === 'join') {
+                  // A join is a relationship between cards (an edge), never a block.
+                  if (selectedIds.size >= 2) {
+                    const selGroups = [...selectedIds].map(id => groups.find(g => g.id === id)).filter(Boolean) as CanvasGroup[];
+                    setMultiJoinTable1(selGroups[0]?.tableName ?? '');
+                    setJoinConfig({ name: '', table2: selGroups[1]?.tableName ?? '', col1: '', col2: '', joinType: 'inner', cardinality: 'many_to_one', extraPairs: [] });
+                    setMultiJoinActive(true);
+                    setSingleJoinActive(false);
+                  } else if (selectedId) {
+                    setJoinConfig({ name: '', table2: '', col1: '', col2: '', joinType: 'inner', cardinality: 'many_to_one', extraPairs: [] });
+                    setSingleJoinActive(true);
+                    setMultiJoinActive(false);
+                  }
+                  return;
+                }
+                // SQL / Python produce their own data → a new card. Every other transform
+                // is table-level → it attaches as a chip on the selected card (Option 1 schema).
+                if (isBlockMode && (op === 'sql' || op === 'python')) { addBlock(op); return; }
+                setSingleJoinActive(false);
+                setMultiJoinActive(false);
+                addStep(op);
+              }}
+              style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 9px', borderRadius: RADIUS6, border: 'none', background: 'transparent', color: '#64748B', fontSize: 11.5, fontWeight: 500, cursor: 'pointer', whiteSpace: 'nowrap', fontFamily: ff.primary }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#F6F8FA'; (e.currentTarget as HTMLElement).style.color = '#1D232F'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#64748B'; }}
+            >
+              {icon}{label}
+            </button>
+          ))}
+          {mode !== 'dataset2' && (<>
+          <div style={{ width: 1, height: 18, background: '#EAEDF2', margin: '0 2px', flexShrink: 0 }} />
+          {/* Prep dropdown */}
+          <div style={{ position: 'relative' }}
+            onMouseEnter={e => { const menu = e.currentTarget.querySelector('[data-prep-menu]') as HTMLElement; if (menu) menu.style.display = 'block'; }}
+            onMouseLeave={e => { const menu = e.currentTarget.querySelector('[data-prep-menu]') as HTMLElement; if (menu) menu.style.display = 'none'; }}
+          >
+            <button
+              onClick={e => e.stopPropagation()}
+              style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 9px', borderRadius: RADIUS6, border: 'none', background: 'transparent', color: '#64748B', fontSize: 11.5, fontWeight: 500, cursor: 'pointer', whiteSpace: 'nowrap', fontFamily: ff.primary }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#F6F8FA'; (e.currentTarget as HTMLElement).style.color = '#1D232F'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#64748B'; }}
+            >
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path fillRule="evenodd" clipRule="evenodd" d="M3.26665 4.13194H10.7333L10.3933 6.26547C10.3752 6.3502 10.3353 6.43034 10.2764 6.49997C10.2176 6.56959 10.1413 6.62692 10.0533 6.66771L8.26664 7.50093C8.15398 7.55241 8.06082 7.63066 7.99819 7.72639C7.93557 7.82213 7.90611 7.93134 7.91331 8.04107L8.29331 13.3909C8.29877 13.4692 8.28557 13.5476 8.25452 13.6214C8.22347 13.6951 8.17523 13.7626 8.11277 13.8197C8.05031 13.8767 7.97496 13.9222 7.89136 13.9532C7.80775 13.9842 7.71766 14.0001 7.62664 14H6.36665C6.27622 14.0001 6.18672 13.9843 6.10358 13.9536C6.02045 13.923 5.94542 13.8781 5.88306 13.8216C5.82069 13.7652 5.7723 13.6984 5.74083 13.6253C5.70936 13.5523 5.69546 13.4745 5.69998 13.3966L6.03331 8.03533C6.04049 7.92773 6.01241 7.82057 5.95229 7.72607C5.89217 7.63157 5.80243 7.55356 5.69332 7.50093L3.95332 6.67921C3.86495 6.63659 3.78901 6.57719 3.73126 6.5055C3.6735 6.43381 3.63545 6.35173 3.61999 6.26547L3.26665 4.13194ZM2.33332 0H4.01999L5.13332 0.826387L6.06665 0H11.6666L10.7333 3.30555H3.26665L2.33332 0Z" fill="currentColor"/></svg>
+              Clean
+              <svg width="9" height="9" viewBox="0 0 10 10" fill="none" style={{ marginLeft: 1 }}><path d="M2 3.5l3 3 3-3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </button>
+            <div data-prep-menu="" style={{ display: 'none', position: 'absolute', top: '100%', left: 0, marginTop: 4, background: '#fff', border: '1px solid #E2E6EC', borderRadius: RADIUS8, boxShadow: '0 6px 24px rgba(25,35,49,0.13)', minWidth: 280, zIndex: 100, overflow: 'hidden', padding: '4px 0' }}>
+              {[
+                { label: 'Change type',    desc: 'Convert a column to another data type.',      op: 'formula' as OpType, icon: <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><text x="1" y="11" fontSize="7" fontWeight="700" fill="currentColor">1</text><path d="M6 4l2-2 2 2M8 2v5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/><text x="8" y="15" fontSize="7" fontWeight="700" fill="currentColor">3</text></svg> },
+                { label: 'Replace value', desc: 'Find and replace values in a column.',         op: 'formula' as OpType, icon: <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M11.5 2.5l2 2-7 7-2.5.5.5-2.5 7-7z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/><path d="M3 14h10" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg> },
+                { label: 'Fix nulls',     desc: 'AI-assisted or manual fix for null values.',   op: 'nullfix' as OpType, icon: <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.2"/><line x1="4" y1="12" x2="12" y2="4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg> },
+                { label: 'Text case',     desc: 'Change case to lower, upper, or title.',       op: 'formula' as OpType, icon: <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><text x="4" y="12" fontSize="11" fontWeight="700" fill="currentColor" fontFamily="serif">T</text></svg> },
+                { label: 'Trim',          desc: 'Remove whitespace from one or both ends.',     op: 'formula' as OpType, icon: <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M10 3l-4 5 4 5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/><path d="M6 8h4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg> },
+                { label: 'Regex replace', desc: 'Replace text matching a regex pattern.',       op: 'formula' as OpType, icon: <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M4 6L2 8l2 2M12 6l2 2-2 2M7 11l2-6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg> },
+                { label: 'Extract',       desc: 'Extract a substring matching a regex group.',  op: 'formula' as OpType, icon: <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="4.5" stroke="currentColor" strokeWidth="1.2"/><path d="M10.5 10.5l3 3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg> },
+                { label: 'Parse date',    desc: 'Parse a string into a date or timestamp.',     op: 'formula' as OpType, icon: <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.2"/><path d="M2 7h12M5 2v2M11 2v2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg> },
+              ].map(item => (
+                <button
+                  key={item.label}
+                  onClick={e => { e.stopPropagation(); handlePrepStep(item.op); }}
+                  style={{ display: 'flex', alignItems: 'flex-start', gap: 10, width: '100%', padding: '8px 14px', border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left', fontFamily: ff.primary }}
+                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#F6F8FA'}
+                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
+                >
+                  <span style={{ color: '#64748B', flexShrink: 0, marginTop: 1, display: 'flex' }}>{item.icon}</span>
+                  <span style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: '#1D232F' }}>{item.label}</span>
+                    <span style={{ fontSize: 11, color: '#777E8B', fontWeight: 400 }}>{item.desc}</span>
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+          </>)}
+        </div>
+      </div>
       )}
+
+      {/* Undo / Redo + Zoom — bottom-right */}
+      <div style={{ position: 'absolute', bottom: 16, right: 16, zIndex: 20, display: 'flex', alignItems: 'center', gap: 6 }}>
+        {/* Undo / Redo */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 2, background: '#fff', border: '1px solid #E2E6EC', borderRadius: 7, padding: '3px 4px', boxShadow: '0 2px 8px rgba(25,35,49,0.08)' }}>
+          <button style={{ width: 26, height: 26, border: 'none', borderRadius: 4, background: 'transparent', color: '#64748B', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Undo"
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#F6F8FA'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+          >
+            {/* Undo: counter-clockwise arrow */}
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 14H4V9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><path d="M4 14a9 9 0 1 1 2.34 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
+          </button>
+          <button style={{ width: 26, height: 26, border: 'none', borderRadius: 4, background: 'transparent', color: '#64748B', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Redo"
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#F6F8FA'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+          >
+            {/* Redo: clockwise arrow */}
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M15 14h5V9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><path d="M20 14a9 9 0 1 0-2.34 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
+          </button>
+        </div>
+        {/* Zoom */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 2, background: '#fff', border: '1px solid #E2E6EC', borderRadius: 7, padding: '3px 4px', boxShadow: '0 2px 8px rgba(25,35,49,0.08)' }}>
+          <button style={{ width: 22, height: 22, border: 'none', borderRadius: 4, background: 'transparent', color: '#64748B', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 300 }}>−</button>
+          <span style={{ fontSize: 11, color: '#A5ACB9', padding: '0 4px', minWidth: 32, textAlign: 'center' }}>100%</span>
+          <button style={{ width: 22, height: 22, border: 'none', borderRadius: 4, background: 'transparent', color: '#64748B', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 300 }}>+</button>
+        </div>
+      </div>
+
+      {/* Empty state */}
+      {groups.length === 0 && !isBlockMode && (
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+          <div style={{ width: 54, height: 54, borderRadius: 16, background: '#fff', border: '1px solid #E2E6EC', boxShadow: '0 2px 14px rgba(25,35,49,0.09)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#777E8B', marginBottom: 2 }}>
+            <IconDagEmpty />
+          </div>
+          <div style={{ fontSize: 16, fontWeight: 600, color: '#1D232F' }}>Make your data AI ready</div>
+          <div style={{ fontSize: 13, color: '#64748B', textAlign: 'center', lineHeight: 1.65, maxWidth: 288 }}>
+            Start by adding data from the data browser, or use the agent to look across your data.
+          </div>
+        </div>
+      )}
+
+      {/* Rich empty state — +Model flow only. Introduces the modelling capabilities. */}
+      {groups.length === 0 && isBlockMode && (
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px', fontFamily: ff.primary, overflow: 'auto' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', maxWidth: 720, width: '100%' }}>
+            <div style={{ fontSize: 22, fontWeight: 700, color: '#1D232F', letterSpacing: '-0.3px', marginBottom: 8, textAlign: 'center' }}>
+              Build an AI-ready model
+            </div>
+            <div style={{ fontSize: 13.5, color: '#64748B', textAlign: 'center', lineHeight: 1.6, maxWidth: 440, marginBottom: 24 }}>
+              Bring raw tables onto the canvas, shape and join them with no SQL, and publish a model your team can ask questions of.
+            </div>
+
+            {/* Capabilities — compact horizontal cards: icon beside a title + one-line desc */}
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
+              {[
+                {
+                  title: 'Add tables',
+                  desc: 'Pull from any source and join',
+                  tint: '#EAF1FF', fg: '#2770EF',
+                  icon: <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><rect x="2.5" y="3.5" width="15" height="13" rx="2" stroke="currentColor" strokeWidth="1.6"/><path d="M2.5 7.5h15M7 7.5v9M13 7.5v9" stroke="currentColor" strokeWidth="1.4"/></svg>,
+                },
+                {
+                  title: 'Preview instantly',
+                  desc: 'Live row-level previews',
+                  tint: '#E6F8F0', fg: '#06BF7F',
+                  icon: <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M2 10s3-5.5 8-5.5S18 10 18 10s-3 5.5-8 5.5S2 10 2 10Z" stroke="currentColor" strokeWidth="1.6"/><circle cx="10" cy="10" r="2.3" stroke="currentColor" strokeWidth="1.6"/></svg>,
+                },
+                {
+                  title: 'Spreadsheet edits',
+                  desc: 'Formulas & data cleanup',
+                  tint: '#F1EAFE', fg: '#8B5CF6',
+                  icon: <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><rect x="2.5" y="2.5" width="15" height="15" rx="2" stroke="currentColor" strokeWidth="1.6"/><path d="M2.5 7.5h15M2.5 12.5h15M7.5 2.5v15" stroke="currentColor" strokeWidth="1.4"/></svg>,
+                },
+              ].map(card => (
+                <div key={card.title} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: '#fff', border: '1px solid #EDEFF3', borderRadius: 10 }}>
+                  <div style={{ width: 30, height: 30, borderRadius: 8, background: card.tint, color: card.fg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    {card.icon}
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                    <div style={{ fontSize: 12.5, fontWeight: 600, color: '#1D232F', whiteSpace: 'nowrap' }}>{card.title}</div>
+                    <div style={{ fontSize: 11.5, color: '#8B96A5', whiteSpace: 'nowrap' }}>{card.desc}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Pannable layer — nodes + edges translated together so the selected node stays centered when the panel opens */}
+      <div style={{ position: 'absolute', inset: 0, transform: `translate(${pan.x}px, ${pan.y}px)`, transition: 'transform 280ms cubic-bezier(0.4,0,0.2,1)', cursor: pickMode ? 'copy' : undefined }}>
+      {/* Canvas nodes (dataset mode — Option 1 only) */}
+      {!isBlockMode && groups.map(group => (
+        <CanvasNodeCard
+          key={group.id}
+          group={group}
+          selected={selectedIds.has(group.id)}
+          cached={dataMode === 'cached'}
+          onClick={(multi) => {
+            if (multi) {
+              setSelectedIds(prev => { const next = new Set(prev); if (next.has(group.id)) next.delete(group.id); else next.add(group.id); return next; });
+            } else {
+              setSelectedIds(new Set([group.id]));
+            }
+          }}
+          onStepClick={(i) => setActiveStep(group.id, i)}
+          onMove={(x, y) => moveNode(group.id, x, y)}
+          onRemove={() => removeNode(group.id)}
+          onRemoveStep={(i) => removeNodeStep(group.id, i)}
+        />
+      ))}
+
+      {/* Canvas nodes + edges (block-flow mode — Options 2 & 3) */}
+      {isBlockMode && (
+        <>
+          <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', overflow: 'visible' }}>
+            <defs>
+              <marker id="blk-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0 0 L10 5 L0 10 z" fill="#8B96A5" />
+              </marker>
+            </defs>
+            {groups.flatMap(g => (g.inputIds ?? []).map(srcId => {
+              const s = groups.find(x => x.id === srcId);
+              if (!s) return null;
+              const sx = s.x + CARD_W, sy = s.y + BLOCK_H / 2;
+              const tx = g.x, ty = g.y + BLOCK_H / 2;
+              // Short horizontal nub out of each boundary (capped) so the wire leaves the card cleanly
+              // without swooping when the target is to the left or above.
+              const k = Math.min(72, Math.max(30, Math.abs(tx - sx) / 2));
+              return <path key={`${srcId}-${g.id}`} d={`M ${sx} ${sy} C ${sx + k} ${sy}, ${tx - k} ${ty}, ${tx} ${ty}`} stroke="#8B96A5" strokeWidth={1.6} fill="none" markerEnd="url(#blk-arrow)" />;
+            }))}
+            {wiring && (() => {
+              const s = groups.find(x => x.id === wiring.fromId);
+              if (!s) return null;
+              const sx = s.x + CARD_W, sy = s.y + BLOCK_H / 2;
+              // Cursor coords are canvas-area-relative; this wire is drawn inside the panned
+              // wrapper, so shift the endpoint by -pan to land under the actual cursor.
+              const ex = wiring.cx - pan.x, ey = wiring.cy - pan.y;
+              // Cap the control offset so dragging up/left gives a clean curve, not a big swoop.
+              const k = Math.min(72, Math.max(30, Math.abs(ex - sx) / 2));
+              return <path d={`M ${sx} ${sy} C ${sx + k} ${sy}, ${ex - k} ${ey}, ${ex} ${ey}`} stroke="#2770EF" strokeWidth={1.8} strokeDasharray="5 3" fill="none" />;
+            })()}
+          </svg>
+          {groups.map(group => (
+            <BlockNode
+              key={group.id}
+              poc={poc}
+              group={group}
+              selected={selectedIds.has(group.id)}
+              wiring={wiring?.overId === group.id}
+              onSelect={(shift) => {
+                if (shift) setSelectedIds(prev => { const next = new Set(prev); if (next.has(group.id)) next.delete(group.id); else next.add(group.id); return next; });
+                // Clicking the block opens the block's own details (step 0); chip clicks open the chip's details.
+                else { setSelectedIds(new Set([group.id])); setActiveStep(group.id, 0); setPreviewOpen(true); }
+              }}
+              onMove={(x, y) => moveNode(group.id, x, y)}
+              onRemove={() => { removeNode(group.id); setGroups(prev => prev.map(g => ({ ...g, inputIds: (g.inputIds ?? []).filter(id => id !== group.id) }))); }}
+              onWireStart={(cx, cy) => wireStart(group.id, cx, cy)}
+              onWireMove={(cx, cy) => wireMove(cx, cy)}
+              onWireEnd={(cx, cy) => wireEnd(group.id, cx, cy)}
+              onAction={(op, isPrep) => {
+                if (isPrep) { handlePrepStep(op, group.id); return; }
+                if (op === 'join') {
+                  setSelectedIds(new Set([group.id]));
+                  setJoinConfig({ name: '', table2: '', col1: '', col2: '', joinType: 'inner', cardinality: 'many_to_one', extraPairs: [] });
+                  setSingleJoinActive(true);
+                  setMultiJoinActive(false);
+                  setPreviewOpen(true);
+                  return;
+                }
+                if (op === 'sql' || op === 'python') { handleCodeStep(op, group.id); return; }
+                addStep(op, false, group.id);
+              }}
+              onStepClick={(i) => { setActiveStep(group.id, i); setSelectedIds(new Set([group.id])); setPreviewOpen(true); }}
+              onRemoveStep={(i) => removeNodeStep(group.id, i)}
+            />
+          ))}
+        </>
+      )}
+
+      {/* SVG connector layer — anchors to the card's actual measured edge (not a
+          hardcoded width), so lines never float off the card, and always exit
+          from the point on the perimeter closest to the join icon. This keeps
+          multi-join tables legible: each join fans out from its own edge point
+          instead of every line leaving from the same fixed spot. */}
+      {canvasJoins.length > 0 && (() => {
+        const cardRect = (g: CanvasGroup) => {
+          const m = cardSizes[g.id];
+          return { left: g.x, top: g.y, width: m?.w ?? BLOCK_W, height: m?.h ?? BLOCK_H };
+        };
+        // Closest point on the rect's perimeter to (tx, ty) — the ray from the
+        // rect's center through the target, clipped to the rect boundary.
+        const edgePoint = (rect: { left: number; top: number; width: number; height: number }, tx: number, ty: number) => {
+          const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
+          const dx = tx - cx, dy = ty - cy;
+          if (dx === 0 && dy === 0) return { x: cx, y: rect.top, horizontal: false };
+          const scaleX = dx !== 0 ? Math.abs(rect.width / 2 / dx) : Infinity;
+          const scaleY = dy !== 0 ? Math.abs(rect.height / 2 / dy) : Infinity;
+          const scale = Math.min(scaleX, scaleY);
+          return { x: cx + dx * scale, y: cy + dy * scale, horizontal: scaleX < scaleY };
+        };
+        return (
+          <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', overflow: 'visible' }}>
+            {canvasJoins.map(j => {
+              const t1 = groups.find(g => g.id === j.table1Id);
+              const t2 = groups.find(g => g.tableName === j.table2Name);
+              const jcx = j.x + 20; // join icon center x (icon ~40px)
+              const jcy = j.y + 20; // join icon center y
+              const lines: React.ReactNode[] = [];
+              const drawEdge = (g: CanvasGroup, key: string) => {
+                const p = edgePoint(cardRect(g), jcx, jcy);
+                const d = p.horizontal
+                  ? (() => { const mx = (p.x + jcx) / 2; return `M ${p.x} ${p.y} C ${mx} ${p.y}, ${mx} ${jcy}, ${jcx} ${jcy}`; })()
+                  : (() => { const my = (p.y + jcy) / 2; return `M ${p.x} ${p.y} C ${p.x} ${my}, ${jcx} ${my}, ${jcx} ${jcy}`; })();
+                lines.push(<path key={key} d={d} stroke="#2770EF" strokeWidth="1.5" fill="none"/>);
+                lines.push(<circle key={`${key}d`} cx={p.x} cy={p.y} r="2.5" fill="#2770EF"/>);
+              };
+              if (t1) drawEdge(t1, 't1');
+              if (t2) drawEdge(t2, 't2');
+              return <g key={j.id}>{lines}</g>;
+            })}
+          </svg>
+        );
+      })()}
+
+      {/* Derive edges — directional data-flow arrows (source card → SQL-derived card). Blue + arrowhead, distinct from the gray join connectors. */}
+      {deriveEdges.length > 0 && (
+        <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', overflow: 'visible' }}>
+          <defs>
+            <marker id="ds-derive-arrow" markerWidth="9" markerHeight="9" refX="6.5" refY="3" orient="auto" markerUnits="userSpaceOnUse">
+              <path d="M0 0 L6.5 3 L0 6 Z" fill="#D0D6DF" />
+            </marker>
+          </defs>
+          {deriveEdges.map((e, i) => {
+            const from = groups.find(g => g.id === e.fromId);
+            const to = groups.find(g => g.id === e.toId);
+            if (!from || !to) return null;
+            // Real widths from the same measured-size state the join connectors use
+            // (so the arrow starts at the actual edge — cards grow past 180px — and
+            // never lags a frame behind when a card's content changes its size).
+            const fromW = cardSizes[from.id]?.w ?? BLOCK_W;
+            const toW = cardSizes[to.id]?.w ?? BLOCK_W;
+            const fromLeftOfTo = from.x + fromW / 2 <= to.x + toW / 2;
+            const sx = fromLeftOfTo ? from.x + fromW : from.x;
+            const sy = from.y + 20;
+            const tx = fromLeftOfTo ? to.x : to.x + toW;
+            const ty = to.y + 20;
+            const mx = (sx + tx) / 2;
+            return (
+              <g key={`${e.fromId}-${e.toId}-${i}`}>
+                <path d={`M ${sx} ${sy} C ${mx} ${sy}, ${mx} ${ty}, ${tx} ${ty}`} stroke="#D0D6DF" strokeWidth="1.6" fill="none" markerEnd="url(#ds-derive-arrow)" />
+              </g>
+            );
+          })}
+        </svg>
+      )}
+
+      {/* Join blocks */}
+      {canvasJoins.map(j => {
+        const joinLabel: Record<string, string> = { inner: 'Inner', full_outer: 'Full Outer', left_outer: 'Left Outer', right_outer: 'Right Outer' };
+        const cardLabel: Record<string, string> = { many_to_one: 'M:1', one_to_many: '1:M', one_to_one: '1:1' };
+        const selected = selectedIds.has(j.id);
+        return (
+          <JoinBlockCard
+            key={j.id}
+            join={j}
+            selected={selected}
+            joinLabel={joinLabel[j.joinType]}
+            cardinalityLabel={cardLabel[j.cardinality]}
+            onClick={(multi) => {
+              setSingleJoinActive(false);
+              setMultiJoinActive(false);
+              if (multi) {
+                setSelectedIds(prev => { const next = new Set(prev); if (next.has(j.id)) next.delete(j.id); else next.add(j.id); return next; });
+              } else {
+                setSelectedIds(new Set([j.id]));
+              }
+            }}
+            onMove={(x, y) => setCanvasJoins(prev => prev.map(jj => jj.id === j.id ? { ...jj, x, y } : jj))}
+            onRemove={() => { setCanvasJoins(prev => prev.filter(jj => jj.id !== j.id)); setSelectedIds(new Set()); }}
+          />
+        );
+      })}
+      </div>
+
+      {/* Overview minimap removed */}
+    </div>
+
+      {propertiesPanel}
     </div>
   );
 
+  // Resolve the rows for a card. A SQL-derived card (tableName "SQL") has no static
+  // MOCK_DATA — its rows are the positional merge of its @-referenced inputs. A source
+  // card whose display name isn't a data key (e.g. "NPS (Pendo)") is matched to a real
+  // mock table by identical columns, so we reuse real rows without inventing data.
+  // Component-scoped (not just previewPanel-local) so the Data tab can reuse it too.
+  const rowsForCard = (g: CanvasGroup | null | undefined, rowCap: number): Row[] => {
+    if (!g) return [];
+    const inputs = deriveEdges
+      .filter(e => e.toId === g.id)
+      .map(e => groups.find(gg => gg.id === e.fromId))
+      .filter(Boolean) as CanvasGroup[];
+    if (inputs.length > 0) {
+      const per = inputs.map(gi => rowsForCard(gi, rowCap));
+      const n = Math.max(0, ...per.map(r => r.length));
+      return Array.from({ length: Math.min(n, rowCap) }, (_, i) =>
+        inputs.flatMap((gi, gj) => per[gj][i] ?? (gi.steps[0]?.cols ?? []).map(() => null))
+      );
+    }
+    if (MOCK_DATA[g.tableName]) return MOCK_DATA[g.tableName].slice(0, rowCap);
+    // Fallback: match a mock table with the same columns (handles display-named sources).
+    const sig = (g.steps[0]?.cols ?? []).map(c => c[0]).join('|');
+    const match = sig ? Object.keys(MOCK_DATA).find(k => (TABLE_COLS[k] ?? []).map(c => c[0]).join('|') === sig) : undefined;
+    return match ? MOCK_DATA[match].slice(0, rowCap) : [];
+  };
+
   // ── Preview panel ───────────────────────────────────────────────────────────
+
+  const allModelCols = groups.flatMap(g => {
+    const srcCols = g.steps[0]?.cols ?? [];
+    return srcCols.map(([col, type]) => ({ table: g.tableName, col, type }));
+  });
+
+  const colEditKey = (table: string, col: string, field: string) => `${table}__${col}__${field}`;
+  const modelColKey = (table: string, col: string) => `${table}__${col}`;
+  // Columns currently in the model (the rows the table shows) vs. removed ones
+  // available to add back. Removed columns grouped by table for the Add-column picker.
+  const includedCols = allModelCols.filter(({ table, col }) => !removedModelCols.has(modelColKey(table, col)));
+  const availableCols = allModelCols.filter(({ table, col }) => removedModelCols.has(modelColKey(table, col)));
+  const availableByTable = availableCols.reduce<Record<string, typeof availableCols>>((acc, c) => {
+    (acc[c.table] ??= []).push(c);
+    return acc;
+  }, {});
+  const toggleSelectCol = (table: string, col: string) => {
+    setSelectedModelCols(prev => {
+      const next = new Set(prev);
+      const k = modelColKey(table, col);
+      if (next.has(k)) next.delete(k); else next.add(k);
+      return next;
+    });
+  };
+  const removeSelectedCols = () => {
+    setRemovedModelCols(prev => new Set([...prev, ...selectedModelCols]));
+    setSelectedModelCols(new Set());
+  };
+  const addColBack = (table: string, col: string) => {
+    setRemovedModelCols(prev => {
+      const next = new Set(prev);
+      next.delete(modelColKey(table, col));
+      return next;
+    });
+  };
+
+  const COL_TYPE_DEFAULTS: Record<string, string> = {
+    INT: 'MEASURE', FLOAT: 'MEASURE', BIGINT: 'MEASURE',
+    VARCHAR: 'ATTRIBUTE', TEXT: 'ATTRIBUTE', TIMESTAMP: 'ATTRIBUTE', DATE: 'ATTRIBUTE',
+  };
+
+  // Helpers for inline diffs in the columns view
+  const airIsAllReview = airFixReview === '__all__';
+  const airCheckActive = (checkId: string) => airFixReview === checkId || airIsAllReview;
+  const airGetRowForCheck = (checkId: string, col: string) =>
+    (AIR_FIX_REVIEW[checkId]?.rows ?? []).find(r => r.col === col);
+  // Maps the editable field name to the AIR check that affects it
+  const FIELD_TO_CHECK: Record<string, string> = { desc: 'coldesc', aicontext: 'desc', synonyms: 'synonyms' };
+
+  const testView = (
+    <TestView
+      tables={groups.map(g => ({ name: g.tableName, cols: TABLE_COLS[g.tableName] ?? [] }))}
+      onFixWithAI={onTestFixWithAI as never}
+    />
+  );
+
+  // Shared column-table renderer — same fields/interactions as the Columns tab
+  // (checkbox, name, table, data type, column type, indexed toggle, description,
+  // AI context, synonyms), parameterized by which rows to show so the Semantic
+  // preview (model level = every row; node level = just that table's/join's rows)
+  // can render identically instead of a slimmer bespoke table.
+  // Add formula / Add column (available, by table) — shared between the standalone
+  // Columns tab's toolbar and the compact preview panel's header (Semantic mode).
+  const renderAddActions = (opts: { compact?: boolean } = {}) => {
+    const compact = opts.compact ?? false;
+    const iconBtnStyle: React.CSSProperties = { display: 'flex', alignItems: 'center', justifyContent: 'center', width: 26, height: 24, padding: 0, borderRadius: 5, border: 'none', background: 'transparent', color: '#1D232F', cursor: 'pointer', fontFamily: ff.primary };
+    return (
+    <>
+      <button
+        onClick={() => { setModelFormulaDraft({ id: null, name: '', expr: '' }); setFormulaModalOpen(true); }}
+        title="Add formula"
+        style={compact
+          ? iconBtnStyle
+          : { display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 6, border: '1px solid #D8DDE5', background: '#fff', color: '#1D232F', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: ff.primary, whiteSpace: 'nowrap' }}
+        onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#F6F8FA')}
+        onMouseLeave={e => (e.currentTarget.style.backgroundColor = compact ? 'transparent' : '#fff')}
+      >
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M4 13V6a2 2 0 0 1 2-2h1" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><path d="M2.5 8.5H7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><path d="M9 8l4 5M13 8l-4 5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>
+        {!compact && 'Add formula'}
+      </button>
+      <div style={{ position: 'relative' }}>
+        <button
+          onClick={() => setAddColMenuOpen(o => !o)}
+          title="Add column"
+          style={compact
+            ? iconBtnStyle
+            : { display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 6, border: '1px solid #D8DDE5', background: '#fff', color: '#1D232F', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: ff.primary, whiteSpace: 'nowrap' }}
+          onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#F6F8FA')}
+          onMouseLeave={e => (e.currentTarget.style.backgroundColor = compact ? 'transparent' : '#fff')}
+        >
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 2v8M2 6h8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+          {!compact && 'Add column'}
+          {!compact && <svg width="9" height="9" viewBox="0 0 10 10" fill="none" style={{ marginLeft: 1 }}><path d="M2.5 4l2.5 2.5L7.5 4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+        </button>
+        {addColMenuOpen && (
+          <>
+            <div onClick={() => setAddColMenuOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 40 }} />
+            <div style={{ position: 'absolute', top: 'calc(100% + 4px)', right: 0, minWidth: 260, maxHeight: 360, overflowY: 'auto', background: '#fff', border: '1px solid #E2E6EC', borderRadius: 8, boxShadow: '0 8px 24px rgba(16,24,40,0.14)', zIndex: 41, padding: 4 }}>
+              {availableCols.length === 0 ? (
+                <div style={{ padding: '14px 12px', fontSize: 12, color: '#A5ACB9', fontFamily: ff.primary, textAlign: 'center' }}>All available columns are in the model</div>
+              ) : (
+                Object.entries(availableByTable).map(([table, cols]) => (
+                  <div key={table}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 10px 4px', fontSize: 10.5, fontWeight: 700, color: '#8B96A5', letterSpacing: '0.03em' }}>
+                      <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><rect x="1" y="2" width="10" height="8" rx="1" stroke="currentColor" strokeWidth="1.2"/><path d="M1 5h10M1 8h10M4 5v5M8 5v5" stroke="currentColor" strokeWidth="1"/></svg>
+                      {table.toUpperCase()}
+                    </div>
+                    {cols.map(({ col }) => (
+                      <button
+                        key={modelColKey(table, col)}
+                        onClick={() => { addColBack(table, col); if (availableCols.length === 1) setAddColMenuOpen(false); }}
+                        style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', textAlign: 'left', padding: '7px 10px', border: 'none', background: 'transparent', borderRadius: 5, cursor: 'pointer', fontFamily: ff.primary }}
+                        onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#F0F5FF')}
+                        onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+                      >
+                        <svg width="11" height="11" viewBox="0 0 12 12" fill="none" style={{ color: '#2770EF', flexShrink: 0 }}><path d="M6 2v8M2 6h8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: '#1D232F', whiteSpace: 'nowrap' }}>{col}</span>
+                      </button>
+                    ))}
+                  </div>
+                ))
+              )}
+            </div>
+          </>
+        )}
+      </div>
+    </>
+    );
+  };
+
+  const renderColumnsTable = (rowsToShow: { table: string; col: string; type: string }[], opts: { showFormulas?: boolean; showToolbar?: boolean } = {}) => {
+    const showFormulas = opts.showFormulas ?? true;
+    const showToolbar = opts.showToolbar ?? true;
+    const scopeSelected = rowsToShow.filter(({ table, col }) => selectedModelCols.has(modelColKey(table, col)));
+    const allVisibleSelectedScoped = rowsToShow.length > 0 && scopeSelected.length === rowsToShow.length;
+    const someVisibleSelectedScoped = scopeSelected.length > 0;
+    return (
+      <>
+      {/* Toolbar — bulk Remove (of selected rows) + Add column (available, by table) */}
+      {showToolbar && (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 16px', background: '#fff', borderBottom: '1px solid #EAEDF2', flexShrink: 0 }}>
+        {selectedModelCols.size > 0 && (
+          <span style={{ fontSize: 12, color: '#1D232F', fontWeight: 600, fontFamily: ff.primary }}>{selectedModelCols.size} selected</span>
+        )}
+        <div style={{ flex: 1 }} />
+        {selectedModelCols.size > 0 && (
+          <Button variant="secondary" size="small" onClick={removeSelectedCols}>
+            {`Remove${selectedModelCols.size > 1 ? ` (${selectedModelCols.size})` : ''}`}
+          </Button>
+        )}
+        {renderAddActions()}
+      </div>
+      )}
+      <div style={{ flex: 1, overflow: 'auto', padding: '0 16px 12px' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: ff.primary, fontSize: 12 }}>
+          <thead>
+            <tr style={{ boxShadow: '0 1px 0 #EAEDF2' }}>
+              <th style={{ position: 'sticky', top: 0, zIndex: 3, padding: '8px 12px', textAlign: 'center', width: 40, minWidth: 40, borderBottom: '1px solid #EAEDF2', background: '#fff' }}>
+                <input
+                  type="checkbox"
+                  checked={allVisibleSelectedScoped}
+                  ref={el => { if (el) el.indeterminate = someVisibleSelectedScoped && !allVisibleSelectedScoped; }}
+                  onChange={e => setSelectedModelCols(prev => {
+                    const next = new Set(prev);
+                    rowsToShow.forEach(({ table, col }) => {
+                      const k = modelColKey(table, col);
+                      if (e.target.checked) next.add(k); else next.delete(k);
+                    });
+                    return next;
+                  })}
+                  title={allVisibleSelectedScoped ? 'Deselect all' : 'Select all'}
+                  style={{ width: 14, height: 14, cursor: 'pointer', accentColor: '#2770EF' }}
+                />
+              </th>
+              {[
+                { label: 'Column name', width: 160 },
+                { label: 'Table', width: 100 },
+                { label: 'Data type', width: 90 },
+                { label: 'Column type', width: 100 },
+                { label: 'Indexed', width: 70 },
+                { label: 'Description', width: 200 },
+                { label: 'AI context', width: 200 },
+                { label: 'Synonyms', width: 180 },
+              ].map(({ label, width }) => {
+                // Highlight header if any active review touches this column
+                const checkForLabel: Record<string, string> = {
+                  'Description': 'coldesc', 'AI context': 'desc', 'Synonyms': 'synonyms',
+                  'Indexed': 'indexing', 'Column type': 'col_types', 'Data type': 'date_vals',
+                };
+                const hdrCheck = checkForLabel[label];
+                const hdrActive = hdrCheck && airCheckActive(hdrCheck);
+                return (
+                  <th key={label} style={{ position: 'sticky', top: 0, zIndex: 3, padding: '8px 12px', textAlign: 'left', fontWeight: 700, fontSize: 11, color: hdrActive ? '#92640A' : '#777E8B', whiteSpace: 'nowrap', borderBottom: hdrActive ? '2px solid rgba(252,200,56,0.5)' : '1px solid #EAEDF2', width, minWidth: width, letterSpacing: '0.02em', background: hdrActive ? 'rgba(252,200,56,0.06)' : '#fff', transition: 'all 150ms' }}>
+                    {label.toUpperCase()}
+                  </th>
+                );
+              })}
+            </tr>
+          </thead>
+          <tbody>
+            {rowsToShow.map(({ table, col, type }, idx) => {
+              const indexed = indexedCols.has(`${table}__${col}`);
+              const colType = COL_TYPE_DEFAULTS[type] ?? 'ATTRIBUTE';
+              const isSelected = selectedModelCols.has(modelColKey(table, col));
+              const rowBg = isSelected ? '#EEF4FF' : idx % 2 === 0 ? '#fff' : '#FAFBFC';
+
+              // Per-row diff helpers
+              const indexingRow = airCheckActive('indexing') ? airGetRowForCheck('indexing', col) : null;
+              const indexingAccepted = airAccepted['indexing']?.[col];
+              const colTypeRow = airCheckActive('col_types') ? airGetRowForCheck('col_types', col) : null;
+              const colTypeAccepted = airAccepted['col_types']?.[col];
+              const dateValsRow = airCheckActive('date_vals') ? airGetRowForCheck('date_vals', col) : null;
+              const dateValsAccepted = airAccepted['date_vals']?.[col];
+
+              const renderEditCell = (field: string, placeholder: string) => {
+                const checkId = FIELD_TO_CHECK[field];
+                const key = colEditKey(table, col, field);
+                const val = colEdits[key] ?? '';
+                const isEditing = editingCell === key;
+
+                // Accepted value: show as plain text (no indicator)
+                const accepted = checkId ? airAccepted[checkId]?.[col] : undefined;
+                if (accepted) {
+                  return (
+                    <td key={field} style={{ padding: '8px 12px', borderBottom: '1px solid #EAEDF2', verticalAlign: 'top', maxWidth: 200 }}>
+                      <span style={{ fontSize: 12, color: '#1D232F', lineHeight: 1.45 }}>{accepted}</span>
+                    </td>
+                  );
+                }
+
+                // Active review: show amber diff
+                const reviewRow = checkId && airCheckActive(checkId) ? airGetRowForCheck(checkId, col) : null;
+                if (reviewRow) {
+                  return (
+                    <td key={field} style={{ padding: '8px 12px', borderBottom: '1px solid #EAEDF2', verticalAlign: 'top', maxWidth: 200, background: 'rgba(252,200,56,0.10)' }}>
+                      {reviewRow.current !== '—' && (
+                        <div style={{ fontSize: 10.5, color: '#A5ACB9', textDecoration: 'line-through', lineHeight: '14px', marginBottom: 3 }}>{reviewRow.current}</div>
+                      )}
+                      <span style={{ fontSize: 12, color: '#1D232F', lineHeight: 1.45 }}>{reviewRow.proposed}</span>
+                    </td>
+                  );
+                }
+
+                // Editing
+                if (isEditing) {
+                  return (
+                    <td key={field} style={{ padding: '4px 8px', borderBottom: '1px solid #EAEDF2', verticalAlign: 'top' }}>
+                      <textarea
+                        autoFocus
+                        defaultValue={val}
+                        onBlur={e => {
+                          setColEdits(prev => ({ ...prev, [key]: e.target.value }));
+                          setEditingCell(null);
+                        }}
+                        onKeyDown={e => {
+                          if (e.key === 'Escape') setEditingCell(null);
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            setColEdits(prev => ({ ...prev, [key]: (e.target as HTMLTextAreaElement).value }));
+                            setEditingCell(null);
+                          }
+                        }}
+                        style={{ width: '100%', minHeight: 52, resize: 'vertical', fontFamily: ff.primary, fontSize: 12, color: '#1D232F', border: '1.5px solid #2770EF', borderRadius: 5, padding: '5px 8px', outline: 'none', boxShadow: '0 0 0 3px rgba(39,112,239,0.10)', background: '#fff', lineHeight: 1.45 }}
+                      />
+                    </td>
+                  );
+                }
+
+                // Normal read / placeholder
+                return (
+                  <td key={field} onClick={() => setEditingCell(key)}
+                    style={{ padding: '8px 12px', borderBottom: '1px solid #EAEDF2', cursor: 'text', verticalAlign: 'top', maxWidth: 200 }}
+                  >
+                    {val
+                      ? <span style={{ color: '#1D232F', lineHeight: 1.45, display: 'block' }}>{val}</span>
+                      : <span style={{ color: '#C0C6CF', fontStyle: 'italic' }}>{placeholder}</span>}
+                  </td>
+                );
+              };
+
+              // Derive display values with diff awareness
+              const displayColType = colTypeAccepted ?? (colTypeRow ? colTypeRow.proposed : colType);
+              const colTypeDiffed = !!(colTypeRow && !colTypeAccepted);
+
+              const displayDataType = dateValsAccepted ?? (dateValsRow ? dateValsRow.proposed : type);
+              const dataTypeDiffed = !!(dateValsRow && !dateValsAccepted);
+
+              const displayIndexed = indexingAccepted
+                ? indexingAccepted === 'On'
+                : indexingRow
+                  ? indexingRow.proposed === 'On'
+                  : indexed;
+              const indexDiffed = !!(indexingRow && !indexingAccepted);
+              const indexAcceptedVal = !!indexingAccepted;
+
+              return (
+                <tr key={`${table}-${col}-${idx}`} style={{ background: rowBg }}
+                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = isSelected ? '#E4EEFF' : '#F0F5FF'}
+                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = rowBg}
+                >
+                  {/* Row selection checkbox */}
+                  <td style={{ padding: '8px 12px', borderBottom: '1px solid #EAEDF2', textAlign: 'center', verticalAlign: 'middle' }}>
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => toggleSelectCol(table, col)}
+                      title={isSelected ? 'Deselect' : 'Select'}
+                      style={{ width: 14, height: 14, cursor: 'pointer', accentColor: '#2770EF' }}
+                    />
+                  </td>
+                  {/* Column name */}
+                  <td style={{ padding: '8px 12px', borderBottom: '1px solid #EAEDF2', fontWeight: 600, color: '#1D232F', whiteSpace: 'nowrap', verticalAlign: 'middle' }}>{col}</td>
+                  {/* Table badge */}
+                  <td style={{ padding: '8px 12px', borderBottom: '1px solid #EAEDF2', verticalAlign: 'middle' }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10.5, fontWeight: 600, padding: '2px 7px', borderRadius: 4, background: 'rgba(39,112,239,0.07)', color: '#2770EF', whiteSpace: 'nowrap' }}>
+                      <svg width="9" height="9" viewBox="0 0 12 12" fill="none"><rect x="1" y="2" width="10" height="8" rx="1" stroke="currentColor" strokeWidth="1.2"/><path d="M1 5h10M1 8h10M4 5v5M8 5v5" stroke="currentColor" strokeWidth="1"/></svg>
+                      {table}
+                    </span>
+                  </td>
+                  {/* Data type — diff-aware */}
+                  <td style={{ padding: '8px 12px', borderBottom: '1px solid #EAEDF2', verticalAlign: 'middle', background: dataTypeDiffed ? 'rgba(252,200,56,0.10)' : 'transparent' }}>
+                    {dataTypeDiffed && <div style={{ fontSize: 10, color: '#A5ACB9', textDecoration: 'line-through', marginBottom: 2 }}>{type}</div>}
+                    <span style={{ fontSize: 11, fontWeight: 600, color: '#64748B', padding: '2px 6px', borderRadius: 3, background: '#F0F2F6', whiteSpace: 'nowrap' }}>{displayDataType}</span>
+                  </td>
+                  {/* Column type — diff-aware */}
+                  <td style={{ padding: '8px 12px', borderBottom: '1px solid #EAEDF2', verticalAlign: 'middle', background: colTypeDiffed ? 'rgba(252,200,56,0.10)' : 'transparent' }}>
+                    {colTypeDiffed && <div style={{ fontSize: 10, color: '#A5ACB9', textDecoration: 'line-through', marginBottom: 2 }}>{colType}</div>}
+                    <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 6px', borderRadius: 3, whiteSpace: 'nowrap', color: displayColType.includes('MEASURE') || displayColType.includes('measure') ? '#06BF7F' : '#64748B', background: displayColType.includes('MEASURE') || displayColType.includes('measure') ? 'rgba(6,191,127,0.09)' : '#F0F2F6' }}>{displayColType}</span>
+                  </td>
+                  {/* Indexed toggle — diff-aware */}
+                  <td style={{ padding: '8px 12px', borderBottom: '1px solid #EAEDF2', verticalAlign: 'middle', background: indexDiffed ? 'rgba(252,200,56,0.10)' : 'transparent' }}>
+                    {indexDiffed && <div style={{ fontSize: 10, color: '#A5ACB9', textDecoration: 'line-through', marginBottom: 3 }}>Off</div>}
+                    <div>
+                      <button
+                        onClick={() => {
+                          if (indexDiffed || indexAcceptedVal) return;
+                          setIndexedCols(prev => {
+                            const next = new Set(prev);
+                            const k = `${table}__${col}`;
+                            if (next.has(k)) next.delete(k); else next.add(k);
+                            return next;
+                          });
+                        }}
+                        style={{ width: 32, height: 18, borderRadius: 9, border: 'none', cursor: indexDiffed || indexAcceptedVal ? 'default' : 'pointer', background: displayIndexed ? '#2770EF' : '#D1D5DB', position: 'relative', transition: 'background 150ms', padding: 0 }}
+                      >
+                        <span style={{ position: 'absolute', top: 2, left: displayIndexed ? 16 : 2, width: 14, height: 14, borderRadius: '50%', background: '#fff', transition: 'left 150ms', boxShadow: '0 1px 2px rgba(0,0,0,0.18)', display: 'block' }} />
+                      </button>
+                    </div>
+                  </td>
+                  {renderEditCell('desc', 'Click to add description')}
+                  {renderEditCell('aicontext', 'Click to add AI context')}
+                  {renderEditCell('synonyms', 'Click to add synonyms')}
+                </tr>
+              );
+            })}
+            {/* Model-level formula rows — calculated columns owned by the whole model */}
+            {showFormulas && modelFormulas.map((f, i) => (
+              <tr key={`formula-${f.id}`} style={{ background: 'rgba(6,191,127,0.045)' }}
+                onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(6,191,127,0.09)'}
+                onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'rgba(6,191,127,0.045)'}
+              >
+                <td style={{ padding: '8px 12px', borderBottom: '1px solid #EAEDF2', textAlign: 'center', verticalAlign: 'middle' }}>
+                  <svg width="13" height="13" viewBox="0 0 16 16" fill="none" style={{ color: '#047857' }}><path d="M4 13V6a2 2 0 0 1 2-2h1" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><path d="M2.5 8.5H7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><path d="M9 8l4 5M13 8l-4 5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>
+                </td>
+                <td style={{ padding: '8px 12px', borderBottom: '1px solid #EAEDF2', fontWeight: 600, color: '#1D232F', whiteSpace: 'nowrap', verticalAlign: 'middle' }}>{f.name}</td>
+                <td style={{ padding: '8px 12px', borderBottom: '1px solid #EAEDF2', verticalAlign: 'middle' }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10.5, fontWeight: 600, padding: '2px 7px', borderRadius: 4, background: 'rgba(6,191,127,0.1)', color: '#047857', whiteSpace: 'nowrap' }}>Model formula</span>
+                </td>
+                <td style={{ padding: '8px 12px', borderBottom: '1px solid #EAEDF2', verticalAlign: 'middle' }}>
+                  <span style={{ fontSize: 11, fontWeight: 600, color: '#64748B', padding: '2px 6px', borderRadius: 3, background: '#F0F2F6', whiteSpace: 'nowrap' }}>FLOAT</span>
+                </td>
+                <td style={{ padding: '8px 12px', borderBottom: '1px solid #EAEDF2', verticalAlign: 'middle' }}>
+                  <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 6px', borderRadius: 3, whiteSpace: 'nowrap', color: '#06BF7F', background: 'rgba(6,191,127,0.09)' }}>MEASURE</span>
+                </td>
+                <td style={{ padding: '8px 12px', borderBottom: '1px solid #EAEDF2', verticalAlign: 'middle', color: '#C0C6CF' }}>—</td>
+                <td colSpan={3} style={{ padding: '6px 12px', borderBottom: '1px solid #EAEDF2', verticalAlign: 'middle' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <code style={{ flex: 1, fontFamily: "'SF Mono','Fira Mono',monospace", fontSize: 11, color: '#1D232F', background: '#F6F8FA', border: '1px solid #EAEDF2', borderRadius: 5, padding: '4px 8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.expr}</code>
+                    <button
+                      onClick={() => { setModelFormulaDraft({ id: f.id, name: f.name, expr: f.expr }); setFormulaModalOpen(true); }}
+                      title="Edit formula"
+                      style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 26, height: 26, borderRadius: 5, border: '1px solid #E2E6EC', background: '#fff', color: '#64748B', cursor: 'pointer', flexShrink: 0 }}
+                      onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#F6F8FA')}
+                      onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#fff')}
+                    >
+                      <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M11.5 2.5l2 2-7.5 7.5-2.5.5.5-2.5 7.5-7.5z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    </button>
+                    <button
+                      onClick={() => setModelFormulas(prev => prev.filter((_, j) => j !== i))}
+                      title="Delete formula"
+                      style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 26, height: 26, borderRadius: 5, border: '1px solid #F3C6C6', background: '#fff', color: '#D64545', cursor: 'pointer', flexShrink: 0 }}
+                      onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#FDF2F2')}
+                      onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#fff')}
+                    >
+                      <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M2.5 3.5h9M5.5 3.5V2.5a1 1 0 0 1 1-1h1a1 1 0 0 1 1 1v1M4 3.5l.5 8a1 1 0 0 0 1 .9h3a1 1 0 0 0 1-.9l.5-8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+            {rowsToShow.length === 0 && (!showFormulas || modelFormulas.length === 0) && (
+              <tr>
+                <td colSpan={9} style={{ padding: '40px 16px', textAlign: 'center', color: '#A5ACB9', fontSize: 12, fontFamily: ff.primary }}>
+                  All columns removed. Use <strong style={{ color: '#64748B', fontWeight: 600 }}>Add column</strong> to bring columns back into the model.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+      </>
+    );
+  };
 
   const previewPanel = (
     <div style={{
@@ -4405,8 +5470,24 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
       <div style={{ height: 38, display: 'flex', alignItems: 'center', padding: '0 12px', gap: 6, flexShrink: 0 }}>
         {/* Preview label — always visible */}
         <span style={{ fontSize: 11, fontWeight: 700, color: '#777E8B', textTransform: 'uppercase', letterSpacing: '0.06em', flexShrink: 0 }}>Preview</span>
+        {/* POC: node level (current selection) vs model level (entire model, combined) */}
+        {showModelLevelPreview && (
+          <div style={{ position: 'relative', flexShrink: 0 }}>
+            <select
+              value={previewScope}
+              onChange={e => setPreviewScope(e.target.value as 'node' | 'model')}
+              style={{ appearance: 'none', WebkitAppearance: 'none', border: BORDER, borderRadius: 5, padding: '3px 22px 3px 8px', fontSize: 11, fontFamily: ff.primary, fontWeight: 500, color: '#1D232F', background: '#fff', cursor: 'pointer', outline: 'none' }}
+            >
+              <option value="node">Node level</option>
+              <option value="model">Model level</option>
+            </select>
+            <div style={{ position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#A5ACB9' }}>
+              <svg width="9" height="9" viewBox="0 0 10 10" fill="none"><path d="M2 3.5l3 3 3-3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </div>
+          </div>
+        )}
         {/* Data / Semantic toggle — hidden while a join is being configured (nothing to preview yet) */}
-        {(selectedGroup || canvasJoins.some(j => j.id === selectedId)) && !(singleJoinActive || multiJoinActive) && (
+        {(previewScope === 'model' ? groups.length > 0 : (selectedGroup || canvasJoins.some(j => j.id === selectedId))) && !(singleJoinActive || multiJoinActive) && (
         <div style={{ display: 'flex', alignItems: 'center', background: '#F0F2F6', borderRadius: 6, padding: 2, gap: 1 }}>
           {(['data', 'semantic'] as const).map(mode => (
             <button
@@ -4425,8 +5506,20 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
         </div>
         )}
         <div style={{ flex: 1 }} />
+        {/* Add formula / Add column — Semantic mode only, moved up here (from the
+            table's own toolbar) to keep the compact preview panel to one row. */}
+        {previewMode === 'semantic' && (previewScope === 'model' ? groups.length > 0 : (selectedGroup || canvasJoins.some(j => j.id === selectedId))) && !(singleJoinActive || multiJoinActive) && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0 }}>
+            {selectedModelCols.size > 0 && (
+              <Button variant="secondary" size="small" onClick={removeSelectedCols}>
+                {`Remove${selectedModelCols.size > 1 ? ` (${selectedModelCols.size})` : ''}`}
+              </Button>
+            )}
+            {renderAddActions({ compact: true })}
+          </div>
+        )}
         {/* Limit — data mode only, shown for both table and join selection */}
-        {(selectedGroup || canvasJoins.some(j => j.id === selectedId)) && previewMode === 'data' && !(singleJoinActive || multiJoinActive) && (
+        {(previewScope === 'model' ? groups.length > 0 : (selectedGroup || canvasJoins.some(j => j.id === selectedId))) && previewMode === 'data' && !(singleJoinActive || multiJoinActive) && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0 }}>
             <span style={{ fontSize: 11, color: '#777E8B', whiteSpace: 'nowrap' }}>Limit</span>
             <div style={{ position: 'relative' }}>
@@ -4440,7 +5533,9 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
             </div>
           </div>
         )}
-        {/* Full-screen toggle for the spreadsheet view */}
+        {/* Full-screen toggle for the spreadsheet view — hidden in the POC (the
+            chevron collapse/expand is the single preview control there) */}
+        {!poc && (
         <button
           onClick={() => setPreviewFull(f => { const nf = !f; if (nf) setPreviewOpen(true); return nf; })}
           title={previewFull ? 'Exit full screen' : 'Full screen'}
@@ -4454,6 +5549,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
             <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M2 6V3.5A1.5 1.5 0 0 1 3.5 2H6M14 6V3.5A1.5 1.5 0 0 0 12.5 2H10M2 10v2.5A1.5 1.5 0 0 0 3.5 14H6M14 10v2.5a1.5 1.5 0 0 1-1.5 1.5H10" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
           )}
         </button>
+        )}
         <button
           onClick={() => { if (previewFull) setPreviewFull(false); else setPreviewOpen(o => !o); }}
           title={previewFull ? 'Exit full screen' : previewOpen ? 'Collapse' : 'Expand'}
@@ -4471,29 +5567,97 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
         const rowsThatFit = Math.max(0, Math.floor((previewHeight - 95) / 25));
         const rowCap = Math.max(previewLimit, rowsThatFit);
 
-        // Resolve the rows for a card. A SQL-derived card (tableName "SQL") has no static
-        // MOCK_DATA — its rows are the positional merge of its @-referenced inputs. A source
-        // card whose display name isn't a data key (e.g. "NPS (Pendo)") is matched to a real
-        // mock table by identical columns, so we reuse real rows without inventing data.
-        const rowsForCard = (g?: CanvasGroup): Row[] => {
-          if (!g) return [];
-          const inputs = deriveEdges
-            .filter(e => e.toId === g.id)
-            .map(e => groups.find(gg => gg.id === e.fromId))
-            .filter(Boolean) as CanvasGroup[];
-          if (inputs.length > 0) {
-            const per = inputs.map(gi => rowsForCard(gi));
-            const n = Math.max(0, ...per.map(r => r.length));
-            return Array.from({ length: Math.min(n, rowCap) }, (_, i) =>
-              inputs.flatMap((gi, gj) => per[gj][i] ?? (gi.steps[0]?.cols ?? []).map(() => null))
+        const previewToolbarProps = {
+          onToggleExpand: () => setPreviewFull(f => { const nf = !f; if (nf) setPreviewOpen(true); return nf; }),
+          expanded: previewFull,
+        };
+
+        // ── Model level (POC): preview of the entire model, combined ──
+        if (previewScope === 'model') {
+          if (groups.length === 0) {
+            return (
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', borderTop: BORDER, overflow: 'hidden' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, opacity: 0.4, textAlign: 'center' }}>
+                  <svg width="30" height="30" viewBox="0 0 32 32" fill="none"><rect x="3" y="7" width="26" height="18" rx="2" stroke="currentColor" strokeWidth="1.5"/><path d="M3 12h26M9 12v13M16 12v13M23 12v13" stroke="currentColor" strokeWidth="1.3"/></svg>
+                  <span style={{ fontSize: 12, color: '#64748B' }}>No data to preview</span>
+                  <span style={{ fontSize: 11, color: '#A5ACB9' }}>Add a table to the model</span>
+                </div>
+              </div>
             );
           }
-          if (MOCK_DATA[g.tableName]) return MOCK_DATA[g.tableName].slice(0, rowCap);
-          // Fallback: match a mock table with the same columns (handles display-named sources).
-          const sig = (g.steps[0]?.cols ?? []).map(c => c[0]).join('|');
-          const match = sig ? Object.keys(MOCK_DATA).find(k => (TABLE_COLS[k] ?? []).map(c => c[0]).join('|') === sig) : undefined;
-          return match ? MOCK_DATA[match].slice(0, rowCap) : [];
-        };
+
+          // Combine every table currently on the canvas — same simple concat/zip
+          // approach the join preview already uses, generalized from 2 tables to N.
+          const modelCols: [string, string, string][] = groups.flatMap(g => {
+            const cols = g.steps[g.activeStep]?.cols ?? TABLE_COLS[g.tableName] ?? [];
+            return cols.map(([col, type]) => [col, type, g.tableName] as [string, string, string]);
+          });
+          const perTableRows = groups.map(g => rowsForCard(g, rowCap));
+          const rowCount = Math.max(0, ...perTableRows.map(r => r.length));
+          const mergedRows: Row[] = Array.from({ length: Math.min(rowCount, rowCap) }, (_, i) =>
+            groups.flatMap((g, gi) => perTableRows[gi][i] ?? (g.steps[g.activeStep]?.cols ?? TABLE_COLS[g.tableName] ?? []).map(() => null))
+          );
+
+          if (previewMode === 'semantic') {
+            return (
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                {renderColumnsTable(includedCols, { showFormulas: true, showToolbar: false })}
+              </div>
+            );
+          }
+
+          // Data mode — mimics the Data tab's spreadsheet chrome (toolbar, formula bar,
+          // column menu), condensed into this smaller panel. Column names collide often
+          // across tables (e.g. every table has its own account_id) — qualify only the
+          // names that actually collide, with the owning table, same as the Data tab.
+          const nameCounts = modelCols.reduce<Record<string, number>>((acc, [name]) => {
+            acc[name] = (acc[name] ?? 0) + 1;
+            return acc;
+          }, {});
+          const sheetCols: [string, string][] = modelCols.map(([name, type, table]) =>
+            nameCounts[name] > 1 ? [`${table}.${name}`, type] : [name, type]
+          );
+          const downloadModelCsv = () => {
+            const escapeCsv = (v: unknown) => {
+              const s = v === null || v === undefined ? '' : String(v);
+              return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+            };
+            const lines = [
+              sheetCols.map(([col]) => escapeCsv(col)).join(','),
+              ...mergedRows.map(r => r.map(escapeCsv).join(',')),
+            ];
+            const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'model_data.csv';
+            a.click();
+            URL.revokeObjectURL(url);
+          };
+
+          return (
+            <div style={{ flex: 1, borderTop: BORDER, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+              <DataSheetToolbar onDownloadCsv={downloadModelCsv} {...previewToolbarProps} />
+              <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+                <SpreadsheetGrid
+                  tableCols={sheetCols}
+                  isInput={false}
+                  scrollRef={previewScrollRef}
+                  rows={mergedRows}
+                  outputRows={mergedRows}
+                  previewSort={previewSort}
+                  previewColMenu={previewColMenu}
+                  setPreviewColMenu={setPreviewColMenu}
+                  hiddenPreviewCols={hiddenPreviewCols}
+                  highlightedCol={null}
+                  derivedCols={{}}
+                  inputFixes={{}}
+                  outputFixes={{}}
+                />
+              </div>
+            </div>
+          );
+        }
 
         // ── Join being configured (not yet applied) — no preview until the join is created ──
         if (singleJoinActive || multiJoinActive) {
@@ -4515,90 +5679,42 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
           const t2Group = groups.find(g => g.tableName === selJoin.table2Name);
           const t1Cols: [string, string][] = t1Group ? t1Group.steps[0].cols : (TABLE_COLS[selJoin.name.split(' × ')[0]] ?? []);
           const t2Cols: [string, string][] = t2Group ? t2Group.steps[0].cols : (TABLE_COLS[selJoin.table2Name] ?? []);
-          const t1Rows = t1Group ? rowsForCard(t1Group) : (MOCK_DATA[selJoin.name.split(' × ')[0]] ?? []).slice(0, rowCap);
-          const t2Rows = t2Group ? rowsForCard(t2Group) : (MOCK_DATA[selJoin.table2Name] ?? []).slice(0, rowCap);
+          const t1Rows = t1Group ? rowsForCard(t1Group, rowCap) : (MOCK_DATA[selJoin.name.split(' × ')[0]] ?? []).slice(0, rowCap);
+          const t2Rows = t2Group ? rowsForCard(t2Group, rowCap) : (MOCK_DATA[selJoin.table2Name] ?? []).slice(0, rowCap);
           const mergedCols: [string, string][] = [...t1Cols, ...t2Cols];
           const mergedRows = t1Rows.map((r, i) => [...r, ...(t2Rows[i] ?? t2Cols.map(() => null))]);
-          const joinLabel: Record<string, string> = { inner: 'Inner', full_outer: 'Full Outer', left_outer: 'Left Outer', right_outer: 'Right Outer' };
 
           if (previewMode === 'semantic') {
+            const joinTable1Name = t1Group?.tableName ?? selJoin.name.split(' × ')[0];
+            const joinRows = includedCols.filter(({ table }) => table === joinTable1Name || table === selJoin.table2Name);
             return (
-              <div style={{ flex: 1, borderTop: BORDER, overflow: 'auto' }}>
-                <div style={{ padding: '7px 12px 6px', background: '#F6F8FA', borderBottom: BORDER, display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{ fontSize: 10, fontWeight: 700, color: '#777E8B', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{joinLabel[selJoin.joinType]} join</span>
-                  <span style={{ color: '#C0C6CF' }}>·</span>
-                  <span style={{ fontSize: 11, color: '#1D232F' }}>{t1Group?.tableName ?? selJoin.name.split(' × ')[0]}</span>
-                  <span style={{ fontSize: 11, color: '#A5ACB9' }}>×</span>
-                  <span style={{ fontSize: 11, color: '#1D232F' }}>{selJoin.table2Name}</span>
-                  <span style={{ fontSize: 10, color: '#A5ACB9', marginLeft: 4 }}>{mergedCols.length} columns</span>
-                </div>
-                <table style={{ borderCollapse: 'collapse', fontSize: 11.5, tableLayout: 'auto', width: 'max-content', minWidth: '100%' }}>
-                  <thead>
-                    <tr style={{ background: '#F6F8FA', position: 'sticky', top: 0, zIndex: 2 }}>
-                      <th style={{ width: 32, padding: '5px 8px', borderRight: BORDER, borderBottom: BORDER, color: '#C0C6CF', fontWeight: 600, fontSize: 10, textAlign: 'center' }}>#</th>
-                      <th style={{ padding: '5px 14px', borderRight: BORDER, borderBottom: BORDER, fontWeight: 600, color: '#1D232F', whiteSpace: 'nowrap', textAlign: 'left', minWidth: 130 }}>Column</th>
-                      <th style={{ padding: '5px 14px', borderRight: BORDER, borderBottom: BORDER, fontWeight: 600, color: '#1D232F', whiteSpace: 'nowrap', textAlign: 'left', minWidth: 80 }}>Type</th>
-                      <th style={{ padding: '5px 14px', borderRight: BORDER, borderBottom: BORDER, fontWeight: 600, color: '#1D232F', whiteSpace: 'nowrap', textAlign: 'left', minWidth: 60 }}>Source</th>
-                      <th style={{ padding: '5px 14px', borderBottom: BORDER, fontWeight: 600, color: '#1D232F', whiteSpace: 'nowrap', textAlign: 'left', minWidth: 90 }}>Role</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {mergedCols.map(([col, type], ri) => {
-                      const badge = getColTypeBadge(type);
-                      const sourceTable = ri < t1Cols.length ? (t1Group?.tableName ?? '—') : selJoin.table2Name;
-                      const meta = getColSemanticMeta(col, type);
-                      return (
-                        <tr key={`${col}_${ri}`} style={{ background: ri % 2 === 1 ? '#FAFBFC' : '#fff' }}
-                          onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#F0F4FF'}
-                          onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = ri % 2 === 1 ? '#FAFBFC' : '#fff'}
-                        >
-                          <td style={{ padding: '5px 8px', borderRight: BORDER, color: '#C0C6CF', fontSize: 10, textAlign: 'center' }}>{ri + 1}</td>
-                          <td style={{ padding: '5px 14px', borderRight: BORDER, fontWeight: 500, color: '#1D232F', whiteSpace: 'nowrap' }}>
-                            <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                              <span style={{ width: 14, height: 14, borderRadius: 3, background: badge.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                <svg width="8" height="8" viewBox="0 0 10 10" fill="none"><rect x="1" y="2" width="8" height="6" rx="0.8" stroke={badge.color} strokeWidth="1.2"/><path d="M1 4h8" stroke={badge.color} strokeWidth="0.8"/></svg>
-                              </span>
-                              {col}
-                            </span>
-                          </td>
-                          <td style={{ padding: '5px 14px', borderRight: BORDER }}>
-                            <span style={{ fontSize: 10, fontWeight: 700, fontFamily: 'monospace', padding: '2px 5px', borderRadius: 3, background: badge.bg, color: badge.color }}>{type}</span>
-                          </td>
-                          <td style={{ padding: '5px 14px', borderRight: BORDER }}>
-                            <span style={{ fontSize: 10, fontWeight: 500, padding: '2px 6px', borderRadius: 3, background: '#EEF2FF', color: '#2770EF' }}>{sourceTable}</span>
-                          </td>
-                          <td style={{ padding: '5px 14px' }}>
-                            {meta.isPk
-                              ? <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 3, background: 'rgba(252,200,56,0.15)', color: '#92640A' }}>PK</span>
-                              : col.endsWith('_id')
-                                ? <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 3, background: 'rgba(14,125,139,0.08)', color: '#0E7D8B' }}>FK</span>
-                                : <span style={{ color: '#C0C6CF', fontSize: 11 }}>—</span>}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                {renderColumnsTable(joinRows, { showFormulas: false, showToolbar: false })}
               </div>
             );
           }
 
-          // Join data mode — consistent with table view
+          // Join data mode — consistent with table view; same spreadsheet chrome as Model level.
+          const downloadJoinCsv = () => {
+            const escapeCsv = (v: unknown) => {
+              const s = v === null || v === undefined ? '' : String(v);
+              return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+            };
+            const lines = [
+              mergedCols.map(([col]) => escapeCsv(col)).join(','),
+              ...mergedRows.map(r => r.map(escapeCsv).join(',')),
+            ];
+            const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'join_data.csv';
+            a.click();
+            URL.revokeObjectURL(url);
+          };
           return (
             <div style={{ flex: 1, borderTop: BORDER, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-              <div style={{ height: 28, display: 'flex', alignItems: 'center', padding: '0 10px', gap: 5, flexShrink: 0, borderBottom: BORDER, background: '#FAFBFC' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#777E8B', flexShrink: 0 }}>
-                  <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><circle cx="6" cy="8" r="4" stroke="currentColor" strokeWidth="1.3"/><circle cx="10" cy="8" r="4" stroke="currentColor" strokeWidth="1.3"/></svg>
-                </span>
-                <span style={{ fontSize: 11, fontWeight: 500, color: '#1D232F' }}>{t1Group?.tableName ?? '—'} :: {selJoin.table2Name}</span>
-                <div style={{ flex: 1 }} />
-                <SpreadsheetToolbar
-                  onFilter={() => {}}
-                  onFormula={() => {}}
-                  cleanOptions={BLOCK_MENU_PREP.map(({ op, label }) => ({ op, label, icon: OP_ICON[op] }))}
-                  onClean={() => {}}
-                />
-              </div>
+              <DataSheetToolbar onDownloadCsv={downloadJoinCsv} {...previewToolbarProps} />
               <SpreadsheetGrid
                 tableCols={mergedCols}
                 isInput={false}
@@ -4636,58 +5752,10 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
         const inputCols = inputStep.cols;
 
         if (previewMode === 'semantic') {
+          const tableRows = includedCols.filter(({ table }) => table === selectedGroup.tableName);
           return (
-            <div style={{ flex: 1, borderTop: BORDER, overflow: 'auto' }}>
-              <style>{`@keyframes colFade { 0%{background:rgba(39,112,239,0.18)} 70%{background:rgba(39,112,239,0.10)} 100%{background:transparent} } @keyframes spin { to { transform: rotate(360deg); } }`}</style>
-              <table style={{ borderCollapse: 'collapse', fontSize: 11.5, tableLayout: 'auto', width: 'max-content', minWidth: '100%' }}>
-                <thead>
-                  <tr style={{ background: '#F6F8FA', position: 'sticky', top: 0, zIndex: 2 }}>
-                    <th style={{ width: 32, padding: '5px 8px', borderRight: BORDER, borderBottom: BORDER, color: '#C0C6CF', fontWeight: 600, fontSize: 10, textAlign: 'center' }}>#</th>
-                    <th style={{ padding: '5px 14px', borderRight: BORDER, borderBottom: BORDER, fontWeight: 600, color: '#1D232F', whiteSpace: 'nowrap', textAlign: 'left', minWidth: 130 }}>Column</th>
-                    <th style={{ padding: '5px 14px', borderRight: BORDER, borderBottom: BORDER, fontWeight: 600, color: '#1D232F', whiteSpace: 'nowrap', textAlign: 'left', minWidth: 80 }}>Type</th>
-                    <th style={{ padding: '5px 14px', borderRight: BORDER, borderBottom: BORDER, fontWeight: 600, color: '#1D232F', whiteSpace: 'nowrap', textAlign: 'left', minWidth: 220 }}>Description</th>
-                    <th style={{ padding: '5px 14px', borderRight: BORDER, borderBottom: BORDER, fontWeight: 600, color: '#1D232F', whiteSpace: 'nowrap', textAlign: 'center', minWidth: 72 }}>Nullable</th>
-                    <th style={{ padding: '5px 14px', borderBottom: BORDER, fontWeight: 600, color: '#1D232F', whiteSpace: 'nowrap', textAlign: 'left', minWidth: 90 }}>Role</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {cols.map(([col, type], ri) => {
-                    const meta = getColSemanticMeta(col, type);
-                    const badge = getColTypeBadge(type);
-                    const isNew = col === highlightedCol;
-                    return (
-                      <tr key={col} style={{ background: isNew ? 'rgba(39,112,239,0.08)' : ri % 2 === 1 ? '#FAFBFC' : '#fff', animation: isNew ? 'colFade 2.4s ease forwards' : 'none' }}
-                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#F0F4FF'}
-                        onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = isNew ? 'rgba(39,112,239,0.08)' : ri % 2 === 1 ? '#FAFBFC' : '#fff'}
-                      >
-                        <td style={{ padding: '5px 8px', borderRight: BORDER, color: '#C0C6CF', fontSize: 10, textAlign: 'center' }}>{ri + 1}</td>
-                        <td style={{ padding: '5px 14px', borderRight: BORDER, fontWeight: 500, color: '#1D232F', whiteSpace: 'nowrap' }}>
-                          <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <span style={{ width: 14, height: 14, borderRadius: 3, background: badge.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                              <svg width="8" height="8" viewBox="0 0 10 10" fill="none"><rect x="1" y="2" width="8" height="6" rx="0.8" stroke={badge.color} strokeWidth="1.2"/><path d="M1 4h8" stroke={badge.color} strokeWidth="0.8"/></svg>
-                            </span>
-                            {col}
-                          </span>
-                        </td>
-                        <td style={{ padding: '5px 14px', borderRight: BORDER }}>
-                          <span style={{ fontSize: 10, fontWeight: 700, fontFamily: 'monospace', padding: '2px 5px', borderRadius: 3, background: badge.bg, color: badge.color }}>{type}</span>
-                        </td>
-                        <td style={{ padding: '5px 14px', borderRight: BORDER, color: '#64748B', whiteSpace: 'nowrap' }}>{meta.description}</td>
-                        <td style={{ padding: '5px 14px', borderRight: BORDER, textAlign: 'center' }}>
-                          {meta.nullable ? <span style={{ color: '#C0C6CF', fontSize: 11 }}>—</span> : <span style={{ color: '#06BF7F', fontSize: 11, fontWeight: 600 }}>✓</span>}
-                        </td>
-                        <td style={{ padding: '5px 14px' }}>
-                          {meta.isPk
-                            ? <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 3, background: 'rgba(252,200,56,0.15)', color: '#92640A' }}>PK</span>
-                            : col.endsWith('_id')
-                              ? <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 3, background: 'rgba(14,125,139,0.08)', color: '#0E7D8B' }}>FK</span>
-                              : <span style={{ color: '#C0C6CF', fontSize: 11 }}>—</span>}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+              {renderColumnsTable(tableRows, { showFormulas: false, showToolbar: false })}
             </div>
           );
         }
@@ -4738,7 +5806,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
           .filter(Boolean) as CanvasGroup[];
         if (dStep?.type === 'sql' && deriveInputs.length > 0) {
           const dCols: [string, string][] = deriveInputs.flatMap(g => g.steps[0]?.cols ?? []);
-          const dRows = rowsForCard(selectedGroup);
+          const dRows = rowsForCard(selectedGroup, rowCap);
           return (
             <div style={{ flex: 1, borderTop: BORDER, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
               <div style={{ height: 28, display: 'flex', alignItems: 'center', padding: '0 10px', gap: 5, flexShrink: 0, borderBottom: BORDER, background: '#FAFBFC' }}>
@@ -4832,49 +5900,68 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
         const isSourceStep = selectedGroup.activeStep === 0;
         const stepLabel = isSourceStep ? null : OP_META[step.type]?.label ?? step.type;
 
+        const downloadTableCsv = () => {
+          const escapeCsv = (v: unknown) => {
+            const s = v === null || v === undefined ? '' : String(v);
+            return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+          };
+          const lines = [
+            cols.map(([col]) => escapeCsv(col)).join(','),
+            ...outputRows.map(r => r.map(escapeCsv).join(',')),
+          ];
+          const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `${tblName}.csv`;
+          a.click();
+          URL.revokeObjectURL(url);
+        };
+
         return (
-          <div style={{ flex: 1, borderTop: BORDER, display: 'flex', overflow: 'hidden' }}>
-            {/* Source (input) pane */}
-            {showInput && (
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, borderRight: showOutput ? `1px solid #EAEDF2` : 'none' }}>
-                <div style={{ height: 28, display: 'flex', alignItems: 'center', padding: '0 10px', gap: 5, flexShrink: 0, borderBottom: BORDER, background: '#FAFBFC' }}>
-                  <span style={{ fontSize: 10, fontWeight: 700, color: '#777E8B', textTransform: 'uppercase', letterSpacing: '0.06em', flexShrink: 0 }}>Source</span>
-                  <span style={{ color: '#C0C6CF', fontSize: 10 }}>·</span>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#2770EF' }}>
-                    <TableIcon />
-                    <span style={{ fontSize: 11, fontWeight: 500, color: '#1D232F' }}>{tblName}</span>
-                  </span>
-                  <span style={{ fontSize: 10, color: '#A5ACB9', marginLeft: 2 }}>{inputCols.length} cols</span>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <DataSheetToolbar
+              onDownloadCsv={downloadTableCsv}
+              onFilter={() => addStep('filter', false)}
+              onFormula={() => addStep('formula', false)}
+              {...previewToolbarProps}
+            />
+            <div style={{ flex: 1, borderTop: BORDER, display: 'flex', overflow: 'hidden' }}>
+              {/* Source (input) pane */}
+              {showInput && (
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, borderRight: showOutput ? `1px solid #EAEDF2` : 'none' }}>
+                  <div style={{ height: 28, display: 'flex', alignItems: 'center', padding: '0 10px', gap: 5, flexShrink: 0, borderBottom: BORDER, background: '#FAFBFC' }}>
+                    <span style={{ fontSize: 10, fontWeight: 700, color: '#777E8B', textTransform: 'uppercase', letterSpacing: '0.06em', flexShrink: 0 }}>Source</span>
+                    <span style={{ color: '#C0C6CF', fontSize: 10 }}>·</span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#2770EF' }}>
+                      <TableIcon />
+                      <span style={{ fontSize: 11, fontWeight: 500, color: '#1D232F' }}>{tblName}</span>
+                    </span>
+                    <span style={{ fontSize: 10, color: '#A5ACB9', marginLeft: 2 }}>{inputCols.length} cols</span>
+                  </div>
+                  {renderDataTable(inputCols, true)}
                 </div>
-                {renderDataTable(inputCols, true)}
-              </div>
-            )}
-            {/* Output pane */}
-            {showOutput && (
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-                <div style={{ height: 28, display: 'flex', alignItems: 'center', padding: '0 10px', gap: 5, flexShrink: 0, borderBottom: BORDER, background: '#FAFBFC' }}>
-                  {/* Always keep the table name for context; append the step label as secondary. */}
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#2770EF' }}>
-                    <TableIcon />
-                    <span style={{ fontSize: 11, fontWeight: 500, color: '#1D232F' }}>{tblName}</span>
-                  </span>
-                  {stepLabel && (
-                    <>
-                      <span style={{ color: '#C0C6CF', fontSize: 10 }}>·</span>
-                      <span style={{ fontSize: 11, fontWeight: 500, color: '#777E8B' }}>{stepLabel}</span>
-                    </>
-                  )}
-                  <div style={{ flex: 1 }} />
-                  <SpreadsheetToolbar
-                    onFilter={() => addStep('filter', false)}
-                    onFormula={() => addStep('formula', false)}
-                    cleanOptions={BLOCK_MENU_PREP.map(({ op, label }) => ({ op, label, icon: OP_ICON[op] }))}
-                    onClean={(op) => handlePrepStep(op as OpType)}
-                  />
+              )}
+              {/* Output pane */}
+              {showOutput && (
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                  <div style={{ height: 28, display: 'flex', alignItems: 'center', padding: '0 10px', gap: 5, flexShrink: 0, borderBottom: BORDER, background: '#FAFBFC' }}>
+                    {/* Always keep the table name for context; append the step label as secondary. */}
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#2770EF' }}>
+                      <TableIcon />
+                      <span style={{ fontSize: 11, fontWeight: 500, color: '#1D232F' }}>{tblName}</span>
+                    </span>
+                    {stepLabel && (
+                      <>
+                        <span style={{ color: '#C0C6CF', fontSize: 10 }}>·</span>
+                        <span style={{ fontSize: 11, fontWeight: 500, color: '#777E8B' }}>{stepLabel}</span>
+                      </>
+                    )}
+                  </div>
+                  {renderDataTable(cols, false, previewScrollRef)}
                 </div>
-                {renderDataTable(cols, false, previewScrollRef)}
-              </div>
-            )}
+              )}
+            </div>
           </div>
         );
       })())}
@@ -4885,12 +5972,15 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
         sort={previewSort}
         onSort={setPreviewSort}
         onHide={(col) => setHiddenPreviewCols(prev => { const n = new Set(prev); n.add(col); return n; })}
-        onAddFormula={() => addStep('formula', false)}
-        onFilter={() => addStep('filter', false)}
-        onClean={(op) => handlePrepStep(op as OpType)}
+        // Add-formula/filter/clean target a single table unambiguously — no-op for a
+        // join or the Model-level merged view, where there's no one table to edit.
+        onAddFormula={() => { if (selectedGroup) addStep('formula', false); }}
+        onFilter={() => { if (selectedGroup) addStep('filter', false); }}
+        onClean={(op) => { if (selectedGroup) handlePrepStep(op as OpType); }}
         cleanOptions={BLOCK_MENU_PREP.map(({ op, label }) => ({ op, label, icon: OP_ICON[op] }))}
         cleanSubOpen={colCleanSub}
         setCleanSubOpen={setColCleanSub}
+        extended
       />
       {/* footer removed — spreadsheet uses infinite scroll, no pagination */}
     </div>
@@ -4900,34 +5990,6 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
   // ── Root render ─────────────────────────────────────────────────────────────
 
   // ── Columns view ─────────────────────────────────────────────────────────────
-
-  const allModelCols = groups.flatMap(g => {
-    const srcCols = g.steps[0]?.cols ?? [];
-    return srcCols.map(([col, type]) => ({ table: g.tableName, col, type }));
-  });
-
-  const colEditKey = (table: string, col: string, field: string) => `${table}__${col}__${field}`;
-
-  const COL_TYPE_DEFAULTS: Record<string, string> = {
-    INT: 'MEASURE', FLOAT: 'MEASURE', BIGINT: 'MEASURE',
-    VARCHAR: 'ATTRIBUTE', TEXT: 'ATTRIBUTE', TIMESTAMP: 'ATTRIBUTE', DATE: 'ATTRIBUTE',
-  };
-
-  // Helpers for inline diffs in the columns view
-  const airIsAllReview = airFixReview === '__all__';
-  const airCheckActive = (checkId: string) => airFixReview === checkId || airIsAllReview;
-  const airGetRowForCheck = (checkId: string, col: string) =>
-    (AIR_FIX_REVIEW[checkId]?.rows ?? []).find(r => r.col === col);
-  // Maps the editable field name to the AIR check that affects it
-  const FIELD_TO_CHECK: Record<string, string> = { desc: 'coldesc', aicontext: 'desc', synonyms: 'synonyms' };
-
-  const testView = (
-    <div style={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#F6F8FA', gap: 12 }}>
-      <svg width="36" height="36" viewBox="0 0 36 36" fill="none" style={{ color: '#C0C6CF' }}><path d="M10 6h16M12 6v6l-4 18h20L24 12V6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><path d="M14 18h8M15 22h6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg>
-      <div style={{ fontSize: 13, fontWeight: 600, color: '#777E8B', fontFamily: ff.primary }}>Test mode coming soon</div>
-      <div style={{ fontSize: 12, color: '#A5ACB9', fontFamily: ff.primary, textAlign: 'center', maxWidth: 260, lineHeight: '18px' }}>Ask Spotter questions to verify your model returns the right answers.</div>
-    </div>
-  );
 
   const columnsView = (
     <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', background: '#F6F8FA' }}>
@@ -4966,187 +6028,251 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
           <svg width="32" height="32" viewBox="0 0 32 32" fill="none" style={{ opacity: 0.3 }}><rect x="3" y="5" width="26" height="22" rx="3" stroke="#64748B" strokeWidth="1.8"/><path d="M3 11h26M11 11v16" stroke="#64748B" strokeWidth="1.5"/></svg>
           <span style={{ fontSize: 13, color: '#A5ACB9', fontFamily: ff.primary }}>Add tables to the model to see columns here</span>
         </div>
-      ) : (
-        <div style={{ flex: 1, overflow: 'auto', padding: '12px 16px' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: ff.primary, fontSize: 12 }}>
-            <thead>
-              <tr style={{ background: '#fff', boxShadow: '0 1px 0 #EAEDF2' }}>
-                {[
-                  { label: 'Column name', width: 160 },
-                  { label: 'Table', width: 100 },
-                  { label: 'Data type', width: 90 },
-                  { label: 'Column type', width: 100 },
-                  { label: 'Indexed', width: 70 },
-                  { label: 'Description', width: 200 },
-                  { label: 'AI context', width: 200 },
-                  { label: 'Synonyms', width: 180 },
-                ].map(({ label, width }) => {
-                  // Highlight header if any active review touches this column
-                  const checkForLabel: Record<string, string> = {
-                    'Description': 'coldesc', 'AI context': 'desc', 'Synonyms': 'synonyms',
-                    'Indexed': 'indexing', 'Column type': 'col_types', 'Data type': 'date_vals',
-                  };
-                  const hdrCheck = checkForLabel[label];
-                  const hdrActive = hdrCheck && airCheckActive(hdrCheck);
-                  return (
-                    <th key={label} style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 700, fontSize: 11, color: hdrActive ? '#92640A' : '#777E8B', whiteSpace: 'nowrap', borderBottom: hdrActive ? '2px solid rgba(252,200,56,0.5)' : '1px solid #EAEDF2', width, minWidth: width, letterSpacing: '0.02em', background: hdrActive ? 'rgba(252,200,56,0.06)' : 'transparent', transition: 'all 150ms' }}>
-                      {label.toUpperCase()}
-                    </th>
-                  );
-                })}
-              </tr>
-            </thead>
-            <tbody>
-              {allModelCols.map(({ table, col, type }, idx) => {
-                const indexed = indexedCols.has(`${table}__${col}`);
-                const colType = COL_TYPE_DEFAULTS[type] ?? 'ATTRIBUTE';
-                const rowBg = idx % 2 === 0 ? '#fff' : '#FAFBFC';
+      ) : renderColumnsTable(includedCols, { showFormulas: true })}
 
-                // Per-row diff helpers
-                const indexingRow = airCheckActive('indexing') ? airGetRowForCheck('indexing', col) : null;
-                const indexingAccepted = airAccepted['indexing']?.[col];
-                const colTypeRow = airCheckActive('col_types') ? airGetRowForCheck('col_types', col) : null;
-                const colTypeAccepted = airAccepted['col_types']?.[col];
-                const dateValsRow = airCheckActive('date_vals') ? airGetRowForCheck('date_vals', col) : null;
-                const dateValsAccepted = airAccepted['date_vals']?.[col];
-
-                const renderEditCell = (field: string, placeholder: string) => {
-                  const checkId = FIELD_TO_CHECK[field];
-                  const key = colEditKey(table, col, field);
-                  const val = colEdits[key] ?? '';
-                  const isEditing = editingCell === key;
-
-                  // Accepted value: show as plain text (no indicator)
-                  const accepted = checkId ? airAccepted[checkId]?.[col] : undefined;
-                  if (accepted) {
-                    return (
-                      <td key={field} style={{ padding: '8px 12px', borderBottom: '1px solid #EAEDF2', verticalAlign: 'top', maxWidth: 200 }}>
-                        <span style={{ fontSize: 12, color: '#1D232F', lineHeight: 1.45 }}>{accepted}</span>
-                      </td>
-                    );
-                  }
-
-                  // Active review: show amber diff
-                  const reviewRow = checkId && airCheckActive(checkId) ? airGetRowForCheck(checkId, col) : null;
-                  if (reviewRow) {
-                    return (
-                      <td key={field} style={{ padding: '8px 12px', borderBottom: '1px solid #EAEDF2', verticalAlign: 'top', maxWidth: 200, background: 'rgba(252,200,56,0.10)' }}>
-                        {reviewRow.current !== '—' && (
-                          <div style={{ fontSize: 10.5, color: '#A5ACB9', textDecoration: 'line-through', lineHeight: '14px', marginBottom: 3 }}>{reviewRow.current}</div>
-                        )}
-                        <span style={{ fontSize: 12, color: '#1D232F', lineHeight: 1.45 }}>{reviewRow.proposed}</span>
-                      </td>
-                    );
-                  }
-
-                  // Editing
-                  if (isEditing) {
-                    return (
-                      <td key={field} style={{ padding: '4px 8px', borderBottom: '1px solid #EAEDF2', verticalAlign: 'top' }}>
-                        <textarea
-                          autoFocus
-                          defaultValue={val}
-                          onBlur={e => {
-                            setColEdits(prev => ({ ...prev, [key]: e.target.value }));
-                            setEditingCell(null);
-                          }}
-                          onKeyDown={e => {
-                            if (e.key === 'Escape') setEditingCell(null);
-                            if (e.key === 'Enter' && !e.shiftKey) {
-                              e.preventDefault();
-                              setColEdits(prev => ({ ...prev, [key]: (e.target as HTMLTextAreaElement).value }));
-                              setEditingCell(null);
-                            }
-                          }}
-                          style={{ width: '100%', minHeight: 52, resize: 'vertical', fontFamily: ff.primary, fontSize: 12, color: '#1D232F', border: '1.5px solid #2770EF', borderRadius: 5, padding: '5px 8px', outline: 'none', boxShadow: '0 0 0 3px rgba(39,112,239,0.10)', background: '#fff', lineHeight: 1.45 }}
-                        />
-                      </td>
-                    );
-                  }
-
-                  // Normal read / placeholder
-                  return (
-                    <td key={field} onClick={() => setEditingCell(key)}
-                      style={{ padding: '8px 12px', borderBottom: '1px solid #EAEDF2', cursor: 'text', verticalAlign: 'top', maxWidth: 200 }}
-                    >
-                      {val
-                        ? <span style={{ color: '#1D232F', lineHeight: 1.45, display: 'block' }}>{val}</span>
-                        : <span style={{ color: '#C0C6CF', fontStyle: 'italic' }}>{placeholder}</span>}
-                    </td>
-                  );
-                };
-
-                // Derive display values with diff awareness
-                const displayColType = colTypeAccepted ?? (colTypeRow ? colTypeRow.proposed : colType);
-                const colTypeDiffed = !!(colTypeRow && !colTypeAccepted);
-
-                const displayDataType = dateValsAccepted ?? (dateValsRow ? dateValsRow.proposed : type);
-                const dataTypeDiffed = !!(dateValsRow && !dateValsAccepted);
-
-                const displayIndexed = indexingAccepted
-                  ? indexingAccepted === 'On'
-                  : indexingRow
-                    ? indexingRow.proposed === 'On'
-                    : indexed;
-                const indexDiffed = !!(indexingRow && !indexingAccepted);
-                const indexAcceptedVal = !!indexingAccepted;
-
-                return (
-                  <tr key={`${table}-${col}-${idx}`} style={{ background: rowBg }}
-                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#F0F5FF'}
-                    onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = rowBg}
-                  >
-                    {/* Column name */}
-                    <td style={{ padding: '8px 12px', borderBottom: '1px solid #EAEDF2', fontWeight: 600, color: '#1D232F', whiteSpace: 'nowrap', verticalAlign: 'middle' }}>{col}</td>
-                    {/* Table badge */}
-                    <td style={{ padding: '8px 12px', borderBottom: '1px solid #EAEDF2', verticalAlign: 'middle' }}>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10.5, fontWeight: 600, padding: '2px 7px', borderRadius: 4, background: 'rgba(39,112,239,0.07)', color: '#2770EF', whiteSpace: 'nowrap' }}>
-                        <svg width="9" height="9" viewBox="0 0 12 12" fill="none"><rect x="1" y="2" width="10" height="8" rx="1" stroke="currentColor" strokeWidth="1.2"/><path d="M1 5h10M1 8h10M4 5v5M8 5v5" stroke="currentColor" strokeWidth="1"/></svg>
-                        {table}
-                      </span>
-                    </td>
-                    {/* Data type — diff-aware */}
-                    <td style={{ padding: '8px 12px', borderBottom: '1px solid #EAEDF2', verticalAlign: 'middle', background: dataTypeDiffed ? 'rgba(252,200,56,0.10)' : 'transparent' }}>
-                      {dataTypeDiffed && <div style={{ fontSize: 10, color: '#A5ACB9', textDecoration: 'line-through', marginBottom: 2 }}>{type}</div>}
-                      <span style={{ fontSize: 11, fontWeight: 600, color: '#64748B', padding: '2px 6px', borderRadius: 3, background: '#F0F2F6', whiteSpace: 'nowrap' }}>{displayDataType}</span>
-                    </td>
-                    {/* Column type — diff-aware */}
-                    <td style={{ padding: '8px 12px', borderBottom: '1px solid #EAEDF2', verticalAlign: 'middle', background: colTypeDiffed ? 'rgba(252,200,56,0.10)' : 'transparent' }}>
-                      {colTypeDiffed && <div style={{ fontSize: 10, color: '#A5ACB9', textDecoration: 'line-through', marginBottom: 2 }}>{colType}</div>}
-                      <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 6px', borderRadius: 3, whiteSpace: 'nowrap', color: displayColType.includes('MEASURE') || displayColType.includes('measure') ? '#06BF7F' : '#64748B', background: displayColType.includes('MEASURE') || displayColType.includes('measure') ? 'rgba(6,191,127,0.09)' : '#F0F2F6' }}>{displayColType}</span>
-                    </td>
-                    {/* Indexed toggle — diff-aware */}
-                    <td style={{ padding: '8px 12px', borderBottom: '1px solid #EAEDF2', verticalAlign: 'middle', background: indexDiffed ? 'rgba(252,200,56,0.10)' : 'transparent' }}>
-                      {indexDiffed && <div style={{ fontSize: 10, color: '#A5ACB9', textDecoration: 'line-through', marginBottom: 3 }}>Off</div>}
-                      <div>
-                        <button
-                          onClick={() => {
-                            if (indexDiffed || indexAcceptedVal) return;
-                            setIndexedCols(prev => {
-                              const next = new Set(prev);
-                              const k = `${table}__${col}`;
-                              if (next.has(k)) next.delete(k); else next.add(k);
-                              return next;
-                            });
-                          }}
-                          style={{ width: 32, height: 18, borderRadius: 9, border: 'none', cursor: indexDiffed || indexAcceptedVal ? 'default' : 'pointer', background: displayIndexed ? '#2770EF' : '#D1D5DB', position: 'relative', transition: 'background 150ms', padding: 0 }}
-                        >
-                          <span style={{ position: 'absolute', top: 2, left: displayIndexed ? 16 : 2, width: 14, height: 14, borderRadius: '50%', background: '#fff', transition: 'left 150ms', boxShadow: '0 1px 2px rgba(0,0,0,0.18)', display: 'block' }} />
-                        </button>
-                      </div>
-                    </td>
-                    {renderEditCell('desc', 'Click to add description')}
-                    {renderEditCell('aicontext', 'Click to add AI context')}
-                    {renderEditCell('synonyms', 'Click to add synonyms')}
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+      {/* Model-level formula editor */}
+      {formulaModalOpen && (
+        <div
+          onClick={() => setFormulaModalOpen(false)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(16,24,40,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000 }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{ width: 460, maxWidth: 'calc(100vw - 40px)', background: '#fff', borderRadius: 12, boxShadow: '0 20px 60px rgba(16,24,40,0.28)', fontFamily: ff.primary, overflow: 'hidden' }}
+          >
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '14px 18px', borderBottom: '1px solid #EAEDF2' }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 26, height: 26, borderRadius: 6, background: 'rgba(6,191,127,0.1)', color: '#047857' }}>
+                <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M4 13V6a2 2 0 0 1 2-2h1" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><path d="M2.5 8.5H7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><path d="M9 8l4 5M13 8l-4 5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>
+              </span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#1D232F' }}>{modelFormulaDraft.id ? 'Edit model formula' : 'New model formula'}</div>
+                <div style={{ fontSize: 11.5, color: '#8B96A5' }}>A calculated column available across the whole model</div>
+              </div>
+              <button onClick={() => setFormulaModalOpen(false)} style={{ background: 'none', border: 'none', color: '#A5ACB9', cursor: 'pointer', padding: 4, display: 'inline-flex' }}>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>
+              </button>
+            </div>
+            {/* Body */}
+            <div style={{ padding: 18, display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div>
+                <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#64748B', marginBottom: 6, letterSpacing: '0.02em' }}>Column name</label>
+                <input
+                  autoFocus
+                  value={modelFormulaDraft.name}
+                  onChange={e => setModelFormulaDraft(d => ({ ...d, name: e.target.value }))}
+                  placeholder="e.g. profit_margin"
+                  style={{ width: '100%', boxSizing: 'border-box', border: '1px solid #EAEDF2', borderRadius: 6, padding: '7px 10px', fontSize: 12.5, color: '#1D232F', fontFamily: ff.primary, outline: 'none', background: '#fff' }}
+                  onFocus={e => { e.currentTarget.style.borderColor = '#2770EF'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(39,112,239,0.10)'; }}
+                  onBlur={e => { e.currentTarget.style.borderColor = '#EAEDF2'; e.currentTarget.style.boxShadow = 'none'; }}
+                />
+              </div>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                  <label style={{ fontSize: 11, fontWeight: 700, color: '#64748B', letterSpacing: '0.02em' }}>Expression</label>
+                  {modelFormulaDraft.expr && <button onClick={() => setModelFormulaDraft(d => ({ ...d, expr: '' }))} style={{ background: 'none', border: 'none', color: '#A5ACB9', fontSize: 11, cursor: 'pointer', padding: 0, fontFamily: ff.primary }}>Clear</button>}
+                </div>
+                <textarea
+                  value={modelFormulaDraft.expr}
+                  onChange={e => setModelFormulaDraft(d => ({ ...d, expr: e.target.value }))}
+                  placeholder="Enter an expression, e.g. sum(sales) / sum(quantity)"
+                  rows={4}
+                  style={{ width: '100%', boxSizing: 'border-box', border: '1px solid #EAEDF2', borderRadius: 6, padding: '8px 10px', fontSize: 12, color: '#1D232F', outline: 'none', resize: 'vertical', lineHeight: 1.6, fontFamily: "'SF Mono','Fira Mono','Menlo',monospace", background: '#F6F8FA', minHeight: 84 }}
+                  onFocus={e => { e.currentTarget.style.borderColor = '#2770EF'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(39,112,239,0.10)'; }}
+                  onBlur={e => { e.currentTarget.style.borderColor = '#EAEDF2'; e.currentTarget.style.boxShadow = 'none'; }}
+                />
+              </div>
+              {!modelFormulaDraft.expr && (
+                <div>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: '#A5ACB9', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Examples</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    {[
+                      { label: 'Profit margin', expr: '(sum(revenue) - sum(cost)) / sum(revenue)' },
+                      { label: 'Avg order value', expr: 'sum(sales) / count(order_id)' },
+                      { label: 'Days since order', expr: 'datediff(\'day\', order_date, now())' },
+                    ].map(s => (
+                      <button key={s.label} onClick={() => setModelFormulaDraft(d => ({ ...d, expr: s.expr }))}
+                        style={{ textAlign: 'left', padding: '7px 10px', borderRadius: 6, border: '1px solid #EAEDF2', background: '#F6F8FA', cursor: 'pointer', fontFamily: ff.primary, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}
+                        onMouseEnter={e => { e.currentTarget.style.borderColor = '#2770EF'; e.currentTarget.style.background = '#EEF2FF'; }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = '#EAEDF2'; e.currentTarget.style.background = '#F6F8FA'; }}>
+                        <span style={{ fontSize: 11, fontWeight: 500, color: '#64748B' }}>{s.label}</span>
+                        <code style={{ fontSize: 10, color: '#777E8B', fontFamily: "'SF Mono','Fira Mono',monospace", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 180 }}>{s.expr}</code>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+            {/* Footer */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, padding: '12px 18px', borderTop: '1px solid #EAEDF2', background: '#FAFBFC' }}>
+              <button
+                onClick={() => setFormulaModalOpen(false)}
+                style={{ padding: '7px 14px', borderRadius: 6, border: '1px solid #E2E6EC', background: '#fff', color: '#64748B', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: ff.primary }}
+                onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#F6F8FA')}
+                onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#fff')}
+              >Cancel</button>
+              <button
+                disabled={!modelFormulaDraft.name.trim() || !modelFormulaDraft.expr.trim()}
+                onClick={() => {
+                  const name = modelFormulaDraft.name.trim();
+                  const expr = modelFormulaDraft.expr.trim();
+                  if (!name || !expr) return;
+                  setModelFormulas(prev => modelFormulaDraft.id
+                    ? prev.map(f => f.id === modelFormulaDraft.id ? { ...f, name, expr } : f)
+                    : [...prev, { id: `mf_${Date.now()}`, name, expr }]);
+                  setFormulaModalOpen(false);
+                }}
+                style={{ padding: '7px 16px', borderRadius: 6, border: 'none', background: (!modelFormulaDraft.name.trim() || !modelFormulaDraft.expr.trim()) ? '#B9C0CC' : '#2770EF', color: '#fff', fontSize: 12, fontWeight: 600, cursor: (!modelFormulaDraft.name.trim() || !modelFormulaDraft.expr.trim()) ? 'default' : 'pointer', fontFamily: ff.primary }}
+              >{modelFormulaDraft.id ? 'Save formula' : 'Add formula'}</button>
+            </div>
+          </div>
         </div>
       )}
     </div>
   );
+
+  // ── Data tab — a single spreadsheet merging every table currently on the canvas ──
+  const dataView = (() => {
+    if (groups.length === 0) {
+      return (
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F6F8FA' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, opacity: 0.5, textAlign: 'center' }}>
+            <svg width="30" height="30" viewBox="0 0 32 32" fill="none"><rect x="3" y="7" width="26" height="18" rx="2" stroke="currentColor" strokeWidth="1.5"/><path d="M3 12h26M9 12v13M16 12v13M23 12v13" stroke="currentColor" strokeWidth="1.3"/></svg>
+            <span style={{ fontSize: 12, color: '#64748B' }}>No data yet</span>
+            <span style={{ fontSize: 11, color: '#A5ACB9' }}>Add a table to the canvas to see its data here</span>
+          </div>
+        </div>
+      );
+    }
+
+    // Merge every table's CURRENT output (its last step's cols — reflects any
+    // filters/formulas already applied) into one row-aligned sheet, the same way
+    // the join-preview branch above merges exactly two tables, generalized to N.
+    // Column names collide often across tables (e.g. every table has its own
+    // account_id foreign key) — SpreadsheetGrid keys header/body cells by the raw
+    // column name, so an un-disambiguated merge produces duplicate React keys.
+    // Qualify only the names that actually collide, with the owning table, so the
+    // common (non-colliding) case still shows a clean bare column name.
+    const rawMergedCols = groups.flatMap(g => (g.steps[g.steps.length - 1]?.cols ?? []).map(c => ({ col: c, table: g.tableName, groupId: g.id })));
+    const nameCounts = rawMergedCols.reduce<Record<string, number>>((acc, { col: [name] }) => {
+      acc[name] = (acc[name] ?? 0) + 1;
+      return acc;
+    }, {});
+    const mergedCols: [string, string][] = rawMergedCols.map(({ col: [name, type], table }) =>
+      nameCounts[name] > 1 ? [`${table}.${name}`, type] : [name, type]
+    );
+    // Displayed column name → owning group id, so the column ▾ menu's Filter/
+    // Add-formula can target the right table with no picker (the column IS the target).
+    const colToGroupId: Record<string, string> = {};
+    rawMergedCols.forEach(({ col: [name], table, groupId }) => {
+      colToGroupId[nameCounts[name] > 1 ? `${table}.${name}` : name] = groupId;
+    });
+    // Add a filter/formula step to a specific group and open its edit form. addStep
+    // selects the group + sets editingStepKey, so the docked propertiesPanel (rendered
+    // on this tab below) opens straight into the new step's form.
+    const startAction = (op: 'filter' | 'formula', groupId: string) => {
+      if (op === 'filter') addStep('filter', false, groupId);
+      else addStep('formula', false, groupId);
+    };
+    const perTableRows = groups.map(g => rowsForCard(g, dataLimit));
+    const rowCount = Math.min(dataLimit, Math.max(0, ...perTableRows.map(r => r.length)));
+    const mergedRows: Row[] = Array.from({ length: rowCount }, (_, i) =>
+      groups.flatMap((g, gi) => perTableRows[gi][i] ?? (g.steps[g.steps.length - 1]?.cols ?? []).map(() => null))
+    );
+
+    const downloadCsv = () => {
+      const escapeCsv = (v: unknown) => {
+        const s = v === null || v === undefined ? '' : String(v);
+        return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+      };
+      const lines = [
+        mergedCols.map(([col]) => escapeCsv(col)).join(','),
+        ...mergedRows.map(r => r.map(escapeCsv).join(',')),
+      ];
+      const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'model_data.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+    };
+
+    return (
+      <div style={{ flex: 1, display: 'flex', minWidth: 0, minHeight: 0 }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: 0, background: '#fff', position: 'relative' }}>
+        <DataSheetToolbar
+          onDownloadCsv={downloadCsv}
+          onToggleExpand={() => setBrowserCollapsed(c => !c)}
+          expanded={browserCollapsed}
+          onFilter={() => setDataActionPicker('filter')}
+          onFormula={() => setDataActionPicker('formula')}
+        />
+        {/* Formula bar */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 12px', borderBottom: BORDER, flexShrink: 0 }}>
+          <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 20, height: 20, color: '#8B96A5', flexShrink: 0 }}>
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M4 13V6a2 2 0 0 1 2-2h1" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><path d="M2.5 8.5H7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><path d="M9 8l4 5M13 8l-4 5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>
+          </span>
+          <input
+            value={dataSelectedCell?.value ?? ''}
+            readOnly
+            placeholder="Enter formula or value"
+            style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', fontSize: 12.5, color: '#1D232F', fontFamily: ff.primary }}
+          />
+        </div>
+        <div
+          style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}
+          onClick={e => {
+            // Delegate: find the clicked body cell, then read its column name off the
+            // header cell at the same DOM position (robust to sort order + hidden
+            // columns, since both header and body skip the same columns identically).
+            const td = (e.target as HTMLElement).closest('td');
+            const tr = td?.closest('tr');
+            const table = td?.closest('table');
+            if (!td || !tr || !table || td.cellIndex === 0) { setDataSelectedCell(null); return; }
+            const th = table.querySelectorAll('thead th')[td.cellIndex] as HTMLElement | undefined;
+            const col = th?.getAttribute('data-col');
+            if (!col) { setDataSelectedCell(null); return; }
+            setDataSelectedCell({ col, value: (td.textContent ?? '').trim() });
+          }}
+        >
+          <SpreadsheetGrid
+            tableCols={mergedCols}
+            isInput={false}
+            scrollRef={dataScrollRef}
+            rows={mergedRows}
+            outputRows={mergedRows}
+            previewSort={dataSort}
+            previewColMenu={dataColMenu}
+            setPreviewColMenu={setDataColMenu}
+            hiddenPreviewCols={dataHiddenCols}
+            highlightedCol={null}
+            derivedCols={{}}
+            inputFixes={{}}
+            outputFixes={{}}
+          />
+        </div>
+        <SpreadsheetColumnMenu
+          menu={dataColMenu}
+          onClose={() => setDataColMenu(null)}
+          sort={dataSort}
+          onSort={setDataSort}
+          onHide={col => { setDataHiddenCols(prev => new Set([...prev, col])); setDataColMenu(null); }}
+          onAddFormula={() => { const gid = dataColMenu && colToGroupId[dataColMenu.col]; setDataColMenu(null); if (gid) startAction('formula', gid); }}
+          onFilter={() => { const gid = dataColMenu && colToGroupId[dataColMenu.col]; setDataColMenu(null); if (gid) startAction('filter', gid); }}
+          onClean={() => setDataColMenu(null)}
+          cleanOptions={BLOCK_MENU_PREP.map(({ op, label }) => ({ op, label, icon: OP_ICON[op] }))}
+          cleanSubOpen={dataCleanSub}
+          setCleanSubOpen={setDataCleanSub}
+          extended
+        />
+      </div>
+      {/* Same docked properties panel the Canvas uses — a filter/formula action
+          from the toolbar or a column menu opens its edit form right here. */}
+      {propertiesPanel}
+      </div>
+    );
+  })();
 
   return (
     <div
@@ -5173,51 +6299,62 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
         logo={
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <BrandMark style={{ height: 22, width: 'auto' }} color="#1D232F" />
-            {agentCollapsed && (
-              <span
-                role="button"
-                tabIndex={0}
-                onClick={e => { e.stopPropagation(); setAgentCollapsed(false); }}
-                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); setAgentCollapsed(false); } }}
-                title="Open agent panel"
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 30, height: 30, borderRadius: 7, background: 'none', color: '#64748B', cursor: 'pointer', flexShrink: 0 }}
-                onMouseEnter={ev => { (ev.currentTarget as HTMLElement).style.background = '#F0F2F6'; (ev.currentTarget as HTMLElement).style.color = '#1D232F'; }}
-                onMouseLeave={ev => { (ev.currentTarget as HTMLElement).style.background = 'none'; (ev.currentTarget as HTMLElement).style.color = '#64748B'; }}
-              >
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                  <rect x="1.5" y="2.5" width="13" height="11" rx="2" stroke="currentColor" strokeWidth="1.3"/>
-                  <path d="M6 2.5v11" stroke="currentColor" strokeWidth="1.3"/>
-                </svg>
-              </span>
-            )}
           </div>
         }
       />
       {/* Gradient work area — full-screen treatment below the global header.
-          When the agent is collapsed there's nothing transparent to reveal it, so
-          the gradient + card framing drop away and the artifact goes edge-to-edge. */}
+          +Model flow: the RADIANCE_WASH + grain persist even when the agent is
+          collapsed (collapsing swaps the panel for a slim rail, mimicking SpotterX).
+          SpotterX embed (hideAgentPanel): unchanged — gradient/card framing drop
+          away and the artifact goes edge-to-edge when collapsed. */}
       <div style={{
-        flex: 1, display: 'flex', minHeight: 0,
-        background: agentCollapsed ? '#fff' : 'radial-gradient(78% 82% at 1% 0%, #EFCEC8 0%, #F6DEDA 20%, #FAEBE7 36%, #F6F0F0 62%, #F2EDEE 100%)',
+        flex: 1, display: 'flex', minHeight: 0, position: 'relative',
+        backgroundColor: '#fff',
+        backgroundImage: (!hideAgentPanel || !agentCollapsed)
+          ? (hideAgentPanel
+              ? 'radial-gradient(78% 82% at 1% 0%, #EFCEC8 0%, #F6DEDA 20%, #FAEBE7 36%, #F6F0F0 62%, #F2EDEE 100%)'
+              : RADIANCE_WASH)
+          : 'none',
       }}>
+        {/* Film grain — matches SpotterX; +Model canvas only (behind the flex content) */}
+        {!hideAgentPanel && (
+          <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', backgroundImage: GRAIN_URI, opacity: 0.03 }} />
+        )}
+        {/* Collapsed rail — slim column + expand toggle at top (mimics SpotterX's chat rail) */}
+        {!hideAgentPanel && agentCollapsed && (
+          <div style={{ position: 'relative', width: 56, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 16 }}>
+            <button
+              onClick={() => setAgentCollapsed(false)}
+              title="Open agent panel"
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 34, height: 34, borderRadius: RADIUS6, border: 'none', background: 'transparent', color: '#64748B', cursor: 'pointer' }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#F0F2F6'; (e.currentTarget as HTMLElement).style.color = '#1D232F'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#64748B'; }}
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <rect x="1.5" y="2.5" width="13" height="11" rx="2" stroke="currentColor" strokeWidth="1.3"/>
+                <path d="M6 2.5v11" stroke="currentColor" strokeWidth="1.3"/>
+              </svg>
+            </button>
+          </div>
+        )}
         {agentPanel}
-        {/* Artifact — solid rounded card floating on the gradient (full-bleed when agent is collapsed) */}
+        {/* Artifact — solid rounded card floating on the gradient (full-bleed only in the
+            SpotterX embed when its chrome is hidden; framed in the +Model flow) */}
         <div style={{
-          flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0,
-          margin: agentCollapsed ? 0 : '14px 14px 14px 6px',
+          flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, position: 'relative',
+          margin: (!hideAgentPanel || !agentCollapsed) ? '14px 14px 14px 6px' : 0,
           background: '#fff',
-          borderRadius: agentCollapsed ? 0 : 14,
-          border: agentCollapsed ? 'none' : '1px solid #EAE4E4',
-          boxShadow: agentCollapsed ? 'none' : '0 8px 28px rgba(70,30,30,0.08), 0 1px 3px rgba(25,35,49,0.05)',
+          borderRadius: (!hideAgentPanel || !agentCollapsed) ? 14 : 0,
+          border: (!hideAgentPanel || !agentCollapsed) ? '1px solid #EAE4E4' : 'none',
+          boxShadow: (!hideAgentPanel || !agentCollapsed) ? '0 8px 28px rgba(70,30,30,0.08), 0 1px 3px rgba(25,35,49,0.05)' : 'none',
           overflow: 'hidden',
-          position: 'relative',
         }}>
           {topbar}
           <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
-            {browserPanel}
+            {viewMode !== 'test' && browserPanel}
             {/* Canvas column */}
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-              {viewMode === 'canvas' ? canvasViewport : viewMode === 'columns' ? columnsView : testView}
+              {viewMode === 'canvas' ? canvasViewport : viewMode === 'columns' && !showModelLevelPreview ? columnsView : viewMode === 'data' ? dataView : viewMode === 'test' ? testView : canvasViewport}
               {viewMode === 'canvas' && !previewFull && previewPanel}
             </div>
           </div>
@@ -5233,13 +6370,13 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
               <div style={{ width: 34, height: 34, borderRadius: 8, background: 'rgba(140,98,245,0.12)', color: '#8C62F5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <svg width="17" height="17" viewBox="0 0 16 16" fill="none"><ellipse cx="8" cy="4" rx="5" ry="2" stroke="currentColor" strokeWidth="1.3"/><path d="M3 4v8c0 1.1 2.2 2 5 2s5-.9 5-2V4" stroke="currentColor" strokeWidth="1.3"/><path d="M3 8c0 1.1 2.2 2 5 2s5-.9 5-2" stroke="currentColor" strokeWidth="1.3"/></svg>
               </div>
-              <div style={{ fontSize: 15, fontWeight: 700, color: '#1D232F' }}>Caching is required</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: '#1D232F' }}>{cacheConfirm.title ?? 'Caching is required'}</div>
             </div>
             <div style={{ fontSize: 13, lineHeight: 1.55, color: '#64748B', marginBottom: 20 }}>
-              To use uploaded files, this model is required to be cached into ThoughtSpot&rsquo;s data store. It will run on cached data, refreshed on a schedule.
+              {cacheConfirm.body ?? 'To use uploaded files, this model is required to be cached into ThoughtSpot’s data store. It will run on cached data, refreshed on a schedule.'}
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-              <button onClick={() => setCacheConfirm(null)} style={{ padding: '8px 16px', borderRadius: RADIUS6, border: '1px solid #C0C6CF', background: '#fff', color: '#1D232F', fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: ff.primary }}>Cancel file upload</button>
+              <button onClick={() => setCacheConfirm(null)} style={{ padding: '8px 16px', borderRadius: RADIUS6, border: '1px solid #C0C6CF', background: '#fff', color: '#1D232F', fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: ff.primary }}>{cacheConfirm.cancelLabel ?? 'Cancel file upload'}</button>
               <button onClick={() => cacheConfirm.onConfirm()} style={{ padding: '8px 16px', borderRadius: RADIUS6, border: 'none', background: '#2770EF', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: ff.primary }}>Continue with caching</button>
             </div>
           </div>

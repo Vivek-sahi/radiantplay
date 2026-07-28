@@ -92,7 +92,7 @@ export interface AgentMessage {
   reviewPlanCTA?: boolean;
   interactiveChips?: { label: string; value: string }[];
   planData?: PlanData;
-  planBuildFlow?: 'from_scratch' | 'multi_source';
+  planBuildFlow?: 'from_scratch' | 'multi_source' | 'mrd';
   buildPlanCard?: boolean;
   genUI?: string;
   genUIResult?: string;
@@ -131,6 +131,7 @@ export interface AgentMessage {
   // canvas-agent fields (isCanvasAgent)
   profileReport?: Array<{ table: string; ok: boolean; issues?: string[] }>;
   canvasPlan?: { rows: Array<{ op: string; label: string; target: string; evidence: string }>; status: 'pending' | 'applied' };
+  joinRec?: { table1: string; table2: string; key: string; joinType: string; cardinality: string; coverage: string; status: 'pending' | 'added' };
 }
 
 interface WorkingStep {
@@ -234,7 +235,7 @@ const PREP_SUGGESTIONS: PrepSuggestion[] = [
 
 // ── Mock plan data ────────────────────────────────────────────────────────────
 
-const MOCK_PLAN_BASE: Omit<PlanData, 'version'> = {
+export const MOCK_PLAN_BASE: Omit<PlanData, 'version'> = {
   modelName: 'Campaign Performance',
   goal: 'Understand campaign ROI and ad spend efficiency across channels, regions, and user segments — enabling full-funnel analysis from impression to first conversion.',
   tables: [
@@ -2525,6 +2526,7 @@ interface AgentPanelProps {
   isFromScratch?: boolean;
   isMultiSource?: boolean;
   isNotebookFlow?: boolean;
+  isMrdFlow?: boolean;
   isDbtReview?: boolean;
   onNotebookUpdate?: (cells: import('./ChatContextPanel').NotebookCell[]) => void;
   onOpenPlan?: (plan: PlanData) => void;
@@ -2544,6 +2546,8 @@ interface AgentPanelProps {
   rootBackground?: string;
   /** Canvas agent: intent-routed handler + canvas bridges (ModelCanvas embed). */
   isCanvasAgent?: boolean;
+  /** POC: multi-node canvas referencing + refined reference icon. */
+  poc?: boolean;
   /** Source tables currently on the canvas — drives the empty-state starters. */
   canvasTableCount?: number;
 }
@@ -2625,7 +2629,49 @@ const CanvasPlanCard: React.FC<{ plan: NonNullable<AgentMessage['canvasPlan']>; 
   );
 };
 
-const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, setMessages, initialPrompt, onBuildComplete, externalMessage, onExternalMessageHandled, externalMessageAttachment, injectInput, onInjectInputHandled, width = 340, selectedColumns, onColumnRemove, isFromScratch, isMultiSource, isNotebookFlow, isDbtReview, onNotebookUpdate, onOpenPlan, onOpenQualityPlan, onBuildStart, onNavigateToWorkspace, onStartBuild, fullPage = false, onBack, initialFlow, initialMessage, onInsightResolved, onOpenObject, onOpenMsItem, flowOption = 'option3', rootBackground, isCanvasAgent, canvasTableCount }) => {
+// Join recommendation card — the canvas agent proposes a join; "Add" commits it.
+const JoinRecCard: React.FC<{ rec: NonNullable<AgentMessage['joinRec']>; onAdd: () => void }> = ({ rec, onAdd }) => {
+  const added = rec.status === 'added';
+  const rows: [string, React.ReactNode][] = [
+    ['Tables', <span style={{ fontFamily: ff.mono }}>{rec.table1} × {rec.table2}</span>],
+    ['Join key', <span style={{ fontFamily: ff.mono }}>{rec.key}</span>],
+    ['Type', rec.joinType],
+    ['Cardinality', rec.cardinality],
+    ['Key coverage', rec.coverage],
+  ];
+  return (
+    <div style={{ border: `1px solid ${added ? '#BBE3C5' : c['border-default']}`, borderRadius: 10, overflow: 'hidden', backgroundColor: c['background-base'] }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: `${sp.B}px ${sp.C}px`, borderBottom: `1px solid ${c['border-divider']}`, fontSize: fs.xs, fontWeight: fw.semibold, color: added ? '#16A34A' : c['content-secondary'] }}>
+        {added
+          ? <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5.4" fill="#16A34A"/><path d="M3.6 6.2l1.7 1.7 3.1-3.4" stroke="#fff" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          : <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><circle cx="6" cy="8" r="3.6" stroke="currentColor" strokeWidth="1.3"/><circle cx="10" cy="8" r="3.6" stroke="currentColor" strokeWidth="1.3"/></svg>}
+        {added ? 'Join added to canvas' : 'Recommended join'}
+      </div>
+      <div style={{ padding: `${sp.A}px ${sp.C}px` }}>
+        {rows.map(([label, val]) => (
+          <div key={label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: sp.C, padding: `${sp.A}px 0`, fontSize: fs.xs }}>
+            <span style={{ color: c['content-secondary'] }}>{label}</span>
+            <span style={{ color: c['content-primary'], fontWeight: fw.medium, textAlign: 'right' }}>{val}</span>
+          </div>
+        ))}
+      </div>
+      {!added && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: sp.C, padding: `${sp.B}px ${sp.C}px`, borderTop: `1px solid ${c['border-divider']}` }}>
+          <button
+            onClick={onAdd}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '5px 16px', borderRadius: 7, border: 'none', backgroundColor: c['content-brand'], color: '#fff', fontSize: fs.xs, fontWeight: fw.medium, cursor: 'pointer', fontFamily: ff.primary }}
+          >
+            <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M6 2v8M2 6h8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg>
+            Add join
+          </button>
+          <span style={{ fontSize: fs.xs, color: c['content-secondary'] }}>or reply to adjust</span>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, setMessages, initialPrompt, onBuildComplete, externalMessage, onExternalMessageHandled, externalMessageAttachment, injectInput, onInjectInputHandled, width = 340, selectedColumns, onColumnRemove, isFromScratch, isMultiSource, isNotebookFlow, isMrdFlow, isDbtReview, onNotebookUpdate, onOpenPlan, onOpenQualityPlan, onBuildStart, onNavigateToWorkspace, onStartBuild, fullPage = false, onBack, initialFlow, initialMessage, onInsightResolved, onOpenObject, onOpenMsItem, flowOption = 'option3', rootBackground, isCanvasAgent, poc, canvasTableCount }) => {
   const [pendingAction, setPending]     = useState<PendingAction | null>(null);
   const [isProcessing, setProcessing]   = useState(false);
   const [planModalOpen, setPlanModalOpen] = useState(false);
@@ -2637,7 +2683,9 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
   const [notebookFlowPhase, setNotebookFlowPhase] = useState<NotebookFlowPhase | null>(isNotebookFlow ? 'env_init' : null);
   const notebookCellsRef = useRef<import('./ChatContextPanel').NotebookCell[]>([]);
   const [planVersion, setPlanVersion]    = useState(1);
-  const [planExpandedId, setPlanExpandedId] = useState<string | null>(null);
+  // Plan cards default to open; a card's id lands here only once the user
+  // explicitly collapses or closes it.
+  const [collapsedPlanIds, setCollapsedPlanIds] = useState<Set<string>>(new Set());
   const [planExpanded, setPlanExpanded]  = useState(false);
   const [agentMode, setAgentMode]        = useState<'build' | 'test'>('build');
   const [connFilter, setConnFilter]      = useState<string | null>(null);
@@ -2650,6 +2698,7 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
   const scrollContainerRef       = useRef<HTMLDivElement>(null);
   const isNearBottomRef          = useRef(true);
   const promptBarRef             = useRef<PromptBarRef>(null);
+  const [refPickActive, setRefPickActive] = useState(false);
   const [pythonFixPending, setPythonFixPending] = useState<string | null>(null);
   const buildCalledRef           = useRef(false);
   const initialPromptFiredRef    = useRef(false);
@@ -2791,6 +2840,25 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
           setProcessing(false);
         }, buildAbortRef);
       }, 300);
+    } else if (isMrdFlow) {
+      // MRD flow: skip the clarify-questions phase — go straight to a draft
+      // model requirements document (DraftPlanCardMRD) for the user to review.
+      setMessages([{ id: `u-${Date.now()}`, type: 'user', content: initialPrompt }]);
+      setProcessing(true);
+      setTimeout(() => {
+        runFromScratchSteps('scratch_parse_use_case', initialPrompt, setMessages, () => {
+          const plan: PlanData = { ...MOCK_PLAN_BASE, version: 1 };
+          setPlanVersion(1);
+          setMessages(prev => [...prev, {
+            id: `r-${Date.now()}`, type: 'response',
+            content: "Here's a draft model requirements document based on your prompt. Review each section — click any of them to edit — then build when you're ready.",
+            planData: plan,
+            planBuildFlow: 'mrd' as const,
+          }]);
+          setFromScratchPhase('plan_ready');
+          setProcessing(false);
+        }, buildAbortRef);
+      }, 300);
     } else if (isFromScratch) {
       setMessages([{ id: `u-${Date.now()}`, type: 'user', content: initialPrompt }]);
       setProcessing(true);
@@ -2867,7 +2935,7 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
   // Collapse any expanded inline plan card when the notebook flow build starts
   useEffect(() => {
     if (notebookFlowPhase === 'building') {
-      setPlanExpandedId(null);
+      setCollapsedPlanIds(prev => new Set([...prev, ...messages.filter(m => m.planData).map(m => m.id)]));
     }
   }, [notebookFlowPhase]);
 
@@ -2899,6 +2967,90 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
   }, []);
 
   const handleGenUIAction = (action: string, msgId: string) => {
+    // ── AI readiness / model tuning actions ────────────────────────────────────
+    // Handled before the generic genUIResult stamp below, since air_readiness's
+    // genUIResult carries the JSON checks payload (not an action echo) and
+    // air_start_tune fires from that same message — stamping it here would
+    // clobber the payload and break AIReadinessCard's JSON.parse on re-render.
+    const runAirWorkingSteps = (steps: string[], onAirComplete: () => void) => {
+      const workId = `air-work-${Date.now()}`;
+      setMessages(prev => [...prev, {
+        id: workId, type: 'working', content: '',
+        steps: steps.map(label => ({ label, status: 'pending' as const })),
+      }]);
+      steps.forEach((_, idx) => {
+        setTimeout(() => {
+          setMessages(prev => prev.map(m => m.id !== workId ? m : {
+            ...m, steps: m.steps?.map((s, i) => i === idx ? { ...s, status: 'running' as const } : s),
+          }));
+          setTimeout(() => {
+            setMessages(prev => prev.map(m => m.id !== workId ? m : {
+              ...m, steps: m.steps?.map((s, i) => i === idx ? { ...s, status: 'done' as const } : s),
+            }));
+          }, 280);
+        }, idx * 380);
+      });
+      setTimeout(() => {
+        setMessages(prev => prev.map(m => m.id !== workId ? m : { ...m, stepsCollapsed: true }));
+        onAirComplete();
+      }, steps.length * 380 + 500);
+    };
+
+    if (action === 'air_readiness_retry') {
+      setMessages(prev => [...prev, { id: `u-retry-${Date.now()}`, type: 'user', content: 'Re-run readiness check' }]);
+      setMessages(prev => prev.filter(m => !m.id.startsWith('air-')));
+      runAirWorkingSteps(
+        ['Re-scanning model', 'Checking metadata completeness', 'Scoring readiness'],
+        () => (window as any).__airRunScan__?.()
+      );
+      return;
+    }
+    if (action === 'air_tune_submit') {
+      const recs: { col: string; problem: string; why: string; fix: string }[] = (window as any).__airTuneRecs__ || [];
+      setMessages(prev => [...prev, { id: `u-tune-${Date.now()}`, type: 'user', content: 'Submit feedback' }]);
+      runAirWorkingSteps(
+        ['Analysing question ratings', 'Identifying metadata gaps', 'Generating fix recommendations'],
+        () => {
+          const responseText = recs.length > 0
+            ? `I found **${recs.length} metadata gap${recs.length === 1 ? '' : 's'}** from your feedback. Here's what needs to be fixed for Spotter to answer these questions correctly:`
+            : 'All questions were answered correctly — the model is well-tuned for these queries.';
+          setMessages(prev => [...prev, {
+            id: `tune-diag-resp-${Date.now()}`, type: 'response',
+            content: responseText, genUI: 'air_tune_diagnostic',
+          }]);
+        }
+      );
+      return;
+    }
+    if (action === 'air_tune_apply_fixes') {
+      const tuneRecs: { col: string; problem: string; why: string; fix: string }[] = (window as any).__airTuneRecs__ || [];
+      setMessages(prev => [...prev, { id: `u-apply-${Date.now()}`, type: 'user', content: 'Apply fixes' }]);
+      runAirWorkingSteps(
+        ['Reading fix recommendations', 'Preparing AI context changes', 'Staging metadata updates'],
+        () => {
+          (window as any).__airShowTuneReview__?.(tuneRecs);
+          setMessages(prev => [...prev, {
+            id: `apply-resp-${Date.now()}`, type: 'response',
+            content: `Proposed changes are ready in the **Columns tab** — ${tuneRecs.length} AI context field${tuneRecs.length === 1 ? '' : 's'} highlighted. Review and accept to make them permanent.`,
+          }]);
+        }
+      );
+      return;
+    }
+    if (action === 'air_tune_dismiss') { return; }
+    if (action === 'air_start_tune') {
+      setMessages(prev => [...prev, { id: `u-tune-start-${Date.now()}`, type: 'user', content: 'Start tuning' }]);
+      runAirWorkingSteps(
+        ['Setting up tune session', 'Loading model questions', 'Running Spotter queries'],
+        () => setMessages(prev => [...prev, {
+          id: `tune-eval-${Date.now()}`, type: 'response',
+          content: "Here are **3 questions** based on your model. Rate each answer — mark it correct, incorrect, or out of scope.",
+          genUI: 'air_tune_eval', genUIResult: 'ready',
+        }])
+      );
+      return;
+    }
+
     setMessages(prev => prev.map(m => m.id === msgId ? { ...m, genUIResult: action } : m));
 
     const addUser = (text: string) => setMessages(prev => [...prev, { id: `u-${Date.now()}`, type: 'user', content: text }]);
@@ -3701,7 +3853,7 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
             id: `r-${Date.now()}`, type: 'response',
             content: `Updated. Here's Plan v${newVersion} with your changes.`,
             planData: updatedPlan,
-            planBuildFlow: 'from_scratch' as const,
+            planBuildFlow: isMrdFlow ? 'mrd' as const : 'from_scratch' as const,
           }]);
           setFromScratchPhase('plan_ready');
           setProcessing(false);
@@ -4063,7 +4215,8 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
     if (!isCanvasAgent) return;
     (window as any).__dsAddPromptRef__ = (ref: { kind: 'table' | 'column' | 'chip' | 'join'; label: string }) =>
       promptBarRef.current?.addReference(ref);
-    return () => { delete (window as any).__dsAddPromptRef__; };
+    (window as any).__dsPickModeChanged__ = (on: boolean) => setRefPickActive(on);
+    return () => { delete (window as any).__dsAddPromptRef__; delete (window as any).__dsPickModeChanged__; };
   }, [isCanvasAgent]);
 
   useEffect(() => {
@@ -4185,8 +4338,28 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
       return;
     }
 
-    // B7 — joins: next build; be honest about it
+    // B7 — joins. POC: reason over the two tables and propose a join to add.
     if (/join|combine|merge|build.*model/.test(lower)) {
+      if (poc) {
+        const mentioned = KNOWN_TABLES.filter(t => lower.includes(t));
+        const pair = (mentioned.length >= 2 ? mentioned : canvas.tables).slice(0, 2);
+        if (pair.length < 2) {
+          say('I need two tables to join. Reference two cards with the ⊞ button (or add them), then ask again.');
+          setProcessing(false);
+          return;
+        }
+        const [t1, t2] = pair;
+        await runCanvasSteps([
+          { label: `Analyzing ${t1} and ${t2}`, detail: 'Reading schemas, types, and sampled values.' },
+          { label: 'Finding shared keys and checking coverage', detail: 'Matching column names and value overlap across the two tables.' },
+          { label: 'Evaluating join cardinality', detail: 'Counting distinct keys on each side to infer the relationship.' },
+        ], 1050);
+        say(`Both tables key on \`account_id\`. I recommend an **inner join**, many-to-one (${t2} → ${t1}), with ~98% key coverage. Review and add it below.`);
+        setMessages(prev => [...prev, { id: mkId(), type: 'response', content: '',
+          joinRec: { table1: t1, table2: t2, key: 'account_id', joinType: 'Inner', cardinality: 'Many-to-one', coverage: '98%', status: 'pending' } }]);
+        setProcessing(false);
+        return;
+      }
       say("Join proposals with evidence (key, coverage, cardinality, preview rows) are the next thing I learn — coming in the next build. For now, drag from one card's edge onto another to create a join manually.");
       setProcessing(false);
       return;
@@ -4615,7 +4788,7 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
           if (!el) return;
           isNearBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 100;
         }}
-        style={{ flex: 1, overflowY: 'auto', ...(fullPage ? { backgroundColor: '#f7f8fa' } : {}) }}
+        style={{ flex: 1, minHeight: 0, overflowY: 'auto', ...(fullPage ? { backgroundColor: '#f7f8fa' } : {}) }}
       >
       <div style={{
         padding: fullPage ? '32px 24px' : `${sp.C}px ${sp.D}px`,
@@ -4624,6 +4797,35 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
       }}>
 
         {messages.length === 0 && !initialPrompt && (
+          isCanvasAgent ? (
+            // Canvas-agent welcome — centred greeting + full-width suggestion pills,
+            // matching the SpotterX single-agent home (adapted to Data Studio content).
+            (() => {
+              const suggestions = project.buildStep === 'healthy'
+                ? ['Add AI context to improve Spotter answers', 'Enable query caching for faster results', 'Track how this model is being used']
+                : (canvasTableCount ?? 0) === 0
+                  ? ['Fetch dim_accounts, support_cases and call_metrics', 'What data can I access?', 'What can you do?']
+                  : ['Are these tables clean?', 'Fix the issues you find', 'Join these tables into a model'];
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 'calc(100vh - 340px)', gap: sp.F, padding: `0 ${sp.A}px` }}>
+                  <h2 style={{ margin: 0, fontSize: 24, fontWeight: fw.semibold, lineHeight: '32px', color: c['content-primary'], textAlign: 'center', letterSpacing: '-0.3px' }}>
+                    Morning, <span style={{ color: c['content-brand'] }}>Sara</span>.<br />Where do we start?
+                  </h2>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: sp.B, width: '100%' }}>
+                    {suggestions.map(hint => (
+                      <button key={hint} onClick={() => promptBarRef.current?.setValue(hint)}
+                        style={{ display: 'block', width: '100%', boxSizing: 'border-box', padding: '12px 20px', border: '1px solid #EAEDF2', borderRadius: 40, backgroundColor: '#F6F8FA', color: '#1D232F', fontSize: 14, fontWeight: 300, cursor: 'pointer', fontFamily: ff.primary, textAlign: 'left', lineHeight: '20px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', transition: 'background-color 120ms' }}
+                        onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#EFF2F6'; }}
+                        onMouseLeave={e => { e.currentTarget.style.backgroundColor = '#F6F8FA'; }}
+                      >
+                        {hint}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()
+          ) : (
           <div style={{ textAlign: 'center', padding: `${sp.H}px ${sp.D}px` }}>
             <AgentAvatarLarge />
             {project.buildStep === 'healthy' ? (
@@ -4633,29 +4835,6 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
                 </p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: sp.B }}>
                   {['Add AI context to improve Spotter answers', 'Enable query caching for faster results', 'Track how this model is being used'].map(hint => (
-                    <button key={hint} onClick={() => promptBarRef.current?.setValue(hint)}
-                      style={{ padding: `${sp.B}px ${sp.C}px`, border: `1px solid ${c['border-default']}`, borderRadius: 8, backgroundColor: 'transparent', color: c['content-primary'], fontSize: fs.xs, cursor: 'pointer', fontFamily: ff.primary, textAlign: 'left' }}
-                      onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
-                      onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
-                    >
-                      {hint}
-                    </button>
-                  ))}
-                </div>
-              </>
-            ) : isCanvasAgent ? (
-              <>
-                <p style={{ fontSize: fs.sm, color: c['content-primary'], margin: `${sp.C}px 0 ${sp.A}px`, lineHeight: '20px' }}>
-                  I build data with you — bring it in, clean it, join it into a model.
-                </p>
-                <p style={{ fontSize: fs.xs, color: c['content-secondary'], margin: `0 0 ${sp.E}px`, lineHeight: '17px' }}>
-                  Everything I do lands on the canvas as steps you can review, edit, or undo.
-                </p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: sp.B }}>
-                  {((canvasTableCount ?? 0) === 0
-                    ? ['Fetch dim_accounts, support_cases and call_metrics', 'What data can I access?', 'What can you do?']
-                    : ['Are these tables clean?', 'Fix the issues you find', 'Join these tables into a model']
-                  ).map(hint => (
                     <button key={hint} onClick={() => promptBarRef.current?.setValue(hint)}
                       style={{ padding: `${sp.B}px ${sp.C}px`, border: `1px solid ${c['border-default']}`, borderRadius: 8, backgroundColor: 'transparent', color: c['content-primary'], fontSize: fs.xs, cursor: 'pointer', fontFamily: ff.primary, textAlign: 'left' }}
                       onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
@@ -4685,6 +4864,7 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
               </>
             )}
           </div>
+          )
         )}
 
         {messages.map((msg, idx) => {
@@ -4727,13 +4907,28 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
             );
           }
 
+          if (msg.joinRec) {
+            const jr = msg.joinRec;
+            return (
+              <div key={msg.id} style={{ display: 'flex', gap: sp.B, alignItems: 'flex-start' }}>
+                <div style={{ width: 28, flexShrink: 0 }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <JoinRecCard rec={jr} onAdd={() => {
+                    (window as any).__dsAgentAddJoin__?.(jr.table1, jr.table2, jr.key, jr.joinType, jr.cardinality);
+                    setMessages(prev => prev.map(m => m.id === msg.id && m.joinRec ? { ...m, joinRec: { ...m.joinRec, status: 'added' as const } } : m));
+                  }} />
+                </div>
+              </div>
+            );
+          }
+
           if (msg.buildPlanCard && msg.planData) {
             return (
               <div key={msg.id} style={{ display: 'flex', gap: sp.B, alignItems: 'flex-start' }}>
                 <AgentAvatar />
                 <div style={{ flex: 1, minWidth: 0, paddingTop: 2 }}>
                   {project.buildStep === 'healthy'
-                    ? <BuiltSummaryCard plan={msg.planData} onNavigate={onNavigateToWorkspace} />
+                    ? <BuiltSummaryCard plan={msg.planData} />
                     : <PlanCardV2 plan={msg.planData} onBuild={handleMsBuildStart} project={project} />
                   }
                 </div>
@@ -4741,9 +4936,24 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
             );
           }
 
+          if (msg.planBuildFlow === 'mrd' && msg.planData) {
+            return (
+              <div key={msg.id} style={{ marginTop: isAfterWorking ? -sp.B : 0, display: 'flex', gap: sp.B, alignItems: 'flex-start' }}>
+                {!isAfterWorking && <AgentAvatar />}
+                {isAfterWorking && <div style={{ width: 28, flexShrink: 0 }} />}
+                <div style={{ flex: 1, minWidth: 0, paddingTop: 2, display: 'flex', flexDirection: 'column', gap: sp.B }}>
+                  {msg.content && (
+                    <p style={{ margin: 0, fontSize: fs.sm, color: c['content-primary'], lineHeight: '20px' }}>{msg.content}</p>
+                  )}
+                  <DraftPlanCardMRD plan={msg.planData} onBuild={handleStartBuilding} built={project.buildStep !== 'empty'} />
+                </div>
+              </div>
+            );
+          }
+
           if (msg.planData) {
             const plan = msg.planData;
-            const isExpanded = planExpandedId === msg.id;
+            const isExpanded = !collapsedPlanIds.has(msg.id);
             const buildHandler = msg.planBuildFlow === 'multi_source' ? handleMsBuildStart : handleStartBuilding;
             return (
               <div key={msg.id} style={{ marginTop: isAfterWorking ? -sp.B : 0, display: 'flex', gap: sp.B, alignItems: 'flex-start' }}>
@@ -4761,7 +4971,11 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
                     overflow: 'hidden',
                   }}>
                     <button
-                      onClick={() => setPlanExpandedId(isExpanded ? null : msg.id)}
+                      onClick={() => setCollapsedPlanIds(prev => {
+                        const next = new Set(prev);
+                        if (isExpanded) next.add(msg.id); else next.delete(msg.id);
+                        return next;
+                      })}
                       style={{
                         display: 'flex', alignItems: 'center', width: '100%',
                         padding: `${sp.C}px ${sp.D}px`, gap: sp.C,
@@ -4797,7 +5011,7 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
                       <div style={{ height: '68vh', borderTop: `1px solid ${c['border-divider']}`, display: 'flex', flexDirection: 'column' }}>
                         <PlanPanelV3
                           plan={plan}
-                          onClose={() => setPlanExpandedId(null)}
+                          onClose={() => setCollapsedPlanIds(prev => new Set([...prev, msg.id]))}
                           onBuildModel={buildHandler}
                           hideClose
                         />
@@ -5202,15 +5416,17 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
               >
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg>
               </button>
-              {/* Reference — point at a canvas element to reference it (pick mode in ModelCanvas) */}
+              {/* Reference — point at canvas nodes to reference them (pick mode in ModelCanvas) */}
               <button
-                onClick={() => (window as any).__dsEnterPickMode__?.()}
-                title="Reference an element"
-                style={{ width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 7, border: 'none', background: 'transparent', color: c['content-secondary'], cursor: 'pointer', flexShrink: 0 }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = c['background-subtle']; (e.currentTarget as HTMLElement).style.color = c['content-primary']; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = c['content-secondary']; }}
+                onClick={() => (poc ? (window as any).__dsTogglePickMode__ : (window as any).__dsEnterPickMode__)?.()}
+                title={refPickActive ? 'Done referencing' : 'Reference nodes from the canvas'}
+                style={{ width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 7, border: 'none', background: refPickActive ? c['background-information'] : 'transparent', color: refPickActive ? c['content-brand'] : c['content-secondary'], cursor: 'pointer', flexShrink: 0, transition: 'background 120ms, color 120ms' }}
+                onMouseEnter={e => { if (!refPickActive) { (e.currentTarget as HTMLElement).style.background = c['background-subtle']; (e.currentTarget as HTMLElement).style.color = c['content-primary']; } }}
+                onMouseLeave={e => { if (!refPickActive) { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = c['content-secondary']; } }}
               >
-                <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M3 2.5l3.6 9 1.35-3.65L11.6 6.4z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/><path d="M10 10.5h3.5V14" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                {poc
+                  ? <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="8" height="8" rx="1.7" stroke="currentColor" strokeWidth="1.4"/><path d="M8.6 8.6l5.2 2.1-2.1.85-.85 2.1z" fill="currentColor"/></svg>
+                  : <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M3 2.5l3.6 9 1.35-3.65L11.6 6.4z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/><path d="M10 10.5h3.5V14" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>}
               </button>
             </div>
           }
@@ -5532,9 +5748,17 @@ const PlanCardV2: React.FC<{
 
 // ── BuiltSummaryCard — condensed post-build summary shown in chat ─────────────
 
-const fmtCol = (name: string) => name.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+const COL_DISPLAY_NAMES: Record<string, string> = {
+  campaign_roas: 'ROAS', conversion_rate: 'Conversion rate',
+  amount: 'Revenue', spend: 'Ad spend', budget: 'Budget',
+  impressions: 'Impressions', lifetime_value: 'Lifetime value',
+  channel: 'Channel', region: 'Region', segment: 'User segment',
+  campaign_name: 'Campaign', target_region: 'Target region',
+};
 
-const BuiltSummaryCard: React.FC<{ plan: PlanData; onNavigate?: () => void }> = ({ plan, onNavigate }) => {
+const fmtCol = (name: string) => COL_DISPLAY_NAMES[name] ?? name.replace(/_/g, ' ');
+
+const BuiltSummaryCard: React.FC<{ plan: PlanData }> = ({ plan }) => {
   const [expanded, setExpanded] = React.useState(false);
 
   const formulas   = plan.columns.filter(col => col.type === 'formula');
@@ -5548,7 +5772,7 @@ const BuiltSummaryCard: React.FC<{ plan: PlanData; onNavigate?: () => void }> = 
   return (
     <div style={{ border: `1px solid ${c['border-default']}`, borderRadius: 12, backgroundColor: c['background-base'], overflow: 'hidden', maxWidth: 520, fontFamily: ff.primary, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
       <div
-        onClick={() => { if (onNavigate) { onNavigate(); } else { setExpanded(o => !o); } }}
+        onClick={() => setExpanded(o => !o)}
         style={{ padding: '11px 14px', display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', borderBottom: expanded ? `1px solid ${c['border-divider']}` : 'none', userSelect: 'none' as const }}
       >
         <div style={{ width: 20, height: 20, borderRadius: '50%', flexShrink: 0, backgroundColor: 'rgba(22,163,74,0.1)', border: '1.5px solid #16A34A', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -5558,19 +5782,10 @@ const BuiltSummaryCard: React.FC<{ plan: PlanData; onNavigate?: () => void }> = 
           <div style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'], whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{plan.modelName}</div>
           <div style={{ fontSize: 11, color: c['content-secondary'], marginTop: 1 }}>Model requirement · {steps.length} steps completed</div>
         </div>
-        {onNavigate ? (
-          <span style={{ fontSize: 11, color: c['content-brand'], fontWeight: fw.medium, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 3 }}>
-            Open model
-            <svg width="11" height="11" viewBox="0 0 13 13" fill="none"><path d="M2.5 6.5h8M7 3l3.5 3.5L7 10" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
-          </span>
-        ) : (
-          <>
-            <span style={{ fontSize: 11, color: c['content-brand'], fontWeight: fw.medium, flexShrink: 0 }}>{expanded ? 'Collapse' : 'View details'}</span>
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke={c['content-secondary']} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: expanded ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.15s', flexShrink: 0 }}>
-              <polyline points="2,4 6,8 10,4"/>
-            </svg>
-          </>
-        )}
+        <span style={{ fontSize: 11, color: c['content-brand'], fontWeight: fw.medium, flexShrink: 0 }}>{expanded ? 'Collapse' : 'View details'}</span>
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke={c['content-secondary']} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: expanded ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.15s', flexShrink: 0 }}>
+          <polyline points="2,4 6,8 10,4"/>
+        </svg>
       </div>
       {expanded && (
         <>
@@ -5612,6 +5827,615 @@ const BuiltSummaryCard: React.FC<{ plan: PlanData; onNavigate?: () => void }> = 
         </>
       )}
     </div>
+  );
+};
+
+// ── DraftPlanCardMRD — narrative model requirement document ──────────────────
+
+const MRD_STYLES = `
+  @keyframes mrd-in {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes mrd-ring {
+    0%   { box-shadow: 0 0 0 0 rgba(39,112,239,0.55); }
+    70%  { box-shadow: 0 0 0 7px rgba(39,112,239,0); }
+    100% { box-shadow: 0 0 0 0 rgba(39,112,239,0); }
+  }
+  .mrd-card { animation: mrd-in 0.44s cubic-bezier(0.22,1,0.36,1) both; }
+  .mrd-sec  { animation: mrd-in 0.34s cubic-bezier(0.22,1,0.36,1) both; }
+  .mrd-approve:hover { opacity: 0.88 !important; transform: translateY(-1px) !important; }
+  .mrd-approve { transition: opacity 0.14s, transform 0.14s !important; }
+  .mrd-section-wrap:hover .mrd-edit-btn { opacity: 1 !important; }
+`;
+
+const CONNECTION_TYPE_LABEL: Record<string, string> = {
+  snowflake: 'Snowflake',
+  bigquery:  'BigQuery',
+  redshift:  'Redshift',
+  databricks:'Databricks',
+};
+
+const CONNECTION_TYPE_COLOR: Record<string, string> = {
+  snowflake:  '#29B5E8',
+  bigquery:   '#4285F4',
+  redshift:   '#DD344C',
+  databricks: '#FF3621',
+};
+
+// ── Inline-editable section (bullets) ─────────────────────────────────────────
+
+interface MRDBulletSectionProps {
+  label: string;
+  items: string[];
+  animDelay?: number;
+  onChange: (items: string[]) => void;
+}
+
+const MRDBulletSection: React.FC<MRDBulletSectionProps> = ({ label, items, animDelay = 0, onChange }) => {
+  const [open, setOpen]       = React.useState(true);
+  const [editing, setEditing] = React.useState(false);
+  const [draft, setDraft]     = React.useState(items);
+  const [hovered, setHovered] = React.useState(false);
+
+  const commit = () => { setEditing(false); onChange(draft.filter(s => s.trim())); };
+  const enter  = (e: React.MouseEvent) => { e.stopPropagation(); setDraft(items); setEditing(true); };
+
+  return (
+    <div
+      className="mrd-sec mrd-section-wrap"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{ borderBottom: `1px solid ${c['border-divider']}`, animationDelay: `${animDelay}ms` }}
+    >
+      {/* Header row — click to toggle */}
+      <div
+        onClick={() => { if (!editing) setOpen(o => !o); }}
+        style={{ padding: '14px 22px', display: 'flex', alignItems: 'center', gap: 8, cursor: editing ? 'default' : 'pointer', userSelect: 'none' }}
+      >
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0, transition: 'transform 0.18s', transform: open ? 'rotate(90deg)' : 'rotate(0deg)' }}>
+          <path d="M4 2.5l4 3.5-4 3.5" stroke={c['content-secondary']} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+        <span style={{ flex: 1, fontSize: 10, fontWeight: fw.semibold, color: c['content-secondary'], textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+          {label}
+        </span>
+        {open && !editing && (
+          <button
+            className="mrd-edit-btn"
+            onClick={enter}
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer', padding: '2px 6px',
+              opacity: hovered ? 1 : 0, transition: 'opacity 0.12s',
+              display: 'flex', alignItems: 'center', gap: 3,
+              fontSize: 10, color: c['content-secondary'], fontFamily: ff.primary, borderRadius: 4,
+            }}
+            onMouseEnter={e => { e.currentTarget.style.color = c['content-primary']; e.currentTarget.style.backgroundColor = c['background-subtle']; }}
+            onMouseLeave={e => { e.currentTarget.style.color = c['content-secondary']; e.currentTarget.style.backgroundColor = 'transparent'; }}
+          >
+            <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
+              <path d="M8.5 1.5l2 2-7 7H1.5v-2l7-7z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            Edit
+          </button>
+        )}
+        {!open && (
+          <span style={{ fontSize: 10, color: c['content-secondary'] }}>{items.length} item{items.length !== 1 ? 's' : ''}</span>
+        )}
+      </div>
+
+      {open && (
+        <div style={{ padding: '0 22px 16px' }}>
+          {editing ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {draft.map((item, i) => (
+                <div key={i} style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                  <span style={{ fontSize: 11, color: c['content-secondary'], flexShrink: 0 }}>·</span>
+                  <input
+                    value={item}
+                    autoFocus={i === 0}
+                    onChange={e => setDraft(prev => prev.map((v, j) => j === i ? e.target.value : v))}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') { e.preventDefault(); setDraft(prev => [...prev.slice(0, i + 1), '', ...prev.slice(i + 1)]); }
+                      if (e.key === 'Backspace' && item === '' && draft.length > 1) {
+                        e.preventDefault(); setDraft(prev => prev.filter((_, j) => j !== i));
+                      }
+                    }}
+                    style={{
+                      flex: 1, fontSize: fs.xs, fontFamily: ff.primary, color: c['content-primary'],
+                      border: 'none', borderBottom: `1px solid ${c['border-default']}`,
+                      outline: 'none', background: 'transparent', padding: '1px 0', lineHeight: '18px',
+                    }}
+                  />
+                  <button
+                    onClick={() => draft.length > 1 && setDraft(prev => prev.filter((_, j) => j !== i))}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: c['content-secondary'], flexShrink: 0, display: 'flex' }}
+                  >
+                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                      <path d="M2 2l6 6M8 2L2 8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+                    </svg>
+                  </button>
+                </div>
+              ))}
+              <div style={{ display: 'flex', gap: sp.C, marginTop: 8 }}>
+                <button
+                  onClick={() => setDraft(prev => [...prev, ''])}
+                  style={{
+                    background: 'none', border: `1px dashed ${c['border-default']}`, cursor: 'pointer',
+                    fontSize: 10, color: c['content-secondary'], fontFamily: ff.primary,
+                    padding: '3px 8px', borderRadius: 5, display: 'flex', alignItems: 'center', gap: 4,
+                  }}
+                >
+                  <svg width="9" height="9" viewBox="0 0 9 9" fill="none">
+                    <path d="M4.5 1v7M1 4.5h7" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+                  </svg>
+                  Add item
+                </button>
+                <button
+                  onClick={commit}
+                  style={{
+                    border: 'none', borderRadius: 5, cursor: 'pointer',
+                    fontSize: 10, fontWeight: fw.semibold, fontFamily: ff.primary,
+                    padding: '3px 10px', backgroundColor: c['content-brand'], color: 'white',
+                  }}
+                >
+                  Done
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 7, cursor: 'text' }} onClick={e => { e.stopPropagation(); enter(e); }}>
+              {items.map((item, i) => (
+                <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                  <span style={{ fontSize: 11, color: c['content-secondary'], lineHeight: '18px', flexShrink: 0 }}>·</span>
+                  <span style={{ fontSize: fs.xs, color: c['content-primary'], lineHeight: '18px' }}>{item}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ── Inline-editable section (paragraph) ───────────────────────────────────────
+
+interface MRDParagraphSectionProps {
+  label: string;
+  text: string;
+  animDelay?: number;
+  onChange: (text: string) => void;
+}
+
+const MRDParagraphSection: React.FC<MRDParagraphSectionProps> = ({ label, text, animDelay = 0, onChange }) => {
+  const [open, setOpen]       = React.useState(true);
+  const [editing, setEditing] = React.useState(false);
+  const [draft, setDraft]     = React.useState(text);
+  const [hovered, setHovered] = React.useState(false);
+
+  const commit = () => { setEditing(false); onChange(draft.trim() || text); };
+  const enter  = (e: React.MouseEvent) => { e.stopPropagation(); setDraft(text); setEditing(true); };
+
+  return (
+    <div
+      className="mrd-sec mrd-section-wrap"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{ borderBottom: `1px solid ${c['border-divider']}`, animationDelay: `${animDelay}ms` }}
+    >
+      {/* Header row — click to toggle */}
+      <div
+        onClick={() => { if (!editing) setOpen(o => !o); }}
+        style={{ padding: '14px 22px', display: 'flex', alignItems: 'center', gap: 8, cursor: editing ? 'default' : 'pointer', userSelect: 'none' }}
+      >
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0, transition: 'transform 0.18s', transform: open ? 'rotate(90deg)' : 'rotate(0deg)' }}>
+          <path d="M4 2.5l4 3.5-4 3.5" stroke={c['content-secondary']} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+        <span style={{ flex: 1, fontSize: 10, fontWeight: fw.semibold, color: c['content-secondary'], textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+          {label}
+        </span>
+        {open && !editing && (
+          <button
+            className="mrd-edit-btn"
+            onClick={enter}
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer', padding: '2px 6px',
+              opacity: hovered ? 1 : 0, transition: 'opacity 0.12s',
+              display: 'flex', alignItems: 'center', gap: 3,
+              fontSize: 10, color: c['content-secondary'], fontFamily: ff.primary, borderRadius: 4,
+            }}
+            onMouseEnter={e => { e.currentTarget.style.color = c['content-primary']; e.currentTarget.style.backgroundColor = c['background-subtle']; }}
+            onMouseLeave={e => { e.currentTarget.style.color = c['content-secondary']; e.currentTarget.style.backgroundColor = 'transparent'; }}
+          >
+            <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
+              <path d="M8.5 1.5l2 2-7 7H1.5v-2l7-7z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            Edit
+          </button>
+        )}
+        {!open && (
+          <span style={{ fontSize: 10, color: c['content-secondary'], maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {text.slice(0, 48)}{text.length > 48 ? '…' : ''}
+          </span>
+        )}
+      </div>
+
+      {open && (
+        <div style={{ padding: '0 22px 16px' }}>
+          {editing ? (
+            <div>
+              <textarea
+                value={draft}
+                autoFocus
+                onChange={e => setDraft(e.target.value)}
+                rows={3}
+                style={{
+                  width: '100%', boxSizing: 'border-box',
+                  fontSize: fs.xs, fontFamily: ff.primary, color: c['content-primary'],
+                  lineHeight: '19px', resize: 'vertical',
+                  border: `1px solid ${c['content-brand']}`, borderRadius: 6,
+                  padding: `${sp.B}px ${sp.C}px`, outline: 'none',
+                  backgroundColor: c['background-base'],
+                }}
+              />
+              <div style={{ display: 'flex', gap: sp.B, marginTop: 6 }}>
+                <button
+                  onClick={commit}
+                  style={{
+                    border: 'none', borderRadius: 5, cursor: 'pointer',
+                    fontSize: 10, fontWeight: fw.semibold, fontFamily: ff.primary,
+                    padding: '3px 10px', backgroundColor: c['content-brand'], color: 'white',
+                  }}
+                >
+                  Done
+                </button>
+                <button
+                  onClick={() => setEditing(false)}
+                  style={{
+                    border: `1px solid ${c['border-default']}`, borderRadius: 5, cursor: 'pointer',
+                    fontSize: 10, fontFamily: ff.primary, padding: '3px 8px',
+                    backgroundColor: 'transparent', color: c['content-secondary'],
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div style={{ fontSize: fs.xs, color: c['content-primary'], lineHeight: '19px', cursor: 'text' }} onClick={enter}>
+              {text}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ── DraftPlanCardMRD main component ───────────────────────────────────────────
+
+export const DraftPlanCardMRD: React.FC<{ plan: PlanData; onBuild: () => void; built?: boolean }> = ({ plan, onBuild, built = false }) => {
+  const [approved, setApproved] = React.useState(false);
+
+  const formulas   = plan.columns.filter(col => col.type === 'formula');
+  const topMetrics = plan.columns.filter(col => col.type === 'metric' && col.included).slice(0, 2);
+  const keyDims    = plan.columns.filter(
+    col => col.type === 'dimension' && col.included && !col.name.endsWith('_id') && !col.name.endsWith('_date')
+  ).slice(0, 4);
+  const hasTimeDimension = plan.columns.some(col => col.name.endsWith('_date') || col.name.includes('date'));
+
+  // Connection — read-only for the MRD (schema is resolved at build time)
+  const connectionId = CONNECTIONS[0].id;
+
+  // Section state — the "what I added" sections are independently editable;
+  // "what I understood" (questions/metrics/dimensions) is derived, read-only.
+  const questions  = plan.sampleQuestions.slice(0, 3);
+  const keyMetrics = [
+    ...formulas.map(f => `${fmtCol(f.name)} (computed at query time)`),
+    ...topMetrics.map(m => fmtCol(m.name)),
+  ];
+  const dimensions = keyDims.map(d => fmtCol(d.name));
+  const [timeHandling,   setTimeHandling]   = React.useState<string>(
+    `Rolling 30/60/90-day windows for spend and conversion metrics. Point-in-time snapshots for ROAS benchmarking. Campaign start/end dates used as range anchors.`
+  );
+  const [guardrails,     setGuardrails]     = React.useState<string[]>([
+    `Only include orders with status = 'completed' — exclude refunded and pending`,
+    `Unattributed orders (no campaign linked) = organic — preserve in their own bucket, never discard`,
+    `${fmtCol(formulas[0]?.name ?? 'ROAS')} computation uses gross revenue, not net`,
+  ]);
+  const [aiInstructions, setAiInstructions] = React.useState<string>(
+    `"Campaign" means paid marketing channels only — organic search and direct traffic are separate. "Revenue" defaults to gross order value unless the user specifies net. When asked about "last month", anchor to the most recent complete calendar month.`
+  );
+  const [limitations,    setLimitations]    = React.useState<string[]>([
+    `Mobile app conversion events not yet ingested — web attribution only`,
+    `Campaign data before Jan 2023 has incomplete spend tracking`,
+  ]);
+
+  const [addedOpen, setAddedOpen] = React.useState(true);
+
+  // ── Export helpers ────────────────────────────────────────────────────────
+  const [feedback, setFeedback] = React.useState<'copy' | 'download' | 'share' | null>(null);
+  const showFeedback = (type: 'copy' | 'download' | 'share') => {
+    setFeedback(type);
+    setTimeout(() => setFeedback(null), 2000);
+  };
+
+  const buildMarkdown = () => {
+    const bullets = (items: string[]) => items.map(i => `- ${i}`).join('\n');
+    const sections: string[] = [
+      `# ${plan.modelName}\n\n${plan.goal}`,
+      `## Questions to answer\n${bullets(questions)}`,
+      `## Key metrics\n${bullets(keyMetrics)}`,
+      `## Dimensions & filters\n${bullets(dimensions)}`,
+      ...(hasTimeDimension ? [`## Time handling\n${timeHandling}`] : []),
+      `## Guardrails\n${bullets(guardrails)}`,
+      `## AI instructions\n${aiInstructions}`,
+      ...(limitations.length > 0 ? [`## Limitations\n${bullets(limitations)}`] : []),
+    ];
+    return sections.join('\n\n');
+  };
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(buildMarkdown()).catch(() => {});
+    showFeedback('copy');
+  };
+
+  const handleDownload = () => {
+    const blob = new Blob([buildMarkdown()], { type: 'text/markdown' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url;
+    a.download = `${plan.modelName.replace(/\s+/g, '-').toLowerCase()}-mrd.md`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showFeedback('download');
+  };
+
+  const handleShare = () => {
+    const mockUrl = `https://app.thoughtspot.com/mrd/${Math.random().toString(36).slice(2, 9)}`;
+    navigator.clipboard.writeText(mockUrl).catch(() => {});
+    showFeedback('share');
+  };
+
+  const handleBuild = () => {
+    setApproved(true);
+    onBuild();
+  };
+
+  const [builtExpanded, setBuiltExpanded] = React.useState(false);
+  const conn = CONNECTIONS.find(cn => cn.id === connectionId) ?? CONNECTIONS[0];
+  const typeLabel = CONNECTION_TYPE_LABEL[conn.type] ?? conn.type;
+  const typeColor = CONNECTION_TYPE_COLOR[conn.type] ?? '#888';
+
+  if (built) {
+    const tableCount  = plan.tables.length;
+    const colCount    = plan.columns.filter(col => col.included).length;
+    const metricCount = plan.columns.filter(col => col.type === 'metric' || col.type === 'formula').length;
+    return (
+      <>
+        <style>{MRD_STYLES}</style>
+        <div style={{
+          borderRadius: 10, border: `1px solid ${c['border-default']}`,
+          backgroundColor: c['background-base'], overflow: 'hidden',
+          maxWidth: 640,
+        }}>
+          <div style={{ height: 2, background: 'linear-gradient(90deg, #2770EF 0%, #818CF8 55%, #A78BFA 100%)' }} />
+
+          {/* Collapsed header — always visible, click to expand */}
+          <button
+            onClick={() => setBuiltExpanded(e => !e)}
+            style={{
+              width: '100%', display: 'flex', alignItems: 'center', gap: sp.C,
+              padding: '10px 14px', background: 'none', border: 'none', cursor: 'pointer',
+              textAlign: 'left', fontFamily: ff.primary,
+            }}
+          >
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 10, fontWeight: fw.semibold, color: c['content-secondary'], textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 3 }}>
+                Model requirement
+              </div>
+              <div style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'], lineHeight: 1.3, marginBottom: 4 }}>
+                {plan.modelName}
+              </div>
+              <div style={{ display: 'flex', gap: sp.B, alignItems: 'center', flexWrap: 'wrap' }}>
+                {[`${tableCount} tables`, `${colCount} columns`, `${metricCount} metrics`].map((s, i) => (
+                  <React.Fragment key={s}>
+                    {i > 0 && <span style={{ fontSize: 10, color: c['border-default'] }}>·</span>}
+                    <span style={{ fontSize: 10, color: c['content-secondary'] }}>{s}</span>
+                  </React.Fragment>
+                ))}
+                <span style={{ fontSize: 10, color: c['border-default'] }}>·</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <div style={{ width: 5, height: 5, borderRadius: '50%', backgroundColor: typeColor, flexShrink: 0 }} />
+                  <span style={{ fontSize: 10, color: c['content-secondary'] }}>{conn.name}</span>
+                </div>
+              </div>
+            </div>
+            <svg
+              width="14" height="14" viewBox="0 0 14 14" fill="none"
+              style={{ flexShrink: 0, color: c['content-secondary'], transform: builtExpanded ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.18s' }}
+            >
+              <polyline points="2,5 7,9 12,5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+
+          {/* Expanded: full MRD sections, read-only */}
+          {builtExpanded && (
+            <>
+              <MRDBulletSection    label="Questions to answer"  items={questions}      animDelay={0} onChange={() => {}} />
+              <MRDBulletSection    label="Key metrics"          items={keyMetrics}     animDelay={0} onChange={() => {}} />
+              <MRDBulletSection    label="Dimensions & filters" items={dimensions}     animDelay={0} onChange={() => {}} />
+              {hasTimeDimension && (
+                <MRDParagraphSection label="Time handling"      text={timeHandling}    animDelay={0} onChange={() => {}} />
+              )}
+              <MRDBulletSection    label="Guardrails"           items={guardrails}     animDelay={0} onChange={() => {}} />
+              <MRDParagraphSection label="AI instructions"      text={aiInstructions}  animDelay={0} onChange={() => {}} />
+              {limitations.length > 0 && (
+                <MRDBulletSection  label="Limitations"          items={limitations}    animDelay={0} onChange={() => {}} />
+              )}
+            </>
+          )}
+        </div>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <style>{MRD_STYLES}</style>
+      <div className="mrd-card" style={{
+        borderRadius: 14,
+        backgroundColor: c['background-base'],
+        overflow: 'hidden',
+        maxWidth: 640,
+        boxShadow: '0 2px 16px rgba(0,0,0,0.10), 0 1px 4px rgba(0,0,0,0.06)',
+        border: `1px solid ${c['border-default']}`,
+      }}>
+
+        {/* ── Gradient accent bar ── */}
+        <div style={{ height: 3, background: 'linear-gradient(90deg, #2770EF 0%, #818CF8 55%, #A78BFA 100%)' }} />
+
+        {/* ── Hero header ── */}
+        <div style={{
+          padding: '20px 22px 18px',
+          background: approved ? 'transparent' : 'linear-gradient(160deg, rgba(39,112,239,0.07) 0%, rgba(129,140,248,0.04) 55%, transparent 100%)',
+          borderBottom: `1px solid ${c['border-divider']}`,
+        }}>
+          {approved ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: sp.B }}>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <circle cx="8" cy="8" r="7" fill="rgba(22,163,74,0.12)" stroke="#16A34A" strokeWidth="1.25"/>
+                <path d="M5 8l2.2 2.2 3.8-3.8" stroke="#16A34A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              <span style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: '#16A34A' }}>Plan approved</span>
+              <span style={{ fontSize: fs.xs, color: c['content-secondary'] }}>· Building draft model…</span>
+            </div>
+          ) : (
+            <>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                <span style={{
+                  width: 7, height: 7, borderRadius: '50%', flexShrink: 0,
+                  backgroundColor: c['content-brand'], display: 'inline-block',
+                  animation: 'mrd-ring 2.6s ease-out infinite',
+                }} />
+                <span style={{ fontSize: 10, fontWeight: fw.semibold, color: c['content-brand'], textTransform: 'uppercase', letterSpacing: '0.09em' }}>Model requirement</span>
+                <div style={{ flex: 1 }} />
+                {/* ── Action toolbar ── */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  {feedback && (
+                    <span style={{ fontSize: 10, color: c['content-brand'], marginRight: 6, fontWeight: fw.medium, animation: 'mrd-in 0.18s ease-out both' }}>
+                      {feedback === 'copy' ? 'Copied!' : feedback === 'download' ? 'Downloaded' : 'Link copied!'}
+                    </span>
+                  )}
+                  {([
+                    {
+                      key: 'copy', title: 'Copy as markdown',
+                      icon: <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="4.5" y="4.5" width="8" height="8" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><path d="M4.5 9.5H3a1.5 1.5 0 01-1.5-1.5V3A1.5 1.5 0 013 1.5h5A1.5 1.5 0 019.5 3v1.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>,
+                      onClick: handleCopy,
+                    },
+                    {
+                      key: 'download', title: 'Download as .md',
+                      icon: <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v8M4 6.5l3 3 3-3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/><path d="M1.5 11h11" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>,
+                      onClick: handleDownload,
+                    },
+                    {
+                      key: 'share', title: 'Share link',
+                      icon: <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="11" cy="3" r="1.5" stroke="currentColor" strokeWidth="1.3"/><circle cx="11" cy="11" r="1.5" stroke="currentColor" strokeWidth="1.3"/><circle cx="3" cy="7" r="1.5" stroke="currentColor" strokeWidth="1.3"/><path d="M4.4 6.3l5.2-2.8M4.4 7.7l5.2 2.8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>,
+                      onClick: handleShare,
+                    },
+                  ] as const).map(({ key, title, icon, onClick }) => (
+                    <button
+                      key={key}
+                      onClick={onClick}
+                      title={title}
+                      style={{
+                        width: 28, height: 28, borderRadius: 7, border: 'none', cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        backgroundColor: feedback === key ? 'rgba(39,112,239,0.1)' : 'transparent',
+                        color: feedback === key ? c['content-brand'] : c['content-secondary'],
+                        transition: 'background-color 0.12s, color 0.12s',
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.backgroundColor = c['background-subtle']; e.currentTarget.style.color = c['content-primary']; }}
+                      onMouseLeave={e => { e.currentTarget.style.backgroundColor = feedback === key ? 'rgba(39,112,239,0.1)' : 'transparent'; e.currentTarget.style.color = feedback === key ? c['content-brand'] : c['content-secondary']; }}
+                    >
+                      {icon}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div style={{ fontSize: 18, fontWeight: fw.semibold, color: c['content-primary'], letterSpacing: '-0.025em', lineHeight: 1.2, marginBottom: 10 }}>
+                {plan.modelName}
+              </div>
+              {/* Connection row — shared across all directions, read-only */}
+              <div style={{ marginTop: 10 }}>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 10px', borderRadius: 20, border: `1px solid ${c['border-default']}` }}>
+                  <div style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: typeColor, flexShrink: 0 }} />
+                  <span style={{ fontSize: 11, fontWeight: fw.medium, color: c['content-primary'], fontFamily: ff.mono }}>{conn.name}</span>
+                  <span style={{ fontSize: 10, color: c['content-secondary'] }}>· {typeLabel}</span>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+
+        {!approved && (
+          <>
+            {/* ── What you asked for ── */}
+            <div style={{ padding: '14px 22px', borderBottom: `1px solid ${c['border-divider']}` }}>
+              <div style={{ fontSize: 10, fontWeight: fw.semibold, color: c['content-secondary'], textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8 }}>What you asked for</div>
+              <p style={{ margin: 0, fontSize: fs.xs, color: c['content-primary'], lineHeight: '19px' }}>{plan.goal}</p>
+            </div>
+
+            {/* ── What I understood ── */}
+            <div style={{ padding: '14px 22px', borderBottom: `1px solid ${c['border-divider']}` }}>
+              <div style={{ fontSize: 10, fontWeight: fw.semibold, color: c['content-secondary'], textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 10 }}>What I understood</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <p style={{ margin: 0, fontSize: fs.xs, color: c['content-primary'], lineHeight: '19px' }}>
+                  {plan.tables.length} linked concepts: <strong>{plan.tables.map(t => fmtCol(t.name)).join(' → ')}</strong>
+                </p>
+                {keyMetrics.slice(0, 3).map((m, i) => (
+                  <div key={i} style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}>
+                    <span style={{ color: c['content-secondary'], fontSize: fs.xs, marginTop: 1 }}>·</span>
+                    <span style={{ fontSize: fs.xs, color: c['content-primary'], lineHeight: '18px' }}>{m}</span>
+                  </div>
+                ))}
+                {dimensions.slice(0, 3).map((d, i) => (
+                  <div key={i} style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}>
+                    <span style={{ color: c['content-secondary'], fontSize: fs.xs, marginTop: 1 }}>·</span>
+                    <span style={{ fontSize: fs.xs, color: c['content-secondary'], lineHeight: '18px' }}>{d}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* ── What I added (toggle) ── */}
+            <button
+              onClick={() => setAddedOpen(o => !o)}
+              style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 22px', background: 'none', border: 'none', borderBottom: `1px solid ${c['border-divider']}`, cursor: 'pointer', fontFamily: ff.primary }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ fontSize: fs.xs, color: c['content-secondary'], fontWeight: fw.medium }}>What I added</span>
+                <span style={{ fontSize: 10, color: c['content-secondary'], opacity: 0.6 }}>· business rules &amp; AI context not in your prompt</span>
+              </div>
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke={c['content-secondary']} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: addedOpen ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.15s', flexShrink: 0 }}>
+                <polyline points="2,4 6,8 10,4" />
+              </svg>
+            </button>
+            {addedOpen && (
+              <>
+                <MRDBulletSection    label="Guardrails"       items={guardrails}    animDelay={0} onChange={setGuardrails} />
+                <MRDParagraphSection label="AI instructions"   text={aiInstructions} animDelay={0} onChange={setAiInstructions} />
+                {hasTimeDimension && <MRDParagraphSection label="Time handling" text={timeHandling} animDelay={0} onChange={setTimeHandling} />}
+                {limitations.length > 0 && <MRDBulletSection label="Limitations" items={limitations} animDelay={0} onChange={setLimitations} />}
+              </>
+            )}
+            <div style={{ padding: '16px 22px', display: 'flex', justifyContent: 'flex-end' }}>
+              <Button variant="primary" size="basic" onClick={handleBuild}>Build model</Button>
+            </div>
+          </>
+        )}
+      </div>
+    </>
   );
 };
 
@@ -6000,12 +6824,6 @@ const MessageBubble: React.FC<{
             </div>
           )}
           {/* ── GenUI cards ─────────────────────────────────────────────────── */}
-          {msg.genUI === 'air_readiness' && (
-            <AIReadinessCard result={msg.genUIResult} />
-          )}
-          {msg.genUI === 'air_tune_eval' && (
-            <AITuneEvalCard />
-          )}
           {msg.genUI === 'semantic_gaps' && onGenUIAction && (
             <SemanticGapsCard msgId={msg.id} result={msg.genUIResult} onAction={onGenUIAction} onOpenObject={onOpenObject} />
           )}
@@ -6065,6 +6883,15 @@ const MessageBubble: React.FC<{
           )}
           {msg.genUI === 'restore_point' && onGenUIAction && (
             <RestorePointCard msgId={msg.id} result={msg.genUIResult} onAction={onGenUIAction} onComplete={onComplete} />
+          )}
+          {msg.genUI === 'air_readiness' && onGenUIAction && (
+            <AIReadinessCard msgId={msg.id} result={msg.genUIResult} onAction={onGenUIAction} />
+          )}
+          {msg.genUI === 'air_tune_eval' && onGenUIAction && (
+            <AITuneEvalCard msgId={msg.id} result={msg.genUIResult} onAction={onGenUIAction} />
+          )}
+          {msg.genUI === 'air_tune_diagnostic' && onGenUIAction && (
+            <AITuneDiagnosticCard msgId={msg.id} onAction={onGenUIAction} />
           )}
           {/* ── Artifact cards ──────────────────────────────────────────────── */}
           {msg.artifactCards && msg.artifactCards.length > 0 && (
@@ -6506,162 +7333,6 @@ const GenUICard: React.FC<{ children: React.ReactNode; locked?: boolean }> = ({ 
     {children}
   </div>
 );
-
-// ── AI readiness card (rendered in the agent panel from ModelCanvas's air scan) ──
-const AIReadinessCard: React.FC<{ result?: string }> = ({ result }) => {
-  type AirCheck = { id: string; name: string; sev: string; detail: string };
-  let items: AirCheck[] = [];
-  try { items = result ? (JSON.parse(result) as AirCheck[]) : []; } catch { items = []; }
-  const [applied, setApplied] = useState<Set<string>>(new Set());
-  const sevMeta: Record<string, { color: string; bg: string; label: string }> = {
-    miss: { color: '#E22B3D', bg: 'rgba(226,43,61,0.08)', label: 'Missing' },
-    warn: { color: '#B8860B', bg: 'rgba(252,200,56,0.14)', label: 'Partial' },
-    good: { color: '#06BF7F', bg: 'rgba(6,191,127,0.10)', label: 'Good' },
-  };
-  const readyCount = items.filter(i => i.sev === 'good' || applied.has(i.id)).length;
-  const pct = items.length ? Math.round((readyCount / items.length) * 100) : 0;
-  const pending = items.filter(i => i.sev !== 'good' && !applied.has(i.id));
-  if (!items.length) return null;
-  return (
-    <GenUICard>
-      <div style={{ padding: '11px 14px', borderBottom: '1px solid #EEF1F4', display: 'flex', alignItems: 'center', gap: 8 }}>
-        <svg width="13" height="13" viewBox="0 0 12 12" fill="none"><path d="M6 1l1.2 3.6H11l-3 2.3 1.1 3.5L6 8.5l-3.1 1.9 1.1-3.5-3-2.3h3.8z" fill="#2770EF"/></svg>
-        <span style={{ fontSize: 13, fontWeight: 600, color: '#1D232F', flex: 1, fontFamily: ff.primary }}>AI readiness</span>
-        <span style={{ fontSize: 11, fontWeight: 600, color: '#8B96A5', fontFamily: ff.primary }}>{readyCount}/{items.length} ready</span>
-      </div>
-      <div style={{ padding: '9px 14px 4px' }}>
-        <div style={{ height: 5, borderRadius: 99, background: '#EEF1F4', overflow: 'hidden' }}>
-          <div style={{ height: '100%', width: `${pct}%`, borderRadius: 99, background: pct <= 40 ? '#E22B3D' : pct <= 75 ? '#FCC838' : '#06BF7F', transition: 'width 500ms cubic-bezier(0.4,0,0.2,1)' }} />
-        </div>
-      </div>
-      <div>
-        {items.map(it => {
-          const m = sevMeta[it.sev] ?? sevMeta.miss;
-          const done = it.sev === 'good' || applied.has(it.id);
-          return (
-            <div key={it.id} style={{ padding: '9px 14px', borderTop: '1px solid #F4F6F8', display: 'flex', gap: 9, alignItems: 'flex-start' }}>
-              <span style={{ width: 15, height: 15, borderRadius: '50%', flexShrink: 0, marginTop: 1, border: `1.5px solid ${done ? '#06BF7F' : m.color}`, background: done ? '#06BF7F' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                {done && <svg width="8" height="8" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#fff" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-              </span>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: 12.5, fontWeight: 600, color: '#1D232F', fontFamily: ff.primary }}>{it.name}</span>
-                  <span style={{ fontSize: 9.5, fontWeight: 700, padding: '1px 6px', borderRadius: 3, color: done ? '#06BF7F' : m.color, background: done ? 'rgba(6,191,127,0.10)' : m.bg, fontFamily: ff.primary }}>{done ? 'Fixed' : m.label}</span>
-                </div>
-                <div style={{ fontSize: 11.5, color: '#64748B', marginTop: 2, lineHeight: 1.45, fontFamily: ff.primary }}>{it.detail}</div>
-              </div>
-              {it.sev !== 'good' && !done && (
-                <button
-                  onClick={() => (window as any).__airShowFixReview__?.(it.id)}
-                  style={{ flexShrink: 0, fontSize: 11, fontWeight: 600, color: '#2770EF', background: 'none', border: '1px solid #D6E0F5', borderRadius: 5, padding: '3px 9px', cursor: 'pointer', fontFamily: ff.primary }}
-                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(39,112,239,0.06)')}
-                  onMouseLeave={e => (e.currentTarget.style.background = 'none')}
-                >Review</button>
-              )}
-            </div>
-          );
-        })}
-      </div>
-      {pending.length > 0 && (
-        <div style={{ padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#FAFBFC', borderTop: '1px solid #F4F6F8' }}>
-          <span style={{ fontSize: 11, color: '#8B96A5', fontFamily: ff.primary }}>{pending.length} improvement{pending.length === 1 ? '' : 's'} pending</span>
-          <button
-            onClick={() => { (window as any).__airApplyFix__?.('__all__'); setApplied(new Set(items.map(i => i.id))); }}
-            style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11.5, fontWeight: 600, color: '#fff', background: '#2770EF', border: 'none', borderRadius: 6, padding: '5px 11px', cursor: 'pointer', fontFamily: ff.primary }}
-            onMouseEnter={e => (e.currentTarget.style.background = '#2359B6')}
-            onMouseLeave={e => (e.currentTarget.style.background = '#2770EF')}
-          >
-            <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M6 1l1.2 3.6H11l-3 2.3 1.1 3.5L6 8.5l-3.1 1.9 1.1-3.5-3-2.3h3.8z" fill="currentColor"/></svg>
-            Fix all with AI
-          </button>
-        </div>
-      )}
-    </GenUICard>
-  );
-};
-
-// ── Tuning eval card — rate simulated Spotter answers → generate metadata fixes ──
-const TUNE_QUESTIONS: { q: string; a: string }[] = [
-  { q: 'What was total revenue by region last quarter?', a: 'Returned SUM of amount grouped by region for the last 3 months (West, East, North, South).' },
-  { q: 'Which campaigns had the highest ROAS?', a: 'Ranked campaigns by total revenue — but did not divide by spend, so this is revenue, not ROAS.' },
-  { q: 'Show me churn rate by customer segment', a: "Spotter couldn't find a churn or account-status field on this model." },
-];
-
-const AITuneEvalCard: React.FC = () => {
-  const [ratings, setRatings] = useState<Record<number, 'correct' | 'incorrect' | 'oos'>>({});
-  const [reasons, setReasons] = useState<Record<number, string>>({});
-  const [submitted, setSubmitted] = useState(false);
-  const allRated = TUNE_QUESTIONS.every((_, i) => ratings[i]);
-  const recCount = TUNE_QUESTIONS.filter((_, i) => ratings[i] === 'incorrect' || ratings[i] === 'oos').length;
-
-  if (submitted) {
-    return (
-      <GenUICard>
-        <div style={{ padding: 14, display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-          <span style={{ width: 22, height: 22, borderRadius: '50%', flexShrink: 0, background: recCount > 0 ? 'rgba(252,200,56,0.16)' : 'rgba(6,191,127,0.14)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            {recCount > 0
-              ? <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M6 3v3.3l2 1.4" stroke="#B8860B" strokeWidth="1.4" strokeLinecap="round"/><circle cx="6" cy="6" r="5" stroke="#B8860B" strokeWidth="1.2"/></svg>
-              : <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#06BF7F" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-          </span>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: '#1D232F', fontFamily: ff.primary }}>{recCount > 0 ? `${recCount} metadata fix${recCount === 1 ? '' : 'es'} generated` : 'All answers correct'}</div>
-            <div style={{ fontSize: 12, color: '#64748B', marginTop: 4, lineHeight: 1.5, fontFamily: ff.primary }}>{recCount > 0 ? 'Applied targeted improvements from your ratings. Re-run AI readiness to see the updated score.' : 'This model is well-tuned for Spotter.'}</div>
-          </div>
-        </div>
-      </GenUICard>
-    );
-  }
-
-  const RATE_OPTS: { val: 'correct' | 'incorrect' | 'oos'; label: string; color: string }[] = [
-    { val: 'correct', label: 'Correct', color: '#06BF7F' },
-    { val: 'incorrect', label: 'Incorrect', color: '#E22B3D' },
-    { val: 'oos', label: 'Out of scope', color: '#8B96A5' },
-  ];
-
-  return (
-    <GenUICard>
-      <div style={{ padding: '11px 14px', borderBottom: '1px solid #EEF1F4' }}>
-        <span style={{ fontSize: 13, fontWeight: 600, color: '#1D232F', fontFamily: ff.primary }}>Rate Spotter&rsquo;s answers</span>
-        <div style={{ fontSize: 11.5, color: '#64748B', marginTop: 2, fontFamily: ff.primary }}>3 sample questions · mark each correct, incorrect, or out of scope</div>
-      </div>
-      {TUNE_QUESTIONS.map((item, i) => {
-        const r = ratings[i];
-        return (
-          <div key={i} style={{ padding: '12px 14px', borderBottom: i < TUNE_QUESTIONS.length - 1 ? '1px solid #F4F6F8' : 'none' }}>
-            <div style={{ fontSize: 12.5, fontWeight: 600, color: '#1D232F', marginBottom: 6, fontFamily: ff.primary }}>{item.q}</div>
-            <div style={{ fontSize: 12, color: '#5B6472', lineHeight: 1.5, padding: '8px 10px', background: '#F6F8FA', borderRadius: 6, marginBottom: 8, fontFamily: ff.primary }}>{item.a}</div>
-            <div style={{ display: 'flex', gap: 6 }}>
-              {RATE_OPTS.map(opt => {
-                const active = r === opt.val;
-                return (
-                  <button key={opt.val} onClick={() => setRatings(p => ({ ...p, [i]: opt.val }))}
-                    style={{ fontSize: 11.5, fontWeight: 600, padding: '4px 10px', borderRadius: 6, cursor: 'pointer', fontFamily: ff.primary, border: `1px solid ${active ? opt.color : '#E2E6EC'}`, color: active ? '#fff' : '#4A5568', background: active ? opt.color : '#fff' }}>
-                    {opt.label}
-                  </button>
-                );
-              })}
-            </div>
-            {r === 'incorrect' && (
-              <input value={reasons[i] ?? ''} onChange={e => setReasons(p => ({ ...p, [i]: e.target.value }))}
-                placeholder="What was wrong? (optional)"
-                style={{ marginTop: 8, width: '100%', boxSizing: 'border-box', fontSize: 12, fontFamily: ff.primary, color: '#1D232F', border: '1px solid #E2E6EC', borderRadius: 6, padding: '6px 9px', outline: 'none' }}
-                onFocus={e => (e.currentTarget.style.borderColor = '#2770EF')}
-                onBlur={e => (e.currentTarget.style.borderColor = '#E2E6EC')}
-              />
-            )}
-          </div>
-        );
-      })}
-      <div style={{ padding: '10px 14px', display: 'flex', justifyContent: 'flex-end', background: '#FAFBFC' }}>
-        <button disabled={!allRated}
-          onClick={() => { setSubmitted(true); (window as any).__airTuneComplete__?.(recCount); }}
-          style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11.5, fontWeight: 600, color: '#fff', background: allRated ? '#2770EF' : '#C0C6CF', border: 'none', borderRadius: 6, padding: '6px 13px', cursor: allRated ? 'pointer' : 'default', fontFamily: ff.primary }}>
-          Generate fixes
-        </button>
-      </div>
-    </GenUICard>
-  );
-};
 
 const GenUISection: React.FC<{ children: React.ReactNode; last?: boolean; bg?: string }> = ({ children, last, bg }) => (
   <div style={{
@@ -8120,6 +8791,994 @@ const NextIssueCard: React.FC<{ msgId: string; result?: string; onAction: (actio
     </GenUICard>
   );
 };
+
+// ── Spotter Tuning ───────────────────────────────────────────────────────────
+
+type TuneAnswer =
+  | { type: 'table'; rows: { label: string; value: string }[] }
+  | { type: 'bar'; rows: { label: string; value: number }[] }
+  | { type: 'ranked'; rows: { rank: number; label: string; value: string }[] };
+
+interface TuneQuestion { id: string; question: string; nlSummary: string; answer: TuneAnswer; incRec: { col: string; problem: string; why: string; fix: string } }
+
+const TUNE_QUESTIONS: TuneQuestion[] = [
+  { id: 'q1', question: 'What is total revenue by customer segment last quarter?', nlSummary: 'Total revenue last quarter was $4.2M across 3 segments.', answer: { type: 'table', rows: [{ label: 'Enterprise', value: '$2.1M' }, { label: 'SMB', value: '$1.4M' }, { label: 'Mid-Market', value: '$700K' }] }, incRec: { col: 'order_date', problem: 'Returned Q4 revenue instead of fiscal Q3.', why: 'Spotter defaults to calendar quarters — your fiscal year starts in July.', fix: 'Add AI context to order_date: "Fiscal year starts July 1. Q1 = Jul–Sep, Q2 = Oct–Dec, Q3 = Jan–Mar, Q4 = Apr–Jun."' } },
+  { id: 'q2', question: 'Which region has the highest order volume this month?', nlSummary: 'North America leads with 2,847 orders this month.', answer: { type: 'bar', rows: [{ label: 'North America', value: 2847 }, { label: 'EMEA', value: 1203 }, { label: 'APAC', value: 891 }, { label: 'LATAM', value: 412 }] }, incRec: { col: 'region', problem: 'Grouped by country instead of region.', why: 'No grouping hierarchy defined — Spotter returned raw column values.', fix: 'Add AI context: "Group by region (North America, EMEA, APAC, LATAM). Don\'t break down by country unless asked."' } },
+  { id: 'q3', question: 'Show top 10 customers by revenue year to date.', nlSummary: 'Here are your top customers by revenue YTD.', answer: { type: 'ranked', rows: [{ rank: 1, label: 'Acme Corp', value: '$487K' }, { rank: 2, label: 'Globex Ltd', value: '$341K' }, { rank: 3, label: 'Initech', value: '$298K' }, { rank: 4, label: 'Umbrella Co', value: '$271K' }, { rank: 5, label: 'Stark Ind.', value: '$244K' }] }, incRec: { col: 'customer_id', problem: 'Ranked by order count, not revenue.', why: 'No sort priority set — Spotter defaulted to order_count.', fix: 'Add AI context: "Sort customers by total_revenue_ytd unless order count is explicitly requested."' } },
+  { id: 'q4', question: 'What is the average order value by sales channel?', nlSummary: 'Average order value across channels this period.', answer: { type: 'bar', rows: [{ label: 'Enterprise', value: 4820 }, { label: 'Mid-Market', value: 2340 }, { label: 'Online', value: 890 }, { label: 'Reseller', value: 1650 }] }, incRec: { col: 'amount', problem: 'Returned total revenue per channel instead of average order value.', why: 'amount defaults to SUM — no average aggregation rule is set on this column.', fix: 'Add AI context: "Use AVG aggregation when the question asks for average order value or AOV."' } },
+  { id: 'q5', question: 'How has monthly recurring revenue trended over the past 6 months?', nlSummary: 'MRR over the last 6 months shows steady growth.', answer: { type: 'bar', rows: [{ label: 'Feb', value: 312000 }, { label: 'Mar', value: 328000 }, { label: 'Apr', value: 341000 }, { label: 'May', value: 359000 }, { label: 'Jun', value: 374000 }, { label: 'Jul', value: 391000 }] }, incRec: { col: 'mrr', problem: 'Showed total contract value instead of monthly recurring revenue.', why: 'mrr and total_contract_value are not distinguished — Spotter picked the higher-value column.', fix: 'Add AI context to mrr: "Use this column for recurring revenue queries. Do not substitute total_contract_value."' } },
+];
+
+const TUNE_REASONS = ['Wrong metric', 'Wrong time range', 'Wrong breakdown', 'Missing filter'];
+
+const renderTuneAnswer = (answer: TuneAnswer): React.ReactNode => {
+  const headerStyle: React.CSSProperties = { fontSize: fs.xs, fontWeight: fw.semibold, color: c['content-secondary'], padding: `${sp.A}px 0`, borderBottom: `1px solid #EAEDF2`, marginBottom: sp.A };
+  if (answer.type === 'table') return (
+    <div>
+      <div style={{ display: 'flex', gap: sp.B, ...headerStyle }}><span style={{ flex: 1 }}>Segment</span><span>Revenue</span></div>
+      {answer.rows.map(r => (
+        <div key={r.label} style={{ display: 'flex', gap: sp.B, padding: `${sp.B}px 0`, borderBottom: `1px solid #F6F8FA` }}>
+          <span style={{ flex: 1, fontSize: fs.sm, color: c['content-primary'] }}>{r.label}</span>
+          <span style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: '#2770EF' }}>{r.value}</span>
+        </div>
+      ))}
+    </div>
+  );
+  if (answer.type === 'bar') {
+    const max = Math.max(...answer.rows.map(r => r.value));
+    return (
+      <div>
+        {answer.rows.map(r => (
+          <div key={r.label} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: `${sp.B}px 0` }}>
+            <span style={{ fontSize: fs.sm, color: c['content-secondary'], width: 120, flexShrink: 0, textAlign: 'right', lineHeight: '18px' }}>{r.label}</span>
+            <div style={{ flex: 1, height: 20, background: '#EEF2F8', borderRadius: 4, overflow: 'hidden' }}>
+              <div style={{ width: `${(r.value / max) * 100}%`, height: '100%', background: r.value === max ? '#2462C8' : '#A8C4FA', borderRadius: 4, transition: 'width 700ms cubic-bezier(0.4,0,0.2,1)' }} />
+            </div>
+            <span style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'], width: 48, textAlign: 'right', flexShrink: 0 }}>{r.value.toLocaleString()}</span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+  if (answer.type === 'ranked') return (
+    <div>
+      <div style={{ display: 'flex', gap: sp.B, ...headerStyle }}><span style={{ width: 20, flexShrink: 0 }}>#</span><span style={{ flex: 1 }}>Customer</span><span>Revenue YTD</span></div>
+      {answer.rows.map(r => (
+        <div key={r.rank} style={{ display: 'flex', alignItems: 'center', gap: sp.B, padding: `${sp.B}px 0`, borderBottom: `1px solid #F6F8FA` }}>
+          <span style={{ width: 20, fontSize: fs.sm, fontWeight: fw.semibold, color: '#BFC6D0', flexShrink: 0 }}>{r.rank}</span>
+          <span style={{ flex: 1, fontSize: fs.sm, color: c['content-primary'] }}>{r.label}</span>
+          <span style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: '#2770EF' }}>{r.value}</span>
+        </div>
+      ))}
+    </div>
+  );
+  return null;
+};
+
+// ── Edit Answer modal — the ThoughtSpot "Search data" answer editor, opened from
+// a tuning question's Edit action. A faithful visual mock (dataset dropdown, token
+// search bar, column picker, live bar chart, viz-type rail, Discard/Done) — the
+// controls are presentational; Done/Discard/✕ close it. Titled after the question
+// being tuned so it reads as "editing this answer".
+const EDIT_ANSWER_MEASURES = ['quantity purchased', 'sales'];
+const EDIT_ANSWER_ATTRIBUTES = ['city', 'county', 'item type', 'latitude', 'longitude', 'product', 'region', 'SKU', 'state'];
+const EDIT_ANSWER_REGIONS = [
+  { label: 'East', value: 47 }, { label: 'Midwest', value: 53 }, { label: 'South', value: 10 },
+  { label: 'Southwest', value: 28 }, { label: 'West', value: 45 },
+];
+
+const EditAnswerModal: React.FC<{ title: string; onClose: () => void }> = ({ title, onClose }) => {
+  const [checkedCols, setCheckedCols] = React.useState<Set<string>>(new Set(['sales', 'region']));
+  const [chart, setChart] = React.useState(true); // chart vs table toggle
+  const toggleCol = (col: string) =>
+    setCheckedCols(prev => { const n = new Set(prev); n.has(col) ? n.delete(col) : n.add(col); return n; });
+
+  const chartOption = {
+    grid: { left: 56, right: 20, top: 20, bottom: 40 },
+    xAxis: { type: 'category', data: EDIT_ANSWER_REGIONS.map(r => r.label), axisLine: { lineStyle: { color: '#E2E6EC' } }, axisTick: { show: false }, axisLabel: { color: '#64748B', fontSize: 12 } },
+    yAxis: { type: 'value', max: 55, interval: 5, axisLabel: { color: '#8B96A5', fontSize: 11, formatter: (v: number) => `${v}M` }, splitLine: { lineStyle: { color: '#F0F2F6' } } },
+    series: [{ type: 'bar', data: EDIT_ANSWER_REGIONS.map(r => r.value), itemStyle: { color: '#3B7BF6' }, barWidth: '58%' }],
+    tooltip: { trigger: 'axis' as const },
+  };
+
+  const railIcon = (path: React.ReactNode, active?: boolean) => (
+    <div style={{ width: 34, height: 34, borderRadius: 7, display: 'flex', alignItems: 'center', justifyContent: 'center', color: active ? '#2770EF' : '#8B96A5', background: active ? 'rgba(39,112,239,0.08)' : 'transparent', cursor: 'pointer' }}>
+      <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">{path}</svg>
+    </div>
+  );
+  const token = (label: string) => (
+    <span style={{ fontSize: fs.sm, fontWeight: fw.medium, color: c['content-primary'], background: '#EEF2F8', border: '1px solid #DCE3EC', borderRadius: 6, padding: '3px 9px', whiteSpace: 'nowrap' as const }}>{label}</span>
+  );
+  const checkRow = (col: string) => {
+    const on = checkedCols.has(col);
+    return (
+      <button key={col} onClick={() => toggleCol(col)} style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '6px 10px', border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left', fontFamily: ff.primary }}
+        onMouseEnter={e => (e.currentTarget.style.background = c['background-subtle'])}
+        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+        <span style={{ width: 16, height: 16, borderRadius: 4, flexShrink: 0, border: `1.5px solid ${on ? '#2770EF' : '#C0C6CF'}`, background: on ? '#2770EF' : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          {on && <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2.5 6l2.5 2.5 4.5-4.5" stroke="#fff" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+        </span>
+        <span style={{ fontSize: fs.sm, fontWeight: fw.medium, color: c['content-primary'], background: on ? 'rgba(6,191,127,0.12)' : 'transparent', borderRadius: 4, padding: on ? '1px 6px' : 0 }}>{col}</span>
+      </button>
+    );
+  };
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 3000, background: 'rgba(25,35,49,0.45)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '40px 24px' }}
+      onClick={onClose}>
+      <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: 1280, height: 'calc(100vh - 80px)', background: '#fff', borderRadius: 12, boxShadow: '0 24px 64px rgba(25,35,49,0.28)', display: 'flex', flexDirection: 'column', overflow: 'hidden', fontFamily: ff.primary }}>
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', padding: '16px 24px', borderBottom: `1px solid ${c['border-divider']}`, flexShrink: 0 }}>
+          <span style={{ fontSize: fs.lg, fontWeight: fw.semibold, color: c['content-primary'] }}>Edit Answer</span>
+        </div>
+        {/* Search / token toolbar */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: sp.C, padding: '12px 24px', borderBottom: `1px solid ${c['border-divider']}`, flexShrink: 0 }}>
+          <button style={{ display: 'flex', alignItems: 'center', gap: 8, height: 36, padding: '0 12px', border: `1px solid ${c['border-default']}`, borderRadius: 8, background: '#fff', cursor: 'pointer', fontFamily: ff.primary, flexShrink: 0 }}>
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="#64748B" strokeWidth="1.4"><path d="M2 4h12M2 8h12M2 12h12"/></svg>
+            <span style={{ fontSize: fs.sm, fontWeight: fw.medium, color: c['content-primary'] }}>(Sample) Retail - Apparel</span>
+            <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M3 4.5l3 3 3-3" stroke="#8B96A5" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          </button>
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: sp.B, minWidth: 0, height: 36, border: `1px solid ${c['border-default']}`, borderRadius: 8, padding: '0 10px' }}>
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}><circle cx="7" cy="7" r="5" stroke="#8B96A5" strokeWidth="1.5"/><path d="M11 11l3 3" stroke="#8B96A5" strokeWidth="1.5" strokeLinecap="round"/></svg>
+            <div style={{ display: 'flex', gap: sp.A, alignItems: 'center', overflow: 'hidden' }}>{token('sales')}{token('region')}{token('date = last year')}</div>
+          </div>
+          <button title="Clear" style={{ width: 32, height: 32, border: 'none', background: 'transparent', borderRadius: 6, cursor: 'pointer', color: '#8B96A5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <svg width="13" height="13" viewBox="0 0 12 12" fill="none"><path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+          </button>
+          <button style={{ height: 34, padding: '0 18px', border: `1px solid ${c['border-default']}`, borderRadius: 8, background: c['background-subtle'], color: c['content-primary'], fontSize: fs.sm, fontWeight: fw.semibold, cursor: 'pointer', fontFamily: ff.primary, flexShrink: 0 }}>Go</button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 2, marginLeft: sp.B, flexShrink: 0 }}>
+            {railIcon(<path d="M8 6H4v4M4 6a7 7 0 1 1-1.5 4.5" />)}
+            {railIcon(<path d="M12 6h4v4M16 6a7 7 0 1 0 1.5 4.5" />)}
+            {railIcon(<path d="M10 4v3M10 4L7.5 6.5M10 4l2.5 2.5M4 12a6 6 0 0 0 12 0" />)}
+          </div>
+        </div>
+        {/* Body */}
+        <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
+          {/* Column picker */}
+          <aside style={{ width: 244, flexShrink: 0, borderRight: `1px solid ${c['border-divider']}`, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: sp.C, padding: '12px 14px 8px' }}>
+              <span style={{ fontSize: fs.sm, color: c['content-tertiary'], fontWeight: fw.medium }}>Popular</span>
+              <span style={{ fontSize: fs.sm, color: '#2770EF', fontWeight: fw.semibold, borderBottom: '2px solid #2770EF', paddingBottom: 2 }}>All</span>
+            </div>
+            <div style={{ padding: '4px 14px 10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, height: 34, border: `1px solid ${c['border-default']}`, borderRadius: 8, padding: '0 10px' }}>
+                <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5" stroke="#A5ACB9" strokeWidth="1.5"/><path d="M11 11l3 3" stroke="#A5ACB9" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                <span style={{ fontSize: fs.sm, color: c['content-tertiary'] }}>Find columns</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 8, color: '#2770EF', fontSize: fs.sm, fontWeight: fw.semibold, cursor: 'pointer' }}>
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 2v8M2 6h8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>Add
+              </div>
+            </div>
+            <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 12 }}>
+              <div style={{ padding: '6px 14px', fontSize: fs.xs, fontWeight: fw.semibold, color: c['content-secondary'], display: 'flex', alignItems: 'center', gap: 6 }}>
+                <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M3 4.5l3 3 3-3" stroke="#8B96A5" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>Measures
+              </div>
+              {EDIT_ANSWER_MEASURES.map(checkRow)}
+              <div style={{ padding: '10px 14px 6px', fontSize: fs.xs, fontWeight: fw.semibold, color: c['content-secondary'], display: 'flex', alignItems: 'center', gap: 6 }}>
+                <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M3 4.5l3 3 3-3" stroke="#8B96A5" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>Attributes
+              </div>
+              {EDIT_ANSWER_ATTRIBUTES.map(checkRow)}
+            </div>
+          </aside>
+          {/* Chart area */}
+          <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', padding: '18px 24px' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start' }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: fs.lg, fontWeight: fw.semibold, color: c['content-primary'], overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</div>
+                <div style={{ fontSize: fs.sm, color: c['content-tertiary'], marginTop: 2 }}>Add description</div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, flexShrink: 0 }}>
+                <div style={{ display: 'flex', background: c['background-subtle'], borderRadius: 8, padding: 3, gap: 2 }}>
+                  <button onClick={() => setChart(false)} style={{ width: 30, height: 26, border: 'none', borderRadius: 6, cursor: 'pointer', background: !chart ? '#fff' : 'transparent', boxShadow: !chart ? '0 1px 2px rgba(25,35,49,0.12)' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', color: !chart ? '#1D232F' : '#8B96A5' }}>
+                    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4"><rect x="2" y="2.5" width="12" height="11" rx="1"/><path d="M2 6h12M6 6v7.5"/></svg>
+                  </button>
+                  <button onClick={() => setChart(true)} style={{ width: 30, height: 26, border: 'none', borderRadius: 6, cursor: 'pointer', background: chart ? '#fff' : 'transparent', boxShadow: chart ? '0 1px 2px rgba(25,35,49,0.12)' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', color: chart ? '#2770EF' : '#8B96A5' }}>
+                    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"><path d="M3 13V8M7 13V4M11 13V6M15 13H1"/></svg>
+                  </button>
+                </div>
+                <button style={{ width: 30, height: 30, border: 'none', background: 'transparent', borderRadius: 6, cursor: 'pointer', color: '#8B96A5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><circle cx="3" cy="8" r="1.4"/><circle cx="8" cy="8" r="1.4"/><circle cx="13" cy="8" r="1.4"/></svg>
+                </button>
+              </div>
+            </div>
+            <div style={{ marginTop: sp.C }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: fs.sm, background: c['background-subtle'], borderRadius: 20, padding: '4px 12px', color: c['content-secondary'] }}>
+                <span style={{ color: c['content-tertiary'] }}>date</span><span style={{ fontWeight: fw.semibold, color: c['content-primary'] }}>Last 1 Year (2025)</span>
+              </span>
+            </div>
+            <div style={{ flex: 1, minHeight: 0, marginTop: sp.C }}>
+              {chart
+                ? <ReactECharts option={chartOption} style={{ height: '100%', width: '100%' }} />
+                : (
+                  <div style={{ height: '100%', overflow: 'auto', border: `1px solid ${c['border-divider']}`, borderRadius: 8 }}>
+                    {EDIT_ANSWER_REGIONS.map((r, i) => (
+                      <div key={r.label} style={{ display: 'flex', padding: '8px 14px', borderBottom: `1px solid ${c['border-divider']}`, background: i % 2 ? '#FAFBFC' : '#fff' }}>
+                        <span style={{ flex: 1, fontSize: fs.sm, color: c['content-primary'] }}>{r.label}</span>
+                        <span style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'] }}>{r.value}M</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+            </div>
+          </div>
+          {/* Viz-type rail */}
+          <div style={{ width: 56, flexShrink: 0, borderLeft: `1px solid ${c['border-divider']}`, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '12px 0', gap: 4 }}>
+            {railIcon(<path d="M3 13V8M7 13V4M11 13V6M15 13H1" />, true)}
+            {railIcon(<path d="M4 4h5v5H4zM11 4h5v5h-5zM4 11h12v5H4z" />)}
+            {railIcon(<path d="M4 15V6M9 15V3M14 15V9" />)}
+            {railIcon(<path d="M10 4v3M10 4L7.5 6.5M10 4l2.5 2.5M4 12a6 6 0 0 0 12 0" />)}
+            {railIcon(<path d="M3 6h10M3 10h10M3 14h6" />)}
+            {railIcon(<rect x="3" y="4" width="14" height="12" rx="1" />)}
+            {railIcon(<circle cx="10" cy="10" r="6" />)}
+            {railIcon(<path d="M5 5l10 10M15 5L5 15" />)}
+            {railIcon(<path d="M4 10h12M10 4v12" />)}
+          </div>
+        </div>
+        {/* Footer */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: sp.C, padding: '14px 24px', borderTop: `1px solid ${c['border-divider']}`, flexShrink: 0 }}>
+          <button onClick={onClose} style={{ height: 38, padding: '0 18px', border: `1px solid ${c['border-default']}`, borderRadius: 8, background: '#fff', color: c['content-primary'], fontSize: fs.sm, fontWeight: fw.semibold, cursor: 'pointer', fontFamily: ff.primary }}>Discard changes</button>
+          <button onClick={onClose} style={{ height: 38, padding: '0 20px', border: 'none', borderRadius: 8, background: '#2770EF', color: '#fff', fontSize: fs.sm, fontWeight: fw.semibold, cursor: 'pointer', fontFamily: ff.primary }}>Done editing</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const AITuneEvalCard: React.FC<{
+  msgId: string;
+  result?: string;
+  onAction: (action: string, msgId: string) => void;
+}> = ({ msgId, onAction }) => {
+  type Rating = 'correct' | 'incorrect' | 'oos';
+  const [questions, setQuestions] = React.useState<TuneQuestion[]>(TUNE_QUESTIONS);
+  const [expanded, setExpanded] = React.useState<string | null>('q1');
+  const [ratings, setRatings] = React.useState<Record<string, Rating>>({});
+  const [reasons, setReasons] = React.useState<Record<string, string>>({});
+  const [submitted, setSubmitted] = React.useState(false);
+  const submittedRef = React.useRef(false);
+  const [addingQuestion, setAddingQuestion] = React.useState(false);
+  const [newQuestionText, setNewQuestionText] = React.useState('');
+  const [loadingNewQText, setLoadingNewQText] = React.useState('');
+  const [editingAnswer, setEditingAnswer] = React.useState<TuneQuestion | null>(null);
+
+  const isAllRated = (r: Record<string, Rating>, rsn: Record<string, string>, qs: TuneQuestion[]) =>
+    qs.length > 0 && qs.every(q => {
+      const rating = r[q.id];
+      if (!rating) return false;
+      if (rating === 'incorrect' && !rsn[q.id]) return false;
+      return true;
+    });
+
+  const allRated = React.useMemo(
+    () => isAllRated(ratings, reasons, questions),
+    [ratings, reasons, questions] // eslint-disable-line react-hooks/exhaustive-deps
+  );
+
+  const advanceToNext = (qId: string, qs = questions) => {
+    const idx = qs.findIndex(q => q.id === qId);
+    const next = qs[idx + 1];
+    setExpanded(next ? next.id : null);
+  };
+
+  const handleThumbsUp = (qId: string) => {
+    setRatings(prev => ({ ...prev, [qId]: 'correct' as Rating }));
+    advanceToNext(qId);
+  };
+
+  const handleThumbsDown = (qId: string) => {
+    setRatings(prev => ({ ...prev, [qId]: 'incorrect' as Rating }));
+  };
+
+  const handleOutOfScope = (qId: string) => {
+    setRatings(prev => ({ ...prev, [qId]: 'oos' as Rating }));
+    advanceToNext(qId);
+  };
+
+  const handleReasonSelect = (qId: string, rsn: string) => {
+    setReasons(prev => ({ ...prev, [qId]: rsn }));
+    advanceToNext(qId);
+  };
+
+  const handleSubmit = () => {
+    if (submittedRef.current) return;
+    submittedRef.current = true;
+    const recs = questions.filter(q => ratings[q.id] === 'incorrect').map(q => q.incRec);
+    (window as any).__airTuneRecs__ = recs;
+    (window as any).__airTuneComplete__?.(recs.length);
+    setSubmitted(true);
+    onAction('air_tune_submit', msgId);
+  };
+
+  const SIMULATED_ANSWERS: TuneAnswer[] = [
+    { type: 'bar', rows: [{ label: 'Q1', value: 142 }, { label: 'Q2', value: 198 }, { label: 'Q3', value: 173 }, { label: 'Q4', value: 221 }] },
+    { type: 'table', rows: [{ label: 'North America', value: '$1.8M' }, { label: 'EMEA', value: '$1.1M' }, { label: 'APAC', value: '$640K' }] },
+    { type: 'bar', rows: [{ label: 'Direct', value: 58 }, { label: 'Reseller', value: 43 }, { label: 'Online', value: 71 }, { label: 'Partner', value: 29 }] },
+  ];
+
+  const handleAddQuestion = () => {
+    const text = newQuestionText.trim();
+    if (!text) return;
+    setAddingQuestion(false);
+    setNewQuestionText('');
+    setLoadingNewQText(text);
+    setTimeout(() => {
+      const newId = `q-custom-${Date.now()}`;
+      const answerIdx = questions.length % SIMULATED_ANSWERS.length;
+      const newQ: TuneQuestion = {
+        id: newId,
+        question: text,
+        nlSummary: 'Here\'s what Spotter returned based on your model.',
+        answer: SIMULATED_ANSWERS[answerIdx],
+        incRec: { col: 'measure', problem: 'Spotter returned an answer that did not match the intent of this question.', why: 'The model lacks enough context to resolve the metric and dimension combination for this query type.', fix: 'Review the metric and dimension mapping for this question type and add AI context to the relevant columns.' },
+      };
+      setQuestions(prev => [...prev, newQ]);
+      setLoadingNewQText('');
+      setExpanded(newId);
+    }, 1800);
+  };
+
+  const iconBtn: React.CSSProperties = {
+    width: 34, height: 34, borderRadius: 8,
+    border: `1px solid ${c['border-default']}`,
+    background: c['background-base'],
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    cursor: 'pointer', flexShrink: 0, padding: 0, transition: 'all 120ms',
+  };
+
+  if (submitted) {
+    const correctCount = questions.filter(q => ratings[q.id] === 'correct').length;
+    const incorrectCount = questions.filter(q => ratings[q.id] === 'incorrect').length;
+    const oosCount = questions.filter(q => ratings[q.id] === 'oos').length;
+    const parts = [
+      correctCount > 0 && `${correctCount} correct`,
+      incorrectCount > 0 && `${incorrectCount} incorrect`,
+      oosCount > 0 && `${oosCount} out of scope`,
+    ].filter(Boolean).join(' · ');
+    return (
+      <div style={{ marginTop: sp.C, border: `1px solid ${c['border-divider']}`, borderRadius: 10, padding: `${sp.B + 2}px ${sp.D}px`, display: 'flex', alignItems: 'center', gap: sp.B, background: c['background-subtle'] }}>
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+          <circle cx="8" cy="8" r="6.5" fill="rgba(39,112,239,0.1)"/>
+          <path d="M5 8l2.5 2.5 4-4" stroke="#2770EF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+        <span style={{ fontSize: fs.xs, color: c['content-secondary'] }}>Feedback submitted — {parts}</span>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ marginTop: sp.C, marginLeft: -sp.H, marginRight: -sp.B, width: `calc(100% + ${sp.H + sp.B}px)` }}>
+      <div style={{ border: `1px solid ${c['border-divider']}`, borderRadius: 12, overflow: 'hidden', background: c['background-base'] }}>
+        {questions.map((q, idx) => {
+          const isExpanded = expanded === q.id;
+          const rating = ratings[q.id] as Rating | undefined;
+          const reason = reasons[q.id];
+          const isLast = idx === questions.length - 1 && !loadingNewQText;
+
+          return (
+            <div key={q.id}>
+              {/* Question row header */}
+              <div
+                onClick={() => setExpanded(isExpanded ? null : q.id)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: sp.C,
+                  padding: `${sp.D}px ${sp.D}px`,
+                  cursor: 'pointer',
+                  borderBottom: (isExpanded || !isLast) ? `1px solid ${c['border-divider']}` : 'none',
+                  background: c['background-base'],
+                  userSelect: 'none' as const,
+                  transition: 'background 100ms',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = c['background-subtle']; }}
+                onMouseLeave={e => { e.currentTarget.style.background = c['background-base']; }}
+              >
+                {/* Circle indicator */}
+                <div style={{
+                  width: 20, height: 20, borderRadius: '50%', flexShrink: 0,
+                  border: rating === 'correct'
+                    ? '1.5px solid #06BF7F'
+                    : rating === 'incorrect'
+                      ? '1.5px solid #E22B3D'
+                      : rating === 'oos'
+                        ? '1.5px solid #A5ACB9'
+                        : `1.5px solid #BFC6D0`,
+                  background: rating === 'correct'
+                    ? 'rgba(6,191,127,0.1)'
+                    : rating === 'incorrect'
+                      ? 'rgba(226,43,61,0.06)'
+                      : 'transparent',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  {rating === 'correct' && (
+                    <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
+                      <path d="M2.5 6l2.5 2.5 4.5-4.5" stroke="#06BF7F" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  )}
+                  {rating === 'incorrect' && (
+                    <svg width="8" height="8" viewBox="0 0 10 10" fill="none">
+                      <path d="M2 2l6 6M8 2l-6 6" stroke="#E22B3D" strokeWidth="1.5" strokeLinecap="round"/>
+                    </svg>
+                  )}
+                  {rating === 'oos' && (
+                    <svg width="8" height="8" viewBox="0 0 10 10" fill="none">
+                      <path d="M2 5h6" stroke="#A5ACB9" strokeWidth="1.5" strokeLinecap="round"/>
+                    </svg>
+                  )}
+                </div>
+                {/* Question text */}
+                <span style={{ flex: 1, fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'], lineHeight: '20px' }}>
+                  {q.question}
+                </span>
+                {/* Chevron */}
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, transition: 'transform 200ms', transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+                  <path d="M4 6l4 4 4-4" stroke={c['content-tertiary']} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+
+              {/* Expanded body */}
+              {isExpanded && (
+                <div style={{ padding: sp.D, borderBottom: !isLast ? `1px solid ${c['border-divider']}` : 'none', background: c['background-base'] }}>
+                  {/* Visualization card */}
+                  <div style={{ position: 'relative', border: `1px solid ${c['border-divider']}`, borderRadius: 10, padding: `${sp.C}px ${sp.D}px`, marginBottom: sp.C, background: '#FAFBFC' }}>
+                    {/* Edit → opens the Search-data answer editor in a popup */}
+                    <button
+                      onClick={e => { e.stopPropagation(); setEditingAnswer(q); }}
+                      title="Edit answer"
+                      style={{ position: 'absolute', top: sp.B, right: sp.B, display: 'flex', alignItems: 'center', gap: 5, height: 26, padding: '0 9px', border: `1px solid ${c['border-default']}`, borderRadius: 6, background: c['background-base'], color: c['content-secondary'], fontSize: fs.xs, fontWeight: fw.semibold, cursor: 'pointer', fontFamily: ff.primary }}
+                      onMouseEnter={e => { e.currentTarget.style.borderColor = '#2770EF'; e.currentTarget.style.color = '#2770EF'; }}
+                      onMouseLeave={e => { e.currentTarget.style.borderColor = c['border-default']; e.currentTarget.style.color = c['content-secondary']; }}
+                    >
+                      <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M9.5 2.5l2 2-7 7H2.5v-2l7-7z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      Edit
+                    </button>
+                    <p style={{ margin: `0 ${sp.I}px ${sp.C}px 0`, fontSize: fs.sm, color: c['content-secondary'], lineHeight: '20px' }}>{q.nlSummary}</p>
+                    {renderTuneAnswer(q.answer)}
+                  </div>
+
+                  {/* Feedback row */}
+                  {!rating ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: sp.B }}>
+                      <span style={{ fontSize: fs.xs, color: c['content-secondary'], marginRight: 2 }}>Is this correct?</span>
+                      {/* Thumbs up */}
+                      <button
+                        onClick={e => { e.stopPropagation(); handleThumbsUp(q.id); }}
+                        style={iconBtn}
+                        title="Correct"
+                        onMouseEnter={e => { e.currentTarget.style.background = '#F0FDF4'; e.currentTarget.style.borderColor = '#06BF7F'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = c['background-base']; e.currentTarget.style.borderColor = c['border-default']; }}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#475569" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/>
+                          <path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/>
+                        </svg>
+                      </button>
+                      {/* Thumbs down */}
+                      <button
+                        onClick={e => { e.stopPropagation(); handleThumbsDown(q.id); }}
+                        style={iconBtn}
+                        title="Incorrect"
+                        onMouseEnter={e => { e.currentTarget.style.background = '#FFF1F2'; e.currentTarget.style.borderColor = '#E22B3D'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = c['background-base']; e.currentTarget.style.borderColor = c['border-default']; }}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#475569" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3H10z"/>
+                          <path d="M17 2h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/>
+                        </svg>
+                      </button>
+                      {/* Out of scope */}
+                      <button
+                        onClick={e => { e.stopPropagation(); handleOutOfScope(q.id); }}
+                        style={iconBtn}
+                        title="Out of scope"
+                        onMouseEnter={e => { e.currentTarget.style.background = c['background-subtle']; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = c['background-base']; }}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="#475569" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="10" cy="10" r="8" strokeDasharray="3 2"/>
+                          <path d="M10 6v4.5l2.5 2"/>
+                        </svg>
+                      </button>
+                    </div>
+                  ) : rating === 'incorrect' ? (
+                    /* Reason chips */
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: sp.B }}>
+                      {TUNE_REASONS.map(rsn => {
+                        const isActive = reason === rsn;
+                        return (
+                          <button
+                            key={rsn}
+                            onClick={e => { e.stopPropagation(); handleReasonSelect(q.id, rsn); }}
+                            style={{
+                              padding: `${sp.B}px ${sp.C}px`, borderRadius: 20,
+                              border: `1px solid ${isActive ? '#2770EF' : c['border-default']}`,
+                              background: isActive ? 'rgba(39,112,239,0.07)' : c['background-base'],
+                              color: isActive ? '#2770EF' : c['content-primary'],
+                              fontSize: fs.sm, fontWeight: fw.semibold, cursor: 'pointer',
+                              fontFamily: ff.primary, lineHeight: '18px', transition: 'all 120ms',
+                            }}
+                            onMouseEnter={e => { if (!isActive) { e.currentTarget.style.borderColor = '#2770EF'; e.currentTarget.style.color = '#2770EF'; } }}
+                            onMouseLeave={e => { if (!isActive) { e.currentTarget.style.borderColor = c['border-default']; e.currentTarget.style.color = c['content-primary']; } }}
+                          >
+                            {rsn}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : rating === 'oos' ? (
+                    /* Out of scope state */
+                    <div style={{ display: 'flex', alignItems: 'center', gap: sp.B }}>
+                      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#A5ACB9" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="8" cy="8" r="6" strokeDasharray="2.5 1.5"/>
+                        <path d="M8 5v3.5l1.5 1.5"/>
+                      </svg>
+                      <span style={{ fontSize: fs.xs, color: c['content-secondary'], fontWeight: fw.medium }}>Marked out of scope</span>
+                    </div>
+                  ) : (
+                    /* Correct state */
+                    <div style={{ display: 'flex', alignItems: 'center', gap: sp.B }}>
+                      <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                        <circle cx="8" cy="8" r="6" fill="rgba(6,191,127,0.1)"/>
+                        <path d="M5 8l2.5 2.5 4-4" stroke="#06BF7F" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      <span style={{ fontSize: fs.xs, color: '#06BF7F', fontWeight: fw.medium }}>Marked correct</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+
+        {/* Loading row — appears while Spotter simulates an answer */}
+        {loadingNewQText && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: sp.C, padding: `${sp.D}px ${sp.D}px`, borderTop: `1px solid ${c['border-divider']}` }}>
+            <div style={{ width: 20, height: 20, borderRadius: '50%', border: `1.5px solid #BFC6D0`, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#BFC6D0', animation: 'tune-pulse 1.2s ease-in-out infinite' }} />
+            </div>
+            <span style={{ flex: 1, fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-secondary'], fontStyle: 'italic', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {loadingNewQText}
+            </span>
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="none" style={{ flexShrink: 0, animation: 'tune-spin 1s linear infinite' }}>
+              <path d="M10 3v2M10 15v2M3 10H5M15 10h2M5.05 5.05l1.41 1.41M13.54 13.54l1.41 1.41M5.05 14.95l1.41-1.41M13.54 6.46l1.41-1.41" stroke="#BFC6D0" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+          </div>
+        )}
+
+        {/* Add question row / input row */}
+        {addingQuestion ? (
+          <div style={{ padding: `${sp.C}px ${sp.D}px`, borderTop: `1px solid ${c['border-divider']}`, display: 'flex', flexDirection: 'column', gap: sp.B }}>
+            <input
+              autoFocus
+              placeholder="Type your question and press Enter…"
+              value={newQuestionText}
+              onChange={e => setNewQuestionText(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') handleAddQuestion(); if (e.key === 'Escape') { setAddingQuestion(false); setNewQuestionText(''); } }}
+              style={{
+                width: '100%', boxSizing: 'border-box',
+                padding: `${sp.B}px ${sp.C}px`, borderRadius: 6,
+                border: `1.5px solid ${c['content-brand']}`,
+                fontSize: fs.sm, fontFamily: ff.primary, color: c['content-primary'],
+                outline: 'none', background: c['background-base'],
+              }}
+            />
+            <div style={{ display: 'flex', gap: sp.B }}>
+              <button
+                onClick={handleAddQuestion}
+                disabled={!newQuestionText.trim()}
+                style={{
+                  padding: `5px 12px`, borderRadius: 6, border: 'none',
+                  background: newQuestionText.trim() ? c['content-brand'] : c['background-subtle'],
+                  color: newQuestionText.trim() ? '#fff' : c['content-tertiary'],
+                  fontSize: fs.xs, fontWeight: fw.semibold, cursor: newQuestionText.trim() ? 'pointer' : 'default',
+                  fontFamily: ff.primary, transition: 'all 120ms',
+                }}
+              >
+                Ask Spotter
+              </button>
+              <button
+                onClick={() => { setAddingQuestion(false); setNewQuestionText(''); }}
+                style={{
+                  padding: `5px 12px`, borderRadius: 6, border: `1px solid ${c['border-default']}`,
+                  background: 'transparent', color: c['content-secondary'],
+                  fontSize: fs.xs, fontWeight: fw.semibold, cursor: 'pointer', fontFamily: ff.primary,
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div
+            onClick={() => !loadingNewQText && setAddingQuestion(true)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: sp.B,
+              padding: `${sp.C + 2}px ${sp.D}px`, cursor: loadingNewQText ? 'default' : 'pointer',
+              borderTop: `1px solid ${c['border-divider']}`,
+              opacity: loadingNewQText ? 0.4 : 1,
+            }}
+            onMouseEnter={e => { if (!loadingNewQText) e.currentTarget.style.background = c['background-subtle']; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+          >
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+              <circle cx="10" cy="10" r="8.5" stroke="#2770EF" strokeWidth="1.3" strokeDasharray="3 2"/>
+              <path d="M10 6.5v7M6.5 10h7" stroke="#2770EF" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+            <span style={{ fontSize: fs.sm, color: '#2770EF', fontWeight: fw.medium, fontFamily: ff.primary }}>Add question</span>
+          </div>
+        )}
+      </div>
+
+      {/* Submit feedback button — appears when all questions are rated */}
+      {allRated && !submitted && (
+        <button
+          onClick={handleSubmit}
+          style={{
+            marginTop: sp.C, alignSelf: 'flex-start',
+            padding: `7px 16px`, borderRadius: 6, border: 'none',
+            background: c['content-brand'], color: '#fff',
+            fontSize: fs.xs, fontWeight: fw.semibold, cursor: 'pointer',
+            fontFamily: ff.primary, lineHeight: '18px',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.opacity = '0.88'; }}
+          onMouseLeave={e => { e.currentTarget.style.opacity = '1'; }}
+        >
+          Submit feedback
+        </button>
+      )}
+      {editingAnswer && (
+        <EditAnswerModal
+          title={editingAnswer.question}
+          onClose={() => setEditingAnswer(null)}
+        />
+      )}
+    </div>
+  );
+};
+
+const AITuneDiagnosticCard: React.FC<{
+  msgId: string;
+  onAction: (action: string, msgId: string) => void;
+}> = ({ msgId, onAction }) => {
+  const recs: { col: string; problem: string; why: string; fix: string }[] = (window as any).__airTuneRecs__ || [];
+  const [applied, setApplied] = React.useState(false);
+
+  if (applied) {
+    return (
+      <div style={{ marginTop: sp.C, border: `1px solid #C6E9DC`, borderRadius: 10, padding: `${sp.C}px ${sp.D}px`, background: '#F0FDF7', display: 'flex', alignItems: 'center', gap: sp.B }}>
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+          <circle cx="8" cy="8" r="6.5" fill="#06BF7F" fillOpacity="0.15"/>
+          <path d="M5 8l2.5 2.5 4-4" stroke="#06BF7F" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+        <span style={{ fontSize: fs.xs, color: '#15803D', fontWeight: fw.medium }}>{recs.length} fix{recs.length === 1 ? '' : 'es'} applied — model metadata updated.</span>
+      </div>
+    );
+  }
+
+  if (recs.length === 0) {
+    return (
+      <div style={{ marginTop: sp.C, border: `1px solid #C6E9DC`, borderRadius: 10, padding: `${sp.C}px ${sp.D}px`, background: '#F0FDF7', display: 'flex', alignItems: 'center', gap: sp.B }}>
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+          <circle cx="8" cy="8" r="6.5" fill="#06BF7F" fillOpacity="0.15"/>
+          <path d="M5 8l2.5 2.5 4-4" stroke="#06BF7F" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+        <span style={{ fontSize: fs.xs, color: '#15803D', fontWeight: fw.medium }}>Model is well-tuned — no fixes needed.</span>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ marginTop: sp.C, border: `1px solid ${c['border-divider']}`, borderRadius: 10, overflow: 'hidden', background: c['background-base'] }}>
+      {recs.map((rec, i) => (
+        <div key={i} style={{ padding: `${sp.C}px ${sp.D}px`, borderBottom: `1px solid ${c['border-divider']}` }}>
+          {/* Header: amber dot + column chip */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, marginBottom: sp.C }}>
+            <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#F59E0B', flexShrink: 0 }} />
+            <span style={{ fontFamily: ff.mono, fontSize: 10.5, fontWeight: fw.semibold, color: '#2770EF', background: 'rgba(39,112,239,0.07)', padding: '1px 5px', borderRadius: 3 }}>{rec.col}</span>
+          </div>
+          {/* Problem */}
+          <div style={{ marginBottom: sp.B + 2 }}>
+            <span style={{ fontSize: 10, fontWeight: fw.semibold, color: c['content-secondary'], textTransform: 'uppercase', letterSpacing: '0.04em' }}>Problem</span>
+            <p style={{ margin: '3px 0 0', fontSize: fs.xs, color: c['content-primary'], lineHeight: '17px' }}>{rec.problem}</p>
+          </div>
+          {/* Fix */}
+          <div style={{ background: '#F8FAFE', border: `1px solid rgba(39,112,239,0.12)`, borderRadius: 6, padding: `${sp.B}px ${sp.C}px` }}>
+            <span style={{ fontSize: 10, fontWeight: fw.semibold, color: '#2462C8', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Fix</span>
+            <p style={{ margin: '3px 0 0', fontSize: fs.xs, color: c['content-primary'], lineHeight: '17px' }}>{rec.fix}</p>
+          </div>
+        </div>
+      ))}
+      <div style={{ padding: `${sp.C}px ${sp.D}px`, background: '#FAFBFC', display: 'flex', gap: sp.B, alignItems: 'center' }}>
+        <button
+          onClick={() => { setApplied(true); onAction('air_tune_apply_fixes', msgId); }}
+          style={{ padding: `6px 14px`, borderRadius: 6, border: 'none', background: c['content-brand'], color: '#fff', fontSize: fs.xs, fontWeight: fw.semibold, cursor: 'pointer', fontFamily: ff.primary }}
+          onMouseEnter={e => { e.currentTarget.style.opacity = '0.88'; }}
+          onMouseLeave={e => { e.currentTarget.style.opacity = '1'; }}
+        >
+          Apply fixes
+        </button>
+        <button
+          onClick={() => onAction('air_tune_dismiss', msgId)}
+          style={{ padding: `6px 14px`, borderRadius: 6, border: `1px solid ${c['border-default']}`, background: 'transparent', color: c['content-secondary'], fontSize: fs.xs, fontWeight: fw.semibold, cursor: 'pointer', fontFamily: ff.primary }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = c['border-divider']; }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = c['border-default']; }}
+        >
+          Dismiss
+        </button>
+      </div>
+    </div>
+  );
+};
+
+const AIReadinessCard: React.FC<{
+  msgId: string;
+  result?: string;
+  onAction: (action: string, msgId: string) => void;
+}> = ({ msgId, result, onAction }) => {
+  const checks: { id: string; name: string; sev: string; detail: string }[] = result ? (() => { try { return JSON.parse(result); } catch { return []; } })() : [];
+
+  type FixPhase = 'idle' | 'working' | 'review' | 'applied' | 'ignored';
+  const [phases, setPhases] = React.useState<Record<string, FixPhase>>({});
+  const [stepStatuses, setStepStatuses] = React.useState<Record<string, Array<'pending' | 'running' | 'done'>>>({});
+  const [cardReview, setCardReview] = React.useState(false);
+
+  // Register canvas callbacks so the preview panel can update card state on accept/reject
+  (window as any).__airFixAccepted__ = (checkId: string) => {
+    setCardReview(false);
+    if (checkId === '__all__') {
+      setPhases(prev => {
+        const next = { ...prev };
+        checks.forEach(c => { if (c.sev !== 'good') next[c.id] = 'applied'; });
+        return next;
+      });
+    } else {
+      setPhases(prev => ({ ...prev, [checkId]: 'applied' }));
+    }
+  };
+  (window as any).__airFixRejected__ = (checkId: string) => {
+    setCardReview(false);
+    if (checkId === '__all__') {
+      setPhases(prev => {
+        const next = { ...prev };
+        checks.forEach(c => { if (prev[c.id] === 'review') next[c.id] = 'idle'; });
+        return next;
+      });
+    } else {
+      setPhases(prev => ({ ...prev, [checkId]: 'idle' }));
+    }
+  };
+
+  const startFix = (checkId: string) => {
+    const fixData = AIR_FIX_DATA[checkId];
+    if (!fixData) return;
+    setPhases(prev => ({ ...prev, [checkId]: 'working' }));
+    setStepStatuses(prev => ({ ...prev, [checkId]: fixData.steps.map(() => 'pending' as const) }));
+    fixData.steps.forEach((_, idx) => {
+      setTimeout(() => {
+        setStepStatuses(prev => ({ ...prev, [checkId]: (prev[checkId] ?? []).map((s, i) => i === idx ? 'running' : s) }));
+        setTimeout(() => {
+          setStepStatuses(prev => ({ ...prev, [checkId]: (prev[checkId] ?? []).map((s, i) => i === idx ? 'done' : s) }));
+        }, 280);
+      }, idx * 300);
+    });
+    setTimeout(() => {
+      (window as any).__airShowFixReview__?.(checkId);
+      setPhases(prev => ({ ...prev, [checkId]: 'review' }));
+      setCardReview(true);
+    }, fixData.steps.length * 300 + 350);
+  };
+
+  const fixAll = () => {
+    const pending = checks.filter(c => c.sev !== 'good' && (phases[c.id] ?? 'idle') === 'idle');
+    if (pending.length === 0) return;
+    let maxMs = 0;
+    pending.forEach(check => {
+      const fixData = AIR_FIX_DATA[check.id];
+      if (!fixData) return;
+      maxMs = Math.max(maxMs, fixData.steps.length * 300 + 350);
+      setPhases(prev => ({ ...prev, [check.id]: 'working' }));
+      setStepStatuses(prev => ({ ...prev, [check.id]: fixData.steps.map(() => 'pending' as const) }));
+      fixData.steps.forEach((_, idx) => {
+        setTimeout(() => {
+          setStepStatuses(prev => ({ ...prev, [check.id]: (prev[check.id] ?? []).map((s, i) => i === idx ? 'running' : s) }));
+          setTimeout(() => {
+            setStepStatuses(prev => ({ ...prev, [check.id]: (prev[check.id] ?? []).map((s, i) => i === idx ? 'done' : s) }));
+          }, 280);
+        }, idx * 300);
+      });
+    });
+    setTimeout(() => {
+      pending.forEach(check => setPhases(prev => ({ ...prev, [check.id]: 'review' })));
+      (window as any).__airShowFixReview__?.('__all__');
+      setCardReview(true);
+    }, maxMs);
+  };
+
+  const tagMap = {
+    miss:    { label: 'Missing', color: '#E22B3D', bg: 'rgba(226,43,61,0.08)',    border: '#E22B3D' },
+    warn:    { label: 'Partial',  color: '#B8860B', bg: 'rgba(252,200,56,0.10)',  border: '#FCC838' },
+    good:    { label: 'Good',     color: '#06BF7F', bg: 'rgba(6,191,127,0.09)',   border: '#06BF7F' },
+    ignored: { label: 'Ignored',  color: '#A5ACB9', bg: 'rgba(165,172,185,0.12)', border: '#C0C6CF' },
+  };
+
+  // Ignored checks always render at the bottom of the list
+  const sortedChecks = [...checks].sort((a, b) => {
+    const aIgnored = (phases[a.id] ?? 'idle') === 'ignored' ? 1 : 0;
+    const bIgnored = (phases[b.id] ?? 'idle') === 'ignored' ? 1 : 0;
+    return aIgnored - bIgnored;
+  });
+
+  const allAcknowledged = checks.length > 0 && !cardReview && checks.every(c => c.sev === 'good' || ['applied', 'ignored'].includes(phases[c.id] ?? 'idle'));
+
+  return (
+    <>
+    <div style={{ marginTop: sp.C, border: `1px solid ${c['border-divider']}`, borderRadius: 10, overflow: 'hidden', backgroundColor: c['background-base'] }}>
+      {sortedChecks.map((check, idx) => {
+        const phase = phases[check.id] ?? 'idle';
+        const steps = stepStatuses[check.id] ?? [];
+        const isApplied = phase === 'applied';
+        const isIgnored = phase === 'ignored';
+        const effectiveSev = isApplied ? 'good' : isIgnored ? 'ignored' : check.sev;
+        const tag = tagMap[effectiveSev as keyof typeof tagMap] ?? tagMap.miss;
+        const isLast = idx === sortedChecks.length - 1;
+        const fixData = AIR_FIX_DATA[check.id];
+
+        // ── Ignored row: de-emphasised, restore link, no actions ──
+        if (isIgnored) {
+          return (
+            <div key={check.id} style={{ padding: `${sp.B + 2}px ${sp.D}px`, display: 'flex', alignItems: 'center', gap: sp.C, borderBottom: isLast ? 'none' : `1px solid ${c['border-divider']}`, opacity: 0.55 }}>
+              <div style={{ width: 16, height: 16, borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1.5px solid #D0D6DF` }}>
+                <svg width="8" height="2" viewBox="0 0 8 2" fill="none"><path d="M1 1h6" stroke="#BFC6D0" strokeWidth="1.5" strokeLinecap="round"/></svg>
+              </div>
+              <span style={{ fontSize: fs.xs, color: c['content-secondary'], flex: 1 }}>{check.name}</span>
+              <span style={{ fontSize: 9.5, fontWeight: fw.semibold, padding: '1px 6px', borderRadius: 3, color: tag.color, background: tag.bg, flexShrink: 0 }}>Ignored</span>
+              <button
+                onClick={() => { setPhases(prev => ({ ...prev, [check.id]: 'idle' })); (window as any).__airSetIgnored__?.(check.id, false); }}
+                style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: fs.xs, color: c['content-brand'], fontFamily: ff.primary, flexShrink: 0, opacity: 1 }}
+              >Restore</button>
+            </div>
+          );
+        }
+
+        return (
+          <div key={check.id} style={{ padding: `${sp.C}px ${sp.D}px`, display: 'flex', alignItems: 'flex-start', gap: sp.C, borderBottom: isLast ? 'none' : `1px solid ${c['border-divider']}` }}>
+            {/* status icon — transitions to green check on apply */}
+            <div style={{ width: 16, height: 16, borderRadius: '50%', flexShrink: 0, marginTop: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1.5px solid ${tag.border}`, background: isApplied || check.sev === 'good' ? '#06BF7F' : 'transparent', transition: 'all 0.25s ease' }}>
+              {(isApplied || check.sev === 'good') && <svg width="8" height="8" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+              {!isApplied && check.sev === 'miss' && <svg width="7" height="7" viewBox="0 0 12 12" fill="none"><path d="M3 3l6 6M9 3l-6 6" stroke="#E22B3D" strokeWidth="1.6" strokeLinecap="round"/></svg>}
+              {!isApplied && check.sev === 'warn' && <span style={{ fontSize: 9, fontWeight: 700, color: '#FCC838', lineHeight: 1, userSelect: 'none' }}>!</span>}
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, marginBottom: isApplied ? 0 : 3 }}>
+                <span style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'], flex: 1, lineHeight: '18px' }}>{check.name}</span>
+                {effectiveSev !== 'good' && !isApplied && <span style={{ fontSize: 9.5, fontWeight: fw.semibold, padding: '1px 6px', borderRadius: 3, color: tag.color, background: tag.bg, flexShrink: 0, whiteSpace: 'nowrap' }}>{tag.label}</span>}
+              </div>
+
+              {/* detail row — hidden when applied to keep the card compact */}
+              {!isApplied && (
+                <p style={{ margin: 0, fontSize: fs.xs, color: c['content-secondary'], lineHeight: '16px' }}>{check.detail}</p>
+              )}
+
+              {/* working phase: animate steps inline inside the row */}
+              {phase === 'working' && fixData && (
+                <div style={{ marginTop: sp.B, display: 'flex', flexDirection: 'column', gap: 5 }}>
+                  {fixData.steps.map((label, i) => {
+                    const status = steps[i] ?? 'pending';
+                    return (
+                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: sp.B }}>
+                        <div style={{ width: 12, height: 12, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          {status === 'done' && <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="6" fill="#06BF7F"/><path d="M3.5 6l2 2 3-3.5" stroke="white" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                          {status === 'running' && <div style={{ width: 10, height: 10, borderRadius: '50%', border: `1.5px solid ${c['border-default']}`, borderTopColor: c['content-brand'], flexShrink: 0, animation: 'ag-spin 0.7s linear infinite' }} />}
+                          {status === 'pending' && <div style={{ width: 6, height: 6, borderRadius: '50%', background: c['border-divider'], margin: '0 1px' }} />}
+                        </div>
+                        <span style={{ fontSize: fs.xs, color: c['content-secondary'], lineHeight: '16px' }}>{label}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* idle + not yet fixed: Fix it / Ignore */}
+              {phase === 'idle' && check.sev !== 'good' && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: sp.C, marginTop: sp.A + 2 }}>
+                  <button
+                    onClick={() => startFix(check.id)}
+                    style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: fs.xs, fontWeight: fw.semibold, color: c['content-brand'], fontFamily: ff.primary }}
+                  >Fix it →</button>
+                  <button
+                    onClick={() => { setPhases(prev => ({ ...prev, [check.id]: 'ignored' })); (window as any).__airSetIgnored__?.(check.id, true); }}
+                    style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: fs.xs, color: c['content-secondary'], fontFamily: ff.primary }}
+                  >Ignore</button>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })}
+      {cardReview && (
+        <div style={{ margin: `0 ${sp.D}px`, padding: `${sp.B}px ${sp.C}px`, borderRadius: 6, background: 'rgba(252,200,56,0.07)', border: '1px solid rgba(252,200,56,0.22)', display: 'flex', alignItems: 'center', gap: sp.B, marginTop: sp.C }}>
+          <svg width="11" height="11" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0, color: '#E07B00' }}>
+            <path d="M7 1l1.5 4.5H13l-3.7 2.7 1.4 4.3L7 9.8l-3.7 2.7 1.4-4.3L1 5.5h4.5z" fill="currentColor"/>
+          </svg>
+          <span style={{ fontSize: fs.xs, color: '#92640A', lineHeight: '15px', flex: 1 }}>Review proposed changes in the preview panel below</span>
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style={{ flexShrink: 0, color: '#E07B00' }}>
+            <path d="M5 2v6M2.5 5.5l2.5 3 2.5-3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </div>
+      )}
+      {(() => {
+        const hasPending = checks.some(c => c.sev !== 'good' && (phases[c.id] ?? 'idle') === 'idle');
+        return (
+          <div style={{ padding: `${sp.B + 2}px ${sp.D}px`, borderTop: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', gap: sp.B }}>
+            {hasPending && (
+              <button
+                onClick={fixAll}
+                style={{ display: 'flex', alignItems: 'center', gap: 5, padding: `5px ${sp.C}px`, borderRadius: 6, border: 'none', background: c['content-brand'], color: '#fff', fontSize: fs.xs, fontWeight: fw.semibold, cursor: 'pointer', fontFamily: ff.primary }}
+                onMouseEnter={e => (e.currentTarget.style.opacity = '0.88')}
+                onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
+              >
+                <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                Fix all
+              </button>
+            )}
+            <div style={{ flex: 1 }} />
+          </div>
+        );
+      })()}
+    </div>
+    {allAcknowledged && (
+      <div style={{ marginTop: sp.B, border: `1px solid ${c['border-divider']}`, borderRadius: 10, background: c['background-base'], padding: `${sp.D}px` }}>
+        <p style={{ margin: 0, fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'], lineHeight: '20px' }}>Tune your model before you ship</p>
+        <p style={{ margin: `${sp.A + 2}px 0 0`, fontSize: fs.xs, color: c['content-secondary'], lineHeight: '18px' }}>Metadata fixes improve how Spotter interprets columns — but they don't guarantee correct answers. Tuning runs real questions through your model so you can catch gaps before your users do.</p>
+        <button
+          onClick={() => onAction('air_start_tune', msgId)}
+          style={{ marginTop: sp.C, padding: `6px 14px`, borderRadius: 6, border: 'none', background: c['content-brand'], color: '#fff', fontSize: fs.xs, fontWeight: fw.semibold, cursor: 'pointer', fontFamily: ff.primary }}
+          onMouseEnter={e => (e.currentTarget.style.opacity = '0.88')}
+          onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
+        >Start tuning</button>
+      </div>
+    )}
+    </>
+  );
+};
+
+const AIR_FIX_DATA: Record<string, { userText: string; steps: string[]; responseText: string; successText: string }> = {
+  desc: {
+    userText: 'Fix column AI context',
+    steps: ['Scanning columns for missing AI context', 'Writing AI context for 8 columns'],
+    responseText: "I've written AI context for the 8 columns missing it. This tells Spotter how to apply each field in queries.",
+    successText: 'Column AI context applied — Spotter will now use these fields correctly.',
+  },
+  synonyms: {
+    userText: 'Fix column synonyms',
+    steps: ['Scanning column names and usage patterns', 'Mapping synonyms for high-traffic columns'],
+    responseText: "I mapped synonyms for your most-queried columns. You can edit any of these after applying.",
+    successText: 'Column synonyms applied — search accuracy improved.',
+  },
+  coldesc: {
+    userText: 'Fix column descriptions',
+    steps: ['Identifying columns without descriptions', 'Writing AI-generated descriptions'],
+    responseText: "I wrote descriptions for the 4 columns with no metadata. These help Spotter pick the right fields.",
+    successText: 'Column descriptions applied — Spotter answer quality improved.',
+  },
+  indexing: {
+    userText: 'Enable indexing',
+    steps: ['Scanning attribute columns for indexing eligibility', 'Enabling indexing on qualifying columns'],
+    responseText: "Indexing is ready to enable on these attribute columns — this lets Spotter retrieve exact values during search.",
+    successText: 'Indexing enabled — Spotter can now look up attribute values correctly.',
+  },
+  col_types: {
+    userText: 'Fix column type mismatches',
+    steps: ['Inspecting column types across tables', 'Identifying attribute vs. measure mismatches'],
+    responseText: "I found 3 columns with incorrect types. Setting the right type ensures Spotter applies aggregations correctly.",
+    successText: 'Column types corrected — aggregations will now work as expected.',
+  },
+  date_vals: {
+    userText: 'Fix date value issues',
+    steps: ['Scanning date columns for format inconsistencies', 'Identifying columns stored as text instead of date'],
+    responseText: "order_date is stored as text (MM/DD/YYYY). Converting to a date type lets Spotter apply time filters correctly.",
+    successText: 'Date format fixed — time filters and trend queries will now work correctly.',
+  },
+};
+
 
 // ── Snowflake Intent Clarify Card ─────────────────────────────────────────────
 

@@ -82,6 +82,8 @@ export interface PromptBarProps {
   leftSlot?: React.ReactNode;
   /** Show the built-in upload/attach button (default true). */
   showUpload?: boolean;
+  /** POC: upload uses a + glyph and an @ button is added to mention/select tables. */
+  pocTools?: boolean;
 }
 
 // ── Component ──────────────────────────────────────────────────────────────────
@@ -98,6 +100,7 @@ const PromptBar = forwardRef<PromptBarRef, PromptBarProps>(({
   onColumnRemove,
   leftSlot,
   showUpload = true,
+  pocTools = false,
 }, ref) => {
 
   const [value, setValue]                     = useState('');
@@ -364,12 +367,33 @@ const PromptBar = forwardRef<PromptBarRef, PromptBarProps>(({
             {showUpload && (
               <button
                 onClick={() => setUpload(true)}
-                title="Upload a file"
+                title={pocTools ? 'Upload data' : 'Upload a file'}
                 style={{ width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', borderRadius: 6, backgroundColor: 'transparent', color: c['content-secondary'], cursor: 'pointer', flexShrink: 0 }}
                 onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
                 onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
               >
-                <Icon name="upload" size="s" color={c['content-secondary']} />
+                {pocTools
+                  ? <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 3.5v9M3.5 8h9" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg>
+                  : <Icon name="upload" size="s" color={c['content-secondary']} />}
+              </button>
+            )}
+
+            {/* POC: @ button — insert a mention so the user can pick tables to add */}
+            {pocTools && (
+              <button
+                onClick={() => {
+                  const cur = textareaRef.current?.value ?? value;
+                  const next = cur && !/\s$/.test(cur) ? `${cur} @` : `${cur}@`;
+                  setValue(next);
+                  setQuery(''); setMention(true); setMentionIdx(0);
+                  requestAnimationFrame(() => textareaRef.current?.focus());
+                }}
+                title="Add tables"
+                style={{ width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', borderRadius: 6, backgroundColor: 'transparent', color: c['content-secondary'], cursor: 'pointer', flexShrink: 0, fontFamily: ff.primary, fontSize: 16, fontWeight: 500, lineHeight: 1 }}
+                onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
+                onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+              >
+                @
               </button>
             )}
           </div>

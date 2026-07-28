@@ -5,6 +5,7 @@ import { WizardModal } from '../../../components/WizardModal';
 import { ProjectState } from '../index';
 import { AgentMessage } from './AgentPanel';
 import AgentPanel from './AgentPanel';
+import { FlowOption } from './Shell';
 import LeftPanel from './LeftPanel';
 import CenterPanel from './CenterPanel';
 import ShareModal from './ShareModal';
@@ -33,6 +34,7 @@ interface WorkspaceProps {
   isNotebookFlow?: boolean;
   notebookCells?: NotebookCell[];
   onNavigateToTable?: (tableName: string) => void;
+  flowOption?: FlowOption;
 }
 
 interface Toast {
@@ -98,7 +100,7 @@ const MH_AIRS_DIMS: MhAirsDim[] = [
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, setMessages, onBack, initialPrompt, isFromScratch, isDbtReview, isAgentMode, instructionsCreated, isNotebookFlow, notebookCells, onNavigateToTable }) => {
+const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, setMessages, onBack, initialPrompt, isFromScratch, isDbtReview, isAgentMode, instructionsCreated, isNotebookFlow, notebookCells, onNavigateToTable, flowOption }) => {
   const [mounted, setMounted] = useState(false);
   const [isBuilding, setIsBuilding] = useState(!!initialPrompt);
   const [notebookPanelOpen, setNotebookPanelOpen] = useState(false);
@@ -422,6 +424,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
             selectedColumns={selectedColumns}
             onColumnRemove={(name) => setSelectedColumns(prev => prev.filter(c => c !== name))}
             onOpenQualityPlan={() => setQualityPlanOpen(true)}
+            flowOption={flowOption}
             onNavigateToWorkspace={() => { setCanvasVisible(true); setPlanPanelOpen(false); setQualityPlanOpen(false); setInstructionsPanelOpen(false); }}
           />
         </div>

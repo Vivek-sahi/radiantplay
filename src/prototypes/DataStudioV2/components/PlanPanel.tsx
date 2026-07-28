@@ -149,7 +149,6 @@ const SQL_KW = new Set([
 const SQL_KW_RE = /\b(SELECT|FROM|JOIN|LEFT|INNER|RIGHT|OUTER|ON|WHERE|AS|DISTINCT|OVER|PARTITION|BY|ORDER|GROUP|HAVING|WITH|SUM|COUNT|AVG|MAX|MIN|NULLIF|AND|OR|NOT|NULL|CASE|WHEN|THEN|ELSE|END|COALESCE)\b/g;
 
 const SqlLine: React.FC<{ line: string }> = ({ line }) => {
-  // Comment: everything from -- to end of line
   const commentIdx = line.indexOf('--');
   if (commentIdx === 0) {
     return <span style={{ color: c['content-secondary'] }}>{line}</span>;
@@ -447,7 +446,7 @@ const PlanPanel: React.FC<PlanPanelProps> = ({ plan, onClose }) => {
       `}</style>
       <div style={{
         flex: 1,
-        minHeight: 0,        // ← critical: lets flex:1 be constrained so inner scroll works
+        minHeight: 0,
         backgroundColor: c['background-base'],
         border: `1px solid ${c['border-divider']}`,
         borderRadius: 10,

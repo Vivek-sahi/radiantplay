@@ -6,6 +6,11 @@ import Tabs from '../../../components/Tabs';
 import { OVERVIEW_PROJECTS, OverviewProject, ACTIVE_INSIGHTS, ActiveInsight, CONNECTIONS } from '../data/mockData';
 import PromptBar, { PromptBarRef } from './PromptBar';
 import ConnectionPill from './ConnectionPill';
+import { useVariant } from '../variant';
+
+// Radiance top-wash — the exact multi-colour gradient from the SpotterX Figma
+// (node 1985:211988), exported as a single composited image (blobs + wash + grain).
+import radianceComposite from '../assets/radiance-wash-composite.png';
 
 
 interface OverviewProps {
@@ -17,6 +22,7 @@ interface OverviewProps {
   onOpenProjectAtMonitoring: (project: OverviewProject) => void;
   onFixWithAgent: (insight: ActiveInsight, project: OverviewProject) => void;
   resolvedInsightIds?: string[];
+  onOpenSpotterX?: () => void;
 }
 
 // ── Capability chips ─────────────────────────────────────────────────────────
@@ -28,6 +34,14 @@ const CAPABILITY_CHIPS = [
     suffixes: [
       ' that tracks marketing attribution across channels and regions',
       ' to analyze P&L by department for our finance team',
+    ],
+  },
+  {
+    icon: 'doc' as const, label: 'Build a model with MRD',
+    base: 'I want to build a model using an MRD',
+    suffixes: [
+      ' — I have the requirements doc ready to share',
+      ' for our new customer analytics initiative',
     ],
   },
   {
@@ -381,8 +395,9 @@ const RecentRow: React.FC<{
 
 const Overview: React.FC<OverviewProps> = ({
   onNewProject, onOpenProject, onPromptSubmit, onMultiSourceClick, onNotebookFlowClick,
-  onOpenProjectAtMonitoring, onFixWithAgent, resolvedInsightIds = [],
+  onOpenProjectAtMonitoring, onFixWithAgent, resolvedInsightIds = [], onOpenSpotterX,
 }) => {
+  const { variant } = useVariant();
   const promptBarRef = useRef<PromptBarRef>(null);
   const [connFilter, setConnFilter] = useState<string | null>(null);
   const [dismissedIds, setDismissedIds] = useState<string[]>([]);
@@ -412,14 +427,24 @@ const Overview: React.FC<OverviewProps> = ({
   };
 
   return (
-    <div style={{ position: 'relative', height: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ position: 'relative', height: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column', backgroundColor: c['background-base'] }}>
+
+      {/* Radiance top-wash — the exact Figma gradient, pinned to the top of the page.
+          Blobs layer behind, wash/glow layer on top; both fade out before the cards. */}
+      <div style={{
+        position: 'absolute', top: 0, left: 0, right: 0, height: 544, pointerEvents: 'none',
+        backgroundImage: `url("${radianceComposite}")`,
+        backgroundRepeat: 'no-repeat',
+        backgroundSize: '100% 100%',
+        backgroundPosition: 'top center',
+      }} />
 
       {/* Scrollable content */}
-      <div style={{ flex: 1, overflowY: 'auto', backgroundColor: c['background-base'] }}>
+      <div style={{ position: 'relative', flex: 1, overflowY: 'auto', backgroundColor: 'transparent' }}>
 
         {/* ── Hero — agent prompt ───────────────────────────────────────── */}
         <div style={{
-          backgroundColor: c['background-base'],
+          backgroundColor: 'transparent',
           padding: `72px ${sp.H}px ${sp.G}px`,
         }}>
           <div style={{
@@ -446,12 +471,14 @@ const Overview: React.FC<OverviewProps> = ({
                 placeholder="How can I help you today?"
                 dropDirection="down"
                 landingPage
+                pocTools={variant === 'poc'}
                 leftSlot={
                   <ConnectionPill
                     connections={CONNECTIONS}
                     value={connFilter}
                     onChange={setConnFilter}
                     dropDirection="down"
+                    poc={variant === 'poc'}
                   />
                 }
               />
@@ -459,7 +486,8 @@ const Overview: React.FC<OverviewProps> = ({
 
             {/* Capability chips */}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: sp.B, justifyContent: 'center' }}>
-              {CAPABILITY_CHIPS.map(chip => (
+              {/* POC: connection/cache-setup chips dropped from the home screen — Vision unchanged. */}
+              {CAPABILITY_CHIPS.filter(chip => variant !== 'poc' || !['Create a connection', 'Connect Snowflake', 'Cache a model'].includes(chip.label)).map(chip => (
                 <HeroChip
                   key={chip.label}
                   icon={chip.icon}
@@ -467,7 +495,7 @@ const Overview: React.FC<OverviewProps> = ({
                   onClick={() => handleChipClick(chip.base, chip.suffixes)}
                 />
               ))}
-              {onMultiSourceClick && (
+              {onMultiSourceClick && variant !== 'poc' && (
                 <HeroChip
                   icon="merge"
                   label="Multi-source model"
@@ -478,7 +506,7 @@ const Overview: React.FC<OverviewProps> = ({
                   }}
                 />
               )}
-              {onNotebookFlowClick && (
+              {onNotebookFlowClick && variant !== 'poc' && (
                 <HeroChip
                   icon="code"
                   label="Multi-source model, single notebook"

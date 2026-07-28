@@ -191,6 +191,96 @@ export function SpreadsheetToolbar({ onFilter, onFormula, cleanOptions, onClean 
   );
 }
 
+// ── Data-tab toolbar — Google-Sheets-style chrome for the full "Data" tab ──────
+// Sort/Filter/Formula/Download/Expand are real (Download builds a CSV; Expand
+// toggles the browser-panel width). Undo/Redo/format-paint/Align/Wrap/$/%/
+// decimals/number-format/Fill-color are present and clickable for visual parity
+// with a real spreadsheet toolbar, but don't persist any formatting state —
+// this is a data-modeling prototype, not a spreadsheet engine.
+export interface DataSheetToolbarProps {
+  onDownloadCsv: () => void;
+  onToggleExpand: () => void;
+  expanded: boolean;
+  // Filter/Formula open the shared properties panel (via a "which table?" picker
+  // in the parent, since the Data sheet merges every table).
+  onFilter?: () => void;
+  onFormula?: () => void;
+}
+
+const NUMBER_FORMATS = ['Automatic', 'Number', 'Currency', 'Percent', 'Date'];
+
+export function DataSheetToolbar({ onDownloadCsv, onToggleExpand, expanded, onFilter, onFormula }: DataSheetToolbarProps) {
+  const [formatOpen, setFormatOpen] = React.useState(false);
+  const formatBtnRef = React.useRef<HTMLDivElement>(null);
+
+  const iconBtn = (title: string, svg: React.ReactNode, onClick?: () => void) => (
+    <button onClick={onClick} title={title}
+      style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 26, height: 24, padding: 0, borderRadius: 5, border: 'none', background: 'transparent', color: '#64748B', cursor: 'pointer', fontFamily: ff.primary }}
+      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#F6F8FA'; (e.currentTarget as HTMLElement).style.color = '#1D232F'; }}
+      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#64748B'; }}
+    >{svg}</button>
+  );
+  // Same icon-button shape, plus a small trailing dropdown caret — matches the
+  // reference toolbar's Sort/Align/Wrap/Download buttons, which each show one.
+  const iconCaretBtn = (title: string, svg: React.ReactNode, onClick?: () => void) => (
+    <button onClick={onClick} title={title}
+      style={{ display: 'flex', alignItems: 'center', gap: 1, height: 24, padding: '0 3px 0 6px', borderRadius: 5, border: 'none', background: 'transparent', color: '#64748B', cursor: 'pointer', fontFamily: ff.primary }}
+      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#F6F8FA'; (e.currentTarget as HTMLElement).style.color = '#1D232F'; }}
+      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#64748B'; }}
+    >{svg}<svg width="8" height="8" viewBox="0 0 10 10" fill="none"><path d="M2 3.5l3 3 3-3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+  );
+  const divider = <div style={{ width: 1, height: 16, background: '#E2E6EC', margin: '0 3px', flexShrink: 0 }} />;
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 1, padding: '4px 10px', borderBottom: BORDER, background: '#fff', flexShrink: 0, overflowX: 'auto' }}>
+      {iconBtn('Undo', <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M9 14 4 9l5-5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>)}
+      {iconBtn('Redo', <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M15 14l5-5-5-5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>)}
+      {divider}
+      {iconCaretBtn('Sort range', <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M4.5 12.5V3.5M4.5 3.5 2 6M4.5 3.5 7 6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/><path d="M11.5 3.5v9M11.5 12.5 9 10M11.5 12.5 14 10" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>)}
+      {divider}
+      {iconBtn('Format paint', <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M4 2h8v4a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V2z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/><path d="M6 7v2H4a1 1 0 0 0-1 1v3h6v-3a1 1 0 0 0-1-1h-2" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/><path d="M11 9.5h2a1 1 0 0 1 1 1V14h-3v-4.5z" fill="currentColor"/></svg>)}
+      {divider}
+      {iconCaretBtn('Align', <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2.5 4h11M2.5 7.5h7M2.5 11h11" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>)}
+      {iconCaretBtn('Wrap text', <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2.5 4h11M2.5 7.5h7.5a2 2 0 0 1 0 4H8M8 11.5l1.8-1.8L8 8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/><path d="M2.5 11.5h3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>)}
+      {divider}
+      {iconBtn('Format as currency', <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 2.5v11M10.5 5c0-1.1-1.1-2-2.5-2s-2.5.7-2.5 1.8c0 2.4 5 1.1 5 3.5 0 1.1-1.1 1.8-2.5 1.8S5.5 11.3 5.5 10" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>)}
+      {iconBtn('Format as percent', <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="4.5" cy="4.5" r="1.8" stroke="currentColor" strokeWidth="1.2"/><circle cx="11.5" cy="11.5" r="1.8" stroke="currentColor" strokeWidth="1.2"/><path d="M12 4L4 12" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>)}
+      {iconBtn('Decrease decimal places', <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2.5 8h4M4 6l-2 2 2 2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/><text x="7.5" y="10.5" fontSize="6.5" fontWeight="700" fill="currentColor">.0</text></svg>)}
+      {iconBtn('Increase decimal places', <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M13.5 8h-4M11 6l2 2-2 2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/><text x="1.5" y="10.5" fontSize="6.5" fontWeight="700" fill="currentColor">.00</text></svg>)}
+      <div ref={formatBtnRef} style={{ position: 'relative' }}>
+        <button onClick={() => setFormatOpen(o => !o)} title="Number format"
+          style={{ display: 'flex', alignItems: 'center', gap: 2, height: 24, padding: '0 6px', borderRadius: 5, border: 'none', background: formatOpen ? '#F6F8FA' : 'transparent', color: formatOpen ? '#1D232F' : '#64748B', fontSize: 11, fontWeight: 600, cursor: 'pointer', fontFamily: ff.primary }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#F6F8FA'; }}
+          onMouseLeave={e => { if (!formatOpen) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+        >123<svg width="8" height="8" viewBox="0 0 10 10" fill="none"><path d="M2 3.5l3 3 3-3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+        {formatOpen && (
+          <AnchoredMenu open={formatOpen} anchorRef={formatBtnRef} onClose={() => setFormatOpen(false)} placement="bottom-start" style={{ background: '#fff', border: '1px solid #E2E6EC', borderRadius: 8, boxShadow: '0 6px 24px rgba(25,35,49,0.13)', width: 150, padding: '4px 0' }}>
+            {NUMBER_FORMATS.map(f => (
+              <button key={f} onClick={() => setFormatOpen(false)}
+                style={{ display: 'flex', alignItems: 'center', width: '100%', padding: '6px 12px', border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left', fontFamily: ff.primary, fontSize: 12, fontWeight: 500, color: '#1D232F' }}
+                onMouseEnter={e => (e.currentTarget.style.background = '#F6F8FA')}
+                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+              >{f}</button>
+            ))}
+          </AnchoredMenu>
+        )}
+      </div>
+      {divider}
+      {iconBtn('Fill color', <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M4 8.5 8.5 4l4.5 4.5-4.5 4.5L4 8.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/><path d="M3 11c-.6.6-1 1.2-1 1.8C2 13.7 2.9 14 3.5 14s1.5-.3 1.5-1.2c0-.6-.4-1.2-1-1.8" fill="currentColor"/></svg>)}
+      {iconBtn('Filter', <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 4h12l-4.5 5.5v3.5l-3-1.5v-2L2 4z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/></svg>, onFilter)}
+      {iconBtn('Formula', <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M4 13V6a2 2 0 0 1 2-2h1" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/><path d="M2.5 8.5H7" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/><path d="M9 8l4 5M13 8l-4 5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>, onFormula)}
+      {divider}
+      {iconCaretBtn('Download', <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 2v8M5 7l3 3 3-3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/><path d="M3 12.5v1a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>, onDownloadCsv)}
+      <div style={{ flex: 1 }} />
+      {iconBtn(expanded ? 'Exit full width' : 'Full width', expanded ? (
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M6 2v2.5a1.5 1.5 0 0 1-1.5 1.5H2M14 6h-2.5A1.5 1.5 0 0 1 10 4.5V2M10 14v-2.5a1.5 1.5 0 0 1 1.5-1.5H14M2 10h2.5A1.5 1.5 0 0 1 6 11.5V14" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
+      ) : (
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M2 6V3.5A1.5 1.5 0 0 1 3.5 2H6M14 6V3.5A1.5 1.5 0 0 0 12.5 2H10M2 10v2.5A1.5 1.5 0 0 0 3.5 14H6M14 10v2.5a1.5 1.5 0 0 1-1.5 1.5H10" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
+      ), onToggleExpand)}
+    </div>
+  );
+}
+
 // ── Column ▾ menu ─────────────────────────────────────────────────────────────
 export interface SpreadsheetColumnMenuProps {
   menu: ColMenu;
@@ -204,11 +294,18 @@ export interface SpreadsheetColumnMenuProps {
   cleanOptions: { op: string; label: string; icon: React.ReactNode }[];
   cleanSubOpen: boolean;
   setCleanSubOpen: (v: boolean) => void;
+  // Data-tab (full spreadsheet) variant: the richer Google-Sheets-style menu
+  // (calculated field · filter · sort · duplicate · hide · conditional formatting ·
+  // format · rename · text wrapping). The added formatting/rename items are visual
+  // only — no persistence — consistent with the Data toolbar's chrome.
+  extended?: boolean;
 }
 
-export function SpreadsheetColumnMenu({ menu, onClose, sort, onSort, onHide, onAddFormula, onFilter, onClean, cleanOptions, cleanSubOpen, setCleanSubOpen }: SpreadsheetColumnMenuProps) {
+export function SpreadsheetColumnMenu({ menu, onClose, sort, onSort, onHide, onAddFormula, onFilter, onClean, cleanOptions, cleanSubOpen, setCleanSubOpen, extended }: SpreadsheetColumnMenuProps) {
   const menuRef = React.useRef<HTMLDivElement>(null);
   const [clampedPos, setClampedPos] = React.useState<{ left: number; top: number } | null>(null);
+  const [sortSubOpen, setSortSubOpen] = React.useState(false);
+  const [wrapSubOpen, setWrapSubOpen] = React.useState(false);
   // Clamp the fixed-positioned menu into the viewport once it's measured, so a
   // column menu opened near the bottom/right edge never runs off-screen.
   React.useLayoutEffect(() => {
@@ -242,7 +339,58 @@ export function SpreadsheetColumnMenu({ menu, onClose, sort, onSort, onHide, onA
   return (
     <>
       <div onClick={close} style={{ position: 'fixed', inset: 0, zIndex: 400 }} />
-      <div ref={menuRef} style={{ position: 'fixed', left: clampedPos?.left ?? menu.x, top: clampedPos?.top ?? menu.y, visibility: clampedPos ? 'visible' : 'hidden', zIndex: 401, background: '#fff', border: '1px solid #E2E6EC', borderRadius: 10, boxShadow: '0 8px 28px rgba(25,35,49,0.16), 0 1px 4px rgba(25,35,49,0.06)', width: 214, padding: '4px 0', fontFamily: ff.primary }}>
+      <div ref={menuRef} style={{ position: 'fixed', left: clampedPos?.left ?? menu.x, top: clampedPos?.top ?? menu.y, visibility: clampedPos ? 'visible' : 'hidden', zIndex: 401, background: '#fff', border: '1px solid #E2E6EC', borderRadius: 10, boxShadow: '0 8px 28px rgba(25,35,49,0.16), 0 1px 4px rgba(25,35,49,0.06)', width: extended ? 240 : 214, padding: '4px 0', fontFamily: ff.primary }}>
+        {extended ? (
+          <>
+            {item(<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M4 13V6a2 2 0 0 1 2-2h1" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><path d="M2.5 8.5H7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><path d="M9 8l4 5M13 8l-4 5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>, 'New calculated field', onAddFormula)}
+            {divider}
+            {item(<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 4h12l-4.5 5.5v3.5l-3-1.5v-2L2 4z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/></svg>, 'Filter', onFilter)}
+            {/* Sort — hover submenu */}
+            <div style={{ position: 'relative' }} onMouseEnter={() => setSortSubOpen(true)} onMouseLeave={() => setSortSubOpen(false)}>
+              <button style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '7px 14px', border: 'none', background: sortSubOpen ? '#F6F8FA' : 'transparent', cursor: 'pointer', textAlign: 'left', fontFamily: ff.primary, fontSize: 12.5, fontWeight: 500, color: '#1D232F' }}>
+                <span style={{ width: 14, height: 14, flexShrink: 0, color: '#64748B', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M5 12.5V3.5M5 3.5 3 5.5M5 3.5 7 5.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/><path d="M11 3.5v9M11 12.5 9 10.5M11 12.5 13 10.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg></span>
+                Sort
+                <svg width="10" height="10" viewBox="0 0 12 12" fill="none" style={{ marginLeft: 'auto', flexShrink: 0, color: '#A5ACB9' }}><path d="M4.5 2.5l3 3.5-3 3.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </button>
+              {sortSubOpen && (
+                <div style={{ position: 'absolute', left: '100%', top: -4, marginLeft: 2, background: '#fff', border: '1px solid #E2E6EC', borderRadius: 10, boxShadow: '0 8px 28px rgba(25,35,49,0.16), 0 1px 4px rgba(25,35,49,0.06)', width: 176, padding: '4px 0', fontFamily: ff.primary }}>
+                  {item(<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 12V4M5 7l3-3 3 3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>, 'Sort ascending', () => onSort({ col, dir: 'asc' }))}
+                  {item(<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 4v8M5 9l3 3 3-3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>, 'Sort descending', () => onSort({ col, dir: 'desc' }))}
+                </div>
+              )}
+            </div>
+            {sortedThis
+              ? item(<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>, 'Clear sort', () => onSort(null))
+              : (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '7px 14px', fontFamily: ff.primary, fontSize: 12.5, fontWeight: 500, color: '#C0C6CF', cursor: 'default' }}>
+                  <span style={{ width: 14, height: 14, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg></span>
+                  Clear sort
+                </div>
+              )}
+            {divider}
+            {item(<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="5.5" y="5.5" width="8" height="8" rx="1.2" stroke="currentColor" strokeWidth="1.3"/><path d="M10.5 5.5V3.7A1.2 1.2 0 0 0 9.3 2.5H3.7A1.2 1.2 0 0 0 2.5 3.7v5.6a1.2 1.2 0 0 0 1.2 1.2h1.8" stroke="currentColor" strokeWidth="1.3"/></svg>, 'Duplicate column', close)}
+            {item(<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 8s2.4-4.3 6-4.3S14 8 14 8s-2.4 4.3-6 4.3S2 8 2 8z" stroke="currentColor" strokeWidth="1.2"/><path d="M3 3l10 10" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>, 'Hide column', () => onHide(col))}
+            {divider}
+            {item(<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2.5 4h5M2.5 8h8M2.5 12h4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/><rect x="11.5" y="3" width="2.5" height="2.5" rx="0.5" fill="currentColor"/></svg>, 'Conditional formatting', close)}
+            {item(<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M4 4h8M8 4v9M6.5 13h3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>, 'Format', close)}
+            {item(<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M9.5 2.5l2 2-7 7H2.5v-2l7-7z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>, 'Rename', close)}
+            {/* Text wrapping — hover submenu (visual) */}
+            <div style={{ position: 'relative' }} onMouseEnter={() => setWrapSubOpen(true)} onMouseLeave={() => setWrapSubOpen(false)}>
+              <button style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '7px 14px', border: 'none', background: wrapSubOpen ? '#F6F8FA' : 'transparent', cursor: 'pointer', textAlign: 'left', fontFamily: ff.primary, fontSize: 12.5, fontWeight: 500, color: '#1D232F' }}>
+                <span style={{ width: 14, height: 14, flexShrink: 0, color: '#64748B', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2.5 4h11M2.5 8h8a2 2 0 0 1 0 4H8.5M8.5 12l1.5-1.5M8.5 12l1.5 1.5M2.5 12h3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg></span>
+                Text wrapping
+                <svg width="10" height="10" viewBox="0 0 12 12" fill="none" style={{ marginLeft: 'auto', flexShrink: 0, color: '#A5ACB9' }}><path d="M4.5 2.5l3 3.5-3 3.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </button>
+              {wrapSubOpen && (
+                <div style={{ position: 'absolute', left: '100%', top: -4, marginLeft: 2, background: '#fff', border: '1px solid #E2E6EC', borderRadius: 10, boxShadow: '0 8px 28px rgba(25,35,49,0.16), 0 1px 4px rgba(25,35,49,0.06)', width: 140, padding: '4px 0', fontFamily: ff.primary }}>
+                  {['Overflow', 'Wrap', 'Clip'].map(w => (
+                    <button key={w} onClick={close} style={{ display: 'flex', alignItems: 'center', width: '100%', padding: '7px 14px', border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left', fontFamily: ff.primary, fontSize: 12.5, fontWeight: 500, color: '#1D232F' }} onMouseEnter={e => (e.currentTarget.style.background = '#F6F8FA')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>{w}</button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
+        ) : (<>
         {item(<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M4 13V6a2 2 0 0 1 2-2h1" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><path d="M2.5 8.5H7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><path d="M9 8l4 5M13 8l-4 5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>, 'Add formula', onAddFormula)}
         {divider}
         {item(<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 4h12l-4.5 5.5v3.5l-3-1.5v-2L2 4z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/></svg>, 'Filter', onFilter)}
@@ -273,6 +421,7 @@ export function SpreadsheetColumnMenu({ menu, onClose, sort, onSort, onHide, onA
             </div>
           )}
         </div>
+        </>)}
       </div>
     </>
   );

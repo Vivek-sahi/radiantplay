@@ -1,16 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
-import Shell, { NavSection, CanvasMode } from './components/Shell';
+import { VariantProvider, useVariant } from './variant';
+import Shell, { NavSection, FlowOption } from './components/Shell';
 import Overview from './components/Overview';
 import ModelView from './components/ModelView';
 import Workspace from './components/Workspace';
-import ModelCanvas from './components/ModelCanvas';
+import ModelCanvas, { InitialCanvasJoin } from './components/ModelCanvas';
+import SpotterXShell from './components/SpotterXShell';
 import ChatView from './components/ChatView';
 import NewProjectPrompt from './components/NewProjectPrompt';
 import DataBrowserPage from './components/DataBrowserPage';
 import ConnectionsPage from './components/ConnectionsPage';
 import ModelsPage from './components/ModelsPage';
 import FullChatView from './components/FullChatView';
-import { AgentMessage } from './components/AgentPanel';
+import { AgentMessage, MOCK_PLAN_BASE } from './components/AgentPanel';
 import { NotebookCell } from './components/ChatContextPanel';
 import { OverviewProject, OverviewAlert, ActiveInsight } from './data/mockData';
 import { c, sp, ff, fs, fw } from './styles';
@@ -66,7 +68,7 @@ export interface ProjectState {
   dqStatus?: 'idle' | 'scanning' | 'issues_found' | 'fixing' | 'done';
 }
 
-type AppView = 'overview' | 'models' | 'chat' | 'new-project' | 'model-view' | 'workspace' | 'data-browser' | 'connections' | 'placeholder' | 'full-chat' | 'canvas';
+type AppView = 'overview' | 'models' | 'chat' | 'new-project' | 'model-view' | 'workspace' | 'data-browser' | 'connections' | 'placeholder' | 'full-chat' | 'canvas' | 'spotterx';
 
 // Derives a short model name from the user's intent prompt.
 const deriveModelName = (prompt: string): string => {
@@ -79,6 +81,32 @@ const deriveModelName = (prompt: string): string => {
   const words = s.split(/\s+/).slice(0, 5).join(' ');
   return words.charAt(0).toUpperCase() + words.slice(1);
 };
+
+// MRD flow → visual canvas: derive the tables/joins to pre-populate the canvas with
+// from the same MOCK_PLAN_BASE the MRD chat card narrates, so the two never drift apart.
+const MRD_MODEL_TABLES: string[] = MOCK_PLAN_BASE.tables.map(t => t.name);
+
+const MRD_JOIN_TYPE_MAP: Record<string, InitialCanvasJoin['joinType']> = {
+  'INNER JOIN':      'inner',
+  'LEFT JOIN':       'left_outer',
+  'RIGHT JOIN':      'right_outer',
+  'FULL OUTER JOIN': 'full_outer',
+};
+
+const MRD_CARDINALITY_MAP: Record<string, InitialCanvasJoin['cardinality']> = {
+  'Many-to-one':  'many_to_one',
+  'One-to-many':  'one_to_many',
+  'One-to-one':   'one_to_one',
+};
+
+const MRD_MODEL_JOINS: InitialCanvasJoin[] = MOCK_PLAN_BASE.relationships.map(r => ({
+  table1: r.fromTable,
+  table2: r.toTable,
+  col1: r.fromKey,
+  col2: r.toKey,
+  joinType: MRD_JOIN_TYPE_MAP[r.joinType] ?? 'inner',
+  cardinality: MRD_CARDINALITY_MAP[r.cardinality ?? ''] ?? 'many_to_one',
+}));
 
 // User-facing labels for the unwired nav sections so the placeholder reads cleanly.
 const PLACEHOLDER_LABEL: Record<NavSection, string> = {
@@ -95,14 +123,20 @@ const DataStudio: React.FC = () => {
     return () => { document.title = prev; };
   }, []);
 
+  const { variant } = useVariant();
+
   const [view, setView]           = useState<AppView>('overview');
   const [prevView, setPrevView]   = useState<AppView>('overview');
   const [activeNav, setActiveNav] = useState<NavSection>('overview');
-  const [canvasMode, setCanvasMode] = useState<CanvasMode>('dataset');
   const [initialPrompt, setInitialPrompt] = useState<string>('');
   const [isFromScratch, setIsFromScratch] = useState(false);
   const [isMultiSource, setIsMultiSource] = useState(false);
   const [isNotebookFlow, setIsNotebookFlow] = useState(false);
+  const [isMrdFlow, setIsMrdFlow] = useState(false);
+  // Distinct from isMrdFlow: isMrdFlow gets reset to false the moment we navigate to
+  // 'canvas' (see the buildStep effect below), but ModelCanvas needs to know "this visit
+  // came from the MRD flow" for its own lifetime — so this flag survives that reset.
+  const [canvasAutoPopulate, setCanvasAutoPopulate] = useState(false);
   const [instructionsCreated, setInstructionsCreated] = useState(false);
   const [isDbtReview, setIsDbtReview] = useState(false);
   const [dbtImported, setDbtImported] = useState(false);
@@ -117,6 +151,7 @@ const DataStudio: React.FC = () => {
   const [resolvedInsightIds, setResolvedInsightIds] = useState<string[]>([]);
   const [selectedProject, setSelectedProject] = useState<OverviewProject | null>(null);
   const [activeAlert, setActiveAlert]         = useState<OverviewAlert | null>(null);
+  const [flowOption] = useState<FlowOption>('option3');
   const [project, setProject] = useState<ProjectState>({
     id: 'proj-001',
     name: 'Untitled Model',
@@ -141,14 +176,26 @@ const DataStudio: React.FC = () => {
 
   // Auto-transition: chat → workspace when the build starts (buildStep leaves 'empty')
   // Notebook flow stays in chat — build completes there and user navigates manually.
+  // MRD flow goes to the visual canvas instead of the workspace.
   useEffect(() => {
     if (view === 'chat' && project.buildStep !== 'empty' && !isNotebookFlow) {
       setInitialPrompt('');
       setIsFromScratch(false);
-      navigateTo('workspace');
+      if (isMrdFlow) {
+        setIsMrdFlow(false);
+        setCanvasAutoPopulate(true);
+        navigateTo('canvas');
+      } else if (variant === 'poc') {
+        // POC: the agentic conversation runs as normal; when the model is created
+        // it lands on the new visual canvas instead of the old workspace.
+        setCanvasAutoPopulate(true);
+        navigateTo('canvas');
+      } else {
+        navigateTo('workspace');
+      }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [project.buildStep, view, isNotebookFlow]);
+  }, [project.buildStep, view, isNotebookFlow, isMrdFlow, variant]);
 
   const [modelViewInitialTab, setModelViewInitialTab] = useState<'info' | 'usage' | 'cache' | 'quality' | 'monitoring' | undefined>(undefined);
 
@@ -277,6 +324,12 @@ const DataStudio: React.FC = () => {
     navigateTo('workspace');
   };
 
+  // Open visual canvas builder — "New model" from Models page
+  const openModelCanvas = () => {
+    setCanvasAutoPopulate(false);
+    navigateTo('canvas');
+  };
+
   // New project → goes to prompt screen first
   const newProject = () => {
     setProject({
@@ -295,6 +348,7 @@ const DataStudio: React.FC = () => {
       dqStatus: 'idle',
     });
     setInitialPrompt('');
+    setCanvasAutoPopulate(false);
     // Pivot: "New model" now opens the no-code visual canvas (Komal's ModelCanvas).
     // The old high-code new-project prompt lives in the frozen "Data Studio 1.5" prototype.
     navigateTo('canvas');
@@ -359,6 +413,7 @@ const DataStudio: React.FC = () => {
       return;
     }
     const isConnectionFlow = /connect.{0,20}snowflake|snowflake.{0,20}connect|set[\s-]up.{0,10}snowflake|add.{0,20}snowflake\b|new data connection/i.test(prompt);
+    const isMrdPromptFlow = /\bmrd\b|model requirement/i.test(prompt);
     setProject({
       id: `proj-${Date.now()}`,
       name: deriveModelName(prompt),
@@ -375,7 +430,8 @@ const DataStudio: React.FC = () => {
       dqStatus: 'idle',
     });
     setInitialPrompt(prompt);
-    setIsFromScratch(!isConnectionFlow);
+    setIsFromScratch(!isConnectionFlow && !isMrdPromptFlow);
+    setIsMrdFlow(isMrdPromptFlow);
     setIsAgentMode(true);
     navigateTo('chat');
   };
@@ -402,6 +458,8 @@ const DataStudio: React.FC = () => {
     setIsFromScratch(false);
     setIsMultiSource(false);
     setIsNotebookFlow(false);
+    setIsMrdFlow(false);
+    setCanvasAutoPopulate(false);
     setIsDbtReview(false);
     setIsAgentMode(false);
     setMessages([]);
@@ -425,11 +483,11 @@ const DataStudio: React.FC = () => {
 
   return (
     <>
-      <Shell activeNav={activeNav} onNavChange={handleNavChange} canvasMode={canvasMode} onCanvasModeChange={setCanvasMode} hideSidebar={view === 'chat' || view === 'workspace' || view === 'full-chat' || view === 'canvas'}>
+      <Shell activeNav={activeNav} onNavChange={handleNavChange} hideSidebar={view === 'chat' || view === 'workspace' || view === 'full-chat' || view === 'canvas'} hideHeader={view === 'canvas'}>
         {view === 'models' && (
           <ModelsPage
             onOpenProject={openModelView}
-            onNewProject={newProject}
+            onNewProject={openModelCanvas}
           />
         )}
         {view === 'overview' && (
@@ -442,6 +500,7 @@ const DataStudio: React.FC = () => {
             onOpenProjectAtMonitoring={(proj) => openModelView(proj, 'monitoring')}
             onFixWithAgent={handleFixWithAgent}
             resolvedInsightIds={resolvedInsightIds}
+            onOpenSpotterX={() => navigateTo('spotterx')}
           />
         )}
         {view === 'model-view' && selectedProject && (
@@ -489,6 +548,7 @@ const DataStudio: React.FC = () => {
             isFromScratch={isFromScratch}
             isMultiSource={isMultiSource}
             isNotebookFlow={isNotebookFlow}
+            isMrdFlow={isMrdFlow}
             isDbtReview={isDbtReview}
             instructionsCreated={instructionsCreated}
             onBuildStart={() => setInstructionsCreated(true)}
@@ -498,6 +558,7 @@ const DataStudio: React.FC = () => {
               setDataBrowserInitialTab('warehouses');
               navigateTo('data-browser');
             }}
+            flowOption={flowOption}
           />
         )}
         {view === 'full-chat' && (
@@ -529,9 +590,10 @@ const DataStudio: React.FC = () => {
             isDbtReview={isDbtReview}
             isAgentMode={isAgentMode}
             instructionsCreated={instructionsCreated}
+            flowOption={flowOption}
             isNotebookFlow={isNotebookFlow}
             notebookCells={notebookCells}
-            onNavigateToTable={(tableName) => {
+            onNavigateToTable={(_tableName) => {
               setDataBrowserInitialTab('warehouses');
               navigateTo('data-browser');
             }}
@@ -540,11 +602,35 @@ const DataStudio: React.FC = () => {
       )}
       {view === 'canvas' && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 50 }}>
-          <ModelCanvas mode={canvasMode} onBack={goBack} onPublished={() => navigateTo('models')} />
+          <ModelCanvas
+            onBack={goBack}
+            mode="dataset2"
+            poc={variant === 'poc'}
+            initialTables={canvasAutoPopulate ? MRD_MODEL_TABLES : undefined}
+            initialJoins={canvasAutoPopulate ? MRD_MODEL_JOINS : undefined}
+            /* Test tab hidden for now — re-add `showTestTab` to bring it back.
+               TestView + all tab logic are left intact; this only stops the +Model
+               flow from opting in. */
+          />
+        </div>
+      )}
+      {view === 'spotterx' && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 50 }}>
+          <SpotterXShell
+            onClose={goBack}
+            initialTables={MRD_MODEL_TABLES}
+            initialJoins={MRD_MODEL_JOINS}
+          />
         </div>
       )}
     </>
   );
 };
 
-export default DataStudio;
+const DataStudioWithVariant: React.FC = () => (
+  <VariantProvider>
+    <DataStudio />
+  </VariantProvider>
+);
+
+export default DataStudioWithVariant;

@@ -64,6 +64,18 @@ const TablesView: React.FC<{ project: ProjectState; onTableClick: (id: string) =
   return (
     <div style={{ flex: 1, overflow: 'auto', padding: sp.H, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: c['background-base'] }}>
       <svg width="620" height={svgH} viewBox={`0 0 620 ${svgH}`} style={{ maxWidth: '100%' }}>
+        <defs>
+          <style>{`
+            @keyframes ds-table-in {
+              from { opacity: 0; transform: translateY(10px); }
+              to   { opacity: 1; transform: translateY(0); }
+            }
+            @keyframes ds-join-in {
+              from { opacity: 0; }
+              to   { opacity: 1; }
+            }
+          `}</style>
+        </defs>
         {tables.map((id) => {
           const meta         = tableMetadata[id];
           const pos          = layout[id];
@@ -73,7 +85,7 @@ const TablesView: React.FC<{ project: ProjectState; onTableClick: (id: string) =
           const selectedCols = project.columnsSelected ? (project.includedColumns[id]?.length ?? 0) : 0;
           return <TableNode key={id} x={pos.x} y={pos.y} label={label} totalCols={totalCols} selectedCols={selectedCols} onClick={() => onTableClick(id)} />;
         })}
-        {hasJoins && activeJoins.map(rel => {
+        {hasJoins && activeJoins.map((rel, i) => {
           const fromPos = layout[rel.leftTable];
           const toPos   = layout[rel.rightTable];
           if (!fromPos || !toPos) return null;
@@ -85,8 +97,9 @@ const TablesView: React.FC<{ project: ProjectState; onTableClick: (id: string) =
           const dotX  = midX;
           const dotY  = Math.round((fromY + toY) / 2);
           const connColor = '#9CA3AF';
+          const animStyle = { animation: `ds-join-in 0.5s ease-out ${i * 120}ms both` };
           return (
-            <g key={rel.id}>
+            <g key={rel.id} style={animStyle}>
               <path d={fromY === toY ? `M ${fromX} ${fromY} H ${toX}` : `M ${fromX} ${fromY} H ${midX} V ${toY} H ${toX}`} stroke={connColor} strokeWidth="1.5" fill="none" />
               <line x1={fromX + 16} y1={fromY} x2={fromX} y2={fromY - 14} stroke={connColor} strokeWidth="1.5" strokeLinecap="round"/>
               <line x1={fromX + 16} y1={fromY} x2={fromX} y2={fromY}      stroke={connColor} strokeWidth="1.5" strokeLinecap="round"/>
@@ -302,7 +315,23 @@ const ColumnsView: React.FC<{ project: ProjectState; setProject: React.Dispatch<
 
   const show = (key: string) => visibleCols.has(key);
 
+  // Track per-table row index for stagger — computed fresh each render
+  const tableRowIndex = React.useRef<Map<string, number>>(new Map());
+  tableRowIndex.current = new Map(); // reset each render
+  const nextRowDelay = (tableId: string) => {
+    const i = tableRowIndex.current.get(tableId) ?? 0;
+    tableRowIndex.current.set(tableId, i + 1);
+    return i * 28;
+  };
+
   return (
+    <>
+      <style>{`
+        @keyframes ds-row-in {
+          from { opacity: 0; transform: translateY(5px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundColor: c['background-base'], opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(8px)', transition: 'opacity 0.22s ease, transform 0.22s ease' }}>
 
 
@@ -345,10 +374,11 @@ const ColumnsView: React.FC<{ project: ProjectState; setProject: React.Dispatch<
               const rowBg  = isSelected ? c['background-subtle'] : c['background-base'];
 
               const effectiveSyncStatus = project.columnOverrides?.[col.id]?.syncStatus ?? col.syncStatus;
+              const rowDelay = nextRowDelay(tableId);
               return (
                 <tr key={rowKey}
                   onClick={() => onToggleColumn?.(col.name)}
-                  style={{ backgroundColor: rowBg, cursor: 'pointer' }}
+                  style={{ backgroundColor: rowBg, cursor: 'pointer', animation: `ds-row-in 0.32s ease-out ${rowDelay}ms both` }}
                   onMouseEnter={e => { e.currentTarget.style.backgroundColor = c['background-sunken']; }}
                   onMouseLeave={e => { e.currentTarget.style.backgroundColor = rowBg; }}
                 >
@@ -453,6 +483,7 @@ const ColumnsView: React.FC<{ project: ProjectState; setProject: React.Dispatch<
         </table>
       </div>
     </div>
+    </>
   );
 };
 
@@ -490,7 +521,7 @@ function getTableLayout(tables: string[]): Record<string, { x: number; y: number
 const TableNode: React.FC<{ x: number; y: number; label: string; totalCols: number; selectedCols: number; onClick?: () => void }> = ({ x, y, label, totalCols, selectedCols, onClick }) => {
   const colLabel = selectedCols > 0 ? `${selectedCols} / ${totalCols} columns` : `${totalCols} columns`;
   return (
-    <g onClick={onClick} style={{ cursor: onClick ? 'pointer' : 'default' }}>
+    <g onClick={onClick} style={{ cursor: onClick ? 'pointer' : 'default', animation: 'ds-table-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both' }}>
       <rect x={x} y={y} width={TABLE_W} height={TABLE_H} rx={8} fill={c['background-base']} stroke="#9CA3AF" strokeWidth="1.5"/>
       {/* Type label */}
       <text x={x + 14} y={y + 20} fill="#9CA3AF" fontSize="10" fontFamily="system-ui" letterSpacing="0.3">Table</text>
