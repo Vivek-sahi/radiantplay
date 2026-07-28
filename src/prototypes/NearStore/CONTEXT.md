@@ -77,7 +77,19 @@ Branch `prototype/data-studio` (designer fork → push `origin` only; NOT pushed
 `e769afa` (prototype) → `e10511b` (overview + docs) → `f966abf` (caching UX refinement) →
 this session's commit (full-width failure banner + Product Telemetry removed from mock data).
 
-## Possible next steps
-- Push to `origin` if desired.
+## Business-user (consumption) side — IN PROGRESS
+The data-person side (above) is done. We're now building the **business-user** side: a
+header **surface-switcher** (Data workspace / Spotter / Search data / Liveboard) with the
+cached-vs-live **indicator** on each. **Spotter is built** (reuses the real `@spotter` engine;
+grey icon + tooltip + "Last refreshed on …" on the answer card; picker shows Cached/None).
+Requirements: `2026-07-27-business-user-requirements.md`. **Full state + next steps:
+`2026-07-27-session-log.md` — READ IT.**
+
+## Next session → Liveboard
+Build the Liveboard surface next (then Search data). Reuse: `src/prototypes/_liveboard-template/`,
+`src/prototypes/_shared/tiles/` (AnswerTile/GroupTile/NoteTile), `src/components/LiveboardHeader`.
+Per-tile cache marker; the hard case is mixed cached/live tiles on one board. See the session log.
+
+## Possible next steps (data-person side, parked)
 - Column-level caching is the open scope question (see DECISION-MEMO §open questions).
 - The overview page (`/near-store-overview.html`) could gain a "why this scope" section.

@@ -46,6 +46,31 @@ const VIZ_STEPS: RichStep[] = [
   },
 ];
 
+const DAU_STEPS: RichStep[] = [
+  {
+    label: 'Understand the question',
+    description:
+      'Parsed the prompt as a Daily Active Users (DAU) trend over the last 12 months.',
+  },
+  {
+    label: 'Resolve the data model',
+    description:
+      'Using Mixpanel Daily Events — # Users by daily event date, excluding internal ThoughtSpot accounts.',
+    toolcall: {
+      id: 'tc-dau',
+      icon: 'database',
+      title: 'ThoughtSpot: Answer generation',
+      input: 'measures: ["# Users"], dimensions: ["Event Date daily"]',
+      output:
+        'Resolved # Users → Event Date daily on Mixpanel Daily Events (filter: Account Name != "thoughtspot, inc.")',
+    },
+  },
+  {
+    label: 'Generate the answer',
+    description: 'Aggregated # Users by day and rendered a bar chart of the daily trend.',
+  },
+];
+
 const TEXT_STEPS: RichStep[] = [
   { label: 'Understand the question', description: 'Parsed prompt as a narrative summary request.' },
   { label: 'Pull the relevant data', description: 'Pulled the latest aggregated metrics from the warehouse.' },
@@ -209,6 +234,168 @@ const vizFixture: CannedEvent[] = [
   { delay: 100, chunk: { kind: 'message_done' } },
 ];
 
+/**
+ * Viz answer: DAU daily bar chart (Near Store demo). Reasoning stays generic —
+ * no cache mention; the cached/live indicator lives on the answer card.
+ */
+const dauFixture: CannedEvent[] = [
+  ...reasoningSequence(DAU_STEPS),
+  {
+    delay: 100,
+    chunk: {
+      kind: 'block_start',
+      block: {
+        kind: 'viz',
+        id: 'viz-dau',
+        tokens: [
+          { id: 't-users', label: '# Users', kind: 'measure' },
+          { id: 't-daily', label: 'Event Date daily', kind: 'keyword' },
+          { id: 't-acct', label: "Account Name != 'thoughtspot, inc.'", kind: 'filter' },
+        ],
+        source: {
+          type: 'data',
+          chartKind: 'bar',
+          data: {
+            xAxis: {
+              label: 'Daily Event Date',
+              categories: [
+                '10/02', '10/03', '10/04', '10/05', '10/06', '10/07', '10/08',
+                '10/09', '10/10', '10/13', '10/14', '10/15', '10/16', '10/17',
+              ],
+            },
+            yAxis: { label: '# Users' },
+            series: [
+              {
+                id: 's1',
+                label: '# Users',
+                data: [63000, 59000, 50000, 13000, 18000, 64000, 63000, 61000, 60000, 60000, 63000, 63000, 61000, 51000],
+              },
+            ],
+          },
+        },
+        tableData: {
+          columns: ['Daily Event Date', '# Users'],
+          rows: [
+            ['10/02', 63000], ['10/03', 59000], ['10/04', 50000], ['10/05', 13000],
+            ['10/06', 18000], ['10/07', 64000], ['10/08', 63000],
+          ],
+        },
+      },
+    },
+  },
+  { delay: 200, chunk: { kind: 'block_done', blockId: 'viz-dau' } },
+  {
+    delay: 200,
+    chunk: {
+      kind: 'block_start',
+      block: {
+        kind: 'followups',
+        id: 'follow-dau',
+        suggestions: [
+          'Break this down by account',
+          'Compare against the previous 12 months',
+          'Show weekly instead of daily',
+        ],
+      },
+    },
+  },
+  { delay: 100, chunk: { kind: 'block_done', blockId: 'follow-dau' } },
+  { delay: 100, chunk: { kind: 'message_done' } },
+];
+
+const MAU_STEPS: RichStep[] = [
+  {
+    label: 'Understand the question',
+    description: 'Parsed the prompt as a Monthly Active Users (MAU) trend over the last 12 months.',
+  },
+  {
+    label: 'Resolve the data model',
+    description:
+      'Using Mixpanel Daily Events — # Users rolled up to a monthly grain, excluding internal ThoughtSpot accounts.',
+    toolcall: {
+      id: 'tc-mau',
+      icon: 'database',
+      title: 'ThoughtSpot: Answer generation',
+      input: 'measures: ["# Users"], dimensions: ["Event Date monthly"]',
+      output: 'Resolved # Users → Event Date monthly (distinct users per month)',
+    },
+  },
+  {
+    label: 'Generate the answer',
+    description: 'Counted distinct # Users by month and rendered a line chart of the monthly trend.',
+  },
+];
+
+/**
+ * Viz answer: MAU monthly line chart (Near Store demo). This answer is served
+ * LIVE from the warehouse, so its answer card shows the live (green) marker —
+ * paired with the cached DAU answer to show both states in one conversation.
+ */
+const mauFixture: CannedEvent[] = [
+  ...reasoningSequence(MAU_STEPS),
+  {
+    delay: 100,
+    chunk: {
+      kind: 'block_start',
+      block: {
+        kind: 'viz',
+        id: 'viz-mau',
+        tokens: [
+          { id: 't-users-m', label: '# Users', kind: 'measure' },
+          { id: 't-monthly', label: 'Event Date monthly', kind: 'keyword' },
+          { id: 't-acct-m', label: "Account Name != 'thoughtspot, inc.'", kind: 'filter' },
+        ],
+        source: {
+          type: 'data',
+          chartKind: 'line',
+          data: {
+            xAxis: {
+              label: 'Monthly Event Date',
+              categories: [
+                'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+                'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+              ],
+            },
+            yAxis: { label: '# Users' },
+            series: [
+              {
+                id: 'm1',
+                label: '# Users',
+                data: [420000, 435000, 448000, 460000, 452000, 470000, 495000, 510000, 505000, 520000, 534000, 548000],
+              },
+            ],
+          },
+        },
+        tableData: {
+          columns: ['Monthly Event Date', '# Users'],
+          rows: [
+            ['Jul', 420000], ['Aug', 435000], ['Sep', 448000],
+            ['Oct', 460000], ['Nov', 452000], ['Dec', 470000],
+          ],
+        },
+      },
+    },
+  },
+  { delay: 200, chunk: { kind: 'block_done', blockId: 'viz-mau' } },
+  {
+    delay: 200,
+    chunk: {
+      kind: 'block_start',
+      block: {
+        kind: 'followups',
+        id: 'follow-mau',
+        suggestions: [
+          'Break this down by account',
+          'Compare against the previous year',
+          'Show weekly instead of monthly',
+        ],
+      },
+    },
+  },
+  { delay: 100, chunk: { kind: 'block_done', blockId: 'follow-mau' } },
+  { delay: 100, chunk: { kind: 'message_done' } },
+];
+
 /** Text-only answer with streamed paragraph. */
 const textFixture: CannedEvent[] = [
   ...reasoningSequence(TEXT_STEPS),
@@ -302,6 +489,12 @@ export function pickCannedResponse(userText: string): CannedEvent[] {
 
   if (lower.length === 0) return vizFixture;
 
+  if (/\b(mau|monthly active)\b/.test(lower)) {
+    return mauFixture;
+  }
+  if (/\b(dau|daily active|active users)\b/.test(lower)) {
+    return dauFixture;
+  }
   if (/\b(churn|customer|retention|account|source|cite)\b/.test(lower)) {
     return sourcesFixture;
   }

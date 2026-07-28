@@ -106,6 +106,25 @@ export interface AnswerTileProps extends React.HTMLAttributes<HTMLDivElement> {
    * tag the tile semantically; AnswerTile itself doesn't apply any styling from it.
    */
   highlighted?: boolean;
+
+  /**
+   * Optional provenance / metadata node rendered inside the card (e.g. a
+   * cached-vs-live marker). Additive: undefined = no change for existing tiles.
+   */
+  provenance?: React.ReactNode;
+
+  /**
+   * Optional node rendered inline just before the title (e.g. a status dot).
+   * Additive: undefined = no change for existing tiles.
+   */
+  titleLeading?: React.ReactNode;
+
+  /**
+   * Where the provenance node sits: 'above-graph' (just under the header,
+   * before the chart) or 'bottom' (a legend row after the chart).
+   * @default 'above-graph'
+   */
+  provenancePlacement?: 'above-graph' | 'bottom';
 }
 
 // ─── Toolbar icons — inline SVG from Figma node 29:57904 ─────────────────────
@@ -217,6 +236,9 @@ export const AnswerTile = forwardRef<HTMLDivElement, AnswerTileProps>(
       onTitleChange,
       onDescriptionChange,
       densityPadding = 4,
+      provenance,
+      provenancePlacement = 'above-graph',
+      titleLeading,
       className,
       style,
       onClick,
@@ -398,7 +420,8 @@ export const AnswerTile = forwardRef<HTMLDivElement, AnswerTileProps>(
           {/* Header — conditionally rendered based on showTitle / showDescription */}
           {(showTitle || showDescription) && (localTitle || localDesc) && (
             <div className={styles.header}>
-              {showTitle && localTitle && (
+              {showTitle && localTitle && (() => {
+                const titleEl = (
                 /* Wrapper carries the border + hover detection — larger/more reliable hit area */
                 <div
                   className={styles.titleWrapper}
@@ -430,7 +453,11 @@ export const AnswerTile = forwardRef<HTMLDivElement, AnswerTileProps>(
                     <span className={styles.title}>{localTitle}</span>
                   )}
                 </div>
-              )}
+                );
+                return titleLeading
+                  ? <div className={styles.titleRow}>{titleLeading}{titleEl}</div>
+                  : titleEl;
+              })()}
               {showDescription && localDesc && (
                 <div
                   className={styles.descriptionWrapper}
@@ -466,6 +493,11 @@ export const AnswerTile = forwardRef<HTMLDivElement, AnswerTileProps>(
             </div>
           )}
 
+          {/* Provenance — above the graph (just under the header) */}
+          {provenance && provenancePlacement === 'above-graph' && (
+            <div className={styles.provenanceAbove}>{provenance}</div>
+          )}
+
           {/* Chart area */}
           {/* chart area is the drag handle — large, safe to drag from */}
           <div className={isEdit ? `${styles.chartArea} tile-drag-handle` : styles.chartArea}>
@@ -473,6 +505,11 @@ export const AnswerTile = forwardRef<HTMLDivElement, AnswerTileProps>(
               <ChartRenderer type={chartType} />
             </Suspense>
           </div>
+
+          {/* Provenance — bottom legend row (after the chart) */}
+          {provenance && provenancePlacement === 'bottom' && (
+            <div className={styles.provenanceBottom}>{provenance}</div>
+          )}
         </div>
 
       </div>

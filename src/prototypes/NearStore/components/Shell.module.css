@@ -6,3 +6,11 @@
   height: 100%;
   overflow-y: auto;
 }
+
+/* Surface switcher (header). The DS ActionMenu paints its open panel from
+   --rd-sys-color-background-surface, which this app doesn't define — so the menu
+   renders transparent/flimsy. Supply an opaque surface token here (the menu is a
+   DOM child of this wrapper, not portaled, so it inherits the value). */
+.switcher {
+  --rd-sys-color-background-surface: var(--rd-sys-color-background-base);
+}

@@ -38,6 +38,23 @@ export interface VizBlockProps {
    * Pass `null` to hide. Pass a custom node to override.
    */
   footerRight?: React.ReactNode;
+  /**
+   * Optional meta row rendered below the header tokens and above the chart.
+   * Additive — it does not touch the footer action groups. Near Store uses
+   * this for the cached / live provenance marker.
+   */
+  meta?: React.ReactNode;
+  /**
+   * Optional node rendered at the start of the "Showing N of N data points"
+   * row (below the chart), divided from the count. Near Store uses this as an
+   * alternate placement for the cache marker.
+   */
+  dataPointsLeading?: React.ReactNode;
+  /**
+   * Optional node rendered in the header action row, before the table/chart
+   * view toggle. Near Store uses this for an icon-only freshness marker.
+   */
+  headerActionsLeading?: React.ReactNode;
   /** Controlled view. */
   view?: VizView;
   /** Called when the user clicks a view-toggle segment. */
@@ -66,6 +83,9 @@ export const VizBlock: React.FC<VizBlockProps> = ({
   chartSlot,
   footerLeft,
   footerRight,
+  meta,
+  dataPointsLeading,
+  headerActionsLeading,
   view: controlledView,
   onViewChange,
   onExpand,
@@ -88,6 +108,8 @@ export const VizBlock: React.FC<VizBlockProps> = ({
     else setExpandedInternal(true);
   };
 
+  const dataPointsLabel = getDataPointsLabel(block);
+
   return (
     <div className={styles.viz}>
       {block.title && <h3 className={styles.title}>{block.title}</h3>}
@@ -99,6 +121,7 @@ export const VizBlock: React.FC<VizBlockProps> = ({
             ))}
           </div>
           <div className={styles.headerActions}>
+            {headerActionsLeading}
             <div className={styles.viewToggle} role="group" aria-label="View mode">
               <button
                 type="button"
@@ -131,6 +154,7 @@ export const VizBlock: React.FC<VizBlockProps> = ({
             </button>
           </div>
         </div>
+        {meta && <div className={styles.cardMeta}>{meta}</div>}
         <div className={styles.cardBody}>
           <Slot
             view={view}
@@ -140,6 +164,15 @@ export const VizBlock: React.FC<VizBlockProps> = ({
             includeLegend
           />
         </div>
+        {(dataPointsLabel || dataPointsLeading) && (
+          <div className={styles.dataPoints}>
+            {dataPointsLeading}
+            {dataPointsLeading && dataPointsLabel && (
+              <span className={styles.dataPointsDivider} aria-hidden="true" />
+            )}
+            {dataPointsLabel && <span>{dataPointsLabel}</span>}
+          </div>
+        )}
         <div className={styles.cardFooter}>
           <div className={styles.footerLeft}>
             {footerLeft === undefined ? (
@@ -354,7 +387,7 @@ const DefaultFooterLeft: React.FC<{
 );
 
 const DefaultFooterRight: React.FC<{ onAddToCoaching?: () => void }> = ({ onAddToCoaching }) => (
-  <FooterAction icon="plus" label="Add to coaching" onClick={onAddToCoaching} brand />
+  <FooterAction icon="plus" label="Add to memory" onClick={onAddToCoaching} />
 );
 
 const FooterAction: React.FC<{

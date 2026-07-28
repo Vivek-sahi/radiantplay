@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
-import { Shell, type NavKey } from './components/Shell';
+import { Shell, type NavKey, type Surface } from './components/Shell';
 import { DataStoreView } from './components/DataStoreView';
 import { DataObjectsView } from './components/DataObjectsView';
 import { ModelView } from './components/ModelView';
+import { SearchDataSurface } from './components/SearchDataSurface';
+import { SpotterSurface } from './components/SpotterSurface';
+import { LiveboardSurface, type LiveboardTreatment } from './components/LiveboardSurface';
 import { models as seedModels } from './data';
 import type { DataModel } from './types';
 
@@ -24,9 +27,21 @@ type View =
   | { kind: 'datastore' }
   | { kind: 'model'; modelId: string; origin: Origin };
 
+// Each Liveboard switcher variant maps to one cache-indicator visual treatment.
+const LIVEBOARD_TREATMENT: Partial<Record<Surface, LiveboardTreatment>> = {
+  'liveboard': 'text-above',
+  'liveboard-b': 'text-bottom',
+  'liveboard-dot': 'dot',
+  'liveboard-statement': 'statement',
+  'liveboard-stroke': 'stroke',
+  'liveboard-hover': 'hover',
+  'liveboard-hover-source': 'hover-source',
+};
+
 export const NearStore: React.FC = () => {
   const [models, setModels] = useState<DataModel[]>(seedModels);
   const [view, setView] = useState<View>({ kind: 'objects' });
+  const [surface, setSurface] = useState<Surface>('data-workspace');
 
   const updateModel = (next: DataModel) =>
     setModels((prev) => prev.map((m) => (m.id === next.id ? next : m)));
@@ -37,6 +52,25 @@ export const NearStore: React.FC = () => {
   const activeNav: NavKey = view.kind === 'model' ? view.origin : view.kind;
 
   const renderContent = () => {
+    // Spotter and Liveboard are the built-out business-user surfaces; Search
+    // data remains a scaffolded placeholder for now.
+    if (
+      surface === 'spotter' ||
+      surface === 'spotter-b' ||
+      surface === 'spotter-source' ||
+      surface === 'spotter-header-icon'
+    ) {
+      const cacheVariant =
+        surface === 'spotter' ? 'above' : surface === 'spotter-header-icon' ? 'header-icon' : 'below';
+      const copyVariant = surface === 'spotter-source' ? 'source' : 'default';
+      return <SpotterSurface cacheVariant={cacheVariant} copyVariant={copyVariant} />;
+    }
+    if (surface.startsWith('liveboard')) {
+      return <LiveboardSurface treatment={LIVEBOARD_TREATMENT[surface] ?? 'text-above'} />;
+    }
+    if (surface === 'search' || surface === 'search-icon') {
+      return <SearchDataSurface freshnessPlacement={surface === 'search-icon' ? 'top-right' : 'footer'} />;
+    }
     if (view.kind === 'datastore') {
       return <DataStoreView models={models} onViewDetails={(id) => openModel(id, 'datastore')} />;
     }
@@ -51,7 +85,7 @@ export const NearStore: React.FC = () => {
   };
 
   return (
-    <Shell active={activeNav} onNavigate={navigate}>
+    <Shell active={activeNav} onNavigate={navigate} surface={surface} onSurfaceChange={setSurface}>
       {renderContent()}
     </Shell>
   );

@@ -1,0 +1,64 @@
+.marker {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  font-family: var(--font-family-primary);
+  /* Inherit size from the container so it matches its context — e.g. the
+     "Showing N of N data points" row (xs) in the after-graph placement. */
+  font-size: inherit;
+  line-height: var(--line-height-md);
+  color: var(--rd-sys-color-content-secondary);
+}
+
+.label {
+  color: var(--rd-sys-color-content-secondary);
+}
+
+.iconTrigger {
+  display: inline-flex;
+  cursor: help;
+}
+
+/* Clock glyph + status badge — green = live (warehouse), blue = cached (Near Store) */
+.clockWrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.badge {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: 1.5px solid var(--rd-sys-color-background-base);
+  box-sizing: border-box;
+}
+
+.badgeLive {
+  background: var(--rd-sys-color-content-success);
+}
+
+.badgeCached {
+  background: var(--rd-sys-color-content-brand);
+}
+
+/* Dot-only exploration (no clock) — green = live, blue = cached */
+.dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  cursor: help;
+}
+
+.dotCached {
+  background: var(--rd-sys-color-content-brand);
+}
+
+.dotLive {
+  background: var(--rd-sys-color-content-success);
+}

@@ -1,0 +1,80 @@
+.surface {
+  height: 100%;
+  position: relative;
+}
+
+.landing {
+  height: 100%;
+}
+
+/* Chat-active layout: scrollable thread + sticky prompt. */
+.chat {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.thread {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--spacing-6) var(--spacing-4);
+}
+
+.threadInner {
+  max-width: 820px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-5);
+}
+
+.answer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+}
+
+/* Agent turn — mirrors @spotter AgentMessage: avatar + stacked body. */
+.agentRow {
+  display: flex;
+  gap: var(--spacing-3);
+  align-items: flex-start;
+}
+
+.agentAvatar {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--rd-sys-color-border-default);
+  color: var(--rd-sys-color-content-primary);
+}
+
+.agentBody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+}
+
+.promptArea {
+  border-top: 1px solid var(--rd-sys-color-border-divider);
+  padding: var(--spacing-4);
+  background: var(--rd-sys-color-background-base);
+}
+
+.promptWrapper {
+  max-width: 820px;
+  margin: 0 auto;
+}
+
+.disclaimer {
+  text-align: center;
+  color: var(--rd-sys-color-content-secondary);
+  font-size: var(--font-size-xs);
+  margin: var(--spacing-2) 0 0;
+}

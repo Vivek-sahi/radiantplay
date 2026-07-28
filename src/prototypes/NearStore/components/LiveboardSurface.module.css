@@ -1,0 +1,109 @@
+.surface {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--rd-sys-color-background-sunken);
+}
+
+/* Scrollable board canvas — tiles are absolutely positioned via the grid math */
+.canvas {
+  position: relative;
+  flex: 1;
+  overflow-y: auto;
+  background: var(--rd-sys-color-background-sunken);
+}
+
+/* Board-level bar — the 'statement' summary line or the 'stroke' legend.
+   Horizontal padding matches the canvas grid PAD (24px) so it lines up. */
+.boardBar {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-6);
+  background: var(--rd-sys-color-background-base);
+  border-bottom: 1px solid var(--rd-sys-color-border-divider);
+  font-family: var(--font-family-primary);
+  font-size: 12px;
+  color: var(--rd-sys-color-content-secondary);
+  flex-shrink: 0;
+}
+
+.legendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+}
+
+.swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.swatchCached {
+  background: var(--rd-sys-color-content-brand);
+}
+
+.swatchLive {
+  background: var(--rd-sys-color-content-secondary);
+}
+
+/* 'hover' treatment — clean tile face; on hover a product-accurate cluster
+   (Spotter · Data freshness · ⋯) appears top-right. */
+.hoverCluster {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.hoverTile:hover .hoverCluster {
+  opacity: 1;
+}
+
+.spotterPill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  height: 28px;
+  padding: 0 var(--spacing-3);
+  border-radius: 999px;
+  border: none;
+  background: var(--rd-sys-color-background-sunken);
+  color: var(--rd-sys-color-content-primary);
+  font-family: var(--font-family-primary);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.clusterIconBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: 999px;
+  border: none;
+  background: var(--rd-sys-color-background-sunken);
+  color: var(--rd-sys-color-content-secondary);
+  cursor: pointer;
+}
+
+/* Text chip for the hover-source variant — shows the source-first copy inline */
+.clusterTextChip {
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 var(--spacing-3);
+  border-radius: 999px;
+  background: var(--rd-sys-color-background-sunken);
+  font-family: var(--font-family-primary);
+  font-size: 12px;
+}

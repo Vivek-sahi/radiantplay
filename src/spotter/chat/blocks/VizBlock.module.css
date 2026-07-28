@@ -131,6 +131,28 @@
   outline-offset: 2px;
 }
 
+/* Optional additive meta row (below tokens, above chart) — e.g. a cache marker. */
+.cardMeta {
+  margin-top: calc(-1 * var(--spacing-2, 8px));
+  padding: 0 var(--spacing-5, 20px) var(--spacing-3, 12px);
+  font-size: var(--font-size-xs, 12px);
+}
+
+.dataPoints {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2, 8px);
+  padding: 0 var(--spacing-5, 20px) var(--spacing-2, 8px);
+  font-size: var(--font-size-xs);
+  color: var(--rd-sys-color-content-secondary);
+}
+
+.dataPointsDivider {
+  width: 1px;
+  height: 12px;
+  background: var(--rd-sys-color-border-default);
+}
+
 .cardBody {
   position: relative;
   display: flex;

@@ -114,6 +114,19 @@
   flex-shrink: 0;
 }
 
+/* Title row — only used when a leading node (e.g. status dot) sits before the title */
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.titleRow .titleWrapper {
+  flex: 1;
+  min-width: 0;
+}
+
 /* Title container — Figma h-[28px]: padding(2) + line-height(24) + padding(2) */
 .titleWrapper {
   padding: 2px 4px;
@@ -201,6 +214,26 @@
 .chartArea > * {
   flex: 1;
   min-width: 0;
+}
+
+/* ─────────────────────────────────────────────────────────
+   Provenance marker (cached / live) — additive slot
+   ───────────────────────────────────────────────────────── */
+
+/* Above the graph: sits just under the header, before the chart */
+.provenanceAbove {
+  padding: 0 4px;
+  font-size: 12px;
+  color: var(--rd-sys-color-content-secondary, #777e8b);
+}
+
+/* Bottom legend row: after the chart, with a hairline divider above */
+.provenanceBottom {
+  margin-top: 4px;
+  padding: 6px 4px 0;
+  border-top: 1px solid var(--rd-sys-color-border-divider, #eaedf2);
+  font-size: 12px;
+  color: var(--rd-sys-color-content-secondary, #777e8b);
 }
 
 /* ─────────────────────────────────────────────────────────
