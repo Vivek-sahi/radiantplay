@@ -10,6 +10,45 @@ Data Studio is a no-code visual canvas for building AI-ready data models. The pr
 
 ---
 
+## Two cuts — Vision and POC
+
+The prototype ships **two experiences from one codebase**, selected at runtime:
+
+- **Vision** — the full vision-level experience. The default.
+- **POC** — a scoped-down cut (Komal's, merged 2026-07-28) for what's buildable now.
+
+`variant.tsx` owns this: a `VariantProvider` + `useVariant()` context resolving from
+`?v=` URL param → `localStorage` → `vision`. A `VariantToggle` segmented control sits
+in the header, and the choice is reflected back into the URL so each cut is shareable
+and reload-safe.
+
+Gating flows as a **`poc` boolean prop** threaded into the shared components —
+`ModelCanvas`, `ConnectionPill`, `AgentPanel`, `Overview`. One component set, two
+behaviours. There is no forked component tree; do not create one.
+
+**POC scope:** single-category data browser (connections only, no tabs, multi-connection,
+cross-connection adds require caching first) · hamburger node menu (Join/Filter/Formula/
+Delete; no Clean/Code) · "Spotter readiness" instead of "AI readiness", with a Check-for
+tests panel · canvas multi-node pick → chips in the composer → "join these tables" →
+reasoning → join recommendation card · bordered connection pill + `@` table mention on
+the home prompt bar · 44px collapsed data-browser rail with a header toggle.
+
+**Vision-specific behaviour** (restored behind `!poc` during the merge): data-browser
+tree rows show the hover info + add pair; the data browser collapses to 0 width with the
+control moving up to the topbar database icon.
+
+⚠️ Not all of her work was gated — see `2026-07-28-poc-vision-gating-review.md` and
+`NEXT_UP.md`. 71 regions in `ModelCanvas.tsx` still need classifying as both/gate/n/a.
+Assume Vision may differ from its pre-merge behaviour in unreviewed places; the
+pre-merge state is tagged `pre-komal-merge-2026-07-28`.
+
+**Also arrived with her canvas work:** `SpotterXShell`, `TestView` (dormant —
+`showTestTab` defaults false), `EvalView`, `MRDReview`, `TestFixCard`, and a unified
+`renderColumnsTable` that replaced the two bespoke semantic preview tables with one
+richer shared table (adds Description / AI context / Synonyms / Indexed).
+
+---
+
 ## Main views
 
 `index.tsx` routes between these views via `Shell.tsx`:

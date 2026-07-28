@@ -6,6 +6,12 @@ _Active work items. Edit in place each session — move done items to Done, add 
 
 ## Active
 
+### POC / Vision gating review ← picked up when convenient
+
+- **Classify the 71 ungated regions** — see `2026-07-28-poc-vision-gating-review.md`. Komal's POC cut landed 2026-07-28; most of it is gated behind the `poc` prop, but not all. Two ungated changes were caught and split by variant during the merge (data-browser row affordances, data-browser collapse). The doc lists the remaining regions in `ModelCanvas.tsx` that differ from pre-merge Vision with no `poc` reference. Most are improvements to keep for both cuts — the job is to classify each as **both** / **gate** / **n/a**, not to revert.
+- **Fill in `PocScope`** — `variant.tsx` defines a `PocScope` config object intended as "the single place that names what the POC turns off," but it's an empty stub. Gating today is ad-hoc `poc &&` checks scattered through components. Worth consolidating as the gating list firms up.
+- **Clear the dead type errors** — 4 real ones arrived with her work, all in code that never runs: `ChatView.tsx` ~250 (false branch of `{true ? … : …}`) and two arithmetic errors in the dormant `TestView.tsx`. Clean up when the Test tab is next touched.
+
 ### Polish / loose ends
 
 - **Loose end #1** — pixel-exact icon swap from Figma node 517-1053 (file `ZOIU8Te4ocC5Kqjwwynz52`). Current icons match the style but not the exact SVGs.
