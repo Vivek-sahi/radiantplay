@@ -55,3 +55,9 @@ src/prototypes/Cmdk/
 
 # Local status dashboard (generated, not for repo)
 public/status.html
+
+# Build artifacts
+tsconfig.node.tsbuildinfo
+
+# LibreOffice lock files
+.~lock.*#

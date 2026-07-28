@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Aurora — Analytics demo</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --panel: #161b22;
+    --panel-2: #1c2330;
+    --border: #2a3242;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --brand: #6e8bff;
+    --brand-2: #54e1c8;
+    --good: #3fb950;
+    --bad: #f85149;
+    --radius: 14px;
+    --shadow: 0 8px 30px rgba(0,0,0,.35);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: radial-gradient(1200px 600px at 80% -10%, rgba(110,139,255,.18), transparent 60%), var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 32px;
+    line-height: 1.5;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; }
+  header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-bottom: 28px; }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .logo {
+    width: 38px; height: 38px; border-radius: 11px;
+    background: linear-gradient(135deg, var(--brand), var(--brand-2));
+    display: grid; place-items: center; font-weight: 800; color: #0d1117; font-size: 20px;
+    box-shadow: 0 4px 18px rgba(110,139,255,.4);
+  }
+  .brand h1 { font-size: 18px; font-weight: 700; letter-spacing: -.2px; }
+  .brand p { font-size: 12px; color: var(--muted); }
+  .seg { display: inline-flex; background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 3px; gap: 2px; }
+  .seg button {
+    border: 0; background: transparent; color: var(--muted); font: inherit; font-size: 13px; font-weight: 600;
+    padding: 7px 14px; border-radius: 7px; cursor: pointer; transition: .15s;
+  }
+  .seg button:hover { color: var(--text); }
+  .seg button.active { background: var(--brand); color: #0d1117; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; margin-bottom: 16px; }
+  .card {
+    background: linear-gradient(180deg, var(--panel-2), var(--panel));
+    border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 18px 20px; box-shadow: var(--shadow);
+  }
+  .stat-label { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 7px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .stat-value { font-size: 30px; font-weight: 750; letter-spacing: -.5px; margin: 8px 0 4px; }
+  .delta { font-size: 13px; font-weight: 650; }
+  .delta.up { color: var(--good); }
+  .delta.down { color: var(--bad); }
+
+  .panel { background: linear-gradient(180deg, var(--panel-2), var(--panel)); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px; box-shadow: var(--shadow); }
+  .panel-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+  .panel-head h2 { font-size: 15px; font-weight: 700; }
+  .panel-head span { font-size: 12px; color: var(--muted); }
+
+  .chart { width: 100%; height: 240px; }
+  .bars { display: flex; align-items: flex-end; gap: 10px; height: 200px; padding-top: 10px; }
+  .bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .bar {
+    width: 100%; border-radius: 7px 7px 3px 3px;
+    background: linear-gradient(180deg, var(--brand), rgba(110,139,255,.25));
+    transition: height .7s cubic-bezier(.22,1,.36,1); height: 0;
+  }
+  .bar-label { font-size: 11px; color: var(--muted); }
+
+  .two-col { display: grid; grid-template-columns: 1.6fr 1fr; gap: 16px; }
+  @media (max-width: 760px) { .two-col { grid-template-columns: 1fr; } body { padding: 18px; } }
+
+  .row { display: flex; align-items: center; justify-content: space-between; padding: 11px 0; border-bottom: 1px solid var(--border); }
+  .row:last-child { border-bottom: 0; }
+  .row .name { font-size: 13px; font-weight: 600; }
+  .row .meta { font-size: 11px; color: var(--muted); }
+  .track { height: 6px; background: var(--bg); border-radius: 4px; overflow: hidden; width: 90px; }
+  .fill { height: 100%; background: linear-gradient(90deg, var(--brand-2), var(--brand)); border-radius: 4px; transition: width .9s cubic-bezier(.22,1,.36,1); width: 0; }
+  footer { margin-top: 24px; text-align: center; font-size: 12px; color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <div class="logo">A</div>
+      <div>
+        <h1>Aurora analytics</h1>
+        <p>Live product overview</p>
+      </div>
+    </div>
+    <div class="seg" id="range">
+      <button data-r="7">7d</button>
+      <button data-r="30" class="active">30d</button>
+      <button data-r="90">90d</button>
+    </div>
+  </header>
+
+  <div class="grid" id="stats"></div>
+
+  <div class="two-col">
+    <div class="panel">
+      <div class="panel-head">
+        <h2>Active users</h2>
+        <span id="chart-sub">Last 30 days</span>
+      </div>
+      <div class="bars" id="bars"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h2>Top channels</h2><span>Share</span></div>
+      <div id="channels"></div>
+    </div>
+  </div>
+
+  <footer>Aurora demo · standalone HTML · no dependencies · <span id="ts"></span></footer>
+</div>
+
+<script>
+  // ---- Mock data per range ----
+  const DATA = {
+    7:  { stats: [["Revenue","$48.2k",6.4,1],["Active users","12.1k",3.1,1],["Conversion","3.8%",-0.6,0],["Avg session","4m 12s",2.2,1]],
+          bars: [42,55,38,61,72,49,80], labels: ["M","T","W","T","F","S","S"],
+          channels: [["Organic",38],["Direct",27],["Referral",19],["Social",11],["Email",5]] },
+    30: { stats: [["Revenue","$214k",12.8,1],["Active users","48.7k",8.5,1],["Conversion","4.1%",1.2,1],["Avg session","4m 38s",-1.1,0]],
+          bars: [30,45,40,55,60,52,68,74,66,80,72,88], labels: Array.from({length:12},(_,i)=>"W"+(i+1)),
+          channels: [["Organic",41],["Direct",24],["Referral",18],["Social",12],["Email",5]] },
+    90: { stats: [["Revenue","$642k",21.3,1],["Active users","139k",15.9,1],["Conversion","4.4%",2.7,1],["Avg session","4m 51s",4.0,1]],
+          bars: [50,58,55,64,60,72,78,70,84,90,86,95], labels: Array.from({length:12},(_,i)=>"M"+(i+1)),
+          channels: [["Organic",44],["Direct",22],["Referral",17],["Social",12],["Email",5]] },
+  };
+  const COLORS = ["#6e8bff","#54e1c8","#f2a65a","#c77dff","#f85149"];
+
+  function render(range) {
+    const d = DATA[range];
+
+    document.getElementById("stats").innerHTML = d.stats.map((s,i) => `
+      <div class="card">
+        <div class="stat-label"><span class="dot" style="background:${COLORS[i%COLORS.length]}"></span>${s[0]}</div>
+        <div class="stat-value">${s[1]}</div>
+        <div class="delta ${s[3]?'up':'down'}">${s[3]?'▲':'▼'} ${Math.abs(s[2])}% vs prev</div>
+      </div>`).join("");
+
+    const max = Math.max(...d.bars);
+    document.getElementById("bars").innerHTML = d.bars.map((v,i) => `
+      <div class="bar-col">
+        <div class="bar" data-h="${Math.round(v/max*100)}"></div>
+        <div class="bar-label">${d.labels[i]}</div>
+      </div>`).join("");
+    requestAnimationFrame(() => document.querySelectorAll(".bar").forEach(b => b.style.height = b.dataset.h + "%"));
+
+    document.getElementById("channels").innerHTML = d.channels.map((c,i) => `
+      <div class="row">
+        <div>
+          <div class="name">${c[0]}</div>
+          <div class="meta">${c[1]}% of traffic</div>
+        </div>
+        <div class="track"><div class="fill" data-w="${c[1]*2}" style="background:linear-gradient(90deg, ${COLORS[i%COLORS.length]}, ${COLORS[i%COLORS.length]}aa)"></div></div>
+      </div>`).join("");
+    requestAnimationFrame(() => document.querySelectorAll(".fill").forEach(f => f.style.width = Math.min(100, f.dataset.w) + "%"));
+
+    document.getElementById("chart-sub").textContent = "Last " + range + " days";
+  }
+
+  document.getElementById("range").addEventListener("click", e => {
+    const btn = e.target.closest("button");
+    if (!btn) return;
+    document.querySelectorAll("#range button").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    render(+btn.dataset.r);
+  });
+
+  document.getElementById("ts").textContent = new Date().toLocaleDateString();
+  render(30);
+</script>
+</body>
+</html>

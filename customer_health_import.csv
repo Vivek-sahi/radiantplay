@@ -1,0 +1,16 @@
+account_id,company_name,nps_score,product_usage_pct,active_users,monthly_logins,renewal_arr,churn_risk,last_qbr_date,csm_owner
+ACC-001,Acme Corp,72,88,142,1840,240000,Low,2026-05-12,Sarah Chen
+ACC-002,Globex Inc,34,41,18,210,85000,High,2026-03-01,Marcus Webb
+ACC-003,Initech,58,79,97,1020,310000,Medium,2026-06-20,Sarah Chen
+ACC-004,Umbrella Ltd,91,95,280,4100,820000,Low,2026-06-28,Priya Nair
+ACC-005,Soylent Corp,12,22,5,48,,High,,Marcus Webb
+ACC-006,Vandelay Industries,49,63,44,590,142000,Medium,2026-04-15,Sarah Chen
+ACC-007,Dunder Mifflin,77,82,88,1140,195000,Low,2026-05-30,Priya Nair
+ACC-008,Massive Dynamic,28,35,11,130,67000,High,,Marcus Webb
+ACC-009,Cyberdyne Systems,63,71,55,720,230000,Medium,2026-06-10,Sarah Chen
+ACC-010,Weyland-Yutani,85,90,167,2200,560000,Low,2026-06-05,Priya Nair
+ACC-011,Tyrell Corp,41,48,29,380,110000,High,2026-02-28,Marcus Webb
+ACC-012,Buy N Large,68,75,73,940,178000,Medium,2026-05-22,Sarah Chen
+ACC-013,Oscorp,22,19,7,62,,High,,Marcus Webb
+ACC-014,Stark Industries,94,97,340,5600,1200000,Low,2026-07-01,Priya Nair
+ACC-015,Wayne Enterprises,55,60,48,620,155000,Medium,2026-04-30,Sarah Chen
