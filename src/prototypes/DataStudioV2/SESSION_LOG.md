@@ -1400,3 +1400,181 @@ Working notes: `2026-06-22-builder-starting-point-discussion.md` (manual start �
 **Next:** mock-data swap (→ Customer Health); "enrich for AI" after joins; complete the tuning fix→apply loop; push + `vercel --prod` when ready.
 
 **Build:** clean ✓ (`vite build`).
+
+---
+
+### 2026-07-06 → 07-09 (session 136)
+
+**Strategy pick + competitor research + canvas code-block redesign (built). All code type-clean, UNCOMMITTED.**
+
+- **Maintenance & monitoring workflow pick** (multi-agent workflow) → `2026-07-09-maintenance-monitoring-workflow-pick.md`: **"Trust Pulse"** monitoring (in-model decay timeline + Overview blast-radius Health lane, agent-speaks-first) + **diagnosis-to-diff** editing (suggest → per-change accept → draft → re-test → re-certify); Draft→Published→**Certified** lifecycle. Saved **vision Loom transcript** (`2026-07-06-vision-loom-transcript.md`).
+- **Concept model locked:** the **canvas is a visual notebook**; every block = a **cell** (SQL/Python/visual-transform); **three ways to do anything — agent / manual UI / code**. Node = compact cell (no code on node); properties panel = cell editor; bottom preview = output. 60/40 modeling/transformation. Captured in `2026-07-09-code-block-interface-decisions.md`.
+- **Competitor code-UX research** — 8 tools (Dataiku, Databricks, Alteryx, KNIME, Coalesce, Matillion, Power Query, Tableau Prep), **29 screenshots** in `research/competitor-code-ux/` → `2026-07-09-competitor-code-ux-research.md`. Transformation backlog → `2026-07-09-transformations-worklist.md`.
+- **BUILT (ModelCanvas.tsx, type-clean, uncommitted):** R1 — removed Sort from toolbar; undo/redo+zoom → bottom-right; caching modal reframed ("Caching is required" / "Continue with caching" / "Cancel"). R2 — **Python & SQL step panels rebuilt as code editors**: code editor dominant (minHeight 320, resizable), removed Python "New column name" field, added source line + Python version dropdown + Import libraries, **Apply/Add-column → Run** + "Ran — output in preview below" status (added `pyVersion`/`ran` to `pythonConfig`). Build-using-AI kept.
+- **Dropped/deferred:** data-browser-click→preview (dropped); full-screen code view (dropped); canvas code-badge (dropped); UI↔code toggle + every-block code view (deferred, read-only later).
+- **Komal merge — DEFERRED** (nothing critical; ModelCanvas diverged ~2000 lines each way; she reconciles off our stale s134). If pulled later: hand-port join-chip+Venn, join-panel edit/delete, semantic grid, "Metadata" tab, filter builder, 2 fixes; skip publish-modal/formula-as-step/MRD/her-AgentPanel-wiring.
+- **Git:** s135 (`3b21499`+`d2cbd99`) committed local, **UNPUSHED**; this session's edits + docs **UNCOMMITTED**; nothing deployed. Saved working preference to memory: **be surgical**.
+
+**Next:** (optional) compact Build-using-AI into editor header; UI↔code toggle + read-only code view for visual-transform cells; **Jira-API-via-Python** data-source flow; spreadsheet preview; object-vs-model actions; column auto-select; demo/loom. Decide when to commit + whether to push s135.
+
+**Build:** type-clean ✓ (`tsc --noEmit` on ModelCanvas; pre-existing unrelated errors in Playground.tsx + SpotterPrep only).
+
+---
+
+### 2026-07-09 (session 137)
+
+**Exploration — three canvas "options" behind a demo toggle. All type-clean, `npm run build` passes, deliberately UNCOMMITTED (user: don't commit while exploring).**
+
+- **3-way canvas toggle** in the left-nav rail bottom (`Shell` `bottomSlot`): `index.tsx` `canvasMode` (`'dataset'|'blocks'|'dataset2'`) → `Shell` + `ModelCanvas` `mode` prop. `isBlockMode = mode !== 'dataset'`. Option 1 = dataset (original, untouched), Option 2 = blocks (every action a node), Option 3 = dataset2 (taxonomy build, shares block engine).
+- **Properties panel redesign (shared):** floating card → **docked right column**; header = **type icon + editable block name** (`PipelineStep.title`, default "Untitled block"); removed breadcrumb / Pipeline dropdown / Build-using-AI / "Reads" line; SQL/Python get an action strip (version·Libraries·Run) + **line-numbered `CodeEditor`** (new module-scope component); canvas chip shows block name (10-char truncate).
+- **Block-flow engine (Options 2 & 3):** block = `CanvasGroup` w/ one step + `inputIds`; `addBlock` **chains to selection** or drops free; `BlockNode` (module scope); **drag-to-connect** (edge-handle → drop on `[data-block-id]` card = join; drop empty = nothing; live dashed wire).
+- **Option 3 taxonomy** ("blocks hold data, rest are actions"): toolbar = **`Add data ▾` click-menu** (CSV·CDW·SQL·Python); **Join removed** (drag-to-connect); **Prep removed**. Preview header reordered + gated: `Preview` (always) · `Model/Table ▾` · `Data|Semantic` · `Output-only ▾` · [spacer] · `Filter·Sort·Aggregate·Formula` · `Limit` — all hidden until a block is selected.
+- **Docs (uncommitted):** `2026-07-09-dataset-vs-block-canvas.md` (Option 1 vs 2 + table-vs-model IA); `2026-07-09-end-to-end-product-flow.md` (5-step spine: Add→Shape(table)→Relate→Clean(model)→AI-ready→[Test loop→Publish]; steps 2&4 = one toolkit at two scopes; step 4 = data quality vs step 5 = AI-readiness).
+- **Bug fixed mid-session:** canvas Add-data menu was hover-open → converted to click-toggle (`toolbarAddOpen`, closes on outside-click/select).
+
+**Next frontier:** **Model view** (rename columns view → "Model view") with model-level **DQ · Test · Add-formula(metric)** in two lanes (data-quality / AI-readiness) — steps 4–5. **Wire** the placed-but-inert Option-3 preview controls + Model/Combined data switch. `CDW data` is a demo shortcut (drops `orders`). Prep in block modes still spawns a block (chips-on-block not built). Table-level DQ chip on blocks.
+
+**Build:** type-clean ✓ (`tsc --noEmit`); `npm run build` ✓. Pre-existing unrelated errors in DataStudio15/SpotterPrep only.
+
+---
+
+### 2026-07-10 (session 139)
+
+**Big canvas UI/UX iteration driven by rapid live feedback (images + `feedback/inbox.jsonl`). All UNCOMMITTED. `npm run build` ✓.** Files: `components/ModelCanvas.tsx` (major), `components/AgentPanel.tsx`, `components/PromptBar.tsx`.
+
+- **Agent + artifact layout:** restored a real `<GlobalHeader>` (imported into ModelCanvas) at the top; full-screen pink radial gradient on the work-area row below it; agent panel is transparent (`rootBackground` prop added to AgentPanel) so the gradient flows through; right side = solid white rounded "artifact" card floating on the gradient. Agent collapse → full-bleed (gradient/card framing drop); the expand icon injects into the GlobalHeader `logo` slot.
+- **Topbar:** model icon+name display-only (left); Live query grouped with Draft; removed Save + the × close; pills unified to 26px height.
+- **Chip-on-card taxonomy:** `BlockNode` restructured to render table-level actions (Filter/Sort/Formula/Clean) as an inline pipeline of chips *inside* the card (Option-1 schema). SQL/Python → own card; join → edge. Prep renamed **Clean** (submenu on block node + toolbar). Aggregate removed from card add-menu + preview controls. Header drops the "N steps"/op-tag when the pipeline shows.
+- **Join = drag-to-connect:** fixed the wire-snap bug (pointer-capture on the handle instead of window listeners). Join now renders as a small **M:1 icon on the edge** (JoinBlockCard shrunk from card → icon); side panel header says **"Join"**, opens editable + **infers/pre-fills** the shared key + Left Outer + Many:1.
+- **Composer:** minimal `+` add + reference icons + send; placeholder "Press '/' for skills and '@' to add context."; removed Build/Test toggle + connection pill; hid PromptBar upload (`showUpload` prop); darkened subtitle + swapped to Customer Health prompts.
+- **SQL/Python blocks:** demo syntax highlighting (Python+SQL) via highlighted `<pre>` behind a transparent textarea in `CodeEditor` (`language` prop); toolbar (version · Libraries · Secrets); last-run status + Run at top; Expand moved into the block header before ×; Python strip split into two rows so nothing clips.
+- **Data browser / preview:** collapsed in empty state; removed header "+"; preview minimized until a table is selected.
+- **Customer Health mock data:** browser now shows `dim_accounts/support_cases/call_metrics/customer_found_defects` (snowflake-prod) + `pendo_nps_enriched/csm_account_mapping` (bigquery-product); "Add source" default → `dim_accounts`.
+- **Escape** no longer bounces to the registry (capture-phase swallow in ModelCanvas).
+- **Feedback inbox:** 8 items marked done; 4 remain to re-drop (qf9r, jdex, wv4t, xi6u).
+
+**Next:** SQL Inputs section (orders · users · + Add input); re-drop the 4 pins; optionally wire Expand to a real full-screen code view; decide when to commit.
+
+---
+
+### 2026-07-10 (session 140)
+
+**Demo-prep session: locked the canvas concept model, cleared ~18 feedback items, and built the code-transformation demo spine. All UNCOMMITTED. `npm run build` ✓ (tsc has only pre-existing session-136→139 debt — none introduced this session). Files: `components/ModelCanvas.tsx` (major), `components/AgentPanel.tsx`, `components/PromptBar.tsx`.**
+
+- **Concept model locked (ingest vs transform):** *Add data ▾* (top menu) = ingestion → **independent, unconnected blocks** (`addBlock(op, standalone)`), joined only via edges. Card `+` / spreadsheet actions = **chips** on the data card. SQL/Python are **dual-homed**: ingestion from Add data, transform-chip from a card. Added a **"Code" menu (SQL/Python)** mirroring "Clean" (block `+` submenu + preview-header dropdown), with a divider between Clean and Code.
+- **Caching rule:** SQL pushes down → **stays live**; Python runs in compute → **materializes/caches**. `handleCodeStep` gates Python (chip + ingestion) behind the "Caching is required" confirm; SQL doesn't gate. Also fixed the **CSV cache-confirm** to always fire in live mode (was gated on `hasWarehouse`, so empty-canvas CSV switched silently).
+- **Preview:** wired the previously-dead **model/combined view** — `joinView === 'combined'` now renders the **joined dataset across all source tables** (left-join on `account_id`, union of columns). Added **full-screen** toggle that overlays the *entire artifact* (topbar+browser+canvas; only the agent stays). Added **show/hide columns** control. Made Filter/Sort/Formula **icon-only** (Clean keeps its label).
+- **Agentic Python fix loop:** "Fix with AI" (results panel) now drops an **error chip + prefill into the prompt bar** (manual send) → the agent runs **working steps + reasoning** → **pastes the corrected code + re-runs** → **Accept/Reject inline below the code editor** (reject restores the prior code + error). Bridges: `__dsRequestPythonFix__` (AgentPanel) / `__dsApplyPythonFix__` (ModelCanvas). Error + Fix moved to the **results panel** (code editor stays code, like a real editor); authoring panel no longer shows the error card.
+- **Sentiment-via-Python values:** `derivedCols` mechanism — a `df["sentiment"] = …` transform now shows real positive/neutral/negative values (derived from score/comment) instead of "—".
+- **Data browser:** tables are **table-only, click-to-add** (no column expand — `frf7`). Added **Google Drive + SharePoint** connections below the warehouse (neutral cloud/folder icons; `qbr_notes` / `renewal_tracker` mock tables keyed on `account_id`; added to the connection filter).
+- **Add data menu:** removed CDW option (`sblu`); **"Upload CSV" → "Upload file"** ("CSV, Excel, Parquet, or JSON", picker broadened); use-case descriptions — SQL "Query warehouse tables or views", Python "Fetch from an API, SDK, or file".
+- **Polish:** chip label truncation 12→**20**; drag-wire **swoop fixed** (capped bezier control offset so up/left drags curve cleanly); **code editor scrolls internally** when big (`fill` → `flex:1 minHeight:0`, textarea `overflow:auto`) + `canvasViewport` `minHeight:0` so a big code block never starves the preview height; removed dangling toolbar divider (`jy58`); removed the redundant "Run failed" authoring status (`fjqz`); dropped the "Fix using AI" nullfix block (`ylx6`); removed properties "Table" info row (`eabh`/`9l11`); chip only selectable when its block is selected; clicking a block opens block details, chip opens chip details.
+- **Feedback inbox:** all pending items cleared (qf9r, eabh, jdex, wv4t, xi6u, 9l11, ylx6, 6pou, jxfa, 06oo, 0ork, usk9, frf7, sblu, m1nb, jy58, dpir, fjqz).
+
+**Demo flow reviewed** (Salesforce/CDW + CSV + Pendo API + sentiment → customer-health model). Focus = code-based transformations.
+
+**Next / open:**
+- **Per-step code storage** (multi-cell code blocks) — a code block should be a chain of cells each with its own code/run-state (`df` flowing). Currently one shared code buffer per block, so for the demo run fetch+enrich in ONE cell (edit in place). ~30–45 min refactor; the "right" architecture; do after the demo.
+- **Naming alignment** (`#3`) — mock table names vs demo narration (dim_accounts vs "accounts", customer_regions CSV vs "CSM data") — narrate to real names or rename the mock set.
+- Model/combined preview merges **all** source tables (not strictly edge-joined) and dedupes 1:many to one row/account — narrate as "joined preview," not aggregated health metrics (that's the semantic/modeling step, a later video).
+- Still all uncommitted — decide when to commit.
+
+---
+
+### 2026-07-10 (session 141)
+
+**Spreadsheet UI overhaul + extraction into a component.** Driven by live feedback + Figma refs (Data journey, file `ZOIU8Te4ocC5Kqjwwynz52`; spreadsheet 514-2027, column menu 516-775, icons 517-1053).
+
+**New file `components/Spreadsheet.tsx`:** `SpreadsheetGrid`, `SpreadsheetColumnMenu`, `SpreadsheetSkeleton`, `SpreadsheetToolbar`. `renderDataTable` now delegates to `<SpreadsheetGrid>`. The **toolbar (Filter/Formula/Clean/Code/Show-hide) renders inline on the SOURCE/output row**; preview header keeps dropdown · Data|Semantic · Limit · Expand.
+
+**Provenance rule locked:** changes/adds/removes data → chip; sort/rename/show-hide → view-only.
+
+**Changes:** type badges removed from headers · column `▾` menu (highlight-on-open, Clean submenu) · scope dropdown width+truncate · infinite scroll (footer removed) · loading skeleton (Python 401→Fix-with-AI kept) · dim_accounts→35 rows · header (bigger title, no icon, Cached+AI-readiness statuses after name, Draft+Publish right) · properties: trash icon, **filter panel built** (was missing), **table metadata panel** (Snowflake), **join panel redesigned** (no chips/pills) · canvas: join line from card edge, gray curve edge, Overview minimap removed, Clean/Code card submenus open right, sort off card `+`, Expand off code headers, Python toolbar single-row, code panel ~44vw.
+
+**Build ✓ throughout. ALL UNCOMMITTED. Nothing reviewed live.**
+
+**NEXT (loose ends):** (1) reference icons exact swap (Figma 517-1053); (2) delete dead `false &&` header-action blocks in ModelCanvas topbar; (3) add toolbar to the joined-view table; (4) block default name + Models page states/actions (earlier batches); (5) **live review** not done.
+
+---
+
+### 2026-07-10 → 07-13 (session 142)
+
+**Strategy/research session + 2 loose ends closed. Direction pivot: next build = the AGENTIC workflow (agent-driven build with approvals), grounded in a 51-item activity catalog + 2-pass adversarially-verified competitive research.**
+
+**Code (`ModelCanvas.tsx`, small, build ✓):** loose end **#2 done** — deleted the dead `false &&` header-action blocks (old Filter/Formula/Clean/Code + Show-hide) from the preview topbar. Loose end **#3 done** — the combined/join view now has its own 28px header row (`Model · a × b · N cols · N rows`) with `SpreadsheetToolbar` wired to the merged columns + group-level handlers. **#5 (live review) done by Vivek.** #1 (exact icons, Figma 517-1053) and #4 (block default name; Models page states/actions) still open.
+
+**New doc — `2026-07-10-analyst-activities.md`:** 51 analyst activities across 8 stages (ingest → profile → clean → transform → join → model-scope → test → manage/edit), each tagged lifecycle verb (Create/Edit/Modify/Remove/Read), scope (Table/Model), built-status, tier. Proposed P1 = 27 items tracing the demo story, + 3 research-informed upgrades (#9 dupes, #10 outliers, #33 join fan-out). **P1 not yet confirmed by Vivek.**
+
+**New doc — `2026-07-10-data-agents-in-the-wild.md`:** merged 2-pass deep research (each claim 3-vote adversarially verified). Headline: all five competitor agents (Cortex, Genie, Hex, Sigma, Omni) are **consume-side** — they presuppose a human-built semantic layer. Killer stats: Genie **0% → 100% only via ~6 manual curation iterations** (Databricks' own study); Snowflake raw-LLM baseline **51%**; benchmark→enterprise cliff **86–91% → 10–21%**. Dedicated modeling agents (Omni Apr'26, Sigma May'26, Genie Code, Snowflake Autopilot) narrow only the **semantic slice** — all human-gated, zero messy-schema evidence. **Uncontested white space: source-data prep (ingest/profile/clean), agent-driven testing (Omni admits it can't test), decay detection (absent everywhere).** Omni ships Sandbox/Review/Auto modes — independent validation of our autonomy design. (Ops note: pass 2 initially failed after a session-model switch — workflow subagents inherited a model that wouldn't emit structured output; fixed by pinning verify/synthesize agents to Opus and resuming from the run journal.)
+
+**Agentic-workflow design decisions (conversation only — doc NOT yet written):** two layers (intent/semantics = converge by conversation; mechanics = determinate execution) · plan artifact = crystallized shared understanding; its sample questions become the test suite · joins never auto on first build — agent profiles first, then **evidence-backed proposal** (key, coverage %, cardinality, preview rows) the user clears · approve **decisions**, not instructions · canvas = shared context the agent sees/acts on · agent **summons the real UI** (cache modal, Python properties panel, secrets) · one agent, multiple skills (modeling + Spotter/query) → testing isn't a mode; query = read-only/never gated, modeling = mutates/gated. Demo beats (Vivek's): fetch 3 tables by name → drop CSV + tell agent → cache consent via agent → Pendo via Python block (agent opens panel for creds) → "are these clean?" → agent finds + fixes with approval → "join into a model" → plan artifact → build (~1 min, cached). One-click variant = same plan artifact up front.
+
+**Strategy synthesis (chat only, not saved to a doc):** consume is commoditized, curation is the bottleneck; trust is the product; cheap approval is the frontier; loops retain, one-shot generation commoditizes; design messy-first; DS's both-ends (build+consume) position is structural; ~12–18-month window. DS mapping: prototype is strongest where the market is contested (canvas/transforms) and weakest where it's uncontested (evidence gates, test loop, decay) → invert build priority; demo should open with messy data and climax with the agent testing its own model.
+
+**Build ✓. ALL UNCOMMITTED (sessions 135→142).**
+
+**NEXT:** (1) confirm P1 scoping in `2026-07-10-analyst-activities.md`; (2) write the agentic-workflow design doc (`research/`) — patterns + demo script + open decisions (co-pilot vs autopilot hero · where autonomy lives · vertical-slice vs full-flow scope); (3) loose ends #1 icons + #4; (4) decide when to commit.
+
+---
+
+### 2026-07-13 (session 143)
+
+**UI polish batch + canvas IA change. ALL UNCOMMITTED (135→143). Build ✓.**
+
+- **Clean icon** — replaced eraser/pencil SVG with Radiant `BrushIcon` (s-variant, 14×14 filled) in all 4 locations: block card `+` menu (ModelCanvas), preview toolbar (ModelCanvas), SpreadsheetToolbar, SpreadsheetColumnMenu.
+- **Table properties panel** — removed Database, Schema, Table, Columns rows and the full column list. Remaining: Connection, Rows, Size, Owner, Created, Last synced.
+- **Agent panel header** — replaced editable `<input value={modelName}>` with static `<span>New chat</span>`. Topbar model name (also `modelName`, default "Untitled model") is unchanged — they are separate.
+- **Test tab** — added as third option in Canvas/Columns view switcher. `viewMode` type expanded to `'canvas' | 'columns' | 'test'`. Shows placeholder empty state.
+- **Caching modal** — description rewritten: "To use uploaded files, this model is required to be cached into ThoughtSpot's data store. It will run on cached data, refreshed on a schedule." (removed the "can't switch back" line). Cancel CTA → "Cancel file upload".
+- **Add data → data browser** — removed "Add data ▾" from the floating canvas toolbar. Added to the data browser panel header (compact button with `+` icon, right-opening dropdown). New `browserAddOpen` state. Same 3 options: Upload file · SQL · Python with descriptions.
+- **AgentDB** — new connection in the warehouse browser tab. Blue database icon. Shows `cached` schema with `customer_regions`, `csm_account_mapping`, `pendo_nps_enriched`, `customer_health_external`. Added to `filterConns` default (size now 5). Appears in the connections filter panel.
+- **Color/icon/font audit** — ran a 5-file workflow audit (ModelCanvas, Spreadsheet, AgentPanel, PromptBar, Shell). Full findings saved. Key: `#2770EF` vs `#2563EB` blue split (highest impact); 6 near-duplicate secondary grays; 7 strokeWidth values in ModelCanvas (canonical = 1.3); filled vs stroked icon mixing; fractional font sizes 11.5/12.5 with no tokens. **Not yet acted on.**
+- **Feedback inbox** — 5 items marked done at session start (2odd, pknq, c8j9, fmss, bqdc).
+
+**NEXT:** commit decision · loose ends #1 (icons) + #4 (block name/Models page) · P1 scoping · agentic workflow design doc · color/icon/font fixes.
+
+---
+
+### 2026-07-13 (session 145)
+
+**Icon color consolidation in ModelCanvas. ALL UNCOMMITTED (135→145). Build ✓.**
+
+Reduced 6+ gray icon color variants down to a 3-tier palette: `#777E8B` (= `content-secondary`) for all standard interactive icons; `#A5ACB9` for muted/decorative icons and disabled button text; `#8B96A5` for canvas edge lines only. Replacements in ModelCanvas.tsx: `#8B96A5` → `#777E8B` (53×), `#BFC6D0` → `#A5ACB9` (47×, was too light), `#94A3B8` → `#8B96A5` (8×, canvas edges), `#A0A8B5` → `#A5ACB9` (11×). Targeted `#C0C6CF` fixes: IconTable and SQL/Python source icons raised to `#8B96A5`; chip connector arrows, card expand icons, AI readiness chevron → `#A5ACB9`; search icon → `#777E8B`. Second pass: all interactive action buttons (trash, ×, close, info, add, menu) raised from `#A5ACB9` → `#777E8B` after visual check showed them too faint. Hover targets updated throughout.
+
+**NEXT:** commit decision · P1 scoping (2026-07-10-analyst-activities.md) · agentic workflow design doc · loose ends #1 (exact SVG icons) + #4 (block name/Models page).
+
+---
+
+### 2026-07-13 (session 144)
+
+**Bug fixes + documentation restructure. ALL UNCOMMITTED (135→144). Build ✓.**
+
+Two canvas bugs fixed: (1) "Add data" button in the data browser was broken — `addDataItems` and `handleAddData` were declared after `browserPanel` in the file, hitting the temporal dead zone when `browserAddOpen` turned true; moved both declarations before `browserPanel`. (2) Residual empty white box appeared in the canvas toolbar in dataset2 mode — the toolbar now conditionally renders only when `opButtons.length > 0 || mode !== 'dataset2'`.
+
+Documentation restructure to reduce session-start context load: CONTEXT.md rewritten from 661 lines to 107 lines (canvas state only — architecture, concept model, what's built, deferred, naming; no session history). NEXT_UP.md synced with session 143 actuals and reformatted as an edit-in-place work queue. CLAUDE.md session protocol updated: reads NEXT_UP.md + CONTEXT.md at start; end-of-session rule is now update-in-place (not append).
+
+---
+
+### 2026-07-13 (session 146)
+
+**Feedback list: join preview, dropdown positioning, copy, Python icon, font colours. ALL UNCOMMITTED (135→146). Build ✓.**
+
+Worked a fresh 6-item feedback list. (1) **Join preview gating** — while a join is being configured (`singleJoinActive || multiJoinActive`) the bottom preview now shows "Preview available after you create the join" and hides the Data/Semantic toggle + Limit control; merged data only renders after Apply. (2) **Dropdown clipping** — new `AnchoredMenu.tsx` helper: renders menus in a `document.body` portal with `position: fixed`, auto-flips (bottom↔top, right↔left) and clamps into the viewport, so menus escape the `overflow:hidden`/rounded artifact + canvas containers. Converted data-mode menu, AI-readiness dropdown, browser Add-data menu, block `+` menu, and spreadsheet toolbar prep to it; the column ▾ menu got self-clamping (already fixed-positioned). Removed the now-redundant airOpen outside-click effect and BlockNode outside-click effect (AnchoredMenu owns close-on-outside/Esc). (3) Empty-state copy → "Make your data AI ready" + adding-data subtext. (4) Topbar "Check AI readiness" pill → "AI readiness" (run-scan CTA button inside the dropdown kept its verb). (5) **Font-colour consolidation (conservative)** — collapsed stray text colours to design-system values: 3 reds→`#E22B3D`, greens (`#047857`/`#15803D`/`#16A34A` literal)→`#06BF7F`, stray grays (`#9CA3AF`/`#B0B8C4`/`#C8CDD6`/`#D0D6DF`/`#4A5568`/`#475569`/`#5B6472`/`#4B5563`)→nearest ramp token, purple `#7C3AED`→`#8C62F5`, blue `#1B58D4`→`#2770EF` — both literals and font-colour ternaries. Left coordinated accent sets untouched (CSV-accent `#16A34A` icon+tint+badge, `CODE_COLORS` syntax palette, dark ambers/teal for text-on-tint). (6) Python icon → official Python logo mark in `currentColor` in both menus. Also removed the Clear button from the SQL and Python blocks (kept on Formula).
+
+**NEXT:** commit decision (135→146 all uncommitted) · AIRS CTA "Check" verb decision · sub-menu portalisation if needed · loose ends #1 (icons) + #4 (block name/Models page) · P1 scoping · agentic workflow design doc · remaining colour fixes (blue split, border consolidation, strokeWidth).
+
+---
+
+### 2026-07-14 (session 147)
+
+**SQL derived tables + pan-to-reveal + sentiment reveal, plus a long live demo-prep polish pass. ALL UNCOMMITTED (135→147). Build ✓. Loom recorded successfully — good feedback.**
+
+Built the **SQL derived-table** interaction end to end (this was the session's centrepiece, developed via a long design conversation — captured the "relate vs derive" model: a join *relates* two tables (both stay), a SQL block that `@`-references tables *derives* a new one). A SQL source block now supports typing `@` → an **inline caret-anchored dropdown** of canvas tables (via a `caretPoint()` textarea-mirror measure + `AnchoredMenu` `anchorPoint`); picking one inserts `@name` (bracketed `@[Name]` for names with spaces). On **Run**, the `@`-references resolve to source cards and **gray derive arrows** are drawn into the SQL card. Matching is deliberately **forgiving**: normalize away spaces/parens/underscores/case, match exact-or-contains, and match against the card's **displayed/renamed name (step titles), not just `tableName`** — this was the root cause of a painful recurring "NPS block won't connect" bug (renames are stored as step titles, so `tableName` stayed the original). Derived preview rows come from `rowsForCard()` which resolves a derived card from its inputs and resolves display-named sources (e.g. "NPS (Pendo)") to a real mock table by identical-column signature — no invented data. Derive arrows: light gray `#D0D6DF`, arrowhead only (no start dot), anchored to each card's **real measured width** (fixes arrow starting inside a wide card); join connector recoloured **blue** so the two edge types read distinctly.
+
+**Pan-to-reveal:** when the properties panel opens, the node+edge layer (wrapped in a translated container) pans **horizontally only** to keep the selected node visible — reveal-not-recenter (no motion for already-visible cards; only nudges a card that the panel would clip; resets on deselect). Drag-to-connect wire coords corrected for the pan; node dragging is delta-based so unaffected.
+
+**Sentiment reveal choreography (demo):** the fetch/Fix-with-AI stamps the enriched `pendo_nps_enriched` schema but hides `sentiment`+`sentiment_score` (`hiddenPreviewCols`); running the sentiment cell — combined fetch+sentiment OR standalone (keyed off `/sentiment/i`) — reveals both and pulses `sentiment_score`. **Fix-with-AI** reworked so data loads **only on Accept** (preview stays on the error during review; Reject restores it); Reject/Accept restyled soft red/green; redundant in-preview "Fix with AI" button hidden during review.
+
+Polish pass: Cached pill → "Cached" (+ removed blue focus-ring outline); data-browser collapse → panel fully collapses, warehouse icon moves to topbar (mirrors agent collapse); Clean menu icons removed; preview output-pane header shows `table · step`; "Add data" button → "Add"; removed "Ran — output in preview below" lines; agent welcome trimmed to 3 chips (dropped the capability table); derive/join edge colours + widths as above.
+
+**NEXT:** Vivek merges + commits (135→147) at the start of next session, then start fresh. Follow-ups logged in NEXT_UP: join-connector width uses the same hardcoded-180 the derive arrow shed (apply real-width measure if seen); derive/sentiment/Fix are hardcoded to the Pendo/NPS demo mock (generalize if productionized); AIRS CTA verb; loose ends #1/#4; P1 scoping; agentic workflow doc.

@@ -3,15 +3,20 @@
 ## Session protocol
 
 **Every session, do this first:**
-1. Read `src/prototypes/DataStudioV2/CONTEXT.md` — current build state.
-2. Read `src/prototypes/DataStudioV2/product.md` if product context is needed — vision, mission, key decisions.
-3. Check current git branch (`git branch`) — always work on `prototype/data-studio`. If on another branch, ask before proceeding.
-4. At the end of the session, append a new entry to `SESSION_LOG.md` and update the current state block in `CONTEXT.md`.
+1. Read `NEXT_UP.md` — if items exist, surface them and ask which to start with; if empty, wait for direction.
+2. Read `CONTEXT.md` — current canvas state.
+3. Read `product.md` only if product context is needed.
+4. Check git branch (`git branch`) — always `prototype/data-studio`; ask before proceeding if not.
+5. Check `feedback/inbox.jsonl` for pending items.
 
-**Before closing any session:** run `npm run build` and confirm it passes.
+**End of every session:**
+1. Update `CONTEXT.md` in-place — state only, no session history, no changelog.
+2. Update `NEXT_UP.md` — mark done items ✅, add new items.
+3. Append a one-paragraph summary to `SESSION_LOG.md`.
+4. Run `npm run build` and confirm it passes.
 
 **Session type — say this at the start:**
-- **"next up"** → read NEXT_UP.md → state the first open item + its classification (scale + novelty) out loud → then act based on that classification. Do not start building before stating the classification.
+- **"next up"** → `NEXT_UP.md` is already read; pick the first open item, state its classification (scale + novelty), then act. Do not start building before stating the classification.
 - **"sidequest: [name]"** → read `sidequests/[name].md`, work in Playground.tsx only, don't touch main prototype code
 - **"research: [topic]"** → use `research/_template.md`, produce a research doc, write no code this session
 
