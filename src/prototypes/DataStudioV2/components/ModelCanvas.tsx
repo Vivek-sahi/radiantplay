@@ -2967,7 +2967,9 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
   const browserPanel = (
     <div style={{
       position: 'relative', flexShrink: 0,
-      width: browserCollapsed ? 44 : browserWidth,
+      // Vision collapses the panel away entirely (0) and hands the control up to
+      // the topbar database icon. POC keeps a 44px rail with its own toggle.
+      width: browserCollapsed ? (poc ? 44 : 0) : browserWidth,
       transition: resizingPanel === 'browser' ? 'none' : 'width 220ms cubic-bezier(0.4,0,0.2,1)',
     }}>
     <div style={{
@@ -2978,14 +2980,18 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
     }}>
       {/* Header */}
       <div style={{ height: 40, display: 'flex', alignItems: 'center', padding: browserCollapsed ? '0' : '0 14px', gap: 8, borderBottom: BORDER, flexShrink: 0, justifyContent: browserCollapsed ? 'center' : undefined }}>
-        {/* Single database icon — the one control that toggles the panel open/closed */}
-        <button onClick={() => setBrowserCollapsed(c => !c)} title={browserCollapsed ? 'Expand data browser' : 'Collapse data browser'}
-          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, borderRadius: RADIUS6, border: 'none', background: 'transparent', color: '#777E8B', cursor: 'pointer', flexShrink: 0 }}
-          onMouseEnter={e => (e.currentTarget.style.background = '#F0F2F6')}
-          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-        >
-          <Icon name="database" size="s" color="#777E8B" />
-        </button>
+        {/* POC: single database icon in the header toggles the panel open/closed.
+            Vision has no header database icon — it uses the chevron below to
+            collapse, and the topbar database icon to reopen. */}
+        {poc && (
+          <button onClick={() => setBrowserCollapsed(c => !c)} title={browserCollapsed ? 'Expand data browser' : 'Collapse data browser'}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, borderRadius: RADIUS6, border: 'none', background: 'transparent', color: '#777E8B', cursor: 'pointer', flexShrink: 0 }}
+            onMouseEnter={e => (e.currentTarget.style.background = '#F0F2F6')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+          >
+            <Icon name="database" size="s" color="#777E8B" />
+          </button>
+        )}
         {!browserCollapsed && (
           <>
             <span style={{ fontSize: 12, fontWeight: 600, color: '#1D232F', flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -3021,6 +3027,12 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
                 </AnchoredMenu>
               )}
             </div>
+            )}
+            {/* Vision: chevron collapses the panel to 0; reopen from the topbar. */}
+            {!poc && (
+              <button onClick={() => setBrowserCollapsed(true)} style={phdrBtnStyle} title="Collapse">
+                <IconChevronLeft size={12} />
+              </button>
             )}
           </>
         )}
