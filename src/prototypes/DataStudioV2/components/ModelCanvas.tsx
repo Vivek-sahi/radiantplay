@@ -6311,6 +6311,25 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
         logo={
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <BrandMark style={{ height: 22, width: 'auto' }} color="#1D232F" />
+            {/* Vision: collapsing the agent panel hands its control up to the topbar
+                (mirrors the data-browser collapse). POC uses a slim rail instead. */}
+            {!poc && agentCollapsed && !hideAgentPanel && (
+              <span
+                role="button"
+                tabIndex={0}
+                onClick={e => { e.stopPropagation(); setAgentCollapsed(false); }}
+                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); setAgentCollapsed(false); } }}
+                title="Open agent panel"
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 30, height: 30, borderRadius: 7, background: 'none', color: '#64748B', cursor: 'pointer', flexShrink: 0 }}
+                onMouseEnter={ev => { (ev.currentTarget as HTMLElement).style.background = '#F0F2F6'; (ev.currentTarget as HTMLElement).style.color = '#1D232F'; }}
+                onMouseLeave={ev => { (ev.currentTarget as HTMLElement).style.background = 'none'; (ev.currentTarget as HTMLElement).style.color = '#64748B'; }}
+              >
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <rect x="1.5" y="2.5" width="13" height="11" rx="2" stroke="currentColor" strokeWidth="1.3"/>
+                  <path d="M6 2.5v11" stroke="currentColor" strokeWidth="1.3"/>
+                </svg>
+              </span>
+            )}
           </div>
         }
       />
@@ -6332,8 +6351,9 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
         {!hideAgentPanel && (
           <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', backgroundImage: GRAIN_URI, opacity: 0.03 }} />
         )}
-        {/* Collapsed rail — slim column + expand toggle at top (mimics SpotterX's chat rail) */}
-        {!hideAgentPanel && agentCollapsed && (
+        {/* Collapsed rail — slim column + expand toggle at top (mimics SpotterX's chat rail).
+            POC only; Vision reopens from the topbar icon instead. */}
+        {poc && !hideAgentPanel && agentCollapsed && (
           <div style={{ position: 'relative', width: 56, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 16 }}>
             <button
               onClick={() => setAgentCollapsed(false)}
