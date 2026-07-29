@@ -111,6 +111,36 @@ edited — re-generate with the diff against the tag if they get stale.
 | 70 | `L6311-6373` | +41/-30 | `+Model flow: the RADIANCE_WASH + grain persist even when the agent is` |
 | 71 | `L6382-6395` | +3/-3 | `<div style={{ fontSize: 15, fontWeight: 700, color: '#1D232F' }}>{cacheConfirm.title ?? 'Caching is required'}…` |
 
+## Deferred — minor UI polish (decide later)
+
+- **Canvas background treatment.** Vision's radial gradient
+  (`#EFCEC8 → #F2EDEE`) was swapped for `RADIANCE_WASH` + a film-grain overlay,
+  and it now persists while the agent panel is collapsed (pre-merge it dropped to
+  `#fff`). Applied to both cuts, ungated. Cosmetic, not functional — left as hers
+  pending a call. `ModelCanvas.tsx` ~L6325 (`backgroundImage`) and the grain div
+  just below it. Pre-merge behaviour: `background: agentCollapsed ? '#fff' : <radial>`.
+
+## Confirmed regressions — found and fixed
+
+Three ungated changes altered Vision behaviour. All now split by variant:
+
+1. **Data-browser tree rows** — hover info/add pair replaced by an always-visible
+   `+`. Restored behind `!poc`.
+2. **Data-browser collapse** — collapse-to-0 + topbar reopen replaced by a 44px
+   rail with a header toggle. Restored behind `!poc`.
+3. **Agent-panel collapse** — topbar "Open agent panel" icon replaced by a 56px
+   SpotterX-style rail. Restored behind `!poc`.
+
+All three are the same shape: a Vision affordance that moved a control **up a
+level** was replaced by a POC rail. Worth checking that pattern first in anything
+still unreviewed.
+
+## Checked, not a regression
+
+- **Floating operator toolbar** (~299 lines removed at `canvasViewport`). Only
+  rendered in `dataset`/`blocks` modes; Vision mounts `mode="dataset2"` where it
+  was already hidden. No visible impact.
+
 ## Known-accepted differences
 
 These were reviewed during the merge and deliberately left as-is:
