@@ -90,7 +90,6 @@ export const ModelPickerModal: React.FC<{
                   Model
                 </Typography>
               </span>
-              {m.cache.state === 'cached' && <DatabaseZapIcon size={13} color={c['content-secondary']} />}
             </button>
           ))}
         </div>
@@ -110,12 +109,12 @@ export const ModelPickerModal: React.FC<{
           {/* Capability — cache shown as plain metadata, in line with "Created on". */}
           {highlighted.cache.state === 'cached' ? (
             <>
-              <Typography variant="footnote" color="gray-light" noMargin>
-                Cached: {highlighted.cache.windowLabel}
-              </Typography>
-              <Typography variant="footnote" color="gray-light" noMargin>
-                Last refreshed: {highlighted.cache.lastRefreshed}
-              </Typography>
+              <Horizontal gap={6} align="center">
+                <DatabaseZapIcon size={12} color={c['content-brand']} />
+                <Typography variant="footnote" color="gray-light" noMargin>
+                  Last cached on {highlighted.cache.lastRefreshed}
+                </Typography>
+              </Horizontal>
             </>
           ) : (
             <Horizontal gap={8} align="center">
