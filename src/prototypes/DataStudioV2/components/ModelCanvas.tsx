@@ -2166,6 +2166,28 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
     doAdd();
   }, [poc, dataMode, groups]);
 
+  /**
+   * Agent → canvas commit seam (run-of-show S3/S4/S5).
+   *
+   * The agent proposes tables in the thread; the user ticks the ones they want
+   * and clicks Add. This is what runs on that click — each accepted table lands
+   * as a normal canvas card, identical to one added by hand.
+   *
+   * Deliberately built on addToCanvas rather than a parallel path, so agent-added
+   * cards inherit the same ids, positions, selection, preview and caching gate.
+   * Appends — it never replaces the canvas, unlike the initialTables seeder.
+   *
+   * Tables already on the canvas are skipped, so re-accepting is harmless.
+   */
+  const agentAddTables = useCallback((tableNames: string[]) => {
+    const present = new Set(groups.map(g => g.tableName));
+    tableNames
+      .filter(name => !present.has(name))
+      // Only tables the canvas can actually render — TABLE_COLS is the catalogue.
+      .filter(name => Boolean(TABLE_COLS[name]))
+      .forEach(name => addToCanvas(name, 'warehouse'));
+  }, [groups, addToCanvas]);
+
   // Seed the canvas from initialTables/initialJoins (MRD flow, SpotterX embed) — once.
   const seededRef = useRef(false);
   useEffect(() => {
@@ -3021,6 +3043,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
           isFromScratch={true}
           isCanvasAgent={true}
           poc={poc}
+          onAgentAddTables={agentAddTables}
           canvasTableCount={groups.filter(g => g.steps[0]?.type === 'source').length}
           width={agentWidth}
           rootBackground="transparent"

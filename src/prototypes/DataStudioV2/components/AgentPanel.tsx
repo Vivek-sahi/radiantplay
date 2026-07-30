@@ -12,6 +12,7 @@ import PlanPanelV3 from './PlanPanelV3';
 import { FlowOption } from './Shell';
 import { Icon } from '../../../components/icons';
 import { Button } from '../../../components/Button';
+import { TableSuggestionCard, type TableProposal } from './agentic';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -108,6 +109,13 @@ export interface AgentMessage {
     name: string;
     subLabel?: string;
   }>;
+  /**
+   * Agent's ranked table proposal (run-of-show S3/S4). Rendered as a
+   * TableSuggestionCard; accepting commits the ticked tables to the canvas.
+   */
+  tableProposals?: TableProposal[];
+  /** Set once accepted, so the card freezes into a read-only record of the turn. */
+  tableProposalsCommitted?: boolean;
   // spotter-answer fields
   answerTitle?: string;
   answerDesc?: string;
@@ -2550,6 +2558,12 @@ interface AgentPanelProps {
   poc?: boolean;
   /** Source tables currently on the canvas — drives the empty-state starters. */
   canvasTableCount?: number;
+  /**
+   * Commits agent-proposed tables onto the canvas (run-of-show S3/S4).
+   * Fired when the user accepts a TableSuggestionCard. Appends — names must
+   * exist in the canvas TABLE_COLS catalogue or they're skipped.
+   */
+  onAgentAddTables?: (tableNames: string[]) => void;
 }
 
 // ── Canvas agent (isCanvasAgent) — canned profile data + genUI cards ───────────
@@ -2671,7 +2685,7 @@ const JoinRecCard: React.FC<{ rec: NonNullable<AgentMessage['joinRec']>; onAdd: 
   );
 };
 
-const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, setMessages, initialPrompt, onBuildComplete, externalMessage, onExternalMessageHandled, externalMessageAttachment, injectInput, onInjectInputHandled, width = 340, selectedColumns, onColumnRemove, isFromScratch, isMultiSource, isNotebookFlow, isMrdFlow, isDbtReview, onNotebookUpdate, onOpenPlan, onOpenQualityPlan, onBuildStart, onNavigateToWorkspace, onStartBuild, fullPage = false, onBack, initialFlow, initialMessage, onInsightResolved, onOpenObject, onOpenMsItem, flowOption = 'option3', rootBackground, isCanvasAgent, poc, canvasTableCount }) => {
+const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, setMessages, initialPrompt, onBuildComplete, externalMessage, onExternalMessageHandled, externalMessageAttachment, injectInput, onInjectInputHandled, width = 340, selectedColumns, onColumnRemove, isFromScratch, isMultiSource, isNotebookFlow, isMrdFlow, isDbtReview, onNotebookUpdate, onOpenPlan, onOpenQualityPlan, onBuildStart, onNavigateToWorkspace, onStartBuild, fullPage = false, onBack, initialFlow, initialMessage, onInsightResolved, onOpenObject, onOpenMsItem, flowOption = 'option3', rootBackground, isCanvasAgent, poc, canvasTableCount, onAgentAddTables }) => {
   const [pendingAction, setPending]     = useState<PendingAction | null>(null);
   const [isProcessing, setProcessing]   = useState(false);
   const [planModalOpen, setPlanModalOpen] = useState(false);
@@ -5239,6 +5253,14 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
                 onApiKeySubmit={handleApiKeySubmit}
                 onFileUpload={handleFileUpload}
                 onArtifactClick={onOpenMsItem}
+                onAcceptTables={(msgId, accepted) => {
+                  // Commit to the canvas, then freeze the card so the thread
+                  // keeps a read-only record of what was accepted.
+                  onAgentAddTables?.(accepted.map(t => t.name));
+                  setMessages(prev => prev.map(m =>
+                    m.id === msgId ? { ...m, tableProposalsCommitted: true } : m
+                  ));
+                }}
                 onComplete={msg.genUI === 'drift_complete' ? () => {
                   onInsightResolved?.('ins-d2');
                   setTimeout(() => {
@@ -6642,7 +6664,9 @@ const MessageBubble: React.FC<{
   onApiKeySubmit?: (msgId: string, key: string) => void;
   onFileUpload?: (msgId: string, file: File) => void;
   onArtifactClick?: (card: { type: string; name: string }) => void;
-}> = ({ msg, showAvatar, onToggleSteps, onToggleCollapsible, onSuggestion, onConfirm, onOpenQualityPlan, onChipClick, onGenUIAction, onComplete, publishedVersion, onOpenObject, onApiKeySubmit, onFileUpload, onArtifactClick }) => {
+  /** User accepted the agent's table proposal — commit them to the canvas. */
+  onAcceptTables?: (msgId: string, tables: TableProposal[]) => void;
+}> = ({ msg, showAvatar, onToggleSteps, onToggleCollapsible, onSuggestion, onConfirm, onOpenQualityPlan, onChipClick, onGenUIAction, onComplete, publishedVersion, onOpenObject, onApiKeySubmit, onFileUpload, onArtifactClick, onAcceptTables }) => {
   const [chipUsed, setChipUsed] = React.useState(false);
   const [apiKeyValue, setApiKeyValue] = React.useState('');
   const [isDragOver, setIsDragOver] = React.useState(false);
@@ -6894,6 +6918,17 @@ const MessageBubble: React.FC<{
             <AITuneDiagnosticCard msgId={msg.id} onAction={onGenUIAction} />
           )}
           {/* ── Artifact cards ──────────────────────────────────────────────── */}
+          {/* Agent's ranked table proposal (S3/S4). Accepting commits the ticked
+              tables to the canvas and freezes the card into a read-only record. */}
+          {msg.tableProposals && msg.tableProposals.length > 0 && (
+            <div style={{ marginTop: sp.C }}>
+              <TableSuggestionCard
+                tables={msg.tableProposals}
+                isReadOnly={msg.tableProposalsCommitted}
+                onAdd={accepted => onAcceptTables?.(msg.id, accepted)}
+              />
+            </div>
+          )}
           {msg.artifactCards && msg.artifactCards.length > 0 && (
             <div style={{ marginTop: sp.C, display: 'flex', flexDirection: 'column', gap: sp.B }}>
               {msg.artifactCards.map((card, i) => {
