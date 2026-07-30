@@ -1,0 +1,72 @@
+/* Adapted from surajboro-ts/spotter-readiness-vision `_agentic/JoinDiagram`.
+   The .joinTypeImg rule is replaced by a drawn connector — see JoinDiagram.tsx. */
+
+.diagram {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.side {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  align-items: flex-start;
+}
+
+.right {
+  align-items: flex-end;
+}
+
+.table {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--rd-sys-color-content-primary);
+  font-family: var(--font-family-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  line-height: var(--line-height-sm);
+  letter-spacing: -0.072px;
+}
+
+.col {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-regular);
+  color: var(--rd-sys-color-content-secondary);
+  font-family: var(--font-family-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  line-height: var(--line-height-sm);
+  letter-spacing: -0.072px;
+}
+
+/* Drawn connector — carries the cardinality label above the arrow. */
+.connector {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-1);
+  color: var(--rd-sys-color-border-default);
+}
+
+.cardinality {
+  font-family: var(--font-family-primary);
+  font-size: 10px;
+  font-weight: var(--font-weight-medium);
+  letter-spacing: 0.04em;
+  color: var(--rd-sys-color-content-secondary);
+  line-height: 1;
+}
+
+/* Many-side joins can inflate aggregates — worth flagging before it's committed. */
+.warn {
+  color: var(--rd-sys-color-content-warning, #92640A);
+  font-weight: var(--font-weight-semibold, 600);
+}

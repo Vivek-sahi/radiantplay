@@ -12,7 +12,7 @@ import PlanPanelV3 from './PlanPanelV3';
 import { FlowOption } from './Shell';
 import { Icon } from '../../../components/icons';
 import { Button } from '../../../components/Button';
-import { TableSuggestionCard, type TableProposal } from './agentic';
+import { TableSuggestionCard, JoinSuggestionCard, type TableProposal, type JoinProposal } from './agentic';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -121,6 +121,9 @@ export interface AgentMessage {
    * next source once a proposal is accepted — S4's "no new prompt from her".
    */
   proposalKey?: 'snowflake' | 'databricks';
+  /** Agent's proposed joins (S7). Accepting draws the edges on the canvas. */
+  joinProposals?: JoinProposal[];
+  joinProposalsCommitted?: boolean;
   // spotter-answer fields
   answerTitle?: string;
   answerDesc?: string;
@@ -2569,6 +2572,12 @@ interface AgentPanelProps {
    * exist in the canvas TABLE_COLS catalogue or they're skipped.
    */
   onAgentAddTables?: (tableNames: string[]) => void;
+  /** Commits agent-proposed joins onto the canvas (S7). Both tables must be present. */
+  onAgentAddJoins?: (joins: Array<{
+    table1: string; table2: string; col1: string; col2: string;
+    joinType: 'inner' | 'full_outer' | 'left_outer' | 'right_outer';
+    cardinality: 'many_to_one' | 'one_to_many' | 'one_to_one';
+  }>) => void;
 }
 
 // ── Canvas agent (isCanvasAgent) — canned profile data + genUI cards ───────────
@@ -2596,6 +2605,28 @@ const DEMO_DATABRICKS_TABLES: TableProposal[] = [
     reasoning: 'usage_delta_90d is the strongest churn predictor in the set — four accounts are down more than 25%.' },
   { id: 'db-2', name: 'feature_adoption', desc: 'Adoption % by feature',                pct: 88, connection: 'Databricks', checked: true,
     reasoning: 'Explains *why* usage dropped. Sparser than usage_events — 10 rows across 7 accounts.' },
+];
+
+/**
+ * Joins the agent proposes once the sources are on the canvas (S7).
+ * Everything hangs off accounts.account_id — the shared key across all six.
+ */
+const DEMO_JOINS: JoinProposal[] = [
+  { id: 'j-1', leftTable: 'accounts', leftCol: 'account_id', rightTable: 'contracts', rightCol: 'account_id',
+    joinType: 'inner', cardinality: 'one_to_many', pct: 97, checked: true,
+    reasoning: 'account_id is unique in accounts and present on every contract row — no orphans either way.' },
+  { id: 'j-2', leftTable: 'accounts', leftCol: 'account_id', rightTable: 'arr_snapshot', rightCol: 'account_id',
+    joinType: 'inner', cardinality: 'one_to_one', pct: 96, checked: true,
+    reasoning: 'Exactly one snapshot row per account at 2024-06-30 — a clean one-to-one.' },
+  { id: 'j-3', leftTable: 'accounts', leftCol: 'account_id', rightTable: 'usage_events', rightCol: 'account_id',
+    joinType: 'left_outer', cardinality: 'one_to_many', pct: 93, checked: true,
+    reasoning: 'Left outer so accounts with no usage rows survive the join rather than dropping out of the risk list.' },
+  { id: 'j-4', leftTable: 'accounts', leftCol: 'account_id', rightTable: 'feature_adoption', rightCol: 'account_id',
+    joinType: 'left_outer', cardinality: 'one_to_many', pct: 84, checked: true, warnFanOut: true,
+    reasoning: 'Several rows per account — one per feature. Aggregate before joining or adoption will multiply the ARR total.' },
+  { id: 'j-5', leftTable: 'accounts', leftCol: 'account_id', rightTable: 'qbr_sentiment', rightCol: 'account_id',
+    joinType: 'left_outer', cardinality: 'one_to_many', pct: 79, checked: true,
+    reasoning: 'Only 8 of 12 accounts have a QBR — left outer keeps the other four, with sentiment null rather than zero.' },
 ];
 
 const CANVAS_TABLE_ISSUES: Record<string, { issues: string[]; fixes: Array<{ op: string; label: string; evidence: string }> }> = {
@@ -2715,7 +2746,7 @@ const JoinRecCard: React.FC<{ rec: NonNullable<AgentMessage['joinRec']>; onAdd: 
   );
 };
 
-const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, setMessages, initialPrompt, onBuildComplete, externalMessage, onExternalMessageHandled, externalMessageAttachment, injectInput, onInjectInputHandled, width = 340, selectedColumns, onColumnRemove, isFromScratch, isMultiSource, isNotebookFlow, isMrdFlow, isDbtReview, onNotebookUpdate, onOpenPlan, onOpenQualityPlan, onBuildStart, onNavigateToWorkspace, onStartBuild, fullPage = false, onBack, initialFlow, initialMessage, onInsightResolved, onOpenObject, onOpenMsItem, flowOption = 'option3', rootBackground, isCanvasAgent, poc, canvasTableCount, onAgentAddTables }) => {
+const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, setMessages, initialPrompt, onBuildComplete, externalMessage, onExternalMessageHandled, externalMessageAttachment, injectInput, onInjectInputHandled, width = 340, selectedColumns, onColumnRemove, isFromScratch, isMultiSource, isNotebookFlow, isMrdFlow, isDbtReview, onNotebookUpdate, onOpenPlan, onOpenQualityPlan, onBuildStart, onNavigateToWorkspace, onStartBuild, fullPage = false, onBack, initialFlow, initialMessage, onInsightResolved, onOpenObject, onOpenMsItem, flowOption = 'option3', rootBackground, isCanvasAgent, poc, canvasTableCount, onAgentAddTables, onAgentAddJoins }) => {
   const [pendingAction, setPending]     = useState<PendingAction | null>(null);
   const [isProcessing, setProcessing]   = useState(false);
   const [planModalOpen, setPlanModalOpen] = useState(false);
@@ -5348,14 +5379,36 @@ ORDER BY row_count DESC
                     }]);
                   }
 
-                  // S5 — with both warehouses in, the agent asks for the CSV.
+                  // S5 — with both warehouses in, the agent asks for the CSV, then
+                  // S7 — moves straight on to proposing the joins without waiting.
                   if (key === 'databricks') {
                     setMessages(prev => [...prev, {
                       id: `cv-csv-${Date.now()}`, type: 'response',
                       content: 'That\'s both warehouses. Now the QBR sentiment sheet — drop the file in and I\'ll parse the columns.',
                       inlineInput: { type: 'file-upload', label: 'QBR sentiment sheet' },
                     }]);
+                    onAgentAddTables?.(['qbr_sentiment']);
+                    await runCanvasSteps([
+                      { label: 'Reading column headers', detail: 'account_id, qbr_date, sentiment, sentiment_delta, csm_name' },
+                      { label: 'Looking for shared keys across all six sources', detail: 'account_id present in every table' },
+                      { label: 'Inferring cardinality', detail: 'profiling key uniqueness on both sides' },
+                    ], 950);
+                    setMessages(prev => [...prev, {
+                      id: `cv-joins-${Date.now()}`, type: 'response',
+                      content: 'Everything keys off `account_id`, so I can join all five to **accounts**. Two are worth a look before you commit — **feature_adoption** has a row per feature, so it will multiply totals unless it\'s aggregated first.',
+                      joinProposals: DEMO_JOINS,
+                    }]);
                   }
+                }}
+                onAcceptJoins={(msgId, accepted) => {
+                  onAgentAddJoins?.(accepted.map(j => ({
+                    table1: j.leftTable, table2: j.rightTable,
+                    col1: j.leftCol, col2: j.rightCol,
+                    joinType: j.joinType, cardinality: j.cardinality,
+                  })));
+                  setMessages(prev => prev.map(m =>
+                    m.id === msgId ? { ...m, joinProposalsCommitted: true } : m
+                  ));
                 }}
                 onComplete={msg.genUI === 'drift_complete' ? () => {
                   onInsightResolved?.('ins-d2');
@@ -6762,7 +6815,9 @@ const MessageBubble: React.FC<{
   onArtifactClick?: (card: { type: string; name: string }) => void;
   /** User accepted the agent's table proposal — commit them to the canvas. */
   onAcceptTables?: (msgId: string, tables: TableProposal[]) => void;
-}> = ({ msg, showAvatar, onToggleSteps, onToggleCollapsible, onSuggestion, onConfirm, onOpenQualityPlan, onChipClick, onGenUIAction, onComplete, publishedVersion, onOpenObject, onApiKeySubmit, onFileUpload, onArtifactClick, onAcceptTables }) => {
+  /** User accepted the agent's join proposal — draw the edges. */
+  onAcceptJoins?: (msgId: string, joins: JoinProposal[]) => void;
+}> = ({ msg, showAvatar, onToggleSteps, onToggleCollapsible, onSuggestion, onConfirm, onOpenQualityPlan, onChipClick, onGenUIAction, onComplete, publishedVersion, onOpenObject, onApiKeySubmit, onFileUpload, onArtifactClick, onAcceptTables, onAcceptJoins }) => {
   const [chipUsed, setChipUsed] = React.useState(false);
   const [apiKeyValue, setApiKeyValue] = React.useState('');
   const [isDragOver, setIsDragOver] = React.useState(false);
@@ -7022,6 +7077,16 @@ const MessageBubble: React.FC<{
                 tables={msg.tableProposals}
                 isReadOnly={msg.tableProposalsCommitted}
                 onAdd={accepted => onAcceptTables?.(msg.id, accepted)}
+              />
+            </div>
+          )}
+          {/* Agent's proposed joins (S7) — accepting draws edges on the canvas. */}
+          {msg.joinProposals && msg.joinProposals.length > 0 && (
+            <div style={{ marginTop: sp.C }}>
+              <JoinSuggestionCard
+                joins={msg.joinProposals}
+                isReadOnly={msg.joinProposalsCommitted}
+                onAdd={accepted => onAcceptJoins?.(msg.id, accepted)}
               />
             </div>
           )}

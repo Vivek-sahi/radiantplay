@@ -2202,6 +2202,37 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
       .forEach(name => addToCanvas(name, 'warehouse'));
   }, [groups, addToCanvas]);
 
+  /**
+   * Agent → canvas join commit (run-of-show S7).
+   *
+   * Mirrors agentAddTables: appends, skips anything already joined, and drops
+   * proposals whose tables aren't on the canvas — a join edge needs both ends.
+   * Resolves table1Id by name the same way the initialJoins seeder does.
+   */
+  const agentAddJoins = useCallback((joins: InitialCanvasJoin[]) => {
+    setGroups(currentGroups => {
+      setCanvasJoins(prevJoins => {
+        const idByName: Record<string, string> = {};
+        currentGroups.forEach(g => { idByName[g.tableName] = g.id; });
+        const existing = new Set(prevJoins.map(j => `${j.table1Id}|${j.table2Name}`));
+        const additions = joins
+          .filter(j => idByName[j.table1] && currentGroups.some(g => g.tableName === j.table2))
+          .filter(j => !existing.has(`${idByName[j.table1]}|${j.table2}`))
+          .map((j, idx) => ({
+            id: `agentjoin_${prevJoins.length + idx + 1}`,
+            name: `${j.table1} × ${j.table2}`,
+            table1Id: idByName[j.table1],
+            table2Name: j.table2,
+            col1: j.col1, col2: j.col2,
+            joinType: j.joinType, cardinality: j.cardinality,
+            x: 0, y: 0,
+          }));
+        return additions.length ? [...prevJoins, ...additions] : prevJoins;
+      });
+      return currentGroups;
+    });
+  }, []);
+
   // Seed the canvas from initialTables/initialJoins (MRD flow, SpotterX embed) — once.
   const seededRef = useRef(false);
   useEffect(() => {
@@ -3058,6 +3089,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
           isCanvasAgent={true}
           poc={poc}
           onAgentAddTables={agentAddTables}
+          onAgentAddJoins={agentAddJoins}
           canvasTableCount={groups.filter(g => g.steps[0]?.type === 'source').length}
           width={agentWidth}
           rootBackground="transparent"

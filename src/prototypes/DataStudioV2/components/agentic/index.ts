@@ -29,4 +29,8 @@ export type { PlanStep, PlanStepsData } from './types';
 
 // ── Tier 2 — proposals, typed against our model ──────────────────────────────
 export { TableSuggestionCard } from './TableSuggestionCard';
+export { JoinSuggestionCard } from './JoinSuggestionCard';
+export type { JoinProposal } from './JoinSuggestionCard';
+export { JoinDiagram } from './JoinDiagram';
+export type { Cardinality } from './JoinDiagram';
 export type { TableProposal, TableSuggestionCardProps } from './TableSuggestionCard';
