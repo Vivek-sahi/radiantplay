@@ -116,6 +116,11 @@ export interface AgentMessage {
   tableProposals?: TableProposal[];
   /** Set once accepted, so the card freezes into a read-only record of the turn. */
   tableProposalsCommitted?: boolean;
+  /**
+   * Which beat this proposal belongs to. Lets the agent auto-advance to the
+   * next source once a proposal is accepted — S4's "no new prompt from her".
+   */
+  proposalKey?: 'snowflake' | 'databricks';
   // spotter-answer fields
   answerTitle?: string;
   answerDesc?: string;
@@ -2568,6 +2573,31 @@ interface AgentPanelProps {
 
 // ── Canvas agent (isCanvasAgent) — canned profile data + genUI cards ───────────
 
+/**
+ * Renewal-risk demo — the agent's ranked table proposals (run-of-show S3/S4).
+ *
+ * Confidence values and the "left unchecked" low scorer come from the script.
+ * Every `name` exists in the canvas TABLE_COLS catalogue, or the card would
+ * propose something the canvas can't place.
+ */
+const DEMO_SNOWFLAKE_TABLES: TableProposal[] = [
+  { id: 'sf-1', name: 'contracts',      desc: 'Renewal dates, term, ACV',        pct: 96, connection: 'Snowflake', checked: true,
+    reasoning: 'Every account renewing this quarter has a row here — renewal_date and acv are complete across all 12.' },
+  { id: 'sf-2', name: 'arr_snapshot',   desc: 'Current ARR by account',          pct: 94, connection: 'Snowflake', checked: true,
+    reasoning: 'Gives the dollar value at risk. arr_change_pct is already computed, so decline needs no derivation.' },
+  { id: 'sf-3', name: 'accounts',       desc: 'Segment, owner, region',          pct: 91, connection: 'Snowflake', checked: true,
+    reasoning: 'The dimension the other three join to. Clean account_id key, no orphans.' },
+  { id: 'sf-4', name: 'billing_events', desc: 'Invoices, credits, overdue flags', pct: 38, connection: 'Snowflake', checked: false,
+    reasoning: 'Only 6 rows cover 4 accounts — too sparse to support a risk signal. Left out unless you want it.' },
+];
+
+const DEMO_DATABRICKS_TABLES: TableProposal[] = [
+  { id: 'db-1', name: 'usage_events',     desc: 'Active users, sessions, 90-day delta', pct: 95, connection: 'Databricks', checked: true,
+    reasoning: 'usage_delta_90d is the strongest churn predictor in the set — four accounts are down more than 25%.' },
+  { id: 'db-2', name: 'feature_adoption', desc: 'Adoption % by feature',                pct: 88, connection: 'Databricks', checked: true,
+    reasoning: 'Explains *why* usage dropped. Sparser than usage_events — 10 rows across 7 accounts.' },
+];
+
 const CANVAS_TABLE_ISSUES: Record<string, { issues: string[]; fixes: Array<{ op: string; label: string; evidence: string }> }> = {
   support_cases: {
     issues: ['12 null values in resolution_time_hours'],
@@ -4244,11 +4274,13 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
 
   const canvasDelay = (ms: number) => new Promise<void>(r => setTimeout(r, ms));
 
-  const runCanvasSteps = async (steps: Array<{ label: string; detail?: string }>, stepMs = 1000) => {
+  // `collapsible` carries the query/code the agent ran, shown on expand —
+  // WorkingStep already supported it; only this signature was narrower.
+  const runCanvasSteps = async (steps: Array<{ label: string; detail?: string; collapsible?: string }>, stepMs = 1000) => {
     const wid = `cvw-${Date.now()}`;
     setMessages(prev => [...prev, {
       id: wid, type: 'working', content: '',
-      steps: steps.map((s, i) => ({ label: s.label, detail: s.detail, status: i === 0 ? 'running' as const : 'pending' as const })),
+      steps: steps.map((s, i) => ({ label: s.label, detail: s.detail, collapsible: s.collapsible, status: i === 0 ? 'running' as const : 'pending' as const })),
       stepsCollapsed: false,
     }]);
     for (let i = 0; i < steps.length; i++) {
@@ -4286,6 +4318,45 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
     if (/what data|which tables|data can i access|available (data|tables)/.test(lower)) {
       say("You're connected to snowflake-prod (ANALYTICS.PUBLIC: dim_accounts, support_cases, call_metrics, customer_found_defects) and bigquery-product (product_db.raw: pendo_nps_enriched, csm_account_mapping), plus Google Drive and SharePoint. Name any of these and I'll add them to the canvas.",
         { suggestions: ['Fetch dim_accounts, support_cases and call_metrics'] });
+      setProcessing(false);
+      return;
+    }
+
+    // ── Renewal-risk demo (run-of-show Beat 2) ─────────────────────────────────
+    // S2 — she states the business question; the agent asks which connections to
+    // read rather than guessing, and offers the ones she already has.
+    if (/renew|churn|at risk|at-risk/.test(lower) && !/snowflake|databricks/.test(lower)) {
+      await runCanvasSteps([{ label: 'Reading your question', detail: text.length > 90 ? `${text.slice(0, 90)}…` : text }], 900);
+      say('That spans a few systems. Which of your connections should I look at?', {
+        suggestions: [
+          'Contracts and ARR from Snowflake, product usage from Databricks, and I\'ll upload the CS team\'s QBR sentiment sheet',
+        ],
+      });
+      setProcessing(false);
+      return;
+    }
+
+    // S3 — she names the sources in one turn. The agent scans Snowflake first and
+    // proposes a ranked, scored set; it sequences to Databricks on accept (S4).
+    if (/snowflake/.test(lower) && /(databricks|usage|qbr|sentiment)/.test(lower)) {
+      await runCanvasSteps([
+        { label: 'Reading Snowflake connection', detail: 'SF_PROD_CUSTOMER · scoped to ANALYTICS.PUBLIC' },
+        {
+          label: 'Matching tables to your question',
+          detail: '96 tables in scope · 4 relevant',
+          collapsible: `SELECT table_name, row_count, last_modified
+FROM information_schema.tables
+WHERE table_schema = 'PUBLIC'
+  AND table_name SIMILAR TO '%(CONTRACT|ARR|ACCOUNT|BILLING|RENEWAL)%'
+ORDER BY row_count DESC
+-- Matched: CONTRACTS, ARR_SNAPSHOT, ACCOUNTS, BILLING_EVENTS`,
+        },
+        { label: 'Scoring by fit', detail: 'Key completeness, coverage of accounts renewing this quarter' },
+      ], 1000);
+      say('Here\'s what I found in Snowflake. I\'ve left **billing_events** out — it\'s too sparse to carry a risk signal, but tick it if you disagree.\n\nHover a score to see why I picked it.', {
+        tableProposals: DEMO_SNOWFLAKE_TABLES,
+        proposalKey: 'snowflake',
+      });
       setProcessing(false);
       return;
     }
@@ -5253,13 +5324,38 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
                 onApiKeySubmit={handleApiKeySubmit}
                 onFileUpload={handleFileUpload}
                 onArtifactClick={onOpenMsItem}
-                onAcceptTables={(msgId, accepted) => {
+                onAcceptTables={async (msgId, accepted) => {
                   // Commit to the canvas, then freeze the card so the thread
                   // keeps a read-only record of what was accepted.
                   onAgentAddTables?.(accepted.map(t => t.name));
+                  const key = messages.find(m => m.id === msgId)?.proposalKey;
                   setMessages(prev => prev.map(m =>
                     m.id === msgId ? { ...m, tableProposalsCommitted: true } : m
                   ));
+
+                  // S4 — auto-advance. She gave all three sources in one turn, so
+                  // the agent moves to the next one without being asked again.
+                  if (key === 'snowflake') {
+                    await runCanvasSteps([
+                      { label: 'Moving to Databricks', detail: 'product usage · no new prompt needed' },
+                      { label: 'Matching tables to your question', detail: '2 relevant of 31 in scope' },
+                    ], 950);
+                    setMessages(prev => [...prev, {
+                      id: `cv-db-${Date.now()}`, type: 'response',
+                      content: 'Databricks next — product usage. Same treatment.',
+                      tableProposals: DEMO_DATABRICKS_TABLES,
+                      proposalKey: 'databricks',
+                    }]);
+                  }
+
+                  // S5 — with both warehouses in, the agent asks for the CSV.
+                  if (key === 'databricks') {
+                    setMessages(prev => [...prev, {
+                      id: `cv-csv-${Date.now()}`, type: 'response',
+                      content: 'That\'s both warehouses. Now the QBR sentiment sheet — drop the file in and I\'ll parse the columns.',
+                      inlineInput: { type: 'file-upload', label: 'QBR sentiment sheet' },
+                    }]);
+                  }
                 }}
                 onComplete={msg.genUI === 'drift_complete' ? () => {
                   onInsightResolved?.('ins-d2');
