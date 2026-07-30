@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Data Studio — 5:00 Run of Show</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#14171a;
+    --ink-60:#5c646d;
+    --ink-30:#9aa2ab;
+    --paper:#ffffff;
+    --rail:#eceff2;
+    --line:#dfe4e9;
+
+    --type-fg:#3730a3;      /* prompt bar */
+    --type-bg:#eef0ff;
+    --type-edge:#4338ca;
+
+    --say-fg:#7c5300;       /* speaker */
+    --say-bg:#fdf6e6;
+    --say-edge:#9a6700;
+
+    --screen-fg:#0d5c56;    /* on screen */
+    --screen-bg:#e9f4f2;
+    --screen-edge:#0f766e;
+
+    --grot:'Archivo',system-ui,sans-serif;
+    --serif:'Newsreader',Georgia,serif;
+    --mono:'IBM Plex Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;background:var(--paper);color:var(--ink);
+    font-family:var(--grot);font-size:15px;line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1020px;margin:0 auto;padding:28px 20px 90px}
+
+  /* ---------- masthead ---------- */
+  .mast{border-bottom:2px solid var(--ink);padding-bottom:14px;margin-bottom:8px}
+  .kicker{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-60);font-weight:600}
+  h1{font-family:var(--grot);font-weight:700;font-size:34px;letter-spacing:-.02em;margin:6px 0 4px}
+  .sub{font-family:var(--serif);font-size:16px;color:var(--ink-60);margin:0}
+
+  /* ---------- timer ---------- */
+  .cockpit{position:sticky;top:0;z-index:20;background:var(--paper);
+    border-bottom:1px solid var(--line);padding:12px 0 10px;margin-bottom:26px}
+  .cockrow{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .clock{font-family:var(--mono);font-size:30px;font-weight:500;letter-spacing:-.02em;min-width:104px}
+  .clock.over{color:#b42318}
+  button{font-family:var(--grot);font-weight:600;font-size:13px;cursor:pointer;
+    border:1px solid var(--ink);background:var(--paper);color:var(--ink);
+    padding:7px 14px;border-radius:2px}
+  button:hover{background:var(--ink);color:var(--paper)}
+  button:focus-visible{outline:2px solid var(--type-edge);outline-offset:2px}
+  .now{font-size:12px;color:var(--ink-60);letter-spacing:.04em;text-transform:uppercase;font-weight:600}
+
+  /* signature: the 5-minute budget bar */
+  .budget{display:flex;width:100%;height:26px;margin-top:11px;gap:2px}
+  .seg{position:relative;background:var(--rail);border:0;padding:0;border-radius:1px;
+    display:flex;align-items:center;justify-content:center;overflow:hidden;
+    font-size:10px;letter-spacing:.1em;font-weight:700;color:var(--ink-30);
+    transition:background .18s ease,color .18s ease}
+  .seg:hover{background:#dde2e7;color:var(--ink-60)}
+  .seg.active{background:var(--ink);color:var(--paper)}
+  .seg .fill{position:absolute;inset:0 100% 0 0;background:rgba(255,255,255,.22)}
+
+  /* ---------- beats ---------- */
+  .beat{border-top:1px solid var(--line);padding:26px 0 6px;scroll-margin-top:150px}
+  .beat.lit .bhead{border-left-color:var(--ink)}
+  .bhead{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;
+    border-left:3px solid transparent;padding-left:12px;margin-left:-15px;transition:border-color .2s}
+  .tc{font-family:var(--mono);font-size:13px;color:var(--ink-60);white-space:nowrap}
+  h2{font-family:var(--grot);font-weight:700;font-size:21px;letter-spacing:-.01em;margin:0}
+  .cap{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+    border:1px solid var(--ink-30);color:var(--ink-60);padding:3px 8px;border-radius:2px}
+
+  .lanes{margin:16px 0 0;padding-left:12px}
+  .lane{display:grid;grid-template-columns:96px 1fr;gap:0;margin-bottom:9px;border-radius:3px;overflow:hidden}
+  .tag{font-size:10px;font-weight:700;letter-spacing:.11em;text-transform:uppercase;
+    padding:11px 10px;line-height:1.25}
+  .body{padding:11px 14px;border-left:3px solid}
+
+  .lane.type .tag{background:var(--type-edge);color:#fff}
+  .lane.type .body{background:var(--type-bg);border-color:var(--type-edge);
+    font-family:var(--mono);font-size:14px;color:var(--type-fg)}
+  .lane.say .tag{background:var(--say-edge);color:#fff}
+  .lane.say .body{background:var(--say-bg);border-color:var(--say-edge);
+    font-family:var(--serif);font-size:16.5px;line-height:1.55;color:#3a2c07}
+  .lane.screen .tag{background:var(--screen-edge);color:#fff}
+  .lane.screen .body{background:var(--screen-bg);border-color:var(--screen-edge);
+    font-size:14px;color:#123f3b}
+
+  .body b{font-weight:700}
+  .body em{font-style:normal;background:rgba(0,0,0,.06);padding:1px 5px;border-radius:2px}
+  .state{font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.04em;
+    display:inline-block;margin-right:7px;opacity:.75}
+  .clickable{display:block;margin-top:6px;font-size:12.5px;font-style:italic;opacity:.85}
+  .body ul{margin:6px 0 0;padding-left:18px}
+  .body li{margin:2px 0}
+
+  /* ---------- closing ---------- */
+  .notes{margin-top:44px;border-top:2px solid var(--ink);padding-top:22px}
+  h3{font-size:15px;font-weight:700;letter-spacing:.02em;margin:26px 0 8px}
+  table{border-collapse:collapse;width:100%;font-size:13.5px}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-60)}
+  ol{padding-left:20px;font-size:14px}
+  ol li{margin:7px 0}
+  p{font-size:14px}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:11.5px;font-weight:600;
+    letter-spacing:.06em;text-transform:uppercase;color:var(--ink-60);margin-top:14px}
+  .dot{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;vertical-align:middle}
+
+  @media (max-width:640px){
+    h1{font-size:26px}
+    .lane{grid-template-columns:1fr}
+    .tag{padding:7px 12px 4px}
+    .body{border-left:0;border-top:3px solid}
+    .clock{font-size:24px}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="mast">
+    <div class="kicker">Run of show · Interactive prototype</div>
+    <h1>Data Studio — the five-minute walkthrough</h1>
+    <p class="sub">Maya Chen, Chief Customer Officer, ten weeks in. Four sources, one board question, no data engineer.</p>
+  </div>
+
+  <div class="cockpit">
+    <div class="cockrow">
+      <div class="clock" id="clock">0:00</div>
+      <button id="run">Start rehearsal</button>
+      <button id="reset">Reset</button>
+      <div class="now" id="now">Beat 1 · The stakes</div>
+    </div>
+    <div class="budget" id="budget"></div>
+    <div class="legend">
+      <span><span class="dot" style="background:var(--type-edge)"></span>Typed into the prompt bar</span>
+      <span><span class="dot" style="background:var(--say-edge)"></span>Spoken</span>
+      <span><span class="dot" style="background:var(--screen-edge)"></span>On screen</span>
+    </div>
+  </div>
+
+  <!-- BEAT 1 -->
+  <section class="beat" id="b0">
+    <div class="bhead"><span class="tc">0:00 – 0:30</span><h2>The stakes</h2><span class="cap">30s</span></div>
+    <div class="lanes">
+      <div class="lane screen"><div class="tag">On screen</div><div class="body">
+        <span class="state">S1</span>Data Workspace home. Empty state, prompt bar centred, cursor blinking. Nothing else on the canvas.
+      </div></div>
+      <div class="lane say"><div class="tag">Say</div><div class="body">
+        This is Maya. Chief Customer Officer, ten weeks into the job. On Monday, her board wants one number: of the forty-eight million dollars renewing this quarter, how much is at risk — and why.<br><br>
+        The data that answers that lives in four different places. Two of them have never been modelled together. In the old world, Maya files a ticket and waits six weeks. Watch what she does instead.
+      </div></div>
+      <div class="lane type"><div class="tag">Type</div><div class="body">
+        Which of our accounts renewing this quarter are at risk of churning, and why?
+        <span class="clickable">Prototype: type-on animation, then Enter. Don't make them click a fake button.</span>
+      </div></div>
+    </div>
+  </section>
+
+  <!-- BEAT 2 -->
+  <section class="beat" id="b1">
+    <div class="bhead"><span class="tc">0:30 – 1:40</span><h2>The agent reads her connections</h2><span class="cap">Model Cache · 70s</span></div>
+    <div class="lanes">
+      <div class="lane screen"><div class="tag">On screen</div><div class="body">
+        <span class="state">S2</span>Agent replies in-thread: <em>Which of your connections should I look at?</em> Below it, the connections she already has — Snowflake, Databricks, Salesforce, Postgres.
+      </div></div>
+      <div class="lane type"><div class="tag">Type</div><div class="body">
+        Contracts and ARR from Snowflake, product usage from Databricks, and I'll upload the CS team's QBR sentiment sheet.
+      </div></div>
+      <div class="lane screen"><div class="tag">On screen</div><div class="body">
+        <span class="state">S3</span><b>Snowflake.</b> Agent scans the connection — a scoped set of tables someone already governed. Ranked suggestions with a confidence score:
+        <ul>
+          <li><em>contracts</em> — 96% · renewal dates, term, ACV</li>
+          <li><em>arr_snapshot</em> — 94% · current ARR by account</li>
+          <li><em>accounts</em> — 91% · segment, owner, region</li>
+          <li><em>billing_events</em> — 38% · left unchecked</li>
+        </ul>
+        <span class="clickable">Clickable: hover a score to see the agent's one-line reasoning. Confirm.</span>
+      </div></div>
+      <div class="lane say"><div class="tag">Say</div><div class="body">
+        Two things happening here. She never named a table — the agent read the connection and worked out which ones answer her question. And it can only see what that connection was scoped to, so she isn't browsing the warehouse; she's browsing what she's already been given.<br><br>
+        Every suggestion comes with a confidence score. Her job is to review, not to build.
+      </div></div>
+      <div class="lane screen"><div class="tag">On screen</div><div class="body">
+        <span class="state">S4</span><b>Auto-advance to Databricks.</b> Same treatment, no new prompt from her — <em>usage_events</em> 95%, <em>feature_adoption</em> 88%. Confirm.<br>
+        <span class="state">S5</span><b>CSV.</b> Agent asks for the sheet. Drag-drop, columns parsed and typed on the fly.
+      </div></div>
+      <div class="lane screen"><div class="tag">On screen</div><div class="body">
+        <span class="state">S6</span>Agent: <em>To model across these three sources I'll need to cache them. This will take a while — you can carry on, I'll let you know when it's ready.</em> Progress moves to a background chip. She navigates away.
+      </div></div>
+      <div class="lane say"><div class="tag">Say</div><div class="body">
+        Snowflake, Databricks and a spreadsheet can't be joined at query time. So Data Studio caches them. <b>That's Model Cache</b> — and it's the only part of this that takes real time, so she doesn't sit and watch it. She goes to her one-on-one.
+        <span class="clickable">Hard cut here — don't stage dead air. Notification toast returns her to the canvas.</span>
+      </div></div>
+      <div class="lane screen"><div class="tag">On screen</div><div class="body">
+        <span class="state">S7</span>Toast: <em>Your sources are cached and ready.</em> Canvas opens with all three, and the agent has <b>already prompted</b>: <em>I can join these — here's what I suggest.</em> Join lines draw in. SQL icon in the corner.
+      </div></div>
+      <div class="lane say"><div class="tag">Say</div><div class="body">
+        She comes back and the agent has moved on without her — it's proposing the joins. She approves them. And if her data engineer wants to hand-tune one later, SQL is right there.
+      </div></div>
+    </div>
+  </section>
+
+  <!-- BEAT 3 -->
+  <section class="beat" id="b2">
+    <div class="bhead"><span class="tc">1:40 – 2:40</span><h2>The data that was never a data source</h2><span class="cap">Python notebook · 60s</span></div>
+    <div class="lanes">
+      <div class="lane type"><div class="tag">Type</div><div class="body">
+        Support escalations are in Jira. There's no connection for it and it was never loaded into the warehouse — pull it in directly.
+      </div></div>
+      <div class="lane screen"><div class="tag">On screen</div><div class="body">
+        <span class="state">S8</span><b>Round one — reach it.</b> Agent asks inline for the Jira site URL, username, and API token. Token field masked.
+        <span class="clickable">Pre-fill these in the prototype. Nobody should watch a VP type credentials, and no real key goes on a stage.</span>
+      </div></div>
+      <div class="lane screen"><div class="tag">On screen</div><div class="body">
+        <span class="state">S9</span><b>Round two — scope it.</b> Project key, issue types, date range, and which fields to bring back. Agent proposes sensible defaults; she accepts.
+      </div></div>
+      <div class="lane say"><div class="tag">Say</div><div class="body">
+        This is the beat I'd underline. In most companies the single most predictive churn signal is sitting in a system nobody ever thought of as a data source. It's not in the warehouse. It was never going to be in the warehouse.<br><br>
+        So the agent asks her what it needs to get there, and what to bring back — and writes the code itself.
+      </div></div>
+      <div class="lane screen"><div class="tag">On screen</div><div class="body">
+        <span class="state">S10</span>Agent: <em>I've written a script to pull this.</em> Two actions — <b>Review script</b> or <b>Run</b>. She chooses Review.<br>
+        <span class="state">S11</span>Notebook opens. Real code, real cells. She narrows one line to <em>priority in (P1, P2)</em> and re-runs. Row count drops.
+        <span class="clickable">Make that line genuinely editable. It's the whole point of the beat.</span>
+      </div></div>
+      <div class="lane say"><div class="tag">Say</div><div class="body">
+        She could just hit Run. But it's a real notebook, not a black box — so she opens it. Maya only cares about P1s and P2s, so she changes the filter herself and re-runs. Anything the agent writes, a human can open and correct.
+      </div></div>
+      <div class="lane screen"><div class="tag">On screen</div><div class="body">
+        <span class="state">S12</span>Fourth table lands on the canvas, joined.
+      </div></div>
+      <div class="lane say"><div class="tag">Say</div><div class="body">
+        Four sources. One model. Still no data engineer.
+      </div></div>
+    </div>
+  </section>
+
+  <!-- BEAT 4 -->
+  <section class="beat" id="b3">
+    <div class="bhead"><span class="tc">2:40 – 3:15</span><h2>Her logic, not IT's</h2><span class="cap">Spreadsheet transform · 35s</span></div>
+    <div class="lanes">
+      <div class="lane screen"><div class="tag">On screen</div><div class="body">
+        <span class="state">S13</span>Toggle: Canvas → Spreadsheet view. Familiar grid, real rows.<br>
+        <span class="state">S14</span>New column being typed. Values populate down the column as she finishes.
+      </div></div>
+      <div class="lane type"><div class="tag">Type</div><div class="body">
+        Renewal Risk = (Usage Decline 90d × 0.4) + (Open P1 Escalations × 0.35) + (QBR Sentiment Drop × 0.25)
+        <span class="clickable">Formula bar, not the agent prompt bar — worth a visual distinction in the prototype.</span>
+      </div></div>
+      <div class="lane say"><div class="tag">Say</div><div class="body">
+        Now the part only Maya can do. She knows what "at risk" actually means — no engineer is going to guess that weighting for her. So she writes it herself, in a view that looks like the spreadsheet she already lives in. The metric goes into the model, not into a slide.
+      </div></div>
+    </div>
+  </section>
+
+  <!-- BEAT 5 -->
+  <section class="beat" id="b4">
+    <div class="bhead"><span class="tc">3:15 – 4:15</span><h2>The differentiator</h2><span class="cap">AI readiness · 60s</span></div>
+    <div class="lanes">
+      <div class="lane screen"><div class="tag">On screen</div><div class="body">
+        <span class="state">S15</span>AI-readiness check runs — pill on the canvas, three layers checking in sequence.<br>
+        <span class="state">S16</span>Findings panel, graded:
+        <ul>
+          <li>6 columns with no description</li>
+          <li><em>acct_st</em> — ambiguous name, no synonyms</li>
+          <li>Fan-out risk on the Jira join</li>
+          <li><em>Renewal Risk</em> has no definition an LLM can reason from</li>
+        </ul>
+      </div></div>
+      <div class="lane say"><div class="tag">Say</div><div class="body">
+        Here's the part nobody else in this market has an answer for.<br><br>
+        A model can be perfectly <b>correct</b> and still be useless to an AI. If a column is called <em>acct_st</em>, if a join fans out, if a metric has no definition — the model is fine for a human and a coin-flip for an LLM.<br><br>
+        Data Studio grades the model on whether an LLM can actually reason over it. Then it fixes what it finds.
+      </div></div>
+      <div class="lane screen"><div class="tag">On screen</div><div class="body">
+        <span class="state">S17</span>Agent applies fixes one by one. Score climbs to green.<br>
+        <span class="state">S18</span>Publish.
+        <span class="clickable">Let the score animate. This is the only place worth spending a real animation.</span>
+      </div></div>
+    </div>
+  </section>
+
+  <!-- BEAT 6 -->
+  <section class="beat" id="b5">
+    <div class="bhead"><span class="tc">4:15 – 5:00</span><h2>The payoff</h2><span class="cap">45s</span></div>
+    <div class="lanes">
+      <div class="lane screen"><div class="tag">On screen</div><div class="body">
+        <span class="state">S19</span>Spotter. Clean prompt bar, published model named underneath.
+      </div></div>
+      <div class="lane type"><div class="tag">Type</div><div class="body">
+        Which accounts renewing in the next 90 days have declining usage and open P1 escalations?
+      </div></div>
+      <div class="lane screen"><div class="tag">On screen</div><div class="body">
+        <span class="state">S20</span>Ranked account list. Risk-weighted ARR total at the top. Jira escalation count as a visible column — proof the un-ETL'd data made it all the way through.
+      </div></div>
+      <div class="lane say"><div class="tag">Say</div><div class="body">
+        Four sources. One of them never in a warehouse. A metric that existed only in Maya's head twenty minutes ago. And it's answering board questions in plain English.<br><br>
+        That's Data Studio.
+      </div></div>
+    </div>
+  </section>
+
+  <div class="notes">
+    <h3>What's cut, and why</h3>
+    <table>
+      <tr><th>Cut</th><th>Reason</th></tr>
+      <tr><td>Separate prompt per source (3 turns → 1)</td><td>She names all three once; the agent sequences through Snowflake → Databricks → CSV on its own. Saves ~50 seconds and four states, and the auto-advance is itself the point</td></tr>
+      <tr><td>Waiting out the cache</td><td>Cached at real scale this takes minutes. Staged live it's dead air. Cut away and return on the notification — that <b>is</b> the behaviour</td></tr>
+      <tr><td>Cross-DB SQL join as its own beat</td><td>Demoted to one clause on S5. The audience that cares will ask</td></tr>
+      <tr><td>SpotterViz liveboard build</td><td>Replaced by a single Spotter question — faster, and it <b>proves</b> AI readiness mattered instead of asserting it</td></tr>
+      <tr><td>AgentDB</td><td>No clean slot. If it must appear, one sentence at S4: "…and where that cached data lives is AgentDB — built for agents to query, not just dashboards." Anything more costs you the spreadsheet beat</td></tr>
+    </table>
+
+    <h3>Build order for the prototype</h3>
+    <p>Three states carry the demo. Build these first and at the highest fidelity; the rest can be static.</p>
+    <ol>
+      <li><b>S3 — confidence-scored suggestions.</b> The scores, and the reasoning on hover, are the proof that the agent reasoned rather than dumped a table list. A plain checkbox list kills the beat.</li>
+      <li><b>S11 — the editable notebook line.</b> If she can't actually change the filter and re-run it, "not a black box" is an unsupported claim.</li>
+      <li><b>S16 — readiness findings.</b> Named, specific findings. A generic "3 issues found" wastes the only capability with no competitive answer.</li>
+    </ol>
+
+    <h3>Confirm before rehearsal</h3>
+    <ol>
+      <li><b>Audience.</b> Written for field/sales. If customers are in the room, cut "nobody else in this market has an answer for" and soften "no data engineer in the loop."</li>
+      <li><b>Who drives.</b> Assumes the VP clicks and narrates. If an SE drives, the on-screen lane becomes their cue sheet — split it out before rehearsal.</li>
+      <li><b>Emphasis.</b> AI readiness gets the longest beat at 65 seconds, on the argument that it's the only capability with no competitive answer. If "no ETL" is the stronger message for this room, swap: give Model Cache the long beat and compress readiness to 30 seconds.</li>
+    </ol>
+  </div>
+</div>
+
+<script>
+(function(){
+  var beats=[
+    {id:'b0',s:0,e:30,label:'1 · The stakes',short:'STAKES'},
+    {id:'b1',s:30,e:100,label:'2 · The agent reads her connections',short:'CACHE'},
+    {id:'b2',s:100,e:160,label:'3 · Never a data source',short:'NOTEBOOK'},
+    {id:'b3',s:160,e:195,label:'4 · Her logic, not IT\u2019s',short:'FORMULA'},
+    {id:'b4',s:195,e:255,label:'5 · The differentiator',short:'READINESS'},
+    {id:'b5',s:255,e:300,label:'6 · The payoff',short:'PAYOFF'}
+  ];
+  var TOTAL=300,t=0,timer=null;
+  var clock=document.getElementById('clock'),
+      runBtn=document.getElementById('run'),
+      resetBtn=document.getElementById('reset'),
+      now=document.getElementById('now'),
+      budget=document.getElementById('budget');
+
+  beats.forEach(function(b,i){
+    var el=document.createElement('button');
+    el.className='seg';
+    el.style.flexGrow=(b.e-b.s);
+    el.innerHTML='<span class="fill"></span>'+b.short;
+    el.setAttribute('aria-label','Jump to beat '+b.label);
+    el.addEventListener('click',function(){
+      t=b.s;paint();
+      document.getElementById(b.id).scrollIntoView({behavior:'smooth',block:'start'});
+    });
+    budget.appendChild(el);
+    b.el=el;b.fill=el.querySelector('.fill');
+  });
+
+  function fmt(n){var m=Math.floor(n/60),s=Math.floor(n%60);return m+':'+(s<10?'0':'')+s;}
+
+  function paint(){
+    clock.textContent=fmt(t);
+    clock.classList.toggle('over',t>=TOTAL);
+    beats.forEach(function(b){
+      var on=t>=b.s&&t<b.e;
+      b.el.classList.toggle('active',on);
+      document.getElementById(b.id).classList.toggle('lit',on);
+      var p=Math.min(1,Math.max(0,(t-b.s)/(b.e-b.s)));
+      b.fill.style.right=(100-p*100)+'%';
+      if(on)now.textContent='Beat '+b.label;
+    });
+    if(t>=TOTAL)now.textContent='Over time';
+  }
+
+  runBtn.addEventListener('click',function(){
+    if(timer){clearInterval(timer);timer=null;runBtn.textContent='Resume';return;}
+    runBtn.textContent='Pause';
+    timer=setInterval(function(){t++;paint();},1000);
+  });
+  resetBtn.addEventListener('click',function(){
+    clearInterval(timer);timer=null;t=0;runBtn.textContent='Start rehearsal';paint();
+  });
+  paint();
+})();
+</script>
+</body>
+</html>
