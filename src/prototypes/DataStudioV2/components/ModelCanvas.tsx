@@ -5460,8 +5460,11 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
               const indexDiffed = !!(indexingRow && !indexingAccepted);
               const indexAcceptedVal = !!indexingAccepted;
 
+              // data-model-col is the DOM hook readiness fixes use to spotlight a
+              // column and draw an inline before→after diff on it. React `key` never
+              // reaches the DOM, so without this the row can't be found.
               return (
-                <tr key={`${table}-${col}-${idx}`} style={{ background: rowBg }}
+                <tr key={`${table}-${col}-${idx}`} data-model-col={modelColKey(table, col)} style={{ background: rowBg }}
                   onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = isSelected ? '#E4EEFF' : '#F0F5FF'}
                   onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = rowBg}
                 >
