@@ -550,6 +550,46 @@ const MOCK_DATA: Record<string, Row[]> = {
   ],
 };
 
+/**
+ * Row filters expressed in a code step, applied to the preview.
+ *
+ * The notebook beat (S11) has the user narrowing a fetch to `priority in
+ * (P1, P2)`, re-running, and watching the row count drop — the script calls
+ * that line out as the whole point of the beat. The run handler already reads
+ * code for column assignment and auth patterns; this is the row half, so
+ * editing the filter has a visible effect instead of none.
+ *
+ * Recognised forms, on any column:
+ *   df[df['col'].isin(['A','B'])]
+ *   df[df['col'] == 'A']
+ *   col in ('A','B')            ← SQL-ish, the way the script writes it
+ */
+function applyCodeRowFilters(code: string | undefined, cols: [string, string][], rows: Row[]): Row[] {
+  if (!code) return rows;
+  const idxOf = (name: string) => cols.findIndex(c => c[0].toLowerCase() === name.toLowerCase());
+  const values = (raw: string) =>
+    raw.split(',').map(v => v.trim().replace(/^['"]|['"]$/g, '')).filter(Boolean);
+
+  let out = rows;
+  const keep = (col: string, allowed: string[]) => {
+    const i = idxOf(col);
+    if (i < 0 || allowed.length === 0) return;
+    const set = new Set(allowed.map(v => v.toLowerCase()));
+    out = out.filter(r => set.has(String(r[i] ?? '').toLowerCase()));
+  };
+
+  for (const m of code.matchAll(/df\[['"](\w+)['"]\]\s*\.isin\(\s*\[([^\]]*)\]\s*\)/g)) {
+    keep(m[1], values(m[2]));
+  }
+  for (const m of code.matchAll(/df\[['"](\w+)['"]\]\s*==\s*['"]([^'"]+)['"]/g)) {
+    keep(m[1], [m[2]]);
+  }
+  for (const m of code.matchAll(/\b(\w+)\s+in\s*\(([^)]*)\)/gi)) {
+    keep(m[1], values(m[2]));
+  }
+  return out;
+}
+
 const OP_META: Record<OpType, { label: string; tag: string; desc: string }> = {
   source:  { label: 'Source',    tag: 'source',  desc: 'Raw table' },
   join:    { label: 'Join',      tag: 'join',    desc: 'Join on key' },
@@ -5203,11 +5243,23 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
         inputs.flatMap((gi, gj) => per[gj][i] ?? (gi.steps[0]?.cols ?? []).map(() => null))
       );
     }
-    if (MOCK_DATA[g.tableName]) return MOCK_DATA[g.tableName].slice(0, rowCap);
+    // Row filters written into a code step narrow the preview (S11) — applied
+    // before the cap, so the count reflects the filter rather than the cap.
+    const withFilters = (base: Row[]): Row[] => {
+      const cols = g.steps[0]?.cols ?? [];
+      const upto = g.steps.slice(0, (g.activeStep ?? 0) + 1);
+      const filtered = upto.reduce(
+        (acc, s) => applyCodeRowFilters(s.pythonCode ?? s.sql, cols, acc),
+        base
+      );
+      return filtered.slice(0, rowCap);
+    };
+
+    if (MOCK_DATA[g.tableName]) return withFilters(MOCK_DATA[g.tableName]);
     // Fallback: match a mock table with the same columns (handles display-named sources).
     const sig = (g.steps[0]?.cols ?? []).map(c => c[0]).join('|');
     const match = sig ? Object.keys(MOCK_DATA).find(k => (TABLE_COLS[k] ?? []).map(c => c[0]).join('|') === sig) : undefined;
-    return match ? MOCK_DATA[match].slice(0, rowCap) : [];
+    return match ? withFilters(MOCK_DATA[match]) : [];
   };
 
   // ── Preview panel ───────────────────────────────────────────────────────────
