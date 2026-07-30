@@ -2390,19 +2390,27 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
     nodeCountRef.current++;
     const pos = NODE_POSITIONS[i];
     const id = `ng_${nodeCountRef.current}`;
+    // Two steps, not one: a source step so the card reads as the table it
+    // produces, plus a python step carrying the script as a chip. A single
+    // python step makes the canvas render it as an operation node labelled
+    // "Python" — right for a transform, wrong for "the fourth table lands".
     setGroups(prev => [...prev, {
       id, tableName, sourceKind: 'warehouse' as const,
-      steps: [{
-        type: 'python' as OpType, label: tableName,
-        desc: 'Fetched via script', cols: TABLE_COLS[tableName], pythonCode: code,
-      }],
+      steps: [
+        { type: 'source' as OpType, label: tableName, desc: 'Fetched via script', cols: TABLE_COLS[tableName] },
+        { type: 'python' as OpType, label: 'Fetch script', desc: 'Written by the agent', cols: TABLE_COLS[tableName], pythonCode: code },
+      ],
       x: pos.x + (nodeCountRef.current > NODE_POSITIONS.length ? Math.floor(nodeCountRef.current / NODE_POSITIONS.length) * 30 : 0),
-      y: pos.y, expanded: false, activeStep: 0,
+      y: pos.y, expanded: false, activeStep: 1,
     }]);
     setSelectedIds(new Set([id]));
     setPreviewOpen(true);
     triggerPreviewLoad();
-    if (openForReview) setEditingStepKey(stepKey(id, 0));
+    // Review lands the user in the code itself, not just the panel.
+    if (openForReview) {
+      setPythonConfig(p => ({ ...p, code, ran: true, error: null }));
+      setEditingStepKey(stepKey(id, 1));
+    }
   }, []);
 
   /**

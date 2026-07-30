@@ -459,7 +459,7 @@ const Overview: React.FC<OverviewProps> = ({
             {/* Heading */}
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: sp.B }}>
               <h1 style={{ margin: 0, fontSize: 26, fontWeight: fw.semibold, color: c['content-primary'], letterSpacing: '-0.3px', lineHeight: 1.2 }}>
-                Welcome back, Sara.
+                Welcome back, Maya.
               </h1>
             </div>
 

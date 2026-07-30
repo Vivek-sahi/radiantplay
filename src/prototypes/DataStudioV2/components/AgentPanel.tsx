@@ -2618,7 +2618,7 @@ const DEMO_DATABRICKS_TABLES: TableProposal[] = [
   { id: 'db-1', name: 'usage_events',     desc: 'Active users, sessions, 90-day delta', pct: 95, connection: 'Databricks', checked: true,
     reasoning: 'usage_delta_90d is the strongest churn predictor in the set — four accounts are down more than 25%.' },
   { id: 'db-2', name: 'feature_adoption', desc: 'Adoption % by feature',                pct: 88, connection: 'Databricks', checked: true,
-    reasoning: 'Explains *why* usage dropped. Sparser than usage_events — 10 rows across 7 accounts.' },
+    reasoning: 'Explains why usage dropped. Sparser than usage_events — 10 rows across 7 accounts.' },
 ];
 
 /**
