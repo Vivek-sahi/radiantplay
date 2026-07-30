@@ -4,7 +4,7 @@ import { c, sp, ff, fs, fw } from '../styles';
 import { shadows } from '@/tokens/shadows';
 import { ProjectState, ProjectContext, PrepTransform } from '../index';
 // agent.ts: skills registry (no API calls — all execution is scripted)
-import { tableMetadata, relationships, CACHE_STATS, CONNECTIONS } from '../data/mockData';
+import { tableMetadata, relationships, CACHE_STATS, CONNECTIONS, DEMO_CONNECTION_IDS } from '../data/mockData';
 import PromptBar, { PromptBarRef } from './PromptBar';
 import ConnectionPill from './ConnectionPill';
 import DataQualityPlanModal from './DataQualityPlanModal';
@@ -12,7 +12,7 @@ import PlanPanelV3 from './PlanPanelV3';
 import { FlowOption } from './Shell';
 import { Icon } from '../../../components/icons';
 import { Button } from '../../../components/Button';
-import { TableSuggestionCard, JoinSuggestionCard, AgentForm, type TableProposal, type JoinProposal, type AgentFormField } from './agentic';
+import { TableSuggestionCard, JoinSuggestionCard, AgentForm, ConnectionList, type TableProposal, type JoinProposal, type AgentFormField } from './agentic';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -121,6 +121,11 @@ export interface AgentMessage {
    * next source once a proposal is accepted — S4's "no new prompt from her".
    */
   proposalKey?: 'snowflake' | 'databricks';
+  /**
+   * Connections listed under the agent's question (S2). Ids into CONNECTIONS.
+   * A component, not prose — see ConnectionList.
+   */
+  connectionIds?: readonly string[];
   /** Agent's proposed joins (S7). Accepting draws the edges on the canvas. */
   joinProposals?: JoinProposal[];
   joinProposalsCommitted?: boolean;
@@ -4298,6 +4303,17 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
   const autonomyMenuRef = useRef<HTMLDivElement>(null);
   const canvasFixesRef = useRef<Array<{ op: string; label: string; target: string; evidence: string }>>([]);
   const canvasMsgCount = useRef(0);
+  /**
+   * Where the renewal-risk demo has got to.
+   *
+   * The agent asks an open question and the user answers in their own words —
+   * no canned reply button, because the point of S2/S3 is that she names the
+   * sources herself. Keyword matching alone is too brittle for that: "Snowflake
+   * and Databricks plus a CSV" and "contracts from SF, usage from DBX" both
+   * mean the same thing. So once the agent has asked, the next message is taken
+   * as the answer whatever its wording.
+   */
+  const demoStage = useRef<null | 'awaiting_connections'>(null);
 
   // Pick-mode results (ModelCanvas) land in the composer through this bridge.
   useEffect(() => {
@@ -4372,19 +4388,22 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
     // read rather than guessing, and offers the ones she already has.
     if (/renew|churn|at risk|at-risk/.test(lower) && !/snowflake|databricks/.test(lower)) {
       await runCanvasSteps([{ label: 'Reading your question', detail: text.length > 90 ? `${text.slice(0, 90)}…` : text }], 900);
-      // Short chip label — a suggestion chip is a shortcut, not a transcript.
-      // Typing the script's full sentence hits the same branch, so the presenter
-      // can either click this or type it out.
-      say('That spans a few systems. Which of your connections should I look at?', {
-        suggestions: ['Snowflake, Databricks, and a QBR sheet'],
-      });
+      // Agent text is verbatim from S2's On screen lane; the connections below
+      // it are a component (ConnectionList), not prose. No reply button — her
+      // answer is Type lane [2], which she types.
+      say('Which of your connections should I look at?', { connectionIds: DEMO_CONNECTION_IDS });
+      demoStage.current = 'awaiting_connections';
       setProcessing(false);
       return;
     }
 
     // S3 — she names the sources in one turn. The agent scans Snowflake first and
     // proposes a ranked, scored set; it sequences to Databricks on accept (S4).
-    if (/snowflake/.test(lower) && /(databricks|usage|qbr|sentiment)/.test(lower)) {
+    // Fires either because the agent just asked (any wording), or because she
+    // named the sources unprompted.
+    if (demoStage.current === 'awaiting_connections'
+      || (/snowflake/.test(lower) && /(databricks|usage|qbr|sentiment|csv|sheet|spreadsheet|upload)/.test(lower))) {
+      demoStage.current = null;
       await runCanvasSteps([
         { label: 'Reading Snowflake connection', detail: 'SF_PROD_CUSTOMER · scoped to ANALYTICS.PUBLIC' },
         {
@@ -7217,6 +7236,14 @@ const MessageBubble: React.FC<{
               isReadOnly={msg.agentFormSubmitted}
               submittedNote={msg.agentForm.submittedNote}
               onSubmit={values => onSubmitAgentForm?.(msg.id, msg.agentForm!.formKey, values)}
+            />
+          )}
+          {/* Connections the user already has (S2). */}
+          {msg.connectionIds && msg.connectionIds.length > 0 && (
+            <ConnectionList
+              connections={msg.connectionIds
+                .map(id => CONNECTIONS.find(cn => cn.id === id))
+                .filter(Boolean) as typeof CONNECTIONS}
             />
           )}
           {/* Agent's proposed joins (S7) — accepting draws edges on the canvas. */}

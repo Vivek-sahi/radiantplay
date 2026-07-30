@@ -2234,7 +2234,19 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
     setResizingPanel(null);
   }, []);
 
-  const addToCanvas = useCallback((tableName: string, sourceKind: 'warehouse' | 'csv' = 'warehouse', fileName?: string) => {
+  /**
+   * `select: false` adds the card without selecting it or opening the preview —
+   * used when the agent commits several tables at once, so the canvas fills up
+   * and the user chooses which one to look at, rather than the last table
+   * silently winning and forcing the preview open.
+   */
+  const addToCanvas = useCallback((
+    tableName: string,
+    sourceKind: 'warehouse' | 'csv' = 'warehouse',
+    fileName?: string,
+    opts: { select?: boolean } = {},
+  ) => {
+    const { select = true } = opts;
     const doAdd = () => {
       const i = nodeCountRef.current % NODE_POSITIONS.length;
       nodeCountRef.current++;
@@ -2253,9 +2265,11 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
         expanded: false,
         activeStep: 0,
       }]);
-      setSelectedIds(new Set([id]));
-      setPreviewOpen(true);
-      triggerPreviewLoad();
+      if (select) {
+        setSelectedIds(new Set([id]));
+        setPreviewOpen(true);
+        triggerPreviewLoad();
+      }
       if (TABLE_COLS[tableName]) {
         setExpandedTableRows(prev => new Set([...prev, tableName]));
       }
@@ -2298,7 +2312,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
       .filter(name => !present.has(name))
       // Only tables the canvas can actually render — TABLE_COLS is the catalogue.
       .filter(name => Boolean(TABLE_COLS[name]))
-      .forEach(name => addToCanvas(name, 'warehouse'));
+      .forEach(name => addToCanvas(name, 'warehouse', undefined, { select: false }));
   }, [groups, addToCanvas]);
 
   /**

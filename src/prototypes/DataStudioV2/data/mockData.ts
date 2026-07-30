@@ -2067,7 +2067,7 @@ export const WAREHOUSE_TREE: WarehouseConnection[] = [
 
 // ─── Connections ─────────────────────────────────────────────────────────────
 
-export type ConnectionType   = 'snowflake' | 'bigquery' | 'databricks' | 'redshift' | 'postgres' | 'dbt';
+export type ConnectionType   = 'snowflake' | 'bigquery' | 'databricks' | 'redshift' | 'postgres' | 'dbt' | 'salesforce';
 export type ConnectionStatus = 'connected' | 'auth-needed' | 'error';
 
 export interface Connection {
@@ -2084,7 +2084,22 @@ export const CONNECTIONS: Connection[] = [
   { id: 'snow-prod', name: 'snowflake-prod',    type: 'snowflake', status: 'connected',   lastSync: '3h ago', ownerEmail: 'vivek@example.com', tables: 184 },
   { id: 'bq-mkt',   name: 'bigquery-marketing', type: 'bigquery',  status: 'connected',   lastSync: '1d ago', ownerEmail: 'vivek@example.com', tables: 42  },
   { id: 'snow-fin', name: 'snowflake-finance',   type: 'snowflake', status: 'auth-needed', lastSync: 'Never',  tables: 0   },
+  // Renewal-risk demo (run-of-show S2): the agent lists what she already has,
+  // and the sources it names have to exist. Databricks carries product usage;
+  // Postgres is the billing replica. Salesforce is in the script too but
+  // ConnectionType has no such variant, so it's left out rather than faked.
+  { id: 'dbx-usage', name: 'databricks-usage',   type: 'databricks', status: 'connected', lastSync: '2h ago', ownerEmail: 'vivek@example.com', tables: 31 },
+  { id: 'pg-bill',   name: 'postgres-billing',   type: 'postgres',   status: 'connected', lastSync: '6h ago', ownerEmail: 'vivek@example.com', tables: 12 },
+  { id: 'sfdc-crm',  name: 'salesforce-crm',     type: 'salesforce', status: 'connected', lastSync: '4h ago', ownerEmail: 'vivek@example.com', tables: 26 },
 ];
+
+/**
+ * The four connections the run-of-show names at S2 — "the connections she
+ * already has: Snowflake, Databricks, Salesforce, Postgres". Listed explicitly
+ * rather than filtering CONNECTIONS by status, so the demo shows exactly these
+ * four and stays stable if other connections are added for other flows.
+ */
+export const DEMO_CONNECTION_IDS = ['snow-prod', 'dbx-usage', 'sfdc-crm', 'pg-bill'] as const;
 
 // ─── Workspace Monitoring Mock Data ──────────────────────────────────────────
 
