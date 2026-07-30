@@ -4372,10 +4372,11 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
     // read rather than guessing, and offers the ones she already has.
     if (/renew|churn|at risk|at-risk/.test(lower) && !/snowflake|databricks/.test(lower)) {
       await runCanvasSteps([{ label: 'Reading your question', detail: text.length > 90 ? `${text.slice(0, 90)}…` : text }], 900);
+      // Short chip label — a suggestion chip is a shortcut, not a transcript.
+      // Typing the script's full sentence hits the same branch, so the presenter
+      // can either click this or type it out.
       say('That spans a few systems. Which of your connections should I look at?', {
-        suggestions: [
-          'Contracts and ARR from Snowflake, product usage from Databricks, and I\'ll upload the CS team\'s QBR sentiment sheet',
-        ],
+        suggestions: ['Snowflake, Databricks, and a QBR sheet'],
       });
       setProcessing(false);
       return;
