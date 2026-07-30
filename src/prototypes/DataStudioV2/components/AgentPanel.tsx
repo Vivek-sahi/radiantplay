@@ -12,7 +12,7 @@ import PlanPanelV3 from './PlanPanelV3';
 import { FlowOption } from './Shell';
 import { Icon } from '../../../components/icons';
 import { Button } from '../../../components/Button';
-import { TableSuggestionCard, JoinSuggestionCard, type TableProposal, type JoinProposal } from './agentic';
+import { TableSuggestionCard, JoinSuggestionCard, AgentForm, type TableProposal, type JoinProposal, type AgentFormField } from './agentic';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -124,6 +124,18 @@ export interface AgentMessage {
   /** Agent's proposed joins (S7). Accepting draws the edges on the canvas. */
   joinProposals?: JoinProposal[];
   joinProposalsCommitted?: boolean;
+  /**
+   * Inline form the agent asks for (S8 credentials, S9 scoping). Pre-filled —
+   * nobody types a credential on stage.
+   */
+  agentForm?: {
+    fields: AgentFormField[];
+    submitLabel: string;
+    /** Which beat, so submit knows what to do next. */
+    formKey: 'jira_credentials' | 'jira_scope';
+    submittedNote?: string;
+  };
+  agentFormSubmitted?: boolean;
   // spotter-answer fields
   answerTitle?: string;
   answerDesc?: string;
@@ -2578,6 +2590,8 @@ interface AgentPanelProps {
     joinType: 'inner' | 'full_outer' | 'left_outer' | 'right_outer';
     cardinality: 'many_to_one' | 'one_to_many' | 'one_to_one';
   }>) => void;
+  /** Lands an agent-written Python source on the canvas (S10). */
+  onAgentAddPythonSource?: (tableName: string, code: string, openForReview: boolean) => void;
 }
 
 // ── Canvas agent (isCanvasAgent) — canned profile data + genUI cards ───────────
@@ -2746,7 +2760,7 @@ const JoinRecCard: React.FC<{ rec: NonNullable<AgentMessage['joinRec']>; onAdd: 
   );
 };
 
-const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, setMessages, initialPrompt, onBuildComplete, externalMessage, onExternalMessageHandled, externalMessageAttachment, injectInput, onInjectInputHandled, width = 340, selectedColumns, onColumnRemove, isFromScratch, isMultiSource, isNotebookFlow, isMrdFlow, isDbtReview, onNotebookUpdate, onOpenPlan, onOpenQualityPlan, onBuildStart, onNavigateToWorkspace, onStartBuild, fullPage = false, onBack, initialFlow, initialMessage, onInsightResolved, onOpenObject, onOpenMsItem, flowOption = 'option3', rootBackground, isCanvasAgent, poc, canvasTableCount, onAgentAddTables, onAgentAddJoins }) => {
+const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, setMessages, initialPrompt, onBuildComplete, externalMessage, onExternalMessageHandled, externalMessageAttachment, injectInput, onInjectInputHandled, width = 340, selectedColumns, onColumnRemove, isFromScratch, isMultiSource, isNotebookFlow, isMrdFlow, isDbtReview, onNotebookUpdate, onOpenPlan, onOpenQualityPlan, onBuildStart, onNavigateToWorkspace, onStartBuild, fullPage = false, onBack, initialFlow, initialMessage, onInsightResolved, onOpenObject, onOpenMsItem, flowOption = 'option3', rootBackground, isCanvasAgent, poc, canvasTableCount, onAgentAddTables, onAgentAddJoins, onAgentAddPythonSource }) => {
   const [pendingAction, setPending]     = useState<PendingAction | null>(null);
   const [isProcessing, setProcessing]   = useState(false);
   const [planModalOpen, setPlanModalOpen] = useState(false);
@@ -4392,6 +4406,63 @@ ORDER BY row_count DESC
       return;
     }
 
+    // S10/S11 — Review opens the script in the properties panel so the filter
+    // can be edited and re-run; Run lands it without opening.
+    if (text === '__jira_review__' || text === '__jira_run__') {
+      const review = text === '__jira_review__';
+      const script = `import requests, pandas as pd
+from requests.auth import HTTPBasicAuth
+
+SITE  = "https://acme.atlassian.net"
+JQL   = "project = CS AND issuetype = Escalation AND created >= -365d"
+
+resp = requests.get(
+    f"{SITE}/rest/api/3/search",
+    params={"jql": JQL, "maxResults": 500},
+    auth=HTTPBasicAuth(USER, API_TOKEN),   # Fixed: read from the secret store
+)
+df = pd.json_normalize(resp.json()["issues"])
+df = df[["issue_key", "account_id", "summary", "status", "priority", "assignee", "created"]]
+`;
+      if (!review) {
+        await runCanvasSteps([
+          { label: 'Running the fetch', detail: 'Jira Cloud REST API v3' },
+          { label: 'Normalising the response', detail: '10 escalations · 7 columns' },
+        ], 950);
+      }
+      onAgentAddPythonSource?.('jira_cs_tickets', script, review);
+      say(review
+        ? 'Opened it in the panel. It pulls every escalation from the last 12 months — narrow the JQL or the dataframe if you only care about some of them, then re-run.'
+        : 'Done — 10 escalations on the canvas, joined on `account_id`.',
+        { suggestions: review ? [] : ['Check AI readiness'] });
+      setProcessing(false);
+      return;
+    }
+
+    // S8 — a source with no connection. The agent asks for what it needs to
+    // reach Jira, pre-filled: nobody types a credential on stage.
+    if (/jira/i.test(text) && /(escalation|ticket|support|pull|bring|no connection|directly)/i.test(lower)) {
+      await runCanvasSteps([
+        { label: 'Checking your connections for Jira', detail: 'no Jira connection configured' },
+        { label: 'Falling back to a direct pull', detail: 'Jira Cloud REST API v3' },
+      ], 900);
+      say('There\'s no Jira connection, so I\'ll pull it directly. I need three things to reach your instance.', {
+        agentForm: {
+          formKey: 'jira_credentials',
+          submitLabel: 'Connect',
+          submittedNote: 'Connected to acme.atlassian.net',
+          fields: [
+            { key: 'site', label: 'Jira site URL', value: 'https://acme.atlassian.net' },
+            { key: 'user', label: 'Username', value: 'maya.chen@acme.com' },
+            { key: 'token', label: 'API token', value: 'ATATT3xFfGF0T9kQvNc8210b', type: 'secret',
+              hint: 'Stored in the workspace secret store, not in the script.' },
+          ],
+        },
+      });
+      setProcessing(false);
+      return;
+    }
+
     // B1 — fetch named tables: user named them, so no gate (instruction, not decision)
     const KNOWN_TABLES = ['dim_accounts', 'support_cases', 'call_metrics', 'customer_found_defects', 'pendo_nps_enriched', 'csm_account_mapping', 'orders', 'customer_regions'];
     const wanted = KNOWN_TABLES.filter(t => lower.includes(t) && !canvas.tables.includes(t));
@@ -5397,6 +5468,50 @@ ORDER BY row_count DESC
                       id: `cv-joins-${Date.now()}`, type: 'response',
                       content: 'Everything keys off `account_id`, so I can join all five to **accounts**. Two are worth a look before you commit — **feature_adoption** has a row per feature, so it will multiply totals unless it\'s aggregated first.',
                       joinProposals: DEMO_JOINS,
+                    }]);
+                  }
+                }}
+                onSubmitAgentForm={async (msgId, formKey, values) => {
+                  setMessages(prev => prev.map(m =>
+                    m.id === msgId ? { ...m, agentFormSubmitted: true } : m
+                  ));
+
+                  // S9 — reached it; now scope it. Agent proposes defaults.
+                  if (formKey === 'jira_credentials') {
+                    await runCanvasSteps([
+                      { label: 'Authenticating', detail: String(values.site ?? '') },
+                      { label: 'Reading available projects and fields', detail: '4 projects · 38 fields' },
+                    ], 900);
+                    setMessages(prev => [...prev, {
+                      id: `cv-jscope-${Date.now()}`, type: 'response',
+                      content: 'In. Now what to bring back — these are sensible defaults for a churn question.',
+                      agentForm: {
+                        formKey: 'jira_scope',
+                        submitLabel: 'Fetch',
+                        submittedNote: 'Scope confirmed — CS project, escalations, last 12 months',
+                        fields: [
+                          { key: 'project', label: 'Project key', value: 'CS', type: 'select', options: ['CS', 'ENG', 'OPS', 'SEC'] },
+                          { key: 'types', label: 'Issue types', value: 'Escalation', type: 'select', options: ['Escalation', 'Bug', 'Incident', 'All types'] },
+                          { key: 'range', label: 'Date range', value: 'Last 12 months', type: 'select', options: ['Last 90 days', 'Last 6 months', 'Last 12 months', 'All time'] },
+                          { key: 'fields', label: 'Fields', value: 'issue_key, account_id, summary, status, priority, assignee, created',
+                            hint: 'account_id is what lets this join to your accounts table.' },
+                        ],
+                      },
+                    }]);
+                  }
+
+                  // S10 — writes the script and offers Review or Run.
+                  if (formKey === 'jira_scope') {
+                    await runCanvasSteps([
+                      { label: 'Writing the fetch script', detail: 'Python 3.12 · requests' },
+                    ], 1100);
+                    setMessages(prev => [...prev, {
+                      id: `cv-jscript-${Date.now()}`, type: 'response',
+                      content: 'I\'ve written a script to pull this. Review it before it runs, or run it as-is.',
+                      interactiveChips: [
+                        { label: 'Review script', value: '__jira_review__' },
+                        { label: 'Run', value: '__jira_run__' },
+                      ],
                     }]);
                   }
                 }}
@@ -6817,7 +6932,9 @@ const MessageBubble: React.FC<{
   onAcceptTables?: (msgId: string, tables: TableProposal[]) => void;
   /** User accepted the agent's join proposal — draw the edges. */
   onAcceptJoins?: (msgId: string, joins: JoinProposal[]) => void;
-}> = ({ msg, showAvatar, onToggleSteps, onToggleCollapsible, onSuggestion, onConfirm, onOpenQualityPlan, onChipClick, onGenUIAction, onComplete, publishedVersion, onOpenObject, onApiKeySubmit, onFileUpload, onArtifactClick, onAcceptTables, onAcceptJoins }) => {
+  /** User submitted an inline agent form (S8/S9). */
+  onSubmitAgentForm?: (msgId: string, formKey: string, values: Record<string, string>) => void;
+}> = ({ msg, showAvatar, onToggleSteps, onToggleCollapsible, onSuggestion, onConfirm, onOpenQualityPlan, onChipClick, onGenUIAction, onComplete, publishedVersion, onOpenObject, onApiKeySubmit, onFileUpload, onArtifactClick, onAcceptTables, onAcceptJoins, onSubmitAgentForm }) => {
   const [chipUsed, setChipUsed] = React.useState(false);
   const [apiKeyValue, setApiKeyValue] = React.useState('');
   const [isDragOver, setIsDragOver] = React.useState(false);
@@ -7079,6 +7196,16 @@ const MessageBubble: React.FC<{
                 onAdd={accepted => onAcceptTables?.(msg.id, accepted)}
               />
             </div>
+          )}
+          {/* Inline agent form — S8 credentials, S9 scoping. */}
+          {msg.agentForm && (
+            <AgentForm
+              fields={msg.agentForm.fields}
+              submitLabel={msg.agentForm.submitLabel}
+              isReadOnly={msg.agentFormSubmitted}
+              submittedNote={msg.agentForm.submittedNote}
+              onSubmit={values => onSubmitAgentForm?.(msg.id, msg.agentForm!.formKey, values)}
+            />
           )}
           {/* Agent's proposed joins (S7) — accepting draws edges on the canvas. */}
           {msg.joinProposals && msg.joinProposals.length > 0 && (

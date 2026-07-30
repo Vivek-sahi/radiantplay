@@ -32,5 +32,7 @@ export { TableSuggestionCard } from './TableSuggestionCard';
 export { JoinSuggestionCard } from './JoinSuggestionCard';
 export type { JoinProposal } from './JoinSuggestionCard';
 export { JoinDiagram } from './JoinDiagram';
+export { AgentForm } from './AgentForm';
+export type { AgentFormField } from './AgentForm';
 export type { Cardinality } from './JoinDiagram';
 export type { TableProposal, TableSuggestionCardProps } from './TableSuggestionCard';

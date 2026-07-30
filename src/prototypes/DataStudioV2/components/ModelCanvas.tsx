@@ -2243,6 +2243,35 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
   }, [groups, addToCanvas]);
 
   /**
+   * Agent-written Python source (run-of-show S10).
+   *
+   * Lands a card whose source step carries the script the agent wrote, so the
+   * user can open it in the properties panel, edit the filter and re-run —
+   * which is the point of S11. Selects it and opens the panel so Review lands
+   * the user directly in the code.
+   */
+  const agentAddPythonSource = useCallback((tableName: string, code: string, openForReview: boolean) => {
+    if (!TABLE_COLS[tableName]) return;
+    const i = nodeCountRef.current % NODE_POSITIONS.length;
+    nodeCountRef.current++;
+    const pos = NODE_POSITIONS[i];
+    const id = `ng_${nodeCountRef.current}`;
+    setGroups(prev => [...prev, {
+      id, tableName, sourceKind: 'warehouse' as const,
+      steps: [{
+        type: 'python' as OpType, label: tableName,
+        desc: 'Fetched via script', cols: TABLE_COLS[tableName], pythonCode: code,
+      }],
+      x: pos.x + (nodeCountRef.current > NODE_POSITIONS.length ? Math.floor(nodeCountRef.current / NODE_POSITIONS.length) * 30 : 0),
+      y: pos.y, expanded: false, activeStep: 0,
+    }]);
+    setSelectedIds(new Set([id]));
+    setPreviewOpen(true);
+    triggerPreviewLoad();
+    if (openForReview) setEditingStepKey(stepKey(id, 0));
+  }, []);
+
+  /**
    * Agent → canvas join commit (run-of-show S7).
    *
    * Mirrors agentAddTables: appends, skips anything already joined, and drops
@@ -3130,6 +3159,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
           poc={poc}
           onAgentAddTables={agentAddTables}
           onAgentAddJoins={agentAddJoins}
+          onAgentAddPythonSource={agentAddPythonSource}
           canvasTableCount={groups.filter(g => g.steps[0]?.type === 'source').length}
           width={agentWidth}
           rootBackground="transparent"
