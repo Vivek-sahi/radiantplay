@@ -1,0 +1,119 @@
+/* ── Card chrome ── */
+.card {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  background: var(--rd-sys-color-background-base);
+  border-radius: 6px;
+  box-shadow: var(--shadow-surface);
+  overflow: hidden;
+}
+
+/* ── Inner content area (steps) ── */
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  padding: var(--spacing-3);
+}
+
+.goal {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-light);
+  color: var(--rd-sys-color-content-secondary);
+  line-height: var(--line-height-sm);
+  font-family: var(--font-family-primary);
+}
+
+.goalLabel {
+  font-weight: var(--font-weight-semibold);
+  color: var(--rd-sys-color-content-primary);
+}
+
+.divider {
+  height: 1px;
+  background: var(--rd-sys-color-border-divider);
+  flex-shrink: 0;
+}
+
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+.step {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-3);
+}
+
+/* 18×18 icon slot — aligned with cap-height of body text */
+.iconSlot {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1px;
+}
+
+/* Spin animation for the arc spinner */
+@keyframes planStepSpin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.spinner {
+  animation: planStepSpin 1s linear infinite;
+  transform-origin: 9px 9px;
+}
+
+.info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  flex: 1;
+  min-width: 0;
+}
+
+/* Base label */
+.label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-md);
+  font-family: var(--font-family-primary);
+  transition: color var(--duration-normal) var(--easing-standard);
+}
+
+/* Done — primary */
+.done {
+  color: var(--rd-sys-color-content-primary);
+}
+
+/* Active — primary (same as done) */
+.active {
+  color: var(--rd-sys-color-content-primary);
+}
+
+/* Pending — secondary */
+.pending {
+  color: var(--rd-sys-color-content-secondary);
+}
+
+.caption {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-regular);
+  color: var(--rd-sys-color-content-secondary);
+  line-height: var(--line-height-sm);
+  font-family: var(--font-family-primary);
+  white-space: pre-line;
+}
+
+/* ── Build CTA footer ── */
+.ctaFooter {
+  border-top: 1px solid var(--rd-sys-color-border-divider);
+  padding: var(--spacing-3) var(--spacing-4);
+}
