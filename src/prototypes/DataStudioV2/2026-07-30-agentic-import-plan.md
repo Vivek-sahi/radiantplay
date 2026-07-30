@@ -2,9 +2,29 @@
 
 _Source: `surajboro-ts/spotter-readiness-vision`, `src/prototypes/_agentic` (29 files, ~2,000 lines) and `src/prototypes/Calibration/data.ts`._
 
-**Governing rule:** our canvas is the newer one, his agent panel is. Take his cards and data, keep our canvas, rebuild anything that reaches into a canvas.
+## The division of labour
 
-**The architecture in one line:** the agent works in the panel; **the canvas visualises the result.** Every agent action ends by committing objects onto our canvas.
+Three layers, three different sources. Nothing crosses.
+
+| Layer | Whose | What changes |
+|---|---|---|
+| **Chat — user talks, agent proposes** | **His patterns** | Import Tier 1 grammar + the proposal interaction |
+| **Canvas — how it's represented** | **Ours, unchanged** | Nothing. Our cards already carry transformations |
+| **Data — what's on screen** | **Ours, re-pointed** | `mockData.ts` → churn scenario |
+
+**Nothing of his renders on the canvas.** His components live entirely in the agent thread — including `JoinDiagram`, which is a chat-side picture of a proposed join, not a canvas element. The moment the user accepts, control passes to our canvas and our `CanvasGroup` takes over.
+
+**The seam is one function call:**
+
+```
+[his chat cards]  →  onAdd(suggType, items)  →  agentAddTables / agentAddJoins  →  [our canvas]
+```
+
+That's the whole integration. Everything left of the arrow is imported; everything right of it already exists and stays as it is.
+
+**Consequence worth noting:** we are *not* modifying canvas rendering — only adding append-semantics entry points. That keeps the blast radius off the surface we most want to protect, and off most of the unreviewed regions from Komal's merge.
+
+**The one hard prerequisite:** the agent can only propose tables that exist in `TABLE_COLS`. Mock data is genuinely step zero.
 
 ---
 
