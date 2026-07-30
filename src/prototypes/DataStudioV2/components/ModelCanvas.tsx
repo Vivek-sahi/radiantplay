@@ -5,6 +5,7 @@ import { Button } from '../../../components/Button';
 import { Icon } from '../../../components/icons';
 import { BrandMark } from '../../../components/BrandMark';
 import AgentPanel, { AgentMessage } from './AgentPanel';
+import { PILLARS, READINESS_ISSUES, issuesForPillar } from '../data/readiness';
 import { SpreadsheetGrid, SpreadsheetSkeleton, SpreadsheetColumnMenu, DataSheetToolbar } from './Spreadsheet';
 import { AnchoredMenu } from './AnchoredMenu';
 import TestView from './TestView';
@@ -1977,14 +1978,18 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
       content: '',
       stepsCollapsed: false,
       allStepsVisible: true,
-      steps: AIR_ITEMS.map(item => ({
-        label: `Analyzing ${item.name.toLowerCase()}`,
+      // Three layers checking in sequence (S15) — each carries its own check
+      // count and cost, so the heavy warehouse scan reads as heavier than the
+      // instant metadata pass rather than all steps looking alike.
+      steps: PILLARS.map(p => ({
+        label: `${p.name} — ${p.tagline.toLowerCase()}`,
+        detail: `${p.checkCount} checks · ${p.costLabel}`,
         status: 'pending' as const,
       })),
     }]);
 
     // Animate each step: pending → running → done
-    AIR_ITEMS.forEach((_, idx) => {
+    PILLARS.forEach((_, idx) => {
       setTimeout(() => {
         setAgentMessages(prev => prev.map(m =>
           m.id !== workingId || !m.steps ? m : {
@@ -2004,13 +2009,19 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
     });
 
     // After all steps complete: collapse steps, transition dropdown, add diagnostics card
-    const totalMs = AIR_ITEMS.length * 320 + 450;
+    const totalMs = PILLARS.length * 320 + 450;
     setTimeout(() => {
       setAirDropView('results');
-      const failCount = AIR_ITEMS.filter(it => it.sev !== 'good').length;
-      const summaryText = failCount === 0
-        ? 'All 5 checks passed — this model is AI-ready.'
-        : `${failCount} of ${AIR_ITEMS.length} checks need attention before this model is ready for Spotter.`;
+      const findings = READINESS_ISSUES.filter(it => it.sev !== 'good');
+      const highCount = findings.filter(f => f.severity === 'high').length;
+      const pillarBreakdown = PILLARS
+        .map(p => ({ p, n: issuesForPillar(p.id).filter(i => i.sev !== 'good').length }))
+        .filter(x => x.n > 0)
+        .map(x => `${x.n} ${x.p.name.toLowerCase()}`)
+        .join(', ');
+      const summaryText = findings.length === 0
+        ? 'All checks passed — this model is ready for Spotter.'
+        : `${findings.length} findings — ${pillarBreakdown}. ${highCount} would cause wrong answers, not just weaker ones.`;
       setAgentMessages(prev => prev.map(m =>
         m.id !== workingId ? m : { ...m, stepsCollapsed: true }
       ));
@@ -2019,8 +2030,11 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
         type: 'response' as const,
         content: summaryText,
         genUI: 'air_readiness',
-        genUIResult: JSON.stringify(AIR_ITEMS.map(item => ({
-          id: item.id, name: item.name, sev: item.sev, detail: item.detail,
+        // `name` carries the instance-level title ("Jira tickets fan out against
+        // accounts"), not the category — S16 wants named findings, and the card
+        // already renders name + detail, so no card change is needed.
+        genUIResult: JSON.stringify(READINESS_ISSUES.map(item => ({
+          id: item.id, name: item.title, sev: item.sev, detail: item.detail,
         }))),
       }]);
     }, totalMs);
