@@ -4431,10 +4431,21 @@ df = df[["issue_key", "account_id", "summary", "status", "priority", "assignee",
         ], 950);
       }
       onAgentAddPythonSource?.('jira_cs_tickets', script, review);
+      // S12 — "lands on the canvas, joined". The join has to exist for real:
+      // the readiness scan later reports fan-out on it, and a finding about a
+      // join that isn't drawn is the kind of thing an audience notices.
+      // Deferred a beat so the card is in `groups` before the edge resolves.
+      window.setTimeout(() => {
+        onAgentAddJoins?.([{
+          table1: 'accounts', table2: 'jira_cs_tickets',
+          col1: 'account_id', col2: 'account_id',
+          joinType: 'left_outer', cardinality: 'one_to_many',
+        }]);
+      }, 400);
       say(review
-        ? 'Opened it in the panel. It pulls every escalation from the last 12 months — narrow the JQL or the dataframe if you only care about some of them, then re-run.'
-        : 'Done — 10 escalations on the canvas, joined on `account_id`.',
-        { suggestions: review ? [] : ['Check AI readiness'] });
+        ? 'Opened it in the panel. It pulls every escalation from the last 12 months — narrow the JQL or the dataframe if you only care about some of them, then re-run.\n\nI\'ve joined it to **accounts** on `account_id`. Worth knowing: several accounts have more than one open ticket, so anything you total across this join will inflate unless it\'s aggregated first.'
+        : 'Done — 10 escalations on the canvas, joined to **accounts** on `account_id`.',
+        { suggestions: ['Check AI readiness'] });
       setProcessing(false);
       return;
     }
