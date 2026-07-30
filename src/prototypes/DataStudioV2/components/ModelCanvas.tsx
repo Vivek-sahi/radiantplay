@@ -131,7 +131,45 @@ function panelHeaderIcon(type: string, color: string) {
 // strings, keywords and numbers in a single pass so tokens never nest wrongly.
 const escapeHtml = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const CODE_COLORS = { comment: '#777E8B', string: '#C2410C', keyword: '#7C3AED', number: '#0E7490' };
-const PY_RE = /(#[^\n]*)|("""[\s\S]*?"""|'''[\s\S]*?'''|(?:[frbu]{0,2})"(?:\\.|[^"\\\n])*"|(?:[frbu]{0,2})'(?:\\.|[^'\\\n])*')|\b(import|from|as|def|class|return|if|elif|else|for|while|in|not|and|or|is|None|True|False|with|try|except|finally|raise|lambda|yield|global|nonlocal|pass|break|continue|async|await|del|assert)\b|\b(\d+\.?\d*)\b/g;
+/**
+ * Colour theming for the spreadsheet formula bar.
+ *
+ * Formulas here are written in business terms, not code —
+ *   Renewal Risk = (Usage Decline 90d × 0.4) + (Open P1 Escalations × 0.35)
+ * — so the tokens worth colouring are different from Python/SQL: the column
+ * being defined, the fields it reads, the weights, and the operators.
+ *
+ * Rendered into a <pre> sitting behind a transparent-text input, the same
+ * layering CodeEditor uses.
+ */
+const FORMULA_COLORS = {
+  target:   '#7C3AED', // the column being defined, left of '='
+  field:    '#2770EF', // referenced fields
+  number:   '#0E7490',
+  operator: '#777E8B',
+  paren:    '#A5ACB9',
+};
+
+function highlightFormula(text: string): string {
+  const eq = text.indexOf('=');
+  const head = eq >= 0 ? text.slice(0, eq) : '';
+  const body = eq >= 0 ? text.slice(eq) : text;
+
+  const paint = (s: string) => escapeHtml(s)
+    // numbers first, so digits inside field names aren't split off
+    .replace(/\b(\d+(?:\.\d+)?)\b(?![\w\s]*[a-zA-Z])/g, `<span style="color:${FORMULA_COLORS.number}">$1</span>`)
+    .replace(/([×*+\-/=])/g, `<span style="color:${FORMULA_COLORS.operator}">$1</span>`)
+    .replace(/([()])/g, `<span style="color:${FORMULA_COLORS.paren}">$1</span>`)
+    // field references: word runs that aren't already inside a span
+    .replace(/(?<!<[^>]*)\b([A-Za-z][A-Za-z0-9_]*(?:\s+[A-Za-z0-9_]+)*)\b(?![^<]*<\/span>)/g,
+      `<span style="color:${FORMULA_COLORS.field}">$1</span>`);
+
+  return (head
+    ? `<span style="color:${FORMULA_COLORS.target};font-weight:600">${escapeHtml(head)}</span>`
+    : '') + paint(body);
+}
+
+const PY_RE =/(#[^\n]*)|("""[\s\S]*?"""|'''[\s\S]*?'''|(?:[frbu]{0,2})"(?:\\.|[^"\\\n])*"|(?:[frbu]{0,2})'(?:\\.|[^'\\\n])*')|\b(import|from|as|def|class|return|if|elif|else|for|while|in|not|and|or|is|None|True|False|with|try|except|finally|raise|lambda|yield|global|nonlocal|pass|break|continue|async|await|del|assert)\b|\b(\d+\.?\d*)\b/g;
 const SQL_RE = /(--[^\n]*)|('(?:\\.|[^'\\\n])*')|\b(SELECT|FROM|WHERE|JOIN|LEFT|RIGHT|INNER|OUTER|FULL|CROSS|ON|GROUP|BY|ORDER|HAVING|LIMIT|OFFSET|AS|AND|OR|NOT|NULL|IS|IN|LIKE|BETWEEN|DISTINCT|COUNT|SUM|AVG|MIN|MAX|CASE|WHEN|THEN|ELSE|END|WITH|UNION|ALL|INSERT|INTO|VALUES|UPDATE|SET|DELETE|CREATE|TABLE|VIEW|COALESCE|CAST|OVER|PARTITION|DESC|ASC)\b|\b(\d+\.?\d*)\b/gi;
 const wrapTok = (_m: string, c?: string, s?: string, kw?: string, num?: string) =>
   c ? `<span style="color:${CODE_COLORS.comment}">${c}</span>`
@@ -1678,6 +1716,27 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
   // up by row index into mergedRows) so it's correct regardless of the grid's own
   // internal sort order or which columns are currently hidden.
   const [dataSelectedCell, setDataSelectedCell] = useState<{ col: string; value: string } | null>(null);
+
+  /**
+   * Formula bar (run-of-show S14).
+   *
+   * Maya defines a weighted metric in the bar — typed or pasted — and on commit
+   * the column appears in the sheet: skeleton first while it "computes", then
+   * values fill down.
+   *
+   * `formulaDraft` is what's in the bar. Null means the bar is showing the
+   * selected cell's value instead, which is its resting state.
+   */
+  const [formulaDraft, setFormulaDraft] = useState<string | null>(null);
+  const [formulaFocused, setFormulaFocused] = useState(false);
+  /** Columns added from the bar, in the order added — appended to the sheet. */
+  const [formulaCols, setFormulaCols] = useState<Array<{ name: string; expr: string }>>([]);
+  /** Values per formula column. Absent while the column is still computing. */
+  const [formulaValues, setFormulaValues] = useState<Record<string, (string | number | null)[]>>({});
+  /** The column currently showing its loading skeleton. */
+  const [formulaComputing, setFormulaComputing] = useState<string | null>(null);
+  /** Surfaced under the bar when a formula can't be parsed or a term didn't match. */
+  const [formulaError, setFormulaError] = useState<string | null>(null);
   // Toolbar Filter/Formula on the merged Data sheet need a target table — this holds
   // the pending action while a small "which table?" picker is shown.
   const [dataActionPicker, setDataActionPicker] = useState<'filter' | 'formula' | null>(null);
@@ -2241,6 +2300,81 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
       .filter(name => Boolean(TABLE_COLS[name]))
       .forEach(name => addToCanvas(name, 'warehouse'));
   }, [groups, addToCanvas]);
+
+  /**
+   * Commit a formula typed or pasted into the formula bar (S14).
+   *
+   * Expects `Name = expression`. The column lands immediately with a skeleton,
+   * then values fill in — computing rather than faking them where the terms
+   * resolve to real columns.
+   *
+   * Term matching is deliberately forgiving, the same way the SQL block's
+   * @-references are: the script writes business names ("Usage Decline 90d")
+   * that don't match column names ("usage_delta_90d") character for character.
+   * Anything unresolved contributes 0 and is reported back, rather than the
+   * whole formula silently producing nonsense.
+   */
+  const commitFormula = useCallback((raw: string, cols: [string, string][], rows: Row[]) => {
+    const eq = raw.indexOf('=');
+    if (eq < 0) return { ok: false as const, reason: 'Needs a name — try "Renewal Risk = …"' };
+    const name = raw.slice(0, eq).trim();
+    const expr = raw.slice(eq + 1).trim();
+    if (!name || !expr) return { ok: false as const, reason: 'Needs both a name and an expression' };
+
+    const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const toks = (s: string) => s.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+    const entries = cols.map((c, i) => ({ i, n: norm(c[0]), t: toks(c[0]) }));
+
+    const resolve = (term: string): number | null => {
+      const n = norm(term);
+      const exact = entries.find(e => e.n === n);
+      if (exact) return exact.i;
+      const sub = entries.find(e => e.n.includes(n) || n.includes(e.n));
+      if (sub) return sub.i;
+      // Token overlap. Substring matching isn't enough: the script writes
+      // "Usage Decline 90d" for usage_delta_90d — no shared substring, but two
+      // of three tokens match. Threshold is low enough for "QBR Sentiment Drop"
+      // → sentiment_delta and high enough that unrelated terms stay unresolved.
+      const tt = toks(term);
+      let best: number | null = null;
+      let bestScore = 0;
+      for (const e of entries) {
+        const shared = e.t.filter(x => tt.includes(x)).length;
+        if (!shared) continue;
+        const score = shared / Math.max(e.t.length, tt.length);
+        if (score > bestScore) { bestScore = score; best = e.i; }
+      }
+      return bestScore >= 0.34 ? best : null;
+    };
+
+    // Replace each non-numeric term with the row's value, then evaluate the
+    // arithmetic. × is the script's multiplication sign.
+    const unresolved = new Set<string>();
+    const values = rows.map(row => {
+      const substituted = expr.replace(/[A-Za-z][A-Za-z0-9_]*(?:\s+[A-Za-z0-9_]+)*/g, term => {
+        const i = resolve(term);
+        if (i === null) { unresolved.add(term.trim()); return '0'; }
+        const v = Number(row[i]);
+        return Number.isFinite(v) ? String(v) : '0';
+      }).replace(/×/g, '*');
+      try {
+        // eslint-disable-next-line no-new-func
+        const out = Function(`"use strict";return (${substituted})`)();
+        return Number.isFinite(out) ? Math.round(out * 100) / 100 : null;
+      } catch { return null; }
+    });
+
+    setFormulaCols(prev => prev.some(f => f.name === name) ? prev : [...prev, { name, expr }]);
+    setFormulaComputing(name);
+    setFormulaValues(prev => { const next = { ...prev }; delete next[name]; return next; });
+    // Skeleton first, then the values land.
+    window.setTimeout(() => {
+      setFormulaValues(prev => ({ ...prev, [name]: values }));
+      setFormulaComputing(cur => (cur === name ? null : cur));
+    }, 1100);
+
+    return { ok: true as const, name, unresolved: [...unresolved] };
+  }, []);
 
   /**
    * Agent-written Python source (run-of-show S10).
@@ -6483,13 +6617,65 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
           <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 20, height: 20, color: '#8B96A5', flexShrink: 0 }}>
             <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M4 13V6a2 2 0 0 1 2-2h1" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><path d="M2.5 8.5H7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><path d="M9 8l4 5M13 8l-4 5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>
           </span>
-          <input
-            value={dataSelectedCell?.value ?? ''}
-            readOnly
-            placeholder="Enter formula or value"
-            style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', fontSize: 12.5, color: '#1D232F', fontFamily: ff.primary }}
-          />
+          {/* Editable + colour-themed. The highlighted <pre> sits behind a
+              transparent-text input — same layering as CodeEditor. Resting
+              state shows the selected cell; typing or pasting switches it to
+              formula mode. */}
+          {(() => {
+            const shown = formulaDraft ?? dataSelectedCell?.value ?? '';
+            const editing = formulaDraft !== null;
+            const metrics: React.CSSProperties = {
+              fontSize: 12.5, fontFamily: ff.primary, lineHeight: '20px',
+              whiteSpace: 'pre', letterSpacing: 'normal', margin: 0, padding: 0,
+            };
+            return (
+              <div style={{ position: 'relative', flex: 1, height: 20 }}>
+                <pre
+                  aria-hidden="true"
+                  style={{ ...metrics, position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', color: '#1D232F' }}
+                  dangerouslySetInnerHTML={{ __html: editing ? highlightFormula(shown) : escapeHtml(shown) }}
+                />
+                <input
+                  value={shown}
+                  placeholder="Enter formula or value"
+                  onChange={e => setFormulaDraft(e.target.value)}
+                  onFocus={() => { setFormulaFocused(true); setFormulaDraft(d => d ?? (dataSelectedCell?.value ?? '')); }}
+                  onBlur={() => setFormulaFocused(false)}
+                  onKeyDown={e => {
+                    if (e.key === 'Escape') { setFormulaDraft(null); (e.currentTarget as HTMLInputElement).blur(); return; }
+                    if (e.key !== 'Enter' || !formulaDraft?.trim()) return;
+                    e.preventDefault();
+                    const res = commitFormula(formulaDraft, mergedCols, mergedRows);
+                    if (!res.ok) { setFormulaError(res.reason); return; }
+                    setFormulaError(res.unresolved.length
+                      ? `Added ${res.name}. Couldn't match: ${res.unresolved.join(', ')} — treated as 0.`
+                      : null);
+                    setFormulaDraft(null);
+                    (e.currentTarget as HTMLInputElement).blur();
+                  }}
+                  style={{
+                    ...metrics, position: 'absolute', inset: 0, width: '100%',
+                    border: 'none', outline: 'none', background: 'transparent',
+                    // Transparent text so the highlighted layer shows through;
+                    // the caret stays visible via caret-color.
+                    color: editing ? 'transparent' : '#1D232F',
+                    caretColor: '#1D232F',
+                  }}
+                />
+              </div>
+            );
+          })()}
+          {formulaFocused && (
+            <span style={{ fontSize: 10.5, color: '#A5ACB9', flexShrink: 0, whiteSpace: 'nowrap' }}>
+              Enter to add column · Esc to cancel
+            </span>
+          )}
         </div>
+        {formulaError && (
+          <div style={{ padding: '5px 12px', borderBottom: BORDER, background: '#FFF7ED', color: '#92640A', fontSize: 11.5, fontFamily: ff.primary, flexShrink: 0 }}>
+            {formulaError}
+          </div>
+        )}
         <div
           style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}
           onClick={e => {
@@ -6506,8 +6692,11 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
             setDataSelectedCell({ col, value: (td.textContent ?? '').trim() });
           }}
         >
+          {/* Formula columns are appended to the sheet. While one is computing
+              its values are absent, so the grid renders the column empty —
+              the skeleton overlay below sits on top of it. */}
           <SpreadsheetGrid
-            tableCols={mergedCols}
+            tableCols={[...mergedCols, ...formulaCols.map(f => [f.name, 'FLOAT'] as [string, string])]}
             isInput={false}
             scrollRef={dataScrollRef}
             rows={mergedRows}
@@ -6516,8 +6705,9 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
             previewColMenu={dataColMenu}
             setPreviewColMenu={setDataColMenu}
             hiddenPreviewCols={dataHiddenCols}
-            highlightedCol={null}
-            derivedCols={{}}
+            highlightedCol={formulaCols.length ? formulaCols[formulaCols.length - 1].name : null}
+            derivedCols={formulaValues}
+            loadingCols={formulaComputing ? new Set([formulaComputing]) : undefined}
             inputFixes={{}}
             outputFixes={{}}
           />

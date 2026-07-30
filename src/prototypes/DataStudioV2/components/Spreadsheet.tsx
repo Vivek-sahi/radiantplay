@@ -25,6 +25,8 @@ export interface SpreadsheetGridProps {
   hiddenPreviewCols: Set<string>;
   highlightedCol: string | null;
   derivedCols: Record<string, (string | number | null)[]>;
+  /** Columns still computing — cells render a shimmer instead of a value. */
+  loadingCols?: Set<string>;
   inputFixes: Record<string, string>;
   outputFixes: Record<string, string>;
 }
@@ -32,12 +34,13 @@ export interface SpreadsheetGridProps {
 export function SpreadsheetGrid({
   tableCols, isInput, scrollRef, rows, outputRows, previewSort,
   previewColMenu, setPreviewColMenu, hiddenPreviewCols, highlightedCol,
-  derivedCols, inputFixes, outputFixes,
+  derivedCols, loadingCols, inputFixes, outputFixes,
 }: SpreadsheetGridProps) {
   const numericTypes = NUMERIC_TYPES;
   return (
     <div ref={scrollRef} style={{ flex: 1, overflow: 'auto' }}>
-      <style>{`@keyframes colFade { 0%{background:rgba(39,112,239,0.18)} 70%{background:rgba(39,112,239,0.10)} 100%{background:transparent} }`}</style>
+      <style>{`@keyframes colFade { 0%{background:rgba(39,112,239,0.18)} 70%{background:rgba(39,112,239,0.10)} 100%{background:transparent} }
+        @keyframes cellShimmer { 0%{background-position:-180px 0} 100%{background-position:180px 0} }`}</style>
       <table style={{ borderCollapse: 'collapse', fontSize: 11.5, tableLayout: 'auto', width: 'max-content', minWidth: '100%' }}>
         <thead>
           <tr style={{ background: '#F6F8FA', position: 'sticky', top: 0, zIndex: 2 }}>
@@ -106,6 +109,19 @@ export function SpreadsheetGrid({
                 const val = row[ci];
                 const isNum = numericTypes.includes(type);
                 const isNew = !isInput && col === highlightedCol;
+                // Column added but not computed yet — shimmer in place of a value.
+                if (loadingCols?.has(col)) {
+                  return (
+                    <td key={col} style={{ padding: '4px 12px', borderRight: BORDER, whiteSpace: 'nowrap' }}>
+                      <span style={{
+                        display: 'block', height: 9, width: `${44 + ((ri * 17) % 26)}%`, borderRadius: 3,
+                        background: 'linear-gradient(90deg,#EDF1F6 0%,#F7F9FC 50%,#EDF1F6 100%)',
+                        backgroundSize: '360px 100%',
+                        animation: 'cellShimmer 1.1s ease-in-out infinite',
+                      }} />
+                    </td>
+                  );
+                }
                 const activeFixes = isInput ? inputFixes : outputFixes;
                 // A code transform (e.g. Python sentiment) supplies values for its new column.
                 const derivedVal = derivedCols[col]?.[origIdx];
