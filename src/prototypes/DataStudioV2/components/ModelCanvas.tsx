@@ -797,6 +797,61 @@ const AIR_FIX_REVIEW: Record<string, { title: string; rows: { col: string; curre
   },
 };
 
+// POC-READINESS-PORT ↓ — proposed semantic values for the POC canvas columns (dim_accounts /
+// support_cases / call_metrics). The vision AIR_FIX_REVIEW above is keyed by different columns,
+// so the POC readiness flow's semantic preview uses this set instead (see airGetRowForCheck +
+// the __dsSemantic* bridge). Keyed by AIR check id: coldesc=description, desc=AI context, synonyms.
+const POC_SEM_REVIEW: Record<string, { col: string; current: string; proposed: string }[]> = {
+  coldesc: [
+    { col: 'account_id', current: '—', proposed: 'Unique identifier for each customer account.' },
+    { col: 'account_name', current: '—', proposed: 'Display name of the customer account.' },
+    { col: 'industry', current: '—', proposed: 'Industry vertical the account operates in.' },
+    { col: 'arr', current: '—', proposed: 'Annual recurring revenue booked for the account, in USD.' },
+    { col: 'region', current: '—', proposed: 'Sales region the account belongs to.' },
+    { col: 'account_tier', current: '—', proposed: 'Account tier — Enterprise, Mid-market, or SMB.' },
+    { col: 'renewal_date', current: '—', proposed: 'Date the account’s contract is up for renewal.' },
+    { col: 'case_id', current: '—', proposed: 'Unique identifier for each support case.' },
+    { col: 'created_date', current: '—', proposed: 'Date the support case was opened.' },
+    { col: 'priority', current: '—', proposed: 'Support case priority — Low, Medium, High, or Urgent.' },
+    { col: 'status', current: '—', proposed: 'Current state of the support case (Open, Pending, Closed).' },
+    { col: 'case_category', current: '—', proposed: 'Category the support case was filed under.' },
+    { col: 'resolution_time_hours', current: '—', proposed: 'Hours taken to resolve the support case.' },
+    { col: 'call_id', current: '—', proposed: 'Unique identifier for each sales call.' },
+    { col: 'call_date', current: '—', proposed: 'Date the sales call took place.' },
+    { col: 'duration_minutes', current: '—', proposed: 'Length of the call in minutes.' },
+    { col: 'sentiment_score', current: '—', proposed: 'Model-scored call sentiment, 0 (negative) to 1 (positive).' },
+    { col: 'deal_risk_flag', current: '—', proposed: 'Whether the deal was flagged at risk on the call.' },
+  ],
+  desc: [
+    { col: 'account_id', current: '—', proposed: 'Join key to accounts. Always present — group by it, don’t count.' },
+    { col: 'account_name', current: '—', proposed: 'Human-readable account label. Use for display, not aggregation.' },
+    { col: 'industry', current: '—', proposed: 'Primary slice for revenue and churn analysis. No nulls expected.' },
+    { col: 'arr', current: '—', proposed: 'Use SUM for total ARR. This is the recurring revenue users mean by “revenue”.' },
+    { col: 'region', current: '—', proposed: 'Geographic dimension. Five known values, no nulls.' },
+    { col: 'account_tier', current: '—', proposed: 'Segment for cohorts. Enterprise = the retention priority.' },
+    { col: 'renewal_date', current: '—', proposed: 'Time axis for renewal and churn-risk questions.' },
+    { col: 'case_id', current: '—', proposed: 'Count of cases = support volume. Do not sum.' },
+    { col: 'created_date', current: '—', proposed: 'Primary time axis for support trends.' },
+    { col: 'priority', current: '—', proposed: 'Rank Low < Medium < High < Urgent when sorting by severity.' },
+    { col: 'status', current: '—', proposed: 'Filter Open/Pending for backlog; Closed for resolved volume.' },
+    { col: 'case_category', current: '—', proposed: 'Slice support volume by topic. Null = uncategorised, not missing.' },
+    { col: 'resolution_time_hours', current: '—', proposed: 'Use AVG for mean resolution time; lower is better.' },
+    { col: 'call_id', current: '—', proposed: 'Count of calls = call volume. Do not sum.' },
+    { col: 'call_date', current: '—', proposed: 'Time axis for call-activity trends.' },
+    { col: 'duration_minutes', current: '—', proposed: 'Use AVG for typical call length; SUM for total talk time.' },
+    { col: 'sentiment_score', current: '—', proposed: 'Use AVG; below 0.4 signals a negative call. Not a currency value.' },
+    { col: 'deal_risk_flag', current: '—', proposed: 'True = deal flagged at risk. Filter to True for pipeline-risk questions.' },
+  ],
+  synonyms: [
+    { col: 'arr', current: '—', proposed: 'annual recurring revenue, recurring revenue, ARR' },
+    { col: 'account_id', current: '—', proposed: 'account, client, customer' },
+    { col: 'account_name', current: '—', proposed: 'account, customer name, client name' },
+    { col: 'industry', current: '—', proposed: 'vertical, sector' },
+    { col: 'sentiment_score', current: '—', proposed: 'call sentiment, sentiment' },
+  ],
+};
+// POC-READINESS-PORT ↑
+
 const AIR_ITEMS = [
   { id: 'desc',      name: 'Column AI context',         detail: 'Missing on 8 of 12 columns — Spotter uses this to know how to apply each field.', sev: 'miss', tag: 'Missing' },
   { id: 'synonyms',  name: 'Column synonyms',           detail: '2 of 12 columns mapped — low coverage reduces search accuracy.',      sev: 'warn', tag: 'Partial' },
@@ -890,11 +945,18 @@ const SPOTTER_TESTS = [
   { id: 'answers', title: 'Spotter answers', lead: 'Answers in practice.', rest: 'Rate actual Spotter responses.' },
 ];
 
-const SpotterReadinessPanel: React.FC<{ onRun: (id: string) => void }> = ({ onRun }) => {
+// POC-READINESS-PORT ↓ — the check id in this panel maps to the ported flow's PillarId.
+// (physical → physical, semantics → semantic, answers → ai). onStart launches the ported
+// AI-readiness flow in the agent panel for the given scope (see PocReadinessFlow / merge doc).
+const READINESS_PILLAR: Record<string, string> = { physical: 'physical', semantics: 'semantic', answers: 'ai' };
+const ALL_READINESS_SCOPE = ['physical', 'semantic', 'ai'];
+
+const SpotterReadinessPanel: React.FC<{ onStart: (scope: string[]) => void }> = ({ onStart }) => {
   const [checked, setChecked] = useState<Set<string>>(new Set());
   const toggle = (id: string) => setChecked(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const scopeFromChecks = () => (checked.size ? SPOTTER_TESTS.filter(t => checked.has(t.id)).map(t => READINESS_PILLAR[t.id]) : ALL_READINESS_SCOPE);
   return (
-    <div style={{ padding: `${sp.C}px ${sp.D}px ${sp.A}px`, fontFamily: ff.primary }}>
+    <div style={{ padding: `${sp.C}px ${sp.D}px ${sp.D}px`, fontFamily: ff.primary }}>
       <div style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'], letterSpacing: '-0.1px', padding: `${sp.A}px 0 ${sp.C}px` }}>Check for</div>
       {SPOTTER_TESTS.map((t, i) => {
         const isChecked = checked.has(t.id);
@@ -914,7 +976,7 @@ const SpotterReadinessPanel: React.FC<{ onRun: (id: string) => void }> = ({ onRu
               </div>
             </div>
             <button
-              onClick={() => onRun(t.id)}
+              onClick={() => onStart([READINESS_PILLAR[t.id]])}
               style={{ flexShrink: 0, padding: `6px ${sp.D}px`, borderRadius: RADIUS6, border: 'none', background: c['background-subtle'], color: c['content-primary'], fontSize: fs.xs, fontWeight: fw.medium, cursor: 'pointer', fontFamily: ff.primary, transition: 'background 120ms' }}
               onMouseEnter={e => (e.currentTarget.style.background = c['background-sunken'])}
               onMouseLeave={e => (e.currentTarget.style.background = c['background-subtle'])}
@@ -924,9 +986,20 @@ const SpotterReadinessPanel: React.FC<{ onRun: (id: string) => void }> = ({ onRu
           </div>
         );
       })}
+      {/* CTA — launches the full readiness flow in the agent panel */}
+      <button
+        onClick={() => onStart(scopeFromChecks())}
+        style={{ marginTop: sp.C, width: '100%', padding: '9px 12px', borderRadius: 8, border: 'none', background: c['content-brand'], color: '#fff', fontSize: fs.sm, fontWeight: fw.semibold, cursor: 'pointer', fontFamily: ff.primary, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, transition: 'opacity 120ms' }}
+        onMouseEnter={e => (e.currentTarget.style.opacity = '0.9')}
+        onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
+      >
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1l1.2 3.6H11l-3 2.3 1.1 3.5L6 8.5l-3.1 1.9 1.1-3.5-3-2.3h3.8z" fill="currentColor"/></svg>
+        {checked.size ? `Check ${checked.size} selected` : 'Check Spotter readiness'}
+      </button>
     </div>
   );
 };
+// POC-READINESS-PORT ↑
 
 // ── Tree row ──────────────────────────────────────────────────────────────────
 
@@ -1982,6 +2055,35 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
   const [airFixReview, setAirFixReview] = useState<string | null>(null);
   const [airAccepted, setAirAccepted] = useState<Record<string, Record<string, string>>>({});
   const [airIgnoredIds, setAirIgnoredIds] = useState<Set<string>>(new Set());
+  // POC-READINESS-PORT ↓ — semantic-preview bridge for the ported readiness flow (POC only).
+  // The flow's semantic step drives the bottom preview panel: switch to Model-level Semantic,
+  // grow it, overlay the POC_SEM_REVIEW proposals; accept → loading → applied (filled) values.
+  const [pocSemActive, setPocSemActive] = useState(false);
+  useEffect(() => {
+    if (variant !== 'poc') return;
+    const w = window as any;
+    w.__dsSemanticPreview__ = () => {
+      setViewMode('canvas'); setPreviewOpen(true); setPreviewScope('model'); setPreviewMode('semantic');
+      setPreviewHeight(h => Math.max(h, 460)); setPocSemActive(true); setAirFixReview('__all__');
+    };
+    w.__dsSemanticApply__ = () => {
+      setPreviewLoading(true);
+      window.setTimeout(() => {
+        setAirAccepted(prev => {
+          const next = { ...prev };
+          (['coldesc', 'desc', 'synonyms'] as const).forEach(cid => {
+            next[cid] = { ...(next[cid] || {}) };
+            (POC_SEM_REVIEW[cid] ?? []).forEach(r => { next[cid][r.col] = r.proposed; });
+          });
+          return next;
+        });
+        setAirFixReview(null); setPocSemActive(false); setPreviewLoading(false);
+      }, 1500);
+    };
+    w.__dsSemanticReject__ = () => { setAirFixReview(null); setPocSemActive(false); };
+    return () => { delete w.__dsSemanticPreview__; delete w.__dsSemanticApply__; delete w.__dsSemanticReject__; };
+  }, [variant]);
+  // POC-READINESS-PORT ↑
   const airPillRef = useRef<HTMLDivElement>(null);
   // Anchor refs for auto-positioned dropdowns (see AnchoredMenu).
   const dataModeBtnRef = useRef<HTMLButtonElement>(null);
@@ -3352,7 +3454,11 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
               <style>{`@keyframes air-fadeIn{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:translateY(0)}} @keyframes air-spin{to{transform:rotate(360deg)}}`}</style>
 
               {poc ? (
-                <SpotterReadinessPanel onRun={() => { setAirOpen(false); if (hasTable) { setAirItemStates({} as Record<AirItemId, AirItemState>); airRunScan(); } }} />
+                /* POC-READINESS-PORT ↓ — the dropdown stays; its CTA (and each Run) launches the
+                   ported AI-readiness flow in the agent panel via the __pocReadinessStart__ bridge
+                   (registered by AgentPanel). Replaces the old vision airRunScan for POC. */
+                <SpotterReadinessPanel onStart={(scope) => { setAirOpen(false); if (hasTable) (window as any).__pocReadinessStart__?.(new Set(scope)); }} />
+                /* POC-READINESS-PORT ↑ */
               ) : airDropView === 'intro' ? (
                 <>
                   <div style={{ padding: '15px 16px 13px', borderBottom: '1px solid #EAEDF2' }}>
@@ -5736,7 +5842,8 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
   const airIsAllReview = airFixReview === '__all__';
   const airCheckActive = (checkId: string) => airFixReview === checkId || airIsAllReview;
   const airGetRowForCheck = (checkId: string, col: string) =>
-    (AIR_FIX_REVIEW[checkId]?.rows ?? []).find(r => r.col === col);
+    // POC-READINESS-PORT: the readiness flow's semantic preview uses POC-column proposals.
+    (pocSemActive ? (POC_SEM_REVIEW[checkId] ?? []) : (AIR_FIX_REVIEW[checkId]?.rows ?? [])).find(r => r.col === col);
   // Maps the editable field name to the AIR check that affects it
   const FIELD_TO_CHECK: Record<string, string> = { desc: 'coldesc', aicontext: 'desc', synonyms: 'synonyms' };
 

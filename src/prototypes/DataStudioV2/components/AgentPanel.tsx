@@ -15,6 +15,9 @@ import { Button } from '../../../components/Button';
 import spotterMascot from '../assets/spotter-mascot.png';
 import { ReasoningBlock, type ReasoningData } from './agentic/ReasoningBlock';
 import { TableSuggestionCard, JoinSuggestionCard, AgentForm, ConnectionList, type TableProposal, type JoinProposal, type AgentFormField } from './agentic';
+// POC-READINESS-PORT — ported AI-readiness flow (POC only). Self-contained module; safe to
+// delete with its folder to fully revert. See MERGE_POC_AI_READINESS.md.
+import PocReadinessFlow from './pocReadiness/PocReadinessFlow';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -2838,6 +2841,20 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
   const isNearBottomRef          = useRef(true);
   const promptBarRef             = useRef<PromptBarRef>(null);
   const [refPickActive, setRefPickActive] = useState(false);
+  // POC-READINESS-PORT ↓ — ported AI-readiness flow state (POC only). Started from the
+  // AI-readiness pill's dropdown CTA in ModelCanvas via the __pocReadinessStart__ window
+  // bridge; rendered as an early return below (replaces the panel body while active).
+  const [pocReadinessActive, setPocReadinessActive] = useState(false);
+  const [pocReadinessScope, setPocReadinessScope] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    if (!poc) return;
+    (window as any).__pocReadinessStart__ = (scope?: Set<string>) => {
+      setPocReadinessScope(scope ?? new Set());
+      setPocReadinessActive(true);
+    };
+    return () => { try { delete (window as any).__pocReadinessStart__; } catch { /* noop */ } };
+  }, [poc]);
+  // POC-READINESS-PORT ↑
   const [pythonFixPending, setPythonFixPending] = useState<string | null>(null);
   const buildCalledRef           = useRef(false);
   const initialPromptFiredRef    = useRef(false);
@@ -5050,6 +5067,21 @@ df = df[["issue_key", "account_id", "summary", "status", "priority", "assignee",
   };
 
   // ── Render ────────────────────────────────────────────────────────────────────
+
+  // POC-READINESS-PORT ↓ — when the ported AI-readiness flow is active (POC only), it takes
+  // over the panel body. Placed after all hooks so hook order is unconditional. Removing this
+  // block + the import + the state effect above fully reverts the wiring.
+  if (poc && pocReadinessActive) {
+    return (
+      <PocReadinessFlow
+        scope={pocReadinessScope}
+        width={width}
+        fullPage={fullPage}
+        onClose={() => setPocReadinessActive(false)}
+      />
+    );
+  }
+  // POC-READINESS-PORT ↑
 
   return (
     <div style={fullPage
