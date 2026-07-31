@@ -5468,27 +5468,6 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
 
       {/* Undo / Redo + Zoom — bottom-right */}
       <div style={{ position: 'absolute', bottom: 16, right: 16, zIndex: 20, display: 'flex', alignItems: 'center', gap: 6 }}>
-        {/* Tidy up — re-runs the layered layout on demand. Hand-placed cards are
-            never moved automatically, so this is how you ask for it. */}
-        {groups.length > 1 && (
-          <div style={{ display: 'flex', alignItems: 'center', background: '#fff', border: '1px solid #E2E6EC', borderRadius: 7, padding: '3px 4px', boxShadow: '0 2px 8px rgba(25,35,49,0.08)' }}>
-            <button
-              onClick={() => arrangeCanvas()}
-              title="Tidy up — arrange cards by their joins"
-              style={{ height: 26, padding: '0 8px', display: 'flex', alignItems: 'center', gap: 5, border: 'none', borderRadius: 4, background: 'transparent', color: '#64748B', cursor: 'pointer', fontFamily: ff.primary, fontSize: 12, fontWeight: 500 }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#F6F8FA'; (e.currentTarget as HTMLElement).style.color = '#1D232F'; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#64748B'; }}
-            >
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-                <rect x="1.6" y="2.4" width="4.4" height="4" rx="1" stroke="currentColor" strokeWidth="1.3"/>
-                <rect x="1.6" y="9.6" width="4.4" height="4" rx="1" stroke="currentColor" strokeWidth="1.3"/>
-                <rect x="10" y="6" width="4.4" height="4" rx="1" stroke="currentColor" strokeWidth="1.3"/>
-                <path d="M6 4.4h2a1 1 0 0 1 1 1V8M6 11.6h2a1 1 0 0 0 1-1V8M9 8h1" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
-              </svg>
-              Tidy up
-            </button>
-          </div>
-        )}
         {/* Undo / Redo */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 2, background: '#fff', border: '1px solid #E2E6EC', borderRadius: 7, padding: '3px 4px', boxShadow: '0 2px 8px rgba(25,35,49,0.08)' }}>
           <button style={{ width: 26, height: 26, border: 'none', borderRadius: 4, background: 'transparent', color: '#64748B', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Undo"
@@ -5511,6 +5490,28 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
           <button style={{ width: 22, height: 22, border: 'none', borderRadius: 4, background: 'transparent', color: '#64748B', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 300 }}>−</button>
           <span style={{ fontSize: 11, color: '#A5ACB9', padding: '0 4px', minWidth: 32, textAlign: 'center' }}>100%</span>
           <button style={{ width: 22, height: 22, border: 'none', borderRadius: 4, background: 'transparent', color: '#64748B', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 300 }}>+</button>
+          {/* Tidy up — reads as a viewport action (fit to frame), so it sits rightmost in
+              the zoom group rather than in a pill of its own. Icon only; the layout is
+              only re-run on demand because hand-placed cards are never moved automatically. */}
+          {groups.length > 1 && (
+            <>
+              <span style={{ width: 1, height: 16, background: '#EAEDF2', margin: '0 3px', flexShrink: 0 }} />
+              <button
+                onClick={() => arrangeCanvas()}
+                title="Tidy up — arrange cards by their joins"
+                style={{ width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', borderRadius: 4, background: 'transparent', color: '#64748B', cursor: 'pointer' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#F6F8FA'; (e.currentTarget as HTMLElement).style.color = '#1D232F'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#64748B'; }}
+              >
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                  <rect x="1.6" y="2.4" width="4.4" height="4" rx="1" stroke="currentColor" strokeWidth="1.3"/>
+                  <rect x="1.6" y="9.6" width="4.4" height="4" rx="1" stroke="currentColor" strokeWidth="1.3"/>
+                  <rect x="10" y="6" width="4.4" height="4" rx="1" stroke="currentColor" strokeWidth="1.3"/>
+                  <path d="M6 4.4h2a1 1 0 0 1 1 1V8M6 11.6h2a1 1 0 0 0 1-1V8M9 8h1" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+                </svg>
+              </button>
+            </>
+          )}
         </div>
       </div>
 
