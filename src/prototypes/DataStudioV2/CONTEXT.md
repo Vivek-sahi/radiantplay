@@ -10,6 +10,40 @@ Data Studio is a no-code visual canvas for building AI-ready data models. The pr
 
 ---
 
+## The demo build
+
+The run-of-show (`demo/2026-07-29-run-of-show.html`) is the spec — 5:00, six beats,
+states S1–S20, Maya Chen / renewal-risk scenario. **The demo runs on Vision**, because
+POC has neither CSV upload nor Python, which S5 and S10–S11 need.
+
+**Reading the script:** *Type* = the stakeholder's five typed inputs. *Say* = spoken
+narration, never rendered. *On screen* = what we build, **including the agent's quoted
+wording** — that isn't ours to paraphrase. Distinguish text from components: the S2
+connection list is a component (`agentic/ConnectionList`), not prose in a message.
+
+**Beats 2, 3 and 5 run end to end.** S13/S14 work; S1, S6, S19/S20 don't. See `NEXT_UP.md`.
+
+| Piece | Where |
+|---|---|
+| Agentic vocabulary, ported | `components/agentic/` |
+| Agent→canvas seam | `agentAddTables` / `agentAddJoins` / `agentAddPythonSource` in `ModelCanvas` |
+| Demo conversation | `handleCanvasAgentInput` in `AgentPanel`, plus `DEMO_*` consts |
+| Readiness pillars + findings | `data/readiness.ts` |
+| Renewal-risk tables | `TABLE_COLS` / `MOCK_DATA` in `ModelCanvas` |
+| Spreadsheet toolbar icons | `components/icons/SpreadsheetIcons.tsx` (exported, unwired) |
+
+**Ported from `surajboro-ts/spotter-readiness-vision`** on a patterns-not-product-decisions
+filter — take the cards and the data, keep our canvas, rebuild anything that reaches into a
+canvas. His fix-pipeline UI finds rows via CSS classes his canvas stamps; ours needed
+`data-model-col` adding, since React `key` never reaches the DOM.
+
+**Agent-added objects are ordinary canvas objects.** `agentAddTables` wraps the existing
+`addToCanvas`, so an agent-added card is indistinguishable from a hand-added one. Batch
+adds pass `{ select: false }` so several tables landing don't steal selection or force the
+preview open.
+
+---
+
 ## Two cuts — Vision and POC
 
 The prototype ships **two experiences from one codebase**, selected at runtime:

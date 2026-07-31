@@ -1578,3 +1578,25 @@ Built the **SQL derived-table** interaction end to end (this was the session's c
 Polish pass: Cached pill → "Cached" (+ removed blue focus-ring outline); data-browser collapse → panel fully collapses, warehouse icon moves to topbar (mirrors agent collapse); Clean menu icons removed; preview output-pane header shows `table · step`; "Add data" button → "Add"; removed "Ran — output in preview below" lines; agent welcome trimmed to 3 chips (dropped the capability table); derive/join edge colours + widths as above.
 
 **NEXT:** Vivek merges + commits (135→147) at the start of next session, then start fresh. Follow-ups logged in NEXT_UP: join-connector width uses the same hardcoded-180 the derive arrow shed (apply real-width measure if seen); derive/sentiment/Fix are hardcoded to the Pendo/NPS demo mock (generalize if productionized); AIRS CTA verb; loose ends #1/#4; P1 scoping; agentic workflow doc.
+
+### 2026-07-28 → 07-31 (sessions 148–150)
+
+**Merged Komal's POC cut alongside Vision, then built the run-of-show demo: mock data, ported agentic vocabulary, agent→canvas commit seam, beats 2/3/5 end to end, editable formula bar. Build ✓, tsc held at 403 throughout. First full browser click-through done. NOT YET PUSHED OR DEPLOYED.**
+
+**The merge (148).** Committed the outstanding 135–147 work first (four commits, incl. Near Store surfaces whose tracked `index.tsx` imported untracked components — would have pushed a broken branch), tagged `pre-komal-merge-2026-07-28` and pushed a `backup/pre-komal-merge`. Then took Komal's `dsv/july-8` **folder-scoped** (`git checkout komal/dsv/july-8 -- src/prototypes/DataStudioV2/`) rather than merging her branch: her work descends from our July 14 HEAD, and we had no committed DataStudioV2 *code* changes since, so nothing of ours was lost and `registry-mine.ts`/Near Store/SpotterPrep were untouched by construction. Her `variant.tsx` gives Vision·POC via `?v=` + localStorage, gated by a `poc` prop through shared components.
+
+**Three ungated Vision regressions found and fixed**, all the same shape — a Vision affordance that moved a control *up a level* was replaced by a POC rail: data-browser row hover actions, data-browser collapse (0-width + topbar icon), agent-panel collapse (topbar icon). Vision restored behind `!poc`. 71 further ungated regions are catalogued in `2026-07-28-poc-vision-gating-review.md`; the AI-readiness and agent-panel ones are deliberately **not** worth reviewing since both surfaces were then replaced.
+
+**The demo build (149–150).** Order was mock data → port → seam → scripts. Added the renewal-risk tables (`accounts`, `contracts`, `arr_snapshot`, `billing_events`, `usage_events`, `feature_adoption`, `qbr_sentiment`) keyed on the existing `ACC-####` ids, and fixed `jira_cs_tickets`, which had **no join key at all** and `High/Critical` priorities — both silently blocking S12 and S11.
+
+Ported from `surajboro-ts/spotter-readiness-vision` on a **patterns-not-product-decisions** filter: six domain-neutral conversation components lifted as-is, `SuggestionCard`'s *interaction* reimplemented against our types (dropping its column and formula variants — we add all columns by default, and S14 is Maya writing the formula), and the readiness pillars + 12 named findings as data. His fix-pipeline UI was **not** ported: it locates rows via CSS classes his canvas stamps. Ours needed one hook adding (`data-model-col`) — React `key` never reaches the DOM.
+
+The seam is one call: agent cards fire `onAdd` → `agentAddTables`/`agentAddJoins` → our `CanvasGroup` takes over. Built on the existing `addToCanvas` so agent-added cards are indistinguishable from hand-added ones.
+
+**Beats 2, 3 and 5 run end to end**, verified in-browser with zero console errors. Also made S11 real (code filters now narrow the preview, 10 rows → 8) and S14 real (formula bar was `readOnly`; now editable, colour-themed, with a per-cell skeleton then computed values — terms resolve exact → substring → token overlap, because the script writes "Usage Decline 90d" for `usage_delta_90d`).
+
+**The click-through earned its keep** — it found the Jira card rendering as "Python", literal `*asterisks*` in a tooltip, and the Overview greeting "Sara" not Maya. Vivek then caught three more by eye that no automated check would: an overlong suggestion chip, a canned reply button where the script has her *typing*, and batch adds stealing selection so the preview forced itself open.
+
+**Read the run-of-show lanes properly late on:** Type = the stakeholder's five typed inputs, Say = spoken only, On screen = ours to build *including the agent's quoted wording*. S2 is now verbatim, with the connections as a **component** rather than prose.
+
+**NEXT:** push + redeploy (the live link predates all demo work). Then four script divergences — `acct_st` (the Say lane commits the presenter to saying it aloud), the Data tab needs renaming to Spreadsheet, S7/S6 agent lines verbatim. Then the toolbar 6 → 19 icons (exported, unwired), S1's empty-state landing, and the caching hand-off as an agent chip opening the existing modal.

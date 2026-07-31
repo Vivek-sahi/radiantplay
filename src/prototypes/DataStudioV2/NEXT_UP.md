@@ -6,6 +6,31 @@ _Active work items. Edit in place each session — move done items to Done, add 
 
 ## Active
 
+### Do this first ⚠️
+
+- **Push and redeploy.** Everything from the demo build onward is local only — `radiantplay-nine.vercel.app` predates mock data, the agentic cards, the formula bar, readiness and the Jira beat. `git push origin prototype/data-studio` + `github`, then `vercel --prod --yes`.
+
+### Script divergences — the run-of-show is the spec
+
+The On screen lane quotes the agent's wording; it isn't ours to paraphrase. Four gaps:
+
+- **`acct_st`** — S16 names it and the **Say** lane commits the presenter to saying it out loud ("if a column is called `acct_st`…"). We surface `arr`/`acv` instead, so the narration won't match the screen in the differentiator beat. Add an `acct_st` column to `accounts` so the finding is literally true, or get the script reworded.
+- **Data tab → "Spreadsheet"** — S13 says "Canvas → Spreadsheet view"; our tab reads *Data*. One word.
+- **S7 agent line** — script: *"I can join these — here's what I suggest."* Ours paraphrases at length.
+- **S6 agent line** — script: *"To model across these three sources I'll need to cache them. This will take a while — you can carry on, I'll let you know when it's ready."* Not built.
+
+### Remaining demo gaps
+
+- **Spreadsheet toolbar 6 → 19 icons.** All 12 missing icons are exported to `components/icons/SpreadsheetIcons.tsx`, just unwired. Alignment is a dropdown, wrap a toggle, currency/percent/decimals act directly on the selected column; overflow folds whole groups from the right. Open question: is `Style` a menu or a toggle? ⚠️ `align-right` exports identical to `align-left` — wrong variant in the Figma, flagged in the file header.
+- **S6 caching hand-off.** Vivek's call: an agent chip ("Configure caching") opening the existing `cacheConfirm` modal, rather than building a toast system. `interactiveChips` already does this for Review/Run.
+- **S1 starting screen.** Bigger than it looks — the script wants an empty state with one centred prompt; our Overview has 11 Pulse cards and 10 recent models.
+- **`Open P1 Escalations` doesn't resolve** in the formula bar — no escalation-count column exists, so it reports "treated as 0". Either add the column or leave it as an honest gap that sets up the readiness beat.
+- **S19/S20 payoff** — S20 explicitly out of scope; S19 has no renewal-risk question yet.
+
+### Demo robustness
+
+- **Triggers are keyword-based.** The five Type-lane inputs all work and `demoStage` covers S2→S3 whatever the wording, but improvising elsewhere gets no response. Worth broadening the remaining branches before a stakeholder rehearses.
+
 ### POC / Vision gating review ← picked up when convenient
 
 - **Classify the 71 ungated regions** — see `2026-07-28-poc-vision-gating-review.md`. Komal's POC cut landed 2026-07-28; most of it is gated behind the `poc` prop, but not all. Two ungated changes were caught and split by variant during the merge (data-browser row affordances, data-browser collapse). The doc lists the remaining regions in `ModelCanvas.tsx` that differ from pre-merge Vision with no `poc` reference. Most are improvements to keep for both cuts — the job is to classify each as **both** / **gate** / **n/a**, not to revert.
