@@ -103,6 +103,16 @@ export interface AgentMessage {
     placeholder?: string;
     submitted?: boolean;
     savedCredentials?: boolean;
+    /** Names which beat this input belongs to, so the upload handler knows
+     *  which continuation to run (the run-of-show CSV vs the notebook one). */
+    inputKey?: string;
+    /**
+     * File-upload affordance. 'button' is a plain generic upload button — use it
+     * when the agent's message already names the file it's asking for, since the
+     * control itself can't be personalised. 'dropzone' (default) is the large
+     * drag-and-drop target.
+     */
+    variant?: 'dropzone' | 'button';
   };
   artifactCards?: Array<{
     type: 'table' | 'spotstore-table' | 'notebook' | 'csv-dataset' | 'staging-table';
@@ -2597,6 +2607,23 @@ interface AgentPanelProps {
   }>) => void;
   /** Lands an agent-written Python source on the canvas (S10). */
   onAgentAddPythonSource?: (tableName: string, code: string, openForReview: boolean) => void;
+  /**
+   * S6 — hands the caching decision to the canvas, which owns the caching modal
+   * and the data-mode pill. `onCached` resumes the thread once caching is
+   * confirmed; cancelling leaves the thread where it was.
+   */
+  onAgentRequestCaching?: (onCached: (settings?: { range: string; refresh: string }) => void) => void;
+  /**
+   * The Demo cut. Gates the run-of-show script — the scripted beats (S2→S12) only
+   * fire here, so Vision keeps its unscripted agent and doesn't get railroaded
+   * into a renewal-risk story by a stray keyword.
+   */
+  demo?: boolean;
+  /**
+   * Reference several canvas cards at once (chips in the composer) and let
+   * "join these tables" reason over that set. Mirrors ModelCanvas' pick mode.
+   */
+  multiSelectJoinFlow?: boolean;
 }
 
 // ── Canvas agent (isCanvasAgent) — canned profile data + genUI cards ───────────
@@ -2765,7 +2792,7 @@ const JoinRecCard: React.FC<{ rec: NonNullable<AgentMessage['joinRec']>; onAdd: 
   );
 };
 
-const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, setMessages, initialPrompt, onBuildComplete, externalMessage, onExternalMessageHandled, externalMessageAttachment, injectInput, onInjectInputHandled, width = 340, selectedColumns, onColumnRemove, isFromScratch, isMultiSource, isNotebookFlow, isMrdFlow, isDbtReview, onNotebookUpdate, onOpenPlan, onOpenQualityPlan, onBuildStart, onNavigateToWorkspace, onStartBuild, fullPage = false, onBack, initialFlow, initialMessage, onInsightResolved, onOpenObject, onOpenMsItem, flowOption = 'option3', rootBackground, isCanvasAgent, poc, canvasTableCount, onAgentAddTables, onAgentAddJoins, onAgentAddPythonSource }) => {
+const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, setMessages, initialPrompt, onBuildComplete, externalMessage, onExternalMessageHandled, externalMessageAttachment, injectInput, onInjectInputHandled, width = 340, selectedColumns, onColumnRemove, isFromScratch, isMultiSource, isNotebookFlow, isMrdFlow, isDbtReview, onNotebookUpdate, onOpenPlan, onOpenQualityPlan, onBuildStart, onNavigateToWorkspace, onStartBuild, fullPage = false, onBack, initialFlow, initialMessage, onInsightResolved, onOpenObject, onOpenMsItem, flowOption = 'option3', rootBackground, isCanvasAgent, poc, canvasTableCount, onAgentAddTables, onAgentAddJoins, onAgentAddPythonSource, onAgentRequestCaching, demo = false, multiSelectJoinFlow = false }) => {
   const [pendingAction, setPending]     = useState<PendingAction | null>(null);
   const [isProcessing, setProcessing]   = useState(false);
   const [planModalOpen, setPlanModalOpen] = useState(false);
@@ -4199,6 +4226,30 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
     setMessages(prev => prev.map(m =>
       m.id === msgId ? { ...m, inlineInput: { ...m.inlineInput!, submitted: true } } : m
     ));
+    // S5 → S7 — the run-of-show CSV. Nothing happens until the file is actually
+    // dropped: the sheet lands on the canvas, its columns get read, and only
+    // then does the agent propose the joins.
+    if (messages.find(m => m.id === msgId)?.inlineInput?.inputKey === 'qbr_sentiment') {
+      setMessages(prev => [...prev, {
+        id: `u-${Date.now()}`, type: 'user',
+        content: file.name,
+        attachment: { type: 'CSV', label: file.name },
+      }]);
+      onAgentAddTables?.(['qbr_sentiment']);
+      void (async () => {
+        await runCanvasSteps([
+          { label: 'Reading column headers', detail: 'account_id, qbr_date, sentiment, sentiment_delta, csm_name' },
+          { label: 'Looking for shared keys across all six sources', detail: 'account_id present in every table' },
+          { label: 'Inferring cardinality', detail: 'profiling key uniqueness on both sides' },
+        ], 950);
+        setMessages(prev => [...prev, {
+          id: `cv-joins-${Date.now()}`, type: 'response',
+          content: 'Everything keys off `account_id`, so I can join all five to **accounts**. Two are worth a look before you commit — **feature_adoption** has a row per feature, so it will multiply totals unless it\'s aggregated first.',
+          joinProposals: DEMO_JOINS,
+        }]);
+      })();
+      return;
+    }
     // Notebook flow — show user message with attachment chip, then handle inline
     if (notebookFlowPhase === 'awaiting_csv') {
       const nbFileName = file.name;
@@ -4260,6 +4311,31 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
     };
     return () => { try { delete (window as any).__dsRequestPythonFix__; } catch { /* noop */ } };
   }, []);
+
+  // ── S11 → S12: the canvas tells us a script the agent wrote was actually run ──
+  // Reviewing the Jira script doesn't commit anything; pressing Run in the canvas
+  // does. Only then is the join drawn and the outcome reported.
+  const jiraRunNotified = useRef(false);
+  useEffect(() => {
+    (window as any).__dsNotifyPythonRun__ = (tableName: string) => {
+      if (!demo || tableName !== 'jira_cs_tickets' || jiraRunNotified.current) return;
+      jiraRunNotified.current = true;
+      window.setTimeout(() => {
+        onAgentAddJoins?.([{
+          table1: 'accounts', table2: 'jira_cs_tickets',
+          col1: 'account_id', col2: 'account_id',
+          joinType: 'left_outer', cardinality: 'one_to_many',
+        }]);
+      }, 400);
+      setMessages(prev => [...prev, {
+        id: `cv-jran-${Date.now()}`, type: 'response',
+        // No follow-on suggestion: the agent thread ends at S12. She moves to the
+        // spreadsheet for the formula and opens AI readiness from the topbar herself.
+        content: 'Ran — 10 escalations on the canvas, joined to **accounts** on `account_id`. Worth knowing: several accounts have more than one open ticket, so anything you total across this join will inflate unless it\'s aggregated first.',
+      }]);
+    };
+    return () => { try { delete (window as any).__dsNotifyPythonRun__; } catch { /* noop */ } };
+  }, [onAgentAddJoins, setMessages, demo]);
 
   const runPythonFixFlow = (userText: string) => {
     setPythonFixPending(null);
@@ -4360,7 +4436,11 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
     const say = (content: string, extra?: Partial<AgentMessage>) =>
       setMessages(prev => [...prev, { id: mkId(), type: 'response' as const, content, ...extra }]);
 
-    setMessages(prev => [...prev, { id: mkId(), type: 'user', content: text }]);
+    // Chip clicks arrive as `__token__` sentinels — they're routing values, not
+    // things she said, so they don't get echoed as a user message. The chip
+    // greying out is the record that the choice was made.
+    const isChipToken = /^__.+__$/.test(text);
+    if (!isChipToken) setMessages(prev => [...prev, { id: mkId(), type: 'user', content: text }]);
     setProcessing(true);
     const lower = text.toLowerCase();
     const canvas: { tables: string[]; joins: number } = (window as any).__dsAgentCanvasState__?.() ?? { tables: [], joins: 0 };
@@ -4383,10 +4463,14 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
       return;
     }
 
-    // ── Renewal-risk demo (run-of-show Beat 2) ─────────────────────────────────
+    // ── Renewal-risk demo (run-of-show Beat 2) — Demo cut only ─────────────────
+    // Everything from here to S12 is the stakeholder script. It fires only in the
+    // Demo cut so Vision's agent stays unscripted: in Vision "renewal risk" is
+    // just words, not a cue to start a five-minute story.
+    //
     // S2 — she states the business question; the agent asks which connections to
     // read rather than guessing, and offers the ones she already has.
-    if (/renew|churn|at risk|at-risk/.test(lower) && !/snowflake|databricks/.test(lower)) {
+    if (demo && /renew|churn|at risk|at-risk/.test(lower) && !/snowflake|databricks/.test(lower)) {
       await runCanvasSteps([{ label: 'Reading your question', detail: text.length > 90 ? `${text.slice(0, 90)}…` : text }], 900);
       // Agent text is verbatim from S2's On screen lane; the connections below
       // it are a component (ConnectionList), not prose. No reply button — her
@@ -4401,8 +4485,8 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
     // proposes a ranked, scored set; it sequences to Databricks on accept (S4).
     // Fires either because the agent just asked (any wording), or because she
     // named the sources unprompted.
-    if (demoStage.current === 'awaiting_connections'
-      || (/snowflake/.test(lower) && /(databricks|usage|qbr|sentiment|csv|sheet|spreadsheet|upload)/.test(lower))) {
+    if (demo && (demoStage.current === 'awaiting_connections'
+      || (/snowflake/.test(lower) && /(databricks|usage|qbr|sentiment|csv|sheet|spreadsheet|upload)/.test(lower)))) {
       demoStage.current = null;
       await runCanvasSteps([
         { label: 'Reading Snowflake connection', detail: 'SF_PROD_CUSTOMER · scoped to ANALYTICS.PUBLIC' },
@@ -4426,9 +4510,29 @@ ORDER BY row_count DESC
       return;
     }
 
+    // S6 — the caching hand-off. Hands off to the canvas' caching modal; the
+    // thread only moves on to the CSV (S5) once caching is confirmed, so
+    // cancelling doesn't skip a beat. Typing "configure caching" re-opens it.
+    if (demo && (text === '__cache_configure__' || /configure caching/i.test(text))) {
+      setProcessing(false);
+      onAgentRequestCaching?.(async settings => {
+        await runCanvasSteps([
+          { label: 'Caching contracts, arr_snapshot, accounts', detail: `Snowflake · ${settings?.range ?? 'Last 6 months'}` },
+          { label: 'Caching usage_events, feature_adoption', detail: `Databricks · ${settings?.range ?? 'Last 6 months'}` },
+          { label: 'Cached and ready', detail: `refreshing ${(settings?.refresh ?? 'Daily').toLowerCase()}` },
+        ], 950);
+        setMessages(prev => [...prev, {
+          id: `cv-csv-${Date.now()}`, type: 'response',
+          content: 'That\'s both warehouses. Now the QBR sentiment sheet — drop the file in and I\'ll parse the columns.',
+          inlineInput: { type: 'file-upload', label: 'Upload file', variant: 'button', inputKey: 'qbr_sentiment' },
+        }]);
+      });
+      return;
+    }
+
     // S10/S11 — Review opens the script in the properties panel so the filter
     // can be edited and re-run; Run lands it without opening.
-    if (text === '__jira_review__' || text === '__jira_run__') {
+    if (demo && (text === '__jira_review__' || text === '__jira_run__')) {
       const review = text === '__jira_review__';
       const script = `import requests, pandas as pd
 from requests.auth import HTTPBasicAuth
@@ -4451,28 +4555,34 @@ df = df[["issue_key", "account_id", "summary", "status", "priority", "assignee",
         ], 950);
       }
       onAgentAddPythonSource?.('jira_cs_tickets', script, review);
-      // S12 — "lands on the canvas, joined". The join has to exist for real:
-      // the readiness scan later reports fan-out on it, and a finding about a
-      // join that isn't drawn is the kind of thing an audience notices.
-      // Deferred a beat so the card is in `groups` before the edge resolves.
-      window.setTimeout(() => {
-        onAgentAddJoins?.([{
-          table1: 'accounts', table2: 'jira_cs_tickets',
-          col1: 'account_id', col2: 'account_id',
-          joinType: 'left_outer', cardinality: 'one_to_many',
-        }]);
-      }, 400);
-      say(review
-        ? 'Opened it in the panel. It pulls every escalation from the last 12 months — narrow the JQL or the dataframe if you only care about some of them, then re-run.\n\nI\'ve joined it to **accounts** on `account_id`. Worth knowing: several accounts have more than one open ticket, so anything you total across this join will inflate unless it\'s aggregated first.'
-        : 'Done — 10 escalations on the canvas, joined to **accounts** on `account_id`.',
-        { suggestions: ['Check AI readiness'] });
+      if (review) {
+        // Review means review — opening the script (or opening and closing it)
+        // must not advance the story. The join and the "done" message wait for
+        // an actual Run in the canvas, which arrives via __dsNotifyPythonRun__.
+        say('Opened it in the panel. It pulls every escalation from the last 12 months — narrow the JQL or the dataframe if you only care about some of them, then run it.\n\nI\'ll join it to **accounts** on `account_id` once it\'s run.');
+      } else {
+        // Ran as-is. The join has to exist for real: the readiness scan later
+        // reports fan-out on it, and a finding about a join that isn't drawn is
+        // the kind of thing an audience notices. Deferred a beat so the card is
+        // in `groups` before the edge resolves.
+        jiraRunNotified.current = true;
+        window.setTimeout(() => {
+          onAgentAddJoins?.([{
+            table1: 'accounts', table2: 'jira_cs_tickets',
+            col1: 'account_id', col2: 'account_id',
+            joinType: 'left_outer', cardinality: 'one_to_many',
+          }]);
+        }, 400);
+        // Thread ends here too — readiness is hers to open from the topbar.
+        say('Done — 10 escalations on the canvas, joined to **accounts** on `account_id`.');
+      }
       setProcessing(false);
       return;
     }
 
     // S8 — a source with no connection. The agent asks for what it needs to
     // reach Jira, pre-filled: nobody types a credential on stage.
-    if (/jira/i.test(text) && /(escalation|ticket|support|pull|bring|no connection|directly)/i.test(lower)) {
+    if (demo && /jira/i.test(text) && /(escalation|ticket|support|pull|bring|no connection|directly)/i.test(lower)) {
       await runCanvasSteps([
         { label: 'Checking your connections for Jira', detail: 'no Jira connection configured' },
         { label: 'Falling back to a direct pull', detail: 'Jira Cloud REST API v3' },
@@ -4558,7 +4668,7 @@ df = df[["issue_key", "account_id", "summary", "status", "priority", "assignee",
 
     // B7 — joins. POC: reason over the two tables and propose a join to add.
     if (/join|combine|merge|build.*model/.test(lower)) {
-      if (poc) {
+      if (multiSelectJoinFlow) {
         const mentioned = KNOWN_TABLES.filter(t => lower.includes(t));
         const pair = (mentioned.length >= 2 ? mentioned : canvas.tables).slice(0, 2);
         if (pair.length < 2) {
@@ -5468,37 +5578,33 @@ df = df[["issue_key", "account_id", "summary", "status", "priority", "assignee",
 
                   // S4 — auto-advance. She gave all three sources in one turn, so
                   // the agent moves to the next one without being asked again.
-                  if (key === 'snowflake') {
+                  // Demo only: accepting tables in Vision just adds tables.
+                  if (demo && key === 'snowflake') {
                     await runCanvasSteps([
                       { label: 'Moving to Databricks', detail: 'product usage · no new prompt needed' },
                       { label: 'Matching tables to your question', detail: '2 relevant of 31 in scope' },
                     ], 950);
                     setMessages(prev => [...prev, {
                       id: `cv-db-${Date.now()}`, type: 'response',
-                      content: 'Databricks next — product usage. Same treatment.',
+                      content: 'Now fetching data sources from Databricks.',
                       tableProposals: DEMO_DATABRICKS_TABLES,
                       proposalKey: 'databricks',
                     }]);
                   }
 
-                  // S5 — with both warehouses in, the agent asks for the CSV, then
-                  // S7 — moves straight on to proposing the joins without waiting.
-                  if (key === 'databricks') {
-                    setMessages(prev => [...prev, {
-                      id: `cv-csv-${Date.now()}`, type: 'response',
-                      content: 'That\'s both warehouses. Now the QBR sentiment sheet — drop the file in and I\'ll parse the columns.',
-                      inlineInput: { type: 'file-upload', label: 'QBR sentiment sheet' },
-                    }]);
-                    onAgentAddTables?.(['qbr_sentiment']);
+                  // S6 — two warehouses on the canvas can't be joined at query
+                  // time, so caching has to happen before the model can span
+                  // them. The chip opens the canvas' existing caching modal
+                  // rather than a bespoke toast; the CSV ask waits until after.
+                  if (demo && key === 'databricks') {
                     await runCanvasSteps([
-                      { label: 'Reading column headers', detail: 'account_id, qbr_date, sentiment, sentiment_delta, csm_name' },
-                      { label: 'Looking for shared keys across all six sources', detail: 'account_id present in every table' },
-                      { label: 'Inferring cardinality', detail: 'profiling key uniqueness on both sides' },
+                      { label: 'Checking how these can be modelled together', detail: 'Snowflake + Databricks — two warehouses' },
+                      { label: 'No cross-warehouse join at query time', detail: 'the model has to run on cached data' },
                     ], 950);
                     setMessages(prev => [...prev, {
-                      id: `cv-joins-${Date.now()}`, type: 'response',
-                      content: 'Everything keys off `account_id`, so I can join all five to **accounts**. Two are worth a look before you commit — **feature_adoption** has a row per feature, so it will multiply totals unless it\'s aggregated first.',
-                      joinProposals: DEMO_JOINS,
+                      id: `cv-cache-${Date.now()}`, type: 'response',
+                      content: 'To model across Snowflake and Databricks I\'ll need to cache them. This will take a while — you can carry on, I\'ll let you know when it\'s ready.',
+                      interactiveChips: [{ label: 'Configure caching', value: '__cache_configure__' }],
                     }]);
                   }
                 }}
@@ -5735,7 +5841,7 @@ df = df[["issue_key", "account_id", "summary", "status", "priority", "assignee",
               </button>
               {/* Reference — point at canvas nodes to reference them (pick mode in ModelCanvas) */}
               <button
-                onClick={() => (poc ? (window as any).__dsTogglePickMode__ : (window as any).__dsEnterPickMode__)?.()}
+                onClick={() => (multiSelectJoinFlow ? (window as any).__dsTogglePickMode__ : (window as any).__dsEnterPickMode__)?.()}
                 title={refPickActive ? 'Done referencing' : 'Reference nodes from the canvas'}
                 style={{ width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 7, border: 'none', background: refPickActive ? c['background-information'] : 'transparent', color: refPickActive ? c['content-brand'] : c['content-secondary'], cursor: 'pointer', flexShrink: 0, transition: 'background 120ms, color 120ms' }}
                 onMouseEnter={e => { if (!refPickActive) { (e.currentTarget as HTMLElement).style.background = c['background-subtle']; (e.currentTarget as HTMLElement).style.color = c['content-primary']; } }}
@@ -7364,8 +7470,21 @@ const MessageBubble: React.FC<{
               )}
             </div>
           )}
-          {/* ── Inline file upload ───────────────────────────────────────────── */}
-          {msg.inlineInput?.type === 'file-upload' && !msg.inlineInput.submitted && (
+          {/* ── Inline file upload — generic button ──────────────────────────── */}
+          {msg.inlineInput?.type === 'file-upload' && !msg.inlineInput.submitted && msg.inlineInput.variant === 'button' && (
+            <div style={{ marginTop: sp.C, display: 'flex', alignItems: 'center', gap: sp.C }}>
+              <Button
+                variant="secondary"
+                size="small"
+                onClick={() => { const input = document.createElement('input'); input.type = 'file'; input.accept = '.csv'; input.onchange = ev => { const f = (ev.target as HTMLInputElement).files?.[0]; if (f) onFileUpload?.(msg.id, f); }; input.click(); }}
+              >
+                Upload file
+              </Button>
+              <span style={{ fontSize: fs.xs, color: c['content-tertiary'] }}>CSV · max 10 MB</span>
+            </div>
+          )}
+          {/* ── Inline file upload — drag-and-drop target ────────────────────── */}
+          {msg.inlineInput?.type === 'file-upload' && !msg.inlineInput.submitted && msg.inlineInput.variant !== 'button' && (
             <div
               onDragOver={e => { e.preventDefault(); setIsDragOver(true); }}
               onDragLeave={() => setIsDragOver(false)}

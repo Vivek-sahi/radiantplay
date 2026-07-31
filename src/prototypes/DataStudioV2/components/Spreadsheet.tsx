@@ -27,6 +27,8 @@ export interface SpreadsheetGridProps {
   derivedCols: Record<string, (string | number | null)[]>;
   /** Columns still computing — cells render a shimmer instead of a value. */
   loadingCols?: Set<string>;
+  /** Formula-defined columns — headers carry an `fx` badge. */
+  formulaCols?: Set<string>;
   inputFixes: Record<string, string>;
   outputFixes: Record<string, string>;
 }
@@ -34,7 +36,7 @@ export interface SpreadsheetGridProps {
 export function SpreadsheetGrid({
   tableCols, isInput, scrollRef, rows, outputRows, previewSort,
   previewColMenu, setPreviewColMenu, hiddenPreviewCols, highlightedCol,
-  derivedCols, loadingCols, inputFixes, outputFixes,
+  derivedCols, loadingCols, formulaCols, inputFixes, outputFixes,
 }: SpreadsheetGridProps) {
   const numericTypes = NUMERIC_TYPES;
   return (
@@ -48,18 +50,23 @@ export function SpreadsheetGrid({
             {tableCols.map(([col, type]) => {
               if (hiddenPreviewCols.has(col)) return null;
               const isNew = !isInput && col === highlightedCol;
+              // A formula column reads like any other column — the `fx` badge is
+              // what marks it, not a colour of its own.
+              const isFormula = !isInput && !!formulaCols?.has(col);
               return (
                 <th key={col} data-col={col} style={{
                   padding: '5px 12px', borderRight: BORDER, borderBottom: BORDER,
                   textAlign: numericTypes.includes(type) ? 'right' : 'left',
-                  whiteSpace: 'nowrap', fontWeight: 600, color: isNew ? '#2770EF' : '#1D232F',
+                  whiteSpace: 'nowrap', fontWeight: 600, color: '#1D232F',
                   minWidth: numericTypes.includes(type) ? 72 : 100,
                   background: previewColMenu?.col === col ? '#EAF1FE' : undefined,
                   animation: isNew ? 'colFade 2.4s ease forwards' : 'none',
                 }}>
                   <span style={{ display: 'flex', alignItems: 'center', gap: 5, justifyContent: numericTypes.includes(type) ? 'flex-end' : 'flex-start' }}>
                     {col}
-                    {isNew && <span style={{ fontSize: 9, fontWeight: 700, padding: '1px 5px', borderRadius: 3, background: '#2770EF', color: '#fff', letterSpacing: '0.02em' }}>NEW</span>}
+                    {isFormula && (
+                      <span title="Formula column" style={{ fontSize: 9.5, fontWeight: 700, fontStyle: 'italic', padding: '1px 5px', borderRadius: 3, background: '#EAEDF2', color: '#777E8B', letterSpacing: '0.02em', flexShrink: 0 }}>fx</span>
+                    )}
                     {previewSort?.col === col && (
                       <svg width="10" height="10" viewBox="0 0 12 12" fill="none" style={{ color: '#2770EF', flexShrink: 0 }}><path d={previewSort.dir === 'asc' ? 'M6 9V3M3.5 5.5L6 3l2.5 2.5' : 'M6 3v6M3.5 6.5L6 9l2.5-2.5'} stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
                     )}

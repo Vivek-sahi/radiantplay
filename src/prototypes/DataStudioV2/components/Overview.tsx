@@ -397,7 +397,7 @@ const Overview: React.FC<OverviewProps> = ({
   onNewProject, onOpenProject, onPromptSubmit, onMultiSourceClick, onNotebookFlowClick,
   onOpenProjectAtMonitoring, onFixWithAgent, resolvedInsightIds = [], onOpenSpotterX,
 }) => {
-  const { variant } = useVariant();
+  const { scope } = useVariant();
   const promptBarRef = useRef<PromptBarRef>(null);
   const [connFilter, setConnFilter] = useState<string | null>(null);
   const [dismissedIds, setDismissedIds] = useState<string[]>([]);
@@ -471,14 +471,14 @@ const Overview: React.FC<OverviewProps> = ({
                 placeholder="How can I help you today?"
                 dropDirection="down"
                 landingPage
-                pocTools={variant === 'poc'}
+                tableTools={scope.promptBarTableMention}
                 leftSlot={
                   <ConnectionPill
                     connections={CONNECTIONS}
                     value={connFilter}
                     onChange={setConnFilter}
                     dropDirection="down"
-                    poc={variant === 'poc'}
+                    bordered={scope.borderedConnectionPill}
                   />
                 }
               />
@@ -486,8 +486,8 @@ const Overview: React.FC<OverviewProps> = ({
 
             {/* Capability chips */}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: sp.B, justifyContent: 'center' }}>
-              {/* POC: connection/cache-setup chips dropped from the home screen — Vision unchanged. */}
-              {CAPABILITY_CHIPS.filter(chip => variant !== 'poc' || !['Create a connection', 'Connect Snowflake', 'Cache a model'].includes(chip.label)).map(chip => (
+              {/* Setup chips dropped from the home screen in POC and Demo — Vision keeps them. */}
+              {CAPABILITY_CHIPS.filter(chip => scope.homeSetupEntryPoints || !['Create a connection', 'Connect Snowflake', 'Cache a model'].includes(chip.label)).map(chip => (
                 <HeroChip
                   key={chip.label}
                   icon={chip.icon}
@@ -495,7 +495,7 @@ const Overview: React.FC<OverviewProps> = ({
                   onClick={() => handleChipClick(chip.base, chip.suffixes)}
                 />
               ))}
-              {onMultiSourceClick && variant !== 'poc' && (
+              {onMultiSourceClick && scope.homeSetupEntryPoints && (
                 <HeroChip
                   icon="merge"
                   label="Multi-source model"
@@ -506,7 +506,7 @@ const Overview: React.FC<OverviewProps> = ({
                   }}
                 />
               )}
-              {onNotebookFlowClick && variant !== 'poc' && (
+              {onNotebookFlowClick && scope.homeSetupEntryPoints && (
                 <HeroChip
                   icon="code"
                   label="Multi-source model, single notebook"

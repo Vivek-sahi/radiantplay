@@ -2,6 +2,7 @@ import React, { useState, useRef, useCallback, useEffect, useLayoutEffect } from
 import { c, sp, ff, fs, fw } from '../styles';
 import { GlobalHeader } from '../../../components';
 import { Button } from '../../../components/Button';
+import { Select } from '../../../components/Select';
 import { Icon } from '../../../components/icons';
 import { BrandMark } from '../../../components/BrandMark';
 import AgentPanel, { AgentMessage } from './AgentPanel';
@@ -150,23 +151,34 @@ const FORMULA_COLORS = {
   paren:    '#A5ACB9',
 };
 
+// Field names first so a digit inside one (`Usage Decline 90d`) isn't split off as
+// a number. One pass over the raw text, not a chain of replaces over the output of
+// the last: the chained version re-matched the `=` and `#` inside its own
+// `style="color:…"` attributes and painted the markup into the visible string.
+const FORMULA_TOKEN = /([A-Za-z][A-Za-z0-9_]*(?:[ \t]+[A-Za-z0-9_]+)*)|(\d+(?:\.\d+)?)|([×*+\-/=])|([()])/g;
+
 function highlightFormula(text: string): string {
   const eq = text.indexOf('=');
   const head = eq >= 0 ? text.slice(0, eq) : '';
   const body = eq >= 0 ? text.slice(eq) : text;
 
-  const paint = (s: string) => escapeHtml(s)
-    // numbers first, so digits inside field names aren't split off
-    .replace(/\b(\d+(?:\.\d+)?)\b(?![\w\s]*[a-zA-Z])/g, `<span style="color:${FORMULA_COLORS.number}">$1</span>`)
-    .replace(/([×*+\-/=])/g, `<span style="color:${FORMULA_COLORS.operator}">$1</span>`)
-    .replace(/([()])/g, `<span style="color:${FORMULA_COLORS.paren}">$1</span>`)
-    // field references: word runs that aren't already inside a span
-    .replace(/(?<!<[^>]*)\b([A-Za-z][A-Za-z0-9_]*(?:\s+[A-Za-z0-9_]+)*)\b(?![^<]*<\/span>)/g,
-      `<span style="color:${FORMULA_COLORS.field}">$1</span>`);
+  let painted = '';
+  let last = 0;
+  for (const m of body.matchAll(FORMULA_TOKEN)) {
+    const at = m.index ?? 0;
+    if (at > last) painted += escapeHtml(body.slice(last, at));
+    const color = m[1] ? FORMULA_COLORS.field
+      : m[2] ? FORMULA_COLORS.number
+      : m[3] ? FORMULA_COLORS.operator
+      : FORMULA_COLORS.paren;
+    painted += `<span style="color:${color}">${escapeHtml(m[0])}</span>`;
+    last = at + m[0].length;
+  }
+  painted += escapeHtml(body.slice(last));
 
   return (head
     ? `<span style="color:${FORMULA_COLORS.target};font-weight:600">${escapeHtml(head)}</span>`
-    : '') + paint(body);
+    : '') + painted;
 }
 
 const PY_RE =/(#[^\n]*)|("""[\s\S]*?"""|'''[\s\S]*?'''|(?:[frbu]{0,2})"(?:\\.|[^"\\\n])*"|(?:[frbu]{0,2})'(?:\\.|[^'\\\n])*')|\b(import|from|as|def|class|return|if|elif|else|for|while|in|not|and|or|is|None|True|False|with|try|except|finally|raise|lambda|yield|global|nonlocal|pass|break|continue|async|await|del|assert)\b|\b(\d+\.?\d*)\b/g;
@@ -1649,18 +1661,32 @@ const POC_TABLE_CONN: Record<string, string> = {
 };
 
 const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = 'dataset', initialTables, initialJoins, hideAgentPanel = false, embedHeaderLeft, embedHeaderRight, showTestTab = false, onTestFixWithAI, poc = false }) => {
-  const { variant } = useVariant();
-  // POC: node-level vs model-level data preview. Scoped to the +Model canvas
-  // (hideAgentPanel is only true for the SpotterX embed) so SpotterX and Vision
-  // are both unaffected regardless of the active variant.
-  const showModelLevelPreview = variant === 'poc' && !hideAgentPanel;
+  const { variant, scope } = useVariant();
+  // Demo is the only cut that runs the run-of-show script. Vision stays clean.
+  const demo = variant === 'demo';
+  // Node-level vs model-level data preview — POC's addition, picked up by Demo.
+  // Scoped to the +Model canvas (hideAgentPanel is only true for the SpotterX
+  // embed) so SpotterX is unaffected regardless of the active variant.
+  const showModelLevelPreview = scope.modelLevelPreview && !hideAgentPanel;
+  // Connections the browser actually renders — drives the filter list and its
+  // select-all, so the filter can't offer a connection that isn't there.
+  const visibleConnIds = scope.nearStoreConnection
+    ? ['sf', 'bq', 'gdrive', 'sharepoint', 'agentdb']
+    : ['sf', 'bq', 'gdrive', 'sharepoint'];
   const [modelName, setModelName] = useState('Untitled model');
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState(modelName);
   const [publishOpen, setPublishOpen] = useState(false);
   const [published, setPublished] = useState(false);
   const [dataMode, setDataMode] = useState<'live' | 'cached'>('live');
-  const [cacheConfirm, setCacheConfirm] = useState<null | { onConfirm: () => void; title?: string; body?: string; cancelLabel?: string }>(null);
+  // `settings: true` adds the scope + refresh controls (the agent's cross-warehouse
+  // hand-off); the other call sites stay a plain confirm.
+  const [cacheConfirm, setCacheConfirm] = useState<null | { onConfirm: (settings?: { range: string; refresh: string }) => void; title?: string; body?: string; cancelLabel?: string; settings?: boolean; note?: string }>(null);
+  // Cards whose script the agent wrote but nobody has run yet. Their preview is
+  // empty until Run — S11's point is that the data arrives because she ran it.
+  const [awaitingRunIds, setAwaitingRunIds] = useState<Set<string>>(new Set());
+  const [cacheRange, setCacheRange] = useState('Last 6 months');
+  const [cacheRefresh, setCacheRefresh] = useState('Daily');
   const [dataModeMenuOpen, setDataModeMenuOpen] = useState(false);
   const [cacheSettingsOpen, setCacheSettingsOpen] = useState(false);
   const [cacheScope, setCacheScope] = useState<'Full model' | 'Custom'>('Full model');
@@ -1770,7 +1796,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
   const [browserAddOpen, setBrowserAddOpen] = useState(false);
   const [emptyAddOpen, setEmptyAddOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
-  const [filterConns, setFilterConns] = useState(new Set(['sf', 'bq', 'gdrive', 'sharepoint', 'agentdb']));
+  const [filterConns, setFilterConns] = useState(new Set(visibleConnIds));
   const [groups, setGroups] = useState<CanvasGroup[]>([]);
   const [wiring, setWiring] = useState<{ fromId: string; cx: number; cy: number; overId: string | null } | null>(null);
   const wireTargetRef = useRef<string | null>(null);
@@ -1891,7 +1917,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
   const [derivedCols, setDerivedCols] = useState<Record<string, (string | number | null)[]>>({});
   const previewScrollRef = useRef<HTMLDivElement | null>(null);
 
-  const [agentWidth, setAgentWidth] = useState(340);
+  const [agentWidth, setAgentWidth] = useState(420);
   const [browserWidth, setBrowserWidth] = useState(260);
   const [resizingPanel, setResizingPanel] = useState<null | 'agent' | 'browser'>(null);
   const agentResizeRef = useRef<{ startX: number; startW: number } | null>(null);
@@ -1945,6 +1971,11 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
     fixing: false,
     apiData: false,
   });
+  // A code step is always an editor — there's no read-only rendering of SQL or
+  // Python — so the shared editor config has to follow whichever code step is
+  // selected. That's what the old "Edit code" / "Edit query" buttons did on click.
+  const loadedCodeStepRef = useRef<string | null>(null);
+
   // Agentic "Fix with AI": after the agent pastes the fix + reruns, show Accept/Reject below the
   // code. Reject restores the stashed pre-fix code + error state.
   const [pythonFixReview, setPythonFixReview] = useState(false);
@@ -2202,6 +2233,23 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
     });
   }, []);
 
+  // Load the selected code step's saved code into the editor config, once per step.
+  // Keyed on step identity, so it never clobbers an edit in progress or a run result.
+  useEffect(() => {
+    const g = groups.find(gg => gg.id === selectedId);
+    const st = g?.steps[g.activeStep];
+    if (!g || !st || (st.type !== 'python' && st.type !== 'sql')) { loadedCodeStepRef.current = null; return; }
+    const key = stepKey(g.id, g.activeStep);
+    if (loadedCodeStepRef.current === key) return;
+    loadedCodeStepRef.current = key;
+    if (st.type === 'python' && st.pythonCode) {
+      setPythonConfig(p => ({ ...p, code: st.pythonCode ?? '', ran: !awaitingRunIds.has(g.id), error: null }));
+    }
+    if (st.type === 'sql' && st.sql) {
+      setSqlConfig(s => ({ ...s, sql: st.sql ?? '', applied: true }));
+    }
+  }, [groups, selectedId, awaitingRunIds]);
+
   const handleAgentResizeDown = useCallback((e: React.PointerEvent) => {
     e.preventDefault();
     agentResizeRef.current = { startX: e.clientX, startW: agentWidth };
@@ -2418,12 +2466,21 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
       y: pos.y, expanded: false, activeStep: 1,
     }]);
     setSelectedIds(new Set([id]));
-    setPreviewOpen(true);
-    triggerPreviewLoad();
-    // Review lands the user in the code itself, not just the panel.
+    // An unrun script has no rows, so the preview stays collapsed — running it is
+    // what opens the panel and fills it. Landing it run (the "Run as-is" path)
+    // opens the preview straight away.
     if (openForReview) {
-      setPythonConfig(p => ({ ...p, code, ran: true, error: null }));
+      setPreviewOpen(false);
+    } else {
+      setPreviewOpen(true);
+      triggerPreviewLoad();
+    }
+    // Review lands the user in the code itself, not just the panel — and lands it
+    // *unrun*, so Run is the obvious next action and the block reads "Not run yet".
+    if (openForReview) {
+      setPythonConfig(p => ({ ...p, code, ran: false, error: null }));
       setEditingStepKey(stepKey(id, 1));
+      setAwaitingRunIds(prev => new Set([...prev, id]));
     }
   }, []);
 
@@ -2744,7 +2801,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
         const gid = el.getAttribute('data-block-id');
         const g = groups.find(gr => gr.id === gid);
         if (g) (window as any).__dsAddPromptRef__?.({ kind: 'table', label: g.tableName });
-        if (!poc) setPickMode(false); // vision: one reference per activation
+        if (!scope.multiSelectJoinFlow) setPickMode(false); // one reference per activation
       } else {
         setPickMode(false); // clicking empty canvas ends multi-select
       }
@@ -2752,7 +2809,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
     document.addEventListener('keydown', onKey);
     document.addEventListener('click', onClick, true); // capture — beat the card's own select handler
     return () => { document.removeEventListener('keydown', onKey); document.removeEventListener('click', onClick, true); };
-  }, [pickMode, groups, poc]);
+  }, [pickMode, groups, scope.multiSelectJoinFlow]);
 
   // Agentic Python fix — the agent (AgentPanel) calls __dsApplyPythonFix__ after its working steps.
   const PENDO_FIX_CODE = `import requests\nimport pandas as pd\n\n# Fixed: Pendo uses apiKey as a query param, not a Bearer token\napi_key = "your-pendo-integration-key"\nbase_url = "https://app.pendo.io/api/v1"\nparams = {"apiKey": api_key}\n\nresponse = requests.get(\n    f"{base_url}/aggregation",\n    params=params,\n    headers={"Content-Type": "application/json"},\n)\nrecords = response.json().get("results", [])\ndf = pd.DataFrame(records)`;
@@ -3007,13 +3064,13 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
       </div>
       {/* Canvas / Columns view switcher — centered over main content (right of browser panel) */}
       <div style={{ position: 'absolute', left: `calc(50% + ${(browserCollapsed ? 48 : browserWidth) / 2}px)`, transform: 'translateX(-50%)', display: 'flex', alignItems: 'center', background: '#F0F2F6', borderRadius: 8, padding: 3, gap: 1 }}>
-        {(['canvas', 'data', 'columns', 'test'] as const).filter(v => (v !== 'test' || showTestTab) && (v !== 'columns' || !showModelLevelPreview)).map(v => (
+        {(['canvas', 'data', 'columns', 'test'] as const).filter(v => (v !== 'test' || showTestTab) && (v !== 'columns' || scope.columnsTab)).map(v => (
           <button
             key={v}
             onClick={() => {
               // POC: switching to the spreadsheet shouldn't carry the canvas
               // selection's properties panel over — it opens on demand only.
-              if (poc && v === 'data') { setSelectedIds(new Set()); setDataActionPicker(null); setEditingStepKey(null); }
+              if (scope.clearSelectionOnSpreadsheet && v === 'data') { setSelectedIds(new Set()); setDataActionPicker(null); setEditingStepKey(null); }
               setViewMode(v);
             }}
             style={{
@@ -3313,9 +3370,18 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
           isFromScratch={true}
           isCanvasAgent={true}
           poc={poc}
+          demo={demo}
+          multiSelectJoinFlow={scope.multiSelectJoinFlow}
           onAgentAddTables={agentAddTables}
           onAgentAddJoins={agentAddJoins}
           onAgentAddPythonSource={agentAddPythonSource}
+          onAgentRequestCaching={onCached => setCacheConfirm({
+            title: 'Caching is required',
+            body: 'Snowflake and Databricks can’t be joined at query time. To model across them, this model is required to be cached into ThoughtSpot’s data store.',
+            cancelLabel: 'Not now',
+            settings: true,
+            onConfirm: settings => { setDataMode('cached'); setCacheConfirm(null); onCached(settings); },
+          })}
           canvasTableCount={groups.filter(g => g.steps[0]?.type === 'source').length}
           width={agentWidth}
           rootBackground="transparent"
@@ -3439,8 +3505,8 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
 
       {browserCollapsed ? null : (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          {/* Browser tabs — hidden when locked to a single connection (POC) */}
-          {!poc && (
+          {/* Browser tabs — hidden when locked to a single connection (POC, Demo) */}
+          {scope.browserCategoryTabs && (
           <div style={{ display: 'flex', borderBottom: BORDER, flexShrink: 0, background: '#fff', padding: '0 10px', gap: 16 }}>
             {(['warehouse', 'business', 'external'] as const).map(tab => {
               const isActive = activeBrowserTab === tab;
@@ -3502,19 +3568,21 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
                   <span style={{ fontSize: 10, fontWeight: 700, color: '#A5ACB9', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Connections</span>
                   <span
                     style={{ fontSize: 11, fontWeight: 600, color: '#2770EF', cursor: 'pointer' }}
-                    onClick={() => setFilterConns(filterConns.size === 5 ? new Set() : new Set(['sf', 'bq', 'gdrive', 'sharepoint', 'agentdb']))}
+                    onClick={() => setFilterConns(filterConns.size === visibleConnIds.length ? new Set() : new Set(visibleConnIds))}
                   >
-                    {filterConns.size === 5 ? 'Deselect all' : 'Select all'}
+                    {filterConns.size === visibleConnIds.length ? 'Deselect all' : 'Select all'}
                   </span>
                 </div>
                 <div style={{ padding: '2px 8px 8px', display: 'flex', flexDirection: 'column', gap: 1 }}>
                   {[
                     { id: 'sf', label: 'snowflake-prod', icon: <IconSnowflake /> },
-                    { id: 'bq', label: 'bigquery-product', icon: <IconBigquery /> },
+                    scope.databricksConnection
+                      ? { id: 'bq', label: 'databricks', icon: <IconDatabricks /> }
+                      : { id: 'bq', label: 'bigquery-product', icon: <IconBigquery /> },
                     { id: 'gdrive', label: 'Google Drive', icon: <IconCloud /> },
                     { id: 'sharepoint', label: 'SharePoint', icon: <IconFolder /> },
                     { id: 'agentdb', label: 'AgentDB', icon: <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><ellipse cx="7" cy="3.5" rx="4.5" ry="1.5" stroke="currentColor" strokeWidth="1.2"/><path d="M2.5 3.5v7c0 .83 2 1.5 4.5 1.5s4.5-.67 4.5-1.5v-7" stroke="currentColor" strokeWidth="1.2"/><path d="M2.5 7c0 .83 2 1.5 4.5 1.5S11.5 7.83 11.5 7" stroke="currentColor" strokeWidth="1.2"/><circle cx="11" cy="11" r="2.5" fill="#2770EF"/><path d="M10 11h2M11 10v2" stroke="white" strokeWidth="1" strokeLinecap="round"/></svg> },
-                  ].map(conn => (
+                  ].filter(conn => visibleConnIds.includes(conn.id)).map(conn => (
                     <div
                       key={conn.id}
                       onClick={() => setFilterConns(prev => {
@@ -3568,8 +3636,8 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
                 )}
                 {/* bigquery-marketing */}
                 {showConn('bq') && (
-                  <TreeConn id="bq" icon={poc ? <IconDatabricks /> : <IconBigquery />} label={poc ? 'databricks' : 'bigquery-product'} open={expanded.has('bq')} onToggle={toggleExpanded}>
-                    <TreeConn id="bq-db" icon={<IconDb />} label={poc ? 'product_catalog' : 'product_db'} muted depth={1} open={expanded.has('bq-db')} onToggle={toggleExpanded}>
+                  <TreeConn id="bq" icon={scope.databricksConnection ? <IconDatabricks /> : <IconBigquery />} label={scope.databricksConnection ? 'databricks' : 'bigquery-product'} open={expanded.has('bq')} onToggle={toggleExpanded}>
+                    <TreeConn id="bq-db" icon={<IconDb />} label={scope.databricksConnection ? 'product_catalog' : 'product_db'} muted depth={1} open={expanded.has('bq-db')} onToggle={toggleExpanded}>
                       <TreeConn id="bq-raw" icon={<IconSchema />} label="raw" muted depth={2} open={expanded.has('bq-raw')} onToggle={toggleExpanded}>
                         {['pendo_nps_enriched','csm_account_mapping'].map(t => (
                           <TreeTableRow
@@ -3588,7 +3656,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
                   </TreeConn>
                 )}
                 {/* AgentDB — ThoughtSpot's own data store */}
-                {!poc && showConn('agentdb') && (
+                {scope.nearStoreConnection && showConn('agentdb') && (
                   <TreeConn id="agentdb" icon={<svg width="13" height="13" viewBox="0 0 14 14" fill="none"><ellipse cx="7" cy="3.5" rx="4.5" ry="1.5" stroke="#2770EF" strokeWidth="1.2"/><path d="M2.5 3.5v7c0 .83 2 1.5 4.5 1.5s4.5-.67 4.5-1.5v-7" stroke="#2770EF" strokeWidth="1.2"/><path d="M2.5 7c0 .83 2 1.5 4.5 1.5S11.5 7.83 11.5 7" stroke="#2770EF" strokeWidth="1.2"/></svg>} label="AgentDB" open={expanded.has('agentdb')} onToggle={toggleExpanded}>
                     <TreeConn id="agentdb-cached" icon={<IconSchema />} label="cached" muted depth={1} open={expanded.has('agentdb-cached')} onToggle={toggleExpanded}>
                       {['customer_regions', 'csm_account_mapping', 'pendo_nps_enriched', 'customer_health_external'].map(t => (
@@ -4566,22 +4634,8 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
 
                     if (step.type === 'sql') {
                       const sc = sqlConfig;
-                      const thisKey = stepKey(sg.id, sg.activeStep);
-                      const isEditing = editingStepKey === thisKey || !step.sql;
-                      if (!isEditing && step.sql) {
-                        return (
-                          <div style={{ padding: '12px' }}>
-                            <div style={{ marginBottom: 14 }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#06BF7F', fontWeight: 500, marginBottom: 8 }}>
-                                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#06BF7F' }} />
-                                Last run 1.28s ago
-                              </div>
-                              <pre style={{ margin: 0, padding: '10px 12px', background: '#F6F8FA', border: BORDER, borderRadius: 6, fontSize: 11.5, fontFamily: "'SF Mono','Fira Mono',monospace", color: '#1D232F', whiteSpace: 'pre-wrap', wordBreak: 'break-word', maxHeight: 140, overflow: 'auto' }}>{step.sql}</pre>
-                            </div>
-                            {editActionButton('Edit query', () => { setSqlConfig(s => ({ ...s, sql: step.sql ?? '', applied: true })); setEditingStepKey(thisKey); })}
-                          </div>
-                        );
-                      }
+                      // Always the editor — a query is code, so there's no read-only
+                      // rendering to step through before you can change it.
                       const inputStyle: React.CSSProperties = { width: '100%', boxSizing: 'border-box', border: BORDER, borderRadius: 6, padding: '6px 10px', fontSize: 12, color: '#1D232F', fontFamily: ff.primary, outline: 'none', background: '#fff' };
                       const inputFocus = (e: React.FocusEvent<HTMLTextAreaElement>) => { e.currentTarget.style.borderColor = '#2770EF'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(39,112,239,0.10)'; };
                       const inputBlur = (e: React.FocusEvent<HTMLTextAreaElement>) => { e.currentTarget.style.borderColor = '#EAEDF2'; e.currentTarget.style.boxShadow = 'none'; };
@@ -4767,22 +4821,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
 
                     if (step.type === 'python') {
                       const pc = pythonConfig;
-                      const thisKey = stepKey(sg.id, sg.activeStep);
-                      const isEditing = editingStepKey === thisKey || !step.pythonCode;
-                      if (!isEditing && step.pythonCode) {
-                        return (
-                          <div style={{ padding: '12px' }}>
-                            <div style={{ marginBottom: 14 }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#06BF7F', fontWeight: 500, marginBottom: 8 }}>
-                                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#06BF7F' }} />
-                                Last run 4.2s ago
-                              </div>
-                              <pre style={{ margin: 0, padding: '10px 12px', background: '#F6F8FA', border: BORDER, borderRadius: 6, fontSize: 11.5, fontFamily: "'SF Mono','Fira Mono',monospace", color: '#1D232F', whiteSpace: 'pre-wrap', wordBreak: 'break-word', maxHeight: 140, overflow: 'auto' }}>{step.pythonCode}</pre>
-                            </div>
-                            {editActionButton('Edit code', () => { setPythonConfig(p => ({ ...p, code: step.pythonCode ?? '', ran: true })); setEditingStepKey(thisKey); })}
-                          </div>
-                        );
-                      }
+                      // Always the editor — see the SQL step above.
                       const inputStyle: React.CSSProperties = { width: '100%', boxSizing: 'border-box', border: BORDER, borderRadius: 6, padding: '6px 10px', fontSize: 12, color: '#1D232F', fontFamily: ff.primary, outline: 'none', background: '#fff' };
                       const inputFocus = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => { e.currentTarget.style.borderColor = '#2770EF'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(39,112,239,0.10)'; };
                       const inputBlur = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => { e.currentTarget.style.borderColor = '#EAEDF2'; e.currentTarget.style.boxShadow = 'none'; };
@@ -4895,7 +4934,15 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
                                 setPythonConfig(p => ({ ...p, ran: true, error: null, apiData: isApiDataBlock }));
                                 setGroups(prev => prev.map(g => g.id === selectedId ? { ...g, steps: g.steps.map((s, i) => i === g.activeStep ? { ...s, pythonCode: pc.code } : s) } : g));
                                 setPreviewOpen(true);
-                                setEditingStepKey(null);
+                                // Stay in the code after a run — it's a cell, not a form.
+                                // Collapsing to a read-only block meant re-running an edit
+                                // took a detour through "Edit code" (S11 is edit → re-run).
+                                // First run fills the preview; every later run re-filters it.
+                                setAwaitingRunIds(prev => { const n = new Set(prev); n.delete(selectedId); return n; });
+                                // Canvas → agent: a script the agent wrote has actually
+                                // been run, so it can now commit what it promised.
+                                const ranTable = groups.find(g => g.id === selectedId)?.tableName;
+                                if (ranTable) (window as any).__dsNotifyPythonRun__?.(ranTable);
                               }}
                               style={{ padding: '6px 16px', borderRadius: 7, border: 'none', background: pc.code.trim() ? '#2770EF' : '#E8ECEF', color: pc.code.trim() ? '#fff' : '#A5ACB9', fontSize: 12.5, fontWeight: 600, cursor: pc.code.trim() ? 'pointer' : 'default', fontFamily: ff.primary, display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}
                             >
@@ -5959,9 +6006,9 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
             </div>
           </div>
         )}
-        {/* Full-screen toggle for the spreadsheet view — hidden in the POC (the
-            chevron collapse/expand is the single preview control there) */}
-        {!poc && (
+        {/* Full-screen toggle for the spreadsheet view — hidden where Spreadsheet
+            is its own tab, since the chevron is then the only control needed */}
+        {scope.spreadsheetFullScreen && (
         <button
           onClick={() => setPreviewFull(f => { const nf = !f; if (nf) setPreviewOpen(true); return nf; })}
           title={previewFull ? 'Exit full screen' : 'Full screen'}
@@ -6264,11 +6311,15 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
         }
 
         // ── Data mode ──
-        const rows = (MOCK_DATA[selectedGroup.tableName] ?? []).slice(0, rowCap);
+        // An agent-written script that hasn't been run yet has no data to show:
+        // columns are known from the schema, rows arrive on Run (S11).
+        const awaitingRun = awaitingRunIds.has(selectedGroup.id);
+        const rows = awaitingRun ? [] : (MOCK_DATA[selectedGroup.tableName] ?? []).slice(0, rowCap);
         const tblName = selectedGroup.tableName;
-        // Mock a SQL result: an applied SQL step reduces rows (window-function dedup —
-        // keep each customer's most recent row). Output pane shows the reduced set; input stays raw.
-        let outputRows = rows;
+        // Output reflects row filters written into a code step (S11: narrowing the
+        // fetch to `priority in (P1, P2)` and re-running drops the count); the
+        // source pane stays raw.
+        let outputRows = awaitingRun ? [] : rowsForCard(selectedGroup, rowCap);
         const activeStepObj = selectedGroup.steps[selectedGroup.activeStep];
         if (activeStepObj?.type === 'sql' && activeStepObj.sql) {
           const srcCols = (selectedGroup.steps[0]?.cols ?? []).map(c => c[0]);
@@ -6383,6 +6434,11 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
                         <span style={{ fontSize: 11, fontWeight: 500, color: '#777E8B' }}>{stepLabel}</span>
                       </>
                     )}
+                    {/* Row count — S11's payoff is watching this drop when the fetch
+                        is narrowed and re-run, so it has to be on screen. */}
+                    <span style={{ fontSize: 10, color: '#A5ACB9', marginLeft: 2 }}>
+                      {awaitingRun ? 'Not run yet' : `${outputRows.length} rows`}
+                    </span>
                   </div>
                   {renderDataTable(cols, false, previewScrollRef)}
                 </div>
@@ -6669,9 +6725,9 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
                     e.preventDefault();
                     const res = commitFormula(formulaDraft, mergedCols, mergedRows);
                     if (!res.ok) { setFormulaError(res.reason); return; }
-                    setFormulaError(res.unresolved.length
-                      ? `Added ${res.name}. Couldn't match: ${res.unresolved.join(', ')} — treated as 0.`
-                      : null);
+                    // A successful add says nothing — the column appearing is the
+                    // feedback. Only a formula that won't parse gets a message.
+                    setFormulaError(null);
                     setFormulaDraft(null);
                     (e.currentTarget as HTMLInputElement).blur();
                   }}
@@ -6730,6 +6786,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
             highlightedCol={formulaCols.length ? formulaCols[formulaCols.length - 1].name : null}
             derivedCols={formulaValues}
             loadingCols={formulaComputing ? new Set([formulaComputing]) : undefined}
+            formulaCols={new Set(formulaCols.map(f => f.name))}
             inputFixes={{}}
             outputFixes={{}}
           />
@@ -6856,7 +6913,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
             {viewMode !== 'test' && browserPanel}
             {/* Canvas column */}
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-              {viewMode === 'canvas' ? canvasViewport : viewMode === 'columns' && !showModelLevelPreview ? columnsView : viewMode === 'data' ? dataView : viewMode === 'test' ? testView : canvasViewport}
+              {viewMode === 'canvas' ? canvasViewport : viewMode === 'columns' && scope.columnsTab ? columnsView : viewMode === 'data' ? dataView : viewMode === 'test' ? testView : canvasViewport}
               {viewMode === 'canvas' && !previewFull && previewPanel}
             </div>
           </div>
@@ -6874,12 +6931,37 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
               </div>
               <div style={{ fontSize: 15, fontWeight: 700, color: '#1D232F' }}>{cacheConfirm.title ?? 'Caching is required'}</div>
             </div>
-            <div style={{ fontSize: 13, lineHeight: 1.55, color: '#64748B', marginBottom: 20 }}>
+            <div style={{ fontSize: 13, lineHeight: 1.55, color: '#64748B', marginBottom: cacheConfirm.settings ? 16 : 20 }}>
               {cacheConfirm.body ?? 'To use uploaded files, this model is required to be cached into ThoughtSpot’s data store. It will run on cached data, refreshed on a schedule.'}
             </div>
+            {cacheConfirm.settings && (
+              <>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+                  <Select
+                    label="Data range"
+                    size="small"
+                    fullWidth
+                    value={cacheRange}
+                    onChange={setCacheRange}
+                    options={['Last 30 days', 'Last 6 months', 'Last 1 year', 'All time'].map(o => ({ id: o, label: o }))}
+                  />
+                  <Select
+                    label="Refresh"
+                    size="small"
+                    fullWidth
+                    value={cacheRefresh}
+                    onChange={setCacheRefresh}
+                    options={['Daily', 'Weekly', 'Monthly'].map(o => ({ id: o, label: o }))}
+                  />
+                </div>
+                <div style={{ fontSize: 12, lineHeight: 1.55, color: '#777E8B', marginBottom: 20 }}>
+                  {cacheConfirm.note ?? 'The first run pulls the full range, so it can take a while. You can change either setting later in the model’s cache settings.'}
+                </div>
+              </>
+            )}
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
               <button onClick={() => setCacheConfirm(null)} style={{ padding: '8px 16px', borderRadius: RADIUS6, border: '1px solid #C0C6CF', background: '#fff', color: '#1D232F', fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: ff.primary }}>{cacheConfirm.cancelLabel ?? 'Cancel file upload'}</button>
-              <button onClick={() => cacheConfirm.onConfirm()} style={{ padding: '8px 16px', borderRadius: RADIUS6, border: 'none', background: '#2770EF', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: ff.primary }}>Continue with caching</button>
+              <button onClick={() => cacheConfirm.onConfirm({ range: cacheRange, refresh: cacheRefresh })} style={{ padding: '8px 16px', borderRadius: RADIUS6, border: 'none', background: '#2770EF', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: ff.primary }}>Continue with caching</button>
             </div>
           </div>
         </div>

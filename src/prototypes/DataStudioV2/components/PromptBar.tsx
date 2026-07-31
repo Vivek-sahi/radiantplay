@@ -83,7 +83,8 @@ export interface PromptBarProps {
   /** Show the built-in upload/attach button (default true). */
   showUpload?: boolean;
   /** POC: upload uses a + glyph and an @ button is added to mention/select tables. */
-  pocTools?: boolean;
+  /** `@` table-mention button + "Upload data" affordance. */
+  tableTools?: boolean;
 }
 
 // ── Component ──────────────────────────────────────────────────────────────────
@@ -100,7 +101,7 @@ const PromptBar = forwardRef<PromptBarRef, PromptBarProps>(({
   onColumnRemove,
   leftSlot,
   showUpload = true,
-  pocTools = false,
+  tableTools = false,
 }, ref) => {
 
   const [value, setValue]                     = useState('');
@@ -367,19 +368,19 @@ const PromptBar = forwardRef<PromptBarRef, PromptBarProps>(({
             {showUpload && (
               <button
                 onClick={() => setUpload(true)}
-                title={pocTools ? 'Upload data' : 'Upload a file'}
+                title={tableTools ? 'Upload data' : 'Upload a file'}
                 style={{ width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', borderRadius: 6, backgroundColor: 'transparent', color: c['content-secondary'], cursor: 'pointer', flexShrink: 0 }}
                 onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
                 onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
               >
-                {pocTools
+                {tableTools
                   ? <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 3.5v9M3.5 8h9" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg>
                   : <Icon name="upload" size="s" color={c['content-secondary']} />}
               </button>
             )}
 
-            {/* POC: @ button — insert a mention so the user can pick tables to add */}
-            {pocTools && (
+            {/* @ button — insert a mention so the user can pick tables to add */}
+            {tableTools && (
               <button
                 onClick={() => {
                   const cur = textareaRef.current?.value ?? value;

@@ -7,11 +7,11 @@ interface ConnectionPillProps {
   value: string | null;
   onChange: (id: string | null) => void;
   dropDirection?: 'up' | 'down';
-  /** POC: a cleaner bordered pill with a connection glyph. */
-  poc?: boolean;
+  /** Bordered pill with a connection glyph — reads as a control, not a label. */
+  bordered?: boolean;
 }
 
-export default function ConnectionPill({ connections, value, onChange, dropDirection = 'down', poc }: ConnectionPillProps) {
+export default function ConnectionPill({ connections, value, onChange, dropDirection = 'down', bordered }: ConnectionPillProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const selected = value ? connections.find(cn => cn.id === value) : null;
@@ -38,23 +38,23 @@ export default function ConnectionPill({ connections, value, onChange, dropDirec
           display: 'flex',
           alignItems: 'center',
           height: 30,
-          background: poc ? c['background-base'] : c['background-subtle'],
-          border: poc ? `1px solid ${c['border-default']}` : 'none',
+          background: bordered ? c['background-base'] : c['background-subtle'],
+          border: bordered ? `1px solid ${c['border-default']}` : 'none',
           borderRadius: 20,
           cursor: 'pointer',
-          padding: poc ? '0 4px 0 10px' : 0,
+          padding: bordered ? '0 4px 0 10px' : 0,
           transition: 'border-color 120ms, background 120ms',
         }}
-        onMouseEnter={e => { if (poc) e.currentTarget.style.borderColor = '#B9C0CC'; }}
-        onMouseLeave={e => { if (poc) e.currentTarget.style.borderColor = c['border-default']; }}
+        onMouseEnter={e => { if (bordered) e.currentTarget.style.borderColor = '#B9C0CC'; }}
+        onMouseLeave={e => { if (bordered) e.currentTarget.style.borderColor = c['border-default']; }}
       >
-        {poc && (
+        {bordered && (
           <span style={{ display: 'flex', alignItems: 'center', color: c['content-secondary'], marginRight: 6, flexShrink: 0 }}>
             <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><ellipse cx="7" cy="3.2" rx="4.5" ry="1.6" stroke="currentColor" strokeWidth="1.2"/><path d="M2.5 3.2v7.6c0 .9 2 1.6 4.5 1.6s4.5-.7 4.5-1.6V3.2" stroke="currentColor" strokeWidth="1.2"/><path d="M2.5 7c0 .9 2 1.6 4.5 1.6S11.5 7.9 11.5 7" stroke="currentColor" strokeWidth="1.2"/></svg>
           </span>
         )}
         <span style={{
-          paddingLeft: poc ? 0 : 10,
+          paddingLeft: bordered ? 0 : 10,
           paddingRight: 4,
           fontSize: fs.sm,
           fontFamily: ff.primary,
