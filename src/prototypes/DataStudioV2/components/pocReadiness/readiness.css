@@ -1831,39 +1831,20 @@
  * self-contained shell (header, transcript, fixes dock slot, composer) so it fills
  * DataStudioV2's AgentPanel body. All rules are scoped under `.calx` — zero leakage.
  * ───────────────────────────────────────────────────────────────────────────── */
-.calx.pr-root {
-  height: 100%; min-height: 0; flex-shrink: 0;
-  display: flex; flex-direction: column;
-  /* Transparent — the host AgentPanel is rootBackground:"transparent", so the panel's
-     gradient shows through. Do NOT paint a solid fill here (it would cover the gradient). */
+/* Content wrapper. The flow no longer brings its own header, composer or
+   disclaimer — the host AgentPanel supplies all three, and its message container
+   already owns the padding, scrolling and background. So this is only a flex
+   column carrying the flow's own 14px rhythm between cards.
+   `.calx` must stay on this element: every rule in this file is scoped under it. */
+.calx.pr-body {
+  display: flex; flex-direction: column; gap: 14px;
   background: transparent;
   font-family: var(--sans);
 }
-.pr-header {
-  height: 48px; flex-shrink: 0; display: flex; align-items: center; gap: 8px;
-  padding: 0 12px; border-bottom: 1px solid var(--line, #EAEDF2);
-}
-.calx .pr-back {
-  width: 26px; height: 26px; display: flex; align-items: center; justify-content: center;
-  border-radius: 6px; border: none; background: transparent; color: var(--ink-3, #777E8B);
-  cursor: pointer; padding: 0; transition: background 0.12s, color 0.12s;
-}
-.calx .pr-back:hover { background: var(--line-tint, #F6F8FA); color: var(--ink, #1D232F); }
-.pr-title { font-size: 13px; font-weight: 600; color: var(--ink, #1D232F); letter-spacing: -0.1px; }
-.pr-flex { flex: 1; }
-.pr-messages {
-  flex: 1; min-height: 0; overflow-y: auto;
-  padding: 14px 16px; display: flex; flex-direction: column; gap: 14px;
-}
-.pr-dockwrap { flex-shrink: 0; padding: 10px 12px 4px; }
-.pr-composer { flex-shrink: 0; padding: 10px 12px 8px; }
-.pr-footer {
-  flex-shrink: 0; padding: 6px 16px 10px; font-size: 10.5px; color: var(--ink-4, #A5ACB9);
-  text-align: center;
-}
-.calx .pr-footer a { color: var(--info, #2770ef); text-decoration: none; }
+.pr-dockwrap { flex-shrink: 0; padding: 10px 0 4px; }
 
-/* Composer chrome (base classes the ported dock/refine bar also rely on) */
+/* Composer chrome — the flow's own composer is gone, but CalFixesDock's refine bar
+   still uses .agent-textarea, .prompt-bar-actions and .send-btn. Keep them. */
 .calx .prompt-bar {
   display: flex; align-items: flex-end; gap: 8px;
   border: 1px solid var(--line-strong, #C0C6CF); border-radius: 12px;
@@ -1912,7 +1893,7 @@
 /* ─────────────────────────────────────────────────────────────────────────────
  * Demo polish pass — one accent (DataStudioV2 blue), readable agent copy, motion.
  * ───────────────────────────────────────────────────────────────────────────── */
-.calx.pr-root {
+.calx.pr-body {
   --accent: #2770EF;                                                    /* .calx chrome → blue */
 }
 /* The fixes card's animated gradient border (source's "moving gradient" signature).
@@ -1929,18 +1910,16 @@
 .calx .calx-ag-passbody .pr-text { margin-bottom: 2px; }
 
 /* Subtle entrance — only newly-mounted rows animate (keyed list). */
-.calx .pr-messages > * { animation: pr-msg-in 260ms cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.calx.pr-body > * { animation: pr-msg-in 260ms cubic-bezier(0.2, 0.7, 0.2, 1) both; }
 @keyframes pr-msg-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
-@media (prefers-reduced-motion: reduce) { .calx .pr-messages > * { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .calx.pr-body > * { animation: none; } }
 
 /* Send button — disabled affordance (composer is live now). */
 .calx .send-btn:disabled { background: var(--line-strong, #C0C6CF); cursor: default; }
 .calx .send-btn:disabled:hover { opacity: 1; }
 
-/* Header — a slim, integrated context bar (sits under the shell's chat header).
-   Transparent so the panel gradient shows through (no solid fill). */
-.pr-header { background: transparent; }
-.pr-title { letter-spacing: -0.15px; }
+/* The flow's own header is gone — the host AgentPanel's header serves it, with a
+   "Back to chat" control rendered by the panel. One header, not two. */
 
 /* Apply summary — TEXT ONLY (no card): a confident headline + a scannable checked list.
  * Shown after the apply reasoning, before the version card. */

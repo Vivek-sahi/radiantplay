@@ -57,6 +57,16 @@ export interface Scope {
   borderedConnectionPill: boolean;
   /** Home prompt bar carries the `@` table-mention button. */
   promptBarTableMention: boolean;
+  /**
+   * The AI-readiness pill opens Komal's "Check for" panel, and its CTA runs the
+   * ported agentic readiness flow (physical → semantic → Spotter grading → apply)
+   * in the agent panel. Off = Vision's own scan → Fix all → tune dropdown.
+   *
+   * On for Demo as well as POC: the run-of-show gives readiness the longest beat
+   * (S15–S18, 60s) and asks for "three layers checking in sequence", which is the
+   * flow's physical/semantic/ai pillars.
+   */
+  readinessFlow: boolean;
 }
 
 /** Kept as an alias so nothing that imported the old name breaks. */
@@ -74,6 +84,7 @@ const VISION_SCOPE: Scope = {
   multiSelectJoinFlow: false,
   borderedConnectionPill: false,
   promptBarTableMention: false,
+  readinessFlow: false,
 };
 
 const POC_SCOPE: Scope = {
@@ -88,6 +99,7 @@ const POC_SCOPE: Scope = {
   multiSelectJoinFlow: true,
   borderedConnectionPill: true,
   promptBarTableMention: true,
+  readinessFlow: true,
 };
 
 // Demo starts as Vision and takes POC's cleanups one at a time. Spreading
@@ -112,6 +124,7 @@ const DEMO_SCOPE: Scope = {
   multiSelectJoinFlow: true,         // reference several cards, then "join these"
   borderedConnectionPill: true,      // reads as a control, not a label
   promptBarTableMention: true,       // `@` to name tables in the prompt
+  readinessFlow: true,               // S15–S18: the three-layer readiness beat
 };
 
 export const SCOPE_BY_VARIANT: Record<DataStudioVariant, Scope> = {

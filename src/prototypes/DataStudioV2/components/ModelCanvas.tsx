@@ -2055,12 +2055,12 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
   const [airFixReview, setAirFixReview] = useState<string | null>(null);
   const [airAccepted, setAirAccepted] = useState<Record<string, Record<string, string>>>({});
   const [airIgnoredIds, setAirIgnoredIds] = useState<Set<string>>(new Set());
-  // POC-READINESS-PORT ↓ — semantic-preview bridge for the ported readiness flow (POC only).
+  // POC-READINESS-PORT ↓ — semantic-preview bridge for the ported readiness flow.
   // The flow's semantic step drives the bottom preview panel: switch to Model-level Semantic,
   // grow it, overlay the POC_SEM_REVIEW proposals; accept → loading → applied (filled) values.
   const [pocSemActive, setPocSemActive] = useState(false);
   useEffect(() => {
-    if (variant !== 'poc') return;
+    if (!scope.readinessFlow) return;
     const w = window as any;
     w.__dsSemanticPreview__ = () => {
       setViewMode('canvas'); setPreviewOpen(true); setPreviewScope('model'); setPreviewMode('semantic');
@@ -2082,7 +2082,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
     };
     w.__dsSemanticReject__ = () => { setAirFixReview(null); setPocSemActive(false); };
     return () => { delete w.__dsSemanticPreview__; delete w.__dsSemanticApply__; delete w.__dsSemanticReject__; };
-  }, [variant]);
+  }, [scope.readinessFlow]);
   // POC-READINESS-PORT ↑
   const airPillRef = useRef<HTMLDivElement>(null);
   // Anchor refs for auto-positioned dropdowns (see AnchoredMenu).
@@ -3445,19 +3445,21 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
 
           return (
             <AnchoredMenu open={airOpen} anchorRef={airPillRef} onClose={() => setAirOpen(false)} placement="bottom-end" gap={7} style={{
-              width: poc ? 400 : 292,
-              background: '#fff', border: '1px solid #E2E6EC', borderRadius: poc ? 16 : 10,
+              width: scope.readinessFlow ? 400 : 292,
+              background: '#fff', border: '1px solid #E2E6EC', borderRadius: scope.readinessFlow ? 16 : 10,
               boxShadow: '0 8px 28px rgba(25,35,49,0.12), 0 1px 4px rgba(25,35,49,0.06)',
               overflow: 'hidden',
               animation: 'air-fadeIn 140ms cubic-bezier(0,0,0.2,1) both',
             }}>
               <style>{`@keyframes air-fadeIn{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:translateY(0)}} @keyframes air-spin{to{transform:rotate(360deg)}}`}</style>
 
-              {poc ? (
+              {scope.readinessFlow ? (
                 /* POC-READINESS-PORT ↓ — the dropdown stays; its CTA (and each Run) launches the
                    ported AI-readiness flow in the agent panel via the __pocReadinessStart__ bridge
-                   (registered by AgentPanel). Replaces the old vision airRunScan for POC. */
-                <SpotterReadinessPanel onStart={(scope) => { setAirOpen(false); if (hasTable) (window as any).__pocReadinessStart__?.(new Set(scope)); }} />
+                   (registered by AgentPanel). Replaces Vision's airRunScan wherever
+                   scope.readinessFlow is on — POC and Demo. The callback arg is named
+                   `pillars`, not `scope`, so it can't shadow the variant scope above. */
+                <SpotterReadinessPanel onStart={(pillars) => { setAirOpen(false); if (hasTable) (window as any).__pocReadinessStart__?.(new Set(pillars)); }} />
                 /* POC-READINESS-PORT ↑ */
               ) : airDropView === 'intro' ? (
                 <>
@@ -3674,6 +3676,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
           poc={poc}
           demo={demo}
           multiSelectJoinFlow={scope.multiSelectJoinFlow}
+          readinessFlow={scope.readinessFlow}
           onAgentAddTables={agentAddTables}
           onAgentAddJoins={agentAddJoins}
           onAgentAddPythonSource={agentAddPythonSource}

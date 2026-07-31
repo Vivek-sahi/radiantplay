@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import './readiness.css';
 import { AgentMessage, UserBubble, ReasoningBlock, VersionCard, TypingIndicator } from '../../../_agentic/index';
 import type { ReasoningData } from '../../../_agentic/index';
@@ -52,10 +52,27 @@ interface Msg {
 interface Props {
   /** Which check passes to run (pillar ids). Defaults to all three (physical + semantic + Spotter answers). */
   scope?: Set<string>;
-  onClose: () => void;
-  /** Panel width when embedded (non-fullPage). Matches the host AgentPanel width. */
-  width?: number;
-  fullPage?: boolean;
+  /**
+   * True while a check pass is streaming. The host disables its composer and
+   * shows Stop instead of Send — the flow no longer owns a composer of its own.
+   */
+  onBusyChange?: (busy: boolean) => void;
+  /**
+   * True while the fixes dock is up. Her workflow is act-on-the-dock, not type,
+   * so the host suppresses its composer rather than offering both.
+   */
+  onDockChange?: (dockActive: boolean) => void;
+}
+
+/**
+ * The flow renders as *content* inside the host AgentPanel: no header, no
+ * composer, no disclaimer of its own. Those come from the panel, so the
+ * readiness beat keeps `@` mentions, `/` skills and one visual language.
+ * The host drives typing through this handle.
+ */
+export interface PocReadinessHandle {
+  send: (text: string) => void;
+  stop: () => void;
 }
 
 // Minimal markdown: render **bold** as <strong>. The _agentic response block prints plain
@@ -92,7 +109,7 @@ const REFINED_HEADLINE: Record<string, string> = {
 
 const ALL_SCOPE: string[] = ['physical', 'semantic', 'ai'];
 
-const PocReadinessFlow: React.FC<Props> = ({ scope, onClose, width = 360, fullPage = false }) => {
+const PocReadinessFlow = forwardRef<PocReadinessHandle, Props>(({ scope, onBusyChange, onDockChange }, ref) => {
   // Default to the full readiness journey when the caller didn't narrow the scope.
   const scopeSet = useMemo<Set<string>>(() => (scope && scope.size ? scope : new Set<string>(ALL_SCOPE)), [scope]);
   const wantsSpotter = scopeSet.has('ai');
@@ -116,7 +133,6 @@ const PocReadinessFlow: React.FC<Props> = ({ scope, onClose, width = 360, fullPa
   const [spotterIssues, setSpotterIssues] = useState<Issue[]>([]);
   const [spotterFixesActive, setSpotterFixesActive] = useState(false);
   // Live composer — a typed question gets a short, on-topic scripted reply.
-  const [input, setInput] = useState('');
   const [typing, setTyping] = useState(false);
 
   const idc = useRef(0);
@@ -362,14 +378,21 @@ const PocReadinessFlow: React.FC<Props> = ({ scope, onClose, width = 360, fullPa
     if (/spotter|answer|question|grade|accuracy|wrong/.test(t)) return 'I can grade how Spotter answers your sample questions and fix the ones that miss. Kick it off from the Spotter readiness pill.';
     return 'I can check your model’s Spotter readiness — physical structure, semantics, and how Spotter answers real questions. Open the Spotter readiness pill to run a check.';
   };
-  const sendPrompt = () => {
-    const q = input.trim();
+  // Text arrives from the host's PromptBar rather than a composer of our own.
+  const sendPrompt = (text: string) => {
+    const q = text.trim();
     if (!q || runningStep != null) return;
-    setInput('');
     push({ kind: 'user', text: q });
     setTyping(true);
     later(() => { setTyping(false); push({ kind: 'agent', text: cannedReply(q) }); }, 900);
   };
+
+  useImperativeHandle(ref, () => ({ send: sendPrompt, stop: stopRun }), [runningStep]);
+
+  // Tell the host what its composer should be doing: Stop while a pass streams,
+  // suppressed entirely while the dock is up.
+  useEffect(() => { onBusyChange?.(runningStep != null); }, [runningStep, onBusyChange]);
+  // The dock signal lives below `dock`'s useMemo — see after it.
 
   const onToggle = (id: string) => setSelected((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
   // Info action toggles the inline detail on a fix row (agent-only — no canvas).
@@ -422,6 +445,10 @@ const PocReadinessFlow: React.FC<Props> = ({ scope, onClose, width = 360, fullPa
     return null;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fixesStep, spotterFixesActive, spotterIssues, selected, overrides, refineData, passOrder]);
+
+  // Declared here rather than with the other signal effects above: `dock` is a const
+  // from the useMemo directly above, so reading it any earlier is a temporal dead zone.
+  useEffect(() => { onDockChange?.(dock != null); }, [dock, onDockChange]);
 
   const renderRunning = (m: Msg): ReasoningData => {
     const checks = m.runChecks ?? [];
@@ -507,22 +534,15 @@ const PocReadinessFlow: React.FC<Props> = ({ scope, onClose, width = 360, fullPa
     }
   };
 
+  // Content only — the host AgentPanel supplies the header, composer and disclaimer.
+  // `.calx` stays: every rule in readiness.css is scoped under it, so the cards below
+  // lose all their styling without this ancestor.
   return (
-    <div className="calx pr-root" style={{ width: fullPage ? '100%' : width }}>
-      <div className="pr-header">
-        <button className="pr-back" onClick={onClose} aria-label="Close readiness">
-          <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="10,4 6,8 10,12" /></svg>
-        </button>
-        <span className="pr-title">Spotter readiness</span>
-        <span className="pr-flex" />
-      </div>
+    <div className="calx pr-body" ref={bodyRef}>
+      {msgs.map(renderMsg)}
+      {typing && <AgentMessage><TypingIndicator label="Thinking…" /></AgentMessage>}
 
-      <div className="pr-messages" ref={bodyRef}>
-        {msgs.map(renderMsg)}
-        {typing && <AgentMessage><TypingIndicator label="Thinking…" /></AgentMessage>}
-      </div>
-
-      {dock ? (
+      {dock && (
         <div className="pr-dockwrap calx-cal-dockwrap">
           <CalFixesDock
             stepLabel={dock.stepLabel}
@@ -537,36 +557,11 @@ const PocReadinessFlow: React.FC<Props> = ({ scope, onClose, width = 360, fullPa
             shimmerId={shimmerId}
           />
         </div>
-      ) : (
-        <div className="pr-composer">
-          <div className="prompt-bar">
-            <textarea
-              className="agent-textarea"
-              placeholder={runningStep != null ? 'Checking Spotter readiness…' : 'Ask about your model’s readiness'}
-              disabled={runningStep != null}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendPrompt(); } }}
-              rows={1}
-            />
-            <div className="prompt-bar-actions">
-              {runningStep != null ? (
-                <button className="send-btn" title="Stop" onClick={stopRun}>
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><rect x="2.5" y="2.5" width="9" height="9" rx="1.5" fill="white" /></svg>
-                </button>
-              ) : (
-                <button className="send-btn" title="Send" disabled={!input.trim()} onClick={sendPrompt}>
-                  <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 13V3M4 7l4-4 4 4" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
       )}
-
-      <div className="pr-footer">Spotter responses should be reviewed. <a href="#" onClick={(e) => e.preventDefault()}>Learn more</a></div>
     </div>
   );
-};
+});
+
+PocReadinessFlow.displayName = 'PocReadinessFlow';
 
 export default PocReadinessFlow;

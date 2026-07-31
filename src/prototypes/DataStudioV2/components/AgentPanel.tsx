@@ -17,7 +17,7 @@ import { ReasoningBlock, type ReasoningData } from './agentic/ReasoningBlock';
 import { TableSuggestionCard, JoinSuggestionCard, AgentForm, ConnectionList, type TableProposal, type JoinProposal, type AgentFormField } from './agentic';
 // POC-READINESS-PORT — ported AI-readiness flow (POC only). Self-contained module; safe to
 // delete with its folder to fully revert. See MERGE_POC_AI_READINESS.md.
-import PocReadinessFlow from './pocReadiness/PocReadinessFlow';
+import PocReadinessFlow, { type PocReadinessHandle } from './pocReadiness/PocReadinessFlow';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -2628,6 +2628,12 @@ interface AgentPanelProps {
    * "join these tables" reason over that set. Mirrors ModelCanvas' pick mode.
    */
   multiSelectJoinFlow?: boolean;
+  /**
+   * The ported agentic readiness flow runs in this panel, launched from the
+   * AI-readiness pill. Mirrors `scope.readinessFlow` — on for POC and Demo.
+   * Not derived from `poc`: Demo needs it too. See variant.tsx.
+   */
+  readinessFlow?: boolean;
 }
 
 // ── Canvas agent (isCanvasAgent) — canned profile data + genUI cards ───────────
@@ -2813,7 +2819,7 @@ const JoinRecCard: React.FC<{ rec: NonNullable<AgentMessage['joinRec']>; onAdd: 
   );
 };
 
-const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, setMessages, initialPrompt, onBuildComplete, externalMessage, onExternalMessageHandled, externalMessageAttachment, injectInput, onInjectInputHandled, width = 340, selectedColumns, onColumnRemove, isFromScratch, isMultiSource, isNotebookFlow, isMrdFlow, isDbtReview, onNotebookUpdate, onOpenPlan, onOpenQualityPlan, onBuildStart, onNavigateToWorkspace, onStartBuild, fullPage = false, onBack, initialFlow, initialMessage, onInsightResolved, onOpenObject, onOpenMsItem, flowOption = 'option3', rootBackground, isCanvasAgent, poc, canvasTableCount, onAgentAddTables, onAgentAddJoins, onAgentAddPythonSource, onCachingApplied, demo = false, multiSelectJoinFlow = false }) => {
+const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, setMessages, initialPrompt, onBuildComplete, externalMessage, onExternalMessageHandled, externalMessageAttachment, injectInput, onInjectInputHandled, width = 340, selectedColumns, onColumnRemove, isFromScratch, isMultiSource, isNotebookFlow, isMrdFlow, isDbtReview, onNotebookUpdate, onOpenPlan, onOpenQualityPlan, onBuildStart, onNavigateToWorkspace, onStartBuild, fullPage = false, onBack, initialFlow, initialMessage, onInsightResolved, onOpenObject, onOpenMsItem, flowOption = 'option3', rootBackground, isCanvasAgent, poc, canvasTableCount, onAgentAddTables, onAgentAddJoins, onAgentAddPythonSource, onCachingApplied, demo = false, multiSelectJoinFlow = false, readinessFlow = false }) => {
   const [pendingAction, setPending]     = useState<PendingAction | null>(null);
   const [isProcessing, setProcessing]   = useState(false);
   const [planModalOpen, setPlanModalOpen] = useState(false);
@@ -2841,19 +2847,24 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
   const isNearBottomRef          = useRef(true);
   const promptBarRef             = useRef<PromptBarRef>(null);
   const [refPickActive, setRefPickActive] = useState(false);
-  // POC-READINESS-PORT ↓ — ported AI-readiness flow state (POC only). Started from the
+  // POC-READINESS-PORT ↓ — ported AI-readiness flow state. Started from the
   // AI-readiness pill's dropdown CTA in ModelCanvas via the __pocReadinessStart__ window
   // bridge; rendered as an early return below (replaces the panel body while active).
   const [pocReadinessActive, setPocReadinessActive] = useState(false);
   const [pocReadinessScope, setPocReadinessScope] = useState<Set<string>>(new Set());
+  // The flow has no composer of its own — we drive it from our PromptBar through this
+  // handle, and it reports back what the composer should be doing.
+  const readinessRef = useRef<PocReadinessHandle>(null);
+  const [readinessBusy, setReadinessBusy] = useState(false);
+  const [readinessDock, setReadinessDock] = useState(false);
   useEffect(() => {
-    if (!poc) return;
-    (window as any).__pocReadinessStart__ = (scope?: Set<string>) => {
-      setPocReadinessScope(scope ?? new Set());
+    if (!readinessFlow) return;
+    (window as any).__pocReadinessStart__ = (pillars?: Set<string>) => {
+      setPocReadinessScope(pillars ?? new Set());
       setPocReadinessActive(true);
     };
     return () => { try { delete (window as any).__pocReadinessStart__; } catch { /* noop */ } };
-  }, [poc]);
+  }, [readinessFlow]);
   // POC-READINESS-PORT ↑
   const [pythonFixPending, setPythonFixPending] = useState<string | null>(null);
   const buildCalledRef           = useRef(false);
@@ -5068,19 +5079,11 @@ df = df[["issue_key", "account_id", "summary", "status", "priority", "assignee",
 
   // ── Render ────────────────────────────────────────────────────────────────────
 
-  // POC-READINESS-PORT ↓ — when the ported AI-readiness flow is active (POC only), it takes
-  // over the panel body. Placed after all hooks so hook order is unconditional. Removing this
-  // block + the import + the state effect above fully reverts the wiring.
-  if (poc && pocReadinessActive) {
-    return (
-      <PocReadinessFlow
-        scope={pocReadinessScope}
-        width={width}
-        fullPage={fullPage}
-        onClose={() => setPocReadinessActive(false)}
-      />
-    );
-  }
+  // POC-READINESS-PORT ↓ — the readiness flow renders as content inside this panel's
+  // message area (see the render below), not as a replacement for the panel. That keeps
+  // our header, PromptBar and disclaimer — so `@` mentions and `/` skills survive the
+  // readiness beat, and the panel doesn't change design language mid-demo.
+  const readinessActive = readinessFlow && pocReadinessActive;
   // POC-READINESS-PORT ↑
 
   return (
@@ -5140,6 +5143,29 @@ df = df[["issue_key", "account_id", "summary", "status", "priority", "assignee",
         display: 'flex', flexDirection: 'column', gap: sp.D,
         ...(fullPage ? { maxWidth: 740, margin: '0 auto' } : {}),
       }}>
+
+        {/* POC-READINESS-PORT ↓ — the readiness flow's own content, in our message area.
+            Its back control is ours too, so there's one header, not two. */}
+        {readinessActive ? (
+          <>
+            <button
+              onClick={() => { setPocReadinessActive(false); setReadinessBusy(false); setReadinessDock(false); }}
+              style={{ alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: 5, padding: '4px 8px 4px 5px', marginBottom: -4, borderRadius: 6, border: 'none', background: 'transparent', color: c['content-secondary'], cursor: 'pointer', fontSize: fs.sm, fontWeight: fw.medium, fontFamily: ff.primary }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = c['background-subtle']; (e.currentTarget as HTMLElement).style.color = c['content-primary']; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = c['content-secondary']; }}
+            >
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="10,4 6,8 10,12" /></svg>
+              Back to chat
+            </button>
+            <PocReadinessFlow
+              ref={readinessRef}
+              scope={pocReadinessScope}
+              onBusyChange={setReadinessBusy}
+              onDockChange={setReadinessDock}
+            />
+          </>
+        ) : (<>
+        {/* POC-READINESS-PORT ↑ */}
 
         {messages.length === 0 && !initialPrompt && (
           isCanvasAgent ? (
@@ -5728,6 +5754,7 @@ df = df[["issue_key", "account_id", "summary", "status", "priority", "assignee",
             </div>
           );
         })}
+        </>)}{/* POC-READINESS-PORT — end of the normal-thread branch */}
         <div ref={messagesEndRef} />
       </div>
       </div>
@@ -5817,17 +5844,21 @@ df = df[["issue_key", "account_id", "summary", "status", "priority", "assignee",
         ...(fullPage ? { backgroundColor: '#fff' } : {}),
       }}>
       <div style={fullPage ? { maxWidth: 740, margin: '0 auto' } : {}}>
+        {/* POC-READINESS-PORT — while the dock is up the flow's workflow is act-on-the-dock,
+            so the composer stands down rather than competing with it. */}
+        {readinessActive && readinessDock ? null : (
         <PromptBar
           ref={promptBarRef}
-          onSubmit={(text, tables) => processText(text, tables)}
-          disabled={(isProcessing && project.buildStep !== 'empty') || fromScratchPhase === 'clarify_q1' || !!coachingPrompt || sfConnectIntent === 'clarify'}
-          isProcessing={isProcessing}
+          onSubmit={(text, tables) => { if (readinessActive) readinessRef.current?.send(text); else processText(text, tables); }}
+          disabled={readinessActive ? readinessBusy : (isProcessing && project.buildStep !== 'empty') || fromScratchPhase === 'clarify_q1' || !!coachingPrompt || sfConnectIntent === 'clarify'}
+          isProcessing={readinessActive ? readinessBusy : isProcessing}
           onStop={() => {
+            if (readinessActive) { readinessRef.current?.stop(); return; }
             buildAbortRef.current = true;
             setProcessing(false);
             setMessages(prev => [...prev, { id: `r-${Date.now()}`, type: 'response', content: "Stopped. What would you like to change?" }]);
           }}
-          placeholder={agentMode === 'test' ? "Ask anything about your model…" : isCanvasAgent ? "Give me a task. Use '@' to add context, or point at the canvas." : fromScratchPhase === 'plan_ready' ? "Ask me to change anything in the plan…" : "Press '/' for skills and '@' to add context."}
+          placeholder={readinessActive ? (readinessBusy ? 'Checking Spotter readiness…' : 'Ask about your model’s readiness') : agentMode === 'test' ? "Ask anything about your model…" : isCanvasAgent ? "Give me a task. Use '@' to add context, or point at the canvas." : fromScratchPhase === 'plan_ready' ? "Ask me to change anything in the plan…" : "Press '/' for skills and '@' to add context."}
           autoFocus
           dropDirection="up"
           onColumnRemove={onColumnRemove}
@@ -5898,6 +5929,7 @@ df = df[["issue_key", "account_id", "summary", "status", "priority", "assignee",
             </div>
           }
         />
+        )}{/* POC-READINESS-PORT — end of the dock-suppresses-composer guard */}
       </div>
 
       </div>
