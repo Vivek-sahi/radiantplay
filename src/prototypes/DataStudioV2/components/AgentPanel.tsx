@@ -12,6 +12,8 @@ import PlanPanelV3 from './PlanPanelV3';
 import { FlowOption } from './Shell';
 import { Icon } from '../../../components/icons';
 import { Button } from '../../../components/Button';
+import spotterMascot from '../assets/spotter-mascot.png';
+import { ReasoningBlock, type ReasoningData } from './agentic/ReasoningBlock';
 import { TableSuggestionCard, JoinSuggestionCard, AgentForm, ConnectionList, type TableProposal, type JoinProposal, type AgentFormField } from './agentic';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -147,7 +149,7 @@ export interface AgentMessage {
     fields: AgentFormField[];
     submitLabel: string;
     /** Which beat, so submit knows what to do next. */
-    formKey: 'jira_credentials' | 'jira_scope';
+    formKey: 'jira_credentials' | 'jira_scope' | 'cache_settings';
     submittedNote?: string;
   };
   agentFormSubmitted?: boolean;
@@ -2608,11 +2610,10 @@ interface AgentPanelProps {
   /** Lands an agent-written Python source on the canvas (S10). */
   onAgentAddPythonSource?: (tableName: string, code: string, openForReview: boolean) => void;
   /**
-   * S6 — hands the caching decision to the canvas, which owns the caching modal
-   * and the data-mode pill. `onCached` resumes the thread once caching is
-   * confirmed; cancelling leaves the thread where it was.
+   * S6 — caching is configured and reported in the thread, so the canvas only
+   * needs to know it happened: this flips the data-mode pill to Cached.
    */
-  onAgentRequestCaching?: (onCached: (settings?: { range: string; refresh: string }) => void) => void;
+  onCachingApplied?: () => void;
   /**
    * The Demo cut. Gates the run-of-show script — the scripted beats (S2→S12) only
    * fire here, so Vision keeps its unscripted agent and doesn't get railroaded
@@ -2657,6 +2658,23 @@ const DEMO_DATABRICKS_TABLES: TableProposal[] = [
  * Joins the agent proposes once the sources are on the canvas (S7).
  * Everything hangs off accounts.account_id — the shared key across all six.
  */
+/**
+ * S12 — the Jira table's join, proposed after the fetch script has actually run.
+ * One proposal, not a set: the other five are already on the canvas by then.
+ */
+const DEMO_JIRA_JOIN: JoinProposal[] = [
+  {
+    id: 'j-jira',
+    leftTable: 'accounts', leftCol: 'account_id',
+    rightTable: 'jira_cs_tickets', rightCol: 'account_id',
+    joinType: 'left_outer', cardinality: 'one_to_many',
+    pct: 94,
+    reasoning: 'Every ticket carries an account_id that resolves to a row in accounts, and no ticket is orphaned.',
+    checked: true,
+    warnFanOut: true,
+  },
+];
+
 const DEMO_JOINS: JoinProposal[] = [
   { id: 'j-1', leftTable: 'accounts', leftCol: 'account_id', rightTable: 'contracts', rightCol: 'account_id',
     joinType: 'inner', cardinality: 'one_to_many', pct: 97, checked: true,
@@ -2792,7 +2810,7 @@ const JoinRecCard: React.FC<{ rec: NonNullable<AgentMessage['joinRec']>; onAdd: 
   );
 };
 
-const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, setMessages, initialPrompt, onBuildComplete, externalMessage, onExternalMessageHandled, externalMessageAttachment, injectInput, onInjectInputHandled, width = 340, selectedColumns, onColumnRemove, isFromScratch, isMultiSource, isNotebookFlow, isMrdFlow, isDbtReview, onNotebookUpdate, onOpenPlan, onOpenQualityPlan, onBuildStart, onNavigateToWorkspace, onStartBuild, fullPage = false, onBack, initialFlow, initialMessage, onInsightResolved, onOpenObject, onOpenMsItem, flowOption = 'option3', rootBackground, isCanvasAgent, poc, canvasTableCount, onAgentAddTables, onAgentAddJoins, onAgentAddPythonSource, onAgentRequestCaching, demo = false, multiSelectJoinFlow = false }) => {
+const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, setMessages, initialPrompt, onBuildComplete, externalMessage, onExternalMessageHandled, externalMessageAttachment, injectInput, onInjectInputHandled, width = 340, selectedColumns, onColumnRemove, isFromScratch, isMultiSource, isNotebookFlow, isMrdFlow, isDbtReview, onNotebookUpdate, onOpenPlan, onOpenQualityPlan, onBuildStart, onNavigateToWorkspace, onStartBuild, fullPage = false, onBack, initialFlow, initialMessage, onInsightResolved, onOpenObject, onOpenMsItem, flowOption = 'option3', rootBackground, isCanvasAgent, poc, canvasTableCount, onAgentAddTables, onAgentAddJoins, onAgentAddPythonSource, onCachingApplied, demo = false, multiSelectJoinFlow = false }) => {
   const [pendingAction, setPending]     = useState<PendingAction | null>(null);
   const [isProcessing, setProcessing]   = useState(false);
   const [planModalOpen, setPlanModalOpen] = useState(false);
@@ -3301,13 +3319,6 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
     if (choice === 'both') sfConnectBothRef.current = true;
     const flowKey = choice === 'semantic' ? 'snowflake_semantic_init' : 'snowflake_connect_init';
     setTimeout(() => { setProcessing(true); runFlow(flowKey, setMessages, setPending, setProcessing, setProject); }, 200);
-  };
-
-  const toggleCollapsible = (msgId: string, stepIdx: number) => {
-    setMessages(prev => prev.map(m => {
-      if (m.id !== msgId || !m.steps) return m;
-      return { ...m, steps: m.steps.map((s, i) => i === stepIdx ? { ...s, collapsibleOpen: !s.collapsibleOpen } : s) };
-    }));
   };
 
   // ── Confirm handler (extracted so it can be called from multiple paths) ────
@@ -4320,18 +4331,12 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
     (window as any).__dsNotifyPythonRun__ = (tableName: string) => {
       if (!demo || tableName !== 'jira_cs_tickets' || jiraRunNotified.current) return;
       jiraRunNotified.current = true;
-      window.setTimeout(() => {
-        onAgentAddJoins?.([{
-          table1: 'accounts', table2: 'jira_cs_tickets',
-          col1: 'account_id', col2: 'account_id',
-          joinType: 'left_outer', cardinality: 'one_to_many',
-        }]);
-      }, 400);
+      // S12 — the table has landed; joining it is her call, so the agent proposes
+      // rather than reaching into the canvas on its own.
       setMessages(prev => [...prev, {
         id: `cv-jran-${Date.now()}`, type: 'response',
-        // No follow-on suggestion: the agent thread ends at S12. She moves to the
-        // spreadsheet for the formula and opens AI readiness from the topbar herself.
-        content: 'Ran — 10 escalations on the canvas, joined to **accounts** on `account_id`. Worth knowing: several accounts have more than one open ticket, so anything you total across this join will inflate unless it\'s aggregated first.',
+        content: 'Ran — 10 escalations on the canvas. `account_id` lines up with **accounts**, so I can join them. Worth knowing before you do: several accounts have more than one open ticket, so anything you total across this join will inflate unless it\'s aggregated first.',
+        joinProposals: DEMO_JIRA_JOIN,
       }]);
     };
     return () => { try { delete (window as any).__dsNotifyPythonRun__; } catch { /* noop */ } };
@@ -4510,26 +4515,6 @@ ORDER BY row_count DESC
       return;
     }
 
-    // S6 — the caching hand-off. Hands off to the canvas' caching modal; the
-    // thread only moves on to the CSV (S5) once caching is confirmed, so
-    // cancelling doesn't skip a beat. Typing "configure caching" re-opens it.
-    if (demo && (text === '__cache_configure__' || /configure caching/i.test(text))) {
-      setProcessing(false);
-      onAgentRequestCaching?.(async settings => {
-        await runCanvasSteps([
-          { label: 'Caching contracts, arr_snapshot, accounts', detail: `Snowflake · ${settings?.range ?? 'Last 6 months'}` },
-          { label: 'Caching usage_events, feature_adoption', detail: `Databricks · ${settings?.range ?? 'Last 6 months'}` },
-          { label: 'Cached and ready', detail: `refreshing ${(settings?.refresh ?? 'Daily').toLowerCase()}` },
-        ], 950);
-        setMessages(prev => [...prev, {
-          id: `cv-csv-${Date.now()}`, type: 'response',
-          content: 'That\'s both warehouses. Now the QBR sentiment sheet — drop the file in and I\'ll parse the columns.',
-          inlineInput: { type: 'file-upload', label: 'Upload file', variant: 'button', inputKey: 'qbr_sentiment' },
-        }]);
-      });
-      return;
-    }
-
     // S10/S11 — Review opens the script in the properties panel so the filter
     // can be edited and re-run; Run lands it without opening.
     if (demo && (text === '__jira_review__' || text === '__jira_run__')) {
@@ -4559,7 +4544,7 @@ df = df[["issue_key", "account_id", "summary", "status", "priority", "assignee",
         // Review means review — opening the script (or opening and closing it)
         // must not advance the story. The join and the "done" message wait for
         // an actual Run in the canvas, which arrives via __dsNotifyPythonRun__.
-        say('Opened it in the panel. It pulls every escalation from the last 12 months — narrow the JQL or the dataframe if you only care about some of them, then run it.\n\nI\'ll join it to **accounts** on `account_id` once it\'s run.');
+        say('Opened it in the panel. It pulls every escalation from the last 12 months — narrow the JQL or the dataframe if you only care about some of them, then run it.');
       } else {
         // Ran as-is. The join has to exist for real: the readiness scan later
         // reports fan-out on it, and a finding about a join that isn't drawn is
@@ -5555,8 +5540,6 @@ df = df[["issue_key", "account_id", "summary", "status", "priority", "assignee",
               <MessageBubble
                 msg={msg}
                 showAvatar={!isAfterWorking}
-                onToggleSteps={id => setMessages(prev => prev.map(m => m.id === id ? { ...m, stepsCollapsed: !m.stepsCollapsed } : m))}
-                onToggleCollapsible={toggleCollapsible}
                 onSuggestion={text => processText(text)}
                 onConfirm={isActivePending ? handleConfirm : undefined}
                 onOpenQualityPlan={onOpenQualityPlan}
@@ -5604,7 +5587,17 @@ df = df[["issue_key", "account_id", "summary", "status", "priority", "assignee",
                     setMessages(prev => [...prev, {
                       id: `cv-cache-${Date.now()}`, type: 'response',
                       content: 'To model across Snowflake and Databricks I\'ll need to cache them. This will take a while — you can carry on, I\'ll let you know when it\'s ready.',
-                      interactiveChips: [{ label: 'Configure caching', value: '__cache_configure__' }],
+                      agentForm: {
+                        formKey: 'cache_settings',
+                        submitLabel: 'Start caching',
+                        submittedNote: 'Caching started',
+                        fields: [
+                          { key: 'range', label: 'Data range', value: 'Last 6 months', type: 'select',
+                            options: ['Last 30 days', 'Last 6 months', 'Last 1 year', 'All time'] },
+                          { key: 'refresh', label: 'Refresh', value: 'Daily', type: 'select',
+                            options: ['Daily', 'Weekly', 'Monthly'] },
+                        ],
+                      },
                     }]);
                   }
                 }}
@@ -5612,6 +5605,25 @@ df = df[["issue_key", "account_id", "summary", "status", "priority", "assignee",
                   setMessages(prev => prev.map(m =>
                     m.id === msgId ? { ...m, agentFormSubmitted: true } : m
                   ));
+
+                  // S6 — caching runs from the thread. The canvas only needs to
+                  // know the model is cached now (the data-mode pill); the agent
+                  // reports progress here rather than opening a modal.
+                  if (formKey === 'cache_settings') {
+                    const range = String(values.range ?? 'Last 6 months');
+                    const refresh = String(values.refresh ?? 'Daily');
+                    onCachingApplied?.();
+                    await runCanvasSteps([
+                      { label: 'Caching contracts, arr_snapshot, accounts', detail: `Snowflake · ${range.toLowerCase()}` },
+                      { label: 'Caching usage_events, feature_adoption', detail: `Databricks · ${range.toLowerCase()}` },
+                      { label: 'Cached and ready', detail: `refreshing ${refresh.toLowerCase()}` },
+                    ], 950);
+                    setMessages(prev => [...prev, {
+                      id: `cv-csv-${Date.now()}`, type: 'response',
+                      content: 'That\'s both warehouses. Now the QBR sentiment sheet — drop the file in and I\'ll parse the columns.',
+                      inlineInput: { type: 'file-upload', label: 'Upload file', variant: 'button', inputKey: 'qbr_sentiment' },
+                    }]);
+                  }
 
                   // S9 — reached it; now scope it. Agent proposes defaults.
                   if (formKey === 'jira_credentials') {
@@ -7052,8 +7064,6 @@ const CoachingClarifyCard: React.FC<{ onSelect: (option: string) => void }> = ({
 const MessageBubble: React.FC<{
   msg: AgentMessage;
   showAvatar: boolean;
-  onToggleSteps: (id: string) => void;
-  onToggleCollapsible: (msgId: string, stepIdx: number) => void;
   onSuggestion: (text: string) => void;
   onConfirm?: () => void;
   onOpenQualityPlan?: () => void;
@@ -7071,7 +7081,7 @@ const MessageBubble: React.FC<{
   onAcceptJoins?: (msgId: string, joins: JoinProposal[]) => void;
   /** User submitted an inline agent form (S8/S9). */
   onSubmitAgentForm?: (msgId: string, formKey: string, values: Record<string, string>) => void;
-}> = ({ msg, showAvatar, onToggleSteps, onToggleCollapsible, onSuggestion, onConfirm, onOpenQualityPlan, onChipClick, onGenUIAction, onComplete, publishedVersion, onOpenObject, onApiKeySubmit, onFileUpload, onArtifactClick, onAcceptTables, onAcceptJoins, onSubmitAgentForm }) => {
+}> = ({ msg, showAvatar, onSuggestion, onConfirm, onOpenQualityPlan, onChipClick, onGenUIAction, onComplete, publishedVersion, onOpenObject, onApiKeySubmit, onFileUpload, onArtifactClick, onAcceptTables, onAcceptJoins, onSubmitAgentForm }) => {
   const [chipUsed, setChipUsed] = React.useState(false);
   const [apiKeyValue, setApiKeyValue] = React.useState('');
   const [isDragOver, setIsDragOver] = React.useState(false);
@@ -7099,113 +7109,56 @@ const MessageBubble: React.FC<{
   }
 
   // ── Working / thinking block ───────────────────────────────────────────────
+  // Suraj's ReasoningBlock, ported with the rest of the agentic vocabulary and
+  // finally wired up. It replaces a hand-rolled dot-and-line list: the header
+  // flips Working → Work done, the box animates open, and each step's dot pops
+  // as it lands. Our step model maps onto his ReasoningData one-to-one; a step's
+  // `collapsible` (a SQL query) becomes his toolcall card.
   if (msg.type === 'working') {
-    const allDone    = msg.steps?.every(s => s.status === 'done') ?? false;
-    const isRunning  = msg.steps?.some(s => s.status === 'running') ?? false;
-    const isCollapsed = msg.stepsCollapsed ?? false;
+    const steps      = msg.steps ?? [];
+    const allDone    = steps.length > 0 && steps.every(s => s.status === 'done');
+    const isRunning  = steps.some(s => s.status === 'running');
+    const current    = steps.find(s => s.status === 'running') ?? steps[steps.length - 1];
+
+    const data: ReasoningData = {
+      // Running header shimmers (his `reasoningShimmer`); done + expanded turns brand blue.
+      header: allDone ? 'Work done' : 'Working',
+      isDone: allDone,
+      // Collapsed-while-running line: the step in flight, its detail if it has one.
+      inlineText: current ? (current.detail ?? current.label) : '',
+      // Every step, pending included — his 'none' dot is the grey upcoming-step
+      // state, so the box shows the whole plan rather than only what has landed.
+      steps: steps.map((step, i) => ({
+        n: i,
+        name: step.label,
+        text: step.detail ?? '',
+        dotState: step.status === 'done' ? 'done' as const
+          : step.status === 'running' ? 'current' as const
+          : 'none' as const,
+        // A step's SQL is the tool call's *input*; its detail is what came back.
+        // Leaving input empty rendered an "INPUT" label with nothing under it.
+        toolcall: step.collapsible
+          ? {
+              id: `${msg.id}-tc-${i}`,
+              title: 'Query',
+              input: step.collapsible,
+              output: step.detail ?? 'Done',
+              status: step.status === 'done' ? 'done' as const : 'loading' as const,
+              isVisible: true,
+            }
+          : undefined,
+      })),
+    };
 
     return (
       <div style={{ display: 'flex', gap: sp.B, alignItems: 'flex-start' }}>
         <AgentAvatar working={isRunning} />
         <div style={{ flex: 1, minWidth: 0, paddingTop: 2 }}>
-
-          {/* Show work toggle — only when all steps are done */}
-          {allDone && (
-            <button
-              onClick={() => onToggleSteps(msg.id)}
-              style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer', background: 'none', border: 'none', padding: 0, fontFamily: ff.primary, marginBottom: isCollapsed ? 0 : sp.C }}
-            >
-              <span style={{ fontSize: fs.xs, color: c['content-secondary'], fontWeight: fw.medium }}>Show work</span>
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke={c['content-secondary']} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)', transition: 'transform 0.15s', flexShrink: 0 }}>
-                <polyline points="2,4 6,8 10,4" />
-              </svg>
-            </button>
-          )}
-
-          {/* Steps — shown while in-progress OR when expanded after done */}
-          {msg.steps && (!allDone || !isCollapsed) && (
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              {(msg.allStepsVisible ? msg.steps : msg.steps.filter(s => s.status !== 'pending')).map((step, i, visible) => (
-                <div key={i} style={{ display: 'flex', gap: 12, animation: 'ag-step-in 0.22s ease' }}>
-
-                  {/* Left: dot + connecting line */}
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 12, flexShrink: 0 }}>
-                    {step.status === 'done' ? (
-                      <svg width="12" height="12" viewBox="0 0 12 12" style={{ flexShrink: 0, marginTop: 4 }}>
-                        <circle cx="6" cy="6" r="6" fill={c['content-success']} />
-                        <path d="M3 6l2 2 4-4" stroke="white" strokeWidth="1.6" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    ) : step.status === 'running' ? (
-                      <div style={{ width: 12, height: 12, borderRadius: '50%', border: `2px solid ${c['border-default']}`, borderTop: `2px solid ${c['content-brand']}`, flexShrink: 0, marginTop: 4, animation: 'ag-spin 0.75s linear infinite' }} />
-                    ) : (
-                      <div style={{ width: 8, height: 8, borderRadius: '50%', border: `1.5px solid ${c['content-secondary']}`, opacity: 0.3, flexShrink: 0, marginTop: 6 }} />
-                    )}
-                    {i < visible.length - 1 && (
-                      <div style={{ flex: 1, width: 1, minHeight: 10, marginTop: 3, backgroundColor: c['border-default'] }} />
-                    )}
-                  </div>
-
-                  {/* Right: step content */}
-                  <div style={{ flex: 1, paddingBottom: i < visible.length - 1 ? sp.D : 0 }}>
-                    <span style={{
-                      fontSize: fs.sm,
-                      fontWeight: step.status === 'pending' ? fw.regular : fw.semibold,
-                      lineHeight: '20px',
-                      color: step.status === 'running' ? c['content-brand'] : step.status === 'pending' ? c['content-secondary'] : c['content-primary'],
-                      opacity: step.status === 'pending' ? 0.45 : 1,
-                      transition: 'color 0.2s',
-                    }}>
-                      {step.label}
-                    </span>
-
-                    {step.detail && step.status !== 'pending' && (
-                      <p style={{ margin: '3px 0 0', fontSize: fs.xs, color: c['content-secondary'], lineHeight: '18px', whiteSpace: 'pre-line' }}>
-                        <TypewriterText text={step.detail} active={step.status === 'running'} />
-                      </p>
-                    )}
-
-                    {/* SQL collapsible — card style */}
-                    {step.status === 'done' && step.collapsible && (
-                      <div style={{ marginTop: sp.B }}>
-                        <button
-                          onClick={() => onToggleCollapsible(msg.id, i)}
-                          style={{ width: '100%', display: 'flex', alignItems: 'center', gap: sp.B, padding: `${sp.B}px ${sp.C}px`, border: `1px solid ${c['border-divider']}`, borderRadius: 6, backgroundColor: c['background-base'], cursor: 'pointer', fontFamily: ff.primary, textAlign: 'left' }}
-                          onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
-                          onMouseLeave={e => (e.currentTarget.style.backgroundColor = c['background-base'])}
-                        >
-                          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke={c['content-secondary']} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-                            <rect x="3" y="2" width="10" height="12" rx="1.5" />
-                            <line x1="6" y1="6" x2="10" y2="6" />
-                            <line x1="6" y1="9" x2="10" y2="9" />
-                          </svg>
-                          <span style={{ flex: 1, fontSize: fs.xs, color: c['content-secondary'], fontWeight: fw.medium }}>
-                            {step.collapsibleOpen ? 'Hide SQL' : 'View SQL'}
-                          </span>
-                          <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke={c['content-secondary']} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: step.collapsibleOpen ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.15s', flexShrink: 0 }}>
-                            <polyline points="2,4 6,8 10,4" />
-                          </svg>
-                        </button>
-                        {step.collapsibleOpen && (
-                          <pre style={{ margin: '3px 0 0', padding: `${sp.B}px ${sp.C}px`, backgroundColor: c['background-subtle'], border: `1px solid ${c['border-divider']}`, borderRadius: 6, fontSize: fs.xs, fontFamily: ff.mono, color: c['content-primary'], overflowX: 'auto', whiteSpace: 'pre' }}>
-                            {step.collapsible}
-                          </pre>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-
-              {/* Duration footer */}
-              {allDone && msg.duration && (
-                <div style={{ display: 'flex', gap: 12, marginTop: sp.B }}>
-                  <div style={{ width: 10, flexShrink: 0 }} />
-                  <span style={{ fontSize: fs.xs, fontWeight: fw.semibold, color: c['content-secondary'] }}>
-                    Worked for {msg.duration}
-                  </span>
-                </div>
-              )}
-            </div>
+          <ReasoningBlock data={data} />
+          {allDone && msg.duration && (
+            <span style={{ display: 'block', marginTop: sp.B, fontSize: fs.xs, fontWeight: fw.semibold, color: c['content-secondary'] }}>
+              Worked for {msg.duration}
+            </span>
           )}
         </div>
       </div>
@@ -7533,28 +7486,15 @@ const MessageBubble: React.FC<{
           {msg.interactiveChips && msg.interactiveChips.length > 0 && (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: sp.B, marginTop: sp.C }}>
               {msg.interactiveChips.map(chip => (
-                <button
+                <Button
                   key={chip.value}
+                  variant="primary"
+                  size="small"
                   disabled={chipUsed}
                   onClick={() => { setChipUsed(true); onChipClick?.(chip.value); }}
-                  style={{
-                    padding: `${sp.A + 2}px ${sp.C}px`,
-                    borderRadius: 20,
-                    border: `1px solid ${chipUsed ? c['border-divider'] : c['content-brand']}`,
-                    backgroundColor: chipUsed ? c['background-subtle'] : c['background-base'],
-                    color: chipUsed ? c['content-tertiary'] : c['content-brand'],
-                    fontSize: fs.xs,
-                    fontWeight: fw.medium,
-                    cursor: chipUsed ? 'default' : 'pointer',
-                    fontFamily: ff.primary,
-                    lineHeight: '18px',
-                    transition: 'all 0.1s',
-                  }}
-                  onMouseEnter={e => { if (!chipUsed) e.currentTarget.style.backgroundColor = c['background-information']; }}
-                  onMouseLeave={e => { if (!chipUsed) e.currentTarget.style.backgroundColor = c['background-base']; }}
                 >
                   {chip.label}
-                </button>
+                </Button>
               ))}
             </div>
           )}
@@ -7584,38 +7524,21 @@ const MessageBubble: React.FC<{
 // ── Avatars ───────────────────────────────────────────────────────────────────
 
 
+// Spotter's mascot, the same asset the Viz panel uses. It replaces a
+// hand-drawn sparkle disc: the agent should look like Spotter, not like a
+// generic AI glyph. The working state keeps its pulse — the mascot doesn't spin.
 const AgentAvatar: React.FC<{ working?: boolean }> = ({ working }) => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
-    style={{ flexShrink: 0, borderRadius: '50%', animation: working ? 'ag-pulse 1.4s ease-in-out infinite' : 'none' }}>
-    <defs>
-      <linearGradient id="ag-grad" x1="2" y1="2" x2="22" y2="22" gradientUnits="userSpaceOnUse">
-        <stop stopColor="#2770ef" />
-        <stop offset="1" stopColor="#5b9ef4" />
-      </linearGradient>
-    </defs>
-    <circle cx="12" cy="12" r="12" fill="url(#ag-grad)" />
-    {/* Sparkle — rotates while working */}
-    <g style={{ transformOrigin: '12px 12px', animation: working ? 'ag-spin 2.2s linear infinite' : 'none' }}>
-      <path d="M12 7.5l.8 2.7 2.7.8-2.7.8-.8 2.7-.8-2.7-2.7-.8 2.7-.8z" fill="white" fillOpacity="0.95" />
-    </g>
-    <circle cx="16.5" cy="8" r="1" fill="white" fillOpacity="0.6" />
-    <circle cx="8.5" cy="16" r="0.7" fill="white" fillOpacity="0.5" />
-  </svg>
+  <img
+    src={spotterMascot}
+    alt=""
+    width={24}
+    height={24}
+    style={{ flexShrink: 0, borderRadius: '50%', display: 'block', animation: working ? 'ag-pulse 1.4s ease-in-out infinite' : 'none' }}
+  />
 );
 
 const AgentAvatarLarge: React.FC = () => (
-  <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
-    <defs>
-      <linearGradient id="ag-grad-lg" x1="3" y1="3" x2="33" y2="33" gradientUnits="userSpaceOnUse">
-        <stop stopColor="#2770ef" />
-        <stop offset="1" stopColor="#5b9ef4" />
-      </linearGradient>
-    </defs>
-    <circle cx="18" cy="18" r="18" fill="url(#ag-grad-lg)" />
-    <path d="M18 11l1.2 4.05L23.25 16.2l-4.05 1.2L18 21.4l-1.2-4.0L12.75 16.2l4.05-1.2z" fill="white" fillOpacity="0.95" />
-    <circle cx="24.5" cy="12" r="1.5" fill="white" fillOpacity="0.6" />
-    <circle cx="12.5" cy="24" r="1" fill="white" fillOpacity="0.5" />
-  </svg>
+  <img src={spotterMascot} alt="" width={36} height={36} style={{ borderRadius: '50%', display: 'block' }} />
 );
 
 const UserAvatar: React.FC = () => (
@@ -7629,32 +7552,6 @@ const UserAvatar: React.FC = () => (
 
 // ── Typewriter text ───────────────────────────────────────────────────────────
 
-const TypewriterText: React.FC<{ text: string; active: boolean }> = ({ text, active }) => {
-  const [displayed, setDisplayed] = React.useState(active ? '' : text);
-  const timerRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
-
-  React.useEffect(() => {
-    if (timerRef.current) clearInterval(timerRef.current);
-    if (!active) {
-      setDisplayed(text);
-      return;
-    }
-    let i = 0;
-    setDisplayed('');
-    timerRef.current = setInterval(() => {
-      i++;
-      setDisplayed(text.slice(0, i));
-      if (i >= text.length && timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
-    }, 14);
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [active]);
-
-  return <>{displayed}</>;
-};
 
 // ── Spinner ───────────────────────────────────────────────────────────────────
 

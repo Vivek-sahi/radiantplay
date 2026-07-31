@@ -53,11 +53,9 @@ export const AgentForm: React.FC<AgentFormProps> = ({
 
   if (isReadOnly) {
     return (
-      <div style={{
-        marginTop: sp.C, padding: `${sp.C}px ${sp.D}px`, borderRadius: 8,
-        border: `1px solid ${c['border-default']}`, backgroundColor: c['background-subtle'],
-        display: 'flex', alignItems: 'center', gap: sp.B,
-      }}>
+      // Once submitted this is a record, not a control — a bordered card gave it
+      // the same weight as the live form, so it's a quiet line instead.
+      <div style={{ marginTop: sp.B, display: 'flex', alignItems: 'center', gap: sp.A + 2 }}>
         <svg width="13" height="13" viewBox="0 0 16 16" fill="none" style={{ color: '#16A34A', flexShrink: 0 }}>
           <path d="M3 8.5l3 3 7-7" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
         </svg>

@@ -140,10 +140,12 @@ export function SpreadsheetGrid({
                 const derivedVal = derivedCols[col]?.[origIdx];
                 const baseVal = (val === null || val === undefined) ? derivedVal : val;
                 const fixVal = (baseVal === null || baseVal === undefined) ? activeFixes[col] : undefined;
+                // A formula column's values read like any other cell — the `fx`
+                // header badge marks the column, so the numbers don't need a colour.
                 const display = (baseVal !== null && baseVal !== undefined)
-                  ? (isNew ? <span style={{ color: '#2770EF', fontWeight: 500 }}>{String(baseVal)}</span> : String(baseVal))
+                  ? String(baseVal)
                   : isNew
-                    ? <span style={{ color: '#2770EF', fontStyle: 'italic' }}>—</span>
+                    ? <span style={{ color: '#C0C6CF', fontStyle: 'italic' }}>—</span>
                     : fixVal !== undefined
                       ? <span style={{ color: '#06BF7F', fontWeight: 600 }}>{fixVal}</span>
                       : <span style={{ color: '#C0C6CF' }}>null</span>;

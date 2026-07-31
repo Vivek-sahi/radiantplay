@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { ConfidenceBadge } from './ConfidenceBadge';
+import { Button } from '../../../../components/Button';
+import Tooltip from '../../../../components/Tooltip';
 import styles from './TableSuggestionCard.module.css';
 
 /**
@@ -91,22 +93,21 @@ export const TableSuggestionCard: React.FC<TableSuggestionCardProps> = ({
               <span className={styles.rowName}>{t.name}</span>
               <span className={styles.rowDesc}>{t.desc}</span>
             </div>
-            {/* title= carries the agent's reasoning on hover (S3). */}
-            <span title={t.reasoning} style={{ display: 'flex', cursor: 'help' }}>
-              <ConfidenceBadge pct={t.pct} />
-            </span>
+            {/* S3: hover the score to see why the agent picked this table. A real
+                tooltip rather than title=, so it's placed, styled and readable. */}
+            <Tooltip content={t.reasoning} placement="left" maxWidth={260}>
+              <span style={{ display: 'flex' }}>
+                <ConfidenceBadge pct={t.pct} />
+              </span>
+            </Tooltip>
           </div>
         ))}
       </div>
       {!isReadOnly && (
         <div className={styles.footer}>
-          <button
-            className={styles.addBtn}
-            disabled={selected.length === 0}
-            onClick={() => onAdd(selected)}
-          >
+          <Button variant="primary" size="small" disabled={selected.length === 0} onClick={() => onAdd(selected)}>
             {addLabel}
-          </button>
+          </Button>
         </div>
       )}
     </div>

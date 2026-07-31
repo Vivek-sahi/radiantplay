@@ -9,6 +9,7 @@ import AgentPanel, { AgentMessage } from './AgentPanel';
 import { PILLARS, READINESS_ISSUES, issuesForPillar } from '../data/readiness';
 import { SpreadsheetGrid, SpreadsheetSkeleton, SpreadsheetColumnMenu, DataSheetToolbar } from './Spreadsheet';
 import { AnchoredMenu } from './AnchoredMenu';
+import { SnowflakeMark, DatabricksMark, BigqueryMark, SalesforceMark, DbtMark } from './icons/ConnectorIcons';
 import TestView from './TestView';
 import { useVariant } from '../variant';
 import { ProjectState, emptyContext } from '../index';
@@ -63,6 +64,9 @@ interface CanvasJoin {
   cardinality: 'many_to_one' | 'one_to_many' | 'one_to_one';
   x: number;
   y: number;
+  /** Set once dragged — the badge then keeps the user's position instead of
+   *  riding the midpoint of its line. */
+  moved?: boolean;
 }
 
 export interface InitialCanvasJoin {
@@ -854,42 +858,16 @@ const IconTable = ({ size = 11, color = '#8B96A5' }: { size?: number; color?: st
 // Data-browser source marks — refined to a consistent, muted line style (uniform
 // stroke, 16px viewBox, distinctive silhouettes). No Radiant brand logos exist, so
 // these stay bespoke but read as one clean set alongside the Radiant structural icons.
-const IconCloud = () => (
-  <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
-    <path d="M5 12.5A3 3 0 0 1 4.5 6.55 3.8 3.8 0 0 1 11.8 7a2.75 2.75 0 0 1-.55 5.5H5z" stroke="#8B96A5" strokeWidth="1.3" strokeLinejoin="round"/>
-  </svg>
-);
-const IconFolder = () => (
-  <Icon name="folder" size="xs" color="#8B96A5" />
-);
-const IconDb = () => (
-  <Icon name="database" size="xs" color="#777E8B" />
-);
-const IconSchema = () => (
-  <Icon name="schema" size="xs" color="#A5ACB9" />
-);
-const IconDbt = () => (
-  <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
-    <path d="M8 2.2l5.2 3v5.6L8 13.8l-5.2-3V5.2z" stroke="#8B96A5" strokeWidth="1.3" strokeLinejoin="round"/>
-  </svg>
-);
-const IconSnowflake = () => (
-  <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
-    <path d="M8 2v12M2.8 5l10.4 6M13.2 5L2.8 11" stroke="#8B96A5" strokeWidth="1.3" strokeLinecap="round"/>
-  </svg>
-);
-const IconBigquery = () => (
-  <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
-    <path d="M8 2.4l5 5-5 5-5-5z" stroke="#8B96A5" strokeWidth="1.3" strokeLinejoin="round"/>
-    <path d="M8 5.6v4.8M5.6 8h4.8" stroke="#8B96A5" strokeWidth="1.1" strokeLinecap="round"/>
-  </svg>
-);
-
-const IconDatabricks = () => (
-  <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
-    <path d="M2 6l6 3.2L14 6M2 9.2l6 3.2 6-3.2M8 3l6 3.2L8 9.4 2 6.2 8 3z" stroke="#8B96A5" strokeWidth="1.15" strokeLinejoin="round" strokeLinecap="round"/>
-  </svg>
-);
+// The connector marks now live in components/icons/ConnectorIcons so the agent
+// thread's connection list shows the same glyph for the same connection.
+const IconCloud      = () => <SalesforceMark />;
+const IconFolder     = () => <Icon name="folder" size="xs" color="#8B96A5" />;
+const IconDb         = () => <Icon name="database" size="xs" color="#777E8B" />;
+const IconSchema     = () => <Icon name="schema" size="xs" color="#A5ACB9" />;
+const IconDbt        = () => <DbtMark />;
+const IconSnowflake  = () => <SnowflakeMark />;
+const IconBigquery   = () => <BigqueryMark />;
+const IconDatabricks = () => <DatabricksMark />;
 
 const IconPlus = ({ size = 10, color = 'currentColor' }: { size?: number; color?: string }) => (
   <svg width={size} height={size} viewBox="0 0 12 12" fill="none">
@@ -2070,16 +2048,19 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
   // These used to read "Snowflake" and "weekly refresh" whatever was on the
   // canvas, which contradicts the model by the time you publish it: the demo
   // spans four sources and caches daily.
-  const publishSources = (() => {
-    const names = new Set<string>();
+  // Grouped by connection, so the modal names the actual tables rather than
+  // running four source names into one wrapping line.
+  const publishSourceGroups = (() => {
+    const bySource = new Map<string, string[]>();
     groups.forEach(g => {
-      if (g.sourceKind === 'csv') { names.add('CSV upload'); return; }
-      const known = CONNECTION_BY_TABLE[g.tableName];
-      if (known) { names.add(known); return; }
-      if (g.steps.some(s => s.type === 'python')) { names.add('Python script'); return; }
-      names.add('Warehouse');
+      const source = g.sourceKind === 'csv' ? 'CSV upload'
+        : CONNECTION_BY_TABLE[g.tableName]
+          ?? (g.steps.some(st => st.type === 'python') ? 'Python script' : 'Warehouse');
+      const list = bySource.get(source) ?? [];
+      if (!list.includes(g.tableName)) list.push(g.tableName);
+      bySource.set(source, list);
     });
-    return names.size ? [...names].join(' · ') : 'Nothing on the canvas yet';
+    return [...bySource.entries()].map(([source, tables]) => ({ source, tables }));
   })();
   const publishCache = dataMode === 'cached'
     ? `Yes · ${cacheRefresh.toLowerCase()} refresh, ${cacheRange.toLowerCase()}`
@@ -2523,6 +2504,186 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
    * proposals whose tables aren't on the canvas — a join edge needs both ends.
    * Resolves table1Id by name the same way the initialJoins seeder does.
    */
+  /**
+   * Tidy the canvas into a layered graph.
+   *
+   * Cards land wherever the next free slot in NODE_POSITIONS happens to be, which
+   * is fine for one or two but reads as chaos once five tables are joined to one
+   * hub. This lays them out left-to-right by distance from the most-connected
+   * table: the hub in the first column, everything joined to it in the second,
+   * anything joined to those in the third, unconnected cards in a column of
+   * their own at the end. Each column is centred vertically against the tallest.
+   *
+   * Called after joins are created, not on every change — dragging a card should
+   * stay put.
+   */
+  /**
+   * Join geometry — one orthogonal line per join, routed through the gutter.
+   *
+   * Each join used to draw as *two* curves meeting a floating badge, so five
+   * joins into one hub meant ten swooping beziers and five nodes adrift in the
+   * middle of the canvas. Now: leave the left card horizontally, one vertical run
+   * in the empty gutter between columns, enter the right card horizontally — the
+   * shape an ERD uses, because it reads.
+   *
+   * Two anti-overlap rules: joins sharing a gutter each get their own vertical
+   * channel, and joins leaving the same card exit at different heights along its
+   * edge. The badge rides the midpoint of the vertical run unless it's been
+   * dragged, in which case the user's position wins.
+   */
+  const joinGeometry = React.useMemo(() => {
+    const rectOf = (g: CanvasGroup) => {
+      const m = cardSizes[g.id];
+      return { left: g.x, top: g.y, width: m?.w ?? BLOCK_W, height: m?.h ?? BLOCK_H };
+    };
+    const resolved = canvasJoins.map(j => {
+      const a = groups.find(g => g.id === j.table1Id);
+      const b = groups.find(g => g.tableName === j.table2Name);
+      return a && b ? { j, a, b } : null;
+    }).filter(Boolean) as { j: CanvasJoin; a: CanvasGroup; b: CanvasGroup }[];
+
+    // How many joins leave each card, so their exit points can be spread out.
+    const exitCount = new Map<string, number>();
+    resolved.forEach(({ a, b }) => {
+      exitCount.set(a.id, (exitCount.get(a.id) ?? 0) + 1);
+      exitCount.set(b.id, (exitCount.get(b.id) ?? 0) + 1);
+    });
+    const exitSeen = new Map<string, number>();
+
+    const out = new Map<string, { d: string; from: { x: number; y: number }; to: { x: number; y: number }; badge: { x: number; y: number } }>();
+
+    resolved.forEach(({ j, a, b }, i) => {
+      const ra = rectOf(a), rb = rectOf(b);
+      const aIsLeft = ra.left + ra.width / 2 <= rb.left + rb.width / 2;
+      const L = aIsLeft ? ra : rb, R = aIsLeft ? rb : ra;
+      const lId = aIsLeft ? a.id : b.id, rId = aIsLeft ? b.id : a.id;
+
+      // Spread exits down each card's edge: nth of m sits at (n+1)/(m+1) height.
+      const spread = (id: string, rect: typeof ra) => {
+        const total = exitCount.get(id) ?? 1;
+        const seen = (exitSeen.get(id) ?? 0) + 1;
+        exitSeen.set(id, seen);
+        return rect.top + (rect.height * seen) / (total + 1);
+      };
+      const sy = spread(lId, L);
+      const ty = spread(rId, R);
+      const sx = L.left + L.width;
+      const tx = R.left;
+
+      // Each join gets its own vertical channel inside the gutter.
+      const gutter = Math.max(24, tx - sx);
+      const slot = (i % 5) - 2;
+      const midX = sx + gutter / 2 + slot * 9;
+
+      const r = 8; // corner radius
+      const vDir = ty > sy ? 1 : -1;
+      const d = Math.abs(ty - sy) < r * 2
+        ? `M ${sx} ${sy} L ${tx} ${ty}`
+        : [
+            `M ${sx} ${sy}`,
+            `L ${midX - r} ${sy}`,
+            `Q ${midX} ${sy} ${midX} ${sy + r * vDir}`,
+            `L ${midX} ${ty - r * vDir}`,
+            `Q ${midX} ${ty} ${midX + r} ${ty}`,
+            `L ${tx} ${ty}`,
+          ].join(' ');
+
+      out.set(j.id, {
+        d,
+        from: { x: sx, y: sy },
+        to: { x: tx, y: ty },
+        badge: { x: midX - 20, y: (sy + ty) / 2 - 20 },
+      });
+    });
+    return out;
+  }, [canvasJoins, groups, cardSizes]);
+
+  const arrangeCanvas = useCallback((joinsOverride?: CanvasJoin[]) => {
+    const COL_GAP = 90;
+    const ROW_GAP = 34;
+    const DEFAULT_H = 132;
+    const ORIGIN = { x: 80, y: 60 };
+
+    setGroups(gs => {
+      if (gs.length < 2) return gs;
+      const joins = joinsOverride ?? canvasJoins;
+      const idByName: Record<string, string> = {};
+      gs.forEach(g => { idByName[g.tableName] = g.id; });
+
+      const adj = new Map<string, Set<string>>(gs.map(g => [g.id, new Set<string>()]));
+      joins.forEach(j => {
+        const a = j.table1Id;
+        const b = idByName[j.table2Name];
+        if (a && b && adj.has(a) && adj.has(b)) { adj.get(a)!.add(b); adj.get(b)!.add(a); }
+      });
+      // Derive edges also count — a SQL card built from other cards belongs downstream.
+      deriveEdges.forEach(e => {
+        if (adj.has(e.fromId) && adj.has(e.toId)) { adj.get(e.fromId)!.add(e.toId); adj.get(e.toId)!.add(e.fromId); }
+      });
+
+      const degree = (id: string) => adj.get(id)?.size ?? 0;
+      const connected = gs.filter(g => degree(g.id) > 0);
+      if (connected.length === 0) return gs;
+
+      // Hub = most joins; ties broken by canvas order so the layout is stable.
+      const hub = connected.reduce((best, g) => (degree(g.id) > degree(best.id) ? g : best), connected[0]);
+
+      const depth = new Map<string, number>([[hub.id, 0]]);
+      const queue = [hub.id];
+      while (queue.length) {
+        const cur = queue.shift()!;
+        adj.get(cur)!.forEach(n => {
+          if (!depth.has(n)) { depth.set(n, depth.get(cur)! + 1); queue.push(n); }
+        });
+      }
+      // A join between two cards at the same depth has no gutter to route
+      // through — its line would cross whatever is stacked between them. Push the
+      // lesser-connected end one column on so every edge gets empty space.
+      for (let pass = 0; pass < 4; pass++) {
+        let moved = false;
+        joins.forEach(jn => {
+          const a = jn.table1Id;
+          const b = idByName[jn.table2Name];
+          if (!a || !b || !depth.has(a) || !depth.has(b)) return;
+          if (depth.get(a) !== depth.get(b)) return;
+          const push = degree(a) <= degree(b) ? a : b;
+          depth.set(push, depth.get(push)! + 1);
+          moved = true;
+        });
+        if (!moved) break;
+      }
+
+      const maxDepth = Math.max(...depth.values());
+      gs.forEach(g => { if (!depth.has(g.id)) depth.set(g.id, maxDepth + 1); });
+
+      const columns = new Map<number, CanvasGroup[]>();
+      gs.forEach(g => {
+        const d = depth.get(g.id)!;
+        columns.set(d, [...(columns.get(d) ?? []), g]);
+      });
+
+      const heightOf = (g: CanvasGroup) => cardSizes[g.id]?.h ?? DEFAULT_H;
+      const widthOf  = (g: CanvasGroup) => cardSizes[g.id]?.w ?? CARD_W;
+      const colHeight = (col: CanvasGroup[]) =>
+        col.reduce((sum, g) => sum + heightOf(g), 0) + ROW_GAP * (col.length - 1);
+      const tallest = Math.max(...[...columns.values()].map(colHeight));
+
+      const pos = new Map<string, { x: number; y: number }>();
+      let x = ORIGIN.x;
+      [...columns.keys()].sort((a, b) => a - b).forEach(d => {
+        const col = columns.get(d)!;
+        let y = ORIGIN.y + (tallest - colHeight(col)) / 2;
+        col.forEach(g => {
+          pos.set(g.id, { x, y });
+          y += heightOf(g) + ROW_GAP;
+        });
+        x += Math.max(...col.map(widthOf)) + COL_GAP;
+      });
+
+      return gs.map(g => ({ ...g, ...(pos.get(g.id) ?? { x: g.x, y: g.y }) }));
+    });
+  }, [canvasJoins, deriveEdges, cardSizes]);
+
   const agentAddJoins = useCallback((joins: InitialCanvasJoin[]) => {
     setGroups(currentGroups => {
       setCanvasJoins(prevJoins => {
@@ -2541,7 +2702,10 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
             joinType: j.joinType, cardinality: j.cardinality,
             x: 0, y: 0,
           }));
-        return additions.length ? [...prevJoins, ...additions] : prevJoins;
+        const next = additions.length ? [...prevJoins, ...additions] : prevJoins;
+        // Lay the graph out against the joins that now exist, not the stale state.
+        if (additions.length) window.setTimeout(() => arrangeCanvas(next), 60);
+        return next;
       });
       return currentGroups;
     });
@@ -2731,7 +2895,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
           x: Math.round((t1.x + t2.x) / 2) + 70,
           y: Math.round((t1.y + t2.y) / 2) + 34,
         }]);
-        setSingleJoinActive(false);
+          setSingleJoinActive(false);
         setMultiJoinActive(false);
         setSelectedIds(new Set([jid]));  // select the join → side panel shows join details
         // Open the join straight into its editable form, pre-filled with the inferred key.
@@ -2797,7 +2961,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
         x: Math.round((t1.x + t2.x) / 2) + 70,
         y: Math.round((t1.y + t2.y) / 2) + 34,
       } as CanvasJoin]);
-    };
+      };
     (window as any).__dsEnterPickMode__ = () => setPickMode(true);
     (window as any).__dsTogglePickMode__ = () => setPickMode(p => !p);
     return () => {
@@ -3407,13 +3571,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
           onAgentAddTables={agentAddTables}
           onAgentAddJoins={agentAddJoins}
           onAgentAddPythonSource={agentAddPythonSource}
-          onAgentRequestCaching={onCached => setCacheConfirm({
-            title: 'Caching is required',
-            body: 'Snowflake and Databricks can’t be joined at query time. To model across them, this model is required to be cached into ThoughtSpot’s data store.',
-            cancelLabel: 'Not now',
-            settings: true,
-            onConfirm: settings => { setDataMode('cached'); setCacheConfirm(null); onCached(settings); },
-          })}
+          onCachingApplied={() => setDataMode('cached')}
           canvasTableCount={groups.filter(g => g.steps[0]?.type === 'source').length}
           width={agentWidth}
           rootBackground="transparent"
@@ -5201,6 +5359,27 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
 
       {/* Undo / Redo + Zoom — bottom-right */}
       <div style={{ position: 'absolute', bottom: 16, right: 16, zIndex: 20, display: 'flex', alignItems: 'center', gap: 6 }}>
+        {/* Tidy up — re-runs the layered layout on demand. Hand-placed cards are
+            never moved automatically, so this is how you ask for it. */}
+        {groups.length > 1 && (
+          <div style={{ display: 'flex', alignItems: 'center', background: '#fff', border: '1px solid #E2E6EC', borderRadius: 7, padding: '3px 4px', boxShadow: '0 2px 8px rgba(25,35,49,0.08)' }}>
+            <button
+              onClick={() => arrangeCanvas()}
+              title="Tidy up — arrange cards by their joins"
+              style={{ height: 26, padding: '0 8px', display: 'flex', alignItems: 'center', gap: 5, border: 'none', borderRadius: 4, background: 'transparent', color: '#64748B', cursor: 'pointer', fontFamily: ff.primary, fontSize: 12, fontWeight: 500 }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#F6F8FA'; (e.currentTarget as HTMLElement).style.color = '#1D232F'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#64748B'; }}
+            >
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                <rect x="1.6" y="2.4" width="4.4" height="4" rx="1" stroke="currentColor" strokeWidth="1.3"/>
+                <rect x="1.6" y="9.6" width="4.4" height="4" rx="1" stroke="currentColor" strokeWidth="1.3"/>
+                <rect x="10" y="6" width="4.4" height="4" rx="1" stroke="currentColor" strokeWidth="1.3"/>
+                <path d="M6 4.4h2a1 1 0 0 1 1 1V8M6 11.6h2a1 1 0 0 0 1-1V8M9 8h1" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+              </svg>
+              Tidy up
+            </button>
+          </div>
+        )}
         {/* Undo / Redo */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 2, background: '#fff', border: '1px solid #E2E6EC', borderRadius: 7, padding: '3px 4px', boxShadow: '0 2px 8px rgba(25,35,49,0.08)' }}>
           <button style={{ width: 26, height: 26, border: 'none', borderRadius: 4, background: 'transparent', color: '#64748B', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Undo"
@@ -5378,50 +5557,31 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
         </>
       )}
 
-      {/* SVG connector layer — anchors to the card's actual measured edge (not a
-          hardcoded width), so lines never float off the card, and always exit
-          from the point on the perimeter closest to the join icon. This keeps
-          multi-join tables legible: each join fans out from its own edge point
-          instead of every line leaving from the same fixed spot. */}
-      {canvasJoins.length > 0 && (() => {
-        const cardRect = (g: CanvasGroup) => {
-          const m = cardSizes[g.id];
-          return { left: g.x, top: g.y, width: m?.w ?? BLOCK_W, height: m?.h ?? BLOCK_H };
-        };
-        // Closest point on the rect's perimeter to (tx, ty) — the ray from the
-        // rect's center through the target, clipped to the rect boundary.
-        const edgePoint = (rect: { left: number; top: number; width: number; height: number }, tx: number, ty: number) => {
-          const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
-          const dx = tx - cx, dy = ty - cy;
-          if (dx === 0 && dy === 0) return { x: cx, y: rect.top, horizontal: false };
-          const scaleX = dx !== 0 ? Math.abs(rect.width / 2 / dx) : Infinity;
-          const scaleY = dy !== 0 ? Math.abs(rect.height / 2 / dy) : Infinity;
-          const scale = Math.min(scaleX, scaleY);
-          return { x: cx + dx * scale, y: cy + dy * scale, horizontal: scaleX < scaleY };
-        };
-        return (
-          <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', overflow: 'visible' }}>
-            {canvasJoins.map(j => {
-              const t1 = groups.find(g => g.id === j.table1Id);
-              const t2 = groups.find(g => g.tableName === j.table2Name);
-              const jcx = j.x + 20; // join icon center x (icon ~40px)
-              const jcy = j.y + 20; // join icon center y
-              const lines: React.ReactNode[] = [];
-              const drawEdge = (g: CanvasGroup, key: string) => {
-                const p = edgePoint(cardRect(g), jcx, jcy);
-                const d = p.horizontal
-                  ? (() => { const mx = (p.x + jcx) / 2; return `M ${p.x} ${p.y} C ${mx} ${p.y}, ${mx} ${jcy}, ${jcx} ${jcy}`; })()
-                  : (() => { const my = (p.y + jcy) / 2; return `M ${p.x} ${p.y} C ${p.x} ${my}, ${jcx} ${my}, ${jcx} ${jcy}`; })();
-                lines.push(<path key={key} d={d} stroke="#2770EF" strokeWidth="1.5" fill="none"/>);
-                lines.push(<circle key={`${key}d`} cx={p.x} cy={p.y} r="2.5" fill="#2770EF"/>);
-              };
-              if (t1) drawEdge(t1, 't1');
-              if (t2) drawEdge(t2, 't2');
-              return <g key={j.id}>{lines}</g>;
-            })}
-          </svg>
-        );
-      })()}
+      {/* Join lines — one orthogonal path per join, routed through the column
+          gutter. Geometry comes from joinGeometry so the badge below sits on the
+          line it belongs to. */}
+      {canvasJoins.length > 0 && (
+        <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', overflow: 'visible' }}>
+          {canvasJoins.map(j => {
+            const geo = joinGeometry.get(j.id);
+            if (!geo) return null;
+            const selected = selectedIds.has(j.id);
+            return (
+              <g key={j.id}>
+                <path
+                  d={geo.d}
+                  stroke={selected ? '#1E5FD8' : '#2770EF'}
+                  strokeWidth={selected ? 2.2 : 1.5}
+                  fill="none"
+                  strokeLinecap="round"
+                />
+                <circle cx={geo.from.x} cy={geo.from.y} r="2.5" fill="#2770EF" />
+                <circle cx={geo.to.x} cy={geo.to.y} r="2.5" fill="#2770EF" />
+              </g>
+            );
+          })}
+        </svg>
+      )}
 
       {/* Derive edges — directional data-flow arrows (source card → SQL-derived card). Blue + arrowhead, distinct from the gray join connectors. */}
       {deriveEdges.length > 0 && (
@@ -5460,10 +5620,13 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
         const joinLabel: Record<string, string> = { inner: 'Inner', full_outer: 'Full Outer', left_outer: 'Left Outer', right_outer: 'Right Outer' };
         const cardLabel: Record<string, string> = { many_to_one: 'M:1', one_to_many: '1:M', one_to_one: '1:1' };
         const selected = selectedIds.has(j.id);
+        const geo = joinGeometry.get(j.id);
+        // Sit on the line unless the user has dragged this badge somewhere.
+        const placed = j.moved || !geo ? j : { ...j, x: geo.badge.x, y: geo.badge.y };
         return (
           <JoinBlockCard
             key={j.id}
-            join={j}
+            join={placed}
             selected={selected}
             joinLabel={joinLabel[j.joinType]}
             cardinalityLabel={cardLabel[j.cardinality]}
@@ -5476,7 +5639,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
                 setSelectedIds(new Set([j.id]));
               }
             }}
-            onMove={(x, y) => setCanvasJoins(prev => prev.map(jj => jj.id === j.id ? { ...jj, x, y } : jj))}
+            onMove={(x, y) => setCanvasJoins(prev => prev.map(jj => jj.id === j.id ? { ...jj, x, y, moved: true } : jj))}
             onRemove={() => { setCanvasJoins(prev => prev.filter(jj => jj.id !== j.id)); setSelectedIds(new Set()); }}
           />
         );
@@ -6072,11 +6235,6 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
         const rowsThatFit = Math.max(0, Math.floor((previewHeight - 95) / 25));
         const rowCap = Math.max(previewLimit, rowsThatFit);
 
-        const previewToolbarProps = {
-          onToggleExpand: () => setPreviewFull(f => { const nf = !f; if (nf) setPreviewOpen(true); return nf; }),
-          expanded: previewFull,
-        };
-
         // ── Model level (POC): preview of the entire model, combined ──
         if (previewScope === 'model') {
           if (groups.length === 0) {
@@ -6122,27 +6280,9 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
           const sheetCols: [string, string][] = modelCols.map(([name, type, table]) =>
             nameCounts[name] > 1 ? [`${table}.${name}`, type] : [name, type]
           );
-          const downloadModelCsv = () => {
-            const escapeCsv = (v: unknown) => {
-              const s = v === null || v === undefined ? '' : String(v);
-              return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-            };
-            const lines = [
-              sheetCols.map(([col]) => escapeCsv(col)).join(','),
-              ...mergedRows.map(r => r.map(escapeCsv).join(',')),
-            ];
-            const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'model_data.csv';
-            a.click();
-            URL.revokeObjectURL(url);
-          };
 
           return (
             <div style={{ flex: 1, borderTop: BORDER, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-              <DataSheetToolbar onDownloadCsv={downloadModelCsv} {...previewToolbarProps} />
               <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
                 <SpreadsheetGrid
                   tableCols={sheetCols}
@@ -6200,26 +6340,8 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
           }
 
           // Join data mode — consistent with table view; same spreadsheet chrome as Model level.
-          const downloadJoinCsv = () => {
-            const escapeCsv = (v: unknown) => {
-              const s = v === null || v === undefined ? '' : String(v);
-              return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-            };
-            const lines = [
-              mergedCols.map(([col]) => escapeCsv(col)).join(','),
-              ...mergedRows.map(r => r.map(escapeCsv).join(',')),
-            ];
-            const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'join_data.csv';
-            a.click();
-            URL.revokeObjectURL(url);
-          };
           return (
             <div style={{ flex: 1, borderTop: BORDER, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-              <DataSheetToolbar onDownloadCsv={downloadJoinCsv} {...previewToolbarProps} />
               <SpreadsheetGrid
                 tableCols={mergedCols}
                 isInput={false}
@@ -6409,32 +6531,9 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
         const isSourceStep = selectedGroup.activeStep === 0;
         const stepLabel = isSourceStep ? null : OP_META[step.type]?.label ?? step.type;
 
-        const downloadTableCsv = () => {
-          const escapeCsv = (v: unknown) => {
-            const s = v === null || v === undefined ? '' : String(v);
-            return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-          };
-          const lines = [
-            cols.map(([col]) => escapeCsv(col)).join(','),
-            ...outputRows.map(r => r.map(escapeCsv).join(',')),
-          ];
-          const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `${tblName}.csv`;
-          a.click();
-          URL.revokeObjectURL(url);
-        };
 
         return (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-            <DataSheetToolbar
-              onDownloadCsv={downloadTableCsv}
-              onFilter={() => addStep('filter', false)}
-              onFormula={() => addStep('formula', false)}
-              {...previewToolbarProps}
-            />
             <div style={{ flex: 1, borderTop: BORDER, display: 'flex', overflow: 'hidden' }}>
               {/* Source (input) pane */}
               {showInput && (
@@ -6646,15 +6745,49 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
   );
 
   // ── Data tab — a single spreadsheet merging every table currently on the canvas ──
+  // Empty sheet fills whatever height the tab has, rather than stopping at a
+  // fixed row count and leaving dead space under it. Re-measures on resize.
+  const emptySheetRef = useRef<HTMLDivElement>(null);
+  const [emptySheetRows, setEmptySheetRows] = useState(24);
+  useEffect(() => {
+    const el = emptySheetRef.current;
+    if (!el) return;
+    const measure = () => setEmptySheetRows(Math.max(24, Math.ceil((el.clientHeight - 26) / 25) + 1));
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [viewMode, groups.length]);
+
   const dataView = (() => {
+    // Empty state is an empty *sheet*, not a grey panel with a message in it —
+    // the tab is a spreadsheet, so it should read as one before there's data.
+    // Same chrome as SpreadsheetGrid (gutter, header band, 25px rows) with
+    // lettered columns, and the guidance floats over it rather than replacing it.
     if (groups.length === 0) {
+      const emptyCols = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
       return (
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F6F8FA' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, opacity: 0.5, textAlign: 'center' }}>
-            <svg width="30" height="30" viewBox="0 0 32 32" fill="none"><rect x="3" y="7" width="26" height="18" rx="2" stroke="currentColor" strokeWidth="1.5"/><path d="M3 12h26M9 12v13M16 12v13M23 12v13" stroke="currentColor" strokeWidth="1.3"/></svg>
-            <span style={{ fontSize: 12, color: '#64748B' }}>No data yet</span>
-            <span style={{ fontSize: 11, color: '#A5ACB9' }}>Add a table to the canvas to see its data here</span>
-          </div>
+        <div ref={emptySheetRef} style={{ flex: 1, position: 'relative', overflow: 'auto', background: '#fff' }}>
+          <table style={{ borderCollapse: 'collapse', fontSize: 11.5, tableLayout: 'fixed', width: '100%', minWidth: 'max-content' }}>
+            <thead>
+              <tr style={{ background: '#F6F8FA', position: 'sticky', top: 0, zIndex: 2 }}>
+                <th style={{ width: 36, padding: '5px 8px', borderRight: BORDER, borderBottom: BORDER, color: '#C0C6CF', fontWeight: 600, fontSize: 10, textAlign: 'center' }}>#</th>
+                {emptyCols.map(col => (
+                  <th key={col} style={{ minWidth: 116, padding: '5px 12px', borderRight: BORDER, borderBottom: BORDER, textAlign: 'left', fontWeight: 600, color: '#C0C6CF' }}>{col}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {Array.from({ length: emptySheetRows }, (_, r) => (
+                <tr key={r}>
+                  <td style={{ width: 36, height: 25, padding: '5px 8px', borderRight: BORDER, borderBottom: BORDER, color: '#C0C6CF', fontSize: 10, textAlign: 'center', background: '#FAFBFC' }}>{r + 1}</td>
+                  {emptyCols.map(col => (
+                    <td key={col} style={{ height: 25, padding: '5px 12px', borderRight: BORDER, borderBottom: BORDER }} />
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       );
     }
@@ -7013,17 +7146,35 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
             <div style={{ margin: '16px 0 20px', border: BORDER, borderRadius: 9, overflow: 'hidden' }}>
               {[
                 { label: 'Status', value: publishStatus.value, color: publishStatus.color, check: publishStatus.check },
-                { label: 'Sources', value: publishSources, color: '#1D232F', check: false },
                 { label: 'Cache', value: publishCache, color: '#1D232F', check: false },
               ].map((row, i) => (
-                <div key={row.label} style={{ display: 'flex', alignItems: 'center', padding: '11px 14px', borderTop: i > 0 ? '1px solid #F0F2F6' : 'none' }}>
-                  <span style={{ fontSize: 12.5, color: '#777E8B', flex: 1, fontFamily: ff.primary }}>{row.label}</span>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: row.color, fontFamily: ff.primary }}>
+                <div key={row.label} style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '11px 14px', borderTop: i > 0 ? '1px solid #F0F2F6' : 'none' }}>
+                  <span style={{ fontSize: 12.5, color: '#777E8B', flexShrink: 0, fontFamily: ff.primary }}>{row.label}</span>
+                  <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: row.color, fontFamily: ff.primary }}>
                     {row.check && <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" fill="rgba(6,191,127,0.14)"/><path d="M5 8l2 2 4-4" stroke="#06BF7F" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                     {row.value}
                   </span>
                 </div>
               ))}
+              {/* Sources — a list, one row per connection, so a long table set wraps
+                  inside its own column instead of over the label. */}
+              <div style={{ padding: '11px 14px', borderTop: '1px solid #F0F2F6' }}>
+                <span style={{ fontSize: 12.5, color: '#777E8B', fontFamily: ff.primary }}>Sources</span>
+                {publishSourceGroups.length === 0 ? (
+                  <div style={{ marginTop: 6, fontSize: 12.5, color: '#A5ACB9', fontFamily: ff.primary }}>Nothing on the canvas yet</div>
+                ) : (
+                  <div style={{ marginTop: 7, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {publishSourceGroups.map(({ source, tables }) => (
+                      <div key={source} style={{ display: 'flex', gap: 10, alignItems: 'baseline' }}>
+                        <span style={{ width: 96, flexShrink: 0, fontSize: 12, fontWeight: 600, color: '#1D232F', fontFamily: ff.primary }}>{source}</span>
+                        <span style={{ flex: 1, minWidth: 0, fontSize: 12, color: '#64748B', fontFamily: ff.primary, lineHeight: 1.5 }}>
+                          {tables.join(', ')}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
               <button onClick={() => setPublishOpen(false)} style={{ padding: '8px 16px', borderRadius: RADIUS6, border: '1px solid #C0C6CF', background: '#fff', color: '#1D232F', fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: ff.primary }}>Cancel</button>

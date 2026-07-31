@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { ConfidenceBadge } from './ConfidenceBadge';
 import { JoinDiagram, type Cardinality } from './JoinDiagram';
 import styles from './TableSuggestionCard.module.css';
+import { Button } from '../../../../components/Button';
+import Tooltip from '../../../../components/Tooltip';
 
 /**
  * Agent's proposed joins — run-of-show S7.
@@ -86,21 +88,19 @@ export const JoinSuggestionCard: React.FC<JoinSuggestionCardProps> = ({ joins, o
                 warnFanOut={j.warnFanOut}
               />
             </div>
-            <span title={j.reasoning} style={{ display: 'flex', cursor: 'help' }}>
-              <ConfidenceBadge pct={j.pct} />
-            </span>
+            <Tooltip content={j.reasoning} placement="left" maxWidth={260}>
+              <span style={{ display: 'flex' }}>
+                <ConfidenceBadge pct={j.pct} />
+              </span>
+            </Tooltip>
           </div>
         ))}
       </div>
       {!isReadOnly && (
         <div className={styles.footer}>
-          <button
-            className={styles.addBtn}
-            disabled={selected.length === 0}
-            onClick={() => onAdd(selected)}
-          >
+          <Button variant="primary" size="small" disabled={selected.length === 0} onClick={() => onAdd(selected)}>
             Create joins
-          </button>
+          </Button>
         </div>
       )}
     </div>
