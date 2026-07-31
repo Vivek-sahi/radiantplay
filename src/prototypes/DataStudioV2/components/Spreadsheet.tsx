@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ff } from '../styles';
 import { AnchoredMenu } from './AnchoredMenu';
 // Real ThoughtSpot glyphs from the Spreadsheet Figma, rather than hand-drawn
@@ -33,6 +33,13 @@ export interface SpreadsheetGridProps {
   derivedCols: Record<string, (string | number | null)[]>;
   /** Columns still computing — cells render a shimmer instead of a value. */
   loadingCols?: Set<string>;
+  /**
+   * The whole result is still being fetched or computed. Every cell shimmers while this
+   * is true; when it flips false the values fill in cell by cell on a diagonal, so you
+   * watch the sheet calculate rather than watching a fake grid swap for a real one.
+   * Headers never shimmer — the real column names are what make this read as your table.
+   */
+  loading?: boolean;
   /** Formula-defined columns — headers carry an `fx` badge. */
   formulaCols?: Set<string>;
   inputFixes: Record<string, string>;
@@ -42,9 +49,49 @@ export interface SpreadsheetGridProps {
 export function SpreadsheetGrid({
   tableCols, isInput, scrollRef, rows, outputRows, previewSort,
   previewColMenu, setPreviewColMenu, hiddenPreviewCols, highlightedCol,
-  derivedCols, loadingCols, formulaCols, inputFixes, outputFixes,
+  derivedCols, loadingCols, loading, formulaCols, inputFixes, outputFixes,
 }: SpreadsheetGridProps) {
   const numericTypes = NUMERIC_TYPES;
+
+  // ── Cell-by-cell reveal ──────────────────────────────────────────────────────
+  // 0 = every cell masked, 1 = every cell shown. Held at 1 unless a load actually
+  // happens, so grids that never pass `loading` behave exactly as before.
+  const [reveal, setReveal] = useState(1);
+  const wasLoading = useRef(false);
+  useEffect(() => {
+    if (loading) { wasLoading.current = true; setReveal(0); return; }
+    // Only animate coming *out* of a load — not on first mount, and not on the
+    // re-renders that follow (sort, column menu, resize).
+    if (!wasLoading.current) { setReveal(1); return; }
+    wasLoading.current = false;
+    let raf = 0;
+    const start = performance.now();
+    const tick = (t: number) => {
+      const p = Math.min(1, (t - start) / 620);
+      setReveal(p);
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [loading]);
+
+  // Diagonal wave: a cell's turn depends on row + column, so the fill sweeps from the
+  // top-left rather than snapping in row by row.
+  const shownCols = tableCols.filter(([c]) => !hiddenPreviewCols.has(c)).length;
+  const revealSpan = Math.max(1, (rows.length - 1) + (shownCols - 1));
+  const cellHidden = (ri: number, ci: number) =>
+    reveal < 1 && (ri + ci) / revealSpan > reveal;
+
+  const shimmerCell = (key: string, ri: number) => (
+    <td key={key} style={{ padding: '4px 12px', borderRight: BORDER, whiteSpace: 'nowrap' }}>
+      <span style={{
+        display: 'block', height: 9, width: `${44 + ((ri * 17) % 26)}%`, borderRadius: 3,
+        background: 'linear-gradient(90deg,#EDF1F6 0%,#F7F9FC 50%,#EDF1F6 100%)',
+        backgroundSize: '360px 100%',
+        animation: 'cellShimmer 1.1s ease-in-out infinite',
+      }} />
+    </td>
+  );
   return (
     <div ref={scrollRef} style={{ flex: 1, overflow: 'auto' }}>
       <style>{`@keyframes colFade { 0%{background:rgba(39,112,239,0.18)} 70%{background:rgba(39,112,239,0.10)} 100%{background:transparent} }
@@ -122,18 +169,10 @@ export function SpreadsheetGrid({
                 const val = row[ci];
                 const isNum = numericTypes.includes(type);
                 const isNew = !isInput && col === highlightedCol;
-                // Column added but not computed yet — shimmer in place of a value.
-                if (loadingCols?.has(col)) {
-                  return (
-                    <td key={col} style={{ padding: '4px 12px', borderRight: BORDER, whiteSpace: 'nowrap' }}>
-                      <span style={{
-                        display: 'block', height: 9, width: `${44 + ((ri * 17) % 26)}%`, borderRadius: 3,
-                        background: 'linear-gradient(90deg,#EDF1F6 0%,#F7F9FC 50%,#EDF1F6 100%)',
-                        backgroundSize: '360px 100%',
-                        animation: 'cellShimmer 1.1s ease-in-out infinite',
-                      }} />
-                    </td>
-                  );
+                // Column added but not computed yet, or the whole result still landing —
+                // shimmer in place of a value.
+                if (loadingCols?.has(col) || cellHidden(ri, ci)) {
+                  return shimmerCell(col, ri);
                 }
                 const activeFixes = isInput ? inputFixes : outputFixes;
                 // A code transform (e.g. Python sentiment) supplies values for its new column.

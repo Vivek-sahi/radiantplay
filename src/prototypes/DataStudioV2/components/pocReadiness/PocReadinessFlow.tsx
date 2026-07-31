@@ -96,15 +96,15 @@ const PASS_LABEL: Record<PassId, string> = { physical: 'physical', semantic: 'se
 const passFixes = (p: PassId): Issue[] => CALIBRATION_FIXES.filter((f) => f.pillar === p);
 
 const REFINED_HEADLINE: Record<string, string> = {
-  i1: 'Change invoices → orders join cardinality to Many : One',
-  i2: 'Re-key the support tickets join to customer_id',
-  i3: 'Use COUNT(DISTINCT order_id) in Average Deal Size',
-  i4: 'Compute Gross Margin % from the actual cost column',
-  i5: 'Auto-generate AI descriptions for all 42 columns',
-  i6: 'Split "amount" into booked vs. invoiced context',
-  i7: 'Rename arr → Annual recurring revenue, keep arr as synonym',
-  i8: 'Add "bookings / revenue / sales" synonyms to booked amount',
-  i9: 'Document what Low / Medium / High churn_risk mean',
+  i1: 'Group jira_cs_tickets by account_id, then join the counts',
+  i2: 'Group feature_adoption by account_id, averaging adoption_pct',
+  i3: 'Use COUNT(DISTINCT issue_key) for the open-P1 term',
+  i4: 'Name the two weights as inputs so they can be retuned',
+  i5: 'Auto-generate descriptions for the 6 undocumented columns',
+  i6: 'Mark arr as the revenue measure, acv as contract value',
+  i7: 'Rename acct_st → Account status, keep acct_st as synonym',
+  i8: 'Add "status / account state / renewal status" as synonyms',
+  i9: 'Define Renewal Risk, its inputs, and the 0.6 threshold',
 };
 
 const ALL_SCOPE: string[] = ['physical', 'semantic', 'ai'];
@@ -291,10 +291,11 @@ const PocReadinessFlow = forwardRef<PocReadinessHandle, Props>(({ scope, onBusyC
 
   // Refined-fix results. Keyed by fix id: the new row title + an optional new diff.
   const REFINE_RESULT: Record<string, { title: string; diff?: DiffField[] }> = {
-    // Physical join fix: modeller says invoices ↔ orders are actually one-to-one → switch to One : One.
+    // Physical join fix: the modeller would rather keep every ticket and filter to open P1s
+    // than aggregate the table, so the refined fix narrows the join instead of grouping it.
     i1: {
-      title: 'Set invoices → orders join to One : One',
-      diff: [{ field: 'Cardinality', before: '1 : Many', after: 'One : One' }],
+      title: 'Join only open P1 tickets, one row per account',
+      diff: [{ field: 'Join input', before: 'jira_cs_tickets (one row per ticket)', after: 'Open P1s only, one row per account_id' }],
     },
   };
 

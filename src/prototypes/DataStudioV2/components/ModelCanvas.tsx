@@ -7,7 +7,7 @@ import { Icon } from '../../../components/icons';
 import { BrandMark } from '../../../components/BrandMark';
 import AgentPanel, { AgentMessage } from './AgentPanel';
 import { PILLARS, READINESS_ISSUES, issuesForPillar } from '../data/readiness';
-import { SpreadsheetGrid, SpreadsheetSkeleton, SpreadsheetColumnMenu, DataSheetToolbar } from './Spreadsheet';
+import { SpreadsheetGrid, SpreadsheetColumnMenu, DataSheetToolbar } from './Spreadsheet';
 import { AnchoredMenu } from './AnchoredMenu';
 import { SnowflakeMark, DatabricksMark, BigqueryMark, SalesforceMark, DbtMark } from './icons/ConnectorIcons';
 import TestView from './TestView';
@@ -6285,16 +6285,13 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
         </div>
         )}
         <div style={{ flex: 1 }} />
-        {/* Add formula / Add column — Semantic mode only, moved up here (from the
-            table's own toolbar) to keep the compact preview panel to one row. */}
-        {previewMode === 'semantic' && (previewScope === 'model' ? groups.length > 0 : (selectedGroup || canvasJoins.some(j => j.id === selectedId))) && !(singleJoinActive || multiJoinActive) && (
+        {/* The preview is a read-only view — Add formula / Add column live in the
+            Columns tab's toolbar, not here. */}
+        {previewMode === 'semantic' && (previewScope === 'model' ? groups.length > 0 : (selectedGroup || canvasJoins.some(j => j.id === selectedId))) && !(singleJoinActive || multiJoinActive) && selectedModelCols.size > 0 && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0 }}>
-            {selectedModelCols.size > 0 && (
-              <Button variant="secondary" size="small" onClick={removeSelectedCols}>
-                {`Remove${selectedModelCols.size > 1 ? ` (${selectedModelCols.size})` : ''}`}
-              </Button>
-            )}
-            {renderAddActions({ compact: true })}
+            <Button variant="secondary" size="small" onClick={removeSelectedCols}>
+              {`Remove${selectedModelCols.size > 1 ? ` (${selectedModelCols.size})` : ''}`}
+            </Button>
           </div>
         )}
         {/* Limit — data mode only, shown for both table and join selection */}
@@ -6339,9 +6336,10 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
       </div>
 
       {/* ── Content ── */}
-      {previewOpen && (previewLoading ? (
-        <SpreadsheetSkeleton />
-      ) : (() => {
+      {/* While a load is in flight the real grid stays mounted with its cells masked —
+          the columns are already known, so there's no reason to show a stand-in table and
+          then swap it. `loading` is threaded to each SpreadsheetGrid below. */}
+      {previewOpen && ((() => {
         // grow rows with panel height: overhead = handle(4) + header(38) + mini-header(28) + thead(25)
         const rowsThatFit = Math.max(0, Math.floor((previewHeight - 95) / 25));
         const rowCap = Math.max(previewLimit, rowsThatFit);
@@ -6396,6 +6394,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
             <div style={{ flex: 1, borderTop: BORDER, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
               <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
                 <SpreadsheetGrid
+                  loading={previewLoading}
                   tableCols={sheetCols}
                   isInput={false}
                   scrollRef={previewScrollRef}
@@ -6454,6 +6453,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
           return (
             <div style={{ flex: 1, borderTop: BORDER, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
               <SpreadsheetGrid
+                loading={previewLoading}
                 tableCols={mergedCols}
                 isInput={false}
                 scrollRef={previewScrollRef}
@@ -6557,6 +6557,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
                 <span style={{ fontSize: 10, color: '#A5ACB9', marginLeft: 2 }}>{dCols.length} cols</span>
               </div>
               <SpreadsheetGrid
+                loading={previewLoading}
                 tableCols={dCols}
                 isInput={false}
                 scrollRef={previewScrollRef}
@@ -6612,6 +6613,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
           scrollRef?: React.RefObject<HTMLDivElement | null>,
         ) => (
           <SpreadsheetGrid
+            loading={previewLoading}
             tableCols={tableCols}
             isInput={isInput}
             scrollRef={scrollRef}

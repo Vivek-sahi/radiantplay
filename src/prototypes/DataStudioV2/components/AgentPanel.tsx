@@ -12,7 +12,6 @@ import PlanPanelV3 from './PlanPanelV3';
 import { FlowOption } from './Shell';
 import { Icon } from '../../../components/icons';
 import { Button } from '../../../components/Button';
-import spotterMascot from '../assets/spotter-mascot.png';
 import { ReasoningBlock, type ReasoningData } from './agentic/ReasoningBlock';
 import { TableSuggestionCard, JoinSuggestionCard, AgentForm, ConnectionList, type TableProposal, type JoinProposal, type AgentFormField } from './agentic';
 // POC-READINESS-PORT — ported AI-readiness flow (POC only). Self-contained module; safe to
@@ -2857,10 +2856,16 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
   const readinessRef = useRef<PocReadinessHandle>(null);
   const [readinessBusy, setReadinessBusy] = useState(false);
   const [readinessDock, setReadinessDock] = useState(false);
+  // Bumped every time the pill starts a check — used as the flow's React key so a
+  // second run starts fresh instead of reusing the finished run's state.
+  const [readinessRun, setReadinessRun] = useState(0);
   useEffect(() => {
     if (!readinessFlow) return;
     (window as any).__pocReadinessStart__ = (pillars?: Set<string>) => {
       setPocReadinessScope(pillars ?? new Set());
+      setReadinessBusy(false);
+      setReadinessDock(false);
+      setReadinessRun(n => n + 1);
       setPocReadinessActive(true);
     };
     return () => { try { delete (window as any).__pocReadinessStart__; } catch { /* noop */ } };
@@ -5144,29 +5149,6 @@ df = df[["issue_key", "account_id", "summary", "status", "priority", "assignee",
         ...(fullPage ? { maxWidth: 740, margin: '0 auto' } : {}),
       }}>
 
-        {/* POC-READINESS-PORT ↓ — the readiness flow's own content, in our message area.
-            Its back control is ours too, so there's one header, not two. */}
-        {readinessActive ? (
-          <>
-            <button
-              onClick={() => { setPocReadinessActive(false); setReadinessBusy(false); setReadinessDock(false); }}
-              style={{ alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: 5, padding: '4px 8px 4px 5px', marginBottom: -4, borderRadius: 6, border: 'none', background: 'transparent', color: c['content-secondary'], cursor: 'pointer', fontSize: fs.sm, fontWeight: fw.medium, fontFamily: ff.primary }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = c['background-subtle']; (e.currentTarget as HTMLElement).style.color = c['content-primary']; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = c['content-secondary']; }}
-            >
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="10,4 6,8 10,12" /></svg>
-              Back to chat
-            </button>
-            <PocReadinessFlow
-              ref={readinessRef}
-              scope={pocReadinessScope}
-              onBusyChange={setReadinessBusy}
-              onDockChange={setReadinessDock}
-            />
-          </>
-        ) : (<>
-        {/* POC-READINESS-PORT ↑ */}
-
         {messages.length === 0 && !initialPrompt && (
           isCanvasAgent ? (
             // Canvas-agent welcome — centred greeting + full-width suggestion pills,
@@ -5754,7 +5736,20 @@ df = df[["issue_key", "account_id", "summary", "status", "priority", "assignee",
             </div>
           );
         })}
-        </>)}{/* POC-READINESS-PORT — end of the normal-thread branch */}
+
+        {/* POC-READINESS-PORT ↓ — readiness continues the same conversation: its cards
+            append to the thread rather than replacing it, so there's nothing to go "back"
+            from. Keyed by run so starting a second check restarts the flow. */}
+        {readinessActive && (
+          <PocReadinessFlow
+            key={readinessRun}
+            ref={readinessRef}
+            scope={pocReadinessScope}
+            onBusyChange={setReadinessBusy}
+            onDockChange={setReadinessDock}
+          />
+        )}
+        {/* POC-READINESS-PORT ↑ */}
         <div ref={messagesEndRef} />
       </div>
       </div>
@@ -5844,21 +5839,23 @@ df = df[["issue_key", "account_id", "summary", "status", "priority", "assignee",
         ...(fullPage ? { backgroundColor: '#fff' } : {}),
       }}>
       <div style={fullPage ? { maxWidth: 740, margin: '0 auto' } : {}}>
-        {/* POC-READINESS-PORT — while the dock is up the flow's workflow is act-on-the-dock,
-            so the composer stands down rather than competing with it. */}
-        {readinessActive && readinessDock ? null : (
+        {/* POC-READINESS-PORT — while the fixes dock is up the flow's workflow is
+            act-on-the-dock, so the composer stands down rather than competing with it.
+            Readiness state is OR'd into the normal conditions, never substituted for
+            them: the thread keeps working normally once the checks have finished. */}
+        {readinessDock ? null : (
         <PromptBar
           ref={promptBarRef}
-          onSubmit={(text, tables) => { if (readinessActive) readinessRef.current?.send(text); else processText(text, tables); }}
-          disabled={readinessActive ? readinessBusy : (isProcessing && project.buildStep !== 'empty') || fromScratchPhase === 'clarify_q1' || !!coachingPrompt || sfConnectIntent === 'clarify'}
-          isProcessing={readinessActive ? readinessBusy : isProcessing}
+          onSubmit={(text, tables) => processText(text, tables)}
+          disabled={readinessBusy || (isProcessing && project.buildStep !== 'empty') || fromScratchPhase === 'clarify_q1' || !!coachingPrompt || sfConnectIntent === 'clarify'}
+          isProcessing={readinessBusy || isProcessing}
           onStop={() => {
-            if (readinessActive) { readinessRef.current?.stop(); return; }
+            if (readinessBusy) { readinessRef.current?.stop(); return; }
             buildAbortRef.current = true;
             setProcessing(false);
             setMessages(prev => [...prev, { id: `r-${Date.now()}`, type: 'response', content: "Stopped. What would you like to change?" }]);
           }}
-          placeholder={readinessActive ? (readinessBusy ? 'Checking Spotter readiness…' : 'Ask about your model’s readiness') : agentMode === 'test' ? "Ask anything about your model…" : isCanvasAgent ? "Give me a task. Use '@' to add context, or point at the canvas." : fromScratchPhase === 'plan_ready' ? "Ask me to change anything in the plan…" : "Press '/' for skills and '@' to add context."}
+          placeholder={readinessBusy ? 'Checking Spotter readiness…' : agentMode === 'test' ? "Ask anything about your model…" : isCanvasAgent ? "Give me a task. Use '@' to add context, or point at the canvas." : fromScratchPhase === 'plan_ready' ? "Ask me to change anything in the plan…" : "Press '/' for skills and '@' to add context."}
           autoFocus
           dropDirection="up"
           onColumnRemove={onColumnRemove}
@@ -7591,9 +7588,13 @@ const MessageBubble: React.FC<{
 // Spotter's mascot, the same asset the Viz panel uses. It replaces a
 // hand-drawn sparkle disc: the agent should look like Spotter, not like a
 // generic AI glyph. The working state keeps its pulse — the mascot doesn't spin.
+// Agent mark — the same asset `_agentic/AgentMessage` uses, so the readiness flow's
+// messages and this panel's own thread show one agent, not two.
+const AGENT_AVATAR_SRC = '/spotter-assets/SpotterModel avatar.svg';
+
 const AgentAvatar: React.FC<{ working?: boolean }> = ({ working }) => (
   <img
-    src={spotterMascot}
+    src={AGENT_AVATAR_SRC}
     alt=""
     width={24}
     height={24}
@@ -7602,7 +7603,7 @@ const AgentAvatar: React.FC<{ working?: boolean }> = ({ working }) => (
 );
 
 const AgentAvatarLarge: React.FC = () => (
-  <img src={spotterMascot} alt="" width={36} height={36} style={{ borderRadius: '50%', display: 'block' }} />
+  <img src={AGENT_AVATAR_SRC} alt="" width={36} height={36} style={{ borderRadius: '50%', display: 'block' }} />
 );
 
 const UserAvatar: React.FC = () => (
