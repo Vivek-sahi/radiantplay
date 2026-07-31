@@ -8,16 +8,41 @@ _Active work items. Edit in place each session — move done items to Done, add 
 
 ### Do this first ⚠️
 
-- **Push and redeploy.** Everything from the demo build onward is local only — `radiantplay-nine.vercel.app` predates mock data, the agentic cards, the formula bar, readiness and the Jira beat. `git push origin prototype/data-studio` + `github`, then `vercel --prod --yes`.
+- Nothing outstanding — pushed and deployed 2026-07-31 (`583afb0`), live on
+  `radiantplay-nine.vercel.app`. Both remotes in sync.
+
+### Parked by Vivek — 2026-07-31, decided not to do yet
+
+- **Demo lands on Workspace, not the canvas.** `index.tsx:188` — after the agentic home
+  flow builds a model, POC goes to the canvas and Vision goes to the old Workspace
+  notebook. Demo inherits Vision. Parked: impact unclear until someone demos from the
+  home prompt rather than opening a model.
+- **Empty-state chips name off-story tables.** The canvas agent's first screen offers
+  "Fetch dim_accounts, support_cases and call_metrics", which is a different scenario.
+  Agreed it shouldn't be table names; tackling later.
+- **Inert spreadsheet formatting toolbar.** 10 of 15 buttons have no handler (Undo,
+  Redo, Sort range, Format paint, Align, Wrap, Currency, Percent, both decimals, Fill
+  colour), and Align/Wrap/Sort show carets that never open. Vivek's call: it's for
+  display, not being shown off in the demo. Icons are now the real Figma exports.
+- **Per-step code storage.** One shared `pythonConfig`/`sqlConfig` serves every code
+  block, so switching cards discards an edit you typed but never ran.
+- **Unrendered agentic components.** `ToolcallCard` is now used (via ReasoningBlock);
+  `PlanStepsCard`, `NextActionChips` and `TypingIndicator` are still rendered nowhere —
+  our own chips and typing indicator superseded them. Delete after the demo rather than
+  wire them.
+- **"N cols" vs "N rows"** — resolved: both preview pane headers now show both.
 
 ### Script divergences — the run-of-show is the spec
 
-The On screen lane quotes the agent's wording; it isn't ours to paraphrase. Four gaps:
+The On screen lane quotes the agent's wording; it isn't ours to paraphrase. Remaining:
 
-- **`acct_st`** — S16 names it and the **Say** lane commits the presenter to saying it out loud ("if a column is called `acct_st`…"). We surface `arr`/`acv` instead, so the narration won't match the screen in the differentiator beat. Add an `acct_st` column to `accounts` so the finding is literally true, or get the script reworded.
-- **Data tab → "Spreadsheet"** — S13 says "Canvas → Spreadsheet view"; our tab reads *Data*. One word.
-- **S7 agent line** — script: *"I can join these — here's what I suggest."* Ours paraphrases at length.
-- **S6 agent line** — script: *"To model across these three sources I'll need to cache them. This will take a while — you can carry on, I'll let you know when it's ready."* Not built.
+- **S7 agent line** — script: *"I can join these — here's what I suggest."* Ours
+  paraphrases at length.
+- ✅ **`acct_st`** — added to `accounts` (values `A` / `AR` / `CH` / `P`) with a readiness
+  finding naming it, so S16's narration matches the screen. Note `accounts` is a column
+  wider than it was.
+- ✅ **Data tab → "Spreadsheet"** — already renamed.
+- ✅ **S6 caching** — built, as an in-thread form rather than a modal.
 
 ### Remaining demo gaps
 
@@ -26,6 +51,20 @@ The On screen lane quotes the agent's wording; it isn't ours to paraphrase. Four
 - **S1 starting screen.** Bigger than it looks — the script wants an empty state with one centred prompt; our Overview has 11 Pulse cards and 10 recent models.
 - **`Open P1 Escalations` doesn't resolve** in the formula bar — no escalation-count column exists, so it reports "treated as 0". Either add the column or leave it as an honest gap that sets up the readiness beat.
 - **S19/S20 payoff** — S20 explicitly out of scope; S19 has no renewal-risk question yet.
+
+### Surfaced 2026-07-31 — worth doing
+
+- **The data browser tree still lists the old Pendo-era tables** (`dim_accounts`,
+  `support_cases`, `pendo_nps_enriched`, …), not the renewal-risk set. The agent adds
+  its tables directly, so the demo works — but if a presenter opens the browser, the
+  tree and the story don't match.
+- **Derive arrows are still curved and grey** while join lines are now orthogonal and
+  blue, so the canvas has two edge idioms. Deliberately not touched — that renderer
+  feeds the sentiment beat. Revisit after the demo.
+- **Orthogonal routing has no obstacle avoidance.** Same-column joins are pushed apart
+  so nothing crosses a card today, but the guarantee comes from the layout, not from the
+  router. Real channel routing is a separate project.
+- **`arrangeCanvas` has no undo.** Tidy up reflows every card and there's no way back.
 
 ### Demo robustness
 
@@ -52,13 +91,37 @@ The On screen lane quotes the agent's wording; it isn't ours to paraphrase. Four
 - **Confirm P1 scoping** — review `2026-07-10-analyst-activities.md`, confirm the 27-item P1 list before building.
 - **Agentic workflow design doc** — write to `research/`; open decisions: co-pilot vs autopilot hero · where autonomy lives · vertical-slice vs full-flow first.
 
-### Git
-
-- **Commit decision** — sessions 135–147 all uncommitted. Vivek will **merge + commit at the start of the next session** (demo recording done 2026-07-14; code left staged intentionally).
-
----
-
 ## Done (recent)
+
+- ✅ **Demo cut** — third variant with a typed `Scope` object; eleven behaviours picked
+  from POC one by one; the run-of-show script gated to Demo so Vision is unscripted again (151)
+- ✅ **Join graph rewritten** — one orthogonal line per join through the column gutter,
+  per-join channels, staggered card exits, badge riding its own line, same-column joins
+  pushed apart, layered auto-layout for agent joins + a Tidy up button (151)
+- ✅ **ReasoningBlock wired** — Suraj's shimmer header, dot-pop and box animation replace
+  the hand-rolled step list; fed all steps so upcoming ones show grey; step SQL becomes
+  the tool call's input (151)
+- ✅ **Caching moved into the thread** as an in-thread form; no modal, no context switch (151)
+- ✅ **Jira beat corrected** — reviewing the script no longer advances the story or promises
+  a join; running it proposes one; the join draws only on accept (151)
+- ✅ **Connector marks** — shared `ConnectorIcons.tsx`; the agent's connection list drops
+  initials-in-a-square fake logos and reuses the proposal card's stylesheet (151)
+- ✅ **One primary Button** across every agent action; confidence keeps its tint on Radiant
+  semantic pairs, minus the thumbs-up, plus a real Radiant tooltip (151)
+- ✅ **Code blocks are always editors** — read-only mode and Edit buttons gone; Run keeps
+  you in the code (151)
+- ✅ **Preview** — row count / "Not run yet"; code row filters now apply at node level, which
+  is what makes S11's 10 → 8 visible; formatting toolbar removed (151)
+- ✅ **Spreadsheet empty state** is an empty sheet that fills the pane (151)
+- ✅ **Publish modal** — Status, Sources and Cache derived from state; sources per connection (151)
+- ✅ **`acct_st`** added with a readiness finding, so S16's narration matches the screen (151)
+- ✅ **Persona** — Maya everywhere, including the header, which said "Vivek Sahi" (151)
+- ✅ **Spotter mascot** replaces the gradient sparkle agent avatar (151)
+- ✅ **Agent panel default width** 340 → 420 (151)
+- ✅ **Formula columns** — `fx` badge instead of NEW, values and header in normal cell colour;
+  formula highlighter no longer paints its own markup into the visible string (151)
+- ✅ **Dead affordances removed** — "Table info" hover button, orphaned `SpreadsheetIcons`
+  now wired instead, `TypewriterText` / `toggleCollapsible` after the renderer swap (151)
 
 - ✅ **SQL derived tables** — SQL block that `@`-references other cards to combine them into a new table (147). Inline caret `@`-dropdown of canvas tables; **forgiving name matching** (normalize away spaces/parens/case + contains, and matches the card's *displayed/renamed* name via step titles, not just `tableName`); derive arrows drawn on Run; merged preview via `rowsForCard` (resolves derived cards + display-named sources by column match, no invented data).
 - ✅ **Derive arrow styling** — gray `#D0D6DF` (lighter than join), arrowhead only (start dot removed), anchored to each card's **real measured width** (not hardcoded 180). Join connector recoloured blue `#2770EF`; derive = gray → the two edge types read distinctly (relate vs derive).

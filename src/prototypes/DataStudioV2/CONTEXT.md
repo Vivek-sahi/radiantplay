@@ -21,7 +21,12 @@ narration, never rendered. *On screen* = what we build, **including the agent's 
 wording** — that isn't ours to paraphrase. Distinguish text from components: the S2
 connection list is a component (`agentic/ConnectionList`), not prose in a message.
 
-**Beats 2, 3 and 5 run end to end.** S13/S14 work; S1, S6, S19/S20 don't. See `NEXT_UP.md`.
+**Beats 2, 3 and 5 run end to end.** S13/S14 work; S6 now works (caching runs as an
+in-thread form); S1 and S19/S20 don't. See `NEXT_UP.md`.
+
+**The script fires only in the Demo cut** (`variant === 'demo'`, threaded to `AgentPanel`
+as `demo`). S2, S3, S4, S6 and S8–S12 are all gated, so Vision's canvas agent is
+unscripted again: "renewal risk" is just words there, and accepting tables adds tables.
 
 | Piece | Where |
 |---|---|
@@ -44,21 +49,54 @@ preview open.
 
 ---
 
-## Two cuts — Vision and POC
+## Three cuts — Vision, POC and Demo
 
-The prototype ships **two experiences from one codebase**, selected at runtime:
+The prototype ships **three experiences from one codebase**, selected at runtime:
 
 - **Vision** — the full vision-level experience. The default.
 - **POC** — a scoped-down cut (Komal's, merged 2026-07-28) for what's buildable now.
+- **Demo** — the stakeholder cut for the sales kickoff, added 2026-07-31. Vision plus
+  selected POC cleanups, and **the only cut where the run-of-show script fires.**
 
 `variant.tsx` owns this: a `VariantProvider` + `useVariant()` context resolving from
 `?v=` URL param → `localStorage` → `vision`. A `VariantToggle` segmented control sits
 in the header, and the choice is reflected back into the URL so each cut is shareable
 and reload-safe.
 
-Gating flows as a **`poc` boolean prop** threaded into the shared components —
-`ModelCanvas`, `ConnectionPill`, `AgentPanel`, `Overview`. One component set, two
-behaviours. There is no forked component tree; do not create one.
+**Gating has two layers, and the distinction matters:**
+
+1. **`poc` boolean prop** — the original, threaded into `ModelCanvas`, `AgentPanel`,
+   `Overview`. Untouched by the Demo work; ~25 checks still read it. `poc` is true for
+   the POC cut only.
+2. **`Scope` object** (`useVariant().scope`) — one typed field per thing the cuts
+   actually differ on. A boolean can only say *which cut am I*, which is useless once
+   Demo needs some things from POC and the rest from Vision. `DEMO_SCOPE` spreads
+   `VISION_SCOPE` before its overrides, so **Demo can only differ where a pick is
+   written down** — it cannot drift from Vision by accident.
+
+Move a check from layer 1 to layer 2 only when Demo needs it to differ. The cost is
+then per pick, not a rewrite of every gate. There is no forked component tree; do not
+create one.
+
+**Demo's picks from POC** (reviewed pick by pick with Vivek, 2026-07-31): model-level
+preview · no Columns tab (Canvas · Spreadsheet only) · no browser category tabs ·
+the Databricks connection naming, in the tree *and* the filter list · Spreadsheet
+opening clears selection and panels · no full-screen toggle · no home setup entry
+points · no AgentDB connection · multi-select join flow · bordered connection pill ·
+`@` table mention.
+
+**Demo stays as Vision on:** data-browser tree rows, the browser Add button, the
+connection filter, both collapse treatments, Clean + Code in the node menu, and free
+cross-connection adds (the script runs its own caching beat).
+
+⚠️ **AI readiness is held.** Komal is building a new version; the chip stays and what
+happens on click arrives with her merge. Nothing there gets wired or extracted until
+then — including moving the readiness surfaces into their own folder, which is the
+right refactor but wrong while she's mid-flight.
+
+Two props were renamed while wiring Demo, because a flag named for POC that Demo also
+switches on is a trap: `ConnectionPill.poc` → `bordered`, `PromptBar.pocTools` →
+`tableTools`.
 
 **POC scope:** single-category data browser (connections only, no tabs, multi-connection,
 cross-connection adds require caching first) · hamburger node menu (Join/Filter/Formula/
@@ -116,7 +154,24 @@ GlobalHeader (top bar — logo, search, user)
     └── Preview header: table/scope dropdown · Data|Semantic · Limit · Expand
 ```
 
-**Topbar** (inside ModelCanvas, above browser+canvas): model name (display) · data-mode pill · view switcher (Canvas / Columns / Test) · AI readiness pill · Draft saved · Publish.
+**Topbar** (inside ModelCanvas, above browser+canvas): model name (display) · data-mode pill · view switcher (Canvas / Columns / Spreadsheet / Test) · AI readiness pill · Draft saved · Publish.
+
+**Join rendering and layout** (rewritten 2026-07-31). One orthogonal path per join —
+out of the left card, one vertical run in the column gutter, into the right card —
+computed once in `joinGeometry` and shared by the line layer and the badge layer, so a
+badge always sits on its own line. Before this each join drew *two* curves converging on
+a floating badge, which made five joins into one hub unreadable. Joins sharing a gutter
+get their own channel; joins leaving one card exit at different heights.
+
+`arrangeCanvas` lays cards out left-to-right by join distance from the most-connected
+table, centring each column vertically. A join whose two ends land in the same column
+pushes one end onward, so **no line passes behind a card by construction**. It runs
+automatically only for agent-committed joins — hand-placed cards are never moved — and
+the **Tidy up** button (bottom-right, by undo/zoom) re-runs it on demand. That split is
+the convention canvas tools follow.
+
+Our join badge and `1:M` / `M:1` labels are unchanged. No crow's-foot notation, and no
+column lists inside cards — the ERD references were shape inspiration only.
 
 ---
 
@@ -166,6 +221,14 @@ GlobalHeader (top bar — logo, search, user)
 | Sentiment reveal — fetch/Fix stamps enriched schema with `sentiment`/`sentiment_score` hidden; running the sentiment cell reveals + pulses them | ✅ (demo-mock) |
 | Fix-with-AI review — data loads only on Accept (error stays during review); Reject/Accept soft red/green | ✅ |
 | Data browser collapse — panel collapses to 0 width; warehouse icon moves to topbar (mirrors agent collapse) | ✅ |
+| Demo cut — third variant, Vision + reviewed POC picks, sole home of the script | ✅ |
+| Join graph — one orthogonal line per join, channels, badge on the line, layered auto-layout + Tidy up | ✅ |
+| Agentic thread — Suraj's `ReasoningBlock` wired; one primary Button everywhere; caching as an in-thread form; real connector marks; tinted confidence + Radiant tooltip | ✅ |
+| Code blocks — Python and SQL are always editors (no read-only mode, no Edit button); Run keeps you in the code | ✅ |
+| Preview — row count / "Not run yet"; code row filters apply at node level (S11's 10 → 8); no formatting toolbar | ✅ |
+| Spreadsheet tab — empty state is an empty sheet that fills the pane; formula columns carry an `fx` badge | ✅ |
+| Publish modal — Status, Sources and Cache all derived from state; sources listed per connection | ✅ |
+| Agent avatar — Spotter mascot (shared with the Viz panel) | ✅ |
 
 ---
 
