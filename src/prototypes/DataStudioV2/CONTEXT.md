@@ -83,16 +83,35 @@ preview · no Columns tab (Canvas · Spreadsheet only) · no browser category ta
 the Databricks connection naming, in the tree *and* the filter list · Spreadsheet
 opening clears selection and panels · no full-screen toggle · no home setup entry
 points · no AgentDB connection · multi-select join flow · bordered connection pill ·
-`@` table mention.
+`@` table mention · **Komal's readiness flow** (`readinessFlow`, added 2026-07-31 —
+S15–S18 is the longest beat in the script, and her three pillars are its "three
+layers checking in sequence").
 
 **Demo stays as Vision on:** data-browser tree rows, the browser Add button, the
 connection filter, both collapse treatments, Clean + Code in the node menu, and free
 cross-connection adds (the script runs its own caching beat).
 
-⚠️ **AI readiness is held.** Komal is building a new version; the chip stays and what
-happens on click arrives with her merge. Nothing there gets wired or extracted until
-then — including moving the readiness surfaces into their own folder, which is the
-right refactor but wrong while she's mid-flight.
+**AI readiness — Komal's flow, merged 2026-07-31.** No longer held. Cherry-picked as one
+commit (`7b65884`) from `komal/dsv/poc-ai-readiness`; her other 33 commits on that branch
+were deliberately left behind. Lives in `components/pocReadiness/` (9 files, self-contained)
+and is reachable in **POC and Demo** via `scope.readinessFlow`.
+
+The pill's dropdown is her "Check for" panel — Physical schema · Semantics · Spotter
+answers, each with a Run, plus a CTA that runs the set. The flow then streams one pass at a
+time and offers fixes you Skip or Fix selected.
+
+It renders **as content in the agent thread**, not as a panel of its own: her cards append
+after the message list, so the conversation continues and there is nothing to exit. Our
+header, PromptBar and disclaimer serve it, so `@` and `/` survive the beat. Her fixes dock
+still replaces the composer while it is up — that workflow choice is hers.
+
+Her content model (`pocReadiness/data.ts`) is rewritten to the renewal-risk scenario; the
+five findings the run-of-show names at S16 are spec, not paraphrase. **There is no readiness
+score** — a decision, and one that disagrees with S17, which asks for one.
+
+⚠️ Vision is untouched, and verified so rather than assumed: `pocSemActive` is the only new
+state reaching a shared render path, and it can only be set by `__dsSemanticPreview__`, which
+is registered behind `scope.readinessFlow`.
 
 Two props were renamed while wiring Demo, because a flag named for POC that Demo also
 switches on is a trap: `ConnectionPill.poc` → `bordered`, `PromptBar.pocTools` →
@@ -228,7 +247,10 @@ column lists inside cards — the ERD references were shape inspiration only.
 | Preview — row count / "Not run yet"; code row filters apply at node level (S11's 10 → 8); no formatting toolbar | ✅ |
 | Spreadsheet tab — empty state is an empty sheet that fills the pane; formula columns carry an `fx` badge | ✅ |
 | Publish modal — Status, Sources and Cache all derived from state; sources listed per connection | ✅ |
-| Agent avatar — Spotter mascot (shared with the Viz panel) | ✅ |
+| Agent avatar — `SpotterModel avatar.svg`, the same asset `_agentic/AgentMessage` renders (replaced the Spotter mascot, 2026-07-31, so the readiness beat and the thread show one agent) | ✅ |
+| AI readiness — Komal's agentic flow: 3-pillar menu → passes stream one at a time → fixes you Skip or Fix selected → Spotter answer grading. POC + Demo, in-thread | ✅ |
+| Preview is read-only — `fx` / Add column live in the Columns tab, not the preview header | ✅ |
+| Spreadsheet loads cell by cell — real grid + real headers stay mounted, cells fill on a diagonal (no stand-in skeleton) | ✅ |
 
 ---
 

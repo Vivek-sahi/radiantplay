@@ -8,8 +8,19 @@ _Active work items. Edit in place each session — move done items to Done, add 
 
 ### Do this first ⚠️
 
-- Nothing outstanding — pushed and deployed 2026-07-31 (`583afb0`), live on
-  `radiantplay-nine.vercel.app`. Both remotes in sync.
+- **Run the readiness beat end to end** (`?v=demo` → add a table → AI-readiness pill).
+  It has never been watched start to finish by a human — every check this session was
+  `tsc` + build. Worth doing before a stakeholder rehearsal.
+- **S17 and the build now disagree.** The script says *"Score climbs to green. Let the
+  score animate. This is the only place worth spending a real animation."* There is no
+  score, by decision. Either edit the run-of-show or plan to narrate past it. `i9`
+  ("Renewal Risk has no definition an LLM can reason from") carries the beat instead.
+- **The avatar swap reverses session 151.** The Spotter mascot was a deliberate choice
+  then; the agent now uses `SpotterModel avatar.svg` to match Komal's flow. Decided, but
+  worth a second look on screen. `spotter-mascot.png` is still in `assets/`.
+- **The user avatar still differs between the two.** Her flow uses
+  `/spotter-assets/User avatar.png` via `_agentic/UserBubble`; our thread draws its own
+  SVG silhouette (`AgentPanel.tsx` `UserAvatar`). Only the agent mark was unified.
 
 ### Parked by Vivek — 2026-07-31, decided not to do yet
 
@@ -91,7 +102,37 @@ The On screen lane quotes the agent's wording; it isn't ours to paraphrase. Rema
 - **Confirm P1 scoping** — review `2026-07-10-analyst-activities.md`, confirm the 27-item P1 list before building.
 - **Agentic workflow design doc** — write to `research/`; open decisions: co-pilot vs autopilot hero · where autonomy lives · vertical-slice vs full-flow first.
 
+### Surfaced by the readiness merge — worth doing
+
+- **The dock blocks the composer.** While a fixes dock is up you cannot type to the agent
+  at all until Skip or Fix selected. That's Komal's workflow and was kept deliberately,
+  but it reads differently now the flow lives in the main thread. A disabled-but-present
+  composer may be better.
+- **Her canned composer replies are dead code.** `cannedReply` / `sendPrompt` in
+  `PocReadinessFlow` are unreachable now the composer routes to the normal agent. The
+  `send` half of `PocReadinessHandle` is unused; `stop` is still live.
+- **Her merge doc undercounts its own edits.** `MERGE_POC_AI_READINESS.md` §4 describes 2
+  blocks in `ModelCanvas.tsx`; there are four plus a one-line change. The undocumented
+  ones are `POC_SEM_REVIEW`, the semantic-preview bridge, and its consumer. A mechanical
+  re-apply following only §4 would silently drop the semantic step.
+- **`PILLARS` / `MODEL` / `severityRank` in `pocReadiness/data.ts` are unused.** Ported for
+  completeness and updated to our scenario, but nothing reads them. Delete or wire.
+- **Demo has no way to add a formula or column.** `columnsTab: false` plus the preview
+  now being read-only means neither surface offers it. Consistent with the script (Maya
+  writes her metric in the spreadsheet beat), but confirm during a rehearsal.
+
 ## Done (recent)
+
+- ✅ **Komal's AI-readiness flow merged** — cherry-picked `7b65884` only, none of her other
+  33 commits; gated on for Demo via `scope.readinessFlow`; runs as content in our agent
+  thread with our header/PromptBar/disclaimer; copy rewritten to the renewal-risk scenario
+  with S16's five named findings as spec (152)
+- ✅ **Tidy up** — icon only, rightmost in the zoom group after 100% (it reads as a
+  viewport action, not a layout one) (152)
+- ✅ **Preview is read-only** — `fx` / Add column removed from the preview header (152)
+- ✅ **Spreadsheet fills cell by cell** — real grid and headers stay mounted through the
+  load, cells reveal on a diagonal; the fake 7×14 skeleton is gone (152)
+- ✅ **Agent avatar unified** on the asset `_agentic/AgentMessage` uses (152)
 
 - ✅ **Demo cut** — third variant with a typed `Scope` object; eleven behaviours picked
   from POC one by one; the run-of-show script gated to Demo so Vision is unscripted again (151)
