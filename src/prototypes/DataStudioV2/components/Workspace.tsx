@@ -957,9 +957,9 @@ const BuildingSkeleton: React.FC = () => {
 // ── Republish wizard ──────────────────────────────────────────────────────────
 
 const MOCK_DEPENDENTS = [
-  { name: 'Campaign ROI by Region',   type: 'Live board', owner: 'Sara Chen', lastViewed: '2 days ago' },
+  { name: 'Campaign ROI by Region',   type: 'Live board', owner: 'Maya Chen', lastViewed: '2 days ago' },
   { name: 'Q1 Campaign Summary',      type: 'Live board', owner: 'Mark T.',   lastViewed: '5 days ago' },
-  { name: 'Top performing channels',  type: 'Answer',     owner: 'Sara Chen', lastViewed: '1 day ago'  },
+  { name: 'Top performing channels',  type: 'Answer',     owner: 'Maya Chen', lastViewed: '1 day ago'  },
   { name: 'Campaign spend vs orders', type: 'Answer',     owner: 'Priya K.',  lastViewed: '3 days ago' },
 ];
 

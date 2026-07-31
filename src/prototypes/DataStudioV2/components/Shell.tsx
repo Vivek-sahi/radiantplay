@@ -47,7 +47,7 @@ const Shell: React.FC<ShellProps> = ({ activeNav, onNavChange, hideSidebar = fal
   const headerProps: GlobalHeaderProps = {
     searchPlaceholder: 'Search in ThoughtSpot',
     searchMode: 'trigger',
-    userName: 'Vivek Sahi',
+    userName: 'Maya Chen',
     notificationCount: 0,
     rightSlot: <VariantToggle />,
     style: hideHeader ? { display: 'none' } : undefined,

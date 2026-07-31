@@ -230,6 +230,23 @@ export const READINESS_ISSUES: ReadinessIssue[] = [
     reviewKey: 'desc',
   },
   {
+    // S16's Say lane commits the presenter to naming this column out loud
+    // ("if a column is called acct_st…"), so it has to be on screen and real.
+    // The column exists on `accounts` and its values are codes, not words.
+    id: 'ambiguous_acct_st',
+    pillar: 'semantic',
+    name: 'Ambiguous naming',
+    title: '"acct_st" is unreadable to Spotter, and has no synonyms',
+    detail: 'An abbreviated name holding coded values — A, AR, CH, P — with nothing to say what they mean.',
+    sev: 'miss', tag: 'Missing', severity: 'high',
+    impact: 'Asked "which accounts are at risk", Spotter cannot tell that AR means at-risk. It either ignores the column or filters on a literal it was never told about.',
+    source: 'Naming scan — abbreviations with coded values',
+    fixability: 'judgment',
+    suggestion: 'Rename to account_status, add synonyms (status, account state), and describe the codes: A active, AR at risk, CH churned, P pending.',
+    fixTarget: { view: 'columns', columns: ['accounts.acct_st'], where: 'Column · acct_st' },
+    reviewKey: 'coldesc',
+  },
+  {
     id: 'ambiguous_arr',
     pillar: 'semantic',
     name: 'Ambiguous naming',

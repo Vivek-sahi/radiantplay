@@ -1114,11 +1114,11 @@ export interface OverviewProject {
 export const OVERVIEW_PROJECTS: OverviewProject[] = [
   {
     id: 'proj-mc', name: 'Marketing Campaign Attribution', status: 'published',
-    lastModified: '20 April', author: 'Sara Chen', conversations: 1839,
+    lastModified: '20 April', author: 'Maya Chen', conversations: 1839,
   },
   {
     id: 'proj-sp', name: 'Sales Performance', status: 'published',
-    lastModified: '20 April', author: 'Sara Chen', conversations: 412,
+    lastModified: '20 April', author: 'Maya Chen', conversations: 412,
     issues: [{
       id: 'alert-1', type: 'sync_failure', severity: 'critical',
       title: 'dbt model `dbt_sales_pipeline` failed to sync — compilation error',
@@ -1147,7 +1147,7 @@ export const OVERVIEW_PROJECTS: OverviewProject[] = [
   },
   {
     id: 'proj-6', name: 'Product Usage Analytics', status: 'published',
-    lastModified: '18 April', author: 'Sara Chen', conversations: 287,
+    lastModified: '18 April', author: 'Maya Chen', conversations: 287,
     issues: [{
       id: 'alert-3', type: 'data_freshness', severity: 'warning',
       title: '`user_events` hasn\'t updated in 26h — exceeds 12h SLA',
@@ -1169,7 +1169,7 @@ export const OVERVIEW_PROJECTS: OverviewProject[] = [
   },
   {
     id: 'proj-10', name: 'Inventory & Supply Chain', status: 'published',
-    lastModified: '28 March', author: 'Sara Chen', conversations: 61,
+    lastModified: '28 March', author: 'Maya Chen', conversations: 61,
   },
 ];
 
@@ -1319,7 +1319,7 @@ export const MODEL_CONVERSATIONS: Record<string, ModelConversation[]> = {
     { id: 'c3', question: 'How efficient is our budget across regions?',          user: 'Marcus J.',  timestamp: 'Apr 17, 4:45 PM',  feedback: null,       failed: false },
     { id: 'c4', question: 'What is revenue by product category?',                user: 'Nina R.',    timestamp: 'Apr 17, 3:20 PM',  feedback: null,       failed: true  },
     { id: 'c5', question: 'Show me top campaigns by ROI',                        user: 'Alex Kim',   timestamp: 'Apr 16, 9:15 AM',  feedback: 'positive', failed: false },
-    { id: 'c6', question: 'What percentage of orders are organic?',              user: 'Sara Chen',  timestamp: 'Apr 15, 2:00 PM',  feedback: null,       failed: false },
+    { id: 'c6', question: 'What percentage of orders are organic?',              user: 'Maya Chen',  timestamp: 'Apr 15, 2:00 PM',  feedback: null,       failed: false },
     { id: 'c7', question: 'Compare ROAS between paid search and social',         user: 'Priya M.',   timestamp: 'Apr 14, 10:45 AM', feedback: 'positive', failed: false },
     { id: 'c8', question: 'Which campaigns drove the most SMB conversions?',     user: 'David K.',   timestamp: 'Apr 13, 3:30 PM',  feedback: null,       failed: false },
   ],
@@ -2116,17 +2116,17 @@ export interface WorkspaceQuery {
 }
 
 export const WORKSPACE_QUERIES: WorkspaceQuery[] = [
-  { id: 'q-1',  query: 'Win rate by region last quarter',             model: 'Sales Performance',             modelId: 'proj-sp',  user: 'Sara Chen',   latencyMs: 340,  status: 'success', timestamp: '2 min ago' },
+  { id: 'q-1',  query: 'Win rate by region last quarter',             model: 'Sales Performance',             modelId: 'proj-sp',  user: 'Maya Chen',   latencyMs: 340,  status: 'success', timestamp: '2 min ago' },
   { id: 'q-2',  query: 'Campaign ROI by channel',                     model: 'Marketing Campaign Attribution', modelId: 'proj-mc',  user: 'Raj Patel',   latencyMs: 520,  status: 'success', timestamp: '5 min ago' },
   { id: 'q-3',  query: 'Revenue by department Q1 vs Q2',              model: 'FnOps Cost Model',               modelId: 'proj-3',   user: 'Vivek Sahi',  latencyMs: 0,    status: 'error',   timestamp: '12 min ago', errorMessage: 'Column rep_territory_id not found in source' },
   { id: 'q-4',  query: 'Monthly active users by segment',             model: 'Product Usage Analytics',        modelId: 'proj-6',   user: 'Priya M.',    latencyMs: 890,  status: 'success', timestamp: '18 min ago' },
-  { id: 'q-5',  query: 'Customer lifetime value distribution',        model: 'Customer 360',                   modelId: 'proj-2',   user: 'Sara Chen',   latencyMs: 1240, status: 'success', timestamp: '24 min ago' },
+  { id: 'q-5',  query: 'Customer lifetime value distribution',        model: 'Customer 360',                   modelId: 'proj-2',   user: 'Maya Chen',   latencyMs: 1240, status: 'success', timestamp: '24 min ago' },
   { id: 'q-6',  query: 'Top deals by rep this month',                 model: 'Sales Performance',             modelId: 'proj-sp',  user: 'Raj Patel',   latencyMs: 0,    status: 'error',   timestamp: '31 min ago', errorMessage: 'dbt model sync failed — stale data' },
   { id: 'q-7',  query: 'Churn risk by cohort',                        model: 'Churn Prediction',               modelId: 'proj-8',   user: 'Priya M.',    latencyMs: 670,  status: 'success', timestamp: '45 min ago' },
   { id: 'q-8',  query: 'Support ticket volume by category',           model: 'Support Analytics',              modelId: 'proj-9',   user: 'Vivek Sahi',  latencyMs: 290,  status: 'success', timestamp: '1h ago' },
-  { id: 'q-9',  query: 'Impressions vs spend by campaign',            model: 'Marketing Campaign Attribution', modelId: 'proj-mc',  user: 'Sara Chen',   latencyMs: 410,  status: 'success', timestamp: '1h 20m ago' },
+  { id: 'q-9',  query: 'Impressions vs spend by campaign',            model: 'Marketing Campaign Attribution', modelId: 'proj-mc',  user: 'Maya Chen',   latencyMs: 410,  status: 'success', timestamp: '1h 20m ago' },
   { id: 'q-10', query: 'Inventory turnover by SKU',                   model: 'Inventory & Supply Chain',       modelId: 'proj-10',  user: 'Raj Patel',   latencyMs: 560,  status: 'success', timestamp: '2h ago' },
-  { id: 'q-11', query: 'Pipeline value by stage',                     model: 'Sales Performance',             modelId: 'proj-sp',  user: 'Sara Chen',   latencyMs: 0,    status: 'error',   timestamp: '2h 10m ago', errorMessage: 'Column rep_territory_id not found in source' },
+  { id: 'q-11', query: 'Pipeline value by stage',                     model: 'Sales Performance',             modelId: 'proj-sp',  user: 'Maya Chen',   latencyMs: 0,    status: 'error',   timestamp: '2h 10m ago', errorMessage: 'Column rep_territory_id not found in source' },
   { id: 'q-12', query: 'Budget vs actual by category',                model: 'FnOps Cost Model',               modelId: 'proj-3',   user: 'Vivek Sahi',  latencyMs: 320,  status: 'success', timestamp: '3h ago' },
 ];
 

@@ -298,7 +298,9 @@ const TABLE_COLS: Record<string, [string, string][]> = {
   // Table names and the columns called out on screen come straight from the
   // script. Keyed on the same ACC-#### ids as dim_accounts so they join.
   // Snowflake:
-  accounts:              [['account_id','VARCHAR'],['account_name','VARCHAR'],['segment','VARCHAR'],['owner','VARCHAR'],['region','VARCHAR']],
+  // `acct_st` is deliberately cryptic: S16's narration names it out loud as the
+  // example of a column an LLM can't reason about. Values are codes, not words.
+  accounts:              [['account_id','VARCHAR'],['account_name','VARCHAR'],['acct_st','VARCHAR'],['segment','VARCHAR'],['owner','VARCHAR'],['region','VARCHAR']],
   contracts:             [['contract_id','VARCHAR'],['account_id','VARCHAR'],['renewal_date','DATE'],['term_months','INT'],['acv','FLOAT']],
   arr_snapshot:          [['account_id','VARCHAR'],['arr','FLOAT'],['arr_change_pct','FLOAT'],['snapshot_date','DATE']],
   billing_events:        [['event_id','VARCHAR'],['account_id','VARCHAR'],['event_type','VARCHAR'],['amount','FLOAT'],['event_date','DATE']],
@@ -307,6 +309,22 @@ const TABLE_COLS: Record<string, [string, string][]> = {
   feature_adoption:      [['account_id','VARCHAR'],['feature','VARCHAR'],['adoption_pct','FLOAT'],['last_used','DATE']],
   // CSV the CS team uploads:
   qbr_sentiment:         [['account_id','VARCHAR'],['qbr_date','DATE'],['sentiment','VARCHAR'],['sentiment_delta','FLOAT'],['csm_name','VARCHAR']],
+};
+
+/**
+ * Where each demo table came from — read by the publish modal so it can name the
+ * model's real sources instead of claiming everything is Snowflake. Only covers
+ * the run-of-show tables; anything else falls back to its `sourceKind`.
+ */
+const CONNECTION_BY_TABLE: Record<string, string> = {
+  accounts:        'Snowflake',
+  contracts:       'Snowflake',
+  arr_snapshot:    'Snowflake',
+  billing_events:  'Snowflake',
+  usage_events:    'Databricks',
+  feature_adoption: 'Databricks',
+  qbr_sentiment:   'CSV upload',
+  jira_cs_tickets: 'Jira (script)',
 };
 
 type Row = (string | number | boolean | null)[];
@@ -513,18 +531,18 @@ const MOCK_DATA: Record<string, Row[]> = {
   ],
   // ── Renewal-risk demo (run-of-show) ───────────────────────────────────────────
   accounts: [
-    ['ACC-0001','Acme Corp',        'Enterprise', 'Priya Shah','APAC'],
-    ['ACC-0002','Globex Inc',       'Mid-Market', 'Priya Shah','NA'  ],
-    ['ACC-0003','Initech LLC',      'Enterprise', 'Tom Reilly','EMEA'],
-    ['ACC-0004','Umbrella Health',  'Enterprise', 'Tom Reilly','NA'  ],
-    ['ACC-0005','Soylent Foods',    'Mid-Market', 'Priya Shah','NA'  ],
-    ['ACC-0006','Stark Industries', 'Enterprise', 'Ana Duarte','EMEA'],
-    ['ACC-0007','Wayne Logistics',  'Mid-Market', 'Ana Duarte','NA'  ],
-    ['ACC-0008','Tyrell Data',      'Enterprise', 'Tom Reilly','APAC'],
-    ['ACC-0009','Cyberdyne Systems','Enterprise', 'Priya Shah','NA'  ],
-    ['ACC-0010','Vandelay Group',   'Mid-Market', 'Ana Duarte','EMEA'],
-    ['ACC-0011','Hooli Cloud',      'Mid-Market', 'Tom Reilly','NA'  ],
-    ['ACC-0012','Massive Dynamic',  'Enterprise', 'Ana Duarte','APAC'],
+    ['ACC-0001','Acme Corp','A'   ,        'Enterprise', 'Priya Shah','APAC'],
+    ['ACC-0002','Globex Inc','AR'  ,       'Mid-Market', 'Priya Shah','NA'  ],
+    ['ACC-0003','Initech LLC','A'   ,      'Enterprise', 'Tom Reilly','EMEA'],
+    ['ACC-0004','Umbrella Health','AR'  ,  'Enterprise', 'Tom Reilly','NA'  ],
+    ['ACC-0005','Soylent Foods','A'   ,    'Mid-Market', 'Priya Shah','NA'  ],
+    ['ACC-0006','Stark Industries','A'   , 'Enterprise', 'Ana Duarte','EMEA'],
+    ['ACC-0007','Wayne Logistics','CH'  ,  'Mid-Market', 'Ana Duarte','NA'  ],
+    ['ACC-0008','Tyrell Data','A'   ,      'Enterprise', 'Tom Reilly','APAC'],
+    ['ACC-0009','Cyberdyne Systems','AR'  ,'Enterprise', 'Priya Shah','NA'  ],
+    ['ACC-0010','Vandelay Group','A'   ,   'Mid-Market', 'Ana Duarte','EMEA'],
+    ['ACC-0011','Hooli Cloud','P'   ,      'Mid-Market', 'Tom Reilly','NA'  ],
+    ['ACC-0012','Massive Dynamic','A'   ,  'Enterprise', 'Ana Duarte','APAC'],
   ],
   contracts: [
     ['CTR-4401','ACC-0001','2024-09-30',24, 240000],
@@ -821,13 +839,6 @@ const IconChevronDown = ({ size = 11 }: { size?: number }) => (
 // Vision-only tree-row affordances. The POC replaced these with a single explicit
 // "+" control (see TreeTableRow's showColumns branch); Vision keeps the original
 // hover pair so its data browser is unchanged.
-const IconInfo = ({ size = 12 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 16 16" fill="none">
-    <circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeWidth="1.3"/>
-    <path d="M8 7.5v4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
-    <circle cx="8" cy="5.2" r="0.8" fill="currentColor"/>
-  </svg>
-);
 const IconAddToCanvas = ({ size = 12 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 16 16" fill="none">
     <rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" strokeWidth="1.3"/>
@@ -1025,15 +1036,8 @@ const TreeTableRow: React.FC<{
               </div>
             ) : (
               <>
-                <button
-                  style={{ width: 22, height: 22, border: 'none', background: 'transparent', borderRadius: 4, color: '#777E8B', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, transition: 'background 100ms, color 100ms' }}
-                  onClick={e => e.stopPropagation()}
-                  title="Table info"
-                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#EEF2FF'; (e.currentTarget as HTMLElement).style.color = '#2770EF'; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#777E8B'; }}
-                >
-                  <IconInfo />
-                </button>
+                {/* "Table info" removed — it never had a handler beyond
+                    stopPropagation, so hovering and clicking it did nothing. */}
                 <button
                   style={{ width: 22, height: 22, border: 'none', background: 'transparent', borderRadius: 4, color: '#777E8B', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, transition: 'background 100ms, color 100ms' }}
                   onClick={e => { e.stopPropagation(); onAdd(name); }}
@@ -2061,6 +2065,34 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
         : airTuneRecsCount > 0
           ? '#FCC838'
           : '#06BF7F';
+
+  // ── Publish modal rows — derived, not hardcoded ─────────────────────────────
+  // These used to read "Snowflake" and "weekly refresh" whatever was on the
+  // canvas, which contradicts the model by the time you publish it: the demo
+  // spans four sources and caches daily.
+  const publishSources = (() => {
+    const names = new Set<string>();
+    groups.forEach(g => {
+      if (g.sourceKind === 'csv') { names.add('CSV upload'); return; }
+      const known = CONNECTION_BY_TABLE[g.tableName];
+      if (known) { names.add(known); return; }
+      if (g.steps.some(s => s.type === 'python')) { names.add('Python script'); return; }
+      names.add('Warehouse');
+    });
+    return names.size ? [...names].join(' · ') : 'Nothing on the canvas yet';
+  })();
+  const publishCache = dataMode === 'cached'
+    ? `Yes · ${cacheRefresh.toLowerCase()} refresh, ${cacheRange.toLowerCase()}`
+    : 'No · live queries';
+  const publishStatus = airDropView === 'intro'
+    ? { value: 'Readiness not checked', color: '#777E8B', check: false }
+    : airPendingCount > 0
+      ? { value: `${airPendingCount} improvement${airPendingCount === 1 ? '' : 's'} pending`, color: '#FCC838', check: false }
+      : airTuneRecsCount === null
+        ? { value: 'Needs tuning', color: '#FCC838', check: false }
+        : airTuneRecsCount > 0
+          ? { value: `${airTuneRecsCount} tuning fix${airTuneRecsCount === 1 ? '' : 'es'}`, color: '#FCC838', check: false }
+          : { value: 'Spotter ready', color: '#06BF7F', check: true };
 
   const airRunScan = () => {
     if (agentCollapsed) setAgentCollapsed(false);
@@ -6414,7 +6446,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
                       <TableIcon />
                       <span style={{ fontSize: 11, fontWeight: 500, color: '#1D232F' }}>{tblName}</span>
                     </span>
-                    <span style={{ fontSize: 10, color: '#A5ACB9', marginLeft: 2 }}>{inputCols.length} cols</span>
+                    <span style={{ fontSize: 10, color: '#A5ACB9', marginLeft: 2 }}>{inputCols.length} cols · {rows.length} rows</span>
                   </div>
                   {renderDataTable(inputCols, true)}
                 </div>
@@ -6437,7 +6469,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
                     {/* Row count — S11's payoff is watching this drop when the fetch
                         is narrowed and re-run, so it has to be on screen. */}
                     <span style={{ fontSize: 10, color: '#A5ACB9', marginLeft: 2 }}>
-                      {awaitingRun ? 'Not run yet' : `${outputRows.length} rows`}
+                      {awaitingRun ? 'Not run yet' : `${cols.length} cols · ${outputRows.length} rows`}
                     </span>
                   </div>
                   {renderDataTable(cols, false, previewScrollRef)}
@@ -6980,9 +7012,9 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
             </div>
             <div style={{ margin: '16px 0 20px', border: BORDER, borderRadius: 9, overflow: 'hidden' }}>
               {[
-                { label: 'Status', value: 'Spotter ready', color: '#06BF7F', check: true },
-                { label: 'Source', value: 'Snowflake', color: '#1D232F', check: false },
-                { label: 'Cache', value: 'Yes · weekly refresh', color: '#1D232F', check: false },
+                { label: 'Status', value: publishStatus.value, color: publishStatus.color, check: publishStatus.check },
+                { label: 'Sources', value: publishSources, color: '#1D232F', check: false },
+                { label: 'Cache', value: publishCache, color: '#1D232F', check: false },
               ].map((row, i) => (
                 <div key={row.label} style={{ display: 'flex', alignItems: 'center', padding: '11px 14px', borderTop: i > 0 ? '1px solid #F0F2F6' : 'none' }}>
                   <span style={{ fontSize: 12.5, color: '#777E8B', flex: 1, fontFamily: ff.primary }}>{row.label}</span>

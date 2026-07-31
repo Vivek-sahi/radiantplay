@@ -1,6 +1,12 @@
 import React from 'react';
 import { ff } from '../styles';
 import { AnchoredMenu } from './AnchoredMenu';
+// Real ThoughtSpot glyphs from the Spreadsheet Figma, rather than hand-drawn
+// approximations. Radiant has no cell-formatting icon set yet.
+import {
+  AdvancedSortingIcon, AlignLeftIcon, CurrencyIcon, IncreaseDecimalIcon,
+  PercentIcon, ReduceDecimalIcon, StyleIcon, TextWrapIcon,
+} from './icons/SpreadsheetIcons';
 
 // ── Spreadsheet component ─────────────────────────────────────────────────────
 // The data grid extracted from ModelCanvas. All new spreadsheet UI (toolbar,
@@ -259,17 +265,17 @@ export function DataSheetToolbar({ onDownloadCsv, onToggleExpand, expanded, onFi
       {iconBtn('Undo', <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M9 14 4 9l5-5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>)}
       {iconBtn('Redo', <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M15 14l5-5-5-5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>)}
       {divider}
-      {iconCaretBtn('Sort range', <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M4.5 12.5V3.5M4.5 3.5 2 6M4.5 3.5 7 6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/><path d="M11.5 3.5v9M11.5 12.5 9 10M11.5 12.5 14 10" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>)}
+      {iconCaretBtn('Sort range', <AdvancedSortingIcon size={14} />)}
       {divider}
-      {iconBtn('Format paint', <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M4 2h8v4a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V2z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/><path d="M6 7v2H4a1 1 0 0 0-1 1v3h6v-3a1 1 0 0 0-1-1h-2" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/><path d="M11 9.5h2a1 1 0 0 1 1 1V14h-3v-4.5z" fill="currentColor"/></svg>)}
+      {iconBtn('Format paint', <StyleIcon size={14} />)}
       {divider}
-      {iconCaretBtn('Align', <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2.5 4h11M2.5 7.5h7M2.5 11h11" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>)}
-      {iconCaretBtn('Wrap text', <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2.5 4h11M2.5 7.5h7.5a2 2 0 0 1 0 4H8M8 11.5l1.8-1.8L8 8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/><path d="M2.5 11.5h3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>)}
+      {iconCaretBtn('Align', <AlignLeftIcon size={14} />)}
+      {iconCaretBtn('Wrap text', <TextWrapIcon size={14} />)}
       {divider}
-      {iconBtn('Format as currency', <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 2.5v11M10.5 5c0-1.1-1.1-2-2.5-2s-2.5.7-2.5 1.8c0 2.4 5 1.1 5 3.5 0 1.1-1.1 1.8-2.5 1.8S5.5 11.3 5.5 10" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>)}
-      {iconBtn('Format as percent', <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="4.5" cy="4.5" r="1.8" stroke="currentColor" strokeWidth="1.2"/><circle cx="11.5" cy="11.5" r="1.8" stroke="currentColor" strokeWidth="1.2"/><path d="M12 4L4 12" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>)}
-      {iconBtn('Decrease decimal places', <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2.5 8h4M4 6l-2 2 2 2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/><text x="7.5" y="10.5" fontSize="6.5" fontWeight="700" fill="currentColor">.0</text></svg>)}
-      {iconBtn('Increase decimal places', <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M13.5 8h-4M11 6l2 2-2 2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/><text x="1.5" y="10.5" fontSize="6.5" fontWeight="700" fill="currentColor">.00</text></svg>)}
+      {iconBtn('Format as currency', <CurrencyIcon size={14} />)}
+      {iconBtn('Format as percent', <PercentIcon size={14} />)}
+      {iconBtn('Decrease decimal places', <ReduceDecimalIcon size={14} />)}
+      {iconBtn('Increase decimal places', <IncreaseDecimalIcon size={14} />)}
       <div ref={formatBtnRef} style={{ position: 'relative' }}>
         <button onClick={() => setFormatOpen(o => !o)} title="Number format"
           style={{ display: 'flex', alignItems: 'center', gap: 2, height: 24, padding: '0 6px', borderRadius: 5, border: 'none', background: formatOpen ? '#F6F8FA' : 'transparent', color: formatOpen ? '#1D232F' : '#64748B', fontSize: 11, fontWeight: 600, cursor: 'pointer', fontFamily: ff.primary }}

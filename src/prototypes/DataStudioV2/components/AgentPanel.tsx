@@ -5137,7 +5137,7 @@ df = df[["issue_key", "account_id", "summary", "status", "priority", "assignee",
               return (
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 'calc(100vh - 340px)', gap: sp.F, padding: `0 ${sp.A}px` }}>
                   <h2 style={{ margin: 0, fontSize: 24, fontWeight: fw.semibold, lineHeight: '32px', color: c['content-primary'], textAlign: 'center', letterSpacing: '-0.3px' }}>
-                    Morning, <span style={{ color: c['content-brand'] }}>Sara</span>.<br />Where do we start?
+                    Morning, <span style={{ color: c['content-brand'] }}>Maya</span>.<br />Where do we start?
                   </h2>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: sp.B, width: '100%' }}>
                     {suggestions.map(hint => (
