@@ -665,27 +665,25 @@ const DataStudio: React.FC = () => {
                 notificationCount={1}
                 userName={PERSONA.userName}
                 userAvatar={PERSONA.userAvatar}
+                /* The whole logo area is the way back. GlobalHeader already wraps the logo
+                   slot in its own button, so a nested button here bubbled its click up to
+                   that one — whose default is navigate('/'), i.e. straight out to the
+                   Radiant Play registry. One button, one handler, no nesting.
+                   `setView` rather than `goBack`: goBack resets the flow flags and clears
+                   the agent thread, which is right when leaving a flow and wrong when
+                   stepping back into one. */
+                onLogoClick={() => setView('canvas')}
                 logo={
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <BrandMark pixelSize={22} color="#1D232F" />
-                    <button
-                      /* Straight back to the canvas, not via goBack — goBack resets the
-                         flow flags and clears the agent thread, which is right when
-                         leaving a flow and wrong when stepping back into one. */
-                      onClick={() => setView('canvas')}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: 5,
-                        padding: '4px 10px 4px 7px', borderRadius: 6, border: 'none',
-                        background: 'transparent', color: '#64748B', cursor: 'pointer',
-                        fontSize: fs.sm, fontWeight: fw.medium, fontFamily: ff.primary,
-                      }}
-                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#F0F2F6'; (e.currentTarget as HTMLElement).style.color = '#1D232F'; }}
-                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#64748B'; }}
-                    >
+                    <span style={{
+                      display: 'flex', alignItems: 'center', gap: 5,
+                      color: '#64748B', fontSize: fs.sm, fontWeight: fw.medium, fontFamily: ff.primary,
+                    }}>
                       <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="10,4 6,8 10,12" /></svg>
                       Back to model
-                    </button>
-                  </div>
+                    </span>
+                  </span>
                 }
               />
             }

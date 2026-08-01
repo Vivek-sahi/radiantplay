@@ -7176,8 +7176,9 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
         notificationCount={1}
         onLogoClick={() => {}}
         style={{ flexShrink: 0 }}
-        /* No View action here — this *is* the canvas. */
-        leadingSlot={<CacheProgressChip />}
+        /* Already on the canvas, so "open the model" means bring the model itself back
+           into view — which is a real action from the Spreadsheet tab. */
+        leadingSlot={<CacheProgressChip onView={() => { setViewMode('canvas'); setSelectedIds(new Set()); }} />}
         logo={
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <BrandMark style={{ height: 22, width: 'auto' }} color="#1D232F" />

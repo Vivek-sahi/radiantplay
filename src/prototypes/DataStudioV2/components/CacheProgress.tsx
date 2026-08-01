@@ -95,7 +95,9 @@ export const CacheProgressChip: React.FC<{ onView?: () => void }> = ({ onView })
       aria-live="polite"
       style={{
         display: 'flex', alignItems: 'center', gap: 8,
-        height: 30, padding: '0 4px 0 10px', marginRight: 4,
+        // Roomier on the right than the 4px it had: the trailing icon button was sitting
+        // hard against the border, and with no icon the label ran into the edge.
+        height: 30, padding: onView ? '0 8px 0 12px' : '0 14px', marginRight: 4,
         borderRadius: 15,
         border: `1px solid ${running ? '#E2E6EC' : '#B7E8D3'}`,
         background: running ? '#fff' : '#F1FBF6',
