@@ -21,10 +21,54 @@ narration, never rendered. *On screen* = what we build, **including the agent's 
 wording** — that isn't ours to paraphrase. Distinguish text from components: the S2
 connection list is a component (`agentic/ConnectionList`), not prose in a message.
 
-**S2→S20 runs end to end.** S6 caching runs as an in-thread form with progress in the
-header; S15–S18 is Komal's readiness flow; S19/S20 hand off to the Spotter prototype
-embedded in this one. **S1 is still the gap** — the script wants one centred prompt and
-Overview has 11 Pulse cards. See `NEXT_UP.md`.
+**S1→S20 runs end to end.** S1–S3 is the chat-first start (below); S6 caching runs as an
+in-thread form with progress in the header; S15–S18 is Komal's readiness flow; S19/S20
+hand off to the Spotter prototype embedded in this one.
+
+---
+
+## The chat-first start — objects are created from intent
+
+The demo opens on a conversation, not on a model. **Her question on the home screen opens
+the canvas itself**, with the chat panel centred on the wash and no model card drawn yet;
+accepting the agent's first table proposal is what creates the model, and the card grows in
+beside a chat that hasn't moved. `scope.chatFirstStart`, Demo only.
+
+The frame: a model isn't a container you make and then fill, it's **the first object the
+conversation produces**. Which is also why the canvas has to appear at S3 rather than S7 as
+the script has it — the accepted tables need somewhere to be. The run-of-show is out of
+date on this point, deliberately.
+
+**Both states are one flex row** — `[chat panel][model card]` — so the change is two
+animated numbers, not two screens. Pre-model the panel is wide and centred by a left
+margin, leaving the card a sliver at zero opacity; creating the model runs the margin to 0
+and the width to `agentWidth`, and the card fills what the panel vacates. **Nothing mounts
+or unmounts**, which is the whole point: the thread stays where it is, S2 and S3 scrolled
+above. Reusing `ChatView` was considered and rejected — it's a different component with a
+different look (860px on flat white vs transparent on the radiance wash), so it would have
+meant handing the conversation across a seam, and the seam is where the illusion breaks.
+
+The precedent for the layout branch is `hideAgentPanel`, which the SpotterX embed already
+uses to hide the chat column and drop the card framing. This is the same change pointed the
+other way.
+
+⚠️ **The canvas takes 4.4s to create the model** (`MODEL_CREATE_MS`) and shows what it's
+doing — three passes over a filling bar, covering the work area but not the topbar, so the
+model's name and Publish appear immediately. Not theatre for its own sake: creating the
+model is the one irreversible step in the flow, and an object that blinks into existence
+reads as a screen transition. The tables land just under the overlay so lifting it reveals
+a populated canvas. `onAgentAddTables` returns a promise so the agent holds S4 until the
+canvas has finished rather than narrating over it.
+
+⚠️ **`initialPrompt` fires only on an empty thread.** The panel unmounts whenever it's
+collapsed (and on every hot reload), which resets `initialPromptFiredRef` — but the thread
+lives in `ModelCanvas` and survives. Without the empty-thread check, reopening the panel
+replays S2 on top of a live conversation.
+
+**S1 itself:** Demo's home screen is the prompt and nothing else — heading, prompt bar,
+cursor already in it, centred on the wash. Pulse and Recent models don't render; models
+stay reachable from the left nav. No auto-typing on load: on stage the question should
+arrive as she asks it.
 
 **The Spotter hand-off.** Publishing shows a persistent toast offering "Test in Spotter",
 which opens `src/prototypes/Spotter` inside Data Studio — our header passed in (so its own
@@ -100,6 +144,10 @@ points · no AgentDB connection · multi-select join flow · bordered connection
 `@` table mention · **Komal's readiness flow** (`readinessFlow`, added 2026-07-31 —
 S15–S18 is the longest beat in the script, and her three pillars are its "three
 layers checking in sequence").
+
+**Demo-only, in neither Vision nor POC:** `chatFirstStart` (added 2026-08-01) — the
+empty S1 home screen, the canvas opening with no model, and the transform. Vision and
+POC both enter the canvas with a model from the first frame and never reach that path.
 
 **Demo stays as Vision on:** data-browser tree rows, the browser Add button, the
 connection filter, both collapse treatments, Clean + Code in the node menu, and free
@@ -269,6 +317,9 @@ column lists inside cards — the ERD references were shape inspiration only.
 | Caching progress — header chip with a filling ring, 5 tables over ~8s, go-to icon back to the model; lives above both header sites so it survives leaving the canvas | ✅ |
 | Publish hand-off — persistent toast → Spotter; save state stays quiet text, never a button | ✅ |
 | Spotter embedded — the Spotter prototype opens inside Data Studio with our header, collapsed menu, published model selected, and a renewal-risk answer | ✅ |
+| Chat-first start — S1 empty home; her question opens the canvas with no model; accepting the first proposal creates it and the card grows in beside an unmoved thread | ✅ (Demo) |
+| Model creation pass — 4.4s, three steps over a filling bar, tables revealed under the overlay; the agent waits for it before S4 | ✅ (Demo) |
+| Formula bar scrolls to its column — a new formula column is appended off screen, so Enter used to look like nothing happened | ✅ |
 
 ---
 

@@ -67,6 +67,21 @@ export interface Scope {
    * flow's physical/semantic/ai pillars.
    */
   readinessFlow: boolean;
+  /**
+   * The conversation starts before the model does. Her question on the home
+   * screen opens the canvas with no model on it — the chat panel centred on the
+   * wash, the model card not drawn yet — and the draft model is created when she
+   * accepts the agent's first table proposal, the card growing in beside a chat
+   * that stays exactly where it is.
+   *
+   * The frame is that objects are created from intent: the model isn't a
+   * container you make and then fill, it's the first thing the conversation
+   * produces. Run-of-show S1→S3.
+   *
+   * Off = the model exists before you arrive (New model, or opening one), which
+   * is every other path into the canvas.
+   */
+  chatFirstStart: boolean;
 }
 
 /** Kept as an alias so nothing that imported the old name breaks. */
@@ -85,6 +100,7 @@ const VISION_SCOPE: Scope = {
   borderedConnectionPill: false,
   promptBarTableMention: false,
   readinessFlow: false,
+  chatFirstStart: false,
 };
 
 const POC_SCOPE: Scope = {
@@ -100,6 +116,7 @@ const POC_SCOPE: Scope = {
   borderedConnectionPill: true,
   promptBarTableMention: true,
   readinessFlow: true,
+  chatFirstStart: false,
 };
 
 // Demo starts as Vision and takes POC's cleanups one at a time. Spreading
@@ -125,6 +142,7 @@ const DEMO_SCOPE: Scope = {
   borderedConnectionPill: true,      // reads as a control, not a label
   promptBarTableMention: true,       // `@` to name tables in the prompt
   readinessFlow: true,               // S15–S18: the three-layer readiness beat
+  chatFirstStart: true,              // S1–S3: the model is created from the conversation
 };
 
 export const SCOPE_BY_VARIANT: Record<DataStudioVariant, Scope> = {

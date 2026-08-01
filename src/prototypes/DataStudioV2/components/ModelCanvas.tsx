@@ -106,6 +106,19 @@ interface ModelCanvasProps {
   // multi-connection selectable, with expandable tick-based column selection and
   // explicit + add icons. Unset (Vision / SpotterX) = full browser, unchanged.
   poc?: boolean;
+  /**
+   * Arrive with no model — the chat panel centred on the wash, the model card
+   * not drawn yet. The draft model is created when the agent's first table
+   * proposal is accepted. See `scope.chatFirstStart`; Demo only.
+   */
+  startWithoutModel?: boolean;
+  /** Name given to the draft model when the chat-first flow creates it. */
+  draftModelName?: string;
+  /**
+   * Her opening question, typed on the home screen. Handed to the agent as its
+   * first turn, so the canvas opens mid-conversation rather than empty.
+   */
+  initialPrompt?: string;
 }
 
 // ── Per-op icon for the properties-panel header ─────────────────────────────────
@@ -1722,7 +1735,55 @@ const POC_TABLE_CONN: Record<string, string> = {
   pendo_nps_enriched: 'databricks', csm_account_mapping: 'databricks',
 };
 
-const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSpotter, mode = 'dataset', initialTables, initialJoins, hideAgentPanel = false, embedHeaderLeft, embedHeaderRight, showTestTab = false, onTestFixWithAI, poc = false }) => {
+/**
+ * Chat-first start — the canvas building the model it was just asked for.
+ *
+ * Covers the work area (not the topbar: the model's name and Publish appearing
+ * up there is the first evidence the object exists) while three passes run. The
+ * step list is the honest sequence, so the wait reads as work rather than as a
+ * spinner padding a transition.
+ */
+const ModelCreatingOverlay: React.FC<{ name: string; tableCount: number; durationMs: number }> = ({ name, tableCount, durationMs }) => {
+  const steps = React.useMemo(() => [
+    'Creating the model',
+    `Adding ${tableCount} table${tableCount === 1 ? '' : 's'}`,
+    'Reading columns and types',
+  ], [tableCount]);
+  const [step, setStep] = useState(0);
+  const [fill, setFill] = useState(0);
+
+  useEffect(() => {
+    const per = durationMs / steps.length;
+    const timers = steps.map((_, i) => setTimeout(() => setStep(i), Math.round(per * i)));
+    // Next frame, so the bar has a 0% start to transition away from.
+    const raf = requestAnimationFrame(() => setFill(1));
+    return () => { timers.forEach(clearTimeout); cancelAnimationFrame(raf); };
+  }, [durationMs, steps]);
+
+  return (
+    <div style={{
+      position: 'absolute', inset: 0, zIndex: 30,
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14,
+      background: '#fff', fontFamily: ff.primary,
+    }}>
+      <svg width="30" height="30" viewBox="0 0 16 16" fill="none" style={{ color: '#2770EF' }}>
+        <path d="M8 1.5L14 5L8 8.5L2 5Z" stroke="currentColor" strokeWidth="1.15" strokeLinejoin="round" fill="currentColor" fillOpacity="0.12" />
+        <path d="M2 5L2 11L8 14.5L8 8.5Z" stroke="currentColor" strokeWidth="1.15" strokeLinejoin="round" fill="currentColor" fillOpacity="0.07" />
+        <path d="M14 5L14 11L8 14.5L8 8.5Z" stroke="currentColor" strokeWidth="1.15" strokeLinejoin="round" fill="currentColor" fillOpacity="0.04" />
+      </svg>
+      <div style={{ fontSize: 14.5, fontWeight: fw.semibold, color: '#1D232F' }}>Creating {name}</div>
+      <div style={{ width: 220, height: 3, borderRadius: 2, background: '#EAEDF2', overflow: 'hidden' }}>
+        <div style={{
+          height: '100%', width: `${fill * 100}%`, background: '#2770EF', borderRadius: 2,
+          transition: `width ${durationMs}ms linear`,
+        }} />
+      </div>
+      <div style={{ fontSize: 12.5, color: '#777E8B' }}>{steps[step]}</div>
+    </div>
+  );
+};
+
+const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSpotter, mode = 'dataset', initialTables, initialJoins, hideAgentPanel = false, embedHeaderLeft, embedHeaderRight, showTestTab = false, onTestFixWithAI, poc = false, startWithoutModel = false, draftModelName, initialPrompt }) => {
   const { variant, scope } = useVariant();
   const { startCaching } = useCache();
   // Demo is the only cut that runs the run-of-show script. Vision stays clean.
@@ -1737,6 +1798,23 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
     ? ['sf', 'bq', 'gdrive', 'sharepoint', 'agentdb']
     : ['sf', 'bq', 'gdrive', 'sharepoint'];
   const [modelName, setModelName] = useState('Untitled model');
+  /**
+   * Chat-first start: does the model exist yet?
+   *
+   * False only while `startWithoutModel` is set and nothing has been accepted —
+   * every other route into the canvas (New model, opening one, the MRD seeder,
+   * the SpotterX embed) has a model from the first frame, so this is true there
+   * and none of the layout below ever branches.
+   *
+   * The ref shadows the state because the commit seam reads it inside a callback
+   * that would otherwise close over a stale value on the very first accept.
+   */
+  const [modelCreated, setModelCreated] = useState(!startWithoutModel);
+  const modelCreatedRef = useRef(!startWithoutModel);
+  const preModel = !modelCreated;
+  /** The canvas is building the model it was just asked for. See MODEL_CREATE_MS. */
+  const [modelCreating, setModelCreating] = useState(false);
+  const [creatingCount, setCreatingCount] = useState(0);
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState(modelName);
   const [publishOpen, setPublishOpen] = useState(false);
@@ -1828,6 +1906,22 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
   const [formulaValues, setFormulaValues] = useState<Record<string, (string | number | null)[]>>({});
   /** The column currently showing its loading skeleton. */
   const [formulaComputing, setFormulaComputing] = useState<string | null>(null);
+  /**
+   * A formula column is appended at the far right of the sheet, which on a model
+   * this wide is well off screen — so pressing Enter looked like nothing had
+   * happened. Bring it into view once it's in the DOM.
+   *
+   * Keyed on the count rather than the values, so it fires when the column is
+   * added and not again when its values land a second later. Scrolling to the
+   * far edge is enough: the new column is always the last one, and it already
+   * arrives highlighted.
+   */
+  useEffect(() => {
+    if (formulaCols.length === 0) return;
+    const el = dataScrollRef.current;
+    if (!el) return;
+    el.scrollTo({ left: el.scrollWidth, behavior: 'smooth' });
+  }, [formulaCols.length]);
   /** Surfaced under the bar when a formula can't be parsed or a term didn't match. */
   const [formulaError, setFormulaError] = useState<string | null>(null);
   // Toolbar Filter/Formula on the merged Data sheet need a target table — this holds
@@ -1989,6 +2083,51 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
   const previewScrollRef = useRef<HTMLDivElement | null>(null);
 
   const [agentWidth, setAgentWidth] = useState(420);
+
+  // ── Chat-first start: the pre-model layout and the transform out of it ───────
+  //
+  // Both states are the same flex row — [chat panel][model card] — so the change
+  // is two animated numbers rather than two screens. Pre-model the panel is wide
+  // and centred by a left margin, which leaves the card a sliver on the right at
+  // zero opacity. Creating the model runs the margin to 0 and the width down to
+  // `agentWidth`; the card fills the space it vacates and fades up. Nothing
+  // mounts or unmounts, so the thread doesn't move.
+  const PRE_MODEL_AGENT_W = 760;
+  const TRANSFORM_MS = 420;
+  /**
+   * How long the canvas spends creating the model before its tables appear.
+   *
+   * Deliberately not instant. Creating a model is the one irreversible thing
+   * that happens in this flow, and an object that blinks into existence reads as
+   * a screen transition rather than as work — so the canvas shows what it's
+   * doing for as long as the real thing would take.
+   */
+  const MODEL_CREATE_MS = 4400;
+  // The canvas is fixed to the viewport, so this is the row's width. Tracked as
+  // state only to keep the centring honest across a window resize.
+  const [viewportW, setViewportW] = useState(() => (typeof window === 'undefined' ? 1440 : window.innerWidth));
+  useEffect(() => {
+    if (!startWithoutModel) return;
+    const onResize = () => setViewportW(window.innerWidth);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, [startWithoutModel]);
+  const effAgentWidth = preModel ? Math.min(PRE_MODEL_AGENT_W, viewportW - 96) : agentWidth;
+  const agentMarginLeft = preModel ? Math.max(0, Math.round((viewportW - effAgentWidth) / 2)) : 0;
+
+  /**
+   * The draft model is created here and nowhere else — the single moment the
+   * conversation turns into an object. Idempotent: later accepts add tables to
+   * the model this one made.
+   */
+  const createDraftModel = useCallback(() => {
+    if (modelCreatedRef.current) return false;
+    modelCreatedRef.current = true;
+    setModelName(draftModelName ?? 'Untitled model');
+    setModelCreated(true);
+    setModelCreating(true);
+    return true;
+  }, [draftModelName]);
   const [browserWidth, setBrowserWidth] = useState(260);
   const [resizingPanel, setResizingPanel] = useState<null | 'agent' | 'browser'>(null);
   const agentResizeRef = useRef<{ startX: number; startW: number } | null>(null);
@@ -2486,13 +2625,32 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
    * Tables already on the canvas are skipped, so re-accepting is harmless.
    */
   const agentAddTables = useCallback((tableNames: string[]) => {
-    const present = new Set(groups.map(g => g.tableName));
-    tableNames
-      .filter(name => !present.has(name))
-      // Only tables the canvas can actually render — TABLE_COLS is the catalogue.
-      .filter(name => Boolean(TABLE_COLS[name]))
-      .forEach(name => addToCanvas(name, 'warehouse', undefined, { select: false }));
-  }, [groups, addToCanvas]);
+    const commit = () => {
+      const present = new Set(groupsRef.current.map(g => g.tableName));
+      tableNames
+        .filter(name => !present.has(name))
+        // Only tables the canvas can actually render — TABLE_COLS is the catalogue.
+        .filter(name => Boolean(TABLE_COLS[name]))
+        .forEach(name => addToCanvas(name, 'warehouse', undefined, { select: false }));
+    };
+    // Chat-first start: this accept is what creates the model, so the canvas runs
+    // its creation pass before the tables appear. Two reasons for the wait beyond
+    // the theatre — the canvas positions cards against its own measured width, and
+    // mid-transform that width is still growing.
+    //
+    // Resolves when the model is ready, so the agent can hold its next beat until
+    // the canvas has caught up rather than talking over it.
+    if (createDraftModel()) {
+      setCreatingCount(tableNames.filter(name => Boolean(TABLE_COLS[name])).length);
+      return new Promise<void>(resolve => {
+        // Tables land just under the overlay, so lifting it reveals a populated
+        // canvas instead of an empty one that then fills in.
+        setTimeout(commit, MODEL_CREATE_MS - 240);
+        setTimeout(() => { setModelCreating(false); resolve(); }, MODEL_CREATE_MS);
+      });
+    }
+    commit();
+  }, [addToCanvas, createDraftModel, MODEL_CREATE_MS]);
 
   /**
    * Commit a formula typed or pasted into the formula bar (S14).
@@ -3692,9 +3850,12 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
   const agentPanel = (agentCollapsed || hideAgentPanel) ? null : (
     <div style={{
       position: 'relative', flexShrink: 0,
-      width: agentWidth,
+      width: effAgentWidth,
+      marginLeft: agentMarginLeft,
       display: 'flex', flexDirection: 'column',
-      transition: resizingPanel === 'agent' ? 'none' : 'width 220ms cubic-bezier(0.4,0,0.2,1)',
+      transition: resizingPanel === 'agent'
+        ? 'none'
+        : `width ${TRANSFORM_MS}ms cubic-bezier(0.22,0.61,0.36,1), margin-left ${TRANSFORM_MS}ms cubic-bezier(0.22,0.61,0.36,1)`,
     }}>
       {/* Agent panel header */}
       <div style={{
@@ -3703,6 +3864,9 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
         display: 'flex', alignItems: 'center', padding: '0 12px', gap: 6,
       }}>
         <span style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: fw.semibold, color: '#1D232F', padding: '3px 6px', fontFamily: ff.primary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>New chat</span>
+        {/* Collapsing pre-model would leave an empty screen — there's nothing
+            behind the chat to collapse towards until the model exists. */}
+        {!preModel && (
         <button
           onClick={() => setAgentCollapsed(true)}
           title="Collapse agent panel"
@@ -3715,6 +3879,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
             <path d="M6 2.5v11" stroke="currentColor" strokeWidth="1.3"/>
           </svg>
         </button>
+        )}
       </div>
       {/* Agent content */}
       <div style={{ flex: 1, overflow: 'hidden', background: 'transparent' }}>
@@ -3723,8 +3888,10 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
           setProject={setAgentProject}
           messages={agentMessages}
           setMessages={setAgentMessages}
+          initialPrompt={initialPrompt}
           isFromScratch={true}
           isCanvasAgent={true}
+          modelPending={preModel}
           poc={poc}
           demo={demo}
           multiSelectJoinFlow={scope.multiSelectJoinFlow}
@@ -3735,7 +3902,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
           onCachingApplied={() => setDataMode('cached')}
           onCachingStart={(tables, onDone) => startCaching(tables, { perTableMs: 1600, onDone })}
           canvasTableCount={groups.filter(g => g.steps[0]?.type === 'source').length}
-          width={agentWidth}
+          width={effAgentWidth}
           rootBackground="transparent"
         />
       </div>
@@ -7302,15 +7469,30 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
           border: (!hideAgentPanel || !agentCollapsed) ? '1px solid #EAE4E4' : 'none',
           boxShadow: (!hideAgentPanel || !agentCollapsed) ? '0 8px 28px rgba(70,30,30,0.08), 0 1px 3px rgba(25,35,49,0.05)' : 'none',
           overflow: 'hidden',
-        }}>
+          // Chat-first start: the card is laid out the whole time — it's just the
+          // strip the centred chat panel isn't using — so its width animates for
+          // free as the panel narrows. Only the opacity is scripted, and it lags
+          // the width slightly so the card reads as arriving rather than blinking.
+          opacity: preModel ? 0 : 1,
+          pointerEvents: preModel ? 'none' : 'auto',
+          transition: `opacity ${Math.round(TRANSFORM_MS * 0.7)}ms ease-out ${Math.round(TRANSFORM_MS * 0.35)}ms`,
+        }}
+        aria-hidden={preModel}>
           {topbar}
-          <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
+          <div style={{ flex: 1, display: 'flex', minHeight: 0, position: 'relative' }}>
             {viewMode !== 'test' && browserPanel}
             {/* Canvas column */}
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
               {viewMode === 'canvas' ? canvasViewport : viewMode === 'columns' && scope.columnsTab ? columnsView : viewMode === 'data' ? dataView : viewMode === 'test' ? testView : canvasViewport}
               {viewMode === 'canvas' && !previewFull && previewPanel}
             </div>
+            {modelCreating && (
+              <ModelCreatingOverlay
+                name={modelName}
+                tableCount={creatingCount}
+                durationMs={MODEL_CREATE_MS}
+              />
+            )}
           </div>
           {/* Full screen: the preview takes over the whole artifact (topbar + browser + canvas); only the agent panel remains. */}
           {viewMode === 'canvas' && previewFull && previewPanel}

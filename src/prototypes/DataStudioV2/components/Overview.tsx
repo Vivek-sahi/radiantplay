@@ -439,13 +439,29 @@ const Overview: React.FC<OverviewProps> = ({
         backgroundPosition: 'top center',
       }} />
 
-      {/* Scrollable content */}
-      <div style={{ position: 'relative', flex: 1, overflowY: 'auto', backgroundColor: 'transparent' }}>
+      {/* Scrollable content.
+          S1 (chat-first start): the home screen is the opening shot of the demo —
+          a prompt and nothing else, so the first thing on screen is the question
+          rather than a dashboard to read past. The panels below don't render at
+          all, and the hero centres in the viewport instead of sitting under a
+          72px top pad. Models stay reachable from the left nav. */}
+      <div style={{
+        position: 'relative', flex: 1, overflowY: 'auto', backgroundColor: 'transparent',
+        ...(scope.chatFirstStart
+          ? { display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center' }
+          : null),
+      }}>
 
         {/* ── Hero — agent prompt ───────────────────────────────────────── */}
         <div style={{
           backgroundColor: 'transparent',
-          padding: `72px ${sp.H}px ${sp.G}px`,
+          // Optically centred rather than mathematically: the bottom pad lifts the
+          // prompt above the midline, which is where the eye expects it and where
+          // the radiance wash is still behind it.
+          padding: scope.chatFirstStart
+            ? `0 ${sp.H}px ${sp.I * 2}px`
+            : `72px ${sp.H}px ${sp.G}px`,
+          ...(scope.chatFirstStart ? { width: '100%', boxSizing: 'border-box' as const } : null),
         }}>
           <div style={{
             maxWidth: 720,
@@ -471,6 +487,10 @@ const Overview: React.FC<OverviewProps> = ({
                 placeholder="How can I help you today?"
                 dropDirection="down"
                 landingPage
+                /* S1 asks for a blinking cursor — she types, then Enter. No
+                   auto-typing on load: on stage the question should arrive as
+                   she asks it, not before. */
+                autoFocus={scope.chatFirstStart}
                 tableTools={scope.promptBarTableMention}
                 leftSlot={
                   <ConnectionPill
@@ -484,7 +504,8 @@ const Overview: React.FC<OverviewProps> = ({
               />
             </div>
 
-            {/* Capability chips */}
+            {/* Capability chips — "nothing else on the canvas" at S1. */}
+            {!scope.chatFirstStart && (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: sp.B, justifyContent: 'center' }}>
               {/* Setup chips dropped from the home screen in POC and Demo — Vision keeps them. */}
               {CAPABILITY_CHIPS.filter(chip => scope.homeSetupEntryPoints || !['Create a connection', 'Connect Snowflake', 'Cache a model'].includes(chip.label)).map(chip => (
@@ -518,10 +539,12 @@ const Overview: React.FC<OverviewProps> = ({
                 />
               )}
             </div>
+            )}
           </div>
         </div>
 
         {/* ── Pulse + Recent panels ────────────────────────────────────── */}
+        {!scope.chatFirstStart && (
         <div style={{
           padding: sp.H,
           display: 'flex', gap: sp.F, alignItems: 'stretch',
@@ -586,6 +609,7 @@ const Overview: React.FC<OverviewProps> = ({
           </RecentPanel>
 
         </div>
+        )}
 
       </div>
 

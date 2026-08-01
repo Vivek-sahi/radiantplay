@@ -113,6 +113,13 @@ const MRD_MODEL_JOINS: InitialCanvasJoin[] = MOCK_PLAN_BASE.relationships.map(r 
   cardinality: MRD_CARDINALITY_MAP[r.cardinality ?? ''] ?? 'many_to_one',
 }));
 
+/**
+ * The name the chat-first flow gives the draft model when her first table
+ * proposal is accepted. Matches the model Spotter is offered at the other end of
+ * the demo, so the object she creates at S3 is the one she questions at S19.
+ */
+const DEMO_DRAFT_MODEL_NAME = 'Renewal risk';
+
 // User-facing labels for the unwired nav sections so the placeholder reads cleanly.
 const PLACEHOLDER_LABEL: Record<NavSection, string> = {
   overview:    'Overview',
@@ -128,7 +135,7 @@ const DataStudio: React.FC = () => {
     return () => { document.title = prev; };
   }, []);
 
-  const { variant } = useVariant();
+  const { variant, scope } = useVariant();
 
   const [view, setView]           = useState<AppView>('overview');
   const [prevView, setPrevView]   = useState<AppView>('overview');
@@ -142,6 +149,11 @@ const DataStudio: React.FC = () => {
   // 'canvas' (see the buildStep effect below), but ModelCanvas needs to know "this visit
   // came from the MRD flow" for its own lifetime — so this flag survives that reset.
   const [canvasAutoPopulate, setCanvasAutoPopulate] = useState(false);
+  // Chat-first start (Demo): the canvas is opened from her question on the home
+  // screen with no model on it, and creates one when she accepts the agent's
+  // first table proposal. Off for every other route into the canvas.
+  const [chatFirstStart, setChatFirstStart] = useState(false);
+  const [canvasPrompt, setCanvasPrompt] = useState('');
   const [instructionsCreated, setInstructionsCreated] = useState(false);
   const [isDbtReview, setIsDbtReview] = useState(false);
   const [dbtImported, setDbtImported] = useState(false);
@@ -335,6 +347,7 @@ const DataStudio: React.FC = () => {
   // Open visual canvas builder — "New model" from Models page
   const openModelCanvas = () => {
     setCanvasAutoPopulate(false);
+    setChatFirstStart(false);
     navigateTo('canvas');
   };
 
@@ -357,6 +370,7 @@ const DataStudio: React.FC = () => {
     });
     setInitialPrompt('');
     setCanvasAutoPopulate(false);
+    setChatFirstStart(false);
     // Pivot: "New model" now opens the no-code visual canvas (Komal's ModelCanvas).
     // The old high-code new-project prompt lives in the frozen "Data Studio 1.5" prototype.
     navigateTo('canvas');
@@ -370,6 +384,33 @@ const DataStudio: React.FC = () => {
 
   // User submitted the hero prompt on the overview page → go to chat
   const handleOverviewPromptSubmit = (prompt: string) => {
+    // Chat-first start (Demo, S1→S3). Her question opens the canvas itself, with
+    // the chat centred and no model card yet — rather than a separate chat screen
+    // that has to hand the conversation over once a model exists. The agent is the
+    // canvas agent from the first turn, so S2's connection question is its reply.
+    if (scope.chatFirstStart) {
+      setProject({
+        id: `proj-${Date.now()}`,
+        name: DEMO_DRAFT_MODEL_NAME,
+        buildStep: 'empty',
+        activeTab: 'tables',
+        publishedVersion: 0,
+        hasUnpublishedChanges: true,
+        projectSource: 'warehouse',
+        context: emptyContext,
+        addedTables: [],
+        columnsSelected: false,
+        includedColumns: {},
+        columnOverrides: {},
+        dqStatus: 'idle',
+      });
+      setCanvasPrompt(prompt);
+      setChatFirstStart(true);
+      setCanvasAutoPopulate(false);
+      setIsAgentMode(true);
+      navigateTo('canvas');
+      return;
+    }
     if (multiSourcePendingRef.current) {
       multiSourcePendingRef.current = false;
       setProject({
@@ -468,6 +509,8 @@ const DataStudio: React.FC = () => {
     setIsNotebookFlow(false);
     setIsMrdFlow(false);
     setCanvasAutoPopulate(false);
+    setChatFirstStart(false);
+    setCanvasPrompt('');
     setIsDbtReview(false);
     setIsAgentMode(false);
     setMessages([]);
@@ -631,6 +674,11 @@ const DataStudio: React.FC = () => {
             onOpenSpotter={(name) => { setSpotterModelName(name); navigateTo('spotter'); }}
             initialTables={canvasAutoPopulate ? MRD_MODEL_TABLES : undefined}
             initialJoins={canvasAutoPopulate ? MRD_MODEL_JOINS : undefined}
+            /* Chat-first start — the canvas opens with no model and her question
+               already in the thread. Demo only; see scope.chatFirstStart. */
+            startWithoutModel={chatFirstStart}
+            draftModelName={DEMO_DRAFT_MODEL_NAME}
+            initialPrompt={chatFirstStart ? canvasPrompt : undefined}
             /* Test tab hidden for now — re-add `showTestTab` to bring it back.
                TestView + all tab logic are left intact; this only stops the +Model
                flow from opting in. */

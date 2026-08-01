@@ -2594,6 +2594,14 @@ interface AgentPanelProps {
   rootBackground?: string;
   /** Canvas agent: intent-routed handler + canvas bridges (ModelCanvas embed). */
   isCanvasAgent?: boolean;
+  /**
+   * No model exists yet — accepting a table proposal is what creates one.
+   * Changes what the agent says at S3 and what the card's button offers, because
+   * "Add to model" is a promise about a model that isn't there. Chat-first start
+   * only; false the moment the model exists, so S4's Databricks card reads
+   * normally.
+   */
+  modelPending?: boolean;
   /** POC: multi-node canvas referencing + refined reference icon. */
   poc?: boolean;
   /** Source tables currently on the canvas — drives the empty-state starters. */
@@ -2603,7 +2611,7 @@ interface AgentPanelProps {
    * Fired when the user accepts a TableSuggestionCard. Appends — names must
    * exist in the canvas TABLE_COLS catalogue or they're skipped.
    */
-  onAgentAddTables?: (tableNames: string[]) => void;
+  onAgentAddTables?: (tableNames: string[]) => void | Promise<void>;
   /** Commits agent-proposed joins onto the canvas (S7). Both tables must be present. */
   onAgentAddJoins?: (joins: Array<{
     table1: string; table2: string; col1: string; col2: string;
@@ -2845,7 +2853,7 @@ const JoinRecCard: React.FC<{ rec: NonNullable<AgentMessage['joinRec']>; onAdd: 
   );
 };
 
-const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, setMessages, initialPrompt, onBuildComplete, externalMessage, onExternalMessageHandled, externalMessageAttachment, injectInput, onInjectInputHandled, width = 340, selectedColumns, onColumnRemove, isFromScratch, isMultiSource, isNotebookFlow, isMrdFlow, isDbtReview, onNotebookUpdate, onOpenPlan, onOpenQualityPlan, onBuildStart, onNavigateToWorkspace, onStartBuild, fullPage = false, onBack, initialFlow, initialMessage, onInsightResolved, onOpenObject, onOpenMsItem, flowOption = 'option3', rootBackground, isCanvasAgent, poc, canvasTableCount, onAgentAddTables, onAgentAddJoins, onAgentAddPythonSource, onCachingApplied, onCachingStart, demo = false, multiSelectJoinFlow = false, readinessFlow = false }) => {
+const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, setMessages, initialPrompt, onBuildComplete, externalMessage, onExternalMessageHandled, externalMessageAttachment, injectInput, onInjectInputHandled, width = 340, selectedColumns, onColumnRemove, isFromScratch, isMultiSource, isNotebookFlow, isMrdFlow, isDbtReview, onNotebookUpdate, onOpenPlan, onOpenQualityPlan, onBuildStart, onNavigateToWorkspace, onStartBuild, fullPage = false, onBack, initialFlow, initialMessage, onInsightResolved, onOpenObject, onOpenMsItem, flowOption = 'option3', rootBackground, isCanvasAgent, modelPending = false, poc, canvasTableCount, onAgentAddTables, onAgentAddJoins, onAgentAddPythonSource, onCachingApplied, onCachingStart, demo = false, multiSelectJoinFlow = false, readinessFlow = false }) => {
   const [pendingAction, setPending]     = useState<PendingAction | null>(null);
   const [isProcessing, setProcessing]   = useState(false);
   const [planModalOpen, setPlanModalOpen] = useState(false);
@@ -2938,7 +2946,19 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
   useEffect(() => {
     if (!initialPrompt || initialPromptFiredRef.current) return;
     initialPromptFiredRef.current = true;
-    if (isNotebookFlow) {
+    // Canvas agent first. ModelCanvas passes isFromScratch alongside isCanvasAgent,
+    // and the from-scratch branch below would otherwise claim the opening prompt
+    // and run the old clarify flow instead of routing to handleCanvasAgentInput.
+    // Only reachable via the chat-first start, which is the one path that hands
+    // this panel a prompt on mount.
+    if (isCanvasAgent) {
+      // Opening turn only. This panel unmounts whenever it's collapsed (and on a
+      // hot reload), which resets initialPromptFiredRef — but the thread lives in
+      // ModelCanvas and survives, so an empty thread is the honest test of "has
+      // she asked yet". Without this, reopening the panel replays S2 on top of a
+      // conversation already in progress.
+      if (messages.length === 0) processText(initialPrompt);
+    } else if (isNotebookFlow) {
       // Notebook flow: show user message, init environment, scan connections, then query tables
       setMessages([{ id: `u-${Date.now()}`, type: 'user', content: initialPrompt }]);
       setProcessing(true);
@@ -4586,10 +4606,18 @@ ORDER BY row_count DESC
         },
         { label: 'Scoring by fit', detail: 'Key completeness, coverage of accounts renewing this quarter' },
       ], 1000);
-      say('Here\'s what I found in Snowflake. I\'ve left **billing_events** out — it\'s too sparse to carry a risk signal, but tick it if you disagree.\n\nHover a score to see why I picked it.', {
-        tableProposals: DEMO_SNOWFLAKE_TABLES,
-        proposalKey: 'snowflake',
-      });
+      // Chat-first start: this is the turn that creates the model, so the agent
+      // says so. Accepting is the one irreversible step in the flow and it
+      // shouldn't be hidden behind a button that reads like an append.
+      say(
+        'Here\'s what I found in Snowflake. I\'ve left **billing_events** out — it\'s too sparse to carry a risk signal, but tick it if you disagree.\n\nHover a score to see why I picked it.'
+        + (modelPending
+          ? '\n\nAccepting these creates a new model, **Renewal risk**, with the tables on its canvas.'
+          : ''),
+        {
+          tableProposals: DEMO_SNOWFLAKE_TABLES,
+          proposalKey: 'snowflake',
+        });
       setProcessing(false);
       return;
     }
@@ -5624,14 +5652,19 @@ ORDER BY row_count DESC
                 onApiKeySubmit={handleApiKeySubmit}
                 onFileUpload={handleFileUpload}
                 onArtifactClick={onOpenMsItem}
+                tableAddLabel={modelPending ? 'Create model' : undefined}
                 onAcceptTables={async (msgId, accepted) => {
-                  // Commit to the canvas, then freeze the card so the thread
-                  // keeps a read-only record of what was accepted.
-                  onAgentAddTables?.(accepted.map(t => t.name));
                   const key = messages.find(m => m.id === msgId)?.proposalKey;
+                  // Freeze first, then commit. The card becomes a read-only record
+                  // of what was accepted — and on the chat-first start the commit
+                  // takes several seconds (it creates the model), so a card left
+                  // live through the wait could be clicked a second time.
                   setMessages(prev => prev.map(m =>
                     m.id === msgId ? { ...m, tableProposalsCommitted: true } : m
                   ));
+                  // Awaited so the agent holds its next beat until the canvas has
+                  // finished, rather than narrating over the top of it.
+                  await onAgentAddTables?.(accepted.map(t => t.name));
 
                   // S4 — auto-advance. She gave all three sources in one turn, so
                   // the agent moves to the next one without being asked again.
@@ -7188,11 +7221,13 @@ const MessageBubble: React.FC<{
   onArtifactClick?: (card: { type: string; name: string }) => void;
   /** User accepted the agent's table proposal — commit them to the canvas. */
   onAcceptTables?: (msgId: string, tables: TableProposal[]) => void;
+  /** Verb on the table card's commit button — "Create model" before one exists. */
+  tableAddLabel?: string;
   /** User accepted the agent's join proposal — draw the edges. */
   onAcceptJoins?: (msgId: string, joins: JoinProposal[]) => void;
   /** User submitted an inline agent form (S8/S9). */
   onSubmitAgentForm?: (msgId: string, formKey: string, values: Record<string, string>) => void;
-}> = ({ msg, showAvatar, onSuggestion, onConfirm, onOpenQualityPlan, onChipClick, onGenUIAction, onComplete, publishedVersion, onOpenObject, onApiKeySubmit, onFileUpload, onArtifactClick, onAcceptTables, onAcceptJoins, onSubmitAgentForm }) => {
+}> = ({ msg, showAvatar, onSuggestion, onConfirm, onOpenQualityPlan, onChipClick, onGenUIAction, onComplete, publishedVersion, onOpenObject, onApiKeySubmit, onFileUpload, onArtifactClick, onAcceptTables, onAcceptJoins, onSubmitAgentForm, tableAddLabel }) => {
   const [chipUsed, setChipUsed] = React.useState(false);
   const [apiKeyValue, setApiKeyValue] = React.useState('');
   const [isDragOver, setIsDragOver] = React.useState(false);
@@ -7394,6 +7429,7 @@ const MessageBubble: React.FC<{
               <TableSuggestionCard
                 tables={msg.tableProposals}
                 isReadOnly={msg.tableProposalsCommitted}
+                addLabel={tableAddLabel}
                 onAdd={accepted => onAcceptTables?.(msg.id, accepted)}
               />
             </div>

@@ -8,8 +8,16 @@ _Active work items. Edit in place each session — move done items to Done, add 
 
 ### Do this first ⚠️
 
-- **Walk the whole demo once.** S1→S20 now connects end to end for the first time, and
-  nobody has watched it in sequence. Every check this session was `tsc` + build.
+- **Walk the whole demo once, now including S1.** S1→S20 connects end to end. S1–S3 was
+  watched on screen this session; S4 onward after the chat-first start has not been, and
+  the beat that most deserves a look is **S4→S7 following a created model** — the agent
+  now waits on the canvas's 4.4s creation pass before advancing to Databricks, and that
+  ordering has only been reasoned about, not seen.
+- **The run-of-show is now out of date at S7.** It says "Canvas opens with all three"
+  after caching; the canvas actually appears at S3, because the accepted tables need
+  somewhere to go. Decided deliberately (2026-08-01) — edit the script to match.
+- **`MODEL_CREATE_MS` is a guess at 4.4s.** Vivek asked for 4–5s and it hasn't been timed
+  against a live narration. One number in `ModelCanvas.tsx`.
 - **The Spotter beat leans on one keyword rule.** `pickCannedResponse` routes renewal
   questions ahead of its churn rule; improvise a phrasing that misses both and you get a
   generic chart. Six phrasings are covered (harness in the commit message for 153) — worth
@@ -33,10 +41,10 @@ _Active work items. Edit in place each session — move done items to Done, add 
 
 ### Parked by Vivek — 2026-07-31, decided not to do yet
 
-- **Demo lands on Workspace, not the canvas.** `index.tsx:188` — after the agentic home
-  flow builds a model, POC goes to the canvas and Vision goes to the old Workspace
-  notebook. Demo inherits Vision. Parked: impact unclear until someone demos from the
-  home prompt rather than opening a model.
+- ✅ **Demo lands on Workspace, not the canvas.** Resolved by the chat-first start —
+  Demo's home prompt now opens the canvas directly and never routes to Workspace. The
+  `buildStep !== 'empty'` transition in `index.tsx` is untouched and still serves Vision
+  and POC.
 - **Empty-state chips name off-story tables.** The canvas agent's first screen offers
   "Fetch dim_accounts, support_cases and call_metrics", which is a different scenario.
   Agreed it shouldn't be table names; tackling later.
@@ -68,7 +76,9 @@ The On screen lane quotes the agent's wording; it isn't ours to paraphrase. Rema
 
 - **Spreadsheet toolbar 6 → 19 icons.** All 12 missing icons are exported to `components/icons/SpreadsheetIcons.tsx`, just unwired. Alignment is a dropdown, wrap a toggle, currency/percent/decimals act directly on the selected column; overflow folds whole groups from the right. Open question: is `Style` a menu or a toggle? ⚠️ `align-right` exports identical to `align-left` — wrong variant in the Figma, flagged in the file header.
 - **S6 caching hand-off.** Vivek's call: an agent chip ("Configure caching") opening the existing `cacheConfirm` modal, rather than building a toast system. `interactiveChips` already does this for Review/Run.
-- **S1 starting screen.** Bigger than it looks — the script wants an empty state with one centred prompt; our Overview has 11 Pulse cards and 10 recent models.
+- ✅ **S1 starting screen** — Demo's home is the prompt and nothing else, centred on the
+  wash, cursor already in it. Pulse and Recent models don't render; the left nav still
+  reaches models. Deliberately no auto-typing on load.
 - **`Open P1 Escalations` doesn't resolve** in the formula bar — no escalation-count column exists, so it reports "treated as 0". Either add the column or leave it as an honest gap that sets up the readiness beat.
 - ✅ **S19/S20 payoff** — back in scope and built (153). Publishing offers "Test in Spotter",
   which opens the Spotter prototype inside Data Studio with our header, its menu collapsed
@@ -146,7 +156,40 @@ The On screen lane quotes the agent's wording; it isn't ours to paraphrase. Rema
 - **The chip and toast use literal hex**, matching surrounding canvas code rather than
   tokens. On the existing consolidation debt below.
 
+### Surfaced by the chat-first start — worth doing
+
+- **Vision and POC still start the old way**, and Vivek's read is that Vision gets
+  replaced by Demo over time rather than kept in step. So `chatFirstStart` is Demo-only
+  on purpose — but if that replacement happens, this is the path that has to generalise,
+  and Vision's agent is unscripted, so "renewal risk" produces no proposal card there.
+  A non-scripted route to a table proposal is the prerequisite.
+- **The draft model's name is hardcoded** to `Renewal risk` (`DEMO_DRAFT_MODEL_NAME` in
+  `index.tsx`), chosen to match the model Spotter is handed at S19. `deriveModelName()`
+  exists and would produce "Which of our accounts renewing" from her actual question,
+  which is why it isn't used. Real naming is an open design question.
+- **The data browser appears with the card**, so it isn't there for S1–S3. That happens
+  to reinforce the script's own point — she isn't browsing the warehouse — but it wasn't
+  designed, it fell out of the browser living inside the model card.
+- **Nothing in the pre-model state offers a way out** except the left nav. There's no
+  back affordance on the centred chat, and the agent-panel collapse is hidden (collapsing
+  pre-model would leave an empty screen).
+
 ## Done (recent)
+
+- ✅ **Chat-first start** — S1's empty home screen; her question opens the canvas with the
+  chat centred and no model; accepting the first table proposal creates the model and the
+  card grows in beside a thread that never moves. One flex row, nothing unmounts (154)
+- ✅ **Model creation reads as work** — 4.4s, three passes over a filling bar, topbar
+  visible throughout, tables revealed under the overlay; the agent awaits it before S4 (154)
+- ✅ **S3 says what accepting does** — "Accepting these creates a new model, Renewal risk"
+  and the button reads Create model until one exists (154)
+- ✅ **Formula bar scrolls to its column** — the new column is appended off screen, so
+  Enter used to look like nothing had happened (154)
+- ✅ **Opening prompt no longer replays** — any remount of the agent panel (collapse and
+  reopen, or a hot reload) re-asked her S1 question on top of a live thread; it now fires
+  only on an empty thread (154)
+- ✅ **Table card freezes before the commit, not after** — with the commit now taking 4.4s
+  that was a four-second window to accept twice (154)
 
 - ✅ **Spotter stitched into Data Studio** — publishing offers "Test in Spotter"; Spotter
   opens inside our product with our header, collapsed menu and the published model
