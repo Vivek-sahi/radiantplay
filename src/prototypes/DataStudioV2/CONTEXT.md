@@ -21,8 +21,22 @@ narration, never rendered. *On screen* = what we build, **including the agent's 
 wording** — that isn't ours to paraphrase. Distinguish text from components: the S2
 connection list is a component (`agentic/ConnectionList`), not prose in a message.
 
-**Beats 2, 3 and 5 run end to end.** S13/S14 work; S6 now works (caching runs as an
-in-thread form); S1 and S19/S20 don't. See `NEXT_UP.md`.
+**S2→S20 runs end to end.** S6 caching runs as an in-thread form with progress in the
+header; S15–S18 is Komal's readiness flow; S19/S20 hand off to the Spotter prototype
+embedded in this one. **S1 is still the gap** — the script wants one centred prompt and
+Overview has 11 Pulse cards. See `NEXT_UP.md`.
+
+**The Spotter hand-off.** Publishing shows a persistent toast offering "Test in Spotter",
+which opens `src/prototypes/Spotter` inside Data Studio — our header passed in (so its own
+"Alex" and its internet-hosted photo never mount), left menu collapsed to the rail, and the
+published model pre-selected. The canvas **stays mounted** behind it, which is what makes
+"Back to model" return you to the model you left rather than a fresh one. The answer lives
+in `src/spotter/runtime/cannedResponses.ts` as `renewalRiskFixture`, and its router entry
+sits *before* the churn rule — that rule matches "account", so without the ordering the
+closing question is answered confidently and wrongly.
+
+⚠️ Spotter's own defaults are unchanged; everything is optional props. The standalone
+Spotter prototype behaves exactly as before.
 
 **The script fires only in the Demo cut** (`variant === 'demo'`, threaded to `AgentPanel`
 as `demo`). S2, S3, S4, S6 and S8–S12 are all gated, so Vision's canvas agent is
@@ -251,6 +265,10 @@ column lists inside cards — the ERD references were shape inspiration only.
 | AI readiness — Komal's agentic flow: 3-pillar menu → passes stream one at a time → fixes you Skip or Fix selected → Spotter answer grading. POC + Demo, in-thread | ✅ |
 | Preview is read-only — `fx` / Add column live in the Columns tab, not the preview header | ✅ |
 | Spreadsheet loads cell by cell — real grid + real headers stay mounted, cells fill on a diagonal (no stand-in skeleton) | ✅ |
+| Persona — one `persona.ts` behind every header and avatar (Maya Chen, local avatar asset) | ✅ |
+| Caching progress — header chip with a filling ring, 5 tables over ~8s, go-to icon back to the model; lives above both header sites so it survives leaving the canvas | ✅ |
+| Publish hand-off — persistent toast → Spotter; save state stays quiet text, never a button | ✅ |
+| Spotter embedded — the Spotter prototype opens inside Data Studio with our header, collapsed menu, published model selected, and a renewal-risk answer | ✅ |
 
 ---
 

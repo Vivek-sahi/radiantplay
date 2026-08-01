@@ -8,6 +8,15 @@ _Active work items. Edit in place each session — move done items to Done, add 
 
 ### Do this first ⚠️
 
+- **Walk the whole demo once.** S1→S20 now connects end to end for the first time, and
+  nobody has watched it in sequence. Every check this session was `tsc` + build.
+- **The Spotter beat leans on one keyword rule.** `pickCannedResponse` routes renewal
+  questions ahead of its churn rule; improvise a phrasing that misses both and you get a
+  generic chart. Six phrasings are covered (harness in the commit message for 153) — worth
+  broadening before a stakeholder rehearses.
+- **Nothing dismisses the caching chip.** By design — it's the route back to the model —
+  but it stays in the header until you leave Data Studio. Revisit if it reads as stuck.
+
 - **Run the readiness beat end to end** (`?v=demo` → add a table → AI-readiness pill).
   It has never been watched start to finish by a human — every check this session was
   `tsc` + build. Worth doing before a stakeholder rehearsal.
@@ -61,7 +70,9 @@ The On screen lane quotes the agent's wording; it isn't ours to paraphrase. Rema
 - **S6 caching hand-off.** Vivek's call: an agent chip ("Configure caching") opening the existing `cacheConfirm` modal, rather than building a toast system. `interactiveChips` already does this for Review/Run.
 - **S1 starting screen.** Bigger than it looks — the script wants an empty state with one centred prompt; our Overview has 11 Pulse cards and 10 recent models.
 - **`Open P1 Escalations` doesn't resolve** in the formula bar — no escalation-count column exists, so it reports "treated as 0". Either add the column or leave it as an honest gap that sets up the readiness beat.
-- **S19/S20 payoff** — S20 explicitly out of scope; S19 has no renewal-risk question yet.
+- ✅ **S19/S20 payoff** — back in scope and built (153). Publishing offers "Test in Spotter",
+  which opens the Spotter prototype inside Data Studio with our header, its menu collapsed
+  and the published model selected; the renewal question returns a ranked answer.
 
 ### Surfaced 2026-07-31 — worth doing
 
@@ -121,7 +132,37 @@ The On screen lane quotes the agent's wording; it isn't ours to paraphrase. Rema
   now being read-only means neither surface offers it. Consistent with the script (Maya
   writes her metric in the spreadsheet beat), but confirm during a rehearsal.
 
+### Loose ends from 153
+
+- **Dead code left on purpose.** `AgentForm`'s `time` / `checkbox` field types and its
+  `link` / `sameRow` flags are unused since the caching form was cut back; `cannedReply` /
+  `sendPrompt` in `PocReadinessFlow` are unreachable since the composer routes to the normal
+  agent; `dismiss` in the cache context is no longer called by the chip. All small, all
+  ready if the fuller versions come back. Strip if they start reading as clutter.
+- **`SpotterXShell.tsx:180` still hardcodes "Royal Enfield".** Off the demo path, so left
+  alone — but it's the last copy of the old persona.
+- **`api/chat.ts` fails to resolve `@vercel/node`** during the Vercel build. Pre-existing,
+  doesn't fail the build (Vite doesn't typecheck), but that serverless function may not run.
+- **The chip and toast use literal hex**, matching surrounding canvas code rather than
+  tokens. On the existing consolidation debt below.
+
 ## Done (recent)
+
+- ✅ **Spotter stitched into Data Studio** — publishing offers "Test in Spotter"; Spotter
+  opens inside our product with our header, collapsed menu and the published model
+  pre-selected; a renewal-risk answer built to Spotter's own pattern (153)
+- ✅ **One persona** — `persona.ts`; the canvas header no longer says "Royal Enfield", and
+  the header, agent thread and readiness flow share one face (153)
+- ✅ **Caching progress in the header** — filling ring, 5 tables over 8s, go-to icon back to
+  the model; survives leaving the canvas; form cut to scope + refresh (153)
+- ✅ **Publish hand-off** — persistent toast to Spotter; save indicator stays status
+  instead of becoming a green pill beside the Publish button (153)
+- ✅ **Agent chat autoscroll** — ResizeObserver on the content, so streaming blocks and the
+  readiness flow pin the view too (153)
+- ✅ **Back to model returns to the model** — the canvas stays mounted behind Spotter (153)
+- ✅ **Jira python card lands as the agent writes the script**, not on the Review click (153)
+- ✅ **Preview is read-only**; **spreadsheet fills cell by cell**; **Tidy up is an icon**;
+  properties panel closes on background click; form buttons a size up; "Mark out of scope" (153)
 
 - ✅ **Komal's AI-readiness flow merged** — cherry-picked `7b65884` only, none of her other
   33 commits; gated on for Demo via `scope.readinessFlow`; runs as content in our agent
