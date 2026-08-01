@@ -439,31 +439,36 @@ const Overview: React.FC<OverviewProps> = ({
         backgroundPosition: 'top center',
       }} />
 
-      {/* Scrollable content.
-          S1 (chat-first start): the home screen is the opening shot of the demo —
-          a prompt and nothing else, so the first thing on screen is the question
-          rather than a dashboard to read past. The panels below don't render at
-          all, and the hero centres in the viewport instead of sitting under a
-          72px top pad. Models stay reachable from the left nav. */}
-      <div style={{
-        position: 'relative', flex: 1, overflowY: 'auto', backgroundColor: 'transparent',
-        ...(scope.chatFirstStart
-          ? { display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center' }
-          : null),
-      }}>
+      {/* Scrollable content */}
+      <div style={{ position: 'relative', flex: 1, overflowY: 'auto', backgroundColor: 'transparent' }}>
 
         {/* ── Hero — agent prompt ───────────────────────────────────────── */}
+        {/* S1 (chat-first start): the prompt owns the first screen and centres in
+            it, with Pulse and Recent picking up immediately below the fold. The
+            band is the full height rather than a fraction of it — at 56% the
+            prompt sat high and left a dead gap between it and the panels, which
+            read as unfinished rather than spacious. */}
         <div style={{
           backgroundColor: 'transparent',
-          // Optically centred rather than mathematically: the bottom pad lifts the
-          // prompt above the midline, which is where the eye expects it and where
-          // the radiance wash is still behind it.
           padding: scope.chatFirstStart
-            ? `0 ${sp.H}px ${sp.I * 2}px`
+            ? `${sp.I}px ${sp.H}px ${sp.G}px`
             : `72px ${sp.H}px ${sp.G}px`,
-          ...(scope.chatFirstStart ? { width: '100%', boxSizing: 'border-box' as const } : null),
+          ...(scope.chatFirstStart ? {
+            minHeight: '100%',
+            width: '100%',
+            boxSizing: 'border-box' as const,
+            display: 'flex',
+            flexDirection: 'column' as const,
+            justifyContent: 'center',
+          } : null),
         }}>
           <div style={{
+            // `width: 100%` is load-bearing, not belt-and-braces. The S1 hero is a
+            // column flex container, and in flex layout an auto margin wins over
+            // align-items: stretch — so `margin: 0 auto` alone collapses this to
+            // its content width and the prompt bar comes out about half size.
+            // No-op in the block layout the other cuts use.
+            width: '100%',
             maxWidth: 720,
             margin: '0 auto',
             display: 'flex',
@@ -544,11 +549,19 @@ const Overview: React.FC<OverviewProps> = ({
         </div>
 
         {/* ── Pulse + Recent panels ────────────────────────────────────── */}
-        {!scope.chatFirstStart && (
+        {/* S1 keeps these, pulled up into the band the centred prompt leaves empty.
+            The negative margin is the only lever that moves these without moving
+            the prompt: the prompt is centred in the first screen, so the space
+            under it is half a screen of geometry, not padding — trimming padding
+            alone is invisible against it. In vh so it tracks the same viewport
+            height the gap itself is a fraction of. */}
         <div style={{
-          padding: sp.H,
+          padding: scope.chatFirstStart
+            ? `${sp.I}px ${sp.H}px ${sp.I}px`
+            : sp.H,
           display: 'flex', gap: sp.F, alignItems: 'stretch',
-          maxWidth: 1320, margin: '0 auto',
+          maxWidth: 1320,
+          margin: scope.chatFirstStart ? '-28vh auto 0' : '0 auto',
           boxSizing: 'border-box' as const,
         }}>
           <PulsePanel
@@ -609,7 +622,6 @@ const Overview: React.FC<OverviewProps> = ({
           </RecentPanel>
 
         </div>
-        )}
 
       </div>
 

@@ -76,9 +76,9 @@ The On screen lane quotes the agent's wording; it isn't ours to paraphrase. Rema
 
 - **Spreadsheet toolbar 6 → 19 icons.** All 12 missing icons are exported to `components/icons/SpreadsheetIcons.tsx`, just unwired. Alignment is a dropdown, wrap a toggle, currency/percent/decimals act directly on the selected column; overflow folds whole groups from the right. Open question: is `Style` a menu or a toggle? ⚠️ `align-right` exports identical to `align-left` — wrong variant in the Figma, flagged in the file header.
 - **S6 caching hand-off.** Vivek's call: an agent chip ("Configure caching") opening the existing `cacheConfirm` modal, rather than building a toast system. `interactiveChips` already does this for Review/Run.
-- ✅ **S1 starting screen** — Demo's home is the prompt and nothing else, centred on the
-  wash, cursor already in it. Pulse and Recent models don't render; the left nav still
-  reaches models. Deliberately no auto-typing on load.
+- ✅ **S1 starting screen** — Demo's home leads with the prompt, centred in the first
+  screen with the cursor in it; Pulse and Recent kept but pulled up so their tops sit on
+  screen; capability chips dropped. Deliberately no auto-typing on load.
 - **`Open P1 Escalations` doesn't resolve** in the formula bar — no escalation-count column exists, so it reports "treated as 0". Either add the column or leave it as an honest gap that sets up the readiness beat.
 - ✅ **S19/S20 payoff** — back in scope and built (153). Publishing offers "Test in Spotter",
   which opens the Spotter prototype inside Data Studio with our header, its menu collapsed
@@ -185,6 +185,11 @@ The On screen lane quotes the agent's wording; it isn't ours to paraphrase. Rema
   and the button reads Create model until one exists (154)
 - ✅ **Formula bar scrolls to its column** — the new column is appended off screen, so
   Enter used to look like nothing had happened (154)
+- ✅ **Canvas no longer skews itself** — the growth-nudge took whichever axis needed the
+  smaller push, which for neighbouring columns is the horizontal one, so a card gaining a
+  row shunted its neighbour out of alignment. Vertical only now (154)
+- ✅ **Tidy up centres the model** in the visible canvas instead of ordering it into the
+  top-left corner (154)
 - ✅ **Opening prompt no longer replays** — any remount of the agent panel (collapse and
   reopen, or a hot reload) re-asked her S1 question on top of a live thread; it now fires
   only on an empty thread (154)

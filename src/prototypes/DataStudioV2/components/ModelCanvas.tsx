@@ -2005,15 +2005,17 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
             const overlapX = Math.min(gBox.right, cBox.right) - Math.max(gBox.left, cBox.left);
             const overlapY = Math.min(gBox.bottom, cBox.bottom) - Math.max(gBox.top, cBox.top);
             if (overlapX <= 0 || overlapY <= 0) return;
-            const gCx = (gBox.left + gBox.right) / 2, gCy = (gBox.top + gBox.bottom) / 2;
-            const cCx = (cBox.left + cBox.right) / 2, cCy = (cBox.top + cBox.bottom) / 2;
-            if (overlapX < overlapY) {
-              const dir = cCx >= gCx ? 1 : -1;
-              deltas[c.id] = { dx: d.dx + dir * (overlapX + GAP), dy: d.dy };
-            } else {
-              const dir = cCy >= gCy ? 1 : -1;
-              deltas[c.id] = { dx: d.dx, dy: d.dy + dir * (overlapY + GAP) };
-            }
+            const gCy = (gBox.top + gBox.bottom) / 2;
+            const cCy = (cBox.top + cBox.bottom) / 2;
+            // Always push vertically, never sideways. This used to take whichever
+            // axis needed the smaller shove, which is cheaper per nudge and wrong
+            // for this canvas: cards sit in columns, and for two cards in
+            // neighbouring columns the horizontal overlap is the small one — so a
+            // grown card would shunt its neighbour out of column alignment and
+            // leave the layout visibly skewed with no way back except Tidy up.
+            // A vertical push clears the same overlap and keeps the columns.
+            const dir = cCy >= gCy ? 1 : -1;
+            deltas[c.id] = { dx: d.dx, dy: d.dy + dir * (overlapY + GAP) };
           });
         });
         if (Object.keys(deltas).length > 0) {
@@ -2918,6 +2920,11 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
     const ROW_GAP = 34;
     const DEFAULT_H = 132;
     const ORIGIN = { x: 80, y: 60 };
+    // Measured before the state update so the updater stays a pure function of its
+    // input. Zero when there's no canvas mounted yet, which just leaves the
+    // arrangement pinned at ORIGIN — the old behaviour.
+    const areaW = canvasAreaRef.current?.clientWidth ?? 0;
+    const areaH = canvasAreaRef.current?.clientHeight ?? 0;
 
     setGroups(gs => {
       if (gs.length < 2) return gs;
@@ -2995,7 +3002,21 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
         x += Math.max(...col.map(widthOf)) + COL_GAP;
       });
 
-      return gs.map(g => ({ ...g, ...(pos.get(g.id) ?? { x: g.x, y: g.y }) }));
+      // Centre the finished arrangement in the visible canvas rather than pinning
+      // it to the top-left. Tidy up reads as "put this in order", and a model that
+      // orders itself into the corner with empty space beside it doesn't look
+      // ordered. `x` has already advanced past the last column, so the trailing
+      // COL_GAP comes back off. Never negative: on a canvas too small to hold the
+      // layout, ORIGIN wins and the viewport scrolls, rather than the first column
+      // being pushed off the left edge where it can't be reached.
+      const layoutW = x - ORIGIN.x - COL_GAP;
+      const dx = Math.max(0, Math.round((areaW - layoutW) / 2) - ORIGIN.x);
+      const dy = Math.max(0, Math.round((areaH - tallest) / 2) - ORIGIN.y);
+
+      return gs.map(g => {
+        const p = pos.get(g.id);
+        return p ? { ...g, x: p.x + dx, y: p.y + dy } : g;
+      });
     });
   }, [canvasJoins, deriveEdges, cardSizes]);
 

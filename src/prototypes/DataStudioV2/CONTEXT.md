@@ -65,10 +65,20 @@ collapsed (and on every hot reload), which resets `initialPromptFiredRef` — bu
 lives in `ModelCanvas` and survives. Without the empty-thread check, reopening the panel
 replays S2 on top of a live conversation.
 
-**S1 itself:** Demo's home screen is the prompt and nothing else — heading, prompt bar,
-cursor already in it, centred on the wash. Pulse and Recent models don't render; models
-stay reachable from the left nav. No auto-typing on load: on stage the question should
-arrive as she asks it.
+**S1 itself:** Demo's home screen leads with the prompt — heading, prompt bar, cursor
+already in it, centred in the first screen. Pulse and Recent models are kept but pulled up
+into the space the centred prompt leaves below it (`-28vh` on the panels block), so their
+tops sit on screen. The capability chips are dropped: they'd sit directly under the prompt,
+and the air below it is what makes the prompt read as the main item. No auto-typing on
+load — on stage the question should arrive as she asks it.
+
+⚠️ The hero is a **column flex container**, so `width: 100%` on the inner block is
+load-bearing: in flex layout an auto margin beats `align-items: stretch`, and `margin: 0
+auto` alone collapses the block to its content width — which halves the prompt bar. The
+other cuts use block layout, where it's a no-op.
+
+⚠️ `-28vh` shrinks the gap faster than the screen shrinks. Fine on a laptop or projector;
+below ~600px of window height the panels start crowding the prompt bar.
 
 **The Spotter hand-off.** Publishing shows a persistent toast offering "Test in Spotter",
 which opens `src/prototypes/Spotter` inside Data Studio — our header passed in (so its own
@@ -245,7 +255,17 @@ a floating badge, which made five joins into one hub unreadable. Joins sharing a
 get their own channel; joins leaving one card exit at different heights.
 
 `arrangeCanvas` lays cards out left-to-right by join distance from the most-connected
-table, centring each column vertically. A join whose two ends land in the same column
+table, centring each column vertically and **centring the finished arrangement in the
+visible canvas** rather than pinning it to a fixed top-left origin (it falls back to the
+origin when the layout is wider than the viewport, so the first column can never be pushed
+off the left edge).
+
+⚠️ **The growth-nudge pushes vertically only.** When a card's measured box grows it shoves
+overlapping neighbours clear; that used to pick whichever axis needed the smaller push,
+which is wrong here — for two cards in *neighbouring* columns the horizontal overlap is the
+small one, so a card gaining a row (`jira_cs_tickets` at S10) shunted its neighbour out of
+column alignment with no way back but Tidy up. A vertical push clears the same overlap and
+keeps the columns. A join whose two ends land in the same column
 pushes one end onward, so **no line passes behind a card by construction**. It runs
 automatically only for agent-committed joins — hand-placed cards are never moved — and
 the **Tidy up** button (bottom-right, by undo/zoom) re-runs it on demand. That split is
