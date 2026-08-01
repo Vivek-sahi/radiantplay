@@ -480,6 +480,131 @@ const sourcesFixture: CannedEvent[] = [
   { delay: 100, chunk: { kind: 'message_done' } },
 ];
 
+// ---------- Renewal risk (Data Studio hand-off) ----------
+// Answers the question the Data Studio demo ends on, after publishing the Renewal risk
+// model and clicking "Test in Spotter". The point of the beat is that data which was never
+// in a warehouse — Jira escalations, pulled by a script — made it all the way through to a
+// board-level answer, so the escalation count is named in the prose, cited in the sources,
+// and carried as a column in the table.
+//
+// Columns and tables are the real ones from the model (accounts, contracts, arr_snapshot,
+// usage_events, jira_cs_tickets), so the answer can't contradict what was just built.
+
+const RENEWAL_STEPS: RichStep[] = [
+  {
+    label: 'Understand the question',
+    description:
+      'Parsed prompt as renewal exposure: accounts with a renewal date inside 90 days, filtered to declining usage and open P1 escalations.',
+  },
+  {
+    label: 'Resolve the data model',
+    description:
+      'Matched the Renewal risk model. Escalations resolve through jira_cs_tickets, which is cached rather than queried live.',
+    toolcall: {
+      id: 'tc-renewal',
+      icon: 'database',
+      title: 'Data model search',
+      input: 'measures: ["arr"], dimensions: ["account", "renewal date"], filters: ["usage declining", "open P1s"]',
+      output: 'Renewal risk · accounts → contracts, arr_snapshot, usage_events, jira_cs_tickets (4 joins resolved)',
+    },
+  },
+  {
+    label: 'Generate the answer',
+    description:
+      'Ranked the 4 matching accounts by renewal risk and summed ARR, both raw and weighted by risk. Bar for the size comparison; the full breakdown is in the table view.',
+  },
+];
+
+const renewalRiskFixture: CannedEvent[] = [
+  ...reasoningSequence(RENEWAL_STEPS),
+  {
+    delay: 100,
+    chunk: { kind: 'block_start', block: { kind: 'text', id: 'text-renewal', text: '' } },
+  },
+  ...streamText(
+    'text-renewal',
+    '$1.1M of ARR is up for renewal in the next 90 days across 4 at-risk accounts — $754K once weighted by renewal risk. All four are declining on usage, and between them they carry 8 open P1 escalations. Northwind is the largest single exposure at $420K, with the steepest usage drop and 3 open P1s.',
+  ),
+  { delay: 100, chunk: { kind: 'block_done', blockId: 'text-renewal' } },
+  {
+    delay: 200,
+    chunk: {
+      kind: 'block_start',
+      block: {
+        kind: 'viz',
+        id: 'viz-renewal-risk',
+        title: 'ARR at risk by account, renewing in the next 90 days',
+        tokens: [
+          { id: 't-arr', label: 'ARR', kind: 'measure' },
+          { id: 't-account', label: 'by account', kind: 'keyword' },
+          { id: 't-renewal', label: 'renewal date = next 90 days', kind: 'filter' },
+          { id: 't-usage', label: 'usage declining', kind: 'filter' },
+          { id: 't-p1', label: 'open P1s > 0', kind: 'filter' },
+        ],
+        source: {
+          type: 'data',
+          // One measure, so one hue that darkens with magnitude — colour here means "more",
+          // not "which account". A colour per account would encode identity nobody needs.
+          chartKind: 'bar',
+          data: {
+            xAxis: { categories: ['Northwind', 'Contoso', 'Fabrikam', 'Tailspin'] },
+            yAxis: { label: 'ARR at risk ($K)' },
+            series: [
+              { id: 'arr-at-risk', label: 'ARR at risk', data: [420, 310, 280, 95] },
+            ],
+          },
+        },
+        tableData: {
+          columns: ['Account', 'Renewal date', 'ARR', '90-day usage', 'Open P1s', 'Renewal risk'],
+          rows: [
+            ['Northwind', '12 Aug 2024', '$420K', '−38%', 3, 0.78],
+            ['Fabrikam', '28 Aug 2024', '$280K', '−31%', 2, 0.71],
+            ['Contoso', '3 Sep 2024', '$310K', '−27%', 2, 0.64],
+            ['Tailspin', '19 Sep 2024', '$95K', '−12%', 1, 0.31],
+          ],
+        },
+      },
+    },
+  },
+  { delay: 200, chunk: { kind: 'block_done', blockId: 'viz-renewal-risk' } },
+  {
+    delay: 200,
+    chunk: {
+      kind: 'block_start',
+      block: {
+        kind: 'sources',
+        id: 'sources-renewal',
+        items: [
+          { id: 's-model', label: 'Renewal risk — published model' },
+          { id: 's-contracts', label: 'contracts · Snowflake' },
+          { id: 's-arr', label: 'arr_snapshot · Snowflake' },
+          { id: 's-usage', label: 'usage_events · Databricks' },
+          // The proof point, said out loud: this never went through a warehouse.
+          { id: 's-jira', label: 'jira_cs_tickets · Jira, cached' },
+        ],
+      },
+    },
+  },
+  { delay: 100, chunk: { kind: 'block_done', blockId: 'sources-renewal' } },
+  {
+    delay: 200,
+    chunk: {
+      kind: 'block_start',
+      block: {
+        kind: 'followups',
+        id: 'follow-renewal',
+        suggestions: [
+          'Which escalations are open on Northwind?',
+          'Break renewal risk down by segment',
+          'How has ARR at risk moved since last quarter?',
+        ],
+      },
+    },
+  },
+  { delay: 100, chunk: { kind: 'block_done', blockId: 'follow-renewal' } },
+  { delay: 100, chunk: { kind: 'message_done' } },
+];
+
 // ---------- Picker ----------
 
 /** Naive keyword-based router. Default falls through to viz so any random
@@ -489,6 +614,16 @@ export function pickCannedResponse(userText: string): CannedEvent[] {
 
   if (lower.length === 0) return vizFixture;
 
+  // Renewal risk must be tested BEFORE the churn rule below. That rule matches on
+  // "account", which every renewal question contains, so without this ordering the demo's
+  // closing question returns a churn answer — confidently, and about the wrong thing.
+  // `accounts?` deliberately — \baccount\b does not match the plural, which is how every
+  // one of these questions is actually phrased.
+  if (/\b(renew|renewal|renewing)\b/.test(lower)
+    || (/\brisk\b/.test(lower) && /\b(accounts?|arr|escalations?|usage)\b/.test(lower))
+    || (/\b(p1|escalations?)\b/.test(lower) && /\b(accounts?|open|renew)\b/.test(lower))) {
+    return renewalRiskFixture;
+  }
   if (/\b(mau|monthly active)\b/.test(lower)) {
     return mauFixture;
   }

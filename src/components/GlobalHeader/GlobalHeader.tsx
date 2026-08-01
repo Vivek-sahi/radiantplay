@@ -40,6 +40,13 @@ export interface GlobalHeaderProps extends React.HTMLAttributes<HTMLElement> {
   onProfileClick?: () => void;
   showDefaultActions?: boolean;
   rightSlot?: React.ReactNode;
+  /**
+   * Rendered at the start of the right-hand section, before the search field.
+   * For ambient status that belongs to the app rather than the page — a background
+   * job's progress, say — which needs to sit near search rather than out past the
+   * profile menu where `rightSlot` lands.
+   */
+  leadingSlot?: React.ReactNode;
   theme?: GlobalHeaderTheme;
 }
 
@@ -99,6 +106,7 @@ export const GlobalHeader = forwardRef<HTMLElement, GlobalHeaderProps>(
       onProfileClick,
       showDefaultActions = true,
       rightSlot,
+      leadingSlot,
       theme = 'dark',
       className,
       style,
@@ -137,6 +145,7 @@ export const GlobalHeader = forwardRef<HTMLElement, GlobalHeaderProps>(
         </div>
 
         <div className={styles.rightSection}>
+          {leadingSlot}
           {searchMode === 'input' ? (
             <label className={styles.searchField}>
               <span className={styles.searchIcon} aria-hidden="true">

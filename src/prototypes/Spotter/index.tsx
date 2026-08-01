@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { GlobalHeader } from '@components/GlobalHeader';
 import { Modal } from '@components/Modal';
 import {
@@ -28,6 +28,7 @@ import {
   analysts,
   dataModels,
   type ChatEntry,
+  type DataModel,
 } from './data/mockData';
 
 const USER_AVATAR_URL = 'https://i.pravatar.cc/64?img=47';
@@ -35,21 +36,43 @@ const USER_AVATAR_URL = 'https://i.pravatar.cc/64?img=47';
 type ModalKey = 'instructions' | 'best-practices' | null;
 
 /**
+ * How Spotter should open. All optional — omitting every one gives the standalone
+ * prototype exactly as before.
+ *
+ * These exist so Spotter can be embedded in another product's shell (Data Studio opens it
+ * from "Test in Spotter" after publishing a model) and land in a specific state rather than
+ * always starting on its own defaults.
+ */
+export interface SpotterProps {
+  /**
+   * Replaces Spotter's own header. Pass the host's header and the whole surface reads as
+   * one product — the alternative is two headers with two personas either side of a click.
+   */
+  header?: React.ReactNode;
+  /** 'rail' opens with the left menu collapsed. Defaults to the full panel. */
+  initialLeftMode?: SpotterLeftMode;
+  /** Extra models to offer in the picker — e.g. the model the host just published. */
+  extraModels?: DataModel[];
+  /** Which model to start on. Must be one of the built-ins or `extraModels`. */
+  initialModelId?: string;
+}
+
+/**
  * Spotter prototype. Wraps the chat provider so any subtree using
  * `useSpotterChat()` can submit prompts and read state.
  */
-export const Spotter: React.FC = () => {
+export const Spotter: React.FC<SpotterProps> = (props) => {
   return (
     <SpotterChatProvider mode="canned">
-      <SpotterInner />
+      <SpotterInner {...props} />
     </SpotterChatProvider>
   );
 };
 
 const noop = (): void => {};
 
-const SpotterInner: React.FC = () => {
-  const [mode, setMode] = useState<SpotterLeftMode>('panel');
+const SpotterInner: React.FC<SpotterProps> = ({ header, initialLeftMode, extraModels, initialModelId }) => {
+  const [mode, setMode] = useState<SpotterLeftMode>(initialLeftMode ?? 'panel');
   const [selectedAnalyst, setSelectedAnalyst] = useState<string>('spotter-default');
   const [selectedChat, setSelectedChat] = useState<string | null>(null);
   const [rightPaneOverride, setRightPaneOverride] = useState<'analyst-list' | null>(null);
@@ -58,7 +81,13 @@ const SpotterInner: React.FC = () => {
   const [promptValue, setPromptValue] = useState('');
   const [promptMode, setPromptMode] = useState<SpotterPromptMode>('ask');
   const [suggestionMode, setSuggestionMode] = useState<'quick-search' | 'deep-analysis' | null>(null);
-  const [dataModelId, setDataModelId] = useState(dataModels[0].id);
+  // A host-supplied model goes to the front of the list — it's the one the user just came
+  // from, so it should read as the obvious choice, not be buried under the built-ins.
+  const models = useMemo<DataModel[]>(
+    () => (extraModels?.length ? [...extraModels, ...dataModels] : dataModels),
+    [extraModels],
+  );
+  const [dataModelId, setDataModelId] = useState(initialModelId ?? models[0].id);
   const [personalMemoryEnabled, setPersonalMemoryEnabled] = useState(true);
   const [openModal, setOpenModal] = useState<ModalKey>(null);
   const [favoriteChats, setFavoriteChats] = useState<Set<string>>(new Set());
@@ -152,7 +181,7 @@ const SpotterInner: React.FC = () => {
     });
   };
 
-  const activeDataModel = dataModels.find((m) => m.id === dataModelId) ?? dataModels[0];
+  const activeDataModel = models.find((m) => m.id === dataModelId) ?? models[0];
 
   const basePromptProps = {
     value: promptValue,
@@ -167,7 +196,7 @@ const SpotterInner: React.FC = () => {
     ...basePromptProps,
     dataModelLabel: activeDataModel.name,
     onDataModelClick: () => {
-      const next = dataModels[(dataModels.indexOf(activeDataModel) + 1) % dataModels.length];
+      const next = models[(models.indexOf(activeDataModel) + 1) % models.length];
       setDataModelId(next.id);
     },
   };
@@ -284,17 +313,21 @@ const SpotterInner: React.FC = () => {
   return (
     <>
       <SpotterShell
+        /* A host can supply its own header so the surface reads as one product. Without
+           it, Spotter keeps its own — the standalone prototype is unchanged. */
         header={
-          <GlobalHeader
-            theme="light"
-            showHamburger
-            onHamburgerClick={toggleMode}
-            searchPlaceholder="Search in your library"
-            showKeyboardHint={false}
-            notificationCount={1}
-            userName="Alex"
-            userAvatar={USER_AVATAR_URL}
-          />
+          header ?? (
+            <GlobalHeader
+              theme="light"
+              showHamburger
+              onHamburgerClick={toggleMode}
+              searchPlaceholder="Search in your library"
+              showKeyboardHint={false}
+              notificationCount={1}
+              userName="Alex"
+              userAvatar={USER_AVATAR_URL}
+            />
+          )
         }
         leftSide={
           <SpotterLeftSide
