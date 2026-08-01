@@ -159,7 +159,12 @@ The On screen lane quotes the agent's wording; it isn't ours to paraphrase. Rema
   instead of becoming a green pill beside the Publish button (153)
 - ✅ **Agent chat autoscroll** — ResizeObserver on the content, so streaming blocks and the
   readiness flow pin the view too (153)
-- ✅ **Back to model returns to the model** — the canvas stays mounted behind Spotter (153)
+- ✅ **Back to model returns to the model** — the canvas stays mounted behind Spotter, and
+  the whole logo area is one button. It had been a button nested inside GlobalHeader's own
+  logo button, so the click bubbled to that one — whose default is `navigate('/')`, i.e.
+  straight out to the Radiant Play registry. Watch for this in any header logo slot (153)
+- ✅ **Cache chip right edge** — 8px padding with the trailing icon, 14px without; the canvas
+  instance now carries the icon too, wired to bring the canvas view back (153)
 - ✅ **Jira python card lands as the agent writes the script**, not on the Review click (153)
 - ✅ **Preview is read-only**; **spreadsheet fills cell by cell**; **Tidy up is an icon**;
   properties panel closes on background click; form buttons a size up; "Mark out of scope" (153)

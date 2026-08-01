@@ -1655,4 +1655,8 @@ The seam is one call: agent cards fire `onAdd` → `agentAddTables`/`agentAddJoi
 
 **Also this session:** one `persona.ts` behind every header, so the canvas no longer says "Royal Enfield" and the header, agent thread and readiness flow share one face; the publish indicator stays quiet text instead of becoming a green pill beside the real Publish button; the Jira python card lands as the agent writes the script rather than when Review is clicked; the preview is read-only; the spreadsheet fills cell by cell on a diagonal; Tidy up is an icon in the zoom group.
 
+**One more of mine, caught after the first fix.** "Back to model" still left the prototype. `GlobalHeader` renders whatever you pass as `logo` *inside its own button*, and `handleLogoClick` falls back to `navigate('/')` — so the back button I'd put in that slot was a button inside a button, and the click bubbled to the outer one and navigated to the Radiant Play registry. Invalid markup producing a real navigation bug, and not something `tsc` or a build will ever tell you. The whole logo area is now one button with its own handler. Worth remembering for any header logo slot.
+
 **NEXT:** walk S1→S20 in sequence — nobody has. S1 is the remaining scripted gap. The Spotter beat rests on keyword matching, so improvising a phrasing outside the six covered returns a generic chart. Nothing dismisses the caching chip, by design. Several small pieces of dead code were left deliberately rather than stripped — listed in `NEXT_UP.md`.
+
+Deployed at `a898c08` — live on `radiantplay-nine.vercel.app`, both remotes in sync.
