@@ -17,6 +17,7 @@ import { TableSuggestionCard, JoinSuggestionCard, AgentForm, ConnectionList, typ
 // POC-READINESS-PORT — ported AI-readiness flow (POC only). Self-contained module; safe to
 // delete with its folder to fully revert. See MERGE_POC_AI_READINESS.md.
 import PocReadinessFlow, { type PocReadinessHandle } from './pocReadiness/PocReadinessFlow';
+import { PERSONA } from '../persona';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -2610,12 +2611,18 @@ interface AgentPanelProps {
     cardinality: 'many_to_one' | 'one_to_many' | 'one_to_one';
   }>) => void;
   /** Lands an agent-written Python source on the canvas (S10). */
-  onAgentAddPythonSource?: (tableName: string, code: string, openForReview: boolean) => void;
+  onAgentAddPythonSource?: (tableName: string, code: string, mode: 'quiet' | 'review' | 'run') => void;
   /**
    * S6 — caching is configured and reported in the thread, so the canvas only
    * needs to know it happened: this flips the data-mode pill to Cached.
    */
   onCachingApplied?: () => void;
+  /**
+   * Kick off the header's caching progress. The agent hands over the table list and a
+   * completion callback; pacing and the chip belong to the host, because the job outlives
+   * this panel's view.
+   */
+  onCachingStart?: (tables: string[], onDone: () => void) => void;
   /**
    * The Demo cut. Gates the run-of-show script — the scripted beats (S2→S12) only
    * fire here, so Vision keeps its unscripted agent and doesn't get railroaded
@@ -2670,6 +2677,26 @@ const DEMO_DATABRICKS_TABLES: TableProposal[] = [
  * S12 — the Jira table's join, proposed after the fetch script has actually run.
  * One proposal, not a set: the other five are already on the canvas by then.
  */
+/**
+ * S10 — the fetch script the agent writes for Jira. Module-level because the card now
+ * lands on the canvas the moment the agent says it has written it; Review and Run then
+ * act on the card that already exists, rather than being what creates it.
+ */
+const DEMO_JIRA_SCRIPT = `import requests, pandas as pd
+from requests.auth import HTTPBasicAuth
+
+SITE  = "https://acme.atlassian.net"
+JQL   = "project = CS AND issuetype = Escalation AND created >= -365d"
+
+resp = requests.get(
+    f"{SITE}/rest/api/3/search",
+    params={"jql": JQL, "maxResults": 500},
+    auth=HTTPBasicAuth(USER, API_TOKEN),   # Fixed: read from the secret store
+)
+df = pd.json_normalize(resp.json()["issues"])
+df = df[["issue_key", "account_id", "summary", "status", "priority", "assignee", "created"]]
+`;
+
 const DEMO_JIRA_JOIN: JoinProposal[] = [
   {
     id: 'j-jira',
@@ -2818,7 +2845,7 @@ const JoinRecCard: React.FC<{ rec: NonNullable<AgentMessage['joinRec']>; onAdd: 
   );
 };
 
-const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, setMessages, initialPrompt, onBuildComplete, externalMessage, onExternalMessageHandled, externalMessageAttachment, injectInput, onInjectInputHandled, width = 340, selectedColumns, onColumnRemove, isFromScratch, isMultiSource, isNotebookFlow, isMrdFlow, isDbtReview, onNotebookUpdate, onOpenPlan, onOpenQualityPlan, onBuildStart, onNavigateToWorkspace, onStartBuild, fullPage = false, onBack, initialFlow, initialMessage, onInsightResolved, onOpenObject, onOpenMsItem, flowOption = 'option3', rootBackground, isCanvasAgent, poc, canvasTableCount, onAgentAddTables, onAgentAddJoins, onAgentAddPythonSource, onCachingApplied, demo = false, multiSelectJoinFlow = false, readinessFlow = false }) => {
+const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, setMessages, initialPrompt, onBuildComplete, externalMessage, onExternalMessageHandled, externalMessageAttachment, injectInput, onInjectInputHandled, width = 340, selectedColumns, onColumnRemove, isFromScratch, isMultiSource, isNotebookFlow, isMrdFlow, isDbtReview, onNotebookUpdate, onOpenPlan, onOpenQualityPlan, onBuildStart, onNavigateToWorkspace, onStartBuild, fullPage = false, onBack, initialFlow, initialMessage, onInsightResolved, onOpenObject, onOpenMsItem, flowOption = 'option3', rootBackground, isCanvasAgent, poc, canvasTableCount, onAgentAddTables, onAgentAddJoins, onAgentAddPythonSource, onCachingApplied, onCachingStart, demo = false, multiSelectJoinFlow = false, readinessFlow = false }) => {
   const [pendingAction, setPending]     = useState<PendingAction | null>(null);
   const [isProcessing, setProcessing]   = useState(false);
   const [planModalOpen, setPlanModalOpen] = useState(false);
@@ -2842,6 +2869,9 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
   const [sfConnectIntent, setSfConnectIntent] = useState<'clarify' | null>(null);
   const sfConnectBothRef = useRef(false);
   const messagesEndRef           = useRef<HTMLDivElement>(null);
+  // The inner content wrapper — observed for size changes so streaming content and the
+  // readiness flow's own messages still pin the view to the bottom.
+  const messagesContentRef       = useRef<HTMLDivElement>(null);
   const scrollContainerRef       = useRef<HTMLDivElement>(null);
   const isNearBottomRef          = useRef(true);
   const promptBarRef             = useRef<PromptBarRef>(null);
@@ -2888,6 +2918,22 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ project, setProject, messages, 
     const el = scrollContainerRef.current;
     if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
   }, [messages]);
+
+  // …and on any content growth, which `messages` alone can't see. Reasoning blocks
+  // stream, cards expand, and the readiness flow keeps its own message list entirely —
+  // none of that changes the `messages` array, so watching it is not enough. A
+  // ResizeObserver on the content wrapper catches every case with one mechanism.
+  useEffect(() => {
+    const content = messagesContentRef.current;
+    const el = scrollContainerRef.current;
+    if (!content || !el || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(() => {
+      if (!isNearBottomRef.current) return;
+      el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+    });
+    ro.observe(content);
+    return () => ro.disconnect();
+  }, []);
 
   useEffect(() => {
     if (!initialPrompt || initialPromptFiredRef.current) return;
@@ -4548,31 +4594,19 @@ ORDER BY row_count DESC
       return;
     }
 
-    // S10/S11 — Review opens the script in the properties panel so the filter
-    // can be edited and re-run; Run lands it without opening.
+    // S10/S11 — the card is already on the canvas (it landed when the agent wrote the
+    // script). Review opens that card's script in the properties panel so the filter can
+    // be edited and re-run; Run runs it in place.
     if (demo && (text === '__jira_review__' || text === '__jira_run__')) {
       const review = text === '__jira_review__';
-      const script = `import requests, pandas as pd
-from requests.auth import HTTPBasicAuth
-
-SITE  = "https://acme.atlassian.net"
-JQL   = "project = CS AND issuetype = Escalation AND created >= -365d"
-
-resp = requests.get(
-    f"{SITE}/rest/api/3/search",
-    params={"jql": JQL, "maxResults": 500},
-    auth=HTTPBasicAuth(USER, API_TOKEN),   # Fixed: read from the secret store
-)
-df = pd.json_normalize(resp.json()["issues"])
-df = df[["issue_key", "account_id", "summary", "status", "priority", "assignee", "created"]]
-`;
+      const script = DEMO_JIRA_SCRIPT;
       if (!review) {
         await runCanvasSteps([
           { label: 'Running the fetch', detail: 'Jira Cloud REST API v3' },
           { label: 'Normalising the response', detail: '10 escalations · 7 columns' },
         ], 950);
       }
-      onAgentAddPythonSource?.('jira_cs_tickets', script, review);
+      onAgentAddPythonSource?.('jira_cs_tickets', script, review ? 'review' : 'run');
       if (review) {
         // Review means review — opening the script (or opening and closing it)
         // must not advance the story. The join and the "done" message wait for
@@ -5143,7 +5177,7 @@ df = df[["issue_key", "account_id", "summary", "status", "priority", "assignee",
         }}
         style={{ flex: 1, minHeight: 0, overflowY: 'auto', ...(fullPage ? { backgroundColor: '#f7f8fa' } : {}) }}
       >
-      <div style={{
+      <div ref={messagesContentRef} style={{
         padding: fullPage ? '32px 24px' : `${sp.C}px ${sp.D}px`,
         display: 'flex', flexDirection: 'column', gap: sp.D,
         ...(fullPage ? { maxWidth: 740, margin: '0 auto' } : {}),
@@ -5631,11 +5665,17 @@ df = df[["issue_key", "account_id", "summary", "status", "priority", "assignee",
                         formKey: 'cache_settings',
                         submitLabel: 'Start caching',
                         submittedNote: 'Caching started',
+                        // Two decisions only: what to cache, and how often to refresh it.
+                        // The real form also carries a time, a weekend exclusion and an
+                        // "also cache now" — all deliberately left out here. On stage they
+                        // are three more things to read past before the beat can start.
                         fields: [
-                          { key: 'range', label: 'Data range', value: 'Last 6 months', type: 'select',
-                            options: ['Last 30 days', 'Last 6 months', 'Last 1 year', 'All time'] },
-                          { key: 'refresh', label: 'Refresh', value: 'Daily', type: 'select',
-                            options: ['Daily', 'Weekly', 'Monthly'] },
+                          { key: 'scope', label: 'Cache scope', value: 'Full model', type: 'select',
+                            options: ['Full model', 'Time window per table'],
+                            description: 'Cache the whole model, or set a time window per table.' },
+                          { key: 'refresh', label: 'Refresh frequency', value: 'Daily', type: 'select',
+                            options: ['Hourly', 'Daily', 'Weekly', 'Monthly'],
+                            description: 'How often the cache is refreshed.' },
                         ],
                       },
                     }]);
@@ -5650,14 +5690,19 @@ df = df[["issue_key", "account_id", "summary", "status", "priority", "assignee",
                   // know the model is cached now (the data-mode pill); the agent
                   // reports progress here rather than opening a modal.
                   if (formKey === 'cache_settings') {
-                    const range = String(values.range ?? 'Last 6 months');
+                    const scopeVal = String(values.scope ?? 'Full model');
                     const refresh = String(values.refresh ?? 'Daily');
-                    onCachingApplied?.();
-                    await runCanvasSteps([
-                      { label: 'Caching contracts, arr_snapshot, accounts', detail: `Snowflake · ${range.toLowerCase()}` },
-                      { label: 'Caching usage_events, feature_adoption', detail: `Databricks · ${range.toLowerCase()}` },
-                      { label: 'Cached and ready', detail: `refreshing ${refresh.toLowerCase()}` },
-                    ], 950);
+
+                    // The five tables the two warehouses contribute, in completion order.
+                    // Real caching takes minutes; the header chip is what lets the demo
+                    // leave and come back rather than watching a spinner.
+                    const CACHE_TABLES = ['contracts', 'arr_snapshot', 'accounts', 'usage_events', 'feature_adoption'];
+                    onCachingStart?.(CACHE_TABLES, () => onCachingApplied?.());
+                    setMessages(prev => [...prev, {
+                      id: `cv-cachestart-${Date.now()}`, type: 'response',
+                      content: `Caching ${CACHE_TABLES.length} tables — ${scopeVal.toLowerCase()}, refreshing ${refresh.toLowerCase()}. Progress is in the header; carry on and I'll tell you when it's done.`,
+                    }]);
+                    await canvasDelay(CACHE_TABLES.length * 1600 + 200);
                     setMessages(prev => [...prev, {
                       id: `cv-csv-${Date.now()}`, type: 'response',
                       content: 'That\'s both warehouses. Now the QBR sentiment sheet — drop the file in and I\'ll parse the columns.',
@@ -5689,14 +5734,19 @@ df = df[["issue_key", "account_id", "summary", "status", "priority", "assignee",
                     }]);
                   }
 
-                  // S10 — writes the script and offers Review or Run.
+                  // S10 — writes the script and offers Review or Run. The card lands on
+                  // the canvas here, as the agent finishes writing it: "I've written a
+                  // script" and an empty canvas don't agree, and having it appear on the
+                  // Review click made the fourth table seem to arrive from nowhere.
+                  // 'quiet' = unrun, nothing opened, selection left alone.
                   if (formKey === 'jira_scope') {
                     await runCanvasSteps([
                       { label: 'Writing the fetch script', detail: 'Python 3.12 · requests' },
                     ], 1100);
+                    onAgentAddPythonSource?.('jira_cs_tickets', DEMO_JIRA_SCRIPT, 'quiet');
                     setMessages(prev => [...prev, {
                       id: `cv-jscript-${Date.now()}`, type: 'response',
-                      content: 'I\'ve written a script to pull this. Review it before it runs, or run it as-is.',
+                      content: 'I\'ve written a script to pull this and put it on the canvas. Review it before it runs, or run it as-is.',
                       interactiveChips: [
                         { label: 'Review script', value: '__jira_review__' },
                         { label: 'Run', value: '__jira_run__' },
@@ -7606,13 +7656,16 @@ const AgentAvatarLarge: React.FC = () => (
   <img src={AGENT_AVATAR_SRC} alt="" width={36} height={36} style={{ borderRadius: '50%', display: 'block' }} />
 );
 
+// The same face as the header's profile and the readiness flow's user bubbles — it was a
+// drawn silhouette here, a photo there, which read as two different people in one thread.
 const UserAvatar: React.FC = () => (
-  <div style={{ width: 24, height: 24, borderRadius: '50%', backgroundColor: c['background-subtle'], border: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-      <circle cx="7" cy="5.5" r="2.2" fill={c['content-secondary']} />
-      <path d="M2 12.5c0-2.76 2.24-5 5-5s5 2.24 5 5" stroke={c['content-secondary']} strokeWidth="1.2" fill="none" strokeLinecap="round" />
-    </svg>
-  </div>
+  <img
+    src={PERSONA.userAvatar}
+    alt=""
+    width={24}
+    height={24}
+    style={{ flexShrink: 0, borderRadius: '50%', display: 'block' }}
+  />
 );
 
 // ── Typewriter text ───────────────────────────────────────────────────────────

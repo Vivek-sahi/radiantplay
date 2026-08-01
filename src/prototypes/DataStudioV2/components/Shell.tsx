@@ -2,6 +2,7 @@ import React from 'react';
 import { AppShell } from '../../../components';
 import type { AppSidebarProps, SidebarTab, SidebarCategory } from '../../../components/AppSidebar';
 import type { GlobalHeaderProps } from '../../../components/GlobalHeader';
+import { PERSONA } from '../persona';
 import { VariantToggle } from '../variant';
 
 export type NavSection = 'overview' | 'projects' | 'data' | 'connections';
@@ -40,16 +41,20 @@ interface ShellProps {
   onNavChange: (nav: NavSection) => void;
   hideSidebar?: boolean;
   hideHeader?: boolean;
+  /** Rendered before the header's search field — see GlobalHeader's `leadingSlot`. */
+  headerLeadingSlot?: React.ReactNode;
   children: React.ReactNode;
 }
 
-const Shell: React.FC<ShellProps> = ({ activeNav, onNavChange, hideSidebar = false, hideHeader = false, children }) => {
+const Shell: React.FC<ShellProps> = ({ activeNav, onNavChange, hideSidebar = false, hideHeader = false, headerLeadingSlot, children }) => {
   const headerProps: GlobalHeaderProps = {
     searchPlaceholder: 'Search in ThoughtSpot',
     searchMode: 'trigger',
-    userName: 'Maya Chen',
+    userName: PERSONA.userName,
+    userAvatar: PERSONA.userAvatar,
     notificationCount: 0,
     rightSlot: <VariantToggle />,
+    leadingSlot: headerLeadingSlot,
     style: hideHeader ? { display: 'none' } : undefined,
   };
 

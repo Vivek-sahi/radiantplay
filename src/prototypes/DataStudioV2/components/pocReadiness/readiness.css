@@ -1663,7 +1663,9 @@
 .calx-ig-qname { font-size: 14px; font-weight: 600; color: var(--ink); line-height: 1.35; }
 .calx-ig-qdesc { font-size: 13px; color: var(--ink-4); line-height: 1.4; }
 .calx-ig-head-actions { display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; }
-.calx-ig-chip { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 16px; border: 1px solid var(--line-strong); background: var(--panel); font-size: 12px; font-weight: 500; color: var(--ink-2); cursor: pointer; transition: all 0.12s; white-space: nowrap; }
+/* 11px, not 12: the label is "Mark out of scope" — a size down keeps the longer
+   string from crowding the question text beside it. */
+.calx-ig-chip { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 16px; border: 1px solid var(--line-strong); background: var(--panel); font-size: 11px; font-weight: 500; color: var(--ink-2); cursor: pointer; transition: all 0.12s; white-space: nowrap; }
 .calx-ig-chip:hover { border-color: var(--ink-4); }
 .calx-ig-chip.on { border-color: var(--ink-4); background: var(--neutral-tint); color: var(--ink); }
 .calx-ig-del { width: 26px; height: 26px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; background: transparent; border: none; cursor: pointer; color: var(--ink-4); }

@@ -9,6 +9,8 @@ import AgentPanel, { AgentMessage } from './AgentPanel';
 import { PILLARS, READINESS_ISSUES, issuesForPillar } from '../data/readiness';
 import { SpreadsheetGrid, SpreadsheetColumnMenu, DataSheetToolbar } from './Spreadsheet';
 import { AnchoredMenu } from './AnchoredMenu';
+import { CacheProgressChip, useCache } from './CacheProgress';
+import { PERSONA } from '../persona';
 import { SnowflakeMark, DatabricksMark, BigqueryMark, SalesforceMark, DbtMark } from './icons/ConnectorIcons';
 import TestView from './TestView';
 import { useVariant } from '../variant';
@@ -81,6 +83,11 @@ export interface InitialCanvasJoin {
 interface ModelCanvasProps {
   onBack: () => void;
   onPublished?: () => void;
+  /**
+   * Open Spotter to test the published model, passing its name so Spotter can offer it
+   * as the selected model. Drives the post-publish toast's action.
+   */
+  onOpenSpotter?: (modelName: string) => void;
   mode?: 'dataset' | 'blocks' | 'dataset2';
   // Pre-populate the canvas with tables/joins (MRD flow, SpotterX embed).
   initialTables?: string[];
@@ -1715,8 +1722,9 @@ const POC_TABLE_CONN: Record<string, string> = {
   pendo_nps_enriched: 'databricks', csm_account_mapping: 'databricks',
 };
 
-const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = 'dataset', initialTables, initialJoins, hideAgentPanel = false, embedHeaderLeft, embedHeaderRight, showTestTab = false, onTestFixWithAI, poc = false }) => {
+const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSpotter, mode = 'dataset', initialTables, initialJoins, hideAgentPanel = false, embedHeaderLeft, embedHeaderRight, showTestTab = false, onTestFixWithAI, poc = false }) => {
   const { variant, scope } = useVariant();
+  const { startCaching } = useCache();
   // Demo is the only cut that runs the run-of-show script. Vision stays clean.
   const demo = variant === 'demo';
   // Node-level vs model-level data preview — POC's addition, picked up by Demo.
@@ -1733,6 +1741,10 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
   const [nameDraft, setNameDraft] = useState(modelName);
   const [publishOpen, setPublishOpen] = useState(false);
   const [published, setPublished] = useState(false);
+  // Persistent, not timed: publishing is the end of the modelling job and the start of the
+  // next one, and "go try it in Spotter" is the whole payoff. A toast that vanishes after
+  // four seconds takes the call to action with it.
+  const [publishToastOpen, setPublishToastOpen] = useState(false);
   const [dataMode, setDataMode] = useState<'live' | 'cached'>('live');
   // `settings: true` adds the scope + refresh controls (the agent's cross-warehouse
   // hand-off); the other call sites stay a plain confirm.
@@ -1853,6 +1865,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
   const [filterOpen, setFilterOpen] = useState(false);
   const [filterConns, setFilterConns] = useState(new Set(visibleConnIds));
   const [groups, setGroups] = useState<CanvasGroup[]>([]);
+  useEffect(() => { groupsRef.current = groups; }, [groups]);
   const [wiring, setWiring] = useState<{ fromId: string; cx: number; cy: number; overId: string | null } | null>(null);
   const wireTargetRef = useRef<string | null>(null);
   const canvasAreaRef = useRef<HTMLDivElement>(null);
@@ -1927,6 +1940,9 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
   const isBlockMode = mode !== 'dataset';
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const nodeCountRef = useRef(0);
+  // Mirrors `groups` so the agent→canvas callbacks (which are useCallback([], …) and so
+  // close over the first render) can read the current canvas without being re-created.
+  const groupsRef = useRef<CanvasGroup[]>([]);
 
   // Derived: primary selected (single) and selectedGroup
   const selectedId: string | null = selectedIds.size === 1 ? [...selectedIds][0] : null;
@@ -2561,8 +2577,44 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
    * which is the point of S11. Selects it and opens the panel so Review lands
    * the user directly in the code.
    */
-  const agentAddPythonSource = useCallback((tableName: string, code: string, openForReview: boolean) => {
+  /**
+   * Agent → canvas python source.
+   *
+   * `mode` matters to the story, not just the UI:
+   *  - 'quiet' — the agent has *written* the script, so the card lands on the canvas
+   *    now. Nothing opens, nothing is selected, and it reads "Not run yet". Having the
+   *    card appear only once you clicked Review made the script seem to arrive out of
+   *    nowhere, a beat after the agent said it had written it.
+   *  - 'review' — open that card's script in the properties panel, still unrun.
+   *  - 'run'   — land it run, with the preview open.
+   *
+   * Idempotent per table: once the card exists, review/run act on it rather than
+   * appending a second copy of the same source.
+   */
+  const agentAddPythonSource = useCallback((tableName: string, code: string, mode: 'quiet' | 'review' | 'run') => {
     if (!TABLE_COLS[tableName]) return;
+    const openForReview = mode === 'review';
+
+    const existing = groupsRef.current.find(g =>
+      g.tableName === tableName && g.steps.some(s => s.type === 'python'));
+    if (existing) {
+      const pyIdx = existing.steps.findIndex(s => s.type === 'python');
+      if (mode === 'review') {
+        setSelectedIds(new Set([existing.id]));
+        setPythonConfig(p => ({ ...p, code, ran: false, error: null }));
+        setEditingStepKey(stepKey(existing.id, pyIdx));
+        setAwaitingRunIds(prev => new Set([...prev, existing.id]));
+        setPreviewOpen(false);
+      } else if (mode === 'run') {
+        setSelectedIds(new Set([existing.id]));
+        setPythonConfig(p => ({ ...p, code, ran: true, error: null }));
+        setAwaitingRunIds(prev => { const n = new Set(prev); n.delete(existing.id); return n; });
+        setPreviewOpen(true);
+        triggerPreviewLoad();
+      }
+      return;
+    }
+
     const i = nodeCountRef.current % NODE_POSITIONS.length;
     nodeCountRef.current++;
     const pos = NODE_POSITIONS[i];
@@ -2580,16 +2632,19 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
       x: pos.x + (nodeCountRef.current > NODE_POSITIONS.length ? Math.floor(nodeCountRef.current / NODE_POSITIONS.length) * 30 : 0),
       y: pos.y, expanded: false, activeStep: 1,
     }]);
-    setSelectedIds(new Set([id]));
+    // 'quiet' lands the card without stealing selection — the agent is still talking,
+    // and yanking the canvas selection mid-sentence reads as the card being opened.
+    if (mode !== 'quiet') setSelectedIds(new Set([id]));
     // An unrun script has no rows, so the preview stays collapsed — running it is
     // what opens the panel and fills it. Landing it run (the "Run as-is" path)
     // opens the preview straight away.
-    if (openForReview) {
-      setPreviewOpen(false);
-    } else {
+    if (mode === 'run') {
       setPreviewOpen(true);
       triggerPreviewLoad();
+    } else {
+      setPreviewOpen(false);
     }
+    if (mode === 'quiet') setAwaitingRunIds(prev => new Set([...prev, id]));
     // Review lands the user in the code itself, not just the panel — and lands it
     // *unrun*, so Run is the obvious next action and the block reads "Not run yet".
     if (openForReview) {
@@ -3614,17 +3669,14 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
       <div style={{ flex: 1 }} />
       {/* Controls — draft status + publish (right group) */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        {published ? (
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, height: 26, boxSizing: 'border-box', fontSize: 12, fontWeight: 600, padding: '0 11px', borderRadius: 99, background: 'rgba(6,191,127,0.10)', color: '#06BF7F', border: '1px solid rgba(6,191,127,0.30)', letterSpacing: '0.01em', userSelect: 'none', flexShrink: 0 }}>
-            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#06BF7F' }} />
-            Published · v1
-          </span>
-        ) : (
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 500, color: '#A5ACB9', letterSpacing: '0.01em', userSelect: 'none', flexShrink: 0, whiteSpace: 'nowrap' }}>
-            <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M4 8.5l2.5 2.5L12 5.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            Draft saved 1 min ago
-          </span>
-        )}
+        {/* Save state is status, not an action. It was becoming a bordered green pill on
+            publish, which reads as a button appearing next to the real one — so both
+            states share the draft treatment and only the words change. The Publish button
+            turning into Republish carries the state change too. */}
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 500, color: '#A5ACB9', letterSpacing: '0.01em', userSelect: 'none', flexShrink: 0, whiteSpace: 'nowrap' }}>
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M4 8.5l2.5 2.5L12 5.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          {published ? 'Published just now' : 'Draft saved 1 min ago'}
+        </span>
         {/* Publish */}
         <button onClick={() => setPublishOpen(true)} style={{ padding: '6px 16px', borderRadius: RADIUS6, border: 'none', background: '#2770EF', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: ff.primary }}>
           {published ? 'Republish' : 'Publish'}
@@ -3681,6 +3733,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
           onAgentAddJoins={agentAddJoins}
           onAgentAddPythonSource={agentAddPythonSource}
           onCachingApplied={() => setDataMode('cached')}
+          onCachingStart={(tables, onDone) => startCaching(tables, { perTableMs: 1600, onDone })}
           canvasTableCount={groups.filter(g => g.steps[0]?.type === 'source').length}
           width={agentWidth}
           rootBackground="transparent"
@@ -5376,7 +5429,14 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
       backgroundImage: 'radial-gradient(circle, #C2C9D4 1.2px, transparent 1.2px)',
       backgroundSize: '24px 24px',
     }}
-      onClick={() => { setSelectedIds(new Set()); }}
+      onClick={() => {
+        // Deselecting has to close the docked properties panel too, not just the preview.
+        // The panel is gated on dataActionPicker / editingStepKey, so clearing selection
+        // alone left it open with nothing selected behind it.
+        setSelectedIds(new Set());
+        setEditingStepKey(null);
+        setDataActionPicker(null);
+      }}
       onDragOver={e => { e.preventDefault(); }}
       onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files?.[0]; if (f && /\.csv$/i.test(f.name)) handleCsvFile(f); }}
     >
@@ -7093,7 +7153,9 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
 
   return (
     <div
-      style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', fontFamily: ff.primary, background: '#fff' }}
+      /* `relative` so the post-publish toast anchors to the canvas rather than to
+         whichever ancestor happens to be positioned (the SpotterX embed differs). */
+      style={{ position: 'relative', display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', fontFamily: ff.primary, background: '#fff' }}
       onClick={() => { setAddDataOpen(false); setDataModeMenuOpen(false); setToolbarAddOpen(false); }}
     >
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
@@ -7109,10 +7171,13 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
         theme="light"
         showHamburger
         searchPlaceholder="Search in your library"
-        userName="Royal Enfield"
+        userName={PERSONA.userName}
+        userAvatar={PERSONA.userAvatar}
         notificationCount={1}
         onLogoClick={() => {}}
         style={{ flexShrink: 0 }}
+        /* No View action here — this *is* the canvas. */
+        leadingSlot={<CacheProgressChip />}
         logo={
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <BrandMark style={{ height: 22, width: 'auto' }} color="#1D232F" />
@@ -7138,6 +7203,57 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
           </div>
         }
       />
+
+      {/* Post-publish toast — persistent by design (see publishToastOpen). Sits above the
+          work area rather than inside the canvas viewport so it survives tab switches
+          between Canvas and Spreadsheet. */}
+      {publishToastOpen && (
+        <div style={{
+          position: 'absolute', bottom: 20, left: '50%', transform: 'translateX(-50%)', zIndex: 60,
+          display: 'flex', alignItems: 'center', gap: 14,
+          padding: '12px 12px 12px 16px', borderRadius: 10,
+          background: '#1D232F', boxShadow: '0 8px 28px rgba(25,35,49,0.24)',
+          fontFamily: ff.primary, maxWidth: 'calc(100% - 48px)',
+        }}>
+          <svg width="17" height="17" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
+            <circle cx="8" cy="8" r="7" fill="#06BF7F" />
+            <path d="M4.8 8.2l2.1 2.1 4.3-4.4" stroke="#1D232F" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 1, minWidth: 0 }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: '#fff', whiteSpace: 'nowrap' }}>
+              {modelName} is published
+            </span>
+            <span style={{ fontSize: 12, color: '#C0C6CF', whiteSpace: 'nowrap' }}>
+              Ask it a question in Spotter to see how it answers.
+            </span>
+          </div>
+          <button
+            onClick={() => { setPublishToastOpen(false); onOpenSpotter?.(modelName); }}
+            style={{
+              flexShrink: 0, padding: '7px 14px', borderRadius: RADIUS6, border: 'none',
+              background: '#2770EF', color: '#fff', fontSize: 12.5, fontWeight: 600,
+              cursor: 'pointer', fontFamily: ff.primary, whiteSpace: 'nowrap',
+            }}
+          >
+            Test in Spotter
+          </button>
+          <button
+            onClick={() => setPublishToastOpen(false)}
+            aria-label="Dismiss"
+            style={{
+              flexShrink: 0, width: 26, height: 26, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              borderRadius: RADIUS6, border: 'none', background: 'transparent', color: '#A5ACB9', cursor: 'pointer',
+            }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.10)'; (e.currentTarget as HTMLElement).style.color = '#fff'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#A5ACB9'; }}
+          >
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round">
+              <path d="M4 4l8 8M12 4l-8 8" />
+            </svg>
+          </button>
+        </div>
+      )}
+
       {/* Gradient work area — full-screen treatment below the global header.
           +Model flow: the RADIANCE_WASH + grain persist even when the agent is
           collapsed (collapsing swaps the panel for a slim rail, mimicking SpotterX).
@@ -7291,7 +7407,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, mode = '
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
               <button onClick={() => setPublishOpen(false)} style={{ padding: '8px 16px', borderRadius: RADIUS6, border: '1px solid #C0C6CF', background: '#fff', color: '#1D232F', fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: ff.primary }}>Cancel</button>
-              <button onClick={() => { setPublished(true); setPublishOpen(false); onPublished?.(); }} style={{ padding: '8px 18px', borderRadius: RADIUS6, border: 'none', background: '#2770EF', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: ff.primary }}>Publish</button>
+              <button onClick={() => { setPublished(true); setPublishOpen(false); setPublishToastOpen(true); onPublished?.(); }} style={{ padding: '8px 18px', borderRadius: RADIUS6, border: 'none', background: '#2770EF', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: ff.primary }}>Publish</button>
             </div>
           </div>
         </div>

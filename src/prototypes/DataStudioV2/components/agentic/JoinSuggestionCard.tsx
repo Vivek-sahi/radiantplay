@@ -98,7 +98,7 @@ export const JoinSuggestionCard: React.FC<JoinSuggestionCardProps> = ({ joins, o
       </div>
       {!isReadOnly && (
         <div className={styles.footer}>
-          <Button variant="primary" size="small" disabled={selected.length === 0} onClick={() => onAdd(selected)}>
+          <Button variant="primary" size="basic" disabled={selected.length === 0} onClick={() => onAdd(selected)}>
             Create joins
           </Button>
         </div>

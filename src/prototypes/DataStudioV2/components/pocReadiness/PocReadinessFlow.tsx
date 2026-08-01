@@ -164,7 +164,9 @@ const PocReadinessFlow = forwardRef<PocReadinessHandle, Props>(({ scope, onBusyC
     }, opts.dur + 250);
   };
 
-  useEffect(() => { const el = bodyRef.current; if (el) el.scrollTop = el.scrollHeight; }, [msgs, fixesStep, spotterFixesActive, typing]);
+  // No scroll effect here: this element is content inside the host AgentPanel's scroller,
+  // so it has no scrollTop of its own. The host keeps the view pinned by observing this
+  // subtree's size — see the ResizeObserver in AgentPanel.
 
   useEffect(() => {
     idc.current = 0;

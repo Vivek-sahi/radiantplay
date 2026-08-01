@@ -84,7 +84,7 @@ const InlineGrading: React.FC<{ questions: SampleQuestion[]; onDone: (r: Grading
           </span>
           <span className="calx-ig-head-actions">
             {/* A user-added question is in scope by definition — no "Out of scope" toggle. */}
-            {!isAdded && <button className={`calx-ig-chip${isOos ? ' on' : ''}`} onClick={() => toggleOos(q.id)}><Ban size={12} />Out of scope</button>}
+            {!isAdded && <button className={`calx-ig-chip${isOos ? ' on' : ''}`} onClick={() => toggleOos(q.id)}><Ban size={12} />Mark out of scope</button>}
             {isAdded && <button className="calx-ig-del" title="Remove" onClick={() => removeAdded(q.id)}><Trash size={14} /></button>}
           </span>
         </div>

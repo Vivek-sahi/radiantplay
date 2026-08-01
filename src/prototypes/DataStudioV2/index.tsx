@@ -1,11 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { VariantProvider, useVariant } from './variant';
+import { CacheProvider, CacheProgressChip } from './components/CacheProgress';
 import Shell, { NavSection, FlowOption } from './components/Shell';
 import Overview from './components/Overview';
 import ModelView from './components/ModelView';
 import Workspace from './components/Workspace';
 import ModelCanvas, { InitialCanvasJoin } from './components/ModelCanvas';
 import SpotterXShell from './components/SpotterXShell';
+import { Spotter } from '../Spotter';
+import { GlobalHeader } from '../../components/GlobalHeader';
+import { BrandMark } from '../../components/BrandMark';
+import { PERSONA } from './persona';
 import ChatView from './components/ChatView';
 import NewProjectPrompt from './components/NewProjectPrompt';
 import DataBrowserPage from './components/DataBrowserPage';
@@ -68,7 +73,7 @@ export interface ProjectState {
   dqStatus?: 'idle' | 'scanning' | 'issues_found' | 'fixing' | 'done';
 }
 
-type AppView = 'overview' | 'models' | 'chat' | 'new-project' | 'model-view' | 'workspace' | 'data-browser' | 'connections' | 'placeholder' | 'full-chat' | 'canvas' | 'spotterx';
+type AppView = 'overview' | 'models' | 'chat' | 'new-project' | 'model-view' | 'workspace' | 'data-browser' | 'connections' | 'placeholder' | 'full-chat' | 'canvas' | 'spotterx' | 'spotter';
 
 // Derives a short model name from the user's intent prompt.
 const deriveModelName = (prompt: string): string => {
@@ -152,6 +157,9 @@ const DataStudio: React.FC = () => {
   const [selectedProject, setSelectedProject] = useState<OverviewProject | null>(null);
   const [activeAlert, setActiveAlert]         = useState<OverviewAlert | null>(null);
   const [flowOption] = useState<FlowOption>('option3');
+  // The model name carried into Spotter from the post-publish toast, so Spotter's model
+  // picker offers the model you just published rather than its own defaults.
+  const [spotterModelName, setSpotterModelName] = useState('');
   const [project, setProject] = useState<ProjectState>({
     id: 'proj-001',
     name: 'Untitled Model',
@@ -483,7 +491,14 @@ const DataStudio: React.FC = () => {
 
   return (
     <>
-      <Shell activeNav={activeNav} onNavChange={handleNavChange} hideSidebar={view === 'chat' || view === 'workspace' || view === 'full-chat' || view === 'canvas'} hideHeader={view === 'canvas'}>
+      <Shell
+        activeNav={activeNav}
+        onNavChange={handleNavChange}
+        hideSidebar={view === 'chat' || view === 'workspace' || view === 'full-chat' || view === 'canvas'}
+        hideHeader={view === 'canvas'}
+        /* Caching progress follows you off the canvas — View is how you get back. */
+        headerLeadingSlot={<CacheProgressChip onView={() => setView('canvas')} />}
+      >
         {view === 'models' && (
           <ModelsPage
             onOpenProject={openModelView}
@@ -600,12 +615,20 @@ const DataStudio: React.FC = () => {
           />
         </div>
       )}
-      {view === 'canvas' && (
+      {/* Stays mounted while Spotter is open, which is what makes "Back to model" return
+          you to the model you left rather than a fresh canvas. Unmounting would discard
+          every bit of canvas state — tables, joins, published status, the whole thread.
+          Spotter renders opaquely on top of it rather than this being hidden, so no
+          layout is measured at zero size and the join connectors survive the trip. */}
+      {(view === 'canvas' || view === 'spotter') && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 50 }}>
           <ModelCanvas
             onBack={goBack}
             mode="dataset2"
             poc={variant === 'poc'}
+            /* Post-publish toast → Spotter, so the model can be asked a question
+               straight after it's published. */
+            onOpenSpotter={(name) => { setSpotterModelName(name); navigateTo('spotter'); }}
             initialTables={canvasAutoPopulate ? MRD_MODEL_TABLES : undefined}
             initialJoins={canvasAutoPopulate ? MRD_MODEL_JOINS : undefined}
             /* Test tab hidden for now — re-add `showTestTab` to bring it back.
@@ -623,13 +646,63 @@ const DataStudio: React.FC = () => {
           />
         </div>
       )}
+      {/* The Spotter prototype, opened from the post-publish toast. It renders inside our
+          product rather than as a separate one: we pass our own header, so Spotter's
+          ("Alex", plus a profile photo fetched from the internet) never mounts and the
+          persona holds across the seam. Its left menu opens collapsed — you came here to
+          ask one question, not to browse — and the rail keeps its own expand control. */}
+      {view === 'spotter' && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 60, background: '#fff' }}>
+          <Spotter
+            initialLeftMode="rail"
+            extraModels={[{ id: 'ds-published', name: spotterModelName || 'Renewal risk' }]}
+            initialModelId="ds-published"
+            header={
+              <GlobalHeader
+                theme="light"
+                searchPlaceholder="Search in your library"
+                showKeyboardHint={false}
+                notificationCount={1}
+                userName={PERSONA.userName}
+                userAvatar={PERSONA.userAvatar}
+                logo={
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <BrandMark pixelSize={22} color="#1D232F" />
+                    <button
+                      /* Straight back to the canvas, not via goBack — goBack resets the
+                         flow flags and clears the agent thread, which is right when
+                         leaving a flow and wrong when stepping back into one. */
+                      onClick={() => setView('canvas')}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 5,
+                        padding: '4px 10px 4px 7px', borderRadius: 6, border: 'none',
+                        background: 'transparent', color: '#64748B', cursor: 'pointer',
+                        fontSize: fs.sm, fontWeight: fw.medium, fontFamily: ff.primary,
+                      }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#F0F2F6'; (e.currentTarget as HTMLElement).style.color = '#1D232F'; }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#64748B'; }}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="10,4 6,8 10,12" /></svg>
+                      Back to model
+                    </button>
+                  </div>
+                }
+              />
+            }
+          />
+        </div>
+      )}
     </>
   );
 };
 
 const DataStudioWithVariant: React.FC = () => (
   <VariantProvider>
-    <DataStudio />
+    {/* Above Shell and the canvas both: a caching run has to survive navigating away
+        from the canvas that started it. See CacheProgress.tsx. */}
+    <CacheProvider>
+      <DataStudio />
+    </CacheProvider>
   </VariantProvider>
 );
 
