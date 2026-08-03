@@ -3,7 +3,6 @@ import { ConfidenceBadge } from './ConfidenceBadge';
 import { JoinDiagram, type Cardinality } from './JoinDiagram';
 import styles from './TableSuggestionCard.module.css';
 import { Button } from '../../../../components/Button';
-import Tooltip from '../../../../components/Tooltip';
 
 /**
  * Agent's proposed joins — run-of-show S7.
@@ -89,11 +88,7 @@ export const JoinSuggestionCard: React.FC<JoinSuggestionCardProps> = ({ joins, o
                 warnFanOut={j.warnFanOut}
               />
             </div>
-            <Tooltip content={j.reasoning} placement="left" maxWidth={260}>
-              <span style={{ display: 'flex' }}>
-                <ConfidenceBadge pct={j.pct} />
-              </span>
-            </Tooltip>
+            <ConfidenceBadge pct={j.pct} reasoning={j.reasoning} />
           </div>
         ))}
       </div>

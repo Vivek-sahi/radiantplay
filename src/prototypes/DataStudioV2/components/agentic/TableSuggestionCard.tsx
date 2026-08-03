@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { ConfidenceBadge } from './ConfidenceBadge';
 import { Button } from '../../../../components/Button';
-import Tooltip from '../../../../components/Tooltip';
 import styles from './TableSuggestionCard.module.css';
 
 /**
@@ -93,13 +92,10 @@ export const TableSuggestionCard: React.FC<TableSuggestionCardProps> = ({
               <span className={styles.rowName}>{t.name}</span>
               <span className={styles.rowDesc}>{t.desc}</span>
             </div>
-            {/* S3: hover the score to see why the agent picked this table. A real
-                tooltip rather than title=, so it's placed, styled and readable. */}
-            <Tooltip content={t.reasoning} placement="left" maxWidth={260}>
-              <span style={{ display: 'flex' }}>
-                <ConfidenceBadge pct={t.pct} />
-              </span>
-            </Tooltip>
+            {/* S3: hover the score to see why the agent picked this table. The badge
+                carries its own tooltip — wrapping it here added a layer that swallowed
+                the hover. */}
+            <ConfidenceBadge pct={t.pct} reasoning={t.reasoning} />
           </div>
         ))}
       </div>
