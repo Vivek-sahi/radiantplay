@@ -107,14 +107,21 @@ export const CacheProgressChip: React.FC<{ onView?: () => void }> = ({ onView })
         // padding is asymmetric: a full 12px on the label side, 5px on the control side.
         height: 30, padding: '0 5px 0 12px', marginRight: 4,
         borderRadius: 15,
-        border: `1px solid ${running ? '#E2E6EC' : '#B7E8D3'}`,
-        background: running ? '#fff' : '#F1FBF6',
+        // Neutral in both states. Finishing turned this green — a success colour for a
+        // job that was never at risk of failing, which asked to be read as an outcome
+        // when it's only a fact. The wording already says it's done.
+        border: '1px solid #E2E6EC',
+        background: '#fff',
         fontFamily: ff.primary, flexShrink: 0, whiteSpace: 'nowrap',
       }}
     >
       {/* The circle carries the progress on its own — it fills as tables complete, so a
           separate bar was saying the same thing twice. Not a spinner: a ring that both
           spins and fills reads as two unrelated signals. */}
+      {/* Ring while running, tick when done — both 14px, so the chip doesn't resize at
+          the moment it finishes. The tick is ink-coloured, not green: nothing here was
+          at risk of failing, so a success colour asks to be read as an outcome when it
+          only marks the end of a count. */}
       {running ? (
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden style={{ flexShrink: 0, transform: 'rotate(-90deg)' }}>
           <circle cx="8" cy="8" r={RING_R} stroke="#E2E6EC" strokeWidth="2" />
@@ -127,15 +134,14 @@ export const CacheProgressChip: React.FC<{ onView?: () => void }> = ({ onView })
         </svg>
       ) : (
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden style={{ flexShrink: 0 }}>
-          <circle cx="8" cy="8" r="7" fill="#06BF7F" />
-          <path d="M4.8 8.2l2.1 2.1 4.3-4.4" stroke="#fff" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M3.2 8.4l3.1 3.1 6.5-6.6" stroke="#1D232F" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       )}
 
-      <span style={{ fontSize: fs.sm, fontWeight: 500, color: c['content-primary'] }}>
-        {running
-          ? `Caching · ${job.done} of ${total} tables`
-          : `${total} tables cached`}
+      {/* One sentence throughout, so the chip never rewrites or resizes under you — it
+          just counts up and stops. "5 of 5 tables cached" is the finished state. */}
+      <span style={{ fontSize: fs.sm, fontWeight: 500, color: c['content-primary'], fontVariantNumeric: 'tabular-nums' }}>
+        {`${job.done} of ${total} tables cached`}
       </span>
 
       {/* Only where it actually goes somewhere — see onView. */}

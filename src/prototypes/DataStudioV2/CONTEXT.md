@@ -365,7 +365,7 @@ readiness flow's Spotter-check Edit action open the same component over their ow
 | Preview is read-only — `fx` / Add column live in the Columns tab, not the preview header | ✅ |
 | Spreadsheet loads cell by cell — real grid + real headers stay mounted, cells fill on a diagonal (no stand-in skeleton) | ✅ |
 | Persona — one `persona.ts` behind every header and avatar (Maya Chen, local avatar asset) | ✅ |
-| Caching progress — header chip with a filling ring, 5 tables over ~8s, go-to icon back to the model; lives above both header sites so it survives leaving the canvas | ✅ |
+| Caching progress — header chip, 5 tables over ~8s; lives above both header sites so it survives leaving the canvas. Neutral throughout (no green "success"), one sentence that counts `3 of 5` → `5 of 5` so it never rewrites or resizes, ring while running / ink tick when done, always closeable, and a View action only when you're off the canvas | ✅ |
 | Publish hand-off — persistent toast → Spotter; save state stays quiet text, never a button | ✅ |
 | Spotter embedded — the Spotter prototype opens inside Data Studio with our header, collapsed menu, published model selected, and a renewal-risk answer | ✅ |
 | Chat-first start — S1 empty home; her question opens the canvas with no model; accepting the first proposal creates it and the card grows in beside an unmoved thread | ✅ (Demo) |

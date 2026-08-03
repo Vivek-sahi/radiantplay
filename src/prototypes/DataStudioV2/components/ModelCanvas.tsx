@@ -6295,7 +6295,14 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                 { label: 'AI context', width: 200 },
                 { label: 'Synonyms', width: 180 },
               ].map(({ label, width }) => {
-                // Highlight header if any active review touches this column
+                // Highlight header if any active review touches this column.
+                //
+                // The highlight must be OPAQUE. This row is `position: sticky`, so body
+                // rows scroll underneath it — a translucent tint (it was 6% amber) let
+                // their text show straight through the column labels, printing "DESCRIPTION"
+                // over the description of whatever row happened to be passing. #FFF9EB is
+                // the cell tint composited onto white, so the highlighted column also reads
+                // as one continuous band from its header down.
                 const checkForLabel: Record<string, string> = {
                   'Description': 'coldesc', 'AI context': 'desc', 'Synonyms': 'synonyms',
                   'Indexed': 'indexing', 'Column type': 'col_types', 'Data type': 'date_vals',
@@ -6303,7 +6310,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                 const hdrCheck = checkForLabel[label];
                 const hdrActive = hdrCheck && airCheckActive(hdrCheck);
                 return (
-                  <th key={label} style={{ position: 'sticky', top: 0, zIndex: 3, padding: '8px 12px', textAlign: 'left', fontWeight: 700, fontSize: 11, color: hdrActive ? '#92640A' : '#777E8B', whiteSpace: 'nowrap', borderBottom: hdrActive ? '2px solid rgba(252,200,56,0.5)' : '1px solid #EAEDF2', width, minWidth: width, letterSpacing: '0.02em', background: hdrActive ? 'rgba(252,200,56,0.06)' : '#fff', transition: 'all 150ms' }}>
+                  <th key={label} style={{ position: 'sticky', top: 0, zIndex: 3, padding: '8px 12px', textAlign: 'left', fontWeight: 700, fontSize: 11, color: hdrActive ? '#92640A' : '#777E8B', whiteSpace: 'nowrap', borderBottom: hdrActive ? '2px solid rgba(252,200,56,0.5)' : '1px solid #EAEDF2', width, minWidth: width, letterSpacing: '0.02em', background: hdrActive ? '#FFF9EB' : '#fff', transition: 'all 150ms' }}>
                     {label.toUpperCase()}
                   </th>
                 );
