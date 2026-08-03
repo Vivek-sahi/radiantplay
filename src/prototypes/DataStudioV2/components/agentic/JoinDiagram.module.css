@@ -65,8 +65,14 @@
   line-height: 1;
 }
 
-/* Many-side joins can inflate aggregates — worth flagging before it's committed. */
-.warn {
-  color: var(--rd-sys-color-content-warning, #92640A);
-  font-weight: var(--font-weight-semibold, 600);
+/* Join type — the third fact in the connector stack, under the arrow. Full colour,
+   so it doesn't inherit the connector's muted stroke colour. */
+.joinTypeMark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: help;
 }
+
+/* The .warn rule that tinted the cardinality amber on a fan-out risk is gone — see
+   JoinDiagram.tsx. `warnFanOut` still drives the connector's hover text. */

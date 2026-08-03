@@ -4,8 +4,28 @@ import { AgentMessage, UserBubble, ReasoningBlock, VersionCard, TypingIndicator 
 import type { ReasoningData } from '../../../_agentic/index';
 import {
   CALIBRATION_FIXES, FIX_META, FIX_PROBLEM, FIX_TARGETS, CHANGE_TAG, IMPACT_META, PILLAR_CHECKS, SPOTTER_QUESTIONS,
+  MODEL, MODEL_MEASURES, MODEL_ATTRIBUTES,
 } from './data';
-import type { Issue, ImpactTier, DiffField } from './data';
+import type { Issue, ImpactTier, DiffField, SampleQuestion } from './data';
+import SearchDataEditor, { type EditAnswerChart } from '../EditAnswerModal';
+import type { QChart } from './data';
+
+/**
+ * A question's answer, in the shape the Search data editor renders.
+ *
+ * QChart is a discriminated union with four kinds; the editor draws two. Bars and
+ * columns are the same figure here, and everything else — a KPI, a table — becomes the
+ * table view, which is honest rather than lossy: a KPI's single value is a one-row
+ * table, and that's what the real editor shows when a viz type can't hold the data.
+ */
+const editorChart = (q?: QChart): EditAnswerChart => {
+  if (!q) return { kind: 'table', columns: ['Result'], rows: [] };
+  // Positive checks first: the bar member's discriminant is itself a union of three
+  // literals, and excluding it by elimination doesn't narrow cleanly.
+  if (q.kind === 'table') return { kind: 'table', columns: q.columns, rows: q.rows.map(r => r.map(String)) };
+  if (q.kind === 'kpi') return { kind: 'table', columns: ['Value'], rows: [[q.value]] };
+  return { kind: 'bar', categories: q.categories, series: q.series, unit: q.unit };
+};
 import CalFixesDock from './CalFixesDock';
 import type { FixGroup, FixItem } from './CalFixesDock';
 import { spotterFix } from './spotterFix';
@@ -126,6 +146,8 @@ const PocReadinessFlow = forwardRef<PocReadinessHandle, Props>(({ scope, onBusyC
   const [overrides, setOverrides] = useState<Record<string, string>>({});
   // A refined fix can also change its diff (not just the title).
   const [refineData, setRefineData] = useState<Record<string, { diff?: DiffField[] }>>({});
+  /** The question whose answer is open in the Search data editor. Null = closed. */
+  const [editingQuestion, setEditingQuestion] = useState<SampleQuestion | null>(null);
   const [shimmerId, setShimmerId] = useState<string | null>(null);
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
   // Spotter grading
@@ -504,10 +526,10 @@ const PocReadinessFlow = forwardRef<PocReadinessHandle, Props>(({ scope, onBusyC
                 <InlineGrading 
                   questions={SPOTTER_QUESTIONS} 
                   onDone={onGradeDone}
-                  onEdit={(question) => {
-                    // TODO: Handle edit - will be implemented based on user requirements
-                    console.log('Edit question:', question);
-                  }}
+                  /* Opens the Search data editor on this question — the columns and
+                     tokens that produced the answer she's grading, so "this is wrong"
+                     can become "this is why" without leaving the flow. */
+                  onEdit={setEditingQuestion}
                 />
               </div>
             </div>
@@ -560,6 +582,22 @@ const PocReadinessFlow = forwardRef<PocReadinessHandle, Props>(({ scope, onBusyC
             shimmerId={shimmerId}
           />
         </div>
+      )}
+
+      {/* Search data editor — the same modal the tuning card opens, over this question's
+          own columns, tokens and answer. Rendered here rather than inside InlineGrading
+          so it escapes the agent thread's scroll container and covers the whole app. */}
+      {editingQuestion && (
+        <SearchDataEditor
+          title={editingQuestion.name}
+          dataset={MODEL.name}
+          tokens={editingQuestion.tokens ?? []}
+          measures={MODEL_MEASURES}
+          attributes={MODEL_ATTRIBUTES}
+          initialChecked={editingQuestion.usedColumns ?? []}
+          chart={editorChart(editingQuestion.chart)}
+          onClose={() => setEditingQuestion(null)}
+        />
       )}
     </div>
   );

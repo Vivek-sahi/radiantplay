@@ -35,17 +35,39 @@ const InlineGrading: React.FC<{ questions: SampleQuestion[]; onDone: (r: Grading
   // just repeat the chip the user already picked.
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
-  // Focused grader — index into the in-scope questions (one assessed at a time).
+  // Focused grader — index into the graded set (one assessed at a time).
   const [curIdx, setCurIdx] = useState(0);
+  /**
+   * The questions being graded, frozen when the grade step opens.
+   *
+   * Deliberately not `inScope`, which is derived from `oos` live: marking the current
+   * question out of scope mid-grade would shrink that array under the index, silently
+   * swapping the question on screen and — on the last one — leaving the panel blank.
+   * Freezing keeps "Question 3 of 6" true for the whole pass; an out-of-scope question
+   * stays in the run as a graded-and-excluded item rather than vanishing from it.
+   */
+  const [gradeSet, setGradeSet] = useState<SampleQuestion[]>([]);
   const genTimer = useRef<number | null>(null);
 
   const all = useMemo(() => [...questions, ...added], [questions, added]);
   const groups = useMemo(() => groupByTopic(all), [all]);
   const inScope = all.filter((q) => !oos.has(q.id));
-  const incorrectCount = inScope.filter((q) => verdicts[q.id] === 'incorrect').length;
+  // Graded = in the frozen set and still in scope. Out-of-scope answers aren't wrong,
+  // so they must not pull a fix into the next step.
+  const graded = gradeSet.filter((q) => !oos.has(q.id));
+  const incorrectCount = graded.filter((q) => verdicts[q.id] === 'incorrect').length;
 
   const toggleOos = (id: string) => setOos((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
   const setVerdict = (id: string, v: 'correct' | 'incorrect') => setVerdicts((m) => ({ ...m, [id]: v }));
+  /**
+   * Out of scope, from the grade step. Clears any verdict: "this question shouldn't be
+   * asked of this model" and "Spotter answered it wrong" are different claims, and
+   * holding both would send a fix for a question we've just excluded.
+   */
+  const markOos = (id: string) => {
+    setVerdicts((m) => { const n = { ...m }; delete n[id]; return n; });
+    toggleOos(id);
+  };
   const setReason = (id: string, r: string) => setReasons((m) => ({ ...m, [id]: r }));
   const setNote = (id: string, r: string) => setNotes((m) => ({ ...m, [id]: r }));
 
@@ -59,7 +81,7 @@ const InlineGrading: React.FC<{ questions: SampleQuestion[]; onDone: (r: Grading
   };
   const removeAdded = (id: string) => { setAdded((a) => a.filter((q) => q.id !== id)); setOos((s) => { const n = new Set(s); n.delete(id); return n; }); };
 
-  const generate = () => { setCurIdx(0); setPhase('generating'); genTimer.current = window.setTimeout(() => setPhase('answers'), 1700); };
+  const generate = () => { setCurIdx(0); setGradeSet(inScope); setPhase('generating'); genTimer.current = window.setTimeout(() => setPhase('answers'), 1700); };
 
   const done = () => {
     const v: GradingResult['verdicts'] = {};
@@ -83,8 +105,22 @@ const InlineGrading: React.FC<{ questions: SampleQuestion[]; onDone: (r: Grading
             <span className="calx-ig-qdesc">{q.description}</span>
           </span>
           <span className="calx-ig-head-actions">
-            {/* A user-added question is in scope by definition — no "Out of scope" toggle. */}
-            {!isAdded && <button className={`calx-ig-chip${isOos ? ' on' : ''}`} onClick={() => toggleOos(q.id)}><Ban size={12} />Mark out of scope</button>}
+            {/* A user-added question is in scope by definition — no "Out of scope" toggle.
+                Icon only: it repeats on every question in the list, and a labelled pill
+                that many times competes with the questions themselves — which are what
+                she's here to read. The label moves to the tooltip, and flips once the
+                question is out of scope so the control says what the click will do. */}
+            {!isAdded && (
+              <button
+                className={`calx-ig-iconbtn${isOos ? ' on' : ''}`}
+                onClick={() => toggleOos(q.id)}
+                title={isOos ? 'Bring back into scope' : 'Mark out of scope'}
+                aria-label={isOos ? 'Bring back into scope' : 'Mark out of scope'}
+                aria-pressed={isOos}
+              >
+                {isOos ? <Ban size={14} /> : <X size={14} />}
+              </button>
+            )}
             {isAdded && <button className="calx-ig-del" title="Remove" onClick={() => removeAdded(q.id)}><Trash size={14} /></button>}
           </span>
         </div>
@@ -95,21 +131,27 @@ const InlineGrading: React.FC<{ questions: SampleQuestion[]; onDone: (r: Grading
   // ── Grade step — focused, one question at a time ──
   if (phase === 'answers') {
     if (submitted) {
-      return <div className="calx-ig-focus"><div className="calx-ig-graded"><Check size={14} strokeWidth={2.6} />Graded {inScope.length} {inScope.length === 1 ? 'question' : 'questions'}.</div></div>;
+      return <div className="calx-ig-focus"><div className="calx-ig-graded"><Check size={14} strokeWidth={2.6} />Graded {graded.length} {graded.length === 1 ? 'question' : 'questions'}.</div></div>;
     }
-    const q = inScope[curIdx];
+    const q = gradeSet[curIdx];
     if (!q) return null;
     const v = verdicts[q.id];
-    const isLast = curIdx >= inScope.length - 1;
-    const next = () => { if (!v) return; if (isLast) done(); else setCurIdx((i) => Math.min(i + 1, inScope.length - 1)); };
+    const isOosNow = oos.has(q.id);
+    // Out of scope counts as answered — she has made a judgement, it just isn't a grade.
+    const answered = Boolean(v) || isOosNow;
+    const isLast = curIdx >= gradeSet.length - 1;
+    const next = () => { if (!answered) return; if (isLast) done(); else setCurIdx((i) => Math.min(i + 1, gradeSet.length - 1)); };
     return (
       <div className="calx-ig-focus">
         <div className="calx-ig-progress">
-          <span className="calx-ig-progress-label">Question {curIdx + 1} of {inScope.length}</span>
+          <span className="calx-ig-progress-label">Question {curIdx + 1} of {gradeSet.length}</span>
           <div className="calx-ig-dots">
-            {inScope.map((iq, i) => {
+            {gradeSet.map((iq, i) => {
               const iv = verdicts[iq.id];
-              const cls = i === curIdx ? 'cur' : iv === 'correct' ? 'ok' : iv === 'incorrect' ? 'bad' : 'todo';
+              const cls = i === curIdx ? 'cur'
+                : oos.has(iq.id) ? 'oos'
+                : iv === 'correct' ? 'ok'
+                : iv === 'incorrect' ? 'bad' : 'todo';
               return <span key={iq.id} className={`calx-ig-dot ${cls}`} />;
             })}
           </div>
@@ -160,8 +202,14 @@ const InlineGrading: React.FC<{ questions: SampleQuestion[]; onDone: (r: Grading
 
         <div className="calx-ig-gq">Does this answer look correct?</div>
         <div className="calx-gm-pills">
-          <button className={`calx-gm-pill${v === 'correct' ? ' on ok' : ''}`} onClick={() => setVerdict(q.id, 'correct')}><Check size={13} strokeWidth={2.6} />Looks right</button>
-          <button className={`calx-gm-pill${v === 'incorrect' ? ' on bad' : ''}`} onClick={() => setVerdict(q.id, 'incorrect')}><X size={13} strokeWidth={2.4} />Incorrect</button>
+          <button className={`calx-gm-pill${v === 'correct' ? ' on ok' : ''}`} onClick={() => setVerdict(q.id, 'correct')}><Check size={12} strokeWidth={2.6} />Looks right</button>
+          <button className={`calx-gm-pill${v === 'incorrect' ? ' on bad' : ''}`} onClick={() => setVerdict(q.id, 'incorrect')}><X size={12} strokeWidth={2.4} />Incorrect</button>
+          {/* Third judgement, not a third grade: some questions shouldn't be asked of this
+              model at all, and calling those "incorrect" would put a fix on the list for a
+              question nobody wants answered. Labelled here, unlike the icon-only toggle in
+              the review list — this is a considered decision made once per answer, not a
+              control repeating down a list. */}
+          <button className={`calx-gm-pill${isOosNow ? ' on oos' : ''}`} onClick={() => markOos(q.id)} aria-pressed={isOosNow}><Ban size={12} />Out of scope</button>
         </div>
         {v === 'incorrect' && (
           <div className="calx-gm-reason">
@@ -175,7 +223,7 @@ const InlineGrading: React.FC<{ questions: SampleQuestion[]; onDone: (r: Grading
         <div className="calx-ig-focus-nav">
           {curIdx > 0 && <Button variant="tertiary" onClick={() => setCurIdx((i) => Math.max(0, i - 1))}>Back</Button>}
           <span className="calx-ig-focus-spacer" />
-          <Button variant="primary" disabled={!v} onClick={next}>
+          <Button variant="primary" disabled={!answered} onClick={next}>
             {isLast ? (incorrectCount > 0 ? 'Suggest fixes' : 'Done') : 'Next question'}
           </Button>
         </div>

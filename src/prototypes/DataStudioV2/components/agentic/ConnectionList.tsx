@@ -1,7 +1,7 @@
 import React from 'react';
 import { c, fs, fw, ff } from '../../styles';
 import type { Connection } from '../../data/mockData';
-import { CONNECTOR_MARK, PostgresMark } from '../icons/ConnectorIcons';
+import { CONNECTOR_MARK, PostgresMark, SourceMark, hasBrandMark } from '../icons/ConnectorIcons';
 import styles from './TableSuggestionCard.module.css';
 
 /**
@@ -40,10 +40,20 @@ export const ConnectionList: React.FC<ConnectionListProps> = ({ connections }) =
       {connections.map(cn => {
         const Mark = CONNECTOR_MARK[cn.type] ?? PostgresMark;
         const label = PLATFORM_LABEL[cn.type] ?? cn.type;
+        // Real logo where the demo has one, silhouette otherwise. This list is the
+        // first place she sees her sources (S2) and the canvas is the second — they
+        // have to agree, so both read the same brand marks.
+        const branded = hasBrandMark(cn.type);
         return (
-          <div key={cn.id} className={styles.row} style={{ cursor: 'default', alignItems: 'center' }}>
-            <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 16, flexShrink: 0 }}>
-              <Mark size={14} />
+          <div key={cn.id} className={styles.row} style={{ cursor: 'default', alignItems: 'center', gap: 12 }}>
+            {/* 22px, not the 16px the checkbox slot was built for. These are logos,
+                not glyphs: each one sits inside its own padding within a 16px
+                viewBox, so a 14px render left about 10px of visible mark against a
+                two-line row — legible, but reading as an afterthought. A fixed
+                square keeps the four left edges true to each other even though the
+                marks themselves are different shapes. */}
+            <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 22, height: 22, flexShrink: 0 }}>
+              {branded ? <SourceMark name={cn.type} size={22} /> : <Mark size={20} />}
             </span>
             <div className={styles.rowText}>
               <span className={styles.rowName}>{label}</span>

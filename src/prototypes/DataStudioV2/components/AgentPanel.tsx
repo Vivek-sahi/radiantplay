@@ -17,6 +17,7 @@ import { TableSuggestionCard, JoinSuggestionCard, AgentForm, ConnectionList, typ
 // POC-READINESS-PORT — ported AI-readiness flow (POC only). Self-contained module; safe to
 // delete with its folder to fully revert. See MERGE_POC_AI_READINESS.md.
 import PocReadinessFlow, { type PocReadinessHandle } from './pocReadiness/PocReadinessFlow';
+import SearchDataEditor from './EditAnswerModal';
 import { PERSONA } from '../persona';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -9387,11 +9388,10 @@ const renderTuneAnswer = (answer: TuneAnswer): React.ReactNode => {
   return null;
 };
 
-// ── Edit Answer modal — the ThoughtSpot "Search data" answer editor, opened from
-// a tuning question's Edit action. A faithful visual mock (dataset dropdown, token
-// search bar, column picker, live bar chart, viz-type rail, Discard/Done) — the
-// controls are presentational; Done/Discard/✕ close it. Titled after the question
-// being tuned so it reads as "editing this answer".
+// ── Edit Answer — the ThoughtSpot "Search data" answer editor.
+// The component now lives in EditAnswerModal.tsx so the readiness flow can open the
+// same editor from a Spotter check. What stays here is only this card's data: the
+// retail sample it has always illustrated.
 const EDIT_ANSWER_MEASURES = ['quantity purchased', 'sales'];
 const EDIT_ANSWER_ATTRIBUTES = ['city', 'county', 'item type', 'latitude', 'longitude', 'product', 'region', 'SKU', 'state'];
 const EDIT_ANSWER_REGIONS = [
@@ -9399,162 +9399,24 @@ const EDIT_ANSWER_REGIONS = [
   { label: 'Southwest', value: 28 }, { label: 'West', value: 45 },
 ];
 
-const EditAnswerModal: React.FC<{ title: string; onClose: () => void }> = ({ title, onClose }) => {
-  const [checkedCols, setCheckedCols] = React.useState<Set<string>>(new Set(['sales', 'region']));
-  const [chart, setChart] = React.useState(true); // chart vs table toggle
-  const toggleCol = (col: string) =>
-    setCheckedCols(prev => { const n = new Set(prev); n.has(col) ? n.delete(col) : n.add(col); return n; });
-
-  const chartOption = {
-    grid: { left: 56, right: 20, top: 20, bottom: 40 },
-    xAxis: { type: 'category', data: EDIT_ANSWER_REGIONS.map(r => r.label), axisLine: { lineStyle: { color: '#E2E6EC' } }, axisTick: { show: false }, axisLabel: { color: '#64748B', fontSize: 12 } },
-    yAxis: { type: 'value', max: 55, interval: 5, axisLabel: { color: '#8B96A5', fontSize: 11, formatter: (v: number) => `${v}M` }, splitLine: { lineStyle: { color: '#F0F2F6' } } },
-    series: [{ type: 'bar', data: EDIT_ANSWER_REGIONS.map(r => r.value), itemStyle: { color: '#3B7BF6' }, barWidth: '58%' }],
-    tooltip: { trigger: 'axis' as const },
-  };
-
-  const railIcon = (path: React.ReactNode, active?: boolean) => (
-    <div style={{ width: 34, height: 34, borderRadius: 7, display: 'flex', alignItems: 'center', justifyContent: 'center', color: active ? '#2770EF' : '#8B96A5', background: active ? 'rgba(39,112,239,0.08)' : 'transparent', cursor: 'pointer' }}>
-      <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">{path}</svg>
-    </div>
-  );
-  const token = (label: string) => (
-    <span style={{ fontSize: fs.sm, fontWeight: fw.medium, color: c['content-primary'], background: '#EEF2F8', border: '1px solid #DCE3EC', borderRadius: 6, padding: '3px 9px', whiteSpace: 'nowrap' as const }}>{label}</span>
-  );
-  const checkRow = (col: string) => {
-    const on = checkedCols.has(col);
-    return (
-      <button key={col} onClick={() => toggleCol(col)} style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '6px 10px', border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left', fontFamily: ff.primary }}
-        onMouseEnter={e => (e.currentTarget.style.background = c['background-subtle'])}
-        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-        <span style={{ width: 16, height: 16, borderRadius: 4, flexShrink: 0, border: `1.5px solid ${on ? '#2770EF' : '#C0C6CF'}`, background: on ? '#2770EF' : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          {on && <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2.5 6l2.5 2.5 4.5-4.5" stroke="#fff" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-        </span>
-        <span style={{ fontSize: fs.sm, fontWeight: fw.medium, color: c['content-primary'], background: on ? 'rgba(6,191,127,0.12)' : 'transparent', borderRadius: 4, padding: on ? '1px 6px' : 0 }}>{col}</span>
-      </button>
-    );
-  };
-
-  return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 3000, background: 'rgba(25,35,49,0.45)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '40px 24px' }}
-      onClick={onClose}>
-      <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: 1280, height: 'calc(100vh - 80px)', background: '#fff', borderRadius: 12, boxShadow: '0 24px 64px rgba(25,35,49,0.28)', display: 'flex', flexDirection: 'column', overflow: 'hidden', fontFamily: ff.primary }}>
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', padding: '16px 24px', borderBottom: `1px solid ${c['border-divider']}`, flexShrink: 0 }}>
-          <span style={{ fontSize: fs.lg, fontWeight: fw.semibold, color: c['content-primary'] }}>Edit Answer</span>
-        </div>
-        {/* Search / token toolbar */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: sp.C, padding: '12px 24px', borderBottom: `1px solid ${c['border-divider']}`, flexShrink: 0 }}>
-          <button style={{ display: 'flex', alignItems: 'center', gap: 8, height: 36, padding: '0 12px', border: `1px solid ${c['border-default']}`, borderRadius: 8, background: '#fff', cursor: 'pointer', fontFamily: ff.primary, flexShrink: 0 }}>
-            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="#64748B" strokeWidth="1.4"><path d="M2 4h12M2 8h12M2 12h12"/></svg>
-            <span style={{ fontSize: fs.sm, fontWeight: fw.medium, color: c['content-primary'] }}>(Sample) Retail - Apparel</span>
-            <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M3 4.5l3 3 3-3" stroke="#8B96A5" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
-          </button>
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: sp.B, minWidth: 0, height: 36, border: `1px solid ${c['border-default']}`, borderRadius: 8, padding: '0 10px' }}>
-            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}><circle cx="7" cy="7" r="5" stroke="#8B96A5" strokeWidth="1.5"/><path d="M11 11l3 3" stroke="#8B96A5" strokeWidth="1.5" strokeLinecap="round"/></svg>
-            <div style={{ display: 'flex', gap: sp.A, alignItems: 'center', overflow: 'hidden' }}>{token('sales')}{token('region')}{token('date = last year')}</div>
-          </div>
-          <button title="Clear" style={{ width: 32, height: 32, border: 'none', background: 'transparent', borderRadius: 6, cursor: 'pointer', color: '#8B96A5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <svg width="13" height="13" viewBox="0 0 12 12" fill="none"><path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
-          </button>
-          <button style={{ height: 34, padding: '0 18px', border: `1px solid ${c['border-default']}`, borderRadius: 8, background: c['background-subtle'], color: c['content-primary'], fontSize: fs.sm, fontWeight: fw.semibold, cursor: 'pointer', fontFamily: ff.primary, flexShrink: 0 }}>Go</button>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 2, marginLeft: sp.B, flexShrink: 0 }}>
-            {railIcon(<path d="M8 6H4v4M4 6a7 7 0 1 1-1.5 4.5" />)}
-            {railIcon(<path d="M12 6h4v4M16 6a7 7 0 1 0 1.5 4.5" />)}
-            {railIcon(<path d="M10 4v3M10 4L7.5 6.5M10 4l2.5 2.5M4 12a6 6 0 0 0 12 0" />)}
-          </div>
-        </div>
-        {/* Body */}
-        <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
-          {/* Column picker */}
-          <aside style={{ width: 244, flexShrink: 0, borderRight: `1px solid ${c['border-divider']}`, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: sp.C, padding: '12px 14px 8px' }}>
-              <span style={{ fontSize: fs.sm, color: c['content-tertiary'], fontWeight: fw.medium }}>Popular</span>
-              <span style={{ fontSize: fs.sm, color: '#2770EF', fontWeight: fw.semibold, borderBottom: '2px solid #2770EF', paddingBottom: 2 }}>All</span>
-            </div>
-            <div style={{ padding: '4px 14px 10px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, height: 34, border: `1px solid ${c['border-default']}`, borderRadius: 8, padding: '0 10px' }}>
-                <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5" stroke="#A5ACB9" strokeWidth="1.5"/><path d="M11 11l3 3" stroke="#A5ACB9" strokeWidth="1.5" strokeLinecap="round"/></svg>
-                <span style={{ fontSize: fs.sm, color: c['content-tertiary'] }}>Find columns</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 8, color: '#2770EF', fontSize: fs.sm, fontWeight: fw.semibold, cursor: 'pointer' }}>
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 2v8M2 6h8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>Add
-              </div>
-            </div>
-            <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 12 }}>
-              <div style={{ padding: '6px 14px', fontSize: fs.xs, fontWeight: fw.semibold, color: c['content-secondary'], display: 'flex', alignItems: 'center', gap: 6 }}>
-                <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M3 4.5l3 3 3-3" stroke="#8B96A5" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>Measures
-              </div>
-              {EDIT_ANSWER_MEASURES.map(checkRow)}
-              <div style={{ padding: '10px 14px 6px', fontSize: fs.xs, fontWeight: fw.semibold, color: c['content-secondary'], display: 'flex', alignItems: 'center', gap: 6 }}>
-                <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M3 4.5l3 3 3-3" stroke="#8B96A5" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>Attributes
-              </div>
-              {EDIT_ANSWER_ATTRIBUTES.map(checkRow)}
-            </div>
-          </aside>
-          {/* Chart area */}
-          <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', padding: '18px 24px' }}>
-            <div style={{ display: 'flex', alignItems: 'flex-start' }}>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: fs.lg, fontWeight: fw.semibold, color: c['content-primary'], overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</div>
-                <div style={{ fontSize: fs.sm, color: c['content-tertiary'], marginTop: 2 }}>Add description</div>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, flexShrink: 0 }}>
-                <div style={{ display: 'flex', background: c['background-subtle'], borderRadius: 8, padding: 3, gap: 2 }}>
-                  <button onClick={() => setChart(false)} style={{ width: 30, height: 26, border: 'none', borderRadius: 6, cursor: 'pointer', background: !chart ? '#fff' : 'transparent', boxShadow: !chart ? '0 1px 2px rgba(25,35,49,0.12)' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', color: !chart ? '#1D232F' : '#8B96A5' }}>
-                    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4"><rect x="2" y="2.5" width="12" height="11" rx="1"/><path d="M2 6h12M6 6v7.5"/></svg>
-                  </button>
-                  <button onClick={() => setChart(true)} style={{ width: 30, height: 26, border: 'none', borderRadius: 6, cursor: 'pointer', background: chart ? '#fff' : 'transparent', boxShadow: chart ? '0 1px 2px rgba(25,35,49,0.12)' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', color: chart ? '#2770EF' : '#8B96A5' }}>
-                    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"><path d="M3 13V8M7 13V4M11 13V6M15 13H1"/></svg>
-                  </button>
-                </div>
-                <button style={{ width: 30, height: 30, border: 'none', background: 'transparent', borderRadius: 6, cursor: 'pointer', color: '#8B96A5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><circle cx="3" cy="8" r="1.4"/><circle cx="8" cy="8" r="1.4"/><circle cx="13" cy="8" r="1.4"/></svg>
-                </button>
-              </div>
-            </div>
-            <div style={{ marginTop: sp.C }}>
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: fs.sm, background: c['background-subtle'], borderRadius: 20, padding: '4px 12px', color: c['content-secondary'] }}>
-                <span style={{ color: c['content-tertiary'] }}>date</span><span style={{ fontWeight: fw.semibold, color: c['content-primary'] }}>Last 1 Year (2025)</span>
-              </span>
-            </div>
-            <div style={{ flex: 1, minHeight: 0, marginTop: sp.C }}>
-              {chart
-                ? <ReactECharts option={chartOption} style={{ height: '100%', width: '100%' }} />
-                : (
-                  <div style={{ height: '100%', overflow: 'auto', border: `1px solid ${c['border-divider']}`, borderRadius: 8 }}>
-                    {EDIT_ANSWER_REGIONS.map((r, i) => (
-                      <div key={r.label} style={{ display: 'flex', padding: '8px 14px', borderBottom: `1px solid ${c['border-divider']}`, background: i % 2 ? '#FAFBFC' : '#fff' }}>
-                        <span style={{ flex: 1, fontSize: fs.sm, color: c['content-primary'] }}>{r.label}</span>
-                        <span style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'] }}>{r.value}M</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-            </div>
-          </div>
-          {/* Viz-type rail */}
-          <div style={{ width: 56, flexShrink: 0, borderLeft: `1px solid ${c['border-divider']}`, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '12px 0', gap: 4 }}>
-            {railIcon(<path d="M3 13V8M7 13V4M11 13V6M15 13H1" />, true)}
-            {railIcon(<path d="M4 4h5v5H4zM11 4h5v5h-5zM4 11h12v5H4z" />)}
-            {railIcon(<path d="M4 15V6M9 15V3M14 15V9" />)}
-            {railIcon(<path d="M10 4v3M10 4L7.5 6.5M10 4l2.5 2.5M4 12a6 6 0 0 0 12 0" />)}
-            {railIcon(<path d="M3 6h10M3 10h10M3 14h6" />)}
-            {railIcon(<rect x="3" y="4" width="14" height="12" rx="1" />)}
-            {railIcon(<circle cx="10" cy="10" r="6" />)}
-            {railIcon(<path d="M5 5l10 10M15 5L5 15" />)}
-            {railIcon(<path d="M4 10h12M10 4v12" />)}
-          </div>
-        </div>
-        {/* Footer */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: sp.C, padding: '14px 24px', borderTop: `1px solid ${c['border-divider']}`, flexShrink: 0 }}>
-          <button onClick={onClose} style={{ height: 38, padding: '0 18px', border: `1px solid ${c['border-default']}`, borderRadius: 8, background: '#fff', color: c['content-primary'], fontSize: fs.sm, fontWeight: fw.semibold, cursor: 'pointer', fontFamily: ff.primary }}>Discard changes</button>
-          <button onClick={onClose} style={{ height: 38, padding: '0 20px', border: 'none', borderRadius: 8, background: '#2770EF', color: '#fff', fontSize: fs.sm, fontWeight: fw.semibold, cursor: 'pointer', fontFamily: ff.primary }}>Done editing</button>
-        </div>
-      </div>
-    </div>
-  );
-};
+const EditAnswerModal: React.FC<{ title: string; onClose: () => void }> = ({ title, onClose }) => (
+  <SearchDataEditor
+    title={title}
+    dataset="(Sample) Retail - Apparel"
+    tokens={['sales', 'region', 'date = last year']}
+    measures={EDIT_ANSWER_MEASURES}
+    attributes={EDIT_ANSWER_ATTRIBUTES}
+    initialChecked={['sales', 'region']}
+    filter={{ label: 'date', value: 'Last 1 Year (2025)' }}
+    chart={{
+      kind: 'bar',
+      categories: EDIT_ANSWER_REGIONS.map(r => r.label),
+      series: [{ name: 'sales', data: EDIT_ANSWER_REGIONS.map(r => r.value) }],
+      unit: 'M',
+    }}
+    onClose={onClose}
+  />
+);
 
 const AITuneEvalCard: React.FC<{
   msgId: string;

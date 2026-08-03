@@ -11,7 +11,8 @@ import { SpreadsheetGrid, SpreadsheetColumnMenu, DataSheetToolbar } from './Spre
 import { AnchoredMenu } from './AnchoredMenu';
 import { CacheProgressChip, useCache } from './CacheProgress';
 import { PERSONA } from '../persona';
-import { SnowflakeMark, DatabricksMark, BigqueryMark, SalesforceMark, DbtMark } from './icons/ConnectorIcons';
+import { BigqueryMark, DbtMark, SourceMark, hasBrandMark } from './icons/ConnectorIcons';
+import { JoinTypeIcon } from './icons/JoinTypeIcon';
 import TestView from './TestView';
 import { useVariant } from '../variant';
 import { ProjectState, emptyContext } from '../index';
@@ -349,6 +350,32 @@ const CONNECTION_BY_TABLE: Record<string, string> = {
   feature_adoption: 'Databricks',
   qbr_sentiment:   'CSV upload',
   jira_cs_tickets: 'Jira (script)',
+};
+
+/**
+ * Which brand mark a table's card should carry.
+ *
+ * Derived from CONNECTION_BY_TABLE rather than duplicating it — there were
+ * already two table→source maps in this file and a third would be the one that
+ * drifts. Returns null for anything the demo doesn't cover (the Pendo-era
+ * browser tables, `orders`/`campaigns`/`users`), and the card falls back to its
+ * generic table glyph rather than showing a wrong or missing logo.
+ *
+ * `jira_cs_tickets` resolves to Python, not a Jira mark: it isn't a connection,
+ * it's a script the agent wrote, and the Python logo is already how that reads
+ * everywhere else in the product.
+ */
+const SOURCE_MARK_BY_CONNECTION: Record<string, string> = {
+  'Snowflake':     'snowflake',
+  'Databricks':    'databricks',
+  'CSV upload':    'csv',
+  'Jira (script)': 'python',
+};
+
+const sourceMarkKey = (tableName: string, sourceKind?: 'warehouse' | 'csv'): string | null => {
+  const connection = CONNECTION_BY_TABLE[tableName];
+  if (connection) return SOURCE_MARK_BY_CONNECTION[connection] ?? null;
+  return sourceKind === 'csv' ? 'csv' : null;
 };
 
 type Row = (string | number | boolean | null)[];
@@ -935,14 +962,18 @@ const IconTable = ({ size = 11, color = '#8B96A5' }: { size?: number; color?: st
 // these stay bespoke but read as one clean set alongside the Radiant structural icons.
 // The connector marks now live in components/icons/ConnectorIcons so the agent
 // thread's connection list shows the same glyph for the same connection.
-const IconCloud      = () => <SalesforceMark />;
+const IconCloud      = () => <SourceMark name="salesforce" size={14} />;
 const IconFolder     = () => <Icon name="folder" size="xs" color="#8B96A5" />;
 const IconDb         = () => <Icon name="database" size="xs" color="#777E8B" />;
 const IconSchema     = () => <Icon name="schema" size="xs" color="#A5ACB9" />;
 const IconDbt        = () => <DbtMark />;
-const IconSnowflake  = () => <SnowflakeMark />;
+// Snowflake and Databricks carry their real marks — the browser tree, the agent's
+// S2 connection list and the canvas cards all have to show the same thing for the
+// same connection, or the story breaks across the seam between chat and canvas.
+// The rest keep their silhouettes; there's no brand asset for them.
+const IconSnowflake  = () => <SourceMark name="snowflake" size={14} />;
 const IconBigquery   = () => <BigqueryMark />;
-const IconDatabricks = () => <DatabricksMark />;
+const IconDatabricks = () => <SourceMark name="databricks" size={14} />;
 
 const IconPlus = ({ size = 10, color = 'currentColor' }: { size?: number; color?: string }) => (
   <svg width={size} height={size} viewBox="0 0 12 12" fill="none">
@@ -1174,11 +1205,15 @@ const TreeConn: React.FC<{
 
 // ── Canvas node card ──────────────────────────────────────────────────────────
 
-const JOIN_TYPE_COLOR: Record<string, { bg: string; fg: string }> = {
-  Inner:       { bg: 'rgba(39,112,239,0.10)',  fg: '#2770EF' },
-  'Full Outer':  { bg: 'rgba(124,58,237,0.10)', fg: '#7C3AED' },
-  'Left Outer':  { bg: 'rgba(6,182,212,0.10)',  fg: '#0891B2' },
-  'Right Outer': { bg: 'rgba(245,158,11,0.10)', fg: '#D97706' },
+// `glyph` is the fill inside the join figure, and it's flat rather than a 10% alpha like
+// `bg`: full outer paints two overlapping discs, and a translucent fill would darken the
+// overlap into a third value that means nothing. It's also stronger than `bg` on purpose —
+// the filled regions are what say which join this is, so they have to read at 18px.
+const JOIN_TYPE_COLOR: Record<string, { bg: string; fg: string; glyph: string }> = {
+  Inner:         { bg: 'rgba(39,112,239,0.10)', fg: '#2770EF', glyph: '#BBD2F8' },
+  'Full Outer':  { bg: 'rgba(124,58,237,0.10)', fg: '#7C3AED', glyph: '#D6C6FA' },
+  'Left Outer':  { bg: 'rgba(6,182,212,0.10)',  fg: '#0891B2', glyph: '#B2E2EE' },
+  'Right Outer': { bg: 'rgba(245,158,11,0.10)', fg: '#D97706', glyph: '#FADFB2' },
 };
 
 const JoinBlockCard: React.FC<{
@@ -1233,10 +1268,10 @@ const JoinBlockCard: React.FC<{
           transition: 'box-shadow 120ms, border-color 120ms',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
-          <svg width="17" height="17" viewBox="0 0 22 22" fill="none">
-            <circle cx="9" cy="11" r="4.5" fill={jc.bg} stroke={jc.fg} strokeWidth="1.2"/>
-            <circle cx="13" cy="11" r="4.5" fill="none" stroke="#2770EF" strokeWidth="1.2"/>
-          </svg>
+          {/* Depicts the join rather than tinting it — the filled regions are the rows
+              that survive. Same glyph the agent's proposal card shows, so the thing she
+              approved and the thing that got drawn are recognisably the same. */}
+          <JoinTypeIcon type={join.joinType} size={18} color={jc.fg} fill={jc.glyph} />
           {hover && (
             <button
               onPointerDown={e => e.stopPropagation()}
@@ -1540,11 +1575,25 @@ const BlockNode: React.FC<{
         borderRadius: RADIUS8,
         boxShadow: selected ? '0 0 0 3px rgba(39,112,239,0.14), 0 2px 10px rgba(25,35,49,0.08)' : '0 2px 10px rgba(25,35,49,0.08)',
       }}>
-        {/* Header */}
+        {/* Header.
+            A source card leads with its platform's mark where it has one, so the
+            canvas says at a glance which warehouse each table came from — the
+            thing S6 turns on. Tables outside the demo set have no mark and keep
+            the generic table glyph. The tinted tile is dropped under a brand mark:
+            these logos carry their own colour, and a coloured square behind them
+            reads as a second badge. */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, height: BLOCK_H, padding: '0 12px' }}>
-          <span style={{ width: 20, height: 20, borderRadius: 4, background: isSource ? '#F6F8FA' : lastTag.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', color: isSource ? '#777E8B' : lastTag.fg, flexShrink: 0 }}>
-            {isSource ? <IconTable size={11} color="#777E8B" /> : stepIcon(step.type)}
-          </span>
+          {(() => {
+            const markKey = isSource ? sourceMarkKey(group.tableName, group.sourceKind) : null;
+            const branded = hasBrandMark(markKey);
+            return (
+              <span style={{ width: 20, height: 20, borderRadius: 4, background: branded ? 'transparent' : isSource ? '#F6F8FA' : lastTag.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', color: isSource ? '#777E8B' : lastTag.fg, flexShrink: 0 }}>
+                {branded ? <SourceMark name={markKey!} size={16} />
+                  : isSource ? <IconTable size={11} color="#777E8B" />
+                  : stepIcon(step.type)}
+              </span>
+            );
+          })()}
           <span style={{ flex: 1, minWidth: 0, fontSize: 12, fontWeight: fw.semibold, color: '#1D232F', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
         </div>
         {/* Inline pipeline — steps live as chips inside the card, ordered left-to-right,
@@ -6092,10 +6141,22 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
 
   // Helpers for inline diffs in the columns view
   const airIsAllReview = airFixReview === '__all__';
-  const airCheckActive = (checkId: string) => airFixReview === checkId || airIsAllReview;
+  // POC-READINESS-PORT: the readiness flow's semantic preview uses POC-column proposals.
+  const airCheckRows = (checkId: string) =>
+    pocSemActive ? (POC_SEM_REVIEW[checkId] ?? []) : (AIR_FIX_REVIEW[checkId]?.rows ?? []);
+  /**
+   * A check is only "active" if the open review actually proposes something for it.
+   *
+   * The length test is the fix for a real bug: an all-review used to light every mapped
+   * column header, whether or not that check had a single row. The readiness flow's
+   * semantic pass only carries coldesc / desc / synonyms, so Data type, Column type and
+   * Indexed were being highlighted as changed while proposing nothing — three columns
+   * claiming edits that didn't exist.
+   */
+  const airCheckActive = (checkId: string) =>
+    (airFixReview === checkId || airIsAllReview) && airCheckRows(checkId).length > 0;
   const airGetRowForCheck = (checkId: string, col: string) =>
-    // POC-READINESS-PORT: the readiness flow's semantic preview uses POC-column proposals.
-    (pocSemActive ? (POC_SEM_REVIEW[checkId] ?? []) : (AIR_FIX_REVIEW[checkId]?.rows ?? [])).find(r => r.col === col);
+    airCheckRows(checkId).find(r => r.col === col);
   // Maps the editable field name to the AIR check that affects it
   const FIELD_TO_CHECK: Record<string, string> = { desc: 'coldesc', aicontext: 'desc', synonyms: 'synonyms' };
 
@@ -7364,9 +7425,10 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
         notificationCount={1}
         onLogoClick={() => {}}
         style={{ flexShrink: 0 }}
-        /* Already on the canvas, so "open the model" means bring the model itself back
-           into view — which is a real action from the Spreadsheet tab. */
-        leadingSlot={<CacheProgressChip onView={() => { setViewMode('canvas'); setSelectedIds(new Set()); }} />}
+        /* No View action here — you're already on the model being cached, and a control
+           that takes you where you already are is what made the chip read as odd. Just
+           the progress and a way to dismiss it. */
+        leadingSlot={<CacheProgressChip />}
         logo={
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <BrandMark style={{ height: 22, width: 'auto' }} color="#1D232F" />

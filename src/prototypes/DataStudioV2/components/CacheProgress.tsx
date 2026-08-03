@@ -13,8 +13,14 @@ import { c, fs, ff } from '../styles';
  * two places (Shell for every view, ModelCanvas for the canvas view, which hides Shell's),
  * and the job has to outlive whichever one is mounted.
  *
- * The chip is deliberately not a toast. A toast disappears, and the point of this beat is
- * that you can leave, do something else, and still be able to get back.
+ * It stays in the header rather than moving to a bottom-right toast: a persistent top
+ * indicator is the convention for "something is running" exactly because it's always in
+ * view, which is what makes leaving the canvas safe.
+ *
+ * It is closeable, though. It was briefly not, on the reasoning that the chip was the only
+ * route back to the model — but that got the dependency backwards. The way back to a model
+ * is the model, via Models or Recent; making a progress notification carry navigation is
+ * what forced it to be permanent, and permanent is what made it read as stuck.
  */
 
 export interface CacheJob {
@@ -75,15 +81,17 @@ export const useCache = (): CacheContextValue => useContext(CacheContext);
  * The header chip. Renders nothing when no job exists, so both header sites can mount it
  * unconditionally.
  *
- * `onView` is what makes leaving safe — it returns you to the canvas. It's omitted on the
- * canvas itself, where there is nowhere to go.
+ * `onView` takes you to the model being cached, and is passed only where that goes
+ * somewhere — i.e. not on the canvas itself. It reads as the word "View" rather than an
+ * arrow-leaving-a-frame glyph, which said "open in a new tab" and, on a screen you hadn't
+ * left, said nothing at all.
  */
 /** Progress-ring geometry — r and its circumference, so the arc maths reads plainly. */
 const RING_R = 6.4;
 const RING_C = 2 * Math.PI * RING_R;
 
 export const CacheProgressChip: React.FC<{ onView?: () => void }> = ({ onView }) => {
-  const { job } = useCache();
+  const { job, dismiss } = useCache();
   if (!job) return null;
 
   const running = job.status === 'running';
@@ -95,9 +103,9 @@ export const CacheProgressChip: React.FC<{ onView?: () => void }> = ({ onView })
       aria-live="polite"
       style={{
         display: 'flex', alignItems: 'center', gap: 8,
-        // Roomier on the right than the 4px it had: the trailing icon button was sitting
-        // hard against the border, and with no icon the label ran into the edge.
-        height: 30, padding: onView ? '0 8px 0 12px' : '0 14px', marginRight: 4,
+        // The close button carries its own right-hand breathing room, so the chip's
+        // padding is asymmetric: a full 12px on the label side, 5px on the control side.
+        height: 30, padding: '0 5px 0 12px', marginRight: 4,
         borderRadius: 15,
         border: `1px solid ${running ? '#E2E6EC' : '#B7E8D3'}`,
         background: running ? '#fff' : '#F1FBF6',
@@ -130,29 +138,41 @@ export const CacheProgressChip: React.FC<{ onView?: () => void }> = ({ onView })
           : `${total} tables cached`}
       </span>
 
-      {/* Open the model again. This replaces the dismiss: the chip's job is to be the way
-          back to what's being cached, so closing it was removing the only route. */}
+      {/* Only where it actually goes somewhere — see onView. */}
       {onView && (
         <button
           onClick={onView}
-          aria-label="Open the model"
-          title="Open the model"
           style={{
-            width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            height: 22, padding: '0 8px', display: 'flex', alignItems: 'center',
             borderRadius: 6, border: 'none', background: 'transparent',
-            color: c['content-secondary'], cursor: 'pointer', flexShrink: 0,
+            fontFamily: ff.primary, fontSize: fs.xs, fontWeight: 600,
+            color: c['content-brand'], cursor: 'pointer', flexShrink: 0,
           }}
-          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#EAEDF2'; (e.currentTarget as HTMLElement).style.color = c['content-brand']; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = c['content-secondary']; }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#EAEDF2'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
         >
-          {/* Arrow leaving a frame — "take me to it", not "open a new tab". */}
-          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M9.5 2.5H13v3.5" />
-            <path d="M13 2.5L7.5 8" />
-            <path d="M12 9.5V12a1.5 1.5 0 0 1-1.5 1.5H4A1.5 1.5 0 0 1 2.5 12V5.5A1.5 1.5 0 0 1 4 4h2.5" />
-          </svg>
+          View
         </button>
       )}
+
+      {/* Always present. A job you can't dismiss stops being a notification and becomes
+          furniture — which is what made this read as stuck once the caching had finished. */}
+      <button
+        onClick={dismiss}
+        aria-label="Dismiss"
+        title="Dismiss"
+        style={{
+          width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          borderRadius: 5, border: 'none', background: 'transparent',
+          color: '#A5ACB9', cursor: 'pointer', flexShrink: 0,
+        }}
+        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#EAEDF2'; (e.currentTarget as HTMLElement).style.color = c['content-primary']; }}
+        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#A5ACB9'; }}
+      >
+        <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+          <path d="M4 4l8 8M12 4l-8 8" />
+        </svg>
+      </button>
     </div>
   );
 };

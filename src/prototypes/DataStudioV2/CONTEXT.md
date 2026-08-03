@@ -276,6 +276,37 @@ column lists inside cards — the ERD references were shape inspiration only.
 
 ---
 
+---
+
+## Source marks, join type, and the Search data editor
+
+**Brand logos, deliberately.** `assets/connectors/` holds the real Snowflake, Databricks,
+Salesforce, Postgres, CSV and Python marks, surfaced through `SourceMark` in
+`icons/ConnectorIcons.tsx`. They sit *alongside* the hand-drawn silhouettes rather than
+replacing them: the silhouettes exist because Radiant ships no vendor logos and inventing
+one is worse than none, but using a vendor's actual mark to identify a real integration is
+a different thing and it's what every data tool does. Colour is how you tell Snowflake from
+Databricks without reading — which S6 depends on. Anything without a brand asset keeps its
+silhouette; anything outside the demo's eight tables keeps the generic table glyph.
+Longer-term intent is illustrations; this is the demo-accurate step.
+
+**Join type is depicted, not colour-coded.** `icons/JoinTypeIcon.tsx` — two overlapping
+circles with the surviving regions filled. It used to be one generic glyph tinted four ways
+with the words only in a hover tooltip, which put a whole category on hue alone. In the
+proposal card it sits under the arrow in the connector stack (`1:N` / arrow / glyph); the
+labelled column it replaced cost ~90px and truncated every table name. Cardinality no
+longer goes amber on a fan-out risk — confidence is the score's job.
+
+**The Search data editor** (`EditAnswerModal.tsx`) is shared. The tuning card and the
+readiness flow's Spotter-check Edit action open the same component over their own data;
+`PocReadinessFlow` feeds it the question's tokens, `usedColumns`, and chart.
+
+⚠️ **It's a view.** The checkboxes tick, the panel collapses, the chart/table toggle works
+— and nothing else does. Changing a ticked column does **not** change the answer;
+`checkedCols` is read only to draw the tick. Known and accepted; see `NEXT_UP.md`.
+
+---
+
 ## Concept model (locked)
 
 - **Add data** = ingestion. Always creates an independent source card. Lives in the data browser header (Upload file · SQL · Python).
@@ -340,6 +371,10 @@ column lists inside cards — the ERD references were shape inspiration only.
 | Chat-first start — S1 empty home; her question opens the canvas with no model; accepting the first proposal creates it and the card grows in beside an unmoved thread | ✅ (Demo) |
 | Model creation pass — 4.4s, three steps over a filling bar, tables revealed under the overlay; the agent waits for it before S4 | ✅ (Demo) |
 | Formula bar scrolls to its column — a new formula column is appended off screen, so Enter used to look like nothing happened | ✅ |
+| Brand connector logos — real Snowflake / Databricks / Salesforce / Postgres marks plus CSV and Python, on canvas cards, the browser tree and the agent's S2 connection list | ✅ |
+| Join type is drawn, not tinted — filled regions say which rows survive; same glyph in the proposal card and on the canvas badge | ✅ |
+| Search data editor — Spotter check → Edit opens the Edit Answer modal over that question's model, tokens, columns and answer | ✅ |
+| Out of scope on a graded answer — third pill beside Looks right / Incorrect, and an icon toggle in the review list | ✅ |
 
 ---
 

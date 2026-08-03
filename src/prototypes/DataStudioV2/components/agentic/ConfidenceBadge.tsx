@@ -38,7 +38,9 @@ export const ConfidenceBadge: React.FC<ConfidenceBadgeProps> = ({ pct }) => {
       whiteSpace: 'nowrap',
       cursor: 'help',
     }}>
-      {pct}% match
+      {/* Just the number. "match" was doing no work the column position didn't
+          already do, and it made a one-line reason hover behind a two-word label. */}
+      {pct}%
     </span>
   );
 };

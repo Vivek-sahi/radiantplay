@@ -156,6 +156,18 @@ The On screen lane quotes the agent's wording; it isn't ours to paraphrase. Rema
 - **The chip and toast use literal hex**, matching surrounding canvas code rather than
   tokens. On the existing consolidation debt below.
 
+### Surfaced by the Search data editor — worth knowing before a rehearsal
+
+- ⚠️ **The editor's column checkboxes tick but change nothing.** `checkedCols` is read
+  only to draw the tick; the chart and table come from the question's data regardless.
+  Vivek's call to leave it (2026-08-03). The risk is on stage: untick a measure and the
+  bars don't move. Wiring the table view (tick = column appears) is the cheap fix if it
+  ever matters — the bar answers can't gain a real second measure.
+- **Everything else in the editor is inert** and honestly so: Go, the ✕, undo/redo/reset,
+  Find columns, + Add, the ⋯ menu, all ten rail icons, and the tokens themselves.
+- **The ✕ and Go sit outside the input bar.** In the real product they look like they're
+  inside it. Left out because pulling them in needs a second divider.
+
 ### Surfaced by the chat-first start — worth doing
 
 - **Vision and POC still start the old way**, and Vivek's read is that Vision gets
@@ -190,6 +202,31 @@ The On screen lane quotes the agent's wording; it isn't ours to paraphrase. Rema
   row shunted its neighbour out of alignment. Vertical only now (154)
 - ✅ **Tidy up centres the model** in the visible canvas instead of ordering it into the
   top-left corner (154)
+
+- ✅ **Brand connector logos** — real Snowflake / Databricks / Salesforce / Postgres marks
+  plus CSV and Python, on canvas cards, the browser tree and the S2 connection list, all
+  reading one shared set (155)
+- ✅ **Join type is drawn** — filled regions say which rows survive, same glyph in the
+  proposal and on the canvas badge; it was four hues on one small circle with the words
+  only in a tooltip. Moved into the connector stack, which gave the table names back the
+  ~90px the labelled column was eating (155)
+- ✅ **Cardinality is no longer amber on fan-out** — it read as low confidence, and
+  confidence is the score's job. The caution survives on hover and in the reasoning (155)
+- ✅ **Confidence badges read `96%`**, not `96% match` (155)
+- ✅ **Search data editor wired to Spotter checks** — `EditAnswerModal` lifted out of
+  AgentPanel and parameterised; Edit on a graded question opens it over that question's
+  model, tokens, columns and answer. The old `onEdit` was a `console.log` TODO (155)
+- ✅ **Out of scope on a graded answer** — third pill beside Looks right / Incorrect, and
+  an icon-only toggle in the review list. The grade set is frozen when grading opens, so
+  marking one mid-pass no longer shrinks the array under the index (155)
+- ✅ **Table headers stop claiming edits that don't exist** — an all-review lit every
+  mapped header whether or not that check proposed anything; the readiness flow's semantic
+  pass only carries three, so three columns were highlighted with nothing to show (155)
+- ✅ **Caching chip closes** — reverses 153's "go-to instead of close". The route back to a
+  model is the model; making a notification carry navigation is what forced it to be
+  permanent, and permanent is what read as stuck. No View action on the canvas (155)
+- ✅ **Fix detail card has a gap above it** — a `-2px` top margin tucked it under a
+  highlighted row, so the two tinted blocks ran together (155)
 - ✅ **Opening prompt no longer replays** — any remount of the agent panel (collapse and
   reopen, or a hot reload) re-asked her S1 question on top of a live thread; it now fires
   only on an empty thread (154)

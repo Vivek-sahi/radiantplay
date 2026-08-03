@@ -1668,6 +1668,14 @@
 .calx-ig-chip { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 16px; border: 1px solid var(--line-strong); background: var(--panel); font-size: 11px; font-weight: 500; color: var(--ink-2); cursor: pointer; transition: all 0.12s; white-space: nowrap; }
 .calx-ig-chip:hover { border-color: var(--ink-4); }
 .calx-ig-chip.on { border-color: var(--ink-4); background: var(--neutral-tint); color: var(--ink); }
+/* Out-of-scope toggle. Same 26px box as .calx-ig-del so the two controls that share
+   this slot sit on the same grid — one appears per row, never both. Quiet until
+   hovered; once the question is out of scope it stays lit, because that's state
+   rather than a hover affordance. */
+.calx-ig-iconbtn { width: 26px; height: 26px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; background: transparent; border: none; cursor: pointer; color: var(--ink-4); transition: background 0.12s, color 0.12s; }
+.calx-ig-iconbtn:hover { background: var(--neutral-tint); color: var(--ink); }
+.calx-ig-iconbtn.on { background: var(--neutral-tint); color: var(--ink-2); }
+
 .calx-ig-del { width: 26px; height: 26px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; background: transparent; border: none; cursor: pointer; color: var(--ink-4); }
 .calx-ig-del:hover { background: var(--crit-tint); color: var(--crit-ink); }
 .calx-ig-detail { padding: 0 14px 14px 38px; }
@@ -1704,8 +1712,12 @@
 .calx-gm-chartwrap .calx-gc { width: 100%; }
 .calx-gm-feedback { display: flex; flex-direction: column; }
 .calx-gm-gq { font-size: 13px; font-weight: 500; color: var(--ink-2); margin-bottom: 8px; }
-.calx-gm-pills { display: flex; flex-wrap: wrap; gap: 8px; }
-.calx-gm-pill { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 20px; border: 1px solid var(--line-strong); background: var(--panel); font-size: 13px; font-weight: 500; color: var(--ink-2); cursor: pointer; transition: all 0.12s; }
+/* Three verdicts on one row. They're a single choice, so wrapping one onto a second
+   line made "Out of scope" look like a different kind of control rather than the third
+   option. Tightened rather than shortened — the labels are the clearest part. `wrap` is
+   kept as the fallback for a hand-narrowed agent panel, where two lines beat clipping. */
+.calx-gm-pills { display: flex; flex-wrap: wrap; gap: 6px; }
+.calx-gm-pill { display: inline-flex; align-items: center; gap: 5px; padding: 6px 11px; border-radius: 20px; border: 1px solid var(--line-strong); background: var(--panel); font-size: 12.5px; font-weight: 500; color: var(--ink-2); cursor: pointer; transition: all 0.12s; white-space: nowrap; }
 .calx-gm-pill:hover { border-color: var(--ink-4); }
 .calx-gm-pill.on.ok { border-color: var(--good); background: var(--good-tint); color: var(--good-ink); }
 .calx-gm-pill.on.bad { border-color: var(--crit); background: var(--crit-tint); color: var(--crit-ink); }
@@ -1868,8 +1880,12 @@
 .calx .send-btn:hover { opacity: 0.9; }
 
 /* Inline fix detail (agent-only replacement for the source's canvas overlay) */
+/* The top margin was -2px, which tucked this under the row it belongs to. That reads
+   as one block when the row above is highlighted: the tinted row and the tinted card
+   run together with no seam, and the explanation looks like part of the row's own
+   background rather than a panel that just opened. A real gap separates them. */
 .calx .calfx-detail {
-  margin: -2px 0 6px 30px; padding: 9px 11px; border-radius: 8px;
+  margin: 8px 0 10px 30px; padding: 10px 12px; border-radius: 8px;
   background: var(--line-tint, #F6F8FA); border: 1px solid var(--line, #EAEDF2);
   display: flex; flex-direction: column; gap: 7px;
 }
@@ -1946,6 +1962,9 @@
 .calx .calx-ig-dot.cur { background: var(--info, #2770ef); box-shadow: 0 0 0 3px rgba(39,112,239,0.16); transform: scale(1.1); }
 .calx .calx-ig-dot.ok { background: var(--good, #06BF7F); }
 .calx .calx-ig-dot.bad { background: var(--crit, #E22B3D); }
+/* Out of scope — settled, but neither pass nor fail. Hollow rather than a fourth
+   colour, so a run of dots still reads as "how many are still to do". */
+.calx .calx-ig-dot.oos { background: transparent; box-shadow: inset 0 0 0 1.5px var(--ink-4, #8B96A5); }
 .calx .calx-ig-focus-name { font-size: 15px; font-weight: 650; color: var(--ink, #1D232F); line-height: 1.34; letter-spacing: -0.2px; }
 .calx .calx-ig-focus-desc { font-size: 12.5px; color: var(--ink-3, #777E8B); line-height: 1.4; margin-top: 4px; }
 .calx .calx-ig-focus-nav { display: flex; align-items: center; gap: 8px; margin-top: 2px; }

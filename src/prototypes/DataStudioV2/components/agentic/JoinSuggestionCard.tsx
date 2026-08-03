@@ -85,6 +85,7 @@ export const JoinSuggestionCard: React.FC<JoinSuggestionCardProps> = ({ joins, o
                 rightTable={j.rightTable}
                 rightCol={j.rightCol}
                 cardinality={j.cardinality}
+                joinType={j.joinType}
                 warnFanOut={j.warnFanOut}
               />
             </div>

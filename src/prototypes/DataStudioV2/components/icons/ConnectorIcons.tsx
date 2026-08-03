@@ -13,6 +13,12 @@
  */
 import React from 'react';
 import { Icon } from '../../../../components/icons';
+import snowflakeBrand from '../../assets/connectors/snowflake.svg';
+import databricksBrand from '../../assets/connectors/databricks.svg';
+import csvBrand from '../../assets/connectors/csv.svg';
+import pythonBrand from '../../assets/connectors/python.svg';
+import salesforceBrand from '../../assets/connectors/salesforce.svg';
+import postgresBrand from '../../assets/connectors/postgres.svg';
 
 export interface ConnectorIconProps {
   size?: number;
@@ -63,6 +69,62 @@ export const DbtMark: React.FC<ConnectorIconProps> = p =>
 export const FolderMark: React.FC<ConnectorIconProps> = ({ color = DEFAULT_COLOR }) => (
   <Icon name="folder" size="xs" color={color} />
 );
+
+// ── Brand marks ──────────────────────────────────────────────────────────────
+/**
+ * The real vendor logos, in colour — for the demo, where a source has to be
+ * recognised at a glance rather than read.
+ *
+ * These sit alongside the silhouettes above rather than replacing them, and the
+ * distinction is deliberate. The silhouettes exist because Radiant ships no
+ * vendor logos and *inventing* one (initials in a tinted square) is worse than
+ * having none. Using a vendor's actual mark to identify a genuine integration
+ * is a different thing, and it's what every data tool does — colour is how you
+ * tell Snowflake from Databricks without stopping to read. That distinction
+ * carries a beat in the run-of-show: S6 only makes sense if you can see at a
+ * glance that the canvas holds two different warehouses.
+ *
+ * Covers the two warehouses the model is built from, the two other connections
+ * S2 offers her, and the two non-vendor sources (an uploaded file, an agent-written
+ * script). Anything else — BigQuery, Redshift, dbt, Drive, SharePoint — falls back
+ * to its silhouette via `SourceMark` returning null. See CONNECTOR_MARK.
+ *
+ * All but Postgres are under Vite's 4kb inline limit, so they build to data URIs;
+ * Postgres is 15kb and becomes its own request.
+ *
+ * Longer term the intent is illustrations rather than vendor logos; this is the
+ * demo-accurate step, not the destination.
+ */
+const BRAND_SRC: Record<string, string> = {
+  snowflake:  snowflakeBrand,
+  databricks: databricksBrand,
+  salesforce: salesforceBrand,
+  postgres:   postgresBrand,
+  csv:        csvBrand,
+  python:     pythonBrand,
+};
+
+export const hasBrandMark = (key: string | null | undefined): boolean =>
+  Boolean(key && BRAND_SRC[key]);
+
+/**
+ * Named `SourceMark`, not `BrandMark` — `BrandMark` is already the ThoughtSpot
+ * logo in `components/BrandMark`, and ModelCanvas imports both.
+ */
+export const SourceMark: React.FC<{ name: string; size?: number }> = ({ name, size = 14 }) => {
+  const src = BRAND_SRC[name];
+  if (!src) return null;
+  return (
+    <img
+      src={src}
+      width={size}
+      height={size}
+      alt=""
+      aria-hidden="true"
+      style={{ display: 'block', flexShrink: 0 }}
+    />
+  );
+};
 
 export const CONNECTOR_MARK: Record<string, React.FC<ConnectorIconProps>> = {
   snowflake:  SnowflakeMark,

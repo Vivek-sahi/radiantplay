@@ -565,6 +565,21 @@ export const MODEL: ModelMeta = {
 
 export const severityRank: Record<Severity, number> = { high: 0, medium: 1, low: 2 };
 
+/**
+ * The columns the renewal-risk model exposes to Spotter, as the Edit Answer picker
+ * lists them. Business names rather than physical ones — this is the surface a CCO
+ * reads, and `usage_delta_90d` is exactly the kind of thing the semantic pass exists
+ * to translate.
+ */
+export const MODEL_MEASURES = [
+  '# Open P1s', '90-day usage change', 'ARR', 'ARR at risk',
+  'Feature adoption', 'QBR sentiment', 'Renewal Risk',
+];
+export const MODEL_ATTRIBUTES = [
+  'Account', 'Account status', 'Account tier', 'Industry',
+  'Owner', 'Priority', 'Region', 'Renewal date',
+];
+
 // Detailed checks streamed as running points during the loading state (no icons).
 export const PILLAR_CHECKS: Record<PillarId, string[]> = {
   physical: [
@@ -633,6 +648,15 @@ export interface SampleQuestion {
   topic?: string;
   /** Mock answer data rendered as a real chart in the grading modal. */
   chart?: QChart;
+  /**
+   * The search tokens that produced this answer, shown in the Edit Answer editor.
+   * Written out rather than derived from the chart: the tokens are the *question* as
+   * the engine understood it, and things like "top 10" or a filter never appear in the
+   * result. Seeing them is the whole point of opening the editor.
+   */
+  tokens?: string[];
+  /** Columns ticked in the editor's picker when it opens — what this answer used. */
+  usedColumns?: string[];
   /** When a wrong answer is turned into a fix, these give it a specific title/fix
    *  (e.g. "add a Units Sold measure"). Falls back to a generic fix if absent. */
   fixTitle?: string;
@@ -651,6 +675,8 @@ export const SPOTTER_QUESTIONS: SampleQuestion[] = [
     description: 'Renewing accounts ranked by renewal risk, with the ARR each one carries.',
     chartType: 'table',
     topic: 'renewal risk',
+    tokens: ['Account', 'Renewal date', 'ARR at risk', 'sort by Renewal Risk', 'Renewal date next 90 days'],
+    usedColumns: ['Account', 'Renewal date', 'ARR at risk', 'Renewal Risk'],
     chart: { kind: 'table', columns: ['Account', 'Renewal date', 'ARR at risk'], rows: [['Northwind', '12 Aug 2024', '$420K'], ['Contoso', '3 Sep 2024', '$310K'], ['Fabrikam', '28 Aug 2024', '$280K'], ['Adventure Works', '19 Sep 2024', '$95K']] },
     fixTitle: 'Rank by risk, not by ticket volume',
     fixSuggestion: 'Aggregate jira_cs_tickets to one row per account so escalations stop multiplying the ranking.',
@@ -663,6 +689,8 @@ export const SPOTTER_QUESTIONS: SampleQuestion[] = [
     description: 'Accounts with a negative 90-day usage delta and a renewal in the window.',
     chartType: 'bar',
     topic: 'usage',
+    tokens: ['Account', '90-day usage change', '90-day usage change < 0', 'sort by 90-day usage change'],
+    usedColumns: ['Account', '90-day usage change'],
     chart: { kind: 'bar', categories: ['Northwind', 'Fabrikam', 'Contoso', 'Tailspin'], series: [{ name: '90-day usage change', data: [-38, -31, -27, -12] }], unit: '%' },
     fixTitle: 'Say what a missing usage delta means',
     fixSuggestion: 'Add AI context to usage_delta_90d so accounts with no reading aren’t read as flat.',
@@ -675,6 +703,8 @@ export const SPOTTER_QUESTIONS: SampleQuestion[] = [
     description: 'Accounts the model considers at risk of not renewing.',
     chartType: 'table',
     topic: 'renewal risk',
+    tokens: ['Account', 'Account status', 'Renewal Risk', 'sort by Renewal Risk'],
+    usedColumns: ['Account', 'Account status', 'Renewal Risk'],
     chart: { kind: 'table', columns: ['Account', 'Status', 'Renewal risk'], rows: [['Northwind', 'AR', '0.78'], ['Fabrikam', 'AR', '0.71'], ['Contoso', 'P', '0.64'], ['Tailspin', 'A', '0.31']] },
     fixTitle: 'Define what “at risk” means',
     fixSuggestion: 'Document the Renewal Risk metric and the acct_st codes so “at risk” resolves to something.',
@@ -687,6 +717,8 @@ export const SPOTTER_QUESTIONS: SampleQuestion[] = [
     description: 'Accounts with unresolved P1 tickets in Jira, counted per account.',
     chartType: 'column',
     topic: 'escalations',
+    tokens: ['Account', '# Open P1s', 'Priority = P1', 'sort by # Open P1s'],
+    usedColumns: ['Account', '# Open P1s', 'Priority'],
     chart: { kind: 'column', categories: ['Northwind', 'Contoso', 'Fabrikam', 'Tailspin'], series: [{ name: 'Open P1s', data: [3, 2, 2, 1] }] },
     fixTitle: 'Count each escalation once',
     fixSuggestion: 'Use COUNT(DISTINCT issue_key) so a fanned-out ticket isn’t counted twice.',
@@ -699,6 +731,8 @@ export const SPOTTER_QUESTIONS: SampleQuestion[] = [
     description: 'Total ARR across accounts renewing this quarter with high renewal risk.',
     chartType: 'kpi',
     topic: 'renewal risk',
+    tokens: ['ARR at risk', 'Renewal date this quarter'],
+    usedColumns: ['ARR at risk', 'Renewal date'],
     chart: { kind: 'kpi', value: '$1.1M', delta: '+14%', deltaUp: true, caption: 'vs. last quarter' },
     fixTitle: 'Stop ARR multiplying through the joins',
     fixSuggestion: 'Aggregate feature_adoption and jira_cs_tickets per account so ARR is summed once.',
@@ -711,6 +745,8 @@ export const SPOTTER_QUESTIONS: SampleQuestion[] = [
     description: 'Average renewal risk grouped by the account’s sales segment.',
     chartType: 'column',
     topic: 'renewal risk',
+    tokens: ['Account tier', 'Renewal Risk', 'sort by Renewal Risk'],
+    usedColumns: ['Account tier', 'Renewal Risk'],
     chart: { kind: 'column', categories: ['Enterprise', 'Mid-market', 'SMB'], series: [{ name: 'Avg renewal risk', data: [0.62, 0.44, 0.29] }] },
     fixTitle: 'Standardize the segment values',
     fixSuggestion: 'Map “ENT” and “Ent.” onto “Enterprise” so the segment stops splitting three ways.',
