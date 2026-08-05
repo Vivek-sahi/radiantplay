@@ -5,7 +5,7 @@ import {
   Button,
   Link,
   Icon,
-  ConfirmDialog,
+  NoData,
   ActionMenu,
   ActionMenuItem,
   Typography,
@@ -13,7 +13,7 @@ import {
   Vertical,
 } from '@/components';
 import type { TableColumn } from '@/components';
-import { KeyValue, SectionHeader, StatCard, FloatingToast, StatusPill, runStatusPillKind } from './primitives';
+import { KeyValue, SectionHeader, StatCard, FloatingToast, StatusPill, runStatusPillKind, ConfirmModal } from './primitives';
 import { CachingSettingsModal, type CacheConfigDraft } from './CachingSettingsModal';
 import { RunHistoryModal } from './RunHistoryModal';
 import { spacing } from '../styles';
@@ -95,7 +95,7 @@ export const CachingTab: React.FC<{ model: DataModel; onChange: (next: DataModel
         ),
       },
     });
-    setToast({ message: 'Cache completed successfully', type: 'success' });
+    setToast({ message: 'Your model is now cached', type: 'success' });
   };
 
   const startRun = (
@@ -149,11 +149,11 @@ export const CachingTab: React.FC<{ model: DataModel; onChange: (next: DataModel
             schedule: draft.schedule,
           },
         });
-        setToast({ message: 'Settings saved — changes apply on the next scheduled run.', type: 'info' });
+        setToast({ message: 'Your settings have been updated. Run Refresh cache to update the cached data.', type: 'info' });
       } else {
         // Enable, schedule-only → pending first run.
         onChange({ ...model, cache: { ...baseCache, lastRunStatus: 'In progress', runs: [] } });
-        setToast({ message: 'Caching scheduled — the first run will follow the schedule above.', type: 'info' });
+        setToast({ message: 'Caching enabled. The first run follows your schedule.', type: 'info' });
       }
       return;
     }
@@ -162,7 +162,7 @@ export const CachingTab: React.FC<{ model: DataModel; onChange: (next: DataModel
       isEdit ? 'Config change' : 'Scheduled',
       draft,
       baseCache,
-      'Caching is in progress and may take up to a few mins. View status in run history.',
+      'Caching is in progress. You can check caching status in run history.',
     );
   };
 
@@ -173,19 +173,35 @@ export const CachingTab: React.FC<{ model: DataModel; onChange: (next: DataModel
       schedule: cache.schedule,
       tableSettings: cache.tableSettings ?? model.tables.map((t) => ({ tableId: t.id, mode: 'full_table' })),
     };
-    startRun('Ad-hoc', draft, cache, 'Caching is in progress and may take up to a few mins. View status in run history.');
+    startRun('Ad-hoc', draft, cache, 'Caching is in progress. You can check caching status in run history.');
+  };
+
+  // Manual "check status" next to the in-progress pill — re-reads the run without a
+  // page reload. The async build is simulated here, so checking resolves it.
+  const refreshRunStatus = () => {
+    if (!cache) return;
+    const inProgress = cache.runs.find((r) => r.status === 'In progress');
+    if (!inProgress) return;
+    if (timerRef.current) { window.clearTimeout(timerRef.current); timerRef.current = null; }
+    const draft: CacheConfigDraft = {
+      window: cache.window,
+      schedule: cache.schedule,
+      tableSettings: cache.tableSettings ?? model.tables.map((t) => ({ tableId: t.id, mode: 'full_table' })),
+    };
+    completeRun(inProgress.id, computeStats(model, draft));
   };
 
   const purgeCache = () => {
     if (!cache) return;
     onChange({ ...model, cache: { ...cache, status: 'purged', cacheSizeMB: 0, rowCount: 0 } });
     setConfirm(null);
-    setToast({ message: 'Cache purged — configuration retained. Run “Refresh Cache” to rebuild.', type: 'info' });
+    setToast({ message: 'Cached snapshot is purged. The next cache runs on your schedule.', type: 'info' });
   };
 
   const disableCache = () => {
     onChange({ ...model, cache: undefined });
     setConfirm(null);
+    setToast({ message: 'Caching has been disabled on this model.', type: 'info' });
   };
 
   const handleSaveConfig = (draft: CacheConfigDraft, isEdit: boolean) => {
@@ -193,21 +209,37 @@ export const CachingTab: React.FC<{ model: DataModel; onChange: (next: DataModel
     applyConfig(draft, isEdit);
   };
 
-  // ── 5a: not cached ──
+  // ── not cacheable (Cacheability API says no) — distinct from "not cached yet" ──
+  if (model.cacheability && !model.cacheability.cacheable) {
+    return (
+      <NoData
+        className={styles.emptyState}
+        illustration={<img src="/near-store/empty-state.svg" alt="" width={140} height={118} />}
+        title="Caching isn't available on this model"
+        description={model.cacheability.reason}
+        action={<Link href="/near-store-overview.html" target="_blank" rel="noopener">Learn more about caching</Link>}
+      />
+    );
+  }
+
+  // ── not cached yet — the "Cache Model" CTA ──
   if (!cache) {
     return (
       <>
-        <Vertical align="center" justify="center" gap={spacing.D} className={styles.emptyState}>
-          <Button variant="primary" onClick={() => { setModalIsEdit(false); setModalOpen(true); }}>
-            {`Cache ${model.name}`}
-          </Button>
-          <div className={styles.emptyStateText}>
-            <Typography variant="body-normal" color="gray-light" noMargin>
-              By caching this model, you can reduce your live query cost and improve loading performance.
-            </Typography>
-          </div>
-          <Link href="/near-store-overview.html" target="_blank" rel="noopener">Learn more about caching</Link>
-        </Vertical>
+        <NoData
+          className={styles.emptyState}
+          illustration={<img src="/near-store/empty-state.svg" alt="" width={140} height={118} />}
+          title="This model isn’t cached yet"
+          description="Cache this model to cut live query cost and speed up load times."
+          action={
+            <Vertical align="center" gap={spacing.C}>
+              <Button variant="primary" onClick={() => { setModalIsEdit(false); setModalOpen(true); }}>
+                Cache Model
+              </Button>
+              <Link href="/near-store-overview.html" target="_blank" rel="noopener">Learn more about caching</Link>
+            </Vertical>
+          }
+        />
         {modalOpen && (
           <CachingSettingsModal model={model} isEdit={false} onClose={() => setModalOpen(false)} onSave={(d) => handleSaveConfig(d, false)} />
         )}
@@ -249,25 +281,16 @@ export const CachingTab: React.FC<{ model: DataModel; onChange: (next: DataModel
             status="warning"
             variant="page"
             dismissible={false}
-            message="This model changed after it was last cached, so the cache is invalidated — queries are running live from Snowflake until it's rebuilt."
+            message="This model changed after it was last cached, so the cached data is out of date — queries are running live directly from source until it's rebuilt."
             buttonText="Refresh now"
             onButtonClick={doRefresh}
-          />
-        ) : !purged && cache.lastRunStatus === 'Failure' ? (
-          <Alert
-            status="failure"
-            variant="page"
-            dismissible={false}
-            message="The last cache run failed. Queries are routing to the live warehouse until the next successful run."
-            buttonText="View details"
-            onButtonClick={() => setShowHistory(true)}
           />
         ) : null}
 
         {/* Cache Settings */}
         <Vertical gap={spacing.C}>
           <SectionHeader
-            title="Cache Settings"
+            title="Cache settings"
             size="small"
             actions={
               <>
@@ -279,15 +302,15 @@ export const CachingTab: React.FC<{ model: DataModel; onChange: (next: DataModel
                   trigger={<Button variant="secondary" size="small" icon="more" iconOnly aria-label="More cache actions">More</Button>}
                 >
                   <ActionMenuItem label="Edit cache settings" icon={<Icon name="pencil" size="s" />} onClick={() => { setModalIsEdit(true); setModalOpen(true); }} />
-                  <ActionMenuItem label="Refresh Cache" icon={<Icon name="refresh" size="s" />} onClick={doRefresh} />
+                  <ActionMenuItem label="Refresh cache" icon={<Icon name="refresh" size="s" />} onClick={doRefresh} />
                   <ActionMenuItem label="Purge current cache" icon={<Icon name="eye-undo" size="s" />} onClick={() => setConfirm('purge')} disabled={purged} />
-                  <ActionMenuItem label="Disable Cache" icon={<Icon name="trash-can" size="s" />} destructive onClick={() => setConfirm('disable')} />
+                  <ActionMenuItem label="Disable cache" icon={<Icon name="trash-can" size="s" />} destructive onClick={() => setConfirm('disable')} />
                 </ActionMenu>
               </>
             }
           />
           <div>
-            <KeyValue label="Cache scope">{cache.window === 'full' ? 'Full Model' : 'Custom'}</KeyValue>
+            <KeyValue label="Cache scope">{cache.window === 'full' ? 'Full model' : 'Custom'}</KeyValue>
             <KeyValue label="Refresh frequency">
               <Vertical gap={spacing.A}>
                 <span>{scheduleLabel(cache.schedule)}</span>
@@ -297,7 +320,12 @@ export const CachingTab: React.FC<{ model: DataModel; onChange: (next: DataModel
               </Vertical>
             </KeyValue>
             <KeyValue label="Cache size">
-              {purged ? '—' : pendingFirstRun ? 'Pending first run' : formatSizeMB(cache.cacheSizeMB)}
+              {purged ? (
+                <Horizontal gap={spacing.B} align="center">
+                  <span>—</span>
+                  <StatusPill kind="neutral" label="Purged" />
+                </Horizontal>
+              ) : pendingFirstRun ? 'Pending first run' : formatSizeMB(cache.cacheSizeMB)}
             </KeyValue>
             {(() => {
               const lastRun = cache.runs.find((r) => r.runType === 'Scheduled' || r.runType === 'Ad-hoc');
@@ -306,6 +334,23 @@ export const CachingTab: React.FC<{ model: DataModel; onChange: (next: DataModel
                   <Horizontal gap={spacing.B} align="center">
                     <span>{lastRun.startTime}</span>
                     <StatusPill kind={runStatusPillKind(lastRun.status)} label={lastRun.status} />
+                    {lastRun.status === 'In progress' && (
+                      <Button
+                        variant="tertiary"
+                        size="small"
+                        icon="refresh"
+                        iconOnly
+                        aria-label="Refresh run status"
+                        onClick={refreshRunStatus}
+                      >
+                        Refresh run status
+                      </Button>
+                    )}
+                    {lastRun.status === 'Error' && (
+                      <Link href="#" onClick={(e) => { e.preventDefault(); setShowHistory(true); }}>
+                        View details
+                      </Link>
+                    )}
                   </Horizontal>
                 </KeyValue>
               ) : null;
@@ -363,24 +408,24 @@ export const CachingTab: React.FC<{ model: DataModel; onChange: (next: DataModel
 
       {showHistory && <RunHistoryModal model={model} onClose={() => setShowHistory(false)} />}
 
-      <ConfirmDialog
-        isOpen={confirm === 'purge'}
-        title="Purge current cache?"
-        message="This removes the latest cache snapshot to free up data store space. Your caching configuration and schedule are kept — the next scheduled run (or Refresh Cache) will rebuild the snapshot."
-        confirmText="Purge current cache"
-        status="warning"
-        onConfirm={purgeCache}
-        onCancel={() => setConfirm(null)}
-      />
-      <ConfirmDialog
-        isOpen={confirm === 'disable'}
-        title="Disable caching?"
-        message="This deletes the cache data and its configuration. All queries will route live to Snowflake. You'll need to set caching up again from scratch."
-        confirmText="Disable caching"
-        status="danger"
-        onConfirm={disableCache}
-        onCancel={() => setConfirm(null)}
-      />
+      {confirm === 'purge' && (
+        <ConfirmModal
+          title="Purge current cache?"
+          message="This will delete the current copy of your cached data from ThoughtSpot. Your cache settings will remain and the cache will run as per schedule."
+          confirmText="Purge current cache"
+          onConfirm={purgeCache}
+          onCancel={() => setConfirm(null)}
+        />
+      )}
+      {confirm === 'disable' && (
+        <ConfirmModal
+          title="Disable caching?"
+          message="This deletes the cache data and its configuration. All queries will run live, directly from source."
+          confirmText="Disable caching"
+          onConfirm={disableCache}
+          onCancel={() => setConfirm(null)}
+        />
+      )}
 
       {toast && <FloatingToast message={toast.message} type={toast.type} onDismiss={() => setToast(null)} />}
     </>

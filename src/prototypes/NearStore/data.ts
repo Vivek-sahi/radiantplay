@@ -161,6 +161,13 @@ const hrTables: ModelTable[] = [
   { id: 'benefits', name: 'benefits_enrollment', rowCount: 132_000, columns: [col('employee_id', 'employee_id', 'string'), col('enrolled_date', 'enrolled_date', 'date'), col('plan', 'plan', 'string')] },
 ];
 
+// A model on a connector that can't be cached — powers the "caching unavailable"
+// empty state.
+const feedbackTables: ModelTable[] = [
+  { id: 'nps_responses', name: 'nps_responses', rowCount: 24_800, columns: [col('response_id', 'response_id', 'string'), col('submitted_at', 'submitted_at', 'date'), col('score', 'score', 'number'), col('comment', 'comment', 'string')] },
+  { id: 'survey_meta', name: 'survey_meta', rowCount: 120, columns: [col('survey_id', 'survey_id', 'string'), col('title', 'title', 'string')] },
+];
+
 // ── Run history builders ────────────────────────────────────────────────────
 const salesRun = (
   id: string,
@@ -210,15 +217,15 @@ const ledgerRuns: CacheRun[] = [
     startTime: '1 hr ago',
     endTime: '45 min ago',
     rows: undefined,
-    status: 'Failure',
+    status: 'Error',
     tableResults: ledgerTables.map((t, i) => ({
       tableId: t.id,
-      status: i === 0 ? 'Failure' : 'Success',
+      status: i === 0 ? 'Error' : 'Success',
       rows: i === 0 ? 0 : t.rowCount,
       sizeMB: i === 0 ? 0 : Math.max(1, Math.round(t.rowCount / 9_000)),
       durationSec: i === 0 ? 12 : 30 + i * 10,
       windowApplied: 'All history',
-      note: i === 0 ? 'Snowflake query timed out after 600s on posted_date partition scan' : undefined,
+      note: i === 0 ? 'Source query timed out after 600s on posted_date partition scan' : undefined,
     })),
   },
   {
@@ -342,7 +349,7 @@ export const models: DataModel[] = [
       cacheSizeMB: 28_160,
       rowCount: 6_100_000,
       nextRunAt: '19 May 2026, 2:00 AM',
-      lastRunStatus: 'Failure',
+      lastRunStatus: 'Error',
       runs: ledgerRuns,
     },
   },
@@ -376,6 +383,23 @@ export const models: DataModel[] = [
       nextRunAt: '21 May 2026, 5:00 AM',
       lastRunStatus: 'Success',
       runs: supplyRuns,
+    },
+  },
+  {
+    id: 'csat-survey-uploads',
+    name: 'CSAT Survey Uploads',
+    description:
+      'Customer satisfaction survey exports uploaded from spreadsheets. Ad-hoc NPS and CSAT responses with free-text comments.',
+    source: 'CSV upload',
+    tables: feedbackTables,
+    tags: ['CX', 'Survey'],
+    author: { name: 'Priya Menon' },
+    lastModified: '6 days ago',
+    cacheability: {
+      cacheable: false,
+      reasonCode: 'UNSUPPORTED_CONNECTOR',
+      reason:
+        'This model is built on a connection type that doesn’t support caching yet. Caching is available for supported cloud data warehouses.',
     },
   },
 ];

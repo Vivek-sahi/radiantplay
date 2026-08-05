@@ -2,7 +2,7 @@
  * Near Store — domain types
  *
  * ThoughtSpot's data caching offering: cache model data queried live from
- * Snowflake into ThoughtSpot to cut live query cost.
+ * the source into ThoughtSpot to cut live query cost.
  */
 
 export type CacheWindow = 'full' | 'custom'; // "Full Model" | "Custom"
@@ -12,7 +12,7 @@ export type CacheStatus = 'not_cached' | 'cached' | 'refreshing' | 'purged' | 'p
 export type Frequency = 'hourly' | 'daily' | 'weekly' | 'monthly';
 export type WindowMonths = 1 | 3 | 6 | 13;
 export type RunType = 'Scheduled' | 'Ad-hoc' | 'Config change' | 'Purge' | 'Model update';
-export type RunStatus = 'In progress' | 'Success' | 'Failure';
+export type RunStatus = 'In progress' | 'Success' | 'Error';
 export type ColumnType = 'string' | 'number' | 'date' | 'boolean';
 
 export interface Column {
@@ -73,7 +73,7 @@ export interface CacheRun {
 export interface CacheAnalytics {
   totalQueries: number;
   cachedQueries: number; // served from the cache
-  liveQueries: number; // fell through to a live Snowflake query
+  liveQueries: number; // fell through to a live source query
   basedOn: string; // display string, e.g. '15 May 2026, 9:00 AM'
 }
 
@@ -95,13 +95,24 @@ export interface ModelAuthor {
   imageUrl?: string;
 }
 
+/**
+ * Cacheability check (from the Cacheability API). When `cacheable` is false, the
+ * Caching tab shows a "can't be cached" empty state and surfaces `reason`.
+ */
+export interface Cacheability {
+  cacheable: boolean;
+  reasonCode?: 'CACHING_DISABLED_ON_ORG' | 'UNSUPPORTED_CONNECTOR' | 'MISSING_CUSTOM_CALENDAR';
+  reason?: string;
+}
+
 export interface DataModel {
   id: string;
   name: string;
   description: string;
-  source: 'Snowflake';
+  source: string; // connector identity, e.g. 'Snowflake'
   tables: ModelTable[];
   cache?: CacheState; // undefined = never cached (shows CTA)
+  cacheability?: Cacheability; // undefined = cacheable; { cacheable: false } = blocked
   tags?: string[];
   author?: ModelAuthor;
   lastModified?: string;

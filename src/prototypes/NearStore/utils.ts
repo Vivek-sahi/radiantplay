@@ -27,6 +27,14 @@ export function formatRowsFull(n: number): string {
   return n.toLocaleString('en-US');
 }
 
+/** 38_300_000 → "38.3M"; 63_900 → "63.9K"; 900 → "900" */
+export function formatCompact(n: number): string {
+  if (n >= 1_000_000_000) return `${(n / 1_000_000_000).toFixed(1)}B`;
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+  return String(n);
+}
+
 const FREQ_LABEL: Record<Frequency, string> = {
   hourly: 'Hourly',
   daily: 'Daily',

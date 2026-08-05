@@ -48,7 +48,7 @@ export const ModelView: React.FC<{
         ) : (
           <NoData
             title="Not part of this prototype"
-            description="This tab is shown for context. The Near Store prototype focuses on the Caching tab."
+            description="This tab is shown for context. The Pulse prototype focuses on the Caching tab."
           />
         )}
       </div>

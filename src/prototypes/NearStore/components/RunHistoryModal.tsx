@@ -1,10 +1,22 @@
 import React, { useState } from 'react';
-import { Modal, ModalFooter, Table, Button, Link, Icon, Typography, Horizontal, Vertical } from '@/components';
+import { Modal, ModalFooter, Table, Button, Link, Icon, Tooltip, Typography, Horizontal, Vertical } from '@/components';
 import type { TableColumn } from '@/components';
 import { StatusPill, runStatusPillKind } from './primitives';
 import { c, spacing } from '../styles';
+import styles from './RunHistoryModal.module.css';
 import { formatRowsFull, formatSizeMB } from '../utils';
 import type { CacheRun, DataModel, RunType, TableRunResult } from '../types';
+
+// Note cell: single line, truncated so it never widens the table. The full text
+// shows on hover (tooltip). No copy affordance.
+const NoteCell: React.FC<{ note?: string }> = ({ note }) => {
+  if (!note) return <>—</>;
+  return (
+    <Tooltip content={note} maxWidth={320}>
+      <span className={styles.noteText}>{note}</span>
+    </Tooltip>
+  );
+};
 
 // Each run history row carries an event-type icon so scheduled builds, ad-hoc
 // refreshes, config/model changes, and purges are distinguishable at a glance.
@@ -60,7 +72,7 @@ export const RunHistoryModal: React.FC<{ model: DataModel; onClose: () => void }
     { key: 'size', label: 'Size', render: (_v, row) => formatSizeMB(row.sizeMB) },
     { key: 'duration', label: 'Duration', render: (_v, row) => `${row.durationSec}s` },
     { key: 'window', label: 'Cached', render: (_v, row) => row.windowApplied },
-    { key: 'note', label: 'Note', render: (_v, row) => row.note ?? '—' },
+    { key: 'note', label: 'Note', render: (_v, row) => <NoteCell note={row.note} /> },
   ];
 
   return (

@@ -1,6 +1,6 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
-import { Toast, Typography, Horizontal, Vertical, Card } from '@/components';
+import { Toast, Typography, Horizontal, Vertical, Card, Modal, ModalFooter, Button } from '@/components';
 import { spacing } from '../styles';
 import styles from './primitives.module.css';
 import type { RunStatus } from '../types';
@@ -14,7 +14,7 @@ export const StatusPill: React.FC<{ kind: PillKind; label: string }> = ({ kind, 
 
 export function runStatusPillKind(status: RunStatus): PillKind {
   if (status === 'Success') return 'success';
-  if (status === 'Failure') return 'failure';
+  if (status === 'Error') return 'failure';
   return 'neutral'; // In progress
 }
 
@@ -51,7 +51,7 @@ export const FloatingToast: React.FC<{ message: string; type: 'success' | 'info'
 }) =>
   createPortal(
     <div className={styles.toastAnchor}>
-      <Toast message={message} type={type} position="bottom" onDismiss={onDismiss} />
+      <Toast className={styles.toastWide} message={message} type={type} position="bottom" onDismiss={onDismiss} />
     </div>,
     document.body,
   );
@@ -76,4 +76,34 @@ export const SectionHeader: React.FC<{ title: string; actions?: React.ReactNode;
     </Typography>
     {actions && <Horizontal gap={spacing.E}>{actions}</Horizontal>}
   </Horizontal>
+);
+
+// ── ConfirmModal ────────────────────────────────────────────────────────────
+// Left-aligned confirm dialog on the standard Radiant Modal. The DS ConfirmDialog
+// is a centred "alert" pattern (top coloured icon, centred text/buttons) that reads
+// inconsistently with the rest of Near Store, so purge/disable use this instead.
+export const ConfirmModal: React.FC<{
+  title: string;
+  message: React.ReactNode;
+  confirmText: string;
+  cancelText?: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+}> = ({ title, message, confirmText, cancelText = 'Cancel', onConfirm, onCancel }) => (
+  <Modal
+    isOpen
+    onClose={onCancel}
+    title={title}
+    size="medium"
+    footer={
+      <ModalFooter
+        secondaryAction={<Button variant="secondary" onClick={onCancel}>{cancelText}</Button>}
+        primaryAction={<Button variant="primary" onClick={onConfirm}>{confirmText}</Button>}
+      />
+    }
+  >
+    <Typography variant="body-normal" color="gray-light" noMargin>
+      {message}
+    </Typography>
+  </Modal>
 );

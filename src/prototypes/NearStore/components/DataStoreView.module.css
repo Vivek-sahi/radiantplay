@@ -1,14 +1,22 @@
-/* Faithful 1:1 port of the inline styles previously in DataStoreView.tsx. */
+/* Pulse dashboard. */
 .page {
   max-width: 1200px;
   padding: var(--spacing-8, 32px);
 }
-.capacityPanel {
-  background-color: var(--rd-sys-color-background-base);
-  border: 1px solid var(--rd-sys-color-border-divider);
-  border-radius: var(--radius-card, 8px);
-  padding: var(--spacing-6, 24px);
+
+.tileRow {
+  width: 100%;
 }
-.narrow {
-  max-width: 640px;
+
+.tile {
+  flex: 1;
+  min-width: 220px;
+}
+
+.tileBody {
+  padding: var(--spacing-5, 20px);
+}
+
+.bar {
+  width: 100%;
 }

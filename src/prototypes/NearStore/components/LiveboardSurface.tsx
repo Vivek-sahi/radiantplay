@@ -141,7 +141,7 @@ export const LiveboardSurface: React.FC<{ treatment: LiveboardTreatment }> = ({
     liveCount === 0
       ? `All tiles cached · as of ${refreshDate}`
       : cachedCount === 0
-        ? 'All tiles queried live from Snowflake'
+        ? 'All tiles queried live from source'
         : `Mixed sources — ${cachedCount} of ${answerProvs.length} tiles cached as of ${refreshDate}, ${liveCount} live`;
 
   return (
@@ -166,11 +166,11 @@ export const LiveboardSurface: React.FC<{ treatment: LiveboardTreatment }> = ({
         <div className={styles.boardBar}>
           <span className={styles.legendItem}>
             <span className={`${styles.swatch} ${styles.swatchCached}`} />
-            Cached in Near Store
+            Cached in AgentDB
           </span>
           <span className={styles.legendItem}>
             <span className={`${styles.swatch} ${styles.swatchLive}`} />
-            Live from Snowflake
+            Live from source
           </span>
         </div>
       )}

@@ -51,6 +51,11 @@
   transform: translateX(-50%);
   z-index: 4000;
 }
+/* Widen the toast past the DS 400px cap so our informative copy sits on one
+   line; anything longer than this wraps cleanly to two lines. */
+.toastWide {
+  max-width: 600px !important;
+}
 
 /* ── KeyValue ───────────────────────────────────────────────────────────── */
 .keyValueRow {

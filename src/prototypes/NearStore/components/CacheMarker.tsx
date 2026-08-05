@@ -13,9 +13,9 @@ import styles from './CacheMarker.module.css';
  * - icon           → clock + dot only; the tooltip carries the detail (Liveboard hover)
  */
 const CACHE_TOOLTIP =
-  'This answer uses cached data from Near Store — a snapshot of the model refreshed on a schedule so queries stay fast.';
+  'This answer uses cached data from AgentDB — a snapshot of the model refreshed on a schedule so queries stay fast.';
 const LIVE_TOOLTIP =
-  'This answer is queried live from the warehouse (Snowflake) — read straight from the source.';
+  'This answer is queried live from the warehouse — read straight from the source.';
 
 export type CacheCopy = 'default' | 'source';
 

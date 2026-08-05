@@ -2,6 +2,14 @@
 .emptyState {
   padding: var(--spacing-10, 40px) 0;
   text-align: center;
+  /* Fill the tab's vertical space so NoData's built-in centering actually
+     centers the content instead of hugging the top. */
+  min-height: 60vh;
+}
+/* Widen NoData's title/description so the empty-state copy sits on one clean
+   line instead of orphan-wrapping inside its default 320px cap. */
+.emptyState p {
+  max-width: 460px;
 }
 .emptyStateText {
   max-width: 480px;

@@ -105,7 +105,7 @@ export const CachingSettingsModal: React.FC<{
     <Modal
       isOpen
       onClose={onClose}
-      title="Caching Settings"
+      title="Caching settings"
       size="M3"
       footer={
         <ModalFooter
@@ -123,12 +123,6 @@ export const CachingSettingsModal: React.FC<{
       }
     >
       <Vertical gap={spacing.F}>
-          <Horizontal align="center" gap={spacing.B} className={styles.disclaimer}>
-            <Icon name="info-circle" size="s" color={c['content-secondary']} />
-            <Typography variant="body-normal" color="gray-light" noMargin>
-              Caching includes every column in a table, even those not used in this model.
-            </Typography>
-          </Horizontal>
           {/* Cache window */}
           <Horizontal align="start" gap={spacing.F}>
             <FieldLabel
@@ -137,7 +131,7 @@ export const CachingSettingsModal: React.FC<{
             />
             <Select
               options={[
-                { id: 'full', label: 'Full Model' },
+                { id: 'full', label: 'Full model' },
                 { id: 'custom', label: 'Custom' },
               ]}
               value={window}
@@ -154,7 +148,7 @@ export const CachingSettingsModal: React.FC<{
                   Custom settings
                 </Typography>
                 <Typography variant="body-normal" color="gray-light" noMargin>
-                  Set how much history each table caches. Everything older is queried live from Snowflake.
+                  Set how much history each table caches. Everything older is queried live directly from source.
                 </Typography>
               </Vertical>
 
@@ -167,7 +161,7 @@ export const CachingSettingsModal: React.FC<{
                   <Typography variant="overline" color="gray-light" noMargin>Cache setting</Typography>
                   <Tooltip
                     maxWidth={300}
-                    content="“Time window” caches only recent data (e.g. the last 13 months) in ThoughtSpot; anything older is queried live from Snowflake. Changing a table's window re-caches it on the next run and drops the old snapshot."
+                    content="“Time window” caches only recent data (e.g. the last 13 months) in ThoughtSpot; anything older is queried live directly from source. Changing a table's window re-caches it on the next run and drops the old snapshot."
                   >
                     <span className={styles.helpTrigger}>
                       <Icon name="info-circle" size="s" color={c['content-secondary']} />
@@ -244,7 +238,7 @@ export const CachingSettingsModal: React.FC<{
 
           {/* Refresh frequency */}
           <Horizontal align="start" gap={spacing.F}>
-            <FieldLabel title="Refresh Frequency" help="How often should the cache be refreshed." />
+            <FieldLabel title="Refresh frequency" help="How often should the cache be refreshed." />
             <Vertical gap={spacing.C}>
               <Horizontal gap={spacing.B} align="center" wrap>
                 <Select
@@ -317,21 +311,32 @@ export const CachingSettingsModal: React.FC<{
             </Vertical>
           </Horizontal>
 
-          {/* "Also cache now" — cache on save, or leave unchecked to apply on the
-              next scheduled run. Replaces the old edit-mode refresh warning. */}
-          <Vertical gap={spacing.A}>
-            <Checkbox
-              checked={alsoCacheNow}
-              onChange={setAlsoCacheNow}
-              label="Also cache now"
-              showLabel
-            />
-            <Typography variant="footnote" color="gray-light" noMargin>
-              {isEdit
-                ? 'Rebuild the cache now so your new settings take effect immediately. If unchecked, they’re saved but the current cache keeps serving until the next scheduled run.'
-                : 'Cache immediately on save. If left unchecked, the first cache runs at the next scheduled time.'}
-            </Typography>
-          </Vertical>
+          {/* "Also cache now" — create flow only. In edit, settings just save and the
+              cache updates on the next scheduled run (or via Refresh cache). */}
+          {!isEdit && (
+            <Vertical gap={spacing.A}>
+              <Checkbox
+                checked={alsoCacheNow}
+                onChange={setAlsoCacheNow}
+                label="Also cache now"
+                showLabel
+              />
+              <Typography variant="footnote" color="gray-light" noMargin>
+                Cache immediately on save. If left unchecked, the first cache runs at the next scheduled time.
+              </Typography>
+            </Vertical>
+          )}
+
+          {/* All-columns disclaimer — moved below "Also cache now" so it informs
+              rather than gates. Create flow only; hidden when editing. */}
+          {!isEdit && (
+            <Horizontal align="center" gap={spacing.B} className={styles.disclaimer}>
+              <Icon name="info-circle" size="s" color={c['content-secondary']} />
+              <Typography variant="body-normal" color="gray-light" noMargin>
+                Caching includes every column in a table, even those not used in this model.
+              </Typography>
+            </Horizontal>
+          )}
         </Vertical>
     </Modal>
   );
