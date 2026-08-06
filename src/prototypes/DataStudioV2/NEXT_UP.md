@@ -8,6 +8,32 @@ _Active work items. Edit in place each session — move done items to Done, add 
 
 ### Do this first ⚠️
 
+- 🐞 **UNRESOLVED — the confidence-score hover shows nothing.** S3 calls for it ("hover a
+  score to see the agent's one-line reasoning") and it does not work on either the table
+  or the join proposal. Confirmed still broken on `25e9c1d`.
+
+  Ruled out: the `reasoning` data (present on every proposal), and one card being wired
+  differently from the other (`TableSuggestionCard.tsx:98` and `JoinSuggestionCard.tsx:91`
+  are now identical). The badge owns its own tooltip and carries a native `title` too, so
+  the hover target is the visible element itself.
+
+  **Leading theory:** Radiant's `Tooltip` renders `position: fixed` **without portalling**
+  (`src/components/Tooltip/Tooltip.tsx`, the trigger and tooltip are siblings). Any
+  ancestor with a `transform` between the badge and the root becomes the containing block
+  for a fixed child, so the tooltip would be placed against that box using viewport
+  coordinates — i.e. off-screen, present in the DOM but invisible. The agent thread has
+  `ag-step-in` keyframes that animate `transform`, and ModelCanvas has a `translate()`
+  pannable layer.
+
+  **The one check that settles it:** hover a score and wait ~1s. If the *plain browser*
+  tooltip appears, the element receives hover fine and it is purely the styled tooltip's
+  positioning → portal it to `document.body`. If nothing appears at all, the element isn't
+  receiving hover and the cause is elsewhere. Then inspect for a `[role="tooltip"]` node
+  in the DOM while hovering — if it exists, it's placement, not firing.
+
+  ⚠️ Portalling `Tooltip` changes a shared Radiant component that Spotter also uses
+  (`SpotterLeftSide`, `SpotterRailItem`) — check those still position correctly.
+
 - **Walk the whole demo once, now including S1.** S1→S20 connects end to end. S1–S3 was
   watched on screen this session; S4 onward after the chat-first start has not been, and
   the beat that most deserves a look is **S4→S7 following a created model** — the agent
