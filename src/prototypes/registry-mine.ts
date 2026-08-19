@@ -31,6 +31,7 @@ import React from 'react';
 import { ProjectMeta } from './registry-core';
 import DataStudioThumbnail from './thumbnails/DataStudio.svg';
 
+const DataStudioMVP = React.lazy(() => import('./DataStudioMVP'));
 const DataStudioV2 = React.lazy(() => import('./DataStudioV2'));
 const DataStudio15 = React.lazy(() => import('./DataStudio15'));
 const DataNotebook = React.lazy(() => import('./DataNotebook'));
@@ -46,6 +47,16 @@ export const myRegistry: ProjectMeta[] = [
     author: 'Vivek Sahi',
     lastModified: '2026-07-02',
     component: NearStore,
+    section: 'mine',
+  },
+  {
+    id: 'DataStudioMVP',
+    name: 'Data Studio - MVP',
+    description: 'The MVP journey — one warehouse, metadata only. Connect, select tables, choose columns, join, check semantics, add formulas and filters, and enable the model for Spotter.',
+    author: 'Vivek Sahi',
+    lastModified: '2026-08-17',
+    thumbnail: DataStudioThumbnail,
+    component: DataStudioMVP,
     section: 'mine',
   },
   {

@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { c, ff, fs, fw } from '../styles';
+import { c, ff, fs, fw, sp } from '../styles';
 import AgentPanel, { AgentMessage } from './AgentPanel';
 import ChatContextPanel from './ChatContextPanel';
 import { ProjectState } from '../index';
@@ -303,7 +303,7 @@ const LiveboardObjectView: React.FC<{ name: string; onClose: () => void }> = ({ 
         onCancel={() => {}}
       />
 
-      <div style={{ position: 'relative', flex: 1, overflow: 'auto', backgroundColor: '#f4f5f7' }}>
+      <div style={{ position: 'relative', flex: 1, overflow: 'auto', backgroundColor: c['background-sunken'] }}>
         <button
           onClick={onClose}
           title="Close"
@@ -314,7 +314,7 @@ const LiveboardObjectView: React.FC<{ name: string; onClose: () => void }> = ({ 
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             color: '#666', boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
           }}
-          onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#f5f5f5')}
+          onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-sunken'])}
           onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#fff')}
         >
           <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
@@ -322,7 +322,7 @@ const LiveboardObjectView: React.FC<{ name: string; onClose: () => void }> = ({ 
           </svg>
         </button>
 
-        <div style={{ padding: '20px 20px 32px', display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: 12, alignItems: 'start' }}>
+        <div style={{ padding: '20px 20px 32px', display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: sp.C, alignItems: 'start' }}>
           {data.tiles.map(tile => (
             <div key={tile.id} style={{ gridColumn: `span ${tile.cols}`, position: 'relative' }}>
               <AnswerTile
@@ -337,7 +337,7 @@ const LiveboardObjectView: React.FC<{ name: string; onClose: () => void }> = ({ 
                   background: 'rgba(254,242,242,0.88)',
                   border: '1.5px solid #fca5a5',
                   display: 'flex', flexDirection: 'column' as const,
-                  alignItems: 'center', justifyContent: 'center', gap: 6,
+                  alignItems: 'center', justifyContent: 'center', gap: sp.B,
                   backdropFilter: 'blur(1px)',
                 }}>
                   <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
@@ -348,7 +348,7 @@ const LiveboardObjectView: React.FC<{ name: string; onClose: () => void }> = ({ 
                   <div style={{ fontSize: 12, fontWeight: fw.semibold, color: '#dc2626', textAlign: 'center' as const }}>
                     Column removed
                   </div>
-                  <div style={{ fontSize: 11, color: '#991b1b', fontFamily: ff.mono }}>
+                  <div style={{ fontSize: 12, color: '#991b1b', fontFamily: ff.mono }}>
                     {tile.brokenCol}
                   </div>
                 </div>
@@ -461,31 +461,31 @@ const ObjectPanel: React.FC<{
       {/* Identity row — matches Workspace artifact */}
       <div style={{
         height: 48, borderBottom: `1px solid ${c['border-divider']}`, flexShrink: 0,
-        display: 'flex', alignItems: 'center', padding: '0 16px', gap: 10,
+        display: 'flex', alignItems: 'center', padding: '0 16px', gap: sp.C,
       }}>
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: sp.B, minWidth: 0 }}>
           <span style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'], overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {name}
           </span>
           <span style={{
-            fontSize: 10, fontWeight: fw.semibold,
+            fontSize: 12, fontWeight: fw.semibold,
             color: obj?.label === 'Model' ? '#374151' : '#6d28d9',
-            background: obj?.label === 'Model' ? '#f3f4f6' : '#ede9fe',
-            border: `1px solid ${obj?.label === 'Model' ? '#e5e7eb' : '#ddd6fe'}`,
+            background: obj?.label === 'Model' ? c['background-sunken'] : '#ede9fe',
+            border: `1px solid ${obj?.label === 'Model' ? c['border-divider'] : '#ddd6fe'}`,
             borderRadius: 4, padding: '1px 6px', textTransform: 'uppercase' as const, letterSpacing: '0.04em', flexShrink: 0,
           }}>
             {obj?.label ?? 'Object'}
           </span>
           {obj?.blocked && (
             <span style={{
-              fontSize: 10, fontWeight: fw.semibold, color: '#92400e',
+              fontSize: 12, fontWeight: fw.semibold, color: '#92400e',
               background: '#fef3c7', border: '1px solid #fde68a',
               borderRadius: 4, padding: '1px 6px', flexShrink: 0,
             }}>sync blocked</span>
           )}
           {!obj?.blocked && brokenCount > 0 && (
             <span style={{
-              fontSize: 10, fontWeight: fw.semibold, color: '#991b1b',
+              fontSize: 12, fontWeight: fw.semibold, color: '#991b1b',
               background: '#fee2e2', border: '1px solid #fecaca',
               borderRadius: 4, padding: '1px 6px', flexShrink: 0,
             }}>
@@ -511,12 +511,12 @@ const ObjectPanel: React.FC<{
         </button>
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px 24px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px 24px', display: 'flex', flexDirection: 'column', gap: sp.E }}>
 
         {/* Source section */}
         {sourceRows.length > 0 && (
           <div>
-            <div style={{ fontSize: fs.xs, fontWeight: fw.semibold, color: c['content-secondary'], textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: 10 }}>
+            <div style={{ fontSize: fs.xs, fontWeight: fw.semibold, color: c['content-secondary'], textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: sp.C }}>
               Source
             </div>
             <div style={{ border: `1px solid ${c['border-divider']}`, borderRadius: 8, overflow: 'hidden' }}>
@@ -562,7 +562,7 @@ const ObjectPanel: React.FC<{
 
         {/* Columns section */}
         <div>
-          <div style={{ fontSize: fs.xs, fontWeight: fw.semibold, color: c['content-secondary'], textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: 10 }}>
+          <div style={{ fontSize: fs.xs, fontWeight: fw.semibold, color: c['content-secondary'], textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: sp.C }}>
             Columns · {mergedCols.length}
           </div>
           <div style={{ border: `1px solid ${c['border-divider']}`, borderRadius: 8, overflow: 'hidden' }}>
@@ -580,8 +580,8 @@ const ObjectPanel: React.FC<{
                     borderLeft: isHighlighted ? `3px solid ${accentColor}` : '3px solid transparent',
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: sp.B }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, minWidth: 0 }}>
                       <span style={{
                         fontFamily: ff.mono, fontSize: fs.sm, fontWeight: fw.medium,
                         color: col.broken ? '#991b1b' : col.nullRate ? '#92400e' : c['content-primary'],
@@ -589,7 +589,7 @@ const ObjectPanel: React.FC<{
                         {col.name}
                       </span>
                       <span style={{
-                        fontSize: 10, fontWeight: fw.medium, color: c['content-secondary'],
+                        fontSize: 12, fontWeight: fw.medium, color: c['content-secondary'],
                         background: c['background-subtle'], borderRadius: 3, padding: '1px 5px', flexShrink: 0,
                       }}>
                         {col.typeLabel}
@@ -597,22 +597,22 @@ const ObjectPanel: React.FC<{
                     </div>
                     <div style={{ flexShrink: 0 }}>
                       {col.broken && (
-                        <span style={{ fontSize: 11, fontWeight: fw.semibold, color: '#dc2626', background: '#fee2e2', border: '1px solid #fca5a5', borderRadius: 4, padding: '2px 6px' }}>
+                        <span style={{ fontSize: 12, fontWeight: fw.semibold, color: '#dc2626', background: '#fee2e2', border: '1px solid #fca5a5', borderRadius: 4, padding: '2px 6px' }}>
                           {col.brokenLabel ?? 'broken'}
                         </span>
                       )}
                       {col.nullRate && (
-                        <span style={{ fontSize: 11, fontWeight: fw.semibold, color: '#d97706', background: '#fef3c7', border: '1px solid #fde68a', borderRadius: 4, padding: '2px 6px' }}>
+                        <span style={{ fontSize: 12, fontWeight: fw.semibold, color: '#d97706', background: '#fef3c7', border: '1px solid #fde68a', borderRadius: 4, padding: '2px 6px' }}>
                           {col.nullRate}% null
                         </span>
                       )}
                       {!col.broken && !col.nullRate && (
-                        <span style={{ fontSize: 11, color: '#16a34a' }}>✓</span>
+                        <span style={{ fontSize: 12, color: '#16a34a' }}>✓</span>
                       )}
                     </div>
                   </div>
                   {(col.sourceTable || col.description) && (
-                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, marginTop: 3 }}>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: sp.A, marginTop: sp.A }}>
                       {col.sourceTable && (
                         <span style={{ fontSize: fs.xs, color: c['content-tertiary'], fontFamily: 'monospace', flexShrink: 0 }}>
                           {col.sourceTable}
@@ -723,7 +723,7 @@ const FullChatView: React.FC<FullChatViewProps> = ({ project, setProject, initia
             onClick={onBack}
             style={{
               background: 'none', border: 'none', cursor: 'pointer', padding: '4px 6px',
-              display: 'flex', alignItems: 'center', gap: 6,
+              display: 'flex', alignItems: 'center', gap: sp.B,
               fontSize: fs.sm, color: c['content-secondary'], fontFamily: ff.primary, borderRadius: 4,
             }}
             onMouseEnter={e => (e.currentTarget.style.color = c['content-primary'])}
@@ -739,7 +739,7 @@ const FullChatView: React.FC<FullChatViewProps> = ({ project, setProject, initia
           onClick={() => setContextPanelOpen(o => !o)}
           title={contextPanelOpen ? 'Hide context panel' : 'Show context panel'}
           style={{
-            background: 'none', border: 'none', cursor: 'pointer', padding: 4,
+            background: 'none', border: 'none', cursor: 'pointer', padding: sp.A,
             display: 'flex', alignItems: 'center',
             color: contextPanelOpen ? c['content-primary'] : c['content-secondary'], borderRadius: 4,
           }}

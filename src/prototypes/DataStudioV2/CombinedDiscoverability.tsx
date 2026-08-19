@@ -29,7 +29,7 @@ const SEV_HIGH = { bg: '#FEE2E2', fg: '#991B1B', chip: '#DC2626' };
 const ProjectIdentity: React.FC = () => (
   <>
     <span style={{ ...ts.contentLabelSubhead, color: c['content-primary'] }}>Campaign Performance</span>
-    <span style={{ fontSize: 11, fontWeight: fw.regular, color: c['content-secondary'] }}>v1</span>
+    <span style={{ fontSize: 12, fontWeight: fw.regular, color: c['content-secondary'] }}>v1</span>
   </>
 );
 
@@ -80,7 +80,7 @@ const CacheChip: React.FC<{ onClick: () => void; size?: 'normal' | 'small' | 'ti
   }
   return (
     <button onClick={onClick}
-      style={{ height: 26, padding: '0 10px', border: `1px solid ${c['border-default']}`, borderRadius: 6, backgroundColor: c['background-base'], cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 12, fontFamily: ff.primary, color: c['content-primary'] }}
+      style={{ height: 26, padding: '0 10px', border: `1px solid ${c['border-default']}`, borderRadius: 6, backgroundColor: c['background-base'], cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: sp.B, fontSize: 12, fontFamily: ff.primary, color: c['content-primary'] }}
       onMouseEnter={e => e.currentTarget.style.backgroundColor = c['background-subtle']}
       onMouseLeave={e => e.currentTarget.style.backgroundColor = c['background-base']}
     >
@@ -106,7 +106,7 @@ const QualityChip: React.FC<{ onClick: () => void; size?: 'normal' | 'small' | '
         borderRadius: 6,
         backgroundColor: loud ? SEV_HIGH.bg : c['background-base'],
         cursor: 'pointer',
-        display: 'inline-flex', alignItems: 'center', gap: 7,
+        display: 'inline-flex', alignItems: 'center', gap: sp.B,
         fontSize: 12, fontWeight: loud ? fw.medium : fw.regular,
         fontFamily: ff.primary,
         color: loud ? SEV_HIGH.fg : c['content-primary'],
@@ -142,7 +142,7 @@ const HeaderM2: React.FC<{ onCacheClick: () => void; onQualityClick: () => void 
     <ProjectIdentity />
     {/* Cache as a property next to identity — quiet, ambient */}
     <button onClick={onCacheClick}
-      style={{ height: 22, padding: '0 8px', border: 'none', borderRadius: 11, backgroundColor: 'transparent', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11, fontFamily: ff.primary, color: c['content-secondary'] }}
+      style={{ height: 22, padding: '0 8px', border: 'none', borderRadius: 11, backgroundColor: 'transparent', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: sp.B, fontSize: 12, fontFamily: ff.primary, color: c['content-secondary'] }}
       onMouseEnter={e => e.currentTarget.style.backgroundColor = c['background-subtle']}
       onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
     >
@@ -163,14 +163,14 @@ const HeaderM3: React.FC<{ onCombinedClick: () => void }> = ({ onCombinedClick }
     <ProjectIdentity />
     <div style={rightActionsStyle}>
       <button onClick={onCombinedClick}
-        style={{ height: 26, padding: '0 10px', border: `1px solid ${SEV_HIGH.chip}55`, borderRadius: 6, backgroundColor: SEV_HIGH.bg, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 12, fontFamily: ff.primary, color: SEV_HIGH.fg, fontWeight: fw.medium }}
+        style={{ height: 26, padding: '0 10px', border: `1px solid ${SEV_HIGH.chip}55`, borderRadius: 6, backgroundColor: SEV_HIGH.bg, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: sp.B, fontSize: 12, fontFamily: ff.primary, color: SEV_HIGH.fg, fontWeight: fw.medium }}
       >
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: sp.A }}>
           <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: '#10B981' }} />
           Live
         </span>
         <span style={{ width: 1, height: 12, backgroundColor: SEV_HIGH.fg + '33' }} />
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: sp.A }}>
           <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: SEV_HIGH.chip }} />
           9 issues
         </span>
@@ -211,28 +211,28 @@ const RefreshIcon: React.FC<{ size?: number; color?: string }> = ({ size = 11, c
 // ── M4 — Status strip below the action header ────────────────────────────────
 
 const StatusStrip: React.FC<{ onCacheClick: () => void; onQualityClick: () => void; onRefresh?: () => void }> = ({ onCacheClick, onQualityClick, onRefresh }) => (
-  <div style={{ height: 32, backgroundColor: c['background-subtle'], borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', padding: `0 ${sp.D}px`, gap: 10, flexShrink: 0 }}>
-    <span style={{ fontSize: 10, color: c['content-tertiary'], fontFamily: ff.primary, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: fw.medium }}>Model</span>
+  <div style={{ height: 32, backgroundColor: c['background-subtle'], borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', padding: `0 ${sp.D}px`, gap: sp.C, flexShrink: 0 }}>
+    <span style={{ fontSize: 12, color: c['content-tertiary'], fontFamily: ff.primary, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: fw.medium }}>Model</span>
     <span style={{ width: 1, height: 12, backgroundColor: c['border-divider'] }} />
     <button onClick={onCacheClick}
-      style={{ height: 22, padding: '0 6px', border: 'none', borderRadius: 4, backgroundColor: 'transparent', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11.5, fontFamily: ff.primary, color: c['content-secondary'] }}
+      style={{ height: 22, padding: '0 6px', border: 'none', borderRadius: 4, backgroundColor: 'transparent', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: sp.B, fontSize: 12, fontFamily: ff.primary, color: c['content-secondary'] }}
       onMouseEnter={e => e.currentTarget.style.backgroundColor = c['background-base']}
       onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
     >
       <DatabaseIcon />
       Live · Snowflake
     </button>
-    <span style={{ color: c['border-divider'], fontSize: 11 }}>·</span>
+    <span style={{ color: c['border-divider'], fontSize: 12 }}>·</span>
     <button onClick={onQualityClick}
-      style={{ height: 22, padding: '0 6px', border: 'none', borderRadius: 4, backgroundColor: 'transparent', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11.5, fontFamily: ff.primary, color: SEV_HIGH.fg, fontWeight: fw.medium }}
+      style={{ height: 22, padding: '0 6px', border: 'none', borderRadius: 4, backgroundColor: 'transparent', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: sp.B, fontSize: 12, fontFamily: ff.primary, color: SEV_HIGH.fg, fontWeight: fw.medium }}
       onMouseEnter={e => e.currentTarget.style.backgroundColor = SEV_HIGH.bg}
       onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
     >
       <WarningIcon />
       9 quality issues
     </button>
-    <span style={{ color: c['border-divider'], fontSize: 11 }}>·</span>
-    <span style={{ fontSize: 11.5, fontFamily: ff.primary, color: c['content-tertiary'], display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+    <span style={{ color: c['border-divider'], fontSize: 12 }}>·</span>
+    <span style={{ fontSize: 12, fontFamily: ff.primary, color: c['content-tertiary'], display: 'inline-flex', alignItems: 'center', gap: sp.A }}>
       Last validated 2h ago
       <button title="Re-run quality scan" onClick={onRefresh}
         style={{ width: 18, height: 18, padding: 0, border: 'none', borderRadius: 3, backgroundColor: 'transparent', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
@@ -275,14 +275,14 @@ const HeaderM5: React.FC<{ onCacheClick: () => void; onQualityClick: () => void 
 // ── Identity-with-subtext (used by M7) ───────────────────────────────────────
 
 const ProjectIdentityWithStatus: React.FC<{ onCacheClick: () => void; onQualityClick: () => void; onRefresh?: () => void }> = ({ onCacheClick, onQualityClick, onRefresh }) => (
-  <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginRight: sp.C, lineHeight: 1.2 }}>
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+  <div style={{ display: 'flex', flexDirection: 'column', gap: sp.A, marginRight: sp.C, lineHeight: 1.2 }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: sp.B }}>
       <span style={{ ...ts.contentLabelSubhead, color: c['content-primary'] }}>Campaign Performance</span>
-      <span style={{ fontSize: 11, fontWeight: fw.regular, color: c['content-secondary'] }}>v1</span>
+      <span style={{ fontSize: 12, fontWeight: fw.regular, color: c['content-secondary'] }}>v1</span>
     </div>
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, color: c['content-tertiary'] }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, fontSize: 12, color: c['content-tertiary'] }}>
       <button onClick={onCacheClick}
-        style={{ padding: 0, border: 'none', background: 'transparent', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontFamily: ff.primary, color: c['content-secondary'] }}
+        style={{ padding: 0, border: 'none', background: 'transparent', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: sp.A, fontSize: 12, fontFamily: ff.primary, color: c['content-secondary'] }}
         onMouseEnter={e => e.currentTarget.style.color = c['content-primary']}
         onMouseLeave={e => e.currentTarget.style.color = c['content-secondary']}
       >
@@ -291,13 +291,13 @@ const ProjectIdentityWithStatus: React.FC<{ onCacheClick: () => void; onQualityC
       </button>
       <span style={{ color: c['border-divider'] }}>·</span>
       <button onClick={onQualityClick}
-        style={{ padding: 0, border: 'none', background: 'transparent', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontFamily: ff.primary, color: SEV_HIGH.fg, fontWeight: fw.medium }}
+        style={{ padding: 0, border: 'none', background: 'transparent', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: sp.A, fontSize: 12, fontFamily: ff.primary, color: SEV_HIGH.fg, fontWeight: fw.medium }}
       >
         <WarningIcon size={11} />
         9 quality issues
       </button>
       <span style={{ color: c['border-divider'] }}>·</span>
-      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: sp.A }}>
         Last validated 2h ago
         <button title="Re-run quality scan" onClick={onRefresh}
           style={{ width: 16, height: 16, padding: 0, border: 'none', borderRadius: 3, backgroundColor: 'transparent', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
@@ -322,13 +322,13 @@ const CanvasMock: React.FC<{ header: React.ReactNode; height?: number }> = ({ he
 
     {/* Sub-header — Data toggle / centered tabs / Data Agent toggle */}
     <div style={{ height: 40, backgroundColor: c['background-base'], borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', padding: `0 ${sp.D}px`, flexShrink: 0, position: 'relative' }}>
-      <button style={{ height: 26, padding: '0 10px', border: `1px solid ${c['border-brand']}`, borderRadius: 6, backgroundColor: c['background-information'], display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, fontFamily: ff.primary, color: c['content-brand'], fontWeight: fw.medium }}>
+      <button style={{ height: 26, padding: '0 10px', border: `1px solid ${c['border-brand']}`, borderRadius: 6, backgroundColor: c['background-information'], display: 'inline-flex', alignItems: 'center', gap: sp.B, fontSize: 12, fontFamily: ff.primary, color: c['content-brand'], fontWeight: fw.medium }}>
         <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><rect x="1" y="1" width="14" height="14" rx="2"/><line x1="5" y1="1" x2="5" y2="15"/></svg>
         Data
       </button>
 
       {/* Centered tab pill */}
-      <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', display: 'flex', backgroundColor: c['background-subtle'], borderRadius: 6, padding: 2 }}>
+      <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', display: 'flex', backgroundColor: c['background-subtle'], borderRadius: 6, padding: sp.A }}>
         {CANVAS_TABS.map((t, i) => (
           <button key={t}
             style={{
@@ -336,7 +336,7 @@ const CanvasMock: React.FC<{ header: React.ReactNode; height?: number }> = ({ he
               border: 'none', borderRadius: 4,
               backgroundColor: i === 0 ? c['background-base'] : 'transparent',
               cursor: 'pointer',
-              fontSize: 11.5, fontFamily: ff.primary,
+              fontSize: 12, fontFamily: ff.primary,
               fontWeight: i === 0 ? fw.medium : fw.regular,
               color: i === 0 ? c['content-primary'] : c['content-secondary'],
               boxShadow: i === 0 ? '0 1px 2px rgba(0,0,0,0.06)' : 'none',
@@ -345,12 +345,12 @@ const CanvasMock: React.FC<{ header: React.ReactNode; height?: number }> = ({ he
         ))}
       </div>
 
-      <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 }}>
-        <span style={{ fontSize: 11, color: c['content-tertiary'], fontFamily: ff.primary }}>17 columns</span>
+      <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: sp.B }}>
+        <span style={{ fontSize: 12, color: c['content-tertiary'], fontFamily: ff.primary }}>17 columns</span>
         <button title="Search" style={{ width: 24, height: 24, border: 'none', borderRadius: 4, background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke={c['content-secondary']} strokeWidth="1.5"><circle cx="7" cy="7" r="5"/><path d="M11 11l3 3"/></svg>
         </button>
-        <button style={{ height: 26, padding: '0 10px', border: `1px solid ${c['border-brand']}`, borderRadius: 6, backgroundColor: c['background-information'], display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, fontFamily: ff.primary, color: c['content-brand'], fontWeight: fw.medium }}>
+        <button style={{ height: 26, padding: '0 10px', border: `1px solid ${c['border-brand']}`, borderRadius: 6, backgroundColor: c['background-information'], display: 'inline-flex', alignItems: 'center', gap: sp.B, fontSize: 12, fontFamily: ff.primary, color: c['content-brand'], fontWeight: fw.medium }}>
           <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1.5 L9.1 6.4 L14.5 8 L9.1 9.6 L8 14.5 L6.9 9.6 L1.5 8 L6.9 6.4 Z"/></svg>
           Data Agent
         </button>
@@ -360,21 +360,21 @@ const CanvasMock: React.FC<{ header: React.ReactNode; height?: number }> = ({ he
     {/* Body */}
     <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
       {/* Left rail */}
-      <div style={{ width: 200, flexShrink: 0, borderRight: `1px solid ${c['border-divider']}`, padding: `${sp.C}px ${sp.B}px`, display: 'flex', flexDirection: 'column', gap: 2, fontSize: fs.xs }}>
-        <div style={{ fontSize: 10, color: c['content-tertiary'], padding: '6px 8px', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: fw.medium }}>Tables</div>
+      <div style={{ width: 200, flexShrink: 0, borderRight: `1px solid ${c['border-divider']}`, padding: `${sp.C}px ${sp.B}px`, display: 'flex', flexDirection: 'column', gap: sp.A, fontSize: fs.xs }}>
+        <div style={{ fontSize: 12, color: c['content-tertiary'], padding: '6px 8px', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: fw.medium }}>Tables</div>
         {['orders', 'campaigns', 'users', 'products'].map((t, i) => (
           <div key={t} style={{ padding: '5px 8px', borderRadius: 4, backgroundColor: i === 0 ? c['background-information'] : 'transparent', color: i === 0 ? c['content-brand'] : c['content-primary'], fontSize: 12 }}>
             {t}
           </div>
         ))}
-        <div style={{ fontSize: 10, color: c['content-tertiary'], padding: '12px 8px 6px', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: fw.medium }}>Joins</div>
-        <div style={{ padding: '5px 8px', color: c['content-secondary'], fontSize: 11.5 }}>orders ↔ users</div>
-        <div style={{ padding: '5px 8px', color: c['content-secondary'], fontSize: 11.5 }}>orders ↔ campaigns</div>
+        <div style={{ fontSize: 12, color: c['content-tertiary'], padding: '12px 8px 6px', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: fw.medium }}>Joins</div>
+        <div style={{ padding: '5px 8px', color: c['content-secondary'], fontSize: 12 }}>orders ↔ users</div>
+        <div style={{ padding: '5px 8px', color: c['content-secondary'], fontSize: 12 }}>orders ↔ campaigns</div>
       </div>
 
       {/* Center — column rows */}
       <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr 0.7fr 0.7fr 0.7fr', padding: '8px 16px', fontSize: 10, color: c['content-tertiary'], textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: fw.medium, borderBottom: `1px solid ${c['border-divider']}`, backgroundColor: c['background-subtle'] }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr 0.7fr 0.7fr 0.7fr', padding: '8px 16px', fontSize: 12, color: c['content-tertiary'], textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: fw.medium, borderBottom: `1px solid ${c['border-divider']}`, backgroundColor: c['background-subtle'] }}>
           <span>Column</span><span>Description</span><span>Null %</span><span>Duplicates</span><span>Anomalies</span>
         </div>
         {[
@@ -387,7 +387,7 @@ const CanvasMock: React.FC<{ header: React.ReactNode; height?: number }> = ({ he
           { col: 'segment', desc: 'User segment', nullPct: '0%', dup: '—', anom: '0', issue: true },
         ].map(r => (
           <div key={r.col} style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr 0.7fr 0.7fr 0.7fr', padding: '10px 16px', fontSize: fs.sm, borderBottom: `1px solid ${c['border-divider']}`, alignItems: 'center' }}>
-            <span style={{ fontFamily: ff.mono, fontSize: 12, color: c['content-primary'], display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ fontFamily: ff.mono, fontSize: 12, color: c['content-primary'], display: 'inline-flex', alignItems: 'center', gap: sp.B }}>
               {r.issue && <span style={{ width: 5, height: 5, borderRadius: '50%', backgroundColor: SEV_HIGH.chip, flexShrink: 0 }} />}
               {r.col}
             </span>
@@ -401,11 +401,11 @@ const CanvasMock: React.FC<{ header: React.ReactNode; height?: number }> = ({ he
 
       {/* Agent panel */}
       <div style={{ width: 280, flexShrink: 0, borderLeft: `1px solid ${c['border-divider']}`, display: 'flex', flexDirection: 'column' }}>
-        <div style={{ height: 40, padding: `0 ${sp.C}px`, borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: fw.medium, color: c['content-primary'] }}>
+        <div style={{ height: 40, padding: `0 ${sp.C}px`, borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', gap: sp.B, fontSize: 12, fontWeight: fw.medium, color: c['content-primary'] }}>
           <svg width="13" height="13" viewBox="0 0 16 16" fill={c['content-brand']}><path d="M8 1.5 L9.1 6.4 L14.5 8 L9.1 9.6 L8 14.5 L6.9 9.6 L1.5 8 L6.9 6.4 Z"/></svg>
           Data Agent
         </div>
-        <div style={{ flex: 1, padding: sp.D, fontSize: 11, color: c['content-tertiary'], lineHeight: 1.5 }}>
+        <div style={{ flex: 1, padding: sp.D, fontSize: 12, color: c['content-tertiary'], lineHeight: 1.5 }}>
           Ask the agent to make changes to your model, review quality, or test it.
         </div>
         <div style={{ padding: sp.C, borderTop: `1px solid ${c['border-divider']}` }}>
@@ -536,18 +536,18 @@ const CombinedStatusPanel: React.FC<{ onClose: () => void; onOpenCache: () => vo
           <span style={{ width: 10, height: 10, borderRadius: '50%', backgroundColor: '#10B981', flexShrink: 0 }} />
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: fs.sm, fontWeight: fw.medium, color: c['content-primary'] }}>Live · Snowflake</div>
-            <div style={{ fontSize: fs.xs, color: c['content-secondary'], marginTop: 2 }}>Every query hits the warehouse. Cache to reduce cost.</div>
+            <div style={{ fontSize: fs.xs, color: c['content-secondary'], marginTop: sp.A }}>Every query hits the warehouse. Cache to reduce cost.</div>
           </div>
-          <span style={{ fontSize: 11, color: c['content-tertiary'] }}>Configure →</span>
+          <span style={{ fontSize: 12, color: c['content-tertiary'] }}>Configure →</span>
         </button>
         {/* Quality row */}
         <button onClick={onOpenQuality} style={{ display: 'flex', alignItems: 'center', gap: sp.C, padding: sp.D, border: `1px solid ${SEV_HIGH.chip}55`, borderRadius: 8, backgroundColor: SEV_HIGH.bg, cursor: 'pointer', textAlign: 'left' }}>
           <span style={{ width: 10, height: 10, borderRadius: '50%', backgroundColor: SEV_HIGH.chip, flexShrink: 0 }} />
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: fs.sm, fontWeight: fw.medium, color: SEV_HIGH.fg }}>9 quality issues · 3 high</div>
-            <div style={{ fontSize: fs.xs, color: SEV_HIGH.fg + 'BB', marginTop: 2 }}>Across 4 columns. Review and apply fixes before publishing.</div>
+            <div style={{ fontSize: fs.xs, color: SEV_HIGH.fg + 'BB', marginTop: sp.A }}>Across 4 columns. Review and apply fixes before publishing.</div>
           </div>
-          <span style={{ fontSize: 11, color: SEV_HIGH.fg }}>Review →</span>
+          <span style={{ fontSize: 12, color: SEV_HIGH.fg }}>Review →</span>
         </button>
       </div>
     </div>
@@ -565,26 +565,26 @@ export const CombinedDiscoverabilityCompare: React.FC = () => {
   return (
     <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', backgroundColor: c['background-sunken'], fontFamily: ff.primary, overflow: 'auto' }}>
       <div style={{ padding: '40px 48px 24px', maxWidth: 1100, width: '100%', boxSizing: 'border-box' }}>
-        <div style={{ fontSize: 11, fontWeight: fw.medium, color: c['content-tertiary'], textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Playground · Combined model status</div>
-        <div style={{ fontSize: 22, fontWeight: fw.semibold, color: c['content-primary'], marginBottom: 10 }}>Five IA strategies for cache + quality on one header</div>
+        <div style={{ fontSize: 12, fontWeight: fw.medium, color: c['content-tertiary'], textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: sp.B }}>Playground · Combined model status</div>
+        <div style={{ fontSize: 22, fontWeight: fw.semibold, color: c['content-primary'], marginBottom: sp.C }}>Five IA strategies for cache + quality on one header</div>
         <div style={{ fontSize: fs.sm, color: c['content-secondary'], lineHeight: 1.6, maxWidth: 780 }}>
           The single header has to hold cache state, quality state, project identity, and primary actions (Share, Publish) — and prep / lineage / monitoring are coming. These five iterations test different mental models for how cache and quality relate to each other and to the rest of the chrome. The right answer depends on whether they\'re the same kind of thing (both "model state", flat list) or different kinds (one ambient, one urgent).
         </div>
       </div>
 
-      <div style={{ padding: '0 48px 40px', display: 'flex', flexDirection: 'column', gap: 40, maxWidth: 1100, width: '100%', boxSizing: 'border-box' }}>
+      <div style={{ padding: '0 48px 40px', display: 'flex', flexDirection: 'column', gap: sp.I, maxWidth: 1100, width: '100%', boxSizing: 'border-box' }}>
         {VARIANTS.map(v => (
           <div key={v.id}>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 6 }}>
-              <span style={{ fontSize: 11, fontFamily: ff.mono, fontWeight: fw.medium, color: c['content-tertiary'], letterSpacing: '0.06em', backgroundColor: c['background-subtle'], padding: '3px 7px', borderRadius: 4 }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: sp.C, marginBottom: sp.B }}>
+              <span style={{ fontSize: 12, fontFamily: ff.mono, fontWeight: fw.medium, color: c['content-tertiary'], letterSpacing: '0.06em', backgroundColor: c['background-subtle'], padding: '3px 7px', borderRadius: 4 }}>
                 {v.id}
               </span>
               <span style={{ fontSize: fs.md, fontWeight: fw.semibold, color: c['content-primary'] }}>{v.label}</span>
             </div>
-            <div style={{ fontSize: fs.xs, fontStyle: 'italic', color: c['content-brand'], marginBottom: 8, fontWeight: fw.medium }}>
+            <div style={{ fontSize: fs.xs, fontStyle: 'italic', color: c['content-brand'], marginBottom: sp.B, fontWeight: fw.medium }}>
               {v.mentalModel}
             </div>
-            <div style={{ fontSize: fs.xs, color: c['content-secondary'], lineHeight: 1.55, marginBottom: 14, maxWidth: 780 }}>{v.blurb}</div>
+            <div style={{ fontSize: fs.xs, color: c['content-secondary'], lineHeight: 1.55, marginBottom: sp.D, maxWidth: 780 }}>{v.blurb}</div>
             <div style={{ border: `1px solid ${c['border-divider']}`, borderRadius: 10, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
               {v.render({
                 onCacheClick: () => { setActiveVariant(v.id); setCacheModalOpen(true); },
@@ -597,27 +597,27 @@ export const CombinedDiscoverabilityCompare: React.FC = () => {
       </div>
 
       {/* In-canvas variants — chrome layered with tabs + body */}
-      <div style={{ padding: '20px 48px 24px', maxWidth: 1100, width: '100%', boxSizing: 'border-box', borderTop: `1px solid ${c['border-divider']}`, marginTop: 12 }}>
-        <div style={{ fontSize: 11, fontWeight: fw.medium, color: c['content-tertiary'], textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>M4 inside the canvas</div>
-        <div style={{ fontSize: fs.md, fontWeight: fw.semibold, color: c['content-primary'], marginBottom: 8 }}>How does it sit alongside tabs and content?</div>
+      <div style={{ padding: '20px 48px 24px', maxWidth: 1100, width: '100%', boxSizing: 'border-box', borderTop: `1px solid ${c['border-divider']}`, marginTop: sp.C }}>
+        <div style={{ fontSize: 12, fontWeight: fw.medium, color: c['content-tertiary'], textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: sp.B }}>M4 inside the canvas</div>
+        <div style={{ fontSize: fs.md, fontWeight: fw.semibold, color: c['content-primary'], marginBottom: sp.B }}>How does it sit alongside tabs and content?</div>
         <div style={{ fontSize: fs.sm, color: c['content-secondary'], lineHeight: 1.6, maxWidth: 780 }}>
           M4 in isolation looks clean. The real test is how it stacks against the canvas sub-header (Data toggle, centered tabs, Data Agent toggle) and the body below. Two placements:
         </div>
       </div>
 
-      <div style={{ padding: '0 48px 80px', display: 'flex', flexDirection: 'column', gap: 40, maxWidth: 1100, width: '100%', boxSizing: 'border-box' }}>
+      <div style={{ padding: '0 48px 80px', display: 'flex', flexDirection: 'column', gap: sp.I, maxWidth: 1100, width: '100%', boxSizing: 'border-box' }}>
         {CANVAS_VARIANTS.map(v => (
           <div key={v.id}>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 6 }}>
-              <span style={{ fontSize: 11, fontFamily: ff.mono, fontWeight: fw.medium, color: c['content-tertiary'], letterSpacing: '0.06em', backgroundColor: c['background-subtle'], padding: '3px 7px', borderRadius: 4 }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: sp.C, marginBottom: sp.B }}>
+              <span style={{ fontSize: 12, fontFamily: ff.mono, fontWeight: fw.medium, color: c['content-tertiary'], letterSpacing: '0.06em', backgroundColor: c['background-subtle'], padding: '3px 7px', borderRadius: 4 }}>
                 {v.id}
               </span>
               <span style={{ fontSize: fs.md, fontWeight: fw.semibold, color: c['content-primary'] }}>{v.label}</span>
             </div>
-            <div style={{ fontSize: fs.xs, fontStyle: 'italic', color: c['content-brand'], marginBottom: 8, fontWeight: fw.medium }}>
+            <div style={{ fontSize: fs.xs, fontStyle: 'italic', color: c['content-brand'], marginBottom: sp.B, fontWeight: fw.medium }}>
               {v.mentalModel}
             </div>
-            <div style={{ fontSize: fs.xs, color: c['content-secondary'], lineHeight: 1.55, marginBottom: 14, maxWidth: 780 }}>{v.blurb}</div>
+            <div style={{ fontSize: fs.xs, color: c['content-secondary'], lineHeight: 1.55, marginBottom: sp.D, maxWidth: 780 }}>{v.blurb}</div>
             <div style={{ border: `1px solid ${c['border-divider']}`, borderRadius: 10, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
               <CanvasMock
                 header={
@@ -674,11 +674,11 @@ const rightActionsStyle: React.CSSProperties = {
   marginLeft: 'auto',
   display: 'flex',
   alignItems: 'center',
-  gap: 6,
+  gap: sp.B,
 };
 
 const iconBtn: React.CSSProperties = {
-  width: 26, height: 26, padding: 4,
+  width: 26, height: 26, padding: sp.A,
   border: `1px solid ${c['border-default']}`, borderRadius: 6,
   backgroundColor: 'transparent', cursor: 'pointer',
   display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -690,7 +690,7 @@ const publishBtn: React.CSSProperties = {
   border: 'none', borderRadius: 6,
   backgroundColor: '#2563EB', color: 'white',
   cursor: 'pointer',
-  display: 'inline-flex', alignItems: 'center', gap: 7,
+  display: 'inline-flex', alignItems: 'center', gap: sp.B,
   fontSize: 12, fontWeight: fw.medium, fontFamily: ff.primary,
   boxSizing: 'border-box',
   transition: 'background-color 0.15s',

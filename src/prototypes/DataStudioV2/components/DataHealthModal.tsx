@@ -110,7 +110,7 @@ const DataHealthModal: React.FC<DataHealthModalProps> = ({ buildStep, onClose })
                     onMouseEnter={e => { if (selectedIssue.id !== issue.id) e.currentTarget.style.backgroundColor = c['background-subtle']; }}
                     onMouseLeave={e => { if (selectedIssue.id !== issue.id) e.currentTarget.style.backgroundColor = 'transparent'; }}
                   >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 2 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: sp.A }}>
                       <span style={{ fontSize: fs.xs, fontWeight: fw.medium, color: c['content-primary'], flex: 1, paddingRight: sp.B }}>{issue.title}</span>
                       <span style={{ fontSize: fs.xs, fontWeight: fw.semibold, color: TYPE_COLOR[issue.type], flexShrink: 0 }}>{issue.percentage}%</span>
                     </div>

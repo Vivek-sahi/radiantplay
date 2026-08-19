@@ -32,7 +32,7 @@ const InstructionsPanel: React.FC<InstructionsPanelProps> = ({ modelName, onClos
           title="Download"
           style={{
             background: 'none', border: 'none', cursor: 'pointer',
-            padding: 4, display: 'flex', alignItems: 'center',
+            padding: sp.A, display: 'flex', alignItems: 'center',
             color: c['content-secondary'], borderRadius: 4,
           }}
           onMouseEnter={e => (e.currentTarget.style.color = c['content-primary'])}
@@ -47,7 +47,7 @@ const InstructionsPanel: React.FC<InstructionsPanelProps> = ({ modelName, onClos
           onClick={onClose}
           style={{
             background: 'none', border: 'none', cursor: 'pointer',
-            padding: 4, display: 'flex', alignItems: 'center',
+            padding: sp.A, display: 'flex', alignItems: 'center',
             color: c['content-secondary'], borderRadius: 4,
           }}
           onMouseEnter={e => (e.currentTarget.style.color = c['content-primary'])}

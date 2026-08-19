@@ -1,0 +1,78 @@
+/* Adapted from surajboro-ts/spotter-readiness-vision `_agentic/JoinDiagram`.
+   The .joinTypeImg rule is replaced by a drawn connector — see JoinDiagram.tsx. */
+
+.diagram {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.side {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  align-items: flex-start;
+}
+
+.right {
+  align-items: flex-end;
+}
+
+.table {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--rd-sys-color-content-primary);
+  font-family: var(--font-family-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  line-height: var(--line-height-sm);
+  letter-spacing: -0.072px;
+}
+
+.col {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-regular);
+  color: var(--rd-sys-color-content-secondary);
+  font-family: var(--font-family-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  line-height: var(--line-height-sm);
+  letter-spacing: -0.072px;
+}
+
+/* Drawn connector — carries the cardinality label above the arrow. */
+.connector {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-1);
+  color: var(--rd-sys-color-border-default);
+}
+
+.cardinality {
+  font-family: var(--font-family-primary);
+  font-size: 10px;
+  font-weight: var(--font-weight-medium);
+  letter-spacing: 0.04em;
+  color: var(--rd-sys-color-content-secondary);
+  line-height: 1;
+}
+
+/* Join type — the third fact in the connector stack, under the arrow. Full colour,
+   so it doesn't inherit the connector's muted stroke colour. */
+.joinTypeMark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: help;
+}
+
+/* The .warn rule that tinted the cardinality amber on a fan-out risk is gone — see
+   JoinDiagram.tsx. `warnFanOut` still drives the connector's hover text. */

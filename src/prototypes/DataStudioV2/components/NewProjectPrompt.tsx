@@ -58,7 +58,7 @@ const NewProjectPrompt: React.FC<NewProjectPromptProps> = ({ onSubmit, onStartMa
         <div style={{ padding: `${sp.C}px ${sp.D}px`, flexShrink: 0 }}>
           <button
             onClick={onBack}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: fs.xs, color: c['content-secondary'], fontFamily: ff.primary, padding: 0, display: 'flex', alignItems: 'center', gap: 4 }}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: fs.xs, color: c['content-secondary'], fontFamily: ff.primary, padding: 0, display: 'flex', alignItems: 'center', gap: sp.A }}
             onMouseEnter={e => (e.currentTarget.style.color = c['content-primary'])}
             onMouseLeave={e => (e.currentTarget.style.color = c['content-secondary'])}
           >
@@ -76,7 +76,7 @@ const NewProjectPrompt: React.FC<NewProjectPromptProps> = ({ onSubmit, onStartMa
 
           {/* Heading */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: sp.B }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: sp.C }}>
               <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg, #2770ef 0%, #5b9ef4 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <AIIcon />
               </div>

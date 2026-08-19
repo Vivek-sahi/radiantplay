@@ -5,16 +5,48 @@ import { Button } from '../../../components/Button';
 import { Select } from '../../../components/Select';
 import { Icon } from '../../../components/icons';
 import { BrandMark } from '../../../components/BrandMark';
+import { Modal, ModalFooter } from '../../../components/Modal';
+import { SegmentedControl } from '../../../components/SegmentedControl';
+/*
+  `SearchBar`, not `SearchInput` — it is the one of the two that has size variants
+  (sm 28 / md 32 / lg 40). `SearchInput` ships a single ~38px box, which is a page-level
+  field dropped into a dense side dock, and it towered over everything beside it.
+*/
+import { SearchBar } from '../../../components/SearchBar';
+import { Checkbox } from '../../../components/Checkbox';
+import { Typography } from '../../../components/Typography';
+import { Horizontal, Vertical } from '../../../components/Layout';
+import { radius } from '../../../tokens/radius';
 import AgentPanel, { AgentMessage } from './AgentPanel';
 import { PILLARS, READINESS_ISSUES, issuesForPillar } from '../data/readiness';
+// Row counts, descriptions and connection labels for the browser's table detail
+// flyout. ModelCanvas keeps its own TABLE_COLS for canvas rendering; this is the
+// only thing it reads from the shared mock data.
+import { tableMetadata } from '../data/mockData';
 import { SpreadsheetGrid, SpreadsheetColumnMenu, DataSheetToolbar } from './Spreadsheet';
 import { AnchoredMenu } from './AnchoredMenu';
-import { CacheProgressChip, useCache } from './CacheProgress';
+import { CacheProgressChip, CacheProgressRing, useCache } from './CacheProgress';
 import { PERSONA } from '../persona';
 import { BigqueryMark, DbtMark, SourceMark, hasBrandMark } from './icons/ConnectorIcons';
 import { JoinTypeIcon } from './icons/JoinTypeIcon';
 import TestView from './TestView';
 import { useVariant } from '../variant';
+// Where each table lives — the one authority for "which warehouse is this in?", which is
+// what the caching flow's join trigger asks. See data/tableConnections.ts on why the six
+// pre-existing table→source maps are left in place rather than rewritten.
+import { ConnectionId, connectionOf, connectionLabel, tablesNeedingCache, TABLE_LOCATION } from '../data/tableConnections';
+import {
+  CachePolicy, DEFAULT_JOIN_WINDOW, DEFAULT_REFRESH, Residency, TableCacheChoice, describeRefresh,
+  holdsCache, initialResidency, perTableMs, summariseModelCache,
+} from './cache/cacheState';
+import { useModelCache } from './cache/ModelCacheContext';
+import CacheRequiredNotice from './cache/CacheRequiredNotice';
+// One caching dialog for the whole product — Near Store's, used as-is. See
+// `canvasCacheModel` in the adapter on why the canvas's own modal was removed.
+import { CachingSettingsModal, CacheConfigDraft } from '../../NearStore/components/CachingSettingsModal';
+import {
+  CanvasCacheTable, canvasCacheModel, draftToCanvasCache, policyToDraft,
+} from './cache/modelCacheAdapter';
 import { ProjectState, emptyContext } from '../index';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -54,6 +86,17 @@ interface CanvasGroup {
   sourceKind?: 'warehouse' | 'csv';
   csv?: CsvSettings;
   inputIds?: string[]; // block-flow mode: ids of upstream blocks feeding this one
+  /**
+   * Which connection this table came from, resolved once at add time from
+   * `data/tableConnections.ts` rather than looked up again later.
+   *
+   * The caching flow's trigger is "would joining these two require bringing anything
+   * into ThoughtSpot", and that question is unanswerable without this — which is why
+   * the gate never fired for any table outside a hardcoded 6-entry demo map.
+   */
+  connection?: ConnectionId | null;
+  /** Where this table's data actually is — live, caching, cached, native or failed. */
+  residency?: Residency;
 }
 
 interface CanvasJoin {
@@ -72,6 +115,20 @@ interface CanvasJoin {
   moved?: boolean;
 }
 
+/**
+ * Filter operator → the words shown for it.
+ *
+ * ⚠️ Module scope deliberately: this used to be declared inside the property panel's
+ * filter branch, so the Metrics pane — which has to summarise every filter in the model —
+ * had no way to read it without a second copy. Two copies of a label map is how a
+ * condition ends up worded differently in two places.
+ */
+const OPERATOR_LABEL: Record<string, string> = {
+  '=': 'equals', '!=': 'does not equal', '>': 'greater than', '<': 'less than',
+  '>=': 'greater or equal', '<=': 'less or equal', contains: 'contains',
+  'is null': 'is null', 'is not null': 'is not null',
+};
+
 export interface InitialCanvasJoin {
   table1: string;
   table2: string;
@@ -83,7 +140,9 @@ export interface InitialCanvasJoin {
 
 interface ModelCanvasProps {
   onBack: () => void;
-  onPublished?: () => void;
+  /** Fired on Publish (or Save model). Carries the canvas's own model name,
+   *  which the host doesn't otherwise know — it lives in ModelCanvas state. */
+  onPublished?: (modelName?: string) => void;
   /**
    * Open Spotter to test the published model, passing its name so Spotter can offer it
    * as the selected model. Drives the post-publish toast's action.
@@ -120,6 +179,21 @@ interface ModelCanvasProps {
    * first turn, so the canvas opens mid-conversation rather than empty.
    */
   initialPrompt?: string;
+  /**
+   * POC V2 — the topbar action is "Save model" rather than Publish, and it commits
+   * straight away: no publish modal, no Spotter toast. This is the current model
+   * editor's behaviour, where saving returns you to the model's detail page and
+   * that page is the confirmation. Requires `onPublished` to do the navigating.
+   */
+  saveMode?: boolean;
+  /**
+   * The connection chosen before the canvas opened (POC V2's entry flow, step 5).
+   *
+   * A model is single-connection on that path — it cannot be changed once you are here —
+   * so this is the one connection whose tables the data browser lists. Undefined in the
+   * other cuts, where the browser shows every connection as a tree.
+   */
+  modelConnection?: ConnectionId;
 }
 
 // ── Per-op icon for the properties-panel header ─────────────────────────────────
@@ -264,23 +338,23 @@ function CodeEditor({ value, onChange, placeholder, minHeight, language = 'pytho
   const lineCount = Math.max(value.split('\n').length, 1);
   const codeMetrics: React.CSSProperties = { boxSizing: 'border-box', padding: '10px 12px', fontFamily: mono, fontSize: 12.5, lineHeight: '1.65em', whiteSpace: 'pre-wrap', wordBreak: 'break-word', margin: 0 };
   return (
-    <div ref={wrapRef} style={{ display: 'flex', alignItems: 'stretch', border: `1px solid ${focused ? '#2770EF' : '#E2E6EC'}`, borderRadius: 8, background: '#F6F8FA', overflow: 'hidden', boxShadow: focused ? '0 0 0 3px rgba(39,112,239,0.10)' : 'none', ...(fill ? { flex: 1, minHeight: 0 } : { minHeight }), transition: 'border-color 120ms, box-shadow 120ms' }}>
-      <div ref={gutterRef} style={{ flexShrink: 0, boxSizing: 'border-box', padding: '10px 8px 10px 6px', textAlign: 'right', color: '#A5ACB9', fontFamily: mono, fontSize: 12.5, lineHeight: '1.65em', userSelect: 'none', overflow: 'hidden', background: '#EEF1F5', borderRight: '1px solid #E4E8EE', minWidth: 38 }}>
+    <div ref={wrapRef} style={{ display: 'flex', alignItems: 'stretch', border: `1px solid ${focused ? '#2770EF' : c['border-subtle-hover']}`, borderRadius: 8, background: c['background-sunken'], overflow: 'hidden', boxShadow: focused ? '0 0 0 3px rgba(39,112,239,0.10)' : 'none', ...(fill ? { flex: 1, minHeight: 0 } : { minHeight }), transition: 'border-color 120ms, box-shadow 120ms' }}>
+      <div ref={gutterRef} style={{ flexShrink: 0, boxSizing: 'border-box', padding: '10px 8px 10px 6px', textAlign: 'right', color: '#A5ACB9', fontFamily: mono, fontSize: 12.5, lineHeight: '1.65em', userSelect: 'none', overflow: 'hidden', background: c['background-subtle'], borderRight: `1px solid ${c['border-divider']}`, minWidth: 38 }}>
         {Array.from({ length: lineCount }, (_, i) => (
           <div key={i} style={{ height: '1.65em' }}>{i + 1}</div>
         ))}
       </div>
       <div style={{ position: 'relative', flex: 1, minHeight: fill ? 0 : minHeight }}>
-        <pre ref={preRef} aria-hidden="true" style={{ ...codeMetrics, position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', color: '#1D232F' }} dangerouslySetInnerHTML={{ __html: highlightCode(value, language) }} />
+        <pre ref={preRef} aria-hidden="true" style={{ ...codeMetrics, position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', color: c['content-primary'] }} dangerouslySetInnerHTML={{ __html: highlightCode(value, language) }} />
         <textarea
           value={value}
           onChange={e => onChange(e.target.value)}
           onScroll={e => { const t = e.currentTarget; if (gutterRef.current) gutterRef.current.scrollTop = t.scrollTop; if (preRef.current) { preRef.current.scrollTop = t.scrollTop; preRef.current.scrollLeft = t.scrollLeft; } }}
           onFocus={() => { if (wrapRef.current) { wrapRef.current.style.borderColor = '#2770EF'; wrapRef.current.style.boxShadow = '0 0 0 3px rgba(39,112,239,0.10)'; } }}
-          onBlur={() => { if (wrapRef.current) { wrapRef.current.style.borderColor = focused ? '#2770EF' : '#E2E6EC'; wrapRef.current.style.boxShadow = focused ? '0 0 0 3px rgba(39,112,239,0.10)' : 'none'; } }}
+          onBlur={() => { if (wrapRef.current) { wrapRef.current.style.borderColor = focused ? '#2770EF' : c['border-subtle-hover']; wrapRef.current.style.boxShadow = focused ? '0 0 0 3px rgba(39,112,239,0.10)' : 'none'; } }}
           placeholder={placeholder}
           spellCheck={false}
-          style={{ ...codeMetrics, position: 'absolute', inset: 0, border: 'none', outline: 'none', resize: 'none', background: 'transparent', color: 'transparent', caretColor: '#1D232F', overflow: 'auto', width: '100%', height: '100%' }}
+          style={{ ...codeMetrics, position: 'absolute', inset: 0, border: 'none', outline: 'none', resize: 'none', background: 'transparent', color: 'transparent', caretColor: c['content-primary'], overflow: 'auto', width: '100%', height: '100%' }}
         />
       </div>
     </div>
@@ -379,6 +453,68 @@ const sourceMarkKey = (tableName: string, sourceKind?: 'warehouse' | 'csv'): str
 };
 
 type Row = (string | number | boolean | null)[];
+
+/**
+ * Evaluate a formula expression against a set of columns and rows.
+ *
+ * Extracted from `commitFormula` so **both** ways of creating a formula compute values. There are
+ * two entry points — the Spreadsheet's formula bar and the property panel (which the Metrics `+`
+ * and the node menu both open) — and only the first ever reached this logic. The panel stored the
+ * expression, added the column, scrolled to it, and left every cell null. Found by running the
+ * flow: `arr / 1000` on a table where `arr` is 240000 also came back null, which ruled out the
+ * expression and pointed at the wiring.
+ *
+ * Term matching is deliberately forgiving, the same way the SQL block's @-references are: the demo
+ * script writes business names ("Usage Decline 90d") that don't match column names
+ * ("usage_delta_90d") character for character. Anything unresolved contributes 0 and is reported
+ * back, rather than the whole formula silently producing nonsense.
+ */
+function evaluateFormula(expr: string, cols: [string, string][], rows: Row[]): {
+  values: (number | null)[];
+  unresolved: string[];
+} {
+  const norm = (x: string) => x.toLowerCase().replace(/[^a-z0-9]/g, '');
+  const toks = (x: string) => x.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+  const entries = cols.map((c, i) => ({ i, n: norm(c[0]), t: toks(c[0]) }));
+
+  const resolve = (term: string): number | null => {
+    const n = norm(term);
+    const exact = entries.find(e => e.n === n);
+    if (exact) return exact.i;
+    const sub = entries.find(e => e.n.includes(n) || n.includes(e.n));
+    if (sub) return sub.i;
+    // Token overlap. Substring matching isn't enough: "Usage Decline 90d" shares no substring with
+    // usage_delta_90d but two of three tokens match. The threshold is low enough for
+    // "QBR Sentiment Drop" → sentiment_delta and high enough that unrelated terms stay unresolved.
+    const tt = toks(term);
+    let best: number | null = null;
+    let bestScore = 0;
+    for (const e of entries) {
+      const shared = e.t.filter(x => tt.includes(x)).length;
+      if (!shared) continue;
+      const score = shared / Math.max(e.t.length, tt.length);
+      if (score > bestScore) { bestScore = score; best = e.i; }
+    }
+    return bestScore >= 0.34 ? best : null;
+  };
+
+  const unresolved = new Set<string>();
+  const values = rows.map(row => {
+    const substituted = expr.replace(/[A-Za-z][A-Za-z0-9_]*(?:\s+[A-Za-z0-9_]+)*/g, term => {
+      const i = resolve(term);
+      if (i === null) { unresolved.add(term.trim()); return '0'; }
+      const v = Number(row[i]);
+      return Number.isFinite(v) ? String(v) : '0';
+    }).replace(/×/g, '*');
+    try {
+      // eslint-disable-next-line no-new-func
+      const out = Function(`"use strict";return (${substituted})`)();
+      return Number.isFinite(out) ? Math.round(out * 100) / 100 : null;
+    } catch { return null; }
+  });
+
+  return { values, unresolved: [...unresolved] };
+}
 const MOCK_DATA: Record<string, Row[]> = {
   orders: [
     [1001,'2024-01-15',42,349.99,'completed','West'],
@@ -918,7 +1054,7 @@ const NODE_POSITIONS = [
 
 // ── Shared style primitives ───────────────────────────────────────────────────
 
-const BORDER  = `1px solid #EAEDF2`;
+const BORDER  = `1px solid ${c['border-divider']}`;
 const RADIUS6 = 6;
 const RADIUS8 = 8;
 
@@ -962,6 +1098,31 @@ const IconTable = ({ size = 11, color = '#8B96A5' }: { size?: number; color?: st
 // these stay bespoke but read as one clean set alongside the Radiant structural icons.
 // The connector marks now live in components/icons/ConnectorIcons so the agent
 // thread's connection list shows the same glyph for the same connection.
+/**
+ * Toggle side panel — the one icon for opening and closing the data browser.
+ *
+ * ⚠️ **Radiant has no panel/sidebar glyph.** The registry's nearest neighbours are `hamburger`
+ * (a nav menu) and `list-view` (a display mode); neither means "show or hide the panel beside
+ * this content", so using one would be borrowing a shape that already says something else. This
+ * is the convention every editor with a dock uses — a frame with one rail filled — and it is
+ * drawn locally rather than approximated. Worth raising as a gap in the design system.
+ *
+ * The filled rail is on the **left** because that is the side the data browser is on; the icon
+ * depicts the panel it toggles rather than the direction of travel, which is what lets the same
+ * glyph serve the collapse control, the collapsed rail and the topbar reopen button.
+ */
+const IconTogglePanel: React.FC<{ size?: number; color?: string }> = ({ size = 16, color = 'currentColor' }) => (
+  /*
+    ⚠️ **Lined, not filled.** The first version filled the left rail, which made the glyph half
+    stroke and half solid — two drawing styles inside one 16px icon, and it read as heavier than
+    everything around it. One stroke weight throughout is the rule the rest of the set follows.
+  */
+  <svg width={size} height={size} viewBox="0 0 16 16" fill="none" aria-hidden>
+    <rect x="2.1" y="3.1" width="11.8" height="9.8" rx="2" stroke={color} strokeWidth="1.3" />
+    <path d="M6.4 3.4v9.2" stroke={color} strokeWidth="1.3" />
+  </svg>
+);
+
 const IconCloud      = () => <SourceMark name="salesforce" size={14} />;
 const IconFolder     = () => <Icon name="folder" size="xs" color="#8B96A5" />;
 const IconDb         = () => <Icon name="database" size="xs" color="#777E8B" />;
@@ -1040,7 +1201,7 @@ const SpotterReadinessPanel: React.FC<{ onStart: (scope: string[]) => void }> = 
       {/* CTA — launches the full readiness flow in the agent panel */}
       <button
         onClick={() => onStart(scopeFromChecks())}
-        style={{ marginTop: sp.C, width: '100%', padding: '9px 12px', borderRadius: 8, border: 'none', background: c['content-brand'], color: '#fff', fontSize: fs.sm, fontWeight: fw.semibold, cursor: 'pointer', fontFamily: ff.primary, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, transition: 'opacity 120ms' }}
+        style={{ marginTop: sp.C, width: '100%', padding: '9px 12px', borderRadius: 8, border: 'none', background: c['content-brand'], color: '#fff', fontSize: fs.sm, fontWeight: fw.semibold, cursor: 'pointer', fontFamily: ff.primary, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: sp.B, transition: 'opacity 120ms' }}
         onMouseEnter={e => (e.currentTarget.style.opacity = '0.9')}
         onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
       >
@@ -1068,7 +1229,7 @@ const ColTypeIcon: React.FC<{ type: string }> = ({ type }) => {
   }
   const numeric = /INT|FLOAT|NUMBER|DECIMAL|DOUBLE|BIGINT/.test(t);
   return (
-    <span style={{ fontSize: 9, fontWeight: 700, color: '#2770EF', fontFamily: "'SF Mono','Fira Mono',monospace", letterSpacing: '0.02em', lineHeight: 1, whiteSpace: 'nowrap' }}>
+    <span style={{ fontSize: 12, fontWeight: 700, color: '#2770EF', fontFamily: "'SF Mono','Fira Mono',monospace", letterSpacing: '0.02em', lineHeight: 1, whiteSpace: 'nowrap' }}>
       {numeric ? '123' : 'Abc'}
     </span>
   );
@@ -1080,52 +1241,52 @@ const TreeTableRow: React.FC<{
   onCanvas?: boolean;
   onAdd: (name: string) => void;
   depthPad?: number;
-  expanded?: boolean;
-  onToggleExpand?: (name: string) => void;
-  deselectedCols?: Set<string>;
-  onToggleCol?: (tableName: string, col: string) => void;
-  // POC: reveal a chevron that expands the table into its selectable columns.
+  /**
+   * Opens the table's detail flyout beside the tree — metadata plus a checkboxed
+   * column list. Deliberately a flyout rather than an inline expansion: expanding
+   * a row pushes the whole tree down and leaves no room for metadata or a preview.
+   * Snowsight and Hex both use a side panel for this. See
+   * 2026-08-11-data-browser-spec.md §4.
+   */
+  onOpenDetails?: (name: string) => void;
+  /**
+   * POC / POC V2: clicking the row opens the detail flyout instead of adding
+   * straight to canvas — the panel is the preview, and Add lives there. No `+`,
+   * no info icon, no column count on the row; the row is just the table.
+   */
   showColumns?: boolean;
-}> = ({ name, isDbt, onCanvas, onAdd, depthPad = 28, expanded, onToggleExpand, deselectedCols, onToggleCol, showColumns }) => {
+}> = ({ name, isDbt, onCanvas, onAdd, depthPad = 28, onOpenDetails, showColumns }) => {
   const [hovered, setHovered] = useState(false);
   return (
     <div>
       <div
+        data-browser-table-row={name}
         style={{
-          display: 'flex', alignItems: 'center', gap: 6,
+          display: 'flex', alignItems: 'center', gap: sp.B,
           padding: `4px 10px 4px ${depthPad}px`,
           fontSize: 12,
-          color: onCanvas ? '#2770EF' : hovered ? '#1D232F' : '#64748B',
-          cursor: onCanvas ? 'default' : 'pointer',
+          color: onCanvas ? '#2770EF' : hovered ? c['content-primary'] : '#64748B',
+          cursor: showColumns || !onCanvas ? 'pointer' : 'default',
           borderRadius: 4, margin: '0 6px',
-          background: onCanvas ? 'rgba(39,112,239,0.05)' : hovered ? '#F6F8FA' : 'transparent',
+          background: onCanvas && !showColumns ? 'rgba(39,112,239,0.05)'
+            : hovered ? '#F6F8FA' : 'transparent',
           position: 'relative', transition: 'background 110ms, color 110ms',
         }}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
-        title={onCanvas ? 'Already on canvas' : 'Add to canvas'}
-        onClick={() => { if (!onCanvas) onAdd(name); }}
+        title={showColumns ? 'Preview and add' : onCanvas ? 'Already on canvas' : 'Add to canvas'}
+        onClick={() => {
+          if (showColumns) { onOpenDetails?.(name); return; }
+          if (!onCanvas) onAdd(name);
+        }}
       >
         <span style={{ color: onCanvas ? '#2770EF' : undefined, flexShrink: 0, display: 'flex' }}>
-          {isDbt ? <IconDbt /> : <Icon name="table" size="xs" color="#8B96A5" />}
+          {isDbt ? <IconDbt /> : <Icon name="table" size="xs" color={onCanvas ? '#2770EF' : '#8B96A5'} />}
         </span>
         <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: onCanvas ? 500 : undefined }}>
           {name}
         </span>
-        {showColumns ? (
-          // Explicit add control: + to add, check once on canvas.
-          <button
-            onClick={e => { e.stopPropagation(); if (!onCanvas) onAdd(name); }}
-            title={onCanvas ? 'Added to canvas' : 'Add table to canvas'}
-            style={{ width: 22, height: 22, borderRadius: 5, border: 'none', background: 'transparent', cursor: onCanvas ? 'default' : 'pointer', color: onCanvas ? '#2770EF' : '#8B96A5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background 110ms, color 110ms' }}
-            onMouseEnter={e => { if (!onCanvas) { e.currentTarget.style.background = 'rgba(39,112,239,0.10)'; e.currentTarget.style.color = '#2770EF'; } }}
-            onMouseLeave={e => { if (!onCanvas) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#8B96A5'; } }}
-          >
-            {onCanvas
-              ? <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M2.5 7.5l3 3 6-7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-              : <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M7 2.5v9M2.5 7h9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>}
-          </button>
-        ) : (hovered || onCanvas) && (
+        {showColumns ? null : (hovered || onCanvas) && (
           // Vision: original hover pair (info + add), unchanged from pre-POC.
           <div style={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
             {onCanvas ? (
@@ -1144,7 +1305,7 @@ const TreeTableRow: React.FC<{
                   style={{ width: 22, height: 22, border: 'none', background: 'transparent', borderRadius: 4, color: '#777E8B', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, transition: 'background 100ms, color 100ms' }}
                   onClick={e => { e.stopPropagation(); onAdd(name); }}
                   title="Add to canvas"
-                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#EEF2FF'; (e.currentTarget as HTMLElement).style.color = '#2770EF'; }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = c['background-information']; (e.currentTarget as HTMLElement).style.color = '#2770EF'; }}
                   onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#777E8B'; }}
                 >
                   <IconAddToCanvas />
@@ -1180,19 +1341,19 @@ const TreeConn: React.FC<{
     <div>
       <div
         style={{
-          display: 'flex', alignItems: 'center', gap: 7,
+          display: 'flex', alignItems: 'center', gap: sp.B,
           padding: `5px 10px 5px ${pad}px`, cursor: 'pointer',
         }}
-        onMouseEnter={e => (e.currentTarget.style.background = '#F6F8FA')}
+        onMouseEnter={e => (e.currentTarget.style.background = c['background-sunken'])}
         onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
         onClick={() => onToggle(id)}
       >
         {icon}
-        <span style={{ fontSize: 12, fontWeight: muted ? 500 : 600, color: muted ? '#64748B' : '#1D232F', flex: 1 }}>
+        <span style={{ fontSize: 12, fontWeight: muted ? 500 : 600, color: muted ? '#64748B' : c['content-primary'], flex: 1 }}>
           {label}
         </span>
         {count !== undefined && (
-          <span style={{ fontSize: 10, color: '#A5ACB9', fontWeight: 500 }}>{count}</span>
+          <span style={{ fontSize: 12, color: '#A5ACB9', fontWeight: 500 }}>{count}</span>
         )}
         <span style={{ color: '#A5ACB9', transition: 'transform 180ms', transform: open ? 'rotate(90deg)' : 'none', flexShrink: 0 }}>
           <IconChevronRight />
@@ -1260,10 +1421,10 @@ const JoinBlockCard: React.FC<{
       title={`${join.name} · ${joinLabel} join`}
     >
       {/* Compact join icon on the relationship — click to edit join details */}
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: sp.A }}>
         <div style={{
           position: 'relative', width: 34, height: 34, borderRadius: 10, background: '#fff',
-          border: `1px solid ${selected ? '#2770EF' : '#D5DAE1'}`,
+          border: `1px solid ${selected ? '#2770EF' : c['border-subtle-hover']}`,
           boxShadow: selected ? '0 0 0 3px rgba(39,112,239,0.14), 0 1px 4px rgba(25,35,49,0.06)' : (hover ? '0 1px 4px rgba(25,35,49,0.08)' : 'none'),
           transition: 'box-shadow 120ms, border-color 120ms',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -1286,10 +1447,10 @@ const JoinBlockCard: React.FC<{
           )}
         </div>
         <span style={{
-          fontSize: 10, fontWeight: 700, letterSpacing: '0.02em', lineHeight: 1,
+          fontSize: 12, fontWeight: 700, letterSpacing: '0.02em', lineHeight: 1,
           padding: '2px 6px', borderRadius: 99,
           color: selected ? '#2770EF' : '#475569',
-          background: selected ? 'rgba(39,112,239,0.10)' : '#F0F2F6',
+          background: selected ? 'rgba(39,112,239,0.10)' : c['background-subtle'],
         }}>{cardinalityLabel}</span>
       </div>
     </div>
@@ -1389,6 +1550,19 @@ const CanvasNodeCard: React.FC<{
               {meta.label}
             </span>
           )}
+          {/*
+            ⚠️ **No residency badge here.** A per-table "Cached" badge was added with the caching
+            flow and removed on 2026-08-12: the table isn't cached in the sense that word carries
+            elsewhere in the product — it has *moved warehouse*, from Snowflake or Databricks into
+            ThoughtSpot's own store, and it is queried there from then on. Stamping "Cached" on
+            every card said "this one is special" about what is now simply where the model's data
+            lives, and it said it eight times over. Where the data is now belongs to the model, and
+            the model states it once, on the topbar pill.
+
+            The legacy `cached` badge below is the pre-caching-flow model-level state (Live query
+            → Cached, driven by CSV uploads and prep transforms) and is untouched — it is not the
+            same fact, and the other three cuts still show it.
+          */}
           {cached && (
             <span title="Cached in ThoughtSpot" style={{
               fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em',
@@ -1595,6 +1769,8 @@ const BlockNode: React.FC<{
             );
           })()}
           <span style={{ flex: 1, minWidth: 0, fontSize: 12, fontWeight: fw.semibold, color: '#1D232F', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
+          {/* No cache badge — see CanvasNodeCard above. Where the model's data lives is stated
+              once, on the topbar pill, not per card. */}
         </div>
         {/* Inline pipeline — steps live as chips inside the card, ordered left-to-right,
             wrapping to a new row (growing the card's height) once a row fills up rather
@@ -1812,7 +1988,7 @@ const ModelCreatingOverlay: React.FC<{ name: string; tableCount: number; duratio
   return (
     <div style={{
       position: 'absolute', inset: 0, zIndex: 30,
-      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14,
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: sp.D,
       background: '#fff', fontFamily: ff.primary,
     }}>
       <svg width="30" height="30" viewBox="0 0 16 16" fill="none" style={{ color: '#2770EF' }}>
@@ -1820,8 +1996,8 @@ const ModelCreatingOverlay: React.FC<{ name: string; tableCount: number; duratio
         <path d="M2 5L2 11L8 14.5L8 8.5Z" stroke="currentColor" strokeWidth="1.15" strokeLinejoin="round" fill="currentColor" fillOpacity="0.07" />
         <path d="M14 5L14 11L8 14.5L8 8.5Z" stroke="currentColor" strokeWidth="1.15" strokeLinejoin="round" fill="currentColor" fillOpacity="0.04" />
       </svg>
-      <div style={{ fontSize: 14.5, fontWeight: fw.semibold, color: '#1D232F' }}>Creating {name}</div>
-      <div style={{ width: 220, height: 3, borderRadius: 2, background: '#EAEDF2', overflow: 'hidden' }}>
+      <div style={{ fontSize: 14.5, fontWeight: fw.semibold, color: c['content-primary'] }}>Creating {name}</div>
+      <div style={{ width: 220, height: 3, borderRadius: 2, background: c['background-subtle'], overflow: 'hidden' }}>
         <div style={{
           height: '100%', width: `${fill * 100}%`, background: '#2770EF', borderRadius: 2,
           transition: `width ${durationMs}ms linear`,
@@ -1832,9 +2008,11 @@ const ModelCreatingOverlay: React.FC<{ name: string; tableCount: number; duratio
   );
 };
 
-const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSpotter, mode = 'dataset', initialTables, initialJoins, hideAgentPanel = false, embedHeaderLeft, embedHeaderRight, showTestTab = false, onTestFixWithAI, poc = false, startWithoutModel = false, draftModelName, initialPrompt }) => {
+const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSpotter, mode = 'dataset', initialTables, initialJoins, hideAgentPanel = false, embedHeaderLeft, embedHeaderRight, showTestTab = false, onTestFixWithAI, poc = false, startWithoutModel = false, draftModelName, initialPrompt, saveMode = false, modelConnection }) => {
   const { variant, scope } = useVariant();
-  const { startCaching } = useCache();
+  // `job` as well as `startCaching`: the table-caching flow flips each card to cached as the
+  // job reports that table done, so the fill reads as progress rather than a single jump.
+  const { startCaching, job } = useCache();
   // Demo is the only cut that runs the run-of-show script. Vision stays clean.
   const demo = variant === 'demo';
   // Node-level vs model-level data preview — POC's addition, picked up by Demo.
@@ -1886,6 +2064,53 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
   const [cacheScope, setCacheScope] = useState<'Full model' | 'Custom'>('Full model');
   const [cacheFreq, setCacheFreq] = useState('Daily');
   const [cacheHour, setCacheHour] = useState('9:00 AM');
+
+  // ── Table caching (POC V2) — 2026-08-12-caching-flow-spec.md ────────────────
+  //
+  // Separate from the `dataMode` / `cacheRange` state above, which is the *model* cache: an
+  // optional performance thing. This is the table cache — mandatory, per table, and the
+  // reason a cross-warehouse join can exist. Flow spec §2 on why they aren't one flag.
+  //
+  /** Tables the attempted join needs cached, or null when nothing is being asked. */
+  const [cacheNotice, setCacheNotice] = useState<string[] | null>(null);
+  /** The notice is the "wait, a cache is filling" variant rather than the "cache these" one. */
+  const [cacheNoticeBusy, setCacheNoticeBusy] = useState(false);
+  /**
+   * The caching dialog: which tables it's configuring, and what opened it. Null when closed.
+   *
+   * Two things open it, over different lists — a cross-warehouse join over the two tables *that
+   * join* needs brought over, and Cache model on the topbar pill over every table on the canvas.
+   *
+   * The reason is carried because one control depends on it. Near Store's dialog offers **Also
+   * cache now**, which is the choice to fill immediately or wait for the first scheduled run —
+   * a real choice when the cache is an optimisation over a model that already works. It is not
+   * a choice when a join is waiting on the fill: deferring it would leave the user having
+   * configured a cache, dismissed a dialog, and lost the join they were making, with the canvas
+   * looking exactly as it did before. So the join path hides it (`isEdit`) and always fills.
+   */
+  const [cacheModalTables, setCacheModalTables] =
+    useState<{ tables: string[]; reason: 'join' | 'model' } | null>(null);
+  /** The model's cache scope, once set. Null until the first cache — flow spec §4. */
+  const [cachePolicy, setCachePolicy] = useState<CachePolicy | null>(null);
+  /** Per-table choices from the last confirm, so re-opening the dialog shows what's in force. */
+  const [cacheChoices, setCacheChoices] = useState<Record<string, TableCacheChoice>>({});
+  /**
+   * The join held back until its tables finish caching, stored as the action to replay.
+   *
+   * A callback rather than a table pair because there are three ways a join gets created —
+   * the property panel's Apply, the agent's join recommendation, and drag-to-connect — and
+   * all three have to pass the same gate. Holding "what to do next" instead of "which two
+   * tables" means the resume path is identical for each.
+   */
+  const pendingJoinRef = useRef<(() => void) | null>(null);
+  /**
+   * The run in flight. A ref rather than state because the progress effect reads it on every
+   * tick of the shared cache job, and it must see what Confirm wrote without waiting for a
+   * re-render to land first.
+   */
+  const cacheRunRef = useRef<{ policy: CachePolicy; choices: Record<string, TableCacheChoice> } | null>(null);
+  const { set: publishModelCache } = useModelCache();
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [agentMessages, setAgentMessages] = useState<AgentMessage[]>([]);
   const [agentProject, setAgentProject] = useState<ProjectState>({
@@ -2099,10 +2324,103 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
     hideAgentPanel ? ['sf', 'sf-analytics'] : ['sf', 'sf-analytics', 'sf-public']
   ));
 
-  const [expandedTableRows, setExpandedTableRows] = useState<Set<string>>(new Set());
   // Which connection subtrees show — driven by the connection filter.
   const showConn = (id: string) => filterConns.has(id);
   const [deselectedCols, setDeselectedCols] = useState<Record<string, Set<string>>>({});
+  /**
+   * The flyout's working set of columns for a table already on the canvas — seeded from
+   * what is in the model, then edited freely in both directions and committed by
+   * **Save changes**.
+   *
+   * ⚠️ It was add-only at first, with in-model columns ticked and locked, on the reasoning
+   * that removal belonged solely to the Metrics pane. **Wrong** (Vivek, 2026-08-13): a
+   * ticked checkbox affords unticking, so disabling it is a worse lie than having two
+   * routes to removal. The checkbox is the control; it works both ways.
+   */
+  const [draftCols, setDraftCols] = useState<Set<string> | null>(null);
+  /**
+   * The formula currently being edited, by column name — null when authoring a new one.
+   *
+   * The formula panel only ever knew how to *add*: its editing state opened on a blank
+   * `formulaConfig` and its commit appended. So Edit from the Metrics pane produced a
+   * summary of the existing formula with "Add another column" under it, which is not what
+   * Edit means. With this set, the commit replaces that formula in place — keeping its
+   * position in the column list — and the button reads Save changes.
+   */
+  const [editingFormulaCol, setEditingFormulaCol] = useState<string | null>(null);
+  /*
+    ── Model-level formulas and filters ──────────────────────────────────────────
+    Authored from the Metrics pane's `+`, and stored **on the model** rather than on a
+    card. Two reasons they can't live on a card:
+
+    1. A chip on a table card is a step in *that table's* pipeline — Source → Clean →
+       Prep — so a formula chip claims an ownership a model-level metric doesn't have.
+       Chips are for clean and prep, which really do act on one table.
+    2. A metric spanning two tables has no card to belong to, which is the whole point.
+
+    ⚠️ **Komal's card-level formula path is untouched.** The node menu still files a
+    formula on its card via `addStep`, and this is a separate workflow producing a
+    different object. The two forms are deliberately duplicated rather than shared: the
+    shared version is the right end state, but not while she is working in that file.
+    Converge when we decide whether formulas belong on cards at all.
+
+    ⚠️ **You cannot write a formula across tables that aren't joined** (Vivek). So the
+    constraint is enforced where the columns are offered — `modelScope` returns only the
+    joined model's columns — rather than by letting it evaluate to null.
+
+    ⚠️ **`modelFormulas` already existed** — a Vision-era feature with its own modal,
+    rendered as rows in the **Columns tab**, which POC V2 doesn't have, so it was
+    unreachable in this cut. Same pattern as the badge on the wrong card component and the
+    gate on the dead join path: the working code existed and the path in use didn't reach
+    it. It is declared further down and **reused**, not duplicated — only the filters and
+    the editor below are new.
+  */
+  const [modelFilters, setModelFilters] = useState<Array<{ name: string; column: string; operator: string; value: string }>>([]);
+  /** Which model-level editor is open, and whether it is editing an existing entry. */
+  const [modelAction, setModelAction] = useState<{ kind: 'formula' | 'filter'; editIdx: number | null } | null>(null);
+  const [modelFormulaTouched, setModelFormulaTouched] = useState(false);
+  const [modelFilterDraft, setModelFilterDraft] = useState<{ name: string; column: string; operator: string; value: string }>({ name: '', column: '', operator: '=', value: '' });
+
+  /**
+   * Metrics pane sections the user has collapsed.
+   *
+   * **Default is open**, so the pane discloses everything in the model on first look —
+   * that is what it is for. But a model with four tables pushes Formulas and Filters
+   * below the fold, so reaching them means scrolling past columns you weren't asking
+   * about. Collapsing is the way back.
+   */
+  const [collapsedPaneSections, setCollapsedPaneSections] = useState<Set<string>>(new Set());
+  /** Metrics pane: which row's ⋯ menu is open, and the anchor it hangs off. */
+  const [paneMenu, setPaneMenu] = useState<{ key: string; idx: number; kind: 'formula' | 'filter' } | null>(null);
+  const paneMenuAnchor = useRef<HTMLButtonElement | null>(null);
+  const [paneAddOpen, setPaneAddOpen] = useState(false);
+  const paneAddAnchor = useRef<HTMLButtonElement | null>(null);
+  /** Table whose detail flyout is open beside the browser tree, or null. */
+  const [detailsTable, setDetailsTable] = useState<string | null>(null);
+  /** Data browser search query. Empty = show the tree. */
+  const [browserQuery, setBrowserQuery] = useState('');
+  /**
+   * Left dock pane: the warehouse tree, or the model's own fields.
+   *
+   * A tab rather than a second panel — a Metrics panel alongside the browser would
+   * make two left rails, which no surveyed platform does (see
+   * 2026-08-11-data-browser-spec.md §6). Sharing the dock costs no new chrome and
+   * reinforces the split: you're either looking at the warehouse or at your model.
+   */
+  const [dockPane, setDockPane] = useState<'data' | 'metrics'>('data');
+  /**
+   * Spreadsheet tab scope — one dropdown, not a node/model toggle plus a picker.
+   * 'model' = the joined model; anything else is a table name.
+   *
+   * The tab hides the canvas (and POC clears its selection on entry), so a bare
+   * node/model toggle would leave "node of what?" unanswered. Collapsing scope and
+   * target into one control also degrades cleanly: drop the table entries and
+   * "Whole model" is the only option, which is model-only.
+   */
+  const [sheetScope, setSheetScope] = useState<string>('model');
+  const detailsRef = useRef<HTMLDivElement | null>(null);
+  const filterRef = useRef<HTMLDivElement | null>(null);
+  const filterBtnRef = useRef<HTMLButtonElement | null>(null);
 
   const [multiJoinActive, setMultiJoinActive] = useState(false);
   const [multiJoinTable1, setMultiJoinTable1] = useState('');
@@ -2144,6 +2462,48 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
   // `agentWidth`; the card fills the space it vacates and fades up. Nothing
   // mounts or unmounts, so the thread doesn't move.
   const PRE_MODEL_AGENT_W = 760;
+  /**
+   * The canvas assembling itself on arrival, rather than appearing all at once.
+   *
+   * Opening a canvas used to be a hard cut: one frame nothing, the next frame a full workspace
+   * — topbar, dock, grid, panels. There is a lot on screen here, and arriving at all of it
+   * simultaneously gives the eye no order to read it in, so it reads as a jolt rather than as a
+   * place you moved to. Staggering by ~70ms lets it resolve outside-in: the frame first, then
+   * the dock, then the work area.
+   *
+   * Deliberately short (≈300ms end to end). This runs on every entry to the canvas, including
+   * returns, and an entrance you notice twice is an entrance that is too long.
+   *
+   * ⚠️ The work area fades **without** a transform — see `enterFadeStyle`.
+   */
+  const [entered, setEntered] = useState(false);
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setEntered(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+  const ENTER_MS = 260;
+  const enterStyle = (delay: number): React.CSSProperties => ({
+    opacity: entered ? 1 : 0,
+    transform: entered ? 'none' : 'translateY(6px)',
+    transition: `opacity ${ENTER_MS}ms ease-out ${delay}ms, transform ${ENTER_MS}ms cubic-bezier(0.22,0.61,0.36,1) ${delay}ms`,
+  });
+  /**
+   * Opacity only, for the work area.
+   *
+   * ⚠️ A `transform` on this element would make it the containing block for every
+   * absolutely-positioned descendant — which is every card on the canvas, the floating toolbar
+   * and the join layer. It resolves to `none` once the entrance finishes, so the damage would
+   * be transient, but "transient" here means the cards land in the wrong place for a quarter of
+   * a second on the one frame the user is watching most closely.
+   */
+  const enterFadeStyle = (delay: number): React.CSSProperties => ({
+    opacity: entered ? 1 : 0,
+    transition: `opacity ${ENTER_MS + 60}ms ease-out ${delay}ms`,
+  });
+
+  /** Height of `SearchBar size="sm"`, so anything beside it in the search row matches it. */
+  const SEARCH_ROW_H = 28;
+
   const TRANSFORM_MS = 420;
   /**
    * How long the canvas spends creating the model before its tables appear.
@@ -2538,20 +2898,72 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
     });
   }, []);
 
-  const toggleExpandTableRow = useCallback((name: string) => {
-    setExpandedTableRows(prev => {
-      const next = new Set(prev);
-      if (next.has(name)) next.delete(name); else next.add(name);
-      return next;
-    });
-  }, []);
-
   const toggleCol = useCallback((tableName: string, col: string) => {
     setDeselectedCols(prev => {
       const set = new Set(prev[tableName] ?? []);
       if (set.has(col)) set.delete(col); else set.add(col);
       return { ...prev, [tableName]: set };
     });
+  }, []);
+
+  // The connection filter floats over the tree, so it needs the same dismissal as any
+  // overlay — an overlay you can't click away from is worse than an inline panel.
+  useEffect(() => {
+    if (!filterOpen) return;
+    const onDown = (e: MouseEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (!t) return;
+      if (filterRef.current?.contains(t) || filterBtnRef.current?.contains(t)) return;
+      setFilterOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setFilterOpen(false); };
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [filterOpen]);
+
+  // Close the table flyout on an outside click or Esc. Clicks on a tree row are
+  // skipped so the row's own handler still toggles it — otherwise this would close
+  // the panel first and the row would immediately reopen it.
+  useEffect(() => {
+    if (!detailsTable) return;
+    const onDown = (e: MouseEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (!t) return;
+      if (detailsRef.current?.contains(t)) return;
+      if (t.closest('[data-browser-table-row]')) return;
+      setDetailsTable(null);
+    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setDetailsTable(null); };
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [detailsTable]);
+
+  // ── Table detail flyout (data browser) ──────────────────────────────────────
+  // Columns default to all-included: `deselectedCols` is an opt-*out* set, so an
+  // untouched table has none and every column is in. The count makes that default
+  // visible rather than silent, and the flyout is where it's refined.
+  const openTableDetails = useCallback((name: string) => {
+    setDetailsTable(prev => (prev === name ? null : name));
+    // Seed the working set from what is in the model, so the flyout opens showing the
+    // truth rather than a default. Null for a table that isn't on the canvas — there
+    // the opt-out set (`deselectedCols`) still drives the ticks.
+    const g = groupsRef.current.find(gg => gg.tableName === name);
+    setDraftCols(g ? new Set((g.steps[g.activeStep]?.cols ?? []).map(([cn]) => cn)) : null);
+  }, []);
+
+  const setAllCols = useCallback((tableName: string, include: boolean) => {
+    setDeselectedCols(prev => ({
+      ...prev,
+      [tableName]: include ? new Set<string>() : new Set((TABLE_COLS[tableName] ?? []).map(([c]) => c)),
+    }));
   }, []);
 
   // Load the selected code step's saved code into the editor config, once per step.
@@ -2620,11 +3032,26 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
       const i = nodeCountRef.current % NODE_POSITIONS.length;
       nodeCountRef.current++;
       const pos = NODE_POSITIONS[i];
-      const cols = TABLE_COLS[tableName] ?? [['id', 'INT'], ['value', 'VARCHAR']];
+      /*
+        ⚠️ **The flyout's column ticks land here, and until 2026-08-13 they didn't.**
+        This read `TABLE_COLS[tableName]` — the whole table — so unticking three columns
+        counted the button down and then added all seven anyway. `deselectedCols` is an
+        opt-*out* set, so an untouched table still gets everything.
+
+        `step.cols` is now the single answer to "which columns are in the model": the
+        Metrics pane, the preview and the merge all read it, and the flyout compares
+        against it to know what is left to add. It used to be one of three disagreeing
+        sources (this, `deselectedCols`, and the Columns tab's `removedModelCols`).
+      */
+      const out = deselectedCols[tableName] ?? new Set<string>();
+      const cols = (TABLE_COLS[tableName] ?? [['id', 'INT'], ['value', 'VARCHAR']])
+        .filter(([cn]) => !out.has(cn));
       const id = `ng_${nodeCountRef.current}`;
       setGroups(prev => [...prev, {
         id, tableName,
         sourceKind,
+        connection: sourceKind === 'csv' ? null : connectionOf(tableName),
+        residency: initialResidency(tableName, sourceKind),
         csv: sourceKind === 'csv'
           ? { fileName: fileName ?? `${tableName}.csv`, delimiter: 'comma', quote: '"', encoding: 'UTF-8', header: true }
           : undefined,
@@ -2639,14 +3066,17 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
         setPreviewOpen(true);
         triggerPreviewLoad();
       }
-      if (TABLE_COLS[tableName]) {
-        setExpandedTableRows(prev => new Set([...prev, tableName]));
-      }
     };
     // POC: modeling across connections requires caching. If this table comes from
     // a different connection than what's already on the canvas (and we're still
     // live), confirm caching first — accepting caches the model, then adds.
-    if (poc && sourceKind === 'warehouse' && dataMode !== 'cached') {
+    //
+    // ⚠️ POC only, and `scope.cacheOnConnectionAdd` is what keeps it that way. This read
+    // used to be the `poc` boolean, which is `isPocCut(variant)` — true for POC V2 as
+    // well — so POC V2 was inheriting an on-drop prompt that its own flow replaces:
+    // dropping a table is not a caching touchpoint, because preview queries the source
+    // live and the requirement is only real at the join.
+    if (scope.cacheOnConnectionAdd && sourceKind === 'warehouse' && dataMode !== 'cached') {
       const newConn = POC_TABLE_CONN[tableName];
       const existingConns = new Set(groups.map(g => POC_TABLE_CONN[g.tableName]).filter(Boolean));
       if (newConn && existingConns.size > 0 && !existingConns.has(newConn)) {
@@ -2660,7 +3090,68 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
       }
     }
     doAdd();
-  }, [poc, dataMode, groups]);
+  }, [scope.cacheOnConnectionAdd, dataMode, groups, deselectedCols]);
+
+  /**
+   * Add columns to a table already on the canvas, and remove them again.
+   *
+   * Two entry points, one each, per the "not multiple ways to do the same thing"
+   * principle: **you add columns in the data browser flyout** (where you added the
+   * table) and **remove them in the Metrics pane** (where the columns are listed).
+   * The flyout deliberately does not let you untick a column that is already in —
+   * that would be a second way to remove.
+   *
+   * ⚠️ Applies to every step that carries `cols`, not just the source step. In this
+   * cut a table's steps all carry the same column set forward, so keeping them in
+   * sync is what makes the preview, the merge and the pane agree. A transform that
+   * deliberately narrowed columns would need this revisiting.
+   */
+  const setGroupColumns = useCallback((groupId: string, colNames: Set<string>) => {
+    setGroups(prev => prev.map(g => {
+      if (g.id !== groupId) return g;
+      const catalogue = TABLE_COLS[g.tableName] ?? [];
+      return {
+        ...g,
+        steps: g.steps.map(st => {
+          if (!st.cols) return st;
+          // Formula columns are not in the catalogue and are not the flyout's business —
+          // they exist because a formula made them, and they leave with it. Keep them
+          // wherever they already sit, and take source columns from the catalogue so
+          // the order matches the table rather than the order they were ticked.
+          const formulaCols = new Set((st.formulas ?? []).map(f => f.col));
+          const kept = st.cols.filter(([cn]) => formulaCols.has(cn));
+          const source = catalogue.filter(([cn]) => colNames.has(cn));
+          return { ...st, cols: [...source, ...kept] };
+        }),
+      };
+    }));
+    // Mirror into the opt-out set so reopening the flyout agrees with the model.
+    setDeselectedCols(prev => {
+      const g = groupsRef.current.find(gg => gg.id === groupId);
+      if (!g) return prev;
+      const all = (TABLE_COLS[g.tableName] ?? []).map(([cn]) => cn);
+      return { ...prev, [g.tableName]: new Set(all.filter(cn => !colNames.has(cn))) };
+    });
+  }, []);
+
+  const removeColFromGroup = useCallback((groupId: string, colName: string) => {
+    setGroups(prev => prev.map(g => g.id !== groupId ? g : {
+      ...g,
+      steps: g.steps.map(st => st.cols ? { ...st, cols: st.cols.filter(([cn]) => cn !== colName) } : st),
+    }));
+    setDeselectedCols(prev => {
+      const g = groupsRef.current.find(gg => gg.id === groupId);
+      if (!g) return prev;
+      return { ...prev, [g.tableName]: new Set([...(prev[g.tableName] ?? []), colName]) };
+    });
+  }, []);
+
+  /*
+    Card-level formula and filter removal from the Metrics pane lived here and is gone:
+    the pane now lists **model-level** formulas and filters, which are removed from
+    `modelFormulas` / `modelFilters` directly. A card-level formula is Komal's object and
+    is removed from her panel.
+  */
 
   /**
    * Agent → canvas commit seam (run-of-show S3/S4/S5).
@@ -2723,48 +3214,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
     const expr = raw.slice(eq + 1).trim();
     if (!name || !expr) return { ok: false as const, reason: 'Needs both a name and an expression' };
 
-    const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
-    const toks = (s: string) => s.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
-    const entries = cols.map((c, i) => ({ i, n: norm(c[0]), t: toks(c[0]) }));
-
-    const resolve = (term: string): number | null => {
-      const n = norm(term);
-      const exact = entries.find(e => e.n === n);
-      if (exact) return exact.i;
-      const sub = entries.find(e => e.n.includes(n) || n.includes(e.n));
-      if (sub) return sub.i;
-      // Token overlap. Substring matching isn't enough: the script writes
-      // "Usage Decline 90d" for usage_delta_90d — no shared substring, but two
-      // of three tokens match. Threshold is low enough for "QBR Sentiment Drop"
-      // → sentiment_delta and high enough that unrelated terms stay unresolved.
-      const tt = toks(term);
-      let best: number | null = null;
-      let bestScore = 0;
-      for (const e of entries) {
-        const shared = e.t.filter(x => tt.includes(x)).length;
-        if (!shared) continue;
-        const score = shared / Math.max(e.t.length, tt.length);
-        if (score > bestScore) { bestScore = score; best = e.i; }
-      }
-      return bestScore >= 0.34 ? best : null;
-    };
-
-    // Replace each non-numeric term with the row's value, then evaluate the
-    // arithmetic. × is the script's multiplication sign.
-    const unresolved = new Set<string>();
-    const values = rows.map(row => {
-      const substituted = expr.replace(/[A-Za-z][A-Za-z0-9_]*(?:\s+[A-Za-z0-9_]+)*/g, term => {
-        const i = resolve(term);
-        if (i === null) { unresolved.add(term.trim()); return '0'; }
-        const v = Number(row[i]);
-        return Number.isFinite(v) ? String(v) : '0';
-      }).replace(/×/g, '*');
-      try {
-        // eslint-disable-next-line no-new-func
-        const out = Function(`"use strict";return (${substituted})`)();
-        return Number.isFinite(out) ? Math.round(out * 100) / 100 : null;
-      } catch { return null; }
-    });
+    const { values, unresolved } = evaluateFormula(expr, cols, rows);
 
     setFormulaCols(prev => prev.some(f => f.name === name) ? prev : [...prev, { name, expr }]);
     setFormulaComputing(name);
@@ -2775,7 +3225,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
       setFormulaComputing(cur => (cur === name ? null : cur));
     }, 1100);
 
-    return { ok: true as const, name, unresolved: [...unresolved] };
+    return { ok: true as const, name, unresolved };
   }, []);
 
   /**
@@ -2834,6 +3284,10 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
     // "Python" — right for a transform, wrong for "the fourth table lands".
     setGroups(prev => [...prev, {
       id, tableName, sourceKind: 'warehouse' as const,
+      // A script's output has no source warehouse — it materialises in our store, so it's
+      // native rather than live, and it never needs caching to be joinable.
+      connection: null,
+      residency: initialResidency(tableName, 'python'),
       steps: [
         { type: 'source' as OpType, label: tableName, desc: 'Fetched via script', cols: TABLE_COLS[tableName] },
         { type: 'python' as OpType, label: 'Fetch script', desc: 'Written by the agent', cols: TABLE_COLS[tableName], pythonCode: code },
@@ -3106,6 +3560,8 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
       const cols = TABLE_COLS[tableName] ?? [['id', 'INT'], ['value', 'VARCHAR']];
       return {
         id: `seed_${idx + 1}`, tableName, sourceKind: 'warehouse' as const,
+        connection: connectionOf(tableName),
+        residency: initialResidency(tableName),
         steps: [{ type: 'source' as OpType, label: tableName, desc: 'Raw table', cols }],
         x: pos.x, y: pos.y, expanded: false, activeStep: 0,
       };
@@ -3223,6 +3679,10 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
       id,
       tableName: meta.label,
       sourceKind: 'warehouse',
+      // A block is an operation, not a table from a warehouse. Python materialises in our
+      // store (native); SQL pushes down, so it stays live.
+      connection: null,
+      residency: initialResidency(meta.label, op === 'python' ? 'python' : 'warehouse'),
       steps: [{ type: op, label: meta.label, desc: meta.desc, cols: [], prep: op === 'nullfix' }],
       x, y,
       expanded: false,
@@ -3254,12 +3714,15 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
       return { ...w, cx: clientX - (rect?.left ?? 0), cy: clientY - (rect?.top ?? 0), overId };
     });
   };
-  const wireEnd = (fromId: string, clientX: number, clientY: number) => {
-    const atPoint = cardIdAtPoint(clientX, clientY);
-    // Prefer the exact release target; fall back to the last card we hovered during the drag.
-    const toId = (atPoint && atPoint !== fromId) ? atPoint : wireTargetRef.current;
-    wireTargetRef.current = null;
-    if (toId && toId !== fromId) {
+  /**
+   * Commit a join between two cards.
+   *
+   * Extracted from `wireEnd` unchanged so the caching flow can *resume* a join it held back:
+   * when the cache finishes, step 6 calls this and the join lands in its property panel
+   * exactly as if the user had just drawn it. One path, so a resumed join is indistinguishable
+   * from a direct one.
+   */
+  const commitJoin = (fromId: string, toId: string) => {
       const t1 = groups.find(g => g.id === fromId);
       const t2 = groups.find(g => g.id === toId);
       if (t1 && t2 && !canvasJoins.some(j => (j.table1Id === fromId && j.table2Name === t2.tableName) || (j.table1Id === toId && j.table2Name === t1.tableName))) {
@@ -3288,6 +3751,200 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
         setEditingJoinId(jid);
         setPreviewOpen(true);
       }
+  };
+
+  /**
+   * Publish this model's cache state upward, so the model listing and the model's Caching tab
+   * describe the same thing the canvas does.
+   *
+   * Keyed by name because that is the only identifier the canvas and the listing share — the
+   * canvas has no model id, and `handleCanvasPublished` matches the listing row on name too.
+   * The provider drops writes that change nothing, so re-summarising per render is cheap.
+   */
+  useEffect(() => {
+    if (!scope.tableCaching) return;
+    publishModelCache(modelName, summariseModelCache(
+      groups.map(g => ({ tableName: g.tableName, connection: g.connection, residency: g.residency })),
+      cachePolicy,
+    ));
+  }, [groups, cachePolicy, modelName, scope.tableCaching, publishModelCache]);
+
+  /**
+   * Step 2 — the gate every join creation passes through.
+   *
+   * Returns true when caching had to be raised, in which case the caller must not create the
+   * join: it's held in `pendingJoinRef` and replayed once the cache lands. Returns false when
+   * there is nothing to bring over, and the join proceeds untouched — which is every join
+   * inside one warehouse, and every cut other than POC V2.
+   */
+  const cacheGate = (tableNames: string[], resume: () => void): boolean => {
+    // No caching on the canvas → never hold a join. A single-connection model has every
+    // table in one warehouse, so there is nothing to bring over and nothing to wait for.
+    if (!scope.canvasCaching) return false;
+    if (!scope.tableCaching) return false;
+    // ⚠️ A cache already in flight refuses the join outright rather than starting a second
+    // run. Two reasons, and the second is the load-bearing one: joining against a
+    // half-filled table can match on arbitrary prefixes and return near-zero rows with no
+    // signal; and `startCaching` replaces the active job, so a second run would clear the
+    // first one's timers and leave its unfinished tables reading "Caching…" forever.
+    if (cacheRunRef.current) {
+      setCacheNotice(Object.keys(cacheRunRef.current.choices));
+      setCacheNoticeBusy(true);
+      return true;
+    }
+    const need = tablesNeedingCache(
+      tableNames.filter(Boolean),
+      name => holdsCache(groups.find(g => g.tableName === name)?.residency),
+    );
+    if (!need.length) return false;
+    pendingJoinRef.current = resume;
+    setCacheNotice(need);
+    setCacheNoticeBusy(false);
+    return true;
+  };
+
+  /**
+   * Step 1 — the gate fires the moment a join **starts**, not when it is applied.
+   *
+   * It used to sit on Apply alone, which is the last click of the interaction: the user picked
+   * two tables, chose a key, chose a join type and a cardinality, pressed Apply — and only then
+   * learned that none of it could happen yet. Everything configured in between was work done
+   * against a join that couldn't exist, and the caching dialog arrived reading as a rejection of
+   * it rather than as the step that makes it possible.
+   *
+   * So the trigger moves to the first moment both tables are known, which is different per path:
+   * both are selected before the toolbar's Join is pressed; the second is chosen from a dropdown
+   * in the property panel; both are known at the drop of a drag-to-connect. Each passes its own
+   * resume, so finishing the cache puts the user back where they were rather than at a join that
+   * silently applied itself.
+   *
+   * Apply keeps a gate of its own as a **backstop**. It costs nothing once this one has run — the
+   * tables are cached, so it returns false — and it is what stops a path added later from
+   * creating a cross-warehouse join by not knowing about this.
+   */
+  const startJoinGate = (t1Name: string | undefined | null, t2Name: string, resume: () => void): boolean => {
+    if (!t1Name || !t2Name) return false;
+    return cacheGate([t1Name, t2Name], resume);
+  };
+
+  /**
+   * Picking the second table in the property panel — the other place a join starts.
+   *
+   * The selection is applied either way. When caching is needed the notice comes up *over* a
+   * panel that already reads the way the user left it, so dismissing it leaves the choice made
+   * rather than reverting the dropdown under them.
+   */
+  const chooseJoinTable2 = (t1Name: string | undefined | null, t2Name: string) => {
+    const pick = () => setJoinConfig(c => ({ ...c, table2: t2Name, col2: '' }));
+    pick();
+    if (!t2Name) return;
+    startJoinGate(t1Name, t2Name, pick);
+  };
+
+  /**
+   * Step 3 → 4. Confirm writes the model's policy, marks the tables filling, and hands the
+   * table list to the shared cache job. Nothing blocks: the fill runs in the background with
+   * progress on the cards, because `CacheProgress` is built to survive leaving the canvas and
+   * a blocking screen would throw that away.
+   */
+  const confirmTableCache = (
+    policy: CachePolicy,
+    choices: Record<string, TableCacheChoice>,
+    /** False only from Cache model with "Also cache now" cleared — see `cacheModalTables`. */
+    fillNow = true,
+  ) => {
+    const tables = Object.keys(choices);
+    setCachePolicy(policy);
+    setCacheChoices(prev => ({ ...prev, ...choices }));
+    setCacheModalTables(null);
+    // Settings saved, nothing brought over yet: the tables stay live and the first fill happens
+    // at the next scheduled run. Nothing is waiting on it, which is the only reason this is
+    // allowed to be a choice at all.
+    if (!fillNow) { pendingJoinRef.current = null; return; }
+    cacheRunRef.current = { policy, choices };
+    setGroups(prev => prev.map(g => (
+      tables.includes(g.tableName)
+        ? { ...g, residency: { kind: 'caching' as const, startedAt: Date.now() } }
+        : g
+    )));
+    // Total run length is fixed, so the window in which to test what the canvas allows
+    // mid-fill doesn't shrink as tables are added. See CACHE_RUN_TOTAL_MS.
+    startCaching(tables, { perTableMs: perTableMs(tables.length) });
+  };
+
+  /**
+   * Step 4 → 6. Each table flips to cached as the job reports it done, so the cards fill in
+   * one at a time rather than all at the end — and when the last one lands, the join the user
+   * originally drew resumes into its property panel. That auto-resume is the point: the wall
+   * they hit is the place they come back to.
+   */
+  useEffect(() => {
+    const run = cacheRunRef.current;
+    if (!scope.tableCaching || !run) return;
+    // ⚠️ The progress chip is closeable by design, and dismissing it clears the job *and* its
+    // timers — caching genuinely stops. Without this branch the tables it was filling would
+    // read "Caching…" permanently, which is the worst of the available lies. Reverting to
+    // live is the honest state: no copy was made.
+    if (!job) {
+      const filling = Object.keys(run.choices);
+      cacheRunRef.current = null;
+      pendingJoinRef.current = null;
+      setGroups(prev => prev.map(g => (
+        filling.includes(g.tableName) && g.residency?.kind === 'caching'
+          ? { ...g, residency: { kind: 'live' as const } }
+          : g
+      )));
+      return;
+    }
+    const landed = job.tables.slice(0, job.done).filter(t => run.choices[t]);
+    if (landed.length) {
+      setGroups(prev => prev.map(g => {
+        if (!landed.includes(g.tableName) || g.residency?.kind === 'cached') return g;
+        const choice = run.choices[g.tableName];
+        return {
+          ...g,
+          residency: {
+            kind: 'cached' as const,
+            window: choice.window,
+            refColumn: choice.refColumn,
+            role: choice.role,
+            refresh: run.policy.refresh,
+          },
+        };
+      }));
+    }
+    if (job.status === 'done') {
+      const cachedNames = Object.keys(run.choices);
+      cacheRunRef.current = null;
+      const held = pendingJoinRef.current;
+      pendingJoinRef.current = null;
+      // ⚠️ Only replay against tables that are still on the canvas. Removing a card mid-fill
+      // is allowed — the fill isn't what the user is committed to — but resuming a join whose
+      // table is gone would create an edge to a card that doesn't exist, and `applyJoin`
+      // silently falls back to default coordinates rather than refusing.
+      const stillHere = cachedNames.every(n => groupsRef.current.some(g => g.tableName === n));
+      // The replay skips the gate — see `applyJoin`'s `resumed` parameter for why re-checking
+      // here re-prompts for tables that were just cached.
+      if (held && stillHere) held();
+    }
+    // `groups` is deliberately not a dep — this must fire on job progress only, and it reads
+    // groups through the setGroups updater rather than the closure.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [job, scope.tableCaching]);
+
+  const wireEnd = (fromId: string, clientX: number, clientY: number) => {
+    const atPoint = cardIdAtPoint(clientX, clientY);
+    // Prefer the exact release target; fall back to the last card we hovered during the drag.
+    const toId = (atPoint && atPoint !== fromId) ? atPoint : wireTargetRef.current;
+    wireTargetRef.current = null;
+    if (toId && toId !== fromId) {
+      const t1 = groups.find(g => g.id === fromId);
+      const t2 = groups.find(g => g.id === toId);
+      if (t1 && t2 && cacheGate([t1.tableName, t2.tableName], () => commitJoin(fromId, toId))) {
+        setWiring(null);
+        return;
+      }
+      commitJoin(fromId, toId);
     }
     setWiring(null);
   };
@@ -3335,6 +3992,9 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
       const t2 = groups.find(g => g.tableName === t2Name);
       if (!t1 || !t2) return;
       if (canvasJoins.some(j => (j.table1Id === t1.id && j.table2Name === t2.tableName) || (j.table1Id === t2.id && j.table2Name === t1.tableName))) return;
+      // The agent's join hits the same gate a hand-made one does. An agent that could join
+      // across warehouses where the user cannot would be describing a different product.
+      if (cacheGate([t1Name, t2Name], () => (window as any).__dsAgentAddJoin__?.(t1Name, t2Name, key, joinType, cardinality))) return;
       joinCountRef.current++;
       const jid = `join_${joinCountRef.current}`;
       setCanvasJoins(prev => [...prev, {
@@ -3433,12 +4093,36 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
   // Re-assign every render so the bridge always uses the freshest closure over groups/pythonConfig.
   useEffect(() => { (window as any).__dsApplyPythonFix__ = applyPythonFix; });
 
-  const applyJoin = useCallback(() => {
+  /**
+   * Apply the join the property panel is configured with.
+   *
+   * ⚠️ **This is the live join path**, not `wireEnd`. Drag-to-connect passes its wire handlers
+   * into `BlockNode`, which never reads them — so the canvas has no drag-to-join today, and a
+   * caching gate placed only there would never fire. The panel's Apply and the agent's
+   * recommendation are the two ways a join actually gets made.
+   */
+  /**
+   * @param resumed true when this is the replay of a join that was held for caching.
+   *
+   * ⚠️ A resumed join **must not re-enter the gate.** It already passed it, and the cache it was
+   * waiting for has just completed. Re-checking looks harmless and isn't: the gate reads
+   * residency from its render closure, and the replay is scheduled from the same effect that
+   * marks the tables cached — so it can see the pre-cache state and pop "cache these tables to
+   * join them" for tables that *are* cached, with the badges on screen saying so. Deferring the
+   * replay a tick was tried first and is a race: React's commit and a timer callback have no
+   * defined order. Found by running the flow.
+   */
+  const applyJoin = useCallback((resumed = false) => {
     const table1Id = multiJoinActive
       ? (groups.find(g => g.tableName === multiJoinTable1)?.id ?? '')
       : (selectedId ?? '');
     const t1 = groups.find(g => g.id === table1Id);
     const t2 = groups.find(g => g.tableName === joinConfig.table2);
+    // The **backstop**, not the trigger — see `startJoinGate`. By the time Apply is pressed the
+    // gate has normally already run at the start of the join and returns false here. It stays so
+    // that a join path added later can't create a cross-warehouse join by not knowing about it;
+    // if it does fire, the panel's configuration is replayed verbatim once the cache lands.
+    if (!resumed && t1 && cacheGate([t1.tableName, joinConfig.table2], () => applyJoinRef.current?.(true))) return;
     const x1 = t1?.x ?? 80, y1 = t1?.y ?? 80;
     const x2 = t2?.x ?? x1 + 300, y2 = t2?.y ?? y1;
     joinCountRef.current++;
@@ -3460,6 +4144,14 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
     setSelectedIds(new Set([jid]));
     setJoinConfig({ name: '', table2: '', col1: '', col2: '', joinType: 'inner', cardinality: 'many_to_one', extraPairs: [] });
   }, [multiJoinActive, multiJoinTable1, groups, selectedId, joinConfig]);
+
+  /**
+   * Lets the held join replay itself after caching without `applyJoin` depending on its own
+   * identity. Re-assigned every render so the replay uses the freshest closure — the same
+   * pattern `__dsApplyPythonFix__` uses a few lines up, and for the same reason.
+   */
+  const applyJoinRef = useRef(applyJoin);
+  applyJoinRef.current = applyJoin;
 
   const selectedGroup = groups.find(g => g.id === selectedId) ?? null;
   // Code steps (SQL/Python) let the editor fill the panel down to the preview; other steps scroll naturally.
@@ -3504,16 +4196,48 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
   const modelHasPrep = groups.some(g => g.steps.some(s => s.prep));
   const canSwitchToLive = !modelHasCsv && !modelHasPrep;
 
+  /**
+   * Where the model's data lives — and, while a cache is filling, how far along it is.
+   *
+   * The pill already answers "Live query or Cached?", which makes it the one place on screen
+   * that states where this model's data is. Caching is that same fact changing, so progress
+   * belongs here rather than in a second indicator somewhere else. It replaced a header chip
+   * that sat above the canvas: a global notification is the right shape for a job you walk away
+   * from, and the wrong one for the step you are currently blocked on — it was easy to miss
+   * precisely because it was outside the surface being worked on.
+   *
+   * POC V2 only. The other three cuts read `dataMode`, which is the model-level Live → Cached
+   * flag CSV uploads and prep transforms drive, and nothing here changes it.
+   */
+  const cacheFilling = scope.tableCaching && !!job && job.status === 'running';
+  const cacheDone = job ? job.done : 0;
+  const cacheTotal = job ? job.tables.length : 0;
+  const anyTableCached = groups.some(g => g.residency?.kind === 'cached');
+  const pillMode: 'caching' | 'cached' | 'live' =
+    cacheFilling ? 'caching'
+      : scope.tableCaching
+        ? (anyTableCached ? 'cached' : 'live')
+        : (dataMode === 'cached' ? 'cached' : 'live');
+  /** Every table on the canvas — what Cache model configures, as opposed to a join's two. */
+  const allCanvasTables = groups.filter(g => g.steps[0]?.type === 'source').map(g => g.tableName);
+  const openModelCacheDialog = () => {
+    setDataModeMenuOpen(false);
+    setCacheModalTables({
+      tables: allCanvasTables.length ? allCanvasTables : groups.map(g => g.tableName),
+      reason: 'model',
+    });
+  };
+
   const topbar = (
     <div style={{
       position: 'relative',
-      height: 48, background: '#fff', borderBottom: BORDER,
-      display: 'flex', alignItems: 'center', padding: '0 16px', gap: 6, flexShrink: 0,
+      height: 48, background: c['background-base'], borderBottom: BORDER,
+      display: 'flex', alignItems: 'center', padding: '0 16px', gap: sp.B, flexShrink: 0,
     }}>
       {/* Model identity — click to rename inline.
           SpotterX embed can replace the left slot with its own header node. */}
       {embedHeaderLeft ?? (
-        <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0, minWidth: 0, maxWidth: 300, marginRight: 4 }}>
+        <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0, minWidth: 0, maxWidth: 300, marginRight: sp.A }}>
           {editingName ? (
             <input
               autoFocus
@@ -3526,10 +4250,10 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                 if (e.key === 'Escape') { setNameDraft(modelName); setEditingName(false); }
               }}
               style={{
-                fontSize: 16, fontWeight: 700, color: '#1D232F', letterSpacing: '-0.2px',
+                fontSize: fs.md, fontWeight: fw.semibold, color: c['content-primary'], letterSpacing: '-0.2px',
                 fontFamily: ff.primary, width: '100%', minWidth: 120, boxSizing: 'border-box',
-                border: '1.5px solid #2770EF', borderRadius: 6, padding: '2px 6px', outline: 'none',
-                background: '#fff',
+                border: `1.5px solid ${c['border-brand']}`, borderRadius: 6, padding: '2px 6px', outline: 'none',
+                background: c['background-base'],
               }}
             />
           ) : (
@@ -3537,65 +4261,135 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
               onClick={() => { setNameDraft(modelName); setEditingName(true); }}
               title="Click to rename"
               style={{
-                fontSize: 16, fontWeight: 700, color: modelName === 'Untitled model' ? '#A5ACB9' : '#1D232F',
+                fontSize: fs.md, fontWeight: fw.semibold, color: modelName === 'Untitled model' ? c['content-secondary'] : c['content-primary'],
                 whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', letterSpacing: '-0.2px',
                 cursor: 'pointer', borderRadius: 6, padding: '2px 6px', margin: '0 -6px',
                 transition: 'background 100ms',
               }}
-              onMouseEnter={e => { e.currentTarget.style.background = '#F6F8FA'; }}
+              onMouseEnter={e => { e.currentTarget.style.background = c['background-sunken']; }}
               onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
             >{modelName}</span>
           )}
         </div>
       )}
-      {/* Collapsed data browser — icon moves into the topbar (mirrors the collapsed agent panel); click to reopen */}
+      {/* Collapsed data browser — icon moves into the topbar (mirrors the collapsed agent panel); click to reopen.
+          ⚠️ **One icon for this panel, everywhere.** There were three: a hand-drawn cylinder
+          here, Radiant's `database` on the collapsed rail, and a chevron on the panel header's
+          collapse button — so the control that closes the browser and the control that reopens
+          it looked like controls for two different things. The icon names the panel; the
+          tooltip and the position say which direction you're going. */}
       {browserCollapsed && (
         <button
           onClick={() => setBrowserCollapsed(false)}
           title="Open data browser"
-          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, borderRadius: 7, border: 'none', background: 'transparent', color: '#64748B', cursor: 'pointer', flexShrink: 0 }}
-          onMouseEnter={e => { e.currentTarget.style.background = '#F0F2F6'; e.currentTarget.style.color = '#1D232F'; }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#64748B'; }}
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, borderRadius: 7, border: 'none', background: 'transparent', color: c['content-secondary'], cursor: 'pointer', flexShrink: 0 }}
+          onMouseEnter={e => { e.currentTarget.style.background = c['background-subtle']; e.currentTarget.style.color = c['content-primary']; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = c['content-secondary']; }}
         >
-          <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><ellipse cx="8" cy="5" rx="5.5" ry="2" stroke="currentColor" strokeWidth="1.3"/><path d="M2.5 5v6c0 1.1 2.5 2 5.5 2s5.5-.9 5.5-2V5" stroke="currentColor" strokeWidth="1.3"/><path d="M2.5 8c0 1.1 2.5 2 5.5 2s5.5-.9 5.5-2" stroke="currentColor" strokeWidth="1.3"/></svg>
+          <IconTogglePanel size={16} />
         </button>
       )}
       {mode === 'blocks' && (
-        <span style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: '#8C62F5', background: 'rgba(124,58,237,0.10)', padding: '3px 8px', borderRadius: 5 }}>Block flow</span>
+        <span style={{ fontSize: fs.xs, fontWeight: fw.semibold, letterSpacing: '0.04em', textTransform: 'uppercase', color: c['content-accent-purple'], background: 'rgba(124,58,237,0.10)', padding: '3px 8px', borderRadius: 5 }}>Block flow</span>
       )}
       {/* Draft status moved next to Publish (right group) */}
-      {/* Data mode — Live query / Cached (one-way status: Live → Cached) */}
+      {/*
+        Data mode — Live query / Caching / Cached. See `pillMode` on why the fill reports here.
+
+        ⚠️ **Hidden entirely when the canvas has no caching** (`canvasCaching: false`, POC V2 from
+        2026-08-17). The pill's whole job is to state where this model's data is and to be the
+        route into cache settings; with one warehouse and nothing copied, the answer is always
+        "the warehouse" and there are no settings to reach. A control that can only ever report
+        one value is noise.
+
+        ⚠️ Do **not** express this by turning `tableCaching` off — that switches the `!tableCaching`
+        branches back on and you get Vision's older model-level caching UI instead of none.
+      */}
+      {scope.canvasCaching && (
       <div style={{ position: 'relative', flexShrink: 0 }}>
         <button
           ref={dataModeBtnRef}
           onClick={e => { e.stopPropagation(); setDataModeMenuOpen(o => !o); }}
           style={{
-            display: 'inline-flex', alignItems: 'center', gap: 6, height: 26, boxSizing: 'border-box',
-            fontSize: 12, fontWeight: 600, padding: '0 9px 0 11px', borderRadius: 99, cursor: 'pointer',
+            display: 'inline-flex', alignItems: 'center', gap: sp.B, height: 26, boxSizing: 'border-box',
+            fontSize: fs.xs, fontWeight: fw.semibold, padding: '0 9px 0 11px', borderRadius: 99, cursor: 'pointer',
             fontFamily: ff.primary,
-            background: dataMode === 'cached' ? 'rgba(140,98,245,0.10)' : 'rgba(22,163,74,0.10)',
-            color: dataMode === 'cached' ? '#8C62F5' : '#16A34A',
-            border: `1px solid ${dataMode === 'cached' ? 'rgba(140,98,245,0.32)' : 'rgba(22,163,74,0.30)'}`,
+            // Caching is neutral, not a third status colour: it is a transient on the way to
+            // Cached, and giving it its own hue would read as a state the model can rest in.
+            background: pillMode === 'caching' ? c['background-subtle'] : pillMode === 'cached' ? 'rgba(140,98,245,0.10)' : 'rgba(22,163,74,0.10)',
+            color: pillMode === 'caching' ? c['content-primary'] : pillMode === 'cached' ? c['content-accent-purple'] : c['content-success'],
+            border: `1px solid ${pillMode === 'caching' ? c['border-divider'] : pillMode === 'cached' ? 'rgba(140,98,245,0.32)' : 'rgba(22,163,74,0.30)'}`,
             outline: 'none',
           }}
         >
-          <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'currentColor', flexShrink: 0 }} />
-          {dataMode === 'cached' ? 'Cached' : 'Live query'}
-          <svg width="10" height="10" viewBox="0 0 12 12" fill="none" style={{ transform: dataModeMenuOpen ? 'rotate(180deg)' : 'none', transition: 'transform 120ms' }}><path d="M3 4.5l3 3 3-3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          {pillMode === 'caching' ? (
+            /* The ring carries the progress itself, growing against the clock so the pill is
+               visibly moving between one table landing and the next. See CacheProgressRing. */
+            <CacheProgressRing size={13} />
+          ) : (
+            <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'currentColor', flexShrink: 0 }} />
+          )}
+          <span style={{ fontVariantNumeric: 'tabular-nums' }}>
+            {pillMode === 'caching' ? `Caching ${cacheDone} of ${cacheTotal}` : pillMode === 'cached' ? 'Cached' : 'Live query'}
+          </span>
+          <span style={{ display: 'flex', transform: dataModeMenuOpen ? 'rotate(180deg)' : 'none', transition: 'transform 120ms' }}><Icon name="caret-down" size="xs" /></span>
         </button>
         {dataModeMenuOpen && (
-          <AnchoredMenu open={dataModeMenuOpen} anchorRef={dataModeBtnRef} onClose={() => setDataModeMenuOpen(false)} placement="bottom-start" gap={6} style={{ width: 290, background: '#fff', border: BORDER, borderRadius: RADIUS8, boxShadow: '0 8px 28px rgba(25,35,49,0.16)', padding: 14 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-              <span style={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0, background: dataMode === 'cached' ? '#7C3AED' : '#16A34A' }} />
-              <span style={{ fontSize: 13, fontWeight: 700, color: '#1D232F' }}>{dataMode === 'cached' ? 'Cached' : 'Live query'}</span>
-              {dataMode === 'cached' && (
+          <AnchoredMenu open={dataModeMenuOpen} anchorRef={dataModeBtnRef} onClose={() => setDataModeMenuOpen(false)} placement="bottom-start" gap={6} style={{ width: 290, background: c['background-base'], border: BORDER, borderRadius: RADIUS8, boxShadow: '0 8px 28px rgba(25,35,49,0.16)', padding: sp.D }}>
+            {/* While a fill runs the menu is the progress detail — which tables, and how far.
+                The pill above says how many; this says which, table by table, because that is
+                the question a count raises and can't answer. */}
+            {pillMode === 'caching' ? (
+              <>
+                <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, marginBottom: sp.B }}>
+                  <span style={{ fontSize: fs.xs, fontWeight: fw.semibold, color: c['content-primary'] }}>Caching in progress</span>
+                </div>
+                <div style={{ fontSize: fs.xs, lineHeight: 1.5, color: c['content-secondary'], marginBottom: sp.C }}>
+                  Bringing these tables into ThoughtSpot&rsquo;s warehouse so they can be joined. Joins wait until this finishes.
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: sp.B }}>
+                  {(job?.tables ?? []).map((t, i) => {
+                    const landed = i < cacheDone;
+                    // Exactly one table is being brought over at a time, and it is the next one
+                    // after the last that landed. Marking it is what makes the list a picture of
+                    // work in progress rather than a checklist with a static remainder.
+                    const active = i === cacheDone;
+                    return (
+                      <div key={t} style={{ display: 'flex', alignItems: 'center', gap: sp.B, fontSize: fs.xs }}>
+                        {landed ? (
+                          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}><path d="M3.2 8.4l3.1 3.1 6.5-6.6" stroke={c['content-primary']} strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        ) : active ? (
+                          /* SVG's own animation rather than a CSS keyframe — this file styles
+                             inline, and an inline `animation` needs a global @keyframes that
+                             isn't guaranteed to be there. */
+                          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
+                            <circle cx="8" cy="8" r="5" stroke={c['border-divider']} strokeWidth="1.6" />
+                            <circle cx="8" cy="8" r="2.6" fill={c['content-brand']}>
+                              <animate attributeName="opacity" values="0.25;1;0.25" dur="1.4s" repeatCount="indefinite" />
+                            </circle>
+                          </svg>
+                        ) : (
+                          <span style={{ width: 12, height: 12, borderRadius: '50%', border: `1.6px solid ${c['border-divider']}`, flexShrink: 0 }} />
+                        )}
+                        <span style={{ color: landed ? c['content-primary'] : active ? c['content-primary'] : c['content-secondary'], fontWeight: active ? 500 : 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            ) : (
+            <>
+            <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, marginBottom: sp.B }}>
+              <span style={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0, background: pillMode === 'cached' ? c['content-accent-purple'] : c['background-success'] }} />
+              <span style={{ fontSize: fs.xs, fontWeight: fw.semibold, color: c['content-primary'] }}>{pillMode === 'cached' ? 'Cached' : 'Live query'}</span>
+              {pillMode === 'cached' && (
                 <>
                   <div style={{ flex: 1 }} />
                   <button
-                    onClick={() => { setDataModeMenuOpen(false); setCacheSettingsOpen(true); }}
+                    onClick={() => { if (scope.tableCaching) { openModelCacheDialog(); return; } setDataModeMenuOpen(false); setCacheSettingsOpen(true); }}
                     title="Cache settings"
-                    style={{ width: 24, height: 24, border: 'none', background: 'transparent', borderRadius: 5, color: '#777E8B', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}
-                    onMouseEnter={e => (e.currentTarget.style.background = '#F0F2F6')}
+                    style={{ width: 24, height: 24, border: 'none', background: 'transparent', borderRadius: 5, color: c['content-secondary'], cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}
+                    onMouseEnter={e => (e.currentTarget.style.background = c['background-subtle'])}
                     onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                   >
                     <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="2" stroke="currentColor" strokeWidth="1.2"/><path d="M8 1.6l.85 1.55 1.72-.38.32 1.73 1.53.87-.83 1.55.83 1.55-1.53.87-.32 1.73-1.72-.38L8 14.4l-.85-1.55-1.72.38-.32-1.73-1.53-.87.83-1.55-.83-1.55 1.53-.87.32-1.73 1.72.38L8 1.6z" stroke="currentColor" strokeWidth="1" strokeLinejoin="round"/></svg>
@@ -3603,73 +4397,101 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                 </>
               )}
             </div>
-            {dataMode === 'cached' ? (
+            {pillMode === 'cached' ? (
               <>
-                <div style={{ fontSize: 12, lineHeight: 1.5, color: '#64748B', marginBottom: 10 }}>
-                  Materialized in ThoughtSpot&rsquo;s data store — required to join uploaded files and run transformations.
+                <div style={{ fontSize: fs.xs, lineHeight: 1.5, color: c['content-secondary'], marginBottom: sp.C }}>
+                  {scope.tableCaching
+                    ? 'These tables now live in ThoughtSpot’s warehouse and refresh on a schedule — which is what lets them be joined across sources.'
+                    : 'Materialized in ThoughtSpot’s data store — required to join uploaded files and run transformations.'}
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}><span style={{ color: '#777E8B' }}>Scope</span><span style={{ color: '#1D232F', fontWeight: 500 }}>{cacheScope}</span></div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}><span style={{ color: '#777E8B' }}>Refresh</span><span style={{ color: '#1D232F', fontWeight: 500 }}>{cacheFreq} · {cacheHour}</span></div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: sp.B }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: fs.xs }}><span style={{ color: c['content-secondary'] }}>Scope</span><span style={{ color: c['content-primary'], fontWeight: fw.medium }}>{scope.tableCaching ? (cachePolicy?.mode === 'window' ? 'Custom' : 'Full model') : cacheScope}</span></div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: fs.xs }}><span style={{ color: c['content-secondary'] }}>Refresh</span><span style={{ color: c['content-primary'], fontWeight: fw.medium }}>{scope.tableCaching ? describeRefresh(cachePolicy?.refresh ?? DEFAULT_REFRESH) : `${cacheFreq} · ${cacheHour}`}</span></div>
                 </div>
-                <div style={{ marginTop: 12, paddingTop: 12, borderTop: BORDER }}>
-                  <button
-                    onClick={() => { if (canSwitchToLive) { setDataMode('live'); setDataModeMenuOpen(false); } }}
-                    disabled={!canSwitchToLive}
-                    style={{ width: '100%', padding: '7px 0', borderRadius: 7, border: `1px solid ${canSwitchToLive ? '#C0C6CF' : '#EAEDF2'}`, background: '#fff', color: canSwitchToLive ? '#1D232F' : '#A5ACB9', fontSize: 12, fontWeight: 600, cursor: canSwitchToLive ? 'pointer' : 'default', fontFamily: ff.primary }}
-                  >
-                    Switch to live query
-                  </button>
-                  {!canSwitchToLive && (
-                    <div style={{ fontSize: 11, lineHeight: 1.45, color: '#777E8B', marginTop: 7 }}>
-                      Remove {modelHasCsv ? 'uploaded files' : ''}{modelHasCsv && modelHasPrep ? ' and ' : ''}{modelHasPrep ? 'prep transformations' : ''} to switch back to live query.
-                    </div>
-                  )}
-                </div>
+                {/* ⚠️ No "Switch to live query" in POC V2. Reverting a multi-source model to live
+                    would break every join in it — live query is exactly what can't cross
+                    warehouses — so the control is absent rather than present and refusing. */}
+                {!scope.tableCaching && (
+                  <div style={{ marginTop: sp.C, paddingTop: sp.C, borderTop: BORDER }}>
+                    <Button
+                      variant="secondary"
+                      size="small"
+                      fullWidth
+                      onClick={() => { if (canSwitchToLive) { setDataMode('live'); setDataModeMenuOpen(false); } }}
+                      disabled={!canSwitchToLive}
+                    >
+                      Switch to live query
+                    </Button>
+                    {!canSwitchToLive && (
+                      <div style={{ fontSize: fs.xs, lineHeight: 1.45, color: c['content-secondary'], marginTop: sp.B }}>
+                        Remove {modelHasCsv ? 'uploaded files' : ''}{modelHasCsv && modelHasPrep ? ' and ' : ''}{modelHasPrep ? 'prep transformations' : ''} to switch back to live query.
+                      </div>
+                    )}
+                  </div>
+                )}
               </>
             ) : (
               <>
-                <div style={{ fontSize: 12, lineHeight: 1.5, color: '#64748B', marginBottom: 12 }}>
-                  Queries run live against your warehouse. Uploading a file or a prep transformation will cache this model into ThoughtSpot&rsquo;s data store.
+                <div style={{ fontSize: fs.xs, lineHeight: 1.5, color: c['content-secondary'], marginBottom: sp.C }}>
+                  {scope.tableCaching
+                    ? 'Queries run live against your warehouse. Caching brings these tables into ThoughtSpot’s warehouse — which is what makes joining across sources possible, and stops live queries against your warehouse.'
+                    : 'Queries run live against your warehouse. Uploading a file or a prep transformation will cache this model into ThoughtSpot’s data store.'}
                 </div>
-                <button
-                  onClick={() => { setDataModeMenuOpen(false); setCacheConfirm({ onConfirm: () => { setDataMode('cached'); setCacheConfirm(null); } }); }}
-                  style={{ width: '100%', padding: '7px 0', borderRadius: 7, border: '1px solid #C0C6CF', background: '#fff', color: '#1D232F', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: ff.primary }}
+                {/* POC V2 opens the one caching dialog over every table on the canvas — the same
+                    dialog a cross-warehouse join opens over its two, so Cache model and caching-
+                    to-join are visibly one feature rather than two that look unrelated. */}
+                <Button
+                  variant="secondary"
+                  size="small"
+                  fullWidth
+                  onClick={() => {
+                    if (scope.tableCaching) { openModelCacheDialog(); return; }
+                    setDataModeMenuOpen(false);
+                    setCacheConfirm({ onConfirm: () => { setDataMode('cached'); setCacheConfirm(null); } });
+                  }}
+                  disabled={scope.tableCaching && groups.length === 0}
                 >
                   Cache model
-                </button>
+                </Button>
               </>
+            )}
+            </>
             )}
           </AnchoredMenu>
         )}
       </div>
-      {/* Canvas / Columns view switcher — centered over main content (right of browser panel) */}
-      <div style={{ position: 'absolute', left: `calc(50% + ${(browserCollapsed ? 48 : browserWidth) / 2}px)`, transform: 'translateX(-50%)', display: 'flex', alignItems: 'center', background: '#F0F2F6', borderRadius: 8, padding: 3, gap: 1 }}>
-        {(['canvas', 'data', 'columns', 'test'] as const).filter(v => (v !== 'test' || showTestTab) && (v !== 'columns' || scope.columnsTab)).map(v => (
-          <button
-            key={v}
-            onClick={() => {
-              // POC: switching to the spreadsheet shouldn't carry the canvas
-              // selection's properties panel over — it opens on demand only.
-              if (scope.clearSelectionOnSpreadsheet && v === 'data') { setSelectedIds(new Set()); setDataActionPicker(null); setEditingStepKey(null); }
-              setViewMode(v);
-            }}
-            style={{
-              fontSize: 12, fontWeight: 500, padding: '4px 14px', borderRadius: 5,
-              border: 'none', cursor: 'pointer', fontFamily: ff.primary,
-              background: viewMode === v ? '#fff' : 'transparent',
-              color: viewMode === v ? '#1D232F' : '#777E8B',
-              boxShadow: viewMode === v ? '0 1px 3px rgba(25,35,49,0.10)' : 'none',
-              transition: 'all 130ms', whiteSpace: 'nowrap', userSelect: 'none',
-            }}
-          >{v === 'canvas' ? 'Canvas' : v === 'columns' ? 'Columns' : v === 'data' ? 'Spreadsheet' : 'Test'}</button>
-        ))}
+      )}
+      {/* Canvas / Columns view switcher — centered over main content (right of browser panel).
+          Radiant's `SegmentedControl`, which is exactly what this was hand-drawing: a track, a
+          raised active segment, and one selected value. */}
+      <div style={{ position: 'absolute', left: `calc(50% + ${(browserCollapsed ? 48 : browserWidth) / 2}px)`, transform: 'translateX(-50%)', display: 'flex', alignItems: 'center' }}>
+        <SegmentedControl
+          size="small"
+          aria-label="View"
+          value={viewMode}
+          onChange={v => {
+            // POC: switching to the spreadsheet shouldn't carry the canvas
+            // selection's properties panel over — it opens on demand only.
+            if (scope.clearSelectionOnSpreadsheet && v === 'data') { setSelectedIds(new Set()); setDataActionPicker(null); setEditingStepKey(null); }
+            setViewMode(v as typeof viewMode);
+          }}
+          options={(['canvas', 'data', 'columns', 'test'] as const)
+            .filter(v => (v !== 'test' || showTestTab) && (v !== 'columns' || scope.columnsTab))
+            .map(v => ({
+              id: v,
+              label: v === 'canvas' ? 'Canvas' : v === 'columns' ? 'Columns' : v === 'data' ? 'Spreadsheet' : 'Test',
+            }))}
+        />
       </div>
 
-      {/* AI Readiness Pill — grouped left as a status after the model name */}
+      {/* AI Readiness Pill — grouped left as a status after the model name.
+          ⚠️ Hidden in POC V2: readiness is phase 2 there ("AI readiness: phase 2" in
+          POCV2_STATUS's locked decisions), and POC's own test is that nothing on screen claims
+          to work when it doesn't. The pill was inherited from POC_SCOPE by the spread. */}
+      {!scope.tableCaching && (
       <div ref={airPillRef} style={{ position: 'relative', flexShrink: 0 }}>
         {airPillTooltip && !hasTable && (
-          <div style={{ position: 'absolute', bottom: 'calc(100% + 7px)', left: '50%', transform: 'translateX(-50%)', background: '#1D232F', color: '#fff', fontSize: 11, fontWeight: 500, padding: '5px 9px', borderRadius: 5, whiteSpace: 'nowrap', zIndex: 300, pointerEvents: 'none', boxShadow: '0 2px 8px rgba(0,0,0,0.18)' }}>
+          <div style={{ position: 'absolute', bottom: 'calc(100% + 7px)', left: '50%', transform: 'translateX(-50%)', background: c['background-base-inverse'], color: c['content-alternate'], fontSize: fs.xs, fontWeight: fw.medium, padding: '5px 9px', borderRadius: 5, whiteSpace: 'nowrap', zIndex: 300, pointerEvents: 'none', boxShadow: '0 2px 8px rgba(0,0,0,0.18)' }}>
             Add at least one table to check AI readiness
           </div>
         )}
@@ -3677,28 +4499,28 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
           onClick={() => { if (hasTable) setAirOpen(o => !o); }}
           disabled={!hasTable}
           style={{
-            display: 'inline-flex', alignItems: 'center', gap: 6, height: 26, boxSizing: 'border-box',
+            display: 'inline-flex', alignItems: 'center', gap: sp.B, height: 26, boxSizing: 'border-box',
             padding: '0 10px 0 9px', borderRadius: 99,
-            border: `1px solid ${!hasTable ? '#E2E6EC' : airOpen ? '#2770EF' : '#C0C6CF'}`,
-            background: '#fff', fontFamily: ff.primary,
-            fontSize: 12, fontWeight: 500,
-            color: !hasTable ? '#A5ACB9' : airOpen ? '#2770EF' : '#64748B',
+            border: `1px solid ${!hasTable ? c['border-divider'] : airOpen ? c['border-brand'] : c['border-default']}`,
+            background: c['background-base'], fontFamily: ff.primary,
+            fontSize: fs.xs, fontWeight: fw.medium,
+            color: !hasTable ? c['content-secondary'] : airOpen ? c['content-brand'] : c['content-secondary'],
             boxShadow: airOpen ? '0 0 0 3px rgba(39,112,239,0.10)' : 'none',
             whiteSpace: 'nowrap', transition: 'border-color 130ms, box-shadow 130ms, color 130ms',
             cursor: hasTable ? 'pointer' : 'not-allowed', opacity: 1,
           }}
           onMouseEnter={e => {
             if (!hasTable) { setAirPillTooltip(true); return; }
-            if (!airOpen) { e.currentTarget.style.borderColor = '#A5ACB9'; e.currentTarget.style.boxShadow = '0 1px 4px rgba(25,35,49,0.08)'; }
+            if (!airOpen) { e.currentTarget.style.borderColor = c['border-default']; e.currentTarget.style.boxShadow = '0 1px 4px rgba(25,35,49,0.08)'; }
           }}
           onMouseLeave={e => {
             setAirPillTooltip(false);
-            if (!airOpen) { e.currentTarget.style.borderColor = hasTable ? '#C0C6CF' : '#E2E6EC'; e.currentTarget.style.boxShadow = 'none'; }
+            if (!airOpen) { e.currentTarget.style.borderColor = hasTable ? c['border-default'] : c['border-divider']; e.currentTarget.style.boxShadow = 'none'; }
           }}
         >
-          <span style={{ width: 7, height: 7, borderRadius: '50%', flexShrink: 0, display: 'inline-block', transition: 'background 150ms', background: !hasTable ? '#E2E6EC' : airOpen ? '#2770EF' : airPillDotColor }} />
+          <span style={{ width: 7, height: 7, borderRadius: '50%', flexShrink: 0, display: 'inline-block', transition: 'background 150ms', background: !hasTable ? c['border-divider'] : airOpen ? c['background-brand'] : airPillDotColor }} />
           <span>{airPillLabel}</span>
-          <svg style={{ color: !hasTable ? '#D1D5DB' : airOpen ? '#71A1F4' : '#A5ACB9', transform: airOpen ? 'rotate(180deg)' : 'none', transition: 'transform 150ms cubic-bezier(0.4,0,0.2,1)', flexShrink: 0 }} width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M5 7l3 3 3-3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          <svg style={{ color: !hasTable ? c['content-tertiary'] : airOpen ? c['border-focus'] : c['content-tertiary'], transform: airOpen ? 'rotate(180deg)' : 'none', transition: 'transform 150ms cubic-bezier(0.4,0,0.2,1)', flexShrink: 0 }} width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M5 7l3 3 3-3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </button>
 
         {/* Dropdown */}
@@ -3709,19 +4531,19 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
             const state = airGetState(item.id);
             const isDone = state === 'done'; const isOOS = state === 'oos'; const isGood = item.sev === 'good';
             const tagText = isDone ? 'Fixed' : isOOS ? 'Skipped' : state === 'awaiting' ? 'Reviewing' : state === 'manual' ? 'Manual' : item.tag;
-            const tagColors: Record<string, { color: string; bg: string }> = { miss: { color: '#E22B3D', bg: 'rgba(226,43,61,0.08)' }, warn: { color: '#B8860B', bg: 'rgba(252,200,56,0.10)' }, good: { color: '#06BF7F', bg: 'rgba(6,191,127,0.09)' }, done: { color: '#06BF7F', bg: 'rgba(6,191,127,0.09)' }, oos: { color: '#A5ACB9', bg: '#F6F8FA' }, Reviewing: { color: '#B8860B', bg: 'rgba(252,200,56,0.10)' }, Manual: { color: '#2770EF', bg: 'rgba(39,112,239,0.08)' } };
+            const tagColors: Record<string, { color: string; bg: string }> = { miss: { color: c['content-failure'], bg: 'rgba(226,43,61,0.08)' }, warn: { color: '#B8860B', bg: 'rgba(252,200,56,0.10)' }, good: { color: c['content-success'], bg: 'rgba(6,191,127,0.09)' }, done: { color: c['content-success'], bg: 'rgba(6,191,127,0.09)' }, oos: { color: c['content-secondary'], bg: c['background-sunken'] }, Reviewing: { color: '#B8860B', bg: 'rgba(252,200,56,0.10)' }, Manual: { color: c['content-brand'], bg: 'rgba(39,112,239,0.08)' } };
             const tagKey = isDone ? 'done' : isOOS ? 'oos' : item.sev;
             const tc = tagColors[tagKey] || tagColors.miss;
             const cbCls = state === 'fixing' || state === 'awaiting' ? 'spin' : isDone ? 'done' : isOOS ? 'oos' : item.sev;
-            const cbBg = isDone || isGood ? '#06BF7F' : isOOS ? '#F6F8FA' : 'transparent';
-            const cbBorder = cbCls === 'spin' ? '#2770EF' : isDone || isGood ? '#06BF7F' : isOOS ? '#E2E6EC' : item.sev === 'miss' ? '#E22B3D' : item.sev === 'warn' ? '#FCC838' : '#06BF7F';
+            const cbBg = isDone || isGood ? c['background-accent-green'] : isOOS ? c['background-sunken'] : 'transparent';
+            const cbBorder = cbCls === 'spin' ? c['border-brand'] : isDone || isGood ? c['border-accent-green'] : isOOS ? c['border-divider'] : item.sev === 'miss' ? c['border-accent-red'] : item.sev === 'warn' ? c['border-accent-yellow'] : c['border-accent-green'];
             return (
-              <div style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 9, borderBottom: '1px solid #F6F8FA' }}>
+              <div style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: sp.B, borderBottom: `1px solid ${c['border-divider']}` }}>
                 <div style={{ width: 16, height: 16, borderRadius: '50%', border: `1.5px solid ${cbBorder}`, background: cbBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, animation: (state === 'fixing' || state === 'awaiting') ? 'air-spin 700ms linear infinite' : 'none' }}>
                   {(isDone || isGood) && <svg width="8" height="8" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                 </div>
-                <span style={{ fontSize: 12, fontWeight: 600, color: isOOS ? '#A5ACB9' : '#1D232F', flex: 1, textDecoration: isOOS ? 'line-through' : 'none' }}>{item.name}</span>
-                <span style={{ fontSize: 9.5, fontWeight: 700, padding: '1px 6px', borderRadius: 3, color: tc.color, background: tc.bg, flexShrink: 0 }}>{tagText}</span>
+                <span style={{ fontSize: fs.xs, fontWeight: fw.semibold, color: isOOS ? c['content-secondary'] : c['content-primary'], flex: 1, textDecoration: isOOS ? 'line-through' : 'none' }}>{item.name}</span>
+                <span style={{ fontSize: fs.xs, fontWeight: fw.semibold, padding: '1px 6px', borderRadius: 3, color: tc.color, background: tc.bg, flexShrink: 0 }}>{tagText}</span>
               </div>
             );
           };
@@ -3729,7 +4551,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
           return (
             <AnchoredMenu open={airOpen} anchorRef={airPillRef} onClose={() => setAirOpen(false)} placement="bottom-end" gap={7} style={{
               width: scope.readinessFlow ? 400 : 292,
-              background: '#fff', border: '1px solid #E2E6EC', borderRadius: scope.readinessFlow ? 16 : 10,
+              background: c['background-base'], border: `1px solid ${c['border-divider']}`, borderRadius: scope.readinessFlow ? 16 : 10,
               boxShadow: '0 8px 28px rgba(25,35,49,0.12), 0 1px 4px rgba(25,35,49,0.06)',
               overflow: 'hidden',
               animation: 'air-fadeIn 140ms cubic-bezier(0,0,0.2,1) both',
@@ -3746,71 +4568,71 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                 /* POC-READINESS-PORT ↑ */
               ) : airDropView === 'intro' ? (
                 <>
-                  <div style={{ padding: '15px 16px 13px', borderBottom: '1px solid #EAEDF2' }}>
-                    <div style={{ fontSize: 10, fontWeight: 700, color: '#A5ACB9', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 7 }}>AI readiness</div>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: '#1D232F', marginBottom: 6, letterSpacing: '-0.3px', lineHeight: 1.3 }}>Make this model work with Spotter</div>
-                    <div style={{ fontSize: 12, color: '#64748B', lineHeight: 1.55, marginBottom: 12 }}>Run a 10-second check. Get a precise diagnosis — and fix every gap with a single click.</div>
+                  <div style={{ padding: '15px 16px 13px', borderBottom: `1px solid ${c['border-divider']}` }}>
+                    <div style={{ fontSize: fs.xs, fontWeight: fw.semibold, color: c['content-secondary'], textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: sp.B }}>AI readiness</div>
+                    <div style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'], marginBottom: sp.B, letterSpacing: '-0.3px', lineHeight: 1.3 }}>Make this model work with Spotter</div>
+                    <div style={{ fontSize: fs.xs, color: c['content-secondary'], lineHeight: 1.55, marginBottom: sp.C }}>Run a 10-second check. Get a precise diagnosis — and fix every gap with a single click.</div>
                     {/* Journey dots */}
                     <div style={{ display: 'flex', alignItems: 'center' }}>
-                      <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#A5ACB9', border: '1.5px solid #A5ACB9', flexShrink: 0 }} />
-                      <span style={{ fontSize: 9.5, fontWeight: 500, color: '#A5ACB9', marginLeft: 4, marginRight: 6, whiteSpace: 'nowrap' }}>Not configured</span>
-                      {[0,1,2,3].map(i => <React.Fragment key={i}><div style={{ width: 18, height: 1.5, background: '#EAEDF2', flexShrink: 0 }} /><div style={{ width: 7, height: 7, borderRadius: '50%', background: i === 3 ? 'rgba(6,191,127,0.35)' : '#E2E6EC', flexShrink: 0 }} /></React.Fragment>)}
-                      <span style={{ fontSize: 9.5, fontWeight: 500, color: 'rgba(6,191,127,0.6)', marginLeft: 4, whiteSpace: 'nowrap' }}>Spotter enabled</span>
+                      <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#A5ACB9', border: `1.5px solid ${c['border-default']}`, flexShrink: 0 }} />
+                      <span style={{ fontSize: fs.xs, fontWeight: fw.medium, color: c['content-secondary'], marginLeft: sp.A, marginRight: sp.B, whiteSpace: 'nowrap' }}>Not configured</span>
+                      {[0,1,2,3].map(i => <React.Fragment key={i}><div style={{ width: 18, height: 1.5, background: c['background-subtle'], flexShrink: 0 }} /><div style={{ width: 7, height: 7, borderRadius: '50%', background: i === 3 ? 'rgba(6,191,127,0.35)' : c['background-subtle'], flexShrink: 0 }} /></React.Fragment>)}
+                      <span style={{ fontSize: fs.xs, fontWeight: fw.medium, color: 'rgba(6,191,127,0.6)', marginLeft: sp.A, whiteSpace: 'nowrap' }}>Spotter enabled</span>
                     </div>
                   </div>
                   <div style={{ padding: '13px 16px 14px' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: sp.B, marginBottom: sp.D }}>
                       {[
                         { icon: <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="5.5" stroke="currentColor" strokeWidth="1.3"/><path d="M5.5 8l2 2 3-3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>, label: '5 metadata dimensions', sub: 'Descriptions, synonyms, questions, columns, joins' },
                         { icon: <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M8 2l1.4 4.2H14l-3.7 2.7 1.4 4.3L8 10.5l-3.7 2.7 1.4-4.3L2 6.9h4.6z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/></svg>, label: 'AI fixes, one click each', sub: 'Or apply manually — your choice' },
                         { icon: <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M2 11l3-5 3 3.5 2-2 3 3.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/><rect x="2" y="2" width="12" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.3"/></svg>, label: 'Readiness tracked over time', sub: 'See how the model improves each run' },
                       ].map(({ icon, label, sub }) => (
-                        <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-                          <div style={{ width: 24, height: 24, borderRadius: 6, background: '#F6F8FA', color: '#777E8B', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{icon}</div>
+                        <div key={label} style={{ display: 'flex', alignItems: 'center', gap: sp.B }}>
+                          <div style={{ width: 24, height: 24, borderRadius: 6, background: c['background-sunken'], color: c['content-secondary'], display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{icon}</div>
                           <div style={{ flex: 1 }}>
-                            <span style={{ fontSize: 12, fontWeight: 600, color: '#1D232F', display: 'block' }}>{label}</span>
-                            <span style={{ fontSize: 11, color: '#A5ACB9', display: 'block', marginTop: 1 }}>{sub}</span>
+                            <span style={{ fontSize: fs.xs, fontWeight: fw.semibold, color: c['content-primary'], display: 'block' }}>{label}</span>
+                            <span style={{ fontSize: fs.xs, color: c['content-secondary'], display: 'block', marginTop: 1 }}>{sub}</span>
                           </div>
                         </div>
                       ))}
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: sp.B }}>
                       <button
                         onClick={() => { setAirOpen(false); setAirItemStates({} as Record<AirItemId, AirItemState>); airRunScan(); }}
-                        style={{ flex: 1, padding: 8, borderRadius: 7, border: 'none', background: '#2770EF', color: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: ff.primary, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7 }}
+                        style={{ flex: 1, padding: sp.B, borderRadius: 7, border: 'none', background: c['background-brand'], color: c['content-alternate'], fontSize: fs.xs, fontWeight: fw.semibold, cursor: 'pointer', fontFamily: ff.primary, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: sp.B }}
                         onMouseEnter={e => { e.currentTarget.style.background = '#2359B6'; }}
-                        onMouseLeave={e => { e.currentTarget.style.background = '#2770EF'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = c['background-brand']; }}
                       >
                         {starSVG} Check AI readiness
                       </button>
-                      <span style={{ fontSize: 10.5, color: '#A5ACB9', whiteSpace: 'nowrap', flexShrink: 0 }}>~10 sec</span>
+                      <span style={{ fontSize: fs.xs, color: c['content-secondary'], whiteSpace: 'nowrap', flexShrink: 0 }}>~10 sec</span>
                     </div>
                   </div>
                 </>
               ) : airPendingCount > 0 ? (
                 <>
-                  <div style={{ padding: '11px 16px 10px', borderBottom: '1px solid #EAEDF2' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 3 }}>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: '#1D232F', flex: 1 }}>AI readiness check</span>
-                      <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 99, background: '#F6F8FA', color: '#777E8B', border: '1px solid #EAEDF2' }}>Not configured</span>
+                  <div style={{ padding: '11px 16px 10px', borderBottom: `1px solid ${c['border-divider']}` }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, marginBottom: sp.A }}>
+                      <span style={{ fontSize: fs.xs, fontWeight: fw.semibold, color: c['content-primary'], flex: 1 }}>AI readiness check</span>
+                      <span style={{ fontSize: fs.xs, fontWeight: fw.semibold, padding: '2px 8px', borderRadius: 99, background: c['background-sunken'], color: c['content-secondary'], border: `1px solid ${c['border-divider']}` }}>Not configured</span>
                     </div>
-                    <div style={{ fontSize: 11, color: '#64748B' }}>{airSubText}</div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 7 }}>
-                      <div style={{ flex: 1, height: 4, background: '#EAEDF2', borderRadius: 99, overflow: 'hidden' }}>
+                    <div style={{ fontSize: fs.xs, color: c['content-secondary'] }}>{airSubText}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, marginTop: sp.B }}>
+                      <div style={{ flex: 1, height: 4, background: c['background-subtle'], borderRadius: 99, overflow: 'hidden' }}>
                         <div style={{ height: '100%', width: `${airPct}%`, borderRadius: 99, background: airColor, transition: 'width 700ms cubic-bezier(0.4,0,0.2,1) 200ms' }} />
                       </div>
-                      <span style={{ fontSize: 10, fontWeight: 700, color: '#777E8B', whiteSpace: 'nowrap' }}>{airPct}%</span>
+                      <span style={{ fontSize: fs.xs, fontWeight: fw.semibold, color: c['content-secondary'], whiteSpace: 'nowrap' }}>{airPct}%</span>
                     </div>
                   </div>
                   <div style={{ maxHeight: 200, overflowY: 'auto' }}>
                     {AIR_ITEMS.map(item => <AirTaskCompact key={item.id} item={item} />)}
                   </div>
-                  <div style={{ padding: '10px 16px', borderTop: '1px solid #EAEDF2', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ padding: '10px 16px', borderTop: `1px solid ${c['border-divider']}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <button
                       onClick={() => { setAirOpen(false); setAirItemStates(prev => { const n = { ...prev } as Record<AirItemId, AirItemState>; AIR_ITEMS.forEach(it => { if (n[it.id] !== 'oos') n[it.id] = 'pending'; }); return n; }); airRunScan(); }}
-                      style={{ fontSize: 11, color: '#64748B', background: 'none', border: '1px solid #EAEDF2', borderRadius: 5, padding: '4px 10px', cursor: 'pointer', fontFamily: ff.primary, fontWeight: 500 }}
-                      onMouseEnter={e => { e.currentTarget.style.borderColor = '#C0C6CF'; }}
-                      onMouseLeave={e => { e.currentTarget.style.borderColor = '#EAEDF2'; }}
+                      style={{ fontSize: fs.xs, color: c['content-secondary'], background: 'none', border: `1px solid ${c['border-divider']}`, borderRadius: 5, padding: '4px 10px', cursor: 'pointer', fontFamily: ff.primary, fontWeight: fw.medium }}
+                      onMouseEnter={e => { e.currentTarget.style.borderColor = c['border-default']; }}
+                      onMouseLeave={e => { e.currentTarget.style.borderColor = c['border-divider']; }}
                     >Run again</button>
                     <button
                       onClick={() => {
@@ -3818,9 +4640,9 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                         setAirItemStates(prev => { const n = { ...prev } as Record<AirItemId, AirItemState>; AIR_ITEMS.forEach(it => { if (it.sev !== 'good' && (n[it.id] === 'pending' || !n[it.id])) n[it.id] = 'fixing'; }); return n; });
                         setTimeout(() => { setAirItemStates(prev => { const n = { ...prev } as Record<AirItemId, AirItemState>; AIR_ITEMS.forEach(it => { if (n[it.id] === 'fixing') n[it.id] = 'done'; }); return n; }); }, 1500);
                       }}
-                      style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#fff', background: '#2770EF', border: 'none', borderRadius: 5, padding: '4px 10px', cursor: 'pointer', fontFamily: ff.primary, fontWeight: 600 }}
+                      style={{ display: 'flex', alignItems: 'center', gap: sp.A, fontSize: fs.xs, color: c['content-alternate'], background: c['background-brand'], border: 'none', borderRadius: 5, padding: '4px 10px', cursor: 'pointer', fontFamily: ff.primary, fontWeight: fw.semibold }}
                       onMouseEnter={e => { e.currentTarget.style.background = '#2359B6'; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = '#2770EF'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = c['background-brand']; }}
                     >
                       {starSVG} Fix all with AI
                     </button>
@@ -3828,32 +4650,32 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                 </>
               ) : airTuneRecsCount === null ? (
                 <>
-                  <div style={{ padding: '15px 16px 13px', borderBottom: '1px solid #EAEDF2' }}>
-                    <div style={{ fontSize: 10, fontWeight: 700, color: '#A5ACB9', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 7 }}>Model tuning</div>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: '#1D232F', marginBottom: 6, letterSpacing: '-0.3px', lineHeight: 1.3 }}>Tune Spotter with sample questions</div>
-                    <div style={{ fontSize: 12, color: '#64748B', lineHeight: 1.55 }}>Simulate how Spotter answers your sample questions. Rate each answer to identify gaps and get targeted metadata fixes.</div>
+                  <div style={{ padding: '15px 16px 13px', borderBottom: `1px solid ${c['border-divider']}` }}>
+                    <div style={{ fontSize: fs.xs, fontWeight: fw.semibold, color: c['content-secondary'], textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: sp.B }}>Model tuning</div>
+                    <div style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'], marginBottom: sp.B, letterSpacing: '-0.3px', lineHeight: 1.3 }}>Tune Spotter with sample questions</div>
+                    <div style={{ fontSize: fs.xs, color: c['content-secondary'], lineHeight: 1.55 }}>Simulate how Spotter answers your sample questions. Rate each answer to identify gaps and get targeted metadata fixes.</div>
                   </div>
                   <div style={{ padding: '13px 16px 14px' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: sp.B, marginBottom: sp.D }}>
                       {[
                         { icon: <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="5.5" stroke="currentColor" strokeWidth="1.3"/><path d="M5 8l2 2.5 4-4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>, label: '3 sample questions', sub: 'Generated from your model schema' },
                         { icon: <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><rect x="2" y="4" width="12" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><path d="M5 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1" stroke="currentColor" strokeWidth="1.3"/><path d="M5 8h6M5 11h4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>, label: 'Rate each Spotter answer', sub: 'Correct, incorrect, or out of scope' },
                         { icon: <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M2 11l3-5 3 3.5 2-2 3 3.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/><rect x="2" y="2" width="12" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.3"/></svg>, label: 'Get metadata improvements', sub: 'Targeted fixes based on your ratings' },
                       ].map(({ icon, label, sub }) => (
-                        <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-                          <div style={{ width: 24, height: 24, borderRadius: 6, background: '#F6F8FA', color: '#777E8B', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{icon}</div>
+                        <div key={label} style={{ display: 'flex', alignItems: 'center', gap: sp.B }}>
+                          <div style={{ width: 24, height: 24, borderRadius: 6, background: c['background-sunken'], color: c['content-secondary'], display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{icon}</div>
                           <div style={{ flex: 1 }}>
-                            <span style={{ fontSize: 12, fontWeight: 600, color: '#1D232F', display: 'block' }}>{label}</span>
-                            <span style={{ fontSize: 11, color: '#A5ACB9', display: 'block', marginTop: 1 }}>{sub}</span>
+                            <span style={{ fontSize: fs.xs, fontWeight: fw.semibold, color: c['content-primary'], display: 'block' }}>{label}</span>
+                            <span style={{ fontSize: fs.xs, color: c['content-secondary'], display: 'block', marginTop: 1 }}>{sub}</span>
                           </div>
                         </div>
                       ))}
                     </div>
                     <button
                       onClick={airStartTuning}
-                      style={{ width: '100%', padding: 8, borderRadius: 7, border: 'none', background: '#2770EF', color: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: ff.primary, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7 }}
+                      style={{ width: '100%', padding: sp.B, borderRadius: 7, border: 'none', background: c['background-brand'], color: c['content-alternate'], fontSize: fs.xs, fontWeight: fw.semibold, cursor: 'pointer', fontFamily: ff.primary, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: sp.B }}
                       onMouseEnter={e => { e.currentTarget.style.background = '#2359B6'; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = '#2770EF'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = c['background-brand']; }}
                     >
                       {starSVG} Tune model
                     </button>
@@ -3862,27 +4684,27 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
               ) : (
                 <>
                   <div style={{ padding: '15px 16px 14px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, marginBottom: sp.B }}>
                       <div style={{ width: 20, height: 20, borderRadius: '50%', background: airTuneRecsCount > 0 ? 'rgba(252,200,56,0.15)' : 'rgba(6,191,127,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                         {airTuneRecsCount > 0
                           ? <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M6 3v3.5l2 1.5" stroke="#B8860B" strokeWidth="1.4" strokeLinecap="round"/><circle cx="6" cy="6" r="5" stroke="#B8860B" strokeWidth="1.2"/></svg>
-                          : <svg width="9" height="9" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#06BF7F" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                          : <svg width="9" height="9" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke={c['content-success']} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
                         }
                       </div>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: '#1D232F' }}>
+                      <span style={{ fontSize: fs.xs, fontWeight: fw.semibold, color: c['content-primary'] }}>
                         {airTuneRecsCount > 0 ? `${airTuneRecsCount} tuning fix${airTuneRecsCount === 1 ? '' : 'es'} found` : 'All answers correct'}
                       </span>
                     </div>
-                    <div style={{ fontSize: 12, color: '#64748B', lineHeight: 1.5, marginBottom: 12 }}>
+                    <div style={{ fontSize: fs.xs, color: c['content-secondary'], lineHeight: 1.5, marginBottom: sp.C }}>
                       {airTuneRecsCount > 0
                         ? 'Review the metadata recommendations in the agent panel and apply them to improve Spotter accuracy.'
                         : 'Spotter answered all sample questions correctly. The model is well-tuned.'}
                     </div>
                     <button
                       onClick={airStartTuning}
-                      style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#64748B', background: 'none', border: '1px solid #EAEDF2', borderRadius: 5, padding: '5px 11px', cursor: 'pointer', fontFamily: ff.primary, fontWeight: 500 }}
-                      onMouseEnter={e => { e.currentTarget.style.borderColor = '#C0C6CF'; }}
-                      onMouseLeave={e => { e.currentTarget.style.borderColor = '#EAEDF2'; }}
+                      style={{ display: 'flex', alignItems: 'center', gap: sp.A, fontSize: fs.xs, color: c['content-secondary'], background: 'none', border: `1px solid ${c['border-divider']}`, borderRadius: 5, padding: '5px 11px', cursor: 'pointer', fontFamily: ff.primary, fontWeight: fw.medium }}
+                      onMouseEnter={e => { e.currentTarget.style.borderColor = c['border-default']; }}
+                      onMouseLeave={e => { e.currentTarget.style.borderColor = c['border-divider']; }}
                     >
                       {starSVG} Tune again
                     </button>
@@ -3893,21 +4715,33 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
           );
         })()}
       </div>
+      )}
 
       <div style={{ flex: 1 }} />
       {/* Controls — draft status + publish (right group) */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: sp.C }}>
         {/* Save state is status, not an action. It was becoming a bordered green pill on
             publish, which reads as a button appearing next to the real one — so both
             states share the draft treatment and only the words change. The Publish button
             turning into Republish carries the state change too. */}
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 500, color: '#A5ACB9', letterSpacing: '0.01em', userSelect: 'none', flexShrink: 0, whiteSpace: 'nowrap' }}>
-          <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M4 8.5l2.5 2.5L12 5.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
-          {published ? 'Published just now' : 'Draft saved 1 min ago'}
-        </span>
-        {/* Publish */}
-        <button onClick={() => setPublishOpen(true)} style={{ padding: '6px 16px', borderRadius: RADIUS6, border: 'none', background: '#2770EF', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: ff.primary }}>
-          {published ? 'Republish' : 'Publish'}
+        {/* POC V2 has no draft state — draft/publish is explicitly out of MVP scope, so
+            a "Draft saved" line here would advertise a concept the cut doesn't have. */}
+        {!saveMode && (
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: sp.A, fontSize: fs.xs, fontWeight: fw.medium, color: c['content-secondary'], letterSpacing: '0.01em', userSelect: 'none', flexShrink: 0, whiteSpace: 'nowrap' }}>
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M4 8.5l2.5 2.5L12 5.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            {published ? 'Published just now' : 'Draft saved 1 min ago'}
+          </span>
+        )}
+        {/* Save (POC V2) or Publish.
+            `saveMode` follows the current model editor: Save commits and leaves for
+            the model's detail page, with no confirmation modal in between. The
+            publish modal, its Sources/Cache summary and the Spotter toast are all
+            skipped — the detail page is the confirmation. */}
+        <button
+          onClick={() => (saveMode ? onPublished?.(modelName) : setPublishOpen(true))}
+          style={{ padding: '6px 16px', borderRadius: RADIUS6, border: 'none', background: c['background-brand'], color: c['content-alternate'], fontSize: fs.xs, fontWeight: fw.semibold, cursor: 'pointer', fontFamily: ff.primary }}
+        >
+          {saveMode ? 'Save model' : published ? 'Republish' : 'Publish'}
         </button>
         {/* SpotterX embed: close button (or any right-slot node) */}
         {embedHeaderRight}
@@ -3931,18 +4765,18 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
       <div style={{
         height: 48, flexShrink: 0,
         background: 'transparent',
-        display: 'flex', alignItems: 'center', padding: '0 12px', gap: 6,
+        display: 'flex', alignItems: 'center', padding: '0 12px', gap: sp.B,
       }}>
-        <span style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: fw.semibold, color: '#1D232F', padding: '3px 6px', fontFamily: ff.primary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>New chat</span>
+        <span style={{ flex: 1, minWidth: 0, fontSize: fs.xs, fontWeight: fw.semibold, color: c['content-primary'], padding: '3px 6px', fontFamily: ff.primary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>New chat</span>
         {/* Collapsing pre-model would leave an empty screen — there's nothing
             behind the chat to collapse towards until the model exists. */}
         {!preModel && (
         <button
           onClick={() => setAgentCollapsed(true)}
           title="Collapse agent panel"
-          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, borderRadius: RADIUS6, border: 'none', background: 'none', color: '#777E8B', cursor: 'pointer', flexShrink: 0 }}
-          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#F6F8FA'; (e.currentTarget as HTMLElement).style.color = '#1D232F'; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'none'; (e.currentTarget as HTMLElement).style.color = '#777E8B'; }}
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, borderRadius: RADIUS6, border: 'none', background: 'none', color: c['content-secondary'], cursor: 'pointer', flexShrink: 0 }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = c['background-sunken']; (e.currentTarget as HTMLElement).style.color = c['content-primary']; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'none'; (e.currentTarget as HTMLElement).style.color = c['content-secondary']; }}
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
             <rect x="1.5" y="2.5" width="13" height="11" rx="2" stroke="currentColor" strokeWidth="1.3"/>
@@ -4016,6 +4850,214 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
     }
   };
 
+  // ── Data browser search ─────────────────────────────────────────────────────
+  //
+  // Search covers database + schema + table names in one box, and results render as
+  // a **flat list with breadcrumb context** rather than a filtered tree — so two
+  // same-named tables in different schemas are tellable apart. Clicking a result
+  // expands the tree to it. Pattern follows Hex (which also offers `database:` /
+  // `schema:` / `table:` prefix scoping — deliberately not built, not MVP).
+  //
+  // ⚠️ This index mirrors the hardcoded JSX tree below and has to be kept in step
+  // with it by hand. The tree should really be rendered *from* this index; that's a
+  // bigger refactor than this change, and it touches Vision/POC/Demo.
+  const browserIndex: { connId: string; conn: string; db: string; schema: string; table: string; nodeIds: string[] }[] = [
+    ...['dim_accounts', 'support_cases', 'call_metrics', 'customer_found_defects'].map(table => ({
+      connId: 'sf', conn: 'snowflake-prod', db: 'ANALYTICS', schema: 'PUBLIC', table,
+      nodeIds: ['sf', 'sf-analytics', 'sf-public'],
+    })),
+    ...['pendo_nps_enriched', 'csm_account_mapping'].map(table => ({
+      connId: 'bq',
+      conn: scope.databricksConnection ? 'databricks' : 'bigquery-product',
+      db: scope.databricksConnection ? 'product_catalog' : 'product_db',
+      schema: 'raw', table,
+      nodeIds: ['bq', 'bq-db', 'bq-raw'],
+    })),
+    ...(scope.nearStoreConnection
+      ? ['customer_regions', 'csm_account_mapping', 'pendo_nps_enriched', 'customer_health_external'].map(table => ({
+          connId: 'agentdb', conn: 'AgentDB', db: 'AgentDB', schema: 'cached', table,
+          nodeIds: ['agentdb', 'agentdb-cached'],
+        }))
+      : []),
+  ];
+
+  const browserResults = browserQuery.trim()
+    ? browserIndex.filter(r => {
+        if (!showConn(r.connId)) return false;
+        const q = browserQuery.trim().toLowerCase();
+        return r.table.toLowerCase().includes(q)
+          || r.schema.toLowerCase().includes(q)
+          || r.db.toLowerCase().includes(q)
+          || r.conn.toLowerCase().includes(q);
+      })
+    : [];
+
+  /** Jump the tree to a result: expand its ancestors and drop back to the tree. */
+  const revealInTree = (nodeIds: string[]) => {
+    setExpanded(prev => new Set([...prev, ...nodeIds]));
+    setBrowserQuery('');
+  };
+
+  // ── Metrics — everything that is in this model ──────────────────────────────
+  //
+  // The one place that answers "what is in this model": the columns, grouped by the
+  // table they came from, then the formulas, then the filters, then parameters. View,
+  // add, edit and remove all happen here.
+  //
+  // ⚠️ **Sectioned, not flat** (changed 2026-08-13). It was flat on the reasoning that a
+  // cross-table formula has no single table to nest under — which is true, and is why
+  // formulas get their **own** section rather than being filed beneath a table. That
+  // resolves the original objection without making the list a wall of undifferentiated
+  // fields, and it is what lets filters and parameters live here too.
+  //
+  // Actions follow the row's kind: a **column** gets a direct delete icon, because
+  // remove is the only thing you can do to one. A **formula** or **filter** gets a ⋯
+  // menu, because they can be edited as well.
+  //
+  // Formulas and filters listed here are the **model-level** ones (`modelFormulas` /
+  // `modelFilters`), authored from this pane's `+`. Card-level formulas — Komal's node-menu
+  // path — stay on their card and are listed under that table, because there they really
+  // are a column of it.
+  type PaneRow =
+    | { kind: 'column'; key: string; groupId: string; table: string; name: string; type: string }
+    | { kind: 'formula'; key: string; idx: number; name: string; expr: string }
+    | { kind: 'filter'; key: string; idx: number; name: string; summary: string };
+
+  const columnsByTable: { table: string; groupId: string; rows: PaneRow[] }[] = groups.map(g => {
+    const step = g.steps[g.activeStep];
+    return {
+      table: g.tableName,
+      groupId: g.id,
+      rows: (step?.cols ?? TABLE_COLS[g.tableName] ?? [])
+        .map(([col, type]): PaneRow => ({
+          kind: 'column', key: `${g.id}.col.${col}`, groupId: g.id, table: g.tableName, name: col, type,
+        })),
+    };
+  });
+
+  const formulaRows: PaneRow[] = modelFormulas.map((f, i): PaneRow => ({
+    kind: 'formula', key: `model.fx.${f.id}`, idx: i, name: f.name, expr: f.expr,
+  }));
+
+  const filterSummary = (f: { column: string; operator: string; value: string }) =>
+    `${f.column} ${OPERATOR_LABEL[f.operator] ?? f.operator}${
+      f.operator === 'is null' || f.operator === 'is not null' ? '' : ` ${f.value}`}`;
+
+  const filterRows: PaneRow[] = modelFilters.map((f, i): PaneRow => ({
+    kind: 'filter', key: `model.flt.${i}`, idx: i,
+    name: f.name || filterSummary(f),
+    summary: filterSummary(f),
+  }));
+
+  /**
+   * The model's hub — the table with the most joins, falling back to the first one.
+   *
+   * Where a model-level formula gets filed while formulas still live on cards. The
+   * most-connected table is the least arbitrary choice available: it is the same table
+   * `arrangeCanvas` lays the model out from, so it is already the model's centre of gravity.
+   */
+  const modelHubGroupId: string | undefined = (() => {
+    if (!groups.length) return undefined;
+    const degree = new Map<string, number>();
+    for (const g of groups) degree.set(g.id, 0);
+    for (const j of canvasJoins) {
+      degree.set(j.table1Id, (degree.get(j.table1Id) ?? 0) + 1);
+      const right = groups.find(g => g.tableName === j.table2Name);
+      if (right) degree.set(right.id, (degree.get(right.id) ?? 0) + 1);
+    }
+    return [...groups].sort((a, b) => (degree.get(b.id) ?? 0) - (degree.get(a.id) ?? 0))[0]?.id;
+  })();
+
+  const metricQueryLower = browserQuery.trim().toLowerCase();
+  const matchesQuery = (r: PaneRow) =>
+    !metricQueryLower ||
+    r.name.toLowerCase().includes(metricQueryLower) ||
+    (r.kind === 'column' && r.table.toLowerCase().includes(metricQueryLower));
+
+  const paneSections: { title: string; rows: PaneRow[]; groupId?: string; empty?: string }[] = [
+    ...columnsByTable.map(t => ({ title: t.table, groupId: t.groupId, rows: t.rows.filter(matchesQuery) })),
+    { title: 'Formulas', rows: formulaRows.filter(matchesQuery), empty: 'No formulas yet' },
+    { title: 'Filters', rows: filterRows.filter(matchesQuery), empty: 'No filters yet' },
+    // Parameters are listed so the model's contents are complete in one place. Not
+    // authorable in this cut — the section states that rather than being hidden.
+    { title: 'Parameters', rows: [], empty: 'Not in this phase' },
+  ];
+  const paneRowCount = paneSections.reduce((n, s) => n + s.rows.length, 0);
+
+  /**
+   * The columns a **model-level** formula or filter may reference, plus the tables it may
+   * not reach.
+   *
+   * ⚠️ **This is where "you cannot write a formula across tables that aren't joined" is
+   * enforced.** Only the connected component containing the first table counts as the
+   * model — the same rule `buildModelMerge` uses, so what you can reference is exactly
+   * what the merged sheet can produce. Everything outside it is named as unreachable, so
+   * the answer to "why isn't `nps_score` in the list" is on screen rather than being a
+   * null column later.
+   *
+   * Derived here rather than from `buildModelMerge` because that is defined further down
+   * the component and the property panel renders before it.
+   */
+  const modelScope = (() => {
+    if (groups.length === 0) return { cols: [] as Array<{ table: string; col: string; type: string }>, unreachable: [] as string[] };
+    const byName = new Map(groups.map(g => [g.tableName, g]));
+    const idToName = new Map(groups.map(g => [g.id, g.tableName]));
+    const edges = canvasJoins
+      .map(j => ({ left: idToName.get(j.table1Id), right: j.table2Name }))
+      .filter((e): e is { left: string; right: string } => Boolean(e.left && e.right && byName.has(e.left) && byName.has(e.right)));
+    const included = new Set<string>([groups[0].tableName]);
+    let grew = true;
+    while (grew) {
+      grew = false;
+      for (const e of edges) {
+        if (included.has(e.left) !== included.has(e.right)) { included.add(e.left); included.add(e.right); grew = true; }
+      }
+    }
+    const cols = groups
+      .filter(g => included.has(g.tableName))
+      .flatMap(g => (g.steps[g.activeStep]?.cols ?? TABLE_COLS[g.tableName] ?? [])
+        .map(([col, type]) => ({ table: g.tableName, col, type })));
+    return { cols, unreachable: groups.map(g => g.tableName).filter(t => !included.has(t)) };
+  })();
+
+  /** Save a model-level formula or filter from the panel's draft. */
+  const commitModelAction = () => {
+    if (!modelAction) return;
+    if (modelAction.kind === 'formula') {
+      const name = modelFormulaDraft.name.trim();
+      const expr = modelFormulaDraft.expr.trim();
+      if (!name || !expr) return;
+      setModelFormulas(prev => modelAction.editIdx === null
+        ? [...prev, { id: `mf_${prev.length + 1}_${name}`, name, expr }]
+        : prev.map((f, i) => i === modelAction.editIdx ? { ...f, name, expr } : f));
+    } else {
+      const d = modelFilterDraft;
+      const needsValue = d.operator !== 'is null' && d.operator !== 'is not null';
+      if (!d.column || (needsValue && !d.value.trim())) return;
+      const next = { name: d.name.trim(), column: d.column, operator: d.operator, value: d.value.trim() };
+      setModelFilters(prev => modelAction.editIdx === null
+        ? [...prev, next]
+        : prev.map((f, i) => i === modelAction.editIdx ? next : f));
+    }
+    setModelAction(null);
+  };
+
+  // Row actions appear on hover — the list is dense, and a persistent icon per row
+  // reads as six controls rather than six fields. The open ⋯ stays visible so the
+  // menu doesn't hang off something invisible.
+  const paneRowActionStyle: React.CSSProperties = {
+    width: 20, height: 20, flexShrink: 0, border: 'none', background: 'transparent',
+    borderRadius: 4, color: c['content-secondary'], cursor: 'pointer',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    transition: 'opacity 120ms, background 120ms, color 120ms',
+  };
+  const paneMenuItemStyle: React.CSSProperties = {
+    width: '100%', display: 'flex', alignItems: 'center', gap: sp.B,
+    padding: '6px 8px', border: 'none', background: 'transparent',
+    borderRadius: RADIUS6, cursor: 'pointer', textAlign: 'left',
+    fontSize: fs.xs, fontFamily: ff.primary, color: c['content-primary'],
+  };
+
   // ── Data browser panel ──────────────────────────────────────────────────────
 
   const browserPanel = (
@@ -4028,53 +5070,80 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
     }}>
     <div style={{
       width: '100%', height: '100%',
-      background: '#fff', borderRight: browserCollapsed ? 'none' : BORDER,
+      background: c['background-base'], borderRight: browserCollapsed ? 'none' : BORDER,
       display: 'flex', flexDirection: 'column',
       overflow: 'hidden',
     }}>
       {/* Header */}
-      <div style={{ height: 40, display: 'flex', alignItems: 'center', padding: browserCollapsed ? '0' : '0 14px', gap: 8, borderBottom: BORDER, flexShrink: 0, justifyContent: browserCollapsed ? 'center' : undefined }}>
+      <div style={{ height: 40, display: 'flex', alignItems: 'center', padding: browserCollapsed ? '0' : '0 14px', gap: sp.B, borderBottom: BORDER, flexShrink: 0, justifyContent: browserCollapsed ? 'center' : undefined }}>
         {/* POC: single database icon in the header toggles the panel open/closed.
             Vision has no header database icon — it uses the chevron below to
-            collapse, and the topbar database icon to reopen. */}
-        {poc && (
+            collapse, and the topbar database icon to reopen.
+
+            ⚠️ **POC V2 moves the toggle to the right edge** (see below) and so only renders
+            this one while collapsed. A control that closes a left-docked panel belongs on the
+            edge the panel closes *towards* — put it on the left and it sits where the panel's
+            content starts, so it reads as part of the content rather than as the panel's own
+            frame. Collapsed, there is no content to sit beside and it centres in the rail. */}
+        {poc && (browserCollapsed || !scope.metricsPane) && (
           <button onClick={() => setBrowserCollapsed(c => !c)} title={browserCollapsed ? 'Expand data browser' : 'Collapse data browser'}
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, borderRadius: RADIUS6, border: 'none', background: 'transparent', color: '#777E8B', cursor: 'pointer', flexShrink: 0 }}
-            onMouseEnter={e => (e.currentTarget.style.background = '#F0F2F6')}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, borderRadius: RADIUS6, border: 'none', background: 'transparent', color: c['content-secondary'], cursor: 'pointer', flexShrink: 0 }}
+            onMouseEnter={e => (e.currentTarget.style.background = c['background-subtle'])}
             onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
           >
-            <Icon name="database" size="s" color="#777E8B" />
+            <IconTogglePanel size={16} color={c['content-secondary']} />
           </button>
         )}
         {!browserCollapsed && (
           <>
-            <span style={{ fontSize: 12, fontWeight: 600, color: '#1D232F', flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              Data browser
-            </span>
+            {/* Dock panes. POC V2 shares this dock between the warehouse tree and the
+                model's own fields; the other cuts keep the plain title. */}
+            {scope.metricsPane ? (
+              <div style={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0 }}>
+                <SegmentedControl
+                  size="small"
+                  aria-label="Dock pane"
+                  value={dockPane}
+                  onChange={id => { setDockPane(id as typeof dockPane); setBrowserQuery(''); setDetailsTable(null); }}
+                  /*
+                    "Data browser", not "Data". The two panes answer different questions and
+                    the old label blurred them: this one is **everything you could pull from**,
+                    every table in every connected warehouse, most of which isn't in the model.
+                    Metrics is **what's in the model** — the columns and formulas you selected.
+                    Called "Data", it read as the model's data, which is exactly what Metrics is.
+                  */
+                  options={[{ id: 'data', label: 'Data browser' }, { id: 'metrics', label: 'Metrics' }]}
+                />
+              </div>
+            ) : (
+              <span style={{ fontSize: fs.xs, fontWeight: fw.semibold, color: c['content-primary'], flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                Data browser
+              </span>
+            )}
             {/* POC: no cross-source "Add" — only the existing data connections */}
             {!poc && (
             <div style={{ position: 'relative', flexShrink: 0 }}>
               <button
                 ref={browserAddBtnRef}
                 onClick={() => setBrowserAddOpen(o => !o)}
-                style={{ display: 'flex', alignItems: 'center', gap: 3, height: 24, padding: '0 8px', borderRadius: RADIUS6, border: '1px solid #C0C6CF', background: browserAddOpen ? '#F6F8FA' : '#fff', color: '#1D232F', fontSize: 11.5, fontWeight: 500, cursor: 'pointer', whiteSpace: 'nowrap', fontFamily: ff.primary }}
+                style={{ display: 'flex', alignItems: 'center', gap: sp.A, height: 24, padding: '0 8px', borderRadius: RADIUS6, border: `1px solid ${c['border-default']}`, background: browserAddOpen ? c['background-sunken'] : c['background-base'], color: c['content-primary'], fontSize: fs.xs, fontWeight: fw.medium, cursor: 'pointer', whiteSpace: 'nowrap', fontFamily: ff.primary }}
               >
-                <Icon name="plus" size="xs" color="#1D232F" />
+                <Icon name="plus" size="xs" color={c['content-primary']} />
                 Add
-                <Icon name="chevron-down" size="xs" color="#1D232F" />
+                <Icon name="chevron-down" size="xs" color={c['content-primary']} />
               </button>
               {browserAddOpen && (
-                <AnchoredMenu open={browserAddOpen} anchorRef={browserAddBtnRef} onClose={() => setBrowserAddOpen(false)} placement="bottom-end" style={{ background: '#fff', border: '1px solid #E2E6EC', borderRadius: RADIUS8, boxShadow: '0 6px 24px rgba(25,35,49,0.13)', minWidth: 232, padding: '4px 0' }}>
+                <AnchoredMenu open={browserAddOpen} anchorRef={browserAddBtnRef} onClose={() => setBrowserAddOpen(false)} placement="bottom-end" style={{ background: c['background-base'], border: `1px solid ${c['border-divider']}`, borderRadius: RADIUS8, boxShadow: '0 6px 24px rgba(25,35,49,0.13)', minWidth: 232, padding: '4px 0' }}>
                   {addDataItems.map(item => (
                     <button key={item.key} onClick={() => handleAddData(item.key)}
-                      style={{ display: 'flex', alignItems: 'flex-start', gap: 10, width: '100%', padding: '8px 14px', border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left', fontFamily: ff.primary }}
-                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#F6F8FA'}
+                      style={{ display: 'flex', alignItems: 'flex-start', gap: sp.C, width: '100%', padding: '8px 14px', border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left', fontFamily: ff.primary }}
+                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = c['background-sunken']}
                       onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
                     >
-                      <span style={{ color: '#64748B', flexShrink: 0, marginTop: 1, display: 'flex' }}>{item.icon}</span>
+                      <span style={{ color: c['content-secondary'], flexShrink: 0, marginTop: 1, display: 'flex' }}>{item.icon}</span>
                       <span style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                        <span style={{ fontSize: 12, fontWeight: 600, color: '#1D232F' }}>{item.label}</span>
-                        <span style={{ fontSize: 11, color: '#777E8B', fontWeight: 400 }}>{item.desc}</span>
+                        <span style={{ fontSize: fs.xs, fontWeight: fw.semibold, color: c['content-primary'] }}>{item.label}</span>
+                        <span style={{ fontSize: fs.xs, color: c['content-secondary'], fontWeight: fw.regular }}>{item.desc}</span>
                       </span>
                     </button>
                   ))}
@@ -4082,21 +5151,307 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
               )}
             </div>
             )}
+            {/* POC V2: the collapse control sits on the panel's right edge — the edge it
+                closes towards, and the one that stays put as the panel narrows. */}
+            {scope.metricsPane && (
+              <button onClick={() => setBrowserCollapsed(true)} style={{ ...phdrBtnStyle, marginRight: -4 }} title="Collapse data browser">
+                <IconTogglePanel size={15} />
+              </button>
+            )}
             {/* Vision: chevron collapses the panel to 0; reopen from the topbar. */}
             {!poc && (
               <button onClick={() => setBrowserCollapsed(true)} style={phdrBtnStyle} title="Collapse">
-                <IconChevronLeft size={12} />
+                <IconTogglePanel size={15} />
               </button>
             )}
           </>
         )}
       </div>
 
-      {browserCollapsed ? null : (
+      {/* ── Metrics pane ─────────────────────────────────────────────────────────
+          The model's own fields: every selected column across every table, plus
+          formulas, flat. `fx` marks a formula — the same badge the Spreadsheet uses,
+          rather than a second marker for the same idea. Nothing here is drawn on the
+          canvas; a field that spans tables has no card to anchor to. */}
+      {!browserCollapsed && scope.metricsPane && dockPane === 'metrics' ? (
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          <div style={{ height: 32, boxSizing: 'border-box', padding: '0 12px', borderBottom: BORDER, flexShrink: 0, display: 'flex', alignItems: 'center', gap: sp.B }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <SearchBar
+                size="sm"
+                placeholder="Search fields"
+                value={browserQuery}
+                onChange={setBrowserQuery}
+              />
+            </div>
+            {/* Formula creation — the second entry point; the canvas node menu is the
+                other. Same object either way. */}
+            {/*
+              No canvas selection required. A model-level formula is the whole reason this pane
+              exists — a metric like take rate spans two tables, so demanding you first pick one
+              of them contradicts the point. The selection requirement was never a design choice:
+              `addStep` needs a card id to hang the step on, and this button had no other way to
+              supply one.
+
+              ⚠️ Until model-level authoring lands (POCV2_STATUS 5b, property panel), the formula
+              is still *stored* on a card — the most-connected one, which is the model's hub. The
+              only visible consequence is that deleting that card deletes the formula with it.
+             */}
+            <button
+              ref={paneAddAnchor}
+              // Opens a menu rather than adding a formula directly: this pane owns both
+              // formulas and filters now, so one `+` has to offer both.
+              onClick={() => setPaneAddOpen(o => !o)}
+              disabled={!modelHubGroupId}
+              title={modelHubGroupId ? 'Add to the model' : 'Add a table to the model first'}
+              /*
+                Matched to the search field beside it — same 28px box, `border-default` stroke
+                and `radius.lg` — and to the filter button in the Data browser pane, since the
+                two panes share this dock and their action buttons should not disagree about
+                what a small square control looks like.
+
+                ⚠️ **The enabled state now reads the same flag the click does.** Border, colour
+                and cursor were keyed off `selectedId` while `disabled` was keyed off
+                `modelHubGroupId` — left over from when this button required a canvas selection.
+                Once that requirement was dropped the two drifted apart, so with nothing selected
+                the button rendered greyed-out and uninteractive while actually working. It looked
+                broken in exactly the state it was fixed for.
+              */
+              style={{
+                width: SEARCH_ROW_H, height: SEARCH_ROW_H, flexShrink: 0, borderRadius: radius.lg,
+                border: `1px solid ${modelHubGroupId ? c['border-default'] : c['border-divider']}`,
+                background: c['background-base'],
+                color: modelHubGroupId ? c['content-secondary'] : c['content-tertiary'],
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: modelHubGroupId ? 'pointer' : 'default',
+                transition: 'border-color 120ms, color 120ms',
+              }}
+            >
+              <Icon name="plus" size="s" color="currentColor" />
+            </button>
+            {/* `+` → Add formula · Add filter. Both open the property panel, which is
+                where authoring lives; this pane is where the results are listed. */}
+            <AnchoredMenu
+              open={paneAddOpen}
+              anchorRef={paneAddAnchor}
+              onClose={() => setPaneAddOpen(false)}
+              placement="bottom-end"
+              gap={6}
+              style={{ background: c['background-base'], border: BORDER, borderRadius: RADIUS8, boxShadow: '0 8px 28px rgba(25,35,49,0.16)', padding: 4, minWidth: 168 }}
+            >
+              {([['formula', 'Add formula'], ['filter', 'Add filter']] as const).map(([op, label]) => (
+                <button
+                  key={op}
+                  onClick={() => {
+                    setPaneAddOpen(false);
+                    /*
+                      Model-level, so **no card is selected and no chip is created.** This
+                      used to call `addStep(op, …, modelHubGroupId)`, which filed the formula
+                      on the most-connected table — selecting that card, stamping a Formula
+                      chip on it, and pointing the preview at it. All three said the metric
+                      belonged to a table it doesn't belong to.
+                    */
+                    if (op === 'formula') { setModelFormulaDraft({ id: null, name: '', expr: '' }); setModelFormulaTouched(false); }
+                    else setModelFilterDraft({ name: '', column: modelScope.cols[0]?.col ?? '', operator: '=', value: '' });
+                    setSelectedIds(new Set());
+                    setModelAction({ kind: op, editIdx: null });
+                  }}
+                  style={{
+                    width: '100%', display: 'flex', alignItems: 'center', gap: sp.B,
+                    padding: '6px 8px', border: 'none', background: 'transparent',
+                    borderRadius: RADIUS6, cursor: 'pointer', textAlign: 'left',
+                    fontSize: fs.xs, fontFamily: ff.primary, color: c['content-primary'],
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.background = c['background-sunken'])}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                >
+                  <Icon name={op === 'formula' ? 'formula' : 'filter'} size="xs" color={c['content-secondary']} />
+                  {label}
+                </button>
+              ))}
+            </AnchoredMenu>
+          </div>
+          <div style={{ flex: 1, overflowY: 'auto', padding: '6px 6px 10px' }}>
+            {groups.length === 0 ? (
+              <div style={{ padding: '28px 14px', textAlign: 'center', fontSize: fs.xs, color: c['content-secondary'], lineHeight: 1.5 }}>
+                No fields yet — add a table to the model.
+              </div>
+            ) : paneRowCount === 0 && browserQuery.trim() ? (
+              <div style={{ padding: '28px 14px', textAlign: 'center', fontSize: fs.xs, color: c['content-secondary'], lineHeight: 1.5 }}>
+                Nothing matches “{browserQuery.trim()}”.
+              </div>
+            ) : (
+              paneSections.map(section => {
+                // A table section with nothing in it is hidden while searching (it just
+                // matched nothing) but shown otherwise, because an empty table is a fact
+                // worth seeing. Formulas / Filters / Parameters always show their heading —
+                // "you can have these and don't" is the thing the pane is telling you.
+                const isTable = section.empty === undefined;
+                if (isTable && section.rows.length === 0 && browserQuery.trim()) return null;
+                // A search result is never hidden behind a collapsed heading — you asked for
+                // it by name, so finding it and then not showing it would be the wrong answer.
+                const collapsed = collapsedPaneSections.has(section.title) && !browserQuery.trim();
+                return (
+                  <div key={section.title} style={{ marginBottom: sp.B }}>
+                    <div
+                      onClick={() => setCollapsedPaneSections(prev => {
+                        const next = new Set(prev);
+                        if (next.has(section.title)) next.delete(section.title); else next.add(section.title);
+                        return next;
+                      })}
+                      style={{ display: 'flex', alignItems: 'center', gap: sp.A, padding: '6px 8px 4px', cursor: 'pointer', borderRadius: RADIUS6 }}
+                      onMouseEnter={e => (e.currentTarget.style.background = c['background-sunken'])}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                      title={collapsed ? `Expand ${section.title}` : `Collapse ${section.title}`}
+                    >
+                      <span style={{
+                        display: 'flex', flexShrink: 0, color: c['content-tertiary'],
+                        transform: collapsed ? 'rotate(-90deg)' : 'none',
+                        transition: 'transform 120ms',
+                      }}>
+                        <Icon name="caret-down" size="xs" color="currentColor" />
+                      </span>
+                      {isTable && <Icon name="table" size="xs" color={c['content-tertiary']} />}
+                      <span style={{ fontSize: fs.xs, fontWeight: fw.semibold, color: c['content-secondary'], textTransform: 'uppercase', letterSpacing: '0.06em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {section.title}
+                      </span>
+                      {section.rows.length > 0 && (
+                        <span style={{ fontSize: fs.xs, color: c['content-tertiary'], flexShrink: 0 }}>{section.rows.length}</span>
+                      )}
+                    </div>
+                    {collapsed ? null : section.rows.length === 0 ? (
+                      <div style={{ padding: '2px 8px 6px', fontSize: fs.xs, color: c['content-tertiary'] }}>
+                        {section.empty ?? 'No columns'}
+                      </div>
+                    ) : section.rows.map(r => (
+                      <div
+                        key={r.key}
+                        data-pane-row={r.key}
+                        style={{ display: 'flex', alignItems: 'center', gap: sp.B, padding: '5px 8px', borderRadius: RADIUS6 }}
+                        onMouseEnter={e => {
+                          e.currentTarget.style.background = c['background-sunken'];
+                          const a = e.currentTarget.querySelector('[data-row-action]') as HTMLElement | null;
+                          if (a) a.style.opacity = '1';
+                        }}
+                        onMouseLeave={e => {
+                          e.currentTarget.style.background = 'transparent';
+                          const a = e.currentTarget.querySelector('[data-row-action]') as HTMLElement | null;
+                          if (a && paneMenu?.key !== r.key) a.style.opacity = '0';
+                        }}
+                        title={r.kind === 'formula' ? `${r.name} = ${r.expr}` : r.kind === 'filter' ? r.summary : `${r.table}.${r.name}`}
+                      >
+                        {r.kind === 'formula' ? (
+                          <span style={{ flexShrink: 0, fontSize: fs.xs, fontWeight: fw.semibold, color: c['content-accent-purple'], border: `1px solid ${c['border-accent-purple']}`, borderRadius: 3, padding: '0 4px', lineHeight: '16px', fontStyle: 'italic' }}>fx</span>
+                        ) : r.kind === 'filter' ? (
+                          <Icon name="filter" size="xs" color={c['content-secondary']} />
+                        ) : (
+                          <Icon name="data-column" size="xs" color={c['content-secondary']} />
+                        )}
+                        <span style={{ flex: 1, minWidth: 0 }}>
+                          <span style={{ display: 'block', fontSize: fs.xs, color: c['content-primary'], overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</span>
+                          {(r.kind === 'formula' || r.kind === 'filter') && (
+                            <span style={{ display: 'block', fontSize: fs.xs, color: c['content-secondary'], overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {r.kind === 'formula' ? r.expr : r.summary}
+                            </span>
+                          )}
+                        </span>
+                        {r.kind === 'column' && (
+                          <span style={{ fontSize: fs.xs, color: c['content-secondary'], flexShrink: 0 }}>{r.type}</span>
+                        )}
+                        {/* Column → delete directly, the only action there is.
+                            Formula / filter → ⋯, because they can also be edited. */}
+                        {r.kind === 'column' ? (
+                          <button
+                            data-row-action
+                            onClick={() => removeColFromGroup(r.groupId, r.name)}
+                            title={`Remove ${r.name} from the model`}
+                            style={{ ...paneRowActionStyle, opacity: 0 }}
+                            onMouseEnter={e => { e.currentTarget.style.background = c['background-inset']; e.currentTarget.style.color = c['content-failure']; }}
+                            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = c['content-secondary']; }}
+                          >
+                            <Icon name="trash-can" size="xs" color="currentColor" />
+                          </button>
+                        ) : (
+                          <button
+                            data-row-action
+                            ref={paneMenu?.key === r.key ? paneMenuAnchor : undefined}
+                            onClick={() => setPaneMenu(prev => prev?.key === r.key ? null : {
+                              key: r.key, idx: r.idx, kind: r.kind,
+                            })}
+                            title="More"
+                            style={{ ...paneRowActionStyle, opacity: paneMenu?.key === r.key ? 1 : 0 }}
+                            onMouseEnter={e => (e.currentTarget.style.background = c['background-inset'])}
+                            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                          >
+                            <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor"><circle cx="2" cy="6" r="1.1"/><circle cx="6" cy="6" r="1.1"/><circle cx="10" cy="6" r="1.1"/></svg>
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                );
+              })
+            )}
+            {/* Edit / Remove for a formula or a filter. Edit opens the property panel on
+                that step — the same surface that authored it. */}
+            <AnchoredMenu
+              open={Boolean(paneMenu)}
+              anchorRef={paneMenuAnchor}
+              onClose={() => setPaneMenu(null)}
+              placement="bottom-end"
+              gap={4}
+              style={{ background: c['background-base'], border: BORDER, borderRadius: RADIUS8, boxShadow: '0 8px 28px rgba(25,35,49,0.16)', padding: 4, minWidth: 150 }}
+            >
+              {paneMenu && (
+                <>
+                  <button
+                    onClick={() => {
+                      const m = paneMenu;
+                      setPaneMenu(null);
+                      // Model-level: reopen the same panel that authored it, seeded, with no
+                      // card selected — the object doesn't belong to one.
+                      setSelectedIds(new Set());
+                      if (m.kind === 'formula') {
+                        const f = modelFormulas[m.idx];
+                        setModelFormulaDraft({ id: f?.id ?? null, name: f?.name ?? '', expr: f?.expr ?? '' });
+                        setModelFormulaTouched(false);
+                      } else {
+                        const f = modelFilters[m.idx];
+                        setModelFilterDraft({ name: f?.name ?? '', column: f?.column ?? '', operator: f?.operator ?? '=', value: f?.value ?? '' });
+                      }
+                      setModelAction({ kind: m.kind, editIdx: m.idx });
+                    }}
+                    style={paneMenuItemStyle}
+                    onMouseEnter={e => (e.currentTarget.style.background = c['background-sunken'])}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                  >
+                    <Icon name="pencil" size="xs" color={c['content-secondary']} />
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => {
+                      const m = paneMenu;
+                      setPaneMenu(null);
+                      if (m.kind === 'formula') setModelFormulas(prev => prev.filter((_, i) => i !== m.idx));
+                      else setModelFilters(prev => prev.filter((_, i) => i !== m.idx));
+                    }}
+                    style={{ ...paneMenuItemStyle, color: c['content-failure'] }}
+                    onMouseEnter={e => (e.currentTarget.style.background = c['background-sunken'])}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                  >
+                    <Icon name="trash-can" size="xs" color="currentColor" />
+                    Remove
+                  </button>
+                </>
+              )}
+            </AnchoredMenu>
+          </div>
+        </div>
+      ) : browserCollapsed ? null : (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           {/* Browser tabs — hidden when locked to a single connection (POC, Demo) */}
           {scope.browserCategoryTabs && (
-          <div style={{ display: 'flex', borderBottom: BORDER, flexShrink: 0, background: '#fff', padding: '0 10px', gap: 16 }}>
+          <div style={{ display: 'flex', borderBottom: BORDER, flexShrink: 0, background: c['background-base'], padding: '0 10px', gap: sp.D }}>
             {(['warehouse', 'business', 'external'] as const).map(tab => {
               const isActive = activeBrowserTab === tab;
               const label = tab === 'warehouse' ? 'Warehouse' : tab === 'business' ? 'Business Apps' : 'External sources';
@@ -4110,10 +5465,10 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                   }}
                 >
                   <span style={{
-                    fontSize: 11.5, fontWeight: isActive ? 600 : 500,
-                    color: isActive ? '#2770EF' : '#777E8B',
-                    paddingBottom: 7,
-                    borderBottom: `2px solid ${isActive ? '#2770EF' : 'transparent'}`,
+                    fontSize: fs.xs, fontWeight: isActive ? 600 : 500,
+                    color: isActive ? c['content-brand'] : c['content-secondary'],
+                    paddingBottom: sp.B,
+                    borderBottom: `2px solid ${isActive ? c['border-brand'] : 'transparent'}`,
                     transition: 'color 140ms, border-color 140ms',
                     whiteSpace: 'nowrap', display: 'inline-block',
                   }}>
@@ -4125,38 +5480,61 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
           </div>
           )}
           {/* Search + filter */}
-          <div style={{ padding: '9px 12px 8px', borderBottom: BORDER, flexShrink: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, height: 32, background: '#F6F8FA', border: '1px solid #EAEDF2', borderRadius: RADIUS6, padding: '0 11px', transition: 'border-color 150ms, box-shadow 150ms' }}
-                onFocus={e => { e.currentTarget.style.borderColor = '#71A1F4'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(39,112,239,0.10)'; e.currentTarget.style.background = '#fff'; }}
-                onBlur={e => { e.currentTarget.style.borderColor = '#EAEDF2'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.background = '#F6F8FA'; }}
-              >
-                <svg width="11" height="11" viewBox="0 0 16 16" fill="none" style={{ color: '#777E8B', flexShrink: 0 }}><circle cx="7" cy="7" r="5" stroke="currentColor" strokeWidth="1.5"/><path d="M11 11l3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
-                <input type="text" placeholder="Find tables, columns..." style={{ border: 'none', background: 'transparent', fontSize: 12, color: '#1D232F', outline: 'none', flex: 1, minWidth: 0, fontFamily: ff.primary }} />
+          <div style={{ height: 32, boxSizing: 'border-box', padding: '0 12px', borderBottom: BORDER, flexShrink: 0, position: 'relative', display: 'flex', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: sp.B }}>
+              {/* Radiant's `SearchInput` — it owns the leading icon, the focus ring and the
+                  field styling this was reproducing by hand. The bespoke clear button went with
+                  it: clearing a search is what Escape and select-all-delete already do, and it
+                  was the only reason this needed to be a composed row rather than one field. */}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <SearchBar
+                  size="sm"
+                  placeholder="Search tables, schemas, databases"
+                  value={browserQuery}
+                  onChange={setBrowserQuery}
+                  onClear={() => setBrowserQuery('')}
+                />
               </div>
-              {/* Filter toggle — hidden when locked to a single connection (POC) */}
-              {!poc && <button
+              {/* Filter toggle — a facet narrowing a unified tree, not a mode that
+                  hides connections. Off only in POC, which was single-connection. */}
+              {/*
+                Matched to the search field it sits beside: same 38px box, the same
+                `border-default` stroke, and Radiant's own filter glyph.
+
+                It disagreed with the field on all three — 32px against 38px, `border-divider`
+                against `border-default`, and a hand-drawn glyph — which is what made the row
+                read as two controls from two different kits rather than one search row.
+              */}
+              {scope.browserConnectionFilter && <button
+                ref={filterBtnRef}
                 onClick={() => setFilterOpen(o => !o)}
                 title="Filter connections"
                 style={{
-                  width: 32, height: 32, flexShrink: 0,
-                  border: `1px solid ${filterOpen ? '#71A1F4' : '#EAEDF2'}`,
-                  borderRadius: RADIUS6, background: filterOpen ? 'rgba(39,112,239,0.07)' : '#fff',
-                  color: filterOpen ? '#2770EF' : '#777E8B',
+                  width: SEARCH_ROW_H, height: SEARCH_ROW_H, flexShrink: 0,
+                  border: `1px solid ${filterOpen ? c['border-brand'] : c['border-default']}`,
+                  borderRadius: radius.lg, background: filterOpen ? c['background-information'] : c['background-base'],
+                  color: filterOpen ? c['content-brand'] : c['content-secondary'],
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  cursor: 'pointer', transition: 'all 120ms',
+                  cursor: 'pointer', transition: 'border-color 120ms, background 120ms, color 120ms',
                 }}
               >
-                <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M4.5 8h7M7 12h2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>
+                <Icon name="filter" size="s" color="currentColor" />
               </button>}
             </div>
             {/* Filter panel */}
             {filterOpen && (
-              <div style={{ marginTop: 8, border: BORDER, borderRadius: RADIUS8, background: '#fff', overflow: 'hidden', boxShadow: '0 4px 16px rgba(25,35,49,0.10)' }}>
+              <div
+                ref={filterRef}
+                style={{
+                  position: 'absolute', top: '100%', left: 12, right: 12, marginTop: sp.A,
+                  border: BORDER, borderRadius: RADIUS8, background: c['background-base'], overflow: 'hidden',
+                  boxShadow: '0 8px 24px rgba(25,35,49,0.16)', zIndex: 250,
+                }}
+              >
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 12px 6px' }}>
-                  <span style={{ fontSize: 10, fontWeight: 700, color: '#A5ACB9', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Connections</span>
+                  <span style={{ fontSize: fs.xs, fontWeight: fw.semibold, color: c['content-secondary'], textTransform: 'uppercase', letterSpacing: '0.06em' }}>Connections</span>
                   <span
-                    style={{ fontSize: 11, fontWeight: 600, color: '#2770EF', cursor: 'pointer' }}
+                    style={{ fontSize: fs.xs, fontWeight: fw.semibold, color: c['content-brand'], cursor: 'pointer' }}
                     onClick={() => setFilterConns(filterConns.size === visibleConnIds.length ? new Set() : new Set(visibleConnIds))}
                   >
                     {filterConns.size === visibleConnIds.length ? 'Deselect all' : 'Select all'}
@@ -4170,7 +5548,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                       : { id: 'bq', label: 'bigquery-product', icon: <IconBigquery /> },
                     { id: 'gdrive', label: 'Google Drive', icon: <IconCloud /> },
                     { id: 'sharepoint', label: 'SharePoint', icon: <IconFolder /> },
-                    { id: 'agentdb', label: 'AgentDB', icon: <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><ellipse cx="7" cy="3.5" rx="4.5" ry="1.5" stroke="currentColor" strokeWidth="1.2"/><path d="M2.5 3.5v7c0 .83 2 1.5 4.5 1.5s4.5-.67 4.5-1.5v-7" stroke="currentColor" strokeWidth="1.2"/><path d="M2.5 7c0 .83 2 1.5 4.5 1.5S11.5 7.83 11.5 7" stroke="currentColor" strokeWidth="1.2"/><circle cx="11" cy="11" r="2.5" fill="#2770EF"/><path d="M10 11h2M11 10v2" stroke="white" strokeWidth="1" strokeLinecap="round"/></svg> },
+                    { id: 'agentdb', label: 'AgentDB', icon: <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><ellipse cx="7" cy="3.5" rx="4.5" ry="1.5" stroke="currentColor" strokeWidth="1.2"/><path d="M2.5 3.5v7c0 .83 2 1.5 4.5 1.5s4.5-.67 4.5-1.5v-7" stroke="currentColor" strokeWidth="1.2"/><path d="M2.5 7c0 .83 2 1.5 4.5 1.5S11.5 7.83 11.5 7" stroke="currentColor" strokeWidth="1.2"/><circle cx="11" cy="11" r="2.5" fill={c['content-brand']}/><path d="M10 11h2M11 10v2" stroke="white" strokeWidth="1" strokeLinecap="round"/></svg> },
                   ].filter(conn => visibleConnIds.includes(conn.id)).map(conn => (
                     <div
                       key={conn.id}
@@ -4179,26 +5557,301 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                         if (next.has(conn.id)) next.delete(conn.id); else next.add(conn.id);
                         return next;
                       })}
-                      style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', borderRadius: RADIUS6, cursor: 'pointer', transition: 'background 100ms' }}
-                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#F6F8FA'}
+                      style={{ display: 'flex', alignItems: 'center', gap: sp.B, padding: `${sp.A}px ${sp.B}px`, borderRadius: radius.md, cursor: 'pointer', transition: 'background 100ms' }}
+                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = c['background-sunken']}
                       onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
                     >
-                      <div style={{
-                        width: 14, height: 14, borderRadius: 3, border: `1.5px solid ${filterConns.has(conn.id) ? '#2770EF' : '#D1D5DB'}`,
-                        background: filterConns.has(conn.id) ? '#2770EF' : '#fff',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all 120ms',
-                      }}>
-                        {filterConns.has(conn.id) && <svg width="8" height="8" viewBox="0 0 10 10" fill="none"><path d="M1.5 5.5l2.5 2.5 5-5" stroke="white" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-                      </div>
-                      <span style={{ color: '#A5ACB9', flexShrink: 0, display: 'flex' }}>{conn.icon}</span>
-                      <span style={{ fontSize: 12, color: '#1D232F', fontWeight: 500, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{conn.label}</span>
+                      {/* Radiant's `Checkbox`, not a hand-drawn box and tick — its checked,
+                          hover and focus states are the design system's to define, and this
+                          copy had no focus state at all. The row still owns the click, so the
+                          checkbox is presentational here and the whole row stays the target.
+
+                          ⚠️ **`pointerEvents: 'none'` is what makes the filter work at all.**
+                          `Checkbox` renders `<label><input/></label>`, so a click landing on it
+                          fired twice on the row behind it — once for the label, once for the
+                          activation the label forwards to the input — toggling the connection
+                          on and straight back off. The menu looked completely dead while the
+                          state was in fact changing twice per click. Presentational means it
+                          takes no clicks. */}
+                      <span style={{ pointerEvents: 'none', display: 'flex', flexShrink: 0 }}>
+                        <Checkbox checked={filterConns.has(conn.id)} onChange={() => {}} />
+                      </span>
+                      <span style={{ color: c['content-secondary'], flexShrink: 0, display: 'flex' }}>{conn.icon}</span>
+                      <span style={{ fontSize: fs.xs, color: c['content-primary'], fontWeight: fw.medium, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{conn.label}</span>
                     </div>
                   ))}
                 </div>
               </div>
             )}
           </div>
-          {/* Tree body */}
+          {/* ── Table detail flyout ──────────────────────────────────────────────
+              Sits beside the tree rather than expanding a row: an inline expansion
+              pushes the whole tree down and has no room for metadata. Snowsight and
+              Hex both use a side panel here. Positioned against the browser panel's
+              right edge. Closes on its own X, Esc, re-clicking the same row, or a
+              click anywhere outside it. */}
+          {detailsTable && (() => {
+            const cols = TABLE_COLS[detailsTable] ?? [];
+            const out = deselectedCols[detailsTable] ?? new Set<string>();
+            const meta = tableMetadata[detailsTable];
+            /*
+              ── Two modes, one flyout ────────────────────────────────────────────
+              **Not on canvas:** the original behaviour. Every column starts ticked,
+              unticking opts out, and the button adds the table.
+
+              **Already on canvas:** the flyout becomes the way to *add the columns you
+              skipped*. Columns in the model show ticked and **locked** — unticking here
+              would be a second way to remove, and removal belongs to the Metrics pane.
+              The rest are tickable, and the button reads **Update**.
+
+              It used to say "Already on canvas" on a disabled button, which was a dead
+              end: the table was the one thing you could no longer act on from the place
+              you added it.
+            */
+            const existing = groups.find(g => g.tableName === detailsTable) ?? null;
+            const onCanvasAlready = Boolean(existing);
+            const inModel = existing
+              ? new Set((existing.steps[existing.activeStep]?.cols ?? []).map(([cn]) => cn))
+              : null;
+            // The working set. Falls back to `inModel` on the render before the seed lands.
+            const draft = onCanvasAlready ? (draftCols ?? inModel ?? new Set<string>()) : null;
+            const included = draft ? draft.size : cols.length - out.size;
+            const dirty = Boolean(draft && inModel &&
+              (draft.size !== inModel.size || [...draft].some(cn => !inModel.has(cn))));
+            return (
+              <div
+                ref={detailsRef}
+                style={{
+                  position: 'absolute', left: '100%', top: 48, marginLeft: sp.B,
+                  width: 288, maxHeight: 'calc(100% - 64px)',
+                  background: c['background-base'], border: BORDER, borderRadius: RADIUS8,
+                  boxShadow: '0 8px 28px rgba(25,35,49,0.16)',
+                  zIndex: 240, display: 'flex', flexDirection: 'column', overflow: 'hidden',
+                }}
+              >
+                {/* Header */}
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: sp.B, padding: '11px 12px 9px', borderBottom: BORDER, flexShrink: 0 }}>
+                  <Icon name="table" size="s" color={c['content-secondary']} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: fs.xs, fontWeight: fw.semibold, color: c['content-primary'], overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{detailsTable}</div>
+                    <div style={{ fontSize: fs.xs, color: c['content-secondary'], marginTop: sp.A }}>
+                      {[meta?.rowCount != null ? `${meta.rowCount.toLocaleString()} rows` : null, `${cols.length} columns`, meta?.connection]
+                        .filter(Boolean).join(' · ')}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setDetailsTable(null)}
+                    title="Close"
+                    style={{ width: 20, height: 20, border: 'none', background: 'transparent', borderRadius: 4, color: c['content-secondary'], cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+                    onMouseEnter={e => (e.currentTarget.style.background = c['background-subtle'])}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                  >
+                    <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2.5 2.5l7 7M9.5 2.5l-7 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                  </button>
+                </div>
+
+                {/*
+                  ⚠️ **Capped, and it scrolls itself.** The column list below is the part that
+                  has to survive a wide table — it is `flex: 1` with `minHeight: 0`, so it
+                  takes whatever is left and scrolls. This block was `flexShrink: 0` with no
+                  limit, so a long description would eat that remainder and squeeze the list
+                  it is sitting above. The metadata is context; the columns are the job.
+                */}
+                {meta?.description && (
+                  <div style={{ padding: '8px 12px', fontSize: fs.xs, color: c['content-secondary'], lineHeight: 1.45, borderBottom: BORDER, flexShrink: 0, maxHeight: 72, overflowY: 'auto' }}>
+                    {meta.description}
+                  </div>
+                )}
+
+                {/* Columns — all included by default; this is where you opt out. */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 12px 5px', flexShrink: 0 }}>
+                  <span style={{ fontSize: fs.xs, fontWeight: fw.semibold, color: c['content-secondary'], textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                    {draft ? `Columns · ${draft.size} of ${cols.length} in model` : `Columns · ${included} of ${cols.length}`}
+                  </span>
+                  <span
+                    onClick={() => {
+                      if (draft) setDraftCols(draft.size === cols.length ? new Set() : new Set(cols.map(([cn]) => cn)));
+                      else setAllCols(detailsTable, out.size > 0);
+                    }}
+                    style={{ fontSize: fs.xs, fontWeight: fw.semibold, color: c['content-brand'], cursor: 'pointer' }}
+                  >
+                    {(draft ? draft.size < cols.length : out.size > 0) ? 'Select all' : 'Deselect all'}
+                  </span>
+                </div>
+                <div style={{ flex: 1, overflowY: 'auto', padding: '0 8px 8px', minHeight: 0 }}>
+                  {cols.map(([col, type]) => {
+                    const on = draft ? draft.has(col) : !out.has(col);
+                    return (
+                      <div
+                        key={col}
+                        onClick={() => {
+                          if (draft) {
+                            setDraftCols(prev => {
+                              const next = new Set(prev ?? draft);
+                              if (next.has(col)) next.delete(col); else next.add(col);
+                              return next;
+                            });
+                          } else {
+                            toggleCol(detailsTable, col);
+                          }
+                        }}
+                        style={{ display: 'flex', alignItems: 'center', gap: sp.B, padding: '5px 6px', borderRadius: RADIUS6, cursor: 'pointer' }}
+                        onMouseEnter={e => (e.currentTarget.style.background = c['background-sunken'])}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                      >
+                        <div style={{
+                          width: 14, height: 14, borderRadius: 3, flexShrink: 0,
+                          border: `1.5px solid ${on ? c['border-brand'] : c['border-subtle-hover']}`,
+                          background: on ? c['background-brand'] : c['background-base'],
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        }}>
+                          {on && <svg width="8" height="8" viewBox="0 0 10 10" fill="none"><path d="M1.5 5.5l2.5 2.5 5-5" stroke="white" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                        </div>
+                        <span style={{ fontSize: fs.xs, color: on ? c['content-primary'] : c['content-secondary'], flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{col}</span>
+                        <span style={{ fontSize: fs.xs, color: c['content-secondary'], flexShrink: 0 }}>{type}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/*
+                  Commit — **Add table** for one not yet on the canvas, **Save changes** for one
+                  that is. One button either way: the flyout edits a set of columns, and both
+                  directions are the same edit.
+
+                  ⚠️ **Static labels, deliberately.** These were `Add with 7 columns` and
+                  `Select at least one column`, so the CTA rewrote itself on every tick and
+                  changed width with the count. The count is already stated directly above it
+                  (`Columns · 7 of 7`), so the button was repeating its neighbour and moving
+                  while doing it. Disabled says "not yet"; it doesn't need a sentence.
+                */}
+                <div style={{ padding: '9px 12px', borderTop: BORDER, flexShrink: 0 }}>
+                  {(() => {
+                    const empty = included === 0;
+                    const disabled = empty || (onCanvasAlready && !dirty);
+                    const label = onCanvasAlready ? 'Save changes' : 'Add table';
+                    return (
+                      <button
+                        disabled={disabled}
+                        onClick={() => {
+                          if (onCanvasAlready && existing && draft) setGroupColumns(existing.id, draft);
+                          else addToCanvas(detailsTable);
+                          setDraftCols(null);
+                          setDetailsTable(null);
+                        }}
+                        style={{
+                          width: '100%', height: 30, borderRadius: RADIUS6, border: 'none',
+                          background: disabled ? c['background-subtle'] : c['background-brand'],
+                          color: disabled ? c['content-secondary'] : c['content-alternate'],
+                          fontSize: fs.xs, fontWeight: fw.semibold, fontFamily: ff.primary,
+                          cursor: disabled ? 'default' : 'pointer',
+                        }}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })()}
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Search results — a flat list with breadcrumb context, replacing the tree
+              while a query is active. Two same-named tables in different schemas are
+              distinguishable, which a filtered tree can't guarantee. */}
+          {browserQuery.trim() ? (
+            <div style={{ flex: 1, overflowY: 'auto', padding: '6px 6px 10px' }}>
+              {browserResults.length === 0 ? (
+                <div style={{ padding: '28px 14px', textAlign: 'center', fontSize: fs.xs, color: c['content-secondary'], lineHeight: 1.5 }}>
+                  Nothing matches “{browserQuery.trim()}”.
+                  {scope.browserConnectionFilter && filterConns.size < visibleConnIds.length && (
+                    <><br />Some connections are filtered out.</>
+                  )}
+                </div>
+              ) : (
+                <>
+                  <div style={{ padding: '4px 8px 6px', fontSize: fs.xs, fontWeight: fw.semibold, color: c['content-secondary'], textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                    {browserResults.length} result{browserResults.length === 1 ? '' : 's'}
+                  </div>
+                  {browserResults.map(r => {
+                    const onCanvasAlready = groups.some(g => g.tableName === r.table);
+                    return (
+                      <div
+                        key={`${r.connId}-${r.schema}-${r.table}`}
+                        style={{ display: 'flex', alignItems: 'center', gap: sp.B, padding: '6px 8px', borderRadius: RADIUS6, cursor: 'pointer' }}
+                        onMouseEnter={e => (e.currentTarget.style.background = c['background-sunken'])}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                        onClick={() => { revealInTree(r.nodeIds); openTableDetails(r.table); }}
+                        title="Preview and add"
+                      >
+                        <Icon name="table" size="xs" color={onCanvasAlready ? c['content-brand'] : c['content-secondary']} />
+                        <span style={{ flex: 1, minWidth: 0 }}>
+                          <span style={{ display: 'block', fontSize: fs.xs, fontWeight: fw.medium, color: onCanvasAlready ? c['content-brand'] : c['content-primary'], overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {r.table}
+                          </span>
+                          <span style={{ display: 'block', fontSize: fs.xs, color: c['content-secondary'], overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {r.conn} · {r.db} · {r.schema}
+                          </span>
+                        </span>
+                      </div>
+                    );
+                  })}
+                </>
+              )}
+            </div>
+          ) : (
+          /*
+            ── Flat table list (POC V2) ────────────────────────────────────────────
+            One connection, chosen before the canvas opened and unchangeable, so there is
+            nothing to group by: no connection level, no database, no schema. We don't let
+            users sync a schema, a database or several warehouses, so three of the tree's
+            four levels described nothing. Search narrows table names.
+
+            ⚠️ **A model is single-connection here, so the caching gate can never fire** —
+            every table already shares a warehouse. Correct for MVP phase 1 being
+            single-source; phase 2 needs a route back to more than one connection.
+
+            The tree below is kept intact for Vision, POC and Demo, which all browse several
+            connections and whose behaviour nobody asked to change.
+          */
+          scope.flatTableBrowser ? (
+            <div style={{ flex: 1, overflowY: 'auto', padding: '4px 0' }}>
+              {(() => {
+                const q = browserQuery.trim().toLowerCase();
+                const tables = Object.entries(TABLE_LOCATION)
+                  .filter(([, loc]) => !modelConnection || loc.connection === modelConnection)
+                  .map(([name]) => name)
+                  .filter(name => Boolean(TABLE_COLS[name]))
+                  .filter(name => !q || name.toLowerCase().includes(q))
+                  .sort((a, b) => a.localeCompare(b));
+                if (tables.length === 0) {
+                  return (
+                    <div style={{ padding: '28px 14px', textAlign: 'center', fontSize: fs.xs, color: c['content-secondary'], lineHeight: 1.5 }}>
+                      {q ? <>Nothing matches “{browserQuery.trim()}”.</> : 'No tables in this connection.'}
+                    </div>
+                  );
+                }
+                return (
+                  <>
+                    <div style={{ padding: '4px 12px 6px', fontSize: fs.xs, fontWeight: fw.semibold, color: c['content-secondary'], textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                      {tables.length} table{tables.length === 1 ? '' : 's'}
+                    </div>
+                    {tables.map(t => (
+                      <TreeTableRow
+                        key={t}
+                        name={t}
+                        depthPad={12}
+                        onCanvas={groups.some(g => g.tableName === t)}
+                        onAdd={name => addToCanvas(name)}
+                        onOpenDetails={openTableDetails}
+                      />
+                    ))}
+                  </>
+                );
+              })()}
+            </div>
+          ) : (
+          /* Tree body */
           <div style={{ flex: 1, overflowY: 'auto' }}>
             {activeBrowserTab === 'warehouse' ? (
               <>
@@ -4212,10 +5865,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                             key={t} name={t} depthPad={50}
                             onCanvas={groups.some(g => g.tableName === t)}
                             onAdd={addToCanvas}
-                            expanded={expandedTableRows.has(t)}
-                            onToggleExpand={toggleExpandTableRow}
-                            deselectedCols={deselectedCols[t]}
-                            onToggleCol={toggleCol}
+                            onOpenDetails={openTableDetails}
                           showColumns={poc}
                           />
                         ))}
@@ -4233,10 +5883,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                             key={t} name={t} depthPad={50}
                             onCanvas={groups.some(g => g.tableName === t)}
                             onAdd={addToCanvas}
-                            expanded={expandedTableRows.has(t)}
-                            onToggleExpand={toggleExpandTableRow}
-                            deselectedCols={deselectedCols[t]}
-                            onToggleCol={toggleCol}
+                            onOpenDetails={openTableDetails}
                           showColumns={poc}
                           />
                         ))}
@@ -4246,17 +5893,14 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                 )}
                 {/* AgentDB — ThoughtSpot's own data store */}
                 {scope.nearStoreConnection && showConn('agentdb') && (
-                  <TreeConn id="agentdb" icon={<svg width="13" height="13" viewBox="0 0 14 14" fill="none"><ellipse cx="7" cy="3.5" rx="4.5" ry="1.5" stroke="#2770EF" strokeWidth="1.2"/><path d="M2.5 3.5v7c0 .83 2 1.5 4.5 1.5s4.5-.67 4.5-1.5v-7" stroke="#2770EF" strokeWidth="1.2"/><path d="M2.5 7c0 .83 2 1.5 4.5 1.5S11.5 7.83 11.5 7" stroke="#2770EF" strokeWidth="1.2"/></svg>} label="AgentDB" open={expanded.has('agentdb')} onToggle={toggleExpanded}>
+                  <TreeConn id="agentdb" icon={<svg width="13" height="13" viewBox="0 0 14 14" fill="none"><ellipse cx="7" cy="3.5" rx="4.5" ry="1.5" stroke={c['content-brand']} strokeWidth="1.2"/><path d="M2.5 3.5v7c0 .83 2 1.5 4.5 1.5s4.5-.67 4.5-1.5v-7" stroke={c['content-brand']} strokeWidth="1.2"/><path d="M2.5 7c0 .83 2 1.5 4.5 1.5S11.5 7.83 11.5 7" stroke={c['content-brand']} strokeWidth="1.2"/></svg>} label="AgentDB" open={expanded.has('agentdb')} onToggle={toggleExpanded}>
                     <TreeConn id="agentdb-cached" icon={<IconSchema />} label="cached" muted depth={1} open={expanded.has('agentdb-cached')} onToggle={toggleExpanded}>
                       {['customer_regions', 'csm_account_mapping', 'pendo_nps_enriched', 'customer_health_external'].map(t => (
                         <TreeTableRow
                           key={t} name={t} depthPad={50}
                           onCanvas={groups.some(g => g.tableName === t)}
                           onAdd={addToCanvas}
-                          expanded={expandedTableRows.has(t)}
-                          onToggleExpand={toggleExpandTableRow}
-                          deselectedCols={deselectedCols[t]}
-                          onToggleCol={toggleCol}
+                          onOpenDetails={openTableDetails}
                         showColumns={poc}
                         />
                       ))}
@@ -4276,10 +5920,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                           key={t} name={t} depthPad={50}
                           onCanvas={groups.some(g => g.tableName === t)}
                           onAdd={addToCanvas}
-                          expanded={expandedTableRows.has(t)}
-                          onToggleExpand={toggleExpandTableRow}
-                          deselectedCols={deselectedCols[t]}
-                          onToggleCol={toggleCol}
+                          onOpenDetails={openTableDetails}
                         showColumns={poc}
                         />
                       ))}
@@ -4295,10 +5936,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                           key={t} name={t} depthPad={50}
                           onCanvas={groups.some(g => g.tableName === t)}
                           onAdd={addToCanvas}
-                          expanded={expandedTableRows.has(t)}
-                          onToggleExpand={toggleExpandTableRow}
-                          deselectedCols={deselectedCols[t]}
-                          onToggleCol={toggleCol}
+                          onOpenDetails={openTableDetails}
                         showColumns={poc}
                         />
                       ))}
@@ -4315,10 +5953,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                       key={t} name={t} depthPad={28}
                       onCanvas={groups.some(g => g.tableName === t)}
                       onAdd={addToCanvas}
-                      expanded={expandedTableRows.has(t)}
-                      onToggleExpand={toggleExpandTableRow}
-                      deselectedCols={deselectedCols[t]}
-                      onToggleCol={toggleCol}
+                      onOpenDetails={openTableDetails}
                     showColumns={poc}
                     />
                   ))}
@@ -4329,10 +5964,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                       key={t} name={t} depthPad={28}
                       onCanvas={groups.some(g => g.tableName === t)}
                       onAdd={addToCanvas}
-                      expanded={expandedTableRows.has(t)}
-                      onToggleExpand={toggleExpandTableRow}
-                      deselectedCols={deselectedCols[t]}
-                      onToggleCol={toggleCol}
+                      onOpenDetails={openTableDetails}
                     showColumns={poc}
                     />
                   ))}
@@ -4340,6 +5972,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
               </>
             )}
           </div>
+          ))}
         </div>
       )}
     </div>
@@ -4380,17 +6013,17 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
   const selectStyle: React.CSSProperties = {
     width: '100%', appearance: 'none' as const, WebkitAppearance: 'none' as const,
     border: BORDER, borderRadius: 6, padding: '7px 28px 7px 10px',
-    fontSize: 12, color: '#1D232F', background: '#fff', cursor: 'pointer',
+    fontSize: fs.xs, color: c['content-primary'], background: c['background-base'], cursor: 'pointer',
     fontFamily: 'inherit', outline: 'none',
   };
   const labelStyle: React.CSSProperties = {
-    display: 'block', fontSize: 11, fontWeight: 600, color: '#777E8B',
-    marginBottom: 5, textTransform: 'uppercase' as const, letterSpacing: '0.04em',
+    display: 'block', fontSize: fs.xs, fontWeight: fw.semibold, color: c['content-secondary'],
+    marginBottom: sp.A, textTransform: 'uppercase' as const, letterSpacing: '0.04em',
   };
   const selectWrap: React.CSSProperties = { position: 'relative' };
   const selectArrow = (
-    <div style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#A5ACB9' }}>
-      <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M3 4.5l3 3 3-3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+    <div style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: c['content-secondary'] }}>
+      <Icon name="caret-down" size="xs" />
     </div>
   );
 
@@ -4398,9 +6031,9 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
   // Nullfix/Formula/SQL/Python): a read-only summary of key values once saved,
   // with a single "Edit <action>" affordance that reopens the form.
   const summaryRow = (label: string, value: React.ReactNode, key?: string) => (
-    <div key={key ?? label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, padding: '7px 0', borderBottom: '1px solid #F3F5F8' }}>
-      <span style={{ fontSize: 12, color: '#777E8B', fontWeight: 500, flexShrink: 0 }}>{label}</span>
-      <span style={{ fontSize: 12, color: '#1D232F', fontWeight: 600, textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>{value}</span>
+    <div key={key ?? label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: sp.B, padding: '7px 0', borderBottom: `1px solid ${c['border-divider']}` }}>
+      <span style={{ fontSize: fs.xs, color: c['content-secondary'], fontWeight: fw.medium, flexShrink: 0 }}>{label}</span>
+      <span style={{ fontSize: fs.xs, color: c['content-primary'], fontWeight: fw.semibold, textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>{value}</span>
     </div>
   );
   const EDIT_PENCIL_ICON = <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M9.5 2.5l2 2-7 7H2.5v-2l7-7z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>;
@@ -4408,46 +6041,30 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
   const editActionButton = (label: string, onClick: () => void, icon: React.ReactNode = EDIT_PENCIL_ICON) => (
     <button
       onClick={onClick}
-      style={{ width: '100%', padding: '7px 0', borderRadius: 7, border: BORDER, background: '#fff', color: '#1D232F', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: ff.primary, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
-      onMouseEnter={e => { e.currentTarget.style.borderColor = '#2770EF'; e.currentTarget.style.color = '#2770EF'; }}
-      onMouseLeave={e => { e.currentTarget.style.borderColor = '#EAEDF2'; e.currentTarget.style.color = '#1D232F'; }}
+      style={{ width: '100%', padding: '7px 0', borderRadius: 7, border: BORDER, background: c['background-base'], color: c['content-primary'], fontSize: fs.xs, fontWeight: fw.semibold, cursor: 'pointer', fontFamily: ff.primary, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: sp.B }}
+      onMouseEnter={e => { e.currentTarget.style.borderColor = c['border-brand']; e.currentTarget.style.color = c['content-brand']; }}
+      onMouseLeave={e => { e.currentTarget.style.borderColor = c['border-divider']; e.currentTarget.style.color = c['content-primary']; }}
     >
       {icon}
       {label}
     </button>
   );
   const saveCancelRow = (opts: { onSave: () => void; onCancel?: () => void; disabled?: boolean; saveLabel?: string }) => (
-    <div style={{ display: 'flex', gap: 6 }}>
+    <div style={{ display: 'flex', gap: sp.B }}>
       <button
         onClick={opts.onSave}
         disabled={opts.disabled}
-        style={{ flex: 1, padding: '8px 0', borderRadius: 7, border: 'none', background: opts.disabled ? '#E8ECEF' : '#2770EF', color: opts.disabled ? '#A5ACB9' : '#fff', fontSize: 13, fontWeight: 600, cursor: opts.disabled ? 'default' : 'pointer', fontFamily: ff.primary }}
+        style={{ flex: 1, padding: '8px 0', borderRadius: 7, border: 'none', background: opts.disabled ? c['background-subtle'] : c['background-brand'], color: opts.disabled ? c['content-secondary'] : c['content-alternate'], fontSize: fs.xs, fontWeight: fw.semibold, cursor: opts.disabled ? 'default' : 'pointer', fontFamily: ff.primary }}
       >{opts.saveLabel ?? 'Save'}</button>
       {opts.onCancel && (
-        <button onClick={opts.onCancel} style={{ padding: '8px 14px', borderRadius: 7, border: BORDER, background: '#fff', color: '#64748B', fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: ff.primary }}>Cancel</button>
+        <button onClick={opts.onCancel} style={{ padding: '8px 14px', borderRadius: 7, border: BORDER, background: c['background-base'], color: c['content-secondary'], fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: ff.primary }}>Cancel</button>
       )}
     </div>
   );
 
-  const TABLE_PATH: Record<string, { conn: string; db: string; schema: string }> = {
-    orders:       { conn: 'snowflake-prod', db: 'analytics', schema: 'public' },
-    customers:    { conn: 'snowflake-prod', db: 'analytics', schema: 'public' },
-    products:     { conn: 'snowflake-prod', db: 'analytics', schema: 'public' },
-    line_items:   { conn: 'snowflake-prod', db: 'analytics', schema: 'public' },
-    transactions: { conn: 'snowflake-prod', db: 'analytics', schema: 'public' },
-    campaigns:    { conn: 'bigquery-prod',  db: 'marketing', schema: 'raw' },
-    ad_events:    { conn: 'bigquery-prod',  db: 'marketing', schema: 'raw' },
-    conversions:  { conn: 'bigquery-prod',  db: 'marketing', schema: 'raw' },
-    fct_orders:   { conn: 'snowflake-prod', db: 'analytics', schema: 'dbt' },
-    dim_customers:{ conn: 'snowflake-prod', db: 'analytics', schema: 'dbt' },
-    mp_events:    { conn: 'mixpanel', db: 'mixpanel', schema: 'events' },
-    mp_users:     { conn: 'mixpanel', db: 'mixpanel', schema: 'events' },
-    mp_cohorts:   { conn: 'mixpanel', db: 'mixpanel', schema: 'events' },
-    pendo_nps:    { conn: 'pendo', db: 'pendo', schema: 'analytics' },
-    pendo_feature_usage: { conn: 'pendo', db: 'pendo', schema: 'analytics' },
-    pendo_visitors:{ conn: 'pendo', db: 'pendo', schema: 'analytics' },
-  };
-  void TABLE_PATH; // retained mock provenance; breadcrumb removed from the properties panel
+  // TABLE_PATH lived here — a `void`ed table→connection map kept for mock provenance after
+  // the properties-panel breadcrumb was removed. Its contents moved to
+  // `data/tableConnections.ts`, which is now the authority the caching flow reads.
 
   // ── Canvas viewport ─────────────────────────────────────────────────────────
 
@@ -4467,34 +6084,169 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
   // so filter/formula actions from either surface open the same edit form.
   // When a Data-tab toolbar action is pending (dataActionPicker set), the panel
   // first shows a table chooser; picking a table adds the step and flips to its form.
-  const propertiesPanel = dataActionPicker ? (
+  /*
+    ── Model-level formula / filter panel ────────────────────────────────────────
+    A duplicate of the card-level form, deliberately: it authors a different object and
+    Komal is working in the card-level one. Simpler than hers by design — no AI block, no
+    step switcher, no table picker, because a model-level metric has no table to pick.
+  */
+  const modelActionPanel = modelAction ? (() => {
+    const isFormula = modelAction.kind === 'formula';
+    const editing = modelAction.editIdx !== null;
+    const needsValue = modelFilterDraft.operator !== 'is null' && modelFilterDraft.operator !== 'is not null';
+    const nameMissing = isFormula && modelFormulaTouched && !modelFormulaDraft.name.trim();
+    // Which referenced identifiers aren't in the joined model. Free-text expressions mean
+    // a name can be typed for a table that isn't joined yet, and a silent null column is
+    // exactly the wrongness the join constraint exists to prevent — so it is named.
+    const known = new Set(modelScope.cols.map(cc => cc.col));
+    const referenced = isFormula
+      ? [...new Set((modelFormulaDraft.expr.match(/[A-Za-z_][A-Za-z0-9_]*/g) ?? []))]
+        .filter(t => !known.has(t) && !/^(if|then|else|and|or|not|null|true|false|sum|avg|min|max|count|abs|round)$/i.test(t))
+      : [];
+    const unknownInModel = referenced.filter(t => groups.some(g => (TABLE_COLS[g.tableName] ?? []).some(([cn]) => cn === t)));
+    const disabled = isFormula
+      ? (!modelFormulaDraft.name.trim() || !modelFormulaDraft.expr.trim() || unknownInModel.length > 0)
+      : (!modelFilterDraft.column || (needsValue && !modelFilterDraft.value.trim()));
+    const fieldStyle: React.CSSProperties = { width: '100%', boxSizing: 'border-box', border: BORDER, borderRadius: 6, padding: '6px 10px', fontSize: 12, color: c['content-primary'], fontFamily: ff.primary, outline: 'none', background: '#fff' };
+    return (
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{ width: 360, flexShrink: 0, zIndex: 30, background: '#fff', borderLeft: BORDER, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+      >
+        <div style={{ height: 38, display: 'flex', alignItems: 'center', padding: '0 12px', gap: sp.B, borderBottom: BORDER, flexShrink: 0 }}>
+          <div style={{ color: '#64748B', display: 'flex', flexShrink: 0 }}>{panelHeaderIcon(modelAction.kind, '#64748B')}</div>
+          <span style={{ fontSize: 12.5, fontWeight: 600, color: c['content-primary'], flex: 1 }}>
+            {editing ? (isFormula ? 'Edit formula' : 'Edit filter') : (isFormula ? 'Add formula' : 'Add filter')}
+          </span>
+          <button onClick={() => setModelAction(null)} style={{ width: 20, height: 20, border: 'none', background: 'transparent', borderRadius: 4, color: '#777E8B', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}>
+            <Icon name="cross" size="xs" color="currentColor" />
+          </button>
+        </div>
+        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '12px', display: 'flex', flexDirection: 'column', gap: sp.D }}>
+          {/* Says what this belongs to, since there is no selected card saying it. */}
+          <div style={{ fontSize: fs.xs, color: c['content-secondary'], lineHeight: 1.45, background: c['background-sunken'], border: BORDER, borderRadius: RADIUS6, padding: '7px 9px' }}>
+            Applies to the whole model{modelScope.unreachable.length > 0 && (
+              <> — <strong style={{ fontWeight: fw.semibold, color: c['content-primary'] }}>{modelScope.unreachable.join(', ')}</strong> {modelScope.unreachable.length === 1 ? "isn't" : "aren't"} joined yet, so {modelScope.unreachable.length === 1 ? 'its' : 'their'} columns can't be used.</>
+            )}
+          </div>
+
+          {isFormula ? (
+            <>
+              <div>
+                <label style={labelStyle}>New column name</label>
+                <input
+                  value={modelFormulaDraft.name}
+                  onChange={e => setModelFormulaDraft(d => ({ ...d, name: e.target.value }))}
+                  onBlur={() => setModelFormulaTouched(true)}
+                  placeholder="e.g. cases_per_arr"
+                  style={{ ...fieldStyle, borderColor: nameMissing ? '#E53E3E' : c['border-divider'] }}
+                />
+                {nameMissing && <div style={{ fontSize: 12, color: '#E22B3D', marginTop: sp.A, fontWeight: 500 }}>Required</div>}
+              </div>
+              <div>
+                <label style={labelStyle}>Expression</label>
+                <textarea
+                  value={modelFormulaDraft.expr}
+                  onChange={e => setModelFormulaDraft(d => ({ ...d, expr: e.target.value }))}
+                  rows={3}
+                  placeholder="e.g. case_count / arr"
+                  style={{ ...fieldStyle, resize: 'none', lineHeight: 1.5, fontFamily: "'SF Mono','Fira Mono',monospace" }}
+                />
+                {unknownInModel.length > 0 && (
+                  <div style={{ fontSize: 12, color: '#E22B3D', marginTop: sp.A, fontWeight: 500, lineHeight: 1.45 }}>
+                    <strong>{unknownInModel.join(', ')}</strong> {unknownInModel.length === 1 ? 'is' : 'are'} in a table that isn’t joined to the model yet. Join it on the canvas first.
+                  </div>
+                )}
+              </div>
+            </>
+          ) : (
+            <>
+              <div>
+                <label style={labelStyle}>Name <span style={{ fontWeight: fw.regular, color: c['content-tertiary'] }}>(optional)</span></label>
+                <input
+                  value={modelFilterDraft.name}
+                  onChange={e => setModelFilterDraft(d => ({ ...d, name: e.target.value }))}
+                  placeholder="e.g. Enterprise only"
+                  style={fieldStyle}
+                />
+              </div>
+              <div>
+                <label style={labelStyle}>Column</label>
+                <select value={modelFilterDraft.column} onChange={e => setModelFilterDraft(d => ({ ...d, column: e.target.value }))} style={{ ...fieldStyle, appearance: 'none' }}>
+                  {modelScope.cols.length === 0 && <option value="">Add a table to the model first</option>}
+                  {modelScope.cols.map(cc => (
+                    <option key={`${cc.table}.${cc.col}`} value={cc.col}>{cc.col} · {cc.table}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label style={labelStyle}>Condition</label>
+                <select value={modelFilterDraft.operator} onChange={e => setModelFilterDraft(d => ({ ...d, operator: e.target.value }))} style={{ ...fieldStyle, appearance: 'none' }}>
+                  {Object.entries(OPERATOR_LABEL).map(([op, label]) => <option key={op} value={op}>{label}</option>)}
+                </select>
+              </div>
+              {needsValue && (
+                <div>
+                  <label style={labelStyle}>Value</label>
+                  <input
+                    value={modelFilterDraft.value}
+                    onChange={e => setModelFilterDraft(d => ({ ...d, value: e.target.value }))}
+                    style={fieldStyle}
+                  />
+                </div>
+              )}
+            </>
+          )}
+        </div>
+        <div style={{ padding: '9px 12px', borderTop: BORDER, flexShrink: 0, display: 'flex', gap: sp.B }}>
+          <button
+            onClick={() => setModelAction(null)}
+            style={{ flex: 1, height: 30, borderRadius: RADIUS6, border: BORDER, background: c['background-base'], color: c['content-secondary'], fontSize: fs.xs, fontWeight: fw.semibold, fontFamily: ff.primary, cursor: 'pointer' }}
+          >Cancel</button>
+          <button
+            disabled={disabled}
+            onClick={commitModelAction}
+            style={{
+              flex: 2, height: 30, borderRadius: RADIUS6, border: 'none',
+              background: disabled ? c['background-subtle'] : c['background-brand'],
+              color: disabled ? c['content-secondary'] : c['content-alternate'],
+              fontSize: fs.xs, fontWeight: fw.semibold, fontFamily: ff.primary,
+              cursor: disabled ? 'default' : 'pointer',
+            }}
+          >{editing ? 'Save changes' : isFormula ? 'Add column' : 'Add filter'}</button>
+        </div>
+      </div>
+    );
+  })() : null;
+
+  const propertiesPanel = modelActionPanel ? modelActionPanel : dataActionPicker ? (
         <div
           onClick={e => e.stopPropagation()}
           style={{ width: 360, flexShrink: 0, zIndex: 30, background: '#fff', borderLeft: BORDER, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
         >
-          <div style={{ height: 38, display: 'flex', alignItems: 'center', padding: '0 12px', gap: 8, borderBottom: BORDER, flexShrink: 0 }}>
+          <div style={{ height: 38, display: 'flex', alignItems: 'center', padding: '0 12px', gap: sp.B, borderBottom: BORDER, flexShrink: 0 }}>
             <div style={{ color: '#64748B', display: 'flex', flexShrink: 0 }}>{panelHeaderIcon(dataActionPicker, '#64748B')}</div>
-            <span style={{ fontSize: 12.5, fontWeight: 600, color: '#1D232F', flex: 1 }}>{dataActionPicker === 'filter' ? 'Add filter' : 'Add formula'}</span>
-            <button onClick={() => setDataActionPicker(null)} style={{ width: 20, height: 20, border: 'none', background: 'transparent', borderRadius: 4, color: '#777E8B', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }} onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#1D232F'; }} onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#777E8B'; }}>
+            <span style={{ fontSize: 12.5, fontWeight: 600, color: c['content-primary'], flex: 1 }}>{dataActionPicker === 'filter' ? 'Add filter' : 'Add formula'}</span>
+            <button onClick={() => setDataActionPicker(null)} style={{ width: 20, height: 20, border: 'none', background: 'transparent', borderRadius: 4, color: '#777E8B', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }} onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = c['content-primary']; }} onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#777E8B'; }}>
               <Icon name="cross" size="xs" color="currentColor" />
             </button>
           </div>
           <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '12px' }}>
             <label style={labelStyle}>Table</label>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 4 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: sp.A, marginTop: sp.A }}>
               {groups.map(g => (
                 <button key={g.id}
                   onClick={() => { const op = dataActionPicker; setDataActionPicker(null); addStep(op, false, g.id); }}
-                  style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '9px 10px', border: BORDER, borderRadius: 7, background: '#fff', cursor: 'pointer', textAlign: 'left', fontFamily: ff.primary, fontSize: 12.5, fontWeight: 500, color: '#1D232F' }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = '#2770EF'; e.currentTarget.style.background = '#F5F8FF'; }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = '#EAEDF2'; e.currentTarget.style.background = '#fff'; }}
+                  style={{ display: 'flex', alignItems: 'center', gap: sp.B, width: '100%', padding: '9px 10px', border: BORDER, borderRadius: 7, background: '#fff', cursor: 'pointer', textAlign: 'left', fontFamily: ff.primary, fontSize: 12.5, fontWeight: 500, color: c['content-primary'] }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = '#2770EF'; e.currentTarget.style.background = c['background-sunken']; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = c['border-divider']; e.currentTarget.style.background = '#fff'; }}
                 >
                   <span style={{ color: '#8B96A5', display: 'flex', flexShrink: 0 }}><Icon name="table" size="xs" color="#8B96A5" /></span>
                   {g.tableName}
                 </button>
               ))}
             </div>
-            <div style={{ fontSize: 11, color: '#A5ACB9', marginTop: 10, lineHeight: 1.5 }}>Choose which table this {dataActionPicker} applies to.</div>
+            <div style={{ fontSize: 12, color: '#A5ACB9', marginTop: sp.C, lineHeight: 1.5 }}>Choose which table this {dataActionPicker} applies to.</div>
           </div>
         </div>
   ) : selectedIds.size > 0 ? (
@@ -4508,14 +6260,14 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
             display: 'flex', flexDirection: 'column', overflow: 'hidden',
           }}
         >
-          <div style={{ height: 38, display: 'flex', alignItems: 'center', padding: '0 12px', gap: 8, borderBottom: BORDER, flexShrink: 0 }}>
+          <div style={{ height: 38, display: 'flex', alignItems: 'center', padding: '0 12px', gap: sp.B, borderBottom: BORDER, flexShrink: 0 }}>
             {(singleJoinActive || multiJoinActive) ? (
               <>
-                <button onClick={() => { setSingleJoinActive(false); setMultiJoinActive(false); }} style={{ width: 20, height: 20, border: 'none', background: 'transparent', borderRadius: 4, color: '#777E8B', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }} onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#1D232F'; }} onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#777E8B'; }}>
+                <button onClick={() => { setSingleJoinActive(false); setMultiJoinActive(false); }} style={{ width: 20, height: 20, border: 'none', background: 'transparent', borderRadius: 4, color: '#777E8B', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }} onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = c['content-primary']; }} onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#777E8B'; }}>
                   <Icon name="chevron-left" size="xs" color="currentColor" />
                 </button>
                 <div style={{ color: '#2770EF', display: 'flex' }}><Icon name="join-inner" size="xs" color="#2770EF" /></div>
-                <span style={{ fontSize: 12, fontWeight: 600, color: '#1D232F', flex: 1 }}>Create Join</span>
+                <span style={{ fontSize: 12, fontWeight: 600, color: c['content-primary'], flex: 1 }}>Create Join</span>
               </>
             ) : (() => {
               const hg = selectedIds.size === 1 ? selectedGroup : null;
@@ -4527,7 +6279,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                     <div style={{ color: selJoin ? '#2770EF' : '#777E8B', display: 'flex', flexShrink: 0 }}>
                       {panelHeaderIcon(selJoin ? 'join' : 'source', selJoin ? '#2770EF' : '#777E8B')}
                     </div>
-                    <span style={{ fontSize: 12.5, fontWeight: 600, color: '#1D232F', flex: 1 }}>{selJoin ? 'Join' : 'Properties'}</span>
+                    <span style={{ fontSize: 12.5, fontWeight: 600, color: c['content-primary'], flex: 1 }}>{selJoin ? 'Join' : 'Properties'}</span>
                   </>
                 );
               }
@@ -4535,7 +6287,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                 <>
                   <div style={{ color: '#64748B', display: 'flex', flexShrink: 0 }}>{panelHeaderIcon(hstep.type, '#64748B')}</div>
                   {hstep.type === 'source' ? (
-                    <span style={{ fontSize: 12.5, fontWeight: 600, color: '#1D232F', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{hg.tableName}</span>
+                    <span style={{ fontSize: 12.5, fontWeight: 600, color: c['content-primary'], flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{hg.tableName}</span>
                   ) : (() => {
                     const thisTitleKey = stepKey(hg.id, hg.activeStep);
                     const defaultLabel = OP_META[hstep.type]?.label ?? 'Step';
@@ -4552,7 +6304,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                             if (e.key === 'Escape') { setEditingTitleFor(null); }
                           }}
                           placeholder={defaultLabel}
-                          style={{ flex: 1, minWidth: 0, border: 'none', outline: 'none', background: 'transparent', fontSize: 12.5, fontWeight: 600, color: '#1D232F', fontFamily: ff.primary, padding: 0 }}
+                          style={{ flex: 1, minWidth: 0, border: 'none', outline: 'none', background: 'transparent', fontSize: 12.5, fontWeight: 600, color: c['content-primary'], fontFamily: ff.primary, padding: 0 }}
                         />
                       );
                     }
@@ -4560,7 +6312,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                       <span
                         onClick={() => { setTitleDraft(hstep.title ?? ''); setEditingTitleFor(thisTitleKey); }}
                         title="Click to rename"
-                        style={{ fontSize: 12.5, fontWeight: 600, color: '#1D232F', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'text' }}
+                        style={{ fontSize: 12.5, fontWeight: 600, color: c['content-primary'], flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'text' }}
                       >
                         {hstep.title?.trim() || defaultLabel}
                       </span>
@@ -4587,7 +6339,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
             <button
               onClick={() => { setSelectedIds(new Set()); setSingleJoinActive(false); setMultiJoinActive(false); }}
               style={{ width: 20, height: 20, border: 'none', background: 'transparent', borderRadius: 4, color: '#777E8B', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#1D232F'; }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = c['content-primary']; }}
               onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#777E8B'; }}
             >
               <Icon name="cross" size="xs" color="currentColor" />
@@ -4609,41 +6361,41 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                 if (isEditing) {
                   return (
                     <div style={{ padding: '12px' }}>
-                      <div style={{ marginBottom: 10 }}>
+                      <div style={{ marginBottom: sp.C }}>
                         <label style={labelStyle}>Join name</label>
                         <input
                           value={joinConfig.name}
                           onChange={e => setJoinConfig(c => ({ ...c, name: e.target.value }))}
                           placeholder={selectedJoin.name}
-                          style={{ width: '100%', boxSizing: 'border-box', border: BORDER, borderRadius: 6, padding: '6px 10px', fontSize: 12, color: '#1D232F', fontFamily: ff.primary, outline: 'none', background: '#fff' }}
+                          style={{ width: '100%', boxSizing: 'border-box', border: BORDER, borderRadius: 6, padding: '6px 10px', fontSize: 12, color: c['content-primary'], fontFamily: ff.primary, outline: 'none', background: '#fff' }}
                           onFocus={e => { e.currentTarget.style.borderColor = '#2770EF'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(39,112,239,0.12)'; }}
-                          onBlur={e => { e.currentTarget.style.borderColor = '#EAEDF2'; e.currentTarget.style.boxShadow = 'none'; }}
+                          onBlur={e => { e.currentTarget.style.borderColor = c['border-divider']; e.currentTarget.style.boxShadow = 'none'; }}
                         />
                       </div>
                       <div style={{ borderTop: BORDER, margin: '10px 0' }} />
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
-                        <div><label style={labelStyle}>Table 1</label><div style={{ padding: '6px 10px', background: '#F6F8FA', borderRadius: 6, border: BORDER, fontSize: 12, color: '#777E8B', fontFamily: ff.primary }}>{t1Name}</div></div>
-                        <div><label style={labelStyle}>Table 2</label><div style={{ padding: '6px 10px', background: '#F6F8FA', borderRadius: 6, border: BORDER, fontSize: 12, color: '#777E8B', fontFamily: ff.primary }}>{selectedJoin.table2Name}</div></div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: sp.B, marginBottom: sp.B }}>
+                        <div><label style={labelStyle}>Table 1</label><div style={{ padding: '6px 10px', background: c['background-sunken'], borderRadius: 6, border: BORDER, fontSize: 12, color: '#777E8B', fontFamily: ff.primary }}>{t1Name}</div></div>
+                        <div><label style={labelStyle}>Table 2</label><div style={{ padding: '6px 10px', background: c['background-sunken'], borderRadius: 6, border: BORDER, fontSize: 12, color: '#777E8B', fontFamily: ff.primary }}>{selectedJoin.table2Name}</div></div>
                       </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 10 }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: sp.B, marginBottom: sp.C }}>
                         <div><label style={labelStyle}>Col (T1)</label><div style={selectWrap}><select value={joinConfig.col1} onChange={e => setJoinConfig(c => ({ ...c, col1: e.target.value }))} style={selectStyle}><option value="">Select</option>{t1Cols.map(([col]) => <option key={col} value={col}>{col}</option>)}</select>{selectArrow}</div></div>
                         <div><label style={labelStyle}>Col (T2)</label><div style={selectWrap}><select value={joinConfig.col2} onChange={e => setJoinConfig(c => ({ ...c, col2: e.target.value }))} style={selectStyle}><option value="">Select</option>{t2Cols.map(([col]) => <option key={col} value={col}>{col}</option>)}</select>{selectArrow}</div></div>
                       </div>
                       <div style={{ borderTop: BORDER, margin: '10px 0' }} />
-                      <div style={{ marginBottom: 10 }}>
+                      <div style={{ marginBottom: sp.C }}>
                         <label style={labelStyle}>Join Type</label>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                          {joinTypePills.map(({ key, label }) => { const active = joinConfig.joinType === key; return <button key={key} onClick={() => setJoinConfig(c => ({ ...c, joinType: key }))} style={{ padding: '4px 9px', borderRadius: 99, border: `1px solid ${active ? '#2770EF' : '#E2E6EC'}`, background: active ? '#2770EF' : '#F6F8FA', color: active ? '#fff' : '#64748B', fontSize: 11, fontWeight: 500, cursor: 'pointer', fontFamily: ff.primary, whiteSpace: 'nowrap' }}>{label}</button>; })}
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: sp.A }}>
+                          {joinTypePills.map(({ key, label }) => { const active = joinConfig.joinType === key; return <button key={key} onClick={() => setJoinConfig(c => ({ ...c, joinType: key }))} style={{ padding: '4px 9px', borderRadius: 99, border: `1px solid ${active ? '#2770EF' : c['border-subtle-hover']}`, background: active ? '#2770EF' : c['background-sunken'], color: active ? '#fff' : '#64748B', fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: ff.primary, whiteSpace: 'nowrap' }}>{label}</button>; })}
                         </div>
                       </div>
                       <div style={{ borderTop: BORDER, margin: '10px 0' }} />
-                      <div style={{ marginBottom: 12 }}>
+                      <div style={{ marginBottom: sp.C }}>
                         <label style={labelStyle}>Cardinality</label>
-                        <div style={{ display: 'flex', gap: 4 }}>
-                          {cardinalityPills.map(({ key, label }) => { const active = joinConfig.cardinality === key; return <button key={key} onClick={() => setJoinConfig(c => ({ ...c, cardinality: key }))} style={{ padding: '4px 9px', borderRadius: 99, border: `1px solid ${active ? '#2770EF' : '#E2E6EC'}`, background: active ? '#2770EF' : '#F6F8FA', color: active ? '#fff' : '#64748B', fontSize: 11, fontWeight: 500, cursor: 'pointer', fontFamily: ff.primary }}>{label}</button>; })}
+                        <div style={{ display: 'flex', gap: sp.A }}>
+                          {cardinalityPills.map(({ key, label }) => { const active = joinConfig.cardinality === key; return <button key={key} onClick={() => setJoinConfig(c => ({ ...c, cardinality: key }))} style={{ padding: '4px 9px', borderRadius: 99, border: `1px solid ${active ? '#2770EF' : c['border-subtle-hover']}`, background: active ? '#2770EF' : c['background-sunken'], color: active ? '#fff' : '#64748B', fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: ff.primary }}>{label}</button>; })}
                         </div>
                       </div>
-                      <div style={{ display: 'flex', gap: 6 }}>
+                      <div style={{ display: 'flex', gap: sp.B }}>
                         <button
                           onClick={() => {
                             setCanvasJoins(prev => prev.map(j => j.id === selectedJoin.id ? {
@@ -4669,17 +6421,17 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
 
                 return (
                   <div style={{ padding: '12px' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 14 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', marginBottom: sp.D }}>
                       {([['Left table', t1Name], ['Right table', selectedJoin.table2Name], ['Join type', joinLabel[selectedJoin.joinType]], ['Cardinality', cardLabel[selectedJoin.cardinality]]] as [string, string][]).map(([label, value]) => (
-                        <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, padding: '7px 0', borderBottom: '1px solid #F3F5F8' }}>
+                        <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: sp.B, padding: '7px 0', borderBottom: `1px solid ${c['border-divider']}` }}>
                           <span style={{ fontSize: 12, color: '#777E8B', fontWeight: 500, flexShrink: 0 }}>{label}</span>
-                          <span style={{ fontSize: 12, color: '#1D232F', fontWeight: 600, textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{value}</span>
+                          <span style={{ fontSize: 12, color: c['content-primary'], fontWeight: 600, textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{value}</span>
                         </div>
                       ))}
                       {(selectedJoin.col1 || selectedJoin.col2) && (
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, padding: '7px 0' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: sp.B, padding: '7px 0' }}>
                           <span style={{ fontSize: 12, color: '#777E8B', fontWeight: 500, flexShrink: 0 }}>Join key</span>
-                          <span style={{ fontSize: 11, color: '#1D232F', fontWeight: 600, fontFamily: "'SF Mono','Fira Mono',monospace", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{selectedJoin.col1} = {selectedJoin.col2}</span>
+                          <span style={{ fontSize: 12, color: c['content-primary'], fontWeight: 600, fontFamily: "'SF Mono','Fira Mono',monospace", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{selectedJoin.col1} = {selectedJoin.col2}</span>
                         </div>
                       )}
                     </div>
@@ -4696,9 +6448,9 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                         });
                         setEditingJoinId(selectedJoin.id);
                       }}
-                      style={{ width: '100%', padding: '7px 0', borderRadius: 7, border: BORDER, background: '#fff', color: '#1D232F', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: ff.primary, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                      style={{ width: '100%', padding: '7px 0', borderRadius: 7, border: BORDER, background: '#fff', color: c['content-primary'], fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: ff.primary, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: sp.B }}
                       onMouseEnter={e => { e.currentTarget.style.borderColor = '#2770EF'; e.currentTarget.style.color = '#2770EF'; }}
-                      onMouseLeave={e => { e.currentTarget.style.borderColor = '#EAEDF2'; e.currentTarget.style.color = '#1D232F'; }}
+                      onMouseLeave={e => { e.currentTarget.style.borderColor = c['border-divider']; e.currentTarget.style.color = c['content-primary']; }}
                     >
                       <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M9.5 2.5l2 2-7 7H2.5v-2l7-7z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
                       Edit join
@@ -4713,17 +6465,17 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                 /* Multi-select join config */
                 <div style={{ padding: '12px' }}>
                   {/* Table chips */}
-                  <div style={{ display: 'flex', gap: 6, marginBottom: 12, flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', gap: sp.B, marginBottom: sp.C, flexWrap: 'wrap' }}>
                     {[multiJoinTable1, joinConfig.table2].filter(Boolean).map((t, i) => (
-                      <span key={i} style={{ fontSize: 11, fontWeight: 600, padding: '3px 8px', borderRadius: 99, background: '#EEF2FF', color: '#2770EF', border: '1px solid rgba(39,112,239,0.18)' }}>{t}</span>
+                      <span key={i} style={{ fontSize: 12, fontWeight: 600, padding: '3px 8px', borderRadius: 99, background: c['background-information'], color: '#2770EF', border: '1px solid rgba(39,112,239,0.18)' }}>{t}</span>
                     ))}
                   </div>
-                  <div style={{ marginBottom: 10 }}>
+                  <div style={{ marginBottom: sp.C }}>
                     <label style={labelStyle}>Join name</label>
-                    <input value={joinConfig.name} onChange={e => setJoinConfig(c => ({ ...c, name: e.target.value }))} placeholder="e.g. orders_customers" style={{ width: '100%', boxSizing: 'border-box', border: BORDER, borderRadius: 6, padding: '6px 10px', fontSize: 12, color: '#1D232F', fontFamily: 'inherit', outline: 'none', background: '#fff' }} onFocus={e => { e.currentTarget.style.borderColor = '#2770EF'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(39,112,239,0.12)'; }} onBlur={e => { e.currentTarget.style.borderColor = '#EAEDF2'; e.currentTarget.style.boxShadow = 'none'; }} />
+                    <input value={joinConfig.name} onChange={e => setJoinConfig(c => ({ ...c, name: e.target.value }))} placeholder="e.g. orders_customers" style={{ width: '100%', boxSizing: 'border-box', border: BORDER, borderRadius: 6, padding: '6px 10px', fontSize: 12, color: c['content-primary'], fontFamily: 'inherit', outline: 'none', background: '#fff' }} onFocus={e => { e.currentTarget.style.borderColor = '#2770EF'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(39,112,239,0.12)'; }} onBlur={e => { e.currentTarget.style.borderColor = c['border-divider']; e.currentTarget.style.boxShadow = 'none'; }} />
                   </div>
                   <div style={{ borderTop: BORDER, margin: '10px 0' }} />
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: sp.B, marginBottom: sp.B }}>
                     <div>
                       <label style={labelStyle}>Table 1</label>
                       <div style={selectWrap}>
@@ -4735,14 +6487,14 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                     <div>
                       <label style={labelStyle}>Table 2</label>
                       <div style={selectWrap}>
-                        <select value={joinConfig.table2} onChange={e => setJoinConfig(c => ({ ...c, table2: e.target.value, col2: '' }))} style={selectStyle}>
+                        <select value={joinConfig.table2} onChange={e => chooseJoinTable2(multiJoinTable1, e.target.value)} style={selectStyle}>
                           <option value="">Select table</option>
                           {groups.map(g => g.tableName).filter(t => t !== multiJoinTable1).map(t => <option key={t} value={t}>{t}</option>)}
                         </select>{selectArrow}
                       </div>
                     </div>
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 4 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: sp.B, marginBottom: sp.A }}>
                     <div>
                       <label style={labelStyle}>Col (T1)</label>
                       <div style={selectWrap}>
@@ -4762,73 +6514,73 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                       </div>
                     </div>
                   </div>
-                  <button onClick={() => setJoinConfig(c => ({ ...c, extraPairs: [...c.extraPairs, { col1: '', col2: '' }] }))} style={{ background: 'none', border: 'none', color: '#2770EF', fontSize: 12, fontWeight: 500, cursor: 'pointer', padding: '4px 0', marginBottom: 10, fontFamily: 'inherit' }}>+ Add column</button>
+                  <button onClick={() => setJoinConfig(c => ({ ...c, extraPairs: [...c.extraPairs, { col1: '', col2: '' }] }))} style={{ background: 'none', border: 'none', color: '#2770EF', fontSize: 12, fontWeight: 500, cursor: 'pointer', padding: '4px 0', marginBottom: sp.C, fontFamily: 'inherit' }}>+ Add column</button>
                   <div style={{ borderTop: BORDER, margin: '10px 0' }} />
-                  <div style={{ marginBottom: 10 }}>
+                  <div style={{ marginBottom: sp.C }}>
                     <label style={labelStyle}>Join Type</label>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                      {joinTypePills.map(({ key, label }) => { const active = joinConfig.joinType === key; return <button key={key} onClick={() => setJoinConfig(c => ({ ...c, joinType: key }))} style={{ padding: '4px 9px', borderRadius: 99, border: `1px solid ${active ? '#2770EF' : '#E2E6EC'}`, background: active ? '#2770EF' : '#F6F8FA', color: active ? '#fff' : '#64748B', fontSize: 11, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>{label}</button>; })}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: sp.A }}>
+                      {joinTypePills.map(({ key, label }) => { const active = joinConfig.joinType === key; return <button key={key} onClick={() => setJoinConfig(c => ({ ...c, joinType: key }))} style={{ padding: '4px 9px', borderRadius: 99, border: `1px solid ${active ? '#2770EF' : c['border-subtle-hover']}`, background: active ? '#2770EF' : c['background-sunken'], color: active ? '#fff' : '#64748B', fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>{label}</button>; })}
                     </div>
                   </div>
                   <div style={{ borderTop: BORDER, margin: '10px 0' }} />
-                  <div style={{ marginBottom: 12 }}>
+                  <div style={{ marginBottom: sp.C }}>
                     <label style={labelStyle}>Cardinality</label>
-                    <div style={{ display: 'flex', gap: 4 }}>
-                      {cardinalityPills.map(({ key, label }) => { const active = joinConfig.cardinality === key; return <button key={key} onClick={() => setJoinConfig(c => ({ ...c, cardinality: key }))} style={{ padding: '4px 9px', borderRadius: 99, border: `1px solid ${active ? '#2770EF' : '#E2E6EC'}`, background: active ? '#2770EF' : '#F6F8FA', color: active ? '#fff' : '#64748B', fontSize: 11, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit' }}>{label}</button>; })}
+                    <div style={{ display: 'flex', gap: sp.A }}>
+                      {cardinalityPills.map(({ key, label }) => { const active = joinConfig.cardinality === key; return <button key={key} onClick={() => setJoinConfig(c => ({ ...c, cardinality: key }))} style={{ padding: '4px 9px', borderRadius: 99, border: `1px solid ${active ? '#2770EF' : c['border-subtle-hover']}`, background: active ? '#2770EF' : c['background-sunken'], color: active ? '#fff' : '#64748B', fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit' }}>{label}</button>; })}
                     </div>
                   </div>
-                  <button onClick={applyJoin} style={{ width: '100%', padding: '8px 0', borderRadius: 7, border: 'none', background: '#2770EF', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: ff.primary }}>Apply Join</button>
+                  <button onClick={() => applyJoin()} style={{ width: '100%', padding: '8px 0', borderRadius: 7, border: 'none', background: '#2770EF', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: ff.primary }}>Apply Join</button>
                 </div>
               ) : (
                 /* Multi-select summary — prompt to use Join */
-                <div style={{ padding: '20px 14px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, textAlign: 'center' }}>
-                  <div style={{ width: 36, height: 36, borderRadius: 9, background: '#EEF2FF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2770EF' }}>
+                <div style={{ padding: '20px 14px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: sp.B, textAlign: 'center' }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 9, background: c['background-information'], display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2770EF' }}>
                     <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><rect x="2" y="2" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.4"/><rect x="11" y="2" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.4"/><rect x="2" y="11" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.4"/><rect x="11" y="11" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.4"/></svg>
                   </div>
-                  <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: '#1D232F' }}>{selectedIds.size} tables selected</p>
+                  <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: c['content-primary'] }}>{selectedIds.size} tables selected</p>
                   <p style={{ margin: 0, fontSize: 12, color: '#777E8B', lineHeight: 1.6 }}>
                     {[...selectedIds].map(id => groups.find(g => g.id === id)?.tableName).filter(Boolean).join(', ')}
                   </p>
-                  <p style={{ margin: '4px 0 0', fontSize: 11, color: '#A5ACB9' }}>Click Join in the toolbar to configure</p>
+                  <p style={{ margin: '4px 0 0', fontSize: 12, color: '#A5ACB9' }}>Click Join in the toolbar to configure</p>
                 </div>
               )
             ) : singleJoinActive ? (
               /* Single node join config */
               <div style={{ padding: '12px' }}>
-                <div style={{ display: 'flex', gap: 6, marginBottom: 12, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: sp.B, marginBottom: sp.C, flexWrap: 'wrap' }}>
                   {[selectedGroup!.tableName, joinConfig.table2].filter(Boolean).map((t, i) => (
-                    <span key={i} style={{ fontSize: 11, fontWeight: 600, padding: '3px 8px', borderRadius: 99, background: '#EEF2FF', color: '#2770EF', border: '1px solid rgba(39,112,239,0.18)' }}>{t}</span>
+                    <span key={i} style={{ fontSize: 12, fontWeight: 600, padding: '3px 8px', borderRadius: 99, background: c['background-information'], color: '#2770EF', border: '1px solid rgba(39,112,239,0.18)' }}>{t}</span>
                   ))}
                 </div>
-                <div style={{ marginBottom: 10 }}>
+                <div style={{ marginBottom: sp.C }}>
                   <label style={labelStyle}>Join name</label>
-                  <input value={joinConfig.name} onChange={e => setJoinConfig(c => ({ ...c, name: e.target.value }))} placeholder={`${selectedGroup!.tableName} × ${joinConfig.table2 || '…'}`} style={{ width: '100%', boxSizing: 'border-box', border: BORDER, borderRadius: 6, padding: '6px 10px', fontSize: 12, color: '#1D232F', fontFamily: ff.primary, outline: 'none', background: '#fff' }} onFocus={e => { e.currentTarget.style.borderColor = '#2770EF'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(39,112,239,0.12)'; }} onBlur={e => { e.currentTarget.style.borderColor = '#EAEDF2'; e.currentTarget.style.boxShadow = 'none'; }} />
+                  <input value={joinConfig.name} onChange={e => setJoinConfig(c => ({ ...c, name: e.target.value }))} placeholder={`${selectedGroup!.tableName} × ${joinConfig.table2 || '…'}`} style={{ width: '100%', boxSizing: 'border-box', border: BORDER, borderRadius: 6, padding: '6px 10px', fontSize: 12, color: c['content-primary'], fontFamily: ff.primary, outline: 'none', background: '#fff' }} onFocus={e => { e.currentTarget.style.borderColor = '#2770EF'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(39,112,239,0.12)'; }} onBlur={e => { e.currentTarget.style.borderColor = c['border-divider']; e.currentTarget.style.boxShadow = 'none'; }} />
                 </div>
                 <div style={{ borderTop: BORDER, margin: '10px 0' }} />
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
-                  <div><label style={labelStyle}>Table 1</label><div style={{ padding: '6px 10px', background: '#F6F8FA', borderRadius: 6, border: BORDER, fontSize: 12, color: '#777E8B', fontFamily: ff.primary }}>{selectedGroup!.tableName}</div></div>
-                  <div><label style={labelStyle}>Table 2</label><div style={selectWrap}><select value={joinConfig.table2} onChange={e => setJoinConfig(c => ({ ...c, table2: e.target.value, col2: '' }))} style={selectStyle}><option value="">Select table</option>{groups.map(g => g.tableName).filter(t => t !== selectedGroup!.tableName).map(t => <option key={t} value={t}>{t}</option>)}</select>{selectArrow}</div></div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: sp.B, marginBottom: sp.B }}>
+                  <div><label style={labelStyle}>Table 1</label><div style={{ padding: '6px 10px', background: c['background-sunken'], borderRadius: 6, border: BORDER, fontSize: 12, color: '#777E8B', fontFamily: ff.primary }}>{selectedGroup!.tableName}</div></div>
+                  <div><label style={labelStyle}>Table 2</label><div style={selectWrap}><select value={joinConfig.table2} onChange={e => chooseJoinTable2(selectedGroup!.tableName, e.target.value)} style={selectStyle}><option value="">Select table</option>{groups.map(g => g.tableName).filter(t => t !== selectedGroup!.tableName).map(t => <option key={t} value={t}>{t}</option>)}</select>{selectArrow}</div></div>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 4 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: sp.B, marginBottom: sp.A }}>
                   <div><label style={labelStyle}>Col (T1)</label><div style={selectWrap}><select value={joinConfig.col1} onChange={e => setJoinConfig(c => ({ ...c, col1: e.target.value }))} style={selectStyle}><option value="">Select</option>{(TABLE_COLS[selectedGroup!.tableName] ?? []).map(([col]) => <option key={col} value={col}>{col}</option>)}</select>{selectArrow}</div></div>
                   <div><label style={labelStyle}>Col (T2)</label><div style={selectWrap}><select value={joinConfig.col2} onChange={e => setJoinConfig(c => ({ ...c, col2: e.target.value }))} style={selectStyle} disabled={!joinConfig.table2}><option value="">Select</option>{(TABLE_COLS[joinConfig.table2] ?? []).map(([col]) => <option key={col} value={col}>{col}</option>)}</select>{selectArrow}</div></div>
                 </div>
-                <button onClick={() => setJoinConfig(c => ({ ...c, extraPairs: [...c.extraPairs, { col1: '', col2: '' }] }))} style={{ background: 'none', border: 'none', color: '#2770EF', fontSize: 12, fontWeight: 500, cursor: 'pointer', padding: '4px 0', marginBottom: 10, fontFamily: ff.primary }}>+ Add column</button>
+                <button onClick={() => setJoinConfig(c => ({ ...c, extraPairs: [...c.extraPairs, { col1: '', col2: '' }] }))} style={{ background: 'none', border: 'none', color: '#2770EF', fontSize: 12, fontWeight: 500, cursor: 'pointer', padding: '4px 0', marginBottom: sp.C, fontFamily: ff.primary }}>+ Add column</button>
                 <div style={{ borderTop: BORDER, margin: '10px 0' }} />
-                <div style={{ marginBottom: 10 }}>
+                <div style={{ marginBottom: sp.C }}>
                   <label style={labelStyle}>Join Type</label>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                    {joinTypePills.map(({ key, label }) => { const active = joinConfig.joinType === key; return <button key={key} onClick={() => setJoinConfig(c => ({ ...c, joinType: key }))} style={{ padding: '4px 9px', borderRadius: 99, border: `1px solid ${active ? '#2770EF' : '#E2E6EC'}`, background: active ? '#2770EF' : '#F6F8FA', color: active ? '#fff' : '#64748B', fontSize: 11, fontWeight: 500, cursor: 'pointer', fontFamily: ff.primary, whiteSpace: 'nowrap' }}>{label}</button>; })}
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: sp.A }}>
+                    {joinTypePills.map(({ key, label }) => { const active = joinConfig.joinType === key; return <button key={key} onClick={() => setJoinConfig(c => ({ ...c, joinType: key }))} style={{ padding: '4px 9px', borderRadius: 99, border: `1px solid ${active ? '#2770EF' : c['border-subtle-hover']}`, background: active ? '#2770EF' : c['background-sunken'], color: active ? '#fff' : '#64748B', fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: ff.primary, whiteSpace: 'nowrap' }}>{label}</button>; })}
                   </div>
                 </div>
                 <div style={{ borderTop: BORDER, margin: '10px 0' }} />
-                <div style={{ marginBottom: 12 }}>
+                <div style={{ marginBottom: sp.C }}>
                   <label style={labelStyle}>Cardinality</label>
-                  <div style={{ display: 'flex', gap: 4 }}>
-                    {cardinalityPills.map(({ key, label }) => { const active = joinConfig.cardinality === key; return <button key={key} onClick={() => setJoinConfig(c => ({ ...c, cardinality: key }))} style={{ padding: '4px 9px', borderRadius: 99, border: `1px solid ${active ? '#2770EF' : '#E2E6EC'}`, background: active ? '#2770EF' : '#F6F8FA', color: active ? '#fff' : '#64748B', fontSize: 11, fontWeight: 500, cursor: 'pointer', fontFamily: ff.primary }}>{label}</button>; })}
+                  <div style={{ display: 'flex', gap: sp.A }}>
+                    {cardinalityPills.map(({ key, label }) => { const active = joinConfig.cardinality === key; return <button key={key} onClick={() => setJoinConfig(c => ({ ...c, cardinality: key }))} style={{ padding: '4px 9px', borderRadius: 99, border: `1px solid ${active ? '#2770EF' : c['border-subtle-hover']}`, background: active ? '#2770EF' : c['background-sunken'], color: active ? '#fff' : '#64748B', fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: ff.primary }}>{label}</button>; })}
                   </div>
                 </div>
-                <button onClick={applyJoin} style={{ width: '100%', padding: '8px 0', borderRadius: 7, border: 'none', background: '#2770EF', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: ff.primary }}>Apply Join</button>
+                <button onClick={() => applyJoin()} style={{ width: '100%', padding: '8px 0', borderRadius: 7, border: 'none', background: '#2770EF', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: ff.primary }}>Apply Join</button>
               </div>
             ) : !selectedGroup ? null : (
               /* Single node — pipeline dropdown + step config */
@@ -4847,17 +6599,26 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                       return (
                         <div>
                           {sg.sourceKind !== 'csv' && (() => {
-                            const rowN = MOCK_DATA[sg.tableName]?.length ?? 0;
+                            // ⚠️ The table's real row count, not the length of the preview
+                            // array. These disagreed: the browser flyout reads `tableMetadata`
+                            // (4.2M for support_cases) and this panel read `MOCK_DATA` (5), so the
+                            // same table reported two counts feet apart on screen. `tableMetadata`
+                            // is the one the caching estimate and the fact/dimension guess use, so
+                            // it wins; the preview length is the fallback for tables it lacks.
+                            const rowN = tableMetadata[sg.tableName]?.rowCount ?? MOCK_DATA[sg.tableName]?.length ?? 0;
                             const colN = step.cols.length;
                             const metaRow = (label: string, value: React.ReactNode) => (
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, padding: '7px 0', borderBottom: '1px solid #F3F5F8' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: sp.B, padding: '7px 0', borderBottom: `1px solid ${c['border-divider']}` }}>
                                 <span style={{ fontSize: 12, color: '#777E8B', fontWeight: 500, flexShrink: 0 }}>{label}</span>
-                                <span style={{ fontSize: 12, color: '#1D232F', fontWeight: 600, textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{value}</span>
+                                <span style={{ fontSize: 12, color: c['content-primary'], fontWeight: 600, textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{value}</span>
                               </div>
                             );
                             return (
                               <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                {metaRow('Connection', 'Snowflake')}
+                                {metaRow('Connection', (() => {
+                                  const cid = sg.connection ?? connectionOf(sg.tableName);
+                                  return cid ? connectionLabel(cid, scope.databricksConnection) : 'ThoughtSpot';
+                                })())}
                                 {metaRow('Rows', rowN.toLocaleString())}
                                 {metaRow('Size', `${Math.max(1, Math.round(rowN * colN * 0.06))} KB`)}
                                 {metaRow('Owner', 'DATA_ENGINEERING')}
@@ -4868,16 +6629,16 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                           })()}
                           {sg.sourceKind === 'csv' && sg.csv && (
                             <div>
-                              <div style={{ fontSize: 10, fontWeight: 700, color: '#A5ACB9', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>CSV import</div>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                                <div><label style={labelStyle}>File</label><div style={{ padding: '6px 10px', background: '#F6F8FA', borderRadius: 6, border: BORDER, fontSize: 12, color: '#777E8B', fontFamily: ff.primary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sg.csv.fileName}</div></div>
-                                <div style={{ display: 'flex', gap: 8 }}>
-                                  <div style={{ flex: 1 }}><label style={labelStyle}>Rows</label><div style={{ padding: '6px 10px', background: '#F6F8FA', borderRadius: 6, border: BORDER, fontSize: 12, color: '#1D232F', fontWeight: 600, fontFamily: ff.primary }}>{MOCK_DATA[sg.tableName]?.length ?? '—'}</div></div>
-                                  <div style={{ flex: 1 }}><label style={labelStyle}>Columns</label><div style={{ padding: '6px 10px', background: '#F6F8FA', borderRadius: 6, border: BORDER, fontSize: 12, color: '#1D232F', fontWeight: 600, fontFamily: ff.primary }}>{step.cols.length}</div></div>
+                              <div style={{ fontSize: 12, fontWeight: 700, color: '#A5ACB9', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: sp.C }}>CSV import</div>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: sp.C }}>
+                                <div><label style={labelStyle}>File</label><div style={{ padding: '6px 10px', background: c['background-sunken'], borderRadius: 6, border: BORDER, fontSize: 12, color: '#777E8B', fontFamily: ff.primary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sg.csv.fileName}</div></div>
+                                <div style={{ display: 'flex', gap: sp.B }}>
+                                  <div style={{ flex: 1 }}><label style={labelStyle}>Rows</label><div style={{ padding: '6px 10px', background: c['background-sunken'], borderRadius: 6, border: BORDER, fontSize: 12, color: c['content-primary'], fontWeight: 600, fontFamily: ff.primary }}>{(tableMetadata[sg.tableName]?.rowCount ?? MOCK_DATA[sg.tableName]?.length)?.toLocaleString() ?? '—'}</div></div>
+                                  <div style={{ flex: 1 }}><label style={labelStyle}>Columns</label><div style={{ padding: '6px 10px', background: c['background-sunken'], borderRadius: 6, border: BORDER, fontSize: 12, color: c['content-primary'], fontWeight: 600, fontFamily: ff.primary }}>{step.cols.length}</div></div>
                                 </div>
                                 <div><label style={labelStyle}>Delimiter</label><div style={selectWrap}><select value={sg.csv.delimiter} onChange={e => setGroups(prev => prev.map(g => g.id === sg.id ? { ...g, csv: { ...g.csv!, delimiter: e.target.value } } : g))} style={selectStyle}><option value="comma">Comma ( , )</option><option value="tab">Tab</option><option value="semicolon">Semicolon ( ; )</option><option value="pipe">Pipe ( | )</option></select>{selectArrow}</div></div>
                                 <div><label style={labelStyle}>Quote character</label><div style={selectWrap}><select value={sg.csv.quote} onChange={e => setGroups(prev => prev.map(g => g.id === sg.id ? { ...g, csv: { ...g.csv!, quote: e.target.value } } : g))} style={selectStyle}><option value={'"'}>Double ( &quot; )</option><option value={"'"}>Single ( &apos; )</option></select>{selectArrow}</div></div>
-                                <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: '#1D232F', cursor: 'pointer', fontFamily: ff.primary }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: sp.B, fontSize: 12, color: c['content-primary'], cursor: 'pointer', fontFamily: ff.primary }}>
                                   <input type="checkbox" checked={sg.csv.header} onChange={e => setGroups(prev => prev.map(g => g.id === sg.id ? { ...g, csv: { ...g.csv!, header: e.target.checked } } : g))} />
                                   First row is header
                                 </label>
@@ -4893,11 +6654,6 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                       const savedFilter = step.filter;
                       const thisKey = stepKey(sg.id, sg.activeStep);
                       const isEditing = editingStepKey === thisKey || !savedFilter;
-                      const OPERATOR_LABEL: Record<string, string> = {
-                        '=': 'equals', '!=': 'does not equal', '>': 'greater than', '<': 'less than',
-                        '>=': 'greater or equal', '<=': 'less or equal', contains: 'contains',
-                        'is null': 'is null', 'is not null': 'is not null',
-                      };
                       if (!isEditing && savedFilter) {
                         const rows: [string, string][] = [];
                         if (savedFilter.name) rows.push(['Name', savedFilter.name]);
@@ -4906,7 +6662,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                         if (savedFilter.operator !== 'is null' && savedFilter.operator !== 'is not null') rows.push(['Value', savedFilter.value]);
                         return (
                           <div style={{ padding: '12px' }}>
-                            <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 14 }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', marginBottom: sp.D }}>
                               {rows.map(([label, value]) => summaryRow(label, value))}
                             </div>
                             {editActionButton('Edit filter', () => {
@@ -4918,7 +6674,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                       }
                       const fcols = (TABLE_COLS[sg.tableName] ?? sg.steps[0]?.cols ?? []) as [string, string][];
                       const needsValue = fc.operator !== 'is null' && fc.operator !== 'is not null';
-                      const fInput: React.CSSProperties = { width: '100%', boxSizing: 'border-box', border: BORDER, borderRadius: 6, padding: '6px 10px', fontSize: 12, color: '#1D232F', fontFamily: ff.primary, outline: 'none', background: '#fff' };
+                      const fInput: React.CSSProperties = { width: '100%', boxSizing: 'border-box', border: BORDER, borderRadius: 6, padding: '6px 10px', fontSize: 12, color: c['content-primary'], fontFamily: ff.primary, outline: 'none', background: '#fff' };
                       // Distinct sample values for the selected column, sourced from the same mock
                       // rows the preview uses — so Value is a pick-list, not free text.
                       const colIdx = fcols.findIndex(([c]) => c === fc.column);
@@ -4929,10 +6685,10 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                           .map(v => String(v))
                       )).sort();
                       return (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: sp.D }}>
                           <div>
                             <label style={labelStyle}>Filter name</label>
-                            <input value={fc.name} onChange={e => setFilterConfig(c => ({ ...c, name: e.target.value }))} placeholder="e.g. Enterprise accounts only" style={fInput} onFocus={e => { e.currentTarget.style.borderColor = '#2770EF'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(39,112,239,0.12)'; }} onBlur={e => { e.currentTarget.style.borderColor = '#EAEDF2'; e.currentTarget.style.boxShadow = 'none'; }} />
+                            <input value={fc.name} onChange={e => setFilterConfig(c => ({ ...c, name: e.target.value }))} placeholder="e.g. Enterprise accounts only" style={fInput} onFocus={e => { e.currentTarget.style.borderColor = '#2770EF'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(39,112,239,0.12)'; }} onBlur={e => { e.currentTarget.style.borderColor = c['border-divider']; e.currentTarget.style.boxShadow = 'none'; }} />
                           </div>
                           <div style={{ borderTop: BORDER }} />
                           <div>
@@ -4977,6 +6733,9 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                           )}
                           {saveCancelRow({
                             disabled: !fc.column || (needsValue && !fc.value.trim()),
+                            // Editing an existing filter says so. A filter is one-per-step, so
+                            // the commit already replaces rather than appends.
+                            saveLabel: savedFilter ? 'Save changes' : 'Save',
                             onSave: () => {
                               if (!fc.column || (needsValue && !fc.value.trim())) return;
                               setGroups(prev => prev.map(g => g.id === sg.id ? { ...g, steps: g.steps.map((s, i) => i === g.activeStep ? { ...s, filter: { name: fc.name.trim(), column: fc.column, operator: fc.operator, value: fc.value.trim() } } : s) } : g));
@@ -4996,7 +6755,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                       if (!isEditing && savedFix) {
                         return (
                           <div style={{ padding: '12px' }}>
-                            <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 14 }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', marginBottom: sp.D }}>
                               {summaryRow('Column', savedFix.column)}
                               {summaryRow('Fill value', savedFix.value)}
                             </div>
@@ -5008,11 +6767,11 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                         );
                       }
                       const nullCols = nullColumnsOf(sg.tableName);
-                      const nfInputStyle: React.CSSProperties = { width: '100%', boxSizing: 'border-box', border: BORDER, borderRadius: 6, padding: '6px 10px', fontSize: 12, color: '#1D232F', fontFamily: ff.primary, outline: 'none', background: '#fff' };
+                      const nfInputStyle: React.CSSProperties = { width: '100%', boxSizing: 'border-box', border: BORDER, borderRadius: 6, padding: '6px 10px', fontSize: 12, color: c['content-primary'], fontFamily: ff.primary, outline: 'none', background: '#fff' };
                       const nfFocus = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => { e.currentTarget.style.borderColor = '#2770EF'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(39,112,239,0.10)'; };
-                      const nfBlur = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => { e.currentTarget.style.borderColor = '#EAEDF2'; e.currentTarget.style.boxShadow = 'none'; };
+                      const nfBlur = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => { e.currentTarget.style.borderColor = c['border-divider']; e.currentTarget.style.boxShadow = 'none'; };
                       return (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: sp.D }}>
                           {/* Column to fix */}
                           <div>
                             <label style={labelStyle}>Column to fix</label>
@@ -5053,27 +6812,23 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                       if (!isEditing) {
                         return (
                           <div style={{ padding: '12px' }}>
-                            <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 14 }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', marginBottom: sp.D }}>
                               {savedFormulas.map((f, i) => summaryRow(f.col, <code style={{ fontFamily: "'SF Mono','Fira Mono',monospace" }}>{f.expr}</code>, `${f.col}_${i}`))}
                             </div>
                             {editActionButton('Add another column', () => {
                               setFormulaConfig({ colName: '', colNameTouched: false, aiDesc: '', aiActive: false, aiGenerating: false, expr: '' });
+                              setEditingFormulaCol(null); // adding, not editing
                               setEditingStepKey(thisKey);
                             }, ADD_PLUS_ICON)}
                           </div>
                         );
                       }
                       const showColError = fc.colNameTouched && !fc.colName.trim();
-                      const SAMPLE_EXPRS = [
-                        { label: 'Profit margin', expr: '(revenue - cost) / revenue' },
-                        { label: 'Full name', expr: "concat(first_name, ' ', last_name)" },
-                        { label: 'Year', expr: 'year(order_date)' },
-                      ];
-                      const inputStyle: React.CSSProperties = { width: '100%', boxSizing: 'border-box', border: BORDER, borderRadius: 6, padding: '6px 10px', fontSize: 12, color: '#1D232F', fontFamily: ff.primary, outline: 'none', background: '#fff' };
+                      const inputStyle: React.CSSProperties = { width: '100%', boxSizing: 'border-box', border: BORDER, borderRadius: 6, padding: '6px 10px', fontSize: 12, color: c['content-primary'], fontFamily: ff.primary, outline: 'none', background: '#fff' };
                       const inputFocus = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => { e.currentTarget.style.borderColor = '#2770EF'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(39,112,239,0.10)'; };
-                      const inputBlur = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => { e.currentTarget.style.borderColor = '#EAEDF2'; e.currentTarget.style.boxShadow = 'none'; };
+                      const inputBlur = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => { e.currentTarget.style.borderColor = c['border-divider']; e.currentTarget.style.boxShadow = 'none'; };
                       return (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: sp.D }}>
                           {/* Column name */}
                           <div>
                             <label style={labelStyle}>New column name</label>
@@ -5083,14 +6838,26 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                               onBlur={e => { setFormulaConfig(f => ({ ...f, colNameTouched: true })); inputBlur(e); }}
                               onFocus={inputFocus}
                               placeholder="e.g. profit_margin"
-                              style={{ ...inputStyle, borderColor: showColError ? '#E53E3E' : '#EAEDF2' }}
+                              style={{ ...inputStyle, borderColor: showColError ? '#E53E3E' : c['border-divider'] }}
                             />
-                            {showColError && <div style={{ fontSize: 11, color: '#E22B3D', marginTop: 4, fontWeight: 500, fontFamily: ff.primary }}>Required</div>}
+                            {showColError && <div style={{ fontSize: 12, color: '#E22B3D', marginTop: sp.A, fontWeight: 500, fontFamily: ff.primary }}>Required</div>}
                           </div>
 
-                          {/* Build using AI */}
+                          {/*
+                            Build using AI — REMOVED (2026-08-12).
+
+                            The panel had four blocks for a two-field task: name it, write it. The
+                            AI describe-and-generate box sat between the two, so the panel opened
+                            on a control that wasn't the one you came for, and the sample-expression
+                            list underneath filled the space where the expression's *own* feedback
+                            should be. What was missing is the only thing a formula editor really
+                            owes you — whether what you typed is valid — and that now sits directly
+                            under the expression. Kept in `{false && …}` to match the SQL and Python
+                            editors, which retired their AI blocks the same way.
+                          */}
+                          {false && (<>
                           <div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 6 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: sp.A, marginBottom: sp.B }}>
                               <span style={labelStyle}>Build using AI</span>
                               <div title="Describe what you want in plain language — AI will write the expression for you" style={{ width: 14, height: 14, borderRadius: 99, border: '1.5px solid #A5ACB9', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'help', flexShrink: 0 }}>
                                 <svg width="8" height="8" viewBox="0 0 10 10" fill="none"><text x="3.2" y="8" fontSize="8" fontWeight="700" fill="#A5ACB9">i</text></svg>
@@ -5108,7 +6875,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                                   rows={3}
                                   style={{ ...inputStyle, resize: 'none', lineHeight: 1.5 }}
                                 />
-                                <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+                                <div style={{ display: 'flex', gap: sp.B, marginTop: sp.B }}>
                                   <button
                                     disabled={!fc.aiDesc.trim() || fc.aiGenerating}
                                     onClick={() => {
@@ -5124,7 +6891,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                                         setFormulaConfig(f => ({ ...f, aiGenerating: false, aiActive: false, expr: generated }));
                                       }, 1200);
                                     }}
-                                    style={{ flex: 1, padding: '6px 0', borderRadius: 6, border: 'none', background: fc.aiDesc.trim() && !fc.aiGenerating ? '#2770EF' : '#E8ECEF', color: fc.aiDesc.trim() && !fc.aiGenerating ? '#fff' : '#A5ACB9', fontSize: 12, fontWeight: 600, cursor: fc.aiDesc.trim() && !fc.aiGenerating ? 'pointer' : 'default', fontFamily: ff.primary, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                                    style={{ flex: 1, padding: '6px 0', borderRadius: 6, border: 'none', background: fc.aiDesc.trim() && !fc.aiGenerating ? '#2770EF' : c['background-subtle'], color: fc.aiDesc.trim() && !fc.aiGenerating ? '#fff' : '#A5ACB9', fontSize: 12, fontWeight: 600, cursor: fc.aiDesc.trim() && !fc.aiGenerating ? 'pointer' : 'default', fontFamily: ff.primary, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: sp.B }}
                                   >
                                     {fc.aiGenerating
                                       ? <><svg width="11" height="11" viewBox="0 0 24 24" fill="none" style={{ animation: 'spin 0.8s linear infinite' }}><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2.5" strokeDasharray="20 40" strokeLinecap="round"/></svg>Generating…</>
@@ -5137,9 +6904,9 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                             ) : (
                               <button
                                 onClick={() => setFormulaConfig(f => ({ ...f, aiActive: true }))}
-                                style={{ width: '100%', textAlign: 'left', padding: '8px 10px', border: '1.5px dashed #D6DBE5', borderRadius: 7, background: '#FAFBFC', color: '#A5ACB9', fontSize: 12, fontStyle: 'italic', cursor: 'pointer', fontFamily: ff.primary, display: 'flex', alignItems: 'center', gap: 6 }}
+                                style={{ width: '100%', textAlign: 'left', padding: '8px 10px', border: '1.5px dashed #D6DBE5', borderRadius: 7, background: c['background-sunken'], color: '#A5ACB9', fontSize: 12, fontStyle: 'italic', cursor: 'pointer', fontFamily: ff.primary, display: 'flex', alignItems: 'center', gap: sp.B }}
                                 onMouseEnter={e => e.currentTarget.style.borderColor = '#2770EF'}
-                                onMouseLeave={e => e.currentTarget.style.borderColor = '#D6DBE5'}
+                                onMouseLeave={e => e.currentTarget.style.borderColor = c['border-subtle-hover']}
                               >
                                 <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M8 2l1.3 3.7L13 7l-3.7 1.3L8 12l-1.3-3.7L3 7l3.7-1.3L8 2z" fill="#A5ACB9"/></svg>
                                 {fc.aiDesc || 'Describe your formula in plain language…'}
@@ -5148,12 +6915,13 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                           </div>
 
                           <div style={{ borderTop: BORDER }} />
+                          </>)}
 
                           {/* Expression */}
                           <div style={{ position: 'relative' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: sp.B }}>
                               <span style={labelStyle}>Expression</span>
-                              {fc.expr && <button onClick={() => setFormulaConfig(f => ({ ...f, expr: '' }))} style={{ background: 'none', border: 'none', color: '#A5ACB9', fontSize: 11, cursor: 'pointer', padding: 0, fontFamily: ff.primary }}>Clear</button>}
+                              {fc.expr && <button onClick={() => setFormulaConfig(f => ({ ...f, expr: '' }))} style={{ background: 'none', border: 'none', color: '#A5ACB9', fontSize: 12, cursor: 'pointer', padding: 0, fontFamily: ff.primary }}>Clear</button>}
                             </div>
                             <textarea
                               value={fc.expr}
@@ -5162,50 +6930,91 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                               onBlur={inputBlur}
                               placeholder={'Enter an expression or custom value'}
                               rows={4}
-                              style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.6, fontFamily: "'SF Mono', 'Fira Mono', 'Menlo', monospace", background: '#F6F8FA', minHeight: 80 }}
+                              style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.6, fontFamily: "'SF Mono', 'Fira Mono', 'Menlo', monospace", background: c['background-sunken'], minHeight: 80 }}
                             />
-                            {fc.aiGenerating && (
-                              <div style={{ position: 'absolute', inset: 0, borderRadius: 6, background: 'rgba(245,248,255,0.88)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ color: '#2770EF', animation: 'spin 0.8s linear infinite' }}><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2.5" strokeDasharray="20 40" strokeLinecap="round"/></svg>
-                                <span style={{ fontSize: 11, color: '#2770EF', fontWeight: 600, fontFamily: ff.primary }}>Generating expression…</span>
-                              </div>
-                            )}
                           </div>
 
-                          {/* Quick examples */}
-                          {!fc.expr && (
-                            <div>
-                              <div style={{ fontSize: 10, fontWeight: 700, color: '#A5ACB9', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6, fontFamily: ff.primary }}>Examples</div>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                                {SAMPLE_EXPRS.map(s => (
-                                  <button key={s.label} onClick={() => setFormulaConfig(f => ({ ...f, expr: s.expr }))}
-                                    style={{ textAlign: 'left', padding: '7px 10px', borderRadius: 6, border: BORDER, background: '#F6F8FA', cursor: 'pointer', fontFamily: ff.primary, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}
-                                    onMouseEnter={e => { e.currentTarget.style.borderColor = '#2770EF'; e.currentTarget.style.background = '#EEF2FF'; }}
-                                    onMouseLeave={e => { e.currentTarget.style.borderColor = '#EAEDF2'; e.currentTarget.style.background = '#F6F8FA'; }}>
-                                    <span style={{ fontSize: 11, fontWeight: 500, color: '#64748B' }}>{s.label}</span>
-                                    <code style={{ fontSize: 10, color: '#777E8B', fontFamily: "'SF Mono', 'Fira Mono', monospace", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 120 }}>{s.expr}</code>
-                                  </button>
-                                ))}
+                          {/*
+                            Validation status — the third and last thing this panel owes you.
+
+                            It runs the **same evaluator that Save will run** (`evaluateFormula`,
+                            also behind the Spreadsheet's formula bar), against this card's real
+                            columns and rows, so a green tick here means the expression genuinely
+                            resolves rather than merely parses. The failure it catches most often
+                            isn't a syntax error: it's a term that matches no column, which the
+                            evaluator otherwise substitutes with 0 and computes a plausible wrong
+                            number from. Naming the unresolved terms is the whole value.
+                          */}
+                          {fc.expr.trim() && (() => {
+                            const vg = groups.find(g => g.id === selectedId);
+                            const vCols = (vg?.steps[vg.activeStep]?.cols ?? vg?.steps[0]?.cols ?? []) as [string, string][];
+                            // ⚠️ One **synthetic** row of 1s rather than the card's real rows.
+                            // Validation is a question about the expression, not about the data:
+                            // a single row resolves every term and evaluates the arithmetic once,
+                            // which is all that's being asked, and 1s keep a division finite so a
+                            // valid formula can't be reported as broken by a zero in the data.
+                            const probe: Row[] = [vCols.map(() => 1)];
+                            const { values, unresolved } = evaluateFormula(fc.expr.trim(), vCols, probe);
+                            const computed = values.filter(v => v !== null).length;
+                            const ok = unresolved.length === 0 && computed > 0;
+                            const tone = ok ? { bg: 'rgba(6,191,127,0.10)', fg: '#0B8A5F' } : { bg: '#FFF7ED', fg: '#92640A' };
+                            return (
+                              <div style={{ display: 'flex', alignItems: 'flex-start', gap: sp.B, padding: '7px 10px', borderRadius: 6, background: tone.bg, color: tone.fg, fontSize: 12, lineHeight: 1.5, fontFamily: ff.primary }}>
+                                <span style={{ flexShrink: 0, marginTop: 1 }}>
+                                  {ok
+                                    ? <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M3.2 8.4l3.1 3.1 6.5-6.6" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                                    : <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M8 3v6" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/><circle cx="8" cy="12" r="0.9" fill="currentColor"/></svg>}
+                                </span>
+                                <span>
+                                  {unresolved.length > 0
+                                    ? `Not a column on this table: ${unresolved.join(', ')}`
+                                    : computed === 0
+                                      ? 'This expression can’t be evaluated — check the operators and brackets'
+                                      : 'Valid expression'}
+                                </span>
                               </div>
-                            </div>
-                          )}
+                            );
+                          })()}
 
                           {saveCancelRow({
                             disabled: !fc.colName.trim() || !fc.expr.trim(),
-                            saveLabel: 'Add column',
+                            saveLabel: editingFormulaCol ? 'Save changes' : 'Add column',
                             onSave: () => {
                               if (!fc.colName.trim() || !fc.expr.trim() || !selectedId) return;
                               const colName = fc.colName.trim();
                               const expr = fc.expr.trim();
-                              // Add column to active step's cols + record it for the summary view
+                              const replacing = editingFormulaCol;
+                              // Editing replaces **in place** so the column keeps its position in
+                              // the list; adding appends. A rename carries the column with it.
                               setGroups(prev => prev.map(g => {
                                 if (g.id !== selectedId) return g;
-                                const steps = g.steps.map((s, i) =>
-                                  i === g.activeStep ? { ...s, cols: [...s.cols, [colName, 'FLOAT'] as [string, string]], formulas: [...(s.formulas ?? []), { col: colName, expr }] } : s
-                                );
+                                const steps = g.steps.map((s, i) => {
+                                  if (i !== g.activeStep) return s;
+                                  if (replacing) {
+                                    return {
+                                      ...s,
+                                      cols: s.cols.map(([cn, t]) => cn === replacing ? [colName, t] as [string, string] : [cn, t] as [string, string]),
+                                      formulas: (s.formulas ?? []).map(f => f.col === replacing ? { col: colName, expr } : f),
+                                    };
+                                  }
+                                  return { ...s, cols: [...s.cols, [colName, 'FLOAT'] as [string, string]], formulas: [...(s.formulas ?? []), { col: colName, expr }] };
+                                });
                                 return { ...g, steps };
                               }));
                               setEditingStepKey(null);
+                              setEditingFormulaCol(null);
+                              // Compute the values. Without this the column lands, scrolls into
+                              // view and highlights — with every cell null, which reads as a
+                              // broken column rather than an unwired one. `evaluateFormula` is the
+                              // same evaluator the Spreadsheet's formula bar has always used; the
+                              // panel just never reached it.
+                              const fg = groups.find(g => g.id === selectedId);
+                              if (fg) {
+                                const srcCols = fg.steps[fg.activeStep]?.cols ?? fg.steps[0]?.cols ?? [];
+                                const srcRows = rowsForCard(fg, 200);
+                                const { values } = evaluateFormula(expr, srcCols, srcRows);
+                                setDerivedCols(prev => ({ ...prev, [colName]: values }));
+                              }
                               // Open preview + scroll/highlight new column
                               setPreviewOpen(true);
                               setHighlightedCol(colName);
@@ -5215,7 +7024,9 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                               }, 60);
                               setTimeout(() => setHighlightedCol(null), 2500);
                             },
-                            onCancel: savedFormulas.length > 0 ? () => setEditingStepKey(null) : undefined,
+                            onCancel: savedFormulas.length > 0
+                              ? () => { setEditingStepKey(null); setEditingFormulaCol(null); }
+                              : undefined,
                           })}
                         </div>
                       );
@@ -5225,16 +7036,16 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                       const sc = sqlConfig;
                       // Always the editor — a query is code, so there's no read-only
                       // rendering to step through before you can change it.
-                      const inputStyle: React.CSSProperties = { width: '100%', boxSizing: 'border-box', border: BORDER, borderRadius: 6, padding: '6px 10px', fontSize: 12, color: '#1D232F', fontFamily: ff.primary, outline: 'none', background: '#fff' };
+                      const inputStyle: React.CSSProperties = { width: '100%', boxSizing: 'border-box', border: BORDER, borderRadius: 6, padding: '6px 10px', fontSize: 12, color: c['content-primary'], fontFamily: ff.primary, outline: 'none', background: '#fff' };
                       const inputFocus = (e: React.FocusEvent<HTMLTextAreaElement>) => { e.currentTarget.style.borderColor = '#2770EF'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(39,112,239,0.10)'; };
-                      const inputBlur = (e: React.FocusEvent<HTMLTextAreaElement>) => { e.currentTarget.style.borderColor = '#EAEDF2'; e.currentTarget.style.boxShadow = 'none'; };
+                      const inputBlur = (e: React.FocusEvent<HTMLTextAreaElement>) => { e.currentTarget.style.borderColor = c['border-divider']; e.currentTarget.style.boxShadow = 'none'; };
                       return (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 14, ...(activeStepIsCode ? { flex: 1, minHeight: 0 } : {}) }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: sp.D, ...(activeStepIsCode ? { flex: 1, minHeight: 0 } : {}) }}>
                           {/* Action strip — last run + Run (top) */}
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: sp.B }}>
                             <div style={{ flex: 1 }} />
-                            <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11.5, color: sc.applied ? '#06BF7F' : '#777E8B', fontWeight: 500, fontFamily: ff.primary, whiteSpace: 'nowrap' }}>
-                              <span style={{ width: 6, height: 6, borderRadius: '50%', background: sc.applied ? '#06BF7F' : '#C0C6CF' }} />
+                            <span style={{ display: 'flex', alignItems: 'center', gap: sp.A, fontSize: 12, color: sc.applied ? '#06BF7F' : '#777E8B', fontWeight: 500, fontFamily: ff.primary, whiteSpace: 'nowrap' }}>
+                              <span style={{ width: 6, height: 6, borderRadius: '50%', background: sc.applied ? '#06BF7F' : c['background-inset'] }} />
                               {sc.applied ? 'Last run 1.28s ago' : 'Not run yet'}
                             </span>
                             <button
@@ -5278,7 +7089,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                                 setPreviewOpen(true);
                                 setEditingStepKey(null);
                               }}
-                              style={{ padding: '6px 16px', borderRadius: 7, border: 'none', background: sc.sql.trim() ? '#2770EF' : '#E8ECEF', color: sc.sql.trim() ? '#fff' : '#A5ACB9', fontSize: 12.5, fontWeight: 600, cursor: sc.sql.trim() ? 'pointer' : 'default', fontFamily: ff.primary, display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}
+                              style={{ padding: '6px 16px', borderRadius: 7, border: 'none', background: sc.sql.trim() ? '#2770EF' : c['background-subtle'], color: sc.sql.trim() ? '#fff' : '#A5ACB9', fontSize: 12.5, fontWeight: 600, cursor: sc.sql.trim() ? 'pointer' : 'default', fontFamily: ff.primary, display: 'flex', alignItems: 'center', gap: sp.B, flexShrink: 0 }}
                             >
                               <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M4 3l9 5-9 5V3z" fill="currentColor"/></svg>
                               Run
@@ -5290,7 +7101,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                           {/* Build using AI — REMOVED */}
                           {false && (<>
                           <div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 6 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: sp.A, marginBottom: sp.B }}>
                               <span style={labelStyle}>Build using AI</span>
                               <div title="Describe the query in plain language — AI will write the SQL for you" style={{ width: 14, height: 14, borderRadius: 99, border: '1.5px solid #A5ACB9', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'help', flexShrink: 0 }}>
                                 <svg width="8" height="8" viewBox="0 0 10 10" fill="none"><text x="3.2" y="8" fontSize="8" fontWeight="700" fill="#A5ACB9">i</text></svg>
@@ -5308,7 +7119,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                                   rows={3}
                                   style={{ ...inputStyle, resize: 'none', lineHeight: 1.5 }}
                                 />
-                                <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+                                <div style={{ display: 'flex', gap: sp.B, marginTop: sp.B }}>
                                   <button
                                     disabled={!sc.aiDesc.trim() || sc.aiGenerating}
                                     onClick={() => {
@@ -5327,7 +7138,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                                         setSqlConfig(s => ({ ...s, aiGenerating: false, aiActive: false, sql: gen }));
                                       }, 1200);
                                     }}
-                                    style={{ flex: 1, padding: '6px 0', borderRadius: 6, border: 'none', background: sc.aiDesc.trim() && !sc.aiGenerating ? '#2770EF' : '#E8ECEF', color: sc.aiDesc.trim() && !sc.aiGenerating ? '#fff' : '#A5ACB9', fontSize: 12, fontWeight: 600, cursor: sc.aiDesc.trim() && !sc.aiGenerating ? 'pointer' : 'default', fontFamily: ff.primary, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                                    style={{ flex: 1, padding: '6px 0', borderRadius: 6, border: 'none', background: sc.aiDesc.trim() && !sc.aiGenerating ? '#2770EF' : c['background-subtle'], color: sc.aiDesc.trim() && !sc.aiGenerating ? '#fff' : '#A5ACB9', fontSize: 12, fontWeight: 600, cursor: sc.aiDesc.trim() && !sc.aiGenerating ? 'pointer' : 'default', fontFamily: ff.primary, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: sp.B }}
                                   >
                                     {sc.aiGenerating
                                       ? <><svg width="11" height="11" viewBox="0 0 24 24" fill="none" style={{ animation: 'spin 0.8s linear infinite' }}><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2.5" strokeDasharray="20 40" strokeLinecap="round"/></svg>Generating…</>
@@ -5340,9 +7151,9 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                             ) : (
                               <button
                                 onClick={() => setSqlConfig(s => ({ ...s, aiActive: true }))}
-                                style={{ width: '100%', textAlign: 'left', padding: '8px 10px', border: '1.5px dashed #D6DBE5', borderRadius: 7, background: '#FAFBFC', color: '#A5ACB9', fontSize: 12, fontStyle: 'italic', cursor: 'pointer', fontFamily: ff.primary, display: 'flex', alignItems: 'center', gap: 6 }}
+                                style={{ width: '100%', textAlign: 'left', padding: '8px 10px', border: '1.5px dashed #D6DBE5', borderRadius: 7, background: c['background-sunken'], color: '#A5ACB9', fontSize: 12, fontStyle: 'italic', cursor: 'pointer', fontFamily: ff.primary, display: 'flex', alignItems: 'center', gap: sp.B }}
                                 onMouseEnter={e => e.currentTarget.style.borderColor = '#2770EF'}
-                                onMouseLeave={e => e.currentTarget.style.borderColor = '#D6DBE5'}
+                                onMouseLeave={e => e.currentTarget.style.borderColor = c['border-subtle-hover']}
                               >
                                 <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M8 2l1.3 3.7L13 7l-3.7 1.3L8 12l-1.3-3.7L3 7l3.7-1.3L8 2z" fill="#A5ACB9"/></svg>
                                 {sc.aiDesc || 'Describe the query in plain language…'}
@@ -5377,8 +7188,8 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                                 .filter(g => g.id !== selectedId)
                                 .filter(g => g.tableName.toLowerCase().includes(sqlAtQuery.toLowerCase()));
                               return (
-                                <AnchoredMenu open={sqlAtOpen} anchorRef={sqlEditorRef} anchorPoint={sqlAtPoint} onClose={() => setSqlAtOpen(false)} placement="bottom-start" gap={2} style={{ background: '#fff', border: '1px solid #E2E6EC', borderRadius: 8, boxShadow: '0 6px 24px rgba(25,35,49,0.13)', minWidth: 220, maxHeight: 240, overflowY: 'auto', padding: '4px 0' }}>
-                                  <div style={{ padding: '5px 12px 4px', fontSize: 10, fontWeight: 700, color: '#A5ACB9', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Reference a table</div>
+                                <AnchoredMenu open={sqlAtOpen} anchorRef={sqlEditorRef} anchorPoint={sqlAtPoint} onClose={() => setSqlAtOpen(false)} placement="bottom-start" gap={2} style={{ background: '#fff', border: `1px solid ${c['border-subtle-hover']}`, borderRadius: 8, boxShadow: '0 6px 24px rgba(25,35,49,0.13)', minWidth: 220, maxHeight: 240, overflowY: 'auto', padding: '4px 0' }}>
+                                  <div style={{ padding: '5px 12px 4px', fontSize: 12, fontWeight: 700, color: '#A5ACB9', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Reference a table</div>
                                   {avail.length === 0 ? (
                                     <div style={{ padding: '8px 12px', fontSize: 12, color: '#A5ACB9' }}>No matching tables</div>
                                   ) : avail.map(g => (
@@ -5389,13 +7200,13 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                                         setSqlConfig(s => ({ ...s, sql: s.sql.replace(/@(\w*)$/, ref), applied: false }));
                                         setSqlAtOpen(false);
                                       }}
-                                      style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '7px 12px', border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left', fontFamily: ff.primary, fontSize: 12.5, fontWeight: 500, color: '#1D232F' }}
-                                      onMouseEnter={e => (e.currentTarget.style.background = '#F6F8FA')}
+                                      style={{ display: 'flex', alignItems: 'center', gap: sp.B, width: '100%', padding: '7px 12px', border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left', fontFamily: ff.primary, fontSize: 12.5, fontWeight: 500, color: c['content-primary'] }}
+                                      onMouseEnter={e => (e.currentTarget.style.background = c['background-sunken'])}
                                       onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                                     >
                                       <span style={{ color: '#64748B', display: 'flex', flexShrink: 0 }}><IconTable size={12} color="#64748B" /></span>
                                       {g.tableName}
-                                      <span style={{ marginLeft: 'auto', fontSize: 10, color: g.sourceKind === 'csv' ? '#16A34A' : '#777E8B', fontWeight: 700, textTransform: 'uppercase' }}>{g.sourceKind === 'csv' ? 'CSV' : 'Source'}</span>
+                                      <span style={{ marginLeft: 'auto', fontSize: 12, color: g.sourceKind === 'csv' ? '#16A34A' : '#777E8B', fontWeight: 700, textTransform: 'uppercase' }}>{g.sourceKind === 'csv' ? 'CSV' : 'Source'}</span>
                                     </button>
                                   ))}
                                 </AnchoredMenu>
@@ -5411,46 +7222,46 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                     if (step.type === 'python') {
                       const pc = pythonConfig;
                       // Always the editor — see the SQL step above.
-                      const inputStyle: React.CSSProperties = { width: '100%', boxSizing: 'border-box', border: BORDER, borderRadius: 6, padding: '6px 10px', fontSize: 12, color: '#1D232F', fontFamily: ff.primary, outline: 'none', background: '#fff' };
+                      const inputStyle: React.CSSProperties = { width: '100%', boxSizing: 'border-box', border: BORDER, borderRadius: 6, padding: '6px 10px', fontSize: 12, color: c['content-primary'], fontFamily: ff.primary, outline: 'none', background: '#fff' };
                       const inputFocus = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => { e.currentTarget.style.borderColor = '#2770EF'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(39,112,239,0.10)'; };
-                      const inputBlur = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => { e.currentTarget.style.borderColor = '#EAEDF2'; e.currentTarget.style.boxShadow = 'none'; };
+                      const inputBlur = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => { e.currentTarget.style.borderColor = c['border-divider']; e.currentTarget.style.boxShadow = 'none'; };
                       return (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 14, ...(activeStepIsCode ? { flex: 1, minHeight: 0 } : {}) }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: sp.D, ...(activeStepIsCode ? { flex: 1, minHeight: 0 } : {}) }}>
                           {/* Action strip — runtime + Run */}
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: sp.B }}>
                             <div style={{ position: 'relative' }}>
                               <select
                                 value={pc.pyVersion}
                                 onChange={e => setPythonConfig(p => ({ ...p, pyVersion: e.target.value }))}
-                                style={{ appearance: 'none', WebkitAppearance: 'none', border: BORDER, borderRadius: 6, padding: '5px 24px 5px 9px', fontSize: 11.5, fontFamily: ff.primary, fontWeight: 500, color: '#1D232F', background: '#fff', cursor: 'pointer', outline: 'none' }}
+                                style={{ appearance: 'none', WebkitAppearance: 'none', border: BORDER, borderRadius: 6, padding: '5px 24px 5px 9px', fontSize: 12, fontFamily: ff.primary, fontWeight: 500, color: c['content-primary'], background: '#fff', cursor: 'pointer', outline: 'none' }}
                               >
                                 <option value="3.12">Python 3.12</option>
                                 <option value="3.11">Python 3.11</option>
                                 <option value="3.10">Python 3.10</option>
                               </select>
                               <div style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#A5ACB9' }}>
-                                <svg width="9" height="9" viewBox="0 0 10 10" fill="none"><path d="M2 3.5l3 3 3-3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                                <Icon name="caret-down" size="xs" />
                               </div>
                             </div>
                             <button
-                              style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 9px', borderRadius: 6, border: BORDER, background: '#fff', color: '#64748B', fontSize: 11.5, fontWeight: 500, cursor: 'pointer', fontFamily: ff.primary }}
-                              onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#F6F8FA'}
+                              style={{ display: 'flex', alignItems: 'center', gap: sp.A, padding: '5px 9px', borderRadius: 6, border: BORDER, background: '#fff', color: '#64748B', fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: ff.primary }}
+                              onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = c['background-sunken']}
                               onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = '#fff'}
                             >
                               <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M3 4.5h7M3 8h7M3 11.5h4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><rect x="11.5" y="3.5" width="2" height="9" rx="0.6" stroke="currentColor" strokeWidth="1.2"/></svg>
                               Libraries
                             </button>
                             <button
-                              style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 9px', borderRadius: 6, border: BORDER, background: '#fff', color: '#64748B', fontSize: 11.5, fontWeight: 500, cursor: 'pointer', fontFamily: ff.primary }}
-                              onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#F6F8FA'}
+                              style={{ display: 'flex', alignItems: 'center', gap: sp.A, padding: '5px 9px', borderRadius: 6, border: BORDER, background: '#fff', color: '#64748B', fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: ff.primary }}
+                              onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = c['background-sunken']}
                               onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = '#fff'}
                             >
                               <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><rect x="3.5" y="7" width="9" height="6.5" rx="1.3" stroke="currentColor" strokeWidth="1.3"/><path d="M5.5 7V5.2a2.5 2.5 0 0 1 5 0V7" stroke="currentColor" strokeWidth="1.3"/></svg>
                               Secrets
                             </button>
                             <div style={{ flex: 1 }} />
-                            <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11.5, color: pc.ran ? '#06BF7F' : '#777E8B', fontWeight: 500, fontFamily: ff.primary, whiteSpace: 'nowrap' }}>
-                              <span style={{ width: 6, height: 6, borderRadius: '50%', background: pc.ran ? '#06BF7F' : '#C0C6CF' }} />
+                            <span style={{ display: 'flex', alignItems: 'center', gap: sp.A, fontSize: 12, color: pc.ran ? '#06BF7F' : '#777E8B', fontWeight: 500, fontFamily: ff.primary, whiteSpace: 'nowrap' }}>
+                              <span style={{ width: 6, height: 6, borderRadius: '50%', background: pc.ran ? '#06BF7F' : c['background-inset'] }} />
                               {pc.ran ? 'Last run 4.2s ago' : 'Not run yet'}
                             </span>
                             <button
@@ -5533,7 +7344,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                                 const ranTable = groups.find(g => g.id === selectedId)?.tableName;
                                 if (ranTable) (window as any).__dsNotifyPythonRun__?.(ranTable);
                               }}
-                              style={{ padding: '6px 16px', borderRadius: 7, border: 'none', background: pc.code.trim() ? '#2770EF' : '#E8ECEF', color: pc.code.trim() ? '#fff' : '#A5ACB9', fontSize: 12.5, fontWeight: 600, cursor: pc.code.trim() ? 'pointer' : 'default', fontFamily: ff.primary, display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}
+                              style={{ padding: '6px 16px', borderRadius: 7, border: 'none', background: pc.code.trim() ? '#2770EF' : c['background-subtle'], color: pc.code.trim() ? '#fff' : '#A5ACB9', fontSize: 12.5, fontWeight: 600, cursor: pc.code.trim() ? 'pointer' : 'default', fontFamily: ff.primary, display: 'flex', alignItems: 'center', gap: sp.B, flexShrink: 0 }}
                             >
                               <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M4 3l9 5-9 5V3z" fill="currentColor"/></svg>
                               Run
@@ -5546,7 +7357,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                           {/* Build using AI — REMOVED */}
                           {false && (<>
                           <div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 6 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: sp.A, marginBottom: sp.B }}>
                               <span style={labelStyle}>Build using AI</span>
                               <div title="Describe what you want in plain language — AI will write the Python for you" style={{ width: 14, height: 14, borderRadius: 99, border: '1.5px solid #A5ACB9', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'help', flexShrink: 0 }}>
                                 <svg width="8" height="8" viewBox="0 0 10 10" fill="none"><text x="3.2" y="8" fontSize="8" fontWeight="700" fill="#A5ACB9">i</text></svg>
@@ -5564,7 +7375,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                                   rows={3}
                                   style={{ ...inputStyle, resize: 'none', lineHeight: 1.5 }}
                                 />
-                                <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+                                <div style={{ display: 'flex', gap: sp.B, marginTop: sp.B }}>
                                   <button
                                     disabled={!pc.aiDesc.trim() || pc.aiGenerating}
                                     onClick={() => {
@@ -5582,7 +7393,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                                         setPythonConfig(p => ({ ...p, aiGenerating: false, aiActive: false, code: gen, colName: p.colName || suggestedCol }));
                                       }, 1300);
                                     }}
-                                    style={{ flex: 1, padding: '6px 0', borderRadius: 6, border: 'none', background: pc.aiDesc.trim() && !pc.aiGenerating ? '#2770EF' : '#E8ECEF', color: pc.aiDesc.trim() && !pc.aiGenerating ? '#fff' : '#A5ACB9', fontSize: 12, fontWeight: 600, cursor: pc.aiDesc.trim() && !pc.aiGenerating ? 'pointer' : 'default', fontFamily: ff.primary, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                                    style={{ flex: 1, padding: '6px 0', borderRadius: 6, border: 'none', background: pc.aiDesc.trim() && !pc.aiGenerating ? '#2770EF' : c['background-subtle'], color: pc.aiDesc.trim() && !pc.aiGenerating ? '#fff' : '#A5ACB9', fontSize: 12, fontWeight: 600, cursor: pc.aiDesc.trim() && !pc.aiGenerating ? 'pointer' : 'default', fontFamily: ff.primary, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: sp.B }}
                                   >
                                     {pc.aiGenerating
                                       ? <><svg width="11" height="11" viewBox="0 0 24 24" fill="none" style={{ animation: 'spin 0.8s linear infinite' }}><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2.5" strokeDasharray="20 40" strokeLinecap="round"/></svg>Generating…</>
@@ -5595,9 +7406,9 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                             ) : (
                               <button
                                 onClick={() => setPythonConfig(p => ({ ...p, aiActive: true }))}
-                                style={{ width: '100%', textAlign: 'left', padding: '8px 10px', border: '1.5px dashed #D6DBE5', borderRadius: 7, background: '#FAFBFC', color: '#A5ACB9', fontSize: 12, fontStyle: 'italic', cursor: 'pointer', fontFamily: ff.primary, display: 'flex', alignItems: 'center', gap: 6 }}
+                                style={{ width: '100%', textAlign: 'left', padding: '8px 10px', border: '1.5px dashed #D6DBE5', borderRadius: 7, background: c['background-sunken'], color: '#A5ACB9', fontSize: 12, fontStyle: 'italic', cursor: 'pointer', fontFamily: ff.primary, display: 'flex', alignItems: 'center', gap: sp.B }}
                                 onMouseEnter={e => e.currentTarget.style.borderColor = '#2770EF'}
-                                onMouseLeave={e => e.currentTarget.style.borderColor = '#D6DBE5'}
+                                onMouseLeave={e => e.currentTarget.style.borderColor = c['border-subtle-hover']}
                               >
                                 <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M8 2l1.3 3.7L13 7l-3.7 1.3L8 12l-1.3-3.7L3 7l3.7-1.3L8 2z" fill="#A5ACB9"/></svg>
                                 {pc.aiDesc || 'Describe what you want in plain language…'}
@@ -5622,7 +7433,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
 
                           {/* Agent fix review — accept keeps the updated code; reject restores the error */}
                           {pythonFixReview && (
-                            <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8 }}>
+                            <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: sp.B }}>
                               <button onClick={rejectPythonFix} style={{ padding: '6px 14px', borderRadius: 7, border: 'none', background: 'rgba(226,43,61,0.09)', color: '#E22B3D', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: ff.primary }}>Reject</button>
                               <button onClick={acceptPythonFix} style={{ padding: '6px 14px', borderRadius: 7, border: 'none', background: 'rgba(6,191,127,0.12)', color: '#06BF7F', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: ff.primary }}>Accept</button>
                             </div>
@@ -5636,15 +7447,15 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                     /* All other step types — generic config placeholder */
                     return (
                       <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                          <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', padding: '2px 7px', borderRadius: 4, background: tc.bg, color: tc.fg }}>{m.label}</span>
-                          <span style={{ fontSize: 11, color: '#777E8B' }}>{m.desc}</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, marginBottom: sp.C }}>
+                          <span style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', padding: '2px 7px', borderRadius: 4, background: tc.bg, color: tc.fg }}>{m.label}</span>
+                          <span style={{ fontSize: 12, color: '#777E8B' }}>{m.desc}</span>
                         </div>
-                        <div style={{ background: '#F6F8FA', border: BORDER, borderRadius: 8, padding: '20px 16px', textAlign: 'center' }}>
+                        <div style={{ background: c['background-sunken'], border: BORDER, borderRadius: 8, padding: '20px 16px', textAlign: 'center' }}>
                           <div style={{ fontSize: 12, color: '#A5ACB9', fontWeight: 500 }}>
                             {step.label}
                           </div>
-                          <div style={{ fontSize: 11, color: '#C0C6CF', marginTop: 4 }}>
+                          <div style={{ fontSize: 12, color: c['content-tertiary'], marginTop: 4 }}>
                             Configuration panel
                           </div>
                         </div>
@@ -5689,10 +7500,17 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                   // A join is a relationship between cards (an edge), never a block.
                   if (selectedIds.size >= 2) {
                     const selGroups = [...selectedIds].map(id => groups.find(g => g.id === id)).filter(Boolean) as CanvasGroup[];
-                    setMultiJoinTable1(selGroups[0]?.tableName ?? '');
-                    setJoinConfig({ name: '', table2: selGroups[1]?.tableName ?? '', col1: '', col2: '', joinType: 'inner', cardinality: 'many_to_one', extraPairs: [] });
-                    setMultiJoinActive(true);
-                    setSingleJoinActive(false);
+                    const openMultiJoin = () => {
+                      setMultiJoinTable1(selGroups[0]?.tableName ?? '');
+                      setJoinConfig({ name: '', table2: selGroups[1]?.tableName ?? '', col1: '', col2: '', joinType: 'inner', cardinality: 'many_to_one', extraPairs: [] });
+                      setMultiJoinActive(true);
+                      setSingleJoinActive(false);
+                    };
+                    // Both tables are known before the panel opens, so this is the earliest
+                    // honest moment to raise caching — the panel would otherwise open onto a
+                    // join that can't be made. Resuming re-opens it.
+                    if (startJoinGate(selGroups[0]?.tableName, selGroups[1]?.tableName ?? '', openMultiJoin)) return;
+                    openMultiJoin();
                   } else if (selectedId) {
                     setJoinConfig({ name: '', table2: '', col1: '', col2: '', joinType: 'inner', cardinality: 'many_to_one', extraPairs: [] });
                     setSingleJoinActive(true);
@@ -5833,7 +7651,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
               Build an AI-ready model
             </div>
             <div style={{ fontSize: 13.5, color: '#64748B', textAlign: 'center', lineHeight: 1.6, maxWidth: 440, marginBottom: 24 }}>
-              Bring raw tables onto the canvas, shape and join them with no SQL, and publish a model your team can ask questions of.
+              Bring raw tables onto the canvas, shape and join them with no SQL, and save a model your team can ask questions of.
             </div>
 
             {/* Capabilities — compact horizontal cards: icon beside a title + one-line desc */}
@@ -6176,7 +7994,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
   // Columns tab's toolbar and the compact preview panel's header (Semantic mode).
   const renderAddActions = (opts: { compact?: boolean } = {}) => {
     const compact = opts.compact ?? false;
-    const iconBtnStyle: React.CSSProperties = { display: 'flex', alignItems: 'center', justifyContent: 'center', width: 26, height: 24, padding: 0, borderRadius: 5, border: 'none', background: 'transparent', color: '#1D232F', cursor: 'pointer', fontFamily: ff.primary };
+    const iconBtnStyle: React.CSSProperties = { display: 'flex', alignItems: 'center', justifyContent: 'center', width: 26, height: 24, padding: 0, borderRadius: 5, border: 'none', background: 'transparent', color: c['content-primary'], cursor: 'pointer', fontFamily: ff.primary };
     return (
     <>
       <button
@@ -6184,8 +8002,8 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
         title="Add formula"
         style={compact
           ? iconBtnStyle
-          : { display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 6, border: '1px solid #D8DDE5', background: '#fff', color: '#1D232F', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: ff.primary, whiteSpace: 'nowrap' }}
-        onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#F6F8FA')}
+          : { display: 'inline-flex', alignItems: 'center', gap: sp.B, padding: '5px 12px', borderRadius: 6, border: `1px solid ${c['border-subtle-hover']}`, background: '#fff', color: c['content-primary'], fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: ff.primary, whiteSpace: 'nowrap' }}
+        onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-sunken'])}
         onMouseLeave={e => (e.currentTarget.style.backgroundColor = compact ? 'transparent' : '#fff')}
       >
         <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M4 13V6a2 2 0 0 1 2-2h1" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><path d="M2.5 8.5H7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><path d="M9 8l4 5M13 8l-4 5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>
@@ -6197,8 +8015,8 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
           title="Add column"
           style={compact
             ? iconBtnStyle
-            : { display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 6, border: '1px solid #D8DDE5', background: '#fff', color: '#1D232F', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: ff.primary, whiteSpace: 'nowrap' }}
-          onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#F6F8FA')}
+            : { display: 'inline-flex', alignItems: 'center', gap: sp.B, padding: '5px 12px', borderRadius: 6, border: `1px solid ${c['border-subtle-hover']}`, background: '#fff', color: c['content-primary'], fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: ff.primary, whiteSpace: 'nowrap' }}
+          onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-sunken'])}
           onMouseLeave={e => (e.currentTarget.style.backgroundColor = compact ? 'transparent' : '#fff')}
         >
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 2v8M2 6h8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
@@ -6208,13 +8026,13 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
         {addColMenuOpen && (
           <>
             <div onClick={() => setAddColMenuOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 40 }} />
-            <div style={{ position: 'absolute', top: 'calc(100% + 4px)', right: 0, minWidth: 260, maxHeight: 360, overflowY: 'auto', background: '#fff', border: '1px solid #E2E6EC', borderRadius: 8, boxShadow: '0 8px 24px rgba(16,24,40,0.14)', zIndex: 41, padding: 4 }}>
+            <div style={{ position: 'absolute', top: 'calc(100% + 4px)', right: 0, minWidth: 260, maxHeight: 360, overflowY: 'auto', background: '#fff', border: `1px solid ${c['border-subtle-hover']}`, borderRadius: 8, boxShadow: '0 8px 24px rgba(16,24,40,0.14)', zIndex: 41, padding: sp.A }}>
               {availableCols.length === 0 ? (
                 <div style={{ padding: '14px 12px', fontSize: 12, color: '#A5ACB9', fontFamily: ff.primary, textAlign: 'center' }}>All available columns are in the model</div>
               ) : (
                 Object.entries(availableByTable).map(([table, cols]) => (
                   <div key={table}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 10px 4px', fontSize: 10.5, fontWeight: 700, color: '#8B96A5', letterSpacing: '0.03em' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: sp.A, padding: '7px 10px 4px', fontSize: 12, fontWeight: 700, color: '#8B96A5', letterSpacing: '0.03em' }}>
                       <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><rect x="1" y="2" width="10" height="8" rx="1" stroke="currentColor" strokeWidth="1.2"/><path d="M1 5h10M1 8h10M4 5v5M8 5v5" stroke="currentColor" strokeWidth="1"/></svg>
                       {table.toUpperCase()}
                     </div>
@@ -6222,12 +8040,12 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                       <button
                         key={modelColKey(table, col)}
                         onClick={() => { addColBack(table, col); if (availableCols.length === 1) setAddColMenuOpen(false); }}
-                        style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', textAlign: 'left', padding: '7px 10px', border: 'none', background: 'transparent', borderRadius: 5, cursor: 'pointer', fontFamily: ff.primary }}
-                        onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#F0F5FF')}
+                        style={{ display: 'flex', alignItems: 'center', gap: sp.B, width: '100%', textAlign: 'left', padding: '7px 10px', border: 'none', background: 'transparent', borderRadius: 5, cursor: 'pointer', fontFamily: ff.primary }}
+                        onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-sunken'])}
                         onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
                       >
                         <svg width="11" height="11" viewBox="0 0 12 12" fill="none" style={{ color: '#2770EF', flexShrink: 0 }}><path d="M6 2v8M2 6h8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
-                        <span style={{ fontSize: 12, fontWeight: 600, color: '#1D232F', whiteSpace: 'nowrap' }}>{col}</span>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: c['content-primary'], whiteSpace: 'nowrap' }}>{col}</span>
                       </button>
                     ))}
                   </div>
@@ -6251,9 +8069,9 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
       <>
       {/* Toolbar — bulk Remove (of selected rows) + Add column (available, by table) */}
       {showToolbar && (
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 16px', background: '#fff', borderBottom: '1px solid #EAEDF2', flexShrink: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: sp.C, padding: '8px 16px', background: '#fff', borderBottom: `1px solid ${c['border-divider']}`, flexShrink: 0 }}>
         {selectedModelCols.size > 0 && (
-          <span style={{ fontSize: 12, color: '#1D232F', fontWeight: 600, fontFamily: ff.primary }}>{selectedModelCols.size} selected</span>
+          <span style={{ fontSize: 12, color: c['content-primary'], fontWeight: 600, fontFamily: ff.primary }}>{selectedModelCols.size} selected</span>
         )}
         <div style={{ flex: 1 }} />
         {selectedModelCols.size > 0 && (
@@ -6268,7 +8086,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
         <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: ff.primary, fontSize: 12 }}>
           <thead>
             <tr style={{ boxShadow: '0 1px 0 #EAEDF2' }}>
-              <th style={{ position: 'sticky', top: 0, zIndex: 3, padding: '8px 12px', textAlign: 'center', width: 40, minWidth: 40, borderBottom: '1px solid #EAEDF2', background: '#fff' }}>
+              <th style={{ position: 'sticky', top: 0, zIndex: 3, padding: '8px 12px', textAlign: 'center', width: 40, minWidth: 40, borderBottom: `1px solid ${c['border-divider']}`, background: '#fff' }}>
                 <input
                   type="checkbox"
                   checked={allVisibleSelectedScoped}
@@ -6310,7 +8128,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                 const hdrCheck = checkForLabel[label];
                 const hdrActive = hdrCheck && airCheckActive(hdrCheck);
                 return (
-                  <th key={label} style={{ position: 'sticky', top: 0, zIndex: 3, padding: '8px 12px', textAlign: 'left', fontWeight: 700, fontSize: 11, color: hdrActive ? '#92640A' : '#777E8B', whiteSpace: 'nowrap', borderBottom: hdrActive ? '2px solid rgba(252,200,56,0.5)' : '1px solid #EAEDF2', width, minWidth: width, letterSpacing: '0.02em', background: hdrActive ? '#FFF9EB' : '#fff', transition: 'all 150ms' }}>
+                  <th key={label} style={{ position: 'sticky', top: 0, zIndex: 3, padding: '8px 12px', textAlign: 'left', fontWeight: 700, fontSize: 12, color: hdrActive ? '#92640A' : '#777E8B', whiteSpace: 'nowrap', borderBottom: hdrActive ? '2px solid rgba(252,200,56,0.5)' : `1px solid ${c['border-divider']}`, width, minWidth: width, letterSpacing: '0.02em', background: hdrActive ? '#FFF9EB' : '#fff', transition: 'all 150ms' }}>
                     {label.toUpperCase()}
                   </th>
                 );
@@ -6342,8 +8160,8 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                 const accepted = checkId ? airAccepted[checkId]?.[col] : undefined;
                 if (accepted) {
                   return (
-                    <td key={field} style={{ padding: '8px 12px', borderBottom: '1px solid #EAEDF2', verticalAlign: 'top', maxWidth: 200 }}>
-                      <span style={{ fontSize: 12, color: '#1D232F', lineHeight: 1.45 }}>{accepted}</span>
+                    <td key={field} style={{ padding: '8px 12px', borderBottom: `1px solid ${c['border-divider']}`, verticalAlign: 'top', maxWidth: 200 }}>
+                      <span style={{ fontSize: 12, color: c['content-primary'], lineHeight: 1.45 }}>{accepted}</span>
                     </td>
                   );
                 }
@@ -6352,11 +8170,11 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                 const reviewRow = checkId && airCheckActive(checkId) ? airGetRowForCheck(checkId, col) : null;
                 if (reviewRow) {
                   return (
-                    <td key={field} style={{ padding: '8px 12px', borderBottom: '1px solid #EAEDF2', verticalAlign: 'top', maxWidth: 200, background: 'rgba(252,200,56,0.10)' }}>
+                    <td key={field} style={{ padding: '8px 12px', borderBottom: `1px solid ${c['border-divider']}`, verticalAlign: 'top', maxWidth: 200, background: 'rgba(252,200,56,0.10)' }}>
                       {reviewRow.current !== '—' && (
-                        <div style={{ fontSize: 10.5, color: '#A5ACB9', textDecoration: 'line-through', lineHeight: '14px', marginBottom: 3 }}>{reviewRow.current}</div>
+                        <div style={{ fontSize: 12, color: '#A5ACB9', textDecoration: 'line-through', lineHeight: '16px', marginBottom: sp.A }}>{reviewRow.current}</div>
                       )}
-                      <span style={{ fontSize: 12, color: '#1D232F', lineHeight: 1.45 }}>{reviewRow.proposed}</span>
+                      <span style={{ fontSize: 12, color: c['content-primary'], lineHeight: 1.45 }}>{reviewRow.proposed}</span>
                     </td>
                   );
                 }
@@ -6364,7 +8182,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                 // Editing
                 if (isEditing) {
                   return (
-                    <td key={field} style={{ padding: '4px 8px', borderBottom: '1px solid #EAEDF2', verticalAlign: 'top' }}>
+                    <td key={field} style={{ padding: '4px 8px', borderBottom: `1px solid ${c['border-divider']}`, verticalAlign: 'top' }}>
                       <textarea
                         autoFocus
                         defaultValue={val}
@@ -6380,7 +8198,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                             setEditingCell(null);
                           }
                         }}
-                        style={{ width: '100%', minHeight: 52, resize: 'vertical', fontFamily: ff.primary, fontSize: 12, color: '#1D232F', border: '1.5px solid #2770EF', borderRadius: 5, padding: '5px 8px', outline: 'none', boxShadow: '0 0 0 3px rgba(39,112,239,0.10)', background: '#fff', lineHeight: 1.45 }}
+                        style={{ width: '100%', minHeight: 52, resize: 'vertical', fontFamily: ff.primary, fontSize: 12, color: c['content-primary'], border: '1.5px solid #2770EF', borderRadius: 5, padding: '5px 8px', outline: 'none', boxShadow: '0 0 0 3px rgba(39,112,239,0.10)', background: '#fff', lineHeight: 1.45 }}
                       />
                     </td>
                   );
@@ -6389,11 +8207,11 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                 // Normal read / placeholder
                 return (
                   <td key={field} onClick={() => setEditingCell(key)}
-                    style={{ padding: '8px 12px', borderBottom: '1px solid #EAEDF2', cursor: 'text', verticalAlign: 'top', maxWidth: 200 }}
+                    style={{ padding: '8px 12px', borderBottom: `1px solid ${c['border-divider']}`, cursor: 'text', verticalAlign: 'top', maxWidth: 200 }}
                   >
                     {val
-                      ? <span style={{ color: '#1D232F', lineHeight: 1.45, display: 'block' }}>{val}</span>
-                      : <span style={{ color: '#C0C6CF', fontStyle: 'italic' }}>{placeholder}</span>}
+                      ? <span style={{ color: c['content-primary'], lineHeight: 1.45, display: 'block' }}>{val}</span>
+                      : <span style={{ color: c['content-tertiary'], fontStyle: 'italic' }}>{placeholder}</span>}
                   </td>
                 );
               };
@@ -6418,11 +8236,11 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
               // reaches the DOM, so without this the row can't be found.
               return (
                 <tr key={`${table}-${col}-${idx}`} data-model-col={modelColKey(table, col)} style={{ background: rowBg }}
-                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = isSelected ? '#E4EEFF' : '#F0F5FF'}
+                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = isSelected ? '#E4EEFF' : c['background-sunken']}
                   onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = rowBg}
                 >
                   {/* Row selection checkbox */}
-                  <td style={{ padding: '8px 12px', borderBottom: '1px solid #EAEDF2', textAlign: 'center', verticalAlign: 'middle' }}>
+                  <td style={{ padding: '8px 12px', borderBottom: `1px solid ${c['border-divider']}`, textAlign: 'center', verticalAlign: 'middle' }}>
                     <input
                       type="checkbox"
                       checked={isSelected}
@@ -6432,27 +8250,27 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                     />
                   </td>
                   {/* Column name */}
-                  <td style={{ padding: '8px 12px', borderBottom: '1px solid #EAEDF2', fontWeight: 600, color: '#1D232F', whiteSpace: 'nowrap', verticalAlign: 'middle' }}>{col}</td>
+                  <td style={{ padding: '8px 12px', borderBottom: `1px solid ${c['border-divider']}`, fontWeight: 600, color: c['content-primary'], whiteSpace: 'nowrap', verticalAlign: 'middle' }}>{col}</td>
                   {/* Table badge */}
-                  <td style={{ padding: '8px 12px', borderBottom: '1px solid #EAEDF2', verticalAlign: 'middle' }}>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10.5, fontWeight: 600, padding: '2px 7px', borderRadius: 4, background: 'rgba(39,112,239,0.07)', color: '#2770EF', whiteSpace: 'nowrap' }}>
+                  <td style={{ padding: '8px 12px', borderBottom: `1px solid ${c['border-divider']}`, verticalAlign: 'middle' }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: sp.A, fontSize: 12, fontWeight: 600, padding: '2px 7px', borderRadius: 4, background: 'rgba(39,112,239,0.07)', color: '#2770EF', whiteSpace: 'nowrap' }}>
                       <svg width="9" height="9" viewBox="0 0 12 12" fill="none"><rect x="1" y="2" width="10" height="8" rx="1" stroke="currentColor" strokeWidth="1.2"/><path d="M1 5h10M1 8h10M4 5v5M8 5v5" stroke="currentColor" strokeWidth="1"/></svg>
                       {table}
                     </span>
                   </td>
                   {/* Data type — diff-aware */}
-                  <td style={{ padding: '8px 12px', borderBottom: '1px solid #EAEDF2', verticalAlign: 'middle', background: dataTypeDiffed ? 'rgba(252,200,56,0.10)' : 'transparent' }}>
-                    {dataTypeDiffed && <div style={{ fontSize: 10, color: '#A5ACB9', textDecoration: 'line-through', marginBottom: 2 }}>{type}</div>}
-                    <span style={{ fontSize: 11, fontWeight: 600, color: '#64748B', padding: '2px 6px', borderRadius: 3, background: '#F0F2F6', whiteSpace: 'nowrap' }}>{displayDataType}</span>
+                  <td style={{ padding: '8px 12px', borderBottom: `1px solid ${c['border-divider']}`, verticalAlign: 'middle', background: dataTypeDiffed ? 'rgba(252,200,56,0.10)' : 'transparent' }}>
+                    {dataTypeDiffed && <div style={{ fontSize: 12, color: '#A5ACB9', textDecoration: 'line-through', marginBottom: sp.A }}>{type}</div>}
+                    <span style={{ fontSize: 12, fontWeight: 600, color: '#64748B', padding: '2px 6px', borderRadius: 3, background: c['background-subtle'], whiteSpace: 'nowrap' }}>{displayDataType}</span>
                   </td>
                   {/* Column type — diff-aware */}
-                  <td style={{ padding: '8px 12px', borderBottom: '1px solid #EAEDF2', verticalAlign: 'middle', background: colTypeDiffed ? 'rgba(252,200,56,0.10)' : 'transparent' }}>
-                    {colTypeDiffed && <div style={{ fontSize: 10, color: '#A5ACB9', textDecoration: 'line-through', marginBottom: 2 }}>{colType}</div>}
-                    <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 6px', borderRadius: 3, whiteSpace: 'nowrap', color: displayColType.includes('MEASURE') || displayColType.includes('measure') ? '#06BF7F' : '#64748B', background: displayColType.includes('MEASURE') || displayColType.includes('measure') ? 'rgba(6,191,127,0.09)' : '#F0F2F6' }}>{displayColType}</span>
+                  <td style={{ padding: '8px 12px', borderBottom: `1px solid ${c['border-divider']}`, verticalAlign: 'middle', background: colTypeDiffed ? 'rgba(252,200,56,0.10)' : 'transparent' }}>
+                    {colTypeDiffed && <div style={{ fontSize: 12, color: '#A5ACB9', textDecoration: 'line-through', marginBottom: sp.A }}>{colType}</div>}
+                    <span style={{ fontSize: 12, fontWeight: 600, padding: '2px 6px', borderRadius: 3, whiteSpace: 'nowrap', color: displayColType.includes('MEASURE') || displayColType.includes('measure') ? '#06BF7F' : '#64748B', background: displayColType.includes('MEASURE') || displayColType.includes('measure') ? 'rgba(6,191,127,0.09)' : c['background-subtle'] }}>{displayColType}</span>
                   </td>
                   {/* Indexed toggle — diff-aware */}
-                  <td style={{ padding: '8px 12px', borderBottom: '1px solid #EAEDF2', verticalAlign: 'middle', background: indexDiffed ? 'rgba(252,200,56,0.10)' : 'transparent' }}>
-                    {indexDiffed && <div style={{ fontSize: 10, color: '#A5ACB9', textDecoration: 'line-through', marginBottom: 3 }}>Off</div>}
+                  <td style={{ padding: '8px 12px', borderBottom: `1px solid ${c['border-divider']}`, verticalAlign: 'middle', background: indexDiffed ? 'rgba(252,200,56,0.10)' : 'transparent' }}>
+                    {indexDiffed && <div style={{ fontSize: 12, color: '#A5ACB9', textDecoration: 'line-through', marginBottom: sp.A }}>Off</div>}
                     <div>
                       <button
                         onClick={() => {
@@ -6464,7 +8282,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                             return next;
                           });
                         }}
-                        style={{ width: 32, height: 18, borderRadius: 9, border: 'none', cursor: indexDiffed || indexAcceptedVal ? 'default' : 'pointer', background: displayIndexed ? '#2770EF' : '#D1D5DB', position: 'relative', transition: 'background 150ms', padding: 0 }}
+                        style={{ width: 32, height: 18, borderRadius: 9, border: 'none', cursor: indexDiffed || indexAcceptedVal ? 'default' : 'pointer', background: displayIndexed ? '#2770EF' : c['background-subtle'], position: 'relative', transition: 'background 150ms', padding: 0 }}
                       >
                         <span style={{ position: 'absolute', top: 2, left: displayIndexed ? 16 : 2, width: 14, height: 14, borderRadius: '50%', background: '#fff', transition: 'left 150ms', boxShadow: '0 1px 2px rgba(0,0,0,0.18)', display: 'block' }} />
                       </button>
@@ -6482,28 +8300,28 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                 onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(6,191,127,0.09)'}
                 onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'rgba(6,191,127,0.045)'}
               >
-                <td style={{ padding: '8px 12px', borderBottom: '1px solid #EAEDF2', textAlign: 'center', verticalAlign: 'middle' }}>
+                <td style={{ padding: '8px 12px', borderBottom: `1px solid ${c['border-divider']}`, textAlign: 'center', verticalAlign: 'middle' }}>
                   <svg width="13" height="13" viewBox="0 0 16 16" fill="none" style={{ color: '#047857' }}><path d="M4 13V6a2 2 0 0 1 2-2h1" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><path d="M2.5 8.5H7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><path d="M9 8l4 5M13 8l-4 5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>
                 </td>
-                <td style={{ padding: '8px 12px', borderBottom: '1px solid #EAEDF2', fontWeight: 600, color: '#1D232F', whiteSpace: 'nowrap', verticalAlign: 'middle' }}>{f.name}</td>
-                <td style={{ padding: '8px 12px', borderBottom: '1px solid #EAEDF2', verticalAlign: 'middle' }}>
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10.5, fontWeight: 600, padding: '2px 7px', borderRadius: 4, background: 'rgba(6,191,127,0.1)', color: '#047857', whiteSpace: 'nowrap' }}>Model formula</span>
+                <td style={{ padding: '8px 12px', borderBottom: `1px solid ${c['border-divider']}`, fontWeight: 600, color: c['content-primary'], whiteSpace: 'nowrap', verticalAlign: 'middle' }}>{f.name}</td>
+                <td style={{ padding: '8px 12px', borderBottom: `1px solid ${c['border-divider']}`, verticalAlign: 'middle' }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: sp.A, fontSize: 12, fontWeight: 600, padding: '2px 7px', borderRadius: 4, background: 'rgba(6,191,127,0.1)', color: '#047857', whiteSpace: 'nowrap' }}>Model formula</span>
                 </td>
-                <td style={{ padding: '8px 12px', borderBottom: '1px solid #EAEDF2', verticalAlign: 'middle' }}>
-                  <span style={{ fontSize: 11, fontWeight: 600, color: '#64748B', padding: '2px 6px', borderRadius: 3, background: '#F0F2F6', whiteSpace: 'nowrap' }}>FLOAT</span>
+                <td style={{ padding: '8px 12px', borderBottom: `1px solid ${c['border-divider']}`, verticalAlign: 'middle' }}>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: '#64748B', padding: '2px 6px', borderRadius: 3, background: c['background-subtle'], whiteSpace: 'nowrap' }}>FLOAT</span>
                 </td>
-                <td style={{ padding: '8px 12px', borderBottom: '1px solid #EAEDF2', verticalAlign: 'middle' }}>
-                  <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 6px', borderRadius: 3, whiteSpace: 'nowrap', color: '#06BF7F', background: 'rgba(6,191,127,0.09)' }}>MEASURE</span>
+                <td style={{ padding: '8px 12px', borderBottom: `1px solid ${c['border-divider']}`, verticalAlign: 'middle' }}>
+                  <span style={{ fontSize: 12, fontWeight: 600, padding: '2px 6px', borderRadius: 3, whiteSpace: 'nowrap', color: '#06BF7F', background: 'rgba(6,191,127,0.09)' }}>MEASURE</span>
                 </td>
-                <td style={{ padding: '8px 12px', borderBottom: '1px solid #EAEDF2', verticalAlign: 'middle', color: '#C0C6CF' }}>—</td>
-                <td colSpan={3} style={{ padding: '6px 12px', borderBottom: '1px solid #EAEDF2', verticalAlign: 'middle' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <code style={{ flex: 1, fontFamily: "'SF Mono','Fira Mono',monospace", fontSize: 11, color: '#1D232F', background: '#F6F8FA', border: '1px solid #EAEDF2', borderRadius: 5, padding: '4px 8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.expr}</code>
+                <td style={{ padding: '8px 12px', borderBottom: `1px solid ${c['border-divider']}`, verticalAlign: 'middle', color: c['content-tertiary'] }}>—</td>
+                <td colSpan={3} style={{ padding: '6px 12px', borderBottom: `1px solid ${c['border-divider']}`, verticalAlign: 'middle' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: sp.C }}>
+                    <code style={{ flex: 1, fontFamily: "'SF Mono','Fira Mono',monospace", fontSize: 12, color: c['content-primary'], background: c['background-sunken'], border: `1px solid ${c['border-divider']}`, borderRadius: 5, padding: '4px 8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.expr}</code>
                     <button
                       onClick={() => { setModelFormulaDraft({ id: f.id, name: f.name, expr: f.expr }); setFormulaModalOpen(true); }}
                       title="Edit formula"
-                      style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 26, height: 26, borderRadius: 5, border: '1px solid #E2E6EC', background: '#fff', color: '#64748B', cursor: 'pointer', flexShrink: 0 }}
-                      onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#F6F8FA')}
+                      style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 26, height: 26, borderRadius: 5, border: `1px solid ${c['border-subtle-hover']}`, background: '#fff', color: '#64748B', cursor: 'pointer', flexShrink: 0 }}
+                      onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-sunken'])}
                       onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#fff')}
                     >
                       <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M11.5 2.5l2 2-7.5 7.5-2.5.5.5-2.5 7.5-7.5z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
@@ -6512,7 +8330,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                       onClick={() => setModelFormulas(prev => prev.filter((_, j) => j !== i))}
                       title="Delete formula"
                       style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 26, height: 26, borderRadius: 5, border: '1px solid #F3C6C6', background: '#fff', color: '#D64545', cursor: 'pointer', flexShrink: 0 }}
-                      onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#FDF2F2')}
+                      onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-sunken'])}
                       onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#fff')}
                     >
                       <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M2.5 3.5h9M5.5 3.5V2.5a1 1 0 0 1 1-1h1a1 1 0 0 1 1 1v1M4 3.5l.5 8a1 1 0 0 0 1 .9h3a1 1 0 0 0 1-.9l.5-8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
@@ -6523,8 +8341,8 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
             ))}
             {rowsToShow.length === 0 && (!showFormulas || modelFormulas.length === 0) && (
               <tr>
-                <td colSpan={9} style={{ padding: '40px 16px', textAlign: 'center', color: '#A5ACB9', fontSize: 12, fontFamily: ff.primary }}>
-                  All columns removed. Use <strong style={{ color: '#64748B', fontWeight: 600 }}>Add column</strong> to bring columns back into the model.
+                <td colSpan={9} style={{ padding: '40px 16px', textAlign: 'center', color: '#A5ACB9', fontSize: fs.xs, fontFamily: ff.primary }}>
+                  All columns removed. Use <strong style={{ color: '#64748B', fontWeight: fw.semibold }}>Add column</strong> to bring columns back into the model.
                 </td>
               </tr>
             )}
@@ -6537,7 +8355,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
 
   const previewPanel = (
     <div style={{
-      background: '#fff', borderTop: BORDER,
+      background: c['background-base'], borderTop: BORDER,
       display: 'flex', flexDirection: 'column', flexShrink: 0, overflow: 'hidden',
       ...(previewFull
         ? { position: 'absolute' as const, inset: 0, zIndex: 30, height: 'auto' }
@@ -6562,37 +8380,37 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
         />
       )}
       {/* ── Header ── */}
-      <div style={{ height: 38, display: 'flex', alignItems: 'center', padding: '0 12px', gap: 6, flexShrink: 0 }}>
+      <div style={{ height: 38, display: 'flex', alignItems: 'center', padding: '0 12px', gap: sp.B, flexShrink: 0 }}>
         {/* Preview label — always visible */}
-        <span style={{ fontSize: 11, fontWeight: 700, color: '#777E8B', textTransform: 'uppercase', letterSpacing: '0.06em', flexShrink: 0 }}>Preview</span>
+        <span style={{ fontSize: fs.xs, fontWeight: fw.semibold, color: c['content-secondary'], textTransform: 'uppercase', letterSpacing: '0.06em', flexShrink: 0 }}>Preview</span>
         {/* POC: node level (current selection) vs model level (entire model, combined) */}
         {showModelLevelPreview && (
           <div style={{ position: 'relative', flexShrink: 0 }}>
             <select
               value={previewScope}
               onChange={e => setPreviewScope(e.target.value as 'node' | 'model')}
-              style={{ appearance: 'none', WebkitAppearance: 'none', border: BORDER, borderRadius: 5, padding: '3px 22px 3px 8px', fontSize: 11, fontFamily: ff.primary, fontWeight: 500, color: '#1D232F', background: '#fff', cursor: 'pointer', outline: 'none' }}
+              style={{ appearance: 'none', WebkitAppearance: 'none', border: BORDER, borderRadius: 5, padding: '3px 22px 3px 8px', fontSize: fs.xs, fontFamily: ff.primary, fontWeight: fw.medium, color: c['content-primary'], background: c['background-base'], cursor: 'pointer', outline: 'none' }}
             >
               <option value="node">Node level</option>
               <option value="model">Model level</option>
             </select>
-            <div style={{ position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#A5ACB9' }}>
-              <svg width="9" height="9" viewBox="0 0 10 10" fill="none"><path d="M2 3.5l3 3 3-3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            <div style={{ position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: c['content-secondary'] }}>
+              <Icon name="caret-down" size="xs" />
             </div>
           </div>
         )}
         {/* Data / Semantic toggle — hidden while a join is being configured (nothing to preview yet) */}
         {(previewScope === 'model' ? groups.length > 0 : (selectedGroup || canvasJoins.some(j => j.id === selectedId))) && !(singleJoinActive || multiJoinActive) && (
-        <div style={{ display: 'flex', alignItems: 'center', background: '#F0F2F6', borderRadius: 6, padding: 2, gap: 1 }}>
+        <div style={{ display: 'flex', alignItems: 'center', background: c['background-subtle'], borderRadius: 6, padding: sp.A, gap: 1 }}>
           {(['data', 'semantic'] as const).map(mode => (
             <button
               key={mode}
               onClick={() => setPreviewMode(mode)}
               style={{
-                fontSize: 11, fontWeight: 500, padding: '3px 10px', borderRadius: 4,
+                fontSize: fs.xs, fontWeight: fw.medium, padding: '3px 10px', borderRadius: 4,
                 border: 'none', cursor: 'pointer', fontFamily: ff.primary,
-                background: previewMode === mode ? '#fff' : 'transparent',
-                color: previewMode === mode ? '#1D232F' : '#777E8B',
+                background: previewMode === mode ? c['background-base'] : 'transparent',
+                color: previewMode === mode ? c['content-primary'] : c['content-secondary'],
                 boxShadow: previewMode === mode ? '0 1px 2px rgba(25,35,49,0.10)' : 'none',
                 transition: 'all 120ms', whiteSpace: 'nowrap',
               }}
@@ -6604,7 +8422,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
         {/* The preview is a read-only view — Add formula / Add column live in the
             Columns tab's toolbar, not here. */}
         {previewMode === 'semantic' && (previewScope === 'model' ? groups.length > 0 : (selectedGroup || canvasJoins.some(j => j.id === selectedId))) && !(singleJoinActive || multiJoinActive) && selectedModelCols.size > 0 && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: sp.A, flexShrink: 0 }}>
             <Button variant="secondary" size="small" onClick={removeSelectedCols}>
               {`Remove${selectedModelCols.size > 1 ? ` (${selectedModelCols.size})` : ''}`}
             </Button>
@@ -6612,15 +8430,15 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
         )}
         {/* Limit — data mode only, shown for both table and join selection */}
         {(previewScope === 'model' ? groups.length > 0 : (selectedGroup || canvasJoins.some(j => j.id === selectedId))) && previewMode === 'data' && !(singleJoinActive || multiJoinActive) && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0 }}>
-            <span style={{ fontSize: 11, color: '#777E8B', whiteSpace: 'nowrap' }}>Limit</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: sp.A, flexShrink: 0 }}>
+            <span style={{ fontSize: fs.xs, color: c['content-secondary'], whiteSpace: 'nowrap' }}>Limit</span>
             <div style={{ position: 'relative' }}>
               <select value={previewLimit} onChange={e => setPreviewLimit(Number(e.target.value))}
-                style={{ appearance: 'none', WebkitAppearance: 'none', border: BORDER, borderRadius: 5, padding: '3px 22px 3px 8px', fontSize: 11, fontFamily: ff.primary, fontWeight: 500, color: '#1D232F', background: '#fff', cursor: 'pointer', outline: 'none' }}>
+                style={{ appearance: 'none', WebkitAppearance: 'none', border: BORDER, borderRadius: 5, padding: '3px 22px 3px 8px', fontSize: fs.xs, fontFamily: ff.primary, fontWeight: fw.medium, color: c['content-primary'], background: c['background-base'], cursor: 'pointer', outline: 'none' }}>
                 {[100, 500, 1000].map(n => <option key={n} value={n}>{n}</option>)}
               </select>
-              <div style={{ position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#A5ACB9' }}>
-                <svg width="9" height="9" viewBox="0 0 10 10" fill="none"><path d="M2 3.5l3 3 3-3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              <div style={{ position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: c['content-secondary'] }}>
+                <Icon name="caret-down" size="xs" />
               </div>
             </div>
           </div>
@@ -6631,9 +8449,9 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
         <button
           onClick={() => setPreviewFull(f => { const nf = !f; if (nf) setPreviewOpen(true); return nf; })}
           title={previewFull ? 'Exit full screen' : 'Full screen'}
-          style={{ width: 22, height: 22, border: 'none', background: 'transparent', borderRadius: 4, color: previewFull ? '#2770EF' : '#A5ACB9', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-          onMouseEnter={e => { if (!previewFull) (e.currentTarget as HTMLElement).style.color = '#64748B'; }}
-          onMouseLeave={e => { if (!previewFull) (e.currentTarget as HTMLElement).style.color = '#A5ACB9'; }}
+          style={{ width: 22, height: 22, border: 'none', background: 'transparent', borderRadius: 4, color: previewFull ? c['content-brand'] : c['content-secondary'], cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          onMouseEnter={e => { if (!previewFull) (e.currentTarget as HTMLElement).style.color = c['content-secondary']; }}
+          onMouseLeave={e => { if (!previewFull) (e.currentTarget as HTMLElement).style.color = c['content-secondary']; }}
         >
           {previewFull ? (
             <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M6 2v2.5a1.5 1.5 0 0 1-1.5 1.5H2M14 6h-2.5A1.5 1.5 0 0 1 10 4.5V2M10 14v-2.5a1.5 1.5 0 0 1 1.5-1.5H14M2 10h2.5A1.5 1.5 0 0 1 6 11.5V14" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
@@ -6645,7 +8463,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
         <button
           onClick={() => { if (previewFull) setPreviewFull(false); else setPreviewOpen(o => !o); }}
           title={previewFull ? 'Exit full screen' : previewOpen ? 'Collapse' : 'Expand'}
-          style={{ width: 22, height: 22, border: 'none', background: 'transparent', borderRadius: 4, color: '#A5ACB9', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          style={{ width: 22, height: 22, border: 'none', background: 'transparent', borderRadius: 4, color: c['content-secondary'], cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
         >
           <IconChevronDown size={11} />
         </button>
@@ -6665,10 +8483,10 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
           if (groups.length === 0) {
             return (
               <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', borderTop: BORDER, overflow: 'hidden' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, opacity: 0.4, textAlign: 'center' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: sp.A, opacity: 0.4, textAlign: 'center' }}>
                   <svg width="30" height="30" viewBox="0 0 32 32" fill="none"><rect x="3" y="7" width="26" height="18" rx="2" stroke="currentColor" strokeWidth="1.5"/><path d="M3 12h26M9 12v13M16 12v13M23 12v13" stroke="currentColor" strokeWidth="1.3"/></svg>
-                  <span style={{ fontSize: 12, color: '#64748B' }}>No data to preview</span>
-                  <span style={{ fontSize: 11, color: '#A5ACB9' }}>Add a table to the model</span>
+                  <span style={{ fontSize: fs.xs, color: c['content-secondary'] }}>No data to preview</span>
+                  <span style={{ fontSize: fs.xs, color: c['content-secondary'] }}>Add a table to the model</span>
                 </div>
               </div>
             );
@@ -6734,10 +8552,10 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
         if (singleJoinActive || multiJoinActive) {
           return (
             <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', borderTop: BORDER, overflow: 'hidden' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, opacity: 0.5, textAlign: 'center' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: sp.A, opacity: 0.5, textAlign: 'center' }}>
                 <svg width="26" height="26" viewBox="0 0 16 16" fill="none"><circle cx="6" cy="8" r="4" stroke="currentColor" strokeWidth="1.3"/><circle cx="10" cy="8" r="4" stroke="currentColor" strokeWidth="1.3"/></svg>
-                <span style={{ fontSize: 12, color: '#64748B' }}>Preview available after you create the join</span>
-                <span style={{ fontSize: 11, color: '#A5ACB9' }}>Configure the join, then select Apply join</span>
+                <span style={{ fontSize: fs.xs, color: c['content-secondary'] }}>Preview available after you create the join</span>
+                <span style={{ fontSize: fs.xs, color: c['content-secondary'] }}>Configure the join, then select Apply join</span>
               </div>
             </div>
           );
@@ -6791,10 +8609,10 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
         if (!selectedGroup) {
           return (
             <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', borderTop: BORDER, overflow: 'hidden' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, opacity: 0.4, textAlign: 'center' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: sp.A, opacity: 0.4, textAlign: 'center' }}>
                 <svg width="30" height="30" viewBox="0 0 32 32" fill="none"><rect x="3" y="7" width="26" height="18" rx="2" stroke="currentColor" strokeWidth="1.5"/><path d="M3 12h26M9 12v13M16 12v13M23 12v13" stroke="currentColor" strokeWidth="1.3"/></svg>
-                <span style={{ fontSize: 12, color: '#64748B' }}>No data to preview</span>
-                <span style={{ fontSize: 11, color: '#A5ACB9' }}>Select a node on the canvas</span>
+                <span style={{ fontSize: fs.xs, color: c['content-secondary'] }}>No data to preview</span>
+                <span style={{ fontSize: fs.xs, color: c['content-secondary'] }}>Select a node on the canvas</span>
               </div>
             </div>
           );
@@ -6817,17 +8635,17 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
         // ── Python error state ──
         if (selectedGroup && selectedGroup.steps[selectedGroup.activeStep]?.type === 'python' && pythonConfig.error) {
           return (
-            <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="#DC2626" strokeWidth="1.3"/><path d="M8 5v4M8 11v.5" stroke="#DC2626" strokeWidth="1.5" strokeLinecap="round"/></svg>
-                <span style={{ fontSize: 13, fontWeight: 700, color: '#E22B3D', fontFamily: ff.primary }}>Run error</span>
+            <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: sp.C }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, flexShrink: 0 }}>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke={c['content-failure']} strokeWidth="1.3"/><path d="M8 5v4M8 11v.5" stroke={c['content-failure']} strokeWidth="1.5" strokeLinecap="round"/></svg>
+                <span style={{ fontSize: fs.xs, fontWeight: fw.semibold, color: c['content-failure'], fontFamily: ff.primary }}>Run error</span>
               </div>
               {/* Traceback scrolls internally so the Fix action below stays visible even in a short preview. */}
-              <div style={{ flex: 1, minHeight: 0, overflow: 'auto', borderRadius: 8, border: '1.5px solid #FECACA', background: '#FEF2F2', padding: '12px 14px' }}>
-                <pre style={{ margin: 0, fontSize: 11.5, color: '#7F1D1D', fontFamily: "'SF Mono','Fira Mono','Menlo',monospace", lineHeight: 1.6, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{pythonConfig.error}</pre>
+              <div style={{ flex: 1, minHeight: 0, overflow: 'auto', borderRadius: 8, border: '1.5px solid #FECACA', background: c['background-failure'], padding: '12px 14px' }}>
+                <pre style={{ margin: 0, fontSize: fs.xs, color: '#7F1D1D', fontFamily: "'SF Mono','Fira Mono','Menlo',monospace", lineHeight: 1.6, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{pythonConfig.error}</pre>
               </div>
               {!pythonFixReview && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, flexShrink: 0 }}>
                 <button
                   disabled={pythonConfig.fixing}
                   onClick={() => {
@@ -6837,7 +8655,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                     if (req) req(pythonConfig.error);
                     else applyPythonFix();
                   }}
-                  style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 12px', borderRadius: 7, border: 'none', background: pythonConfig.fixing ? '#E8ECEF' : '#2770EF', color: pythonConfig.fixing ? '#A5ACB9' : '#fff', fontSize: 12, fontWeight: 600, cursor: pythonConfig.fixing ? 'default' : 'pointer', fontFamily: ff.primary }}
+                  style={{ display: 'flex', alignItems: 'center', gap: sp.A, padding: '6px 12px', borderRadius: 7, border: 'none', background: pythonConfig.fixing ? c['background-subtle'] : c['background-brand'], color: pythonConfig.fixing ? c['content-secondary'] : c['content-alternate'], fontSize: fs.xs, fontWeight: fw.semibold, cursor: pythonConfig.fixing ? 'default' : 'pointer', fontFamily: ff.primary }}
                 >
                   {pythonConfig.fixing ? (
                     <><svg width="11" height="11" viewBox="0 0 16 16" fill="none" style={{ animation: 'spin 0.9s linear infinite' }}><path d="M8 2a6 6 0 110 12A6 6 0 018 2z" stroke="currentColor" strokeWidth="1.8" strokeDasharray="28 10"/></svg>Fixing…</>
@@ -6845,7 +8663,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                     <><svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M2 8c0-3.3 2.7-6 6-6a6 6 0 010 12c-2.1 0-3.9-1-5-2.6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/><path d="M2 12V8h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>Fix with AI</>
                   )}
                 </button>
-                <span style={{ fontSize: 11, color: '#A5ACB9', fontFamily: ff.primary }}>Sends the error to the agent — press send to run the fix</span>
+                <span style={{ fontSize: fs.xs, color: c['content-secondary'], fontFamily: ff.primary }}>Sends the error to the agent — press send to run the fix</span>
               </div>
               )}
             </div>
@@ -6863,14 +8681,14 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
           const dRows = rowsForCard(selectedGroup, rowCap);
           return (
             <div style={{ flex: 1, borderTop: BORDER, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-              <div style={{ height: 28, display: 'flex', alignItems: 'center', padding: '0 10px', gap: 5, flexShrink: 0, borderBottom: BORDER, background: '#FAFBFC' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#2770EF' }}>
+              <div style={{ height: 28, display: 'flex', alignItems: 'center', padding: '0 10px', gap: sp.A, flexShrink: 0, borderBottom: BORDER, background: c['background-sunken'] }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: sp.A, color: c['content-brand'] }}>
                   <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M4.5 5L2 8l2.5 3M11.5 5L14 8l-2.5 3M9.5 3.5l-3 9" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                  <span style={{ fontSize: 11, fontWeight: 500, color: '#1D232F' }}>Derived</span>
+                  <span style={{ fontSize: fs.xs, fontWeight: fw.medium, color: c['content-primary'] }}>Derived</span>
                 </span>
-                <span style={{ color: '#C0C6CF', fontSize: 10 }}>·</span>
-                <span style={{ fontSize: 11, color: '#777E8B' }}>{deriveInputs.map(g => g.tableName).join(' + ')}</span>
-                <span style={{ fontSize: 10, color: '#A5ACB9', marginLeft: 2 }}>{dCols.length} cols</span>
+                <span style={{ color: c['content-secondary'], fontSize: fs.xs }}>·</span>
+                <span style={{ fontSize: fs.xs, color: c['content-secondary'] }}>{deriveInputs.map(g => g.tableName).join(' + ')}</span>
+                <span style={{ fontSize: fs.xs, color: c['content-secondary'], marginLeft: sp.A }}>{dCols.length} cols</span>
               </div>
               <SpreadsheetGrid
                 loading={previewLoading}
@@ -6966,15 +8784,15 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
             <div style={{ flex: 1, borderTop: BORDER, display: 'flex', overflow: 'hidden' }}>
               {/* Source (input) pane */}
               {showInput && (
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, borderRight: showOutput ? `1px solid #EAEDF2` : 'none' }}>
-                  <div style={{ height: 28, display: 'flex', alignItems: 'center', padding: '0 10px', gap: 5, flexShrink: 0, borderBottom: BORDER, background: '#FAFBFC' }}>
-                    <span style={{ fontSize: 10, fontWeight: 700, color: '#777E8B', textTransform: 'uppercase', letterSpacing: '0.06em', flexShrink: 0 }}>Source</span>
-                    <span style={{ color: '#C0C6CF', fontSize: 10 }}>·</span>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#2770EF' }}>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, borderRight: showOutput ? `1px solid ${c['border-divider']}` : 'none' }}>
+                  <div style={{ height: 28, display: 'flex', alignItems: 'center', padding: '0 10px', gap: sp.A, flexShrink: 0, borderBottom: BORDER, background: c['background-sunken'] }}>
+                    <span style={{ fontSize: fs.xs, fontWeight: fw.semibold, color: c['content-secondary'], textTransform: 'uppercase', letterSpacing: '0.06em', flexShrink: 0 }}>Source</span>
+                    <span style={{ color: c['content-secondary'], fontSize: fs.xs }}>·</span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: sp.A, color: c['content-brand'] }}>
                       <TableIcon />
-                      <span style={{ fontSize: 11, fontWeight: 500, color: '#1D232F' }}>{tblName}</span>
+                      <span style={{ fontSize: fs.xs, fontWeight: fw.medium, color: c['content-primary'] }}>{tblName}</span>
                     </span>
-                    <span style={{ fontSize: 10, color: '#A5ACB9', marginLeft: 2 }}>{inputCols.length} cols · {rows.length} rows</span>
+                    <span style={{ fontSize: fs.xs, color: c['content-secondary'], marginLeft: sp.A }}>{inputCols.length} cols · {rows.length} rows</span>
                   </div>
                   {renderDataTable(inputCols, true)}
                 </div>
@@ -6982,21 +8800,21 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
               {/* Output pane */}
               {showOutput && (
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-                  <div style={{ height: 28, display: 'flex', alignItems: 'center', padding: '0 10px', gap: 5, flexShrink: 0, borderBottom: BORDER, background: '#FAFBFC' }}>
+                  <div style={{ height: 28, display: 'flex', alignItems: 'center', padding: '0 10px', gap: sp.A, flexShrink: 0, borderBottom: BORDER, background: c['background-sunken'] }}>
                     {/* Always keep the table name for context; append the step label as secondary. */}
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#2770EF' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: sp.A, color: c['content-brand'] }}>
                       <TableIcon />
-                      <span style={{ fontSize: 11, fontWeight: 500, color: '#1D232F' }}>{tblName}</span>
+                      <span style={{ fontSize: fs.xs, fontWeight: fw.medium, color: c['content-primary'] }}>{tblName}</span>
                     </span>
                     {stepLabel && (
                       <>
-                        <span style={{ color: '#C0C6CF', fontSize: 10 }}>·</span>
-                        <span style={{ fontSize: 11, fontWeight: 500, color: '#777E8B' }}>{stepLabel}</span>
+                        <span style={{ color: c['content-secondary'], fontSize: fs.xs }}>·</span>
+                        <span style={{ fontSize: fs.xs, fontWeight: fw.medium, color: c['content-secondary'] }}>{stepLabel}</span>
                       </>
                     )}
                     {/* Row count — S11's payoff is watching this drop when the fetch
                         is narrowed and re-run, so it has to be on screen. */}
-                    <span style={{ fontSize: 10, color: '#A5ACB9', marginLeft: 2 }}>
+                    <span style={{ fontSize: fs.xs, color: c['content-secondary'], marginLeft: sp.A }}>
                       {awaitingRun ? 'Not run yet' : `${cols.length} cols · ${outputRows.length} rows`}
                     </span>
                   </div>
@@ -7034,12 +8852,12 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
   // ── Columns view ─────────────────────────────────────────────────────────────
 
   const columnsView = (
-    <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', background: '#F6F8FA' }}>
+    <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', background: c['background-sunken'] }}>
       {/* Review action bar — shown inline at top of column view when a fix is under review */}
       {airFixReview && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 16px', background: 'rgba(252,200,56,0.07)', borderBottom: '1px solid rgba(252,200,56,0.22)', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, padding: '8px 16px', background: 'rgba(252,200,56,0.07)', borderBottom: '1px solid rgba(252,200,56,0.22)', flexShrink: 0 }}>
           <svg width="13" height="13" viewBox="0 0 16 16" fill="none" style={{ color: '#92640A', flexShrink: 0 }}><circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeWidth="1.3"/><path d="M8 5v4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/><circle cx="8" cy="11" r="0.8" fill="currentColor"/></svg>
-          <span style={{ fontSize: 12, color: '#92640A', flex: 1, lineHeight: '16px' }}>
+          <span style={{ fontSize: fs.xs, color: '#92640A', flex: 1, lineHeight: '16px' }}>
             {airFixReview === '__all__'
               ? 'Review all suggested changes — highlighted cells show proposed values. Accept to apply everything.'
               : `Review suggested changes for "${AIR_FIX_REVIEW[airFixReview]?.title ?? airFixReview}" — highlighted cells show proposed values.`}
@@ -7049,7 +8867,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
               (window as any).__airApplyFix__?.(airFixReview);
               (window as any).__airFixAccepted__?.(airFixReview);
             }}
-            style={{ padding: '5px 14px', borderRadius: 5, border: 'none', background: '#06BF7F', color: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: ff.primary, whiteSpace: 'nowrap' }}
+            style={{ padding: '5px 14px', borderRadius: 5, border: 'none', background: '#06BF7F', color: c['content-alternate'], fontSize: fs.xs, fontWeight: fw.semibold, cursor: 'pointer', fontFamily: ff.primary, whiteSpace: 'nowrap' }}
             onMouseEnter={e => (e.currentTarget.style.opacity = '0.88')}
             onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
           >{airFixReview === '__all__' ? 'Accept all' : 'Accept'}</button>
@@ -7058,17 +8876,17 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
               (window as any).__airFixRejected__?.(airFixReview);
               setAirFixReview(null);
             }}
-            style={{ padding: '5px 12px', borderRadius: 5, border: '1px solid #E2E6EC', background: '#fff', color: '#64748B', fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: ff.primary, whiteSpace: 'nowrap' }}
-            onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#F6F8FA')}
-            onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#fff')}
+            style={{ padding: '5px 12px', borderRadius: 5, border: `1px solid ${c['border-divider']}`, background: c['background-base'], color: c['content-secondary'], fontSize: fs.xs, fontWeight: fw.medium, cursor: 'pointer', fontFamily: ff.primary, whiteSpace: 'nowrap' }}
+            onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-sunken'])}
+            onMouseLeave={e => (e.currentTarget.style.backgroundColor = c['background-base'])}
           >{airFixReview === '__all__' ? 'Reject all' : 'Reject'}</button>
         </div>
       )}
 
       {groups.length === 0 ? (
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 10 }}>
-          <svg width="32" height="32" viewBox="0 0 32 32" fill="none" style={{ opacity: 0.3 }}><rect x="3" y="5" width="26" height="22" rx="3" stroke="#64748B" strokeWidth="1.8"/><path d="M3 11h26M11 11v16" stroke="#64748B" strokeWidth="1.5"/></svg>
-          <span style={{ fontSize: 13, color: '#A5ACB9', fontFamily: ff.primary }}>Add tables to the model to see columns here</span>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: sp.C }}>
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none" style={{ opacity: 0.3 }}><rect x="3" y="5" width="26" height="22" rx="3" stroke={c['content-secondary']} strokeWidth="1.8"/><path d="M3 11h26M11 11v16" stroke={c['content-secondary']} strokeWidth="1.5"/></svg>
+          <span style={{ fontSize: fs.xs, color: c['content-secondary'], fontFamily: ff.primary }}>Add tables to the model to see columns here</span>
         </div>
       ) : renderColumnsTable(includedCols, { showFormulas: true })}
 
@@ -7080,65 +8898,65 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
         >
           <div
             onClick={e => e.stopPropagation()}
-            style={{ width: 460, maxWidth: 'calc(100vw - 40px)', background: '#fff', borderRadius: 12, boxShadow: '0 20px 60px rgba(16,24,40,0.28)', fontFamily: ff.primary, overflow: 'hidden' }}
+            style={{ width: 460, maxWidth: 'calc(100vw - 40px)', background: c['background-base'], borderRadius: 12, boxShadow: '0 20px 60px rgba(16,24,40,0.28)', fontFamily: ff.primary, overflow: 'hidden' }}
           >
             {/* Header */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '14px 18px', borderBottom: '1px solid #EAEDF2' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, padding: '14px 18px', borderBottom: `1px solid ${c['border-divider']}` }}>
               <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 26, height: 26, borderRadius: 6, background: 'rgba(6,191,127,0.1)', color: '#047857' }}>
                 <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M4 13V6a2 2 0 0 1 2-2h1" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><path d="M2.5 8.5H7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><path d="M9 8l4 5M13 8l-4 5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>
               </span>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: '#1D232F' }}>{modelFormulaDraft.id ? 'Edit model formula' : 'New model formula'}</div>
-                <div style={{ fontSize: 11.5, color: '#8B96A5' }}>A calculated column available across the whole model</div>
+                <div style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'] }}>{modelFormulaDraft.id ? 'Edit model formula' : 'New model formula'}</div>
+                <div style={{ fontSize: fs.xs, color: c['content-secondary'] }}>A calculated column available across the whole model</div>
               </div>
-              <button onClick={() => setFormulaModalOpen(false)} style={{ background: 'none', border: 'none', color: '#A5ACB9', cursor: 'pointer', padding: 4, display: 'inline-flex' }}>
+              <button onClick={() => setFormulaModalOpen(false)} style={{ background: 'none', border: 'none', color: c['content-secondary'], cursor: 'pointer', padding: sp.A, display: 'inline-flex' }}>
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>
               </button>
             </div>
             {/* Body */}
-            <div style={{ padding: 18, display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div style={{ padding: sp.E, display: 'flex', flexDirection: 'column', gap: sp.D }}>
               <div>
-                <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#64748B', marginBottom: 6, letterSpacing: '0.02em' }}>Column name</label>
+                <label style={{ display: 'block', fontSize: fs.xs, fontWeight: fw.semibold, color: c['content-secondary'], marginBottom: sp.B, letterSpacing: '0.02em' }}>Column name</label>
                 <input
                   autoFocus
                   value={modelFormulaDraft.name}
                   onChange={e => setModelFormulaDraft(d => ({ ...d, name: e.target.value }))}
                   placeholder="e.g. profit_margin"
-                  style={{ width: '100%', boxSizing: 'border-box', border: '1px solid #EAEDF2', borderRadius: 6, padding: '7px 10px', fontSize: 12.5, color: '#1D232F', fontFamily: ff.primary, outline: 'none', background: '#fff' }}
-                  onFocus={e => { e.currentTarget.style.borderColor = '#2770EF'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(39,112,239,0.10)'; }}
-                  onBlur={e => { e.currentTarget.style.borderColor = '#EAEDF2'; e.currentTarget.style.boxShadow = 'none'; }}
+                  style={{ width: '100%', boxSizing: 'border-box', border: `1px solid ${c['border-divider']}`, borderRadius: 6, padding: '7px 10px', fontSize: fs.xs, color: c['content-primary'], fontFamily: ff.primary, outline: 'none', background: c['background-base'] }}
+                  onFocus={e => { e.currentTarget.style.borderColor = c['border-brand']; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(39,112,239,0.10)'; }}
+                  onBlur={e => { e.currentTarget.style.borderColor = c['border-divider']; e.currentTarget.style.boxShadow = 'none'; }}
                 />
               </div>
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                  <label style={{ fontSize: 11, fontWeight: 700, color: '#64748B', letterSpacing: '0.02em' }}>Expression</label>
-                  {modelFormulaDraft.expr && <button onClick={() => setModelFormulaDraft(d => ({ ...d, expr: '' }))} style={{ background: 'none', border: 'none', color: '#A5ACB9', fontSize: 11, cursor: 'pointer', padding: 0, fontFamily: ff.primary }}>Clear</button>}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: sp.B }}>
+                  <label style={{ fontSize: fs.xs, fontWeight: fw.semibold, color: c['content-secondary'], letterSpacing: '0.02em' }}>Expression</label>
+                  {modelFormulaDraft.expr && <button onClick={() => setModelFormulaDraft(d => ({ ...d, expr: '' }))} style={{ background: 'none', border: 'none', color: c['content-secondary'], fontSize: fs.xs, cursor: 'pointer', padding: 0, fontFamily: ff.primary }}>Clear</button>}
                 </div>
                 <textarea
                   value={modelFormulaDraft.expr}
                   onChange={e => setModelFormulaDraft(d => ({ ...d, expr: e.target.value }))}
                   placeholder="Enter an expression, e.g. sum(sales) / sum(quantity)"
                   rows={4}
-                  style={{ width: '100%', boxSizing: 'border-box', border: '1px solid #EAEDF2', borderRadius: 6, padding: '8px 10px', fontSize: 12, color: '#1D232F', outline: 'none', resize: 'vertical', lineHeight: 1.6, fontFamily: "'SF Mono','Fira Mono','Menlo',monospace", background: '#F6F8FA', minHeight: 84 }}
-                  onFocus={e => { e.currentTarget.style.borderColor = '#2770EF'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(39,112,239,0.10)'; }}
-                  onBlur={e => { e.currentTarget.style.borderColor = '#EAEDF2'; e.currentTarget.style.boxShadow = 'none'; }}
+                  style={{ width: '100%', boxSizing: 'border-box', border: `1px solid ${c['border-divider']}`, borderRadius: 6, padding: '8px 10px', fontSize: fs.xs, color: c['content-primary'], outline: 'none', resize: 'vertical', lineHeight: 1.6, fontFamily: "'SF Mono','Fira Mono','Menlo',monospace", background: c['background-sunken'], minHeight: 84 }}
+                  onFocus={e => { e.currentTarget.style.borderColor = c['border-brand']; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(39,112,239,0.10)'; }}
+                  onBlur={e => { e.currentTarget.style.borderColor = c['border-divider']; e.currentTarget.style.boxShadow = 'none'; }}
                 />
               </div>
               {!modelFormulaDraft.expr && (
                 <div>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: '#A5ACB9', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Examples</div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <div style={{ fontSize: fs.xs, fontWeight: fw.semibold, color: c['content-secondary'], textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: sp.B }}>Examples</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: sp.A }}>
                     {[
                       { label: 'Profit margin', expr: '(sum(revenue) - sum(cost)) / sum(revenue)' },
                       { label: 'Avg order value', expr: 'sum(sales) / count(order_id)' },
                       { label: 'Days since order', expr: 'datediff(\'day\', order_date, now())' },
                     ].map(s => (
                       <button key={s.label} onClick={() => setModelFormulaDraft(d => ({ ...d, expr: s.expr }))}
-                        style={{ textAlign: 'left', padding: '7px 10px', borderRadius: 6, border: '1px solid #EAEDF2', background: '#F6F8FA', cursor: 'pointer', fontFamily: ff.primary, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}
-                        onMouseEnter={e => { e.currentTarget.style.borderColor = '#2770EF'; e.currentTarget.style.background = '#EEF2FF'; }}
-                        onMouseLeave={e => { e.currentTarget.style.borderColor = '#EAEDF2'; e.currentTarget.style.background = '#F6F8FA'; }}>
-                        <span style={{ fontSize: 11, fontWeight: 500, color: '#64748B' }}>{s.label}</span>
-                        <code style={{ fontSize: 10, color: '#777E8B', fontFamily: "'SF Mono','Fira Mono',monospace", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 180 }}>{s.expr}</code>
+                        style={{ textAlign: 'left', padding: '7px 10px', borderRadius: 6, border: `1px solid ${c['border-divider']}`, background: c['background-sunken'], cursor: 'pointer', fontFamily: ff.primary, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: sp.B }}
+                        onMouseEnter={e => { e.currentTarget.style.borderColor = c['border-brand']; e.currentTarget.style.background = c['background-information']; }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = c['border-divider']; e.currentTarget.style.background = c['background-sunken']; }}>
+                        <span style={{ fontSize: fs.xs, fontWeight: fw.medium, color: c['content-secondary'] }}>{s.label}</span>
+                        <code style={{ fontSize: fs.xs, color: c['content-secondary'], fontFamily: "'SF Mono','Fira Mono',monospace", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 180 }}>{s.expr}</code>
                       </button>
                     ))}
                   </div>
@@ -7146,12 +8964,12 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
               )}
             </div>
             {/* Footer */}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, padding: '12px 18px', borderTop: '1px solid #EAEDF2', background: '#FAFBFC' }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: sp.B, padding: '12px 18px', borderTop: `1px solid ${c['border-divider']}`, background: c['background-sunken'] }}>
               <button
                 onClick={() => setFormulaModalOpen(false)}
-                style={{ padding: '7px 14px', borderRadius: 6, border: '1px solid #E2E6EC', background: '#fff', color: '#64748B', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: ff.primary }}
-                onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#F6F8FA')}
-                onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#fff')}
+                style={{ padding: '7px 14px', borderRadius: 6, border: `1px solid ${c['border-divider']}`, background: c['background-base'], color: c['content-secondary'], fontSize: fs.xs, fontWeight: fw.semibold, cursor: 'pointer', fontFamily: ff.primary }}
+                onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-sunken'])}
+                onMouseLeave={e => (e.currentTarget.style.backgroundColor = c['background-base'])}
               >Cancel</button>
               <button
                 disabled={!modelFormulaDraft.name.trim() || !modelFormulaDraft.expr.trim()}
@@ -7164,7 +8982,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                     : [...prev, { id: `mf_${Date.now()}`, name, expr }]);
                   setFormulaModalOpen(false);
                 }}
-                style={{ padding: '7px 16px', borderRadius: 6, border: 'none', background: (!modelFormulaDraft.name.trim() || !modelFormulaDraft.expr.trim()) ? '#B9C0CC' : '#2770EF', color: '#fff', fontSize: 12, fontWeight: 600, cursor: (!modelFormulaDraft.name.trim() || !modelFormulaDraft.expr.trim()) ? 'default' : 'pointer', fontFamily: ff.primary }}
+                style={{ padding: '7px 16px', borderRadius: 6, border: 'none', background: (!modelFormulaDraft.name.trim() || !modelFormulaDraft.expr.trim()) ? '#B9C0CC' : c['background-brand'], color: c['content-alternate'], fontSize: fs.xs, fontWeight: fw.semibold, cursor: (!modelFormulaDraft.name.trim() || !modelFormulaDraft.expr.trim()) ? 'default' : 'pointer', fontFamily: ff.primary }}
               >{modelFormulaDraft.id ? 'Save formula' : 'Add formula'}</button>
             </div>
           </div>
@@ -7188,14 +9006,170 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
     return () => ro.disconnect();
   }, [viewMode, groups.length]);
 
+  // ── Model merge (join-aware) ────────────────────────────────────────────────
+  //
+  // Replaces a positional row zip — the previous merge put row `i` of every table
+  // side by side regardless of joins, so `accounts` row 3 sat next to whatever
+  // happened to be row 3 of `usage_events`. It produced a table that looked real
+  // and meant nothing, and it never read `canvasJoins` at all.
+  //
+  // This walks the join graph instead: start at one table, then repeatedly attach
+  // any table joined to something already merged, matching on the join's key pair.
+  // Join type decides whether unmatched left rows survive; one-to-many genuinely
+  // multiplies rows, so the output can be longer than any input.
+  const buildModelMerge = (limit: number): {
+    cols: [string, string][];
+    rows: Row[];
+    included: string[];
+    excluded: string[];
+    truncated: boolean;
+  } => {
+    if (groups.length === 0) return { cols: [], rows: [], included: [], excluded: [], truncated: false };
+
+    // Connected component containing the first table — that's "the model". Anything
+    // outside it isn't joined in and is reported rather than silently blended.
+    const byName = new Map(groups.map(g => [g.tableName, g]));
+    const idToName = new Map(groups.map(g => [g.id, g.tableName]));
+    const edges = canvasJoins
+      .map(j => ({
+        left: idToName.get(j.table1Id),
+        right: j.table2Name,
+        col1: j.col1,
+        col2: j.col2,
+        joinType: j.joinType,
+      }))
+      .filter((e): e is { left: string; right: string; col1: string; col2: string; joinType: CanvasJoin['joinType'] } =>
+        Boolean(e.left && e.right && byName.has(e.left) && byName.has(e.right)));
+    const start = groups[0].tableName;
+    const included = new Set<string>([start]);
+    let grew = true;
+    while (grew) {
+      grew = false;
+      for (const e of edges) {
+        if (included.has(e.left) !== included.has(e.right)) {
+          included.add(e.left); included.add(e.right); grew = true;
+        }
+      }
+    }
+    const excluded = groups.map(g => g.tableName).filter(t => !included.has(t));
+
+    const colsOf = (g: CanvasGroup): [string, string][] =>
+      (g.steps[g.steps.length - 1]?.cols ?? TABLE_COLS[g.tableName] ?? []) as [string, string][];
+
+    // Accumulate: qualified column list + rows, table by table.
+    const order = [...included].filter(t => byName.has(t));
+    let accTables: string[] = [order[0]];
+    let accCols: { table: string; col: string; type: string }[] =
+      colsOf(byName.get(order[0])!).map(([col, type]) => ({ table: order[0], col, type }));
+    let accRows: Row[] = rowsForCard(byName.get(order[0])!, limit).map(r => [...r]);
+
+    const remaining = order.slice(1);
+    let guard = 0;
+    while (remaining.length && guard++ < 50) {
+      // Find a join connecting something already merged to something not yet merged.
+      const idx = remaining.findIndex(t =>
+        edges.some(e =>
+          (e.left === t && accTables.includes(e.right)) ||
+          (e.right === t && accTables.includes(e.left))));
+      if (idx === -1) break; // nothing else reachable
+      const next = remaining.splice(idx, 1)[0];
+      const join = edges.find(e =>
+        (e.left === next && accTables.includes(e.right)) ||
+        (e.right === next && accTables.includes(e.left)))!;
+      // Orient the key pair: `mineCol` is on the already-merged side.
+      const nextIsLeft = join.left === next;
+      const mineTable = nextIsLeft ? join.right : join.left;
+      const mineCol = nextIsLeft ? join.col2 : join.col1;
+      const nextCol = nextIsLeft ? join.col1 : join.col2;
+
+      const g = byName.get(next)!;
+      const nextCols = colsOf(g);
+      const nextRows = rowsForCard(g, 500);
+      const nextKeyIdx = nextCols.findIndex(([cn]) => cn === nextCol);
+      const mineKeyIdx = accCols.findIndex(cc => cc.table === mineTable && cc.col === mineCol);
+      const keepUnmatched = join.joinType !== 'inner';
+
+      const out: Row[] = [];
+      for (const row of accRows) {
+        const key = mineKeyIdx >= 0 ? row[mineKeyIdx] : undefined;
+        const matches = nextKeyIdx >= 0 && key !== undefined && key !== null
+          ? nextRows.filter(nr => String(nr[nextKeyIdx]) === String(key))
+          : [];
+        if (matches.length === 0) {
+          if (keepUnmatched) out.push([...row, ...nextCols.map(() => null)]);
+        } else {
+          // One-to-many fans out — the merged result can exceed either input.
+          for (const m of matches) out.push([...row, ...m]);
+        }
+        if (out.length >= limit) break;
+      }
+      accRows = out;
+      accCols = [...accCols, ...nextCols.map(([col, type]) => ({ table: next, col, type }))];
+      accTables = [...accTables, next];
+    }
+
+    // Qualify only names that actually collide, so the common case stays clean.
+    const counts = accCols.reduce<Record<string, number>>((acc, { col }) => {
+      acc[col] = (acc[col] ?? 0) + 1; return acc;
+    }, {});
+    const cols: [string, string][] = accCols.map(({ table, col, type }) =>
+      counts[col] > 1 ? [`${table}.${col}`, type] : [col, type]);
+
+    return {
+      cols,
+      rows: accRows.slice(0, limit),
+      included: accTables,
+      excluded,
+      truncated: accRows.length > limit,
+    };
+  };
+
   const dataView = (() => {
     // Empty state is an empty *sheet*, not a grey panel with a message in it —
     // the tab is a spreadsheet, so it should read as one before there's data.
     // Same chrome as SpreadsheetGrid (gutter, header band, 25px rows) with
     // lettered columns, and the guidance floats over it rather than replacing it.
+    //
+    // ⚠️ **The chrome above the grid is part of the empty state**, not an extra. This branch
+    // returned the bare grid, so opening a brand-new model's Spreadsheet tab showed a sheet with
+    // no toolbar and no formula bar — which reads as "this build lost the formula bar" rather
+    // than "there is no data yet", because an empty spreadsheet with no formula bar isn't a
+    // spreadsheet. The controls are present and inert until there is a column to act on.
     if (groups.length === 0) {
       const emptyCols = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
       return (
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: 0, background: '#fff' }}>
+        <DataSheetToolbar
+          onDownloadCsv={() => {}}
+          onToggleExpand={() => setBrowserCollapsed(c => !c)}
+          expanded={browserCollapsed}
+          onFilter={() => {}}
+          onFormula={() => {}}
+        />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', borderBottom: BORDER, flexShrink: 0 }}>
+          <div style={{ position: 'relative', flexShrink: 0 }}>
+            <select disabled value="model" style={{ appearance: 'none', WebkitAppearance: 'none', border: BORDER, borderRadius: 5, padding: '3px 22px 3px 8px', fontSize: 11.5, fontFamily: ff.primary, fontWeight: 500, color: '#A5ACB9', background: '#fff', cursor: 'default', outline: 'none' }}>
+              <option value="model">Whole model</option>
+            </select>
+            <div style={{ position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#C0C6CF' }}>
+              <Icon name="caret-down" size="xs" />
+            </div>
+          </div>
+          <span style={{ fontSize: 11, color: '#A5ACB9', flexShrink: 0 }}>0 rows · 0 columns</span>
+        </div>
+        {/* Formula bar — inert, because there is no column to write against yet. */}
+        <div style={{ display: 'flex', alignItems: 'stretch', height: 32, borderBottom: BORDER, flexShrink: 0, background: c['background-base'] }}>
+          <div style={{ width: 32, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: `1px solid ${c['border-divider']}`, color: c['content-tertiary'] }}>
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M4 13V6a2 2 0 0 1 2-2h1" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><path d="M2.5 8.5H7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><path d="M9 8l4 5M13 8l-4 5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>
+          </div>
+          <input
+            disabled
+            value=""
+            readOnly
+            placeholder="Add a table to start writing formulas"
+            style={{ flex: 1, minWidth: 0, fontSize: fs.xs, fontFamily: ff.primary, lineHeight: '32px', padding: '0 12px', border: 'none', outline: 'none', background: c['background-sunken'], color: c['content-tertiary'], boxSizing: 'border-box' }}
+          />
+        </div>
         <div ref={emptySheetRef} style={{ flex: 1, position: 'relative', overflow: 'auto', background: '#fff' }}>
           <table style={{ borderCollapse: 'collapse', fontSize: 11.5, tableLayout: 'fixed', width: '100%', minWidth: 'max-content' }}>
             <thead>
@@ -7218,6 +9192,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
             </tbody>
           </table>
         </div>
+        </div>
       );
     }
 
@@ -7229,14 +9204,24 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
     // column name, so an un-disambiguated merge produces duplicate React keys.
     // Qualify only the names that actually collide, with the owning table, so the
     // common (non-colliding) case still shows a clean bare column name.
-    const rawMergedCols = groups.flatMap(g => (g.steps[g.steps.length - 1]?.cols ?? []).map(c => ({ col: c, table: g.tableName, groupId: g.id })));
+    // Scope: the joined model, or one table. `sheetScope` falls back to 'model' if it
+    // names a table that has since been removed from the canvas.
+    const scopedTable = sheetScope !== 'model' && groups.some(g => g.tableName === sheetScope)
+      ? groups.find(g => g.tableName === sheetScope)!
+      : null;
+    const merge = scopedTable ? null : buildModelMerge(dataLimit);
+    const scopeCols: [string, string][] = scopedTable
+      ? ((scopedTable.steps[scopedTable.steps.length - 1]?.cols ?? []) as [string, string][])
+      : merge!.cols;
+
+    const rawMergedCols = scopedTable
+      ? scopeCols.map(c => ({ col: c, table: scopedTable.tableName, groupId: scopedTable.id }))
+      : groups.flatMap(g => (g.steps[g.steps.length - 1]?.cols ?? []).map(c => ({ col: c, table: g.tableName, groupId: g.id })));
     const nameCounts = rawMergedCols.reduce<Record<string, number>>((acc, { col: [name] }) => {
       acc[name] = (acc[name] ?? 0) + 1;
       return acc;
     }, {});
-    const mergedCols: [string, string][] = rawMergedCols.map(({ col: [name, type], table }) =>
-      nameCounts[name] > 1 ? [`${table}.${name}`, type] : [name, type]
-    );
+    const mergedCols: [string, string][] = scopeCols;
     // Displayed column name → owning group id, so the column ▾ menu's Filter/
     // Add-formula can target the right table with no picker (the column IS the target).
     const colToGroupId: Record<string, string> = {};
@@ -7250,11 +9235,12 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
       if (op === 'filter') addStep('filter', false, groupId);
       else addStep('formula', false, groupId);
     };
-    const perTableRows = groups.map(g => rowsForCard(g, dataLimit));
-    const rowCount = Math.min(dataLimit, Math.max(0, ...perTableRows.map(r => r.length)));
-    const mergedRows: Row[] = Array.from({ length: rowCount }, (_, i) =>
-      groups.flatMap((g, gi) => perTableRows[gi][i] ?? (g.steps[g.steps.length - 1]?.cols ?? []).map(() => null))
-    );
+    const mergedRows: Row[] = scopedTable
+      ? rowsForCard(scopedTable, dataLimit)
+      : merge!.rows;
+    // Tables on the canvas that aren't joined into the model. Named rather than
+    // silently blended in — that silent blend was the old bug.
+    const unjoined = scopedTable ? [] : merge!.excluded;
 
     const downloadCsv = () => {
       const escapeCsv = (v: unknown) => {
@@ -7283,12 +9269,87 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
           expanded={browserCollapsed}
           onFilter={() => setDataActionPicker('filter')}
           onFormula={() => setDataActionPicker('formula')}
+          /* What the sheet is showing, on the toolbar's right — see `scopeControl`. */
+          scopeControl={
+            <div style={{ position: 'relative', flexShrink: 0 }}>
+              <select
+                value={sheetScope}
+                onChange={e => setSheetScope(e.target.value)}
+                title="What this sheet is showing"
+                style={{ appearance: 'none', WebkitAppearance: 'none', border: BORDER, borderRadius: 5, height: 24, padding: '0 22px 0 8px', fontSize: fs.xs, fontFamily: ff.primary, fontWeight: fw.medium, color: c['content-primary'], background: c['background-base'], cursor: 'pointer', outline: 'none', maxWidth: 190 }}
+              >
+                <option value="model">Whole model</option>
+                {groups.map(g => <option key={g.id} value={g.tableName}>{g.tableName}</option>)}
+              </select>
+              <div style={{ position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: c['content-secondary'] }}>
+                <Icon name="caret-down" size="xs" />
+              </div>
+            </div>
+          }
         />
-        {/* Formula bar */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 12px', borderBottom: BORDER, flexShrink: 0 }}>
-          <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 20, height: 20, color: '#8B96A5', flexShrink: 0 }}>
-            <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M4 13V6a2 2 0 0 1 2-2h1" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><path d="M2.5 8.5H7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><path d="M9 8l4 5M13 8l-4 5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>
-          </span>
+        {/*
+          ── Orphaned table: Whole model can't be shown ───────────────────────────────
+          A table with no join has no row correspondence with the rest of the model, so there
+          is no honest "whole model" to render — the old behaviour quietly dropped it and showed
+          a subset that looked complete. **This is an error state, not a caption** (Vivek,
+          2026-08-12): the sheet refuses rather than showing a partial answer with a footnote.
+
+          Scope stays live on the toolbar above, so switching to a single table is one click —
+          and individual tables always work, orphan or not, because one table needs no joins.
+        */}
+        {!scopedTable && unjoined.length > 0 ? (
+          <div style={{
+            flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column',
+            alignItems: 'center', justifyContent: 'center', gap: sp.C,
+            padding: sp.H, textAlign: 'center', background: c['background-base'],
+          }}>
+            <span style={{
+              width: 40, height: 40, borderRadius: '50%', display: 'flex', alignItems: 'center',
+              justifyContent: 'center', background: c['background-warning'], color: c['content-warning'],
+            }}>
+              <Icon name="exclamation-point-circle" size="m" color="currentColor" />
+            </span>
+            <span style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'] }}>
+              The whole model can’t be shown yet
+            </span>
+            <span style={{ fontSize: fs.xs, color: c['content-secondary'], lineHeight: 1.55, maxWidth: 380 }}>
+              {unjoined.length === 1
+                ? <><strong style={{ fontWeight: fw.semibold, color: c['content-primary'] }}>{unjoined[0]}</strong> isn’t joined to the rest of the model, so its rows don’t line up with anything.</>
+                : <><strong style={{ fontWeight: fw.semibold, color: c['content-primary'] }}>{unjoined.join(', ')}</strong> aren’t joined to the rest of the model, so their rows don’t line up with anything.</>}
+              {' '}Join {unjoined.length === 1 ? 'it' : 'them'} on the canvas, or pick a single table above.
+            </span>
+            <Button variant="secondary" size="small" onClick={() => setViewMode('canvas')}>
+              Go to canvas
+            </Button>
+          </div>
+        ) : (
+        <>
+        {/*
+          ── Formula bar ─────────────────────────────────────────────────────────────
+          Geometry taken from the design, not approximated: Figma `Data journey`, node
+          `622:5094`. Three cells in a 32px row —
+
+            [ Column formula name · 160 ][ fx · 32 ][ Text input · fills ]
+
+          with a `border-divider` rule after each of the first two. The name cell and the fx
+          cell sit on **white**; the input is **sunken**, which is what makes it read as the
+          field and the other two as labels for it. Ours had none of that structure: an icon
+          and a flush input, both on the same white, so there was nothing to say where the
+          editable part began. The fx glyph is `content-primary`, not a muted grey — it is the
+          bar's identity, not a decoration.
+        */}
+        <div style={{ display: 'flex', alignItems: 'stretch', height: 32, borderBottom: BORDER, flexShrink: 0, background: c['background-base'] }}>
+          {/* ⚠️ **No name box.** The design reserves 160px on the left for the column the
+              formula belongs to, but its text layer is `hidden` — so in practice it is 160px of
+              empty white before anything happens, and the bar reads as starting a third of the
+              way in. `fx` leads instead. The selected column is still identifiable: it is the
+              highlighted cell in the grid directly below. */}
+          <div style={{
+            width: 32, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            borderRight: `1px solid ${c['border-divider']}`, color: c['content-primary'],
+          }}>
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M4 13V6a2 2 0 0 1 2-2h1" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><path d="M2.5 8.5H7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><path d="M9 8l4 5M13 8l-4 5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>
+          </div>
           {/* Editable + colour-themed. The highlighted <pre> sits behind a
               transparent-text input — same layering as CodeEditor. Resting
               state shows the selected cell; typing or pasting switches it to
@@ -7297,14 +9358,15 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
             const shown = formulaDraft ?? dataSelectedCell?.value ?? '';
             const editing = formulaDraft !== null;
             const metrics: React.CSSProperties = {
-              fontSize: 12.5, fontFamily: ff.primary, lineHeight: '20px',
-              whiteSpace: 'pre', letterSpacing: 'normal', margin: 0, padding: 0,
+              fontSize: fs.xs, fontFamily: ff.primary, lineHeight: '32px',
+              whiteSpace: 'pre', letterSpacing: 'normal', margin: 0, padding: '0 12px',
+              boxSizing: 'border-box',
             };
             return (
-              <div style={{ position: 'relative', flex: 1, height: 20 }}>
+              <div style={{ position: 'relative', flex: 1, minWidth: 0, background: c['background-sunken'] }}>
                 <pre
                   aria-hidden="true"
-                  style={{ ...metrics, position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', color: '#1D232F' }}
+                  style={{ ...metrics, position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', color: c['content-primary'] }}
                   dangerouslySetInnerHTML={{ __html: editing ? highlightFormula(shown) : escapeHtml(shown) }}
                 />
                 <input
@@ -7330,18 +9392,24 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                     border: 'none', outline: 'none', background: 'transparent',
                     // Transparent text so the highlighted layer shows through;
                     // the caret stays visible via caret-color.
-                    color: editing ? 'transparent' : '#1D232F',
-                    caretColor: '#1D232F',
+                    color: editing ? 'transparent' : c['content-primary'],
+                    caretColor: c['content-primary'],
                   }}
                 />
+                {/* Sits inside the field rather than after it, so the row keeps its three
+                    cells and the hint doesn't push the input narrower as it appears. */}
+                {formulaFocused && (
+                  <span style={{
+                    position: 'absolute', right: 12, top: 0, lineHeight: '32px',
+                    fontSize: fs.xs, color: c['content-tertiary'], whiteSpace: 'nowrap',
+                    pointerEvents: 'none', background: c['background-sunken'], paddingLeft: sp.B,
+                  }}>
+                    Enter to add column · Esc to cancel
+                  </span>
+                )}
               </div>
             );
           })()}
-          {formulaFocused && (
-            <span style={{ fontSize: 10.5, color: '#A5ACB9', flexShrink: 0, whiteSpace: 'nowrap' }}>
-              Enter to add column · Esc to cancel
-            </span>
-          )}
         </div>
         {formulaError && (
           <div style={{ padding: '5px 12px', borderBottom: BORDER, background: '#FFF7ED', color: '#92640A', fontSize: 11.5, fontFamily: ff.primary, flexShrink: 0 }}>
@@ -7385,6 +9453,23 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
             outputFixes={{}}
           />
         </div>
+        </>
+        )}
+        {/*
+          ⚠️ **No footer, no pagination, no row-count readout.** The sheet scrolls infinitely,
+          so a page size is a setting for a behaviour it doesn't have, and the spreadsheet design
+          (Figma `Data journey`, node 622-2207) has no footer at all — toolbar, formula bar,
+          grid, and nothing below it. `dataLimit` stays as the internal fetch cap only.
+
+          Scope moved to the toolbar's right edge; see `scopeControl` in `Spreadsheet.tsx`.
+
+          **Unjoined tables are not named here, by decision** (Vivek, 2026-08-12). "Whole model"
+          shows the connected component only — a table with no join is still never blended in,
+          because the positional row-zip was the old silent-wrongness bug — but the sheet does
+          not caption which tables it left out. The canvas already shows an unjoined table as
+          unjoined, so a warning under a grid was reporting a fact the user can see, in the one
+          place they aren't looking at it. Don't reintroduce it.
+        */}
         <SpreadsheetColumnMenu
           menu={dataColMenu}
           onClose={() => setDataColMenu(null)}
@@ -7411,7 +9496,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
     <div
       /* `relative` so the post-publish toast anchors to the canvas rather than to
          whichever ancestor happens to be positioned (the SpotterX embed differs). */
-      style={{ position: 'relative', display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', fontFamily: ff.primary, background: '#fff' }}
+      style={{ position: 'relative', display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', fontFamily: ff.primary, background: c['background-base'] }}
       onClick={() => { setAddDataOpen(false); setDataModeMenuOpen(false); setToolbarAddOpen(false); }}
     >
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
@@ -7434,11 +9519,16 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
         style={{ flexShrink: 0 }}
         /* No View action here — you're already on the model being cached, and a control
            that takes you where you already are is what made the chip read as odd. Just
-           the progress and a way to dismiss it. */
-        leadingSlot={<CacheProgressChip />}
+           the progress and a way to dismiss it.
+
+           ⚠️ **Not in POC V2**, where the topbar pill reports the fill instead — see `pillMode`.
+           Two indicators for one job is one too many, and the header is the further of the two
+           from the canvas the user is working on. The other cuts keep it: the Demo's S6 beat
+           walks away from the canvas mid-cache, which is the case a global chip exists for. */
+        leadingSlot={scope.tableCaching ? undefined : <CacheProgressChip />}
         logo={
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <BrandMark style={{ height: 22, width: 'auto' }} color="#1D232F" />
+          <div style={{ display: 'flex', alignItems: 'center', gap: sp.C }}>
+            <BrandMark style={{ height: 22, width: 'auto' }} color={c['content-primary']} />
             {/* Vision: collapsing the agent panel hands its control up to the topbar
                 (mirrors the data-browser collapse). POC uses a slim rail instead. */}
             {!poc && agentCollapsed && !hideAgentPanel && (
@@ -7448,9 +9538,9 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                 onClick={e => { e.stopPropagation(); setAgentCollapsed(false); }}
                 onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); setAgentCollapsed(false); } }}
                 title="Open agent panel"
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 30, height: 30, borderRadius: 7, background: 'none', color: '#64748B', cursor: 'pointer', flexShrink: 0 }}
-                onMouseEnter={ev => { (ev.currentTarget as HTMLElement).style.background = '#F0F2F6'; (ev.currentTarget as HTMLElement).style.color = '#1D232F'; }}
-                onMouseLeave={ev => { (ev.currentTarget as HTMLElement).style.background = 'none'; (ev.currentTarget as HTMLElement).style.color = '#64748B'; }}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 30, height: 30, borderRadius: 7, background: 'none', color: c['content-secondary'], cursor: 'pointer', flexShrink: 0 }}
+                onMouseEnter={ev => { (ev.currentTarget as HTMLElement).style.background = c['background-subtle']; (ev.currentTarget as HTMLElement).style.color = c['content-primary']; }}
+                onMouseLeave={ev => { (ev.currentTarget as HTMLElement).style.background = 'none'; (ev.currentTarget as HTMLElement).style.color = c['content-secondary']; }}
               >
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                   <rect x="1.5" y="2.5" width="13" height="11" rx="2" stroke="currentColor" strokeWidth="1.3"/>
@@ -7468,20 +9558,20 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
       {publishToastOpen && (
         <div style={{
           position: 'absolute', bottom: 20, left: '50%', transform: 'translateX(-50%)', zIndex: 60,
-          display: 'flex', alignItems: 'center', gap: 14,
+          display: 'flex', alignItems: 'center', gap: sp.D,
           padding: '12px 12px 12px 16px', borderRadius: 10,
-          background: '#1D232F', boxShadow: '0 8px 28px rgba(25,35,49,0.24)',
+          background: c['background-base-inverse'], boxShadow: '0 8px 28px rgba(25,35,49,0.24)',
           fontFamily: ff.primary, maxWidth: 'calc(100% - 48px)',
         }}>
           <svg width="17" height="17" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
-            <circle cx="8" cy="8" r="7" fill="#06BF7F" />
-            <path d="M4.8 8.2l2.1 2.1 4.3-4.4" stroke="#1D232F" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+            <circle cx="8" cy="8" r="7" fill={c['content-success']} />
+            <path d="M4.8 8.2l2.1 2.1 4.3-4.4" stroke={c['content-primary']} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 1, minWidth: 0 }}>
-            <span style={{ fontSize: 13, fontWeight: 600, color: '#fff', whiteSpace: 'nowrap' }}>
+            <span style={{ fontSize: fs.xs, fontWeight: fw.semibold, color: c['content-alternate'], whiteSpace: 'nowrap' }}>
               {modelName} is published
             </span>
-            <span style={{ fontSize: 12, color: '#C0C6CF', whiteSpace: 'nowrap' }}>
+            <span style={{ fontSize: fs.xs, color: c['content-secondary'], whiteSpace: 'nowrap' }}>
               Ask it a question in Spotter to see how it answers.
             </span>
           </div>
@@ -7489,7 +9579,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
             onClick={() => { setPublishToastOpen(false); onOpenSpotter?.(modelName); }}
             style={{
               flexShrink: 0, padding: '7px 14px', borderRadius: RADIUS6, border: 'none',
-              background: '#2770EF', color: '#fff', fontSize: 12.5, fontWeight: 600,
+              background: c['background-brand'], color: c['content-alternate'], fontSize: fs.xs, fontWeight: fw.semibold,
               cursor: 'pointer', fontFamily: ff.primary, whiteSpace: 'nowrap',
             }}
           >
@@ -7500,10 +9590,10 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
             aria-label="Dismiss"
             style={{
               flexShrink: 0, width: 26, height: 26, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              borderRadius: RADIUS6, border: 'none', background: 'transparent', color: '#A5ACB9', cursor: 'pointer',
+              borderRadius: RADIUS6, border: 'none', background: 'transparent', color: c['content-secondary'], cursor: 'pointer',
             }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.10)'; (e.currentTarget as HTMLElement).style.color = '#fff'; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#A5ACB9'; }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.10)'; (e.currentTarget as HTMLElement).style.color = c['content-alternate']; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = c['content-secondary']; }}
           >
             <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round">
               <path d="M4 4l8 8M12 4l-8 8" />
@@ -7519,7 +9609,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
           away and the artifact goes edge-to-edge when collapsed. */}
       <div style={{
         flex: 1, display: 'flex', minHeight: 0, position: 'relative',
-        backgroundColor: '#fff',
+        backgroundColor: c['background-base'],
         backgroundImage: (!hideAgentPanel || !agentCollapsed)
           ? (hideAgentPanel
               ? 'radial-gradient(78% 82% at 1% 0%, #EFCEC8 0%, #F6DEDA 20%, #FAEBE7 36%, #F6F0F0 62%, #F2EDEE 100%)'
@@ -7533,13 +9623,13 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
         {/* Collapsed rail — slim column + expand toggle at top (mimics SpotterX's chat rail).
             POC only; Vision reopens from the topbar icon instead. */}
         {poc && !hideAgentPanel && agentCollapsed && (
-          <div style={{ position: 'relative', width: 56, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 16 }}>
+          <div style={{ position: 'relative', width: 56, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: sp.D }}>
             <button
               onClick={() => setAgentCollapsed(false)}
               title="Open agent panel"
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 34, height: 34, borderRadius: RADIUS6, border: 'none', background: 'transparent', color: '#64748B', cursor: 'pointer' }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#F0F2F6'; (e.currentTarget as HTMLElement).style.color = '#1D232F'; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#64748B'; }}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 34, height: 34, borderRadius: RADIUS6, border: 'none', background: 'transparent', color: c['content-secondary'], cursor: 'pointer' }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = c['background-subtle']; (e.currentTarget as HTMLElement).style.color = c['content-primary']; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = c['content-secondary']; }}
             >
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                 <rect x="1.5" y="2.5" width="13" height="11" rx="2" stroke="currentColor" strokeWidth="1.3"/>
@@ -7554,9 +9644,9 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
         <div style={{
           flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, position: 'relative',
           margin: (!hideAgentPanel || !agentCollapsed) ? '14px 14px 14px 6px' : 0,
-          background: '#fff',
+          background: c['background-base'],
           borderRadius: (!hideAgentPanel || !agentCollapsed) ? 14 : 0,
-          border: (!hideAgentPanel || !agentCollapsed) ? '1px solid #EAE4E4' : 'none',
+          border: (!hideAgentPanel || !agentCollapsed) ? `1px solid ${c['border-subtle-hover']}` : 'none',
           boxShadow: (!hideAgentPanel || !agentCollapsed) ? '0 8px 28px rgba(70,30,30,0.08), 0 1px 3px rgba(25,35,49,0.05)' : 'none',
           overflow: 'hidden',
           // Chat-first start: the card is laid out the whole time — it's just the
@@ -7568,11 +9658,11 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
           transition: `opacity ${Math.round(TRANSFORM_MS * 0.7)}ms ease-out ${Math.round(TRANSFORM_MS * 0.35)}ms`,
         }}
         aria-hidden={preModel}>
-          {topbar}
+          <div style={enterStyle(0)}>{topbar}</div>
           <div style={{ flex: 1, display: 'flex', minHeight: 0, position: 'relative' }}>
-            {viewMode !== 'test' && browserPanel}
+            {viewMode !== 'test' && <div style={{ display: 'flex', ...enterStyle(70) }}>{browserPanel}</div>}
             {/* Canvas column */}
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, ...enterFadeStyle(130) }}>
               {viewMode === 'canvas' ? canvasViewport : viewMode === 'columns' && scope.columnsTab ? columnsView : viewMode === 'data' ? dataView : viewMode === 'test' ? testView : canvasViewport}
               {viewMode === 'canvas' && !previewFull && previewPanel}
             </div>
@@ -7589,21 +9679,95 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
 
         </div>
       </div>
+
+      {/* ── Table caching (POC V2) — steps 2 and 3 of the flow ──────────────── */}
+      {cacheNotice && (
+        <CacheRequiredNotice
+          tables={cacheNotice}
+          connectionLabel={t => {
+            const conn = connectionOf(t);
+            return conn ? connectionLabel(conn, scope.databricksConnection) : 'ThoughtSpot';
+          }}
+          busy={cacheNoticeBusy}
+          onDismiss={() => {
+            // ⚠️ Phase 3 turns this into a dashed pending edge, so Dismiss becomes "not now"
+            // instead of losing the gesture. Until then the attempted join is discarded.
+            if (!cacheNoticeBusy) pendingJoinRef.current = null;
+            setCacheNotice(null);
+            setCacheNoticeBusy(false);
+          }}
+          onProceed={() => { setCacheModalTables({ tables: cacheNotice, reason: 'join' }); setCacheNotice(null); }}
+        />
+      )}
+      {/*
+        Near Store's caching dialog, used as-is over the canvas's tables.
+
+        This replaced a second, canvas-only cache modal on 2026-08-12. Both asked the same three
+        questions — cache the whole model or set it per table, how much history each table keeps,
+        how often it refreshes — so the canvas one was a reimplementation of a reviewed dialog
+        with its own wording for the same choices, and there was no way for a user meeting both
+        to know it was the same feature. The per-table **Fact / Dimension** dropdown went with it:
+        it was a guess the user had to confirm before reaching the control it stood in for, and
+        this dialog asks about history directly. Role is still derived for the model summary,
+        just never asked for. See `canvasCacheModel` / `draftToCanvasCache`.
+
+        `canFallBackToLive` is false whenever the tables span more than one warehouse: live query
+        is exactly what can't cross warehouses, so there is nothing outside the window to fall
+        back to, and the dialog says so rather than offering coverage it can't deliver.
+      */}
+      {cacheModalTables && (() => {
+        const { tables: modalTables, reason } = cacheModalTables;
+        const dialogTables: CanvasCacheTable[] = modalTables.map(name => ({
+          name,
+          cols: TABLE_COLS[name] ?? [],
+          rowCount: tableMetadata[name]?.rowCount,
+        }));
+        const sources = new Set(modalTables.map(n => connectionOf(n)).filter(Boolean));
+        return (
+          <CachingSettingsModal
+            model={canvasCacheModel(modelName, dialogTables)}
+            initial={policyToDraft(cachePolicy, dialogTables, cacheChoices)}
+            // A join is waiting, so there is no "cache later" to offer — see `cacheModalTables`.
+            isEdit={reason === 'join'}
+            canFallBackToLive={sources.size <= 1}
+            /* The shortest window, not Near Store's 13 months: on the canvas a cache is what
+               unblocks a join, so the default should be the one that finishes soonest and
+               moves the least data. Both live in `_shared/caching/windows.ts`. */
+            defaultTableWindow={DEFAULT_JOIN_WINDOW}
+            onClose={() => { pendingJoinRef.current = null; setCacheModalTables(null); }}
+            onSave={(draft: CacheConfigDraft) => {
+              const { policy, choices } = draftToCanvasCache(draft, dialogTables);
+              confirmTableCache(policy, choices, reason === 'join' || draft.alsoCacheNow !== false);
+            }}
+          />
+        );
+      })()}
+
+      {/* The three dialogs below were hand-rolled fixed-overlay divs until 2026-08-12. They are
+          Radiant `Modal`s now: the overlay, the escape key, the focus trap and the size scale
+          belong to the dialog component, and three bespoke shells meant three dialogs that only
+          resembled each other by coincidence — and drifted (440px vs 420px, two shadow values).
+          `M1` is Radiant's confirmation size. */}
       {cacheConfirm && (
-        <div onClick={() => setCacheConfirm(null)} style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(25,35,49,0.38)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div onClick={e => e.stopPropagation()} style={{ width: 440, background: '#fff', borderRadius: 12, boxShadow: '0 12px 48px rgba(25,35,49,0.24)', padding: 24 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-              <div style={{ width: 34, height: 34, borderRadius: 8, background: 'rgba(140,98,245,0.12)', color: '#8C62F5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <svg width="17" height="17" viewBox="0 0 16 16" fill="none"><ellipse cx="8" cy="4" rx="5" ry="2" stroke="currentColor" strokeWidth="1.3"/><path d="M3 4v8c0 1.1 2.2 2 5 2s5-.9 5-2V4" stroke="currentColor" strokeWidth="1.3"/><path d="M3 8c0 1.1 2.2 2 5 2s5-.9 5-2" stroke="currentColor" strokeWidth="1.3"/></svg>
-              </div>
-              <div style={{ fontSize: 15, fontWeight: 700, color: '#1D232F' }}>{cacheConfirm.title ?? 'Caching is required'}</div>
-            </div>
-            <div style={{ fontSize: 13, lineHeight: 1.55, color: '#64748B', marginBottom: cacheConfirm.settings ? 16 : 20 }}>
+        <Modal
+          isOpen
+          onClose={() => setCacheConfirm(null)}
+          size="M1"
+          title={cacheConfirm.title ?? 'Caching is required'}
+          footer={
+            <ModalFooter
+              secondaryAction={<Button variant="secondary" onClick={() => setCacheConfirm(null)}>{cacheConfirm.cancelLabel ?? 'Cancel file upload'}</Button>}
+              primaryAction={<Button variant="primary" onClick={() => cacheConfirm.onConfirm({ range: cacheRange, refresh: cacheRefresh })}>Continue with caching</Button>}
+            />
+          }
+        >
+          <Vertical gap={sp.D}>
+            <Typography variant="body-normal" color="gray-light" noMargin>
               {cacheConfirm.body ?? 'To use uploaded files, this model is required to be cached into ThoughtSpot’s data store. It will run on cached data, refreshed on a schedule.'}
-            </div>
+            </Typography>
             {cacheConfirm.settings && (
               <>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: sp.C }}>
                   <Select
                     label="Data range"
                     size="small"
@@ -7621,114 +9785,131 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
                     options={['Daily', 'Weekly', 'Monthly'].map(o => ({ id: o, label: o }))}
                   />
                 </div>
-                <div style={{ fontSize: 12, lineHeight: 1.55, color: '#777E8B', marginBottom: 20 }}>
+                <Typography variant="footnote" color="gray-light" noMargin>
                   {cacheConfirm.note ?? 'The first run pulls the full range, so it can take a while. You can change either setting later in the model’s cache settings.'}
-                </div>
+                </Typography>
               </>
             )}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-              <button onClick={() => setCacheConfirm(null)} style={{ padding: '8px 16px', borderRadius: RADIUS6, border: '1px solid #C0C6CF', background: '#fff', color: '#1D232F', fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: ff.primary }}>{cacheConfirm.cancelLabel ?? 'Cancel file upload'}</button>
-              <button onClick={() => cacheConfirm.onConfirm({ range: cacheRange, refresh: cacheRefresh })} style={{ padding: '8px 16px', borderRadius: RADIUS6, border: 'none', background: '#2770EF', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: ff.primary }}>Continue with caching</button>
-            </div>
-          </div>
-        </div>
+          </Vertical>
+        </Modal>
       )}
       {publishOpen && (
-        <div onClick={() => setPublishOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(25,35,49,0.38)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div onClick={e => e.stopPropagation()} style={{ width: 420, background: '#fff', borderRadius: 12, boxShadow: '0 12px 48px rgba(25,35,49,0.24)', padding: 24 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 11, marginBottom: 4 }}>
-              <div style={{ width: 34, height: 34, borderRadius: 8, background: 'rgba(39,112,239,0.10)', color: '#2770EF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <svg width="17" height="17" viewBox="0 0 16 16" fill="none"><path d="M8 2.5l4 4M8 2.5l-4 4M8 2.5v8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/><path d="M3 13h10" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>
-              </div>
-              <div>
-                <div style={{ fontSize: 15, fontWeight: 700, color: '#1D232F' }}>Publish model</div>
-                <div style={{ fontSize: 12, color: '#777E8B' }}>{modelName} → your organization</div>
-              </div>
-            </div>
-            <div style={{ margin: '16px 0 20px', border: BORDER, borderRadius: 9, overflow: 'hidden' }}>
+        <Modal
+          isOpen
+          onClose={() => setPublishOpen(false)}
+          size="M1"
+          title="Publish model"
+          footer={
+            <ModalFooter
+              secondaryAction={<Button variant="secondary" onClick={() => setPublishOpen(false)}>Cancel</Button>}
+              primaryAction={
+                <Button
+                  variant="primary"
+                  onClick={() => { setPublished(true); setPublishOpen(false); setPublishToastOpen(true); onPublished?.(modelName); }}
+                >
+                  Publish
+                </Button>
+              }
+            />
+          }
+        >
+          <Vertical gap={sp.D}>
+            <Typography variant="body-normal" color="gray-light" noMargin>
+              {modelName} → your organization
+            </Typography>
+            {/* Every row is derived from canvas state — nothing here is a fixed string. */}
+            <div style={{ border: `1px solid ${c['border-divider']}`, borderRadius: radius.md, overflow: 'hidden' }}>
               {[
                 { label: 'Status', value: publishStatus.value, color: publishStatus.color, check: publishStatus.check },
-                { label: 'Cache', value: publishCache, color: '#1D232F', check: false },
+                { label: 'Cache', value: publishCache, color: c['content-primary'], check: false },
               ].map((row, i) => (
-                <div key={row.label} style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '11px 14px', borderTop: i > 0 ? '1px solid #F0F2F6' : 'none' }}>
-                  <span style={{ fontSize: 12.5, color: '#777E8B', flexShrink: 0, fontFamily: ff.primary }}>{row.label}</span>
-                  <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: row.color, fontFamily: ff.primary }}>
-                    {row.check && <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" fill="rgba(6,191,127,0.14)"/><path d="M5 8l2 2 4-4" stroke="#06BF7F" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                <Horizontal key={row.label} align="center" gap={sp.D} style={{ padding: `${sp.C}px ${sp.D}px`, borderTop: i > 0 ? `1px solid ${c['border-divider']}` : 'none' }}>
+                  <span style={{ fontSize: fs.xs, color: c['content-secondary'], flexShrink: 0, fontFamily: ff.primary }}>{row.label}</span>
+                  <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: sp.A, fontSize: fs.sm, fontWeight: fw.semibold, color: row.color, fontFamily: ff.primary }}>
+                    {row.check && <Icon name="checkmark-circle" size="s" color={c['content-success']} />}
                     {row.value}
                   </span>
-                </div>
+                </Horizontal>
               ))}
               {/* Sources — a list, one row per connection, so a long table set wraps
                   inside its own column instead of over the label. */}
-              <div style={{ padding: '11px 14px', borderTop: '1px solid #F0F2F6' }}>
-                <span style={{ fontSize: 12.5, color: '#777E8B', fontFamily: ff.primary }}>Sources</span>
+              <div style={{ padding: `${sp.C}px ${sp.D}px`, borderTop: `1px solid ${c['border-divider']}` }}>
+                <span style={{ fontSize: fs.xs, color: c['content-secondary'], fontFamily: ff.primary }}>Sources</span>
                 {publishSourceGroups.length === 0 ? (
-                  <div style={{ marginTop: 6, fontSize: 12.5, color: '#A5ACB9', fontFamily: ff.primary }}>Nothing on the canvas yet</div>
+                  <div style={{ marginTop: sp.A, fontSize: fs.xs, color: c['content-secondary'], fontFamily: ff.primary }}>Nothing on the canvas yet</div>
                 ) : (
-                  <div style={{ marginTop: 7, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <Vertical gap={sp.A} style={{ marginTop: sp.A }}>
                     {publishSourceGroups.map(({ source, tables }) => (
-                      <div key={source} style={{ display: 'flex', gap: 10, alignItems: 'baseline' }}>
-                        <span style={{ width: 96, flexShrink: 0, fontSize: 12, fontWeight: 600, color: '#1D232F', fontFamily: ff.primary }}>{source}</span>
-                        <span style={{ flex: 1, minWidth: 0, fontSize: 12, color: '#64748B', fontFamily: ff.primary, lineHeight: 1.5 }}>
+                      <Horizontal key={source} gap={sp.B} align="baseline">
+                        <span style={{ width: 96, flexShrink: 0, fontSize: fs.xs, fontWeight: fw.semibold, color: c['content-primary'], fontFamily: ff.primary }}>{source}</span>
+                        <span style={{ flex: 1, minWidth: 0, fontSize: fs.xs, color: c['content-secondary'], fontFamily: ff.primary, lineHeight: 1.5 }}>
                           {tables.join(', ')}
                         </span>
-                      </div>
+                      </Horizontal>
                     ))}
-                  </div>
+                  </Vertical>
                 )}
               </div>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-              <button onClick={() => setPublishOpen(false)} style={{ padding: '8px 16px', borderRadius: RADIUS6, border: '1px solid #C0C6CF', background: '#fff', color: '#1D232F', fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: ff.primary }}>Cancel</button>
-              <button onClick={() => { setPublished(true); setPublishOpen(false); setPublishToastOpen(true); onPublished?.(); }} style={{ padding: '8px 18px', borderRadius: RADIUS6, border: 'none', background: '#2770EF', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: ff.primary }}>Publish</button>
-            </div>
-          </div>
-        </div>
+          </Vertical>
+        </Modal>
       )}
+      {/* ⚠️ Vision / POC / Demo only. POC V2 opens Near Store's `CachingSettingsModal` from the
+          same pill instead — see `openModelCacheDialog`. Kept because the other three cuts have
+          no table-caching flow and this is still their only cache settings surface. */}
       {cacheSettingsOpen && (
-        <div onClick={() => setCacheSettingsOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(25,35,49,0.38)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div onClick={e => e.stopPropagation()} style={{ width: 440, background: '#fff', borderRadius: 12, boxShadow: '0 12px 48px rgba(25,35,49,0.24)', padding: 24 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 3 }}>
-              <div style={{ width: 30, height: 30, borderRadius: 7, background: 'rgba(140,98,245,0.12)', color: '#8C62F5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="2" stroke="currentColor" strokeWidth="1.2"/><path d="M8 1.6l.85 1.55 1.72-.38.32 1.73 1.53.87-.83 1.55.83 1.55-1.53.87-.32 1.73-1.72-.38L8 14.4l-.85-1.55-1.72.38-.32-1.73-1.53-.87.83-1.55-.83-1.55 1.53-.87.32-1.73 1.72.38L8 1.6z" stroke="currentColor" strokeWidth="1" strokeLinejoin="round"/></svg>
-              </div>
-              <div style={{ fontSize: 15, fontWeight: 700, color: '#1D232F' }}>Cache settings</div>
-            </div>
-            <div style={{ fontSize: 12.5, color: '#777E8B', marginBottom: 18, paddingLeft: 39 }}>Control how this model is materialized in ThoughtSpot.</div>
+        <Modal
+          isOpen
+          onClose={() => setCacheSettingsOpen(false)}
+          size="M1"
+          title="Cache settings"
+          footer={<ModalFooter primaryAction={<Button variant="primary" onClick={() => setCacheSettingsOpen(false)}>Done</Button>} />}
+        >
+          <Vertical gap={sp.E}>
+            <Typography variant="body-normal" color="gray-light" noMargin>
+              Control how this model is materialized in ThoughtSpot.
+            </Typography>
 
-            <div style={{ marginBottom: 16 }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: '#1D232F', marginBottom: 7 }}>Scope</div>
-              <div style={{ display: 'flex', gap: 6 }}>
-                {(['Full model', 'Custom'] as const).map(s => (
-                  <button key={s} onClick={() => setCacheScope(s)} style={{ flex: 1, padding: '8px 0', borderRadius: 7, cursor: 'pointer', fontFamily: ff.primary, fontSize: 12.5, fontWeight: 600, border: `1.5px solid ${cacheScope === s ? '#2770EF' : '#EAEDF2'}`, background: cacheScope === s ? 'rgba(39,112,239,0.05)' : '#fff', color: cacheScope === s ? '#2770EF' : '#64748B' }}>{s}</button>
-                ))}
-              </div>
-              {cacheScope === 'Custom' && <div style={{ fontSize: 11.5, color: '#777E8B', marginTop: 7 }}>Choose which tables and how much history to cache per table.</div>}
-            </div>
+            <Vertical gap={sp.B}>
+              <Typography variant="content-label" color="base" noMargin>Scope</Typography>
+              <SegmentedControl
+                options={[
+                  { id: 'Full model', label: 'Full model' },
+                  { id: 'Custom', label: 'Custom' },
+                ]}
+                value={cacheScope}
+                onChange={v => setCacheScope(v as 'Full model' | 'Custom')}
+                fullWidth
+              />
+              {cacheScope === 'Custom' && (
+                <Typography variant="footnote" color="gray-light" noMargin>
+                  Choose which tables and how much history to cache per table.
+                </Typography>
+              )}
+            </Vertical>
 
-            <div style={{ marginBottom: 22 }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: '#1D232F', marginBottom: 7 }}>Refresh</div>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <div style={{ flex: 1, position: 'relative' }}>
-                  <select value={cacheFreq} onChange={e => setCacheFreq(e.target.value)} style={{ width: '100%', appearance: 'none', WebkitAppearance: 'none', border: BORDER, borderRadius: 7, padding: '8px 28px 8px 10px', fontSize: 12.5, color: '#1D232F', background: '#fff', cursor: 'pointer', fontFamily: ff.primary, fontWeight: 500, outline: 'none' }}>
-                    {['Daily', 'Hourly', 'Weekly'].map(f => <option key={f} value={f}>{f}</option>)}
-                  </select>
-                  <div style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#A5ACB9' }}><svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M3 4.5l3 3 3-3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg></div>
-                </div>
-                <div style={{ flex: 1, position: 'relative', opacity: cacheFreq === 'Hourly' ? 0.5 : 1 }}>
-                  <select value={cacheHour} disabled={cacheFreq === 'Hourly'} onChange={e => setCacheHour(e.target.value)} style={{ width: '100%', appearance: 'none', WebkitAppearance: 'none', border: BORDER, borderRadius: 7, padding: '8px 28px 8px 10px', fontSize: 12.5, color: '#1D232F', background: '#fff', cursor: cacheFreq === 'Hourly' ? 'default' : 'pointer', fontFamily: ff.primary, fontWeight: 500, outline: 'none' }}>
-                    {['12:00 AM', '6:00 AM', '9:00 AM', '12:00 PM', '6:00 PM'].map(t => <option key={t} value={t}>{t}</option>)}
-                  </select>
-                  <div style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#A5ACB9' }}><svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M3 4.5l3 3 3-3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg></div>
-                </div>
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-              <button onClick={() => setCacheSettingsOpen(false)} style={{ padding: '8px 18px', borderRadius: RADIUS6, border: 'none', background: '#2770EF', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: ff.primary }}>Done</button>
-            </div>
-          </div>
-        </div>
+            <Vertical gap={sp.B}>
+              <Typography variant="content-label" color="base" noMargin>Refresh</Typography>
+              <Horizontal gap={sp.B}>
+                <Select
+                  size="small"
+                  fullWidth
+                  value={cacheFreq}
+                  onChange={setCacheFreq}
+                  options={['Daily', 'Hourly', 'Weekly'].map(f => ({ id: f, label: f }))}
+                />
+                <Select
+                  size="small"
+                  fullWidth
+                  disabled={cacheFreq === 'Hourly'}
+                  value={cacheHour}
+                  onChange={setCacheHour}
+                  options={['12:00 AM', '6:00 AM', '9:00 AM', '12:00 PM', '6:00 PM'].map(t => ({ id: t, label: t }))}
+                />
+              </Horizontal>
+            </Vertical>
+          </Vertical>
+        </Modal>
       )}
     </div>
   );
@@ -7740,9 +9921,9 @@ export default ModelCanvas;
 
 const phdrBtnStyle: React.CSSProperties = {
   width: 22, height: 22, border: 'none', background: 'transparent', borderRadius: 4,
-  color: '#A5ACB9', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+  color: c['content-secondary'], cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
 };
 const railBtnStyle: React.CSSProperties = {
   width: 32, height: 32, borderRadius: 6, border: 'none', background: 'transparent',
-  color: '#777E8B', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+  color: c['content-secondary'], cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
 };

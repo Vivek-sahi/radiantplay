@@ -1,0 +1,1983 @@
+/* Calibration prototype — self-contained, scoped under .calx.
+   Design language: precision instrument. Cool ink, electric-indigo accent,
+   semantic colors kept separate, monospace for readouts. Two motifs: gauge
+   (calibration) and waveform (drift). */
+
+.calx {
+  --ink: #16171d;
+  --ink-2: #3b3d47;
+  --ink-3: #6c6f7b;
+  --ink-4: #9a9da8;
+  --paper: #f4f5f7;
+  --panel: #ffffff;
+  --panel-2: #fbfbfc;
+  --line: #e7e8ec;
+  --line-2: #eff0f3;
+  --line-strong: #d6d8de;
+
+  --accent: #574fe6;
+  --accent-press: #453cc9;
+  --accent-tint: #eeedfd;
+  --accent-tint-2: #f6f5fe;
+  --accent-ink: #2f2a8f;
+
+  --good: #0d9f6e;
+  --good-tint: #e2f5ee;
+  --good-ink: #075e42;
+  --warn: #d9820a;
+  --warn-tint: #fbefd9;
+  --warn-ink: #8a5307;
+  --crit: #e14b4b;
+  --crit-tint: #fbe9e9;
+  --crit-ink: #952f2f;
+  --info: #2e7bef;
+  --info-tint: #e5f0fd;
+  --neutral-tint: #eef0f2;
+
+  --r-xs: 4px;
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --r-xl: 22px;
+
+  --sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --mono: "SF Mono", ui-monospace, "JetBrains Mono", Menlo, monospace;
+
+  --shadow-sm: 0 1px 2px rgba(20, 22, 30, 0.06), 0 1px 1px rgba(20, 22, 30, 0.04);
+  --shadow-md: 0 6px 20px rgba(20, 22, 30, 0.10), 0 2px 6px rgba(20, 22, 30, 0.06);
+  --shadow-lg: 0 24px 60px rgba(20, 22, 30, 0.20), 0 8px 24px rgba(20, 22, 30, 0.12);
+
+  /* .calx is a scoping context only — it provides the design tokens, font, and
+     reset to whatever it wraps. It imposes no layout so it can be embedded inside
+     a host surface (the real DME header) without taking over the screen. The
+     full-screen standalone stage styling lives on .calx-stage. */
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+.calx *,
+.calx *::before,
+.calx *::after { box-sizing: border-box; }
+
+.calx button { font-family: inherit; cursor: pointer; border: none; background: transparent; color: inherit; }
+
+/* ============ STAGE (standalone DME backdrop only) ============ */
+.calx-stage {
+  position: fixed; inset: 0;
+  background: var(--paper);
+  overflow: hidden;
+  display: flex; flex-direction: column; height: 100%;
+}
+
+/* Embedded entry slot — sits in a host header, pushes itself to the right */
+.calx-entry-slot { display: inline-flex; align-items: center; gap: 10px; margin-left: auto; }
+
+.calx-topbar {
+  display: flex; align-items: center; gap: 16px;
+  height: 56px; padding: 0 20px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+}
+.calx-topbar-title { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
+.calx-topbar-spacer { flex: 1; }
+
+/* Calibration entry pill — dark, iridescent hairline border */
+.calx .calx-entry-pill {
+  display: inline-flex; align-items: center; gap: 9px;
+  height: 38px; padding: 0 16px 0 14px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: #fff;
+  font-size: 13.5px; font-weight: 550;
+  letter-spacing: -0.005em;
+  position: relative;
+  transition: transform 0.12s ease, box-shadow 0.16s ease;
+}
+.calx-entry-pill::before {
+  content: ""; position: absolute; inset: -1px; border-radius: 999px; padding: 1px;
+  background: linear-gradient(120deg, #7d76ff, #4ec8b0 55%, #7d76ff);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  opacity: 0.9;
+}
+.calx-entry-pill .calx-state-dot { width: 7px; height: 7px; border-radius: 50%; }
+
+/* Rated pill — neutral: shows a plain "N/M fixed" count, no colour or emotion */
+.calx .calx-entry-pill.calx-rated {
+  background: var(--panel);
+  color: var(--ink);
+  border: 1.5px solid var(--line-strong);
+  gap: 8px; padding: 0 14px;
+  font-weight: 500;
+}
+.calx-entry-pill.calx-rated::before { content: none; }
+.calx-entry-pill.calx-rated .calx-entry-count {
+  font-weight: 600; font-variant-numeric: tabular-nums; color: var(--ink-2);
+  padding-left: 8px; border-left: 1px solid var(--line-strong);
+}
+
+/* Drift bell — pulse icon (same height as the pill, no border) */
+.calx .calx-drift-btn {
+  width: 38px; height: 38px; border-radius: 50%;
+  background: var(--ink);
+  display: inline-flex; align-items: center; justify-content: center;
+  position: relative;
+}
+.calx-drift-btn svg { color: #fff; }
+.calx-drift-count {
+  position: absolute; top: -3px; right: -3px;
+  min-width: 18px; height: 18px; padding: 0 4px;
+  border-radius: 999px; background: var(--crit); color: #fff;
+  font-family: var(--mono); font-size: 11.5px; font-weight: 600;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 2px solid var(--panel);
+}
+
+/* Sub-header */
+.calx-subhead {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 20px; background: var(--panel);
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+}
+.calx-model-name { font-size: 17px; font-weight: 640; letter-spacing: -0.02em; }
+.calx-model-desc { font-size: 13px; color: var(--ink-3); }
+.calx-conn {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12px; color: var(--ink-3);
+  font-family: var(--mono);
+}
+
+/* Body: left rail + canvas */
+.calx-body { flex: 1; display: flex; min-height: 0; }
+.calx-rail {
+  width: 232px; flex-shrink: 0; background: var(--panel);
+  border-right: 1px solid var(--line);
+  padding: 14px; display: flex; flex-direction: column; gap: 4px;
+  overflow-y: auto;
+}
+.calx-rail-title {
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--ink-4);
+  padding: 6px 8px 8px;
+}
+.calx-rail-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 8px; border-radius: var(--r-sm);
+  font-size: 13px; color: var(--ink-2);
+}
+.calx-rail-item .dot { width: 6px; height: 6px; border-radius: 2px; background: var(--line-strong); }
+.calx-rail-item.warn .dot { background: var(--warn); }
+.calx-rail-item.crit .dot { background: var(--crit); }
+
+.calx-canvas {
+  flex: 1; position: relative; overflow: hidden;
+  background:
+    radial-gradient(circle at 1px 1px, var(--line) 1px, transparent 0);
+  background-size: 22px 22px;
+  background-color: var(--paper);
+}
+.calx-canvas-tables { position: absolute; inset: 0; }
+.calx-tablecard {
+  position: absolute; width: 176px;
+  background: var(--panel); border: 1px solid var(--line-strong);
+  border-radius: var(--r-md); box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+.calx-tablecard-head {
+  display: flex; align-items: center; gap: 7px;
+  padding: 9px 11px; border-bottom: 1px solid var(--line-2);
+  font-weight: 600; font-size: 12.5px;
+}
+.calx-tablecard-head .ico { width: 14px; height: 14px; color: var(--accent); }
+.calx-tablecard-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 6px 11px; font-size: 12px; color: var(--ink-2);
+  border-bottom: 1px solid var(--line-2);
+}
+.calx-tablecard-row:last-child { border-bottom: none; }
+.calx-tablecard-row .t { font-family: var(--mono); font-size: 10px; color: var(--ink-4); }
+.calx-tablecard-row.flag { background: var(--crit-tint); }
+.calx-tablecard-row.flag .t { color: var(--crit-ink); }
+
+.calx-footer {
+  display: flex; align-items: center; justify-content: flex-end; gap: 10px;
+  height: 60px; padding: 0 20px; background: var(--panel);
+  border-top: 1px solid var(--line); flex-shrink: 0;
+}
+
+/* ============ Buttons ============ */
+.calx-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  height: 38px; padding: 0 16px; border-radius: var(--r-sm);
+  font-size: 13.5px; font-weight: 560; letter-spacing: -0.005em;
+  transition: background 0.14s ease, transform 0.1s ease, box-shadow 0.14s ease, border-color 0.14s;
+  white-space: nowrap;
+}
+.calx-btn:active { transform: translateY(0.5px); }
+.calx .calx-btn-primary { background: var(--accent); color: #fff; }
+.calx-btn-primary:hover { background: var(--accent-press); }
+.calx-btn-primary:disabled { background: var(--line-strong); color: #fff; cursor: not-allowed; }
+.calx .calx-btn-secondary { background: var(--panel); color: var(--ink); border: 1px solid var(--line-strong); }
+.calx-btn-secondary:hover { border-color: var(--ink-4); background: var(--panel-2); }
+.calx-btn-ghost { color: var(--ink-2); }
+.calx-btn-ghost:hover { background: var(--line-2); }
+.calx-btn-sm { height: 32px; padding: 0 12px; font-size: 12.5px; border-radius: 7px; }
+
+/* ============ Overlay / modal shell ============ */
+.calx-scrim {
+  position: fixed; inset: 0; background: rgba(20, 22, 30, 0.42);
+  backdrop-filter: blur(2px);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1200; padding: 32px;
+  animation: calx-fade 0.16s ease;
+}
+@keyframes calx-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes calx-rise { from { opacity: 0; transform: translateY(10px) scale(0.99); } to { opacity: 1; transform: none; } }
+
+.calx-modal {
+  width: 100%; max-width: 780px; max-height: calc(100vh - 64px);
+  background: var(--panel); border-radius: var(--r-xl);
+  box-shadow: var(--shadow-lg);
+  display: flex; flex-direction: column; overflow: hidden;
+  animation: calx-rise 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.calx-modal-head {
+  display: flex; align-items: flex-start; gap: 14px;
+  padding: 22px 24px 18px;
+  border-bottom: 1px solid var(--line);
+}
+.calx-modal-mark {
+  width: 40px; height: 40px; border-radius: 11px; flex-shrink: 0;
+  background: var(--ink); color: #fff;
+  display: inline-flex; align-items: center; justify-content: center;
+  position: relative;
+}
+.calx-modal-mark::before {
+  content: ""; position: absolute; inset: -1px; border-radius: 11px; padding: 1px;
+  background: linear-gradient(120deg, #7d76ff, #4ec8b0 55%, #7d76ff);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+}
+.calx-modal-titles { flex: 1; min-width: 0; }
+.calx-modal-title { font-size: 18px; font-weight: 640; letter-spacing: -0.02em; }
+.calx-modal-sub { font-size: 13px; color: var(--ink-3); margin-top: 2px; }
+.calx-modal-x {
+  width: 32px; height: 32px; border-radius: var(--r-sm); color: var(--ink-3);
+  display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.calx-modal-x:hover { background: var(--line-2); color: var(--ink); }
+.calx-modal-body { padding: 20px 24px; overflow-y: auto; }
+.calx-modal-foot {
+  display: flex; align-items: center; gap: 12px;
+  padding: 16px 24px; border-top: 1px solid var(--line);
+  background: var(--panel-2);
+}
+.calx-modal-foot .spacer { flex: 1; }
+
+/* ============ Pillar selection cards ============ */
+.calx-pillars { display: flex; flex-direction: column; gap: 12px; }
+.calx-pillar {
+  display: flex; gap: 14px; padding: 16px;
+  border: 1.5px solid var(--line); border-radius: var(--r-lg);
+  background: var(--panel); cursor: pointer;
+  transition: border-color 0.14s ease, background 0.14s ease, box-shadow 0.14s ease;
+  position: relative;
+}
+.calx-pillar:hover { border-color: var(--line-strong); box-shadow: var(--shadow-sm); }
+.calx-pillar.on { border-color: var(--accent); background: var(--accent-tint-2); }
+.calx-pillar-check {
+  width: 22px; height: 22px; border-radius: 7px; flex-shrink: 0; margin-top: 1px;
+  border: 1.5px solid var(--line-strong); background: var(--panel);
+  display: inline-flex; align-items: center; justify-content: center;
+  color: #fff; transition: background 0.14s, border-color 0.14s;
+}
+.calx-pillar.on .calx-pillar-check { background: var(--accent); border-color: var(--accent); }
+.calx-pillar-motif {
+  width: 46px; height: 46px; border-radius: var(--r-md); flex-shrink: 0;
+  background: var(--panel-2); border: 1px solid var(--line);
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--accent);
+}
+.calx-pillar.on .calx-pillar-motif { background: var(--accent-tint); border-color: transparent; }
+.calx-pillar-main { flex: 1; min-width: 0; }
+.calx-pillar-top { display: flex; align-items: baseline; gap: 8px; }
+.calx-pillar-name { font-size: 14.5px; font-weight: 620; letter-spacing: -0.01em; }
+.calx-pillar-tag {
+  font-family: var(--mono); font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--ink-4);
+}
+.calx-pillar-blurb { font-size: 12.5px; color: var(--ink-2); margin-top: 5px; line-height: 1.5; }
+.calx-pillar-meta { display: flex; align-items: center; gap: 14px; margin-top: 10px; flex-wrap: wrap; }
+.calx-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11.5px; color: var(--ink-3);
+}
+.calx-chip .k { font-family: var(--mono); font-size: 10.5px; }
+.calx-chip.cost-instant { color: var(--good-ink); }
+.calx-chip.cost-moderate { color: var(--info); }
+.calx-chip.cost-heavy { color: var(--warn-ink); }
+
+/* Partial disclaimer */
+.calx-disclaimer {
+  display: flex; gap: 10px; align-items: flex-start;
+  margin-top: 18px; padding: 12px 14px;
+  background: var(--warn-tint); border-radius: var(--r-md);
+  border: 1px solid #f0dcb4;
+}
+.calx-disclaimer svg { color: var(--warn-ink); flex-shrink: 0; margin-top: 1px; }
+.calx-disclaimer p { margin: 0; font-size: 12.5px; color: var(--warn-ink); line-height: 1.5; }
+.calx-disclaimer strong { font-weight: 620; }
+
+/* ============ Waveform / gauge motif helpers ============ */
+.calx-wave { display: block; }
+
+/* ============ Select — minimal cards (inside RdModal) ============ */
+/* Fixed height so this modal matches every other step in the flow. */
+.calx-select {
+  color: var(--ink);
+  font-family: "Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  height: min(560px, calc(85vh - 204px));
+  display: flex; flex-direction: column;
+}
+.calx-select-head { flex-shrink: 0; }
+/* intro — Radiant body-large / regular, primary colour */
+.calx-select-intro { margin: 0 0 4px; font-size: 16px; font-weight: 400; color: var(--ink); line-height: 24px; }
+.calx-select-rec { margin: 0 0 10px; font-size: 14px; font-weight: 375; color: var(--ink-3); line-height: 20px; }
+/* counter — Radiant body-normal / light, secondary */
+.calx-select-count { text-align: left; margin: 0 0 14px; font-size: 14px; font-weight: 375; color: var(--ink-3); line-height: 20px; }
+/* Cards are a fixed 368px; the container top-aligns so the modal height stays constant. */
+.calx-selcards { display: flex; gap: 12px; align-items: flex-start; flex: 1; min-height: 0; }
+.calx-selcards.running { justify-content: center; }
+.calx-selcards.running .calx-selcard { flex: 0 0 238px; }
+
+.calx-selcard {
+  flex: 1 1 0; min-width: 0; height: 368px;
+  position: relative; overflow: hidden;
+  border: 1.5px solid var(--line); border-radius: 14px;
+  background: var(--panel); padding: 16px;
+  cursor: pointer; display: flex; flex-direction: column;
+  transition: border-color 0.14s ease, background 0.14s ease, box-shadow 0.14s ease;
+}
+.calx-selcard.mode-select:hover { border-color: var(--line-strong); box-shadow: var(--shadow-sm); }
+.calx-selcard:focus-visible { outline: 2px solid #2770ef; outline-offset: 2px; }
+.calx-selcard.on { border-color: #2770ef; background: rgba(39, 112, 239, 0.05); }
+.calx-selcard.mode-pending, .calx-selcard.mode-running, .calx-selcard.mode-done { cursor: default; }
+.calx-selcard.mode-running { border-color: transparent; }
+/* Done — subtle green accent + green border. */
+.calx-selcard.mode-done { border-color: var(--good); background: rgba(13, 159, 110, 0.055); }
+
+/* Running border — a blue segment travelling around the card edge (start-angle animation,
+   so overflow:hidden never clips it). */
+@property --calx-angle { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
+.calx-selcard-runborder {
+  position: absolute; inset: 0; border-radius: 14px; padding: 1.5px; z-index: 2;
+  background: conic-gradient(from var(--calx-angle), rgba(39,112,239,0) 0deg, rgba(39,112,239,0) 210deg, #2770ef 320deg, rgba(39,112,239,0) 360deg);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  animation: calx-angle-spin 1.3s linear infinite;
+  pointer-events: none;
+}
+@keyframes calx-angle-spin { to { --calx-angle: 360deg; } }
+
+.calx-selcard-topzone { position: relative; height: 74px; flex-shrink: 0; }
+.calx-selcard-art svg { width: 84px; height: 84px; display: block; }
+.calx-selcard-ind { position: absolute; top: 0; left: 0; z-index: 3; }
+.calx-selcard-art { position: absolute; top: -6px; right: -8px; z-index: 0; }
+
+/* Running indicator — blue spinner (same as the primary CTA loader) where the checkbox was. */
+.calx-run-spinner {
+  display: inline-block; width: 18px; height: 18px; border-radius: 50%;
+  border: 2px solid #c3ddfa; border-top-color: #2770ef;
+  animation: calx-spin 0.7s linear infinite;
+}
+@keyframes calx-spin { to { transform: rotate(360deg); } }
+/* Done — green check. */
+.calx-done-check {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px; border-radius: 50%; background: #0d9f6e; color: #fff;
+}
+/* Pending — yellow "Will run next" chip. */
+.calx-willrun {
+  display: inline-flex; align-items: center; height: 22px; padding: 0 9px; border-radius: 999px;
+  background: #fff3d1; color: #8a5307; font-size: 11px; font-weight: 500; white-space: nowrap;
+}
+
+/* Streaming check points — fill remaining card height, newest at bottom pushing older up. */
+.calx-run-points {
+  flex: 1; min-height: 0; margin-top: 8px;
+  display: flex; flex-direction: column; justify-content: flex-end; gap: 6px;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 34px);
+  mask-image: linear-gradient(to bottom, transparent, #000 34px);
+}
+.calx-run-point {
+  flex-shrink: 0; min-height: 20px;
+  font-size: 13px; font-weight: 375; color: var(--ink-2); line-height: 20px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  animation: calx-point-in 0.25s ease;
+}
+@keyframes calx-point-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+/* Done summary line. */
+.calx-done-summary { margin-top: 10px; font-size: 13px; font-weight: 500; color: var(--good-ink); }
+
+/* card title — Radiant section-label / h3 (18 / semibold) */
+.calx-selcard-title {
+  font-size: 18px; font-weight: 600; letter-spacing: -0.4px; line-height: 24px;
+  margin-bottom: 4px; text-wrap: balance; flex-shrink: 0;
+}
+.calx-selpoints { display: flex; flex-direction: column; margin-top: 6px; }
+/* points — Radiant body-normal (14 / regular), no dividers, no icons */
+.calx-selpoint {
+  padding: 7px 0;
+  font-size: 14px; font-weight: 375; color: var(--ink-2); line-height: 20px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* ============ Checking phase ============ */
+.calx-scan-bar {
+  height: 6px; border-radius: 999px; background: var(--line-2); overflow: hidden;
+  margin-bottom: 20px;
+}
+.calx-scan-fill {
+  height: 100%; border-radius: 999px;
+  background: linear-gradient(90deg, var(--accent), #6ec8b4);
+  transition: width 0.1s linear;
+}
+.calx-scan-list { display: flex; flex-direction: column; gap: 8px; }
+.calx-scan-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 13px 14px; border-radius: var(--r-md);
+  border: 1px solid var(--line); background: var(--panel-2);
+  transition: border-color 0.2s, background 0.2s, opacity 0.2s;
+}
+.calx-scan-row.wait { opacity: 0.5; }
+.calx-scan-row.run { border-color: var(--accent); background: var(--accent-tint-2); }
+.calx-scan-row.done { border-color: var(--good); background: var(--good-tint); }
+.calx-scan-ico { color: var(--ink-3); display: inline-flex; }
+.calx-scan-row.run .calx-scan-ico { color: var(--accent); }
+.calx-scan-row.done .calx-scan-ico { color: var(--good-ink); }
+.calx-scan-name { flex: 1; font-size: 13.5px; font-weight: 560; }
+.calx-scan-status { font-size: 12px; }
+.calx-scan-done { display: inline-flex; align-items: center; gap: 5px; color: var(--good-ink); font-family: var(--mono); font-size: 11px; }
+.calx-scan-running { display: inline-flex; align-items: center; gap: 6px; color: var(--accent); font-family: var(--mono); font-size: 11px; }
+.calx-scan-running > span { animation: calx-blink 0.9s ease-in-out infinite; }
+.calx-scan-wait { color: var(--ink-4); font-family: var(--mono); font-size: 11px; }
+@keyframes calx-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+/* ============ Results (Radiant modal, tabbed) ============ */
+.calx-results {
+  font-family: "Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+.calx-results-note {
+  margin: 0 0 14px; padding: 10px 12px; border-radius: var(--r-sm);
+  background: var(--neutral-tint); font-size: 12px; font-weight: 375; color: var(--ink-3); line-height: 18px;
+}
+/* ---- Improvement opportunities (Figma) ---- */
+.calx-opps {
+  position: relative; z-index: 0;
+  font-family: "Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  height: min(560px, calc(85vh - 204px)); display: flex; flex-direction: column;
+}
+
+.calx-opps-warn {
+  display: flex; align-items: flex-start; gap: 10px;
+  background: #fff8e5; border-radius: 6px; padding: 16px;
+  font-size: 14px; font-weight: 375; color: #1d232f; line-height: 20px;
+  margin-bottom: 16px;
+}
+.calx-opps-warn svg { flex-shrink: 0; margin-top: 1px; }
+
+/* Top bar — tabs (Not fixed / Fixed / Ignored) on the left, Fix selected on the right */
+.calx-opps-topbar {
+  display: flex; align-items: flex-end; justify-content: space-between; gap: 12px;
+  margin-bottom: 14px; flex-shrink: 0;
+}
+.calx-opps-topbar > button { flex-shrink: 0; }
+/* Underline spans only the tabs; the active tab's segment is blue. */
+.calx-opps-tabs { display: inline-flex; gap: 22px; align-items: stretch; border-bottom: 1px solid var(--line); }
+/* `.calx` prefix so these beat the global `.calx button { border: none }` reset. */
+.calx .calx-opps-tab {
+  appearance: none; background: none; border: none; cursor: pointer;
+  padding: 6px 2px 11px; margin-bottom: -1px;
+  border-bottom: 2.5px solid transparent;
+  font-family: inherit; font-size: 15px; font-weight: 500; color: var(--ink-3);
+}
+.calx .calx-opps-tab:hover { color: var(--ink); }
+.calx .calx-opps-tab.on { color: var(--info); border-bottom-color: var(--info); }
+
+.calx-opps-filters { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; flex-shrink: 0; }
+
+/* Ignore / restore eye button in the rightmost column */
+.calx-eye-btn {
+  appearance: none; border: none; background: none; cursor: pointer;
+  width: 30px; height: 30px; border-radius: var(--r-xs);
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--ink-3);
+}
+.calx-eye-btn:hover { background: rgba(20, 22, 30, 0.05); color: var(--ink); }
+
+/* Type filter — expandable searchable checkbox menu */
+.calx-typefilter { position: relative; }
+.calx-filter-btn {
+  appearance: none; font-family: inherit; cursor: pointer; border: none;
+}
+.calx .calx-filter-btn { cursor: pointer; }
+.calx .calx-filter-btn.open { background: var(--info-tint); color: var(--info); }
+.calx .calx-filter-btn.open .k, .calx .calx-filter-btn.open .v, .calx .calx-filter-btn.open svg { color: var(--info); }
+.calx-tf-radio { width: 16px; display: inline-flex; align-items: center; justify-content: center; color: var(--info); flex-shrink: 0; }
+.calx-typefilter-opt.on { color: var(--info); font-weight: 500; }
+.calx-chev-up { transform: rotate(180deg); }
+.calx-typefilter-scrim { position: fixed; inset: 0; z-index: 40; }
+.calx-typefilter-menu {
+  position: absolute; top: calc(100% + 6px); left: 0; z-index: 41;
+  min-width: 260px; padding: 6px;
+  background: var(--panel); border: 1px solid var(--line-strong); border-radius: var(--r-sm);
+  box-shadow: var(--shadow-md);
+}
+.calx-typefilter-search {
+  display: flex; align-items: center; gap: 8px; padding: 8px 10px; margin-bottom: 4px;
+  border-bottom: 1px solid var(--line-2); color: var(--ink-3);
+}
+.calx-typefilter-search input {
+  border: none; outline: none; background: none; font-family: inherit; font-size: 14px;
+  color: var(--ink); width: 100%;
+}
+.calx-typefilter-opt {
+  display: flex; align-items: center; gap: 12px; width: 100%;
+  appearance: none; border: none; background: none; cursor: pointer; font-family: inherit;
+  padding: 9px 10px; border-radius: var(--r-xs); font-size: 15px; color: var(--ink);
+  text-align: left;
+}
+.calx-typefilter-opt:hover { background: rgba(20, 22, 30, 0.04); }
+
+/* Per-row fix status shown in the Fixed tab (replaces the checkbox column). */
+.calx-fixstatus { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500; white-space: nowrap; }
+.calx-fixstatus.fixing { color: var(--info); }
+.calx-fixstatus.fixed { color: var(--good-ink); }
+.calx-fix-spinner {
+  width: 16px; height: 16px; border-radius: 50%; flex-shrink: 0;
+  border: 2px solid #c3ddfa; border-top-color: var(--info);
+  animation: calx-spin 0.7s linear infinite;
+}
+.calx-fix-check {
+  width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0;
+  background: var(--good); color: #fff;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+
+.calx .calx-filter {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 32px; padding: 6px 8px 6px 12px; border-radius: 16px;
+  background: #eaedf2; color: #1d232f; font-size: 14px; cursor: default;
+}
+.calx .calx-filter .k { font-weight: 375; }
+.calx .calx-filter .v { font-weight: 600; }
+.calx .calx-filter svg { color: #1d232f; }
+
+/* Table fills the remaining space as a fixed-height bordered box; rows scroll inside it,
+   header stays sticky. The dim overlay lets one row elevate above it when Details is open. */
+/* Soften the Radiant table's selected-row blue so the highlight reads subtle. */
+.calx-opps-list { flex: 1; min-height: 0; display: flex; --rd-sys-color-background-information: rgba(39, 112, 239, 0.06); }
+.calx-opps-list .container { flex: 1; min-height: 0; overflow: auto; border-radius: 8px; }
+.calx-opps-list table.table { font-family: inherit; }
+/* Vertical column dividers, matching the DME Columns/Formulas tab grid. */
+.calx-opps-list td, .calx-opps-list th { border-right: 1px solid var(--rd-sys-color-border-divider); }
+.calx-opps-list td:last-child, .calx-opps-list th:last-child { border-right: none; }
+.calx-opp-cell { display: flex; flex-direction: column; gap: 2px; }
+.calx-opprow-title { font-size: 14px; font-weight: 600; color: #1d232f; line-height: 20px; }
+.calx-opprow-desc { font-size: 12px; font-weight: 400; color: #777e8b; line-height: 18px; }
+.calx-sevtext { font-size: 13px; font-weight: 600; }
+.calx-opp-done { font-size: 12px; font-weight: 500; color: var(--good-ink); }
+
+.calx-opps-banner {
+  margin-top: 16px; flex-shrink: 0; background: #f6f8fa; border-radius: 6px; padding: 16px;
+  font-size: 14px; font-weight: 375; color: #1d232f; line-height: 20px;
+}
+.calx-opps-banner strong { font-weight: 600; }
+.calx .calx-linkbtn { color: #2770ef; font-size: 14px; font-weight: 375; }
+.calx .calx-linkbtn:hover { text-decoration: underline; }
+
+/* ---- Spotter Calibration ---- */
+/* Fill the modal's available content height (85vh minus header 84 + footer 72 +
+   content padding 48). Both views use this, so the modal never resizes between
+   grid and expanded, and the grid fits exactly without scrolling. */
+.calx-spotter { position: relative; display: flex; flex-direction: column; gap: 12px; height: calc(85vh - 204px); max-height: 560px; }
+.calx-spotter-intro { margin: 0; font-size: 14px; font-weight: 375; color: var(--ink-3); line-height: 20px; flex-shrink: 0; }
+.calx-spotter-body { flex: 1; min-height: 0; overflow-y: auto; }
+
+.calx-spotter-bar { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+.calx-spotter-bar.has-tabs { align-items: flex-end; }
+.calx-spotter-actions { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; }
+.calx-spotter-actions .calx-addq-wrap { margin-left: 0; }
+
+/* Suggested-fix board — reuses the opportunities table; scrolls internally */
+.calx-spotter-fixbody { position: relative; z-index: 0; flex: 1; min-height: 0; display: flex; flex-direction: column; }
+
+/* Single accordion list of question cards */
+.calx-sq-list { display: flex; flex-direction: column; gap: 10px; }
+.calx .calx-sq-row {
+  border: 1px solid var(--line-strong); border-radius: var(--r-sm); background: var(--panel);
+  overflow: hidden; transition: background-color 0.12s ease, border-color 0.12s ease;
+}
+/* Unrated hover — light bg + slightly darker border (subtle) */
+.calx .calx-sq-row.unrated:hover { background: rgba(20, 22, 30, 0.022); border-color: #c7cad2; }
+/* Rated rows take a subtle coloured border + tint */
+.calx .calx-sq-row.ver-correct { border-color: var(--good); background: rgba(13, 159, 110, 0.05); }
+.calx .calx-sq-row.ver-incorrect { border-color: var(--crit); background: rgba(225, 75, 75, 0.05); }
+
+.calx .calx-sq-rowhead {
+  appearance: none; border: none; background: transparent; cursor: pointer; font-family: inherit;
+  width: 100%; text-align: left; display: flex; gap: 14px; align-items: center; padding: 14px;
+}
+.calx-sq-rowmeta { margin-left: auto; display: inline-flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.calx-sq-chev { color: var(--ink-3); transition: transform 0.15s ease; flex-shrink: 0; }
+
+/* Detail region revealed on expand */
+.calx-sq-detail { padding: 0 14px 16px; }
+.calx-sq-detail .calx-sq-chart { margin-top: 4px; }
+
+/* Suggested-reason chips above the reason field */
+.calx-sq-suggest { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; }
+.calx-sq-suggest-label { font-size: 13px; font-weight: 375; color: var(--ink-3); }
+.calx .calx-sq-chip {
+  appearance: none; cursor: pointer; font-family: inherit;
+  border: 1px solid var(--line-strong); background: transparent; color: var(--ink);
+  border-radius: 999px; padding: 5px 12px; font-size: 12.5px; font-weight: 400; line-height: 16px;
+  transition: background-color 0.12s ease, border-color 0.12s ease;
+}
+.calx .calx-sq-chip:hover { background: rgba(20, 22, 30, 0.022); border-color: #c7cad2; }
+
+.calx-sq-icon {
+  flex-shrink: 0; width: 38px; height: 38px; border-radius: var(--r-xs);
+  display: inline-flex; align-items: center; justify-content: center;
+  background: rgba(39, 112, 239, 0.08); color: var(--info);
+}
+.calx-sq-body { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.calx-sq-name { font-size: 15px; font-weight: 600; color: var(--ink); line-height: 20px; }
+.calx-sq-desc {
+  margin-top: 4px; font-size: 13px; font-weight: 375; color: var(--ink-3); line-height: 18px;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+
+/* verdict pill shown in the row header */
+.calx-sq-verpill {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 10px; border-radius: var(--r-xs); font-size: 12.5px; font-weight: 500;
+}
+.calx-sq-verpill.correct { background: rgba(13, 159, 110, 0.10); color: var(--good-ink); }
+.calx-sq-verpill.incorrect { background: rgba(225, 75, 75, 0.10); color: var(--crit-ink); }
+
+.calx-sq-chart {
+  margin: 18px 0; height: 236px; border-radius: var(--r-xs);
+  background: var(--panel-2); border: 1px solid var(--line);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--ink-3); font-size: 14px; font-weight: 500;
+}
+.calx-sq-grade { display: flex; align-items: center; gap: 16px; }
+.calx-sq-gq { font-size: 15px; font-weight: 500; color: var(--ink); }
+.calx-sq-pills { display: inline-flex; gap: 10px; }
+.calx .calx-sq-pill {
+  appearance: none; cursor: pointer; font-family: inherit;
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 34px; padding: 0 18px; border-radius: var(--r-xs);
+  border: 1px solid var(--line-strong); background: var(--panel);
+  font-size: 14px; font-weight: 500; color: var(--ink);
+}
+.calx .calx-sq-pill:hover:not(.yes):not(.no) { background: rgba(20, 22, 30, 0.04); }
+.calx .calx-sq-pill.yes { background: rgba(13, 159, 110, 0.10); border-color: var(--good); color: var(--good-ink); }
+.calx .calx-sq-pill.no { background: rgba(225, 75, 75, 0.10); border-color: var(--crit); color: var(--crit-ink); }
+.calx-sq-reason { margin-top: 16px; }
+/* Reason field: blue border on focus, no glow ring */
+.calx-sq-reason textarea:focus { box-shadow: none !important; border-color: #2770ef !important; }
+
+/* Skeleton shimmer — shown while a newly-added question's answer generates */
+.calx-skel {
+  background: linear-gradient(90deg, #edeff3 25%, #f7f8fa 50%, #edeff3 75%);
+  background-size: 200% 100%; animation: calx-shimmer 1.3s ease-in-out infinite;
+  border-radius: 6px;
+}
+@keyframes calx-shimmer { to { background-position: -200% 0; } }
+.calx-skel-icon { width: 38px; height: 38px; border-radius: var(--r-xs); flex-shrink: 0; }
+.calx-skel-line { height: 12px; }
+.calx-sq-row.calx-sq-gen .calx-sq-rowhead { cursor: default; }
+
+/* Add-question overlay — floats directly below the Add question button, no dim */
+.calx-addq-wrap { position: relative; margin-left: auto; }
+.calx-addq-scrim { position: fixed; inset: 0; z-index: 15; background: transparent; }
+.calx-addq-card {
+  position: absolute; top: calc(100% + 8px); right: 0; z-index: 16;
+  width: 460px; max-width: 90vw; padding: 20px;
+  background: var(--panel); border: 1px solid var(--line-strong); border-radius: var(--r-md);
+  box-shadow: var(--shadow-lg, 0 16px 40px rgba(20, 22, 30, 0.18));
+}
+.calx-addq-title { font-size: 16px; font-weight: 600; color: var(--ink); }
+.calx-addq-sub { margin: 4px 0 14px; font-size: 13px; font-weight: 375; color: var(--ink-3); line-height: 18px; }
+.calx-addq-actions { display: flex; justify-content: flex-end; margin-top: 14px; }
+
+/* ---- Calibration summary — neutral count of fixes applied ---- */
+.calx-summary {
+  height: calc(85vh - 204px); max-height: 560px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 8px; text-align: center;
+}
+.calx-summary-count {
+  display: inline-flex; align-items: baseline; gap: 12px;
+  font-variant-numeric: tabular-nums; color: var(--ink);
+}
+.calx-summary-done { font-size: 64px; font-weight: 700; line-height: 1; }
+.calx-summary-sep { font-size: 20px; font-weight: 400; color: var(--ink-4); }
+.calx-summary-total { font-size: 40px; font-weight: 500; color: var(--ink-3); line-height: 1; }
+.calx-summary-label { font-size: 15px; font-weight: 500; color: var(--ink-2); }
+.calx-summary-bar {
+  margin-top: 14px; width: 320px; max-width: 80%; height: 8px; border-radius: 999px;
+  background: var(--line-2); overflow: hidden;
+}
+.calx-summary-fill { height: 100%; background: var(--ink-3); border-radius: 999px; transition: width 0.4s ease; }
+.calx-summary-note { margin: 14px 0 0; max-width: 400px; font-size: 13.5px; font-weight: 375; color: var(--ink-3); line-height: 20px; }
+
+/* ---- Details: dim the content, elevate the active row, float the popover ---- */
+/* -24 bleeds over the modal's 24px content padding so the dim covers the whole
+   content area edge-to-edge (header/footer stay bright). z-index 15 sits above the
+   sticky table header (z-index 10) so the header dims too. */
+.calx-details-dim {
+  position: absolute; inset: -24px; z-index: 15;
+  background: rgba(31, 38, 50, 0.5);
+}
+/* Active row rises above the dim (resolves within the .calx-opps stacking context). */
+.calx-opps-list .calx-row-active {
+  position: relative; z-index: 16; background: #fff;
+}
+.calx-opps-list .calx-row-active td { background: #fff; }
+/* Active Details button — persistent light-blue active background + pointer. */
+.calx-details-active { background-color: rgba(39, 112, 239, 0.08) !important; cursor: pointer; }
+
+.calx-pop {
+  position: fixed; z-index: 10060;
+  background: #fff; border-radius: 12px; padding: 16px;
+  box-shadow: 0 12px 32px rgba(20, 22, 30, 0.16), 0 2px 8px rgba(20, 22, 30, 0.08);
+  display: flex; flex-direction: column; gap: 12px;
+  animation: calx-fade 0.12s ease;
+}
+.calx-pop-div { height: 1px; background: var(--line-2); }
+.calx-pop-sec { display: flex; flex-direction: column; gap: 4px; }
+.calx-pop-head { display: flex; align-items: center; gap: 8px; }
+.calx-pop-head svg { color: #1d232f; flex-shrink: 0; }
+.calx-pop-label { font-size: 15px; font-weight: 600; color: #1d232f; }
+.calx-pop-text { font-size: 13px; font-weight: 375; color: #777e8b; line-height: 19px; padding-left: 24px; }
+
+/* ============ Drift monitor — inside RdModal, Radiant visual language ============ */
+.calx-drift { position: relative; z-index: 0; display: flex; flex-direction: column; height: min(560px, calc(85vh - 204px)); }
+.calx-drift-intro { margin: 0 0 14px; font-size: 14px; font-weight: 375; color: var(--ink-3); line-height: 20px; flex-shrink: 0; }
+.calx-drift-feed { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+
+.calx-drift-empty {
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
+  padding: 56px 20px; text-align: center; margin: auto 0;
+}
+.calx-drift-empty-ico {
+  width: 42px; height: 42px; border-radius: 50%; background: var(--good-tint); color: var(--good-ink);
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.calx-drift-empty p { margin: 0; font-size: 14px; color: var(--ink-3); }
+
+/* One drift signal — title + description, actions top-right, meta row below */
+.calx-dsignal { border: 1px solid var(--line-strong); border-radius: var(--r-sm); padding: 16px; background: var(--panel); }
+/* Active card rises above the details dim so it stays bright. */
+.calx-dsignal.active { position: relative; z-index: 16; }
+.calx-dsignal-top { display: flex; align-items: flex-start; gap: 16px; }
+.calx-dsignal-headmain { display: flex; align-items: flex-start; gap: 10px; flex: 1; min-width: 0; }
+/* Unseen indicator — small blue dot + bolder title, like an unread notification */
+.calx-dsignal-dot {
+  width: 8px; height: 8px; border-radius: 50%; background: var(--info); flex-shrink: 0; margin-top: 7px;
+}
+.calx-dsignal-titlewrap { flex: 1; min-width: 0; }
+.calx-dsignal-title { font-size: 15px; font-weight: 500; color: var(--ink); line-height: 21px; }
+.calx-dsignal.unseen .calx-dsignal-title { font-weight: 700; }
+.calx-dsignal-desc { margin-top: 4px; font-size: 13.5px; font-weight: 375; color: var(--ink-3); line-height: 19px; }
+.calx-dsignal-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.calx-dsignal-fixed { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500; color: var(--good-ink); white-space: nowrap; }
+
+.calx-dsignal-meta {
+  margin-top: 14px; display: flex; align-items: center; gap: 12px;
+  font-size: 13px; color: var(--ink-3);
+}
+.calx-dsignal-metaitem { display: inline-flex; align-items: center; gap: 6px; }
+.calx-dsignal-metaitem svg { color: var(--ink-4); }
+.calx-dsignal-metadiv { width: 1px; height: 16px; background: var(--line-strong); }
+/* Details is a Radiant tertiary button; only nudge it to the right edge. */
+.calx-dsignal-detailsbtn { margin-left: auto; }
+
+/* ============ Fix-on-canvas walkthrough ============ */
+/* Root captures clicks so the dimmed canvas isn't interactive during a walkthrough. */
+.calx-fixwalk-root { position: fixed; inset: 0; z-index: 10050; }
+.calx-fixwalk-fulldim { position: fixed; inset: 0; background: rgba(20, 22, 30, 0.55); }
+/* Spotlight — a transparent hole with a giant box-shadow dimming everything around it. */
+.calx-fixwalk-hole {
+  position: fixed; border-radius: 8px; pointer-events: none;
+  box-shadow: 0 0 0 9999px rgba(20, 22, 30, 0.55);
+  border: 2px solid #2e7bef; transition: all 0.22s ease;
+}
+.calx-fixwalk-card {
+  position: fixed; width: 380px; max-width: calc(100vw - 28px);
+  background: #fff; border-radius: 12px; padding: 18px;
+  box-shadow: 0 16px 40px rgba(20, 22, 30, 0.22), 0 3px 10px rgba(20, 22, 30, 0.10);
+  font-family: "Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  animation: calx-fade 0.14s ease;
+}
+.calx-fixwalk-counter { font-size: 12px; font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase; color: #6c6f7b; }
+.calx-fixwalk-where { margin-top: 8px; font-size: 12px; font-weight: 500; color: #2e7bef; }
+.calx-fixwalk-title { margin-top: 4px; font-size: 16px; font-weight: 600; color: #16171d; line-height: 22px; }
+.calx-fixwalk-sug { margin-top: 6px; font-size: 13.5px; font-weight: 375; color: #3b3d47; line-height: 20px; }
+.calx-fixwalk-actions { margin-top: 18px; display: flex; align-items: center; gap: 8px; }
+.calx-fixwalk-spacer { flex: 1; }
+
+/* ============ Side-panel exploration (#dme-panel) ============ */
+/* Docked right panel — stays open beside the canvas; no scrim, canvas stays usable. */
+.calx-panel {
+  position: fixed; top: 0; right: 0; bottom: 0; width: 408px; max-width: 92vw; z-index: 9999;
+  display: flex; flex-direction: column;
+  background: var(--panel); border-left: 1px solid var(--line-strong);
+  box-shadow: -8px 0 28px rgba(20, 22, 30, 0.12);
+  font-family: "Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  animation: calx-panel-in 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes calx-panel-in { from { transform: translateX(24px); opacity: 0.4; } to { transform: translateX(0); opacity: 1; } }
+.calx-panel-head { display: flex; align-items: center; justify-content: space-between; height: 60px; padding: 0 16px; border-bottom: 1px solid var(--line); flex-shrink: 0; }
+.calx-panel-title { font-size: 17px; font-weight: 700; color: var(--ink); }
+.calx .calx-panel-x { width: 30px; height: 30px; border-radius: var(--r-sm); color: var(--ink-3); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+.calx .calx-panel-x:hover { background: var(--line-2); color: var(--ink); }
+
+.calx-cp-body { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; }
+
+/* Stepper — three dots connected by lines, labels below */
+.calx-cp-stepper { display: flex; padding: 18px 16px 10px; flex-shrink: 0; }
+.calx-cp-step { flex: 1; display: flex; flex-direction: column; align-items: center; position: relative; }
+.calx-cp-step:not(:first-child)::before {
+  content: ""; position: absolute; top: 9px; left: -50%; right: 50%; height: 2px; background: var(--line-strong); z-index: 0;
+}
+.calx-cp-step.done::before, .calx-cp-step.active::before { background: var(--info); }
+.calx-cp-dot {
+  width: 18px; height: 18px; border-radius: 50%; border: 1px solid var(--line-strong); background: var(--panel);
+  display: inline-flex; align-items: center; justify-content: center; color: #fff; position: relative; z-index: 1;
+}
+.calx-cp-step.active .calx-cp-dot { width: 20px; height: 20px; border: 2.5px solid var(--info); }
+.calx-cp-step.done .calx-cp-dot { background: var(--info); border-color: var(--info); }
+.calx-cp-slabel { margin-top: 8px; font-size: 15px; font-weight: 500; color: var(--ink-4); }
+.calx-cp-step.active .calx-cp-slabel { color: var(--ink); font-weight: 700; }
+.calx-cp-step.done .calx-cp-slabel { color: var(--ink-2); }
+
+/* Selection bar — grey rounded card: count · Skip · Fix selected */
+.calx-cp-selbar { margin: 8px 16px 0; padding: 16px 12px; background: #f6f8fa; border: 1px solid var(--line); border-radius: var(--r-md); display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-shrink: 0; }
+.calx-cp-selbar.applying { opacity: 0.72; }
+.calx-cp-selcount { font-size: 14px; font-weight: 375; color: var(--ink); }
+.calx-cp-selactions { display: inline-flex; align-items: center; gap: 8px; }
+
+.calx-cp-fixeslabel { margin: 16px 16px 2px; font-size: 12.5px; font-weight: 500; color: var(--ink); }
+.calx-cp-empty { margin: 6px 16px; font-size: 13px; color: var(--ink-4); }
+
+/* Fix rows — leading checkbox + fix text (2-line clamp) + hover Details */
+.calx-cp-list { padding: 0 16px; }
+.calx-cp-row { position: relative; display: flex; align-items: flex-start; gap: 10px; padding: 12px 8px; border-bottom: 1px solid var(--line-2); transition: background-color 0.12s ease; }
+.calx-cp-row:hover, .calx-cp-row.active { background: rgba(20, 22, 30, 0.028); }
+/* Fixed 20px box so the spinner and the 16px checkbox occupy identical space — no text shift */
+.calx-cp-rowcb { flex: 0 0 20px; width: 20px; height: 20px; margin-top: 1px; display: inline-flex; align-items: center; justify-content: center; }
+/* Max 2 lines, then truncate — full text shows via the title tooltip on hover */
+.calx-cp-rowtext {
+  flex: 1; min-width: 0; font-size: 14px; font-weight: 375; color: var(--ink); line-height: 20px; cursor: pointer;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.calx .calx-cp-detailsbtn {
+  display: none; flex-shrink: 0; align-self: center; padding: 0; background: none; cursor: pointer; font-family: inherit;
+  font-size: 13px; font-weight: 500; color: var(--info);
+}
+.calx-cp-row:hover .calx-cp-detailsbtn, .calx-cp-row.active .calx-cp-detailsbtn { display: inline-flex; }
+
+/* Details popover — shadow only, no border (matches Figma) */
+.calx-cp-details {
+  position: absolute; top: calc(100% - 4px); left: 0; right: 0; z-index: 6;
+  background: var(--panel); border-radius: var(--r-md);
+  box-shadow: 0 14px 32px rgba(20, 22, 30, 0.18), 0 2px 8px rgba(20, 22, 30, 0.08);
+  padding: 14px 16px; animation: calx-fade 0.12s ease;
+}
+.calx-cp-det-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+.calx-cp-det-title { font-size: 13.5px; font-weight: 600; color: var(--ink); line-height: 19px; }
+.calx .calx-cp-det-x { flex-shrink: 0; background: none; color: var(--ink-3); cursor: pointer; padding: 0; }
+.calx-cp-det-sec { margin-top: 10px; }
+.calx-cp-det-sec:first-of-type { margin-top: 0; }
+.calx-cp-det-k { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; color: var(--ink-4); }
+.calx-cp-det-v { margin-top: 3px; font-size: 13px; font-weight: 375; color: var(--ink-2); line-height: 18px; }
+
+/* Spotter grade rows */
+.calx-cp-grade { padding: 0 16px; }
+.calx-cp-qrow { display: flex; align-items: center; gap: 10px; padding: 10px 4px; border-bottom: 1px solid var(--line-2); }
+.calx-cp-qicon { width: 26px; height: 26px; border-radius: var(--r-xs); background: rgba(39, 112, 239, 0.08); color: var(--info); display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.calx-cp-qname { flex: 1; min-width: 0; font-size: 13.5px; font-weight: 375; color: var(--ink); line-height: 18px; }
+.calx-cp-qpills { display: inline-flex; gap: 4px; flex-shrink: 0; }
+.calx .calx-cp-qpill { width: 30px; height: 28px; border-radius: var(--r-xs); border: 1px solid var(--line-strong); background: var(--panel); color: var(--ink-3); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+.calx .calx-cp-qpill.on.yes { background: rgba(13, 159, 110, 0.12); border-color: var(--good); color: var(--good-ink); }
+.calx .calx-cp-qpill.on.no { background: rgba(225, 75, 75, 0.12); border-color: var(--crit); color: var(--crit-ink); }
+
+/* Run-selection screen — cards (Physical / Semantic centred Spotter) */
+.calx-cp-run { padding: 24px 16px; }
+.calx-cp-runintro { text-align: center; margin: 0 0 20px; font-size: 15px; font-weight: 375; color: var(--ink-3); line-height: 22px; }
+.calx-cp-cards { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
+.calx .calx-cp-card {
+  flex: 0 0 calc(50% - 6px); box-sizing: border-box; min-height: 138px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; text-align: center;
+  padding: 20px 14px; border-radius: var(--r-md);
+  border: 1.5px solid var(--line-strong); background: var(--panel-2); cursor: pointer; font-family: inherit;
+  transition: border-color 0.12s ease, background-color 0.12s ease;
+}
+.calx .calx-cp-card:hover:not(.on) { border-color: var(--ink-4); }
+.calx .calx-cp-card.on { border-color: var(--info); background: rgba(39, 112, 239, 0.06); }
+.calx-cp-cardart { display: inline-flex; margin-bottom: 2px; }
+.calx-cp-cardart svg { width: 48px; height: 48px; }
+.calx-cp-cardname { font-size: 17px; font-weight: 700; color: var(--ink); }
+.calx .calx-cp-card.on .calx-cp-cardname { color: var(--info); }
+.calx-cp-cardsub { font-size: 13px; font-weight: 375; color: var(--ink-3); }
+.calx-cp-runcta { margin-top: 16px; }
+.calx .calx-cp-runbtn { width: 100%; }
+
+/* Per-pillar loading — centred, 56px below the stepper, with credits-style check names */
+.calx-cp-loading { margin-top: 56px; padding: 0 16px; display: flex; flex-direction: column; align-items: center; }
+.calx-cp-loadtitle { margin-top: 18px; font-size: 22px; font-weight: 700; color: var(--ink); text-align: center; line-height: 28px; }
+.calx-cp-credits {
+  margin-top: 18px; width: 100%; height: 120px; overflow: hidden; text-align: center;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 26%, #000 82%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 26%, #000 82%, transparent 100%);
+}
+/* padding-top = half the window so the first check name starts mid-window, then rises */
+.calx-cp-credits-inner { display: flex; flex-direction: column; gap: 8px; padding-top: 60px; transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1); will-change: transform; }
+.calx-cp-credit { font-size: 14px; font-weight: 375; color: var(--ink-3); line-height: 22px; }
+
+/* Screen + inner-swap transitions — fade/rise so phase changes feel natural */
+@keyframes calx-cp-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.calx-cp-screen { animation: calx-cp-in 0.3s cubic-bezier(0.22, 1, 0.36, 1); }
+.calx-cp-swap { animation: calx-cp-in 0.26s cubic-bezier(0.22, 1, 0.36, 1); }
+
+/* Per-step completion countdown */
+.calx-cp-countdown { margin-top: 10px; font-size: 13px; font-weight: 375; color: var(--ink-3); }
+
+/* SpotterModel reopen chip — lives in the DME subheader (outside .calx scope) */
+.dme-spotter-reopen {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 32px; padding: 0 12px; border-radius: 8px;
+  border: 1px solid #d6d8de; background: #fff; color: #16171d; cursor: pointer;
+  font-family: inherit; font-size: 13px; font-weight: 500;
+}
+.dme-spotter-reopen:hover { background: #f6f8fa; border-color: #9a9da8; }
+
+/* Row spinner — replaces a fix row's checkbox while its fix is being applied */
+.calx-cp-rowspin { animation: calx-spin 0.8s linear infinite; transform-origin: center; flex-shrink: 0; }
+.calx-cp-row.applying { opacity: 0.85; }
+
+/* Applying-fixes global loader — covers the model area (left pane + canvas), left of the panel */
+.calx-cp-applyoverlay {
+  position: fixed; top: 0; left: 0; right: 408px; bottom: 0; z-index: 9998;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+  background: rgba(255, 255, 255, 0.8);
+}
+.calx-cp-applylabel { font-size: 14px; font-weight: 375; color: var(--ink-3); }
+
+/* Quiet end state */
+.calx-cp-done { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 40px 16px; text-align: center; }
+.calx-cp-done-ico { width: 48px; height: 48px; border-radius: 50%; background: var(--good-tint); color: var(--good-ink); display: inline-flex; align-items: center; justify-content: center; }
+.calx-cp-done-title { font-size: 17px; font-weight: 700; color: var(--ink); }
+.calx-cp-done-sub { font-size: 13.5px; font-weight: 375; color: var(--ink-3); margin-bottom: 8px; }
+
+/* Canvas highlight ring — no dim, canvas stays fully visible beside the panel */
+.calx-canvas-ring {
+  position: fixed; z-index: 9998; pointer-events: none; border-radius: 8px;
+  border: 2px solid #2e7bef; box-shadow: 0 0 0 4px rgba(46, 123, 239, 0.16);
+  transition: left 0.18s ease, top 0.18s ease, width 0.18s ease, height 0.18s ease;
+}
+
+/* At-a-glance fix highlights on the canvas — persistent amber wash + left bar on every
+   object touched by a fix in the active step. Table/formula objects use .calx-fixhl;
+   column rows use .calx-fixdiff (an inline before→after diff drawn right on the row). */
+.calx-fixhl {
+  position: fixed; z-index: 9997; border-radius: 8px; cursor: pointer;
+  background: rgba(217,130,10,0.10); border: 1px solid rgba(217,130,10,0.38);
+  box-shadow: inset 3px 0 0 var(--warn); transition: background 0.12s;
+}
+.calx-fixhl:hover { background: rgba(217,130,10,0.17); }
+.calx-fixhl.pinned { background: rgba(217,130,10,0.18); box-shadow: inset 3px 0 0 var(--warn), 0 0 0 2px rgba(217,130,10,0.45); }
+/* Join highlight hugs the join badge — a rounded amber pill, no left bar. */
+.calx-fixhl.join { border-radius: 999px; box-shadow: none; border-color: rgba(217,130,10,0.55); background: rgba(217,130,10,0.16); }
+.calx-fixhl.join:hover { background: rgba(217,130,10,0.24); }
+.calx-fixhl.join.pinned { box-shadow: 0 0 0 2px rgba(217,130,10,0.5); }
+
+.calx-fixdiff {
+  position: fixed; z-index: 9997; border-radius: 8px; cursor: pointer; overflow: hidden;
+  display: flex; align-items: center; gap: 8px; padding: 0 10px;
+  background: rgba(217,130,10,0.10); border: 1px solid rgba(217,130,10,0.38);
+  box-shadow: inset 3px 0 0 var(--warn); transition: background 0.12s;
+}
+.calx-fixdiff:hover { background: rgba(217,130,10,0.17); }
+.calx-fixdiff.pinned { box-shadow: inset 3px 0 0 var(--warn), 0 0 0 2px rgba(217,130,10,0.45); }
+.calx-fixdiff-pair { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; line-height: 1.2; white-space: nowrap; min-width: 0; overflow: hidden; }
+.calx-fixdiff-before { flex-shrink: 0; text-decoration: line-through; text-decoration-color: rgba(149,47,47,0.5); color: var(--crit-ink); background: var(--crit-tint); padding: 1px 6px; border-radius: 4px; max-width: 120px; overflow: hidden; text-overflow: ellipsis; }
+.calx-fixdiff-arrow { color: var(--ink-4); flex-shrink: 0; }
+.calx-fixdiff-after { color: var(--good-ink); background: var(--good-tint); padding: 1px 6px; border-radius: 4px; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.calx-fixdiff-label { font-size: 12.5px; font-weight: 500; color: var(--warn-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.calx-fixdiff-add { font-size: 12px; font-weight: 500; color: var(--good-ink); background: var(--good-tint); padding: 1px 8px; border-radius: 5px; white-space: nowrap; }
+
+/* ============ misc ============ */
+.calx-count { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+@media (prefers-reduced-motion: reduce) {
+  .calx-scrim, .calx-modal { animation: none; }
+  .calx-entry-pill, .calx-drift-btn, .calx-btn, .calx-pillar { transition: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Model A (#dme-staging) + Model B (#dme-proposal) — shared + per-model styles
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Local red for the "remove" grammar (no global token). */
+.calx { --bad: #d64545; --bad-tint: #fbe9e9; --bad-ink: #9c2a2a; }
+
+/* ── Change-type tags (Added / Edited / Removed) ── */
+.calx-tag {
+  display: inline-flex; align-items: center; height: 18px; padding: 0 7px;
+  border-radius: 5px; font-size: 11px; font-weight: 600; line-height: 1;
+  letter-spacing: 0.01em; flex-shrink: 0; white-space: nowrap;
+}
+.calx-tag.tag-add    { background: var(--good-tint); color: var(--good-ink); }
+.calx-tag.tag-edit   { background: var(--warn-tint); color: var(--warn-ink); }
+.calx-tag.tag-remove { background: var(--bad-tint);  color: var(--bad-ink); }
+
+/* ── Filter pill + popover (shared) ── */
+.calx-filterbar { padding: 12px 16px 0; }
+.calx-filterpill-wrap { position: relative; display: inline-block; }
+.calx-filterpill {
+  display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px;
+  border-radius: 15px; border: 1px solid var(--line-strong); background: var(--panel);
+  font-size: 13px; font-weight: 600; color: var(--ink-2); cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+.calx-filterpill:hover { border-color: var(--ink-4); }
+.calx-filterpill.on { background: var(--info-tint); border-color: var(--info); color: var(--info); }
+.calx-filterpill-count {
+  display: inline-flex; align-items: center; justify-content: center; min-width: 17px; height: 17px;
+  padding: 0 4px; border-radius: 9px; background: var(--info); color: #fff; font-size: 11px; font-weight: 700;
+}
+.calx-filterpop-scrim { position: fixed; inset: 0; z-index: 40; }
+.calx-filterpop {
+  position: absolute; top: calc(100% + 6px); left: 0; z-index: 41; width: 268px;
+  background: var(--panel); border: 1px solid var(--line-strong); border-radius: 12px;
+  box-shadow: 0 12px 40px rgba(16,17,29,0.16); padding: 12px; animation: calx-cp-in 0.14s ease;
+}
+.calx-filtergroup { margin-bottom: 12px; }
+.calx-filtergroup:last-of-type { margin-bottom: 0; }
+.calx-filtergroup-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-4); margin-bottom: 7px; }
+.calx-filtergroup-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.calx-filterpop-clear {
+  margin-top: 12px; width: 100%; height: 30px; border-radius: 7px; border: 1px solid var(--line-strong);
+  background: var(--panel); font-size: 12.5px; font-weight: 600; color: var(--ink-2); cursor: pointer;
+}
+.calx-filterpop-clear:hover { border-color: var(--ink-4); background: var(--panel-2); }
+.calx-chip {
+  display: inline-flex; align-items: center; height: 26px; padding: 0 10px;
+  border-radius: 13px; border: 1px solid var(--line-strong); background: var(--panel);
+  font-size: 12px; font-weight: 500; color: var(--ink-2); cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+.calx-chip:hover { border-color: var(--ink-4); }
+.calx-chip.on { background: var(--info-tint); border-color: var(--info); color: var(--info); font-weight: 600; }
+.calx-chip-clear {
+  height: 26px; padding: 0 6px; border: none; background: transparent;
+  font-size: 12px; font-weight: 500; color: var(--ink-3); cursor: pointer; text-decoration: underline;
+}
+.calx-chip-clear:hover { color: var(--ink); }
+
+/* ── Canvas highlight rings (Grammarly grammars for B, uniform draft for A) ── */
+.calx-ring {
+  position: fixed; z-index: 9990; border-radius: 9px; pointer-events: auto;
+  cursor: default; transition: box-shadow 0.14s, border-color 0.14s;
+}
+.calx-ring.g-edit  { border: 2px solid var(--info); box-shadow: 0 0 0 4px rgba(46,123,239,0.14); }
+.calx-ring.g-add   { border: 2px dashed var(--good); box-shadow: 0 0 0 4px rgba(13,159,110,0.13); }
+.calx-ring.g-remove{ border: 2px solid var(--bad); box-shadow: 0 0 0 4px rgba(214,69,69,0.13); }
+.calx-ring.g-draft { border: 2px solid var(--info); box-shadow: 0 0 0 4px rgba(46,123,239,0.14); }
+.calx-ring.active  { box-shadow: 0 0 0 5px rgba(46,123,239,0.22); }
+.calx-ring.g-add.active { box-shadow: 0 0 0 5px rgba(13,159,110,0.2); }
+.calx-ring-chip {
+  position: absolute; top: -10px; left: 8px; height: 17px; padding: 0 6px;
+  display: inline-flex; align-items: center; border-radius: 4px;
+  background: var(--good); color: #fff; font-size: 10px; font-weight: 700; letter-spacing: 0.02em;
+}
+
+/* ── Mini-diff popover (Model B canvas discovery) ── */
+.calx-minidiff {
+  position: fixed; z-index: 10000; width: 300px; max-width: 44vw;
+  background: var(--panel); border-radius: 10px; box-shadow: 0 8px 30px rgba(16,17,29,0.18);
+  padding: 12px; animation: calx-cp-in 0.16s ease;
+}
+.calx-minidiff-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.calx-minidiff-title { font-size: 13px; font-weight: 600; color: var(--ink); line-height: 1.3; }
+.calx-diffrow { padding: 7px 0; border-top: 1px solid var(--line-2); }
+.calx-diffrow:first-of-type { border-top: none; }
+.calx-diff-field { font-size: 11px; font-weight: 600; color: var(--ink-4); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
+.calx-diff-ba { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 12.5px; }
+.calx-diffrow.code .calx-diff-ba { font-family: var(--mono); font-size: 11.5px; }
+.calx-diff-before { color: var(--bad-ink); background: var(--bad-tint); padding: 1px 5px; border-radius: 4px; text-decoration: line-through; text-decoration-color: rgba(156,42,42,0.5); }
+.calx-diff-after  { color: var(--good-ink); background: var(--good-tint); padding: 1px 5px; border-radius: 4px; }
+.calx-diff-arrow  { color: var(--ink-4); flex-shrink: 0; }
+
+/* ── Row internals shared by both models ── */
+.calx-cp-rowmain { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; cursor: pointer; }
+.calx-cp-rowtop { display: flex; align-items: flex-start; gap: 7px; min-width: 0; }
+.calx-cp-rowtop .calx-tag { margin-top: 1px; }
+.calx-cp-uses { font-size: 11.5px; color: var(--ink-4); font-family: var(--mono); }
+
+/* ── Model B — families (each a self-contained card) ── */
+.calx-fam-list { flex: 1; min-height: 0; overflow-y: auto; padding: 12px 16px 16px; display: flex; flex-direction: column; gap: 10px; }
+.calx-fam { flex-shrink: 0; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); overflow: hidden; }
+.calx-fam-head {
+  display: flex; align-items: center; gap: 8px; width: 100%; padding: 11px 12px;
+  background: var(--panel-2); border: none; cursor: pointer; text-align: left;
+}
+.calx-fam-head:hover { background: var(--line-2); }
+.calx-fam-caret { color: var(--ink-4); display: inline-flex; transform: rotate(90deg); transition: transform 0.15s; }
+.calx-fam-caret.collapsed { transform: rotate(0deg); }
+.calx-fam-name { flex: 1; font-size: 13px; font-weight: 700; color: var(--ink); }
+.calx-fam-count { font-size: 12px; font-weight: 600; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+/* Rows inside a family card — divided, tucked inside the container */
+.calx-fam .calx-cp-row { padding: 11px 12px; border-bottom: none; border-top: 1px solid var(--line-2); }
+.calx-fam .calx-cp-row:hover, .calx-fam .calx-cp-row.active { background: var(--panel-2); }
+
+/* ── Model A — draft bar + diff list ── */
+.calx-draftbar {
+  display: flex; align-items: center; gap: 9px; margin: 12px 16px 0; padding: 10px 12px;
+  background: var(--info-tint); border: 1px solid rgba(46,123,239,0.3); border-radius: 8px;
+}
+.calx-draftbar.saving { opacity: 0.72; }
+.calx-draftbar-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--info); flex-shrink: 0; }
+.calx-draftbar-label { flex: 1; font-size: 13px; font-weight: 600; color: var(--info); }
+.calx-draftbar-compare {
+  height: 26px; padding: 0 10px; border-radius: 6px; border: 1px solid var(--info);
+  background: var(--panel); color: var(--info); font-size: 12px; font-weight: 600; cursor: pointer;
+}
+.calx-draftbar-compare:hover { background: rgba(46,123,239,0.08); }
+.calx-draftbar-compare:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.calx-diffitem {
+  display: flex; align-items: flex-start; gap: 10px; padding: 12px 16px;
+  border-bottom: 1px solid var(--line-2); transition: background 0.12s;
+}
+.calx-diffitem:hover, .calx-diffitem.active { background: var(--panel-2); }
+.calx-diffitem.unstaged { opacity: 0.5; }
+.calx-diffitem.saving { opacity: 0.72; }
+.calx-diffitem-main { display: flex; flex-direction: column; gap: 5px; min-width: 0; flex: 1; }
+.calx-diffitem-ba { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 12px; }
+.calx-diffitem-ba.code { font-family: var(--mono); font-size: 11px; }
+.calx-diffitem-view {
+  align-self: center; flex-shrink: 0; height: 26px; padding: 0 9px; border-radius: 6px;
+  border: none; background: transparent; color: var(--info); font-size: 12px; font-weight: 600;
+  cursor: pointer; display: none;
+}
+.calx-diffitem:hover .calx-diffitem-view, .calx-diffitem.active .calx-diffitem-view { display: inline-flex; align-items: center; }
+.calx-diffitem-view:hover { background: rgba(46,123,239,0.08); }
+.calx-cp-savebar { padding: 12px 16px; border-top: 1px solid var(--line); }
+.calx-cp-savebar button { width: 100%; }
+
+/* Spotter placeholder art sizing */
+.calx-cp-done-ico.waveform { width: 56px; height: 56px; background: transparent; }
+.calx-cp-done-ico.waveform svg { width: 56px; height: 56px; }
+
+/* ═══ Compare-changes modal (Model A) ═══ */
+.calx-cmp-scrim {
+  position: fixed; inset: 0; z-index: 10070; background: rgba(16,17,29,0.5);
+  display: flex; align-items: center; justify-content: center; padding: 40px;
+  animation: calx-cp-in 0.18s ease;
+}
+.calx-cmp {
+  width: min(1100px, 94vw); height: min(680px, 88vh); background: var(--panel);
+  border-radius: 14px; box-shadow: 0 24px 80px rgba(16,17,29,0.35);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.calx-cmp-head {
+  display: flex; align-items: center; justify-content: space-between;
+  height: 56px; padding: 0 16px; border-bottom: 1px solid var(--line); flex-shrink: 0;
+}
+.calx-cmp-title { font-size: 15px; font-weight: 700; color: var(--ink); }
+.calx-cmp-body { flex: 1; min-height: 0; display: flex; }
+
+/* Left — change list */
+.calx-cmp-list { width: 300px; flex-shrink: 0; border-right: 1px solid var(--line); overflow-y: auto; padding: 8px; }
+.calx-cmp-listitem {
+  display: flex; align-items: flex-start; gap: 8px; width: 100%; padding: 10px; border-radius: 8px;
+  background: transparent; border: none; cursor: pointer; text-align: left; margin-bottom: 2px;
+}
+.calx-cmp-listitem:hover { background: var(--panel-2); }
+.calx-cmp-listitem.on { background: var(--info-tint); }
+.calx-cmp-listitem.gone { opacity: 0.5; }
+.calx-cmp-listitem.gone .calx-cmp-listtext { text-decoration: line-through; }
+.calx-cmp-listtext { font-size: 13px; font-weight: 500; color: var(--ink); line-height: 1.35; }
+.calx-cmp-listitem .calx-tag { margin-top: 1px; }
+
+/* Center — before/after stage */
+.calx-cmp-stage { flex: 1; min-width: 0; display: flex; flex-direction: column; background: var(--panel-2); }
+.calx-cmp-frames { flex: 1; min-height: 0; display: flex; gap: 16px; padding: 24px; overflow: auto; }
+.calx-cmp-frames.overlay { justify-content: center; }
+.calx-cmp-frame { flex: 1; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.calx-cmp-overlay { width: min(420px, 100%); display: flex; flex-direction: column; gap: 8px; }
+.calx-cmp-framelabel { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-4); }
+.calx-cmp-overlaynote { font-size: 12px; color: var(--ink-3); }
+.calx-cmp-card { background: var(--panel); border: 1px solid var(--line-strong); border-radius: 10px; padding: 14px; box-shadow: var(--shadow-sm); }
+.calx-cmp-card.after { border-color: var(--good); }
+.calx-cmp-card-head { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--line-2); }
+.calx-cmp-card-ico { color: var(--ink-3); display: inline-flex; }
+.calx-cmp-card-where { font-size: 13px; font-weight: 600; color: var(--ink); }
+.calx-cmp-card-field { margin-top: 10px; }
+.calx-cmp-card-k { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-4); margin-bottom: 4px; }
+.calx-cmp-card-v { font-size: 13px; color: var(--ink); word-break: break-word; }
+.calx-cmp-card-v.code { font-family: var(--mono); font-size: 12px; background: var(--panel-2); padding: 8px 10px; border-radius: 6px; }
+.calx-cmp-card-v.before { color: var(--bad-ink); }
+.calx-cmp-card-v.after { color: var(--good-ink); }
+
+.calx-cmp-viewtoggle { display: flex; gap: 4px; justify-content: center; padding: 12px; border-top: 1px solid var(--line); background: var(--panel); flex-shrink: 0; }
+.calx-cmp-vt { height: 30px; padding: 0 14px; border-radius: 7px; border: 1px solid transparent; background: transparent; font-size: 12.5px; font-weight: 600; color: var(--ink-3); cursor: pointer; }
+.calx-cmp-vt.on { background: var(--ink); color: #fff; }
+
+/* Right — before/after diff */
+.calx-cmp-diff { width: 320px; flex-shrink: 0; border-left: 1px solid var(--line); overflow-y: auto; padding: 16px; }
+.calx-cmp-diff-head { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 16px; }
+.calx-cmp-diff-title { font-size: 14px; font-weight: 700; color: var(--ink); line-height: 1.35; }
+.calx-cmp-diffrow { margin-bottom: 14px; }
+.calx-cmp-diff-field { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-4); margin-bottom: 6px; }
+.calx-cmp-diff-before, .calx-cmp-diff-after { display: flex; gap: 7px; font-size: 13px; padding: 6px 9px; border-radius: 6px; margin-bottom: 4px; word-break: break-word; }
+.calx-cmp-diffrow.code .calx-cmp-diff-before, .calx-cmp-diffrow.code .calx-cmp-diff-after { font-family: var(--mono); font-size: 12px; }
+.calx-cmp-diff-before { background: var(--bad-tint); color: var(--bad-ink); }
+.calx-cmp-diff-after { background: var(--good-tint); color: var(--good-ink); }
+.calx-cmp-sign { font-weight: 700; flex-shrink: 0; }
+.calx-cmp-diff-impact { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line-2); }
+.calx-cmp-diff-k { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-4); margin-bottom: 5px; }
+.calx-cmp-diff-impacttext { font-size: 13px; color: var(--ink-2); line-height: 1.45; }
+.calx-cmp-diff-actions { margin-top: 18px; }
+.calx-cmp-revert { height: 34px; padding: 0 14px; border-radius: 7px; border: 1px solid var(--line-strong); background: var(--panel); color: var(--bad-ink); font-size: 13px; font-weight: 600; cursor: pointer; }
+.calx-cmp-revert:hover { border-color: var(--bad); background: var(--bad-tint); }
+.calx-cmp-reverted { font-size: 12.5px; color: var(--ink-4); font-style: italic; }
+
+/* ═══ Spotter cards (shared by all 3 side-panel models) ═══ */
+.calx-sqc-list { flex: 1; min-height: 0; overflow-y: auto; padding: 12px 16px 16px; display: flex; flex-direction: column; gap: 10px; }
+.calx-cp-spotterhint { margin: 12px 16px 0; font-size: 13px; color: var(--ink-3); line-height: 1.45; }
+
+.calx-sqc { flex-shrink: 0; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); overflow: hidden; transition: border-color 0.14s; }
+.calx-sqc.v-incorrect { border-color: rgba(214,69,69,0.45); }
+.calx-sqc.v-correct { border-color: rgba(13,159,110,0.4); }
+.calx-sqc-head { display: flex; align-items: flex-start; gap: 11px; width: 100%; padding: 12px; background: transparent; border: none; cursor: pointer; text-align: left; }
+.calx-sqc-head:hover { background: var(--panel-2); }
+.calx-sqc-icon { flex-shrink: 0; width: 34px; height: 34px; border-radius: 8px; background: var(--info-tint); color: var(--info); display: inline-flex; align-items: center; justify-content: center; }
+.calx-sqc-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.calx-sqc-name { font-size: 13.5px; font-weight: 700; color: var(--ink); line-height: 1.3; }
+.calx-sqc-desc { font-size: 12.5px; color: var(--ink-3); line-height: 1.4; }
+.calx-sqc-meta { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.calx-sqc-verpill { display: inline-flex; align-items: center; gap: 3px; height: 20px; padding: 0 7px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+.calx-sqc-verpill.correct { background: var(--good-tint); color: var(--good-ink); }
+.calx-sqc-verpill.incorrect { background: var(--bad-tint); color: var(--bad-ink); }
+.calx-sqc-chev { color: var(--ink-4); transition: transform 0.18s; flex-shrink: 0; }
+.calx-sqc-chev.calx-chev-up { transform: rotate(180deg); }
+
+.calx-sqc-detail { padding: 0 12px 12px; }
+.calx-sqc-chart { height: 96px; border-radius: 8px; background: var(--panel-2); border: 1px dashed var(--line-strong); display: flex; align-items: center; justify-content: center; margin-bottom: 12px; }
+.calx-sqc-chart span { font-size: 12px; color: var(--ink-4); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+.calx-sqc-grade { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.calx-sqc-gq { font-size: 13px; font-weight: 600; color: var(--ink); }
+.calx-sqc-pills { display: flex; gap: 6px; }
+.calx-sqc-pill { display: inline-flex; align-items: center; gap: 4px; height: 30px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--line-strong); background: var(--panel); font-size: 12.5px; font-weight: 600; color: var(--ink-2); cursor: pointer; }
+.calx-sqc-pill:hover:not(:disabled) { border-color: var(--ink-4); }
+.calx-sqc-pill:disabled { cursor: default; opacity: 0.6; }
+.calx-sqc-pill.yes { background: var(--good-tint); border-color: var(--good); color: var(--good-ink); }
+.calx-sqc-pill.no { background: var(--bad-tint); border-color: var(--bad); color: var(--bad-ink); }
+
+.calx-sqc-fix { display: flex; align-items: flex-start; gap: 10px; padding: 11px 12px; border-top: 1px solid var(--line-2); background: var(--info-tint); }
+.calx-sqc-fixmain { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; }
+.calx-sqc-fixlabel { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; color: var(--info); }
+.calx-sqc-fixtext { font-size: 13px; color: var(--ink); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+/* Hide the action bar until a fix exists (Spotter step, before any incorrect grade). */
+.calx-cp-selbar.hidden, .calx-draftbar.hidden { display: none; }
+
+/* ═══ Select screen — object targeting + auto-apply toggle ═══ */
+.calx-cp-targets { margin-top: 20px; }
+.calx-cp-sectlabel { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-4); margin-bottom: 9px; }
+.calx-cp-targetchips { display: flex; flex-wrap: wrap; gap: 7px; }
+
+.calx-cp-auto {
+  display: flex; align-items: center; gap: 11px; width: 100%; margin-top: 16px; padding: 13px 14px;
+  border: 1px solid var(--line-strong); border-radius: 12px; background: var(--panel); cursor: pointer; text-align: left;
+  transition: border-color 0.14s, background 0.14s;
+}
+.calx-cp-auto:hover { border-color: var(--ink-4); }
+.calx-cp-auto.on { border-color: var(--info); background: var(--info-tint); }
+.calx-cp-auto-ico {
+  flex-shrink: 0; width: 32px; height: 32px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center;
+  background: var(--panel-2); color: var(--ink-3);
+}
+.calx-cp-auto.on .calx-cp-auto-ico { background: var(--panel); color: var(--info); }
+.calx-cp-auto-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.calx-cp-auto-title { font-size: 14px; font-weight: 650; color: var(--ink); }
+.calx-cp-auto-sub { font-size: 12.5px; color: var(--ink-3); line-height: 1.4; }
+.calx-cp-switch {
+  flex-shrink: 0; width: 40px; height: 23px; border-radius: 999px; background: var(--line-strong);
+  position: relative; transition: background 0.16s;
+}
+.calx-cp-auto.on .calx-cp-switch { background: var(--info); }
+.calx-cp-switch-knob {
+  position: absolute; top: 2.5px; left: 2.5px; width: 18px; height: 18px; border-radius: 50%; background: #fff;
+  box-shadow: 0 1px 3px rgba(16,17,29,0.25); transition: transform 0.16s;
+}
+.calx-cp-auto.on .calx-cp-switch-knob { transform: translateX(17px); }
+
+/* Spotter auto-applied marker (replaces the checkbox in auto mode) */
+.calx-sqc-applied {
+  flex-shrink: 0; width: 20px; height: 20px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+  background: var(--good); color: #fff;
+}
+
+/* ═══ Top-right chips — calibration + drift share the neutral pill look ═══ */
+.calx-entry-pill .calx-entry-ico { display: inline-flex; align-items: center; justify-content: center; }
+.calx .calx-entry-pill.calx-rated { cursor: pointer; }
+.calx .calx-entry-pill.calx-rated:hover { border-color: var(--ink-4); background: var(--panel-2); }
+.calx-drift-pill .calx-entry-ico { color: var(--ink-2); }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Agentic exploration (#dme-agentic) — entry chip + popover + SpotterModel chat
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Entry chip (fully-rounded pill) + scoped-launcher popover ── */
+.calx-agchip-wrap { position: relative; }
+.calx-agchip {
+  display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px;
+  border-radius: 999px; background: var(--panel); font-size: 14px; font-weight: 650; color: var(--ink); cursor: pointer;
+  transition: filter 0.12s;
+}
+.calx-agchip:hover { filter: brightness(0.98); }
+.calx-agchip.ok { border: 1.5px solid var(--good); background: #eafaf3; }
+.calx-agchip.stale { border: 1.5px solid var(--warn); background: #fdf6e8; }
+/* Neutral — model not built yet, nothing to check. No colour / due indicator. */
+.calx-agchip.neutral { border: 1.5px solid var(--line-strong); background: var(--panel); }
+.calx-agchip.neutral .calx-agchip-label { color: var(--ink-2); font-weight: 650; }
+.calx-agchip-ico { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 50%; font-size: 13px; font-weight: 800; line-height: 1; }
+.calx-agchip.ok .calx-agchip-ico { background: var(--good); color: #fff; }
+.calx-agchip.stale .calx-agchip-ico { background: var(--bad); color: #fff; }
+.calx-agchip-label { font-weight: 700; color: var(--ink); }
+.calx-agchip-sub { color: var(--ink-3); font-weight: 500; }
+.calx-agchip svg { color: var(--ink-4); }
+
+.calx-agpop-scrim { position: fixed; inset: 0; z-index: 9998; }
+.calx-agpop {
+  position: absolute; top: calc(100% + 8px); right: 0; z-index: 9999; width: 384px; max-width: 92vw;
+  background: var(--panel); border-radius: 14px; box-shadow: 0 16px 48px rgba(16,17,29,0.18); padding: 16px;
+  max-height: calc(100vh - 76px); overflow-y: auto;
+  animation: calx-cp-in 0.15s ease;
+}
+.calx-agpop-lastrun { background: #f6f8fa; border-radius: 10px; padding: 14px; margin-bottom: 18px; }
+.calx-agpop-lastrun-h { font-size: 13px; color: var(--ink-3); margin-bottom: 10px; }
+.calx-agpop-lastrun-row { display: flex; align-items: center; gap: 9px; font-size: 14px; color: var(--ink-2); margin-bottom: 7px; }
+.calx-agpop-lastrun-row:last-child { margin-bottom: 0; }
+.calx-agpop-lastrun-row svg { color: var(--ink-4); flex-shrink: 0; }
+.calx-agpop-lastrun-row b { color: var(--ink); }
+.calx-agpop-h { font-size: 19px; font-weight: 750; letter-spacing: -0.01em; margin-bottom: 12px; }
+/* Reserve the header height so the "Run selected" CTA appearing on first selection
+   doesn't grow the header and shift the checks below it. */
+.calx-agpop-checkhead { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; min-height: 36px; }
+.calx-agpop-checkhead .calx-agpop-h { margin-bottom: 0; }
+.calx-agpop-checks { display: flex; flex-direction: column; gap: 2px; }
+/* Align the checkbox with the option's title (top text), not the vertical centre of the block. */
+.calx-agpop-check { display: flex; align-items: flex-start; gap: 12px; padding: 10px 8px; border: none; background: none; text-align: left; cursor: pointer; border-radius: 8px; }
+.calx-agpop-check:hover { background: var(--panel-2); }
+.calx-agpop-ctext { flex: 1; }
+.calx-agpop-runcell { flex-shrink: 0; align-self: center; }
+.calx-agpop-cb { flex-shrink: 0; margin-top: 1px; }
+.calx-agpop-ctext { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.calx-agpop-ctitle { font-size: 15px; font-weight: 700; color: var(--ink); }
+.calx-agpop-cdesc { font-size: 13.5px; color: var(--ink-4); line-height: 1.4; }
+.calx-agpop-clead { color: var(--ink-2); }
+.calx-agpop-actions { display: flex; align-items: center; justify-content: flex-end; gap: 10px; margin: 16px -16px -16px; padding: 12px 16px; border-top: 1px solid var(--line); background: #f6f8fa; border-radius: 0 0 14px 14px; }
+.calx-agpop-run { display: inline-flex; align-items: center; gap: 7px; }
+
+/* Ambient drift badge on the pill — keeps "Calibration" as the constant word while
+   signalling that new drift has been detected. Pulse dot + count, coloured by severity. */
+.calx-agchip-drift {
+  display: inline-flex; align-items: center; gap: 5px; height: 20px; padding: 0 8px 0 6px;
+  border-radius: 999px; background: rgba(16,17,29,0.05); font-size: 12px; font-weight: 700; color: var(--ink-2);
+}
+.calx-agchip-driftdot { width: 7px; height: 7px; border-radius: 50%; background: var(--ink-4); position: relative; }
+.calx-agchip-driftdot::after {
+  content: ''; position: absolute; inset: -3px; border-radius: 50%; background: inherit; opacity: 0.35;
+  animation: calx-drift-pulse 1.8s ease-in-out infinite;
+}
+.calx-agchip-drift.sev-high .calx-agchip-driftdot { background: var(--bad); }
+.calx-agchip-drift.sev-medium .calx-agchip-driftdot { background: var(--warn); }
+.calx-agchip-drift.sev-low .calx-agchip-driftdot { background: var(--ink-4); }
+.calx-agchip-driftlabel { color: var(--ink-3); font-weight: 500; }
+.calx-agchip-sep { color: var(--ink-4); }
+@keyframes calx-drift-pulse { 0%,100% { transform: scale(1); opacity: 0.35; } 50% { transform: scale(1.9); opacity: 0; } }
+
+/* Two-tab launcher (segmented control). Calibrate tab: plain inline actions + a muted
+   last-run line at the bottom. Drift tab: the signals section, flush to the popover edges. */
+.calx-agpop-seg { margin-bottom: 16px; }
+/* Match the canvas tab bar's fully-rounded pill treatment + colours (mirrors .dme-tab-nav):
+   secondary text for unselected, brand blue for the selected tab. */
+.calx-agpop-seg [role="radiogroup"] { border-radius: var(--radius-full); }
+.calx-agpop-seg [role="radio"] { border-radius: var(--radius-full); color: var(--rd-sys-color-content-secondary); }
+.calx-agpop-seg [role="radio"][aria-checked="true"] { border-radius: var(--radius-full); color: var(--rd-sys-color-content-brand); }
+.calx-agpop-actions.mid { margin: 16px 0 0; padding: 0; border-top: none; background: transparent; border-radius: 0; }
+/* Self-contained rounded block (not a full-bleed bottom bar), with bold key terms. */
+.calx-agpop-lastline { margin: 18px 0 2px; padding: 13px 15px; border: 1px solid var(--line); background: #f6f8fa; border-radius: 10px; font-size: 14px; color: var(--ink-3); line-height: 1.4; }
+.calx-agpop-lastline b { color: var(--ink); font-weight: 700; }
+.calx-agpop-driftdot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 8px; vertical-align: middle; background: var(--ink-4); }
+.calx-agpop-driftdot.sev-high { background: var(--bad); }
+.calx-agpop-driftdot.sev-medium { background: var(--warn); }
+.calx-agpop-driftdot.sev-low { background: var(--ink-4); }
+.calx-agpop-drift { margin: 0 -16px -16px; }
+.calx-agpop-drift .calx-dm-head { padding-top: 0; }
+.calx-agpop-drift .calx-dm-list { max-height: none; overflow: visible; }
+.calx-agpop-drift .calx-dm-foot { border-radius: 0 0 14px 14px; }
+
+/* Canvas diff card — call out the drift signal a fix resolves (combined/drift runs). */
+.calx-cal-diffsource { font-size: 12.5px; color: var(--ink-3); margin-bottom: 10px; }
+.calx-cal-diffsource b { color: var(--ink-2); font-weight: 600; }
+
+/* ── SpotterModel chat surface (docked, calibration conversation) ── */
+.calx-agent {
+  position: fixed; top: 0; right: 0; bottom: 0; width: 408px; max-width: 92vw; z-index: 9999;
+  background: var(--panel); border-left: 1px solid var(--line); display: flex; flex-direction: column;
+  box-shadow: -8px 0 30px rgba(16,17,29,0.06);
+}
+.calx-agent-head { height: 60px; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; border-bottom: 1px solid var(--line); }
+.calx-agent-title { font-size: 16px; font-weight: 700; color: var(--ink); }
+.calx-agent-body { flex: 1; min-height: 0; overflow-y: auto; padding: 18px 16px; display: flex; flex-direction: column; gap: 16px; }
+.calx-agent-foot { flex-shrink: 0; padding: 12px 16px; border-top: 1px solid var(--line); font-size: 12px; color: var(--ink-4); }
+.calx-agent-foot a { color: var(--info); text-decoration: none; }
+
+/* Calibration content nested inside the real AgentMessage — reasoning, intro line and the
+   fixes card are one agent turn (one avatar); passbody stacks the intro + card below the
+   reasoning block, and the fixes proposal reads as a card, matching how SpotterModel nests
+   suggestion/plan cards inside an agent turn. */
+.calx-ag-passbody { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
+.calx-ag-fixes { display: flex; flex-direction: column; gap: 2px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; padding: 8px; }
+.calx-ag-fix { display: flex; gap: 9px; align-items: flex-start; padding: 9px 6px; border-radius: 8px; transition: background 0.12s; }
+.calx-ag-fix:hover { background: var(--panel); }
+.calx-ag-fixcb { flex-shrink: 0; width: 20px; display: flex; justify-content: center; }
+.calx-ag-fixstate { width: 18px; height: 18px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; }
+.calx-ag-fixstate.applied { background: var(--good); color: #fff; }
+.calx-ag-fixstate.skipped { background: var(--line-strong); color: #fff; }
+.calx-ag-fixmain { flex: 1; min-width: 0; cursor: pointer; }
+.calx-ag-fixtop { display: flex; gap: 7px; align-items: flex-start; }
+.calx-ag-fixtop .calx-tag { margin-top: 1px; }
+.calx-ag-fixtext { font-size: 13.5px; line-height: 1.4; color: var(--ink); }
+.calx-ag-fixactions { margin-top: 12px; }
+.calx-ag-fixactions button { width: 100%; }
+
+.calx-ag-grading .calx-sqc-list { padding: 0; gap: 8px; }
+
+.calx-ag-donemsg { flex: 1; background: var(--good-tint); border: 1px solid rgba(13,159,110,0.3); border-radius: 12px; border-top-left-radius: 4px; padding: 12px 14px; }
+.calx-ag-donehead { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14.5px; color: var(--good-ink); }
+.calx-ag-donecheck { width: 20px; height: 20px; border-radius: 50%; background: var(--good); color: #fff; display: inline-flex; align-items: center; justify-content: center; }
+.calx-ag-donesub { font-size: 13.5px; color: var(--ink-2); margin-top: 5px; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Agentic fixes dock (#dme-agentic) — the step's fixes shown in the SpotterModel
+   prompt-bar slot, mirroring the clarifying-questions dock.
+   ══════════════════════════════════════════════════════════════════════════ */
+/* Match the usual prompt bar's spacing to the disclaimer — .chat-input-wrapper already
+   supplies the padding; no extra bottom gap. */
+.calx-cal-dockwrap { padding-bottom: 0; }
+
+/* Continuous moving gradient border — the usual SpotterModel prompt-bar border
+   (purple → teal → brand → purple, seamless), rotating. */
+.calfx-card {
+  position: relative; display: flex; flex-direction: column; overflow: hidden;
+  max-height: 48vh; border: 1.5px solid transparent; border-radius: 12px;
+  background:
+    linear-gradient(var(--panel), var(--panel)) padding-box,
+    conic-gradient(from var(--gradient-angle), var(--rd-sys-color-content-accent-purple), #48D1E0, var(--rd-sys-color-content-brand), var(--rd-sys-color-content-accent-purple)) border-box;
+  animation: rotate-border 4s linear infinite, calx-cp-in 0.24s ease;
+}
+
+.calfx-action {
+  flex-shrink: 0; height: 56px; display: flex; align-items: center; justify-content: space-between;
+  padding: 0 10px 0 16px; background: #f6f8fa; border-top: 1px solid var(--line);
+}
+.calfx-count { font-size: 14px; color: var(--ink-3); }
+.calfx-action-btns { display: flex; align-items: center; gap: 6px; }
+
+.calfx-list { overflow-y: auto; min-height: 0; padding: 2px 0 4px; }
+.calfx-list::-webkit-scrollbar { width: 4px; }
+.calfx-list::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 4px; }
+
+/* Full-width divider between groups. */
+.calfx-group:not(:first-child) { border-top: 1px solid var(--line); }
+.calfx-group-head { display: flex; align-items: center; padding: 11px 14px 7px 16px; }
+.calfx-group-label { font-size: 14px; font-weight: 600; color: var(--ink); }
+
+.calfx-row {
+  position: relative; display: flex; align-items: flex-start; gap: 10px;
+  padding: 10px 14px 10px 22px; cursor: pointer; transition: background 0.12s;
+}
+.calfx-row.is-hover { background: var(--neutral-tint); }
+.calfx-row.is-highlighted { background: rgba(39, 112, 239, 0.08); }
+/* Inset divider between items within a group (not after the last item). */
+.calfx-row:not(:last-child)::before {
+  content: ''; position: absolute; left: 22px; right: 14px; bottom: 0; height: 1px; background: var(--line-2);
+}
+.calfx-cb { flex-shrink: 0; display: flex; padding-top: 1px; }
+/* Row = problem (title) over recommendation (description). */
+.calfx-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.calfx-title {
+  min-width: 0; font-size: 13.5px; font-weight: 600; line-height: 1.4; color: var(--ink); letter-spacing: -0.1px;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.calfx-desc {
+  min-width: 0; font-size: 12.5px; font-weight: 400; line-height: 1.4; color: var(--ink-3);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+
+/* Actions overlay the right edge on hover with a fade, so the title never reflows —
+   the line count stays constant before/after hover (the text is masked, not pushed). */
+.calfx-actions {
+  position: absolute; top: 0; right: 0; bottom: 0; display: flex; align-items: center; gap: 2px;
+  padding: 0 10px 0 30px;
+  background: linear-gradient(to right, rgba(238,240,242,0), var(--neutral-tint) 34%);
+}
+/* Highlighted rows fade to the light-blue row bg instead of gray. */
+.calfx-actions.on-hl { background: linear-gradient(to right, rgba(236,242,253,0), #ecf2fd 34%); }
+.calfx-iconbtn {
+  width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 6px; background: transparent; border: none; cursor: pointer; color: var(--ink-3);
+  transition: background 0.12s, color 0.12s;
+}
+.calfx-iconbtn:hover { background: var(--panel); color: var(--ink); }
+/* Active (info toggled on) — brand-tinted so it reads as the way out of the highlight. */
+.calfx-iconbtn.active { background: rgba(39, 112, 239, 0.12); color: var(--info); }
+.calfx-iconbtn.active:hover { background: rgba(39, 112, 239, 0.18); color: var(--info); }
+
+/* Shimmer while a refined fix "updates". */
+.calfx-row.is-shimmer { pointer-events: none; }
+.calfx-shimmer {
+  position: absolute; inset: 6px 10px; border-radius: 6px;
+  background: linear-gradient(100deg, var(--accent-tint-2) 20%, var(--accent-tint) 40%, var(--accent-tint-2) 60%);
+  background-size: 220% 100%; animation: calfx-shim 1.1s linear infinite;
+}
+@keyframes calfx-shim { from { background-position: 180% 0; } to { background-position: -60% 0; } }
+
+/* ── Refine sub-mode — the usual prompt bar in a "refining" variant ── */
+.calfx-refine { display: flex; flex-direction: column; animation: calx-cp-in 0.2s ease; }
+.calfx-refine-return { align-self: flex-start; margin: 0 0 6px 2px; }
+/* Prompt bar with the moving gradient border always on (same recipe as .prompt-bar:focus-within). */
+.calfx-refine-bar {
+  position: relative; z-index: 1; display: flex; flex-direction: column; overflow: hidden;
+  border: 1.5px solid transparent; border-radius: var(--radius-xl);
+  background:
+    linear-gradient(var(--panel), var(--panel)) padding-box,
+    conic-gradient(from var(--gradient-angle), var(--rd-sys-color-content-accent-purple), #48D1E0, var(--rd-sys-color-content-brand), var(--rd-sys-color-content-accent-purple)) border-box;
+  animation: rotate-border 4s linear infinite;
+  box-shadow: var(--shadow-sm);
+}
+.calfx-refine-head { padding: 12px 14px 10px; }
+.calfx-refine-label { font-size: 14px; color: var(--ink-4); margin-bottom: 2px; }
+.calfx-refine-fixname {
+  font-size: 14px; font-weight: 500; color: var(--ink);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+/* Full-width divider (edge to edge). */
+.calfx-refine-fulldiv { height: 1px; background: var(--line); }
+.calfx-refine-body { padding: 12px 12px 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+.calfx-refine-ta { min-height: 52px; }
+/* The `.calx button` reset (transparent bg) out-specifies `.send-btn`; restore the brand
+   fill for the real send button inside the calx-scoped dock. */
+.calfx-refine-bar .send-btn { background: var(--rd-sys-color-content-brand); color: #fff; }
+.calfx-refine-bar .send-btn:disabled { background: var(--line-strong); cursor: default; }
+
+/* ── Canvas info overlay — diff + impact-if-unresolved, anchored near the object ── */
+.calx-cal-diffcard {
+  position: fixed; width: 356px; max-width: 92vw; z-index: 10000;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+  box-shadow: var(--shadow-md); padding: 12px 14px; animation: calx-cp-in 0.16s ease;
+}
+.calx-cal-diffhead { display: flex; align-items: flex-start; gap: 8px; }
+.calx-cal-diffname { flex: 1; min-width: 0; font-size: 13.5px; font-weight: 600; color: var(--ink); line-height: 1.4; }
+.calx-cal-diffx {
+  flex-shrink: 0; width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 6px; background: transparent; border: none; cursor: pointer; color: var(--ink-4); margin: -2px -4px 0 0;
+}
+.calx-cal-diffx:hover { background: var(--neutral-tint); color: var(--ink); }
+.calx-cal-diffbody { display: flex; flex-direction: column; gap: 8px; margin: 11px 0; }
+.calx-cal-diffrow { display: flex; flex-direction: column; gap: 3px; }
+.calx-cal-difffield { font-size: 11px; font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase; color: var(--ink-4); }
+.calx-cal-diffvals { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; font-size: 13px; color: var(--ink-2); }
+.calx-cal-diffvals.code { flex-direction: column; align-items: stretch; gap: 5px; font-family: var(--mono); font-size: 12px; }
+.calx-cal-before { color: var(--crit-ink); background: var(--crit-tint); padding: 2px 6px; border-radius: 5px; text-decoration: line-through; text-decoration-color: rgba(149,47,47,0.5); max-width: 260px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.calx-cal-after { color: var(--good-ink); background: var(--good-tint); padding: 2px 6px; border-radius: 5px; max-width: 260px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.calx-cal-diffvals.code .calx-cal-arrow { display: none; }
+/* Formula code diffs should show in full (wrap), not truncate like the metadata value pills. */
+.calx-cal-diffvals.code .calx-cal-before,
+.calx-cal-diffvals.code .calx-cal-after { max-width: none; white-space: pre-wrap; overflow: visible; text-overflow: clip; }
+.calx-cal-arrow { color: var(--ink-4); }
+.calx-cal-impact {
+  display: flex; align-items: flex-start; gap: 7px; padding: 9px 10px; border-radius: 8px;
+  background: var(--warn-tint); color: var(--warn-ink); font-size: 12.5px; line-height: 1.45;
+}
+.calx-cal-impact svg { flex-shrink: 0; margin-top: 1px; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Spotter grading — thread card, grading modal, and answer charts (#dme-agentic)
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* Thread card listing the sample questions with a "Start grading" CTA; after grading
+   the rows carry Incorrect / Out-of-scope badges. */
+.calx-gcard { display: flex; flex-direction: column; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; margin-top: 2px; }
+.calx-gcard-group:not(:first-child) { border-top: 1px solid var(--line); }
+.calx-gcard-grouphead { font-size: 13px; font-weight: 600; color: var(--ink-2); padding: 8px 14px; background: #f6f8fa; border-bottom: 1px solid var(--line-2); }
+.calx-gcard-row { position: relative; display: flex; align-items: flex-start; gap: 11px; padding: 9px 14px; }
+.calx-gcard-row:not(:last-child)::after { content: ''; position: absolute; left: 51px; right: 14px; bottom: 0; height: 1px; background: var(--line-2); }
+.calx-gcard-icon { flex-shrink: 0; width: 32px; height: 32px; border-radius: 8px; background: var(--neutral-tint); color: var(--ink-3); display: inline-flex; align-items: center; justify-content: center; }
+.calx-gcard-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.calx-gcard-name { font-size: 14px; font-weight: 500; color: var(--ink); line-height: 1.35; }
+.calx-gcard-desc { font-size: 13px; color: var(--ink-4); line-height: 1.4; }
+.calx-gcard-badge { flex-shrink: 0; align-self: center; font-size: 11.5px; font-weight: 600; padding: 3px 8px; border-radius: 20px; }
+.calx-gcard-badge.bad { background: var(--crit-tint); color: var(--crit-ink); }
+.calx-gcard-badge.oos { background: var(--neutral-tint); color: var(--ink-2); }
+.calx-gcard-badge.ok { background: var(--good-tint); color: var(--good-ink); }
+
+/* ── Inline Spotter grading (in-panel; styled as the agentic list card) ── */
+.calx-ig-row { position: relative; transition: background 0.12s; }
+.calx-ig-row:not(:last-child) { border-bottom: 1px solid var(--line-2); }
+.calx-ig-row.s-incorrect { background: rgba(225,75,75,0.035); }
+.calx-ig-row.s-oos { background: var(--panel-2); }
+/* An out-of-scope question reads as disabled: dim its name + description while the
+   "Out of scope" pill (a sibling of the row body) stays fully legible. */
+.calx-ig-row.s-oos .calx-ig-rowbody { opacity: 0.4; }
+.calx-ig-rowhead { display: flex; align-items: flex-start; gap: 9px; padding: 12px 14px; }
+.calx-ig-chev { flex-shrink: 0; color: var(--ink-4); margin-top: 1px; transition: transform 0.15s; display: inline-flex; }
+.calx-ig-rowbody { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.calx-ig-qname { font-size: 14px; font-weight: 600; color: var(--ink); line-height: 1.35; }
+.calx-ig-qdesc { font-size: 13px; color: var(--ink-4); line-height: 1.4; }
+.calx-ig-head-actions { display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; }
+/* 11px, not 12: the label is "Mark out of scope" — a size down keeps the longer
+   string from crowding the question text beside it. */
+.calx-ig-chip { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 16px; border: 1px solid var(--line-strong); background: var(--panel); font-size: 11px; font-weight: 500; color: var(--ink-2); cursor: pointer; transition: all 0.12s; white-space: nowrap; }
+.calx-ig-chip:hover { border-color: var(--ink-4); }
+.calx-ig-chip.on { border-color: var(--ink-4); background: var(--neutral-tint); color: var(--ink); }
+/* Out-of-scope toggle. Same 26px box as .calx-ig-del so the two controls that share
+   this slot sit on the same grid — one appears per row, never both. Quiet until
+   hovered; once the question is out of scope it stays lit, because that's state
+   rather than a hover affordance. */
+.calx-ig-iconbtn { width: 26px; height: 26px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; background: transparent; border: none; cursor: pointer; color: var(--ink-4); transition: background 0.12s, color 0.12s; }
+.calx-ig-iconbtn:hover { background: var(--neutral-tint); color: var(--ink); }
+.calx-ig-iconbtn.on { background: var(--neutral-tint); color: var(--ink-2); }
+
+.calx-ig-del { width: 26px; height: 26px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; background: transparent; border: none; cursor: pointer; color: var(--ink-4); }
+.calx-ig-del:hover { background: var(--crit-tint); color: var(--crit-ink); }
+.calx-ig-detail { padding: 0 14px 14px 38px; }
+.calx-ig-chartwrap { border: 1px solid var(--line-2); border-radius: 8px; background: var(--panel-2); padding: 12px; margin-bottom: 12px; }
+.calx-ig-chartwrap .calx-gc { width: 100%; }
+.calx-ig-gq { font-size: 13px; font-weight: 500; color: var(--ink-2); margin-bottom: 8px; }
+.calx-ig-shim { height: 150px; border-radius: 8px; background: linear-gradient(100deg, var(--panel-2) 30%, rgba(16,17,29,0.05) 50%, var(--panel-2) 70%); background-size: 200% 100%; animation: calx-ig-shim 1.2s ease-in-out infinite; }
+@keyframes calx-ig-shim { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+/* Add-question row — sits inside the list (trailing row), not the footer. */
+.calx-ig-addrow { display: flex; gap: 8px; align-items: center; padding: 10px 14px; border-top: 1px solid var(--line-2); }
+.calx-ig-addrow .calx-gm-addinput { flex: 1; min-width: 0; height: 36px; }
+/* Gray footer block — the single full-width CTA (mirrors the fixes-dock action bar). */
+.calx-ig-foot { padding: 12px 14px; background: #f6f8fa; border-top: 1px solid var(--line); }
+.calx-ig-foot button { width: 100%; }
+.calx-ig-loading { display: block; text-align: center; font-size: 13px; color: var(--ink-3); }
+.calx-gcard-foot { padding: 10px; border-top: 1px solid var(--line); }
+.calx-gcard-foot button { width: 100%; }
+
+/* Grading modal */
+.calx-gm { display: flex; flex-direction: column; gap: 18px; }
+.calx-gm-intro { margin: 0; font-size: 14px; line-height: 1.5; color: var(--ink-3); }
+.calx-gm-group { display: flex; flex-direction: column; gap: 10px; }
+.calx-gm-grouphead { font-size: 13px; font-weight: 700; letter-spacing: 0.01em; color: var(--ink-2); }
+.calx-gm-card { display: flex; flex-direction: column; gap: 14px; padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); transition: border-color 0.12s, background 0.12s; }
+.calx-gm-card.s-incorrect { border-color: rgba(225,75,75,0.4); background: rgba(225,75,75,0.03); }
+.calx-gm-card.s-oos { border-color: var(--line-strong); background: var(--panel-2); }
+.calx-gm-qtop { display: flex; align-items: flex-start; gap: 8px; }
+.calx-gm-qhead { flex: 1; min-width: 0; }
+.calx-gm-qname { font-size: 15px; font-weight: 600; color: var(--ink); line-height: 1.35; }
+.calx-gm-del { flex-shrink: 0; width: 28px; height: 28px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; background: transparent; border: none; cursor: pointer; color: var(--ink-4); }
+.calx-gm-del:hover { background: var(--crit-tint); color: var(--crit-ink); }
+.calx-gm-qdesc { font-size: 13.5px; color: var(--ink-4); line-height: 1.45; margin-top: 3px; }
+.calx-gm-chartwrap { width: 100%; border: 1px solid var(--line-2); border-radius: 10px; padding: 14px 16px; background: var(--panel-2); display: flex; justify-content: center; align-items: center; }
+.calx-gm-chartwrap .calx-gc { width: 100%; }
+.calx-gm-feedback { display: flex; flex-direction: column; }
+.calx-gm-gq { font-size: 13px; font-weight: 500; color: var(--ink-2); margin-bottom: 8px; }
+/* Three verdicts on one row. They're a single choice, so wrapping one onto a second
+   line made "Out of scope" look like a different kind of control rather than the third
+   option. Tightened rather than shortened — the labels are the clearest part. `wrap` is
+   kept as the fallback for a hand-narrowed agent panel, where two lines beat clipping. */
+.calx-gm-pills { display: flex; flex-wrap: wrap; gap: 6px; }
+.calx-gm-pill { display: inline-flex; align-items: center; gap: 5px; padding: 6px 11px; border-radius: 20px; border: 1px solid var(--line-strong); background: var(--panel); font-size: 12.5px; font-weight: 500; color: var(--ink-2); cursor: pointer; transition: all 0.12s; white-space: nowrap; }
+.calx-gm-pill:hover { border-color: var(--ink-4); }
+.calx-gm-pill.on.ok { border-color: var(--good); background: var(--good-tint); color: var(--good-ink); }
+.calx-gm-pill.on.bad { border-color: var(--crit); background: var(--crit-tint); color: var(--crit-ink); }
+.calx-gm-pill.on.oos { border-color: var(--ink-4); background: var(--neutral-tint); color: var(--ink-2); }
+.calx-gm-reason { margin-top: 12px; display: flex; flex-direction: column; gap: 10px; }
+.calx-gm-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.calx-gm-chip { padding: 5px 10px; border-radius: 16px; border: 1px solid var(--line); background: var(--panel); font-size: 12.5px; color: var(--ink-2); cursor: pointer; transition: all 0.12s; }
+.calx-gm-chip:hover { border-color: var(--info); color: var(--info); }
+.calx-gm-chip.on { background: var(--info-tint); border-color: var(--info); color: var(--info); font-weight: 600; }
+.calx-gm-reasonta { width: 100%; min-height: 56px; border: 1px solid var(--line-strong); border-radius: 8px; padding: 9px 11px; font-family: var(--sans); font-size: 13.5px; color: var(--ink); resize: vertical; outline: none; }
+.calx-gm-reasonta:focus { border-color: var(--info); }
+.calx-gm-reasonta::placeholder { color: var(--ink-4); }
+.calx-gm-add { display: flex; gap: 10px; align-items: center; padding-top: 4px; }
+.calx-gm-addinput { flex: 1; height: 40px; border: 1px solid var(--line-strong); border-radius: 8px; padding: 0 12px; font-family: var(--sans); font-size: 14px; color: var(--ink); outline: none; }
+.calx-gm-addinput:focus { border-color: var(--info); }
+.calx-gm-addinput::placeholder { color: var(--ink-4); }
+.calx-gm-addbtn { display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 16px; border-radius: 8px; border: 1px solid var(--line-strong); background: var(--panel); font-size: 14px; font-weight: 500; color: var(--ink); cursor: pointer; }
+.calx-gm-addbtn:hover:not(:disabled) { border-color: var(--ink-4); }
+.calx-gm-addbtn:disabled { opacity: 0.45; cursor: default; }
+
+/* Answer charts (grading modal) */
+.calx-gc { width: 100%; }
+.calx-gc-empty { background: var(--neutral-tint); border-radius: 8px; }
+.calx-gc-kpi { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 4px; width: 100%; }
+.calx-gc-kpival { font-size: 32px; font-weight: 700; color: var(--ink); letter-spacing: -0.02em; }
+.calx-gc-kpidelta { font-size: 13px; font-weight: 600; }
+.calx-gc-kpidelta.up { color: var(--good); }
+.calx-gc-kpidelta.down { color: var(--crit); }
+.calx-gc-kpicap { font-size: 12px; color: var(--ink-4); }
+.calx-gc-table { width: 100%; overflow: auto; }
+.calx-gc-table table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.calx-gc-table th { text-align: left; font-weight: 600; color: var(--ink-3); padding: 6px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.calx-gc-table td { padding: 6px 8px; color: var(--ink); border-bottom: 1px solid var(--line-2); white-space: nowrap; }
+.calx-gc-table tr:last-child td { border-bottom: none; }
+
+/* Spotter-fix info overlay — a plain change line when there's no before/after diff. */
+.calx-cal-suggest { font-size: 13px; color: var(--ink-2); line-height: 1.5; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Drift Monitor (#dme-agentic) — a notification-centre popover off a circular button
+   ══════════════════════════════════════════════════════════════════════════ */
+.calx-dm-wrap { position: relative; display: inline-flex; }
+/* Secondary icon-only button. (.calx prefix beats the `.calx button` reset.) */
+.calx .calx-dm-btn {
+  position: relative; width: 40px; height: 40px; border-radius: 10px; cursor: pointer;
+  background: var(--panel); border: 1px solid var(--line-strong); color: var(--ink-2);
+  display: inline-flex; align-items: center; justify-content: center; transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+.calx .calx-dm-btn:hover, .calx .calx-dm-btn.open { background: var(--neutral-tint); border-color: var(--ink-4); color: var(--ink); }
+/* Pill trigger — matches the sibling CTAs in the model view mode (gray pill, inline count). */
+.calx .calx-dm-pillbtn {
+  height: 32px; padding: 0 14px; border-radius: 16px; cursor: pointer; border: none;
+  background: var(--rd-sys-color-background-subtle, #eaedf2); color: var(--rd-sys-color-content-primary, #1d232f);
+  display: inline-flex; align-items: center; gap: 7px; font-size: 14px; font-weight: 400; white-space: nowrap;
+  transition: background 0.12s;
+}
+.calx .calx-dm-pillbtn:hover, .calx .calx-dm-pillbtn.open { background: var(--rd-sys-color-background-ghost-hover, #dfe3ea); }
+/* Prominent count badge on the Drift monitor CTA (muting is only for the overflow header). */
+.calx-dm-pillcount {
+  min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: var(--crit); color: #fff;
+  font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center;
+}
+.calx-dm-badge {
+  position: absolute; top: -4px; right: -4px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px;
+  background: var(--crit); color: #fff; font-size: 12px; font-weight: 700; line-height: 20px; text-align: center;
+  border: 2px solid var(--panel); box-sizing: content-box;
+}
+
+.calx-dm-scrim { position: fixed; inset: 0; z-index: 9998; }
+.calx-dm-pop {
+  position: absolute; top: calc(100% + 10px); right: 0; z-index: 9999; width: 384px; max-width: 92vw;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow-lg);
+  display: flex; flex-direction: column; overflow: hidden; animation: calx-cp-in 0.16s ease;
+}
+
+.calx-dm-head { display: flex; align-items: center; gap: 10px; padding: 16px 16px 12px; }
+.calx-dm-title { flex: 1; font-size: 18px; font-weight: 700; color: var(--ink); }
+.calx-dm-titlecount { color: var(--ink-4); font-weight: 400; }
+.calx-dm-back { width: 26px; height: 26px; margin-left: -4px; border-radius: 6px; border: none; background: transparent; color: var(--ink-2); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+.calx-dm-back:hover { background: var(--neutral-tint); }
+.calx-dm-actions { display: flex; align-items: center; gap: 8px; }
+/* Secondary CTA in brand blue — used for Select to fix / Schedule alert.
+   (.calx prefix beats the `.calx button` reset that would strip the border.) */
+.calx .calx-dm-cta {
+  display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border-radius: 8px;
+  border: 1px solid var(--info); background: transparent; color: var(--info); font-size: 13.5px; font-weight: 600; cursor: pointer;
+  transition: background 0.12s;
+}
+.calx .calx-dm-cta:hover { background: var(--info-tint); }
+.calx .calx-dm-cta:disabled { border-color: var(--line-strong); color: var(--ink-4); background: transparent; cursor: default; }
+
+.calx-dm-alertbar { display: flex; align-items: center; gap: 7px; margin: 0 16px 4px; padding: 7px 11px; border-radius: 8px; background: var(--good-tint); color: var(--good-ink); font-size: 12.5px; font-weight: 500; }
+
+.calx-dm-list { max-height: 52vh; overflow-y: auto; padding: 4px 0 6px; }
+.calx-dm-empty { padding: 20px 16px; font-size: 13.5px; color: var(--ink-4); text-align: center; }
+.calx-dm-row { display: flex; align-items: flex-start; gap: 11px; padding: 13px 16px; border-bottom: 1px solid var(--line-2); }
+.calx-dm-row:last-child { border-bottom: none; }
+.calx-dm-cb { flex-shrink: 0; padding-top: 1px; }
+.calx-dm-rowbody { flex: 1; min-width: 0; }
+.calx-dm-rowtitle { font-size: 15px; font-weight: 600; color: var(--ink); line-height: 1.35; }
+.calx-dm-rowdesc { font-size: 13px; color: var(--ink-4); line-height: 1.45; margin-top: 3px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.calx-dm-rowage { flex-shrink: 0; display: inline-flex; align-items: center; gap: 5px; font-size: 13px; color: var(--ink-4); white-space: nowrap; }
+
+.calx-dm-foot { display: flex; justify-content: flex-end; gap: 10px; padding: 12px 16px; border-top: 1px solid var(--line); background: #f6f8fa; }
+.calx-dm-getfixes { display: inline-flex; align-items: center; gap: 7px; }
+
+/* Schedule-alerts view */
+.calx-dm-sched { padding: 4px 16px 16px; display: flex; flex-direction: column; }
+.calx-dm-schedlead { display: flex; align-items: flex-start; gap: 9px; font-size: 13.5px; color: var(--ink-2); line-height: 1.45; }
+.calx-dm-schedlead svg { flex-shrink: 0; margin-top: 1px; color: var(--ink-3); }
+.calx-dm-schedlabel { font-size: 12px; font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase; color: var(--ink-4); margin: 16px 0 8px; }
+.calx-dm-freqs { display: flex; gap: 8px; }
+.calx .calx-dm-freq { flex: 1; padding: 9px 8px; border-radius: 8px; border: 1px solid var(--line-strong); background: var(--panel); font-size: 13px; font-weight: 500; color: var(--ink-2); cursor: pointer; transition: all 0.12s; }
+.calx .calx-dm-freq:hover { border-color: var(--ink-4); }
+.calx .calx-dm-freq.on { border-color: var(--info); background: var(--info-tint); color: var(--info); }
+.calx-dm-email { height: 40px; border: 1px solid var(--line-strong); border-radius: 8px; padding: 0 12px; font-family: var(--sans); font-size: 14px; color: var(--ink); outline: none; }
+.calx-dm-email:focus { border-color: var(--info); }
+
+.calx-ag-lead { margin-bottom: 10px; }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+ * POC AI-readiness port — panel chrome + composer.
+ * The source flow reused the DME host's `.agent-panel` / `.chat-*` classes, which
+ * don't exist in DataStudioV2. These `.calx`-scoped rules give the flow its own
+ * self-contained shell (header, transcript, fixes dock slot, composer) so it fills
+ * DataStudioV2's AgentPanel body. All rules are scoped under `.calx` — zero leakage.
+ * ───────────────────────────────────────────────────────────────────────────── */
+/* Content wrapper. The flow no longer brings its own header, composer or
+   disclaimer — the host AgentPanel supplies all three, and its message container
+   already owns the padding, scrolling and background. So this is only a flex
+   column carrying the flow's own 14px rhythm between cards.
+   `.calx` must stay on this element: every rule in this file is scoped under it. */
+.calx.pr-body {
+  display: flex; flex-direction: column; gap: 14px;
+  background: transparent;
+  font-family: var(--sans);
+}
+.pr-dockwrap { flex-shrink: 0; padding: 10px 0 4px; }
+
+/* Composer chrome — the flow's own composer is gone, but CalFixesDock's refine bar
+   still uses .agent-textarea, .prompt-bar-actions and .send-btn. Keep them. */
+.calx .prompt-bar {
+  display: flex; align-items: flex-end; gap: 8px;
+  border: 1px solid var(--line-strong, #C0C6CF); border-radius: 12px;
+  padding: 8px 8px 8px 12px; background: var(--panel, #fff);
+}
+.calx .agent-textarea {
+  flex: 1; border: none; outline: none; resize: none; background: transparent;
+  font-family: var(--sans); font-size: 13px; line-height: 1.5; color: var(--ink, #1D232F);
+  min-height: 22px; max-height: 120px; padding: 2px 0;
+}
+.calx .agent-textarea::placeholder { color: var(--ink-4, #A5ACB9); }
+.calx .prompt-bar-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.calx .send-btn {
+  width: 28px; height: 28px; border-radius: 8px; border: none; cursor: pointer;
+  background: var(--accent, #574fe6); color: #fff;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  transition: background 0.12s, opacity 0.12s;
+}
+.calx .send-btn:hover { opacity: 0.9; }
+
+/* Inline fix detail (agent-only replacement for the source's canvas overlay) */
+/* The top margin was -2px, which tucked this under the row it belongs to. That reads
+   as one block when the row above is highlighted: the tinted row and the tinted card
+   run together with no seam, and the explanation looks like part of the row's own
+   background rather than a panel that just opened. A real gap separates them. */
+.calx .calfx-detail {
+  margin: 8px 0 10px 30px; padding: 10px 12px; border-radius: 8px;
+  background: var(--line-tint, #F6F8FA); border: 1px solid var(--line, #EAEDF2);
+  display: flex; flex-direction: column; gap: 7px;
+}
+.calfx-detail-head { display: flex; align-items: center; gap: 7px; }
+.calfx-detail-tag {
+  font-size: 9.5px; font-weight: 700; letter-spacing: 0.02em; text-transform: uppercase;
+  padding: 1px 6px; border-radius: 3px;
+}
+.calfx-detail-tag.tone-add { color: var(--good, #06BF7F); background: rgba(6,191,127,0.10); }
+.calfx-detail-tag.tone-edit { color: var(--info, #2770ef); background: rgba(39,112,239,0.09); }
+.calfx-detail-tag.tone-remove { color: var(--crit, #E22B3D); background: rgba(226,43,61,0.08); }
+.calfx-detail-where { font-size: 11px; color: var(--ink-3, #777E8B); }
+.calfx-diff { display: flex; flex-direction: column; gap: 3px; }
+.calfx-diff-field { font-size: 11px; font-weight: 600; color: var(--ink-2, #64748B); }
+.calfx-diff-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 11.5px; }
+.calfx-diff.is-code .calfx-diff-row { font-family: var(--mono, ui-monospace, monospace); font-size: 11px; }
+.calfx-diff-before { color: var(--crit, #E22B3D); text-decoration: line-through; opacity: 0.75; }
+.calfx-diff-arrow { color: var(--ink-4, #A5ACB9); }
+.calfx-diff-after { color: var(--good, #06BF7F); font-weight: 500; }
+.calfx-detail-sugg, .calfx-detail-impact { font-size: 11.5px; color: var(--ink-2, #64748B); line-height: 1.45; }
+.calfx-detail-impact { color: var(--ink-3, #777E8B); }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+ * Demo polish pass — one accent (DataStudioV2 blue), readable agent copy, motion.
+ * ───────────────────────────────────────────────────────────────────────────── */
+.calx.pr-body {
+  --accent: #2770EF;                                                    /* .calx chrome → blue */
+}
+/* The fixes card's animated gradient border (source's "moving gradient" signature).
+ * The source repo defined these in its GLOBAL css; only calibration.css was ported, so
+ * `--gradient-angle` / `rotate-border` were missing → the conic-gradient was invalid →
+ * `.calfx-card` painted no border at all. Define them here so the card frame renders. */
+@property --gradient-angle { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
+@keyframes rotate-border { to { --gradient-angle: 360deg; } }
+/* Agent copy we render ourselves (supports **bold**). */
+.calx .pr-text { margin: 0; font-family: var(--sans); font-size: 13px; line-height: 1.55; color: var(--ink, #1D232F); }
+.calx .pr-text strong { font-weight: 650; color: var(--ink, #1D232F); }
+.calx .calx-ag-lead.pr-text { margin-bottom: 10px; }
+.calx .pr-intro { margin-top: 10px; }
+.calx .calx-ag-passbody .pr-text { margin-bottom: 2px; }
+
+/* Subtle entrance — only newly-mounted rows animate (keyed list). */
+.calx.pr-body > * { animation: pr-msg-in 260ms cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+@keyframes pr-msg-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .calx.pr-body > * { animation: none; } }
+
+/* Send button — disabled affordance (composer is live now). */
+.calx .send-btn:disabled { background: var(--line-strong, #C0C6CF); cursor: default; }
+.calx .send-btn:disabled:hover { opacity: 1; }
+
+/* The flow's own header is gone — the host AgentPanel's header serves it, with a
+   "Back to chat" control rendered by the panel. One header, not two. */
+
+/* Apply summary — TEXT ONLY (no card): a confident headline + a scannable checked list.
+ * Shown after the apply reasoning, before the version card. */
+.calx .pr-summary { display: flex; flex-direction: column; gap: 9px; }
+.calx .pr-summary-title { font-size: 14px; font-weight: 650; color: var(--ink, #1D232F); letter-spacing: -0.15px; line-height: 1.35; }
+.calx .pr-summary-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.calx .pr-summary-item {
+  display: flex; align-items: flex-start; gap: 9px;
+  font-size: 13px; line-height: 1.45; color: var(--ink-2, #4B5563);
+  animation: pr-sum-in 320ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.calx .pr-summary-item svg { flex-shrink: 0; margin-top: 2px; color: var(--good, #06BF7F); }
+@keyframes pr-sum-in { from { opacity: 0; transform: translateX(-5px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .calx .pr-summary-item { animation: none; } }
+
+/* Focused grader — one Spotter question at a time. */
+.calx .calx-ig-focus { display: flex; flex-direction: column; gap: 12px; padding: 14px 14px 12px; animation: pr-focus-in 240ms cubic-bezier(0.2,0.7,0.2,1) both; }
+.calx .calx-ig-progress { display: flex; align-items: center; gap: 12px; }
+.calx .calx-ig-progress-label { font-size: 10.5px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ink-4, #A5ACB9); white-space: nowrap; }
+.calx .calx-ig-dots { display: flex; align-items: center; gap: 5px; flex: 1; }
+.calx .calx-ig-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--line-strong, #C0C6CF); transition: background 0.15s, box-shadow 0.15s, transform 0.15s; }
+.calx .calx-ig-dot.cur { background: var(--info, #2770ef); box-shadow: 0 0 0 3px rgba(39,112,239,0.16); transform: scale(1.1); }
+.calx .calx-ig-dot.ok { background: var(--good, #06BF7F); }
+.calx .calx-ig-dot.bad { background: var(--crit, #E22B3D); }
+/* Out of scope — settled, but neither pass nor fail. Hollow rather than a fourth
+   colour, so a run of dots still reads as "how many are still to do". */
+.calx .calx-ig-dot.oos { background: transparent; box-shadow: inset 0 0 0 1.5px var(--ink-4, #8B96A5); }
+.calx .calx-ig-focus-name { font-size: 15px; font-weight: 650; color: var(--ink, #1D232F); line-height: 1.34; letter-spacing: -0.2px; }
+.calx .calx-ig-focus-desc { font-size: 12.5px; color: var(--ink-3, #777E8B); line-height: 1.4; margin-top: 4px; }
+.calx .calx-ig-focus-nav { display: flex; align-items: center; gap: 8px; margin-top: 2px; }
+.calx .calx-ig-focus-spacer { flex: 1; }
+.calx .calx-ig-graded { display: flex; align-items: center; gap: 7px; font-size: 13px; color: var(--ink-2, #4B5563); }
+.calx .calx-ig-graded svg { color: var(--good, #06BF7F); }
+@keyframes pr-focus-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .calx .calx-ig-focus { animation: none; } }
+
+/* Generating answers — a small three-dot pulse. */
+.calx .calx-ig-generating { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 30px 14px; font-size: 13px; color: var(--ink-3, #777E8B); }
+.calx .calx-ig-gen-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--info, #2770ef); animation: pr-gen-pulse 1s ease-in-out infinite; }
+.calx .calx-ig-gen-dot:nth-child(2) { animation-delay: 0.15s; }
+.calx .calx-ig-gen-dot:nth-child(3) { animation-delay: 0.3s; }
+@keyframes pr-gen-pulse { 0%, 100% { opacity: 0.3; transform: translateY(0); } 50% { opacity: 1; transform: translateY(-3px); } }
+@media (prefers-reduced-motion: reduce) { .calx .calx-ig-gen-dot { animation: none; } }

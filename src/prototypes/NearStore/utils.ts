@@ -3,7 +3,7 @@
  */
 
 import { capacity } from './data';
-import type { DataModel, Frequency, Schedule, Weekday, WindowMonths } from './types';
+import type { DataModel, Frequency, Schedule, Weekday } from './types';
 
 /** 256 → "256 MB"; 35020 → "34.2 GB" */
 export function formatSizeMB(mb: number): string {
@@ -58,9 +58,12 @@ export function scheduleLabel(s: Schedule): string {
   return `${FREQ_LABEL[s.frequency]}, ${timeLabel(s.hour, s.minute)}`;
 }
 
-export function windowMonthsLabel(m: WindowMonths): string {
-  return `Last ${m} months`;
-}
+/**
+ * ⚠️ `windowMonthsLabel` lived here. Durations are no longer months, so the label comes from the
+ * shared list — `WINDOW_LABEL` in `_shared/caching/windows.ts`, which is also what Data Studio's
+ * canvas renders. One list, one set of words for it.
+ */
+export { WINDOW_LABEL as windowLabel } from '../_shared/caching/windows';
 
 const WEEKDAY_FULL: Record<Weekday, string> = {
   M: 'Mon', T: 'Tue', W: 'Wed', Th: 'Thu', F: 'Fri', Sa: 'Sat', S: 'Sun',

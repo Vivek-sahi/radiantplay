@@ -167,7 +167,7 @@ export const CacheModal: React.FC<{
         {/* Modal header — title only */}
         <div style={{ height: 52, padding: `0 ${sp.E}px`, borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', flexShrink: 0 }}>
           <div style={{ fontSize: fs.md, fontWeight: fw.semibold, color: c['content-primary'] }}>Model caching</div>
-          {triggeredBy && <span style={{ marginLeft: 10, fontSize: fs.xs, color: c['content-tertiary'] }}>· opened from {triggeredBy}</span>}
+          {triggeredBy && <span style={{ marginLeft: sp.C, fontSize: fs.xs, color: c['content-tertiary'] }}>· opened from {triggeredBy}</span>}
           <button onClick={onClose} style={{ marginLeft: 'auto', width: 28, height: 28, border: 'none', background: 'transparent', cursor: 'pointer', color: c['content-secondary'], fontSize: 20, lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 6 }}
             onMouseEnter={e => e.currentTarget.style.backgroundColor = c['background-subtle']}
             onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
@@ -182,7 +182,7 @@ export const CacheModal: React.FC<{
             </div>
             <div style={{ height: 60, padding: `0 ${sp.E}px`, borderTop: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', flexShrink: 0 }}>
               {onDisable && (
-                <button onClick={onDisable} style={{ height: 32, padding: '0 14px', border: '1px solid #FECACA', borderRadius: 6, backgroundColor: '#FEF2F2', cursor: 'pointer', fontSize: fs.sm, fontWeight: fw.medium, fontFamily: ff.primary, color: '#B91C1C' }}>
+                <button onClick={onDisable} style={{ height: 32, padding: '0 14px', border: '1px solid #FECACA', borderRadius: 6, backgroundColor: c['background-failure'], cursor: 'pointer', fontSize: fs.sm, fontWeight: fw.medium, fontFamily: ff.primary, color: '#B91C1C' }}>
                   Disable cache
                 </button>
               )}
@@ -207,7 +207,7 @@ export const CacheModal: React.FC<{
               {renderForm()}
 
               {/* Estimated savings — insight line with lightbulb */}
-              <div style={{ marginTop: sp.D, padding: `${sp.C}px ${sp.D}px`, backgroundColor: '#FEFCE8', border: '1px solid #FEF08A', borderRadius: 6, fontSize: fs.xs, color: c['content-secondary'], display: 'flex', alignItems: 'flex-start', gap: 8, lineHeight: 1.5 }}>
+              <div style={{ marginTop: sp.D, padding: `${sp.C}px ${sp.D}px`, backgroundColor: '#FEFCE8', border: '1px solid #FEF08A', borderRadius: 6, fontSize: fs.xs, color: c['content-secondary'], display: 'flex', alignItems: 'flex-start', gap: sp.B, lineHeight: 1.5 }}>
                 <svg width="14" height="14" viewBox="0 0 18 18" fill="none" stroke="#A16207" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 1 }}>
                   <path d="M9 2C6 2 4 4 4 7c0 1.8.9 3.2 2 4v2c0 .6.4 1 1 1h4c.6 0 1-.4 1-1v-2c1.1-.8 2-2.2 2-4 0-3-2-5-5-5z"/>
                   <line x1="6.5" y1="16" x2="11.5" y2="16"/>
@@ -252,13 +252,13 @@ const ModeCard: React.FC<{ selected: boolean; onClick: () => void; title: string
       fontFamily: ff.primary,
     }}
   >
-    <div style={{ width: 16, height: 16, borderRadius: '50%', border: `1.5px solid ${selected ? c['border-brand'] : c['border-default']}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 2 }}>
+    <div style={{ width: 16, height: 16, borderRadius: '50%', border: `1.5px solid ${selected ? c['border-brand'] : c['border-default']}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: sp.A }}>
       {selected && <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: c['content-brand'] }} />}
     </div>
     <div style={{ flex: 1 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, marginBottom: sp.A }}>
         <span style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'] }}>{title}</span>
-        {badge && <span style={{ fontSize: 10, fontWeight: fw.medium, padding: '1px 6px', borderRadius: 3, backgroundColor: '#DCFCE7', color: '#15803D', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{badge}</span>}
+        {badge && <span style={{ fontSize: 12, fontWeight: fw.medium, padding: '1px 6px', borderRadius: 3, backgroundColor: '#DCFCE7', color: '#15803D', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{badge}</span>}
       </div>
       <div style={{ fontSize: fs.xs, color: c['content-secondary'], lineHeight: 1.5 }}>{description}</div>
     </div>
@@ -287,7 +287,7 @@ const ModalSection: React.FC<{ title: string; subtitle?: string; children: React
   <div style={{ marginBottom: sp.E }}>
     <div style={{ marginBottom: sp.C }}>
       <div style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'] }}>{title}</div>
-      {subtitle && <div style={{ fontSize: fs.xs, color: c['content-secondary'], marginTop: 2 }}>{subtitle}</div>}
+      {subtitle && <div style={{ fontSize: fs.xs, color: c['content-secondary'], marginTop: sp.A }}>{subtitle}</div>}
     </div>
     {children}
   </div>
@@ -301,7 +301,7 @@ const ProjectIdentity: React.FC<{ project?: ProjectState }> = ({ project }) => {
   return (
     <>
       <span style={{ ...ts.contentLabelSubhead, color: c['content-primary'] }}>{name}</span>
-      <span style={{ fontSize: 11, fontWeight: fw.regular, color: c['content-secondary'] }}>v{version}</span>
+      <span style={{ fontSize: 12, fontWeight: fw.regular, color: c['content-secondary'] }}>v{version}</span>
     </>
   );
 };
@@ -349,7 +349,7 @@ const HeaderCD1: React.FC<{ project?: ProjectState; onCacheClick: () => void }> 
   <div style={mainHeaderStyle}>
     <ProjectIdentity project={project} />
     <button onClick={onCacheClick}
-      style={{ height: 22, padding: '0 8px', border: 'none', borderRadius: 11, backgroundColor: 'transparent', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11, fontFamily: ff.primary, color: c['content-secondary'] }}
+      style={{ height: 22, padding: '0 8px', border: 'none', borderRadius: 11, backgroundColor: 'transparent', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: sp.B, fontSize: 12, fontFamily: ff.primary, color: c['content-secondary'] }}
       onMouseEnter={e => e.currentTarget.style.backgroundColor = c['background-subtle']}
       onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
     >
@@ -369,7 +369,7 @@ const HeaderCD2: React.FC<{ project?: ProjectState; onCacheClick: () => void }> 
     <ProjectIdentity project={project} />
     <div style={rightActionsStyle}>
       <button onClick={onCacheClick}
-        style={{ height: 26, padding: '0 12px', border: `1px solid ${c['border-default']}`, borderRadius: 6, backgroundColor: c['background-base'], cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 12, fontWeight: fw.medium, fontFamily: ff.primary, color: c['content-primary'] }}
+        style={{ height: 26, padding: '0 12px', border: `1px solid ${c['border-default']}`, borderRadius: 6, backgroundColor: c['background-base'], cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: sp.B, fontSize: 12, fontWeight: fw.medium, fontFamily: ff.primary, color: c['content-primary'] }}
         onMouseEnter={e => e.currentTarget.style.backgroundColor = c['background-subtle']}
         onMouseLeave={e => e.currentTarget.style.backgroundColor = c['background-base']}
       >
@@ -390,7 +390,7 @@ const HeaderCD3: React.FC<{ project?: ProjectState; onCacheClick: () => void }> 
   <div style={mainHeaderStyle}>
     <ProjectIdentity project={project} />
     <div style={rightActionsStyle}>
-      <span style={{ fontSize: 11, color: c['content-secondary'], fontFamily: ff.primary, display: 'inline-flex', alignItems: 'center', gap: 6, marginRight: 4 }}>
+      <span style={{ fontSize: 12, color: c['content-secondary'], fontFamily: ff.primary, display: 'inline-flex', alignItems: 'center', gap: sp.B, marginRight: sp.A }}>
         <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: '#10B981' }} />
         Live querying Snowflake
       </span>
@@ -413,7 +413,7 @@ const HeaderCD4: React.FC<{ project?: ProjectState; onCacheClick: () => void }> 
     <ProjectIdentity project={project} />
     <div style={rightActionsStyle}>
       <button onClick={onCacheClick}
-        style={{ height: 26, padding: '0 10px', border: `1px solid ${c['border-default']}`, borderRadius: 6, backgroundColor: c['background-base'], cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 12, fontFamily: ff.primary, color: c['content-primary'] }}
+        style={{ height: 26, padding: '0 10px', border: `1px solid ${c['border-default']}`, borderRadius: 6, backgroundColor: c['background-base'], cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: sp.B, fontSize: 12, fontFamily: ff.primary, color: c['content-primary'] }}
         onMouseEnter={e => e.currentTarget.style.backgroundColor = c['background-subtle']}
         onMouseLeave={e => e.currentTarget.style.backgroundColor = c['background-base']}
       >
@@ -434,7 +434,7 @@ const HeaderCD5: React.FC<{ project?: ProjectState; onCacheClick: () => void }> 
     <ProjectIdentity project={project} />
     <div style={rightActionsStyle}>
       <button onClick={onCacheClick}
-        style={{ height: 26, padding: '0 10px', border: `1px solid #FCD34D`, borderRadius: 6, backgroundColor: '#FFFBEB', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 12, fontFamily: ff.primary, color: '#92400E' }}
+        style={{ height: 26, padding: '0 10px', border: `1px solid #FCD34D`, borderRadius: 6, backgroundColor: '#FFFBEB', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: sp.B, fontSize: 12, fontFamily: ff.primary, color: '#92400E' }}
         onMouseEnter={e => e.currentTarget.style.backgroundColor = '#FEF3C7'}
         onMouseLeave={e => e.currentTarget.style.backgroundColor = '#FFFBEB'}
       >
@@ -476,8 +476,8 @@ export const CacheDiscoverabilityCompare: React.FC = () => {
 
       {/* Page header */}
       <div style={{ padding: '40px 48px 24px', maxWidth: 1100, width: '100%', boxSizing: 'border-box' }}>
-        <div style={{ fontSize: 11, fontWeight: fw.medium, color: c['content-tertiary'], textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Playground · Cache discoverability</div>
-        <div style={{ fontSize: 22, fontWeight: fw.semibold, color: c['content-primary'], marginBottom: 10 }}>Five header variants for surfacing cache state</div>
+        <div style={{ fontSize: 12, fontWeight: fw.medium, color: c['content-tertiary'], textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: sp.B }}>Playground · Cache discoverability</div>
+        <div style={{ fontSize: 22, fontWeight: fw.semibold, color: c['content-primary'], marginBottom: sp.C }}>Five header variants for surfacing cache state</div>
         <div style={{ fontSize: fs.sm, color: c['content-secondary'], lineHeight: 1.6, maxWidth: 760 }}>
           All five variants share the same modal — clicking any chip below opens the same in-canvas caching workflow with smart per-table defaults. Compare placement, framing, and visual weight. See <code style={{ fontSize: fs.xs, padding: '1px 6px', backgroundColor: c['background-subtle'], borderRadius: 4 }}>research/caching-discoverability.md</code> for the reasoning.
         </div>
@@ -488,13 +488,13 @@ export const CacheDiscoverabilityCompare: React.FC = () => {
         {VARIANTS.map(v => (
           <div key={v.id}>
             {/* Label row */}
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 8 }}>
-              <span style={{ fontSize: 11, fontFamily: ff.mono, fontWeight: fw.medium, color: c['content-tertiary'], letterSpacing: '0.06em', backgroundColor: c['background-subtle'], padding: '3px 7px', borderRadius: 4 }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: sp.C, marginBottom: sp.B }}>
+              <span style={{ fontSize: 12, fontFamily: ff.mono, fontWeight: fw.medium, color: c['content-tertiary'], letterSpacing: '0.06em', backgroundColor: c['background-subtle'], padding: '3px 7px', borderRadius: 4 }}>
                 {v.id}
               </span>
               <span style={{ fontSize: fs.md, fontWeight: fw.semibold, color: c['content-primary'] }}>{v.label}</span>
             </div>
-            <div style={{ fontSize: fs.xs, color: c['content-secondary'], lineHeight: 1.55, marginBottom: 14, maxWidth: 760 }}>{v.blurb}</div>
+            <div style={{ fontSize: fs.xs, color: c['content-secondary'], lineHeight: 1.55, marginBottom: sp.D, maxWidth: 760 }}>{v.blurb}</div>
 
             {/* The header chrome */}
             <div style={{ border: `1px solid ${c['border-divider']}`, borderRadius: 10, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
@@ -532,11 +532,11 @@ const rightActionsStyle: React.CSSProperties = {
   marginLeft: 'auto',
   display: 'flex',
   alignItems: 'center',
-  gap: 6,
+  gap: sp.B,
 };
 
 const iconBtn: React.CSSProperties = {
-  width: 26, height: 26, padding: 4,
+  width: 26, height: 26, padding: sp.A,
   border: `1px solid ${c['border-default']}`, borderRadius: 6,
   backgroundColor: 'transparent', cursor: 'pointer',
   display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -547,7 +547,7 @@ const secondaryBtn: React.CSSProperties = {
   height: 26, padding: '0 12px',
   border: `1px solid ${c['border-default']}`, borderRadius: 6,
   backgroundColor: c['background-base'], cursor: 'pointer',
-  display: 'inline-flex', alignItems: 'center', gap: 6,
+  display: 'inline-flex', alignItems: 'center', gap: sp.B,
   fontSize: 12, fontWeight: fw.medium, fontFamily: ff.primary,
   color: c['content-primary'], boxSizing: 'border-box',
 };
@@ -557,14 +557,14 @@ const publishBtn: React.CSSProperties = {
   border: 'none', borderRadius: 6,
   backgroundColor: '#2563EB', color: 'white',
   cursor: 'pointer',
-  display: 'inline-flex', alignItems: 'center', gap: 7,
+  display: 'inline-flex', alignItems: 'center', gap: sp.B,
   fontSize: 12, fontWeight: fw.medium, fontFamily: ff.primary,
   boxSizing: 'border-box',
   transition: 'background-color 0.15s',
 };
 
 const tabBtn = (active: boolean): React.CSSProperties => ({
-  height: 28, padding: '0 10px', gap: 6,
+  height: 28, padding: '0 10px', gap: sp.B,
   border: `1px solid ${active ? c['border-brand'] : c['border-default']}`,
   borderRadius: 6,
   backgroundColor: active ? c['background-information'] : 'transparent',

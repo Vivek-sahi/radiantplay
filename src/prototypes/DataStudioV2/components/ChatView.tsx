@@ -167,7 +167,7 @@ const ChatView: React.FC<ChatViewProps> = ({
             onClick={onBack}
             style={{
               background: 'none', border: 'none', cursor: 'pointer', padding: '4px 6px',
-              display: 'flex', alignItems: 'center', gap: 6,
+              display: 'flex', alignItems: 'center', gap: sp.B,
               fontSize: fs.sm, color: c['content-secondary'], fontFamily: ff.primary, borderRadius: 4,
             }}
             onMouseEnter={e => (e.currentTarget.style.color = c['content-primary'])}
@@ -184,7 +184,7 @@ const ChatView: React.FC<ChatViewProps> = ({
             onClick={() => setContextPanelOpen(o => !o)}
             title={contextPanelOpen ? 'Hide context panel' : 'Show context panel'}
             style={{
-              background: 'none', border: 'none', cursor: 'pointer', padding: 4,
+              background: 'none', border: 'none', cursor: 'pointer', padding: sp.A,
               display: 'flex', alignItems: 'center',
               color: contextPanelOpen ? c['content-primary'] : c['content-secondary'], borderRadius: 4,
             }}
@@ -338,7 +338,7 @@ const MultiSourcePreviewPanel: React.FC<{ item: MultiSourceCreatedItem; onClose:
   const thS: React.CSSProperties = {
     padding: '5px 12px', borderBottom: `1px solid ${c['border-divider']}`,
     backgroundColor: c['background-sunken'], color: c['content-secondary'],
-    fontWeight: fw.semibold, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.4px',
+    fontWeight: fw.semibold, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.4px',
     textAlign: 'left', whiteSpace: 'nowrap',
   };
   const tdS: React.CSSProperties = {
@@ -376,7 +376,7 @@ LEFT JOIN spotstore.csm_account_mapping c
             <div key={i} style={{
               marginBottom: sp.B, padding: `${sp.B}px ${sp.C}px`,
               borderRadius: 4, fontFamily: ff.mono, fontSize: 12,
-              backgroundColor: cell.kind === 'output' ? '#F0FDF4' : cell.kind === 'comment' ? 'transparent' : c['background-sunken'],
+              backgroundColor: cell.kind === 'output' ? c['background-success'] : cell.kind === 'comment' ? 'transparent' : c['background-sunken'],
               color: cell.kind === 'output' ? '#16A34A' : cell.kind === 'comment' ? c['content-secondary'] : c['content-primary'],
               fontStyle: cell.kind === 'comment' ? 'italic' : 'normal',
               border: cell.kind === 'output' ? '1px solid #BBF7D0' : 'none',
@@ -442,7 +442,7 @@ LEFT JOIN spotstore.csm_account_mapping c
         {/* SQL tab (staging only) */}
         {isStaging && activeTab === 'sql' ? (
           <div style={{ padding: `${sp.C}px ${sp.D}px`, position: 'relative' }}>
-            <pre style={{ margin: 0, fontFamily: ff.mono, fontSize: 11, color: c['content-primary'], backgroundColor: c['background-sunken'], padding: sp.C, borderRadius: 4, overflowX: 'auto', lineHeight: 1.6, whiteSpace: 'pre' }}>
+            <pre style={{ margin: 0, fontFamily: ff.mono, fontSize: 12, color: c['content-primary'], backgroundColor: c['background-sunken'], padding: sp.C, borderRadius: 4, overflowX: 'auto', lineHeight: 1.6, whiteSpace: 'pre' }}>
               {STAGING_SQL}
             </pre>
             <button
@@ -493,7 +493,7 @@ LEFT JOIN spotstore.csm_account_mapping c
                 <tr key={col.id}>
                   <td style={{ ...tdS, fontWeight: fw.medium }}>
                     {col.name}
-                    {col.classification === 'key' && <span style={{ marginLeft: 4, fontSize: 9, fontWeight: fw.semibold, color: '#2770EF', backgroundColor: '#DEE8FA', borderRadius: 3, padding: '1px 4px' }}>KEY</span>}
+                    {col.classification === 'key' && <span style={{ marginLeft: sp.A, fontSize: 12, fontWeight: fw.semibold, color: '#2770EF', backgroundColor: '#DEE8FA', borderRadius: 3, padding: '1px 4px' }}>KEY</span>}
                   </td>
                   <td style={{ ...tdS, fontFamily: ff.mono, color: c['content-secondary'] }}>{col.type.toUpperCase()}</td>
                   {isCdw && (
@@ -522,7 +522,7 @@ LEFT JOIN spotstore.csm_account_mapping c
       <div style={headerStyle}>
         <div>
           <div style={{ fontWeight: fw.semibold, color: c['content-primary'] }}>{title}</div>
-          <div style={{ fontSize: fs.xs, color: c['content-secondary'], marginTop: 2 }}>
+          <div style={{ fontSize: fs.xs, color: c['content-secondary'], marginTop: sp.A }}>
             {item.type === 'staging-table' ? 'Spotstore · staging table' :
              item.type === 'notebook'      ? 'Python notebook' :
              item.type === 'csv-dataset'   ? 'CSV · Spotstore' :
@@ -531,7 +531,7 @@ LEFT JOIN spotstore.csm_account_mapping c
         </div>
         <button
           onClick={onClose}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: c['content-secondary'], borderRadius: 4, display: 'flex' }}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: sp.A, color: c['content-secondary'], borderRadius: 4, display: 'flex' }}
           onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
           onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
         >

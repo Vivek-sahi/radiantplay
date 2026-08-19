@@ -27,8 +27,8 @@ const MODELS: ExternalModel[] = [
 
 const DbtBadge: React.FC = () => (
   <span style={{
-    display: 'inline-flex', alignItems: 'center', gap: 4,
-    fontSize: 10, fontWeight: fw.semibold, fontFamily: ff.primary,
+    display: 'inline-flex', alignItems: 'center', gap: sp.A,
+    fontSize: 12, fontWeight: fw.semibold, fontFamily: ff.primary,
     color: '#FF694A',
     padding: `1px 6px`, borderRadius: 3,
     backgroundColor: 'rgba(255,105,74,0.08)',
@@ -95,7 +95,7 @@ const ExternalModelsPage: React.FC<ExternalModelsPageProps> = ({ onReviewIssues 
           <h1 style={{ margin: 0, fontSize: 18, fontWeight: fw.semibold, color: c['content-primary'], fontFamily: ff.primary }}>
             External models
           </h1>
-          <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, marginTop: 3 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, marginTop: sp.A }}>
             <span style={{ fontSize: fs.xs, color: c['content-tertiary'], fontFamily: ff.primary }}>
               {MODELS.length} models · synced from dbt analytics ·{' '}
             </span>
@@ -156,7 +156,7 @@ const ExternalModelsPage: React.FC<ExternalModelsPageProps> = ({ onReviewIssues 
           }}>
             {['Model', 'Source', 'Status', 'Issues', 'Last synced', ''].map(h => (
               <div key={h} style={{
-                fontSize: 11, fontWeight: fw.medium, color: c['content-secondary'],
+                fontSize: 12, fontWeight: fw.medium, color: c['content-secondary'],
                 fontFamily: ff.primary, textTransform: 'uppercase', letterSpacing: '0.04em',
               }}>
                 {h}
@@ -213,7 +213,7 @@ const ExternalModelsPage: React.FC<ExternalModelsPageProps> = ({ onReviewIssues 
                       padding: `${sp.A}px ${sp.B + 2}px`, borderRadius: 5,
                       border: `1px solid ${c['border-default']}`,
                       backgroundColor: 'transparent', cursor: 'pointer',
-                      fontSize: 11, fontFamily: ff.primary, color: c['content-secondary'],
+                      fontSize: 12, fontFamily: ff.primary, color: c['content-secondary'],
                       whiteSpace: 'nowrap',
                     }}
                     onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}

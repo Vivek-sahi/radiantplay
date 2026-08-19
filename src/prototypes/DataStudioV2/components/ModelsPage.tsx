@@ -31,7 +31,7 @@ const HealthBadge: React.FC<{ project: OverviewProject }> = ({ project }) => {
   const health = getProjectHealth(project);
   const color  = HEALTH_COLOR[health];
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: fs.sm, fontWeight: fw.medium, color }}>
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: sp.A, fontSize: fs.sm, fontWeight: fw.medium, color }}>
       <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: color, flexShrink: 0, display: 'inline-block' }} />
       {HEALTH_LABEL[health]}
     </span>
@@ -61,7 +61,7 @@ const ModelsPage: React.FC<ModelsPageProps> = ({ onOpenProject, onNewProject }) 
           backgroundColor: c['background-subtle'],
         }}>
           {['Model', 'Status', 'Queries', 'Health', 'Last modified'].map(h => (
-            <div key={h} style={{ fontSize: 11, fontWeight: fw.medium, color: c['content-secondary'], textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            <div key={h} style={{ fontSize: 12, fontWeight: fw.medium, color: c['content-secondary'], textTransform: 'uppercase', letterSpacing: '0.04em' }}>
               {h}
             </div>
           ))}

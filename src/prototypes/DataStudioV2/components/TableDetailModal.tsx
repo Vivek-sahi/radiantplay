@@ -80,7 +80,7 @@ const TableDetailModal: React.FC<TableDetailModalProps> = ({ tableId, buildStep,
         <div style={{ padding: `${sp.C}px ${sp.F}px`, borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', gap: sp.B, flexShrink: 0 }}>
           <span style={{ fontSize: fs.sm }}>⊞</span>
           <span style={{ ...ts.contentLabelSubhead, color: c['content-primary'], fontSize: fs.md, flex: 1 }}>{table.name}</span>
-          <button style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: fs.xs, color: c['content-brand'], display: 'flex', alignItems: 'center', gap: 4, padding: `${sp.A}px ${sp.B}px` }}>
+          <button style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: fs.xs, color: c['content-brand'], display: 'flex', alignItems: 'center', gap: sp.A, padding: `${sp.A}px ${sp.B}px` }}>
             ↗ Go to table
           </button>
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, color: c['content-secondary'], lineHeight: 1, padding: 0 }}>×</button>
@@ -139,17 +139,17 @@ const TableDetailModal: React.FC<TableDetailModalProps> = ({ tableId, buildStep,
 
                       {/* Name + metadata */}
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: fs.sm, fontWeight: fw.medium, color: c['content-primary'], marginBottom: 2 }}>
+                        <div style={{ fontSize: fs.sm, fontWeight: fw.medium, color: c['content-primary'], marginBottom: sp.A }}>
                           {col.name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: sp.D, fontSize: fs.xs, color: c['content-secondary'] }}>
-                          <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: sp.A }}>
                             <span>≡</span>
                             <span style={{ color: hasDesc ? c['content-primary'] : c['content-secondary'] }}>
                               {hasDesc ? desc.description : 'No description'}
                             </span>
                           </span>
-                          <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: sp.A }}>
                             <span>💡</span>
                             <span style={{ color: hasDesc ? c['content-primary'] : c['content-secondary'] }}>
                               {hasDesc ? desc.aiContext : 'No AI context'}

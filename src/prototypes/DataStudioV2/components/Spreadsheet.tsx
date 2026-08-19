@@ -275,11 +275,22 @@ export interface DataSheetToolbarProps {
   // in the parent, since the Data sheet merges every table).
   onFilter?: () => void;
   onFormula?: () => void;
+  /**
+   * What the sheet is showing — the whole model, or one table.
+   *
+   * Right-aligned, beside Full width, because it is the only control here that changes *what
+   * you are looking at* rather than how a cell is formatted. Everything to the left acts on
+   * the current selection; scope acts on the sheet. It sat in a band of its own below the
+   * toolbar, then briefly in a footer — the toolbar's right edge is where the reference
+   * spreadsheet keeps view-level controls, and it stops the sheet from having three separate
+   * strips of chrome above the first row.
+   */
+  scopeControl?: React.ReactNode;
 }
 
 const NUMBER_FORMATS = ['Automatic', 'Number', 'Currency', 'Percent', 'Date'];
 
-export function DataSheetToolbar({ onDownloadCsv, onToggleExpand, expanded, onFilter, onFormula }: DataSheetToolbarProps) {
+export function DataSheetToolbar({ onDownloadCsv, onToggleExpand, expanded, onFilter, onFormula, scopeControl }: DataSheetToolbarProps) {
   const [formatOpen, setFormatOpen] = React.useState(false);
   const formatBtnRef = React.useRef<HTMLDivElement>(null);
 
@@ -301,8 +312,12 @@ export function DataSheetToolbar({ onDownloadCsv, onToggleExpand, expanded, onFi
   );
   const divider = <div style={{ width: 1, height: 16, background: '#E2E6EC', margin: '0 3px', flexShrink: 0 }} />;
 
+  // 40px tall — the same height as the data browser's header on the other side of the dock
+  // seam, so the rule under this toolbar and the rule under that header form one continuous
+  // line across the screen. They were 32 and 40, which put two horizontal borders 8px apart
+  // and made the seam read as a mistake.
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 1, padding: '4px 10px', borderBottom: BORDER, background: '#fff', flexShrink: 0, overflowX: 'auto' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 1, height: 40, boxSizing: 'border-box', padding: '0 10px', borderBottom: BORDER, background: '#fff', flexShrink: 0, overflowX: 'auto' }}>
       {iconBtn('Undo', <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M9 14 4 9l5-5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>)}
       {iconBtn('Redo', <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M15 14l5-5-5-5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>)}
       {divider}
@@ -342,6 +357,7 @@ export function DataSheetToolbar({ onDownloadCsv, onToggleExpand, expanded, onFi
       {divider}
       {iconCaretBtn('Download', <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 2v8M5 7l3 3 3-3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/><path d="M3 12.5v1a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>, onDownloadCsv)}
       <div style={{ flex: 1 }} />
+      {scopeControl && <>{scopeControl}{divider}</>}
       {iconBtn(expanded ? 'Exit full width' : 'Full width', expanded ? (
         <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M6 2v2.5a1.5 1.5 0 0 1-1.5 1.5H2M14 6h-2.5A1.5 1.5 0 0 1 10 4.5V2M10 14v-2.5a1.5 1.5 0 0 1 1.5-1.5H14M2 10h2.5A1.5 1.5 0 0 1 6 11.5V14" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
       ) : (

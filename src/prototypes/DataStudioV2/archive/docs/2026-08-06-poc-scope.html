@@ -1,0 +1,274 @@
+<meta charset="utf-8">
+<title>Data Studio POC — scope</title>
+<style>
+  :root {
+    --bg: #fff; --fg: #1D232F; --mut: #6B7280; --line: #E2E6EC; --sunk: #F6F8FA;
+    --in: #06805A; --in-bg: #E6F6F0;
+    --out: #8A94A6; --out-bg: #F1F3F6;
+    --open: #92640A; --open-bg: #FDF6E3;
+    --inh: #2452C4; --inh-bg: #EAF0FD;
+    --new: #A32D6A; --new-bg: #FBEBF2;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14181F; --fg: #E8EBF0; --mut: #98A1B0; --line: #2A313C; --sunk: #1A1F27;
+      --in: #4DD6A8; --in-bg: #123227;
+      --out: #8A94A6; --out-bg: #22272F;
+      --open: #F0C24B; --open-bg: #32280F;
+      --inh: #8DAEF8; --inh-bg: #17233F;
+      --new: #F292BE; --new-bg: #3A1729;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 48px 32px 96px; background: var(--bg); color: var(--fg);
+    font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    max-width: 1000px; margin-inline: auto;
+  }
+  h1 { font-size: 26px; margin: 0 0 4px; letter-spacing: -0.02em; }
+  .sub { color: var(--mut); font-size: 13px; margin: 0 0 8px; }
+  .lede { font-size: 15px; margin: 0 0 40px; padding-bottom: 24px; border-bottom: 1px solid var(--line); }
+  h2 {
+    font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--mut);
+    margin: 44px 0 12px; font-weight: 700;
+  }
+  h2 .n { color: var(--fg); }
+  h3 { font-size: 14px; margin: 24px 0 8px; }
+  p { margin: 0 0 12px; }
+  .note { color: var(--mut); font-size: 13px; margin: 8px 0 0; }
+  .wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th {
+    text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--mut); padding: 0 10px 6px; border-bottom: 1px solid var(--line); white-space: nowrap;
+  }
+  td { padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  td:first-child, th:first-child { padding-left: 0; }
+  td:last-child, th:last-child { padding-right: 0; }
+  code { font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--mut); }
+  .pill {
+    display: inline-block; padding: 2px 8px; border-radius: 100px; font-size: 11px;
+    font-weight: 700; white-space: nowrap; letter-spacing: 0.02em;
+  }
+  .p-in { background: var(--in-bg); color: var(--in); }
+  .p-out { background: var(--out-bg); color: var(--out); }
+  .p-open { background: var(--open-bg); color: var(--open); }
+  .p-inh { background: var(--inh-bg); color: var(--inh); }
+  .p-new { background: var(--new-bg); color: var(--new); }
+  .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 28px; }
+  ul { margin: 0; padding-left: 18px; }
+  li { margin-bottom: 6px; }
+  ol { margin: 0; padding-left: 20px; }
+  ol li { margin-bottom: 10px; }
+  .owner { font-size: 11px; font-weight: 700; color: var(--mut); text-transform: uppercase; letter-spacing: 0.04em; }
+  .card { background: var(--sunk); border: 1px solid var(--line); border-radius: 8px; padding: 16px 18px; }
+  .card h3 { margin-top: 0; }
+  .rule { font-size: 15px; padding: 14px 18px; background: var(--sunk); border-left: 3px solid var(--fg); border-radius: 0 6px 6px 0; margin: 0 0 32px; }
+  .legend { font-size: 12px; color: var(--mut); margin: 0 0 16px; }
+</style>
+
+<h1>Data Studio — POC scope</h1>
+<p class="sub">2026-08-06 · for product, engineering, and the data-modeling team · includes review feedback</p>
+<p class="lede">
+  POC is the cut we build and spec against. Vision is long-term — prep transforms, code blocks,
+  the fuller agentic surface. Demo is finished and is not under review.
+</p>
+
+<p class="rule">
+  <strong>The cut rule.</strong> A feature makes POC if it serves one of the three problems in §1.
+  Everything else waits. And every control that ships is wired or removed — a cosmetic control
+  gets spec'd as real.
+</p>
+
+<h2><span class="n">1.</span> &nbsp;What we're solving — the deciding criteria</h2>
+<div class="wrap">
+<table>
+  <thead><tr><th style="width:26%">Problem today</th><th style="width:32%">What POC does about it</th><th style="width:14%">In POC</th><th>Owner</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><strong>Modeling isn't agentic.</strong> Every join, formula and description is manual.</td>
+      <td>Agent builds joins and formulas from a brief, on a visual canvas.</td>
+      <td><span class="pill p-in">Core</span></td>
+      <td>Canvas: us · Agent: SpotterModel</td>
+    </tr>
+    <tr>
+      <td><strong>No testing during build.</strong> Models publish without knowing if Spotter answers correctly.</td>
+      <td>Readiness check inside the build flow.</td>
+      <td><span class="pill p-in">Core</span></td>
+      <td>Komal</td>
+    </tr>
+    <tr>
+      <td><strong>Work is fragmented.</strong> Modeling here, prep elsewhere, testing nowhere.</td>
+      <td>One canvas: browse → join → filter → formula → cache → publish.</td>
+      <td><span class="pill p-in">Core</span></td>
+      <td>Us</td>
+    </tr>
+    <tr>
+      <td><strong>No way to diagnose Spotter failures.</strong></td>
+      <td>Readiness pillars name what's wrong.</td>
+      <td><span class="pill p-open">Partial</span></td>
+      <td>Komal — depth is hers to scope</td>
+    </tr>
+    <tr>
+      <td><strong>No integrated data prep.</strong> Quality issues exist in the warehouse, no BI-layer fix.</td>
+      <td>Nothing. Clean and code blocks are Vision.</td>
+      <td><span class="pill p-out">Deferred</span></td>
+      <td>—</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+<p class="note">Source: <code>knowledge/users.md</code> — the five documented breakdowns in the current process.</p>
+
+<h2><span class="n">2.</span> &nbsp;What's in, what's not</h2>
+<p class="legend"><span class="pill p-new">Review</span> = raised in the POC review, 2026-08-06.</p>
+<div class="wrap">
+<table>
+  <thead><tr><th style="width:28%">Capability</th><th style="width:16%">Status</th><th>Note</th></tr></thead>
+  <tbody>
+    <tr><td>Data browser — warehouse tree</td><td><span class="pill p-in">In</span></td><td>Primary way data reaches the canvas</td></tr>
+    <tr><td>Join tables via UI</td><td><span class="pill p-in">In</span></td><td>Drag-to-connect, plus multi-select → agent join</td></tr>
+    <tr><td>Canvas zoom · undo/redo</td><td><span class="pill p-in">In</span></td><td>Canvas-level only — see §4</td></tr>
+    <tr><td>Formulas and filters <strong>across tables</strong></td><td><span class="pill p-new">Review</span> <span class="pill p-open">Rework</span></td><td>Both are per-table today. They need to work across the model. Same question as node-vs-model level — one decision, not two</td></tr>
+    <tr><td>Spreadsheet <em>vs</em> data preview</td><td><span class="pill p-new">Review</span> <span class="pill p-open">Open</span></td><td>Two surfaces show tabular data. Differentiate the purpose of each, or drop one. See §4 for what each does today</td></tr>
+    <tr><td>Caching — scheduling + in-progress behaviour</td><td><span class="pill p-new">Review</span> <span class="pill p-open">Open</span></td><td>Configure and enable are built. Scheduling isn't, and nothing defines what a user can do while a cache runs</td></tr>
+    <tr><td>Agent-led creation surface</td><td><span class="pill p-new">Review</span> <span class="pill p-open">Open</span></td><td>Full-screen chat or the canvas? Already explored — see §4</td></tr>
+    <tr><td>Published model view</td><td><span class="pill p-in">Decided</span></td><td><strong>No change.</strong> MVP is the canvas experience; the post-publish model view stays as-is</td></tr>
+    <tr><td>Entry point</td><td><span class="pill p-in">Decided</span></td><td><strong>A CTA.</strong> No Data Studio home in MVP — the Vision landing page with monitoring and recent models is out. Location of the CTA is the remaining detail</td></tr>
+    <tr><td>Add data via CSV</td><td><span class="pill p-out">Out</span></td><td></td></tr>
+    <tr><td>Clean / prep transforms</td><td><span class="pill p-out">Out</span></td><td>Vision</td></tr>
+    <tr><td>Code blocks — SQL, Python</td><td><span class="pill p-out">Out</span></td><td>Vision. As sources <em>and</em> as transforms</td></tr>
+    <tr><td>Columns tab</td><td><span class="pill p-out">Out</span></td><td>Columns live in the preview instead</td></tr>
+    <tr><td>Workspace · multi-source · notebook</td><td><span class="pill p-out">Out</span></td><td>Vision</td></tr>
+    <tr><td>Spotter Model — the agent</td><td><span class="pill p-inh">Inherited</span></td><td>SpotterModel team. §3</td></tr>
+    <tr><td>Readiness flow</td><td><span class="pill p-inh">Inherited</span></td><td>Komal. POC carries the entry point only</td></tr>
+    <tr><td>Publish workflow · Draft state</td><td><span class="pill p-open">Open</span></td><td>Both built in the prototype. Build for real or not?</td></tr>
+    <tr><td>Parameters · Settings</td><td><span class="pill p-open">Open</span></td><td>In the old canvas, absent here</td></tr>
+    <tr><td>Spotter optimization</td><td><span class="pill p-open">Open</span></td><td>In neither canvas today — net-new ask</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2><span class="n">3.</span> &nbsp;Who builds what</h2>
+<div class="wrap">
+<table>
+  <thead><tr><th style="width:24%">Area</th><th style="width:20%">Owner</th><th>State</th></tr></thead>
+  <tbody>
+    <tr><td>Visual canvas, data browser, spreadsheet, publish UI</td><td class="owner">Us</td><td>Prototype built and reviewed</td></tr>
+    <tr><td>The agent</td><td class="owner">SpotterModel team</td><td>In flight elsewhere. Reused entirely — we build no agent</td></tr>
+    <tr><td>Readiness</td><td class="owner">Komal</td><td>Being rebuilt. POC shows the pill; the flow arrives with her merge</td></tr>
+    <tr><td>What already exists vs what gets built</td><td class="owner">Data-modeling team</td><td>Not yet asked. §5</td></tr>
+    <tr><td>POC implementation</td><td class="owner">Engineering</td><td>Unassigned — this doc is the input</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>The seam — the one thing the agent has to be able to do</h3>
+<p>Three calls in <code>ModelCanvas.tsx</code>. This is the entire API between a conversation and the canvas.</p>
+<div class="wrap">
+<table>
+  <thead><tr><th style="width:30%">Call</th><th>Does</th></tr></thead>
+  <tbody>
+    <tr><td><code>agentAddTables</code></td><td>Places table cards. Returns a promise</td></tr>
+    <tr><td><code>agentAddJoins</code></td><td>Draws joins, runs auto-layout</td></tr>
+    <tr><td><code>agentAddPythonSource</code></td><td>Adds a Python source card — out of POC scope</td></tr>
+  </tbody>
+</table>
+</div>
+<p class="note">If the SpotterModel agent can call these, it can drive POC's canvas. <strong>Caching is not on this list</strong> — agent-driven caching is a new call, not a wiring job.</p>
+
+<h2><span class="n">4.</span> &nbsp;What's there, what's missing</h2>
+<div class="cols">
+  <div>
+    <h3>Built and working</h3>
+    <ul>
+      <li>Canvas — cards, chip pipeline, orthogonal joins, auto-layout, Tidy up</li>
+      <li>Data browser tree with column selection</li>
+      <li>Join, filter, formula via UI + properties panel</li>
+      <li>Spreadsheet grid, column menu</li>
+      <li>Caching — configure, enable, progress</li>
+      <li>Publish — modal, draft→published</li>
+      <li>Node-level and model-level preview</li>
+    </ul>
+  </div>
+  <div>
+    <h3>Gaps to fill</h3>
+    <ul>
+      <li><strong>Formula and filter are per-table.</strong> Confirmed in review — they need to span the model</li>
+      <li><strong>The entry CTA doesn't exist.</strong> Today the only route to the canvas is the conversation</li>
+      <li><strong>Three datasets are live at once.</strong> The journey builds a marketing model; the browser lists customer-support tables; readiness describes a third set</li>
+      <li><strong>Caching has no schedule and no in-progress contract.</strong> Nothing says what's usable while it runs</li>
+      <li><strong>Published model view is undefined for MVP</strong></li>
+      <li><strong>Undo is partial.</strong> Canvas undo works; spreadsheet undo/redo are dead buttons; Tidy up has no undo</li>
+      <li><strong>Parameters, Settings.</strong> Never built here</li>
+      <li><strong>Cosmetic controls to remove:</strong> spreadsheet formatting toolbar (10 of 15 dead), "Fix all with agent" chip, WorkflowDirectory</li>
+    </ul>
+  </div>
+</div>
+
+<h3>Two review items where the prototype already holds evidence</h3>
+<div class="wrap">
+<table>
+  <thead><tr><th style="width:22%">Question</th><th>What the prototype shows</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><strong>Spreadsheet vs data preview</strong></td>
+      <td>
+        <strong>Preview</strong> (bottom pane): output of the pipeline at a chosen node <em>or</em> the whole model,
+        Data and Semantic tabs, read-only, row count. It answers <em>"what did this step do?"</em><br>
+        <strong>Spreadsheet</strong> (top tab): full-pane grid, column menu, formula columns with an <code>fx</code> badge,
+        opening it clears canvas selection. It answers <em>"let me work in the data."</em><br>
+        The overlap is real — both render the same rows.
+      </td>
+    </tr>
+    <tr>
+      <td><strong>Agent-led creation — chat or canvas?</strong></td>
+      <td>
+        Built as <strong>canvas</strong>: the chat panel sits on the canvas, and accepting the agent's first
+        table proposal creates the model. Full-screen chat was considered and rejected — it's a
+        different visual treatment, so the conversation has to be handed across a seam mid-flow.
+        One flex row, nothing mounts or unmounts. Currently Demo-only (<code>chatFirstStart</code>).
+      </td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<h2><span class="n">5.</span> &nbsp;Validated vs to be validated</h2>
+<div class="cols">
+  <div class="card">
+    <h3>Validated</h3>
+    <ul>
+      <li><strong>The canvas interaction model</strong> — built and reviewed across 155 sessions of design review</li>
+      <li><strong>The Demo path</strong> — walked end to end internally, S1→S20</li>
+      <li><strong>The canvas UX with stakeholders</strong> — reviewed 2026-08-06; feedback is in §2 and §4</li>
+      <li><strong>Design system fidelity</strong> — Radiant components and tokens throughout</li>
+    </ul>
+    <p class="note">All internal. None of it is user-validated.</p>
+  </div>
+  <div class="card">
+    <h3>To be validated</h3>
+    <ul>
+      <li><strong>The POC path itself</strong> — never walked end to end. Demo was; POC wasn't</li>
+      <li><strong>The seam</strong> — that the SpotterModel agent can drive the canvas. Theoretical, never tested against their build</li>
+      <li><strong>Feasibility</strong> — what the backend already supports vs what gets built. Not yet asked</li>
+      <li><strong>The old-canvas gaps</strong> — whether losing Parameters and Settings is acceptable</li>
+      <li><strong>That prep being out is survivable</strong> — it's one of the five documented user problems, deferred to Vision</li>
+      <li><strong>The user, at all</strong> — <code>knowledge/users.md</code> carries four open questions about the primary user, all unanswered</li>
+    </ul>
+  </div>
+</div>
+
+<h2><span class="n">6.</span> &nbsp;Decisions blocking the build</h2>
+<ol>
+  <li><strong>Where the CTA lives.</strong> Entry point is settled — a CTA, no Data Studio home in MVP. Only the location is open. <span class="owner">Product</span></li>
+  <li><strong>Formula and filter at model level.</strong> Confirmed rework. Same decision as node-vs-model level — settle once. <span class="owner">Product + Design</span></li>
+  <li><strong>Spreadsheet and preview — both, or one?</strong> Evidence in §4. <span class="owner">Product + Design</span></li>
+  <li><strong>Is the clarify→plan→build conversation ours or a placeholder</strong> for the SpotterModel agent? Decides whether we invest in the conversation or only in the seam. <span class="owner">Product + SpotterModel</span></li>
+  <li><strong>Caching contract.</strong> Scheduling, duration, and what a user can do mid-cache. Plus whether the agent drives it — that's a new seam call. <span class="owner">Product + Data-modeling</span></li>
+  <li><strong>One dataset.</strong> Which of the three the whole POC runs on. <span class="owner">Product</span></li>
+  <li><strong>Publish and Draft — build or not?</strong> Both exist in the prototype. <span class="owner">Product + Engineering</span></li>
+  <li><strong>What can the modeling team plug vs what gets built?</strong> Parameters, Settings, cross-table filters, agent-driven caching. <span class="owner">Data-modeling team</span></li>
+  <li><strong>Readiness label</strong> — "Spotter readiness" or "AI readiness". One ships. <span class="owner">Product + Komal</span></li>
+</ol>

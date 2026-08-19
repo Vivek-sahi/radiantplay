@@ -134,7 +134,7 @@ const Step2Content: React.FC<{ onAutoAdvance: () => void }> = ({ onAutoAdvance }
               width: 18, height: 18, borderRadius: 9, flexShrink: 0,
               backgroundColor: done ? c['content-success'] : active ? c['content-brand'] : c['background-sunken'],
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 10, color: 'white', transition: 'all 0.2s',
+              fontSize: 12, color: 'white', transition: 'all 0.2s',
             }}>
               {done ? '✓' : active ? '↻' : ''}
             </div>
@@ -190,7 +190,7 @@ const Step3Content: React.FC = () => {
               backgroundColor: checked[p.id] ? c['content-brand'] : 'transparent',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
-              {checked[p.id] && <span style={{ fontSize: 10, color: 'white', lineHeight: 1 }}>✓</span>}
+              {checked[p.id] && <span style={{ fontSize: 12, color: 'white', lineHeight: 1 }}>✓</span>}
             </div>
             <div style={{ flex: 1 }}>
               <span style={{ fontSize: fs.sm, fontWeight: fw.medium, color: c['content-primary'], fontFamily: ff.primary }}>
@@ -252,7 +252,7 @@ const Step4Content: React.FC<Step4ContentProps> = ({ onReviewIssues, onPublish }
                 width: 18, height: 18, borderRadius: 9, flexShrink: 0,
                 backgroundColor: done ? c['content-success'] : active ? c['content-brand'] : c['background-sunken'],
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 10, color: 'white', transition: 'all 0.2s',
+                fontSize: 12, color: 'white', transition: 'all 0.2s',
               }}>
                 {done ? '✓' : active ? '↻' : ''}
               </div>
@@ -283,7 +283,7 @@ const Step4Content: React.FC<Step4ContentProps> = ({ onReviewIssues, onPublish }
         borderBottom: `1px solid ${c['border-divider']}`,
       }}>
         {['Model', 'Issues', ''].map(h => (
-          <div key={h} style={{ fontSize: 11, fontWeight: fw.medium, color: c['content-secondary'], fontFamily: ff.primary, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+          <div key={h} style={{ fontSize: 12, fontWeight: fw.medium, color: c['content-secondary'], fontFamily: ff.primary, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
             {h}
           </div>
         ))}
@@ -310,7 +310,7 @@ const Step4Content: React.FC<Step4ContentProps> = ({ onReviewIssues, onPublish }
                 padding: `${sp.A}px ${sp.B + 2}px`, borderRadius: 5,
                 border: `1px solid ${c['border-default']}`,
                 backgroundColor: 'transparent', cursor: 'pointer',
-                fontSize: 11, fontFamily: ff.primary, color: c['content-secondary'],
+                fontSize: 12, fontFamily: ff.primary, color: c['content-secondary'],
               }}
               onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
               onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
@@ -323,7 +323,7 @@ const Step4Content: React.FC<Step4ContentProps> = ({ onReviewIssues, onPublish }
                 padding: `${sp.A}px ${sp.B + 2}px`, borderRadius: 5,
                 border: `1px solid ${c['border-default']}`,
                 backgroundColor: 'transparent', cursor: 'pointer',
-                fontSize: 11, fontFamily: ff.primary, color: c['content-secondary'],
+                fontSize: 12, fontFamily: ff.primary, color: c['content-secondary'],
               }}
               onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
               onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}

@@ -447,7 +447,7 @@ const ColumnsView: React.FC<{ project: ProjectState; setProject: React.Dispatch<
                   )}
                   {show('nullPct') && (
                     <td style={tdStyle()}>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: sp.A }}>
                         {qVal(col.nullRate)}{col.nullRate ? '%' : ''}
                         {prepTransformMap.has(`${tableId}:${col.id}:null`) && (
                           <span title={`Transform active: ${prepTransformMap.get(`${tableId}:${col.id}:null`)}`} style={{ fontSize: 12, color: c['content-brand'], cursor: 'default', lineHeight: 1, padding: '2px 2px' }}>✦</span>
@@ -457,7 +457,7 @@ const ColumnsView: React.FC<{ project: ProjectState; setProject: React.Dispatch<
                   )}
                   {show('duplicates') && (
                     <td style={tdStyle()}>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: sp.A }}>
                         {qVal(col.duplicateCount)}
                         {prepTransformMap.has(`${tableId}:${col.id}:duplicate`) && (
                           <span title={`Transform active: ${prepTransformMap.get(`${tableId}:${col.id}:duplicate`)}`} style={{ fontSize: 12, color: c['content-brand'], cursor: 'default', lineHeight: 1, padding: '2px 2px' }}>✦</span>
@@ -468,7 +468,7 @@ const ColumnsView: React.FC<{ project: ProjectState; setProject: React.Dispatch<
                   {show('blanks')     && <td style={tdStyle()}>{qVal(col.blankCount)}</td>}
                   {show('anomalies') && (
                     <td style={tdStyle()}>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: sp.A }}>
                         {qVal(col.anomalyCount)}
                         {prepTransformMap.has(`${tableId}:${col.id}:anomaly`) && (
                           <span title={`Transform active: ${prepTransformMap.get(`${tableId}:${col.id}:anomaly`)}`} style={{ fontSize: 12, color: c['content-brand'], cursor: 'default', lineHeight: 1, padding: '2px 2px' }}>✦</span>
@@ -573,7 +573,7 @@ const DataPreviewView: React.FC<{ project: ProjectState }> = ({ project }) => {
     backgroundColor: c['background-sunken'],
     color: c['content-secondary'],
     fontWeight: fw.semibold,
-    fontSize: 10,
+    fontSize: 12,
     textTransform: 'uppercase',
     letterSpacing: '0.4px',
     textAlign: 'left',
@@ -614,10 +614,10 @@ const DataPreviewView: React.FC<{ project: ProjectState }> = ({ project }) => {
                 <th style={{ ...thStyle, width: 36, minWidth: 36, textAlign: 'right', borderRight: `2px solid ${c['border-divider']}`, fontWeight: fw.regular }}>#</th>
                 {CH_COLS.map(({ key, formula, wide }) => (
                   <th key={key} style={{ ...thStyle, minWidth: key === 'customer_health_score' ? 160 : wide ? 160 : 120 }}>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                      <span style={{ fontFamily: ff.mono, fontSize: 10 }}>{key}</span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: sp.A }}>
+                      <span style={{ fontFamily: ff.mono, fontSize: 12 }}>{key}</span>
                       {formula && (
-                        <span style={{ fontSize: 9, fontFamily: ff.primary, backgroundColor: c['background-information'], color: c['content-brand'], padding: '1px 4px', borderRadius: 3, textTransform: 'none', letterSpacing: 0, fontWeight: fw.semibold }}>ƒx</span>
+                        <span style={{ fontSize: 12, fontFamily: ff.primary, backgroundColor: c['background-information'], color: c['content-brand'], padding: '1px 4px', borderRadius: 3, textTransform: 'none', letterSpacing: 0, fontWeight: fw.semibold }}>ƒx</span>
                       )}
                       <svg style={{ marginLeft: 'auto', opacity: 0.4, flexShrink: 0 }} width="8" height="8" viewBox="0 0 10 10" fill="none">
                         <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
@@ -635,7 +635,7 @@ const DataPreviewView: React.FC<{ project: ProjectState }> = ({ project }) => {
                   onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
                   onMouseLeave={e => (e.currentTarget.style.backgroundColor = c['background-base'])}
                 >
-                  <td style={{ padding: cellPad, borderBottom: `1px solid ${c['border-divider']}`, borderRight: `2px solid ${c['border-divider']}`, color: c['content-secondary'], textAlign: 'right', fontFamily: ff.mono, fontSize: 10, userSelect: 'none', backgroundColor: c['background-sunken'] }}>
+                  <td style={{ padding: cellPad, borderBottom: `1px solid ${c['border-divider']}`, borderRight: `2px solid ${c['border-divider']}`, color: c['content-secondary'], textAlign: 'right', fontFamily: ff.mono, fontSize: 12, userSelect: 'none', backgroundColor: c['background-sunken'] }}>
                     {start + i + 1}
                   </td>
                   {CH_COLS.map(({ key, formula }) => {
@@ -760,10 +760,10 @@ const DataPreviewView: React.FC<{ project: ProjectState }> = ({ project }) => {
                 const minW = col === 'campaign_name' ? 200 : isComputed ? 148 : isCampaignCol || isUserCol ? 120 : 108;
                 return (
                   <th key={col} style={{ ...thStyle, minWidth: minW }}>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                      <span style={{ fontFamily: ff.mono, fontSize: 10 }}>{col}</span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: sp.A }}>
+                      <span style={{ fontFamily: ff.mono, fontSize: 12 }}>{col}</span>
                       {isComputed && (
-                        <span style={{ fontSize: 9, fontFamily: ff.primary, backgroundColor: c['background-information'], color: c['content-brand'], padding: '1px 4px', borderRadius: 3, textTransform: 'none', letterSpacing: 0, fontWeight: fw.semibold }}>ƒx</span>
+                        <span style={{ fontSize: 12, fontFamily: ff.primary, backgroundColor: c['background-information'], color: c['content-brand'], padding: '1px 4px', borderRadius: 3, textTransform: 'none', letterSpacing: 0, fontWeight: fw.semibold }}>ƒx</span>
                       )}
                       <svg style={{ marginLeft: 'auto', opacity: 0.4, flexShrink: 0 }} width="8" height="8" viewBox="0 0 10 10" fill="none">
                         <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
@@ -782,7 +782,7 @@ const DataPreviewView: React.FC<{ project: ProjectState }> = ({ project }) => {
                 onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
                 onMouseLeave={e => (e.currentTarget.style.backgroundColor = c['background-base'])}
               >
-                <td style={{ padding: cellPad, borderBottom: `1px solid ${c['border-divider']}`, borderRight: `2px solid ${c['border-divider']}`, color: c['content-secondary'], textAlign: 'right', fontFamily: ff.mono, fontSize: 10, userSelect: 'none', backgroundColor: c['background-sunken'] }}>
+                <td style={{ padding: cellPad, borderBottom: `1px solid ${c['border-divider']}`, borderRight: `2px solid ${c['border-divider']}`, color: c['content-secondary'], textAlign: 'right', fontFamily: ff.mono, fontSize: 12, userSelect: 'none', backgroundColor: c['background-sunken'] }}>
                   {start + i + 1}
                 </td>
                 {allCols.map(col => {
@@ -801,7 +801,7 @@ const DataPreviewView: React.FC<{ project: ProjectState }> = ({ project }) => {
                       backgroundColor: isAnomaly ? c['background-warning'] : undefined,
                     }}>
                       {isNull ? <em style={{ fontStyle: 'italic', opacity: 0.55 }}>null</em> : String(val)}
-                      {isFlagged && <span style={{ marginLeft: 5, fontSize: 10, color: c['content-warning'] }}>⚠</span>}
+                      {isFlagged && <span style={{ marginLeft: sp.A, fontSize: 12, color: c['content-warning'] }}>⚠</span>}
                     </td>
                   );
                 })}
@@ -1118,14 +1118,14 @@ const NotebookCell: React.FC<NotebookCellProps> = ({
         <div style={{ display: 'flex', alignItems: 'center', gap: sp.B }}>
           <StatusDot status={status} />
           <span style={{
-            fontSize: 10, fontWeight: fw.semibold,
+            fontSize: 12, fontWeight: fw.semibold,
             color: type === 'sql' ? c['content-brand'] : type === 'python' ? '#D97706' : c['content-secondary'],
             textTransform: 'uppercase', letterSpacing: '0.06em',
           }}>{type}</span>
           <span style={{ fontSize: fs.xs, color: c['content-primary'], fontWeight: fw.medium }}>{label}</span>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4, opacity: isEditing || headerHovered ? 1 : 0, transition: 'opacity 0.15s' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: sp.A, opacity: isEditing || headerHovered ? 1 : 0, transition: 'opacity 0.15s' }}>
           {isEditing ? (
             <>
               <button
@@ -1137,7 +1137,7 @@ const NotebookCell: React.FC<NotebookCellProps> = ({
               <button
                 onClick={onRun}
                 style={{
-                  display: 'flex', alignItems: 'center', gap: 5,
+                  display: 'flex', alignItems: 'center', gap: sp.A,
                   background: c['background-accent-green'], color: c['content-accent-green'],
                   border: `1px solid ${c['border-accent-green']}`,
                   borderRadius: 5, cursor: 'pointer',
@@ -1331,7 +1331,7 @@ const NotebookView: React.FC<{ project: ProjectState }> = ({ project }) => {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: sp.C }}>
           {errorCount > 0 && (
-            <span style={{ fontSize: fs.xs, color: c['content-accent-red'], display: 'flex', alignItems: 'center', gap: 4 }}>
+            <span style={{ fontSize: fs.xs, color: c['content-accent-red'], display: 'flex', alignItems: 'center', gap: sp.A }}>
               <svg width="10" height="10" viewBox="0 0 16 16" fill="none">
                 <circle cx="8" cy="8" r="7" stroke={c['content-accent-red']} strokeWidth="1.5" />
                 <path d="M8 5v3.5M8 10.5v.5" stroke={c['content-accent-red']} strokeWidth="1.5" strokeLinecap="round" />
@@ -1369,9 +1369,9 @@ const NotebookView: React.FC<{ project: ProjectState }> = ({ project }) => {
       {/* Cells */}
       <div style={{ padding: sp.D, display: 'flex', flexDirection: 'column', gap: sp.C }}>
         {allCells.map(cell => (
-          <div key={cell.id} style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+          <div key={cell.id} style={{ display: 'flex', flexDirection: 'column', gap: sp.A }}>
             {cell.instruction && (
-              <p style={{ margin: 0, fontSize: fs.xs, color: c['content-secondary'], lineHeight: '16px', paddingLeft: 4 }}>
+              <p style={{ margin: 0, fontSize: fs.xs, color: c['content-secondary'], lineHeight: '16px', paddingLeft: sp.A }}>
                 {cell.instruction}
               </p>
             )}
@@ -1414,7 +1414,7 @@ const NotebookView: React.FC<{ project: ProjectState }> = ({ project }) => {
           </button>
           {showAddMenu && (
             <div style={{
-              position: 'absolute', bottom: '100%', left: 0, marginBottom: 4,
+              position: 'absolute', bottom: '100%', left: 0, marginBottom: sp.A,
               background: c['background-base'], border: `1px solid ${c['border-divider']}`,
               borderRadius: 8, boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
               overflow: 'hidden', minWidth: 160, zIndex: 10,

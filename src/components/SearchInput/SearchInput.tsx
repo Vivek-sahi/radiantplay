@@ -41,7 +41,15 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(({
 
   return (
     <div className={containerClasses}>
-      <Icon name="search" size="m" className={styles.icon} />
+      {/*
+        ⚠️ The colour is passed, not left to the class.
+
+        `Icon` writes `style={{ color }}` on the svg with a default of `currentColor`, and an
+        inline style beats a class — so `.icon { color: content-tertiary }` never applied and the
+        search glyph inherited the field's text colour instead, rendering near-black next to a
+        tertiary-grey placeholder. Same token, stated where it actually wins.
+      */}
+      <Icon name="search" size="m" className={styles.icon} color="var(--rd-sys-color-content-tertiary)" />
       <input
         ref={ref}
         type="text"

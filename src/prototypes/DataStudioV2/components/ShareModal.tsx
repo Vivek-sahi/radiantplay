@@ -101,7 +101,7 @@ const ShareModal: React.FC<{ onClose: () => void; onShared?: () => void }> = ({ 
             <CheckboxField checked={addMessage} onChange={setAddMessage} label="Add message (optional)" />
             <div style={{ display: 'flex', alignItems: 'center', gap: sp.A }}>
               <CheckboxField checked={false} onChange={() => {}} label="Embedded link format" />
-              <span style={{ width: 14, height: 14, borderRadius: '50%', border: `1px solid ${c['border-default']}`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, color: c['content-secondary'], cursor: 'default', marginLeft: sp.A }}>i</span>
+              <span style={{ width: 14, height: 14, borderRadius: '50%', border: `1px solid ${c['border-default']}`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: c['content-secondary'], cursor: 'default', marginLeft: sp.A }}>i</span>
             </div>
           </div>
 
@@ -123,7 +123,7 @@ const ShareModal: React.FC<{ onClose: () => void; onShared?: () => void }> = ({ 
                         {user.permission} ▾
                       </Button>
                       {openPermission === user.id && (
-                        <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: 4, backgroundColor: c['background-base'], border: `1px solid ${c['border-default']}`, borderRadius: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.12)', zIndex: 10, overflow: 'hidden', minWidth: 130 }}>
+                        <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: sp.A, backgroundColor: c['background-base'], border: `1px solid ${c['border-default']}`, borderRadius: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.12)', zIndex: 10, overflow: 'hidden', minWidth: 130 }}>
                           {(['Can view', 'Can edit', 'Can manage'] as const).map(perm => (
                             <div
                               key={perm}
@@ -153,7 +153,7 @@ const ShareModal: React.FC<{ onClose: () => void; onShared?: () => void }> = ({ 
           {/* Discoverable */}
           <div style={{ marginBottom: sp.C }}>
             <CheckboxField checked={discoverable} onChange={setDiscoverable} label="Make this data model discoverable">
-              <span style={{ width: 14, height: 14, borderRadius: '50%', border: `1px solid ${c['border-default']}`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, color: c['content-secondary'], cursor: 'default', marginLeft: sp.A }}>i</span>
+              <span style={{ width: 14, height: 14, borderRadius: '50%', border: `1px solid ${c['border-default']}`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: c['content-secondary'], cursor: 'default', marginLeft: sp.A }}>i</span>
             </CheckboxField>
           </div>
 

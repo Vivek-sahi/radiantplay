@@ -93,7 +93,7 @@ const HeroChip: React.FC<{ icon: React.ComponentProps<typeof Icon>['name']; labe
     style={{
       display: 'inline-flex',
       alignItems: 'center',
-      gap: 5,
+      gap: sp.A,
       padding: `${sp.A + 1}px ${sp.C}px`,
       borderRadius: 20,
       border: `1px solid ${c['border-default']}`,
@@ -200,7 +200,7 @@ const PulseRow: React.FC<{
       onMouseLeave={() => setHovered(false)}
       style={{
         padding: '14px 20px',
-        display: 'flex', alignItems: 'center', gap: 14,
+        display: 'flex', alignItems: 'center', gap: sp.D,
         borderBottom: isLast ? 'none' : '1px solid rgba(0,0,0,0.05)',
         backgroundColor: hovered ? 'rgba(0,0,0,0.018)' : 'transparent',
         cursor: 'pointer',
@@ -233,7 +233,7 @@ const PulseRow: React.FC<{
             {insight.titleShort ?? insight.title}
           </span>
         </div>
-        <div style={{ marginTop: 3 }}>
+        <div style={{ marginTop: sp.A }}>
           <span style={{
             fontSize: 12, color: '#9ca3af', lineHeight: 1.4,
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
@@ -245,11 +245,11 @@ const PulseRow: React.FC<{
       </div>
 
       {/* Right — action + dismiss, both revealed on hover */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: sp.C, flexShrink: 0 }}>
         <button
           onClick={e => { e.stopPropagation(); onAction(); }}
           style={{
-            fontSize: 11, fontWeight: fw.medium, fontFamily: ff.primary,
+            fontSize: 12, fontWeight: fw.medium, fontFamily: ff.primary,
             color: c['content-brand'],
             background: 'none', border: 'none', cursor: 'pointer',
             padding: 0, whiteSpace: 'nowrap',
@@ -266,12 +266,12 @@ const PulseRow: React.FC<{
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             width: 18, height: 18, borderRadius: 4,
             background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-            color: '#c4c9d4',
+            color: c['content-tertiary'],
             opacity: hovered ? 1 : 0,
             transition: 'opacity 0.12s, color 0.12s',
           }}
           onMouseEnter={e => { e.currentTarget.style.color = '#9ca3af'; }}
-          onMouseLeave={e => { e.currentTarget.style.color = '#c4c9d4'; }}
+          onMouseLeave={e => { e.currentTarget.style.color = c['content-tertiary']; }}
         >
           <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
             <path d="M1.5 1.5L8.5 8.5M8.5 1.5L1.5 8.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
@@ -318,7 +318,7 @@ const RecentPanel: React.FC<{
       height: 48,
       padding: '0 20px',
       borderBottom: '1px solid rgba(0,0,0,0.05)',
-      display: 'flex', alignItems: 'center', gap: 8,
+      display: 'flex', alignItems: 'center', gap: sp.B,
       flexShrink: 0,
     }}>
       <span style={{ fontSize: 13, fontWeight: fw.semibold, color: c['content-primary'], letterSpacing: '-0.1px' }}>Recent models</span>
@@ -358,7 +358,7 @@ const RecentRow: React.FC<{
       onMouseLeave={() => setHovered(false)}
       style={{
         padding: '11px 20px',
-        display: 'flex', alignItems: 'center', gap: 12,
+        display: 'flex', alignItems: 'center', gap: sp.C,
         borderBottom: isLast ? 'none' : '1px solid rgba(0,0,0,0.05)',
         backgroundColor: hovered ? 'rgba(0,0,0,0.018)' : 'transparent',
         cursor: 'pointer',
@@ -377,16 +377,16 @@ const RecentRow: React.FC<{
         }}>
           {project.name}
         </div>
-        <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 2, lineHeight: 1.4 }}>
+        <div style={{ fontSize: 12, color: '#9ca3af', marginTop: sp.A, lineHeight: 1.4 }}>
           {project.status === 'published' ? 'Published' : 'Draft'}
           {project.conversations ? ` · ${project.conversations.toLocaleString()} queries` : ''}
         </div>
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: sp.A, flexShrink: 0 }}>
         <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: healthColor, flexShrink: 0 }} />
         <span style={{ fontSize: 12, fontWeight: fw.medium, color: healthColor, whiteSpace: 'nowrap' }}>{healthLabel}</span>
       </div>
-      <span style={{ fontSize: 11, color: '#c4c9d4', flexShrink: 0, minWidth: 52, textAlign: 'right' as const }}>{project.lastModified}</span>
+      <span style={{ fontSize: 12, color: c['content-tertiary'], flexShrink: 0, minWidth: 52, textAlign: 'right' as const }}>{project.lastModified}</span>
     </div>
   );
 };
@@ -567,11 +567,11 @@ const Overview: React.FC<OverviewProps> = ({
           <PulsePanel
             bodyHeight={441}
             tabBar={
-              <div style={{ display: 'flex', alignItems: 'center', padding: '0 20px', height: 48, borderBottom: '1px solid rgba(0,0,0,0.05)', gap: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', padding: '0 20px', height: 48, borderBottom: '1px solid rgba(0,0,0,0.05)', gap: sp.B }}>
                 <span style={{ fontSize: 13, fontWeight: fw.semibold, color: c['content-primary'], letterSpacing: '-0.1px' }}>Pulse</span>
                 {visiblePulseInsights.length > 0 && (
                   <span style={{
-                    fontSize: 11, fontWeight: fw.semibold,
+                    fontSize: 12, fontWeight: fw.semibold,
                     lineHeight: '16px', padding: '0 5px', borderRadius: 20,
                     color: '#9ca3af', backgroundColor: 'rgba(0,0,0,0.05)',
                     minWidth: 18, textAlign: 'center' as const,

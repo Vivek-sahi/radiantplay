@@ -239,7 +239,7 @@ const CodeCell: React.FC<CodeCellProps> = ({
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: sp.B }}>
           <span style={{
-            fontSize: 10, fontWeight: fw.semibold, color: type === 'sql' ? '#7C3AED' : type === 'python' ? '#B45309' : c['content-secondary'],
+            fontSize: 12, fontWeight: fw.semibold, color: type === 'sql' ? '#7C3AED' : type === 'python' ? '#B45309' : c['content-secondary'],
             textTransform: 'uppercase', letterSpacing: '0.06em',
           }}>{type}</span>
           <span style={{ fontSize: fs.xs, color: c['content-primary'], fontWeight: fw.medium }}>{label}</span>
@@ -247,7 +247,7 @@ const CodeCell: React.FC<CodeCellProps> = ({
 
         <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, opacity: isEditing || isRunning || isFlash || headerHovered ? 1 : 0, transition: 'opacity 0.15s' }}>
           {isRunning ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: fs.xs, color: c['content-secondary'], fontFamily: ff.primary }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: sp.A, fontSize: fs.xs, color: c['content-secondary'], fontFamily: ff.primary }}>
               <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ animation: 'ds-spin 0.8s linear infinite', flexShrink: 0 }}>
                 <circle cx="6" cy="6" r="4.5" strokeOpacity="0.25" />
                 <path d="M6 1.5A4.5 4.5 0 0 1 10.5 6" strokeLinecap="round" />
@@ -255,7 +255,7 @@ const CodeCell: React.FC<CodeCellProps> = ({
               Running…
             </div>
           ) : isFlash ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: fs.xs, color: '#16a34a', fontFamily: ff.primary, fontWeight: fw.medium }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: sp.A, fontSize: fs.xs, color: '#16a34a', fontFamily: ff.primary, fontWeight: fw.medium }}>
               <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="2,6 5,9 10,3" />
               </svg>
@@ -272,7 +272,7 @@ const CodeCell: React.FC<CodeCellProps> = ({
               <button
                 onClick={onRun}
                 style={{
-                  display: 'flex', alignItems: 'center', gap: 5,
+                  display: 'flex', alignItems: 'center', gap: sp.A,
                   background: '#16a34a', color: '#fff', border: 'none',
                   borderRadius: 5, cursor: 'pointer',
                   fontSize: fs.xs, fontWeight: fw.semibold, padding: '3px 10px', fontFamily: ff.primary,
@@ -540,7 +540,7 @@ const PlanPanel: React.FC<PlanPanelProps> = ({ plan, onClose }) => {
               <div style={{ padding: `0 ${sp.D}px ${sp.D}px`, display: 'flex', flexDirection: 'column', gap: sp.C }}>
                 {plan.tables.map(table => (
                   <div key={table.name} style={{ borderRadius: 7, border: `1px solid ${c['border-divider']}`, padding: `${sp.B}px ${sp.C}px` }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 3 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: sp.A }}>
                       <span style={{ fontSize: fs.xs, fontWeight: fw.semibold, color: c['content-primary'], fontFamily: 'monospace' }}>
                         {table.schema}.{table.name}
                       </span>
@@ -556,13 +556,13 @@ const PlanPanel: React.FC<PlanPanelProps> = ({ plan, onClose }) => {
               <div style={{ padding: `0 ${sp.D}px ${sp.D}px`, display: 'flex', flexDirection: 'column', gap: sp.C }}>
                 {plan.relationships.map((rel, i) => (
                   <div key={i} style={{ borderRadius: 7, border: `1px solid ${c['border-divider']}`, padding: `${sp.B}px ${sp.C}px` }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, marginBottom: 4, flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, marginBottom: sp.A, flexWrap: 'wrap' }}>
                       <code style={{ fontSize: fs.xs, color: c['content-primary'], backgroundColor: c['background-subtle'], padding: '1px 5px', borderRadius: 3 }}>{rel.fromTable}</code>
                       <span style={{ fontSize: fs.xs, color: c['content-secondary'] }}>→</span>
                       <code style={{ fontSize: fs.xs, color: c['content-primary'], backgroundColor: c['background-subtle'], padding: '1px 5px', borderRadius: 3 }}>{rel.toTable}</code>
                       <span style={{ fontSize: fs.xs, fontWeight: fw.medium, color: '#1AA251', marginLeft: 'auto' }}>{rel.joinType}</span>
                     </div>
-                    <div style={{ display: 'flex', gap: 4, marginBottom: 3 }}>
+                    <div style={{ display: 'flex', gap: sp.A, marginBottom: sp.A }}>
                       <span style={{ fontSize: fs.xs, color: c['content-secondary'] }}>on</span>
                       <code style={{ fontSize: fs.xs, color: c['content-primary'] }}>{rel.fromKey} = {rel.toKey}</code>
                     </div>
@@ -576,14 +576,14 @@ const PlanPanel: React.FC<PlanPanelProps> = ({ plan, onClose }) => {
               <div style={{ padding: `0 ${sp.D}px ${sp.D}px`, display: 'flex', flexDirection: 'column', gap: sp.D }}>
                 {Object.entries(columnsByTable).map(([tableName, cols]) => (
                   <div key={tableName}>
-                    <p style={{ margin: `0 0 ${sp.B}px`, fontSize: 10, fontWeight: fw.semibold, color: c['content-secondary'], textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+                    <p style={{ margin: `0 0 ${sp.B}px`, fontSize: 12, fontWeight: fw.semibold, color: c['content-secondary'], textTransform: 'uppercase', letterSpacing: '0.07em' }}>
                       {tableName}
                     </p>
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
                       {cols.map((col, ci) => (
                         <div key={col.name} style={{ display: 'flex', gap: sp.B, padding: `${sp.B}px 0`, borderBottom: ci < cols.length - 1 ? `1px solid ${c['border-divider']}` : 'none' }}>
                           <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, marginBottom: 2 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, marginBottom: sp.A }}>
                               <span style={{ fontSize: fs.sm, fontWeight: fw.medium, color: c['content-primary'] }}>{col.name}</span>
                               <span style={{ fontSize: fs.xs, color: typeColor(col.type) }}>{typeLabel(col.type)}</span>
                             </div>
@@ -602,7 +602,7 @@ const PlanPanel: React.FC<PlanPanelProps> = ({ plan, onClose }) => {
                 <div style={{ padding: `0 ${sp.D}px ${sp.D}px`, display: 'flex', flexDirection: 'column' }}>
                   {formulaCols.map((col, ci) => (
                     <div key={col.name} style={{ padding: `${sp.B}px 0`, borderBottom: ci < formulaCols.length - 1 ? `1px solid ${c['border-divider']}` : 'none' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, marginBottom: 3 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, marginBottom: sp.A }}>
                         <span style={{ fontSize: fs.sm, fontWeight: fw.medium, color: c['content-primary'] }}>{col.name}</span>
                         <span style={{ fontSize: fs.xs, color: c['content-brand'] }}>Formula</span>
                       </div>
@@ -633,9 +633,9 @@ const PlanPanel: React.FC<PlanPanelProps> = ({ plan, onClose }) => {
         {activeTab === 'code' && (
           <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: sp.D, display: 'flex', flexDirection: 'column', gap: sp.C }}>
             {cellDefs.map(({ label, type, instruction }, i) => (
-              <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+              <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: sp.A }}>
                 {instruction && (
-                  <p style={{ margin: 0, fontSize: fs.xs, color: c['content-secondary'], lineHeight: '16px', paddingLeft: 4 }}>{instruction}</p>
+                  <p style={{ margin: 0, fontSize: fs.xs, color: c['content-secondary'], lineHeight: '16px', paddingLeft: sp.A }}>{instruction}</p>
                 )}
                 <CodeCell
                   label={label}
@@ -675,7 +675,7 @@ const PlanPanel: React.FC<PlanPanelProps> = ({ plan, onClose }) => {
 
               {showAddMenu && (
                 <div style={{
-                  position: 'absolute', bottom: '100%', left: 0, marginBottom: 4,
+                  position: 'absolute', bottom: '100%', left: 0, marginBottom: sp.A,
                   background: c['background-base'], border: `1px solid ${c['border-divider']}`,
                   borderRadius: 8, boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
                   overflow: 'hidden', minWidth: 160, zIndex: 10,

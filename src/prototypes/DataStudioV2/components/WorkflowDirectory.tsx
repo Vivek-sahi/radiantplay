@@ -48,11 +48,11 @@ const WorkflowDirectory: React.FC<WorkflowDirectoryProps> = ({ onClose }) => (
       }}>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: fs.md, fontWeight: fw.semibold, color: c['content-primary'] }}>Workflow directory</div>
-          <div style={{ fontSize: fs.xs, color: c['content-secondary'], marginTop: 2 }}>Select a workflow to begin</div>
+          <div style={{ fontSize: fs.xs, color: c['content-secondary'], marginTop: sp.A }}>Select a workflow to begin</div>
         </div>
         <button
           onClick={onClose}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', color: c['content-secondary'], fontSize: 20, lineHeight: 1, padding: 4 }}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', color: c['content-secondary'], fontSize: 20, lineHeight: 1, padding: sp.A }}
         >
           ×
         </button>
@@ -79,16 +79,16 @@ const WorkflowDirectory: React.FC<WorkflowDirectoryProps> = ({ onClose }) => (
             >
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: sp.B }}>
                 <span style={{
-                  fontSize: 11, fontWeight: fw.medium,
+                  fontSize: 12, fontWeight: fw.medium,
                   color: c['content-tertiary'],
-                  flexShrink: 0, marginTop: 2,
+                  flexShrink: 0, marginTop: sp.A,
                   fontVariantNumeric: 'tabular-nums',
                 }}>
                   {wf.num}
                 </span>
                 <div>
                   <div style={{ fontSize: fs.sm, fontWeight: fw.medium, color: c['content-primary'] }}>{wf.name}</div>
-                  <div style={{ fontSize: fs.xs, color: c['content-secondary'], marginTop: 3, lineHeight: 1.5 }}>{wf.desc}</div>
+                  <div style={{ fontSize: fs.xs, color: c['content-secondary'], marginTop: sp.A, lineHeight: 1.5 }}>{wf.desc}</div>
                 </div>
               </div>
             </button>

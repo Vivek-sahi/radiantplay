@@ -2,9 +2,13 @@
   display: inline-flex;
   align-items: center;
   gap: var(--spacing-2);
-  background-color: var(--rd-sys-color-background-surface);
+  background-color: var(--rd-sys-color-background-base);
   border: 1px solid var(--rd-sys-color-border-default);
-  border-radius: var(--radius-2xl);
+  /* `lg`, matching `SearchInput` and Radiant's input radius. `2xl` made this a pill,
+     which put it at odds with every control it sits next to — including its own
+     sibling search component. Reported from the data browser, where a pill search
+     sat beside a rounded-rect filter button. */
+  border-radius: var(--radius-lg);
   padding: 0 var(--spacing-3);
   transition: border-color var(--duration-fast, 150ms) ease;
   width: 100%;
@@ -32,7 +36,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--rd-sys-color-content-subtle);
+  color: var(--rd-sys-color-content-tertiary);
   flex-shrink: 0;
 }
 
@@ -47,7 +51,7 @@
 }
 
 .input::placeholder {
-  color: var(--rd-sys-color-content-subtle);
+  color: var(--rd-sys-color-content-tertiary);
 }
 
 .clearButton {
@@ -58,7 +62,7 @@
   border: none;
   cursor: pointer;
   padding: var(--spacing-1);
-  color: var(--rd-sys-color-content-subtle);
+  color: var(--rd-sys-color-content-tertiary);
   flex-shrink: 0;
   border-radius: var(--radius-sm);
   transition: color var(--duration-fast, 150ms) ease, background-color var(--duration-fast, 150ms) ease;
@@ -66,7 +70,7 @@
 
 .clearButton:hover {
   color: var(--rd-sys-color-content-primary);
-  background-color: var(--rd-sys-color-background-hover);
+  background-color: var(--rd-sys-color-background-subtle);
 }
 
 @keyframes rd-searchbar-spin {

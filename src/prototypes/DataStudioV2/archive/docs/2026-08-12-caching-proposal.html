@@ -1,0 +1,292 @@
+<meta charset="utf-8">
+<title>Caching for multi-source modeling — proposal</title>
+<style>
+  :root{--bg:#fff;--fg:#1D232F;--mut:#6B7280;--line:#E2E6EC;--sunk:#F6F8FA;
+    --yes:#06805A;--yes-bg:#E6F6F0;--no:#B3261E;--no-bg:#FCEEEC;--open:#92640A;--open-bg:#FDF6E3;
+    --rec:#2452C4;--rec-bg:#EAF0FD}
+  @media (prefers-color-scheme:dark){:root{--bg:#14181F;--fg:#E8EBF0;--mut:#98A1B0;--line:#2A313C;--sunk:#1A1F27;
+    --yes:#4DD6A8;--yes-bg:#123227;--no:#F2A5A0;--no-bg:#3A1B18;--open:#F0C24B;--open-bg:#32280F;
+    --rec:#8DAEF8;--rec-bg:#17233F}}
+  *{box-sizing:border-box}
+  body{margin:0 auto;padding:44px 32px 72px;max-width:900px;background:var(--bg);color:var(--fg);
+    font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+  h1{font-size:23px;margin:0 0 3px;letter-spacing:-.02em}
+  .sub{color:var(--mut);font-size:13px;margin:0 0 28px}
+  .part{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--mut);font-weight:700;
+    margin:34px 0 0;padding-top:14px;border-top:1px solid var(--line)}
+  h2{font-size:15px;margin:14px 0 8px;font-weight:700}
+  p{margin:0 0 10px}
+  .note{color:var(--mut);font-size:13px;margin:6px 0 0}
+  .wrap{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:13px;margin:4px 0 0}
+  th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut);
+    padding:0 9px 5px;border-bottom:1px solid var(--line);white-space:nowrap}
+  td{padding:8px 9px;border-bottom:1px solid var(--line);vertical-align:top}
+  tr:last-child td{border-bottom:none}
+  td:first-child,th:first-child{padding-left:0}
+  td:last-child,th:last-child{padding-right:0}
+  code{font:12px ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--mut)}
+  .pill{display:inline-block;padding:2px 7px;border-radius:100px;font-size:10.5px;font-weight:700;white-space:nowrap}
+  .p-yes{background:var(--yes-bg);color:var(--yes)}
+  .p-no{background:var(--no-bg);color:var(--no)}
+  .p-open{background:var(--open-bg);color:var(--open)}
+  .p-rec{background:var(--rec-bg);color:var(--rec)}
+  ul{margin:0;padding-left:18px}li{margin-bottom:5px}
+  ol{margin:0;padding-left:20px}ol li{margin-bottom:7px}
+  .box{padding:13px 16px;background:var(--sunk);border-left:3px solid var(--fg);border-radius:0 6px 6px 0;margin:0 0 18px}
+  .mono{font:12px ui-monospace,Menlo,monospace;background:var(--sunk);border:1px solid var(--line);
+    border-radius:6px;padding:11px 13px;display:block;white-space:pre;overflow-x:auto;color:var(--fg);margin:10px 0 0}
+  .step{font-weight:700;color:var(--rec);font-size:12px;letter-spacing:.04em}
+</style>
+
+<h1>Caching for multi-source modeling</h1>
+<p class="sub">Proposal · 2026-08-12</p>
+
+<p class="part">Problem</p>
+
+<h2>Problem statement</h2>
+<div class="box">
+  <strong>How do we let users explore data modeling in real time, when caching enough data
+  can take minutes to hours?</strong>
+</div>
+<p>
+  You can't join tables across warehouses. Every table in a model must sit in one warehouse
+  — ours or an external one — and caching is what moves them there. Agent DB cached
+  <em>after</em> modeling, so latency was optional. Here caching blocks the join the user is
+  making.
+</p>
+
+<h2>Where it applies</h2>
+<div class="wrap">
+<table>
+  <thead><tr><th style="width:46%">Model</th><th>Caching</th></tr></thead>
+  <tbody>
+    <tr><td>Single table</td><td><span class="pill p-yes">Not needed</span></td></tr>
+    <tr><td>Multi-table, one warehouse</td><td><span class="pill p-yes">Not needed</span></td></tr>
+    <tr><td><strong>Multi-table, multiple warehouses</strong></td><td><span class="pill p-no">Required</span> — MVP scope</td></tr>
+    <tr><td>CSV / Python source</td><td><span class="pill p-no">Required</span> — out of MVP</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2>How long it takes</h2>
+<div class="wrap">
+<table>
+  <thead><tr><th>Rows</th><th>Time</th><th></th></tr></thead>
+  <tbody>
+    <tr><td>10M</td><td>~37 sec</td><td><span class="pill p-yes">Fine</span></td></tr>
+    <tr><td>100M</td><td>~7 min</td><td><span class="pill p-open">Problem</span></td></tr>
+    <tr><td>500M / 25 GB</td><td>~45 min</td><td><span class="pill p-no">Severe</span></td></tr>
+  </tbody>
+</table>
+</div>
+<p class="note">Below ~50M rows there is nothing to solve. Slicing earns its complexity above ~200M.</p>
+
+<p class="part">Solution</p>
+
+<h2>Cache a slice to keep exploring</h2>
+<div class="box">
+  <strong>Users cache a slice of data and continue exploring immediately. If they want full
+  data and accept the latency, they can choose that instead.</strong>
+</div>
+
+<h2>Ways to slice — and why time period wins</h2>
+<div class="wrap">
+<table>
+  <thead><tr><th style="width:16%">Lever</th><th style="width:14%">Joins survive</th><th style="width:34%">Why</th><th>UX implication</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><strong>Time period</strong><br><span class="note">last N hours / days</span></td>
+      <td><span class="pill p-yes">Yes</span></td>
+      <td>Both tables share the predicate meaningfully — an order and its shipment both fall in the last 7 days. The slice is coherent, not arbitrary</td>
+      <td>One dropdown per fact table + a reference date column <span class="pill p-rec">Recommend</span></td>
+    </tr>
+    <tr>
+      <td><strong>Rows</strong></td>
+      <td><span class="pill p-no">No</span></td>
+      <td>Arbitrary cut. The first 500 rows of two tables needn't share keys, so a join returns near-zero matches — <em>silently</em>, with no signal it's a caching artefact</td>
+      <td>Fallback only, where no date column exists and the other side is cached full</td>
+    </tr>
+    <tr>
+      <td><strong>GB</strong></td>
+      <td><span class="pill p-no">No</span></td>
+      <td>Resolves to an arbitrary row cut, so same silent join failure. But it's the unit users think in for cost</td>
+      <td>Show as a readout of the chosen window, never as an input</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+<p class="note">
+  Time period also wins on filters and formulas: a 7-day slice gives correct answers
+  <em>for 7 days</em>. A row slice gives an answer for an arbitrary subset, which means nothing.
+</p>
+
+<h2>How users cache</h2>
+
+<p><span class="step">1 · DROP A TABLE — no caching</span></p>
+<p>
+  Tables land on the canvas uncached. Preview queries the source live, so the user can
+  explore and understand the data with no wait at all.
+</p>
+
+<p><span class="step">2 · DRAW A JOIN — caching required</span></p>
+<p>
+  The join is what needs co-located data, so this is the trigger. Each table is cached
+  separately. For each, we need a <strong>time period</strong> and a <strong>reference date
+  column</strong>. Default to a short window — 6 or 12 hours — so the first cache is fast and
+  the choice isn't weighty.
+</p>
+<span class="mono">ad_impressions — 22M rows
+Cache  [ last 12 hours ▾ ]  by  [ impression_date ▾ ]
+≈ 37K rows · 30 MB · est. 1 sec</span>
+<p class="note">
+  Good to have: detect fact vs dimension, so dimensions cache in full (they're small) and
+  only fact tables need a window and a date column. Signals below.
+</p>
+
+<p><span class="step">3 · WHILE CACHING — partial capability</span></p>
+<p>
+  Preview loads progressively. Formulas and filters can be created. Join and clean cannot —
+  they need complete data.
+</p>
+
+<p><span class="step">4 · CACHED, SLICED — full capability except cleaning</span></p>
+<p>Preview, join, formula and filter all work. Cleaning still needs the full table.</p>
+
+<p><span class="step">5 · TESTING — may need full data</span></p>
+<p>
+  A question inside the cached period answers correctly. A question outside it can't be
+  answered, and the user gets the option to cache full.
+</p>
+
+<h2>Capability by cache state</h2>
+<div class="wrap">
+<table>
+  <thead><tr><th style="width:22%"></th><th>Uncached</th><th>Caching</th><th>Sliced</th><th>Full</th></tr></thead>
+  <tbody>
+    <tr><td>Data preview</td><td><span class="pill p-yes">Live</span></td><td><span class="pill p-open">Progressive</span></td><td><span class="pill p-yes">Yes</span></td><td><span class="pill p-yes">Yes</span></td></tr>
+    <tr><td>Formula</td><td><span class="pill p-yes">Yes</span></td><td><span class="pill p-yes">Yes</span></td><td><span class="pill p-yes">Yes</span></td><td><span class="pill p-yes">Yes</span></td></tr>
+    <tr><td>Filter</td><td><span class="pill p-yes">Yes</span></td><td><span class="pill p-yes">Yes</span></td><td><span class="pill p-yes">Yes</span></td><td><span class="pill p-yes">Yes</span></td></tr>
+    <tr><td><strong>Join</strong></td><td><span class="pill p-no">No</span></td><td><span class="pill p-no">No</span></td><td><span class="pill p-yes">Yes</span></td><td><span class="pill p-yes">Yes</span></td></tr>
+    <tr><td><strong>Clean</strong></td><td><span class="pill p-no">No</span></td><td><span class="pill p-no">No</span></td><td><span class="pill p-no">No</span></td><td><span class="pill p-yes">Yes</span></td></tr>
+    <tr><td><strong>Test</strong></td><td>—</td><td>—</td><td><span class="pill p-open">In period only</span></td><td><span class="pill p-yes">Yes</span></td></tr>
+  </tbody>
+</table>
+</div>
+<p class="note">
+  Barring join during the fill removes the one real hazard of progressive caching — two
+  partially-filled tables joining on arbitrary prefixes. Nothing that depends on
+  completeness is available until the cache completes.
+</p>
+
+<h2>Which approach are we taking?</h2>
+<div class="wrap">
+<table>
+  <thead><tr><th style="width:20%">Approach</th><th style="width:14%">In?</th><th>Reasoning</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><strong>Slice the data</strong></td>
+      <td><span class="pill p-rec">Yes</span></td>
+      <td>Makes the cache fast enough that exploration continues. Time period as the lever</td>
+    </tr>
+    <tr>
+      <td><strong>Progressive use during the fill</strong></td>
+      <td><span class="pill p-rec">Yes</span></td>
+      <td>Complementary, not an alternative. Gated to preview / formula / filter so nothing depends on partial data</td>
+    </tr>
+    <tr>
+      <td><strong>Cache at join, not on drop</strong></td>
+      <td><span class="pill p-rec">Yes</span></td>
+      <td>Costs nothing — preview is live anyway — and the window is chosen when the user knows what they're building</td>
+    </tr>
+    <tr>
+      <td><strong>Target the majority warehouse</strong></td>
+      <td><span class="pill p-open">If supported</span></td>
+      <td>Move only the outliers: 4-of-5 tables already in Snowflake means caching 1, not 5. Largest single win available</td>
+    </tr>
+    <tr>
+      <td><strong>Background + notify</strong></td>
+      <td><span class="pill p-no">No</span></td>
+      <td>Only justified at 45-minute scale, and slicing should prevent reaching it. Needs a notification surface we don't have</td>
+    </tr>
+    <tr>
+      <td><strong>Entity subset</strong><br><span class="note">N accounts + related rows</span></td>
+      <td><span class="pill p-no">No</span></td>
+      <td>Best join integrity of any option and needs no date column, but requires the join graph and likely isn't supported. Listed for completeness</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<h2>Detecting fact vs dimension</h2>
+<p>Caching happens before joins exist, so classification uses column statistics only:</p>
+<div class="wrap">
+<table>
+  <thead><tr><th style="width:46%">Signal</th><th>Fact</th><th>Dimension</th></tr></thead>
+  <tbody>
+    <tr><td>A column with distinct count ≈ row count</td><td>absent</td><td>present (natural key)</td></tr>
+    <tr><td>ID-shaped columns with heavy repetition</td><td>present</td><td>absent</td></tr>
+    <tr><td>Row count</td><td>large</td><td>small</td></tr>
+    <tr><td>Date column</td><td>event date</td><td>audit date, or none</td></tr>
+  </tbody>
+</table>
+</div>
+<p class="note">
+  First two are reliable without joins. Show the guess, let the user correct it once per
+  table. Good-to-have, not required — the fallback is asking per table.
+</p>
+
+<p class="part">Who this affects</p>
+
+<h2>Short term vs long term</h2>
+<div class="wrap">
+<table>
+  <thead><tr><th style="width:26%">Segment</th><th style="width:16%">Size</th><th>Implication</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>Do multi-source modeling</td>
+      <td><span class="pill p-no">Unknown</span></td>
+      <td>Structurally a minority — single-warehouse models need none of this — but it's the differentiating capability</td>
+    </tr>
+    <tr>
+      <td>Hit the severe band (200M+ rows)</td>
+      <td><span class="pill p-no">Unknown</span></td>
+      <td><strong>If small, most of this is premature</strong> and MVP should cache fully and defer slicing</td>
+    </tr>
+    <tr>
+      <td>Need cleaning</td>
+      <td><span class="pill p-no">Unknown</span></td>
+      <td>Cleaning is phase 2, so "no cleaning on a sliced cache" is acceptable now. It becomes the main reason to cache full later</td>
+    </tr>
+    <tr>
+      <td>Will ask questions outside a short window</td>
+      <td><span class="pill p-no">Unknown</span></td>
+      <td>Drives how often step 5 forces a full cache. If common, the short default is friction rather than help</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+<div class="box">
+  <strong>Why this approach holds up both ways.</strong> Short term: slicing plus progressive
+  use keeps exploration real-time while cleaning is out of scope. Long term: cleaning arrives
+  in phase 2 and needs full data — and nothing here blocks that, because full caching is
+  already the user's choice at step 2 and forced at step 5. We aren't building a slice-only
+  architecture that has to be undone.
+</div>
+
+<p class="part">Open</p>
+
+<h2>Blocking — modeling team</h2>
+<ol>
+  <li>Can we target an <strong>external</strong> warehouse, or only ours? Difference between caching 1 table and 5</li>
+  <li>Per-table <strong>window predicate</strong> supported?</li>
+  <li>Can caching <strong>stream</strong>, so preview loads progressively (step 3)?</li>
+  <li>Are <strong>column statistics</strong> available pre-cache? Both classification and the size estimate need them — a fake estimate is worse than none</li>
+</ol>
+
+<h2>Needs validation — users</h2>
+<ol>
+  <li>What % hit 200M+ tables? Decides whether slicing is needed at all in MVP</li>
+  <li>Real latency tolerance mid-build</li>
+  <li>How often questions fall outside a short window</li>
+</ol>

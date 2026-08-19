@@ -54,7 +54,7 @@ const DbtOverview: React.FC<DbtOverviewProps> = ({ onImportComplete, onReviewIss
           <h1 style={{ margin: 0, fontSize: 18, fontWeight: fw.semibold, color: c['content-primary'], fontFamily: ff.primary }}>
             External models
           </h1>
-          <div style={{ fontSize: fs.xs, color: c['content-tertiary'], marginTop: 2, fontFamily: ff.primary }}>
+          <div style={{ fontSize: fs.xs, color: c['content-tertiary'], marginTop: sp.A, fontFamily: ff.primary }}>
             dbt models and semantic views imported into ThoughtSpot
           </div>
         </div>

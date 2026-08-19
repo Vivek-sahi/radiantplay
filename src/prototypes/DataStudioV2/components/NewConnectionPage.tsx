@@ -78,7 +78,7 @@ const inputSt: React.CSSProperties = {
   background: bBase, outline: 'none', width: '100%', fontFamily: ff.primary,
   boxSizing: 'border-box',
 };
-const hintSt: React.CSSProperties = { fontSize: 11, color: fg2, fontFamily: ff.primary, marginTop: 4, display: 'flex', alignItems: 'flex-start', gap: 5 };
+const hintSt: React.CSSProperties = { fontSize: 12, color: fg2, fontFamily: ff.primary, marginTop: sp.A, display: 'flex', alignItems: 'flex-start', gap: sp.A };
 
 // ─── TopBar ───────────────────────────────────────────────────────────────────
 const TopBar: React.FC<{ title: string; showBack: boolean; onBack: () => void; onClose: () => void }> =
@@ -91,7 +91,7 @@ const TopBar: React.FC<{ title: string; showBack: boolean; onBack: () => void; o
       <div style={{ position: 'absolute', left: sp.H }}>
         {showBack && (
           <button onClick={onBack} style={{
-            display: 'flex', alignItems: 'center', gap: 6, padding: `6px ${sp.C}px`,
+            display: 'flex', alignItems: 'center', gap: sp.B, padding: `6px ${sp.C}px`,
             background: 'none', border: 'none', cursor: 'pointer',
             color: fg2, fontFamily: ff.primary, fontSize: fs.sm, borderRadius: 6,
           }}>
@@ -180,7 +180,7 @@ const StepBar: React.FC<{ steps: string[]; states: StepStatus[] }> = ({ steps, s
           <div style={{
             width: 24, height: 24, borderRadius: 12, flexShrink: 0,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 11, fontWeight: fw.medium, fontFamily: ff.primary,
+            fontSize: 12, fontWeight: fw.medium, fontFamily: ff.primary,
             background: states[i] === 'active' ? brand : states[i] === 'done' ? green : 'transparent',
             border: states[i] === 'inactive' ? `1.5px solid ${bdiv}` : 'none',
             color: states[i] === 'active' ? 'white' : states[i] === 'inactive' ? fg2 : 'transparent',
@@ -217,7 +217,7 @@ const SourceCard: React.FC<{
       {icon}
     </div>
     <div style={{ fontSize: 13, fontWeight: fw.medium, color: fg1, fontFamily: ff.primary }}>{name}</div>
-    <div style={{ fontSize: 11, color: fg2, fontFamily: ff.primary }}>{desc}</div>
+    <div style={{ fontSize: 12, color: fg2, fontFamily: ff.primary }}>{desc}</div>
   </div>
 );
 
@@ -233,13 +233,13 @@ const TypeCard: React.FC<{
     onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.borderColor = bdiv; el.style.boxShadow = ''; }}
   >
     <div style={{ width: 48, height: 48, borderRadius: 12, background: iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: sp.D }}>{icon}</div>
-    <div style={{ fontSize: 16, fontWeight: fw.medium, color: fg1, fontFamily: ff.primary, marginBottom: 8 }}>{title}</div>
+    <div style={{ fontSize: 16, fontWeight: fw.medium, color: fg1, fontFamily: ff.primary, marginBottom: sp.B }}>{title}</div>
     <div style={{ fontSize: fs.sm, color: fg2, fontFamily: ff.primary, lineHeight: 1.6, marginBottom: sp.E, minHeight: 52 }}>{desc}</div>
     <div style={{ height: 1, background: bdiv, marginBottom: sp.D }} />
-    <div style={{ fontSize: 11, color: fg2, fontFamily: ff.primary, marginBottom: sp.B }}>Works with</div>
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+    <div style={{ fontSize: 12, color: fg2, fontFamily: ff.primary, marginBottom: sp.B }}>Works with</div>
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: sp.B }}>
       {chips.map(ch => (
-        <span key={ch} style={{ fontSize: 11, fontWeight: fw.medium, padding: '3px 9px', borderRadius: 4, border: `1px solid ${bdiv}`, background: bSunk, color: fg2, fontFamily: ff.primary }}>{ch}</span>
+        <span key={ch} style={{ fontSize: 12, fontWeight: fw.medium, padding: '3px 9px', borderRadius: 4, border: `1px solid ${bdiv}`, background: bSunk, color: fg2, fontFamily: ff.primary }}>{ch}</span>
       ))}
     </div>
   </div>
@@ -382,12 +382,12 @@ const CdwConfigureScreen: React.FC<{ sourceName?: string; cgEnabled: boolean; on
           <div style={{ display: 'flex', flexDirection: 'column', gap: sp.B }}>
             <label style={labelSt}>Role</label>
             <input type="text" placeholder="dev" style={inputSt} />
-            <span style={{ fontSize: 11, color: fg2, fontFamily: ff.primary }}>This role must have SELECT access to the tables you want to connect</span>
+            <span style={{ fontSize: 12, color: fg2, fontFamily: ff.primary }}>This role must have SELECT access to the tables you want to connect</span>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: sp.B }}>
             <label style={labelSt}>Warehouse</label>
             <input type="text" placeholder="CX_AUTO_WH" style={inputSt} />
-            <span style={{ fontSize: 11, color: fg2, fontFamily: ff.primary }}>Set auto-resume to 'true' and auto-suspend to '5 minutes'</span>
+            <span style={{ fontSize: 12, color: fg2, fontFamily: ff.primary }}>Set auto-resume to 'true' and auto-suspend to '5 minutes'</span>
           </div>
         </div>
         <div style={{ height: 1, background: bdiv }} />
@@ -399,8 +399,8 @@ const CdwConfigureScreen: React.FC<{ sourceName?: string; cgEnabled: boolean; on
           <table style={{ width: '100%', borderCollapse: 'collapse', border: `1px solid ${bdiv}`, borderRadius: 6, overflow: 'hidden' }}>
             <thead>
               <tr style={{ background: bSunk }}>
-                <th style={{ textAlign: 'left', padding: `${sp.B}px ${sp.C}px`, fontSize: 11, fontWeight: fw.medium, color: fg2, borderBottom: `1px solid ${bdiv}`, width: '50%', fontFamily: ff.primary }}>Key</th>
-                <th style={{ textAlign: 'left', padding: `${sp.B}px ${sp.C}px`, fontSize: 11, fontWeight: fw.medium, color: fg2, borderBottom: `1px solid ${bdiv}`, fontFamily: ff.primary }}>Value</th>
+                <th style={{ textAlign: 'left', padding: `${sp.B}px ${sp.C}px`, fontSize: 12, fontWeight: fw.medium, color: fg2, borderBottom: `1px solid ${bdiv}`, width: '50%', fontFamily: ff.primary }}>Key</th>
+                <th style={{ textAlign: 'left', padding: `${sp.B}px ${sp.C}px`, fontSize: 12, fontWeight: fw.medium, color: fg2, borderBottom: `1px solid ${bdiv}`, fontFamily: ff.primary }}>Value</th>
                 <th style={{ width: 32, borderBottom: `1px solid ${bdiv}` }} />
               </tr>
             </thead>
@@ -416,7 +416,7 @@ const CdwConfigureScreen: React.FC<{ sourceName?: string; cgEnabled: boolean; on
               </tr>
             </tbody>
           </table>
-          <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: brand, fontFamily: ff.primary, fontSize: 11, display: 'flex', alignItems: 'center', gap: 6, padding: `4px 0`, marginTop: sp.B }}>
+          <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: brand, fontFamily: ff.primary, fontSize: 12, display: 'flex', alignItems: 'center', gap: sp.B, padding: `4px 0`, marginTop: sp.B }}>
             <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M7 2v10M2 7h10" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round"/></svg>
             Add row
           </button>
@@ -435,7 +435,7 @@ const CdwConfigureScreen: React.FC<{ sourceName?: string; cgEnabled: boolean; on
             </p>
             <div style={{ display: 'flex', gap: sp.F, flexWrap: 'wrap' }}>
               {['Read-only, never writes', 'No data leaves your warehouse', 'Disable in settings any time'].map(t => (
-                <span key={t} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: fg2, fontFamily: ff.primary }}>
+                <span key={t} style={{ display: 'flex', alignItems: 'center', gap: sp.B, fontSize: 12, color: fg2, fontFamily: ff.primary }}>
                   <span style={{ width: 5, height: 5, borderRadius: '50%', background: brand, flexShrink: 0 }} />
                   {t}
                 </span>
@@ -446,14 +446,14 @@ const CdwConfigureScreen: React.FC<{ sourceName?: string; cgEnabled: boolean; on
                 <div style={{ width: 16, height: 16, borderRadius: '50%', background: green, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <svg width="9" height="9" viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5L8 3" stroke="white" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg>
                 </div>
-                <span style={{ fontSize: 11, color: green, fontWeight: fw.medium, fontFamily: ff.primary }}>Query history access granted</span>
+                <span style={{ fontSize: 12, color: green, fontWeight: fw.medium, fontFamily: ff.primary }}>Query history access granted</span>
               </div>
             )}
           </div>
           {/* Toggle */}
           <button onClick={onCgToggle} style={{
             flexShrink: 0, width: 36, height: 20, borderRadius: 99, border: 'none', cursor: 'pointer',
-            padding: 0, marginTop: 4, position: 'relative',
+            padding: 0, marginTop: sp.A, position: 'relative',
             background: cgEnabled ? brand : '#C4C9D4', transition: 'background 220ms',
           }}>
             <span style={{
@@ -505,7 +505,7 @@ const CdwTablesScreen: React.FC<{ checked: string[]; onToggle: (k: string) => vo
               </div>
               <div>
                 <div style={{ fontSize: 13, fontWeight: fw.medium, color: fg1, fontFamily: ff.mono }}>{s.key}</div>
-                <div style={{ fontSize: 11, color: fg2, fontFamily: ff.primary, marginTop: 2 }}>{s.meta}</div>
+                <div style={{ fontSize: 12, color: fg2, fontFamily: ff.primary, marginTop: sp.A }}>{s.meta}</div>
               </div>
             </div>
           );
@@ -553,7 +553,7 @@ const SemanticConfigureScreen: React.FC<{ sourceLabel: string }> = ({ sourceLabe
         <p style={{ margin: `0 0 ${sp.D}px`, fontSize: fs.sm, color: fg2, fontFamily: ff.primary }}>
           Enter your credentials so ThoughtSpot can read metric and dimension definitions.
         </p>
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: sp.B, padding: `5px 12px`, borderRadius: 99, border: `1px solid ${bdiv}`, fontSize: 11, fontWeight: fw.medium, color: fg1, background: bBase, fontFamily: ff.primary }}>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: sp.B, padding: `5px 12px`, borderRadius: 99, border: `1px solid ${bdiv}`, fontSize: 12, fontWeight: fw.medium, color: fg1, background: bBase, fontFamily: ff.primary }}>
           <svg width="13" height="13" viewBox="0 0 32 32" fill="none"><circle cx="8" cy="16" r="4" fill="#FF694A" fillOpacity="0.2" stroke="#FF694A" strokeWidth="1.6"/><circle cx="24" cy="16" r="4" fill="#FF694A" fillOpacity="0.2" stroke="#FF694A" strokeWidth="1.6"/><path d="M12 16h8" stroke="#FF694A" strokeWidth="1.6" strokeLinecap="round"/><path d="M18 13.5l2.5 2.5-2.5 2.5" stroke="#FF694A" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
           {sourceLabel}
         </div>
@@ -629,7 +629,7 @@ const DBT_FOLDERS: { name: string; path: string; synced: boolean; models: { id: 
 
 const MetricsBadge: React.FC<{ has: boolean }> = ({ has }) => (
   <span style={{
-    fontSize: 11, fontFamily: ff.primary, fontWeight: fw.medium,
+    fontSize: 12, fontFamily: ff.primary, fontWeight: fw.medium,
     color: has ? '#15803D' : fg3,
     background: has ? '#DCFCE7' : c['background-subtle'],
     padding: '1px 7px', borderRadius: 99, whiteSpace: 'nowrap',
@@ -639,7 +639,7 @@ const MetricsBadge: React.FC<{ has: boolean }> = ({ has }) => (
 );
 
 const SyncDot: React.FC<{ synced: boolean; showLabel?: boolean }> = ({ synced, showLabel = true }) => (
-  <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0 }}>
+  <div style={{ display: 'flex', alignItems: 'center', gap: sp.A, flexShrink: 0 }}>
     <span style={{ width: 6, height: 6, borderRadius: '50%', background: synced ? green : fg3, flexShrink: 0 }} />
     {showLabel && <span style={{ fontSize: 12, fontFamily: ff.primary, color: synced ? green : fg3, whiteSpace: 'nowrap' }}>{synced ? 'Synced' : 'Not synced'}</span>}
   </div>
@@ -704,7 +704,7 @@ const SemanticDbtModelsScreen: React.FC = () => {
                 <path d="M11 11l3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
               </svg>
               <input type="text" placeholder="Search models…" value={search} onChange={e => setSearch(e.target.value)}
-                style={{ ...inputSt, paddingLeft: 32, height: 34, fontSize: fs.sm }} />
+                style={{ ...inputSt, paddingLeft: sp.H, height: 34, fontSize: fs.sm }} />
             </div>
           </div>
 
@@ -745,7 +745,7 @@ const SemanticDbtModelsScreen: React.FC = () => {
                   />
                   <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: sp.B }}>
                     <span style={{ ...ts.overline, color: fg1 }}>{folder.name}</span>
-                    <span style={{ fontSize: 11, color: fg3, fontFamily: ff.mono }}>{folder.path}</span>
+                    <span style={{ fontSize: 12, color: fg3, fontFamily: ff.mono }}>{folder.path}</span>
                     <span style={{ fontSize: 12, color: fg3, fontFamily: ff.primary }}>
                       {folderIds.filter(id => checked.has(id)).length}/{folder.models.length}
                     </span>
@@ -765,10 +765,10 @@ const SemanticDbtModelsScreen: React.FC = () => {
                           onClick={e => { e.stopPropagation(); toggle(model.id); }}
                         />
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: fs.sm, fontWeight: fw.medium, color: fg1, fontFamily: ff.primary, marginBottom: 2 }}>{model.name}</div>
-                          <div style={{ fontSize: 12, color: fg2, fontFamily: ff.primary, lineHeight: 1.5, marginBottom: 5 }}>{model.description}</div>
+                          <div style={{ fontSize: fs.sm, fontWeight: fw.medium, color: fg1, fontFamily: ff.primary, marginBottom: sp.A }}>{model.name}</div>
+                          <div style={{ fontSize: 12, color: fg2, fontFamily: ff.primary, lineHeight: 1.5, marginBottom: sp.A }}>{model.description}</div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, flexWrap: 'wrap' }}>
-                            <span style={{ fontFamily: ff.mono, fontSize: 10, color: fg2, letterSpacing: '0.04em' }}>{model.table}</span>
+                            <span style={{ fontFamily: ff.mono, fontSize: 12, color: fg2, letterSpacing: '0.04em' }}>{model.table}</span>
                             <MetricsBadge has={model.hasMetrics} />
                           </div>
                         </div>
@@ -862,7 +862,7 @@ const SemanticSnowflakeScreen: React.FC<{
             <div style={{ fontSize: 13, fontWeight: fw.medium, color: fg1, fontFamily: ff.primary }}>
               {selectedSource === 'dbt Semantic Layer' ? 'Database connection' : 'Snowflake source'}
             </div>
-            <div style={{ fontSize: 12, color: fg2, fontFamily: ff.primary, marginTop: 4 }}>
+            <div style={{ fontSize: 12, color: fg2, fontFamily: ff.primary, marginTop: sp.A }}>
               {selectedSource === 'dbt Semantic Layer'
                 ? 'Choose the Snowflake warehouse where your dbt models run'
                 : 'Choose the Snowflake warehouse to bring the semantic layer from'}
@@ -888,11 +888,11 @@ const SemanticSnowflakeScreen: React.FC<{
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 13, fontWeight: fw.medium, color: fg1, fontFamily: ff.primary }}>{conn.name}</div>
-                      <div style={{ fontSize: 11, color: fg2, fontFamily: ff.primary, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{conn.meta}</div>
+                      <div style={{ fontSize: 12, color: fg2, fontFamily: ff.primary, marginTop: sp.A, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{conn.meta}</div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: sp.A, flexShrink: 0 }}>
                       <span style={{ width: 6, height: 6, borderRadius: '50%', background: conn.status === 'connected' ? green : '#F5A623', flexShrink: 0 }} />
-                      <span style={{ fontSize: 11, fontWeight: fw.medium, color: conn.status === 'connected' ? green : '#E0831A', fontFamily: ff.primary }}>
+                      <span style={{ fontSize: 12, fontWeight: fw.medium, color: conn.status === 'connected' ? green : '#E0831A', fontFamily: ff.primary }}>
                         {conn.status === 'connected' ? 'Connected' : 'Auth needed'}
                       </span>
                     </div>
@@ -905,7 +905,7 @@ const SemanticSnowflakeScreen: React.FC<{
           {/* "or" divider */}
           <div style={{ display: 'flex', alignItems: 'center', gap: sp.C, padding: `${sp.B}px ${sp.F}px` }}>
             <div style={{ flex: 1, height: 1, background: bdiv }} />
-            <span style={{ fontSize: 11, color: fg3, fontFamily: ff.primary }}>or</span>
+            <span style={{ fontSize: 12, color: fg3, fontFamily: ff.primary }}>or</span>
             <div style={{ flex: 1, height: 1, background: bdiv }} />
           </div>
 
@@ -929,7 +929,7 @@ const SemanticSnowflakeScreen: React.FC<{
                 </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 13, fontWeight: fw.medium, color: fg1, fontFamily: ff.primary }}>Connect a new Snowflake warehouse</div>
-                  <div style={{ fontSize: 11, color: fg2, fontFamily: ff.primary, marginTop: 2 }}>Don't see your warehouse? Authenticate a new Snowflake source right here.</div>
+                  <div style={{ fontSize: 12, color: fg2, fontFamily: ff.primary, marginTop: sp.A }}>Don't see your warehouse? Authenticate a new Snowflake source right here.</div>
                 </div>
               </div>
             );
@@ -973,7 +973,7 @@ const SemanticSnowflakeScreen: React.FC<{
                   <div style={{ display: 'flex', flexDirection: 'column', gap: sp.B }}>
                     <label style={labelSt}>Role</label>
                     <input type="text" placeholder="transformer" style={inputSt} />
-                    <span style={{ fontSize: 11, color: fg2, fontFamily: ff.primary }}>Must have SELECT access to the semantic-layer tables</span>
+                    <span style={{ fontSize: 12, color: fg2, fontFamily: ff.primary }}>Must have SELECT access to the semantic-layer tables</span>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: sp.B }}>
                     <label style={labelSt}>Warehouse</label>
@@ -1066,7 +1066,7 @@ const AppsAuthScreen: React.FC<{ appName: string }> = ({ appName }) => {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: sp.B }}>
                   <label style={labelSt}>Client ID</label>
                   <input type="text" placeholder="e.g. 12abc34d-ef56-…" style={inputSt} />
-                  <span style={{ fontSize: 11, color: fg2, fontFamily: ff.primary, marginTop: 2 }}>{appName} → Settings → OAuth Applications</span>
+                  <span style={{ fontSize: 12, color: fg2, fontFamily: ff.primary, marginTop: sp.A }}>{appName} → Settings → OAuth Applications</span>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: sp.B }}>
                   <label style={labelSt}>Client secret</label>
@@ -1078,7 +1078,7 @@ const AppsAuthScreen: React.FC<{ appName: string }> = ({ appName }) => {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: sp.B }}>
                   <label style={labelSt}>Service account username</label>
                   <input type="text" placeholder="e.g. thoughtspot.sync" style={inputSt} />
-                  <span style={{ fontSize: 11, color: fg2, fontFamily: ff.primary, marginTop: 2 }}>{appName} → Organization Settings → Service Accounts</span>
+                  <span style={{ fontSize: 12, color: fg2, fontFamily: ff.primary, marginTop: sp.A }}>{appName} → Organization Settings → Service Accounts</span>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: sp.B }}>
                   <label style={labelSt}>Bearer token / secret</label>
@@ -1188,7 +1188,7 @@ const AppsScopeScreen: React.FC = () => {
                     onClick={() => toggleCollapse(group.label)}
                     style={{ padding: `8px ${sp.E}px`, background: bSunk, display: 'flex', alignItems: 'center', gap: sp.C, cursor: 'pointer', userSelect: 'none' }}
                   >
-                    <label onClick={e => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', flex: 1 }}>
+                    <label onClick={e => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center', gap: sp.B, cursor: 'pointer', flex: 1 }}>
                       <input type="checkbox" checked={allOn}
                         ref={el => { if (el) el.indeterminate = someOn; }}
                         onChange={() => toggleGroup(gids)}
@@ -1209,7 +1209,7 @@ const AppsScopeScreen: React.FC = () => {
                         style={{ width: 14, height: 14, cursor: 'pointer', accentColor: brand, flexShrink: 0 }} />
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: fs.sm, fontWeight: fw.medium, color: fg1, fontFamily: ff.primary }}>{item.label}</div>
-                        <div style={{ fontSize: 11, color: fg3, fontFamily: ff.primary, marginTop: 1 }}>{item.sub}</div>
+                        <div style={{ fontSize: 12, color: fg3, fontFamily: ff.primary, marginTop: 1 }}>{item.sub}</div>
                       </div>
                       <span style={{ fontSize: 12, color: fg2, fontFamily: ff.primary, flexShrink: 0 }}>~{fmtRec(item.records)}</span>
                     </label>
@@ -1221,7 +1221,7 @@ const AppsScopeScreen: React.FC = () => {
 
           {/* Estimator */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: sp.C }}>
-            <span style={{ fontSize: 11, fontWeight: fw.medium, textTransform: 'uppercase' as const, letterSpacing: '0.08em', color: fg3, fontFamily: ff.primary }}>
+            <span style={{ fontSize: 12, fontWeight: fw.medium, textTransform: 'uppercase' as const, letterSpacing: '0.08em', color: fg3, fontFamily: ff.primary }}>
               Live estimate
             </span>
             {estimCards.map(card => (
@@ -1230,7 +1230,7 @@ const AppsScopeScreen: React.FC = () => {
                   {card.icon}
                 </div>
                 <div>
-                  <div style={{ fontSize: 11, color: fg3, fontFamily: ff.primary }}>{card.label}</div>
+                  <div style={{ fontSize: 12, color: fg3, fontFamily: ff.primary }}>{card.label}</div>
                   <div style={{ fontSize: 17, fontWeight: fw.medium, color: fg1, fontFamily: ff.primary, marginTop: 1 }}>{card.val}</div>
                 </div>
               </div>
@@ -1307,7 +1307,7 @@ const AppsFlattenScreen: React.FC = () => {
             padding: `9px ${sp.E}px`, background: bSunk, borderBottom: `1px solid ${bdiv}`,
           }}>
             {['Source path', 'Inferred type', 'Target column', ''].map(h => (
-              <span key={h} style={{ fontSize: 11, fontWeight: fw.medium, textTransform: 'uppercase' as const, letterSpacing: '0.07em', color: fg3, fontFamily: ff.primary }}>{h}</span>
+              <span key={h} style={{ fontSize: 12, fontWeight: fw.medium, textTransform: 'uppercase' as const, letterSpacing: '0.07em', color: fg3, fontFamily: ff.primary }}>{h}</span>
             ))}
           </div>
 
@@ -1330,7 +1330,7 @@ const AppsFlattenScreen: React.FC = () => {
                   <select value={row.type} disabled={row.excluded}
                     onChange={e => update(row.id, { type: e.target.value as FlattenRow['type'] })}
                     style={{
-                      fontSize: 11, fontWeight: fw.medium, color: chip.color,
+                      fontSize: 12, fontWeight: fw.medium, color: chip.color,
                       background: chip.bg, border: `1px solid ${chip.color}44`,
                       borderRadius: 5, padding: '3px 7px', cursor: row.excluded ? 'not-allowed' : 'pointer',
                       fontFamily: ff.primary, outline: 'none', appearance: 'none' as const,
@@ -1356,7 +1356,7 @@ const AppsFlattenScreen: React.FC = () => {
                       background: 'none', border: 'none', padding: '2px 6px', borderRadius: 4,
                       fontSize: 12, fontFamily: ff.mono, color: fg1,
                       cursor: row.excluded ? 'default' : 'pointer',
-                      display: 'flex', alignItems: 'center', gap: 5,
+                      display: 'flex', alignItems: 'center', gap: sp.A,
                     }}>
                       {row.col}
                       {!row.excluded && (
@@ -1372,7 +1372,7 @@ const AppsFlattenScreen: React.FC = () => {
                 <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                   <button onClick={() => update(row.id, { excluded: !row.excluded })} style={{
                     background: 'none', border: `1px solid ${bdef}`, borderRadius: 5,
-                    padding: '3px 10px', fontSize: 11,
+                    padding: '3px 10px', fontSize: 12,
                     color: row.excluded ? brand : fg3,
                     cursor: 'pointer', fontFamily: ff.primary,
                     fontWeight: row.excluded ? fw.medium : 400,
@@ -1444,7 +1444,7 @@ const AppsCacheScreen: React.FC = () => {
 
         {/* Refresh schedule options */}
         <div style={{ marginBottom: sp.D }}>
-          <span style={{ fontSize: 11, fontWeight: fw.medium, textTransform: 'uppercase' as const, letterSpacing: '0.08em', color: fg3, fontFamily: ff.primary }}>
+          <span style={{ fontSize: 12, fontWeight: fw.medium, textTransform: 'uppercase' as const, letterSpacing: '0.08em', color: fg3, fontFamily: ff.primary }}>
             Refresh schedule
           </span>
         </div>
@@ -1469,7 +1469,7 @@ const AppsCacheScreen: React.FC = () => {
                     {opt.icon}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 14, fontWeight: fw.medium, color: fg1, fontFamily: ff.primary, marginBottom: 4 }}>{opt.label}</div>
+                    <div style={{ fontSize: 14, fontWeight: fw.medium, color: fg1, fontFamily: ff.primary, marginBottom: sp.A }}>{opt.label}</div>
                     <p style={{ margin: 0, fontSize: 12, color: fg2, fontFamily: ff.primary, lineHeight: 1.55 }}>{opt.desc}</p>
 
                     {/* Automatic: frequency dropdown */}
@@ -1494,13 +1494,13 @@ const AppsCacheScreen: React.FC = () => {
                           style={{ ...inputSt, maxWidth: 220, fontFamily: ff.mono, fontSize: 12 }}
                           onClick={e => e.stopPropagation()}
                         />
-                        <span style={{ fontSize: 11, color: fg3, fontFamily: ff.primary }}>UTC timezone</span>
+                        <span style={{ fontSize: 12, color: fg3, fontFamily: ff.primary }}>UTC timezone</span>
                       </div>
                     )}
                   </div>
                   {/* Radio dot */}
                   <div style={{
-                    width: 20, height: 20, borderRadius: '50%', flexShrink: 0, marginTop: 2,
+                    width: 20, height: 20, borderRadius: '50%', flexShrink: 0, marginTop: sp.A,
                     border: `2px solid ${isSel ? col : bdef}`,
                     background: isSel ? col : 'transparent',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -1564,7 +1564,7 @@ const SuccessScreen: React.FC<{
             }
           </p>
           <div style={{ display: 'flex', gap: sp.B, alignItems: 'center', justifyContent: 'center', marginBottom: sp.F }}>
-            <span style={{ fontSize: 11, fontWeight: fw.medium, padding: '4px 14px', borderRadius: 99, background: bBase, border: `1px solid ${bdiv}`, color: fg1, fontFamily: ff.primary }}>{sourceLabel}</span>
+            <span style={{ fontSize: 12, fontWeight: fw.medium, padding: '4px 14px', borderRadius: 99, background: bBase, border: `1px solid ${bdiv}`, color: fg1, fontFamily: ff.primary }}>{sourceLabel}</span>
           </div>
 
           {/* Next steps card — Open model CTA + capabilities list */}
@@ -1585,7 +1585,7 @@ const SuccessScreen: React.FC<{
                   </svg>
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: fw.medium, color: fg1, fontFamily: ff.primary, marginBottom: 2 }}>{sourceLabel === 'dbt Semantic Layer' ? 'Make your models Spotter-ready' : 'Make your semantic layer Spotter-ready'}</div>
+                  <div style={{ fontSize: 13, fontWeight: fw.medium, color: fg1, fontFamily: ff.primary, marginBottom: sp.A }}>{sourceLabel === 'dbt Semantic Layer' ? 'Make your models Spotter-ready' : 'Make your semantic layer Spotter-ready'}</div>
                   <div style={{ fontSize: 12, color: fg2, fontFamily: ff.primary, lineHeight: 1.45 }}>{sourceLabel === 'dbt Semantic Layer' ? 'Enrich your imported models with descriptions, synonyms, relationships, and verified answers — so Spotter responds with precision.' : 'Enrich your imported model with descriptions, synonyms, relationships, and verified answers — so Spotter responds with precision.'}</div>
                 </div>
               </div>
@@ -1598,7 +1598,7 @@ const SuccessScreen: React.FC<{
                   </svg>
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: fw.medium, color: fg1, fontFamily: ff.primary, marginBottom: 2 }}>Your whole team gets instant answers</div>
+                  <div style={{ fontSize: 13, fontWeight: fw.medium, color: fg1, fontFamily: ff.primary, marginBottom: sp.A }}>Your whole team gets instant answers</div>
                   <div style={{ fontSize: 12, color: fg2, fontFamily: ff.primary, lineHeight: 1.45 }}>{sourceLabel === 'dbt Semantic Layer' ? 'Enable your models for Spotter to let your whole team ask questions in plain language.' : 'Enable for Spotter to let your whole team ask questions in plain language.'}</div>
                 </div>
               </div>
@@ -1638,9 +1638,9 @@ const SuccessScreen: React.FC<{
           Raw data connected. Create a model to unlock transformations, AI-ready metrics, and natural language search.
         </p>
         <div style={{ display: 'flex', gap: sp.B, alignItems: 'center', justifyContent: 'center', marginBottom: sp.F, flexWrap: 'wrap' }}>
-          <span style={{ fontSize: 11, fontWeight: fw.medium, padding: '4px 14px', borderRadius: 99, background: bBase, border: `1px solid ${bdiv}`, color: fg1, fontFamily: ff.primary }}>{sourceLabel}</span>
+          <span style={{ fontSize: 12, fontWeight: fw.medium, padding: '4px 14px', borderRadius: 99, background: bBase, border: `1px solid ${bdiv}`, color: fg1, fontFamily: ff.primary }}>{sourceLabel}</span>
           {cgEnabled && (
-            <span style={{ fontSize: 11, fontWeight: fw.medium, padding: '4px 14px', borderRadius: 99, background: 'rgba(140,98,245,0.08)', border: '1px solid rgba(140,98,245,0.22)', color: '#8C62F5', display: 'flex', alignItems: 'center', gap: 6, fontFamily: ff.primary }}>
+            <span style={{ fontSize: 12, fontWeight: fw.medium, padding: '4px 14px', borderRadius: 99, background: 'rgba(140,98,245,0.08)', border: '1px solid rgba(140,98,245,0.22)', color: '#8C62F5', display: 'flex', alignItems: 'center', gap: sp.B, fontFamily: ff.primary }}>
               <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#8C62F5', flexShrink: 0 }} />
               Context Graph active
             </span>
@@ -1665,7 +1665,7 @@ const SuccessScreen: React.FC<{
                 </svg>
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 13, fontWeight: fw.medium, color: fg1, fontFamily: ff.primary, marginBottom: 2 }}>Shape data around your team's questions</div>
+                <div style={{ fontSize: 13, fontWeight: fw.medium, color: fg1, fontFamily: ff.primary, marginBottom: sp.A }}>Shape data around your team's questions</div>
                 <div style={{ fontSize: 12, color: fg2, fontFamily: ff.primary, lineHeight: 1.45 }}>Join tables and apply transformations to shape data around your team's questions.</div>
               </div>
             </div>
@@ -1677,7 +1677,7 @@ const SuccessScreen: React.FC<{
                 </svg>
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 13, fontWeight: fw.medium, color: fg1, fontFamily: ff.primary, marginBottom: 2 }}>Build an AI ready model</div>
+                <div style={{ fontSize: 13, fontWeight: fw.medium, color: fg1, fontFamily: ff.primary, marginBottom: sp.A }}>Build an AI ready model</div>
                 <div style={{ fontSize: 12, color: fg2, fontFamily: ff.primary, lineHeight: 1.45 }}>Build an AI ready model by enriching it with descriptions, synonyms, relationships, and verified answers — so Spotter responds with precision.</div>
               </div>
             </div>
@@ -1690,7 +1690,7 @@ const SuccessScreen: React.FC<{
                 </svg>
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 13, fontWeight: fw.medium, color: fg1, fontFamily: ff.primary, marginBottom: 2 }}>Self-serve analytics for everyone</div>
+                <div style={{ fontSize: 13, fontWeight: fw.medium, color: fg1, fontFamily: ff.primary, marginBottom: sp.A }}>Self-serve analytics for everyone</div>
                 <div style={{ fontSize: 12, color: fg2, fontFamily: ff.primary, lineHeight: 1.45 }}>Your team asks questions in plain English — Spotter finds the answer instantly.</div>
               </div>
             </div>
@@ -1752,7 +1752,7 @@ const Footer: React.FC<{
   return (
     <div style={{ height: 68, flexShrink: 0, background: bBase, borderTop: `1px solid ${bdiv}`, display: 'flex', alignItems: 'center', padding: `0 ${sp.H}px`, gap: sp.C }}>
       {showBack ? (
-        <button onClick={onBack} style={{ ...btnBase, background: 'none', border: 'none', color: fg2, display: 'flex', alignItems: 'center', gap: 6 }}>
+        <button onClick={onBack} style={{ ...btnBase, background: 'none', border: 'none', color: fg2, display: 'flex', alignItems: 'center', gap: sp.B }}>
           <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M9 3L4 7l5 4" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/></svg>
           Back
         </button>

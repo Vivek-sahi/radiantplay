@@ -23,10 +23,10 @@ const DbtLogo: React.FC<{ size?: number }> = ({ size = 32 }) => (
 const PageHeader: React.FC<{ title: string; subtitle?: string; actions?: React.ReactNode; back?: () => void }> = ({ title, subtitle, actions, back }) => (
   <div style={{ flexShrink: 0, padding: `${sp.D}px ${sp.H}px`, backgroundColor: c['background-base'], borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: sp.D }}>
     <div style={{ display: 'flex', alignItems: 'center', gap: sp.C }}>
-      {back && <button onClick={back} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: c['content-secondary'], fontSize: 14 }}>←</button>}
+      {back && <button onClick={back} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: sp.A, color: c['content-secondary'], fontSize: 14 }}>←</button>}
       <div>
         <h1 style={{ margin: 0, fontSize: 18, fontWeight: fw.medium, color: c['content-primary'], fontFamily: ff.primary }}>{title}</h1>
-        {subtitle && <div style={{ fontSize: fs.xs, color: c['content-tertiary'], marginTop: 2, fontFamily: ff.primary }}>{subtitle}</div>}
+        {subtitle && <div style={{ fontSize: fs.xs, color: c['content-tertiary'], marginTop: sp.A, fontFamily: ff.primary }}>{subtitle}</div>}
       </div>
     </div>
     {actions && <div style={{ display: 'flex', gap: sp.B }}>{actions}</div>}
@@ -84,7 +84,7 @@ const ImportingState: React.FC = () => (
                 <span style={{
                   width: 16, height: 16, borderRadius: 8,
                   backgroundColor: s.status === 'done' ? c['content-success'] : s.status === 'in-progress' ? c['content-brand'] : c['background-subtle'],
-                  color: 'white', fontSize: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                  color: 'white', fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                 }}>{s.status === 'done' ? '✓' : s.status === 'in-progress' ? '↻' : ''}</span>
                 <span style={{ fontSize: fs.sm, color: s.status === 'pending' ? c['content-tertiary'] : c['content-primary'], fontFamily: ff.primary }}>{s.label}</span>
               </div>
@@ -120,15 +120,15 @@ const ImportedState: React.FC = () => (
             <Card key={s.k}>
               <div style={{ padding: sp.D }}>
                 <div style={{ fontSize: fs.xs, color: c['content-tertiary'], fontFamily: ff.primary }}>{s.k}</div>
-                <div style={{ fontSize: 22, fontWeight: fw.medium, color: s.tone ? c[`content-${s.tone}` as keyof typeof c] as string : c['content-primary'], marginTop: 2, fontFamily: ff.primary }}>{s.v}</div>
-                {s.sub && <div style={{ fontSize: fs.xs, color: c['content-secondary'], marginTop: 2, fontFamily: ff.primary }}>{s.sub}</div>}
+                <div style={{ fontSize: 22, fontWeight: fw.medium, color: s.tone ? c[`content-${s.tone}` as keyof typeof c] as string : c['content-primary'], marginTop: sp.A, fontFamily: ff.primary }}>{s.v}</div>
+                {s.sub && <div style={{ fontSize: fs.xs, color: c['content-secondary'], marginTop: sp.A, fontFamily: ff.primary }}>{s.sub}</div>}
               </div>
             </Card>
           ))}
         </div>
 
         <Card>
-          <div style={{ padding: `${sp.B}px ${sp.D}px`, backgroundColor: c['background-subtle'], borderBottom: `1px solid ${c['border-divider']}`, fontSize: 11, fontWeight: fw.medium, color: c['content-secondary'], textTransform: 'uppercase', letterSpacing: '0.04em', fontFamily: ff.primary }}>
+          <div style={{ padding: `${sp.B}px ${sp.D}px`, backgroundColor: c['background-subtle'], borderBottom: `1px solid ${c['border-divider']}`, fontSize: 12, fontWeight: fw.medium, color: c['content-secondary'], textTransform: 'uppercase', letterSpacing: '0.04em', fontFamily: ff.primary }}>
             Imported models
           </div>
           {[
@@ -174,14 +174,14 @@ const IssuesState: React.FC = () => (
     />
     <div style={{ flex: 1, overflowY: 'auto', backgroundColor: c['background-sunken'], padding: `${sp.E}px ${sp.H}px` }}>
       <div style={{ maxWidth: 920, margin: '0 auto' }}>
-        <div style={{ fontSize: 11, color: c['content-secondary'], textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: fw.medium, marginBottom: sp.B, fontFamily: ff.primary }}>
+        <div style={{ fontSize: 12, color: c['content-secondary'], textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: fw.medium, marginBottom: sp.B, fontFamily: ff.primary }}>
           Blocking <span style={{ color: c['content-tertiary'] }}>· must resolve to publish</span>
         </div>
         <Card>
           <div style={{ padding: sp.D, fontSize: fs.sm, color: c['content-tertiary'], fontFamily: ff.primary }}>No blocking issues for this model.</div>
         </Card>
 
-        <div style={{ fontSize: 11, color: c['content-secondary'], textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: fw.medium, marginTop: sp.E, marginBottom: sp.B, fontFamily: ff.primary }}>
+        <div style={{ fontSize: 12, color: c['content-secondary'], textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: fw.medium, marginTop: sp.E, marginBottom: sp.B, fontFamily: ff.primary }}>
           Advisory <span style={{ color: c['content-tertiary'] }}>· publish anyway, fix later</span>
         </div>
         {[
@@ -194,10 +194,10 @@ const IssuesState: React.FC = () => (
               <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, marginBottom: sp.A }}>
                 <span style={{ fontSize: 14 }}>▲</span>
                 <span style={{ fontSize: fs.sm, fontWeight: fw.medium, color: c['content-primary'], fontFamily: ff.primary }}>{iss.title}</span>
-                <span style={{ fontSize: 11, padding: `1px ${sp.B}px`, borderRadius: 3, backgroundColor: c['background-warning'], color: c['content-warning'], fontWeight: fw.medium }}>{iss.type}</span>
+                <span style={{ fontSize: 12, padding: `1px ${sp.B}px`, borderRadius: 3, backgroundColor: c['background-warning'], color: c['content-warning'], fontWeight: fw.medium }}>{iss.type}</span>
               </div>
-              <div style={{ fontSize: fs.xs, color: c['content-secondary'], lineHeight: 1.5, marginBottom: sp.C, marginLeft: 22, fontFamily: ff.primary }}>{iss.body}</div>
-              <div style={{ marginLeft: 22, padding: sp.B, borderRadius: 4, backgroundColor: c['background-information'], display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ fontSize: fs.xs, color: c['content-secondary'], lineHeight: 1.5, marginBottom: sp.C, marginLeft: sp.F, fontFamily: ff.primary }}>{iss.body}</div>
+              <div style={{ marginLeft: sp.F, padding: sp.B, borderRadius: 4, backgroundColor: c['background-information'], display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, fontFamily: ff.primary }}>
                   <span style={{ fontSize: 12 }}>✦</span>
                   <span style={{ fontSize: fs.xs, color: c['content-brand'], fontWeight: fw.medium }}>AI fix: {iss.fix}</span>
@@ -238,7 +238,7 @@ const FixFlowState: React.FC = () => (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: sp.C, marginTop: sp.D }}>
           <Card>
             <div style={{ padding: sp.D }}>
-              <div style={{ fontSize: 10, color: c['content-tertiary'], textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: sp.B, fontFamily: ff.primary, fontWeight: fw.medium }}>Before</div>
+              <div style={{ fontSize: 12, color: c['content-tertiary'], textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: sp.B, fontFamily: ff.primary, fontWeight: fw.medium }}>Before</div>
               <pre style={{ margin: 0, whiteSpace: 'pre-wrap', color: c['content-secondary'], fontSize: fs.xs, fontFamily: ff.mono }}>{`transactions
   ⨝ order_items ON order_id
   ⨝ returns     ON order_id
@@ -247,7 +247,7 @@ const FixFlowState: React.FC = () => (
           </Card>
           <Card>
             <div style={{ padding: sp.D, backgroundColor: c['background-success'] }}>
-              <div style={{ fontSize: 10, color: c['content-tertiary'], textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: sp.B, fontFamily: ff.primary, fontWeight: fw.medium }}>After</div>
+              <div style={{ fontSize: 12, color: c['content-tertiary'], textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: sp.B, fontFamily: ff.primary, fontWeight: fw.medium }}>After</div>
               <pre style={{ margin: 0, whiteSpace: 'pre-wrap', color: c['content-success'], fontSize: fs.xs, fontFamily: ff.mono }}>{`transactions
   ⨝ order_items ON order_id
   ⨝ (returns_agg) ON order_id
@@ -296,7 +296,7 @@ const PublishedState: React.FC = () => (
           ].map(([t, d]) => (
             <Card key={t}><div style={{ padding: sp.C }}>
               <div style={{ fontSize: fs.sm, fontWeight: fw.medium, color: c['content-primary'] }}>{t}</div>
-              <div style={{ fontSize: fs.xs, color: c['content-secondary'], marginTop: 2 }}>{d}</div>
+              <div style={{ fontSize: fs.xs, color: c['content-secondary'], marginTop: sp.A }}>{d}</div>
             </div></Card>
           ))}
         </div>

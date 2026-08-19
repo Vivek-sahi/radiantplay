@@ -59,7 +59,7 @@ const ModelView: React.FC<ModelViewProps> = ({ project, alert, initialTab, onBac
             {/* Author + last updated */}
             <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, paddingRight: sp.C, borderRight: `1px solid ${c['border-divider']}` }}>
               <div style={{ width: 20, height: 20, borderRadius: '50%', backgroundColor: '#2563EB', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <span style={{ fontSize: 10, fontWeight: fw.semibold, color: 'white', lineHeight: 1 }}>
+                <span style={{ fontSize: 12, fontWeight: fw.semibold, color: 'white', lineHeight: 1 }}>
                   {project.author.charAt(0)}
                 </span>
               </div>
@@ -73,7 +73,7 @@ const ModelView: React.FC<ModelViewProps> = ({ project, alert, initialTab, onBac
               <Button variant="tertiary" size="small" onClick={() => setMoreOpen(o => !o)}>···</Button>
               {moreOpen && (
                 <div
-                  style={{ position: 'absolute', top: '100%', right: 0, marginTop: 4, backgroundColor: c['background-base'], border: `1px solid ${c['border-default']}`, borderRadius: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.12)', zIndex: 100, minWidth: 160, overflow: 'hidden' }}
+                  style={{ position: 'absolute', top: '100%', right: 0, marginTop: sp.A, backgroundColor: c['background-base'], border: `1px solid ${c['border-default']}`, borderRadius: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.12)', zIndex: 100, minWidth: 160, overflow: 'hidden' }}
                   onClick={() => setMoreOpen(false)}
                 >
                   {[
@@ -97,7 +97,7 @@ const ModelView: React.FC<ModelViewProps> = ({ project, alert, initialTab, onBac
             <button
               title="Share"
               onClick={() => setShareOpen(true)}
-              style={{ width: 26, height: 26, padding: 4, border: `1px solid ${c['border-default']}`, borderRadius: 6, backgroundColor: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box' }}
+              style={{ width: 26, height: 26, padding: sp.A, border: `1px solid ${c['border-default']}`, borderRadius: 6, backgroundColor: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box' }}
               onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
               onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
             >
@@ -109,7 +109,7 @@ const ModelView: React.FC<ModelViewProps> = ({ project, alert, initialTab, onBac
             {/* Edit model */}
             <button
               onClick={onEdit}
-              style={{ height: 26, padding: '0 14px', border: 'none', borderRadius: 6, backgroundColor: '#2563EB', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 12, fontWeight: 500, fontFamily: ff.primary, color: 'white', boxSizing: 'border-box', transition: 'background-color 0.15s' }}
+              style={{ height: 26, padding: '0 14px', border: 'none', borderRadius: 6, backgroundColor: '#2563EB', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: sp.B, fontSize: 12, fontWeight: 500, fontFamily: ff.primary, color: 'white', boxSizing: 'border-box', transition: 'background-color 0.15s' }}
               onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#1d4ed8')}
               onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#2563EB')}
             >
@@ -220,12 +220,12 @@ const ColumnCard: React.FC<{ col: ModelColumn; isLast: boolean }> = ({ col, isLa
         <span style={{ fontSize: fs.sm, fontWeight: fw.medium, color: c['content-primary'] }}>
           {col.name}
         </span>
-        <span style={{ fontSize: 10, fontWeight: fw.medium, color: c['content-secondary'], flexShrink: 0 }}>
+        <span style={{ fontSize: 12, fontWeight: fw.medium, color: c['content-secondary'], flexShrink: 0 }}>
           {typeLabel}
         </span>
       </div>
       {/* Row 2: source table · description */}
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, marginTop: 3 }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: sp.A, marginTop: sp.A }}>
         <span style={{ fontSize: fs.xs, color: c['content-tertiary'], flexShrink: 0, fontFamily: 'monospace' }}>
           {col.table === 'computed' ? 'computed' : col.table}
         </span>
@@ -265,7 +265,7 @@ const SourceBlock: React.FC<{
 
     const lastSyncValue = hasSyncFailure ? (
       <div style={{ display: 'flex', alignItems: 'center', gap: sp.C }}>
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: c['content-primary'] }}>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: sp.A, color: c['content-primary'] }}>
           <svg width="13" height="13" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
             <circle cx="8" cy="8" r="6.5" stroke="#b91c1c" strokeWidth="1.5"/>
             <line x1="8" y1="5" x2="8" y2="9" stroke="#b91c1c" strokeWidth="1.5" strokeLinecap="round"/>
@@ -420,7 +420,7 @@ const InfoTab: React.FC<{ details: typeof MODEL_DETAILS[string] | null; project:
               value={colSearch}
               onChange={e => setColSearch(e.target.value)}
               placeholder="Search columns…"
-              style={{ paddingLeft: 26, paddingRight: colSearch ? 24 : sp.C, paddingTop: 5, paddingBottom: 5, fontSize: fs.xs, fontFamily: ff.primary, color: c['content-primary'], backgroundColor: c['background-subtle'], border: `1px solid ${c['border-default']}`, borderRadius: 6, outline: 'none', width: 180, boxSizing: 'border-box' as const }}
+              style={{ paddingLeft: sp.G, paddingRight: colSearch ? 24 : sp.C, paddingTop: sp.A, paddingBottom: sp.A, fontSize: fs.xs, fontFamily: ff.primary, color: c['content-primary'], backgroundColor: c['background-subtle'], border: `1px solid ${c['border-default']}`, borderRadius: 6, outline: 'none', width: 180, boxSizing: 'border-box' as const }}
               onFocus={e => (e.target.style.borderColor = c['content-brand'])}
               onBlur={e => (e.target.style.borderColor = c['border-default'])}
             />
@@ -730,7 +730,7 @@ const calcTrend = (current: number, prev: number): TrendDir => {
 
 const TrendBadge: React.FC<{ dir: TrendDir; good: 'up' | 'down' }> = ({ dir, good }) => {
   if (dir === 'flat') return null;
-  return <span style={{ fontSize: 10, fontWeight: fw.semibold, color: dir === good ? '#16a34a' : '#dc2626', lineHeight: 1, marginLeft: 2 }}>{dir === 'up' ? '↑' : '↓'}</span>;
+  return <span style={{ fontSize: 12, fontWeight: fw.semibold, color: dir === good ? '#16a34a' : '#dc2626', lineHeight: 1, marginLeft: sp.A }}>{dir === 'up' ? '↑' : '↓'}</span>;
 };
 
 interface PillarIssue { text: string; sub?: string; action?: string; }
@@ -813,16 +813,16 @@ const PillarCard: React.FC<{ pillar: PillarData }> = ({ pillar }) => {
     <div style={{ backgroundColor: c['background-base'], border: `1px solid ${c['border-divider']}`, borderTop: `3px solid ${CARD_TOP[pillar.status]}`, borderRadius: 8, padding: `${sp.C}px ${sp.D}px`, display: 'flex', flexDirection: 'column', gap: sp.B }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <span style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'] }}>{PILLAR_LABEL[pillar.id]}</span>
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '1px 7px', borderRadius: 12, backgroundColor: BADGE_BG[pillar.status], fontSize: fs.xs, fontWeight: fw.medium, color: STATUS_COLOR[pillar.status] }}>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: sp.A, padding: '1px 7px', borderRadius: 12, backgroundColor: BADGE_BG[pillar.status], fontSize: fs.xs, fontWeight: fw.medium, color: STATUS_COLOR[pillar.status] }}>
           <span style={{ width: 5, height: 5, borderRadius: '50%', backgroundColor: STATUS_COLOR[pillar.status], flexShrink: 0 }} />
           {STATUS_LABEL[pillar.status]}
         </span>
       </div>
       <div style={{ fontSize: 17, fontWeight: fw.semibold, lineHeight: 1.2, letterSpacing: '-0.2px', color: isHealthy ? c['content-secondary'] : c['content-primary'] }}>{pillar.headline}</div>
-      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' as const }}>
+      <div style={{ display: 'flex', gap: sp.B, flexWrap: 'wrap' as const }}>
         {pillar.stats.map((s, si) => (
           <div key={si} style={{ padding: '3px 8px', borderRadius: 5, backgroundColor: c['background-sunken'], border: `1px solid ${c['border-divider']}` }}>
-            <div style={{ fontSize: 10, color: c['content-tertiary'], marginBottom: 1 }}>{s.label}</div>
+            <div style={{ fontSize: 12, color: c['content-tertiary'], marginBottom: 1 }}>{s.label}</div>
             <div style={{ display: 'flex', alignItems: 'center' }}>
               <span style={{ fontSize: fs.xs, fontWeight: fw.semibold, color: isHealthy ? c['content-secondary'] : c['content-primary'] }}>{s.value}</span>
               {s.trendDir && s.trendGood && <TrendBadge dir={s.trendDir} good={s.trendGood} />}
@@ -833,14 +833,14 @@ const PillarCard: React.FC<{ pillar: PillarData }> = ({ pillar }) => {
       {!isHealthy && pillar.issues && pillar.issues.length > 0 && (
         <div style={{ borderTop: `1px solid ${c['border-divider']}`, paddingTop: sp.B, display: 'flex', flexDirection: 'column', gap: sp.B }}>
           {pillar.issues.map((issue, ii) => (
-            <div key={ii} style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
-              <span style={{ width: 4, height: 4, borderRadius: '50%', backgroundColor: STATUS_COLOR[pillar.status], marginTop: 5, flexShrink: 0 }} />
+            <div key={ii} style={{ display: 'flex', alignItems: 'flex-start', gap: sp.B }}>
+              <span style={{ width: 4, height: 4, borderRadius: '50%', backgroundColor: STATUS_COLOR[pillar.status], marginTop: sp.A, flexShrink: 0 }} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: fs.xs, color: c['content-primary'], lineHeight: 1.4 }}>{issue.text}</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: sp.C, marginTop: 2, flexWrap: 'wrap' as const }}>
-                  {issue.sub && <span style={{ fontSize: 11, color: c['content-tertiary'] }}>{issue.sub}</span>}
+                <div style={{ display: 'flex', alignItems: 'center', gap: sp.C, marginTop: sp.A, flexWrap: 'wrap' as const }}>
+                  {issue.sub && <span style={{ fontSize: 12, color: c['content-tertiary'] }}>{issue.sub}</span>}
                   {issue.action && (
-                    <button onClick={() => {}} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: 11, fontWeight: fw.semibold, color: c['content-brand'], fontFamily: ff.primary, display: 'inline-flex', alignItems: 'center', gap: 2, lineHeight: 1 }}
+                    <button onClick={() => {}} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: 12, fontWeight: fw.semibold, color: c['content-brand'], fontFamily: ff.primary, display: 'inline-flex', alignItems: 'center', gap: sp.A, lineHeight: 1 }}
                       onMouseEnter={e => (e.currentTarget.style.textDecoration = 'underline')}
                       onMouseLeave={e => (e.currentTarget.style.textDecoration = 'none')}
                     >{issue.action} →</button>
@@ -874,17 +874,17 @@ const CostRoiSection: React.FC<{ modelId: string }> = ({ modelId }) => {
   ];
   return (
     <div style={{ marginTop: sp.H }}>
-      <div style={{ fontSize: 11, fontWeight: fw.semibold, color: c['content-secondary'], textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: sp.C }}>Cost & efficiency</div>
+      <div style={{ fontSize: 12, fontWeight: fw.semibold, color: c['content-secondary'], textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: sp.C }}>Cost & efficiency</div>
       <div style={{ backgroundColor: c['background-base'], border: `1px solid ${c['border-divider']}`, borderRadius: 8, overflow: 'hidden', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr' }}>
         {cells.map((cell, i) => (
           <div key={i} style={{ padding: `${sp.C}px ${sp.D}px`, borderRight: `1px solid ${c['border-divider']}` }}>
-            <div style={{ fontSize: 11, color: c['content-tertiary'], marginBottom: 4 }}>{cell.label}</div>
+            <div style={{ fontSize: 12, color: c['content-tertiary'], marginBottom: sp.A }}>{cell.label}</div>
             <div style={{ fontSize: 18, fontWeight: fw.semibold, color: c['content-primary'], letterSpacing: '-0.3px', lineHeight: 1 }}>{cell.value}</div>
           </div>
         ))}
         <div style={{ padding: `${sp.C}px ${sp.D}px`, backgroundColor: ROI_BG[stats.roiFlag], display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
           <div style={{ fontSize: fs.xs, fontWeight: fw.semibold, color: ROI_COLOR[stats.roiFlag] }}>{ROI_LABEL[stats.roiFlag]}</div>
-          <div style={{ fontSize: 11, color: ROI_COLOR[stats.roiFlag], marginTop: 3 }}>{stats.weeklyQueryVolume} queries · {stats.uniqueUsersThisWeek} users this week</div>
+          <div style={{ fontSize: 12, color: ROI_COLOR[stats.roiFlag], marginTop: sp.A }}>{stats.weeklyQueryVolume} queries · {stats.uniqueUsersThisWeek} users this week</div>
         </div>
       </div>
     </div>
@@ -901,7 +901,7 @@ const SemanticCoverageSection: React.FC<{ modelId: string }> = ({ modelId }) => 
 
   return (
     <div style={{ marginTop: sp.H }}>
-      <div style={{ fontSize: 11, fontWeight: fw.semibold, color: c['content-secondary'], textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: sp.C }}>Semantic coverage</div>
+      <div style={{ fontSize: 12, fontWeight: fw.semibold, color: c['content-secondary'], textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: sp.C }}>Semantic coverage</div>
       <div style={{ backgroundColor: c['background-base'], border: `1px solid ${c['border-divider']}`, borderRadius: 8, padding: `${sp.C}px ${sp.D}px`, display: 'flex', flexDirection: 'column', gap: sp.C }}>
         {coverage && pct !== null && (
           <div style={{ display: 'flex', alignItems: 'center', gap: sp.C }}>
@@ -912,14 +912,14 @@ const SemanticCoverageSection: React.FC<{ modelId: string }> = ({ modelId }) => 
         )}
         {gaps.length > 0 && (
           <div style={{ borderTop: coverage ? `1px solid ${c['border-divider']}` : 'none', paddingTop: coverage ? sp.C : 0 }}>
-            <div style={{ fontSize: 11, color: c['content-tertiary'], marginBottom: sp.B }}>Top gaps — questions users asked that Spotter couldn't answer</div>
+            <div style={{ fontSize: 12, color: c['content-tertiary'], marginBottom: sp.B }}>Top gaps — questions users asked that Spotter couldn't answer</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: sp.A }}>
               {gaps.map((gap, i) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'baseline', gap: sp.C }}>
                   <span style={{ fontSize: fs.xs, fontWeight: fw.medium, color: c['content-primary'], minWidth: 130, flexShrink: 0 }}>{gap.column}</span>
-                  <span style={{ fontSize: 11, color: c['content-tertiary'], flexShrink: 0 }}>{gap.queryCount}× asked</span>
+                  <span style={{ fontSize: 12, color: c['content-tertiary'], flexShrink: 0 }}>{gap.queryCount}× asked</span>
                   <span style={{ fontSize: fs.xs, color: c['content-secondary'], flex: 1, minWidth: 0 }}>{gap.issue}</span>
-                  <button onClick={() => {}} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: 11, fontWeight: fw.semibold, color: c['content-brand'], fontFamily: ff.primary, flexShrink: 0 }}
+                  <button onClick={() => {}} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: 12, fontWeight: fw.semibold, color: c['content-brand'], fontFamily: ff.primary, flexShrink: 0 }}
                     onMouseEnter={e => (e.currentTarget.style.textDecoration = 'underline')}
                     onMouseLeave={e => (e.currentTarget.style.textDecoration = 'none')}
                   >Fix →</button>
@@ -960,8 +960,8 @@ const LogModal: React.FC<{ log: string; onClose: () => void }> = ({ log, onClose
         <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, color: c['content-secondary'], lineHeight: 1, padding: 0 }}>×</button>
       </div>
       {/* Log body */}
-      <div style={{ flex: 1, overflowY: 'auto', backgroundColor: '#1E1E1E', padding: `${sp.C}px ${sp.D}px` }}>
-        <pre style={{ margin: 0, fontSize: 11, color: '#D4D4D4', fontFamily: 'monospace', lineHeight: '18px', whiteSpace: 'pre-wrap' as const }}>
+      <div style={{ flex: 1, overflowY: 'auto', backgroundColor: c['background-base-inverse'], padding: `${sp.C}px ${sp.D}px` }}>
+        <pre style={{ margin: 0, fontSize: 12, color: c['content-tertiary'], fontFamily: 'monospace', lineHeight: '18px', whiteSpace: 'pre-wrap' as const }}>
           {log}
         </pre>
       </div>

@@ -138,7 +138,7 @@ const PageHeader: React.FC<{
       <div style={{ minWidth: 0 }}>
         <h1 style={{ ...ts.modalTitle, margin: 0, color: c['content-primary'], fontFamily: ff.primary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</h1>
         {subtitle && (
-          <div style={{ ...ts.footnote, color: c['content-secondary'], marginTop: 2, fontFamily: ff.primary }}>{subtitle}</div>
+          <div style={{ ...ts.footnote, color: c['content-secondary'], marginTop: sp.A, fontFamily: ff.primary }}>{subtitle}</div>
         )}
       </div>
     </div>
@@ -150,7 +150,7 @@ const StatCell: React.FC<{ label: string; value: string }> = ({ label, value }) 
   <Card>
     <div style={{ padding: sp.D }}>
       <div style={{ ...ts.footnote, color: c['content-tertiary'] }}>{label}</div>
-      <div style={{ ...ts.headlineLarge, fontSize: fs.xl, color: c['content-primary'], marginTop: 2 }}>{value}</div>
+      <div style={{ ...ts.headlineLarge, fontSize: fs.xl, color: c['content-primary'], marginTop: sp.A }}>{value}</div>
     </div>
   </Card>
 );
@@ -259,11 +259,11 @@ const SchemaHome: React.FC<{
     { key: 'name', label: 'Table',
       render: (_v, row) => (
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: sp.B }}>
-          <span style={{ paddingTop: 2 }}><TableTypeIcon table={row.raw} size="s" /></span>
+          <span style={{ paddingTop: sp.A }}><TableTypeIcon table={row.raw} size="s" /></span>
           <div style={{ minWidth: 0 }}>
             <div style={{ fontFamily: ff.primary, color: c['content-primary'], fontWeight: fw.medium }}>{row.name}</div>
             {row.description && (
-              <div style={{ fontFamily: ff.primary, fontSize: fs.xs, color: c['content-tertiary'], marginTop: 2 }}>{row.description}</div>
+              <div style={{ fontFamily: ff.primary, fontSize: fs.xs, color: c['content-tertiary'], marginTop: sp.A }}>{row.description}</div>
             )}
           </div>
         </div>
@@ -818,7 +818,7 @@ const ExternalModelsView: React.FC<{ entries: ExternalEntry[] }> = ({ entries })
                     display: 'flex', alignItems: 'flex-start', gap: sp.B,
                   }}
                 >
-                  <span style={{ paddingTop: 2 }}><TableTypeIcon table={e.table} size="s" /></span>
+                  <span style={{ paddingTop: sp.A }}><TableTypeIcon table={e.table} size="s" /></span>
                   <div style={{ minWidth: 0, flex: 1 }}>
                     <div style={{ fontSize: fs.sm, fontWeight: fw.medium, color: sel ? c['content-brand'] : c['content-primary'], overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {e.table.name}
@@ -896,7 +896,7 @@ const ExternalModelOptionCard: React.FC<{
         <img src={option.logo} alt={option.title} style={{ width: 22, height: 22, objectFit: 'contain' }} />
       </div>
       <div style={{ flex: 1 }}>
-        <div style={{ fontSize: fs.sm, fontWeight: fw.medium, color: c['content-primary'], marginBottom: 2 }}>
+        <div style={{ fontSize: fs.sm, fontWeight: fw.medium, color: c['content-primary'], marginBottom: sp.A }}>
           {option.title}
         </div>
         <div style={{ fontSize: fs.xs, color: c['content-secondary'] }}>
@@ -914,7 +914,7 @@ const ExternalModelsEmptyState: React.FC<{ onImport: () => void }> = ({ onImport
   <div style={{ flex: 1, overflowY: 'auto', backgroundColor: c['background-sunken'] }}>
     <div style={{ maxWidth: 560, margin: '0 auto', padding: `${sp.H}px` }}>
       <div style={{
-        fontSize: 11, fontWeight: fw.semibold, textTransform: 'uppercase' as const,
+        fontSize: 12, fontWeight: fw.semibold, textTransform: 'uppercase' as const,
         letterSpacing: '0.06em', color: c['content-secondary'], marginBottom: sp.D,
         fontFamily: ff.primary,
       }}>
@@ -970,7 +970,7 @@ const InlinePublishModal: React.FC<{
           </div>
           <button
             onClick={onClose}
-            style={{ width: 28, height: 28, flexShrink: 0, borderRadius: 7, backgroundColor: c['background-subtle'], border: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: c['content-secondary'], marginTop: 2 }}
+            style={{ width: 28, height: 28, flexShrink: 0, borderRadius: 7, backgroundColor: c['background-subtle'], border: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: c['content-secondary'], marginTop: sp.A }}
           >
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M1.5 1.5l9 9M10.5 1.5l-9 9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
           </button>
@@ -979,8 +979,8 @@ const InlinePublishModal: React.FC<{
           <div style={rowStyle}>
             <span style={labelStyle}>Source</span>
             <span style={valueStyle}>
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ fontSize: 11, fontWeight: fw.semibold, color: '#FF694A', backgroundColor: 'rgba(255,105,74,0.08)', border: '1px solid rgba(255,105,74,0.2)', borderRadius: 3, padding: '1px 6px' }}>◆ dbt</span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: sp.B }}>
+                <span style={{ fontSize: 12, fontWeight: fw.semibold, color: '#FF694A', backgroundColor: 'rgba(255,105,74,0.08)', border: '1px solid rgba(255,105,74,0.2)', borderRadius: 3, padding: '1px 6px' }}>◆ dbt</span>
                 <span style={{ color: c['content-secondary'], fontWeight: fw.regular, fontFamily: ff.primary }}>analytics · linked</span>
               </span>
             </span>

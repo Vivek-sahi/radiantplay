@@ -4,7 +4,7 @@ import { BrandMark } from '../../../components/BrandMark';
 import ModelCanvas, { InitialCanvasJoin } from './ModelCanvas';
 import { DraftPlanCardMRD, MOCK_PLAN_BASE } from './AgentPanel';
 import TestFixCard, { TestFixItem } from './TestFixCard';
-import { c, ff, fw } from '../styles';
+import { c, ff, fw, sp } from '../styles';
 
 type FixPhase = 'idle' | 'reasoning' | 'done';
 interface FixFlow { phase: FixPhase; items: TestFixItem[] }
@@ -26,20 +26,20 @@ const ReasoningBlock: React.FC = () => {
     return () => { timers.current.forEach(clearTimeout); };
   }, []);
   return (
-    <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 9 }}>
+    <div style={{ marginTop: sp.E, display: 'flex', flexDirection: 'column', gap: sp.B }}>
       <style>{`@keyframes sx-spin{to{transform:rotate(360deg)}}`}</style>
       {REASONING_STEPS.map((label, i) => {
         const done = i < step;
         const active = i === step;
         return (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 9, opacity: i <= step ? 1 : 0.4 }}>
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: sp.B, opacity: i <= step ? 1 : 0.4 }}>
             <span style={{ width: 15, height: 15, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               {done ? (
                 <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" fill="#06BF7F"/><path d="M4.3 7l2 2 3.4-3.6" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
               ) : active ? (
-                <span style={{ width: 12, height: 12, borderRadius: '50%', border: '1.6px solid #D5DAE1', borderTopColor: c['content-brand'], animation: 'sx-spin 700ms linear infinite' }} />
+                <span style={{ width: 12, height: 12, borderRadius: '50%', border: `1.6px solid ${c['border-subtle-hover']}`, borderTopColor: c['content-brand'], animation: 'sx-spin 700ms linear infinite' }} />
               ) : (
-                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#D5DAE1' }} />
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: c['background-subtle'] }} />
               )}
             </span>
             <span style={{ fontSize: 14, color: done ? c['content-secondary'] : c['content-primary'], lineHeight: 1.4 }}>{label}</span>
@@ -125,10 +125,10 @@ const UtilityButton: React.FC<{ children: React.ReactNode; label: string }> = ({
 const TopNav: React.FC = () => (
   <div style={{
     height: 60, flexShrink: 0, display: 'flex', alignItems: 'center',
-    padding: '0 24px 0 15px', gap: 12,
+    padding: '0 24px 0 15px', gap: sp.C,
     backgroundColor: HEADER_BG,
   }}>
-    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: sp.C }}>
       <IconButton label="Toggle navigation">
         <Icon name="hamburger" size="m" color={c['content-primary']} />
       </IconButton>
@@ -137,10 +137,10 @@ const TopNav: React.FC = () => (
 
     <div style={{ flex: 1 }} />
 
-    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: sp.C }}>
       {/* Search pill — 216×32 */}
       <div style={{
-        display: 'flex', alignItems: 'center', gap: 9,
+        display: 'flex', alignItems: 'center', gap: sp.B,
         width: 216, height: 32, padding: '0 12px', boxSizing: 'border-box',
         borderRadius: 140, backgroundColor: UTILITY_BG,
         color: SEARCH_TEXT, fontSize: 14, fontWeight: fw.light, fontFamily: ff.primary,
@@ -169,19 +169,19 @@ const TopNav: React.FC = () => (
       </UtilityButton>
 
       {/* Org switcher — joined pill group */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: sp.A }}>
         <button type="button" style={{
-          display: 'flex', alignItems: 'center', gap: 4,
+          display: 'flex', alignItems: 'center', gap: sp.A,
           padding: '6px 6px 6px 18px', border: 'none',
           borderRadius: '20px 2px 2px 20px', backgroundColor: UTILITY_BG,
           fontFamily: ff.primary, fontSize: 14, fontWeight: fw.medium,
-          lineHeight: '20px', color: '#1D232F', cursor: 'pointer',
+          lineHeight: '20px', color: c['content-primary'], cursor: 'pointer',
         }}>
           Royal Enfield
           <Icon name="chevron-down" size="xs" color={c['content-primary']} />
         </button>
         <div style={{
-          width: 32, height: 32, boxSizing: 'border-box', padding: 2,
+          width: 32, height: 32, boxSizing: 'border-box', padding: sp.A,
           borderRadius: '2px 20px 20px 2px', backgroundColor: UTILITY_BG,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
@@ -189,7 +189,7 @@ const TopNav: React.FC = () => (
             width: 28, height: 28, borderRadius: 999,
             background: 'linear-gradient(135deg, #7C8CF8, #4A5FD0)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 11, fontWeight: fw.semibold, color: '#FFFFFF',
+            fontSize: 12, fontWeight: fw.semibold, color: c['content-alternate'],
             fontFamily: ff.primary, letterSpacing: 0.2,
           }}>
             KB
@@ -222,7 +222,7 @@ const ChatPanel: React.FC<{ width: number; onCollapse: () => void; fixFlow: FixF
     boxSizing: 'border-box',
   }}>
     {/* Chat header */}
-    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, flexShrink: 0 }}>
       <span style={{ fontSize: 15, fontWeight: fw.semibold, color: c['content-primary'] }}>
         Campaign performance model
       </span>
@@ -234,7 +234,7 @@ const ChatPanel: React.FC<{ width: number; onCollapse: () => void; fixFlow: FixF
     </div>
 
     {/* Conversation */}
-    <div ref={scrollRef} style={{ flex: 1, minHeight: 0, overflowY: 'auto', paddingTop: 40, paddingRight: 4 }}>
+    <div ref={scrollRef} style={{ flex: 1, minHeight: 0, overflowY: 'auto', paddingTop: sp.I, paddingRight: sp.A }}>
       <h2 style={{ margin: 0, fontSize: 24, fontWeight: fw.semibold, color: c['content-primary'], lineHeight: 1.25 }}>
         Campaign Performance
       </h2>
@@ -245,7 +245,7 @@ const ChatPanel: React.FC<{ width: number; onCollapse: () => void; fixFlow: FixF
       </p>
 
       {/* MRD plan card — same card the MRD flow narrates, already built */}
-      <div style={{ marginTop: 24 }}>
+      <div style={{ marginTop: sp.F }}>
         <DraftPlanCardMRD plan={{ ...MOCK_PLAN_BASE, version: 1 }} onBuild={() => {}} built />
       </div>
 
@@ -253,7 +253,7 @@ const ChatPanel: React.FC<{ width: number; onCollapse: () => void; fixFlow: FixF
         I hope I was able to set up the model you needed. If you wish to refine
         it further, you may ask -
       </p>
-      <ol style={{ margin: '12px 0 0', paddingLeft: 22, fontSize: 15, lineHeight: 1.55, color: c['content-primary'], display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <ol style={{ margin: '12px 0 0', paddingLeft: sp.F, fontSize: 15, lineHeight: 1.55, color: c['content-primary'], display: 'flex', flexDirection: 'column', gap: sp.C }}>
         <li>Why did you choose LEFT JOINs?</li>
         <li>Run an AI readiness scan on this model</li>
         <li>Publish this model to Spotter</li>
@@ -263,7 +263,7 @@ const ChatPanel: React.FC<{ width: number; onCollapse: () => void; fixFlow: FixF
       {fixFlow.phase !== 'idle' && (
         <>
           {/* User message */}
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 28 }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: sp.G }}>
             <div style={{ maxWidth: '80%', background: c['background-subtle'], borderRadius: 14, padding: '10px 14px', fontSize: 14, lineHeight: 1.5, color: c['content-primary'] }}>
               Fix the issues you found in this test
             </div>
@@ -277,7 +277,7 @@ const ChatPanel: React.FC<{ width: number; onCollapse: () => void; fixFlow: FixF
                 I traced the divergence to the model. {fixFlow.items.length === 1 ? 'One change' : `${fixFlow.items.length} changes`} will make
                 Spotter answer this question the same way as the exact query:
               </p>
-              <div style={{ marginTop: 16 }}>
+              <div style={{ marginTop: sp.D }}>
                 <TestFixCard items={fixFlow.items} />
               </div>
             </>
@@ -288,14 +288,14 @@ const ChatPanel: React.FC<{ width: number; onCollapse: () => void; fixFlow: FixF
 
     {/* Input */}
     <div style={{
-      flexShrink: 0, marginTop: 16, backgroundColor: c['background-base'],
+      flexShrink: 0, marginTop: sp.D, backgroundColor: c['background-base'],
       borderRadius: 14, border: `1px solid ${c['border-default']}`,
       boxShadow: '0 2px 10px rgba(23,31,46,0.06)', padding: '14px 16px 10px',
     }}>
       <div style={{ fontSize: 15, color: c['content-secondary'] }}>
         Press &lsquo;/&rsquo; for skills and &lsquo;@&rsquo; to add context.
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', marginTop: 18 }}>
+      <div style={{ display: 'flex', alignItems: 'center', marginTop: sp.E }}>
         <IconButton label="Add attachment">
           <Icon name="plus" size="m" color={c['content-primary']} />
         </IconButton>
@@ -310,7 +310,7 @@ const ChatPanel: React.FC<{ width: number; onCollapse: () => void; fixFlow: FixF
       </div>
     </div>
 
-    <div style={{ flexShrink: 0, marginTop: 12, fontSize: 12, color: c['content-secondary'] }}>
+    <div style={{ flexShrink: 0, marginTop: sp.C, fontSize: 12, color: c['content-secondary'] }}>
       Spotter responses should be reviewed.{' '}
       <span style={{ color: c['content-brand'], cursor: 'pointer' }}>Learn more.</span>
     </div>
@@ -367,7 +367,7 @@ const SpotterXShell: React.FC<SpotterXShellProps> = ({ onClose, initialTables, i
       <div style={{ flex: 1, minHeight: 0, display: 'flex' }}>
         {chatCollapsed ? (
           /* Collapsed rail — just the expand toggle */
-          <div style={{ width: 56, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 16 }}>
+          <div style={{ width: 56, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: sp.D }}>
             <IconButton label="Expand chat panel" onClick={() => setChatCollapsed(false)}>
               <PanelToggleIcon />
             </IconButton>
@@ -419,7 +419,7 @@ const SpotterXShell: React.FC<SpotterXShellProps> = ({ onClose, initialTables, i
               showTestTab
               onTestFixWithAI={handleTestFixWithAI as never}
               embedHeaderLeft={
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, paddingLeft: 4 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: sp.C, paddingLeft: sp.A }}>
                   <Icon name="schema" size="m" color={c['content-primary']} />
                   <span style={{ fontSize: 15, fontWeight: fw.semibold, color: c['content-primary'], whiteSpace: 'nowrap' }}>{MOCK_PLAN_BASE.modelName}</span>
                 </div>

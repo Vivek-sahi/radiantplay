@@ -1,97 +1,129 @@
-# Data Studio — Claude Instructions
+# Data Studio — Claude instructions
 
 ## Session protocol
 
-**Every session, do this first:**
-1. Read `NEXT_UP.md` — if items exist, surface them and ask which to start with; if empty, wait for direction.
-2. Read `CONTEXT.md` — current canvas state.
-3. Read `product.md` only if product context is needed.
-4. Check git branch (`git branch`) — always `prototype/data-studio`; ask before proceeding if not.
-5. Check `feedback/inbox.jsonl` for pending items.
+**Read these four, in order. That is the whole session start:**
 
-**End of every session:**
-1. Update `CONTEXT.md` in-place — state only, no session history, no changelog.
-2. Update `NEXT_UP.md` — mark done items ✅, add new items.
-3. Append a one-paragraph summary to `SESSION_LOG.md`.
-4. Run `npm run build` and confirm it passes.
+1. **`FOUNDATION.md`** — how to think about this product. What a model is, how data teams work, the
+   agent/human line, the correctness posture, what caching is for, the design principles. **Read it
+   first — the other three assume it.**
+2. **`CONTEXT.md`** — what exists right now.
+3. **`PRD.md`** — phases, then every feature as the user meets it, with expected behaviour and
+   status. **This doubles as the test plan.**
+4. **`DESIGN.md`** — what's in flight: ownership, build queue, next up, architecture decisions,
+   traps, and what's been reversed.
 
-**Session type — say this at the start:**
-- **"next up"** → `NEXT_UP.md` is already read; pick the first open item, state its classification (scale + novelty), then act. Do not start building before stating the classification.
-- **"sidequest: [name]"** → read `sidequests/[name].md`, work in Playground.tsx only, don't touch main prototype code
-- **"research: [topic]"** → use `research/_template.md`, produce a research doc, write no code this session
+Then: check git branch (always `prototype/data-studio` — ask before proceeding if not) and
+`feedback/inbox.jsonl` for pending items.
+
+**Look up as needed, not at session start:** `reference.md` (mock data schema, routing pipeline, key
+files — read before touching `api/agent.ts`, `data/mockData.ts`, or the pipeline) and
+`design-system.md` (Radiant cheat sheet).
+
+⚠️ **`archive/` is not read.** It holds ~150 files of Vision-era research, the Demo run-of-show era,
+and superseded specs. Read one only if asked for it by name. **Anything in there that contradicts
+the three files above is stale by definition** — that is why it was archived.
+
+**Design notes are notes.** When Vivek shares notes, open questions, or thinking-out-loud, that is
+not a build queue. Ask before writing code.
+
+---
+
+## End of session
+
+1. Update `PRD.md` if a requirement or status changed.
+2. Update `DESIGN.md` — queue, next up, anything reversed.
+3. Update `CONTEXT.md` in place — state only, no history, no changelog.
+4. Append **one paragraph** to `SESSION_LOG.md`.
+5. Run `npm run typecheck` **and** `npm run build`.
+
+⚠️ **Never record build state in `PRD.md`'s prose or in a spec.** Status lives in the status column
+and in `DESIGN.md`. Mixing "what we decided" with "what is built" is how a reversal survives in three
+documents — it already happened once, with the per-table cache badge.
+
+---
+
+## Keep the working set at 8 files
+
+`FOUNDATION.md` · `CLAUDE.md` · `CONTEXT.md` · `PRD.md` · `DESIGN.md` · `SESSION_LOG.md` ·
+`reference.md` · `design-system.md`.
+
+**Do not add a ninth.** This folder held 94 markdown files on 2026-08-13 and the cost was real:
+nobody knew which were current, and stale ones were read as authoritative. A new document is almost
+always a section in one of the above. If something genuinely needs its own file, say so and ask
+first — the eighth was added deliberately, after being argued for.
+
+**Vivek is the architect and makes the decisions.** Don't fill a gap by inference; if something is
+unanswered, ask again. **And discuss before coding** — when a topic is under discussion, propose and
+agree before changing anything.
 
 ---
 
 ## Task intake — classify before acting
 
-Before starting any task, classify it on two dimensions. State the classification before proceeding.
+State the classification before proceeding.
 
-**Novelty:**
-- **Known** — extends or tweaks something already built in DataStudio
-- **New** — first time DataStudio touches this problem area
+**Novelty:** *Known* (extends something built) · *New* (first time we touch this problem area).
+**Scale:** *Small* (≤2 files, no new component or interaction) · *Medium* (new component,
+interaction, or modifies a flow) · *Large* (new product area, journey, or IA).
 
-**Scale:**
-- **Small** — ≤ 2 files, no new component, no new interaction pattern
-- **Medium** — new component, new interaction, or modifies an existing flow
-- **Large** — new product area, new user journey, new IA, or first treatment of a capability
-
-| | Known territory | New territory |
+| | Known | New |
 |---|---|---|
-| **Small** | Build directly | Scan `knowledge/` and `research/` first |
-| **Medium** | Check `research/` for prior decisions, then build | Write a research doc first (`research/_template.md`) |
-| **Large** | Research + Playground explorations before committing | Full process: understand → research → IA → explore → converge → build |
+| **Small** | Build directly | Check `PRD.md` and `DESIGN.md` first |
+| **Medium** | Check `DESIGN.md` for prior decisions, then build | Propose a spec before building |
+| **Large** | Explore in `Playground.tsx` before committing | Understand → spec → explore → converge → build |
 
-**Signals — new territory:** first time a capability is touched (caching, monitoring, connections); changes where something lives in the UI; introduces a new user mental model.
-
-**Signals — explore first:** multiple layout approaches are valid; interaction pattern not established. Use `Playground.tsx`, try 2–3 directions before choosing.
-
-**When uncertain:** err toward more process.
-
-**Research is self-triggering.** You don't need the user to say "research: [topic]" — if a task classifies as medium/large + new territory, propose research before building, regardless of how the session started. Say:
-
-> "This is [scale] + new territory. I don't think we should build yet — I want to understand [X] first. Let me ask a few questions / start a research doc."
-
-Then either ask pointed questions to fill `research/_template.md`, or start filling it with what's already known and mark the gaps. The user can redirect ("just build it") but the default is to pause.
+**When uncertain, err toward more process.** If a task is medium/large + new territory, propose
+writing it down before building — you don't need to be asked. Vivek can redirect ("just build it"),
+but the default is to pause.
 
 ---
 
-## Knowledge base — read when relevant
+## This is a stakeholder prototype, not a product
 
-- `knowledge/users.md` — who the primary user is, their workflow, the AHA moment
-- `knowledge/platform.md` — ThoughtSpot current state, caching, Spotter failures, dbt integration
-- `knowledge/patterns.md` — confirmed patterns, anti-patterns, open design questions
-- `design-system.md` — Radiant component cheat sheet (use this before loading full rule files)
-- `product.md` — what DataStudio is, the 6 situations, design principles
-- `reference.md` — mock data schema, routing pipeline, ProjectState, key files, Figma keys
+It exists to make design decisions reviewable, not to execute SQL. **"Not built" is the normal state
+of anything outside a demoed path.** Before flagging a gap, triage it:
 
-Read `reference.md` when touching `api/agent.ts`, `data/mockData.ts`, or the routing pipeline. Not needed for UI-only sessions.
+| Tier | Test | Do |
+|---|---|---|
+| **1 — it lies** | Produces a plausible **wrong answer** in a path we walk, so it misleads our own design conversation | Fix, or make it visibly inert |
+| **2 — inert but clickable** | Reachable, does nothing when used | Hide it, or route around |
+| **3 — off the path** | Nobody goes there | Note and move on. Not work |
 
----
-
-## Rule files — skip for all DataStudio sessions
-
-Never load: `liveboard-canvas-core.md`, `liveboard-canvas-edit.md`, `liveboard-canvas-advanced.md`, `liveboard-ia.md`, `liveboard-scaffolding.md`, `prototype-generation.md`, `prototype-structure.md`
-
-Use `design-system.md` first. Escalate to full rule files only for patterns not covered there.
+**Don't grade the prototype as shipping software.** A control the real product has and we stub is
+fine; it matters only if someone clicks it on stage.
 
 ---
 
-## Git rules
+## Verification
 
-- **Always work on `prototype/data-studio`** of `origin` (`vivek-sahi/radiantplay` on galaxy). This is the DataStudio working branch — all 57+ sessions have happened here.
-- `main` on Vivek's fork is an occasional sync of `upstream` (Faris's repo) — unrelated to DataStudio. Never work on `main` for DataStudio.
-- **Push to `origin` only** — never to `upstream` (mohammed-faris/radiantplay).
-- **Komal's work** comes in via her own branch; review and merge into `prototype/data-studio`.
-- **After every commit**, push to `origin prototype/data-studio` so the local dev server picks it up on next restart.
-- **Dev server note:** new file additions require a dev server restart (`Ctrl+C` → `npm run dev`) to appear — HMR alone won't pick up brand-new imports.
+- **Run `npm run typecheck`, not just `npm run build`.** Vite doesn't typecheck, so a scripted edit
+  can introduce an undefined identifier — a clean build and a blank screen at runtime.
+- **Running it beats compiling it.** Three of five bugs in the last walkthrough were invisible to
+  both `tsc` and the build, and all were code wired to a component or state that isn't in play. See
+  the traps table in `DESIGN.md`.
+- **Don't claim visual fidelity from Playwright.** Verify with typecheck and build, and let Vivek
+  look.
+
+---
+
+## Git
+
+- **Always `prototype/data-studio`** on `origin` (`vivek-sahi/radiantplay` on galaxy). All 157
+  sessions have happened here.
+- `main` on the fork is an occasional sync of Faris's upstream — unrelated. Never work on it for
+  Data Studio, and never flag the mismatch as a problem.
+- **Push to `origin` only** — never `upstream`.
+- Komal's work arrives on her own branch; review and merge into `prototype/data-studio`.
+- Deploy with `vercel --prod --yes` after pushing — don't stop at the push.
+- New file additions need a dev server restart; HMR won't pick up brand-new imports.
 
 ---
 
 ## Hard rules
 
-- **Never restructure the routing pipeline** without asking — load-bearing, tuned across 34 sessions. See `reference.md`.
-- **Never invent mock data** — all table and column names must come from `mockData.ts`. Schema in `reference.md`.
-- **Never add prototype components to `src/components/`** — DataStudio components go in `src/prototypes/DataStudioV2/components/` only.
-- **Always run `npm run build`** before marking a session complete.
-- **WorkflowDirectory** is currently cosmetic. Do not wire it unless explicitly asked.
-- **Manual paths** for all workflows are intentionally deferred — build agentic paths first.
+- **Never restructure the routing pipeline** without asking — load-bearing across 34 sessions.
+- **Never invent mock data** — names come from `mockData.ts`.
+- **Never add prototype components to `src/components/`** — that's the design system.
+- **`WorkflowDirectory` is cosmetic.** Don't wire it.
+- Manual workflow paths are deferred — agentic paths first.

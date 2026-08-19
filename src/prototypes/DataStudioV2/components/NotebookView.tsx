@@ -147,14 +147,14 @@ const NbCellComponent: React.FC<{
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: sp.B }}>
           <StatusDot status={status} />
-          <span style={{ fontSize: 10, fontWeight: fw.semibold, color: cell.type === 'sql' ? c['content-brand'] : cell.type === 'python' ? '#D97706' : c['content-secondary'], textTransform: 'uppercase', letterSpacing: '0.06em' }}>{cell.type}</span>
+          <span style={{ fontSize: 12, fontWeight: fw.semibold, color: cell.type === 'sql' ? c['content-brand'] : cell.type === 'python' ? '#D97706' : c['content-secondary'], textTransform: 'uppercase', letterSpacing: '0.06em' }}>{cell.type}</span>
           <span style={{ fontSize: fs.xs, color: c['content-primary'], fontWeight: fw.medium }}>{cell.label}</span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4, opacity: isEditing || hovered ? 1 : 0, transition: 'opacity 0.15s' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: sp.A, opacity: isEditing || hovered ? 1 : 0, transition: 'opacity 0.15s' }}>
           {isEditing ? (
             <>
               <button onClick={onCancel} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: fs.xs, color: c['content-secondary'], padding: '2px 6px', fontFamily: ff.primary }}>Cancel</button>
-              <button onClick={onRun} style={{ display: 'flex', alignItems: 'center', gap: 5, background: c['background-accent-green'], color: c['content-accent-green'], border: `1px solid ${c['border-accent-green']}`, borderRadius: 5, cursor: 'pointer', fontSize: fs.xs, fontWeight: fw.semibold, padding: '3px 10px', fontFamily: ff.primary }}>
+              <button onClick={onRun} style={{ display: 'flex', alignItems: 'center', gap: sp.A, background: c['background-accent-green'], color: c['content-accent-green'], border: `1px solid ${c['border-accent-green']}`, borderRadius: 5, cursor: 'pointer', fontSize: fs.xs, fontWeight: fw.semibold, padding: '3px 10px', fontFamily: ff.primary }}>
                 <svg width="7" height="8" viewBox="0 0 7 8" fill="currentColor"><polygon points="0,0 7,4 0,8" /></svg>
                 Run
               </button>
@@ -261,7 +261,7 @@ const CellRunResults: React.FC<{ cellId: string }> = ({ cellId }) => {
   if (!result) {
     return (
       <div style={{ borderTop: `1px solid ${c['border-divider']}`, backgroundColor: c['background-sunken'], padding: '5px 12px' }}>
-        <span style={{ fontSize: 11, fontFamily: monoFont, color: c['content-secondary'] }}>3 rows returned</span>
+        <span style={{ fontSize: 12, fontFamily: monoFont, color: c['content-secondary'] }}>3 rows returned</span>
       </div>
     );
   }
@@ -271,7 +271,7 @@ const CellRunResults: React.FC<{ cellId: string }> = ({ cellId }) => {
 
   return (
     <div style={{ borderTop: `1px solid ${c['border-divider']}`, backgroundColor: c['background-sunken'], maxHeight: 120, overflow: 'hidden' }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11, fontFamily: monoFont, tableLayout: 'fixed' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, fontFamily: monoFont, tableLayout: 'fixed' }}>
         <colgroup>
           {result.columns.map((_, i) => <col key={i} style={{ width: `${100 / colCount}%` }} />)}
         </colgroup>
@@ -297,7 +297,7 @@ const CellRunResults: React.FC<{ cellId: string }> = ({ cellId }) => {
         </tbody>
       </table>
       <div style={{ padding: '3px 8px 5px', borderTop: `1px solid ${c['border-divider']}` }}>
-        <span style={{ fontSize: 11, fontFamily: monoFont, color: c['content-secondary'] }}>{result.footer}</span>
+        <span style={{ fontSize: 12, fontFamily: monoFont, color: c['content-secondary'] }}>{result.footer}</span>
       </div>
     </div>
   );
@@ -404,7 +404,7 @@ const NotebookView: React.FC<NotebookViewProps> = ({ cells, notebookName = 'cust
           <line x1="5.5" y1="10.5" x2="9" y2="10.5" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/>
         </svg>
         <span style={{ flex: 1, fontSize: fs.sm, fontWeight: fw.medium, color: c['content-primary'], fontFamily: ff.primary }}>{notebookName}</span>
-        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'flex', alignItems: 'center', color: c['content-secondary'], borderRadius: 4 }} onMouseEnter={e => (e.currentTarget.style.color = c['content-primary'])} onMouseLeave={e => (e.currentTarget.style.color = c['content-secondary'])}>
+        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: sp.A, display: 'flex', alignItems: 'center', color: c['content-secondary'], borderRadius: 4 }} onMouseEnter={e => (e.currentTarget.style.color = c['content-primary'])} onMouseLeave={e => (e.currentTarget.style.color = c['content-secondary'])}>
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg>
         </button>
       </div>
@@ -413,7 +413,7 @@ const NotebookView: React.FC<NotebookViewProps> = ({ cells, notebookName = 'cust
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: `${sp.B}px ${sp.D}px`, borderBottom: `1px solid ${c['border-divider']}`, backgroundColor: c['background-base'], flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: sp.C }}>
           {errorCount > 0 && (
-            <span style={{ fontSize: fs.xs, color: c['content-accent-red'], display: 'flex', alignItems: 'center', gap: 4 }}>
+            <span style={{ fontSize: fs.xs, color: c['content-accent-red'], display: 'flex', alignItems: 'center', gap: sp.A }}>
               <svg width="10" height="10" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke={c['content-accent-red']} strokeWidth="1.5"/><path d="M8 5v3.5M8 10.5v.5" stroke={c['content-accent-red']} strokeWidth="1.5" strokeLinecap="round"/></svg>
               {errorCount} error{errorCount > 1 ? 's' : ''}
             </span>
@@ -478,7 +478,7 @@ const NotebookView: React.FC<NotebookViewProps> = ({ cells, notebookName = 'cust
             Add cell
           </button>
           {showAddMenu && (
-            <div style={{ position: 'absolute', bottom: '100%', left: 0, marginBottom: 4, background: c['background-base'], border: `1px solid ${c['border-divider']}`, borderRadius: 8, boxShadow: '0 4px 12px rgba(0,0,0,0.1)', overflow: 'hidden', minWidth: 160, zIndex: 10 }}>
+            <div style={{ position: 'absolute', bottom: '100%', left: 0, marginBottom: sp.A, background: c['background-base'], border: `1px solid ${c['border-divider']}`, borderRadius: 8, boxShadow: '0 4px 12px rgba(0,0,0,0.1)', overflow: 'hidden', minWidth: 160, zIndex: 10 }}>
               {(['sql', 'python', 'text'] as NbCellType[]).map(type => (
                 <button key={type} onClick={() => addCell(type)} style={{ width: '100%', padding: `${sp.B}px ${sp.C}px`, border: 'none', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: sp.B, fontSize: fs.xs, color: c['content-primary'], fontFamily: ff.primary, textAlign: 'left' }} onMouseEnter={e => { e.currentTarget.style.background = c['background-subtle']; }} onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}>
                   <span style={{ width: 8, height: 8, borderRadius: 2, background: NB_CELL_ACCENT[type], flexShrink: 0 }} />

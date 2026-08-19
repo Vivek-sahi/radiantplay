@@ -88,7 +88,7 @@ const QualityPlanPanel: React.FC<QualityPlanPanelProps> = ({ onClose, onApplyFix
                 <path d="M8 2L14 14H2L8 2z"/><line x1="8" y1="7" x2="8" y2="10"/><circle cx="8" cy="12.5" r="0.5" fill="#D97706"/>
               </svg>
               <span style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'] }}>Data Quality Plan</span>
-              <span style={{ fontSize: fs.xs, fontWeight: fw.medium, padding: '2px 7px', borderRadius: 4, backgroundColor: '#FEF2F2', color: '#DC2626', border: '1px solid #FECACA' }}>9 issues</span>
+              <span style={{ fontSize: fs.xs, fontWeight: fw.medium, padding: '2px 7px', borderRadius: 4, backgroundColor: c['background-failure'], color: '#DC2626', border: '1px solid #FECACA' }}>9 issues</span>
             </div>
             <button
               title="Download plan"
@@ -137,7 +137,7 @@ const QualityPlanPanel: React.FC<QualityPlanPanelProps> = ({ onClose, onApplyFix
                     const sev = SEVERITY_STYLE[issue.severity];
                     return (
                       <div key={issue.col} style={{ padding: `${sp.B}px 0`, borderBottom: i < section.issues.length - 1 ? `1px solid ${c['border-divider']}` : 'none' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, marginBottom: 3 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, marginBottom: sp.A }}>
                           <code style={{ fontSize: fs.xs, color: c['content-primary'], backgroundColor: c['background-subtle'], padding: '1px 5px', borderRadius: 3, fontFamily: 'monospace', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{issue.col}</code>
                           <span style={{ fontSize: fs.xs, fontWeight: fw.medium, padding: '1px 7px', borderRadius: 4, backgroundColor: sev.bg, color: sev.text, flexShrink: 0 }}>{sev.label}</span>
                         </div>

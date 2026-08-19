@@ -72,7 +72,7 @@ const Tag: React.FC<{ label: string }> = ({ label }) => (
 
 const SectionLabel: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <div style={{
-    fontSize: 11, fontWeight: fw.semibold, textTransform: 'uppercase' as const,
+    fontSize: 12, fontWeight: fw.semibold, textTransform: 'uppercase' as const,
     letterSpacing: '0.05em', color: c['content-secondary'],
     paddingBottom: sp.B, marginBottom: sp.B, marginTop: sp.E,
     borderBottom: `1px solid ${c['border-divider']}`,
@@ -345,7 +345,7 @@ const MRDReview: React.FC<MRDReviewProps> = ({ prompt, onApprove, onBack }) => {
             <SectionLabel>Calculated fields</SectionLabel>
             <div style={{ border: `1px solid ${c['border-divider']}`, borderRadius: 8, overflow: 'hidden', marginBottom: sp.D }}>
               <div style={{ display: 'grid', gridTemplateColumns: '130px 1fr', gap: sp.D, padding: `${sp.B}px ${sp.D}px`, backgroundColor: c['background-subtle'], borderBottom: `1px solid ${c['border-divider']}` }}>
-                {['Name', 'Formula'].map(h => <span key={h} style={{ fontSize: 11, fontWeight: fw.medium, color: c['content-secondary'] }}>{h}</span>)}
+                {['Name', 'Formula'].map(h => <span key={h} style={{ fontSize: 12, fontWeight: fw.medium, color: c['content-secondary'] }}>{h}</span>)}
               </div>
               {mrd.calculatedFields.map((f, i) => (
                 <div key={i} style={{
@@ -463,7 +463,7 @@ const MRDReview: React.FC<MRDReviewProps> = ({ prompt, onApprove, onBack }) => {
             return (
               <div key={step.id} style={{ display: 'flex', alignItems: 'flex-start', gap: sp.C, marginBottom: sp.D }}>
                 {/* Status icon */}
-                <div style={{ width: 20, height: 20, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 2 }}>
+                <div style={{ width: 20, height: 20, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: sp.A }}>
                   {s === 'done' && (
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke={c['content-brand']} strokeWidth="1.8" strokeLinecap="round">
                       <circle cx="8" cy="8" r="6.5" /><path d="M5.5 8l2 2 3-3" />
@@ -494,7 +494,7 @@ const MRDReview: React.FC<MRDReviewProps> = ({ prompt, onApprove, onBack }) => {
                   }}>{step.label}</div>
 
                   {s === 'done' && step.detail && (
-                    <div style={{ fontSize: fs.xs, color: c['content-secondary'], marginTop: 2, animation: 'mrd-col-in 0.2s ease-out' }}>
+                    <div style={{ fontSize: fs.xs, color: c['content-secondary'], marginTop: sp.A, animation: 'mrd-col-in 0.2s ease-out' }}>
                       {step.detail}
                     </div>
                   )}
@@ -516,14 +516,14 @@ const MRDReview: React.FC<MRDReviewProps> = ({ prompt, onApprove, onBack }) => {
                           onMouseLeave={e => { e.currentTarget.style.borderColor = '#FCD34D'; e.currentTarget.style.backgroundColor = 'white'; }}
                         >
                           <div style={{ fontSize: fs.xs, fontWeight: fw.semibold, color: '#78350F' }}>{opt.label}</div>
-                          <div style={{ fontSize: 11, color: '#92400E', marginTop: 2 }}>{opt.desc}</div>
+                          <div style={{ fontSize: 12, color: '#92400E', marginTop: sp.A }}>{opt.desc}</div>
                         </button>
                       ))}
                     </div>
                   )}
 
                   {s === 'paused' && pauseAnswer && (
-                    <div style={{ fontSize: fs.xs, color: c['content-secondary'], marginTop: 2 }}>
+                    <div style={{ fontSize: fs.xs, color: c['content-secondary'], marginTop: sp.A }}>
                       Using: {pauseAnswer}
                     </div>
                   )}
@@ -569,8 +569,8 @@ const MRDReview: React.FC<MRDReviewProps> = ({ prompt, onApprove, onBack }) => {
                   <div style={{ padding: `${sp.C}px ${sp.D}px`, borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', gap: sp.B }}>
                     <span style={{ fontSize: 12, fontWeight: fw.semibold, color: c['content-primary'], textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>{card.name}</span>
                     <span style={{
-                      fontSize: 11, padding: '1px 6px', borderRadius: 3, fontWeight: fw.semibold,
-                      backgroundColor: card.type === 'fact' ? '#EEF4FF' : '#ECFDF5',
+                      fontSize: 12, padding: '1px 6px', borderRadius: 3, fontWeight: fw.semibold,
+                      backgroundColor: card.type === 'fact' ? c['background-success'] : c['background-sunken'],
                       color: card.type === 'fact' ? '#2563EB' : '#059669',
                     }}>{card.type}</span>
                   </div>
@@ -583,9 +583,9 @@ const MRDReview: React.FC<MRDReviewProps> = ({ prompt, onApprove, onBack }) => {
                       animation: 'mrd-col-in 0.15s ease-out',
                     }}>
                       <span style={{ fontSize: fs.xs, fontFamily: 'monospace', color: c['content-primary'] }}>{col.name}</span>
-                      <span style={{ fontSize: 11, color: c['content-secondary'] }}>{col.type}</span>
+                      <span style={{ fontSize: 12, color: c['content-secondary'] }}>{col.type}</span>
                       {showDescs
-                        ? <span style={{ fontSize: 11, color: c['content-secondary'], animation: 'mrd-col-in 0.3s ease-out' }}>{col.desc}</span>
+                        ? <span style={{ fontSize: 12, color: c['content-secondary'], animation: 'mrd-col-in 0.3s ease-out' }}>{col.desc}</span>
                         : <span />
                       }
                     </div>
@@ -597,7 +597,7 @@ const MRDReview: React.FC<MRDReviewProps> = ({ prompt, onApprove, onBack }) => {
                         style={{ animation: 'mrd-spin 0.9s linear infinite' }}>
                         <path d="M7 1v2M7 11v2M1 7h2M11 7h2" />
                       </svg>
-                      <span style={{ fontSize: 11, color: c['content-secondary'] }}>Adding columns…</span>
+                      <span style={{ fontSize: 12, color: c['content-secondary'] }}>Adding columns…</span>
                     </div>
                   )}
                 </div>
@@ -608,7 +608,7 @@ const MRDReview: React.FC<MRDReviewProps> = ({ prompt, onApprove, onBack }) => {
               <div style={{ animation: 'mrd-card-in 0.2s ease-out', display: 'flex', alignItems: 'center', gap: sp.B, padding: `${sp.A}px 0` }}>
                 <div style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: c['content-brand'], flexShrink: 0 }} />
                 <div style={{ flex: 1, height: 1, backgroundColor: c['border-default'] }} />
-                <span style={{ fontSize: 11, color: c['content-secondary'], whiteSpace: 'nowrap' as const }}>
+                <span style={{ fontSize: 12, color: c['content-secondary'], whiteSpace: 'nowrap' as const }}>
                   campaigns.campaign_id → orders.campaign_id
                 </span>
                 <div style={{ flex: 1, height: 1, backgroundColor: c['border-default'] }} />

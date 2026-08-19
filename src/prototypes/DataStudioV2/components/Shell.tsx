@@ -5,11 +5,11 @@ import type { GlobalHeaderProps } from '../../../components/GlobalHeader';
 import { PERSONA } from '../persona';
 import { VariantToggle } from '../variant';
 
-export type NavSection = 'overview' | 'projects' | 'data' | 'connections';
+export type NavSection = 'overview' | 'projects' | 'data' | 'connections' | 'data-objects';
 export type FlowOption = 'option1' | 'option2' | 'option3';
 export type CanvasMode = 'dataset' | 'blocks' | 'dataset2';
 
-// ── Sidebar config ────────────────────────────────────────────────────────────
+// ── Sidebar config — Data Studio's own nav (Vision, POC, Demo) ────────────────
 
 const SIDEBAR_TABS: SidebarTab[] = [
   { id: 'insights', label: 'Insights',  headerTitle: 'Insights' },
@@ -34,6 +34,59 @@ const SIDEBAR_CATEGORIES: Record<string, SidebarCategory[]> = {
   admin: [],
 };
 
+// ── Sidebar config — Data Workspace (POC V2) ──────────────────────────────────
+//
+// POC V2 stops being a destination: the canvas is a feature of ThoughtSpot's Data
+// Workspace, so Data Studio gives up its own home and nav and adopts these. Ported
+// from `surajboro-ts/spotter-readiness-vision`.
+//
+// Only Data objects and Connections resolve to a page. The rest are the real
+// product's nav and are deliberately present but inert — the shell has to read as
+// Data Workspace, and a truncated nav would misrepresent where the canvas lives.
+// This is the one place the wire-it-or-remove-it rule doesn't apply, because these
+// items aren't ours to build.
+
+const DATA_WORKSPACE_TABS: SidebarTab[] = [
+  { id: 'insights', label: 'Insights App',   headerTitle: 'Insights' },
+  { id: 'data',     label: 'Data Workspace', headerTitle: 'Data Workspace' },
+  { id: 'develop',  label: 'Develop App',    headerTitle: 'Develop' },
+];
+
+const DATA_WORKSPACE_CATEGORIES: Record<string, SidebarCategory[]> = {
+  insights: [],
+  data: [
+    {
+      items: [
+        { id: 'data-objects',           label: 'Data objects' },
+        { id: 'connections',            label: 'Connections' },
+        { id: 'semantic-integrations',  label: 'Semantic integrations' },
+        { id: 'analyst-studio',         label: 'Analyst Studio' },
+        { id: 'utilities',              label: 'Utilities' },
+        { id: 'sync',                   label: 'Sync' },
+      ],
+    },
+    {
+      title: 'Spotter coaching',
+      items: [
+        { id: 'reference-questions', label: 'Reference questions' },
+        { id: 'business-terms',      label: 'Business terms' },
+      ],
+    },
+    {
+      title: 'Governance',
+      items: [
+        { id: 'data-catalog',           label: 'Data catalog' },
+        { id: 'usage',                  label: 'Usage' },
+        { id: 'liveboard-verification', label: 'Liveboard verification' },
+      ],
+    },
+  ],
+  develop: [],
+};
+
+/** Nav ids that actually resolve to a page in POC V2. */
+const LIVE_WORKSPACE_NAV = new Set(['data-objects', 'connections']);
+
 // ── Shell ─────────────────────────────────────────────────────────────────────
 
 interface ShellProps {
@@ -43,10 +96,14 @@ interface ShellProps {
   hideHeader?: boolean;
   /** Rendered before the header's search field — see GlobalHeader's `leadingSlot`. */
   headerLeadingSlot?: React.ReactNode;
+  /** POC V2 — render Data Workspace's nav instead of Data Studio's own. */
+  dataWorkspace?: boolean;
+  /** The sidebar header's `+` button. Only shown when a handler is passed. */
+  onAddClick?: () => void;
   children: React.ReactNode;
 }
 
-const Shell: React.FC<ShellProps> = ({ activeNav, onNavChange, hideSidebar = false, hideHeader = false, headerLeadingSlot, children }) => {
+const Shell: React.FC<ShellProps> = ({ activeNav, onNavChange, hideSidebar = false, hideHeader = false, headerLeadingSlot, dataWorkspace = false, onAddClick, children }) => {
   const headerProps: GlobalHeaderProps = {
     searchPlaceholder: 'Search in ThoughtSpot',
     searchMode: 'trigger',
@@ -58,13 +115,24 @@ const Shell: React.FC<ShellProps> = ({ activeNav, onNavChange, hideSidebar = fal
     style: hideHeader ? { display: 'none' } : undefined,
   };
 
+  const tabs = dataWorkspace
+    ? DATA_WORKSPACE_TABS.map(t =>
+        t.id === 'data' && onAddClick ? { ...t, showAddButton: true, onAddClick } : t,
+      )
+    : SIDEBAR_TABS;
+
   const sidebarProps: AppSidebarProps = {
-    tabs: SIDEBAR_TABS,
+    tabs,
     activeTab: 'data',
     onTabChange: () => {},
-    categories: SIDEBAR_CATEGORIES,
+    categories: dataWorkspace ? DATA_WORKSPACE_CATEGORIES : SIDEBAR_CATEGORIES,
     selectedNav: activeNav,
-    onNavSelect: (id) => onNavChange(id as NavSection),
+    // In Data Workspace only the two live items navigate; the rest are the real
+    // product's nav and stay inert rather than blanking the page.
+    onNavSelect: (id) => {
+      if (dataWorkspace && !LIVE_WORKSPACE_NAV.has(id)) return;
+      onNavChange(id as NavSection);
+    },
   };
 
   return (

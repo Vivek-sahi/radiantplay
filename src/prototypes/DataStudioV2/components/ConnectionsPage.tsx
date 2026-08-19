@@ -45,7 +45,7 @@ const StatusDot: React.FC<{ status: Connection['status'] }> = ({ status }) => {
               : status === 'auth-needed' ? 'Auth needed'
               : 'Error';
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: fs.xs, color, fontWeight: fw.medium, fontFamily: ff.primary }}>
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: sp.A, fontSize: fs.xs, color, fontWeight: fw.medium, fontFamily: ff.primary }}>
       <span style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: color, flexShrink: 0 }} />
       {label}
     </span>
@@ -71,7 +71,7 @@ const PageHeader: React.FC<{
       {back && <Button variant="ghost" size="small" onClick={back}>←</Button>}
       <div>
         <h1 style={{ margin: 0, fontSize: 18, fontWeight: fw.medium, color: c['content-primary'], fontFamily: ff.primary }}>{title}</h1>
-        {subtitle && <div style={{ fontSize: fs.xs, color: c['content-tertiary'], marginTop: 2, fontFamily: ff.primary }}>{subtitle}</div>}
+        {subtitle && <div style={{ fontSize: fs.xs, color: c['content-tertiary'], marginTop: sp.A, fontFamily: ff.primary }}>{subtitle}</div>}
       </div>
     </div>
     {actions && <div style={{ display: 'flex', gap: sp.B, alignItems: 'center' }}>{actions}</div>}
@@ -103,7 +103,7 @@ const ListView: React.FC<{
           borderBottom: `1px solid ${c['border-divider']}`,
         }}>
           {['Name', 'Source', 'Status', 'Tables', ''].map((h, i) => (
-            <div key={i} style={{ fontSize: 11, fontWeight: fw.medium, color: c['content-secondary'], textTransform: 'uppercase', letterSpacing: '0.04em', fontFamily: ff.primary }}>
+            <div key={i} style={{ fontSize: 12, fontWeight: fw.medium, color: c['content-secondary'], textTransform: 'uppercase', letterSpacing: '0.04em', fontFamily: ff.primary }}>
               {h}
             </div>
           ))}
@@ -243,7 +243,7 @@ const DetailView: React.FC<{
                     <div style={{ fontSize: fs.sm, fontWeight: fw.medium, color: c['content-primary'], fontFamily: ff.primary }}>
                       Schemas in scope
                     </div>
-                    <div style={{ fontSize: fs.xs, color: c['content-tertiary'], marginTop: 2, fontFamily: ff.primary }}>
+                    <div style={{ fontSize: fs.xs, color: c['content-tertiary'], marginTop: sp.A, fontFamily: ff.primary }}>
                       2 of 6 schemas added · 116 tables visible
                     </div>
                   </div>
@@ -352,7 +352,7 @@ const DbtSetupView: React.FC<{ conn: Connection; onCancel: () => void; onDone: (
                     backgroundColor: s.selected ? c['background-information'] : c['background-base'],
                   }}>
                     <div style={{ fontSize: fs.sm, fontWeight: fw.medium, color: s.selected ? c['content-brand'] : c['content-primary'], fontFamily: ff.primary }}>{s.label}</div>
-                    <div style={{ fontSize: fs.xs, color: c['content-tertiary'], marginTop: 2, fontFamily: ff.primary }}>{s.hint}</div>
+                    <div style={{ fontSize: fs.xs, color: c['content-tertiary'], marginTop: sp.A, fontFamily: ff.primary }}>{s.hint}</div>
                   </div>
                 ))}
               </div>

@@ -284,7 +284,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
       <div style={{ height: 48, backgroundColor: c['background-base'], borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', padding: `0 ${sp.D}px`, gap: sp.B, flexShrink: 0 }}>
         <button
           onClick={onBack}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 6px', display: 'flex', alignItems: 'center', gap: 6, fontSize: fs.sm, color: c['content-secondary'], fontFamily: ff.primary, borderRadius: 4 }}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 6px', display: 'flex', alignItems: 'center', gap: sp.B, fontSize: fs.sm, color: c['content-secondary'], fontFamily: ff.primary, borderRadius: 4 }}
           onMouseEnter={e => (e.currentTarget.style.color = c['content-primary'])}
           onMouseLeave={e => (e.currentTarget.style.color = c['content-secondary'])}
         >
@@ -299,7 +299,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
         <button
           onClick={() => setContextPanelOpen(o => !o)}
           title={contextPanelOpen ? 'Hide context panel' : 'Show context panel'}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'flex', alignItems: 'center', color: contextPanelOpen ? c['content-primary'] : c['content-secondary'], borderRadius: 4 }}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: sp.A, display: 'flex', alignItems: 'center', color: contextPanelOpen ? c['content-primary'] : c['content-secondary'], borderRadius: 4 }}
         >
           <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
             <rect x="1.5" y="1.5" width="15" height="15" rx="2" stroke="currentColor" strokeWidth="1.5" />
@@ -382,7 +382,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
       {toasts.length > 0 && (
         <div style={{ position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', gap: sp.B, alignItems: 'center', zIndex: 9999, pointerEvents: 'none' }}>
           {toasts.map(t => (
-            <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: sp.C, backgroundColor: c['background-base-inverse'] ?? '#1a1d23', color: '#fff', padding: `${sp.B}px ${sp.D}px`, borderRadius: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.24)', fontSize: fs.sm, pointerEvents: 'auto', whiteSpace: 'nowrap' }}>
+            <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: sp.C, backgroundColor: c['background-base-inverse'] ?? c['background-base-inverse'], color: '#fff', padding: `${sp.B}px ${sp.D}px`, borderRadius: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.24)', fontSize: fs.sm, pointerEvents: 'auto', whiteSpace: 'nowrap' }}>
               <span>✓</span>
               <span>{t.message}</span>
               {t.action && (
@@ -488,7 +488,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
                     <rect x="9" y="9" width="6" height="6" rx="1.5" fill="#2770EF"/>
                   </svg>
                   <span style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'], overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{project.name}</span>
-                  <span style={{ fontSize: 11, fontWeight: fw.medium, color: project.publishedVersion === 0 ? c['content-secondary'] : c['content-brand'], backgroundColor: project.publishedVersion === 0 ? c['background-sunken'] : c['background-information'], border: `1px solid ${project.publishedVersion === 0 ? c['border-default'] : c['border-brand']}`, borderRadius: 4, padding: '1px 6px', flexShrink: 0 }}>
+                  <span style={{ fontSize: 12, fontWeight: fw.medium, color: project.publishedVersion === 0 ? c['content-secondary'] : c['content-brand'], backgroundColor: project.publishedVersion === 0 ? c['background-sunken'] : c['background-information'], border: `1px solid ${project.publishedVersion === 0 ? c['border-default'] : c['border-brand']}`, borderRadius: 4, padding: '1px 6px', flexShrink: 0 }}>
                     {project.publishedVersion === 0 ? 'Draft' : `v${project.publishedVersion}`}
                   </span>
                 </div>
@@ -496,7 +496,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
                   {/* Cache — moved to identity row */}
                   <button
                     onClick={() => setCacheModalOpen(true)}
-                    style={{ height: 30, padding: '0 10px', gap: 5, border: `1px solid ${c['border-default']}`, borderRadius: 7, backgroundColor: cacheStatus === 'cached' ? c['background-subtle'] : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, color: c['content-secondary'], boxSizing: 'border-box' }}
+                    style={{ height: 30, padding: '0 10px', gap: sp.A, border: `1px solid ${c['border-default']}`, borderRadius: 7, backgroundColor: cacheStatus === 'cached' ? c['background-subtle'] : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, color: c['content-secondary'], boxSizing: 'border-box' }}
                     onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
                     onMouseLeave={e => { e.currentTarget.style.backgroundColor = cacheStatus === 'cached' ? c['background-subtle'] : 'transparent'; }}
                   >
@@ -513,7 +513,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
                   </button>
                   <button
                     onClick={() => setShareOpen(true)}
-                    style={{ height: 30, padding: '0 12px', gap: 6, border: `1px solid ${c['border-default']}`, borderRadius: 7, backgroundColor: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, color: c['content-primary'], boxSizing: 'border-box' }}
+                    style={{ height: 30, padding: '0 12px', gap: sp.B, border: `1px solid ${c['border-default']}`, borderRadius: 7, backgroundColor: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, color: c['content-primary'], boxSizing: 'border-box' }}
                     onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
                     onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
                   >
@@ -522,7 +522,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
                   </button>
                   <button
                     onClick={() => setPublishOpen(true)}
-                    style={{ height: 30, padding: '0 12px', gap: 6, border: 'none', borderRadius: 7, backgroundColor: '#2770EF', cursor: 'pointer', display: 'flex', alignItems: 'center', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, color: '#fff', boxSizing: 'border-box' }}
+                    style={{ height: 30, padding: '0 12px', gap: sp.B, border: 'none', borderRadius: 7, backgroundColor: '#2770EF', cursor: 'pointer', display: 'flex', alignItems: 'center', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, color: '#fff', boxSizing: 'border-box' }}
                     onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#1a5fd4')}
                     onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#2770EF')}
                   >
@@ -582,7 +582,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
                       <div ref={dqDropRef} style={{ position: 'relative', flexShrink: 0 }}>
                         <button
                           onClick={() => setActiveHealthView(v => v === 'quality' ? null : 'quality')}
-                          style={{ height: 28, padding: '0 9px', gap: 5, border: `1px solid ${dqTm.border}`, borderRadius: 6, backgroundColor: dqTm.bg, cursor: 'pointer', display: 'flex', alignItems: 'center', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, color: dqTm.text, boxSizing: 'border-box' as const }}
+                          style={{ height: 28, padding: '0 9px', gap: sp.A, border: `1px solid ${dqTm.border}`, borderRadius: 6, backgroundColor: dqTm.bg, cursor: 'pointer', display: 'flex', alignItems: 'center', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, color: dqTm.text, boxSizing: 'border-box' as const }}
                         >
                           Data quality · {dqTier}
                           <svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" style={{ transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s', flexShrink: 0 }}><path d="M2 3.5l3 3 3-3"/></svg>
@@ -598,11 +598,11 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
                                     strokeDasharray={`${circ * dqPct / 100} ${circ * (1 - dqPct / 100)}`}
                                     strokeLinecap="round" transform="rotate(-90 18 18)"/>
                                 </svg>
-                                <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: fw.semibold, fontFamily: ff.primary, color: dqTm.text }}>{resolved ? '✓' : totalIssues}</div>
+                                <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: fw.semibold, fontFamily: ff.primary, color: dqTm.text }}>{resolved ? '✓' : totalIssues}</div>
                               </div>
                               <div style={{ flex: 1 }}>
                                 <div style={{ fontSize: fs.xs, fontWeight: fw.semibold, fontFamily: ff.primary, color: c['content-primary'] }}>Data quality</div>
-                                <div style={{ fontSize: 11, fontFamily: ff.primary, color: c['content-secondary'], marginTop: 2 }}>{resolved ? `${totalIssues} issues resolved` : `${totalIssues} issues detected`}</div>
+                                <div style={{ fontSize: 12, fontFamily: ff.primary, color: c['content-secondary'], marginTop: sp.A }}>{resolved ? `${totalIssues} issues resolved` : `${totalIssues} issues detected`}</div>
                               </div>
                             </div>
                             {/* Collapsible sections */}
@@ -621,17 +621,17 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
                                     onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
                                   >
                                     <span style={{ flex: 1, fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, color: c['content-primary'], textAlign: 'left' as const }}>{section.label}</span>
-                                    <span style={{ fontSize: 11, fontWeight: fw.medium, fontFamily: ff.primary, padding: '1px 5px', borderRadius: 4, background: badgeBg, color: badgeColor, border: `1px solid ${badgeBdr}`, flexShrink: 0 }}>{section.items.length} issues</span>
+                                    <span style={{ fontSize: 12, fontWeight: fw.medium, fontFamily: ff.primary, padding: '1px 5px', borderRadius: 4, background: badgeBg, color: badgeColor, border: `1px solid ${badgeBdr}`, flexShrink: 0 }}>{section.items.length} issues</span>
                                     <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke={c['content-tertiary']} strokeWidth="1.5" strokeLinecap="round" style={{ transform: isSectionOpen ? 'rotate(0)' : 'rotate(-90deg)', transition: 'transform 0.15s', flexShrink: 0 }}><path d="M2 4l4 4 4-4"/></svg>
                                   </button>
                                   {isSectionOpen && section.items.map(item => {
                                     const sm = MH_SEV[item.sev];
                                     return (
-                                      <div key={item.col} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderTop: `1px solid ${c['border-divider']}` }}>
-                                        <span style={{ fontSize: 11, fontFamily: ff.primary, color: c['content-primary'], minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const, flexShrink: 0, maxWidth: 110 }}>{item.col}</span>
-                                        <span style={{ flex: 1, fontSize: 11, fontFamily: ff.primary, color: c['content-secondary'], overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const, minWidth: 0 }}>{item.detail}</span>
-                                        <span style={{ fontSize: 11, fontWeight: fw.medium, fontFamily: ff.primary, padding: '1px 4px', borderRadius: 3, backgroundColor: sm.bg, color: sm.text, flexShrink: 0 }}>{sm.label}</span>
-                                        <button style={{ fontSize: 11, fontFamily: ff.primary, color: '#2563EB', background: 'none', border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0 }}>Fix →</button>
+                                      <div key={item.col} style={{ display: 'flex', alignItems: 'center', gap: sp.B, padding: '5px 12px', borderTop: `1px solid ${c['border-divider']}` }}>
+                                        <span style={{ fontSize: 12, fontFamily: ff.primary, color: c['content-primary'], minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const, flexShrink: 0, maxWidth: 110 }}>{item.col}</span>
+                                        <span style={{ flex: 1, fontSize: 12, fontFamily: ff.primary, color: c['content-secondary'], overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const, minWidth: 0 }}>{item.detail}</span>
+                                        <span style={{ fontSize: 12, fontWeight: fw.medium, fontFamily: ff.primary, padding: '1px 4px', borderRadius: 3, backgroundColor: sm.bg, color: sm.text, flexShrink: 0 }}>{sm.label}</span>
+                                        <button style={{ fontSize: 12, fontFamily: ff.primary, color: '#2563EB', background: 'none', border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0 }}>Fix →</button>
                                       </div>
                                     );
                                   })}
@@ -652,7 +652,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
                   <div ref={airsDropRef} style={{ position: 'relative', flexShrink: 0 }}>
                     <button
                       onClick={() => setActiveHealthView(v => v === 'readiness' ? null : 'readiness')}
-                      style={{ height: 28, padding: '0 8px', gap: 5, border: `1px solid ${mhTm.border}`, borderRadius: 6, backgroundColor: mhTm.bg, cursor: 'pointer', display: 'flex', alignItems: 'center', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, color: mhTm.text, boxSizing: 'border-box' as const }}
+                      style={{ height: 28, padding: '0 8px', gap: sp.A, border: `1px solid ${mhTm.border}`, borderRadius: 6, backgroundColor: mhTm.bg, cursor: 'pointer', display: 'flex', alignItems: 'center', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, color: mhTm.text, boxSizing: 'border-box' as const }}
                     >
                       AI readiness · {MH_AIRS_TIER}
                       <svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" style={{ transform: activeHealthView === 'readiness' ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s', flexShrink: 0 }}><path d="M2 3.5l3 3 3-3"/></svg>
@@ -668,11 +668,11 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
                                 strokeDasharray={`${2 * Math.PI * 14 * (MH_AIRS_SCORE / 100)} ${2 * Math.PI * 14}`}
                                 strokeLinecap="round" transform="rotate(-90 18 18)"/>
                             </svg>
-                            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: fw.semibold, fontFamily: ff.primary, color: mhTm.text }}>{MH_AIRS_SCORE}</div>
+                            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: fw.semibold, fontFamily: ff.primary, color: mhTm.text }}>{MH_AIRS_SCORE}</div>
                           </div>
                           <div style={{ flex: 1 }}>
                             <div style={{ fontSize: fs.xs, fontWeight: fw.semibold, fontFamily: ff.primary, color: c['content-primary'] }}>AI readiness</div>
-                            <div style={{ fontSize: 11, fontFamily: ff.primary, color: c['content-secondary'], marginTop: 2 }}>{MH_AIRS_SCORE} / 100 · Spotter improves as score rises</div>
+                            <div style={{ fontSize: 12, fontFamily: ff.primary, color: c['content-secondary'], marginTop: sp.A }}>{MH_AIRS_SCORE} / 100 · Spotter improves as score rises</div>
                           </div>
                         </div>
                         {/* Collapsible dimensions */}
@@ -689,15 +689,15 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
                                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
                               >
                                 <span style={{ flex: 1, fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, color: c['content-primary'], textAlign: 'left' as const }}>{dim.label}</span>
-                                <span style={{ fontSize: 11, fontWeight: fw.medium, fontFamily: ff.primary, padding: '1px 5px', borderRadius: 4, background: dtm.bg, color: dtm.text, border: `1px solid ${dtm.border}`, flexShrink: 0 }}>{dim.score}%</span>
+                                <span style={{ fontSize: 12, fontWeight: fw.medium, fontFamily: ff.primary, padding: '1px 5px', borderRadius: 4, background: dtm.bg, color: dtm.text, border: `1px solid ${dtm.border}`, flexShrink: 0 }}>{dim.score}%</span>
                                 <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke={c['content-tertiary']} strokeWidth="1.5" strokeLinecap="round" style={{ transform: isOpen ? 'rotate(0)' : 'rotate(-90deg)', transition: 'transform 0.15s', flexShrink: 0 }}><path d="M2 4l4 4 4-4"/></svg>
                               </button>
                               {isOpen && dim.items.map(item => {
                                 const isDone = item.action === null;
                                 return (
-                                  <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderTop: `1px solid ${c['border-divider']}` }}>
-                                    <span style={{ flex: 1, fontSize: 11, fontFamily: ff.primary, color: isDone ? c['content-secondary'] : c['content-primary'], overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const, textDecoration: isDone ? 'line-through' : 'none' }}>{item.label}</span>
-                                    {!isDone && <button style={{ fontSize: 11, fontFamily: ff.primary, color: '#2563EB', background: 'none', border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0, whiteSpace: 'nowrap' as const }}>{item.action} →</button>}
+                                  <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: sp.B, padding: '5px 12px', borderTop: `1px solid ${c['border-divider']}` }}>
+                                    <span style={{ flex: 1, fontSize: 12, fontFamily: ff.primary, color: isDone ? c['content-secondary'] : c['content-primary'], overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const, textDecoration: isDone ? 'line-through' : 'none' }}>{item.label}</span>
+                                    {!isDone && <button style={{ fontSize: 12, fontFamily: ff.primary, color: '#2563EB', background: 'none', border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0, whiteSpace: 'nowrap' as const }}>{item.action} →</button>}
                                   </div>
                                 );
                               })}
@@ -716,7 +716,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
                   <button
                     title="Data panel"
                     onClick={() => setLeftPanelOpen(o => !o)}
-                    style={{ height: 28, padding: '0 10px', gap: 6, border: `1px solid ${leftPanelOpen ? c['border-brand'] : c['border-default']}`, borderRadius: 6, backgroundColor: leftPanelOpen ? c['background-information'] : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, color: leftPanelOpen ? c['content-brand'] : c['content-secondary'], boxSizing: 'border-box', flexShrink: 0 }}
+                    style={{ height: 28, padding: '0 10px', gap: sp.B, border: `1px solid ${leftPanelOpen ? c['border-brand'] : c['border-default']}`, borderRadius: 6, backgroundColor: leftPanelOpen ? c['background-information'] : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, color: leftPanelOpen ? c['content-brand'] : c['content-secondary'], boxSizing: 'border-box', flexShrink: 0 }}
                   >
                     <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
                       <line x1="8" y1="2" x2="8" y2="14"/><line x1="2" y1="8" x2="14" y2="8"/>
@@ -731,7 +731,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
                 <div style={{ height: 36, borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', paddingLeft: sp.D, paddingRight: sp.D, gap: sp.B, flexShrink: 0 }}>
                   {project.projectSource === 'dbt' && (
                     <>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '2px 8px', borderRadius: 6, background: '#F0FDF4', border: '1px solid #BBF7D0', fontSize: 11, color: '#166534', fontWeight: fw.medium, flexShrink: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: sp.A, padding: '2px 8px', borderRadius: 6, background: c['background-success'], border: '1px solid #BBF7D0', fontSize: 12, color: '#166534', fontWeight: fw.medium, flexShrink: 0 }}>
                         <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="#22C55E" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M14 8a6 6 0 01-9.17 5.08"/><path d="M2 8a6 6 0 019.17-5.08"/>
                           <polyline points="14,5 14,8 11,8"/><polyline points="2,11 2,8 5,8"/>
@@ -740,14 +740,14 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
                       </div>
                       {dbtIssueCount > 0 && (
                         <button onClick={() => setShowIssuesOnly(o => !o)}
-                          style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 6, background: showIssuesOnly ? '#FEE2E2' : '#FEF2F2', border: '1px solid #FECACA', fontSize: 11, color: '#B91C1C', fontWeight: fw.medium, cursor: 'pointer', fontFamily: ff.primary, flexShrink: 0 }}
+                          style={{ display: 'flex', alignItems: 'center', gap: sp.A, padding: '2px 8px', borderRadius: 6, background: showIssuesOnly ? '#FEE2E2' : c['background-failure'], border: '1px solid #FECACA', fontSize: 12, color: '#B91C1C', fontWeight: fw.medium, cursor: 'pointer', fontFamily: ff.primary, flexShrink: 0 }}
                         >⚠ {dbtIssueCount} {dbtIssueCount === 1 ? 'issue' : 'issues'}</button>
                       )}
                       <div style={{ width: 1, height: 16, backgroundColor: c['border-divider'], flexShrink: 0 }} />
                     </>
                   )}
                   <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: sp.B }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: sp.A }}>
                       {searchOpen && (
                         <input autoFocus value={search} onChange={e => setSearch(e.target.value)}
                           onKeyDown={e => { if (e.key === 'Escape') { setSearchOpen(false); setSearch(''); } }}
@@ -782,7 +782,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ project, setProject, messages, se
                         </svg>
                       </button>
                       {colVisOpen && (
-                        <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: 4, backgroundColor: c['background-base'], border: `1px solid ${c['border-divider']}`, borderRadius: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.1)', padding: sp.C, width: 220, zIndex: 100, maxHeight: 400, overflowY: 'auto' }}>
+                        <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: sp.A, backgroundColor: c['background-base'], border: `1px solid ${c['border-divider']}`, borderRadius: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.1)', padding: sp.C, width: 220, zIndex: 100, maxHeight: 400, overflowY: 'auto' }}>
                           <div style={{ fontSize: fs.xs, fontWeight: fw.medium, color: c['content-secondary'], textTransform: 'uppercase', letterSpacing: '0.02em', marginBottom: sp.A }}>Default visible</div>
                           {DEFAULT_VISIBLE_COLS.map(key => (
                             <div key={key} style={{ padding: '2px 0' }}>
@@ -991,14 +991,14 @@ const RepublishWizard: React.FC<{
     const bgColor = variant === 'green' ? c['background-success'] : variant === 'yellow' ? c['background-warning'] : c['background-sunken'];
     const textColor = variant === 'green' ? c['content-success'] : variant === 'yellow' ? c['content-warning'] : c['content-secondary'];
     return (
-      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: fw.semibold, padding: '2px 8px', borderRadius: 4, backgroundColor: bgColor, color: textColor }}>
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: sp.A, fontSize: 12, fontWeight: fw.semibold, padding: '2px 8px', borderRadius: 4, backgroundColor: bgColor, color: textColor }}>
         {children}
       </span>
     );
   };
 
   const TypeBadge: React.FC<{ type: string }> = ({ type }) => (
-    <span style={{ fontSize: 11, fontWeight: fw.medium, padding: '2px 7px', borderRadius: 4,
+    <span style={{ fontSize: 12, fontWeight: fw.medium, padding: '2px 7px', borderRadius: 4,
       backgroundColor: type === 'Live board' ? c['background-information'] : c['background-sunken'],
       color: type === 'Live board' ? c['content-brand'] : c['content-secondary'] }}>
       {type}
@@ -1014,7 +1014,7 @@ const RepublishWizard: React.FC<{
         <thead>
           <tr style={{ backgroundColor: c['background-sunken'] }}>
             {['Name', 'Type', 'Owner', 'Last viewed'].map(h => (
-              <th key={h} style={{ padding: `${sp.B}px ${sp.C}px`, textAlign: 'left', fontSize: 11, fontWeight: fw.semibold, color: c['content-secondary'], textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: `1px solid ${c['border-divider']}` }}>
+              <th key={h} style={{ padding: `${sp.B}px ${sp.C}px`, textAlign: 'left', fontSize: 12, fontWeight: fw.semibold, color: c['content-secondary'], textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: `1px solid ${c['border-divider']}` }}>
                 {h}
               </th>
             ))}
@@ -1072,7 +1072,7 @@ const RepublishWizard: React.FC<{
         <span style={labelStyle}>Tables</span>
         <span style={valueStyle}>
           {tableCount}
-          <span style={{ color: c['content-secondary'], fontWeight: fw.regular, fontSize: fs.xs, marginLeft: 6 }}>
+          <span style={{ color: c['content-secondary'], fontWeight: fw.regular, fontSize: fs.xs, marginLeft: sp.B }}>
             ({project.addedTables.map(t => t.charAt(0).toUpperCase() + t.slice(1)).join(', ') || 'Orders, Campaigns, Users'})
           </span>
         </span>
@@ -1170,7 +1170,7 @@ const PublishModal: React.FC<{
       gray:   { backgroundColor: c['background-sunken'], color: c['content-secondary'] },
     };
     return (
-      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: fw.semibold, padding: '2px 8px', borderRadius: 4, ...styles[variant] }}>
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: sp.A, fontSize: 12, fontWeight: fw.semibold, padding: '2px 8px', borderRadius: 4, ...styles[variant] }}>
         {children}
       </span>
     );
@@ -1197,7 +1197,7 @@ const PublishModal: React.FC<{
           </div>
           <button
             onClick={onClose}
-            style={{ width: 28, height: 28, flexShrink: 0, borderRadius: 7, backgroundColor: c['background-subtle'], border: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: c['content-secondary'], marginTop: 2 }}
+            style={{ width: 28, height: 28, flexShrink: 0, borderRadius: 7, backgroundColor: c['background-subtle'], border: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: c['content-secondary'], marginTop: sp.A }}
           >
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M1.5 1.5l9 9M10.5 1.5l-9 9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
           </button>
@@ -1209,7 +1209,7 @@ const PublishModal: React.FC<{
             <span style={labelStyle}>Tables</span>
             <span style={valueStyle}>
               {tableCount}
-              <span style={{ color: c['content-secondary'], fontWeight: fw.regular, fontSize: fs.xs, marginLeft: 6 }}>
+              <span style={{ color: c['content-secondary'], fontWeight: fw.regular, fontSize: fs.xs, marginLeft: sp.B }}>
                 ({project.addedTables.map(t => t.charAt(0).toUpperCase() + t.slice(1)).join(', ') || 'Orders, Campaigns, Users'})
               </span>
             </span>
@@ -1291,7 +1291,7 @@ const DbtPublishModal: React.FC<{
           </div>
           <button
             onClick={onClose}
-            style={{ width: 28, height: 28, flexShrink: 0, borderRadius: 7, backgroundColor: c['background-subtle'], border: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: c['content-secondary'], marginTop: 2 }}
+            style={{ width: 28, height: 28, flexShrink: 0, borderRadius: 7, backgroundColor: c['background-subtle'], border: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: c['content-secondary'], marginTop: sp.A }}
           >
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M1.5 1.5l9 9M10.5 1.5l-9 9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
           </button>
@@ -1302,8 +1302,8 @@ const DbtPublishModal: React.FC<{
           <div style={rowStyle}>
             <span style={labelStyle}>Source</span>
             <span style={valueStyle}>
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ fontSize: 11, fontWeight: fw.semibold, color: '#FF694A', backgroundColor: 'rgba(255,105,74,0.08)', border: '1px solid rgba(255,105,74,0.2)', borderRadius: 3, padding: '1px 6px' }}>◆ dbt</span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: sp.B }}>
+                <span style={{ fontSize: 12, fontWeight: fw.semibold, color: '#FF694A', backgroundColor: 'rgba(255,105,74,0.08)', border: '1px solid rgba(255,105,74,0.2)', borderRadius: 3, padding: '1px 6px' }}>◆ dbt</span>
                 <span style={{ color: c['content-secondary'], fontWeight: fw.regular }}>analytics · linked</span>
               </span>
             </span>

@@ -50,7 +50,7 @@ const colRowStyle: React.CSSProperties = {
 };
 
 const secLabelStyle: React.CSSProperties = {
-  fontSize: 10,
+  fontSize: 12,
   fontWeight: fw.bold,
   color: c['content-secondary'],
   textTransform: 'uppercase' as const,
@@ -122,7 +122,7 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ project, setProject, onSendToAgen
         onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
         onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
       >
-        <div style={{ ...secLabelStyle, marginBottom: 3 }}>Memory</div>
+        <div style={{ ...secLabelStyle, marginBottom: sp.A }}>Memory</div>
         <p style={{
           fontSize: fs.xs,
           color: hasMemory ? c['content-primary'] : c['content-secondary'],
@@ -145,7 +145,7 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ project, setProject, onSendToAgen
           <div style={{ display: 'flex', alignItems: 'center', gap: sp.B }}>
             <span style={secLabelStyle}>Data</span>
             {isDbt && (
-              <span style={{ fontSize: 10, fontWeight: fw.medium, color: c['content-secondary'], background: c['background-subtle'], border: `1px solid ${c['border-divider']}`, borderRadius: 3, padding: '1px 5px', lineHeight: '14px' }}>
+              <span style={{ fontSize: 12, fontWeight: fw.medium, color: c['content-secondary'], background: c['background-subtle'], border: `1px solid ${c['border-divider']}`, borderRadius: 3, padding: '1px 5px', lineHeight: '16px' }}>
                 dbt
               </span>
             )}
@@ -155,7 +155,7 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ project, setProject, onSendToAgen
               title={isDbt ? 'Model structure is managed by dbt' : 'Add'}
               disabled={isDbt}
               onClick={isDbt ? undefined : () => setAddMenuOpen(o => !o)}
-              style={{ background: 'none', border: 'none', cursor: isDbt ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 3, borderRadius: 3, color: c['content-secondary'], opacity: isDbt ? 0.35 : 1 }}
+              style={{ background: 'none', border: 'none', cursor: isDbt ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: sp.A, borderRadius: 3, color: c['content-secondary'], opacity: isDbt ? 0.35 : 1 }}
               onMouseEnter={e => { if (!isDbt) e.currentTarget.style.backgroundColor = c['background-subtle']; }}
               onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
             >
@@ -179,7 +179,7 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ project, setProject, onSendToAgen
         {/* dbt model name */}
         {isDbt && (
           <div style={{ display: 'flex', alignItems: 'center', height: ROW_H, paddingLeft: NAME_LEFT, paddingRight: sp.B, marginBottom: sp.A }}>
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, marginRight: 5, color: c['content-secondary'] }}>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, marginRight: sp.A, color: c['content-secondary'] }}>
               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z" fill="currentColor" opacity="0"/>
               <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.5"/>
               <path d="M7 8h4M7 12h10M7 16h6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
@@ -191,7 +191,7 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ project, setProject, onSendToAgen
         )}
 
         {/* Tables */}
-        <div style={{ marginBottom: 2 }}>
+        <div style={{ marginBottom: sp.A }}>
           <div style={{ ...secLabelStyle, padding: `4px ${sp.C}px 2px` }}>Tables</div>
           {!hasData ? (
             <div style={{ ...rowStyle, cursor: 'default' }}>
@@ -227,7 +227,7 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ project, setProject, onSendToAgen
 
                   {/* Column list */}
                   {isExpanded && (
-                    <div style={{ paddingBottom: 2 }}>
+                    <div style={{ paddingBottom: sp.A }}>
                       {table.columns.map(col => {
                         const isIncluded = !project.columnsSelected || includedSet.has(col.id) ||
                           relationships.some(r =>
@@ -242,7 +242,7 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ project, setProject, onSendToAgen
                             onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
                             onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
                           >
-                            <span style={{ fontSize: 11, fontFamily: ff.mono, color: c['content-primary'], flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            <span style={{ fontSize: 12, fontFamily: ff.mono, color: c['content-primary'], flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                               {col.id}
                             </span>
                           </div>
@@ -257,7 +257,7 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ project, setProject, onSendToAgen
         </div>
 
         {/* Joins */}
-        <div style={{ marginBottom: 2 }}>
+        <div style={{ marginBottom: sp.A }}>
           <div style={{ ...secLabelStyle, padding: `4px ${sp.C}px 2px` }}>Joins</div>
           {!hasJoins || activeJoins.length === 0 ? (
             <div style={{ ...rowStyle, cursor: 'default' }}>
@@ -335,7 +335,7 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ project, setProject, onSendToAgen
 
         {/* Transformations — below Formulas */}
         {project.prepTransforms && project.prepTransforms.length > 0 && (
-          <div style={{ marginTop: 2 }}>
+          <div style={{ marginTop: sp.A }}>
             <div style={{ ...secLabelStyle, padding: `4px ${sp.C}px 2px` }}>Transformations</div>
             {project.prepTransforms.map(t => (
               <div
@@ -378,7 +378,7 @@ const ContextMenu: React.FC<{
     <div
       ref={ref}
       style={{
-        position: 'absolute', right: 0, top: '100%', marginTop: 2,
+        position: 'absolute', right: 0, top: '100%', marginTop: sp.A,
         backgroundColor: c['background-base'], border: `1px solid ${c['border-divider']}`,
         borderRadius: 6, boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
         zIndex: 200, minWidth: 148, overflow: 'hidden',
@@ -432,7 +432,7 @@ const MemoryModal: React.FC<{
             <span style={{ fontSize: fs.md, fontWeight: fw.semibold, color: c['content-primary'] }}>Memory</span>
             <p style={{ margin: `${sp.A}px 0 0`, fontSize: fs.xs, color: c['content-secondary'] }}>Model context. Updated by the agent and by you.</p>
           </div>
-          <button onClick={handleClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, color: c['content-secondary'], lineHeight: 1, padding: 0, marginTop: 2 }}>×</button>
+          <button onClick={handleClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, color: c['content-secondary'], lineHeight: 1, padding: 0, marginTop: sp.A }}>×</button>
         </div>
 
         <div style={{ overflowY: 'auto', flexGrow: 1 }}>

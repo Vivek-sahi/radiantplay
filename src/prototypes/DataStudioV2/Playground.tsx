@@ -70,7 +70,7 @@ const TestPane: React.FC = () => (
           { label: 'Context',      status: 'ok',      note: 'All columns described' },
           { label: 'Structure',    status: 'ok',      note: 'Joins valid' },
         ].map(d => (
-          <div key={d.label} style={{ flex: 1, padding: sp.B, borderRadius: 6, backgroundColor: d.status === 'warning' ? '#FFF8E5' : c['background-success'], fontSize: 11 }}>
+          <div key={d.label} style={{ flex: 1, padding: sp.B, borderRadius: 6, backgroundColor: d.status === 'warning' ? '#FFF8E5' : c['background-success'], fontSize: 12 }}>
             <div style={{ fontWeight: fw.medium, color: d.status === 'warning' ? '#92400E' : '#065F46', marginBottom: 2 }}>{d.label}</div>
             <div style={{ color: d.status === 'warning' ? '#78350F' : '#047857' }}>{d.note}</div>
           </div>
@@ -262,7 +262,7 @@ const ClarifyBarExploration: React.FC = () => {
                             backgroundColor: isSelected ? '#EFF6FF' : c['background-subtle'],
                             border: `1px solid ${isSelected ? '#BFDBFE' : c['border-divider']}`,
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            fontSize: 11, fontWeight: fw.medium, fontFamily: ff.mono,
+                            fontSize: 12, fontWeight: fw.medium, fontFamily: ff.mono,
                             color: isSelected ? c['content-brand'] : c['content-secondary'],
                           }}>
                             {idx + 1}
@@ -340,7 +340,7 @@ const ClarifyBarExploration: React.FC = () => {
             </div>
 
             {/* Disclaimer */}
-            <p style={{ margin: 0, textAlign: 'center', fontSize: 11, color: c['content-secondary'], fontFamily: ff.primary, padding: `${sp.A}px ${sp.D}px ${sp.C}px`, lineHeight: '16px' }}>
+            <p style={{ margin: 0, textAlign: 'center', fontSize: 12, color: c['content-secondary'], fontFamily: ff.primary, padding: `${sp.A}px ${sp.D}px ${sp.C}px`, lineHeight: '16px' }}>
               Spotter responses should be reviewed. <span style={{ textDecoration: 'underline', cursor: 'pointer' }}>Learn more</span>
             </p>
 
@@ -521,7 +521,7 @@ const ContextPanelExploration: React.FC = () => {
               <>
                 {data.tables.length > 0 && (
                   <div style={{ marginBottom: sp.C }}>
-                    <div style={{ padding: `${sp.B}px ${sp.D}px`, fontSize: 10, fontWeight: fw.medium, color: c['content-tertiary'], fontFamily: ff.primary, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Tables</div>
+                    <div style={{ padding: `${sp.B}px ${sp.D}px`, fontSize: 12, fontWeight: fw.medium, color: c['content-tertiary'], fontFamily: ff.primary, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Tables</div>
                     {data.tables.map((t, i) => (
                       <div key={i} style={{ display: 'flex', alignItems: 'center', gap: sp.C, padding: `5px ${sp.D}px`, cursor: 'pointer' }}
                         onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = c['background-subtle']; }}
@@ -537,7 +537,7 @@ const ContextPanelExploration: React.FC = () => {
                 )}
                 {data.skills.length > 0 && (
                   <div>
-                    <div style={{ padding: `${sp.B}px ${sp.D}px`, fontSize: 10, fontWeight: fw.medium, color: c['content-tertiary'], fontFamily: ff.primary, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Skills</div>
+                    <div style={{ padding: `${sp.B}px ${sp.D}px`, fontSize: 12, fontWeight: fw.medium, color: c['content-tertiary'], fontFamily: ff.primary, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Skills</div>
                     {data.skills.map((s, i) => (
                       <div key={i} style={{ display: 'flex', alignItems: 'center', gap: sp.C, padding: `5px ${sp.D}px`, cursor: 'pointer' }}
                         onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = c['background-subtle']; }}
@@ -572,7 +572,7 @@ const ContextPanelExploration: React.FC = () => {
               height: '100%', padding: `0 ${sp.C}px`, border: 'none',
               borderRight: i === 0 ? `1px solid ${c['border-default']}` : 'none',
               backgroundColor: layout === l ? c['background-information'] : c['background-base'],
-              cursor: 'pointer', fontSize: 11, fontFamily: ff.primary,
+              cursor: 'pointer', fontSize: 12, fontFamily: ff.primary,
               color: layout === l ? c['content-brand'] : c['content-secondary'],
             }}>{l === 'chat' ? 'Chat' : 'With artifact'}</button>
           ))}
@@ -584,7 +584,7 @@ const ContextPanelExploration: React.FC = () => {
             border: `1px solid ${step === i ? c['border-brand'] : c['border-default']}`,
             borderRadius: 6,
             backgroundColor: step === i ? c['background-information'] : c['background-base'],
-            cursor: 'pointer', fontSize: 11, fontFamily: ff.primary,
+            cursor: 'pointer', fontSize: 12, fontFamily: ff.primary,
             color: step === i ? c['content-brand'] : c['content-secondary'],
           }}>{s.label}</button>
         ))}
@@ -633,7 +633,7 @@ const ContextPanelExploration: React.FC = () => {
                     <span style={{ flex: 1, fontSize: fs.sm, color: c['content-tertiary'], fontFamily: ff.primary }}>Ask a follow-up…</span>
                     <span style={{ fontSize: fs.xs, color: c['content-tertiary'], fontFamily: ff.primary }}>Spotter ↓</span>
                   </div>
-                  <p style={{ margin: `${sp.A}px 0 0`, textAlign: 'center', fontSize: 11, color: c['content-secondary'], fontFamily: ff.primary, lineHeight: '16px' }}>Spotter responses should be reviewed.</p>
+                  <p style={{ margin: `${sp.A}px 0 0`, textAlign: 'center', fontSize: 12, color: c['content-secondary'], fontFamily: ff.primary, lineHeight: '16px' }}>Spotter responses should be reviewed.</p>
                 </div>
               </div>
             </div>
@@ -670,7 +670,7 @@ const ContextPanelExploration: React.FC = () => {
                     <rect x="9" y="9" width="5.5" height="5.5" rx="1.5" fill="#2563EB" opacity="0.4"/>
                   </svg>
                   <span style={{ fontSize: fs.sm, fontWeight: fw.medium, color: c['content-primary'], fontFamily: ff.primary }}>Campaign Performance</span>
-                  <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 4, backgroundColor: '#EFF6FF', color: c['content-brand'], border: '1px solid #BFDBFE', fontFamily: ff.primary }}>Draft</span>
+                  <span style={{ fontSize: 12, padding: '1px 6px', borderRadius: 4, backgroundColor: '#EFF6FF', color: c['content-brand'], border: '1px solid #BFDBFE', fontFamily: ff.primary }}>Draft</span>
                   <div style={{ flex: 1 }} />
                   <button style={{ height: 28, padding: `0 ${sp.C}px`, border: `1px solid ${c['border-default']}`, borderRadius: 6, backgroundColor: 'transparent', cursor: 'pointer', fontSize: fs.xs, fontFamily: ff.primary, color: c['content-secondary'] }}>Share</button>
                   <button style={{ height: 28, padding: `0 ${sp.C}px`, border: 'none', borderRadius: 6, backgroundColor: '#2563EB', color: 'white', cursor: 'pointer', fontSize: fs.xs, fontFamily: ff.primary }}>Publish model</button>
@@ -685,7 +685,7 @@ const ContextPanelExploration: React.FC = () => {
                 <div style={{ flex: 1, overflowY: 'auto' }}>
                   {['order_date', 'amount', 'region', 'campaign_id', 'campaign_name', 'channel', 'spend', 'budget', 'impressions'].map((col, i) => (
                     <div key={col} style={{ display: 'flex', alignItems: 'center', height: 36, padding: `0 ${sp.D}px`, gap: sp.C, borderBottom: `1px solid ${c['border-divider']}` }}>
-                      <span style={{ fontSize: 10, fontFamily: ff.mono, color: c['content-tertiary'], width: 44, flexShrink: 0 }}>{i < 1 ? 'DATE' : i < 3 ? 'TEXT' : i < 4 ? 'INT' : i < 6 ? 'TEXT' : 'FLOAT'}</span>
+                      <span style={{ fontSize: 12, fontFamily: ff.mono, color: c['content-tertiary'], width: 44, flexShrink: 0 }}>{i < 1 ? 'DATE' : i < 3 ? 'TEXT' : i < 4 ? 'INT' : i < 6 ? 'TEXT' : 'FLOAT'}</span>
                       <span style={{ fontSize: fs.sm, fontFamily: ff.primary, color: c['content-primary'] }}>{col}</span>
                     </div>
                   ))}
@@ -756,7 +756,7 @@ const Playground: React.FC = () => {
       {/* ── Main header ── */}
       <div style={{ height: HEADER_HEIGHT, backgroundColor: c['background-base'], borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', padding: `0 ${sp.D}px`, gap: sp.C, flexShrink: 0 }}>
         <span style={{ ...ts.contentLabelSubhead, color: c['content-primary'] }}>{project.name}</span>
-        <span style={{ fontSize: 11, fontWeight: fw.regular, color: c['content-secondary'] }}>v{project.publishedVersion}</span>
+        <span style={{ fontSize: 12, fontWeight: fw.regular, color: c['content-secondary'] }}>v{project.publishedVersion}</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 'auto' }}>
           {/* Warehouse */}
           <button title="Warehouse" style={iconBtn}>
@@ -938,7 +938,7 @@ const Playground: React.FC = () => {
                 <button
                   key={tab.id}
                   onClick={() => { setDrawerTab(tab.id); setDrawerOpen(true); }}
-                  style={{ height: 24, padding: `0 ${sp.B}px`, border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: 11, fontFamily: ff.primary, color: c['content-secondary'], backgroundColor: 'transparent' }}
+                  style={{ height: 24, padding: `0 ${sp.B}px`, border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: 12, fontFamily: ff.primary, color: c['content-secondary'], backgroundColor: 'transparent' }}
                   onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
                   onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
                 >
@@ -1134,7 +1134,7 @@ const DataGrid: React.FC<{ cols: ColDef[]; rows: Record<string, unknown>[]; foot
       <div style={{ display: 'flex', position: 'sticky', top: 0, height: HEAD, backgroundColor: K.bgHead, borderBottom: `1px solid ${K.border}`, zIndex: 1 }}>
         <div style={{ width: 36, flexShrink: 0, borderRight: `1px solid ${K.border}` }} />
         {cols.map(col => (
-          <div key={col.key} style={{ width: col.width, flexShrink: 0, padding: '0 8px', display: 'flex', alignItems: 'center', justifyContent: col.align === 'right' ? 'flex-end' : 'flex-start', color: K.dim, letterSpacing: '0.04em', fontSize: 11, borderRight: `1px solid ${K.border}`, whiteSpace: 'nowrap', overflow: 'hidden' }}>
+          <div key={col.key} style={{ width: col.width, flexShrink: 0, padding: '0 8px', display: 'flex', alignItems: 'center', justifyContent: col.align === 'right' ? 'flex-end' : 'flex-start', color: K.dim, letterSpacing: '0.04em', fontSize: 12, borderRight: `1px solid ${K.border}`, whiteSpace: 'nowrap', overflow: 'hidden' }}>
             {col.label}
           </div>
         ))}
@@ -1143,7 +1143,7 @@ const DataGrid: React.FC<{ cols: ColDef[]; rows: Record<string, unknown>[]; foot
         <div key={i} style={{ display: 'flex', height: RH, backgroundColor: i % 2 === 0 ? K.bg : K.bgAlt, borderBottom: `1px solid ${K.mute}` }}
           onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#2D333B')}
           onMouseLeave={e => (e.currentTarget.style.backgroundColor = i % 2 === 0 ? K.bg : K.bgAlt)}>
-          <div style={{ width: 36, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: 8, color: K.mute, borderRight: `1px solid ${K.border}`, fontSize: 11 }}>{i + 1}</div>
+          <div style={{ width: 36, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: 8, color: K.mute, borderRight: `1px solid ${K.border}`, fontSize: 12 }}>{i + 1}</div>
           {cols.map(col => (
             <div key={col.key} style={{ width: col.width, flexShrink: 0, padding: '0 8px', display: 'flex', alignItems: 'center', justifyContent: col.align === 'right' ? 'flex-end' : 'flex-start', color: K.text, whiteSpace: 'nowrap', overflow: 'hidden', borderRight: `1px solid ${K.mute}` }}>
               {renderCell(row[col.key], col)}
@@ -1151,7 +1151,7 @@ const DataGrid: React.FC<{ cols: ColDef[]; rows: Record<string, unknown>[]; foot
           ))}
         </div>
       ))}
-      <div style={{ padding: '10px 44px', color: K.dim, fontSize: 11 }}>{footerNote}</div>
+      <div style={{ padding: '10px 44px', color: K.dim, fontSize: 12 }}>{footerNote}</div>
     </div>
   );
 };
@@ -1207,12 +1207,12 @@ const DarkNotebookCell: React.FC<{ id: number; type: 'sql' | 'python'; comment: 
   <div style={{ border: `1px solid ${K.border}`, borderRadius: 6, backgroundColor: K.bgHead, overflow: 'hidden' }}>
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '5px 10px', borderBottom: `1px solid ${K.border}`, backgroundColor: K.bg }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <span style={{ fontSize: 10, backgroundColor: type === 'sql' ? 'rgba(113,161,244,0.18)' : 'rgba(210,168,255,0.18)', color: type === 'sql' ? K.blue : K.purple, padding: '1px 6px', borderRadius: 3, fontWeight: fw.semibold, textTransform: 'uppercase', fontFamily: ff.mono }}>{type}</span>
-        <span style={{ fontSize: 11, color: K.dim, fontFamily: ff.primary }}>Cell {id}</span>
+        <span style={{ fontSize: 12, backgroundColor: type === 'sql' ? 'rgba(113,161,244,0.18)' : 'rgba(210,168,255,0.18)', color: type === 'sql' ? K.blue : K.purple, padding: '1px 6px', borderRadius: 3, fontWeight: fw.semibold, textTransform: 'uppercase', fontFamily: ff.mono }}>{type}</span>
+        <span style={{ fontSize: 12, color: K.dim, fontFamily: ff.primary }}>Cell {id}</span>
       </div>
       <div style={{ display: 'flex', gap: 4 }}>
         {['▶', '···'].map(icon => (
-          <button key={icon} style={{ height: 22, padding: '0 6px', border: `1px solid ${K.border}`, borderRadius: 4, backgroundColor: 'transparent', cursor: 'pointer', color: K.dim, fontSize: 11, fontFamily: ff.mono }}
+          <button key={icon} style={{ height: 22, padding: '0 6px', border: `1px solid ${K.border}`, borderRadius: 4, backgroundColor: 'transparent', cursor: 'pointer', color: K.dim, fontSize: 12, fontFamily: ff.mono }}
             onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = K.text; (e.currentTarget as HTMLButtonElement).style.borderColor = K.dim; }}
             onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = K.dim; (e.currentTarget as HTMLButtonElement).style.borderColor = K.border; }}>
             {icon}
@@ -1224,7 +1224,7 @@ const DarkNotebookCell: React.FC<{ id: number; type: 'sql' | 'python'; comment: 
       <div style={{ color: K.dim, marginBottom: 4 }}>{comment}</div>
       {query.split('\n').map((line, i) => (
         <div key={i} style={{ display: 'flex', gap: 14 }}>
-          <span style={{ color: K.mute, minWidth: 18, textAlign: 'right', userSelect: 'none', fontSize: 11 }}>{i + 1}</span>
+          <span style={{ color: K.mute, minWidth: 18, textAlign: 'right', userSelect: 'none', fontSize: 12 }}>{i + 1}</span>
           <DarkColorizedLine line={line} lang={type} />
         </div>
       ))}
@@ -1338,8 +1338,8 @@ const DarkTestPane: React.FC = () => (
           { label: 'Structure',    ok: true,  note: 'Joins valid' },
         ].map(d => (
           <div key={d.label} style={{ flex: 1, padding: '8px 10px', borderRadius: 4, backgroundColor: K.bg, border: `1px solid ${d.ok ? '#238636' : '#9E6A03'}` }}>
-            <div style={{ fontSize: 11, fontWeight: 600, color: d.ok ? K.green : K.orange, marginBottom: 2 }}>{d.label}</div>
-            <div style={{ fontSize: 11, color: K.dim }}>{d.note}</div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: d.ok ? K.green : K.orange, marginBottom: 2 }}>{d.label}</div>
+            <div style={{ fontSize: 12, color: K.dim }}>{d.note}</div>
           </div>
         ))}
       </div>
@@ -1378,7 +1378,7 @@ const ConsolePane: React.FC<ConsolePaneProps> = ({ height, onDragStart, onClose 
             <polyline points="3,5 7,9 3,13" stroke={K.dim} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
             <line x1="9" y1="13" x2="14" y2="13" stroke={K.dim} strokeWidth="1.5" strokeLinecap="round"/>
           </svg>
-          <span style={{ fontSize: 11, color: K.mute, fontFamily: ff.primary, letterSpacing: '0.06em' }}>CONSOLE</span>
+          <span style={{ fontSize: 12, color: K.mute, fontFamily: ff.primary, letterSpacing: '0.06em' }}>CONSOLE</span>
         </div>
 
         {/* Tabs — VS Code style: text + bottom border active indicator */}
@@ -1412,7 +1412,7 @@ const ConsolePane: React.FC<ConsolePaneProps> = ({ height, onDragStart, onClose 
                 style={{
                   height: 22, padding: '0 8px', border: `1px solid ${table === tbl.id ? K.blue : K.border}`,
                   borderRadius: 4, backgroundColor: table === tbl.id ? 'rgba(88,166,255,0.12)' : 'transparent',
-                  cursor: 'pointer', fontSize: 11, fontFamily: ff.mono,
+                  cursor: 'pointer', fontSize: 12, fontFamily: ff.mono,
                   color: table === tbl.id ? K.blue : K.dim,
                 }}
               >
@@ -1425,7 +1425,7 @@ const ConsolePane: React.FC<ConsolePaneProps> = ({ height, onDragStart, onClose 
         {/* Connection badge */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '0 12px', borderRight: `1px solid ${K.border}` }}>
           <div style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: K.green }} />
-          <span style={{ fontSize: 11, color: K.dim, fontFamily: ff.primary }}>Snowflake</span>
+          <span style={{ fontSize: 12, color: K.dim, fontFamily: ff.primary }}>Snowflake</span>
         </div>
 
         {/* Close */}
@@ -1465,7 +1465,7 @@ const CollapsedConsole: React.FC<{ onExpand: (tab: ConsoleTab) => void }> = ({ o
       <button
         key={t.id}
         onClick={() => onExpand(t.id)}
-        style={{ height: 22, padding: '0 10px', border: 'none', borderRadius: 3, backgroundColor: 'transparent', cursor: 'pointer', fontSize: 11, fontFamily: ff.primary, color: K.dim }}
+        style={{ height: 22, padding: '0 10px', border: 'none', borderRadius: 3, backgroundColor: 'transparent', cursor: 'pointer', fontSize: 12, fontFamily: ff.primary, color: K.dim }}
         onMouseEnter={e => (e.currentTarget.style.color = K.text)}
         onMouseLeave={e => (e.currentTarget.style.color = K.dim)}
       >
@@ -1530,12 +1530,12 @@ export const PlaygroundV2: React.FC = () => {
       {/* Header */}
       <div style={{ height: HEADER_HEIGHT, backgroundColor: c['background-base'], borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', padding: `0 ${sp.D}px`, gap: sp.C, flexShrink: 0 }}>
         <span style={{ ...ts.contentLabelSubhead, color: c['content-primary'] }}>{project.name}</span>
-        <span style={{ fontSize: 11, color: c['content-secondary'] }}>v{project.publishedVersion}</span>
+        <span style={{ fontSize: 12, color: c['content-secondary'] }}>v{project.publishedVersion}</span>
         {/* Iteration badge */}
-        <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, backgroundColor: 'rgba(88,166,255,0.12)', color: K.blue, border: `1px solid rgba(88,166,255,0.3)`, fontWeight: fw.medium }}>
+        <span style={{ fontSize: 12, padding: '2px 8px', borderRadius: 10, backgroundColor: 'rgba(88,166,255,0.12)', color: K.blue, border: `1px solid rgba(88,166,255,0.3)`, fontWeight: fw.medium }}>
           iteration 2
         </span>
-        <a href="/data-studio-v2/playground" style={{ fontSize: 11, color: c['content-secondary'], textDecoration: 'none', marginLeft: 4 }}>
+        <a href="/data-studio-v2/playground" style={{ fontSize: 12, color: c['content-secondary'], textDecoration: 'none', marginLeft: 4 }}>
           ← iteration 1
         </a>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 'auto' }}>
@@ -1700,7 +1700,7 @@ const CanvasHeader: React.FC<{
   }}>
     <div style={{ display: 'flex', alignItems: 'center', gap: sp.B }}>
       <span style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'] }}>Columns</span>
-      <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 10, backgroundColor: c['background-subtle'], color: c['content-secondary'] }}>{iterLabel}</span>
+      <span style={{ fontSize: 12, padding: '2px 7px', borderRadius: 10, backgroundColor: c['background-subtle'], color: c['content-secondary'] }}>{iterLabel}</span>
     </div>
     <div style={{ display: 'flex', gap: 2 }}>
       {SEC_PANE_DEFS.map(p => {
@@ -1764,7 +1764,7 @@ const SecPanelHeader: React.FC<{
                 borderRadius: 3,
                 backgroundColor: table === tbl.id ? 'rgba(121,192,255,0.12)' : 'transparent',
                 color: table === tbl.id ? K.blue : K.dim,
-                cursor: 'pointer', fontSize: 11, fontFamily: ff.mono,
+                cursor: 'pointer', fontSize: 12, fontFamily: ff.mono,
               }}
             >{tbl.label}</button>
           ))}
@@ -1772,7 +1772,7 @@ const SecPanelHeader: React.FC<{
       )}
 
       {pane === 'data' && (
-        <span style={{ fontSize: 11, color: K.mute, fontFamily: ff.primary }}>
+        <span style={{ fontSize: 12, color: K.mute, fontFamily: ff.primary }}>
           {CTABLES.find(t => t.id === table)?.rows} rows
         </span>
       )}
@@ -1818,9 +1818,9 @@ const PlaygroundShell: React.FC<{
   <div style={{ position: 'fixed', inset: 0, display: 'flex', flexDirection: 'column', backgroundColor: c['background-sunken'], fontFamily: ff.primary }}>
     <div style={{ height: HEADER_HEIGHT, backgroundColor: c['background-base'], borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', padding: `0 ${sp.D}px`, gap: sp.C, flexShrink: 0 }}>
       <span style={{ ...ts.contentLabelSubhead, color: c['content-primary'] }}>{project.name}</span>
-      <span style={{ fontSize: 11, color: c['content-secondary'] }}>v{project.publishedVersion}</span>
-      <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, backgroundColor: 'rgba(88,166,255,0.12)', color: K.blue, border: `1px solid rgba(88,166,255,0.3)`, fontWeight: fw.medium }}>{iterLabel}</span>
-      <a href={prevHref} style={{ fontSize: 11, color: c['content-secondary'], textDecoration: 'none' }}>← prev</a>
+      <span style={{ fontSize: 12, color: c['content-secondary'] }}>v{project.publishedVersion}</span>
+      <span style={{ fontSize: 12, padding: '2px 8px', borderRadius: 10, backgroundColor: 'rgba(88,166,255,0.12)', color: K.blue, border: `1px solid rgba(88,166,255,0.3)`, fontWeight: fw.medium }}>{iterLabel}</span>
+      <a href={prevHref} style={{ fontSize: 12, color: c['content-secondary'], textDecoration: 'none' }}>← prev</a>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 'auto' }}>
         <button style={actionBtn}>
           <svg width="11" height="11" viewBox="0 0 18 18" fill="none"><path d="M4.5 2.25L15 9L4.5 15.75V2.25Z" fill={c['content-secondary']}/></svg>
@@ -2106,7 +2106,7 @@ const LightDataGrid: React.FC<{ table: ConsoleTable }> = ({ table }) => {
       <div style={{ display: 'flex', position: 'sticky', top: 0, height: 30, backgroundColor: c['background-subtle'], borderBottom: `1px solid ${c['border-divider']}`, zIndex: 1 }}>
         <div style={{ width: 36, flexShrink: 0, borderRight: `1px solid ${c['border-divider']}` }} />
         {cols.map(col => (
-          <div key={col.key} style={{ width: col.width, flexShrink: 0, padding: '0 8px', display: 'flex', alignItems: 'center', justifyContent: col.align === 'right' ? 'flex-end' : 'flex-start', color: c['content-secondary'], fontSize: 11, letterSpacing: '0.04em', borderRight: `1px solid ${c['border-divider']}`, whiteSpace: 'nowrap', overflow: 'hidden' }}>
+          <div key={col.key} style={{ width: col.width, flexShrink: 0, padding: '0 8px', display: 'flex', alignItems: 'center', justifyContent: col.align === 'right' ? 'flex-end' : 'flex-start', color: c['content-secondary'], fontSize: 12, letterSpacing: '0.04em', borderRight: `1px solid ${c['border-divider']}`, whiteSpace: 'nowrap', overflow: 'hidden' }}>
             {col.label}
           </div>
         ))}
@@ -2115,7 +2115,7 @@ const LightDataGrid: React.FC<{ table: ConsoleTable }> = ({ table }) => {
         <div key={i} style={{ display: 'flex', height: 32, backgroundColor: i % 2 === 0 ? c['background-base'] : c['background-sunken'], borderBottom: `1px solid ${c['border-divider']}` }}
           onMouseEnter={e => (e.currentTarget.style.backgroundColor = c['background-subtle'])}
           onMouseLeave={e => (e.currentTarget.style.backgroundColor = i % 2 === 0 ? c['background-base'] : c['background-sunken'])}>
-          <div style={{ width: 36, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: 8, color: c['content-tertiary'], borderRight: `1px solid ${c['border-divider']}`, fontSize: 11 }}>{i + 1}</div>
+          <div style={{ width: 36, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: 8, color: c['content-tertiary'], borderRight: `1px solid ${c['border-divider']}`, fontSize: 12 }}>{i + 1}</div>
           {cols.map(col => {
             const val = row[col.key];
             const isNull = val === null || val === undefined;
@@ -2127,7 +2127,7 @@ const LightDataGrid: React.FC<{ table: ConsoleTable }> = ({ table }) => {
           })}
         </div>
       ))}
-      <div style={{ padding: '10px 44px', color: c['content-tertiary'], fontSize: 11, fontFamily: ff.primary }}>
+      <div style={{ padding: '10px 44px', color: c['content-tertiary'], fontSize: 12, fontFamily: ff.primary }}>
         12 of {CTABLES.find(t => t.id === table)?.rows} rows · Snowflake
       </div>
     </div>
@@ -2145,7 +2145,7 @@ const LightLineagePan: React.FC = () => (
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
           <div style={{ width: 3, height: 16, borderRadius: 2, backgroundColor: accent }} />
           <span style={{ fontWeight: fw.semibold, color: c['content-primary'], fontFamily: ff.mono }}>{table}</span>
-          <span style={{ fontSize: 11, color: c['content-secondary'] }}>Snowflake</span>
+          <span style={{ fontSize: 12, color: c['content-secondary'] }}>Snowflake</span>
         </div>
         <div style={{ paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 3 }}>
           {cols.map(col => {
@@ -2215,13 +2215,13 @@ const LightPaneHeader: React.FC<{ pane: SecPane; table: ConsoleTable; onTable: (
         <div style={{ display: 'flex', gap: 3, marginLeft: sp.B }}>
           {CTABLES.map(tbl => (
             <button key={tbl.id} onClick={() => onTable(tbl.id)}
-              style={{ height: 22, padding: '0 8px', border: `1px solid ${table === tbl.id ? c['border-brand'] : c['border-default']}`, borderRadius: 4, backgroundColor: table === tbl.id ? c['background-information'] : 'transparent', color: table === tbl.id ? c['content-brand'] : c['content-secondary'], cursor: 'pointer', fontSize: 11, fontFamily: ff.mono }}>
+              style={{ height: 22, padding: '0 8px', border: `1px solid ${table === tbl.id ? c['border-brand'] : c['border-default']}`, borderRadius: 4, backgroundColor: table === tbl.id ? c['background-information'] : 'transparent', color: table === tbl.id ? c['content-brand'] : c['content-secondary'], cursor: 'pointer', fontSize: 12, fontFamily: ff.mono }}>
               {tbl.label}
             </button>
           ))}
         </div>
       )}
-      {pane === 'data' && <span style={{ fontSize: 11, color: c['content-tertiary'] }}>{CTABLES.find(t => t.id === table)?.rows} rows</span>}
+      {pane === 'data' && <span style={{ fontSize: 12, color: c['content-tertiary'] }}>{CTABLES.find(t => t.id === table)?.rows} rows</span>}
       <div style={{ flex: 1 }} />
       <button onClick={onClose} style={{ width: 24, height: 24, border: 'none', borderRadius: 4, backgroundColor: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: c['content-tertiary'] }}
         onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = c['background-subtle']; (e.currentTarget as HTMLButtonElement).style.color = c['content-primary']; }}
@@ -2263,17 +2263,17 @@ const DarkPaneHeader: React.FC<{ pane: SecPane; table: ConsoleTable; onTable: (t
         <div style={{ display: 'flex', gap: 3, marginLeft: sp.B }}>
           {CTABLES.map(tbl => (
             <button key={tbl.id} onClick={() => onTable(tbl.id)}
-              style={{ height: 22, padding: '0 8px', border: `1px solid ${table === tbl.id ? K.blue : K.border}`, borderRadius: 4, backgroundColor: table === tbl.id ? 'rgba(113,161,244,0.15)' : 'transparent', color: table === tbl.id ? K.blue : K.dim, cursor: 'pointer', fontSize: 11, fontFamily: ff.mono }}>
+              style={{ height: 22, padding: '0 8px', border: `1px solid ${table === tbl.id ? K.blue : K.border}`, borderRadius: 4, backgroundColor: table === tbl.id ? 'rgba(113,161,244,0.15)' : 'transparent', color: table === tbl.id ? K.blue : K.dim, cursor: 'pointer', fontSize: 12, fontFamily: ff.mono }}>
               {tbl.label}
             </button>
           ))}
         </div>
       )}
-      {pane === 'data' && <span style={{ fontSize: 11, color: K.mute, fontFamily: ff.primary }}>{table === 'model' ? '150 rows · orders × campaigns × users' : `${CTABLES.find(t => t.id === table)?.rows} rows · Snowflake`}</span>}
+      {pane === 'data' && <span style={{ fontSize: 12, color: K.mute, fontFamily: ff.primary }}>{table === 'model' ? '150 rows · orders × campaigns × users' : `${CTABLES.find(t => t.id === table)?.rows} rows · Snowflake`}</span>}
       <div style={{ flex: 1 }} />
       {/* ">>" style close matching ThoughtSpot dark panel pattern */}
       <button onClick={onClose}
-        style={{ height: 28, padding: '0 8px', border: `1px solid ${K.border}`, borderRadius: 6, backgroundColor: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, color: K.dim, fontSize: 11, fontFamily: ff.primary }}
+        style={{ height: 28, padding: '0 8px', border: `1px solid ${K.border}`, borderRadius: 6, backgroundColor: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, color: K.dim, fontSize: 12, fontFamily: ff.primary }}
         onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = K.text; (e.currentTarget as HTMLButtonElement).style.borderColor = K.dim; }}
         onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = K.dim; (e.currentTarget as HTMLButtonElement).style.borderColor = K.border; }}>
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="3,2 7,6 3,10"/><polyline points="7,2 11,6 7,10"/></svg>
@@ -2342,7 +2342,7 @@ export const PlaygroundV6: React.FC = () => {
       <div style={{ height: HEADER_HEIGHT, backgroundColor: c['background-base'], borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', padding: `0 ${sp.D}px`, gap: sp.C, flexShrink: 0 }}>
         <a href="/data-studio-v2/playground-v5" style={{ ...actionBtn, textDecoration: 'none' }}>←</a>
         <span style={{ ...ts.contentLabelSubhead, color: c['content-primary'] }}>{project.name}</span>
-        <span style={{ fontSize: 11, color: c['content-secondary'] }}>v{project.publishedVersion}</span>
+        <span style={{ fontSize: 12, color: c['content-secondary'] }}>v{project.publishedVersion}</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 'auto' }}>
           <button title="Warehouse connection" style={iconBtn}>
             <svg width="16" height="16" viewBox="0 0 18 18" fill="none" stroke={c['content-secondary']} strokeWidth="1.5">
@@ -2465,7 +2465,7 @@ const AcModelIcon: React.FC<{ size?: number }> = ({ size = 24 }) => (
 );
 
 const AcDraftBadge: React.FC = () => (
-  <span style={{ fontSize: 10.5, fontWeight: fw.semibold, color: '#92400E', background: '#FEF3C7', borderRadius: 4, padding: '2px 7px', flexShrink: 0, letterSpacing: '0.01em' }}>
+  <span style={{ fontSize: 12, fontWeight: fw.semibold, color: '#92400E', background: '#FEF3C7', borderRadius: 4, padding: '2px 7px', flexShrink: 0, letterSpacing: '0.01em' }}>
     Draft
   </span>
 );
@@ -2526,7 +2526,7 @@ const ArtifactChatExploration: React.FC = () => {
 
             {/* Agent: clarify intro */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxWidth: 340 }}>
-              <span style={{ fontSize: 11, fontWeight: fw.semibold, color: c['content-tertiary'], letterSpacing: '0.04em', textTransform: 'uppercase' }}>Spotter</span>
+              <span style={{ fontSize: 12, fontWeight: fw.semibold, color: c['content-tertiary'], letterSpacing: '0.04em', textTransform: 'uppercase' }}>Spotter</span>
               <div style={{ fontSize: 13.5, color: c['content-primary'], lineHeight: 1.6 }}>
                 A couple of questions before I start building.
               </div>
@@ -2541,7 +2541,7 @@ const ArtifactChatExploration: React.FC = () => {
 
             {/* Agent: working steps (done) */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxWidth: 340 }}>
-              <span style={{ fontSize: 11, fontWeight: fw.semibold, color: c['content-tertiary'], letterSpacing: '0.04em', textTransform: 'uppercase' }}>Spotter</span>
+              <span style={{ fontSize: 12, fontWeight: fw.semibold, color: c['content-tertiary'], letterSpacing: '0.04em', textTransform: 'uppercase' }}>Spotter</span>
               <div style={{ fontSize: 13.5, color: c['content-primary'], lineHeight: 1.6, marginBottom: 4 }}>On it.</div>
               {AC_STEPS.map((step, i) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '2px 0' }}>
@@ -2549,12 +2549,12 @@ const ArtifactChatExploration: React.FC = () => {
                   <span style={{ fontSize: 12.5, color: c['content-secondary'] }}>{step}</span>
                 </div>
               ))}
-              <div style={{ fontSize: 11.5, color: c['content-tertiary'], marginTop: 4 }}>Worked for 8s</div>
+              <div style={{ fontSize: 12, color: c['content-tertiary'], marginTop: 4 }}>Worked for 8s</div>
             </div>
 
             {/* Agent: artifact ready message + artifact card */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 340 }}>
-              <span style={{ fontSize: 11, fontWeight: fw.semibold, color: c['content-tertiary'], letterSpacing: '0.04em', textTransform: 'uppercase' }}>Spotter</span>
+              <span style={{ fontSize: 12, fontWeight: fw.semibold, color: c['content-tertiary'], letterSpacing: '0.04em', textTransform: 'uppercase' }}>Spotter</span>
               <div style={{ fontSize: 13.5, color: c['content-primary'], lineHeight: 1.6 }}>
                 Campaign Performance is ready. 13 columns across 3 tables, including 2 calculated metrics.
               </div>
@@ -2569,7 +2569,7 @@ const ArtifactChatExploration: React.FC = () => {
                       <span style={{ fontSize: 13, fontWeight: fw.semibold, color: c['content-primary'] }}>Campaign Performance</span>
                       <AcDraftBadge />
                     </div>
-                    <div style={{ fontSize: 11.5, color: c['content-secondary'] }}>Data model · 13 columns · 3 tables</div>
+                    <div style={{ fontSize: 12, color: c['content-secondary'] }}>Data model · 13 columns · 3 tables</div>
                   </div>
                   <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke={c['content-tertiary']} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="5,2 9,7 5,12"/>
@@ -2719,7 +2719,7 @@ const ArtifactChatExploration: React.FC = () => {
                     style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '9px 20px', borderBottom: `1px solid ${c['border-divider']}`, cursor: 'pointer' }}
                     onMouseEnter={e => (e.currentTarget.style.background = c['background-subtle'])}
                     onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                    <div style={{ width: 20, height: 20, borderRadius: 4, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: fw.bold, fontFamily: ff.mono,
+                    <div style={{ width: 20, height: 20, borderRadius: 4, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: fw.bold, fontFamily: ff.mono,
                       background: col.type === 'measure' ? 'rgba(37,99,235,0.1)' : col.type === 'formula' ? 'rgba(124,58,237,0.1)' : c['background-subtle'],
                       color: col.type === 'measure' ? '#2563EB' : col.type === 'formula' ? '#7C3AED' : c['content-tertiary'],
                     }}>
@@ -2729,7 +2729,7 @@ const ArtifactChatExploration: React.FC = () => {
                       <span style={{ fontSize: 13, fontWeight: fw.medium, color: c['content-primary'], fontFamily: ff.mono }}>{col.name}</span>
                       {col.desc && <span style={{ fontSize: 12, color: c['content-tertiary'], marginLeft: 10, fontFamily: ff.primary }}>{col.desc}</span>}
                     </div>
-                    {col.table && <span style={{ fontSize: 11, color: c['content-tertiary'], fontFamily: ff.mono, flexShrink: 0 }}>{col.table}</span>}
+                    {col.table && <span style={{ fontSize: 12, color: c['content-tertiary'], fontFamily: ff.mono, flexShrink: 0 }}>{col.table}</span>}
                   </div>
                 ))}
               </div>
@@ -2875,7 +2875,7 @@ const TmArtifactStub: React.FC = () => {
         <div style={{ flex: 1, overflowY: 'auto' }}>
           {COLS.map((col, i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 16px', borderBottom: `1px solid ${c['border-divider']}` }}>
-              <div style={{ width: 18, height: 18, borderRadius: 3, background: c['background-subtle'], display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: fw.bold, fontFamily: ff.mono, color: c['content-tertiary'], flexShrink: 0 }}>A</div>
+              <div style={{ width: 18, height: 18, borderRadius: 3, background: c['background-subtle'], display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: fw.bold, fontFamily: ff.mono, color: c['content-tertiary'], flexShrink: 0 }}>A</div>
               <span style={{ fontSize: fs.sm, color: c['content-primary'], fontFamily: ff.mono }}>{col}</span>
             </div>
           ))}
@@ -3193,7 +3193,7 @@ const AIReadinessChipVariants: React.FC = () => {
           strokeDasharray={`${dashB} ${gapB}`} strokeLinecap="round" transform="rotate(-90 9 9)"/>
       </svg>
       <span style={{ fontSize: 12, fontWeight: fw.semibold, color: tm.text, fontFamily: ff.primary }}>{AI_MOCK_SCORE}</span>
-      <span style={{ fontSize: 11, color: tm.text, opacity: 0.75, fontFamily: ff.primary }}>Basic</span>
+      <span style={{ fontSize: 12, color: tm.text, opacity: 0.75, fontFamily: ff.primary }}>Basic</span>
     </div>
   );
 
@@ -3208,7 +3208,7 @@ const AIReadinessChipVariants: React.FC = () => {
             style={{ width: 8, height: 8, borderRadius: '50%', background: d.color, opacity: d.score >= 65 ? 1 : 0.28 }}/>
         ))}
       </div>
-      <span style={{ fontSize: 11, color: c['content-secondary'], fontFamily: ff.primary }}>2 / 4 ready</span>
+      <span style={{ fontSize: 12, color: c['content-secondary'], fontFamily: ff.primary }}>2 / 4 ready</span>
     </div>
   );
 
@@ -3225,8 +3225,8 @@ const AIReadinessChipVariants: React.FC = () => {
       {AI_MOCK_DIMENSIONS.map(d => (
         <div key={d.id}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
-            <span style={{ fontSize: 11, color: c['content-secondary'], fontFamily: ff.primary }}>{d.label}</span>
-            <span style={{ fontSize: 11, fontWeight: fw.medium, color: c['content-secondary'], fontFamily: ff.mono }}>{d.score}</span>
+            <span style={{ fontSize: 12, color: c['content-secondary'], fontFamily: ff.primary }}>{d.label}</span>
+            <span style={{ fontSize: 12, fontWeight: fw.medium, color: c['content-secondary'], fontFamily: ff.mono }}>{d.score}</span>
           </div>
           <div style={{ height: 4, borderRadius: 2, background: c['background-subtle'], overflow: 'hidden' }}>
             <div style={{ height: '100%', width: `${d.score}%`, background: d.color, borderRadius: 2, opacity: 0.7 }}/>
@@ -3266,12 +3266,12 @@ const AIReadinessChipVariants: React.FC = () => {
             <div key={v.key} style={{ border: `1px solid ${c['border-divider']}`, borderRadius: 10, overflow: 'hidden', background: c['background-base'] }}>
               <div style={{ padding: `${sp.B}px ${sp.D}px`, background: c['background-sunken'], borderBottom: `1px solid ${c['border-divider']}` }}>
                 <span style={{ fontSize: 12, fontWeight: fw.semibold, color: c['content-primary'], fontFamily: ff.primary }}>{v.label}</span>
-                <span style={{ fontSize: 11, color: c['content-secondary'], fontFamily: ff.primary, marginLeft: sp.B }}>{v.meta}</span>
+                <span style={{ fontSize: 12, color: c['content-secondary'], fontFamily: ff.primary, marginLeft: sp.B }}>{v.meta}</span>
               </div>
               <div style={{ height: 48, display: 'flex', alignItems: 'center', padding: `0 ${sp.D}px`, gap: sp.C }}>
                 <AirsModelIcon size={20}/>
                 <span style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'], fontFamily: ff.primary }}>Campaign Performance</span>
-                <span style={{ fontSize: 11, background: c['background-subtle'], border: `1px solid ${c['border-divider']}`, borderRadius: 4, padding: '1px 6px', color: c['content-secondary'], fontFamily: ff.mono }}>v1</span>
+                <span style={{ fontSize: 12, background: c['background-subtle'], border: `1px solid ${c['border-divider']}`, borderRadius: 4, padding: '1px 6px', color: c['content-secondary'], fontFamily: ff.mono }}>v1</span>
                 {v.chip}
                 <div style={{ flex: 1 }}/>
                 <button style={{ height: 28, padding: `0 ${sp.C}px`, border: `1px solid ${c['border-default']}`, borderRadius: 6, background: c['background-base'], fontSize: fs.xs, fontFamily: ff.primary, cursor: 'pointer', color: c['content-secondary'] }}>Share</button>
@@ -3309,7 +3309,7 @@ const AIReadinessPanelExploration: React.FC = () => {
           <div style={{ background: c['background-base'], border: `1px solid ${c['border-divider']}`, borderRadius: 12, overflow: 'hidden' }}>
             <div style={{ height: 44, display: 'flex', alignItems: 'center', padding: `0 ${sp.D}px`, borderBottom: `1px solid ${c['border-divider']}`, gap: sp.B }}>
               <span style={{ flex: 1, fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'] }}>AI Readiness</span>
-              <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 3, background: '#FFFBEB', color: '#D97706', border: '1px solid #FDE68A', fontWeight: fw.medium }}>Lighthouse-style</span>
+              <span style={{ fontSize: 12, padding: '2px 6px', borderRadius: 3, background: '#FFFBEB', color: '#D97706', border: '1px solid #FDE68A', fontWeight: fw.medium }}>Lighthouse-style</span>
               <button style={{ width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', color: c['content-tertiary'], fontSize: 14 }}>✕</button>
             </div>
             <div style={{ padding: sp.D, display: 'flex', flexDirection: 'column', gap: sp.D }}>
@@ -3320,7 +3320,7 @@ const AIReadinessPanelExploration: React.FC = () => {
                 <div key={d.id}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                     <span style={{ fontSize: fs.xs, fontWeight: fw.medium, color: c['content-primary'] }}>{d.label}</span>
-                    <span style={{ fontSize: 11, fontWeight: fw.semibold, fontFamily: ff.mono, color: d.color }}>{d.score}</span>
+                    <span style={{ fontSize: 12, fontWeight: fw.semibold, fontFamily: ff.mono, color: d.color }}>{d.score}</span>
                   </div>
                   <div style={{ height: 6, borderRadius: 3, background: c['background-subtle'], overflow: 'hidden' }}>
                     <div style={{ height: '100%', width: `${d.score}%`, background: d.color, borderRadius: 3, opacity: 0.7 }}/>
@@ -3332,13 +3332,13 @@ const AIReadinessPanelExploration: React.FC = () => {
                 {AI_OPPORTUNITIES.map((o, i) => (
                   <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: sp.B, padding: sp.C, borderRadius: 7, background: '#FFFBEB', border: '1px solid #FDE68A', marginBottom: sp.B }}>
                     <div style={{ width: 18, height: 18, borderRadius: '50%', background: '#FEF3C7', border: '1px solid #FDE68A', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <span style={{ fontSize: 9, fontWeight: fw.bold, color: '#D97706' }}>↑</span>
+                      <span style={{ fontSize: 12, fontWeight: fw.bold, color: '#D97706' }}>↑</span>
                     </div>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: fs.xs, fontWeight: fw.medium, color: '#92400E' }}>{o.label}</div>
-                      <div style={{ fontSize: 11, color: '#78350F', marginTop: 2, opacity: 0.75 }}>{o.detail}</div>
+                      <div style={{ fontSize: 12, color: '#78350F', marginTop: 2, opacity: 0.75 }}>{o.detail}</div>
                     </div>
-                    <span style={{ fontSize: 10, fontWeight: fw.medium, color: o.impact === 'High' ? '#D97706' : c['content-secondary'], background: o.impact === 'High' ? '#FEF3C7' : c['background-subtle'], padding: '1px 5px', borderRadius: 3, flexShrink: 0 }}>{o.impact}</span>
+                    <span style={{ fontSize: 12, fontWeight: fw.medium, color: o.impact === 'High' ? '#D97706' : c['content-secondary'], background: o.impact === 'High' ? '#FEF3C7' : c['background-subtle'], padding: '1px 5px', borderRadius: 3, flexShrink: 0 }}>{o.impact}</span>
                   </div>
                 ))}
               </div>
@@ -3350,7 +3350,7 @@ const AIReadinessPanelExploration: React.FC = () => {
                       <svg width="8" height="8" viewBox="0 0 8 8" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="1,4 3,6 7,2"/></svg>
                     </div>
                     <span style={{ flex: 1, fontSize: fs.xs, color: '#065F46' }}>{d.label}</span>
-                    <span style={{ fontSize: 11, color: '#047857', opacity: 0.65 }}>{d.note}</span>
+                    <span style={{ fontSize: 12, color: '#047857', opacity: 0.65 }}>{d.note}</span>
                   </div>
                 ))}
               </div>
@@ -3361,7 +3361,7 @@ const AIReadinessPanelExploration: React.FC = () => {
           <div style={{ background: c['background-base'], border: `1px solid ${c['border-divider']}`, borderRadius: 12, overflow: 'hidden' }}>
             <div style={{ height: 44, display: 'flex', alignItems: 'center', padding: `0 ${sp.D}px`, borderBottom: `1px solid ${c['border-divider']}`, gap: sp.B }}>
               <span style={{ flex: 1, fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'] }}>AI Readiness</span>
-              <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 3, background: c['background-subtle'], color: c['content-secondary'], border: `1px solid ${c['border-divider']}`, fontWeight: fw.medium }}>Checklist-style</span>
+              <span style={{ fontSize: 12, padding: '2px 6px', borderRadius: 3, background: c['background-subtle'], color: c['content-secondary'], border: `1px solid ${c['border-divider']}`, fontWeight: fw.medium }}>Checklist-style</span>
               <button style={{ width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', color: c['content-tertiary'], fontSize: 14 }}>✕</button>
             </div>
             <div style={{ padding: `${sp.C}px ${sp.D}px`, borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', gap: sp.C }}>
@@ -3382,7 +3382,7 @@ const AIReadinessPanelExploration: React.FC = () => {
                     onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}>
                     <div style={{ width: 8, height: 8, borderRadius: '50%', background: d.color, flexShrink: 0 }}/>
                     <span style={{ flex: 1, fontSize: fs.sm, fontWeight: fw.medium, color: c['content-primary'], textAlign: 'left' as const }}>{d.label}</span>
-                    <span style={{ fontSize: 11, fontFamily: ff.mono, color: totalDone === d.items.length ? '#059669' : c['content-tertiary'] }}>{totalDone}/{d.items.length}</span>
+                    <span style={{ fontSize: 12, fontFamily: ff.mono, color: totalDone === d.items.length ? '#059669' : c['content-tertiary'] }}>{totalDone}/{d.items.length}</span>
                     <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke={c['content-tertiary']} strokeWidth="1.5" strokeLinecap="round" style={{ transform: isOpen ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.15s', flexShrink: 0 }}>
                       <path d="M2 4l4 4 4-4"/>
                     </svg>
@@ -3397,8 +3397,8 @@ const AIReadinessPanelExploration: React.FC = () => {
                               {isDone && <svg width="8" height="8" viewBox="0 0 8 8" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="1,4 3,6 7,2"/></svg>}
                             </div>
                             <span style={{ flex: 1, fontSize: fs.xs, color: isDone ? '#065F46' : c['content-primary'] }}>{item.label}</span>
-                            <span style={{ fontSize: 11, fontFamily: ff.mono, color: isDone ? '#059669' : c['content-secondary'] }}>{item.done}/{item.total}</span>
-                            {!isDone && <button style={{ fontSize: 11, color: '#2563EB', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: ff.primary }}>Fix →</button>}
+                            <span style={{ fontSize: 12, fontFamily: ff.mono, color: isDone ? '#059669' : c['content-secondary'] }}>{item.done}/{item.total}</span>
+                            {!isDone && <button style={{ fontSize: 12, color: '#2563EB', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: ff.primary }}>Fix →</button>}
                           </div>
                         );
                       })}
@@ -3431,7 +3431,7 @@ const AIReadinessPublishGate: React.FC = () => {
         <div style={{ flex: 1 }}/>
         <AirsModelIcon size={18}/>
         <span style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'] }}>Campaign Performance</span>
-        <span style={{ fontSize: 11, background: c['background-subtle'], border: `1px solid ${c['border-divider']}`, borderRadius: 4, padding: '1px 6px', color: c['content-secondary'], fontFamily: ff.mono }}>Draft</span>
+        <span style={{ fontSize: 12, background: c['background-subtle'], border: `1px solid ${c['border-divider']}`, borderRadius: 4, padding: '1px 6px', color: c['content-secondary'], fontFamily: ff.mono }}>Draft</span>
         <div style={{ flex: 1 }}/>
         <button onClick={() => { setGateState('gate'); setChecked({}); }}
           style={{ height: 30, padding: `0 ${sp.D}px`, border: 'none', borderRadius: 6, background: '#2770EF', color: 'white', fontSize: fs.xs, fontFamily: ff.primary, cursor: 'pointer', fontWeight: fw.medium }}>
@@ -3470,11 +3470,11 @@ const AIReadinessPublishGate: React.FC = () => {
                     {AI_OPPORTUNITIES.map((o, i) => (
                       <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: sp.B }}>
                         <div style={{ width: 16, height: 16, borderRadius: 4, background: '#FEF3C7', border: '1px solid #FDE68A', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>
-                          <span style={{ fontSize: 9, fontWeight: fw.bold, color: '#D97706' }}>{i + 1}</span>
+                          <span style={{ fontSize: 12, fontWeight: fw.bold, color: '#D97706' }}>{i + 1}</span>
                         </div>
                         <div>
                           <div style={{ fontSize: fs.xs, color: '#78350F', fontWeight: fw.medium }}>{o.label}</div>
-                          <div style={{ fontSize: 11, color: '#92400E', opacity: 0.7, marginTop: 2 }}>{o.detail}</div>
+                          <div style={{ fontSize: 12, color: '#92400E', opacity: 0.7, marginTop: 2 }}>{o.detail}</div>
                         </div>
                       </div>
                     ))}
@@ -3498,9 +3498,9 @@ const AIReadinessPublishGate: React.FC = () => {
                         </div>
                         <div style={{ flex: 1 }}>
                           <div style={{ fontSize: fs.xs, fontWeight: fw.medium, color: done ? '#065F46' : c['content-primary'], textDecoration: done ? 'line-through' : 'none' }}>{o.label}</div>
-                          <div style={{ fontSize: 11, color: done ? '#047857' : c['content-secondary'], marginTop: 2 }}>{o.detail}</div>
+                          <div style={{ fontSize: 12, color: done ? '#047857' : c['content-secondary'], marginTop: 2 }}>{o.detail}</div>
                         </div>
-                        <span style={{ fontSize: 10, fontWeight: fw.medium, color: o.impact === 'High' ? '#D97706' : c['content-secondary'], background: o.impact === 'High' ? '#FEF3C7' : c['background-subtle'], padding: '2px 6px', borderRadius: 3, flexShrink: 0 }}>{o.impact}</span>
+                        <span style={{ fontSize: 12, fontWeight: fw.medium, color: o.impact === 'High' ? '#D97706' : c['content-secondary'], background: o.impact === 'High' ? '#FEF3C7' : c['background-subtle'], padding: '2px 6px', borderRadius: 3, flexShrink: 0 }}>{o.impact}</span>
                       </div>
                     );
                   })}
@@ -3598,13 +3598,13 @@ const AIReadinessModelsList: React.FC = () => {
           {/* Table header */}
           <div style={{ display: 'flex', alignItems: 'center', height: 36, padding: `0 ${sp.D}px`, background: c['background-sunken'], borderBottom: `1px solid ${c['border-divider']}`, gap: sp.C }}>
             <div style={{ width: 16 }}/>
-            <span style={{ flex: 1, fontSize: 11, fontWeight: fw.medium, color: c['content-secondary'], textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>Model</span>
+            <span style={{ flex: 1, fontSize: 12, fontWeight: fw.medium, color: c['content-secondary'], textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>Model</span>
             {layout === 'A' && <>
-              <span style={{ width: 160, fontSize: 11, fontWeight: fw.medium, color: c['content-secondary'], textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>Health</span>
-              <span style={{ width: 150, fontSize: 11, fontWeight: fw.medium, color: c['content-secondary'], textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>AI Readiness</span>
+              <span style={{ width: 160, fontSize: 12, fontWeight: fw.medium, color: c['content-secondary'], textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>Health</span>
+              <span style={{ width: 150, fontSize: 12, fontWeight: fw.medium, color: c['content-secondary'], textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>AI Readiness</span>
             </>}
-            {layout === 'B' && <span style={{ width: 260, fontSize: 11, fontWeight: fw.medium, color: c['content-secondary'], textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>Model health</span>}
-            {layout === 'C' && <span style={{ width: 180, fontSize: 11, fontWeight: fw.medium, color: c['content-secondary'], textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>Status</span>}
+            {layout === 'B' && <span style={{ width: 260, fontSize: 12, fontWeight: fw.medium, color: c['content-secondary'], textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>Model health</span>}
+            {layout === 'C' && <span style={{ width: 180, fontSize: 12, fontWeight: fw.medium, color: c['content-secondary'], textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>Status</span>}
             <div style={{ width: 52 }}/>
           </div>
 
@@ -3656,7 +3656,7 @@ const AIReadinessModelsList: React.FC = () => {
                   </div>
                 )}
 
-                <button style={{ fontSize: 11, color: c['content-secondary'], background: 'none', border: 'none', cursor: 'pointer', fontFamily: ff.primary, width: 52, textAlign: 'right' as const }}>View →</button>
+                <button style={{ fontSize: 12, color: c['content-secondary'], background: 'none', border: 'none', cursor: 'pointer', fontFamily: ff.primary, width: 52, textAlign: 'right' as const }}>View →</button>
               </div>
             );
           })}
@@ -3688,8 +3688,8 @@ const ArtifactTabStub: React.FC = () => (
     <div style={{ display: 'flex', flexDirection: 'column', gap: sp.A }}>
       {['campaign_id','campaign_name','channel','roas_actual','amount','conversion_date','user_segment','ad_impressions','campaign_spend','order_date'].map((col, i) => (
         <div key={col} style={{ height: 36, display: 'flex', alignItems: 'center', padding: `0 ${sp.C}px`, borderRadius: 6, background: i % 2 === 0 ? c['background-base'] : c['background-sunken'], border: `1px solid ${c['border-divider']}` }}>
-          <code style={{ fontSize: 11, fontFamily: ff.mono, color: c['content-primary'], flex: 1 }}>{col}</code>
-          <span style={{ fontSize: 11, color: c['content-secondary'] }}>{(['string','string','string','float','float','date','string','integer','float','date'] as const)[i]}</span>
+          <code style={{ fontSize: 12, fontFamily: ff.mono, color: c['content-primary'], flex: 1 }}>{col}</code>
+          <span style={{ fontSize: 12, color: c['content-secondary'] }}>{(['string','string','string','float','float','date','string','integer','float','date'] as const)[i]}</span>
         </div>
       ))}
     </div>
@@ -3734,8 +3734,8 @@ const ModelHealthSeparate: React.FC = () => {
         <circle cx="8" cy="8" r={rB} fill="none" stroke={tm.border} strokeWidth="2"/>
         <circle cx="8" cy="8" r={rB} fill="none" stroke={tm.dot} strokeWidth="2" strokeDasharray={`${dashB} ${gapB}`} strokeLinecap="round" transform="rotate(-90 8 8)"/>
       </svg>
-      <span style={{ fontSize: 11, fontWeight: fw.semibold }}>{AI_MOCK_SCORE}</span>
-      <span style={{ fontSize: 11, opacity: 0.85 }}>{AI_MOCK_TIER}</span>
+      <span style={{ fontSize: 12, fontWeight: fw.semibold }}>{AI_MOCK_SCORE}</span>
+      <span style={{ fontSize: 12, opacity: 0.85 }}>{AI_MOCK_TIER}</span>
     </button>
   );
 
@@ -3762,7 +3762,7 @@ const ModelHealthSeparate: React.FC = () => {
                 onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = c['background-subtle']; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}>
                 <span style={{ flex: 1, fontSize: fs.sm, fontWeight: fw.medium, color: c['content-primary'], textAlign: 'left' as const }}>{section.label}</span>
-                <span style={{ fontSize: 11, fontFamily: ff.mono, color: sectionFixed === section.items.length ? '#059669' : c['content-secondary'] }}>{sectionFixed}/{section.items.length}</span>
+                <span style={{ fontSize: 12, fontFamily: ff.mono, color: sectionFixed === section.items.length ? '#059669' : c['content-secondary'] }}>{sectionFixed}/{section.items.length}</span>
                 <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke={c['content-tertiary']} strokeWidth="1.5" strokeLinecap="round" style={{ transform: isOpen ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.15s', flexShrink: 0 }}><path d="M2 4l4 4 4-4"/></svg>
               </button>
               {isOpen && (
@@ -3776,10 +3776,10 @@ const ModelHealthSeparate: React.FC = () => {
                         <div style={{ width: 16, height: 16, borderRadius: '50%', border: `1.5px solid ${isFixed ? '#059669' : c['border-default']}`, background: isFixed ? '#059669' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                           {isFixed && <svg width="8" height="8" viewBox="0 0 8 8" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="1,4 3,6 7,2"/></svg>}
                         </div>
-                        <code style={{ fontSize: 11, fontFamily: ff.mono, color: isFixed ? '#065F46' : c['content-primary'], flexShrink: 0 }}>{item.col}</code>
+                        <code style={{ fontSize: 12, fontFamily: ff.mono, color: isFixed ? '#065F46' : c['content-primary'], flexShrink: 0 }}>{item.col}</code>
                         <span style={{ flex: 1, fontSize: fs.xs, color: isFixed ? '#047857' : c['content-secondary'] }}>{item.detail}</span>
-                        {!isFixed && <span style={{ fontSize: 10, fontWeight: fw.medium, padding: '1px 5px', borderRadius: 3, background: sm.bg, color: sm.text, border: `1px solid ${sm.border}`, flexShrink: 0 }}>{sm.label}</span>}
-                        {!isFixed && <button onClick={() => setFixedDQ(prev => { const n = new Set(prev); n.add(key); return n; })} style={{ fontSize: 11, color: '#2563EB', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: ff.primary, flexShrink: 0 }}>Fix →</button>}
+                        {!isFixed && <span style={{ fontSize: 12, fontWeight: fw.medium, padding: '1px 5px', borderRadius: 3, background: sm.bg, color: sm.text, border: `1px solid ${sm.border}`, flexShrink: 0 }}>{sm.label}</span>}
+                        {!isFixed && <button onClick={() => setFixedDQ(prev => { const n = new Set(prev); n.add(key); return n; })} style={{ fontSize: 12, color: '#2563EB', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: ff.primary, flexShrink: 0 }}>Fix →</button>}
                       </div>
                     );
                   })}
@@ -3799,7 +3799,7 @@ const ModelHealthSeparate: React.FC = () => {
         <div style={{ flex: 1 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, marginBottom: 2 }}>
             <span style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'] }}>AI readiness</span>
-            <span style={{ fontSize: 11, padding: '1px 6px', borderRadius: 10, background: tm.bg, color: tm.text, border: `1px solid ${tm.border}`, fontWeight: fw.medium }}>{AI_MOCK_TIER}</span>
+            <span style={{ fontSize: 12, padding: '1px 6px', borderRadius: 10, background: tm.bg, color: tm.text, border: `1px solid ${tm.border}`, fontWeight: fw.medium }}>{AI_MOCK_TIER}</span>
           </div>
           <span style={{ fontSize: fs.xs, color: c['content-secondary'] }}>Spotter can answer simple questions; complex queries may return uncertain results</span>
         </div>
@@ -3818,7 +3818,7 @@ const ModelHealthSeparate: React.FC = () => {
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}>
                 <div style={{ width: 8, height: 8, borderRadius: '50%', background: dim.color, flexShrink: 0 }}/>
                 <span style={{ flex: 1, fontSize: fs.sm, fontWeight: fw.medium, color: c['content-primary'], textAlign: 'left' as const }}>{dim.label}</span>
-                <span style={{ fontSize: 11, fontFamily: ff.mono, color: dimFixed === dim.items.length ? '#059669' : c['content-secondary'] }}>{dimFixed}/{dim.items.length}</span>
+                <span style={{ fontSize: 12, fontFamily: ff.mono, color: dimFixed === dim.items.length ? '#059669' : c['content-secondary'] }}>{dimFixed}/{dim.items.length}</span>
                 <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke={c['content-tertiary']} strokeWidth="1.5" strokeLinecap="round" style={{ transform: isOpen ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.15s', flexShrink: 0 }}><path d="M2 4l4 4 4-4"/></svg>
               </button>
               {isOpen && (
@@ -3831,8 +3831,8 @@ const ModelHealthSeparate: React.FC = () => {
                           {isDone && <svg width="8" height="8" viewBox="0 0 8 8" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="1,4 3,6 7,2"/></svg>}
                         </div>
                         <span style={{ flex: 1, fontSize: fs.xs, color: isDone ? '#065F46' : c['content-primary'] }}>{item.label}</span>
-                        <span style={{ fontSize: 11, fontFamily: ff.mono, color: isDone ? '#059669' : c['content-secondary'] }}>{item.done}/{item.total}</span>
-                        {!isDone && <button onClick={() => setFixedAI(prev => { const n = new Set(prev); n.add(`${dim.id}:${item.label}`); return n; })} style={{ fontSize: 11, color: '#2563EB', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: ff.primary, flexShrink: 0 }}>Fix →</button>}
+                        <span style={{ fontSize: 12, fontFamily: ff.mono, color: isDone ? '#059669' : c['content-secondary'] }}>{item.done}/{item.total}</span>
+                        {!isDone && <button onClick={() => setFixedAI(prev => { const n = new Set(prev); n.add(`${dim.id}:${item.label}`); return n; })} style={{ fontSize: 12, color: '#2563EB', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: ff.primary, flexShrink: 0 }}>Fix →</button>}
                       </div>
                     );
                   })}
@@ -3848,7 +3848,7 @@ const ModelHealthSeparate: React.FC = () => {
   return (
     <div style={{ position: 'fixed', inset: 0, background: c['background-sunken'], fontFamily: ff.primary, display: 'flex', flexDirection: 'column' }}>
       <div style={{ height: 32, flexShrink: 0, background: c['background-base'], borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', padding: `0 ${sp.D}px` }}>
-        <span style={{ fontSize: 11, color: c['content-secondary'] }}>← Overview</span>
+        <span style={{ fontSize: 12, color: c['content-secondary'] }}>← Overview</span>
         <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
           <span style={{ fontSize: fs.xs, fontWeight: fw.medium, color: c['content-brand'], background: c['background-information'], padding: '1px 8px', borderRadius: 4 }}>mh1 — Separate signals</span>
         </div>
@@ -3859,7 +3859,7 @@ const ModelHealthSeparate: React.FC = () => {
           <div style={{ height: 48, borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', padding: `0 ${sp.D}px`, gap: sp.C, flexShrink: 0 }}>
             <AirsModelIcon size={18}/>
             <span style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'] }}>Campaign Performance</span>
-            <span style={{ fontSize: 11, background: c['background-subtle'], border: `1px solid ${c['border-divider']}`, borderRadius: 4, padding: '1px 6px', color: c['content-secondary'] }}>Draft</span>
+            <span style={{ fontSize: 12, background: c['background-subtle'], border: `1px solid ${c['border-divider']}`, borderRadius: 4, padding: '1px 6px', color: c['content-secondary'] }}>Draft</span>
             <div style={{ flex: 1 }}/>
             <button style={{ height: 28, padding: `0 ${sp.C}px`, border: `1px solid ${c['border-default']}`, borderRadius: 6, background: 'none', fontSize: fs.xs, fontFamily: ff.primary, cursor: 'pointer', color: c['content-secondary'] }}>Share</button>
             <button style={{ height: 28, padding: `0 ${sp.C}px`, border: 'none', borderRadius: 6, background: '#2770EF', color: '#fff', fontSize: fs.xs, fontFamily: ff.primary, cursor: 'pointer', fontWeight: fw.medium }}>Publish model</button>
@@ -3916,14 +3916,14 @@ const ModelHealthUmbrella: React.FC = () => {
         <span style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'], flexShrink: 0 }}>Model health</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '3px 8px', borderRadius: 6, background: fixedDQ.size === dqTotal ? '#F0FDF4' : '#FEF2F2', border: `1px solid ${fixedDQ.size === dqTotal ? '#BBF7D0' : '#FECACA'}` }}>
           <div style={{ width: 6, height: 6, borderRadius: '50%', background: dqDot }}/>
-          <span style={{ fontSize: 11, color: fixedDQ.size === dqTotal ? '#166534' : '#B91C1C', fontFamily: ff.primary }}>Data quality · {fixedDQ.size === dqTotal ? 'clean' : `${dqTotal - fixedDQ.size} issues`}</span>
+          <span style={{ fontSize: 12, color: fixedDQ.size === dqTotal ? '#166534' : '#B91C1C', fontFamily: ff.primary }}>Data quality · {fixedDQ.size === dqTotal ? 'clean' : `${dqTotal - fixedDQ.size} issues`}</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '3px 8px', borderRadius: 6, background: tm.bg, border: `1px solid ${tm.border}` }}>
           <svg width="14" height="14" viewBox="0 0 14 14">
             <circle cx="7" cy="7" r="5.5" fill="none" stroke={tm.border} strokeWidth="1.8"/>
             <circle cx="7" cy="7" r="5.5" fill="none" stroke={tm.dot} strokeWidth="1.8" strokeDasharray={`${circB * 0.55 * (AI_MOCK_SCORE / 100)} ${circB * 0.55}`} strokeLinecap="round" transform="rotate(-90 7 7)"/>
           </svg>
-          <span style={{ fontSize: 11, color: tm.text, fontFamily: ff.primary }}>AI readiness · {AI_MOCK_TIER}</span>
+          <span style={{ fontSize: 12, color: tm.text, fontFamily: ff.primary }}>AI readiness · {AI_MOCK_TIER}</span>
         </div>
         <div style={{ flex: 1 }}/>
         <button style={{ height: 28, padding: '0 10px', border: 'none', borderRadius: 6, backgroundColor: '#2770EF', color: '#fff', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, cursor: 'pointer', flexShrink: 0 }}>Fix all with agent</button>
@@ -3951,7 +3951,7 @@ const ModelHealthUmbrella: React.FC = () => {
                   onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = c['background-subtle']; }}
                   onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}>
                   <span style={{ flex: 1, fontSize: fs.xs, fontWeight: fw.medium, color: c['content-primary'], textAlign: 'left' as const }}>{section.label}</span>
-                  <span style={{ fontSize: 11, fontFamily: ff.mono, color: c['content-secondary'] }}>{section.items.filter(it => fixedDQ.has(`${section.key}:${it.col}`)).length}/{section.items.length}</span>
+                  <span style={{ fontSize: 12, fontFamily: ff.mono, color: c['content-secondary'] }}>{section.items.filter(it => fixedDQ.has(`${section.key}:${it.col}`)).length}/{section.items.length}</span>
                   <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke={c['content-tertiary']} strokeWidth="1.5" strokeLinecap="round" style={{ transform: isOpen ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.15s', flexShrink: 0 }}><path d="M2 4l4 4 4-4"/></svg>
                 </button>
                 {isOpen && (
@@ -3965,10 +3965,10 @@ const ModelHealthUmbrella: React.FC = () => {
                           <div style={{ width: 14, height: 14, borderRadius: '50%', border: `1.5px solid ${isFixed ? '#059669' : c['border-default']}`, background: isFixed ? '#059669' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                             {isFixed && <svg width="7" height="7" viewBox="0 0 8 8" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="1,4 3,6 7,2"/></svg>}
                           </div>
-                          <code style={{ fontSize: 11, fontFamily: ff.mono, color: isFixed ? '#065F46' : c['content-primary'], flexShrink: 0 }}>{item.col}</code>
+                          <code style={{ fontSize: 12, fontFamily: ff.mono, color: isFixed ? '#065F46' : c['content-primary'], flexShrink: 0 }}>{item.col}</code>
                           <span style={{ flex: 1, fontSize: fs.xs, color: isFixed ? '#047857' : c['content-secondary'] }}>{item.detail}</span>
-                          {!isFixed && <span style={{ fontSize: 10, padding: '1px 5px', borderRadius: 3, background: sm.bg, color: sm.text, border: `1px solid ${sm.border}`, flexShrink: 0 }}>{sm.label}</span>}
-                          {!isFixed && <button onClick={() => setFixedDQ(prev => { const n = new Set(prev); n.add(key); return n; })} style={{ fontSize: 11, color: '#2563EB', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: ff.primary, flexShrink: 0 }}>Fix →</button>}
+                          {!isFixed && <span style={{ fontSize: 12, padding: '1px 5px', borderRadius: 3, background: sm.bg, color: sm.text, border: `1px solid ${sm.border}`, flexShrink: 0 }}>{sm.label}</span>}
+                          {!isFixed && <button onClick={() => setFixedDQ(prev => { const n = new Set(prev); n.add(key); return n; })} style={{ fontSize: 12, color: '#2563EB', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: ff.primary, flexShrink: 0 }}>Fix →</button>}
                         </div>
                       );
                     })}
@@ -4000,7 +4000,7 @@ const ModelHealthUmbrella: React.FC = () => {
                   onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}>
                   <div style={{ width: 7, height: 7, borderRadius: '50%', background: dim.color, flexShrink: 0 }}/>
                   <span style={{ flex: 1, fontSize: fs.xs, fontWeight: fw.medium, color: c['content-primary'], textAlign: 'left' as const }}>{dim.label}</span>
-                  <span style={{ fontSize: 11, fontFamily: ff.mono, color: dimFixed === dim.items.length ? '#059669' : c['content-secondary'] }}>{dimFixed}/{dim.items.length}</span>
+                  <span style={{ fontSize: 12, fontFamily: ff.mono, color: dimFixed === dim.items.length ? '#059669' : c['content-secondary'] }}>{dimFixed}/{dim.items.length}</span>
                   <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke={c['content-tertiary']} strokeWidth="1.5" strokeLinecap="round" style={{ transform: isOpen ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.15s', flexShrink: 0 }}><path d="M2 4l4 4 4-4"/></svg>
                 </button>
                 {isOpen && (
@@ -4013,8 +4013,8 @@ const ModelHealthUmbrella: React.FC = () => {
                             {isDone && <svg width="7" height="7" viewBox="0 0 8 8" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="1,4 3,6 7,2"/></svg>}
                           </div>
                           <span style={{ flex: 1, fontSize: fs.xs, color: isDone ? '#065F46' : c['content-primary'] }}>{item.label}</span>
-                          <span style={{ fontSize: 11, fontFamily: ff.mono, color: isDone ? '#059669' : c['content-secondary'] }}>{item.done}/{item.total}</span>
-                          {!isDone && <button onClick={() => setFixedAI(prev => { const n = new Set(prev); n.add(`${dim.id}:${item.label}`); return n; })} style={{ fontSize: 11, color: '#2563EB', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: ff.primary, flexShrink: 0 }}>Fix →</button>}
+                          <span style={{ fontSize: 12, fontFamily: ff.mono, color: isDone ? '#059669' : c['content-secondary'] }}>{item.done}/{item.total}</span>
+                          {!isDone && <button onClick={() => setFixedAI(prev => { const n = new Set(prev); n.add(`${dim.id}:${item.label}`); return n; })} style={{ fontSize: 12, color: '#2563EB', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: ff.primary, flexShrink: 0 }}>Fix →</button>}
                         </div>
                       );
                     })}
@@ -4031,7 +4031,7 @@ const ModelHealthUmbrella: React.FC = () => {
   return (
     <div style={{ position: 'fixed', inset: 0, background: c['background-sunken'], fontFamily: ff.primary, display: 'flex', flexDirection: 'column' }}>
       <div style={{ height: 32, flexShrink: 0, background: c['background-base'], borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', padding: `0 ${sp.D}px` }}>
-        <span style={{ fontSize: 11, color: c['content-secondary'] }}>← Overview</span>
+        <span style={{ fontSize: 12, color: c['content-secondary'] }}>← Overview</span>
         <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
           <span style={{ fontSize: fs.xs, fontWeight: fw.medium, color: c['content-brand'], background: c['background-information'], padding: '1px 8px', borderRadius: 4 }}>mh2 — Model Health umbrella</span>
         </div>
@@ -4042,7 +4042,7 @@ const ModelHealthUmbrella: React.FC = () => {
           <div style={{ height: 48, borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', padding: `0 ${sp.D}px`, gap: sp.C, flexShrink: 0 }}>
             <AirsModelIcon size={18}/>
             <span style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'] }}>Campaign Performance</span>
-            <span style={{ fontSize: 11, background: c['background-subtle'], border: `1px solid ${c['border-divider']}`, borderRadius: 4, padding: '1px 6px', color: c['content-secondary'] }}>Draft</span>
+            <span style={{ fontSize: 12, background: c['background-subtle'], border: `1px solid ${c['border-divider']}`, borderRadius: 4, padding: '1px 6px', color: c['content-secondary'] }}>Draft</span>
             <div style={{ flex: 1 }}/>
             <button style={{ height: 28, padding: `0 ${sp.C}px`, border: `1px solid ${c['border-default']}`, borderRadius: 6, background: 'none', fontSize: fs.xs, fontFamily: ff.primary, cursor: 'pointer', color: c['content-secondary'] }}>Share</button>
             <button style={{ height: 28, padding: `0 ${sp.C}px`, border: 'none', borderRadius: 6, background: '#2770EF', color: '#fff', fontSize: fs.xs, fontFamily: ff.primary, cursor: 'pointer', fontWeight: fw.medium }}>Publish model</button>
@@ -4082,7 +4082,7 @@ const MHP_AIRS_TIER: PanelTier = scoreToPT(MHP_AIRS_SCORE);
 
 const TierPill: React.FC<{ tier: PanelTier }> = ({ tier }) => {
   const m = PT_META[tier];
-  return <span style={{ fontSize: 11, fontWeight: fw.medium, padding: '1px 7px', borderRadius: 10, background: m.bg, color: m.text, border: `1px solid ${m.border}`, flexShrink: 0, whiteSpace: 'nowrap' as const }}>{tier}</span>;
+  return <span style={{ fontSize: 12, fontWeight: fw.medium, padding: '1px 7px', borderRadius: 10, background: m.bg, color: m.text, border: `1px solid ${m.border}`, flexShrink: 0, whiteSpace: 'nowrap' as const }}>{tier}</span>;
 };
 
 const MhpGauge: React.FC<{ score: number; tier: PanelTier }> = ({ score, tier }) => {
@@ -4110,7 +4110,7 @@ const MhpChip: React.FC<{ label: string; tier: PanelTier }> = ({ label, tier }) 
 const MhpShell: React.FC<{ exploLabel: string; dqChip: React.ReactNode; airsChip: React.ReactNode; dqPanel: React.ReactNode; airsPanel: React.ReactNode }> = ({ exploLabel, dqChip, airsChip, dqPanel, airsPanel }) => (
   <div style={{ position: 'fixed', inset: 0, background: c['background-sunken'], fontFamily: ff.primary, display: 'flex', flexDirection: 'column' }}>
     <div style={{ height: 32, flexShrink: 0, background: c['background-base'], borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', padding: `0 ${sp.D}px` }}>
-      <span style={{ fontSize: 11, color: c['content-secondary'] }}>← Overview</span>
+      <span style={{ fontSize: 12, color: c['content-secondary'] }}>← Overview</span>
       <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
         <span style={{ fontSize: fs.xs, fontWeight: fw.medium, color: c['content-brand'], background: c['background-information'], padding: '1px 8px', borderRadius: 4 }}>{exploLabel}</span>
       </div>
@@ -4120,7 +4120,7 @@ const MhpShell: React.FC<{ exploLabel: string; dqChip: React.ReactNode; airsChip
         <div style={{ height: 48, borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', padding: `0 ${sp.D}px`, gap: sp.C, flexShrink: 0 }}>
           <AirsModelIcon size={18}/>
           <span style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'] }}>Campaign Performance</span>
-          <span style={{ fontSize: 11, background: c['background-subtle'], border: `1px solid ${c['border-divider']}`, borderRadius: 4, padding: '1px 6px', color: c['content-secondary'] }}>Draft</span>
+          <span style={{ fontSize: 12, background: c['background-subtle'], border: `1px solid ${c['border-divider']}`, borderRadius: 4, padding: '1px 6px', color: c['content-secondary'] }}>Draft</span>
           <div style={{ flex: 1 }}/>
           <button style={{ height: 28, padding: `0 ${sp.C}px`, border: `1px solid ${c['border-default']}`, borderRadius: 6, background: 'none', fontSize: fs.xs, fontFamily: ff.primary, cursor: 'pointer', color: c['content-secondary'] }}>Share</button>
           <button style={{ height: 28, padding: `0 ${sp.C}px`, border: 'none', borderRadius: 6, background: '#2770EF', color: '#fff', fontSize: fs.xs, fontFamily: ff.primary, cursor: 'pointer', fontWeight: fw.medium }}>Publish model</button>
@@ -4179,7 +4179,7 @@ const ModelHealthPanels1: React.FC = () => {
                     <div key={item.col} style={{ display: 'flex', alignItems: 'center', gap: sp.B, padding: `${sp.B}px ${sp.C}px`, borderRadius: 5, border: `1px solid ${c['border-divider']}`, background: c['background-subtle'] }}>
                       <code style={{ fontSize: fs.xs, fontFamily: ff.mono, color: c['content-primary'], width: 130, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const, flexShrink: 0 }}>{item.col}</code>
                       <span style={{ flex: 1, fontSize: fs.xs, color: c['content-secondary'], overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{item.detail}</span>
-                      <span style={{ fontSize: 11, fontWeight: fw.medium, padding: '1px 4px', borderRadius: 3, background: sm.bg, color: sm.text, border: `1px solid ${sm.border}`, flexShrink: 0 }}>{sm.label}</span>
+                      <span style={{ fontSize: 12, fontWeight: fw.medium, padding: '1px 4px', borderRadius: 3, background: sm.bg, color: sm.text, border: `1px solid ${sm.border}`, flexShrink: 0 }}>{sm.label}</span>
                       <button style={{ fontSize: fs.xs, color: '#2563EB', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: ff.primary, flexShrink: 0 }}>Fix →</button>
                     </div>
                   );
@@ -4224,7 +4224,7 @@ const ModelHealthPanels1: React.FC = () => {
                         {isDone && <svg width="7" height="7" viewBox="0 0 8 8" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="1,4 3,6 7,2"/></svg>}
                       </div>
                       <span style={{ flex: 1, fontSize: fs.xs, color: isDone ? '#065F46' : c['content-primary'], textDecoration: isDone ? 'line-through' : 'none' }}>{item.label}</span>
-                      <span style={{ fontSize: 11, fontFamily: ff.mono, color: isDone ? '#059669' : c['content-secondary'] }}>{item.done}/{item.total}</span>
+                      <span style={{ fontSize: 12, fontFamily: ff.mono, color: isDone ? '#059669' : c['content-secondary'] }}>{item.done}/{item.total}</span>
                       {!isDone && <button style={{ fontSize: fs.xs, color: '#2563EB', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: ff.primary, flexShrink: 0 }}>Fix →</button>}
                     </div>
                   );
@@ -4255,7 +4255,7 @@ const ModelHealthPanels2: React.FC = () => {
         <button style={{ height: 26, padding: '0 8px', border: 'none', borderRadius: 5, backgroundColor: '#2770EF', color: '#fff', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, cursor: 'pointer' }}>Fix all with agent</button>
       </div>
       <div style={{ padding: `${sp.C}px ${sp.D}px`, borderBottom: `1px solid ${c['border-divider']}` }}>
-        <div style={{ fontSize: 11, color: c['content-tertiary'], marginBottom: sp.B, textTransform: 'uppercase' as const, letterSpacing: '0.05em', fontWeight: fw.semibold }}>By category</div>
+        <div style={{ fontSize: 12, color: c['content-tertiary'], marginBottom: sp.B, textTransform: 'uppercase' as const, letterSpacing: '0.05em', fontWeight: fw.semibold }}>By category</div>
         {DQ_SECTIONS.map(sec => {
           const tier = dqSecTier(sec.items);
           const m = PT_META[tier];
@@ -4268,7 +4268,7 @@ const ModelHealthPanels2: React.FC = () => {
                 <div style={{ height: '100%', width: `${barPct}%`, background: m.dot, borderRadius: 3 }}/>
               </div>
               <TierPill tier={tier}/>
-              <span style={{ fontSize: 11, color: c['content-secondary'], width: 50, textAlign: 'right' as const }}>{sec.items.length} issues</span>
+              <span style={{ fontSize: 12, color: c['content-secondary'], width: 50, textAlign: 'right' as const }}>{sec.items.length} issues</span>
             </div>
           );
         })}
@@ -4286,7 +4286,7 @@ const ModelHealthPanels2: React.FC = () => {
             <div key={`${sec.key}:${item.col}`} style={{ display: 'flex', alignItems: 'center', gap: sp.B, padding: `5px ${sp.D}px`, borderTop: `1px solid ${c['border-divider']}` }}>
               <code style={{ fontSize: fs.xs, fontFamily: ff.mono, color: c['content-primary'], width: 130, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const, flexShrink: 0 }}>{item.col}</code>
               <span style={{ flex: 1, fontSize: fs.xs, color: c['content-secondary'], overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{item.detail}</span>
-              <span style={{ fontSize: 11, padding: '1px 4px', borderRadius: 3, background: sm.bg, color: sm.text, border: `1px solid ${sm.border}`, flexShrink: 0, fontWeight: fw.medium }}>{sm.label}</span>
+              <span style={{ fontSize: 12, padding: '1px 4px', borderRadius: 3, background: sm.bg, color: sm.text, border: `1px solid ${sm.border}`, flexShrink: 0, fontWeight: fw.medium }}>{sm.label}</span>
               <button style={{ fontSize: fs.xs, color: '#2563EB', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: ff.primary, flexShrink: 0 }}>Fix →</button>
             </div>
           );
@@ -4307,12 +4307,12 @@ const ModelHealthPanels2: React.FC = () => {
             <span style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'] }}>AI readiness</span>
             <TierPill tier={MHP_AIRS_TIER}/>
           </div>
-          <span style={{ fontSize: 11, color: c['content-secondary'] }}>Spotter answers improve as this score increases</span>
+          <span style={{ fontSize: 12, color: c['content-secondary'] }}>Spotter answers improve as this score increases</span>
         </div>
         <button style={{ height: 26, padding: '0 8px', border: 'none', borderRadius: 5, backgroundColor: '#2770EF', color: '#fff', fontSize: fs.xs, fontWeight: fw.medium, fontFamily: ff.primary, cursor: 'pointer' }}>Fix all</button>
       </div>
       <div style={{ padding: `${sp.C}px ${sp.D}px`, borderBottom: `1px solid ${c['border-divider']}` }}>
-        <div style={{ fontSize: 11, color: c['content-tertiary'], marginBottom: sp.B, textTransform: 'uppercase' as const, letterSpacing: '0.05em', fontWeight: fw.semibold }}>Score breakdown</div>
+        <div style={{ fontSize: 12, color: c['content-tertiary'], marginBottom: sp.B, textTransform: 'uppercase' as const, letterSpacing: '0.05em', fontWeight: fw.semibold }}>Score breakdown</div>
         {AI_MOCK_DIMENSIONS.map(dim => {
           const tier = scoreToPT(dim.score);
           const m = PT_META[tier];
@@ -4323,7 +4323,7 @@ const ModelHealthPanels2: React.FC = () => {
                 <div style={{ height: '100%', width: `${dim.score}%`, background: m.dot, borderRadius: 3 }}/>
               </div>
               <TierPill tier={tier}/>
-              <span style={{ fontSize: 11, color: c['content-secondary'], width: 30, textAlign: 'right' as const }}>{dim.score}%</span>
+              <span style={{ fontSize: 12, color: c['content-secondary'], width: 30, textAlign: 'right' as const }}>{dim.score}%</span>
             </div>
           );
         })}
@@ -4338,7 +4338,7 @@ const ModelHealthPanels2: React.FC = () => {
         {aiOppOpen && aiOpportunities.map(item => (
           <div key={`${item.dimLabel}:${item.label}`} style={{ display: 'flex', alignItems: 'center', gap: sp.B, padding: `5px ${sp.D}px`, borderTop: `1px solid ${c['border-divider']}` }}>
             <span style={{ flex: 1, fontSize: fs.xs, color: c['content-primary'] }}>{item.label}</span>
-            <span style={{ fontSize: 11, fontFamily: ff.mono, color: c['content-secondary'] }}>{item.done}/{item.total}</span>
+            <span style={{ fontSize: 12, fontFamily: ff.mono, color: c['content-secondary'] }}>{item.done}/{item.total}</span>
             <button style={{ fontSize: fs.xs, color: '#2563EB', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: ff.primary, flexShrink: 0 }}>Fix →</button>
           </div>
         ))}
@@ -4356,7 +4356,7 @@ const ModelHealthPanels2: React.FC = () => {
               <svg width="7" height="7" viewBox="0 0 8 8" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="1,4 3,6 7,2"/></svg>
             </div>
             <span style={{ flex: 1, fontSize: fs.xs, color: c['content-secondary'], textDecoration: 'line-through' }}>{item.label}</span>
-            <span style={{ fontSize: 11, fontFamily: ff.mono, color: '#059669' }}>{item.total}/{item.total}</span>
+            <span style={{ fontSize: 12, fontFamily: ff.mono, color: '#059669' }}>{item.total}/{item.total}</span>
           </div>
         ))}
       </div>
@@ -4386,7 +4386,7 @@ const ModelHealthPanels3: React.FC = () => {
               onMouseLeave={e => { (e.currentTarget as HTMLElement).style.boxShadow = 'none'; }}>
               <span style={{ fontSize: fs.xs, fontWeight: fw.semibold, color: c['content-primary'] }}>{sec.label}</span>
               <TierPill tier={tier}/>
-              <span style={{ fontSize: 11, color: c['content-secondary'] }}>{sec.items.length} issues · {sec.items.filter(i => i.severity === 'high').length} high</span>
+              <span style={{ fontSize: 12, color: c['content-secondary'] }}>{sec.items.length} issues · {sec.items.filter(i => i.severity === 'high').length} high</span>
             </div>
           );
         })}
@@ -4415,7 +4415,7 @@ const ModelHealthPanels3: React.FC = () => {
               <div style={{ height: 4, borderRadius: 2, background: 'rgba(0,0,0,0.08)', overflow: 'hidden' }}>
                 <div style={{ height: '100%', width: `${dim.score}%`, background: m.dot, borderRadius: 2 }}/>
               </div>
-              <span style={{ fontSize: 11, color: c['content-secondary'] }}>{dim.score}% · {dim.items.filter(i => i.done < i.total).length} to improve</span>
+              <span style={{ fontSize: 12, color: c['content-secondary'] }}>{dim.score}% · {dim.items.filter(i => i.done < i.total).length} to improve</span>
             </div>
           );
         })}
@@ -4447,7 +4447,7 @@ const ModelHealthPanels4: React.FC = () => {
       <div style={{ padding: `${sp.B}px ${sp.D}px`, borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', gap: sp.B, flexShrink: 0, flexWrap: 'wrap' as const }}>
         {[{ key: null as string | null, label: `All (${allDqItems.length})` }, ...DQ_SECTIONS.map(s => ({ key: s.key as string | null, label: `${s.label} (${s.items.length})` }))].map(f => (
           <button key={f.key ?? 'all'} onClick={() => setDqFilter(f.key)}
-            style={{ height: 24, padding: '0 8px', border: `1px solid ${dqFilter === f.key ? c['border-brand'] : c['border-default']}`, borderRadius: 12, background: dqFilter === f.key ? c['background-information'] : 'transparent', color: dqFilter === f.key ? c['content-brand'] : c['content-secondary'], fontSize: 11, fontFamily: ff.primary, cursor: 'pointer', fontWeight: dqFilter === f.key ? fw.medium : fw.regular }}>
+            style={{ height: 24, padding: '0 8px', border: `1px solid ${dqFilter === f.key ? c['border-brand'] : c['border-default']}`, borderRadius: 12, background: dqFilter === f.key ? c['background-information'] : 'transparent', color: dqFilter === f.key ? c['content-brand'] : c['content-secondary'], fontSize: 12, fontFamily: ff.primary, cursor: 'pointer', fontWeight: dqFilter === f.key ? fw.medium : fw.regular }}>
             {f.label}
           </button>
         ))}
@@ -4458,9 +4458,9 @@ const ModelHealthPanels4: React.FC = () => {
           return (
             <div key={`${item.secKey}:${item.col}:${i}`} style={{ display: 'flex', alignItems: 'center', gap: sp.B, padding: `6px ${sp.D}px`, borderBottom: `1px solid ${c['border-divider']}` }}>
               <code style={{ fontSize: fs.xs, fontFamily: ff.mono, color: c['content-primary'], width: 130, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const, flexShrink: 0 }}>{item.col}</code>
-              <span style={{ fontSize: 11, padding: '1px 5px', borderRadius: 3, background: c['background-subtle'], color: c['content-secondary'], border: `1px solid ${c['border-divider']}`, flexShrink: 0, whiteSpace: 'nowrap' as const }}>{item.secLabel}</span>
+              <span style={{ fontSize: 12, padding: '1px 5px', borderRadius: 3, background: c['background-subtle'], color: c['content-secondary'], border: `1px solid ${c['border-divider']}`, flexShrink: 0, whiteSpace: 'nowrap' as const }}>{item.secLabel}</span>
               <span style={{ flex: 1, fontSize: fs.xs, color: c['content-secondary'], overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{item.detail}</span>
-              <span style={{ fontSize: 11, padding: '1px 4px', borderRadius: 3, background: sm.bg, color: sm.text, border: `1px solid ${sm.border}`, flexShrink: 0, fontWeight: fw.medium }}>{sm.label}</span>
+              <span style={{ fontSize: 12, padding: '1px 4px', borderRadius: 3, background: sm.bg, color: sm.text, border: `1px solid ${sm.border}`, flexShrink: 0, fontWeight: fw.medium }}>{sm.label}</span>
               <button style={{ fontSize: fs.xs, color: '#2563EB', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: ff.primary, flexShrink: 0 }}>Fix →</button>
             </div>
           );
@@ -4481,7 +4481,7 @@ const ModelHealthPanels4: React.FC = () => {
       <div style={{ padding: `${sp.B}px ${sp.D}px`, borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', gap: sp.B, flexShrink: 0 }}>
         {(['todo', 'done'] as const).map(f => (
           <button key={f} onClick={() => setAiFilter(f)}
-            style={{ height: 24, padding: '0 10px', border: `1px solid ${aiFilter === f ? c['border-brand'] : c['border-default']}`, borderRadius: 12, background: aiFilter === f ? c['background-information'] : 'transparent', color: aiFilter === f ? c['content-brand'] : c['content-secondary'], fontSize: 11, fontFamily: ff.primary, cursor: 'pointer', fontWeight: aiFilter === f ? fw.medium : fw.regular }}>
+            style={{ height: 24, padding: '0 10px', border: `1px solid ${aiFilter === f ? c['border-brand'] : c['border-default']}`, borderRadius: 12, background: aiFilter === f ? c['background-information'] : 'transparent', color: aiFilter === f ? c['content-brand'] : c['content-secondary'], fontSize: 12, fontFamily: ff.primary, cursor: 'pointer', fontWeight: aiFilter === f ? fw.medium : fw.regular }}>
             {f === 'todo' ? `To improve (${aiTodo.length})` : `Done (${aiDone.length})`}
           </button>
         ))}
@@ -4495,8 +4495,8 @@ const ModelHealthPanels4: React.FC = () => {
                 {isDone && <svg width="7" height="7" viewBox="0 0 8 8" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="1,4 3,6 7,2"/></svg>}
               </div>
               <span style={{ flex: 1, fontSize: fs.xs, color: isDone ? c['content-secondary'] : c['content-primary'], textDecoration: isDone ? 'line-through' : 'none' }}>{item.label}</span>
-              <span style={{ fontSize: 11, padding: '1px 5px', borderRadius: 3, background: c['background-subtle'], color: c['content-secondary'], border: `1px solid ${c['border-divider']}`, flexShrink: 0, whiteSpace: 'nowrap' as const }}>{item.dimLabel}</span>
-              <span style={{ fontSize: 11, fontFamily: ff.mono, color: isDone ? '#059669' : c['content-secondary'] }}>{item.done}/{item.total}</span>
+              <span style={{ fontSize: 12, padding: '1px 5px', borderRadius: 3, background: c['background-subtle'], color: c['content-secondary'], border: `1px solid ${c['border-divider']}`, flexShrink: 0, whiteSpace: 'nowrap' as const }}>{item.dimLabel}</span>
+              <span style={{ fontSize: 12, fontFamily: ff.mono, color: isDone ? '#059669' : c['content-secondary'] }}>{item.done}/{item.total}</span>
               {!isDone && <button style={{ fontSize: fs.xs, color: '#2563EB', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: ff.primary, flexShrink: 0 }}>Fix →</button>}
             </div>
           );
@@ -4522,9 +4522,9 @@ const MhpShellDropdown: React.FC<{
 }> = ({ exploLabel, dqChip, airsChip, dqPanel, airsPanel, openPanel, onDqClick, onAirsClick }) => (
   <div style={{ position: 'fixed', inset: 0, background: c['background-sunken'], fontFamily: ff.primary, display: 'flex', flexDirection: 'column' }}>
     <div style={{ height: 32, flexShrink: 0, background: c['background-base'], borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', padding: `0 ${sp.D}px` }}>
-      <span style={{ fontSize: 11, color: c['content-secondary'] }}>← Overview</span>
+      <span style={{ fontSize: 12, color: c['content-secondary'] }}>← Overview</span>
       <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
-        <span style={{ fontSize: 11, fontWeight: fw.medium, color: c['content-brand'], background: c['background-information'], padding: '1px 8px', borderRadius: 4 }}>{exploLabel}</span>
+        <span style={{ fontSize: 12, fontWeight: fw.medium, color: c['content-brand'], background: c['background-information'], padding: '1px 8px', borderRadius: 4 }}>{exploLabel}</span>
       </div>
     </div>
     <div style={{ flex: 1, display: 'flex', padding: '20px 24px', overflow: 'hidden' }}>
@@ -4533,7 +4533,7 @@ const MhpShellDropdown: React.FC<{
         <div style={{ height: 48, borderBottom: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', padding: `0 ${sp.D}px`, gap: sp.C, flexShrink: 0 }}>
           <AirsModelIcon size={18}/>
           <span style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'] }}>Campaign Performance</span>
-          <span style={{ fontSize: 11, background: c['background-subtle'], border: `1px solid ${c['border-divider']}`, borderRadius: 4, padding: '1px 6px', color: c['content-secondary'] }}>Draft</span>
+          <span style={{ fontSize: 12, background: c['background-subtle'], border: `1px solid ${c['border-divider']}`, borderRadius: 4, padding: '1px 6px', color: c['content-secondary'] }}>Draft</span>
           <div style={{ flex: 1 }}/>
           <button style={{ height: 28, padding: `0 ${sp.C}px`, border: `1px solid ${c['border-default']}`, borderRadius: 6, background: 'none', fontSize: fs.xs, fontFamily: ff.primary, cursor: 'pointer', color: c['content-secondary'] }}>Share</button>
           <button style={{ height: 28, padding: `0 ${sp.C}px`, border: 'none', borderRadius: 6, background: '#2770EF', color: '#fff', fontSize: fs.xs, fontFamily: ff.primary, cursor: 'pointer', fontWeight: fw.medium }}>Publish model</button>
@@ -4608,7 +4608,7 @@ const ModelHealthPanels5: React.FC = () => {
                     <div key={item.col} style={{ display: 'flex', alignItems: 'center', gap: sp.B, padding: `${sp.B}px ${sp.C}px`, borderRadius: 5, border: `1px solid ${c['border-divider']}`, background: c['background-subtle'] }}>
                       <code style={{ fontSize: fs.xs, fontFamily: ff.mono, color: c['content-primary'], minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const, flexShrink: 1 }}>{item.col}</code>
                       <span style={{ flex: 1, fontSize: fs.xs, color: c['content-secondary'], overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const, minWidth: 0 }}>{item.detail}</span>
-                      <span style={{ fontSize: 11, fontWeight: fw.medium, padding: '1px 4px', borderRadius: 3, background: sm.bg, color: sm.text, border: `1px solid ${sm.border}`, flexShrink: 0 }}>{sm.label}</span>
+                      <span style={{ fontSize: 12, fontWeight: fw.medium, padding: '1px 4px', borderRadius: 3, background: sm.bg, color: sm.text, border: `1px solid ${sm.border}`, flexShrink: 0 }}>{sm.label}</span>
                       <button style={{ fontSize: fs.xs, color: '#2563EB', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: ff.primary, flexShrink: 0 }}>Fix →</button>
                     </div>
                   );
@@ -4653,7 +4653,7 @@ const ModelHealthPanels5: React.FC = () => {
                         {isDone && <svg width="7" height="7" viewBox="0 0 8 8" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="1,4 3,6 7,2"/></svg>}
                       </div>
                       <span style={{ flex: 1, fontSize: fs.xs, color: isDone ? '#065F46' : c['content-primary'], textDecoration: isDone ? 'line-through' : 'none' }}>{item.label}</span>
-                      <span style={{ fontSize: 11, fontFamily: ff.mono, color: isDone ? '#059669' : c['content-secondary'] }}>{item.done}/{item.total}</span>
+                      <span style={{ fontSize: 12, fontFamily: ff.mono, color: isDone ? '#059669' : c['content-secondary'] }}>{item.done}/{item.total}</span>
                       {!isDone && <button style={{ fontSize: fs.xs, color: '#2563EB', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: ff.primary, flexShrink: 0 }}>Fix →</button>}
                     </div>
                   );
@@ -4870,10 +4870,10 @@ const TsAnswerAtRisk: React.FC = () => (
           <div style={{ width: `${row.score}%`, height: '100%', backgroundColor: row.color, opacity: 0.55, borderRadius: 3 }} />
         </div>
         <span style={{ fontSize: fs.xs, fontWeight: fw.semibold, color: c['content-primary'], width: 32, textAlign: 'right', flexShrink: 0 }}>{row.score}%</span>
-        <span style={{ fontSize: 10, padding: '1px 7px', borderRadius: 4, background: row.bg, color: row.color, flexShrink: 0, minWidth: 108, textAlign: 'center' }}>{row.label}</span>
+        <span style={{ fontSize: 12, padding: '1px 7px', borderRadius: 4, background: row.bg, color: row.color, flexShrink: 0, minWidth: 108, textAlign: 'center' }}>{row.label}</span>
       </div>
     ))}
-    <div style={{ fontSize: 10, color: c['content-secondary'], paddingTop: sp.A, borderTop: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', gap: 5 }}>
+    <div style={{ fontSize: 12, color: c['content-secondary'], paddingTop: sp.A, borderTop: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', gap: 5 }}>
       <svg width="10" height="10" viewBox="0 0 16 16" fill="none"><path d="M8 1.5L9.1 6.4L14.5 8L9.1 9.6L8 14.5L6.9 9.6L1.5 8L6.9 6.4Z" fill="#6366F1"/></svg>
       Queried Customer Health Scorecard · 0.2s
     </div>
@@ -4884,17 +4884,17 @@ const TsAnswerARR: React.FC = () => (
   <div style={{ padding: `${sp.C}px ${sp.D}px`, borderTop: `1px solid ${c['border-divider']}`, backgroundColor: c['background-sunken'], display: 'flex', flexDirection: 'column', gap: sp.B }}>
     <div style={{ display: 'flex', gap: sp.C }}>
       <div style={{ flex: 1, padding: sp.C, borderRadius: 8, border: `1px solid ${c['border-divider']}`, background: c['background-base'] }}>
-        <div style={{ fontSize: 10, color: c['content-secondary'], marginBottom: 4 }}>ARR at risk</div>
+        <div style={{ fontSize: 12, color: c['content-secondary'], marginBottom: 4 }}>ARR at risk</div>
         <div style={{ fontSize: 22, fontWeight: fw.bold, color: c['content-accent-red'], lineHeight: 1 }}>$56,500</div>
-        <div style={{ fontSize: 10, color: c['content-secondary'], marginTop: 4 }}>2 accounts · below 70% health</div>
+        <div style={{ fontSize: 12, color: c['content-secondary'], marginTop: 4 }}>2 accounts · below 70% health</div>
       </div>
       <div style={{ flex: 1, padding: sp.C, borderRadius: 8, border: `1px solid ${c['border-divider']}`, background: c['background-base'] }}>
-        <div style={{ fontSize: 10, color: c['content-secondary'], marginBottom: 4 }}>Total monitored ARR</div>
+        <div style={{ fontSize: 12, color: c['content-secondary'], marginBottom: 4 }}>Total monitored ARR</div>
         <div style={{ fontSize: 22, fontWeight: fw.bold, color: c['content-primary'], lineHeight: 1 }}>$181,500</div>
-        <div style={{ fontSize: 10, color: c['content-secondary'], marginTop: 4 }}>3 accounts</div>
+        <div style={{ fontSize: 12, color: c['content-secondary'], marginTop: 4 }}>3 accounts</div>
       </div>
     </div>
-    <div style={{ fontSize: 10, color: c['content-secondary'], paddingTop: sp.A, borderTop: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', gap: 5 }}>
+    <div style={{ fontSize: 12, color: c['content-secondary'], paddingTop: sp.A, borderTop: `1px solid ${c['border-divider']}`, display: 'flex', alignItems: 'center', gap: 5 }}>
       <svg width="10" height="10" viewBox="0 0 16 16" fill="none"><path d="M8 1.5L9.1 6.4L14.5 8L9.1 9.6L8 14.5L6.9 9.6L1.5 8L6.9 6.4Z" fill="#6366F1"/></svg>
       Queried Customer Health Scorecard · 0.3s
     </div>
@@ -5004,7 +5004,7 @@ const NBXCellComponent: React.FC<{
   const SqlResult: React.FC<{ result: typeof NBX_SQL_RESULTS[string] }> = ({ result }) => (
     <div style={{ borderTop: `1px solid ${c['border-divider']}`, backgroundColor: c['background-sunken'] }}>
       <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11, fontFamily: monoFont, tableLayout: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, fontFamily: monoFont, tableLayout: 'auto' }}>
           <thead>
             <tr style={{ borderBottom: `1px solid ${c['border-divider']}` }}>
               {result.columns.map(col => (
@@ -5024,7 +5024,7 @@ const NBXCellComponent: React.FC<{
         </table>
       </div>
       <div style={{ padding: '3px 10px 5px', borderTop: `1px solid ${c['border-divider']}` }}>
-        <span style={{ fontSize: 10, fontFamily: monoFont, color: c['content-secondary'] }}>{result.footer}</span>
+        <span style={{ fontSize: 12, fontFamily: monoFont, color: c['content-secondary'] }}>{result.footer}</span>
       </div>
     </div>
   );
@@ -5059,7 +5059,7 @@ const NBXCellComponent: React.FC<{
                 <path d="M3.5 6l1.8 1.8 3.2-3.2" stroke={c['content-accent-green']} strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             ) : <div style={{ width: 12, height: 12, flexShrink: 0 }} />}
-            <span style={{ fontSize: 10, fontWeight: fw.bold, color: accent, textTransform: 'uppercase', letterSpacing: '0.07em', flexShrink: 0 }}>{NBX_TYPE_LABEL[cell.type]}</span>
+            <span style={{ fontSize: 12, fontWeight: fw.bold, color: accent, textTransform: 'uppercase', letterSpacing: '0.07em', flexShrink: 0 }}>{NBX_TYPE_LABEL[cell.type]}</span>
             <span style={{ fontSize: fs.xs, color: isTs ? c['content-primary'] : c['content-secondary'], fontWeight: isTs ? fw.medium : fw.regular, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cell.label}</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, opacity: hovered || isEditing ? 1 : 0, transition: 'opacity 0.15s', flexShrink: 0, marginLeft: sp.B }}>
@@ -5090,7 +5090,7 @@ const NBXCellComponent: React.FC<{
         {bindings.length > 0 && !isEditing && (
           <div style={{ display: 'flex', gap: sp.B, flexWrap: 'wrap', padding: `4px ${sp.C}px`, backgroundColor: '#FFFBF0', borderBottom: `1px solid ${c['border-divider']}` }}>
             {bindings.map((b, i) => (
-              <span key={i} style={{ fontSize: 10, fontFamily: monoFont, display: 'flex', alignItems: 'center', gap: 4, color: '#92400E', background: '#FEF3C7', border: '1px solid #FDE68A', borderRadius: 4, padding: '1px 7px' }}>
+              <span key={i} style={{ fontSize: 12, fontFamily: monoFont, display: 'flex', alignItems: 'center', gap: 4, color: '#92400E', background: '#FEF3C7', border: '1px solid #FDE68A', borderRadius: 4, padding: '1px 7px' }}>
                 <span style={{ fontWeight: fw.semibold }}>{b.variable}</span>
                 <span style={{ color: c['content-secondary'] }}>← {b.source} · {b.rows}</span>
               </span>
@@ -5135,7 +5135,7 @@ const NBXCellComponent: React.FC<{
         {/* Generic Python done (non-tabular) */}
         {ran && cell.type === 'python' && !pyOut && (
           <div style={{ padding: '4px 10px 6px', borderTop: `1px solid ${c['border-divider']}`, backgroundColor: c['background-sunken'] }}>
-            <span style={{ fontSize: 10, fontFamily: monoFont, color: c['content-secondary'] }}>✓ Done · 0.9s</span>
+            <span style={{ fontSize: 12, fontFamily: monoFont, color: c['content-secondary'] }}>✓ Done · 0.9s</span>
           </div>
         )}
 
@@ -5220,15 +5220,15 @@ const NotebookExploration: React.FC = () => {
             <line x1="5.5" y1="10.5" x2="9" y2="10.5" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/>
           </svg>
           <span style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'] }}>customer_health_analysis</span>
-          <span style={{ fontSize: 10, color: c['content-secondary'], background: c['background-subtle'], border: `1px solid ${c['border-divider']}`, borderRadius: 4, padding: '1px 6px' }}>v1</span>
+          <span style={{ fontSize: 12, color: c['content-secondary'], background: c['background-subtle'], border: `1px solid ${c['border-divider']}`, borderRadius: 4, padding: '1px 6px' }}>v1</span>
           {successCount > 0 && (
-            <span style={{ fontSize: 10, color: c['content-accent-green'] }}>{successCount} / {allCells.length} ran successfully</span>
+            <span style={{ fontSize: 12, color: c['content-accent-green'] }}>{successCount} / {allCells.length} ran successfully</span>
           )}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: sp.B }}>
           <div style={{ display: 'flex', gap: 6, marginRight: sp.B }}>
             {(['sql', 'python', 'ts-answer'] as NBXCellType[]).map(t => (
-              <span key={t} style={{ fontSize: 10, display: 'flex', alignItems: 'center', gap: 4, color: c['content-secondary'] }}>
+              <span key={t} style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 4, color: c['content-secondary'] }}>
                 <span style={{ width: 8, height: 8, borderRadius: 2, background: NBX_ACCENT[t], flexShrink: 0 }} />
                 {t === 'ts-answer' ? '✦ TS Answer' : t === 'sql' ? 'SQL' : 'Python'}
               </span>
@@ -5355,7 +5355,7 @@ export const PlaygroundNav: React.FC = () => {
             display: 'flex', alignItems: 'center', gap: 5,
             background: 'rgba(0,0,0,0.4)', border: 'none', borderRadius: 13,
             color: 'rgba(255,255,255,0.65)',
-            fontSize: 11.5, fontFamily: ff.primary, fontWeight: fw.medium,
+            fontSize: 12, fontFamily: ff.primary, fontWeight: fw.medium,
             cursor: 'pointer', backdropFilter: 'blur(4px)',
             letterSpacing: '0.01em',
           }}
@@ -5373,7 +5373,7 @@ export const PlaygroundNav: React.FC = () => {
 
       {/* Header */}
       <div style={{ height: 52, flexShrink: 0, display: 'flex', alignItems: 'center', padding: '0 32px', background: c['background-base'], borderBottom: `1px solid ${c['border-divider']}` }}>
-        <span style={{ fontSize: 11, fontWeight: fw.medium, color: c['content-tertiary'], textTransform: 'uppercase', letterSpacing: '0.08em' }}>Data Studio</span>
+        <span style={{ fontSize: 12, fontWeight: fw.medium, color: c['content-tertiary'], textTransform: 'uppercase', letterSpacing: '0.08em' }}>Data Studio</span>
         <span style={{ margin: '0 8px', color: c['border-default'], fontSize: 14 }}>·</span>
         <span style={{ fontSize: 13, fontWeight: fw.semibold, color: c['content-primary'] }}>Playground</span>
       </div>
@@ -5434,16 +5434,16 @@ export const PlaygroundNav: React.FC = () => {
               onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = c['border-divider']; (e.currentTarget as HTMLButtonElement).style.boxShadow = 'none'; }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ fontSize: 10.5, fontFamily: ff.mono, color: c['content-tertiary'], letterSpacing: '0.04em' }}>{item.id}</span>
+                <span style={{ fontSize: 12, fontFamily: ff.mono, color: c['content-tertiary'], letterSpacing: '0.04em' }}>{item.id}</span>
                 {item.tag && (
-                  <span style={{ fontSize: 9, background: '#7C3AED', color: 'white', borderRadius: 3, padding: '1px 5px', fontWeight: fw.bold, letterSpacing: '0.02em' }}>
+                  <span style={{ fontSize: 12, background: '#7C3AED', color: 'white', borderRadius: 3, padding: '1px 5px', fontWeight: fw.bold, letterSpacing: '0.02em' }}>
                     {item.tag}
                   </span>
                 )}
               </div>
               <div style={{ fontSize: 14, fontWeight: fw.semibold, color: c['content-primary'], lineHeight: 1.3 }}>{item.label}</div>
               {item.meta && (
-                <div style={{ fontSize: 11.5, color: c['content-secondary'], marginTop: 2 }}>{item.meta}</div>
+                <div style={{ fontSize: 12, color: c['content-secondary'], marginTop: 2 }}>{item.meta}</div>
               )}
             </button>
           ))}

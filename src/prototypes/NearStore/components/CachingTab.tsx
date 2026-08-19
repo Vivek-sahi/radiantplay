@@ -18,13 +18,17 @@ import { CachingSettingsModal, type CacheConfigDraft } from './CachingSettingsMo
 import { RunHistoryModal } from './RunHistoryModal';
 import { spacing } from '../styles';
 import styles from './CachingTab.module.css';
-import { formatRowsFull, formatSizeMB, scheduleDetail, scheduleLabel, windowMonthsLabel } from '../utils';
-import type { CacheRun, CacheState, DataModel, TableCacheSetting, TableRunResult, WindowMonths } from '../types';
+import { formatRowsFull, formatSizeMB, scheduleDetail, scheduleLabel } from '../utils';
+import { WINDOW_LABEL, windowFraction } from '../../_shared/caching/windows';
+import type { CacheRun, CacheState, CacheWindow, DataModel, TableCacheSetting, TableRunResult } from '../types';
 
 const REBUILD_MS = 6000; // simulated cache build time
 
 // ── cache stat computation ────────────────────────────────────────────────────
-const monthsFactor = (m?: WindowMonths) => (m ? Math.min(1, m / 24) : 1);
+// Fraction of a table a window keeps. Two years of history assumed, as before — the old
+// `monthsFactor` divided months by 24 for exactly that reason.
+const SPAN_HOURS = 2 * 365 * 24;
+const windowFactor = (w?: CacheWindow) => (w ? windowFraction(w, SPAN_HOURS) : 1);
 
 function computeStats(model: DataModel, draft: CacheConfigDraft) {
   const settings: TableCacheSetting[] =
@@ -34,7 +38,7 @@ function computeStats(model: DataModel, draft: CacheConfigDraft) {
   const tableResults: TableRunResult[] = model.tables.map((t) => {
     const ts = settings.find((s) => s.tableId === t.id);
     const windowed = ts?.mode === 'window';
-    const factor = windowed ? monthsFactor(ts?.windowMonths) : 1;
+    const factor = windowed ? windowFactor(ts?.cacheWindow) : 1;
     const r = Math.round(t.rowCount * factor);
     const mb = Math.max(1, Math.round((t.rowCount * factor) / 8000));
     sizeMB += mb;
@@ -45,7 +49,7 @@ function computeStats(model: DataModel, draft: CacheConfigDraft) {
       rows: r,
       sizeMB: mb,
       durationSec: 20 + Math.round(r / 250_000),
-      windowApplied: windowed ? windowMonthsLabel(ts!.windowMonths!) : 'All history',
+      windowApplied: windowed ? WINDOW_LABEL[ts!.cacheWindow!] : 'All history',
     };
   });
   return { sizeMB, rows, tableResults };
@@ -56,7 +60,23 @@ const nextRunId = () => `nr-${(runSeq += 1)}`;
 const pct = (n: number, total: number) => (total > 0 ? Math.round((n / total) * 100) : 0);
 
 // ── Caching tab ─────────────────────────────────────────────────────────────
-export const CachingTab: React.FC<{ model: DataModel; onChange: (next: DataModel) => void }> = ({ model, onChange }) => {
+export const CachingTab: React.FC<{
+  model: DataModel;
+  onChange: (next: DataModel) => void;
+  /**
+   * Whether data outside the cache window can still be queried from the source.
+   *
+   * ⚠️ **False for a multi-source model.** Near Store's cache is an optimisation over one
+   * warehouse: cache the recent slice, fall through to the source for anything older. A model
+   * that spans several warehouses has no such fallback, because querying live is exactly what
+   * cannot join across warehouses — so there the window is not a cost/coverage trade-off, it is
+   * the definition of what the model contains.
+   *
+   * Defaults to true, which is Near Store's own behaviour unchanged. Only Data Studio's
+   * consolidated surfaces pass false, and only for models that draw on more than one source.
+   */
+  canFallBackToLive?: boolean;
+}> = ({ model, onChange, canFallBackToLive = true }) => {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalIsEdit, setModalIsEdit] = useState(false);
   const [confirm, setConfirm] = useState<null | 'purge' | 'disable'>(null);
@@ -230,7 +250,9 @@ export const CachingTab: React.FC<{ model: DataModel; onChange: (next: DataModel
           className={styles.emptyState}
           illustration={<img src="/near-store/empty-state.svg" alt="" width={140} height={118} />}
           title="This model isn’t cached yet"
-          description="Cache this model to cut live query cost and speed up load times."
+          description={canFallBackToLive
+            ? 'Cache this model to cut live query cost and speed up load times.'
+            : 'This model draws on more than one warehouse, so its data has to be cached in ThoughtSpot before it can be queried.'}
           action={
             <Vertical align="center" gap={spacing.C}>
               <Button variant="primary" onClick={() => { setModalIsEdit(false); setModalOpen(true); }}>
@@ -241,7 +263,7 @@ export const CachingTab: React.FC<{ model: DataModel; onChange: (next: DataModel
           }
         />
         {modalOpen && (
-          <CachingSettingsModal model={model} isEdit={false} onClose={() => setModalOpen(false)} onSave={(d) => handleSaveConfig(d, false)} />
+          <CachingSettingsModal model={model} isEdit={false} canFallBackToLive={canFallBackToLive} onClose={() => setModalOpen(false)} onSave={(d) => handleSaveConfig(d, false)} />
         )}
         {toast && <FloatingToast message={toast.message} type={toast.type} onDismiss={() => setToast(null)} />}
       </>
@@ -260,7 +282,7 @@ export const CachingTab: React.FC<{ model: DataModel; onChange: (next: DataModel
 
   const settingsSummary: TableColumn<TableCacheSetting>[] = [
     { key: 'table', label: 'Table', render: (_v, row) => model.tables.find((t) => t.id === row.tableId)?.name ?? row.tableId },
-    { key: 'setting', label: 'Cached', render: (_v, row) => (row.mode === 'full_table' ? 'All history' : windowMonthsLabel(row.windowMonths!)) },
+    { key: 'setting', label: 'Cached', render: (_v, row) => (row.mode === 'full_table' ? 'All history' : WINDOW_LABEL[row.cacheWindow!]) },
     {
       key: 'ref',
       label: 'Reference column',
@@ -281,7 +303,9 @@ export const CachingTab: React.FC<{ model: DataModel; onChange: (next: DataModel
             status="warning"
             variant="page"
             dismissible={false}
-            message="This model changed after it was last cached, so the cached data is out of date — queries are running live directly from source until it's rebuilt."
+            message={canFallBackToLive
+              ? "This model changed after it was last cached, so the cached data is out of date — queries are running live directly from source until it's rebuilt."
+              : "This model changed after it was last cached, so the cached data is out of date. It spans more than one warehouse, so it can't fall back to live — rebuild the cache to restore it."}
             buttonText="Refresh now"
             onButtonClick={doRefresh}
           />
@@ -385,11 +409,15 @@ export const CachingTab: React.FC<{ model: DataModel; onChange: (next: DataModel
                 value={cache.analytics ? `${pct(cache.analytics.cachedQueries, cache.analytics.totalQueries)}%` : '—'}
                 sub={`${cache.analytics ? formatRowsFull(cache.analytics.cachedQueries) : 0} queries`}
               />
-              <StatCard
-                label="Queries on live data"
-                value={cache.analytics ? `${pct(cache.analytics.liveQueries, cache.analytics.totalQueries)}%` : '—'}
-                sub={`${cache.analytics ? formatRowsFull(cache.analytics.liveQueries) : 0} queries`}
-              />
+              {/* Omitted where no live fallback exists: a multi-source model cannot serve a live
+                  query, so a "0%" stat would invite the reader to wonder what went wrong. */}
+              {canFallBackToLive && (
+                <StatCard
+                  label="Queries on live data"
+                  value={cache.analytics ? `${pct(cache.analytics.liveQueries, cache.analytics.totalQueries)}%` : '—'}
+                  sub={`${cache.analytics ? formatRowsFull(cache.analytics.liveQueries) : 0} queries`}
+                />
+              )}
             </Horizontal>
           </Vertical>
         )}
@@ -398,6 +426,7 @@ export const CachingTab: React.FC<{ model: DataModel; onChange: (next: DataModel
 
       {modalOpen && (
         <CachingSettingsModal
+          canFallBackToLive={canFallBackToLive}
           model={model}
           isEdit={modalIsEdit}
           initial={modalIsEdit ? editDraft : undefined}
@@ -420,7 +449,9 @@ export const CachingTab: React.FC<{ model: DataModel; onChange: (next: DataModel
       {confirm === 'disable' && (
         <ConfirmModal
           title="Disable caching?"
-          message="This deletes the cache data and its configuration. All queries will run live, directly from source."
+          message={canFallBackToLive
+            ? 'This deletes the cache data and its configuration. All queries will run live, directly from source.'
+            : 'This deletes the cache data and its configuration. This model spans more than one warehouse, so it can’t be queried at all until it is cached again.'}
           confirmText="Disable caching"
           onConfirm={disableCache}
           onCancel={() => setConfirm(null)}

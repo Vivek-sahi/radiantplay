@@ -1,6 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { VariantProvider, useVariant } from './variant';
+import { VariantProvider, useVariant, isPocCut } from './variant';
+import DataObjectsPage from './components/DataObjectsPage';
+import CreateModelModal from './components/CreateModelModal';
+import CanvasChoiceModal from './components/CanvasChoiceModal';
+import SelectConnectionModal from './components/SelectConnectionModal';
+import type { ConnectionId } from './data/tableConnections';
+import ModelDetailPage from './components/ModelDetailPage';
+import { DATA_OBJECTS, RECENT_DATA_OBJECTS, makeCreatedModel } from './data/dataObjects';
+import type { DataObject } from './data/dataObjects';
 import { CacheProvider, CacheProgressChip } from './components/CacheProgress';
+import { ModelCacheProvider } from './components/cache/ModelCacheContext';
 import Shell, { NavSection, FlowOption } from './components/Shell';
 import Overview from './components/Overview';
 import ModelView from './components/ModelView';
@@ -73,7 +82,7 @@ export interface ProjectState {
   dqStatus?: 'idle' | 'scanning' | 'issues_found' | 'fixing' | 'done';
 }
 
-type AppView = 'overview' | 'models' | 'chat' | 'new-project' | 'model-view' | 'workspace' | 'data-browser' | 'connections' | 'placeholder' | 'full-chat' | 'canvas' | 'spotterx' | 'spotter';
+type AppView = 'overview' | 'models' | 'chat' | 'new-project' | 'model-view' | 'workspace' | 'data-browser' | 'connections' | 'placeholder' | 'full-chat' | 'canvas' | 'spotterx' | 'spotter' | 'data-objects' | 'model-detail';
 
 // Derives a short model name from the user's intent prompt.
 const deriveModelName = (prompt: string): string => {
@@ -122,10 +131,11 @@ const DEMO_DRAFT_MODEL_NAME = 'Renewal risk';
 
 // User-facing labels for the unwired nav sections so the placeholder reads cleanly.
 const PLACEHOLDER_LABEL: Record<NavSection, string> = {
-  overview:    'Overview',
-  projects:    'Models',
-  data:        'Data',
-  connections: 'Connections',
+  overview:        'Overview',
+  projects:        'Models',
+  data:            'Data',
+  connections:     'Connections',
+  'data-objects':  'Data objects',
 };
 
 const DataStudio: React.FC = () => {
@@ -136,10 +146,39 @@ const DataStudio: React.FC = () => {
   }, []);
 
   const { variant, scope } = useVariant();
+  // POC and POC V2 both render the POC experience. See isPocCut in variant.tsx.
+  const poc = isPocCut(variant);
+  /**
+   * POC V2 — the canvas is a feature of Data Workspace, not a destination. Data
+   * Studio's home screen and nav are replaced by Data Workspace's, and the canvas
+   * is reached from `+ → Model → Multi source model`.
+   */
+  const dataWorkspace = variant === 'pocv2';
 
-  const [view, setView]           = useState<AppView>('overview');
-  const [prevView, setPrevView]   = useState<AppView>('overview');
-  const [activeNav, setActiveNav] = useState<NavSection>('overview');
+  const [view, setView]           = useState<AppView>(dataWorkspace ? 'data-objects' : 'overview');
+  const [prevView, setPrevView]   = useState<AppView>(dataWorkspace ? 'data-objects' : 'overview');
+  const [activeNav, setActiveNav] = useState<NavSection>(dataWorkspace ? 'data-objects' : 'overview');
+
+  // Data Workspace's `+` menu and the model-options modal it opens.
+  const [createMenuOpen, setCreateMenuOpen]   = useState(false);
+  /** The two steps between the model-type modal and the canvas. */
+  const [canvasChoiceOpen, setCanvasChoiceOpen] = useState(false);
+  const [selectConnectionOpen, setSelectConnectionOpen] = useState(false);
+  /**
+   * The connection chosen at step 5. A model is single-connection in this flow — it is
+   * picked before the canvas opens and cannot be changed — so this is what the data
+   * browser lists tables from.
+   */
+  const [modelConnection, setModelConnection] = useState<ConnectionId | null>(null);
+  const [createModelOpen, setCreateModelOpen] = useState(false);
+  /**
+   * The workspace's object list. Stateful because publishing a model has to put it
+   * in here — landing back on a page that doesn't show what you just made is the
+   * thing that breaks the loop.
+   */
+  const [dataObjects, setDataObjects] = useState<DataObject[]>(DATA_OBJECTS);
+  /** The model whose detail page is open — the view state's subject. */
+  const [activeModelObject, setActiveModelObject] = useState<DataObject | null>(null);
   const [initialPrompt, setInitialPrompt] = useState<string>('');
   const [isFromScratch, setIsFromScratch] = useState(false);
   const [isMultiSource, setIsMultiSource] = useState(false);
@@ -205,9 +244,9 @@ const DataStudio: React.FC = () => {
         setIsMrdFlow(false);
         setCanvasAutoPopulate(true);
         navigateTo('canvas');
-      } else if (variant === 'poc') {
-        // POC: the agentic conversation runs as normal; when the model is created
-        // it lands on the new visual canvas instead of the old workspace.
+      } else if (poc) {
+        // POC and POC V2: the agentic conversation runs as normal; when the model
+        // is created it lands on the new visual canvas instead of the old workspace.
         setCanvasAutoPopulate(true);
         navigateTo('canvas');
       } else {
@@ -525,11 +564,61 @@ const DataStudio: React.FC = () => {
 
   const handleNavChange = (nav: NavSection) => {
     setActiveNav(nav);
-    if (nav === 'overview')         setView('overview');
+    if (nav === 'data-objects')     setView('data-objects');
+    else if (nav === 'overview')    setView('overview');
     else if (nav === 'projects')    setView('models');
     else if (nav === 'data')       { setDataBrowserInitialTab('warehouses'); setView('data-browser'); }
     else if (nav === 'connections') setView('connections');
     else                            setView('placeholder');
+  };
+
+  // ── Data Workspace entry point (POC V2) ────────────────────────────────────
+  //
+  // `+ → Model` opens the options modal; picking Multi source model opens the
+  // canvas on an empty model. Deliberately *not* `startWithoutModel` — that state
+  // waits for the agent's first accepted table proposal to create the model, which
+  // only the Demo script produces. Here the model exists and the canvas is empty.
+
+  const handleCreateMultiSourceModel = () => {
+    setCreateModelOpen(false);
+    openModelCanvas();
+  };
+
+  /**
+   * Publishing from the canvas lands on the model's detail page — the view state.
+   * That's what closes the loop: you leave the edit state and arrive at the object
+   * you just made, rather than back at a list.
+   */
+  const handleCanvasPublished = (canvasModelName?: string) => {
+    if (!dataWorkspace) return;
+    // The canvas owns the model name (it's renameable inline there), so prefer what
+    // it hands back over our ProjectState copy.
+    const name = canvasModelName?.trim()
+      || (project.name && project.name !== 'Untitled Model' ? project.name : 'Untitled model');
+    const existing = dataObjects.find(o => o.type === 'Model' && o.name === name);
+    const obj = existing ?? makeCreatedModel(name, PERSONA.userName);
+    if (!existing) setDataObjects(prev => [obj, ...prev]);
+    setActiveModelObject(obj);
+    setActiveNav('data-objects');
+    setView('model-detail');
+  };
+
+  /** Data objects → a model's detail page (the view state). */
+  const handleOpenModelDetail = (obj: DataObject) => {
+    setActiveModelObject(obj);
+    navigateTo('model-detail');
+  };
+
+  /**
+   * "Edit model" on the detail page → the edit state. Multi-source models edit on
+   * our canvas; the rest belong to the classic modelling UI, which this prototype
+   * doesn't hold. Making the two canvases consistent is a later phase.
+   */
+  const handleEditModel = () => {
+    if (activeModelObject?.canvas !== 'multiSource') { setView('placeholder'); return; }
+    setCanvasAutoPopulate(true);
+    setChatFirstStart(false);
+    navigateTo('canvas');
   };
 
   return (
@@ -539,9 +628,26 @@ const DataStudio: React.FC = () => {
         onNavChange={handleNavChange}
         hideSidebar={view === 'chat' || view === 'workspace' || view === 'full-chat' || view === 'canvas'}
         hideHeader={view === 'canvas'}
-        /* Caching progress follows you off the canvas — View is how you get back. */
-        headerLeadingSlot={<CacheProgressChip onView={() => setView('canvas')} />}
+        /* Caching progress follows you off the canvas — View is how you get back.
+           Not in POC V2: there the model's topbar pill is the single place a fill reports,
+           and a header chip repeating it was the second indicator for one job. */
+        headerLeadingSlot={scope.tableCaching ? undefined : <CacheProgressChip onView={() => setView('canvas')} />}
+        dataWorkspace={dataWorkspace}
+        onAddClick={dataWorkspace ? () => setCreateMenuOpen(true) : undefined}
       >
+        {view === 'data-objects' && (
+          <DataObjectsPage
+            objects={dataObjects}
+            recent={RECENT_DATA_OBJECTS}
+            onOpenModel={handleOpenModelDetail}
+            /* Tables have no detail page in this prototype — say so rather than
+               doing nothing. */
+            onOpenTable={() => setView('placeholder')}
+          />
+        )}
+        {view === 'model-detail' && activeModelObject && (
+          <ModelDetailPage object={activeModelObject} onEditModel={handleEditModel} />
+        )}
         {view === 'models' && (
           <ModelsPage
             onOpenProject={openModelView}
@@ -668,7 +774,11 @@ const DataStudio: React.FC = () => {
           <ModelCanvas
             onBack={goBack}
             mode="dataset2"
-            poc={variant === 'poc'}
+            poc={poc}
+            /* POC V2 — "Save model" commits and lands on the model's detail page,
+               with no publish modal in between (the current model editor's UX). */
+            saveMode={dataWorkspace}
+            onPublished={dataWorkspace ? handleCanvasPublished : undefined}
             /* Post-publish toast → Spotter, so the model can be asked a question
                straight after it's published. */
             onOpenSpotter={(name) => { setSpotterModelName(name); navigateTo('spotter'); }}
@@ -679,6 +789,9 @@ const DataStudio: React.FC = () => {
             startWithoutModel={chatFirstStart}
             draftModelName={DEMO_DRAFT_MODEL_NAME}
             initialPrompt={chatFirstStart ? canvasPrompt : undefined}
+            /* The connection chosen at step 5 of the entry flow. The data browser lists
+               its tables as a flat list — see scope.flatTableBrowser. */
+            modelConnection={modelConnection ?? undefined}
             /* Test tab hidden for now — re-add `showTestTab` to bring it back.
                TestView + all tab logic are left intact; this only stops the +Model
                flow from opting in. */
@@ -722,10 +835,10 @@ const DataStudio: React.FC = () => {
                    stepping back into one. */
                 onLogoClick={() => setView('canvas')}
                 logo={
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: sp.C }}>
                     <BrandMark pixelSize={22} color="#1D232F" />
                     <span style={{
-                      display: 'flex', alignItems: 'center', gap: 5,
+                      display: 'flex', alignItems: 'center', gap: sp.A,
                       color: '#64748B', fontSize: fs.sm, fontWeight: fw.medium, fontFamily: ff.primary,
                     }}>
                       <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="10,4 6,8 10,12" /></svg>
@@ -738,6 +851,132 @@ const DataStudio: React.FC = () => {
           />
         </div>
       )}
+
+      {/* ── Data Workspace `+` menu (POC V2) ──────────────────────────────────
+          Rendered outside Shell so the sidebar's dark theme variables don't cascade
+          into it. Anchored under the sidebar header's `+`.
+
+          Model opens a submenu rather than going straight to the modal:
+            Old canvas → the existing 6-card "Select a data modelling option" modal,
+                         which is left exactly as it is (all the classic build paths
+                         — semantic layer, dbt, TML, datasets — live behind it)
+            New canvas → our canvas, on an empty model
+          Connection / Dataset / SQL view are the real product's and stay inert. */}
+      {createMenuOpen && (
+        <>
+          <div
+            style={{ position: 'fixed', inset: 0, zIndex: 999 }}
+            onClick={() => setCreateMenuOpen(false)}
+          />
+          <div
+            style={{
+              position: 'fixed',
+              top: 126, left: 244,
+              backgroundColor: c['background-base'],
+              borderRadius: 8,
+              boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
+              zIndex: 1000,
+              padding: `${sp.B}px 0`,
+              minWidth: 180,
+              fontFamily: ff.primary,
+            }}
+          >
+            {([
+              { label: 'Connection', submenu: false, action: null },
+              { label: 'Model',      submenu: false, action: () => setCreateModelOpen(true) },
+              { label: 'Dataset',    submenu: false, action: null },
+              { label: 'SQL view',   submenu: false, action: null },
+            ] as { label: string; submenu: boolean; action: (() => void) | null }[]).map(item => {
+              const live = Boolean(item.action);
+              return (
+                /*
+                  Hovering **Model** opens its submenu; hovering any other row closes it.
+                  That is how a nested menu behaves everywhere — the chevron announces "there is
+                  more this way", and a disclosure you have to click twice to reach reads as two
+                  separate menus rather than one with a branch. Click still works, because the
+                  row is a target either way and a click that does nothing on an item you were
+                  told is clickable is worse than a redundant one.
+
+                  The parent stays open on hover-out: the submenu is `left: 100%` of this row, so
+                  the pointer has to travel across the row's own right edge to reach it, and
+                  closing on leave would take it away mid-journey. It closes when another row is
+                  hovered, or when the menu itself closes.
+                */
+                <div
+                  key={item.label}
+                  style={{ position: 'relative' }}
+                >
+                  <div
+                    onClick={() => {
+                      if (item.action) { item.action(); setCreateMenuOpen(false); }
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: sp.C,
+                      padding: `${sp.B}px ${sp.D}px`,
+                      fontSize: fs.sm,
+                      color: live ? c['content-primary'] : c['content-tertiary'],
+                      cursor: live ? 'pointer' : 'default',
+                    }}
+                    onMouseEnter={e => { if (live) e.currentTarget.style.backgroundColor = c['background-sunken']; }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                    }}
+                  >
+                    {item.label}
+                  </div>
+
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+
+      {/*
+        ── Entry flow: three modals, in order ──────────────────────────────────────
+          `+ → Model`      → the model-type modal (Suraj's, unchanged)
+          Build your own   → the old-vs-new canvas choice
+          New canvas       → Select connection
+          Next             → the canvas
+
+        ⚠️ **Only "Build your own model" continues.** Every other option in the first modal
+        (semantic layer, dbt, TML, datasets) closes on Next exactly as it always did.
+
+        The old/new choice used to be a nav submenu under Model. It moved here because at the
+        submenu the user hasn't yet said what kind of model they want, so "old" and "new" mean
+        nothing to choose between.
+      */}
+      {createModelOpen && (
+        <CreateModelModal
+          onClose={() => setCreateModelOpen(false)}
+          onBuildOwn={() => { setCreateModelOpen(false); setCanvasChoiceOpen(true); }}
+        />
+      )}
+
+      {canvasChoiceOpen && (
+        <CanvasChoiceModal
+          onClose={() => setCanvasChoiceOpen(false)}
+          onChooseNew={() => { setCanvasChoiceOpen(false); setSelectConnectionOpen(true); }}
+          /*
+            ⚠️ **Old canvas has nowhere to go.** It used to *be* the model-type modal, so with
+            that modal moving to the front of the flow there is no old-canvas destination in
+            this prototype. Closing is the honest placeholder — it does not pretend to open
+            something that doesn't exist. Needs a decision.
+          */
+          onChooseOld={() => setCanvasChoiceOpen(false)}
+        />
+      )}
+
+      {selectConnectionOpen && (
+        <SelectConnectionModal
+          onClose={() => setSelectConnectionOpen(false)}
+          onBack={() => { setSelectConnectionOpen(false); setCanvasChoiceOpen(true); }}
+          onNext={connId => { setModelConnection(connId); setSelectConnectionOpen(false); handleCreateMultiSourceModel(); }}
+        />
+      )}
     </>
   );
 };
@@ -747,7 +986,13 @@ const DataStudioWithVariant: React.FC = () => (
     {/* Above Shell and the canvas both: a caching run has to survive navigating away
         from the canvas that started it. See CacheProgress.tsx. */}
     <CacheProvider>
-      <DataStudio />
+      {/* Also above both: what a model's cache *consists of* has to outlive the canvas, so the
+          model listing and the model's Caching tab can read what the canvas set. Separate from
+          CacheProvider on purpose — that one is "a job is running", this one is "this model
+          holds these windows". See cache/ModelCacheContext.tsx. */}
+      <ModelCacheProvider>
+        <DataStudio />
+      </ModelCacheProvider>
     </CacheProvider>
   </VariantProvider>
 );

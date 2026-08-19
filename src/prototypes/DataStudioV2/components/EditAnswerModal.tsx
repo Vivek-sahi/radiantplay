@@ -23,7 +23,7 @@ import { c, sp, ff, fs, fw } from '../styles';
  */
 
 const SUNKEN = '#F6F8FA';
-const CARD_BORDER = '#E7EAEF';
+const CARD_BORDER = c['border-divider'];
 const CARD_SHADOW = '0 1px 2px rgba(25,35,49,0.05)';
 /** Column names are chips in this product, tinted whether or not they're selected. */
 const COL_CHIP = 'rgba(6,191,127,0.10)';
@@ -82,8 +82,8 @@ const EditAnswerModal: React.FC<EditAnswerModalProps> = ({
   const unit = chartData.unit ?? '';
   const chartOption = {
     grid: { left: 56, right: 20, top: 20, bottom: 40 },
-    xAxis: { type: 'category', data: cats, axisLine: { lineStyle: { color: '#E2E6EC' } }, axisTick: { show: false }, axisLabel: { color: '#64748B', fontSize: 12 } },
-    yAxis: { type: 'value', axisLabel: { color: '#8B96A5', fontSize: 11, formatter: (v: number) => `${v}${unit}` }, splitLine: { lineStyle: { color: '#F0F2F6' } } },
+    xAxis: { type: 'category', data: cats, axisLine: { lineStyle: { color: c['content-tertiary'] } }, axisTick: { show: false }, axisLabel: { color: '#64748B', fontSize: 12 } },
+    yAxis: { type: 'value', axisLabel: { color: '#8B96A5', fontSize: 12, formatter: (v: number) => `${v}${unit}` }, splitLine: { lineStyle: { color: c['content-tertiary'] } } },
     // Negative values are the point of the usage-decline answer, so bars below the
     // axis keep their own colour rather than reading as smaller positives.
     series: [{
@@ -102,7 +102,7 @@ const EditAnswerModal: React.FC<EditAnswerModalProps> = ({
   /** History control — undo / redo / reset, grouped in their own bordered cluster. */
   const histIcon = (path: React.ReactNode, label: string) => (
     <button key={label} title={label} aria-label={label} style={{ width: 32, height: 30, border: 'none', background: 'transparent', borderRadius: 6, cursor: 'pointer', color: '#8B96A5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#F0F2F6'; (e.currentTarget as HTMLElement).style.color = '#1D232F'; }}
+      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = c['background-subtle']; (e.currentTarget as HTMLElement).style.color = c['content-primary']; }}
       onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#8B96A5'; }}>
       <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">{path}</svg>
     </button>
@@ -118,7 +118,7 @@ const EditAnswerModal: React.FC<EditAnswerModalProps> = ({
         fontSize: fs.sm, fontWeight: fw.medium,
         color: c['content-primary'],
         background: isCol ? '#E8EFFB' : '#fff',
-        border: `1px solid ${isCol ? '#D3E1F8' : '#E7EAEF'}`,
+        border: `1px solid ${isCol ? '#D3E1F8' : c['border-divider']}`,
         borderRadius: 6, padding: '3px 9px', whiteSpace: 'nowrap' as const,
       }}>{label}</span>
     );
@@ -126,10 +126,10 @@ const EditAnswerModal: React.FC<EditAnswerModalProps> = ({
   const checkRow = (col: string) => {
     const on = checkedCols.has(col);
     return (
-      <button key={col} onClick={() => toggleCol(col)} style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '5px 12px', border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left', fontFamily: ff.primary }}
+      <button key={col} onClick={() => toggleCol(col)} style={{ display: 'flex', alignItems: 'center', gap: sp.C, width: '100%', padding: '5px 12px', border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left', fontFamily: ff.primary }}
         onMouseEnter={e => (e.currentTarget.style.background = c['background-subtle'])}
         onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-        <span style={{ width: 16, height: 16, borderRadius: 4, flexShrink: 0, border: `1.5px solid ${on ? '#2770EF' : '#C0C6CF'}`, background: on ? '#2770EF' : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <span style={{ width: 16, height: 16, borderRadius: 4, flexShrink: 0, border: `1.5px solid ${on ? '#2770EF' : c['border-default']}`, background: on ? '#2770EF' : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           {on && <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2.5 6l2.5 2.5 4.5-4.5" stroke="#fff" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>}
         </span>
         {/* Regular weight. Every row in this list is a chip on a tint, and medium on top
@@ -176,7 +176,7 @@ const EditAnswerModal: React.FC<EditAnswerModalProps> = ({
             background: '#fff', borderRadius: 10,
             boxShadow: '0 1px 3px rgba(25,35,49,0.10), 0 3px 10px rgba(25,35,49,0.06)',
           }}>
-            <button style={{ display: 'flex', alignItems: 'center', gap: 9, height: '100%', padding: '0 14px 0 10px', border: 'none', background: 'transparent', cursor: 'pointer', fontFamily: ff.primary, flexShrink: 0 }}>
+            <button style={{ display: 'flex', alignItems: 'center', gap: sp.B, height: '100%', padding: '0 14px 0 10px', border: 'none', background: 'transparent', cursor: 'pointer', fontFamily: ff.primary, flexShrink: 0 }}>
               {/* The dataset mark is a tinted tile in the product — it's the one place the
                   toolbar names an object rather than an action. */}
               <span style={{ width: 26, height: 26, borderRadius: 999, background: 'rgba(39,112,239,0.10)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -188,51 +188,51 @@ const EditAnswerModal: React.FC<EditAnswerModalProps> = ({
             {/* Scope | query. Inset from the ends so it reads as a seam inside one
                 control rather than as the edge of two. */}
             <span style={{ width: 1, alignSelf: 'stretch', margin: '7px 0', background: c['border-divider'], flexShrink: 0 }} />
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, padding: '0 12px' }}>
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: sp.B, minWidth: 0, padding: '0 12px' }}>
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}><circle cx="7" cy="7" r="5" stroke="#8B96A5" strokeWidth="1.5"/><path d="M11 11l3 3" stroke="#8B96A5" strokeWidth="1.5" strokeLinecap="round"/></svg>
-              <div style={{ display: 'flex', gap: 6, alignItems: 'center', overflow: 'hidden' }}>{tokens.map(token)}</div>
+              <div style={{ display: 'flex', gap: sp.B, alignItems: 'center', overflow: 'hidden' }}>{tokens.map(token)}</div>
             </div>
           </div>
           <button title="Clear" style={{ width: 32, height: 32, border: 'none', background: 'transparent', borderRadius: 6, cursor: 'pointer', color: '#8B96A5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <svg width="14" height="14" viewBox="0 0 12 12" fill="none"><path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
           </button>
-          <button style={{ ...pillBtn, padding: '0 22px', border: 'none', background: '#EEF0F4', color: c['content-primary'] }}>Go</button>
+          <button style={{ ...pillBtn, padding: '0 22px', border: 'none', background: c['background-subtle'], color: c['content-primary'] }}>Go</button>
           {/* Grouped, not loose: undo/redo/reset are one control set and belong in their
               own container rather than trailing the Go button as three stray glyphs. */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 2, border: `1px solid ${CARD_BORDER}`, borderRadius: 10, padding: 2, flexShrink: 0, background: '#fff' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: sp.A, border: `1px solid ${CARD_BORDER}`, borderRadius: 10, padding: sp.A, flexShrink: 0, background: '#fff' }}>
             {histIcon(<><path d="M7.5 5.5L4 9l3.5 3.5" /><path d="M4 9h7a4.5 4.5 0 0 1 0 9H8" /></>, 'Undo')}
             {histIcon(<><path d="M12.5 5.5L16 9l-3.5 3.5" /><path d="M16 9H9a4.5 4.5 0 0 0 0 9h3" /></>, 'Redo')}
             {histIcon(<><path d="M16 10a6 6 0 1 1-1.9-4.4" /><path d="M16.2 4v3.2H13" /></>, 'Reset')}
           </div>
         </div>
         {/* Body — sunken, with the three regions as cards */}
-        <div style={{ flex: 1, display: 'flex', minHeight: 0, background: SUNKEN, padding: 12, gap: 12 }}>
+        <div style={{ flex: 1, display: 'flex', minHeight: 0, background: SUNKEN, padding: sp.C, gap: sp.C }}>
           {/* Column picker */}
           {panelOpen && (
           <aside style={{ width: 250, flexShrink: 0, display: 'flex', flexDirection: 'column', minHeight: 0, background: '#fff', border: `1px solid ${CARD_BORDER}`, borderRadius: 10, boxShadow: CARD_SHADOW, overflow: 'hidden' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: sp.C, padding: '10px 12px 8px' }}>
               <span style={{ fontSize: fs.sm, color: c['content-tertiary'], fontWeight: fw.medium, cursor: 'pointer' }}>Popular</span>
-              <span style={{ fontSize: fs.sm, color: '#2770EF', fontWeight: fw.semibold, borderBottom: '2px solid #2770EF', paddingBottom: 2, cursor: 'pointer' }}>All</span>
+              <span style={{ fontSize: fs.sm, color: '#2770EF', fontWeight: fw.semibold, borderBottom: '2px solid #2770EF', paddingBottom: sp.A, cursor: 'pointer' }}>All</span>
               {/* Collapse the picker — the product puts this at the end of the tab row. */}
               <button onClick={() => setPanelOpen(false)} title="Hide columns" style={{ marginLeft: 'auto', width: 24, height: 24, border: 'none', background: 'transparent', borderRadius: 5, cursor: 'pointer', color: '#8B96A5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <svg width="16" height="16" viewBox="0 0 18 18" fill="none"><rect x="2" y="3" width="14" height="12" rx="2" stroke="currentColor" strokeWidth="1.4"/><rect x="2.8" y="3.8" width="4.4" height="10.4" rx="1.2" fill="currentColor"/></svg>
               </button>
             </div>
             <div style={{ padding: '2px 12px 10px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, height: 34, border: `1px solid ${CARD_BORDER}`, borderRadius: 8, padding: '0 10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, height: 34, border: `1px solid ${CARD_BORDER}`, borderRadius: 8, padding: '0 10px' }}>
                 <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5" stroke="#A5ACB9" strokeWidth="1.5"/><path d="M11 11l3 3" stroke="#A5ACB9" strokeWidth="1.5" strokeLinecap="round"/></svg>
                 <span style={{ fontSize: fs.sm, color: c['content-tertiary'] }}>Find columns</span>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 9, color: '#2770EF', fontSize: fs.sm, fontWeight: fw.semibold, cursor: 'pointer' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: sp.A, marginTop: sp.B, color: '#2770EF', fontSize: fs.sm, fontWeight: fw.semibold, cursor: 'pointer' }}>
                 <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 2v8M2 6h8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg>Add
               </div>
             </div>
-            <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 10, borderTop: `1px solid ${c['border-divider']}` }}>
-              <div style={{ padding: '10px 12px 4px', fontSize: fs.sm, fontWeight: fw.regular, color: c['content-secondary'], display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ flex: 1, overflowY: 'auto', paddingBottom: sp.C, borderTop: `1px solid ${c['border-divider']}` }}>
+              <div style={{ padding: '10px 12px 4px', fontSize: fs.sm, fontWeight: fw.regular, color: c['content-secondary'], display: 'flex', alignItems: 'center', gap: sp.B }}>
                 <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M3 4.5l3 3 3-3" stroke="#8B96A5" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>Measures
               </div>
               {measures.map(checkRow)}
-              <div style={{ padding: '12px 12px 4px', fontSize: fs.sm, fontWeight: fw.regular, color: c['content-secondary'], display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div style={{ padding: '12px 12px 4px', fontSize: fs.sm, fontWeight: fw.regular, color: c['content-secondary'], display: 'flex', alignItems: 'center', gap: sp.B }}>
                 <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M3 4.5l3 3 3-3" stroke="#8B96A5" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>Attributes
               </div>
               {attributes.map(checkRow)}
@@ -245,7 +245,7 @@ const EditAnswerModal: React.FC<EditAnswerModalProps> = ({
           <div style={{ flex: 1, minWidth: 0, display: 'flex', background: '#fff', border: `1px solid ${CARD_BORDER}`, borderRadius: 10, boxShadow: CARD_SHADOW, overflow: 'hidden' }}>
           <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', padding: '18px 22px' }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: sp.D }}>
-              <div style={{ minWidth: 0, display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+              <div style={{ minWidth: 0, display: 'flex', alignItems: 'flex-start', gap: sp.C }}>
                 {!panelOpen && (
                   <button onClick={() => setPanelOpen(true)} title="Show columns" style={{ width: 26, height: 26, border: `1px solid ${CARD_BORDER}`, background: '#fff', borderRadius: 6, cursor: 'pointer', color: '#8B96A5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     <svg width="15" height="15" viewBox="0 0 18 18" fill="none"><rect x="2" y="3" width="14" height="12" rx="2" stroke="currentColor" strokeWidth="1.4"/><path d="M7 3v12" stroke="currentColor" strokeWidth="1.4"/></svg>
@@ -253,12 +253,12 @@ const EditAnswerModal: React.FC<EditAnswerModalProps> = ({
                 )}
                 <div style={{ minWidth: 0 }}>
                   <div style={{ fontSize: 19, fontWeight: fw.semibold, color: c['content-primary'], letterSpacing: '-0.2px' }}>{title}</div>
-                  <div style={{ fontSize: fs.md, color: c['content-tertiary'], marginTop: 3 }}>Add description</div>
+                  <div style={{ fontSize: fs.md, color: c['content-tertiary'], marginTop: sp.A }}>Add description</div>
                 </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, flexShrink: 0 }}>
-                <div style={{ display: 'flex', background: '#F0F2F6', borderRadius: 8, padding: 3, gap: 2 }}>
-                  <button onClick={() => setChart(false)} style={{ width: 32, height: 27, border: 'none', borderRadius: 6, cursor: 'pointer', background: !chart ? '#fff' : 'transparent', boxShadow: !chart ? '0 1px 2px rgba(25,35,49,0.12)' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', color: !chart ? '#1D232F' : '#8B96A5' }}>
+                <div style={{ display: 'flex', background: c['background-subtle'], borderRadius: 8, padding: sp.A, gap: sp.A }}>
+                  <button onClick={() => setChart(false)} style={{ width: 32, height: 27, border: 'none', borderRadius: 6, cursor: 'pointer', background: !chart ? '#fff' : 'transparent', boxShadow: !chart ? '0 1px 2px rgba(25,35,49,0.12)' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', color: !chart ? c['content-primary'] : '#8B96A5' }}>
                     <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4"><rect x="2" y="2.5" width="12" height="11" rx="1"/><path d="M2 6h12M6 6v7.5"/></svg>
                   </button>
                   <button onClick={() => setChart(true)} style={{ width: 32, height: 27, border: 'none', borderRadius: 6, cursor: 'pointer', background: chart ? '#fff' : 'transparent', boxShadow: chart ? '0 1px 2px rgba(25,35,49,0.12)' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', color: chart ? '#2770EF' : '#8B96A5' }}>
@@ -271,9 +271,9 @@ const EditAnswerModal: React.FC<EditAnswerModalProps> = ({
               </div>
             </div>
             {filterChips.length > 0 && (
-              <div style={{ marginTop: sp.C, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              <div style={{ marginTop: sp.C, display: 'flex', flexWrap: 'wrap', gap: sp.B }}>
                 {filterChips.map(f => (
-                  <span key={f.label + f.value} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: fs.sm, background: '#F0F2F6', borderRadius: 20, padding: '6px 14px', color: c['content-secondary'] }}>
+                  <span key={f.label + f.value} style={{ display: 'inline-flex', alignItems: 'center', gap: sp.B, fontSize: fs.sm, background: c['background-subtle'], borderRadius: 20, padding: '6px 14px', color: c['content-secondary'] }}>
                     <span style={{ color: c['content-secondary'] }}>{f.label}</span>
                     <span style={{ fontWeight: fw.semibold, color: c['content-primary'] }}>{f.value}</span>
                   </span>
@@ -291,7 +291,7 @@ const EditAnswerModal: React.FC<EditAnswerModalProps> = ({
                       ))}
                     </div>
                     {tableRows.map((row, i) => (
-                      <div key={i} style={{ display: 'flex', padding: '8px 14px', borderBottom: `1px solid ${c['border-divider']}`, background: i % 2 ? '#FAFBFC' : '#fff' }}>
+                      <div key={i} style={{ display: 'flex', padding: '8px 14px', borderBottom: `1px solid ${c['border-divider']}`, background: i % 2 ? c['background-sunken'] : '#fff' }}>
                         {row.map((cell, j) => (
                           <span key={j} style={{ flex: 1, fontSize: fs.sm, color: c['content-primary'], fontWeight: j === row.length - 1 ? fw.semibold : fw.regular }}>{cell}</span>
                         ))}
@@ -303,7 +303,7 @@ const EditAnswerModal: React.FC<EditAnswerModalProps> = ({
           </div>
           {/* Viz-type rail — inside the answer card, on its own tinted ground so the
               column of controls separates from the answer without a second card. */}
-          <div style={{ width: 48, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '8px 0', gap: 2, background: '#FBFCFD', borderLeft: `1px solid ${c['border-divider']}` }}>
+          <div style={{ width: 48, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '8px 0', gap: sp.A, background: c['background-base'], borderLeft: `1px solid ${c['border-divider']}` }}>
             {railIcon(<path d="M3 15V9M7.5 15V4M12 15V7M16.5 15v-4" />, true)}
             {railIcon(<><rect x="3" y="4" width="6" height="5" rx="1" /><rect x="11" y="4" width="6" height="5" rx="1" /><rect x="3" y="11" width="14" height="5" rx="1" /></>)}
             {railIcon(<><path d="M4 16V6" /><path d="M10 16V4" /><path d="M16 16V9" /></>)}

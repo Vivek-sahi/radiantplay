@@ -54,7 +54,7 @@ const SEV_COLORS: Record<Severity, { bg: string; fg: string; chip: string }> = {
 
 const SeverityBadge: React.FC<{ severity: Severity }> = ({ severity }) => (
   <span style={{
-    fontSize: 10, fontWeight: fw.medium,
+    fontSize: 12, fontWeight: fw.medium,
     padding: '2px 7px', borderRadius: 3,
     backgroundColor: SEV_COLORS[severity].bg,
     color: SEV_COLORS[severity].fg,
@@ -81,7 +81,7 @@ export const QualityModal: React.FC<{ onClose: () => void; onReviewWithAgent: ()
           <div>
             <div style={{ fontSize: fs.md, fontWeight: fw.semibold, color: c['content-primary'] }}>Review data quality</div>
             <div style={{ fontSize: fs.xs, color: c['content-secondary'], marginTop: 1 }}>
-              Campaign Performance · v1{triggeredBy && <span style={{ marginLeft: 8, color: c['content-tertiary'] }}>· opened from {triggeredBy}</span>}
+              Campaign Performance · v1{triggeredBy && <span style={{ marginLeft: sp.B, color: c['content-tertiary'] }}>· opened from {triggeredBy}</span>}
             </div>
           </div>
           <button onClick={onClose} style={{ marginLeft: 'auto', width: 28, height: 28, border: 'none', background: 'transparent', cursor: 'pointer', color: c['content-secondary'], fontSize: 20, lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 6 }}
@@ -116,7 +116,7 @@ export const QualityModal: React.FC<{ onClose: () => void; onReviewWithAgent: ()
                   {subset.map(issue => (
                     <div key={issue.id} style={{ display: 'flex', alignItems: 'flex-start', gap: sp.C, padding: `${sp.C}px 0`, borderBottom: `1px solid ${c['border-divider']}` }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: sp.B, marginBottom: sp.A }}>
                           <code style={{ fontSize: fs.xs, fontFamily: ff.mono, color: c['content-primary'], backgroundColor: c['background-subtle'], padding: '1px 6px', borderRadius: 4 }}>{issue.table}.{issue.column}</code>
                           <SeverityBadge severity={issue.severity} />
                         </div>
@@ -137,7 +137,7 @@ export const QualityModal: React.FC<{ onClose: () => void; onReviewWithAgent: ()
           <button onClick={onClose} style={{ height: 32, padding: '0 14px', border: `1px solid ${c['border-default']}`, borderRadius: 6, backgroundColor: c['background-base'], cursor: 'pointer', fontSize: fs.sm, fontWeight: fw.medium, fontFamily: ff.primary, color: c['content-primary'] }}>
             Cancel
           </button>
-          <button onClick={onReviewWithAgent} style={{ height: 32, padding: '0 16px', border: 'none', borderRadius: 6, backgroundColor: '#2563EB', color: 'white', cursor: 'pointer', fontSize: fs.sm, fontWeight: fw.medium, fontFamily: ff.primary, display: 'inline-flex', alignItems: 'center', gap: 6 }}
+          <button onClick={onReviewWithAgent} style={{ height: 32, padding: '0 16px', border: 'none', borderRadius: 6, backgroundColor: '#2563EB', color: 'white', cursor: 'pointer', fontSize: fs.sm, fontWeight: fw.medium, fontFamily: ff.primary, display: 'inline-flex', alignItems: 'center', gap: sp.B }}
             onMouseEnter={e => e.currentTarget.style.backgroundColor = '#1d4ed8'}
             onMouseLeave={e => e.currentTarget.style.backgroundColor = '#2563EB'}
           >
@@ -156,14 +156,14 @@ const ModalSection: React.FC<{ title: string; subtitle?: string; children: React
   <div style={{ marginBottom: sp.E }}>
     <div style={{ marginBottom: sp.C }}>
       <div style={{ fontSize: fs.sm, fontWeight: fw.semibold, color: c['content-primary'] }}>{title}</div>
-      {subtitle && <div style={{ fontSize: fs.xs, color: c['content-secondary'], marginTop: 2 }}>{subtitle}</div>}
+      {subtitle && <div style={{ fontSize: fs.xs, color: c['content-secondary'], marginTop: sp.A }}>{subtitle}</div>}
     </div>
     {children}
   </div>
 );
 
 const StatPill: React.FC<{ label: string; count: number; color: string; bg: string }> = ({ label, count, color, bg }) => (
-  <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', borderRadius: 12, backgroundColor: bg, color, fontSize: fs.xs, fontFamily: ff.primary, fontWeight: fw.medium }}>
+  <div style={{ display: 'inline-flex', alignItems: 'center', gap: sp.B, padding: '4px 10px', borderRadius: 12, backgroundColor: bg, color, fontSize: fs.xs, fontFamily: ff.primary, fontWeight: fw.medium }}>
     <span style={{ fontWeight: fw.semibold }}>{count}</span>
     <span style={{ opacity: 0.85 }}>{label}</span>
   </div>
@@ -174,7 +174,7 @@ const StatPill: React.FC<{ label: string; count: number; color: string; bg: stri
 const ProjectIdentity: React.FC = () => (
   <>
     <span style={{ ...ts.contentLabelSubhead, color: c['content-primary'] }}>Campaign Performance</span>
-    <span style={{ fontSize: 11, fontWeight: fw.regular, color: c['content-secondary'] }}>v1</span>
+    <span style={{ fontSize: 12, fontWeight: fw.regular, color: c['content-secondary'] }}>v1</span>
   </>
 );
 
@@ -222,7 +222,7 @@ const HeaderDQ1: React.FC<{ onQualityClick: () => void }> = ({ onQualityClick })
   <div style={mainHeaderStyle}>
     <ProjectIdentity />
     <button onClick={onQualityClick}
-      style={{ height: 22, padding: '0 8px', border: 'none', borderRadius: 11, backgroundColor: 'transparent', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11, fontFamily: ff.primary, color: SEV_COLORS.high.fg }}
+      style={{ height: 22, padding: '0 8px', border: 'none', borderRadius: 11, backgroundColor: 'transparent', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: sp.B, fontSize: 12, fontFamily: ff.primary, color: SEV_COLORS.high.fg }}
       onMouseEnter={e => e.currentTarget.style.backgroundColor = SEV_COLORS.high.bg}
       onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
     >
@@ -247,7 +247,7 @@ const HeaderDQ2: React.FC<{ onQualityClick: () => void }> = ({ onQualityClick })
     <ProjectIdentity />
     <div style={rightActionsStyle}>
       <button onClick={onQualityClick}
-        style={{ height: 26, padding: '0 12px', border: `1px solid ${c['border-default']}`, borderRadius: 6, backgroundColor: c['background-base'], cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 12, fontWeight: fw.medium, fontFamily: ff.primary, color: c['content-primary'] }}
+        style={{ height: 26, padding: '0 12px', border: `1px solid ${c['border-default']}`, borderRadius: 6, backgroundColor: c['background-base'], cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: sp.B, fontSize: 12, fontWeight: fw.medium, fontFamily: ff.primary, color: c['content-primary'] }}
         onMouseEnter={e => e.currentTarget.style.backgroundColor = c['background-subtle']}
         onMouseLeave={e => e.currentTarget.style.backgroundColor = c['background-base']}
       >
@@ -270,7 +270,7 @@ const HeaderDQ3: React.FC<{ onQualityClick: () => void }> = ({ onQualityClick })
   <div style={mainHeaderStyle}>
     <ProjectIdentity />
     <div style={rightActionsStyle}>
-      <span style={{ fontSize: 11, color: c['content-secondary'], fontFamily: ff.primary, display: 'inline-flex', alignItems: 'center', gap: 6, marginRight: 4 }}>
+      <span style={{ fontSize: 12, color: c['content-secondary'], fontFamily: ff.primary, display: 'inline-flex', alignItems: 'center', gap: sp.B, marginRight: sp.A }}>
         <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: SEV_COLORS.high.chip }} />
         9 issues · 3 high
       </span>
@@ -300,11 +300,11 @@ const HeaderDQ4: React.FC<{ onQualityClick: () => void }> = ({ onQualityClick })
       <ProjectIdentity />
       <div style={rightActionsStyle}>
         <button onClick={onQualityClick}
-          style={{ height: 26, padding: '0 10px', border: `1px solid ${tone.fg}33`, borderRadius: 6, backgroundColor: tone.bg, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 12, fontFamily: ff.primary, color: tone.fg }}
+          style={{ height: 26, padding: '0 10px', border: `1px solid ${tone.fg}33`, borderRadius: 6, backgroundColor: tone.bg, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: sp.B, fontSize: 12, fontFamily: ff.primary, color: tone.fg }}
         >
           <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: tone.dot }} />
           Quality {score}%
-          <span style={{ fontSize: 10, opacity: 0.85 }}>· 9 issues</span>
+          <span style={{ fontSize: 12, opacity: 0.85 }}>· 9 issues</span>
         </button>
         <StandardActions />
       </div>
@@ -321,7 +321,7 @@ const HeaderDQ5: React.FC<{ onQualityClick: () => void }> = ({ onQualityClick })
     <ProjectIdentity />
     <div style={rightActionsStyle}>
       <button onClick={onQualityClick}
-        style={{ height: 26, padding: '0 10px', border: `1px solid ${SEV_COLORS.high.chip}55`, borderRadius: 6, backgroundColor: SEV_COLORS.high.bg, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 12, fontFamily: ff.primary, color: SEV_COLORS.high.fg, fontWeight: fw.medium }}
+        style={{ height: 26, padding: '0 10px', border: `1px solid ${SEV_COLORS.high.chip}55`, borderRadius: 6, backgroundColor: SEV_COLORS.high.bg, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: sp.B, fontSize: 12, fontFamily: ff.primary, color: SEV_COLORS.high.fg, fontWeight: fw.medium }}
       >
         <svg width="11" height="11" viewBox="0 0 18 18" fill="none" stroke={SEV_COLORS.high.fg} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
           <path d="M9 1.5L1.5 15.75H16.5L9 1.5Z"/>
@@ -361,8 +361,8 @@ export const DataQualityDiscoverabilityCompare: React.FC = () => {
 
       {/* Page header */}
       <div style={{ padding: '40px 48px 24px', maxWidth: 1100, width: '100%', boxSizing: 'border-box' }}>
-        <div style={{ fontSize: 11, fontWeight: fw.medium, color: c['content-tertiary'], textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Playground · Data quality discoverability</div>
-        <div style={{ fontSize: 22, fontWeight: fw.semibold, color: c['content-primary'], marginBottom: 10 }}>Five header variants for surfacing data quality at the model level</div>
+        <div style={{ fontSize: 12, fontWeight: fw.medium, color: c['content-tertiary'], textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: sp.B }}>Playground · Data quality discoverability</div>
+        <div style={{ fontSize: 22, fontWeight: fw.semibold, color: c['content-primary'], marginBottom: sp.C }}>Five header variants for surfacing data quality at the model level</div>
         <div style={{ fontSize: fs.sm, color: c['content-secondary'], lineHeight: 1.6, maxWidth: 780 }}>
           Column-level quality already shows in ColumnsView (null %, duplicates, anomalies). What's missing is a model-level surface that tells Sara whether the model has unresolved problems before publish or share. All five variants click through to the same plan modal — the existing <code style={{ fontSize: fs.xs, padding: '1px 6px', backgroundColor: c['background-subtle'], borderRadius: 4 }}>review_data_quality</code> output as a standalone surface, with a "Review with agent" alternative in the footer.
         </div>
@@ -372,13 +372,13 @@ export const DataQualityDiscoverabilityCompare: React.FC = () => {
       <div style={{ padding: '0 48px 80px', display: 'flex', flexDirection: 'column', gap: 36, maxWidth: 1100, width: '100%', boxSizing: 'border-box' }}>
         {VARIANTS.map(v => (
           <div key={v.id}>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 8 }}>
-              <span style={{ fontSize: 11, fontFamily: ff.mono, fontWeight: fw.medium, color: c['content-tertiary'], letterSpacing: '0.06em', backgroundColor: c['background-subtle'], padding: '3px 7px', borderRadius: 4 }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: sp.C, marginBottom: sp.B }}>
+              <span style={{ fontSize: 12, fontFamily: ff.mono, fontWeight: fw.medium, color: c['content-tertiary'], letterSpacing: '0.06em', backgroundColor: c['background-subtle'], padding: '3px 7px', borderRadius: 4 }}>
                 {v.id}
               </span>
               <span style={{ fontSize: fs.md, fontWeight: fw.semibold, color: c['content-primary'] }}>{v.label}</span>
             </div>
-            <div style={{ fontSize: fs.xs, color: c['content-secondary'], lineHeight: 1.55, marginBottom: 14, maxWidth: 780 }}>{v.blurb}</div>
+            <div style={{ fontSize: fs.xs, color: c['content-secondary'], lineHeight: 1.55, marginBottom: sp.D, maxWidth: 780 }}>{v.blurb}</div>
             <div style={{ border: `1px solid ${c['border-divider']}`, borderRadius: 10, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
               <v.Header onQualityClick={() => { setActiveVariant(v.id); setModalOpen(true); }} />
             </div>
@@ -414,11 +414,11 @@ const rightActionsStyle: React.CSSProperties = {
   marginLeft: 'auto',
   display: 'flex',
   alignItems: 'center',
-  gap: 6,
+  gap: sp.B,
 };
 
 const iconBtn: React.CSSProperties = {
-  width: 26, height: 26, padding: 4,
+  width: 26, height: 26, padding: sp.A,
   border: `1px solid ${c['border-default']}`, borderRadius: 6,
   backgroundColor: 'transparent', cursor: 'pointer',
   display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -429,7 +429,7 @@ const secondaryBtn: React.CSSProperties = {
   height: 26, padding: '0 12px',
   border: `1px solid ${c['border-default']}`, borderRadius: 6,
   backgroundColor: c['background-base'], cursor: 'pointer',
-  display: 'inline-flex', alignItems: 'center', gap: 6,
+  display: 'inline-flex', alignItems: 'center', gap: sp.B,
   fontSize: 12, fontWeight: fw.medium, fontFamily: ff.primary,
   color: c['content-primary'], boxSizing: 'border-box',
 };
@@ -439,7 +439,7 @@ const publishBtn: React.CSSProperties = {
   border: 'none', borderRadius: 6,
   backgroundColor: '#2563EB', color: 'white',
   cursor: 'pointer',
-  display: 'inline-flex', alignItems: 'center', gap: 7,
+  display: 'inline-flex', alignItems: 'center', gap: sp.B,
   fontSize: 12, fontWeight: fw.medium, fontFamily: ff.primary,
   boxSizing: 'border-box',
   transition: 'background-color 0.15s',

@@ -15,19 +15,31 @@ import {
   Vertical,
 } from '@/components';
 import { c, spacing } from '../styles';
+import { WINDOW_LABEL, WINDOW_OPTIONS } from '../../_shared/caching/windows';
 import styles from './CachingSettingsModal.module.css';
 import type {
+  CacheScope,
   CacheWindow,
   DataModel,
   Frequency,
   Schedule,
   TableCacheSetting,
   Weekday,
-  WindowMonths,
 } from '../types';
 
+/**
+ * Opting a table into a window here keeps Near Store's reviewed default of 13 months. The
+ * canvas defaults to the shortest window instead, because there the cache is blocking a join —
+ * same list, different urgency. See `_shared/caching/windows.ts`.
+ *
+ * Overridable per caller via `defaultTableWindow` rather than changed outright: 13 months is
+ * right where the cache is a cost optimisation over years of warehouse data, and 24 hours is
+ * right where the first cache has to finish before the user can carry on. One list, two defaults.
+ */
+const DEFAULT_MODEL_TABLE_WINDOW = '13mo' as const;
+
 export interface CacheConfigDraft {
-  window: CacheWindow;
+  window: CacheScope;
   schedule: Schedule;
   tableSettings: TableCacheSetting[];
   /** Enable flow only: cache immediately on save, or wait for the first scheduled run. */
@@ -41,10 +53,12 @@ const FREQ_OPTIONS = [
 ];
 const HOUR_OPTIONS = Array.from({ length: 24 }, (_, h) => ({ id: String(h), label: String(h).padStart(2, '0') }));
 const MINUTE_OPTIONS = [0, 15, 30, 45].map((m) => ({ id: String(m), label: String(m).padStart(2, '0') }));
-const MONTHS_OPTIONS: { id: string; label: string }[] = [1, 3, 6, 13].map((m) => ({
-  id: String(m),
-  label: `Last ${m} months`,
-}));
+/**
+ * Window options come from the shared list, so this dropdown and Data Studio's canvas offer the
+ * same durations. Replaces a months-only `[1, 3, 6, 13]` — those four are all still here, with
+ * hours and days added below them for the case where a cache blocks a join and has to be fast.
+ */
+const WINDOW_SELECT_OPTIONS = WINDOW_OPTIONS.map((w) => ({ id: w, label: WINDOW_LABEL[w] }));
 
 const WEEKDAYS: Weekday[] = ['M', 'T', 'W', 'Th', 'F', 'Sa', 'S'];
 
@@ -73,7 +87,32 @@ export const CachingSettingsModal: React.FC<{
   isEdit?: boolean;
   onClose: () => void;
   onSave: (draft: CacheConfigDraft) => void;
-}> = ({ model, initial, isEdit = false, onClose, onSave }) => {
+  /**
+   * Whether data outside the cache window can still be queried from the source.
+   *
+   * ⚠️ **False for a multi-source model.** Near Store's cache is an optimisation over one
+   * warehouse: cache the recent slice, fall through to the source for anything older. A model
+   * that spans several warehouses has no such fallback, because querying live is exactly what
+   * cannot join across warehouses — so there the window is not a cost/coverage trade-off, it is
+   * the definition of what the model contains.
+   *
+   * Defaults to true, which is Near Store's own behaviour unchanged. Only Data Studio's
+   * consolidated surfaces pass false, and only for models that draw on more than one source.
+   */
+  canFallBackToLive?: boolean;
+  /**
+   * Which window a table gets when it is switched to **Time window**.
+   *
+   * Defaults to Near Store's reviewed 13 months. Data Studio's canvas passes the shortest window,
+   * because there caching is what unblocks a cross-warehouse join and the point of a window is to
+   * make the first cache small enough to finish while the user waits — a 13-month default caches
+   * far more data than the join needs to exist.
+   */
+  defaultTableWindow?: CacheWindow;
+}> = ({
+  model, initial, isEdit = false, onClose, onSave, canFallBackToLive = true,
+  defaultTableWindow = DEFAULT_MODEL_TABLE_WINDOW,
+}) => {
   const defaultTableSettings: TableCacheSetting[] = useMemo(
     () =>
       initial?.tableSettings ??
@@ -81,7 +120,7 @@ export const CachingSettingsModal: React.FC<{
     [initial, model.tables],
   );
 
-  const [window, setWindow] = useState<CacheWindow>(initial?.window ?? 'full');
+  const [window, setWindow] = useState<CacheScope>(initial?.window ?? 'full');
   const [schedule, setSchedule] = useState<Schedule>(
     initial?.schedule ?? { frequency: 'daily', hour: 9, minute: 0, excludeWeekends: true, timezone: 'Asia/Calcutta' },
   );
@@ -135,7 +174,7 @@ export const CachingSettingsModal: React.FC<{
                 { id: 'custom', label: 'Custom' },
               ]}
               value={window}
-              onChange={(v) => setWindow(v as CacheWindow)}
+              onChange={(v) => setWindow(v as CacheScope)}
               aria-label="Cache window"
             />
           </Horizontal>
@@ -148,7 +187,9 @@ export const CachingSettingsModal: React.FC<{
                   Custom settings
                 </Typography>
                 <Typography variant="body-normal" color="gray-light" noMargin>
-                  Set how much history each table caches. Everything older is queried live directly from source.
+                  {canFallBackToLive
+                    ? 'Set how much history each table caches. Everything older is queried live directly from source.'
+                    : 'Set how much history each table caches. This model draws on more than one warehouse, so anything older isn’t available — the window is what the model covers.'}
                 </Typography>
               </Vertical>
 
@@ -161,7 +202,9 @@ export const CachingSettingsModal: React.FC<{
                   <Typography variant="overline" color="gray-light" noMargin>Cache setting</Typography>
                   <Tooltip
                     maxWidth={300}
-                    content="“Time window” caches only recent data (e.g. the last 13 months) in ThoughtSpot; anything older is queried live directly from source. Changing a table's window re-caches it on the next run and drops the old snapshot."
+                    content={canFallBackToLive
+                      ? '“Time window” caches only recent data (e.g. the last 13 months) in ThoughtSpot; anything older is queried live directly from source. Changing a table\'s window re-caches it on the next run and drops the old snapshot.'
+                      : '“Time window” caches only recent data in ThoughtSpot. This model spans more than one warehouse, so data outside the window can’t be queried live — the window defines what the model covers. Changing a table\'s window re-caches it on the next run and drops the old snapshot.'}
                   >
                     <span className={styles.helpTrigger}>
                       <Icon name="info-circle" size="s" color={c['content-secondary']} />
@@ -199,7 +242,7 @@ export const CachingSettingsModal: React.FC<{
                         onChange={(v) =>
                           updateTable(t.id, {
                             mode: v as TableCacheSetting['mode'],
-                            windowMonths: v === 'window' ? ts.windowMonths ?? 13 : undefined,
+                            cacheWindow: v === 'window' ? ts.cacheWindow ?? defaultTableWindow : undefined,
                             referenceColumnId: v === 'window' ? (ts.referenceColumnId ?? dateCols[0]?.id) : undefined,
                           })
                         }
@@ -213,9 +256,9 @@ export const CachingSettingsModal: React.FC<{
                       ) : ts.mode === 'window' ? (
                         <>
                           <Select
-                            options={MONTHS_OPTIONS}
-                            value={String(ts.windowMonths ?? 13)}
-                            onChange={(v) => updateTable(t.id, { windowMonths: Number(v) as WindowMonths })}
+                            options={WINDOW_SELECT_OPTIONS}
+                            value={ts.cacheWindow ?? defaultTableWindow}
+                            onChange={(v) => updateTable(t.id, { cacheWindow: v as CacheWindow })}
                             size="small"
                             aria-label={`Window length for ${t.name}`}
                           />
