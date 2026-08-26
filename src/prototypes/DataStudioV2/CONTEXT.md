@@ -82,7 +82,7 @@ draft and publish · Parameters · Settings.
 | Canvas ⇄ cache dialog adapter | `cache/modelCacheAdapter.ts` |
 | Model cache state above the canvas | `cache/ModelCacheContext.tsx` (keyed by model **name** — the canvas has no id) |
 | Cache progress (clock-driven) | `components/CacheProgress.tsx` |
-| Shared cache window list | `_shared/caching/windows.ts` |
+| Cache window list (own copy — AgentDB is frozen) | `components/cache/nearstore/windows.ts` |
 | Join-aware merge | `buildModelMerge` in `ModelCanvas.tsx` |
 | Spreadsheet | `components/Spreadsheet.tsx`, `DataSheetToolbar` |
 | Readiness flow (POC + Demo) | `components/pocReadiness/` |

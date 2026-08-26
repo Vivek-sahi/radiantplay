@@ -319,9 +319,9 @@ export const models: DataModel[] = [
       status: 'cached',
       window: 'custom',
       tableSettings: [
-        { tableId: 'sessions', mode: 'window', cacheWindow: '13mo', referenceColumnId: 'session_ts' },
+        { tableId: 'sessions', mode: 'window', windowMonths: 13, referenceColumnId: 'session_ts' },
         { tableId: 'campaigns', mode: 'full_table' },
-        { tableId: 'touchpoints', mode: 'window', cacheWindow: '6mo', referenceColumnId: 'touch_ts' },
+        { tableId: 'touchpoints', mode: 'window', windowMonths: 6, referenceColumnId: 'touch_ts' },
       ],
       schedule: { ...dailyNineAm, hour: 3, excludeWeekends: false },
       cacheSizeMB: 35_020,

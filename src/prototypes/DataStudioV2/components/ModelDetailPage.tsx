@@ -25,7 +25,7 @@ import type { ModelColumn } from '../data/mockData';
 import type { DataObject } from '../data/dataObjects';
 // Near Store's model-caching components, used as they are rather than copied — see
 // cache/modelCacheAdapter.ts on why the two sides meet in exactly one file.
-import { CachingTab } from '../../NearStore/components/CachingTab';
+import { CachingTab } from './cache/nearstore/CachingTab';
 import { useModelCache } from './cache/ModelCacheContext';
 import { canFallBackToLive } from './cache/cacheState';
 import { fromNearStoreModel, toNearStoreModel } from './cache/modelCacheAdapter';

@@ -1,7 +1,7 @@
 import type {
   CacheRun, CacheState, Column, DataModel, ModelTable, Schedule, TableCacheSetting,
-} from '../../../NearStore/types';
-import type { CacheConfigDraft } from '../../../NearStore/components/CachingSettingsModal';
+} from './nearstore/types';
+import type { CacheConfigDraft } from './nearstore/CachingSettingsModal';
 import type { DataObject } from '../../data/dataObjects';
 import { tableMetadata } from '../../data/mockData';
 import {

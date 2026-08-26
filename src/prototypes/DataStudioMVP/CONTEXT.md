@@ -133,9 +133,13 @@ Its header, identical in both states:
 | UX concepts menu — ⚠️ **hidden** (`MENU_VISIBLE = false`), nothing deleted | `components/PrototypeConfig.tsx` |
 | Table detail panel · entry modals | `components/SelectConnectionModal.tsx` · `components/CanvasChoiceModal.tsx` |
 
-**Imported from elsewhere, not copied:** Near Store's `CachingSettingsModal` (the model cache on the
-detail page) and `_shared/caching/windows.ts`. Single vs multi-source is a property of the model, not
-a variant of the prototype — a fork would duplicate ~90% of that for one boolean.
+**Copied, not imported:** AgentDB's caching UI (`CachingTab`, `CachingSettingsModal`,
+`RunHistoryModal` and the types they need) lives in `components/cache/nearstore/` as **this
+prototype's own copy**, taken 2026-08-26. ⚠️ **AgentDB (`src/prototypes/NearStore/`) is frozen** —
+it is a shipped SKU handed to engineering, and nothing here may import from it or change it.
+It was briefly shared, and Data Studio's short cache windows leaked into AgentDB's dialog as a
+result; the copy exists so that cannot recur. Caching is out of this prototype's MVP scope, so
+this copy may be cut outright rather than developed.
 
 ---
 

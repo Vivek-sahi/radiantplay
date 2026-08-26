@@ -1,0 +1,9 @@
+/* Run-history note cell — single line, truncated. Full text on hover (tooltip).
+   A hard max-width keeps a long note from widening the table / forcing scroll. */
+.noteText {
+  display: block;
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

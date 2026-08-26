@@ -1,4 +1,15 @@
 /**
+ * ⚠️ DATA STUDIO'S OWN COPY of AgentDB (Pulse) caching. Taken 2026-08-26.
+ *
+ * AgentDB is a shipped SKU: it has been handed to engineering and built from. It is frozen —
+ * nothing in Data Studio may import from `src/prototypes/NearStore/`, and AgentDB must never be
+ * changed to serve Data Studio. That coupling happened once (a shared window list, 2026-08-12)
+ * and had to be unpicked; this copy exists so it cannot happen again.
+ *
+ * Change this copy freely. Caching is out of Data Studio's MVP scope, so it may well be cut
+ * outright before it is developed further.
+ */
+/**
  * Cache time windows — **one list, shared by every caching surface.**
  *
  * Two prototypes ask the user how much history to cache, and they used to disagree about the

@@ -11,6 +11,14 @@
 .emptyState p {
   max-width: 460px;
 }
+/* NoData spaces every child by one uniform gap; pull the description up toward
+   the title so the two read as a pair. Also pin its colour to a defined grey —
+   NoData defaults the description to --rd-sys-color-content-subtle, which is
+   undefined in this app (so it fell back to near-black). Title stays primary. */
+.emptyState p + p {
+  margin-top: calc(var(--spacing-2, 8px) * -1);
+  color: var(--rd-sys-color-content-secondary);
+}
 .emptyStateText {
   max-width: 480px;
 }

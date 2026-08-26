@@ -69,7 +69,7 @@ import { useModelCache } from './cache/ModelCacheContext';
 import CacheRequiredNotice from './cache/CacheRequiredNotice';
 // One caching dialog for the whole product — Near Store's, used as-is. See
 // `canvasCacheModel` in the adapter on why the canvas's own modal was removed.
-import { CachingSettingsModal, CacheConfigDraft } from '../../NearStore/components/CachingSettingsModal';
+import { CachingSettingsModal, CacheConfigDraft } from './cache/nearstore/CachingSettingsModal';
 import {
   CanvasCacheTable, canvasCacheModel, draftToCanvasCache, policyToDraft,
 } from './cache/modelCacheAdapter';
@@ -10764,7 +10764,7 @@ const ModelCanvas: React.FC<ModelCanvasProps> = ({ onBack, onPublished, onOpenSp
             canFallBackToLive={sources.size <= 1}
             /* The shortest window, not Near Store's 13 months: on the canvas a cache is what
                unblocks a join, so the default should be the one that finishes soonest and
-               moves the least data. Both live in `_shared/caching/windows.ts`. */
+               moves the least data. Both live in `components/cache/nearstore/windows.ts`. */
             defaultTableWindow={DEFAULT_JOIN_WINDOW}
             onClose={() => { pendingJoinRef.current = null; setCacheModalTables(null); }}
             onSave={(draft: CacheConfigDraft) => {

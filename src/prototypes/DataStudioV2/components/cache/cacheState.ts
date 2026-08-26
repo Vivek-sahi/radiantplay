@@ -12,22 +12,23 @@
  */
 
 import { NATIVE_TABLES, isInThoughtSpot } from '../../data/tableConnections';
-import { CacheWindow, WINDOW_SHORT, windowFraction } from '../../../_shared/caching/windows';
+import { CacheWindow, WINDOW_SHORT, windowFraction } from './nearstore/windows';
 
 // ── Window ────────────────────────────────────────────────────────────────────
 
 /**
- * The window list lives in `_shared/caching/windows.ts` — **one definition, both prototypes.**
+ * The window list lives in `./nearstore/windows.ts` — **this prototype's own copy.**
  *
- * Not duplicated here, because a list defined twice is a list that drifts, and the point of
- * consolidating with Near Store is that a window set on the canvas reads identically on the
- * model's Caching tab. Re-exported so callers in this prototype have one import.
+ * It used to be one definition shared with AgentDB (Pulse). That was wrong: AgentDB is a shipped
+ * SKU, already handed to engineering, and sharing meant Data Studio's need for short windows
+ * (24h/3d/7d) appeared in AgentDB's dialog, which only ever wanted months. Copied on 2026-08-26
+ * so the two can never move each other again. Re-exported so callers here have one import.
  */
 export type { CacheWindow };
 export {
   WINDOW_OPTIONS, WINDOW_LABEL, WINDOW_SHORT, WINDOW_HOURS,
   DEFAULT_JOIN_WINDOW, DEFAULT_MODEL_WINDOW, windowFraction,
-} from '../../../_shared/caching/windows';
+} from './nearstore/windows';
 
 // ── Refresh ───────────────────────────────────────────────────────────────────
 

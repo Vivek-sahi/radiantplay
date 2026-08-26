@@ -1,0 +1,56 @@
+/* Faithful 1:1 port of the inline styles previously in CachingSettingsModal.tsx. */
+
+/* Shared left-column width so labels + table names align. */
+.labelCol {
+  width: 240px;
+  flex-shrink: 0;
+}
+
+.tableHeaderRow {
+  padding-bottom: var(--spacing-1, 4px);
+  border-bottom: 1px solid var(--rd-sys-color-border-divider);
+}
+.tableRow {
+  min-height: 40px;
+  padding-bottom: var(--spacing-3, 12px);
+}
+.tableRowBordered {
+  border-bottom: 1px solid var(--rd-sys-color-border-divider);
+}
+
+.helpTrigger {
+  display: inline-flex;
+  cursor: help;
+}
+
+/* Full-width grey info banner at the top of the modal. Built from DS primitives
+   (Icon + Typography) because the Alert component can't do a grey background and
+   an info icon together — muted hides the icon, info forces a blue background. */
+.disclaimer {
+  width: 100%;
+  padding: var(--spacing-3) var(--spacing-4);
+  border-radius: var(--radius-md);
+  background-color: var(--rd-sys-color-background-sunken);
+}
+.monthlyInput {
+  max-width: 320px;
+}
+
+/* Weekday toggle chips (weekly schedule). */
+.dayChip {
+  min-width: 34px;
+  height: 32px;
+  padding: 0 var(--spacing-2, 8px);
+  border: none;
+  border-radius: var(--radius-md, 6px);
+  cursor: pointer;
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-sm, 14px);
+  font-weight: var(--font-weight-medium, 500);
+  background-color: var(--rd-sys-color-background-subtle);
+  color: var(--rd-sys-color-content-secondary);
+}
+.dayChipOn {
+  background-color: var(--rd-sys-color-background-information);
+  color: var(--rd-sys-color-content-brand);
+}

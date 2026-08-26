@@ -1,0 +1,78 @@
+/* Faithful 1:1 port of the inline styles previously in primitives.tsx.
+   Values are unchanged — same tokens, expressed as CSS vars with px fallbacks. */
+
+/* ── StatusPill ─────────────────────────────────────────────────────────── */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: var(--radius-badge, 4px);
+  padding: 2px var(--spacing-2, 8px);
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-xs, 12px);
+  line-height: var(--line-height-sm, 18px);
+  font-weight: var(--font-weight-medium, 500);
+  white-space: nowrap;
+}
+.success {
+  background-color: var(--rd-sys-color-background-success);
+  color: var(--rd-sys-color-content-success);
+}
+.failure {
+  background-color: var(--rd-sys-color-background-failure);
+  color: var(--rd-sys-color-content-failure);
+}
+.warning {
+  background-color: var(--rd-sys-color-background-warning);
+  color: var(--rd-sys-color-content-primary);
+}
+.info {
+  background-color: var(--rd-sys-color-background-information);
+  color: var(--rd-sys-color-content-information);
+}
+.neutral {
+  background-color: var(--rd-sys-color-background-subtle);
+  color: var(--rd-sys-color-content-secondary);
+}
+
+/* ── StatCard ───────────────────────────────────────────────────────────── */
+.statCard {
+  min-width: 160px;
+  flex: 1;
+}
+.statCardBody {
+  padding: var(--spacing-4, 16px) var(--spacing-5, 20px);
+}
+
+/* ── FloatingToast ──────────────────────────────────────────────────────── */
+.toastAnchor {
+  position: fixed;
+  left: 50%;
+  bottom: var(--spacing-7, 28px);
+  transform: translateX(-50%);
+  z-index: 4000;
+}
+/* Widen the toast past the DS 400px cap so our informative copy sits on one
+   line; anything longer than this wraps cleanly to two lines. */
+.toastWide {
+  max-width: 600px !important;
+}
+
+/* ── KeyValue ───────────────────────────────────────────────────────────── */
+.keyValueRow {
+  padding: var(--spacing-1, 4px) 0;
+}
+.keyValueLabel {
+  width: 180px;
+  flex-shrink: 0;
+}
+.keyValueValue {
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-sm, 14px);
+  line-height: var(--line-height-md, 20px);
+  color: var(--rd-sys-color-content-primary);
+}
+
+/* ── SectionHeader ──────────────────────────────────────────────────────── */
+.sectionHeader {
+  width: 100%;
+}
