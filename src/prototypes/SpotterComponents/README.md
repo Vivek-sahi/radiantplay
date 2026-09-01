@@ -20,15 +20,6 @@
 > | `ResponseGridView` | — (new, no old equivalent) |
 > | `ToolIcon` | — (new, no old equivalent) |
 >
-> The only consumer of the old blocks **visible in this repo** is the Spotter
-> prototype (`src/prototypes/Spotter/`), which would be migrated in that same
-> change. But designers may be using the old components in local branches and
-> forks that aren't on main — so when replacing:
->
-> - **Announce the change first** and give people time to speak up
-> - **Don't delete the old components immediately** — keep them for a
->   deprecation window so unmerged work still builds after syncing upstream
->
 > **Note for that migration — the grids differ.** The old `ChatThread` uses a
 > single 880px column with 16px side padding; the new layout is a 800px
 > content column with a 24px page gutter + 16px inner padding and a 768px
