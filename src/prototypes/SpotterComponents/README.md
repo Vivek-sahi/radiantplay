@@ -1,20 +1,27 @@
 # Spotter components
 
-> ## ⚠️ Maintainer decision needed (Faris)
+> ## ⚠️ Maintainer note (Faris)
 >
-> These components overlap with the shared Spotter DS at `src/spotter/`
-> (`ReasoningBlock`, `AgentMessage`, `ChatThread`). When accepting this PR,
-> please pick one:
+> Some of these components overlap with the shared Spotter DS at
+> `src/spotter/`. **This PR keeps them separate** ("Spotter new components")
+> — nothing in `src/spotter/` changes.
 >
-> 1. **Keep separate** — leave this folder as-is under
->    `src/prototypes/SpotterComponents/` ("Spotter new components").
->    Prototypes copy them in per the install steps below. Nothing in
->    `src/spotter/` changes.
-> 2. **Replace the existing components** — promote `Reasoning`, `UserMessage`,
->    and `PromptBar` into `src/spotter/` as the new official versions and
->    retire the older equivalents.
+> They are structured for easy promotion later: everything is imported via
+> `components/index.ts`, so once verified in a second prototype, the folder
+> can move into `src/spotter/` and consumers only update one import path.
 >
-> Until this decision is made, these components stay prototype-local.
+> Replacement map for that promotion:
+>
+> | New (this folder) | Replaces in `src/spotter/` |
+> |-------------------|----------------------------|
+> | `Reasoning` | `ReasoningBlock` |
+> | `UserMessage` | `UserBubble` |
+> | `PromptBar` | `SpotterPrompt` |
+> | `ResponseGridView` | — (new, no old equivalent) |
+> | `ToolIcon` | — (new, no old equivalent) |
+>
+> The only consumer of the old blocks is the Spotter prototype
+> (`src/prototypes/Spotter/`), which would be migrated in that same change.
 
 The Spotter chat-response building blocks from the **Spotter Refresh** prototype,
 packaged to drop into a RadiantPlay fork.
