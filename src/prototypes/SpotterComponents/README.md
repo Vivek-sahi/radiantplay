@@ -82,6 +82,33 @@ The layout spec runs in the gallery as **Spotter components** (under
 "My prototypes"), route `/playground/SpotterComponents` — grid overlay,
 stacked turns, and resize toggles included.
 
+## Promotion playbook (for the maintainer, when required)
+
+To replace the old Spotter blocks with these components, in one PR
+(tip: ask Claude to follow this playbook):
+
+1. **Move** `components/` and `assets/` together (they must stay siblings —
+   asset imports are `../assets/...`) to `src/spotter/response/`. No file
+   edits needed; the barrel `components/index.ts` keeps all exports.
+2. **Export** from `src/spotter/index.ts`: `export * from './response/components'`.
+3. **Migrate the Spotter prototype** (`src/prototypes/Spotter/`):
+   `ReasoningBlock` → `Reasoning`, `UserBubble` → `UserMessage`,
+   `SpotterPrompt` → `PromptBar`. Props differ — this is a rewrite of those
+   call sites, not a rename. Visual check required: the new grid is narrower
+   (880px → 800px content column).
+4. **Deprecate the old blocks** (keep them working): add
+   `/** @deprecated Use X from '@spotter/response' */` above each old
+   component and a `console.warn` naming the replacement inside it.
+5. **Update the Spotter rules** (`.cursor/rules/spotter-components.md`) so
+   builders and Claude sessions reach for the new components by default.
+6. **Verify**: `npm run typecheck` + `npm run build`, open the Spotter
+   prototype and the `/playground/SpotterComponents` demo.
+7. **Announce** via `docs/CHANGELOG.md` (`/release`). Delete the deprecated
+   blocks only after a deprecation window, in a later PR.
+
+This folder (`src/prototypes/SpotterComponents/`) then becomes just the demo
+page, or can be retired once the gallery entry points at the new location.
+
 ## Conventions
 
 Tokens only (no hardcoded colors/spacing), Radiant components, sentence case.
