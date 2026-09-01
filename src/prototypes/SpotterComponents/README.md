@@ -1,5 +1,21 @@
 # Spotter components
 
+> ## ⚠️ Maintainer decision needed (Faris)
+>
+> These components overlap with the shared Spotter DS at `src/spotter/`
+> (`ReasoningBlock`, `AgentMessage`, `ChatThread`). When accepting this PR,
+> please pick one:
+>
+> 1. **Keep separate** — leave this folder as-is under
+>    `src/prototypes/SpotterComponents/` ("Spotter new components").
+>    Prototypes copy them in per the install steps below. Nothing in
+>    `src/spotter/` changes.
+> 2. **Replace the existing components** — promote `Reasoning`, `UserMessage`,
+>    and `PromptBar` into `src/spotter/` as the new official versions and
+>    retire the older equivalents.
+>
+> Until this decision is made, these components stay prototype-local.
+
 The Spotter chat-response building blocks from the **Spotter Refresh** prototype,
 packaged to drop into a RadiantPlay fork.
 
