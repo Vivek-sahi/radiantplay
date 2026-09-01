@@ -22,6 +22,15 @@
 >
 > The only consumer of the old blocks is the Spotter prototype
 > (`src/prototypes/Spotter/`), which would be migrated in that same change.
+>
+> **Note for that migration — the grids differ.** The old `ChatThread` uses a
+> single 880px column with 16px side padding; the new layout is a 800px
+> content column with a 24px page gutter + 16px inner padding and a 768px
+> text column. Swapping old for new is a visible change (the page gets
+> narrower), not just a code change.
+>
+> **Rollout:** additive first (this PR, safe to ship to staging — no existing
+> project changes), replacement later once verified in a second prototype.
 
 The Spotter chat-response building blocks from the **Spotter Refresh** prototype,
 packaged to drop into a RadiantPlay fork.
@@ -33,7 +42,7 @@ packaged to drop into a RadiantPlay fork.
 | **Reasoning** | `Reasoning.tsx` · `Reasoning.module.css` · `ToolIcons.tsx` | The "Show work" chain-of-thought — a flat timeline of NL text + tool calls that expands/collapses. Has an optional `triggerLeading` slot (used to place an agent photo before the "Show work" label). |
 | **User message** | `UserMessage.tsx` · `UserMessage.module.css` | The user's chat bubble — squircle bubble, attached files, edit/hover states. Also exports `FileCard`. |
 | **Prompt bar** | `PromptBar.tsx` · `PromptBar.module.css` | The input composer — model picker, skills, connectors, deep analysis, file attach, highlighted-text pill. |
-| **Response (composition)** | `ResponseGridView.tsx` · `ResponseGridView.module.css` | **How they come together.** Lays a user message + reasoning + response body + footer (thumbs up/down, copy, verify) onto the page grid (24px page padding / 16px inner padding / 768px text column). Toggles for grid overlay, stacked turns, agent photo, and show reasoning. |
+| **Response grid (layout spec)** | `ResponseGridView.tsx` · `ResponseGridView.module.css` | **Not a shipping component — the grid, drawn as a live page.** Shows how user message + reasoning + response body + footer sit on the Spotter page grid (24px page gutter / 16px inner padding / 800px content / 768px text column). Toggles for grid overlay, stacked turns, agent photo, and show reasoning; drag the right edge to test resize. Copy its measurements and wiring into your prototype — don't embed it. |
 
 Shared helpers: `useSquirclePath.ts` + `figmaSquircle.ts` (squircle geometry used by
 UserMessage and PromptBar).
@@ -62,14 +71,19 @@ RadiantPlay checkout to run.
 1. Copy `components/` and `assets/` into a prototype folder, e.g.
    `src/prototypes/<YourPrototype>/` — keep them as **siblings** (the components
    import assets via `../assets/...`).
-2. Import what you need, e.g.:
+2. Import everything from the barrel (`components/index.ts`) — never from the
+   individual files. This keeps the future promotion to `src/spotter/` a
+   one-line path change:
    ```tsx
-   import { ResponseGridView } from './components/ResponseGridView';
-   import { Reasoning } from './components/Reasoning';
-   import { UserMessage } from './components/UserMessage';
-   import PromptBar from './components/PromptBar';
+   import { Reasoning, UserMessage, PromptBar } from './components';
    ```
 3. Register your prototype in `src/prototypes/registry-mine.ts`.
+
+## Live demo
+
+The layout spec runs in the gallery as **Spotter components** (under
+"My prototypes"), route `/playground/SpotterComponents` — grid overlay,
+stacked turns, and resize toggles included.
 
 ## Conventions
 
