@@ -1,0 +1,590 @@
+/* ── Prompt bar shell ──────────────────────────────────────────────────────── */
+
+.bar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  /* Top inset lives inside the textarea (as padding-top) so it scrolls away and
+     overflowing text can bleed all the way up to the top border. */
+  padding: 0 16px 16px;
+  border-radius: 20px;
+  background: var(--rd-sys-color-background-raised);
+  border: 1px solid var(--rd-sys-color-border-subtle);
+  box-shadow: var(--shadow-surface);
+  position: relative;
+  width: 100%;
+  box-sizing: border-box;
+  /* No border-color transition on the base/hover state → hover is instant. */
+  transition: box-shadow 0.15s ease;
+}
+
+.bar:hover:not(.barFocused),
+.barHover:not(.barFocused) {
+  border-color: var(--rd-sys-color-border-subtle-hover);
+}
+
+/* Gradient border ring — drawn as a masked overlay so it can fade via opacity.
+   (background-image gradients are not transitionable; opacity is.) */
+.bar::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: 20px;
+  padding: 1px;
+  background: linear-gradient(
+    90deg,
+    rgba(140, 98, 245, 0.5) 2%,
+    rgba(72, 209, 224, 0.5) 49%,
+    rgba(39, 112, 239, 0.5) 96%
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  pointer-events: none;
+}
+
+.barFocused,
+.barFocusedCursor {
+  border-color: transparent;
+  box-shadow:
+    0 3px 12px 0 rgba(4, 101, 237, 0.12),
+    0 4px 24px 0 rgba(56, 125, 222, 0.12);
+  /* Smooth border crossfade when selecting (not on hover). */
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.barFocused::before,
+.barFocusedCursor::before {
+  opacity: 1;
+}
+
+/* ── Highlighted context pill ──────────────────────────────────────────────── */
+
+.highlightBar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 6px 6px 8px;
+  border-radius: 6px;
+  background: var(--rd-sys-color-background-on-base);
+  overflow: hidden;
+}
+
+/* Attached file cards — responsive grid, wraps as the bar narrows. */
+.fileGrid {
+  display: grid;
+  /* min(160px, calc(50% - 4px)) caps each column at half the container width
+     (accounting for the 8px gap), so auto-fill can never produce fewer than 2 columns. */
+  grid-template-columns: repeat(auto-fill, minmax(min(160px, calc(50% - 4px)), 1fr));
+  gap: 8px;
+}
+
+.highlightIcon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--rd-sys-color-content-secondary);
+}
+
+.highlightText {
+  flex: 1;
+  min-width: 0;
+  font-family: 'Plain', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--rd-sys-color-content-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.highlightRemove {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 50%;
+  color: var(--rd-sys-color-content-secondary);
+  transition: background 0.12s ease;
+}
+
+.highlightRemove:hover {
+  background: var(--rd-sys-color-background-ghost-hover);
+}
+
+/* ── Text area row ─────────────────────────────────────────────────────────── */
+
+.textRow {
+  display: flex;
+  align-items: flex-end;
+  padding-left: 4px;
+  padding-right: 8px;
+}
+
+.textarea {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  border: none;
+  outline: none;
+  resize: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  font-family: 'Plain', sans-serif;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 24px;
+  letter-spacing: -0.064px;
+  color: var(--rd-sys-color-content-primary);
+  /* padding-top / max-height set inline (depends on whether a highlight pill is shown). */
+  display: block;
+  /* Invisible scrollbar that reserves its gutter so text never shifts. */
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+.textarea::placeholder {
+  color: var(--rd-sys-color-content-secondary);
+}
+
+/* Thumb stays invisible until the bar is hovered; gutter is already reserved. */
+.textarea::-webkit-scrollbar {
+  width: 6px;
+}
+
+.textarea::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.textarea::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 999px;
+}
+
+.bar:hover .textarea::-webkit-scrollbar-thumb {
+  background: var(--rd-sys-color-border-default);
+}
+
+.bar:hover .textarea {
+  scrollbar-color: var(--rd-sys-color-border-default) transparent;
+}
+
+/* ── Action row ────────────────────────────────────────────────────────────── */
+
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.leftActions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.rightActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ── Plus icon button ──────────────────────────────────────────────────────── */
+
+.plusBtn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--rd-sys-color-content-primary);
+  flex-shrink: 0;
+  transition: background 0.12s ease;
+}
+
+.plusBtn:hover {
+  background: var(--rd-sys-color-background-ghost-hover);
+}
+
+.plusBtnActive {
+  background: var(--rd-sys-color-background-ghost-highlight);
+  color: var(--rd-sys-color-content-brand);
+}
+
+.plusBtnActive:hover {
+  background: var(--rd-sys-color-background-ghost-highlight);
+}
+
+/* ── Model picker button ───────────────────────────────────────────────────── */
+
+.modelBtn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 6px 6px 8px;
+  border-radius: 6px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: 'Plain', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--rd-sys-color-content-primary);
+  white-space: nowrap;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.modelBtn:hover {
+  background: var(--rd-sys-color-background-ghost-hover);
+}
+
+.modelBtnActive {
+  background: var(--rd-sys-color-background-ghost-highlight);
+  color: var(--rd-sys-color-content-brand);
+}
+
+/* Truncate the model name past 168px. */
+.modelBtnLabel {
+  max-width: 168px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.modelBtnActive:hover {
+  background: var(--rd-sys-color-background-ghost-highlight);
+}
+
+/* ── Deep analysis chip ────────────────────────────────────────────────────── */
+
+.deepChip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 8px;
+  border-radius: 6px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: 'Plain', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--rd-sys-color-content-brand);
+  white-space: nowrap;
+  position: relative;
+  transition: background 0.12s ease;
+}
+
+.deepChip:hover {
+  background: var(--rd-sys-color-background-ghost-highlight);
+}
+
+/* Inline glyph inherits this brand colour via currentColor. */
+.deepChipIcon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--rd-sys-color-content-brand);
+}
+
+.deepChipRemove {
+  width: 14px;
+  height: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--rd-sys-color-content-brand);
+}
+
+/* ── Send button ───────────────────────────────────────────────────────────── */
+
+.sendBtn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--rd-comp-color-button-primary-default);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--rd-sys-color-content-primary-inverse);
+  flex-shrink: 0;
+  transition: background 0.12s ease;
+}
+
+.sendBtn:hover {
+  background: var(--rd-comp-color-button-primary-hover);
+}
+
+.sendBtn:active {
+  background: var(--rd-comp-color-button-primary-pressed);
+}
+
+/* ── Dropdown menus ────────────────────────────────────────────────────────── */
+
+/* Each trigger button is wrapped in this so its menu anchors to it. */
+.menuAnchor {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.menuPopover {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 100;
+}
+
+/* Opens upwards (question-asked state, bar pinned to bottom). */
+.menuPopoverUp {
+  top: auto;
+  bottom: calc(100% + 4px);
+}
+
+/* Right-aligned popover (connectors button sits on the right edge). */
+.menuPopoverRight {
+  left: auto;
+  right: 0;
+}
+
+.menu {
+  background: var(--rd-sys-color-background-raised);
+  border-radius: 6px;
+  box-shadow:
+    0 0 4px rgba(25, 35, 49, 0.08),
+    0 12px 24px rgba(25, 35, 49, 0.12);
+  width: 235px;
+  /* No overflow:hidden — the connectors submenu escapes to the right.
+     The 8px list padding keeps items clear of the rounded corners. */
+}
+
+.menuList {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 0;
+}
+
+.menuItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  font-family: 'Plain', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--rd-sys-color-content-primary);
+}
+
+.menuItem:hover {
+  background: var(--rd-sys-color-background-ghost-hover);
+}
+
+.menuItemIcon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--rd-sys-color-content-secondary);
+}
+
+.menuItemLabel {
+  flex: 1;
+}
+
+.menuItemChevron {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--rd-sys-color-content-secondary);
+}
+
+.menuDivider {
+  height: 1px;
+  background: var(--rd-sys-color-border-subtle);
+  margin: 8px 0;
+}
+
+/* ── Connectors submenu ────────────────────────────────────────────────────── */
+
+.menuItemHasSub {
+  position: relative;
+}
+
+.submenu {
+  position: absolute;
+  top: -8px;
+  left: calc(100% + 4px);
+  z-index: 110;
+}
+
+/* Opens upward (anchored to the row's bottom) when downward would overflow. */
+.submenuUp {
+  top: auto;
+  bottom: -8px;
+}
+
+/* Submenu opening on the upward side flips to the left of the item is handled by
+   the same right placement; vertical anchor stays at the row. */
+
+.connectorRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  width: 100%;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  font-family: 'Plain', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.connectorRow:hover {
+  background: var(--rd-sys-color-background-ghost-hover);
+}
+
+/* The control is purely visual — the whole row handles the click. */
+.connectorControl {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+}
+
+.connectorLogo {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: #fff;
+  overflow: hidden;
+}
+
+.connectorLogo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.connectLink {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-family: 'Plain', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--rd-sys-color-content-brand);
+  flex-shrink: 0;
+  padding: 0;
+}
+
+/* ── Interactive playground ────────────────────────────────────────────────── */
+
+.playground {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Landing — bar sits in the upper-centre; non-shrinking top spacer anchors it
+   so typing grows the bar downward into the empty space below. */
+.modeLanding {
+  justify-content: flex-start;
+}
+
+.modeLanding::before {
+  content: '';
+  flex: 0 0 34%;
+}
+
+/* Question asked — bar pinned 40px from the bottom; typing grows it upward. */
+.modeAsked {
+  justify-content: flex-end;
+  padding-bottom: 40px;
+}
+
+.barBlock {
+  position: relative;
+  width: 100%;
+  max-width: 800px;
+  min-width: 352px;
+  flex-shrink: 0;
+}
+
+/* Drag handle — right edge of the bar frame (resize 352–800px). */
+.dragHandle {
+  position: absolute;
+  top: 0;
+  right: -4px;
+  width: 8px;
+  height: 100%;
+  cursor: ew-resize;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+.dragHandleBar {
+  width: 3px;
+  height: 28px;
+  border-radius: 2px;
+  background: var(--rd-sys-color-border-default);
+  pointer-events: none;
+}
+
