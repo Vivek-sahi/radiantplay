@@ -62,6 +62,8 @@ npm run new-prototype  # Scaffold a new prototype
 
 `@components/*` is the **Radiant DS** — product-agnostic primitives. `@spotter/*` is the **Spotter DS** — agentic-domain blocks (chat, answers, viz, page shell) built on top of Radiant. Same conventions apply (tokens only, sentence case, layout primitives) but Spotter components encode AI-flavoured patterns.
 
+New Spotter chat surfaces render `Reasoning`, `UserMessage` and `PromptBar` from `@spotter/chat`. `ReasoningBlock` and `UserBubble` are adapters kept for consumers holding a runtime `ChatMessage`. Never vendor a Spotter block into a prototype — import from `@spotter/*` and PR improvements against `src/spotter/`. Both composers (`SpotterPrompt` and `PromptBar`) ship until the composer decision lands — see `docs/2026-09-02-spotter-refresh-adoption-plan.md` §8.1.
+
 When working on Spotter surfaces, the orchestrator auto-loads the Spotter cursor rules. For a new Spotter prototype the orchestrator runs a Requirements Gate first (mode / welcome state / data). See `.cursor/rules/_orchestration.md` → Spotter Requirements Gate.
 
 **Spotter modes:**
