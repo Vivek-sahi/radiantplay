@@ -13,4 +13,7 @@
    DOM child of this wrapper, not portaled, so it inherits the value). */
 .switcher {
   --rd-sys-color-background-surface: var(--rd-sys-color-background-base);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2, 8px);
 }

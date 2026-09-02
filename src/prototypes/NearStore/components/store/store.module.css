@@ -1,0 +1,102 @@
+/* Token values expressed as CSS vars with px fallbacks — the convention used
+   across this repo's prototypes, since only the colour family is published as
+   custom properties. */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-6, 24px);
+  padding: var(--spacing-8, 32px);
+}
+.head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--spacing-4, 16px);
+}
+.headText {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1, 4px);
+}
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-4, 16px);
+}
+.search {
+  width: 320px;
+}
+.card {
+  background-color: var(--rd-sys-color-background-base);
+  border: 1px solid var(--rd-sys-color-border-divider);
+  border-radius: var(--radius-md, 6px);
+  overflow: hidden;
+}
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-3, 12px);
+  padding: var(--spacing-4, 16px);
+  border-top: 1px solid var(--rd-sys-color-border-divider);
+}
+.cellLink {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2, 8px);
+}
+.author {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2, 8px);
+}
+.tags {
+  display: inline-flex;
+  gap: var(--spacing-1, 4px);
+  flex-wrap: wrap;
+}
+.rowActions {
+  display: flex;
+  justify-content: flex-end;
+}
+.mark {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2, 8px);
+}
+
+/* Unified-model capacity strip. Storage is a meter (ratio), the other two are
+   counts — the same distinction Pulse's dashboard already makes. */
+.meterTile { flex: 2 1 340px; }
+.countTile { flex: 1 1 180px; }
+.tileBody { padding: var(--spacing-5, 20px); }
+.bar2 { width: 100%; }
+
+/* Monitoring sections — the store holds two kinds of thing, and they differ in
+   what we know and what you can do, so they get their own tables. */
+.section { display: flex; flex-direction: column; gap: var(--spacing-3, 12px); }
+.sectionHead {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  gap: var(--spacing-4, 16px);
+}
+
+/* Filter row — left aligned, one control group.
+   SearchInput ships 8px vertical padding (~38px tall) and has no size prop, while
+   Select is 24 / 32 / 40. Pin the search box to 32px so it matches Select `basic`
+   instead of sitting a few pixels proud of it. */
+.filters {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3, 12px);
+}
+.searchWrap { width: 280px; }
+.searchWrap > div {
+  height: 32px;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+/* Nested inside StoreView's padded page — gap only, no padding of its own. */
+.subPage { display: flex; flex-direction: column; gap: var(--spacing-6, 24px); }
