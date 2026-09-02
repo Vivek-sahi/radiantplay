@@ -34,8 +34,10 @@ export type {
 export { UserMessage, FileCard } from '@spotter/chat';
 export type { UserMessageProps, UserMessageFile, UserMessageState } from '@spotter/chat';
 
-export { default as PromptBar, PromptBarPlayground } from './PromptBar';
-export type { OpenMenu, ConnectorsPlacement, PromptBarMode, PromptBarState } from './PromptBar';
+// PromptBar moved to the shared Spotter DS (src/spotter/chat), alongside
+// SpotterPrompt rather than replacing it.
+export { PromptBar, PromptBarPlayground } from '@spotter/chat';
+export type { OpenMenu, ConnectorsPlacement, PromptBarMode, PromptBarState } from '@spotter/chat';
 
 export { default as ResponseGridView } from './ResponseGridView';
 
