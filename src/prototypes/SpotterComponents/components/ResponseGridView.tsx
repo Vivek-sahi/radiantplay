@@ -4,7 +4,7 @@ import { fontSize, fontWeight, lineHeight } from '@tokens/typography';
 import { Avatar } from '@components/Avatar';
 import { Button } from '@components/Button';
 import { Toggle } from '@components/Toggle';
-import { UserMessage } from './UserMessage';
+import { UserMessage } from '@spotter/chat';
 import { Reasoning } from '@spotter/chat';
 import type { ReasoningItem } from '@spotter/runtime/schema';
 import footerStyles from './ResponseGridView.module.css';

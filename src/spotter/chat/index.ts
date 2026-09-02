@@ -20,6 +20,12 @@ export type { MessageRowProps } from './MessageRow';
 export { UserBubble } from './UserBubble';
 export type { UserBubbleProps } from './UserBubble';
 
+export { UserMessage, FileCard } from './UserMessage';
+export type { UserMessageProps, UserMessageFile, UserMessageState } from './UserMessage';
+
+export { useSquirclePath } from './useSquirclePath';
+export { getSvgPath as getSquirclePath } from './figmaSquircle';
+
 export { AgentMessage } from './AgentMessage';
 export type { AgentMessageProps } from './AgentMessage';
 

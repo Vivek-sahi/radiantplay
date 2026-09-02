@@ -1,12 +1,15 @@
 import React from 'react';
 import type { ChatMessage } from '../runtime/schema';
-import styles from './UserBubble.module.css';
+import { UserMessage } from './UserMessage';
 
 export interface UserBubbleProps {
   message: ChatMessage;
-  /** Optional avatar URL. Defaults to a fallback initial. */
+  /**
+   * Kept for API compatibility. The Refresh bubble carries no avatar; the
+   * user's identity is implied by the right-aligned placement.
+   */
   avatarUrl?: string;
-  /** Initial used in the fallback when no avatar URL is provided. */
+  /** Kept for API compatibility; see `avatarUrl`. */
   initial?: string;
 }
 
@@ -19,27 +22,21 @@ const formatTimestamp = (ts: number): string => {
   return `${time}, ${date}`;
 };
 
-export const UserBubble: React.FC<UserBubbleProps> = ({
-  message,
-  avatarUrl,
-  initial = 'A',
-}) => {
-  return (
-    <div className={styles.wrapper}>
-      <div className={styles.row}>
-        <div className={styles.avatar} aria-hidden="true">
-          {avatarUrl ? (
-            <img src={avatarUrl} alt="" className={styles.avatarImg} />
-          ) : (
-            <span className={styles.avatarFallback}>{initial}</span>
-          )}
-        </div>
-        <p className={styles.text}>{message.text}</p>
-      </div>
-      <span className={styles.timestamp}>{formatTimestamp(message.createdAt)}</span>
-    </div>
-  );
-};
+/**
+ * Renders a runtime ChatMessage with the shared UserMessage bubble.
+ *
+ * Adapter between the reducer's message model and the bubble's flat props.
+ * Consumers that already hold a ChatMessage keep using this; new code that
+ * owns its own strings (message, files, highlighted text) should render
+ * `UserMessage` directly.
+ */
+export const UserBubble: React.FC<UserBubbleProps> = ({ message, initial }) => (
+  <UserMessage
+    message={message.text ?? ''}
+    timestamp={formatTimestamp(message.createdAt)}
+    avatarInitials={initial}
+  />
+);
 
 UserBubble.displayName = 'UserBubble';
 
