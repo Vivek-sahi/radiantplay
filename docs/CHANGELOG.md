@@ -37,7 +37,7 @@ Internal repository housekeeping and public-release groundwork. No user-facing c
 - **Playground archive section and sidebar navigation** — Gallery now has a light left sidebar with Prototypes (default) and Archived sections. Per-card 3-dot menu archives or restores any prototype in your session. Save-to-code modal generates a Claude-ready prompt to commit the layout permanently. `MiniSpotters` and `AdminLang` now appear as archived by default.
 
 ### Added
-- `src/prototypes/StylingPanel/` — Liveboard Styling panel prototype restored (originally PR #14, reverted then re-landed via worktree cherry-pick). Per-tile drawer with density, color theme, corner style, spacing, and highlight overrides. Authored by Devanshi Behara.
+- `src/prototypes/StylingPanel/` — Liveboard Styling panel prototype restored (originally PR #14, reverted then re-landed via worktree cherry-pick). Per-tile drawer with density, color theme, corner style, spacing, and highlight overrides. Authored by Devanshi Behera.
 - Shared tile CSS variables for tile density / color theme / corner / spacing / highlight on `AnswerTile`, `NoteTile`, `GroupTile`.
 - `src/prototypes/NewUIAdmin2/` — AdminUI 2.0 Application Settings screen. Registered in `registry-core.ts` as a sample. Cluster settings, administration toggles, downloads and schedules, version control, AI settings. Authored by the Design Team via Simran Pandit (PR #19).
 - `src/prototypes/Spotter/AnalystLandingPage.tsx` + `AnalystListPage.tsx` — right-pane state machine for the standalone Spotter prototype. Replaces the prior "always show chat" right pane.

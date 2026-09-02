@@ -189,7 +189,7 @@ const CHANGELOG: ChangelogEntry[] = [
         category: 'added',
         label: 'Prototypes',
         items: [
-          'Liveboard - Styling panel (StylingPanel) — restored after the original PR #14 revert. Per-tile drawer with density, color theme, corner style, spacing, and highlight overrides. Shared tile CSS variables added to AnswerTile, NoteTile, GroupTile. Authored by Devanshi Behara.',
+          'Liveboard - Styling panel (StylingPanel) — restored after the original PR #14 revert. Per-tile drawer with density, color theme, corner style, spacing, and highlight overrides. Shared tile CSS variables added to AnswerTile, NoteTile, GroupTile. Authored by Devanshi Behera.',
           'AdminUI 2.0 (NewUIAdmin2) — Application Settings screen added to the shared sample registry. Cluster settings, administration toggles, downloads and schedules, version control, AI settings. Lands via PR #19.',
         ],
       },
