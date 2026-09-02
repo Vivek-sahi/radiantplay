@@ -1,8 +1,15 @@
 import React, { useState, useRef, useLayoutEffect, useEffect } from 'react';
 import { Icon } from '@components/icons';
-import type { IconName } from '@components/icons';
-import { ToolIcon, ToolIconName } from './ToolIcons';
-import slackLogo from '../assets/slack.png';
+import { ToolIcon } from './ToolIcons';
+import type {
+  ReasoningItem,
+  ToolCall,
+  CodeExecution,
+  ChartToken,
+  ChartViz,
+  NestLabels,
+} from '../runtime/schema';
+import slackLogo from './assets/slack.png';
 import styles from './Reasoning.module.css';
 
 // ── Data model ───────────────────────────────────────────────────────────────
@@ -12,73 +19,9 @@ import styles from './Reasoning.module.css';
 //   • tool — a tool call: icon/logo + title + chevron, expandable to Input/Output code
 // MCP tool calls use `logo` (an image src / placeholder) instead of a Radiant `icon`.
 
-export interface CodeExecution {
-  id: string;
-  summaryHeader: string; // LLM-generated header for this nested block (done state)
-  loadingHeader?: string; // present-tense header shown (shimmering) while this sub-step runs
-  loadMs?: number; // how long this sub-step stays in its loading state (play machine)
-  input?: string; // code input — omit when the block is a chart
-  output?: string;
-  chart?: ChartViz; // when present, the nested block opens the chart card instead of code
-}
-
-// A query token chip shown above the chart (Spotter's parsed query phrases).
-export interface ChartToken {
-  kind: 'measure' | 'filter' | 'keyword' | 'date';
-  label: string;
-}
-
-// Visualization output (the "Visualizing data" tool). Input is the NL question;
-// Output is a chart (or a table view of the same series), not code.
-export interface ChartViz {
-  question: string; // Input — the natural-language question
-  tokens?: ChartToken[]; // query phrases shown above the chart
-  series: { label: string; value: number }[]; // drives both the chart and table
-}
-
-// Labels for a nestable tool (code execution, answer generation). While only the
-// first sub-step runs the row shows `singular`; once it's a nest the title is a
-// count: `${runningVerb} N ${unit}` (running) / `${doneVerb} N ${unit}` (done).
-export interface NestLabels {
-  singular: string; // e.g. "Running a command" / "Visualizing data"
-  runningVerb: string; // e.g. "Running" / "Creating"
-  doneVerb: string; // e.g. "Ran" / "Created"
-  unit: string; // plural unit, e.g. "commands" / "visualizations"
-}
-
-export type ReasoningItem =
-  | { kind: 'text'; id: string; text: string; summaryHeader?: string }
-  | {
-      kind: 'tool';
-      id: string;
-      title: string; // present tense, shown while loading ("Fetching…")
-      doneTitle?: string; // past tense, shown once loaded ("Fetched…")
-      toolIcon?: ToolIconName; // custom tool-execution glyph (fetch/answer/code)
-      icon?: IconName; // Radiant icon fallback
-      logo?: string; // MCP logo image (e.g. Slack)
-      connector?: string; // connector display name (e.g. "Slack") — drives the header
-      group?: string; // tools sharing a group id run in parallel = one step
-      loadMs?: number; // demo only: how long this tool holds the loading state
-      // MCP permission gate — when present, the expanded body shows an approval
-      // prompt instead of the code.
-      permission?: { action: string; description?: string };
-      // Error / permission-denied — title turns red; the Output shows this message
-      // in a red block instead of the normal output.
-      error?: string;
-      input?: string;
-      output?: string;
-      codeExecutions?: CodeExecution[]; // nested code-execution blocks (double accordion)
-      // Nesting (code execution or answer generation): the row starts as a single
-      // non-clickable label (nest.singular) and only becomes a clickable nest once a
-      // 2nd sub-step begins, at which point the title becomes a count built from
-      // nest.runningVerb/doneVerb + nest.unit (e.g. "Running 2 commands",
-      // "Created 4 visualizations"). Sub-steps use the same logic regardless.
-      nest?: NestLabels;
-      chart?: ChartViz; // visualization output — renders a chart instead of code
-    };
-
-// A single tool call (the `tool` variant of ReasoningItem).
-export type ToolCall = Extract<ReasoningItem, { kind: 'tool' }>;
+// The data model lives in runtime/schema.ts so the reducer and this component
+// share one definition; re-exported here for consumers of the chat barrel.
+export type { ReasoningItem, ToolCall, CodeExecution, ChartToken, ChartViz, NestLabels };
 
 export interface ReasoningProps {
   items: ReasoningItem[];
@@ -93,6 +36,8 @@ export interface ReasoningProps {
   /** Optional element rendered inside the trigger, before the label (e.g. an
    *  agent photo). Uses the trigger's own 4px gap + centre alignment. */
   triggerLeading?: React.ReactNode;
+  /** Text of the terminal "Done" row in the expanded view. Default "Done". */
+  doneLabel?: string;
 }
 
 // ── Semi-collapsed model ───────────────────────────────────────────────────────
@@ -437,6 +382,7 @@ export const Reasoning: React.FC<ReasoningProps> = ({
   onToggleExpanded,
   loadedToolIds,
   triggerLeading,
+  doneLabel,
 }) => {
   const running = status === 'running';
   const revealed = items.slice(0, Math.max(0, Math.min(visibleCount, items.length)));
@@ -486,7 +432,7 @@ export const Reasoning: React.FC<ReasoningProps> = ({
     ),
   );
   // "Done" only exists in the expanded view, so it never flashes during collapse.
-  if (status === 'done' && expanded) rows.push(<DoneRow key="done" />);
+  if (status === 'done' && expanded) rows.push(<DoneRow key="done" label={doneLabel} />);
   if (rows.length > 0) {
     rows[rows.length - 1] = React.cloneElement(rows[rows.length - 1], {
       terminal: true,
@@ -620,13 +566,13 @@ const TextRow: React.FC<{ text: string; lineOnly?: boolean; terminal?: boolean }
   );
 };
 
-const DoneRow: React.FC<{ terminal?: boolean }> = ({ terminal }) => (
+const DoneRow: React.FC<{ terminal?: boolean; label?: string }> = ({ terminal, label }) => (
   <div className={styles.row} data-terminal={terminal || undefined}>
     <RowMarker>
       <span className={styles.dot} />
     </RowMarker>
     <div className={styles.content}>
-      <p className={styles.text}>Done</p>
+      <p className={styles.text}>{label ?? 'Done'}</p>
     </div>
   </div>
 );

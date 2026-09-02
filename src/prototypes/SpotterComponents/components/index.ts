@@ -16,7 +16,9 @@
  *   ResponseGridView, ToolIcon → new, no old equivalent
  */
 
-export { default as Reasoning, ToolRow, SemiCollapsed, toolStepLabel } from './Reasoning';
+// Reasoning moved to the shared Spotter DS (src/spotter/chat). Re-exported so
+// existing imports from this barrel keep working.
+export { Reasoning, ToolRow, SemiCollapsed, toolStepLabel } from '@spotter/chat';
 export type {
   ReasoningProps,
   ReasoningItem,
@@ -26,7 +28,7 @@ export type {
   ChartToken,
   ChartViz,
   NestLabels,
-} from './Reasoning';
+} from '@spotter/chat';
 
 export { UserMessage, FileCard } from './UserMessage';
 export type { UserMessageProps, UserMessageFile, UserMessageState } from './UserMessage';
@@ -36,5 +38,5 @@ export type { OpenMenu, ConnectorsPlacement, PromptBarMode, PromptBarState } fro
 
 export { default as ResponseGridView } from './ResponseGridView';
 
-export { ToolIcon } from './ToolIcons';
-export type { ToolIconName } from './ToolIcons';
+export { ToolIcon } from '@spotter/chat';
+export type { ToolIconName } from '@spotter/runtime/schema';

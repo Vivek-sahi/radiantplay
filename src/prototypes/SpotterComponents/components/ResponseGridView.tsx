@@ -5,7 +5,8 @@ import { Avatar } from '@components/Avatar';
 import { Button } from '@components/Button';
 import { Toggle } from '@components/Toggle';
 import { UserMessage } from './UserMessage';
-import { Reasoning, ReasoningItem } from './Reasoning';
+import { Reasoning } from '@spotter/chat';
+import type { ReasoningItem } from '@spotter/runtime/schema';
 import footerStyles from './ResponseGridView.module.css';
 import agentAvatar from '../assets/image-1783516317669.png';
 

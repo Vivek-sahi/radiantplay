@@ -26,8 +26,23 @@ export type { AgentMessageProps } from './AgentMessage';
 export { TypingIndicator } from './TypingIndicator';
 export type { TypingIndicatorProps } from './TypingIndicator';
 
-export { ReasoningBlock } from './ReasoningBlock';
-export type { ReasoningBlockProps } from './ReasoningBlock';
+export { ReasoningBlock, reasoningTraceToItems } from './ReasoningBlock';
+export type { ReasoningBlockProps, ReasoningItemsModel } from './ReasoningBlock';
+
+export { Reasoning, ToolRow, SemiCollapsed, toolStepLabel } from './Reasoning';
+export type {
+  ReasoningProps,
+  SemiCollapsedProps,
+  LatestStep,
+  ReasoningItem,
+  ToolCall,
+  CodeExecution,
+  ChartToken,
+  ChartViz,
+  NestLabels,
+} from './Reasoning';
+
+export { ToolIcon } from './ToolIcons';
 
 export { AgentResponseBlock } from './AgentResponseBlock';
 export type { AgentResponseBlockProps } from './AgentResponseBlock';

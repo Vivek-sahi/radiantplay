@@ -9,6 +9,8 @@
  * shapes are starting points designed to render the screens we have.
  */
 
+import type { IconName } from '@components/icons';
+
 // ---------- Answer blocks ----------
 
 export type AnswerBlockKind =
@@ -135,15 +137,91 @@ export interface AnswerContent {
 }
 
 // ---------- Reasoning ----------
+//
+// A reasoning trace is a list of steps (the wire shape the reducer fills in).
+// The Reasoning timeline renders it as a flat list of items: text rows and tool
+// rows. Tool rows carry the full tool-call model below; chat/ReasoningBlock
+// adapts a trace into items.
+
+/** Custom tool-execution glyphs rendered by chat/ToolIcons.tsx. */
+export type ToolIconName = 'fetch' | 'answer' | 'code' | 'memory' | 'web';
+
+/** A nested code-execution block inside a tool row (double accordion). */
+export interface CodeExecution {
+  id: string;
+  /** LLM-generated header for this nested block (done state). */
+  summaryHeader: string;
+  /** Present-tense header shown (shimmering) while this sub-step runs. */
+  loadingHeader?: string;
+  /** Demo only: how long this sub-step stays in its loading state. */
+  loadMs?: number;
+  /** Code input; omit when the block is a chart. */
+  input?: string;
+  output?: string;
+  /** When present, the nested block opens the chart card instead of code. */
+  chart?: ChartViz;
+}
+
+/** A query token chip shown above a chart (Spotter's parsed query phrases). */
+export interface ChartToken {
+  kind: 'measure' | 'filter' | 'keyword' | 'date';
+  label: string;
+}
+
+/** Visualization output. Input is the NL question; output is a chart. */
+export interface ChartViz {
+  question: string;
+  tokens?: ChartToken[];
+  series: { label: string; value: number }[];
+}
+
+/**
+ * Labels for a nestable tool (code execution, answer generation). While only
+ * the first sub-step runs the row shows `singular`; once it nests the title is
+ * a count: `${runningVerb} N ${unit}` / `${doneVerb} N ${unit}`.
+ */
+export interface NestLabels {
+  singular: string;
+  runningVerb: string;
+  doneVerb: string;
+  unit: string;
+}
 
 export interface ReasoningToolCall {
   id: string;
-  /** Optional Radiant icon name shown in the toolcall card header. */
-  icon?: string;
+  /** Present tense, shown while running ("Fetching…"). */
   title: string;
+  /** Past tense, shown once loaded ("Fetched…"). */
+  doneTitle?: string;
+  /** Radiant icon name for the row glyph. */
+  icon?: IconName;
+  /** Custom tool-execution glyph; takes precedence over `icon`. */
+  toolIcon?: ToolIconName;
+  /** MCP logo image src (e.g. Slack). */
+  logo?: string;
+  /** Connector display name (e.g. "Slack"); drives the collapsed header. */
+  connector?: string;
+  /** Tools sharing a group id run in parallel and collapse into one step. */
+  group?: string;
+  /** Demo only: how long this tool holds the loading state. */
+  loadMs?: number;
+  /** MCP permission gate: the expanded body shows an approval prompt. */
+  permission?: { action: string; description?: string };
+  /** Error / permission denied: title turns red, output shows this message. */
+  error?: string;
   input?: string;
   output?: string;
+  codeExecutions?: CodeExecution[];
+  nest?: NestLabels;
+  chart?: ChartViz;
 }
+
+/** One row of the reasoning timeline. */
+export type ReasoningItem =
+  | { kind: 'text'; id: string; text: string; summaryHeader?: string }
+  | ({ kind: 'tool' } & ReasoningToolCall);
+
+export type ToolCall = Extract<ReasoningItem, { kind: 'tool' }>;
 
 export interface ReasoningStep {
   id: string;
