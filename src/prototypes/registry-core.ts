@@ -56,6 +56,7 @@ const DataModelEditorSample = React.lazy(() => import('./DataModelEditor'));
 const Spotter = React.lazy(() => import('./Spotter'));
 const NewUIAdmin2 = React.lazy(() => import('./NewUIAdmin2'));
 const StylingPanel = React.lazy(() => import('./StylingPanel'));
+const SpotterComponents = React.lazy(() => import('./SpotterComponents'));
 
 // ── Registry ──────────────────────────────────────────────────────────────────
 
@@ -167,6 +168,15 @@ export const coreRegistry: ProjectMeta[] = [
     component: StylingPanel,
     dsComponents: 6,
     customComponents: 4,
+    section: 'sample',
+  },
+  {
+    id: 'SpotterComponents',
+    name: 'Spotter components',
+    description: 'Spotter chat-response building blocks — user message, reasoning timeline, prompt bar, and the response grid layout with resize and overlay toggles.',
+    author: 'Devanshi Behara',
+    lastModified: '2026-09-01',
+    component: SpotterComponents,
     section: 'sample',
   },
 ];

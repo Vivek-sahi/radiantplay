@@ -9,8 +9,8 @@ import styles from './PromptBar.module.css';
 import attachIcon from '../assets/Attach.svg';
 import skillsIcon from '../assets/skills.svg';
 import connectorsIcon from '../assets/connectors.svg';
-import deepAnalysisIcon from '../assets/deep analysis.svg';
-import googleDriveIcon from '../assets/google drive.png';
+import deepAnalysisIcon from '../assets/deep-analysis.svg';
+import googleDriveIcon from '../assets/google-drive.png';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
