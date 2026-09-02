@@ -11,6 +11,13 @@ import { c } from './styles';
 // One source of truth, read anywhere via useVariant(); toggled from the header.
 export type DataStudioVariant = 'vision' | 'poc' | 'demo' | 'pocv2';
 
+// ── Customer-call lock ───────────────────────────────────────────────────────
+// Set to a variant to lock the prototype to that cut: the header toggle hides,
+// and ?v= / localStorage are ignored so every visitor lands on it. Set back to
+// null to restore the toggle and normal behaviour. Locked to 'demo' 2026-09-02
+// for a customer call — temporary, expected back in ~a week.
+export const LOCKED_VARIANT: DataStudioVariant | null = 'demo';
+
 /**
  * True for every cut that renders the POC experience. The ~28 `poc &&` checks in
  * ModelCanvas / AgentPanel read a single boolean, so POC V2 has to resolve it too
@@ -292,7 +299,9 @@ const isVariant = (v: unknown): v is DataStudioVariant =>
   v === 'vision' || v === 'poc' || v === 'demo' || v === 'pocv2';
 
 // Initial value: ?v= URL param wins, then localStorage, then 'vision'.
+// A LOCKED_VARIANT overrides all three.
 function readInitialVariant(): DataStudioVariant {
+  if (LOCKED_VARIANT) return LOCKED_VARIANT;
   try {
     const fromUrl = new URLSearchParams(window.location.search).get('v');
     if (isVariant(fromUrl)) return fromUrl;
@@ -339,6 +348,7 @@ export const useScope = (): PocScope => useContext(VariantContext).scope;
 // ── Header toggle — a small segmented control (Vision · POC · Demo) ──────────
 export const VariantToggle: React.FC = () => {
   const { variant, setVariant } = useVariant();
+  if (LOCKED_VARIANT) return null;
   const options: { value: DataStudioVariant; label: string }[] = [
     { value: 'vision', label: 'Vision' },
     { value: 'poc', label: 'POC' },
