@@ -205,7 +205,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  /* Tool glyphs inherit this via currentColor (matches the #777E8B asset fills). */
+  /* Tool glyphs inherit this via currentColor (matches the content-secondary asset fills). */
   color: var(--rd-sys-color-content-secondary);
 }
 
@@ -500,12 +500,13 @@
   white-space: pre;
 }
 
-/* ── Syntax highlighting — Radiant chart palette (Blue/Red/Green 70). These
-   chart colours aren't exposed as CSS sys-vars, so the exact hexes are used. ── */
-.synString  { color: #049160; } /* chart Green/70 */
-.synNumber  { color: #2359b6; } /* chart Blue/70 */
-.synKeyword { color: #2359b6; } /* chart Blue/70 */
-.synFn      { color: #b6313e; } /* chart Red/70 */
+/* ── Syntax highlighting — Radiant accent colours. The design used the /70
+   chart shades; Radiant exposes the /60 accents as tokens, so the darker
+   shade is derived by mixing toward content-primary. ── */
+.synString  { color: color-mix(in srgb, var(--rd-sys-color-content-accent-green) 80%, var(--rd-sys-color-content-primary)); }
+.synNumber  { color: color-mix(in srgb, var(--rd-sys-color-content-accent-blue) 80%, var(--rd-sys-color-content-primary)); }
+.synKeyword { color: color-mix(in srgb, var(--rd-sys-color-content-accent-blue) 80%, var(--rd-sys-color-content-primary)); }
+.synFn      { color: color-mix(in srgb, var(--rd-sys-color-content-accent-red) 80%, var(--rd-sys-color-content-primary)); }
 .synKey     { color: var(--rd-sys-color-content-primary); }
 
 /* Error / permission-denied Output block — red background, red message, no header
@@ -581,12 +582,12 @@
 /* Measure (green) and date (purple) chips use the Radiant chart palette, which
    isn't exposed as CSS sys-vars — same documented exception as the syntax colours. */
 .vizTokenMeasure {
-  background-color: #e0f8ef; /* charts Green/20 */
-  color: #047857; /* readable green on the light-green chip */
+  background-color: var(--rd-sys-color-background-accent-green);
+  color: color-mix(in srgb, var(--rd-sys-color-content-accent-green) 70%, var(--rd-sys-color-content-primary)); /* darkened for contrast on the chip */
 }
 .vizTokenDate {
-  background-color: #f0ebff; /* charts Purple/20 */
-  color: #5b3fd1; /* charts purple */
+  background-color: var(--rd-sys-color-background-accent-purple-subtle);
+  color: color-mix(in srgb, var(--rd-sys-color-content-accent-purple) 75%, var(--rd-sys-color-content-primary));
 }
 
 /* Table / chart segmented toggle (Figma 432-141815) — a fully-rounded pill track;
@@ -625,7 +626,7 @@
 }
 .vizChartIconActive {
   display: inline-flex;
-  color: #06bf7f; /* charts Green/60 — active chart glyph */
+  color: var(--rd-sys-color-content-accent-green); /* active chart glyph */
 }
 
 /* Chart area — caps at 272px; the area stretches to the card width. */
@@ -639,7 +640,7 @@
   height: 240px;
 }
 .vizArea {
-  fill: #dfe4ea; /* charts gray fill (between Gray/20 and Gray/40) */
+  fill: var(--rd-sys-color-background-subtle); /* chart gray fill */
 }
 .vizLine {
   fill: none;
