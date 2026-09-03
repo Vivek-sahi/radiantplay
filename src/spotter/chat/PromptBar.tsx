@@ -6,11 +6,11 @@ import { Toggle } from '@components/Toggle';
 import { FileCard, type UserMessageFile } from './UserMessage';
 import { useSquirclePath } from './useSquirclePath';
 import styles from './PromptBar.module.css';
-import attachIcon from '../assets/Attach.svg';
-import skillsIcon from '../assets/skills.svg';
-import connectorsIcon from '../assets/connectors.svg';
-import deepAnalysisIcon from '../assets/deep-analysis.svg';
-import googleDriveIcon from '../assets/google-drive.png';
+import attachIcon from './assets/Attach.svg';
+import skillsIcon from './assets/skills.svg';
+import connectorsIcon from './assets/connectors.svg';
+import deepAnalysisIcon from './assets/deep-analysis.svg';
+import googleDriveIcon from './assets/google-drive.png';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -805,4 +805,9 @@ export function PromptBarPlayground({
   );
 }
 
+/**
+ * The Refresh composer. Named export is the canonical one; the default export
+ * is kept so older `import PromptBar from './PromptBar'` sites keep working.
+ */
+export { PromptBarCore as PromptBar };
 export default PromptBarCore;

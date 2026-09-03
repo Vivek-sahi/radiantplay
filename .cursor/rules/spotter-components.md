@@ -45,12 +45,19 @@ Use these when building or modifying anything chat-flavoured.
 | `useSpotterChat` | Hook with the must-be-inside-provider guard. |
 | `ChatThread` | Scrollable list of messages. Auto-scrolls on append + on streaming updates (tracks block count + text length fingerprint). |
 | `MessageRow` | Role dispatcher → `UserBubble` for user, `AgentMessage` for agent. **Renamed from ChatMessage to avoid colliding with the schema type.** |
-| `UserBubble` | Two-part layout: (1) a row with avatar + text inside a soft-gray rounded container, (2) timestamp rendered **below** the row, right-aligned (`align-self: flex-end`). Timestamp is never inside the bubble row. |
+| `UserBubble` | **Adapter — deprecated in favour of `UserMessage`.** Takes a runtime `ChatMessage` and renders `UserMessage` with the formatted timestamp. Kept so `MessageRow` and existing consumers change nothing; `avatarUrl` / `initial` are accepted but unused (the Refresh bubble has no avatar). New code that owns its own strings renders `UserMessage`. |
+| `UserMessage` | The user bubble. Right-aligned squircle, timestamp **below** the bubble, hover actions, inline edit, attached `FileCard`s, and a quoted-context pill (`highlightedText`). Long text clamps (4 lines, 3 with a highlight) with a show-more affordance. Props: `message`, `highlightedText`, `files`, `state`, `timestamp`, `avatarInitials`. |
+| `FileCard` | One attached file inside `UserMessage` — squircle card with a type-tinted illustration, name and `TYPE · size`. Types: `csv`, `xlsx`, `pdf`, `png`, `txt`, `json`. |
 | `AgentMessage` | Avatar (icon-based, default `ai`) + reasoning + response blocks + feedback row when `stage === 'done'`. |
 | `TypingIndicator` | Spinner ring + "Analysing…" — shown only between submit and the first reasoning chunk. |
-| `ReasoningBlock` | Collapsible "Show work ⌄" trigger. Auto-expands during streaming, auto-collapses 600ms after done. Renders steps with title + description + optional ToolcallCard + "Worked for X seconds" footer. Done dots are gray (`content-tertiary`). |
+| `ReasoningBlock` | **Adapter — deprecated in favour of `Reasoning`.** Takes a runtime `ReasoningTrace` and renders `Reasoning` through `reasoningTraceToItems()` (each step → a text row, plus a tool row when it carries a toolcall). Owns the lifecycle: semi-collapsed while running, brief expand at done, then "Show work"; a user click locks the state. New code that owns its own item list renders `Reasoning`. |
+| `Reasoning` | The reasoning timeline, and what new chat surfaces should render. A flat `ReasoningItem[]` of text rows and tool rows. Tool rows expand to Input / Output code (syntax-highlighted), take a Radiant `icon`, a `toolIcon` glyph or an MCP `logo`, and can carry `error`, `permission`, `codeExecutions` (double accordion) or a `chart`. Tools sharing a `group` run in parallel and collapse into one semi-collapsed step. **Controlled** — the consumer owns `expanded` + `onToggleExpanded` and `visibleCount`; `loadedToolIds` marks which tools have finished. `doneLabel` sets the terminal row ("Thought for N seconds"). Also exports `ToolRow`, `SemiCollapsed`, `toolStepLabel`. |
+| `ToolIcon` | Tool-execution glyphs used by `Reasoning`'s tool rows: `fetch`, `answer`, `code`, `memory`, `web` (`ToolIconName`). Takes precedence over a Radiant `icon` on the same row. |
 | `AgentResponseBlock` | Block dispatcher. Iterates `content.blocks` and calls the right renderer per `kind`. |
 | `SpotterPrompt` | Controlled prompt with auto-resize textarea, mode toggle (ChartSearch / Orbits icons), model picker, controls icon, blue submit. **Gets a purple→blue gradient border on `:focus-within`.** Props: `mode`/`onModeChange` wire the toggle (left = `'ask'` / quick search, right = `'analyze'` / deep analysis). `showDataModel` (default `true`) — set to `false` on named-analyst pages to hide the data model picker and `+` source button. |
+| `PromptBar` | The Refresh composer, shipped **alongside** `SpotterPrompt`, not replacing it: `SpotterPrompt` carries the mode toggle + data-model picker, `PromptBar` carries model / skills / connectors plus a deep-analysis chip, attached files and a quoted-context pill. Controlled through `focused`, `openMenu`/`onOpenMenuChange`, `value`/`onValueChange`; `minLines` + `menuDirection` give the landing (2 lines, menus down) vs asked (1 line, menus up) shapes. Which one Spotter's composer should be is an open decision — see the adoption plan §8.1 (`docs/2026-09-02-spotter-refresh-adoption-plan.md`). |
+| `PromptBarPlayground` | `PromptBar` inside a resizable frame with a drag handle and a model-selector modal — the spec/exploration harness, not a surface to ship. Props: `mode` (`landing` / `asked`), `state` (`default` / `hover` / `selected`), plus `frameWidth` / `frameRef` / `onDragStart`. |
+| `useSquirclePath` | Hook returning `{ ref, clipPath }` for Figma-style smoothed corners (`cornerRadius`, `cornerSmoothing`). Used by `UserMessage`, `FileCard` and `PromptBar`. The raw path builder is exported as `getSquirclePath`. |
 | `QuickAction`, `QuickActionRow` | Pill buttons used in the welcome state. Three buttons: **Quick search**, **Deep analysis**, **Know your data**. Interaction rules: (1) `:active` state applies `scale(0.97)` press feedback. (2) `QuickActionRow` pre-fills `promptValue` for one frame before sending. Behavior per button: **Quick search** and **Deep analysis** open their respective `PromptSuggestionsPanel` (clicking again closes it — no direct prompt fire); **Know your data** fires `"Help me understand this data model and what can you do with it?"` directly. |
 
 ### blocks/ — block renderers
@@ -121,6 +128,10 @@ To add a new block kind:
   name.
 - **Block components** live in `blocks/`. New block kinds need schema
   arm + dispatcher case + canned fixture.
+- **No vendoring** — import Spotter blocks from `@spotter/*`. Never copy
+  a Spotter component into a prototype folder: a copy is frozen at copy
+  time and stops receiving improvements. Improvements to a Spotter block
+  are PR'd against `src/spotter/`, not against a prototype.
 
 ## Where consumers live
 
@@ -129,6 +140,8 @@ To add a new block kind:
 - **`AnalystLandingPage`** (prototype-local at `src/prototypes/Spotter/components/`) — right-pane view when a named analyst is selected and no chat is active. Full-height centered: radial glow + 80px avatar circle (brand gradient, white initial) + "Hi, I'm {name}" heading + `SpotterPrompt` with analyst-specific placeholder and `showDataModel={false}` (no data model picker on analyst pages).
 - **`PromptSuggestionsPanel`** (prototype-local at `src/prototypes/Spotter/components/`) — card rendered below the prompt bar in the welcome state when the user clicks "Quick search" or "Deep analysis". Shows mode icon + mode label + X close + 4 clickable prompt suggestions. Clicking a suggestion pre-fills and sends the prompt. Props: `mode: 'quick-search' | 'deep-analysis'`, `onSelect: (text: string) => void`, `onClose: () => void`. Quick search suggestions are short lookup questions; deep analysis suggestions are report/trend/anomaly prompts.
 - **`AnalystListPage`** (prototype-local at `src/prototypes/Spotter/components/`) — right-pane view when `rightPaneOverride === 'analyst-list'`. Full-width scrollable outer container; inner content centered at `936px` max-width (matching `--spotter-chat-max-width`). Contains: header ("Analysts" + "+ Create new") + search bar + All/Yours/Shared tabs + 3-column responsive grid of analyst cards (avatar, name, description, author, integration chips).
+
+- **`SpotterComponents`** (`src/prototypes/SpotterComponents/`) — demo for the Refresh blocks. Owns nothing but `ResponseGridView` (the response-layout spec with a grid overlay); everything else its barrel exports (`Reasoning`, `ToolIcon`, `UserMessage`, `FileCard`, `PromptBar`, `PromptBarPlayground`) is a re-export from `@spotter/chat`. Component docs live on `/radiant/spotter`.
 
 When you change a Spotter DS component, that change ripples to every
 consumer. When you change a prototype-local component (like

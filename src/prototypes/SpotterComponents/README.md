@@ -74,12 +74,13 @@ RadiantPlay checkout to run.
    ```tsx
    import { Reasoning, UserMessage, PromptBar } from './components';
    ```
-3. Register your prototype in `src/prototypes/registry-mine.ts`.
+3. Register your prototype in `src/prototypes/registry-mine.ts` (on a fork). On the
+   shared branches this demo is registered in `registry-core.ts` as a sample.
 
 ## Live demo
 
 The layout spec runs in the gallery as **Spotter components** (under
-"My prototypes"), route `/playground/SpotterComponents` — grid overlay,
+"Samples"), route `/playground/SpotterComponents` — grid overlay,
 stacked turns, and resize toggles included.
 
 ## Promotion playbook (for the maintainer, when required)

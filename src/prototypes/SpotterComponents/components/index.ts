@@ -16,7 +16,9 @@
  *   ResponseGridView, ToolIcon → new, no old equivalent
  */
 
-export { default as Reasoning, ToolRow, SemiCollapsed, toolStepLabel } from './Reasoning';
+// Reasoning moved to the shared Spotter DS (src/spotter/chat). Re-exported so
+// existing imports from this barrel keep working.
+export { Reasoning, ToolRow, SemiCollapsed, toolStepLabel } from '@spotter/chat';
 export type {
   ReasoningProps,
   ReasoningItem,
@@ -26,15 +28,18 @@ export type {
   ChartToken,
   ChartViz,
   NestLabels,
-} from './Reasoning';
+} from '@spotter/chat';
 
-export { UserMessage, FileCard } from './UserMessage';
-export type { UserMessageProps, UserMessageFile, UserMessageState } from './UserMessage';
+// UserMessage moved to the shared Spotter DS (src/spotter/chat).
+export { UserMessage, FileCard } from '@spotter/chat';
+export type { UserMessageProps, UserMessageFile, UserMessageState } from '@spotter/chat';
 
-export { default as PromptBar, PromptBarPlayground } from './PromptBar';
-export type { OpenMenu, ConnectorsPlacement, PromptBarMode, PromptBarState } from './PromptBar';
+// PromptBar moved to the shared Spotter DS (src/spotter/chat), alongside
+// SpotterPrompt rather than replacing it.
+export { PromptBar, PromptBarPlayground } from '@spotter/chat';
+export type { OpenMenu, ConnectorsPlacement, PromptBarMode, PromptBarState } from '@spotter/chat';
 
 export { default as ResponseGridView } from './ResponseGridView';
 
-export { ToolIcon } from './ToolIcons';
-export type { ToolIconName } from './ToolIcons';
+export { ToolIcon } from '@spotter/chat';
+export type { ToolIconName } from '@spotter/runtime/schema';

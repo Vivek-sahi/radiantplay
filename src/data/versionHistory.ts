@@ -32,6 +32,8 @@ export const versionHistory: VersionEntry[] = [
     date: '2026-09-03',
     type: 'patch',
     changes: [
+      { type: 'added', group: 'Spotter', component: 'Refresh blocks', description: 'Reasoning, UserMessage, PromptBar and ToolIcon (Devanshi Behera) move from the SpotterComponents prototype into src/spotter/chat/. ReasoningBlock and UserBubble become adapters over them, so existing prototypes are unchanged; PromptBar ships alongside SpotterPrompt.' },
+      { type: 'added', group: 'Spotter', component: 'Refresh showcase', description: 'Front door for the Refresh blocks on /radiant/spotter with usage rules; Spotter roadmap updated.' },
       { type: 'added', group: 'Deployment', component: 'Coolify docs', description: 'docs/coolify/ gathers the designer deploy guide, an operations sheet (apps, webhook, recipe, quirks) and an index; the original design record moved to docs/archive/.' },
       { type: 'added', group: 'Deployment', component: 'docker/nginx.conf + Dockerfile', description: 'The SPA fallback config every Coolify app pastes in, and a multi-stage image for the no-git deploy path.' },
       { type: 'modified', group: 'Tooling', component: 'push-faris.sh + pre-push hook', description: 'One-step push to origin and galaxy; the hook now protects the faris working branch from force-push and deletion instead of blocking the retired personal branch.' },
@@ -72,7 +74,7 @@ export const versionHistory: VersionEntry[] = [
     date: '2026-05-26',
     type: 'minor',
     changes: [
-      { type: 'added', group: 'Prototypes', component: 'StylingPanel (Liveboard - Styling panel)', description: 'Restored after the original PR #14 revert. Per-tile drawer with density, color theme, corner style, spacing, and highlight overrides. Shared tile CSS variables added to AnswerTile, NoteTile, GroupTile. Authored by Devanshi Behara. Two integration bugs from the original PR also fixed (missing AnswerTileProps.highlighted, EditToolbar onToggleStyling wiring)' },
+      { type: 'added', group: 'Prototypes', component: 'StylingPanel (Liveboard - Styling panel)', description: 'Restored after the original PR #14 revert. Per-tile drawer with density, color theme, corner style, spacing, and highlight overrides. Shared tile CSS variables added to AnswerTile, NoteTile, GroupTile. Authored by Devanshi Behera. Two integration bugs from the original PR also fixed (missing AnswerTileProps.highlighted, EditToolbar onToggleStyling wiring)' },
       { type: 'added', group: 'Prototypes', component: 'NewUIAdmin2 (AdminUI 2.0)', description: 'Application Settings screen added to the shared sample registry. Cluster settings, administration toggles, downloads and schedules, version control, AI settings. Lands via PR #19 from simran-pandit/feat/newuiadmin2' },
       { type: 'added', group: 'Spotter prototype', component: 'Analyst right-pane state machine', description: 'AnalystLandingPage + AnalystListPage added. Right pane now switches between chat, analyst landing, and analyst list states (matches the spotter-ia.md spec)' },
       { type: 'added', group: 'Spotter DS', component: 'PromptSuggestionsPanel', description: 'New panel surfaced from the prompt bar. Hideable, mode-aware. Prompt bar position stays fixed when the suggestion panel opens' },

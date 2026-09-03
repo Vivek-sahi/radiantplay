@@ -2,7 +2,10 @@
 
 ## 26.9.1a — 2026-09-03
 
-Coolify deployment consolidated into the shared repo. Docs and tooling only, no product changes.
+Spotter Refresh blocks adopted into the shared Spotter DS, and Coolify deployment consolidated into the shared repo.
+
+- Adopted Devanshi's Refresh blocks into `src/spotter/chat/`: `Reasoning` (timeline), `UserMessage` (bubble), `PromptBar` (composer) and `ToolIcon`. `ReasoningBlock` and `UserBubble` remain as adapters over the new components, so existing prototypes keep working; `PromptBar` ships alongside `SpotterPrompt` until the composer decision
+- Added a Refresh blocks front door on `/radiant/spotter` (showcase, rules) and updated the Spotter roadmap
 
 - Added `docs/coolify/`: a designer deploy guide, an operations sheet (apps, webhook, recipe, known quirks) and a short index. The original design record moved to `docs/archive/`
 - Added `docker/nginx.conf` (the SPA fallback every Coolify app uses) and a `Dockerfile` for the no-git deploy path
@@ -46,7 +49,7 @@ Internal repository housekeeping and public-release groundwork. No user-facing c
 - **Playground archive section and sidebar navigation** — Gallery now has a light left sidebar with Prototypes (default) and Archived sections. Per-card 3-dot menu archives or restores any prototype in your session. Save-to-code modal generates a Claude-ready prompt to commit the layout permanently. `MiniSpotters` and `AdminLang` now appear as archived by default.
 
 ### Added
-- `src/prototypes/StylingPanel/` — Liveboard Styling panel prototype restored (originally PR #14, reverted then re-landed via worktree cherry-pick). Per-tile drawer with density, color theme, corner style, spacing, and highlight overrides. Authored by Devanshi Behara.
+- `src/prototypes/StylingPanel/` — Liveboard Styling panel prototype restored (originally PR #14, reverted then re-landed via worktree cherry-pick). Per-tile drawer with density, color theme, corner style, spacing, and highlight overrides. Authored by Devanshi Behera.
 - Shared tile CSS variables for tile density / color theme / corner / spacing / highlight on `AnswerTile`, `NoteTile`, `GroupTile`.
 - `src/prototypes/NewUIAdmin2/` — AdminUI 2.0 Application Settings screen. Registered in `registry-core.ts` as a sample. Cluster settings, administration toggles, downloads and schedules, version control, AI settings. Authored by the Design Team via Simran Pandit (PR #19).
 - `src/prototypes/Spotter/AnalystLandingPage.tsx` + `AnalystListPage.tsx` — right-pane state machine for the standalone Spotter prototype. Replaces the prior "always show chat" right pane.

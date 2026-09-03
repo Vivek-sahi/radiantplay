@@ -1,6 +1,10 @@
 /* ── Prompt bar shell ──────────────────────────────────────────────────────── */
 
+/* Component-level colour with no Radiant token: the cyan stop of the focus
+   gradient. Radiant's reference palette has no teal/cyan; flagged for a DS
+   token. Every other colour in this file resolves to a system token. */
 .bar {
+  --promptbar-glow-cyan: rgba(72, 209, 224, 0.5);
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -33,13 +37,14 @@
   padding: 1px;
   background: linear-gradient(
     90deg,
-    rgba(140, 98, 245, 0.5) 2%,
-    rgba(72, 209, 224, 0.5) 49%,
-    rgba(39, 112, 239, 0.5) 96%
+    color-mix(in srgb, var(--rd-sys-color-content-accent-purple) 50%, transparent) 2%,
+    var(--promptbar-glow-cyan) 49%,
+    color-mix(in srgb, var(--rd-sys-color-content-brand) 50%, transparent) 96%
   );
+  /* Mask alpha only; the colour is irrelevant. */
   -webkit-mask:
-    linear-gradient(#fff 0 0) content-box,
-    linear-gradient(#fff 0 0);
+    linear-gradient(black 0 0) content-box,
+    linear-gradient(black 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   opacity: 0;
@@ -51,8 +56,8 @@
 .barFocusedCursor {
   border-color: transparent;
   box-shadow:
-    0 3px 12px 0 rgba(4, 101, 237, 0.12),
-    0 4px 24px 0 rgba(56, 125, 222, 0.12);
+    0 3px 12px 0 color-mix(in srgb, var(--rd-sys-color-content-brand) 12%, transparent),
+    0 4px 24px 0 color-mix(in srgb, var(--rd-sys-color-content-brand) 12%, transparent);
   /* Smooth border crossfade when selecting (not on hover). */
   transition:
     border-color 0.15s ease,
@@ -381,9 +386,7 @@
 .menu {
   background: var(--rd-sys-color-background-raised);
   border-radius: 6px;
-  box-shadow:
-    0 0 4px rgba(25, 35, 49, 0.08),
-    0 12px 24px rgba(25, 35, 49, 0.12);
+  box-shadow: var(--shadow-menu);
   width: 235px;
   /* No overflow:hidden — the connectors submenu escapes to the right.
      The 8px list padding keeps items clear of the rounded corners. */
@@ -506,7 +509,7 @@
   justify-content: center;
   font-size: 11px;
   font-weight: 600;
-  color: #fff;
+  color: var(--rd-sys-color-content-alternate); /* initial on the connector's brand-coloured disc */
   overflow: hidden;
 }
 

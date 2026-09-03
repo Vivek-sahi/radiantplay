@@ -1,6 +1,6 @@
 # Spotter roadmap
 
-Last updated: 2026-06-25 (Stage B Phase 2 essentially complete. Right-pane state machine, AnalystLandingPage, AnalystListPage all shipped on staging. Prompt bar rebuilt with mode toggle, data-model picker hide, and PromptSuggestionsPanel. 12 IA polish corrections landed. Only Stage B item left: showcase previews on `/radiant/spotter` for the new menus + analyst pages).
+Last updated: 2026-09-02 (Spotter Refresh adoption underway on `feat/spotter-refresh-blocks` — Devanshi's `Reasoning`, `UserMessage` and `PromptBar` now live in `src/spotter/chat/`, front door landed on `/radiant/spotter`. Previously 2026-06-25: Stage B Phase 2 essentially complete. Right-pane state machine, AnalystLandingPage, AnalystListPage all shipped on staging. Prompt bar rebuilt with mode toggle, data-model picker hide, and PromptSuggestionsPanel. 12 IA polish corrections landed. Only Stage B item left: showcase previews on `/radiant/spotter` for the new menus + analyst pages).
 
 This is the **resume-here tracker** for all Spotter work across modes. If you open one Spotter doc, open this one. It absorbs the high-level status and points to deeper references.
 
@@ -36,6 +36,10 @@ There are **four Spotter surface modes**:
 ---
 
 ## Active initiatives
+
+### Spotter Refresh adoption (2026-09-02)
+
+Devanshi's Refresh blocks (`Reasoning`, `UserMessage`, `PromptBar`, `ToolIcon`) move out of `src/prototypes/SpotterComponents/` into `src/spotter/chat/`, so every prototype picks up Spotter improvements by import instead of by copy. `ReasoningBlock` and `UserBubble` stay as adapters over the new components; `PromptBar` ships alongside `SpotterPrompt` until the composer decision. Plan and open decisions: `docs/2026-09-02-spotter-refresh-adoption-plan.md`.
 
 ### Spotter showcase page (new)
 

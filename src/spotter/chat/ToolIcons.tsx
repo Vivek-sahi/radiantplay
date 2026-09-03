@@ -9,7 +9,9 @@ import React from 'react';
 //   • memory — memory steps (fetch/recipes/rules)
 //   • web    — web search steps (globe)
 
-export type ToolIconName = 'fetch' | 'answer' | 'code' | 'memory' | 'web';
+import type { ToolIconName } from '../runtime/schema';
+
+export type { ToolIconName };
 
 interface ToolIconProps {
   name: ToolIconName;
