@@ -30,7 +30,7 @@ export const versionHistory: VersionEntry[] = [
   {
     version: '26.9.1a',
     date: '2026-09-03',
-    type: 'patch',
+    type: 'minor',
     changes: [
       { type: 'added', group: 'Spotter', component: 'Refresh blocks', description: 'Reasoning, UserMessage, PromptBar and ToolIcon (Devanshi Behera) move from the SpotterComponents prototype into src/spotter/chat/. ReasoningBlock and UserBubble become adapters over them, so existing prototypes are unchanged; PromptBar ships alongside SpotterPrompt.' },
       { type: 'added', group: 'Spotter', component: 'Refresh showcase', description: 'Front door for the Refresh blocks on /radiant/spotter with usage rules; Spotter roadmap updated.' },
