@@ -1,5 +1,11 @@
 # Changelog
 
+## 26.9.1b — 2026-09-03
+
+Dependency security update. No product changes.
+
+- Resolved all 19 Dependabot alerts with `npm audit fix` (no major bumps): react-router-dom 7.13 → 7.18.3 (12 advisories, mostly server-side features this static SPA never uses), vite 7.3.3 → 7.3.6, and transitive patches for postcss, browserslist, @babel/core and esbuild. Lockfile stays on the public npm registry only
+
 ## 26.9.1a — 2026-09-03
 
 Spotter Refresh blocks adopted into the shared Spotter DS, and Coolify deployment consolidated into the shared repo.
