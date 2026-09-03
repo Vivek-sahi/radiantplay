@@ -28,6 +28,14 @@ export interface VersionEntry {
  */
 export const versionHistory: VersionEntry[] = [
   {
+    version: '26.9.1b',
+    date: '2026-09-03',
+    type: 'patch',
+    changes: [
+      { type: 'modified', group: 'Dependencies', component: 'Security update', description: 'npm audit fix clears all 19 Dependabot alerts without major bumps: react-router-dom 7.13 to 7.18.3, vite 7.3.3 to 7.3.6, plus transitive patches for postcss, browserslist, @babel/core and esbuild. Lockfile remains on the public npm registry.' },
+    ],
+  },
+  {
     version: '26.9.1a',
     date: '2026-09-03',
     type: 'minor',
