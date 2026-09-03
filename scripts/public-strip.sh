@@ -120,6 +120,12 @@ declare -a FILES_TO_OMIT=(
   "docs/2026-05-07-spotter-viz-block-behaviour.md"
   "docs/2026-05-07-icon-sync-issues.md"
 
+  # Coolify deploy docs (internal hostnames, IPs, app UUIDs)
+  "docs/coolify/README.md"
+  "docs/coolify/2026-09-03-deploy-guide-for-designers.md"
+  "docs/coolify/2026-09-03-coolify-operations.md"
+  "docs/archive/2026-07-23-coolify-deploy-setup.md"
+
   # Internal collaboration docs (Galaxy-shaped)
   "docs/collaboration/forking-guide.md"
   "docs/collaboration/contributing-back.md"

@@ -7,7 +7,7 @@ A tool-agnostic prototyping playground built on ThoughtSpot's Radiant design sys
 [![Vite](https://img.shields.io/badge/Vite-7.2-646CFF)](https://vitejs.dev/)
 [![Vercel](https://img.shields.io/badge/Deployed-Vercel-black)](https://vercel.com)
 
-**Live site:** [radiantplay.vercel.app](https://radiantplay.vercel.app) *(ThoughtSpot internal)*
+**Live site:** [radiantplay.vercel.app](https://radiantplay.vercel.app) · [radiantplay.design.coolify.thoughtspot.com](https://radiantplay.design.coolify.thoughtspot.com) *(ThoughtSpot internal; the Coolify copy needs the corporate network)*
 
 ---
 
@@ -248,7 +248,7 @@ Radiant Play ships with slash commands you can run directly in Claude Code (or d
 | Remote | URL | Purpose |
 |--------|-----|---------|
 | `origin` | `github.com/faris-ts/radiantplay` | Primary — Vercel deploys from here |
-| `galaxy` | `galaxy.corp.thoughtspot.com/mohammed-faris/radiantplay` | Internal ThoughtSpot access |
+| `galaxy` | `galaxy.corp.thoughtspot.com/mohammed-faris/radiantplay` | Internal ThoughtSpot access — Coolify deploys from here (see `docs/coolify/`) |
 | `public` | `github.com/thoughtspot/radiant-play` | Public release mirror — curated snapshot, publish-only |
 
 ---
