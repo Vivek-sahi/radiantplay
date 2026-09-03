@@ -50,7 +50,8 @@ no-git path in the designer guide.
 2. A repo webhook on galaxy (Settings → Hooks, push events only) posts to
    `http://10.79.75.177:8000/webhooks/source/github/events/manual`. Coolify
    matches `owner/repo` + branch and deploys the right app. One webhook per
-   fork covers every app built from that fork.
+   fork covers every app built from that fork, **provided every app carries
+   the same GitHub webhook secret** (see below).
 3. Build takes 3 to 4 minutes. Check under the app's **Deployments** tab, or
    with the `coolify-write` MCP (`deployment list_for_app`).
 4. Verify: root, a deep link such as `/playground`, and a refresh all return
@@ -68,8 +69,29 @@ corporate network and the payload is HMAC-signed. A green ping does not prove
 the secret matches (pings are not verified); only a real push does, and a 401
 on push means the secret is wrong.
 
+### Every app on a fork must share one webhook secret
+
+Coolify checks the webhook signature **per application**, against that app's
+own *GitHub manual webhook secret* (Configuration → Webhooks). Apps whose secret
+differs from the one the galaxy hook signs with are skipped silently: galaxy
+still records a 200, no deployment appears, and the app keeps serving its old
+build. New apps get a random secret, so after creating one:
+
+1. Open an app that already auto-deploys (for this fork, `radiantplay-faris`),
+   Configuration → Webhooks, copy the GitHub manual webhook secret.
+2. Open the new app, same place, paste it in and save.
+
+`radiantplay`, `radiantplay-staging` and `radiantplay-faris` share one secret
+as of 2026-09-03. The `radiantplay` (main) app missed its first two pushes this
+way before the secret was aligned.
+
 ## Known quirks
 
+- **Silent webhook skip.** A 200 from Coolify on the galaxy hook does not mean
+  a deploy was queued — it only means the request was received. Per-app secret
+  mismatch (above) and disabled auto deploy both return 200 and do nothing.
+  Confirm with the app's Deployments tab: a webhook deploy shows
+  `is_webhook: true`.
 - **`is_static` and `custom_nginx_configuration` cannot be set through the
   `coolify-write` MCP** (`application update` answers "Invalid request"), and
   the REST API accepts them only on create. Set them in the UI: General → Is
@@ -91,6 +113,7 @@ on push means the secret is wrong.
 
 | File | Role |
 |---|---|
+| `.claude/commands/coolify-deploy.md` | `/coolify-deploy` guided setup and `check` mode; reads these two docs at run time |
 | `docker/nginx.conf` | Canonical SPA fallback; paste into every app |
 | `Dockerfile` | Multi-stage image (Node 22 build → nginx) for the no-git path |
 | `internal/scripts/push-faris.sh` | Push any branch to origin + galaxy in one step |
@@ -104,4 +127,4 @@ on push means the secret is wrong.
 - 2026-07-23: recipe verified on `ts.coolify.thoughtspot.com` after five failed deploys; `radiantplay-staging` live; per-designer model locked.
 - 2026-08-04: `radiantplay-faris` created (branch `faris` from galaxy).
 - 2026-09-02: `personal` collapsed into `faris`; galaxy webhook added, deploys become automatic.
-- 2026-09-03: `radiantplay` (`main`) created; docs consolidated into `docs/coolify/`.
+- 2026-09-03: `radiantplay` (`main`) created; docs consolidated into `docs/coolify/`; main's webhook secret aligned with the other two apps after its first pushes were skipped.

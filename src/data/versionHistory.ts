@@ -28,6 +28,15 @@ export interface VersionEntry {
  */
 export const versionHistory: VersionEntry[] = [
   {
+    version: '26.9.1c',
+    date: '2026-09-03',
+    type: 'patch',
+    changes: [
+      { type: 'added', group: 'Tooling', component: '/coolify-deploy', description: 'Guided Coolify setup for a fork, one verified step at a time, plus a check mode that compares an existing app against the recipe. Drives the Coolify and galaxy UIs via Claude in Chrome, never types secrets, reads docs/coolify/ at run time.' },
+      { type: 'modified', group: 'Deployment', component: 'Coolify docs', description: 'Every app on one fork must share the same GitHub webhook secret; Coolify checks the signature per app and skips mismatches silently while galaxy shows 200.' },
+    ],
+  },
+  {
     version: '26.9.1b',
     date: '2026-09-03',
     type: 'patch',

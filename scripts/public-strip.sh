@@ -138,6 +138,7 @@ declare -a FILES_TO_OMIT=(
 
   # Internal Claude commands and hooks
   ".claude/commands/sync-upstream.md"
+  ".claude/commands/coolify-deploy.md"
   ".claude/hooks/liveboard-gate.sh"
   ".claude/hooks/post-compact-inject.sh"
 
