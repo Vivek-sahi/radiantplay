@@ -27,6 +27,13 @@ export const HIGHLIGHT_GROUPS: { id: HighlightGroup; label: string }[] = [
 export const HIGHLIGHTS: Highlight[] = [
   // ── Sample prototypes & contexts ───────────────────────────────────────────
   {
+    title: 'Spotter Refresh blocks in the shared Spotter DS',
+    description: "Devanshi's Reasoning timeline, UserMessage bubble, PromptBar composer and ToolIcon now live in src/spotter/chat/. ReasoningBlock and UserBubble stay as adapters, so existing prototypes pick up the new look without changes. Front door on /radiant/spotter.",
+    version: '26.9.1a',
+    date: '2026-09-03',
+    group: 'prototypes',
+  },
+  {
     title: 'Spotter prototype',
     description: 'AnalystLandingPage, AnalystListPage, and the right-pane state machine landed. Prompt bar rebuilt with a mode toggle, hideable data-model picker, and a new PromptSuggestionsPanel. 12 IA polish corrections across analyst selection, recency-sorted chats, panel restructure, and chat naming. The Liveboard template SpotterViz side panel was also rebuilt to match the Figma design.',
     version: '26.5.4a',

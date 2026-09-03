@@ -25,6 +25,12 @@ interface Highlight {
 
 const HIGHLIGHTS: Highlight[] = [
   {
+    title: 'Spotter Refresh blocks in the shared Spotter DS',
+    description: "Devanshi's Reasoning timeline, UserMessage bubble, PromptBar composer and ToolIcon now live in src/spotter/chat/. ReasoningBlock and UserBubble stay as adapters, so existing prototypes pick up the new look without changes. Front door on /radiant/spotter.",
+    version: '26.9.1a',
+    date: '2026-09-03',
+  },
+  {
     title: 'Spotter prototype',
     description: 'AnalystLandingPage, AnalystListPage, and the right-pane state machine landed. Prompt bar rebuilt with a mode toggle, hideable data-model picker, and a new PromptSuggestionsPanel. 12 IA polish corrections across analyst selection, recency-sorted chats, panel restructure, and chat naming. The Liveboard template SpotterViz side panel was also rebuilt to match the Figma design.',
     version: '26.5.4a',
@@ -93,6 +99,36 @@ const HIGHLIGHTS: Highlight[] = [
 ];
 
 const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '26.9.1a',
+    date: '2026-09-03',
+    title: 'Spotter Refresh blocks adopted + Coolify deployment consolidated',
+    type: 'minor',
+    changes: [
+      {
+        category: 'added',
+        label: 'Spotter',
+        items: [
+          "Reasoning, UserMessage, PromptBar and ToolIcon (Devanshi Behera) moved from the SpotterComponents prototype into src/spotter/chat/. ReasoningBlock and UserBubble became adapters over them, so existing prototypes are unchanged; PromptBar ships alongside SpotterPrompt until the composer decision.",
+          'Refresh blocks front door on /radiant/spotter with usage rules; Spotter roadmap updated.',
+        ],
+      },
+      {
+        category: 'added',
+        label: 'Deployment',
+        items: [
+          'docs/coolify/ gathers the designer deploy guide, an operations sheet (apps, webhook, recipe, quirks) and an index. docker/nginx.conf carries the SPA fallback every Coolify app uses; a Dockerfile covers the no-git path.',
+        ],
+      },
+      {
+        category: 'changed',
+        label: 'Repository',
+        items: [
+          'faris replaces the retired personal branch in CLAUDE.md and the pre-push hook; each branch lists its Coolify URL beside its Vercel one. push-faris.sh pushes a branch to origin and galaxy in one step.',
+        ],
+      },
+    ],
+  },
   {
     version: '26.7.1b',
     date: '2026-07-01',
