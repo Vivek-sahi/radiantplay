@@ -1,5 +1,12 @@
 # Changelog
 
+## 26.9.1c — 2026-09-03
+
+Guided Coolify setup for designers. Docs and tooling only, no product changes.
+
+- Added `/coolify-deploy`: a Claude Code command that walks a designer through putting their fork on Coolify one verified step at a time (deploy key, app, build settings, Node pin, static site and nginx fallback, first deploy, auto-deploy webhook), plus `/coolify-deploy check` to compare an existing app against the known-good recipe. Reads `docs/coolify/` at run time; never types secrets
+- Documented that every Coolify app on one fork must share the same GitHub webhook secret, since Coolify verifies the signature per app and silently skips mismatches
+
 ## 26.9.1b — 2026-09-03
 
 Dependency security update. No product changes.

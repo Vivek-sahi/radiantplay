@@ -123,6 +123,12 @@ One webhook per fork covers every Coolify app built from that repo: Coolify
 matches `owner/repo` and the branch from the push payload, so `staging` and
 `faris` apps on the same repo each fire only for their own branch.
 
+**If you add a second app on the same fork** (say `main` and `staging`), the
+webhook secret must match on *every* app. Coolify verifies the signature per
+app and silently skips any app whose secret differs — galaxy still shows 200
+and nothing deploys. Copy the GitHub manual webhook secret from the first app
+(Configuration → Webhooks) into the same field on each new one, then save.
+
 ---
 
 # Path B — Docker image (no git)
@@ -211,6 +217,7 @@ then click **Redeploy** on the resource in Coolify.
 | Deep links / refresh 404 | No SPA fallback in nginx | Custom nginx config (A6); Docker image already includes it |
 | Coolify can't find your Docker image | Image only exists locally | Push it to a registry first (B0, B3) |
 | Deploy finished but the browser shows the old build | nginx serves `index.html` without `Cache-Control`, so the browser keeps the old shell | Hard refresh; a `no-cache` header on `index.html` is the permanent fix (not yet applied) |
+| Push shows 200 on galaxy but a second app never deploys | That app's webhook secret differs from the one galaxy signs with; Coolify skips it silently | Copy the first app's GitHub manual webhook secret into the new app (A7) |
 | API / MCP call to set "static site" or nginx config returns "Invalid request" | Coolify's API accepts `is_static` and `custom_nginx_configuration` only on create, and the `coolify-write` MCP rejects both | Set them in the UI (A6) |
 
 ## Notes
