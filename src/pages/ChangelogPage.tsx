@@ -100,6 +100,21 @@ const HIGHLIGHTS: Highlight[] = [
 
 const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '26.9.1b',
+    date: '2026-09-03',
+    title: 'Dependency security update',
+    type: 'patch',
+    changes: [
+      {
+        category: 'changed',
+        label: 'Dependencies',
+        items: [
+          'npm audit fix clears all 19 Dependabot alerts with no major bumps: react-router-dom 7.13 to 7.18.3, vite 7.3.3 to 7.3.6, plus transitive patches for postcss, browserslist, @babel/core and esbuild. Lockfile stays on the public npm registry.',
+        ],
+      },
+    ],
+  },
+  {
     version: '26.9.1a',
     date: '2026-09-03',
     title: 'Spotter Refresh blocks adopted + Coolify deployment consolidated',
