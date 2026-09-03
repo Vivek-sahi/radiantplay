@@ -100,6 +100,28 @@ const HIGHLIGHTS: Highlight[] = [
 
 const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '26.9.1c',
+    date: '2026-09-03',
+    title: 'Guided Coolify setup for designers',
+    type: 'patch',
+    changes: [
+      {
+        category: 'added',
+        label: 'Tooling',
+        items: [
+          '/coolify-deploy walks a designer through putting their fork on Coolify one verified step at a time (deploy key, app, build settings, Node pin, static site and nginx fallback, first deploy, auto-deploy webhook). /coolify-deploy check compares an existing app against the known-good recipe. Reads docs/coolify/ at run time and never types secrets.',
+        ],
+      },
+      {
+        category: 'changed',
+        label: 'Deployment',
+        items: [
+          'Coolify docs now state that every app on one fork must share the same GitHub webhook secret, since Coolify verifies the signature per app and silently skips mismatches.',
+        ],
+      },
+    ],
+  },
+  {
     version: '26.9.1b',
     date: '2026-09-03',
     title: 'Dependency security update',
