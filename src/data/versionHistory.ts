@@ -28,6 +28,17 @@ export interface VersionEntry {
  */
 export const versionHistory: VersionEntry[] = [
   {
+    version: '26.9.1a',
+    date: '2026-09-03',
+    type: 'patch',
+    changes: [
+      { type: 'added', group: 'Deployment', component: 'Coolify docs', description: 'docs/coolify/ gathers the designer deploy guide, an operations sheet (apps, webhook, recipe, quirks) and an index; the original design record moved to docs/archive/.' },
+      { type: 'added', group: 'Deployment', component: 'docker/nginx.conf + Dockerfile', description: 'The SPA fallback config every Coolify app pastes in, and a multi-stage image for the no-git deploy path.' },
+      { type: 'modified', group: 'Tooling', component: 'push-faris.sh + pre-push hook', description: 'One-step push to origin and galaxy; the hook now protects the faris working branch from force-push and deletion instead of blocking the retired personal branch.' },
+      { type: 'modified', group: 'Repository', component: 'CLAUDE.md + README', description: 'faris replaces personal in the branch model; Coolify URLs listed beside the Vercel ones for main, staging and faris.' },
+    ],
+  },
+  {
     version: '26.7.1b',
     date: '2026-07-01',
     type: 'patch',

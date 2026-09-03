@@ -22,14 +22,14 @@
 |---|---|---|
 | `main` | Shared library + samples (what other designers sync from) | origin + galaxy |
 | `staging` | Shared preview / QA | origin + galaxy |
-| `faris` | Maintainer's daily working branch: personal prototypes (in `registry-mine.ts`) and decks | origin + galaxy (the galaxy copy deploys the personal Coolify app) |
+| `faris` | Maintainer's daily working branch: personal prototypes (in `registry-mine.ts`) and decks | origin + galaxy (the galaxy copy deploys the radiantplay-faris Coolify app) |
 | `feat/*`, `fix/*`, `chore/*` | Shared work branches | origin + galaxy |
 
-`faris` is pushed to both remotes; the galaxy copy is what the personal Coolify app deploys. A pre-push hook refuses force-pushes and deletions of `faris`, because it is real history rather than a mirror. Do not bypass the hook with `--no-verify` unless the user explicitly says to.
+`faris` is pushed to both remotes; the galaxy copy is what the radiantplay-faris Coolify app deploys. A pre-push hook refuses force-pushes and deletions of `faris`, because it is real history rather than a mirror. `faris` is never merged into `main` or `staging` — shared work is cut from `main` on a `feat/*`, `fix/*` or `chore/*` branch, and `faris` picks it up by merging `main` in. Do not bypass the hook with `--no-verify` unless the user explicitly says to.
 
 There is also a `public` remote (`github.com/thoughtspot/radiant-play`), the curated public release mirror. **Never push to it directly.** The public snapshot is published separately, and only with explicit per-push approval for that specific push.
 
-**The maintainer's daily working branch is `faris`.** Work directly on `faris`; if a side branch is used, merge it back promptly rather than leaving it long-lived. Push it to both remotes in one step with `bash internal/scripts/push-faris.sh`. Personal prototypes live in `registry-mine.ts`. To promote a personal prototype to the shared library: switch to `main`, move the entry from `registry-mine.ts` to `registry-core.ts`, commit, and push to both remotes.
+**The maintainer's daily working branch is `faris`.** Work directly on `faris`; if a side branch is used, merge it back promptly rather than leaving it long-lived. Push it to both remotes in one step with `bash internal/scripts/push-faris.sh`. Keep it current by merging `main` into `faris`, never the other way round. Personal prototypes live in `registry-mine.ts`. To promote a personal prototype to the shared library: switch to `main`, move the entry from `registry-mine.ts` to `registry-core.ts`, commit, and push to both remotes.
 
 Run `git remote -v` to confirm which remotes exist. Default deploy target is **staging**, not main — do not push to main unless explicitly asked.
 
@@ -37,7 +37,7 @@ Run `git remote -v` to confirm which remotes exist. Default deploy target is **s
 
 ## Tech Stack
 
-React 19 + TypeScript + Vite 7, deployed on Vercel. When building or modifying pages, verify the build succeeds before considering the task complete.
+React 19 + TypeScript + Vite 7. Deployed on Vercel (main, staging, per-branch previews) and on ThoughtSpot's self-hosted Coolify (main, staging, faris — see `docs/coolify/`). When building or modifying pages, verify the build succeeds before considering the task complete.
 
 ## Commands
 
@@ -164,12 +164,12 @@ Apply the 5 conventions above + verify `npm run build` passes before finishing a
 
 | Branch | Purpose | Deploys to | Pushed to |
 |--------|---------|------------|-----------|
-| `main` | Production (shared library) | radiantplay.vercel.app | origin + galaxy |
-| `staging` | Shared preview / QA | staging-radiantplay.vercel.app | origin + galaxy |
-| `faris` | Maintainer's daily working branch — personal prototypes in `registry-mine.ts`, decks | radiantplay-faris Coolify app (deploys from galaxy) | origin + galaxy |
+| `main` | Production (shared library) | radiantplay.vercel.app · radiantplay.design.coolify.thoughtspot.com | origin + galaxy |
+| `staging` | Shared preview / QA | staging-radiantplay.vercel.app · radiantplay-staging.design.coolify.thoughtspot.com | origin + galaxy |
+| `faris` | Maintainer's daily working branch — personal prototypes in `registry-mine.ts`, decks | Per-branch Vercel preview · radiantplay-faris.design.coolify.thoughtspot.com (from galaxy) | origin + galaxy |
 | `feat/*`, `fix/*`, `chore/*` | Shared work branches | — | origin + galaxy |
 
-The pre-push hook (`scripts/hooks/pre-push`) refuses force-pushes and deletions of `faris`, since it is the real working branch rather than a mirror. To "promote" a personal prototype to the shared library, switch to `main`, move the entry from `registry-mine.ts` to `registry-core.ts`, commit, and push to both remotes.
+The pre-push hook (`scripts/hooks/pre-push`) refuses force-pushes and deletions of `faris`, since it is the real working branch rather than a mirror. Vercel deploys from `origin`; Coolify deploys from `galaxy` (setup and operations in `docs/coolify/`). To "promote" a personal prototype to the shared library, switch to `main`, move the entry from `registry-mine.ts` to `registry-core.ts`, commit, and push to both remotes.
 
 ### Remotes
 

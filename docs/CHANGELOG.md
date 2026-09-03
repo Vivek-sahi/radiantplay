@@ -1,5 +1,14 @@
 # Changelog
 
+## 26.9.1a — 2026-09-03
+
+Coolify deployment consolidated into the shared repo. Docs and tooling only, no product changes.
+
+- Added `docs/coolify/`: a designer deploy guide, an operations sheet (apps, webhook, recipe, known quirks) and a short index. The original design record moved to `docs/archive/`
+- Added `docker/nginx.conf` (the SPA fallback every Coolify app uses) and a `Dockerfile` for the no-git deploy path
+- Added `internal/scripts/push-faris.sh` (push a branch to origin and galaxy in one step) and updated the pre-push hook to protect the `faris` working branch instead of the retired `personal` branch
+- Updated CLAUDE.md and the README: `faris` replaces `personal` in the branch model, and each branch's Coolify URL sits beside its Vercel one
+
 ## 26.7.1b — 2026-07-01
 
 SegmentedControl visual refresh. CSS-only, no breaking changes.
