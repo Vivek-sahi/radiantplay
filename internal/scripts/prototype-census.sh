@@ -4,12 +4,12 @@
 # Auto-discovers forks from the galaxy GitHub Enterprise API (falling back to
 # internal/scripts/forks.txt if the API is unreachable), plus the maintainer
 # repo, counts prototypes (folders + registry entries by section, per creator,
-# archived included), and writes a cache that /project-status displays cheaply:
+# archived included), and writes a cache that /project-canvas displays cheaply:
 #
 #   internal/cache/prototype-census.json   — machine-readable data
 #   internal/cache/prototype-census.html   — fragment embedded by status.sh
 #
-# This is intentionally NOT run by /project-status (it git-fetches ~16 repos and
+# This is intentionally NOT run by /project-canvas (it git-fetches ~16 repos and
 # takes a while). Run it explicitly via /prototype-census when you want fresh
 # numbers. The dashboard shows the last cached run + a refresh hint.
 #
