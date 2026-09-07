@@ -636,7 +636,11 @@ while IFS= read -r f; do
     pdate="$(stat -f "%Sm" -t "%Y-%m-%d" "$f" 2>/dev/null)"
     pchip="<span class='chip wip'>Local</span>"
   fi
-  title="$(grep -o '<title>[^<]*</title>' "$f" 2>/dev/null | head -1 | sed -e 's/<title>//' -e 's|</title>||')"
+  # The title comes out of HTML, so it already carries entities. Decode them
+  # first, otherwise esc_html escapes the ampersand a second time.
+  title="$(grep -o '<title>[^<]*</title>' "$f" 2>/dev/null | head -1 \
+    | sed -e 's/<title>//' -e 's|</title>||' \
+          -e 's/&amp;/\&/g' -e 's/&lt;/</g' -e 's/&gt;/>/g' -e 's/&#39;/'"'"'/g' -e 's/&quot;/"/g')"
   [ -z "$title" ] && title="$base"
   pdesc="$(grep -o 'name="description" content="[^"]*"' "$f" 2>/dev/null | head -1 | sed -e 's/.*content="//' -e 's/"$//' | cut -c1-190)"
   [ -z "$pdesc" ] && pdesc="$base"
