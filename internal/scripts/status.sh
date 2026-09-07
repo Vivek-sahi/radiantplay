@@ -377,26 +377,42 @@ if [ -n "$DESIGNER_UPSTREAM_REMOTE" ]; then
 fi
 
 # ── data: plan files, rules, docs (split into buckets) ───────────────────
-render_row() {
-  local p="$1"
-  local size mtime badge id
-  size=$(wc -l < "$p" 2>/dev/null | tr -d ' ')
-  mtime=$(stat -f "%Sm" -t "%Y-%m-%d" "$p" 2>/dev/null)
-  badge=""
-  if git check-ignore -q "$p" 2>/dev/null; then
-    badge=" <span class='badge local' title='Gitignored — exists only on this machine'>local</span>"
-  elif [ -n "$(git ls-files --others --exclude-standard "$p" 2>/dev/null)" ]; then
-    badge=" <span class='badge local' title='Untracked — not yet committed to git'>local</span>"
-  fi
+# Embed a markdown file once, keyed by a path-derived id, and echo that id.
+# Both the Docs and plans tables and the Content cards point at the same
+# embedded copy, so a doc listed twice is still only carried once.
+EMBEDDED_IDS=""
+embed_doc() {
+  local p="$1" id
   id=$(echo "$p" | sed 's/[^a-zA-Z0-9]/_/g')
-
-  # Embed file content into a hidden script block keyed by id.
+  case " $EMBEDDED_IDS " in
+    *" $id "*) echo "$id"; return ;;
+  esac
+  EMBEDDED_IDS="$EMBEDDED_IDS $id"
   {
     echo "<script type=\"text/markdown\" id=\"md-${id}\" data-path=\"${p}\">"
     embed_esc < "$p" 2>/dev/null
     echo "</script>"
   } >> "$EMBED_FILE"
+  echo "$id"
+}
 
+# "local" when the file is gitignored or not yet committed.
+local_badge() {
+  local p="$1"
+  if git check-ignore -q "$p" 2>/dev/null; then
+    echo " <span class='badge local' title='Gitignored, exists only on this machine'>local</span>"
+  elif [ -n "$(git ls-files --others --exclude-standard "$p" 2>/dev/null)" ]; then
+    echo " <span class='badge local' title='Untracked, not yet committed to git'>local</span>"
+  fi
+}
+
+render_row() {
+  local p="$1"
+  local size mtime badge id
+  size=$(wc -l < "$p" 2>/dev/null | tr -d ' ')
+  mtime=$(stat -f "%Sm" -t "%Y-%m-%d" "$p" 2>/dev/null)
+  badge="$(local_badge "$p")"
+  id="$(embed_doc "$p")"
   echo "<tr><td><button class='md-link' data-target='md-${id}'>${p}</button>${badge}</td><td>${size} lines</td><td>${mtime}</td></tr>"
 }
 
@@ -526,86 +542,169 @@ if [ -n "${STATUS_DEPLOYS+x}" ] && [ ${#STATUS_DEPLOYS[@]} -gt 0 ]; then
   rm -rf "$SITE_TMP"
 fi
 
-# ── data: content (prototypes + standalone pages) ────────────────────────
-# The two registries are the inventory of what this repo actually produces, and
-# public/*.html is the other half. Neither appeared on this dashboard before.
+# ── data: content, grouped by project ────────────────────────────────────
+# One tab that answers "what has this project made". A project's prototype, its
+# pages and its plan docs sit together under one heading, because that is the
+# unit someone actually thinks in. The kind is a badge on the card, not a tab.
+#
+# Groups come from STATUS_GROUPS in the config: first matching pattern wins,
+# declared order is render order, and anything unmatched lands in Unfiled.
 esc_html() { sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g'; }
 
-# Registry entries: id, name, lastModified and section, flushed when `section`
-# closes an entry. Field order is stable in both files and no name contains an
-# apostrophe, which is what makes the quote split safe.
+UNFILED="Unfiled"
+
+group_for() {
+  local hay row name pats pat
+  hay=$(echo "$1" | tr '[:upper:]' '[:lower:]')
+  for row in ${STATUS_GROUPS[@]+"${STATUS_GROUPS[@]}"}; do
+    name="${row%%|*}"
+    pats="${row#*|}"
+    for pat in $pats; do
+      case "$hay" in
+        *"$pat"*) echo "$name"; return ;;
+      esac
+    done
+  done
+  echo "$UNFILED"
+}
+
+ITEM_FILE=$(mktemp)
+# Each line: group <TAB> date <TAB> card HTML. Cards carry no tabs.
+add_item() { printf '%s\t%s\t%s\n' "$1" "$2" "$3" >> "$ITEM_FILE"; }
+
+card() {
+  # kind, title, desc-html, date, chip, open-attrs
+  printf '<%s class="card"%s><div class="c-top"><div class="c-title">%s</div>%s</div><div class="c-desc">%s</div><div class="c-foot"><span class="type">%s</span><span class="mtime num">%s</span></div></%s>' \
+    "$7" "$6" "$2" "$5" "$3" "$1" "$4" "$7"
+}
+
+# Registry entries. Fields are read from the first quote to the last quote on
+# the line, so a description containing a comma or a colon survives.
 parse_registry() {
-  awk -F"'" '
-    /^[[:space:]]*id:[[:space:]]*./       { id = $2 }
-    /^[[:space:]]*name:[[:space:]]*./     { nm = $2 }
-    /^[[:space:]]*lastModified:[[:space:]]*./ { lm = $2 }
-    /^[[:space:]]*section:[[:space:]]*./  { if (id != "") { print id "\t" nm "\t" lm "\t" $2; id = "" } }
+  # The single quote is passed in as q: an awk program lives inside single
+  # quotes, so a literal quote cannot be written directly.
+  awk -v q="'" '
+    function val(l) {
+      i = index(l, q); if (i == 0) return "";
+      r = substr(l, i + 1); j = length(r);
+      while (j > 0 && substr(r, j, 1) != q) j--;
+      return substr(r, 1, j - 1);
+    }
+    /^[[:space:]]*id:/           { id = val($0) }
+    /^[[:space:]]*name:/         { nm = val($0) }
+    /^[[:space:]]*description:/  { ds = val($0) }
+    /^[[:space:]]*lastModified:/ { lm = val($0) }
+    /^[[:space:]]*section:/      { if (id != "") { print id "\t" nm "\t" ds "\t" lm "\t" val($0); id = "" } }
   ' "$1" 2>/dev/null
 }
 
-proto_card() {
-  local id="$1" nm="$2" lm="$3" sec="$4" src="$5"
-  local chip
-  case "$sec" in
-    mine)     chip="<span class='chip wip'>Mine</span>" ;;
-    sample)   chip="<span class='chip live'>Library</span>" ;;
-    archived) chip="<span class='chip flat'>Archived</span>" ;;
-    *)        chip="<span class='chip flat'>${sec}</span>" ;;
-  esac
-  printf '<div class="card"><div class="c-top"><div class="c-title">%s</div>%s</div><div class="c-desc"><code>/playground/%s</code></div><div class="c-foot"><span class="type">%s</span><span class="mtime num">%s</span></div></div>' \
-    "$(printf '%s' "$nm" | esc_html)" "$chip" "$id" "$src" "${lm:-—}"
-}
-
-CONTENT_MINE=""
-CONTENT_LIB=""
 PROTO_MINE_N=0
 PROTO_LIB_N=0
 for reg in src/prototypes/registry-mine.ts src/prototypes/registry-core.ts; do
   [ -f "$reg" ] || continue
-  tag="core"
-  case "$reg" in *mine*) tag="mine" ;; esac
-  while IFS=$'\t' read -r id nm lm sec; do
+  while IFS=$'\t' read -r id nm ds lm sec; do
     [ -z "$id" ] && continue
-    if [ "$tag" = "mine" ]; then
-      PROTO_MINE_N=$((PROTO_MINE_N+1))
-      CONTENT_MINE="${CONTENT_MINE}$(proto_card "$id" "$nm" "$lm" "$sec" "registry-mine")"
-    else
-      PROTO_LIB_N=$((PROTO_LIB_N+1))
-      CONTENT_LIB="${CONTENT_LIB}$(proto_card "$id" "$nm" "$lm" "$sec" "registry-core")"
-    fi
+    case "$reg" in
+      *mine*) PROTO_MINE_N=$((PROTO_MINE_N+1)) ;;
+      *)      PROTO_LIB_N=$((PROTO_LIB_N+1)) ;;
+    esac
+    case "$sec" in
+      mine)     chip="<span class='chip wip'>Mine</span>" ;;
+      sample)   chip="<span class='chip live'>Library</span>" ;;
+      archived) chip="<span class='chip flat'>Archived</span>" ;;
+      *)        chip="<span class='chip flat'>${sec}</span>" ;;
+    esac
+    add_item "$(group_for "$id $nm")" "${lm:-0000-00-00}" \
+      "$(card 'prototype' "$(printf '%s' "$nm" | esc_html)" \
+              "$(printf '%s' "$ds" | esc_html)" "${lm:-—}" "$chip" '' 'div')"
   done < <(parse_registry "$reg")
 done
 
-# Standalone pages under public/. The dashboard is written into that same
-# folder, so a plain relative href opens each one straight from file://.
-CONTENT_PAGES=""
+# Standalone pages under public/. The dashboard is written into that folder, so
+# a plain relative href opens each one straight from file://.
 PAGE_COUNT=0
 while IFS= read -r f; do
   [ -z "$f" ] && continue
   base="$(basename "$f")"
   [ "$base" = "status.html" ] && continue
   PAGE_COUNT=$((PAGE_COUNT+1))
-  # Prefer the last commit date: switching branches cannot fake freshness that
-  # way. An uncommitted page falls back to its file date and still shows up.
+  # The last commit date, so switching branches cannot fake freshness. An
+  # uncommitted page falls back to its file date and still shows up.
   pdate="$(git log -1 --format=%ad --date=short -- "$f" 2>/dev/null)"
   pchip="<span class='chip flat'>Page</span>"
   if [ -z "$pdate" ]; then
     pdate="$(stat -f "%Sm" -t "%Y-%m-%d" "$f" 2>/dev/null)"
     pchip="<span class='chip wip'>Local</span>"
   fi
-  title="$(grep -o '<title>[^<]*</title>' "$f" 2>/dev/null | head -1 | sed -e 's/<title>//' -e 's/<\/title>//')"
+  title="$(grep -o '<title>[^<]*</title>' "$f" 2>/dev/null | head -1 | sed -e 's/<title>//' -e 's|</title>||')"
   [ -z "$title" ] && title="$base"
-  CONTENT_PAGES="${CONTENT_PAGES}$(printf '<a class="card" href="./%s"><div class="c-top"><div class="c-title">%s</div>%s</div><div class="c-desc"><code>%s</code></div><div class="c-foot"><span class="type">html</span><span class="mtime num">%s</span></div></a>' \
-    "$base" "$(printf '%s' "$title" | esc_html)" "$pchip" "$base" "$pdate")"
+  pdesc="$(grep -o 'name="description" content="[^"]*"' "$f" 2>/dev/null | head -1 | sed -e 's/.*content="//' -e 's/"$//' | cut -c1-190)"
+  [ -z "$pdesc" ] && pdesc="$base"
+  add_item "$(group_for "$base $title")" "$pdate" \
+    "$(card 'page' "$(printf '%s' "$title" | esc_html)" "$(printf '%s' "$pdesc" | esc_html)" \
+            "$pdate" "$pchip" " href=\"./${base}\" title=\"public/${base}\"" 'a')"
 done < <(find public -maxdepth 1 -name '*.html' 2>/dev/null | sort)
 
+# Project docs. A doc only reaches Content when it matches a configured group:
+# an unmatched markdown file is repo machinery, not project work, and stays in
+# Docs and plans only. Clicking one opens the same embedded copy.
+DOC_ITEM_N=0
+while IFS= read -r f; do
+  [ -z "$f" ] && continue
+  case "$(basename "$f")" in CHANGELOG*.md) continue ;; esac
+  g="$(group_for "$f")"
+  [ "$g" = "$UNFILED" ] && continue
+  DOC_ITEM_N=$((DOC_ITEM_N+1))
+  ddate="$(git log -1 --format=%ad --date=short -- "$f" 2>/dev/null)"
+  [ -z "$ddate" ] && ddate="$(stat -f "%Sm" -t "%Y-%m-%d" "$f" 2>/dev/null)"
+  dtitle="$(grep -m1 '^# ' "$f" 2>/dev/null | sed 's/^# *//')"
+  [ -z "$dtitle" ] && dtitle="$(basename "$f" .md)"
+  # First real prose line: skip headings, the bold metadata block, lists,
+  # tables, quotes and code fences.
+  ddesc="$(awk '
+    # Skip a YAML frontmatter block, otherwise its keys read as the summary.
+    NR == 1 && /^---[[:space:]]*$/ { fm = 1; next }
+    fm && /^---[[:space:]]*$/      { fm = 0; next }
+    fm                             { next }
+    /^[[:space:]]*$/               { next }
+    /^#/                           { next }
+    /^[*_>|`-]/                    { next }
+    /^[[:space:]]*[0-9]+\./         { next }
+    { print; exit }
+  ' "$f" 2>/dev/null | sed -e 's/\*\*//g' -e 's/`//g' | cut -c1-190)"
+  [ -z "$ddesc" ] && ddesc="$f"
+  did="$(embed_doc "$f")"
+  dchip="<span class='chip flat'>Doc</span>"
+  case "$f" in *archive/*) dchip="<span class='chip flat'>Archived</span>" ;; esac
+  [ -n "$(local_badge "$f")" ] && dchip="<span class='chip wip'>Local</span>"
+  add_item "$g" "$ddate" \
+    "$(card 'doc' "$(printf '%s' "$dtitle" | esc_html)" "$(printf '%s' "$ddesc" | esc_html)" \
+            "$ddate" "$dchip" " role=\"button\" tabindex=\"0\" class=\"md-link\" data-target=\"md-${did}\" title=\"${f}\"" 'div')"
+done < <(find docs -maxdepth 2 -name '*.md' 2>/dev/null | sort)
+
+# Render group by group, config order first, then Unfiled.
+CONTENT_SECTIONS=""
+render_group() {
+  local g="$1" rows n
+  rows="$(awk -F'\t' -v g="$g" '$1 == g { print $2 "\t" $3 }' "$ITEM_FILE" | sort -r | cut -f2-)"
+  [ -z "$rows" ] && return
+  n=$(awk -F'\t' -v g="$g" '$1 == g' "$ITEM_FILE" | wc -l | tr -d ' ')
+  CONTENT_SECTIONS="${CONTENT_SECTIONS}<h2>$(printf '%s' "$g" | esc_html) <span class=\"n num\">${n}</span></h2><div class=\"cards\">${rows}</div>"
+}
+for row in ${STATUS_GROUPS[@]+"${STATUS_GROUPS[@]}"}; do
+  render_group "${row%%|*}"
+done
+render_group "$UNFILED"
+rm -f "$ITEM_FILE"
+
+# Colour of the Sites pill in the toolbar.
 if [ "$SITES_TOTAL" -eq 0 ]; then SITE_DOT="down"
 elif [ "$SITES_UP" -eq "$SITES_TOTAL" ]; then SITE_DOT=""
 elif [ "$SITES_UP" -eq 0 ]; then SITE_DOT="down"
 else SITE_DOT="warn"; fi
 
 PROTOTYPE_COUNT=$((PROTO_MINE_N + PROTO_LIB_N))
-CONTENT_TOTAL=$((PROTOTYPE_COUNT + PAGE_COUNT))
+CONTENT_TOTAL=$((PROTOTYPE_COUNT + PAGE_COUNT + DOC_ITEM_N))
 BRANCH_N=$(git for-each-ref --format='%(refname)' refs/heads/ 2>/dev/null | wc -l | tr -d ' ')
 
 # ── render HTML ──────────────────────────────────────────────────────────
@@ -928,11 +1027,13 @@ cat > "$OUT" <<HTML
     transition: border-color .12s ease;
   }
   a.card { border-bottom: 1px solid var(--border); }
+  .card.md-link { cursor: pointer; text-align: left; font: inherit; }
   .card:hover { border-color: var(--border-strong); }
   .c-top { display: flex; align-items: center; gap: 9px; }
   .c-title { font-size: 14px; font-weight: 650; color: var(--text); flex: 1; min-width: 0;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .c-desc { color: var(--text-2); font-size: 12.5px; line-height: 1.45; margin: 0; }
+  .c-desc { color: var(--text-2); font-size: 12.5px; line-height: 1.45; margin: 0;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
   .c-desc code { font-size: 11.5px; }
   .c-foot { display: flex; align-items: center; gap: 8px; margin-top: 2px;
     font-size: 11px; font-weight: 500; color: var(--text-3); }
@@ -1157,17 +1258,8 @@ cat >> "$OUT" <<HTML
 </section>
 
 <section id="content">
-  <h2>My prototypes <span class="n num">${PROTO_MINE_N}</span></h2>
-  <p class="file-list">From <code>src/prototypes/registry-mine.ts</code>. Yours, never touched by an upstream sync.</p>
-  <div class="cards">${CONTENT_MINE:-<p class="empty">No entries in registry-mine.ts.</p>}</div>
-
-  <h2>Shared library <span class="n num">${PROTO_LIB_N}</span></h2>
-  <p class="file-list">From <code>src/prototypes/registry-core.ts</code>. What forks sync from <code>main</code>.</p>
-  <div class="cards">${CONTENT_LIB:-<p class="empty">No entries in registry-core.ts.</p>}</div>
-
-  <h2>Pages <span class="n num">${PAGE_COUNT}</span></h2>
-  <p class="file-list">Standalone HTML in <code>public/</code>: decks, guides and microsites. Dated by last commit, or by file date when uncommitted. Click a card to open it.</p>
-  <div class="cards">${CONTENT_PAGES:-<p class="empty">No pages in public/.</p>}</div>
+  <p class="file-list">Grouped by project: ${PROTOTYPE_COUNT} prototypes, ${PAGE_COUNT} pages and ${DOC_ITEM_N} project docs. Newest first inside each group, dated by last commit. Groups come from <code>STATUS_GROUPS</code> in <code>internal/status.config.sh</code>; anything under Unfiled needs a pattern adding there.</p>
+  ${CONTENT_SECTIONS:-<p class="empty">Nothing to show.</p>}
 </section>
 
 <section id="branches">
@@ -1418,6 +1510,9 @@ $(cat "$EMBED_FILE")
 
   document.querySelectorAll('.md-link').forEach(b => {
     b.addEventListener('click', () => openMd(b.dataset.target));
+    b.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openMd(b.dataset.target); }
+    });
   });
   document.getElementById('doc-back').addEventListener('click', closeMd);
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeMd(); });

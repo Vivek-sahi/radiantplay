@@ -27,6 +27,29 @@ STATUS_HOST="galaxy.corp.thoughtspot.com"
 # wins again.
 STATUS_LOOK="studio"
 
+# ── Content groups ───────────────────────────────────────────────────────
+# The Content tab groups by project, so a project's prototype, its pages and
+# its plan docs sit together under one heading.
+#
+# Format: "Group name|substring substring substring"
+# Each substring is matched against the item's path or registry id, case
+# insensitively. First group that matches wins, so declare narrow groups before
+# broad ones. Anything unmatched lands under "Unfiled" at the bottom, which is
+# untidy rather than invisible, and is the cue to add a pattern here.
+#
+# Groups render in the order below.
+STATUS_GROUPS=(
+  "Apps in ThoughtSpot|appsinthoughtspot appsints appsints_ apps-in-ts apps-spotter spot-agentspot dataapps data-apps"
+  "Spotter|spottermemory spottercomponents minispotters spotter-roadmap spotter-answer spotter-viz spotter-chat spotter-ds spotter-prototype spotter-refresh"
+  "Liveboard|liveboard-template stylingpanel salesperformance"
+  "Data model|datamodeleditor datamodel"
+  "Admin|admingroups adminlang newuiadmin"
+  "Design system|design-system designsystem component-api component-patterns component-parity segmentedcontrol icon-sync ux-writing content-guidelines"
+  "Talks and decks|talk socialpost moodboard"
+  "Guides and onboarding|guide how-it-works landing overview collaboration cursor-to-claude prototyping-guide workflow-explorations forking contributing branching"
+  "Deploy and ops|coolify muze-charts"
+)
+
 # ── Branches ─────────────────────────────────────────────────────────────
 # Refs every branch is measured against, in the order the columns appear.
 # A ref that does not exist locally renders as an em dash rather than failing.
