@@ -27,6 +27,13 @@ STATUS_HOST="galaxy.corp.thoughtspot.com"
 # wins again.
 STATUS_LOOK="studio"
 
+# ── App base URL ─────────────────────────────────────────────────────────
+# Prototype cards on the Content tab link to /playground/<id> on the dev
+# server. The canvas is often opened as a file, where a root-relative path
+# resolves against the filesystem, so the base is absolute. vite.config.ts
+# pins this port with strictPort, so it does not drift.
+STATUS_APP_BASE="http://localhost:4310"
+
 # ── Content groups ───────────────────────────────────────────────────────
 # The Content tab groups by project, so a project's prototype, its pages and
 # its plan docs sit together under one heading.

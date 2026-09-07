@@ -29,6 +29,7 @@ STATUS_TAB_TITLE="${STATUS_TAB_TITLE:-Radiant Play canvas}"
 STATUS_LOOK="${STATUS_LOOK:-ascii}"
 STATUS_SITE_TIMEOUT="${STATUS_SITE_TIMEOUT:-6}"
 STATUS_INTERNAL_HOST_MATCH="${STATUS_INTERNAL_HOST_MATCH:-coolify.thoughtspot.com}"
+STATUS_APP_BASE="${STATUS_APP_BASE:-http://localhost:4310}"
 # Arrays are referenced with the ${ARR[@]+...} guard throughout: `set -u` plus
 # bash 3.2, which is what macOS ships, errors on an unset array otherwise.
 if [ -z "${STATUS_BASELINES+x}" ]; then STATUS_BASELINES=(main staging); fi
@@ -573,9 +574,12 @@ ITEM_FILE=$(mktemp)
 add_item() { printf '%s\t%s\t%s\n' "$1" "$2" "$3" >> "$ITEM_FILE"; }
 
 card() {
-  # kind, title, desc-html, date, chip, open-attrs
-  printf '<%s class="card"%s><div class="c-top"><div class="c-title">%s</div>%s</div><div class="c-desc">%s</div><div class="c-foot"><span class="type">%s</span><span class="mtime num">%s</span></div></%s>' \
-    "$7" "$6" "$2" "$5" "$3" "$1" "$4" "$7"
+  # 1 kind, 2 title, 3 desc-html, 4 date, 5 chip, 6 open-attrs, 7 tag, 8 extra class
+  # The extra class is its own argument on purpose: folding it into the attrs
+  # emitted a second class attribute, which the parser drops, so doc cards
+  # silently lost md-link and stopped being clickable.
+  printf '<%s class="card%s"%s><div class="c-top"><div class="c-title">%s</div>%s</div><div class="c-desc">%s</div><div class="c-foot"><span class="type">%s</span><span class="mtime num">%s</span></div></%s>' \
+    "$7" "${8:-}" "$6" "$2" "$5" "$3" "$1" "$4" "$7"
 }
 
 # Registry entries. Fields are read from the first quote to the last quote on
@@ -616,7 +620,8 @@ for reg in src/prototypes/registry-mine.ts src/prototypes/registry-core.ts; do
     esac
     add_item "$(group_for "$id $nm")" "${lm:-0000-00-00}" \
       "$(card 'prototype' "$(printf '%s' "$nm" | esc_html)" \
-              "$(printf '%s' "$ds" | esc_html)" "${lm:-—}" "$chip" '' 'div')"
+              "$(printf '%s' "$ds" | esc_html)" "${lm:-—}" "$chip" \
+              " href=\"${STATUS_APP_BASE}/playground/${id}\" title=\"${STATUS_APP_BASE}/playground/${id}\"" 'a')"
   done < <(parse_registry "$reg")
 done
 
@@ -683,7 +688,7 @@ while IFS= read -r f; do
   [ -n "$(local_badge "$f")" ] && dchip="<span class='chip wip'>Local</span>"
   add_item "$g" "$ddate" \
     "$(card 'doc' "$(printf '%s' "$dtitle" | esc_html)" "$(printf '%s' "$ddesc" | esc_html)" \
-            "$ddate" "$dchip" " role=\"button\" tabindex=\"0\" class=\"md-link\" data-target=\"md-${did}\" title=\"${f}\"" 'div')"
+            "$ddate" "$dchip" " role=\"button\" tabindex=\"0\" data-target=\"md-${did}\" title=\"${f}\"" 'div' ' md-link')"
 done < <(find docs -maxdepth 2 -name '*.md' 2>/dev/null | sort)
 
 # Render group by group, config order first, then Unfiled.
@@ -1030,8 +1035,11 @@ cat > "$OUT" <<HTML
     text-decoration: none; color: inherit; box-shadow: var(--shadow);
     transition: border-color .12s ease;
   }
-  a.card { border-bottom: 1px solid var(--border); }
+  a.card { border-bottom: 1px solid var(--border); cursor: pointer; }
   .card.md-link { cursor: pointer; text-align: left; font: inherit; }
+  a.card:hover, .card.md-link:hover { border-color: var(--border-strong); background: var(--hover); }
+  a.card:focus-visible, .card.md-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  a.card .c-title, .card.md-link .c-title { text-decoration: none; }
   .card:hover { border-color: var(--border-strong); }
   .c-top { display: flex; align-items: center; gap: 9px; }
   .c-title { font-size: 14px; font-weight: 650; color: var(--text); flex: 1; min-width: 0;
