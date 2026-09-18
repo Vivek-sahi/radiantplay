@@ -1,0 +1,148 @@
+/* Selector Option 2's left-pane list. Container, typography and spacing tokens
+   are taken from _datamodel/ColumnTree.module.css (Option 1) so the two options
+   differ only where Komal asked — plain-text names instead of chips, a "+"
+   instead of a chevron, and a select-all checkbox on the table row. */
+
+.list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  background: var(--rd-sys-color-background-base);
+  padding: var(--spacing-2) var(--spacing-4);
+  /* No uniform gap: it spaced a table from its own columns (12px) exactly as
+     far as from the next table, so the columns didn't read as belonging to it.
+     Table-to-table spacing is set on the rows below instead, leaving the
+     column list free to sit tight under its parent. */
+  gap: 0;
+}
+
+.list::-webkit-scrollbar { width: 4px; }
+.list::-webkit-scrollbar-thumb {
+  background: var(--rd-sys-color-border-subtle-hover);
+  border-radius: var(--radius-xs);
+}
+
+.empty {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-light);
+  color: var(--rd-sys-color-content-secondary);
+  font-family: var(--font-family-primary);
+  text-align: center;
+  padding: var(--spacing-6) var(--spacing-4);
+}
+
+.tableRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-1) 0;
+  cursor: grab;
+}
+
+/* Every table after the first, whether the element above it is another table
+   row or an expanded column list. Keeps table-to-table rhythm unchanged. */
+.tableRow:not(:first-child) {
+  margin-top: var(--spacing-3);
+}
+
+/* Expand/collapse, back on the left of the name. */
+.chevron {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--rd-sys-color-content-secondary);
+  cursor: pointer;
+}
+
+.chevronOpen {
+  transform: rotate(90deg);
+}
+
+.chevron svg {
+  transition: transform var(--duration-fast) var(--easing-standard);
+}
+
+/* Plain text — no chip background, per "the tables shouldn't look like tags". */
+.tableName {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--font-size-sm);
+  /* Medium, where the column chips are light — the table has to read as the
+     parent of the columns nested under it. */
+  font-weight: var(--font-weight-medium);
+  color: var(--rd-sys-color-content-primary);
+  font-family: var(--font-family-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.add {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--rd-sys-color-content-brand);
+  cursor: pointer;
+}
+
+.add:hover {
+  background: var(--rd-sys-color-background-ghost-hover);
+}
+
+.selectAllRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.selectAllLabel {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-regular);
+  color: var(--rd-sys-color-content-secondary);
+  font-family: var(--font-family-primary);
+}
+
+.dragging {
+  opacity: 0.35;
+}
+
+/* Indented to sit under the table name (chevron 18px + row gap 8px), so the
+   nesting is visible rather than implied. */
+.colList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  /* 4px under the table row it belongs to, against 12px between tables. */
+  padding: var(--spacing-1) 0 0 var(--spacing-6);
+  align-items: flex-start;
+}
+
+.colItem {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.colName {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-light);
+  color: var(--rd-sys-color-content-primary);
+  font-family: var(--font-family-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

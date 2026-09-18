@@ -75,6 +75,22 @@
   text-overflow: ellipsis;
 }
 
+/* Additive — only applied when the addedTableNames/draggableTables props
+   are used (data-source-selector Option 2). Mirrors .colAdded/.colDragging
+   below so added tables and dragged tables read the same way columns do. */
+.tableChipAdded {
+  background: var(--rd-sys-color-background-sunken);
+  box-shadow: none;
+}
+
+.tableChipAdded .tableName {
+  color: var(--rd-sys-color-border-hover);
+}
+
+.tableDragging {
+  opacity: 0.35;
+}
+
 .colList {
   display: flex;
   flex-direction: column;
@@ -103,6 +119,16 @@
 }
 
 .colDraggable:hover {
+  box-shadow: var(--shadow-sm);
+}
+
+/* checkboxColumns prop only — same hover affordance as .colDraggable, but no
+   grab cursor since these rows aren't draggable. */
+.colCheckable {
+  cursor: default;
+}
+
+.colCheckable:hover {
   box-shadow: var(--shadow-sm);
 }
 

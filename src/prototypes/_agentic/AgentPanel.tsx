@@ -8,9 +8,10 @@ import type { MessageItem, SuggType, ReasoningData } from './types';
 
 export interface AgentPanelProps {
   welcomeVariant: 'blank' | 'existing';
+  onClose?: () => void;
 }
 
-export const AgentPanel: React.FC<AgentPanelProps> = ({ welcomeVariant }) => {
+export const AgentPanel: React.FC<AgentPanelProps> = ({ welcomeVariant, onClose }) => {
   const [messages, setMessages] = useState<MessageItem[]>([]);
   const [chatStarted, setChatStarted] = useState(false);
   const chatMsgsRef = useRef<HTMLDivElement>(null);
@@ -68,7 +69,7 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({ welcomeVariant }) => {
           <img src="/spotter-assets/Contextual spinner.svg" className="ctx-chip-spinner" width="14" height="14" alt="" />
           <span>Context</span>
         </div>
-        <div className="close-btn">
+        <div className="close-btn" onClick={onClose} role={onClose ? 'button' : undefined} aria-label={onClose ? 'Collapse SpotterModel panel' : undefined}>
           <img src="/spotter-assets/cross-s.svg" width="14" height="14" alt="close" />
         </div>
       </div>

@@ -1,0 +1,10 @@
+/* The reference dialog paints the selected segment's label brand blue, where
+   Radiant's SegmentedControl paints it content-primary. Scoped to this
+   dialog's two controls through the component's own className prop, so the
+   shared component — and every other SegmentedControl in the prototype,
+   including the Builder/Semantics switcher behind this modal — is untouched.
+   Hooked on aria-checked (the segments are role="radio") rather than the
+   design system's hashed class name. */
+.segmented button[aria-checked='true'] {
+  color: var(--rd-sys-color-content-brand);
+}

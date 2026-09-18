@@ -15,6 +15,16 @@ export interface CardRect {
 export interface JoinConnectorProps {
   joins: JoinInfo[];
   cardRects: Record<string, CardRect>;
+  // Optional interactive selection — omitted by default (all existing
+  // consumers keep the purely decorative, non-interactive connector lines).
+  // When provided, each join line/badge becomes clickable and the selected
+  // one is highlighted.
+  selectedJoinKey?: string;
+  onSelectJoin?: (join: JoinInfo) => void;
+}
+
+export function joinKey(j: JoinInfo): string {
+  return `${j.leftTable}::${j.rightTable}`;
 }
 
 type Edge = 'left' | 'right' | 'top' | 'bottom';
@@ -97,7 +107,8 @@ function elbowPath(
 
 const OFFSET_STEP = 12;
 
-const JoinConnector: React.FC<JoinConnectorProps> = ({ joins, cardRects }) => {
+const JoinConnector: React.FC<JoinConnectorProps> = ({ joins, cardRects, selectedJoinKey, onSelectJoin }) => {
+  const interactive = !!onSelectJoin;
   type Resolved = { j: JoinInfo; rectA: CardRect; rectB: CardRect; edgeA: Edge; edgeB: Edge };
 
   // Pass 1: resolve cards and edges
@@ -124,8 +135,8 @@ const JoinConnector: React.FC<JoinConnectorProps> = ({ joins, cardRects }) => {
   });
 
   // Pass 3: compute paths and badge midpoints
-  const paths: Array<{ d: string }> = [];
-  const badges: Array<{ x: number; y: number }> = [];
+  const paths: Array<{ d: string; j: JoinInfo }> = [];
+  const badges: Array<{ x: number; y: number; j: JoinInfo }> = [];
 
   resolved.forEach(({ j, rectA, rectB, edgeA, edgeB }) => {
     const edgesA = cardEdges(rectA);
@@ -143,8 +154,8 @@ const JoinConnector: React.FC<JoinConnectorProps> = ({ joins, cardRects }) => {
       edgesA[edgeA], edgeA, offset1,
       edgesB[edgeB], edgeB, offset2
     );
-    paths.push({ d });
-    badges.push({ x: Math.round(midX - 16), y: Math.round(midY - 7) });
+    paths.push({ d, j });
+    badges.push({ x: Math.round(midX - 16), y: Math.round(midY - 7), j });
   });
 
   return (
@@ -153,14 +164,36 @@ const JoinConnector: React.FC<JoinConnectorProps> = ({ joins, cardRects }) => {
         style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', overflow: 'visible', zIndex: 0, color: 'var(--rd-sys-color-content-primary)' }}
         aria-hidden="true"
       >
-        {paths.map((p, i) => (
-          <path key={i} d={p.d} stroke="currentColor" strokeWidth="1.5" fill="none" />
-        ))}
+        {paths.map((p, i) => {
+          const selected = interactive && joinKey(p.j) === selectedJoinKey;
+          return (
+            <g key={i}>
+              {interactive && (
+                <path
+                  d={p.d}
+                  stroke="transparent"
+                  strokeWidth="12"
+                  fill="none"
+                  style={{ cursor: 'pointer', pointerEvents: 'stroke' }}
+                  onClick={() => onSelectJoin?.(p.j)}
+                />
+              )}
+              <path
+                d={p.d}
+                stroke={selected ? 'var(--rd-sys-color-content-brand, #2770EF)' : 'currentColor'}
+                strokeWidth={selected ? 2 : 1.5}
+                fill="none"
+                style={{ pointerEvents: 'none' }}
+              />
+            </g>
+          );
+        })}
       </svg>
       {badges.map((b, i) => (
         <div
           key={i}
-          style={{ position: 'absolute', left: b.x, top: b.y, zIndex: 1, pointerEvents: 'none' }}
+          onClick={interactive ? () => onSelectJoin?.(b.j) : undefined}
+          style={{ position: 'absolute', left: b.x, top: b.y, zIndex: 1, pointerEvents: interactive ? 'auto' : 'none', cursor: interactive ? 'pointer' : undefined }}
         >
           <img src="/spotter-assets/Join UI.svg" width="32" height="14" alt="join" />
         </div>

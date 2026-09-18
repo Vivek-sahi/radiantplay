@@ -21,6 +21,11 @@
   z-index: 100;
 }
 
+.selected {
+  border-color: var(--rd-sys-color-border-focus);
+  box-shadow: 0 0 0 1px var(--rd-sys-color-border-focus);
+}
+
 .header {
   display: flex;
   align-items: center;
@@ -69,4 +74,35 @@
   letter-spacing: -0.06px;
   line-height: var(--line-height-xs);
   margin-top: auto;
+}
+
+/* ── Opt-in hover affordance (hoverAffordance prop) ──────────────────────────
+   Brand-blue border plus a join handle butted against the card's right edge.
+   Gated behind the prop so DataModelEditor, the explorations copy and
+   CoachingScreen — which share this component — keep hover-less cards. */
+.hoverable:hover {
+  border-color: var(--rd-sys-color-border-brand);
+}
+
+.joinHandle {
+  position: absolute;
+  right: calc(-1 * var(--spacing-3));
+  top: 50%;
+  transform: translateY(-50%);
+  width: var(--spacing-3);
+  height: var(--spacing-4);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  background: var(--rd-sys-color-background-base);
+  border: 1px solid var(--rd-sys-color-border-brand);
+  border-left: none;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  color: var(--rd-sys-color-content-brand);
+  cursor: pointer;
+}
+
+.hoverable:hover .joinHandle {
+  display: flex;
 }

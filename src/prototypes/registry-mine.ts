@@ -30,6 +30,7 @@
 import React from 'react';
 import { ProjectMeta } from './registry-core';
 import DataStudioThumbnail from './thumbnails/DataStudio.svg';
+import DataModelEditorThumbnail from './thumbnails/DataModelEditor.svg';
 
 const DataStudioMVP = React.lazy(() => import('./DataStudioMVP'));
 const DataStudioV2 = React.lazy(() => import('./DataStudioV2'));
@@ -38,8 +39,30 @@ const DataNotebook = React.lazy(() => import('./DataNotebook'));
 const SpotterPrep = React.lazy(() => import('./SpotterPrep'));
 const SpotterPrep2 = React.lazy(() => import('./SpotterPrep2'));
 const NearStore = React.lazy(() => import('./NearStore'));
+const SearchDataOnDataModelexplorations = React.lazy(() => import('./SearchDataOnDataModelexplorations'));
+const SearchDataOnDataModelFinal = React.lazy(() => import('./SearchDataOnDataModelFinal'));
 
 export const myRegistry: ProjectMeta[] = [
+  {
+    id: 'SearchDataOnDataModelFinal',
+    name: 'SearchDataOnDataModelFinal',
+    description: 'Final design — the search/query experience on a data model, locked to the chosen direction.',
+    author: 'Komal Bains',
+    lastModified: '2026-09-11',
+    thumbnail: DataModelEditorThumbnail,
+    component: SearchDataOnDataModelFinal,
+    section: 'mine',
+  },
+  {
+    id: 'SearchDataOnDataModelexplorations',
+    name: 'SearchDataOnDataModelexplorations',
+    description: 'Copy of Data model editor — working exploration of the search/query experience on top of a data model.',
+    author: 'Komal Bains',
+    lastModified: '2026-09-02',
+    thumbnail: DataModelEditorThumbnail,
+    component: SearchDataOnDataModelexplorations,
+    section: 'mine',
+  },
   {
     id: 'NearStore',
     name: 'Near Store',
