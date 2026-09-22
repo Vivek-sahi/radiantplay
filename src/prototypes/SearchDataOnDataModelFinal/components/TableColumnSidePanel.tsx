@@ -1,5 +1,4 @@
-import React from 'react';
-import { Button } from '@components/Button';
+import React, { useEffect, useRef } from 'react';
 import { Typography } from '@components/Typography';
 import type { ColumnTreeData } from '../../_datamodel/index';
 import { TableColumnBrowserBody } from './TableColumnBrowserBody';
@@ -21,18 +20,41 @@ export interface TableColumnSidePanelProps {
   catalog: ColumnTreeData;
   draft: { table: string; columns: string[] }[];
   onToggleColumn: (tableName: string, colName: string, checked: boolean) => void;
-  onConfirm: () => void;
   initialFocusTable?: string | null;
   /** Pixel width of #left-pane right now (0 if collapsed) — where this overlay's left edge starts. */
   leftOffset: number;
+  /** See TableColumnBrowserBodyProps — forwarded straight through. */
+  tableInfoMode?: 'icon' | 'tab';
 }
 
 export const TableColumnSidePanel: React.FC<TableColumnSidePanelProps> = ({
-  open, onClose, catalog, draft, onToggleColumn, onConfirm, initialFocusTable, leftOffset,
+  open, onClose, catalog, draft, onToggleColumn, initialFocusTable, leftOffset, tableInfoMode,
 }) => {
+  // No footer to confirm or cancel any more (2026-09-22, Komal: "remove the
+  // 'add to model' and cancel from the bottom. It should be free flowing
+  // selection. Clicking outside should close the panel") — every checkbox
+  // already writes straight to the model, so the only thing left to do is
+  // close. A click anywhere that isn't this panel or the left nav that hosts
+  // its own entry points ("+", each row's edit pencil) does that. #left-pane
+  // is deliberately included in "inside": those triggers sit outside this
+  // component's own DOM (the panel starts where the pane ends), and without
+  // this a click on a different table's edit pencil — meant to re-focus this
+  // same panel on a new table — would register as "outside" and close it
+  // first.
+  const rootRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (rootRef.current?.contains(target)) return;
+      if (document.getElementById('left-pane')?.contains(target)) return;
+      onClose();
+    };
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, [open, onClose]);
+
   if (!open) return null;
-  const totalSelectedColumns = draft.reduce((n, g) => n + g.columns.length, 0);
-  const totalSelectedTables = draft.filter(g => g.columns.length > 0).length;
 
   return (
     // Same background and shadow #left-pane itself uses (dme.css: box-shadow:
@@ -48,9 +70,10 @@ export const TableColumnSidePanel: React.FC<TableColumnSidePanelProps> = ({
     // so the 640px width sized for a 2-up grid was excess; narrowed back
     // down ("reduce the width of columns") now that a single column of
     // names doesn't need that much room.
-    <div style={{ position: 'absolute', top: 0, bottom: 0, left: leftOffset, width: 480, display: 'flex', flexDirection: 'column', background: 'var(--rd-sys-color-background-base)', borderRight: '1px solid var(--rd-sys-color-border-divider)', boxShadow: 'var(--shadow-surface)', zIndex: 10 }}>
-      {/* No close "x" (Komal, 2026-09-22: "remove") — Cancel in the footer
-          below is the only way to close without confirming. */}
+    <div ref={rootRef} style={{ position: 'absolute', top: 0, bottom: 0, left: leftOffset, width: 480, display: 'flex', flexDirection: 'column', background: 'var(--rd-sys-color-background-base)', borderRight: '1px solid var(--rd-sys-color-border-divider)', boxShadow: 'var(--shadow-surface)', zIndex: 10 }}>
+      {/* No close "x" (Komal, 2026-09-22: "remove") and no footer any more
+          either — clicking outside closes it, and there's nothing left to
+          confirm or cancel. */}
       <div style={{ display: 'flex', alignItems: 'center', padding: 'var(--spacing-3) var(--spacing-4)', background: 'var(--rd-sys-color-background-sunken)', borderBottom: '1px solid var(--rd-sys-color-border-divider)', flexShrink: 0 }}>
         <Typography variant="content-label" as="span" noMargin>Add tables and columns</Typography>
       </div>
@@ -61,16 +84,8 @@ export const TableColumnSidePanel: React.FC<TableColumnSidePanelProps> = ({
           draft={draft}
           onToggleColumn={onToggleColumn}
           initialFocusTable={initialFocusTable}
+          tableInfoMode={tableInfoMode}
         />
-      </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-3)', padding: 'var(--spacing-3) var(--spacing-4)', borderTop: '1px solid var(--rd-sys-color-border-divider)', flexShrink: 0 }}>
-        <span style={{ flex: 1, fontSize: 12, color: 'var(--rd-sys-color-content-secondary)' }}>
-          {totalSelectedColumns === 0
-            ? 'Nothing selected yet'
-            : `${totalSelectedTables} table${totalSelectedTables === 1 ? '' : 's'} · ${totalSelectedColumns} column${totalSelectedColumns === 1 ? '' : 's'} selected`}
-        </span>
-        <Button variant="secondary" onClick={onClose}>Cancel</Button>
-        <Button variant="primary" onClick={onConfirm} disabled={totalSelectedColumns === 0}>Add to model</Button>
       </div>
     </div>
   );

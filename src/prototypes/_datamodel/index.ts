@@ -5,4 +5,4 @@ export { default as ColumnTree } from './ColumnTree';
 export type { TableCardProps } from './TableCard';
 export type { JoinInfo, CardRect, JoinConnectorProps } from './JoinConnector';
 export type { TablePositionData, TableCanvasProps } from './TableCanvas';
-export type { ColumnTreeData, ColumnTreeProps } from './ColumnTree';
+export type { ColumnTreeData, ColumnTreeProps, DataSourceTable } from './ColumnTree';

@@ -87,34 +87,39 @@ export function initDME() {
   // extra columns show up in Combined too, not Split alone — there wasn't a
   // way to give Split its own column count without the two disagreeing on
   // what these tables contain.
+  // description/createdDate power the table info card (2026-09-22) — the
+  // other metadata fields (source table name, database, schema, models using
+  // this table) are left unset on purpose, rendering as "--" the same way
+  // Komal's reference screenshot showed them for a table without that
+  // metadata populated.
   const DATASOURCE_TABLES = [
-    { name: 'fact_customer', columns: [
+    { name: 'fact_customer', createdDate: '3/2/2025', description: 'Customer profile and demographic attributes used across sales and support models.', columns: [
       'customer_id', 'first_name', 'last_name', 'email', 'phone', 'region', 'segment', 'acquisition_date', 'lifetime_value',
       'date_of_birth', 'gender', 'marital_status', 'occupation', 'income_bracket', 'education_level', 'household_size',
       'loyalty_tier', 'loyalty_points', 'preferred_channel', 'preferred_language', 'opt_in_email', 'opt_in_sms',
       'referral_source', 'credit_score', 'city', 'state', 'postal_code', 'country', 'account_status',
     ] },
-    { name: 'fact_new_retail_sales', columns: [
+    { name: 'fact_new_retail_sales', createdDate: '6/11/2025', description: 'Retail sales transactions captured from the newer point-of-sale system.', columns: [
       'sale_id', 'customer_id', 'product_id', 'store_id', 'sale_date', 'quantity', 'unit_price', 'discount', 'net_amount',
       'tax_amount', 'shipping_cost', 'payment_method', 'promo_code', 'channel', 'employee_id', 'return_flag',
       'return_reason', 'gross_amount', 'cost_of_goods', 'margin_amount', 'order_id', 'line_item_number', 'currency',
       'exchange_rate', 'fulfillment_status', 'delivery_date', 'customer_rating',
     ] },
-    { name: 'fact_sales', columns: ['sale_id', 'customer_id', 'product_id', 'sale_date', 'amount', 'quantity_sold', 'salesperson_id', 'channel'] },
-    { name: 'dim_store', columns: ['store_id', 'store_name', 'city', 'state', 'region_id', 'open_date', 'sq_footage', 'manager_id'] },
-    { name: 'dim_product', columns: [
+    { name: 'fact_sales', createdDate: '1/14/2025', description: 'Core sales transactions joining customers, products and stores.', columns: ['sale_id', 'customer_id', 'product_id', 'sale_date', 'amount', 'quantity_sold', 'salesperson_id', 'channel'] },
+    { name: 'dim_store', createdDate: '1/20/2025', description: 'Store locations and their operating attributes.', columns: ['store_id', 'store_name', 'city', 'state', 'region_id', 'open_date', 'sq_footage', 'manager_id'] },
+    { name: 'dim_product', createdDate: '2/5/2025', description: 'Product catalog with pricing, packaging and supplier attributes.', columns: [
       'product_id', 'product_name', 'category', 'sub_category', 'brand', 'unit_price', 'cost', 'sku',
       'weight_kg', 'length_cm', 'width_cm', 'height_cm', 'color', 'material', 'size', 'launch_date',
       'discontinued_date', 'supplier_id', 'supplier_name', 'warranty_months', 'is_seasonal', 'is_returnable',
       'min_order_qty', 'max_order_qty', 'margin_pct', 'tax_category', 'country_of_origin', 'barcode',
     ] },
-    { name: 'fact_region', columns: ['region_id', 'region_name', 'country', 'zone', 'timezone', 'manager_id'] },
-    { name: 'fact_inventory', columns: ['inventory_id', 'product_id', 'store_id', 'quantity_on_hand', 'reorder_level', 'last_updated', 'unit_cost'] },
-    { name: 'dim_shipping_method', columns: ['shipping_id', 'method_name', 'carrier', 'avg_days', 'cost_per_unit', 'tracking_available'] },
-    { name: 'dim_feedback', columns: ['feedback_id', 'customer_id', 'rating', 'comment', 'feedback_date', 'product_id', 'channel'] },
-    { name: 'dim_date', columns: ['date_id', 'full_date', 'day', 'month', 'quarter', 'year', 'week_of_year', 'is_weekend', 'is_holiday'] },
-    { name: 'fact_sales_pipeline', columns: ['opportunity_id', 'customer_id', 'stage', 'deal_value', 'close_date', 'salesperson_id', 'win_probability'] },
-    { name: 'fact_customer_satisfaction', columns: ['csat_id', 'customer_id', 'score', 'survey_date', 'channel', 'product_id', 'nps_score'] },
+    { name: 'fact_region', createdDate: '1/22/2025', description: 'Sales regions and their geographic and timezone attributes.', columns: ['region_id', 'region_name', 'country', 'zone', 'timezone', 'manager_id'] },
+    { name: 'fact_inventory', createdDate: '4/9/2025', description: 'Stock levels and reorder thresholds by product and store.', columns: ['inventory_id', 'product_id', 'store_id', 'quantity_on_hand', 'reorder_level', 'last_updated', 'unit_cost'] },
+    { name: 'dim_shipping_method', createdDate: '2/18/2025', description: 'Shipping carriers and delivery method attributes.', columns: ['shipping_id', 'method_name', 'carrier', 'avg_days', 'cost_per_unit', 'tracking_available'] },
+    { name: 'dim_feedback', createdDate: '5/30/2025', description: 'Customer feedback and ratings linked to products and channels.', columns: ['feedback_id', 'customer_id', 'rating', 'comment', 'feedback_date', 'product_id', 'channel'] },
+    { name: 'dim_date', createdDate: '1/2/2025', description: 'Calendar dimension used for date-based rollups and comparisons.', columns: ['date_id', 'full_date', 'day', 'month', 'quarter', 'year', 'week_of_year', 'is_weekend', 'is_holiday'] },
+    { name: 'fact_sales_pipeline', createdDate: '7/8/2025', description: 'Sales opportunities and their pipeline stage and value.', columns: ['opportunity_id', 'customer_id', 'stage', 'deal_value', 'close_date', 'salesperson_id', 'win_probability'] },
+    { name: 'fact_customer_satisfaction', createdDate: '8/21/2025', description: 'Customer satisfaction survey scores and NPS by product.', columns: ['csat_id', 'customer_id', 'score', 'survey_date', 'channel', 'product_id', 'nps_score'] },
   ];
 
   function rebuildColumnPane() {

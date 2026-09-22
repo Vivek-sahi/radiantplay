@@ -36,10 +36,12 @@ export interface TableBrowserModalProps {
    * "+", which has no specific table in mind.
    */
   initialFocusTable?: string | null;
+  /** See TableColumnBrowserBodyProps — forwarded straight through. */
+  tableInfoMode?: 'icon' | 'tab';
 }
 
 export const TableBrowserModal: React.FC<TableBrowserModalProps> = ({
-  isOpen, onClose, catalog, draft, onToggleColumn, onConfirm, initialFocusTable,
+  isOpen, onClose, catalog, draft, onToggleColumn, onConfirm, initialFocusTable, tableInfoMode,
 }) => {
   const totalSelectedColumns = draft.reduce((n, g) => n + g.columns.length, 0);
   const totalSelectedTables = draft.filter(g => g.columns.length > 0).length;
@@ -69,6 +71,7 @@ export const TableBrowserModal: React.FC<TableBrowserModalProps> = ({
         onToggleColumn={onToggleColumn}
         initialFocusTable={initialFocusTable}
         height={440}
+        tableInfoMode={tableInfoMode}
       />
     </Modal>
   );

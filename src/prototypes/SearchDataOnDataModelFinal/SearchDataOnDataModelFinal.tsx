@@ -348,18 +348,19 @@ const TAB_OPTIONS_OPTION3 = [
 ];
 // Optimized only — same ids ('tables'/'columns', so the tab-switch wiring is
 // untouched), renamed display labels for this branch's sub-header switcher.
-// Builder/Semantics → Build/Define (2026-09-22, Komal: "update the tabs to:
-// Build, Define, Test") — verbs for what you do in each, matching Test below.
+// Build/Define → Builder/Semantics (2026-09-22, Komal: "change this to
+// Builder, Semantics, Query") — reverts to the original noun labels, third
+// pill below renamed to match.
 const TAB_OPTIONS_OPTION3_OPTIMIZED = [
-  { id: 'tables',  label: 'Build' },
-  { id: 'columns', label: 'Define' },
+  { id: 'tables',  label: 'Builder' },
+  { id: 'columns', label: 'Semantics' },
 ];
-// "Split" layout only (see dataModelLayout below) — Build/Define plus a third
-// pill for the as-is Query experience (QueryAsIs), labelled Test. Additive:
-// the "Combined" layout keeps using TAB_OPTIONS_OPTION3_OPTIMIZED above.
+// "Split" layout only (see dataModelLayout below) — Builder/Semantics plus a
+// third pill for the as-is Query experience (QueryAsIs), labelled Query.
+// Additive: the "Combined" layout keeps using TAB_OPTIONS_OPTION3_OPTIMIZED.
 const TAB_OPTIONS_SPLIT = [
   ...TAB_OPTIONS_OPTION3_OPTIMIZED,
-  { id: 'query-asis', label: 'Test' },
+  { id: 'query-asis', label: 'Query' },
 ];
 
 const JOIN_OPTIONS = [
@@ -630,6 +631,11 @@ const SearchDataOnDataModelFinal: React.FC = () => {
   const [tablesNavOption, setTablesNavOption] = useState<1 | 2 | 2.1 | 3 | 4>(2.1);
   const [tablesNavMenuOpen, setTablesNavMenuOpen] = useState(false);
   const tablesNavMenuBtnRef = useRef<HTMLButtonElement>(null);
+  // Comparing two places to surface the table info card (2026-09-22, Komal:
+  // "let's try 1 and 3") — 'icon' puts an info-circle on each row in "Add
+  // tables and columns" (opens a popover); 'tab' adds an Info tab next to
+  // Columns in that same panel's right pane.
+  const [tableInfoMode, setTableInfoMode] = useState<'icon' | 'tab'>('icon');
   // "In this model should be the first default tab, and available second...
   // land them on available, until they have added tables" (2026-09-22,
   // Komal) — landing default depends on whether the model already has
@@ -716,6 +722,36 @@ const SearchDataOnDataModelFinal: React.FC = () => {
     // the nav list, showing exactly what just changed — no extra click to
     // re-expand it (2026-09-22, Komal: "getting in and out of edit mode").
     if (option2FocusTable && draftTables.has(option2FocusTable)) setOption2OpenTable(option2FocusTable);
+    setOption2ModalOpen(false);
+  };
+
+  // Option 2.1 only (2026-09-22, Komal: "remove the 'add to model' and
+  // cancel from the bottom. It should be free flowing selection") — no
+  // staged draft, no confirm step: every checkbox click writes straight to
+  // the real model via the same bridges Option 1's checkboxes use
+  // (handleToggleColumn above), plus the add/remove-table half Option 2
+  // needs that Option 1 doesn't, since here a table isn't on the canvas at
+  // all until its first column is picked. `remaining` is read from the live
+  // model BEFORE the toggle, so unchecking a table's last column is
+  // detected in the same click that removes it, rather than a stale read
+  // after the state update.
+  const handleOption2LiveToggle = (tableName: string, colName: string, checked: boolean) => {
+    if (checked) {
+      (window as any)._addTableManually?.(tableName);
+      (window as any)._toggleColumnManually?.(tableName, colName, true);
+      return;
+    }
+    const remaining = (columnTreeData.modelColumns.find(g => g.table === tableName)?.columns ?? []).filter(c => c !== colName);
+    (window as any)._toggleColumnManually?.(tableName, colName, false);
+    if (remaining.length === 0) (window as any)._removeTableManually?.(tableName);
+  };
+  // Replaces handleOption2Confirm's own end-of-flow step for this panel:
+  // land back on the edited table already expanded in the nav list, read
+  // from the live model at the moment of closing rather than a draft.
+  const closeOption2Panel = () => {
+    if (option2FocusTable && (columnTreeData.modelColumns.find(g => g.table === option2FocusTable)?.columns.length ?? 0) > 0) {
+      setOption2OpenTable(option2FocusTable);
+    }
     setOption2ModalOpen(false);
   };
 
@@ -903,6 +939,11 @@ const SearchDataOnDataModelFinal: React.FC = () => {
             <Menu.Item active={tablesNavOption === 2.1} onClick={() => { setTablesNavOption(2.1); setTablesNavMenuOpen(false); }}>Option 2.1</Menu.Item>
             <Menu.Item active={tablesNavOption === 3} onClick={() => { setTablesNavOption(3); setTablesNavMenuOpen(false); }}>Option 3</Menu.Item>
             <Menu.Item active={tablesNavOption === 4} onClick={() => { setTablesNavOption(4); setTablesNavMenuOpen(false); }}>Option 4</Menu.Item>
+          </Menu.Group>
+          <Menu.Divider />
+          <Menu.Group label="Table info panel">
+            <Menu.Item active={tableInfoMode === 'icon'} onClick={() => { setTableInfoMode('icon'); setTablesNavMenuOpen(false); }}>Row icon</Menu.Item>
+            <Menu.Item active={tableInfoMode === 'tab'} onClick={() => { setTableInfoMode('tab'); setTablesNavMenuOpen(false); }}>Side panel tab</Menu.Item>
           </Menu.Group>
         </Menu>
       </AnchoredMenu>
@@ -1726,13 +1767,13 @@ const SearchDataOnDataModelFinal: React.FC = () => {
             {tablesNavOption === 2.1 && (
               <TableColumnSidePanel
                 open={option2ModalOpen}
-                onClose={() => setOption2ModalOpen(false)}
+                onClose={closeOption2Panel}
                 catalog={unifiedTreeData}
-                draft={option2Draft}
-                onToggleColumn={handleOption2DraftToggle}
-                onConfirm={handleOption2Confirm}
+                draft={columnTreeData.modelColumns}
+                onToggleColumn={handleOption2LiveToggle}
                 initialFocusTable={option2FocusTable}
                 leftOffset={leftPaneCollapsed ? 0 : leftPaneWidth}
+                tableInfoMode={tableInfoMode}
               />
             )}
 
@@ -2158,6 +2199,7 @@ const SearchDataOnDataModelFinal: React.FC = () => {
           onToggleColumn={handleOption2DraftToggle}
           onConfirm={handleOption2Confirm}
           initialFocusTable={option2FocusTable}
+          tableInfoMode={tableInfoMode}
         />
       )}
     </div>

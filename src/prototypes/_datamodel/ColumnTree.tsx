@@ -2,7 +2,19 @@ import React, { useState } from 'react';
 import { Checkbox } from '@components/Checkbox';
 import styles from './ColumnTree.module.css';
 
-interface DataSourceTable { name: string; columns: string[] }
+// Metadata fields are additive/optional (2026-09-22, SearchDataOnDataModelFinal's
+// table info card) — ColumnTree itself never reads them, so this doesn't touch
+// its frozen rendering, only widens the shared data shape.
+export interface DataSourceTable {
+  name: string;
+  columns: string[];
+  sourceTableName?: string;
+  createdDate?: string;
+  description?: string;
+  database?: string;
+  schemaName?: string;
+  modelsUsingThisTable?: string[];
+}
 interface ColumnGroup { table: string; columns: string[] }
 
 export interface ColumnTreeData {
