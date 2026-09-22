@@ -13,9 +13,12 @@ export interface AgentPanelProps {
   // omitted everywhere except a consumer that docks the panel on the left
   // and wants a collapse-to-left glyph instead.
   closeIcon?: React.ReactNode;
+  /** Drops the "Context" chip from the header. Off by default — every existing
+   *  caller keeps the chip. (SearchDataOnDataModelFinal, 2026-09-22.) */
+  hideContextChip?: boolean;
 }
 
-export const AgentPanel: React.FC<AgentPanelProps> = ({ welcomeVariant, onClose, closeIcon }) => {
+export const AgentPanel: React.FC<AgentPanelProps> = ({ welcomeVariant, onClose, closeIcon, hideContextChip }) => {
   const [messages, setMessages] = useState<MessageItem[]>([]);
   const [chatStarted, setChatStarted] = useState(false);
   const chatMsgsRef = useRef<HTMLDivElement>(null);
@@ -69,10 +72,12 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({ welcomeVariant, onClose,
       {/* Header */}
       <div className="agent-panel-header">
         <span className="agent-title">SpotterModel</span>
-        <div className="context-chip" id="context-chip-btn">
-          <img src="/spotter-assets/Contextual spinner.svg" className="ctx-chip-spinner" width="14" height="14" alt="" />
-          <span>Context</span>
-        </div>
+        {!hideContextChip && (
+          <div className="context-chip" id="context-chip-btn">
+            <img src="/spotter-assets/Contextual spinner.svg" className="ctx-chip-spinner" width="14" height="14" alt="" />
+            <span>Context</span>
+          </div>
+        )}
         <div className="close-btn" onClick={onClose} role={onClose ? 'button' : undefined} aria-label={onClose ? 'Collapse SpotterModel panel' : undefined}>
           {closeIcon ?? <img src="/spotter-assets/cross-s.svg" width="14" height="14" alt="close" />}
         </div>

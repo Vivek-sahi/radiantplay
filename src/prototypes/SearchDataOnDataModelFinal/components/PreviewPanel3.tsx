@@ -2,6 +2,8 @@ import React, { useEffect, useRef } from 'react';
 import type { TablePositionData, JoinInfo } from '../../_datamodel/index';
 import { SegmentedControl } from '@components/SegmentedControl';
 import { SearchDataExplorations } from '../SearchDataExplorations';
+import { SearchDataExplorations as QueryAsIs } from './QueryAsIs';
+import { ScopeSwitcher, type PreviewScope } from './ScopeSwitcher';
 
 // Kept local (not imported from SearchDataOnDataModelFinal.tsx) to avoid a circular
 // module dependency, since that file imports this component.
@@ -34,8 +36,8 @@ export interface PreviewPanelProps {
   setHeight: (v: number) => void;
   panelTab: 'preview' | 'query';
   setPanelTab: (v: 'preview' | 'query') => void;
-  scope: 'table' | 'join' | 'model';
-  setScope: (v: 'table' | 'join' | 'model') => void;
+  scope: PreviewScope;
+  setScope: (v: PreviewScope) => void;
   selectedTable: string;
   setSelectedTable: (v: string) => void;
   join: JoinInfo | null;
@@ -44,6 +46,12 @@ export interface PreviewPanelProps {
   // Picks which fully independent branch below renders — see the note above
   // PreviewPanel3Optimized/PreviewPanel3AsIs.
   embedMode: 'asis' | 'optimized';
+  // "Split" data-model layout only (SearchDataOnDataModelFinal.tsx) — Query
+  // moves to its own top-level pill there, so this dock shows only the
+  // Spreadsheet: no Preview/Query switcher, forced to the sheet view.
+  // Optional and defaulted so every existing "Combined" call site is
+  // untouched.
+  hideQueryTab?: boolean;
 }
 
 const ExpandIcon = () => (
@@ -71,13 +79,14 @@ type OptimizedProps = BranchProps & {
   dataSourceTables: { name: string; columns: string[] }[];
   modelColumns: { table: string; columns: string[] }[];
   modelFormulas: { name: string; expression: string }[];
-  scope: 'table' | 'join' | 'model';
-  setScope: (v: 'table' | 'join' | 'model') => void;
+  scope: PreviewScope;
+  setScope: (v: PreviewScope) => void;
   selectedTable: string;
   setSelectedTable: (v: string) => void;
   join: JoinInfo | null;
   setJoin: (v: JoinInfo | null) => void;
   joins: JoinInfo[];
+  hideQueryTab?: boolean;
 };
 
 // ─── "Optimized" branch ─────────────────────────────────────────────────────
@@ -95,6 +104,7 @@ const PreviewPanel3Optimized: React.FC<OptimizedProps> = ({
   tables, dataSourceTables, modelColumns, modelFormulas,
   scope, setScope, selectedTable, setSelectedTable,
   join, setJoin, joins,
+  hideQueryTab = false,
 }) => {
   // Default height = 40% of the canvas area (this panel's parent, which spans
   // canvas + panel). Measured once on mount; after that the user's own drag
@@ -142,7 +152,7 @@ const PreviewPanel3Optimized: React.FC<OptimizedProps> = ({
         transition: 'height var(--duration-slow) var(--easing-standard), background var(--duration-slow) var(--easing-standard), border-color var(--duration-slow) var(--easing-standard), box-shadow var(--duration-slow) var(--easing-standard)',
       };
 
-  const sheetTab = panelTab === 'preview' ? 'sheet' : 'query';
+  const sheetTab = hideQueryTab ? 'sheet' : panelTab === 'preview' ? 'sheet' : 'query';
 
   return (
     <div ref={rootRef} className="preview-panel" style={containerStyle}>
@@ -168,31 +178,64 @@ const PreviewPanel3Optimized: React.FC<OptimizedProps> = ({
 
       {!open && !full ? (
           <button type="button" className="preview-bar-collapsed" style={{ height: '100%' }} onClick={() => setOpen(true)}>
+            {/* Split (hideQueryTab) sends querying to its own Query tab, so
+                this dock is only ever a data preview now (2026-09-22, Komal:
+                "now that we have moved query away in the split option, this is
+                just data preview. Update the text and illustration"). The
+                chart card was the answer half of "preview AND test" — with
+                that gone the grid widens and fills all three columns, so the
+                illustration says rows of data and nothing else. Combined still
+                carries the Query tab, so it keeps the original pair. */}
             <span style={{ width: 96, height: 56, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <svg width="96" height="56" viewBox="0 0 96 56" fill="none">
-                <rect x="4" y="4" width="76" height="48" rx="4" fill="#fff" stroke="#CEDCF5" strokeWidth="1.4"/>
-                <path d="M4 15h76" stroke="#CEDCF5" strokeWidth="1.4"/>
-                <path d="M28 15v37M52 15v37" stroke="#EBF2FD" strokeWidth="1.4"/>
-                <path d="M4 27h76M4 39h76" stroke="#EBF2FD" strokeWidth="1.4"/>
-                <rect x="9" y="8" width="13" height="3" rx="1.5" fill="#ABC7F9"/>
-                <rect x="33" y="8" width="13" height="3" rx="1.5" fill="#ABC7F9"/>
-                <rect x="57" y="8" width="13" height="3" rx="1.5" fill="#ABC7F9"/>
-                <rect x="9" y="20" width="12" height="2.5" rx="1.25" fill="#DBDFE7"/>
-                <rect x="33" y="20" width="14" height="2.5" rx="1.25" fill="#DBDFE7"/>
-                <rect x="57" y="20" width="10" height="2.5" rx="1.25" fill="#DBDFE7"/>
-                <rect x="9" y="32" width="14" height="2.5" rx="1.25" fill="#DBDFE7"/>
-                <rect x="33" y="32" width="9" height="2.5" rx="1.25" fill="#DBDFE7"/>
-                <rect x="9" y="44" width="11" height="2.5" rx="1.25" fill="#DBDFE7"/>
-                <rect x="33" y="44" width="13" height="2.5" rx="1.25" fill="#DBDFE7"/>
-                <rect x="59" y="27" width="34" height="25" rx="4" fill="#fff" stroke="#2770EF" strokeWidth="1.5"/>
-                <rect x="65" y="40" width="5" height="7" rx="1.5" fill="#ABC7F9"/>
-                <rect x="73" y="35" width="5" height="12" rx="1.5" fill="#71A1F4"/>
-                <rect x="81" y="38" width="5" height="9" rx="1.5" fill="#2770EF"/>
-              </svg>
+              {hideQueryTab ? (
+                <svg width="96" height="56" viewBox="0 0 96 56" fill="none">
+                  <rect x="8" y="4" width="80" height="48" rx="4" fill="#fff" stroke="#CEDCF5" strokeWidth="1.4"/>
+                  <path d="M8 15h80" stroke="#CEDCF5" strokeWidth="1.4"/>
+                  <path d="M34 15v37M61 15v37" stroke="#EBF2FD" strokeWidth="1.4"/>
+                  <path d="M8 27h80M8 39h80" stroke="#EBF2FD" strokeWidth="1.4"/>
+                  <rect x="13" y="8" width="14" height="3" rx="1.5" fill="#ABC7F9"/>
+                  <rect x="39" y="8" width="14" height="3" rx="1.5" fill="#ABC7F9"/>
+                  <rect x="66" y="8" width="14" height="3" rx="1.5" fill="#ABC7F9"/>
+                  <rect x="13" y="20" width="13" height="2.5" rx="1.25" fill="#DBDFE7"/>
+                  <rect x="39" y="20" width="15" height="2.5" rx="1.25" fill="#DBDFE7"/>
+                  <rect x="66" y="20" width="11" height="2.5" rx="1.25" fill="#DBDFE7"/>
+                  <rect x="13" y="32" width="15" height="2.5" rx="1.25" fill="#DBDFE7"/>
+                  <rect x="39" y="32" width="10" height="2.5" rx="1.25" fill="#DBDFE7"/>
+                  <rect x="66" y="32" width="13" height="2.5" rx="1.25" fill="#DBDFE7"/>
+                  <rect x="13" y="44" width="12" height="2.5" rx="1.25" fill="#DBDFE7"/>
+                  <rect x="39" y="44" width="14" height="2.5" rx="1.25" fill="#DBDFE7"/>
+                  <rect x="66" y="44" width="9" height="2.5" rx="1.25" fill="#DBDFE7"/>
+                </svg>
+              ) : (
+                <svg width="96" height="56" viewBox="0 0 96 56" fill="none">
+                  <rect x="4" y="4" width="76" height="48" rx="4" fill="#fff" stroke="#CEDCF5" strokeWidth="1.4"/>
+                  <path d="M4 15h76" stroke="#CEDCF5" strokeWidth="1.4"/>
+                  <path d="M28 15v37M52 15v37" stroke="#EBF2FD" strokeWidth="1.4"/>
+                  <path d="M4 27h76M4 39h76" stroke="#EBF2FD" strokeWidth="1.4"/>
+                  <rect x="9" y="8" width="13" height="3" rx="1.5" fill="#ABC7F9"/>
+                  <rect x="33" y="8" width="13" height="3" rx="1.5" fill="#ABC7F9"/>
+                  <rect x="57" y="8" width="13" height="3" rx="1.5" fill="#ABC7F9"/>
+                  <rect x="9" y="20" width="12" height="2.5" rx="1.25" fill="#DBDFE7"/>
+                  <rect x="33" y="20" width="14" height="2.5" rx="1.25" fill="#DBDFE7"/>
+                  <rect x="57" y="20" width="10" height="2.5" rx="1.25" fill="#DBDFE7"/>
+                  <rect x="9" y="32" width="14" height="2.5" rx="1.25" fill="#DBDFE7"/>
+                  <rect x="33" y="32" width="9" height="2.5" rx="1.25" fill="#DBDFE7"/>
+                  <rect x="9" y="44" width="11" height="2.5" rx="1.25" fill="#DBDFE7"/>
+                  <rect x="33" y="44" width="13" height="2.5" rx="1.25" fill="#DBDFE7"/>
+                  <rect x="59" y="27" width="34" height="25" rx="4" fill="#fff" stroke="#2770EF" strokeWidth="1.5"/>
+                  <rect x="65" y="40" width="5" height="7" rx="1.5" fill="#ABC7F9"/>
+                  <rect x="73" y="35" width="5" height="12" rx="1.5" fill="#71A1F4"/>
+                  <rect x="81" y="38" width="5" height="9" rx="1.5" fill="#2770EF"/>
+                </svg>
+              )}
             </span>
             <span style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1, textAlign: 'left' }}>
-              <span style={{ fontSize: 16, fontWeight: 600, color: '#1D232F', letterSpacing: '-0.3px' }}>Preview and test your data</span>
-              <span style={{ fontSize: 13, color: '#777E8B' }}>See the rows behind your model before anyone else does</span>
+              <span style={{ fontSize: 16, fontWeight: 600, color: '#1D232F', letterSpacing: '-0.3px' }}>
+                {hideQueryTab ? 'Preview your data' : 'Preview and test your data'}
+              </span>
+              <span style={{ fontSize: 13, color: '#777E8B' }}>
+                {hideQueryTab ? 'See the rows behind your model as you build it' : 'See the rows behind your model before anyone else does'}
+              </span>
             </span>
             <span className="preview-bar-chevron" style={{ width: 30, height: 30, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748B', flexShrink: 0 }}>
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 9.5L8 5.5l4 4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg>
@@ -205,13 +248,39 @@ const PreviewPanel3Optimized: React.FC<OptimizedProps> = ({
             regardless of how wide the right-hand buttons are. Same technique as
             the Builder/Semantics sub-header switch. Optimized only —
             PreviewPanel3AsIs below keeps its original tabs. */}
-        <div style={{ flex: 1 }} />
-        <SegmentedControl
-          options={[{ id: 'preview', label: 'Spreadsheet' }, { id: 'query', label: 'Query' }]}
-          value={panelTab}
-          onChange={v => setPanelTab(v as 'preview' | 'query')}
-          size="default"
-        />
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+          {/* "Split" layout only — hideQueryTab hides the centered
+              Spreadsheet/Query switch below, leaving this left flank empty;
+              Komal, 2026-09-22: "Add a title here: Data preview". Combined
+              keeps this flank blank exactly as before. */}
+          {hideQueryTab && (
+            <span style={{ fontSize: 13, fontWeight: 600, color: '#1D232F' }}>Data preview</span>
+          )}
+        </div>
+        {!hideQueryTab ? (
+          <SegmentedControl
+            options={[{ id: 'preview', label: 'Spreadsheet' }, { id: 'query', label: 'Query' }]}
+            value={panelTab}
+            onChange={v => setPanelTab(v as 'preview' | 'query')}
+            size="default"
+          />
+        ) : (
+          /* "Split" only — the centre slot the Spreadsheet/Query switch used
+             to occupy now carries the scope switcher (2026-09-22, Komal: "in
+             the centre here, add a scope switcher as other options — between
+             tables, joins and model"). It writes the same scope/selection the
+             canvas clicks do, so the two stay in step in both directions. */
+          <ScopeSwitcher
+            scope={scope}
+            tables={tables}
+            joins={joins}
+            selectedTable={selectedTable}
+            selectedJoin={join}
+            onPickTable={name => { setScope('table'); setSelectedTable(name); setJoin(null); }}
+            onPickJoin={j => { setScope('join'); setJoin(j as JoinInfo); setSelectedTable(''); }}
+            onPickModel={() => { setScope('model'); setSelectedTable(''); setJoin(null); }}
+          />
+        )}
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 12 }}>
           <button
             type="button"
@@ -241,25 +310,47 @@ const PreviewPanel3Optimized: React.FC<OptimizedProps> = ({
 
       {(open || full) && (
         <div className="preview-panel-body" style={{ display: 'flex', flexDirection: 'column', minHeight: 0, padding: 0, background: 'var(--rd-sys-color-background-sunken, #F6F8FA)' }}>
-          <SearchDataExplorations
-            showSpotter={false}
-            hideSheetToggle
-            hideHeaderBar
-            edgeToEdge
-            hideColumnPanelTabs
-            compactPanelSearch
-            alignColumnCheckboxes
-            lightAnswerTableHeader
-            sheetTab={sheetTab}
-            onSheetTabChange={t => setPanelTab(t === 'sheet' ? 'preview' : 'query')}
-            canvasScope={{
-              tables, joins, dataSourceTables, modelColumns, modelFormulas,
-              scope, selectedTable, selectedJoin: join,
-              onScopeChange: setScope,
-              onSelectedTableChange: setSelectedTable,
-              onSelectedJoinChange: setJoin,
-            }}
-          />
+          {hideQueryTab ? (
+            // "Split" layout only (hideQueryTab is only ever true there) — the
+            // pixel-original, unmodified spreadsheet from the worksheet 2
+            // source (see components/QueryAsIs.tsx). canvasScope is the one
+            // addition (2026-09-22, Komal: "make the data preview work like
+            // an actual data preview... when someone clicks a table/join");
+            // read-only there (no scope-switcher UI of its own, same table/
+            // join/model selection Combined's canvas drives below). Every
+            // other prop stays exactly as before — "Combined" always passes
+            // hideQueryTab={false}/undefined, so its own branch is untouched.
+            <QueryAsIs
+              mode="spreadsheet"
+              canvasScope={{
+                tables, joins, dataSourceTables, modelColumns,
+                scope, selectedTable, selectedJoin: join,
+              }}
+            />
+          ) : (
+            <SearchDataExplorations
+              showSpotter={false}
+              hideSheetToggle
+              hideHeaderBar
+              edgeToEdge
+              hideColumnPanelTabs
+              compactPanelSearch
+              alignColumnCheckboxes
+              lightAnswerTableHeader
+              sheetTab={sheetTab}
+              onSheetTabChange={t => setPanelTab(t === 'sheet' ? 'preview' : 'query')}
+              canvasScope={{
+                tables, joins, dataSourceTables, modelColumns, modelFormulas,
+                // 'none' is a Split-only state (nothing picked yet); Combined
+                // has always started on the whole model, so it never sees it.
+                scope: scope === 'none' ? 'model' : scope,
+                selectedTable, selectedJoin: join,
+                onScopeChange: setScope,
+                onSelectedTableChange: setSelectedTable,
+                onSelectedJoinChange: setJoin,
+              }}
+            />
+          )}
         </div>
       )}
     </div>
@@ -368,6 +459,7 @@ const PreviewPanel3: React.FC<PreviewPanelProps> = ({
   scope, setScope, selectedTable, setSelectedTable,
   join, setJoin, joins,
   embedMode,
+  hideQueryTab,
 }) => {
   const branchProps: BranchProps = { open, setOpen, full, setFull, height, setHeight, panelTab, setPanelTab };
   return embedMode === 'optimized'
@@ -376,6 +468,7 @@ const PreviewPanel3: React.FC<PreviewPanelProps> = ({
         tables={tables} dataSourceTables={dataSourceTables} modelColumns={modelColumns} modelFormulas={modelFormulas}
         scope={scope} setScope={setScope} selectedTable={selectedTable} setSelectedTable={setSelectedTable}
         join={join} setJoin={setJoin} joins={joins}
+        hideQueryTab={hideQueryTab}
       />
     : <PreviewPanel3AsIs {...branchProps} />;
 };

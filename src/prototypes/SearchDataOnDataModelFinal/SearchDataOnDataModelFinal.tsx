@@ -8,10 +8,10 @@ import { Checkbox } from '@components/Checkbox';
 import { Typography } from '@components/Typography';
 import { Divider } from '@components/Divider';
 import { SegmentedControl } from '@components/SegmentedControl';
+import { Tabs } from '@components/Tabs';
 import { Select } from '@components/Select';
 import { Menu } from '@components/Menu';
 import { List } from '@components/List';
-import { Link } from '@components/Link';
 import { Popover } from '@components/Popover';
 import { AnchoredMenu } from './components/AnchoredMenu';
 import { RdModal } from '@components/RdModal';
@@ -26,12 +26,16 @@ import { OverlayLoading } from '@components/OverlayLoading';
 import { Icon } from '@components/icons';
 import PreviewPanel from './components/PreviewPanel';
 import PreviewPanel3 from './components/PreviewPanel3';
-import TablePickerV2 from './components/TablePickerV2';
+import TablePickerV2, { ColumnChip } from './components/TablePickerV2';
+import tablePickerStyles from './components/TablePickerV2.module.css';
 import FormulaEditorModal from './components/FormulaEditorModal';
 import type { FormulaDraft } from './components/FormulaEditorModal';
 import EditJoinModal from './components/EditJoinModal';
 import type { EditJoinResult } from './components/EditJoinModal';
+import TableBrowserModal from './components/TableBrowserModal';
+import TableColumnSidePanel from './components/TableColumnSidePanel';
 import { SearchDataExplorations } from './SearchDataExplorations';
+import { SearchDataExplorations as QueryAsIs } from './components/QueryAsIs';
 
 // Formula/Filters/Parameters dock (ported exactly from DataStudioV2 MVP's left
 // browser panel) — fixed to the bottom of the Tables pane, table list scrolls
@@ -111,7 +115,7 @@ const DockRow: React.FC<{ balance: PaneBalance; icon: React.ReactNode; label: st
         {headerContent}
       </button>
       <div style={fill && open
-        ? { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }
+        ? { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflowY: 'auto' }
         : { maxHeight: open ? 220 : 0, overflowY: open ? 'auto' : 'hidden', transition: 'max-height 220ms cubic-bezier(0.4,0,0.2,1)' }}>
         {children}
       </div>
@@ -144,17 +148,22 @@ const DockListRow: React.FC<{
   const run = (fn: () => void) => () => { setMenuOpen(false); fn(); };
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
-      <div style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-        <Link
-          color="black"
-          size="small"
-          onClick={e => { e.preventDefault(); onEdit(); }}
-          title={detail}
-        >
-          {name}
-        </Link>
-      </div>
+    // Same row shape and type as a table row in the Tables section (2026-09-22,
+    // Komal: "across tables, formula, filters and parameters — use the same
+    // styling for lists. Use the same fonts as tables in others"): the name
+    // wears TablePickerV2's own .tableName (sm / medium / content-primary)
+    // rather than Radiant's small Link, which set these lists a size and
+    // weight apart from the tables above them. Still a button — the name
+    // opens the object's editor — exactly as Option 2's AddedTableRow does.
+    <div className="dock-list-row" style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-2)', minWidth: 0 }}>
+      <button
+        type="button"
+        onClick={onEdit}
+        title={detail}
+        style={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0, padding: 0, border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left' }}
+      >
+        <span className={tablePickerStyles.tableName}>{name}</span>
+      </button>
       <Button
         ref={menuBtnRef}
         variant="tertiary"
@@ -179,6 +188,78 @@ const DockListRow: React.FC<{
         </Menu>
       </AnchoredMenu>
     </div>
+  );
+};
+
+// Tables-section Option 2's populated nav row (2026-09-21) — a table already
+// on the canvas, styled like TablePickerV2's plain-text row (chevron + name,
+// no chip, no drag handle: nothing here is draggable) rather than the
+// drag-oriented shared ColumnTree. Removal is the "..." menu only, matching
+// DockListRow's own pattern — never a row-level "x".
+// No "..." menu (Komal, 2026-09-22: "remove the 3 dot menu") — a table is
+// still removable by reopening the "+" picker and unticking its columns,
+// which already fully removes it (see handleOption2Confirm). Row and column
+// styling reuses Option 1's own TablePickerV2.module.css classes verbatim
+// (Komal: "the table name, make it look like option 1, without the plus
+// icon" / "for the columns, use the same UI as option 1") rather than a
+// hand-approximated copy, so the two are pixel-identical apart from the "+"
+// (not needed — these tables are already on the canvas) and the drag cursor
+// (overridden to pointer — nothing here is draggable). No checkboxes on the
+// expanded columns either (Komal, 2026-09-22: "addition and removal of
+// columns happen from the data browser") — this list is read-only, showing
+// only the columns already added; the "Add tables and columns" pop-up is the
+// only place that adds or removes one.
+const AddedTableRow: React.FC<{
+  name: string;
+  addedColumns: string[];
+  isOpen: boolean;
+  onToggleOpen: () => void;
+  onEdit: () => void;
+}> = ({ name, addedColumns, isOpen, onToggleOpen, onEdit }) => {
+  // Fragment at the top level (colList is a sibling of the row div, both
+  // direct children of .list) — TablePickerV2.module.css's
+  // `.tableRow:not(:first-child) { margin-top: var(--spacing-3) }` rule (the
+  // table-to-table rhythm) only fires when .tableRow is a direct, non-first
+  // child of the shared list container (Komal, 2026-09-22: "the spacing and
+  // alignment is off again... CLEAN IT UP"). The row itself is back to being
+  // a <div> wrapping two separate buttons (toggle + edit) rather than one
+  // button being the whole row — needed now that there are two actions,
+  // and a <button> can't contain another <button>. Matches TablePickerV2's
+  // own div>button+span+button shape exactly.
+  return (
+    <>
+      <div className={`${tablePickerStyles.tableRow} option2-table-row`} style={{ cursor: 'default' }}>
+        <button
+          type="button"
+          onClick={onToggleOpen}
+          style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-2)', flex: 1, minWidth: 0, padding: 0, border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left' }}
+        >
+          <span className={`${tablePickerStyles.chevron} ${isOpen ? tablePickerStyles.chevronOpen : ''}`}>
+            <Icon name="chevron-right" size="xs" color="var(--rd-sys-color-content-secondary)" />
+          </span>
+          <span className={tablePickerStyles.tableName}>{name}</span>
+        </button>
+        <button
+          type="button"
+          className="option2-edit-btn"
+          onClick={onEdit}
+          aria-label={`Edit ${name}`}
+          title={`Edit ${name}`}
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 20, height: 20, flexShrink: 0, border: 'none', background: 'transparent', borderRadius: 'var(--radius-sm)', cursor: 'pointer', color: 'var(--rd-sys-color-content-secondary)' }}
+        >
+          <Icon name="pencil" size="xs" />
+        </button>
+      </div>
+      {isOpen && (
+        <div className={tablePickerStyles.colList}>
+          {addedColumns.map(c => (
+            <div key={c} className={tablePickerStyles.colItem}>
+              <ColumnChip label={c} />
+            </div>
+          ))}
+        </div>
+      )}
+    </>
   );
 };
 
@@ -219,11 +300,22 @@ const DockSearch: React.FC<{ placeholder: string; value: string; onChange: (v: s
   </div>
 );
 
-const DockEmpty: React.FC<{ icon: React.ReactNode; title: string; subtitle: string }> = ({ icon, title, subtitle }) => (
-  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: '18px 20px 20px', textAlign: 'center' }}>
+// `action` is additive and optional (defaults undefined) — every existing
+// caller (Formulas/Filters/Parameters) omits it, so their empty state is
+// pixel-identical. Tables-section Option 2 is the only consumer that passes
+// it, per Komal: "Button inside the empty state" (2026-09-21).
+const DockEmpty: React.FC<{ icon: React.ReactNode; title: string; subtitle: string; action?: React.ReactNode }> = ({ icon, title, subtitle, action }) => (
+  // flex:1 + centred, for the same reason the Tables empty state is: an open
+  // section now takes the pane's whole remaining height, so a top-pinned
+  // empty state sat under a tall stretch of white (2026-09-22, Komal: "centre
+  // align the empty states in formula, filters and parameters"). DockRow's
+  // `fill` body is a column flex container, so this centres against the full
+  // section; in a collapsed/max-height body it simply behaves as before.
+  <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '18px 20px 20px', textAlign: 'center' }}>
     <div style={{ width: 30, height: 30, borderRadius: 8, background: 'var(--rd-sys-color-background-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--rd-sys-color-content-secondary)', flexShrink: 0 }}>{icon}</div>
     <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--rd-sys-color-content-primary)' }}>{title}</div>
     <div style={{ fontSize: 11, color: 'var(--rd-sys-color-content-secondary)', lineHeight: 1.4, maxWidth: 200 }}>{subtitle}</div>
+    {action && <div style={{ marginTop: 4 }}>{action}</div>}
   </div>
 );
 
@@ -256,9 +348,18 @@ const TAB_OPTIONS_OPTION3 = [
 ];
 // Optimized only — same ids ('tables'/'columns', so the tab-switch wiring is
 // untouched), renamed display labels for this branch's sub-header switcher.
+// Builder/Semantics → Build/Define (2026-09-22, Komal: "update the tabs to:
+// Build, Define, Test") — verbs for what you do in each, matching Test below.
 const TAB_OPTIONS_OPTION3_OPTIMIZED = [
-  { id: 'tables',  label: 'Builder' },
-  { id: 'columns', label: 'Semantics' },
+  { id: 'tables',  label: 'Build' },
+  { id: 'columns', label: 'Define' },
+];
+// "Split" layout only (see dataModelLayout below) — Build/Define plus a third
+// pill for the as-is Query experience (QueryAsIs), labelled Test. Additive:
+// the "Combined" layout keeps using TAB_OPTIONS_OPTION3_OPTIMIZED above.
+const TAB_OPTIONS_SPLIT = [
+  ...TAB_OPTIONS_OPTION3_OPTIMIZED,
+  { id: 'query-asis', label: 'Test' },
 ];
 
 const JOIN_OPTIONS = [
@@ -438,12 +539,44 @@ const SearchDataOnDataModelFinal: React.FC = () => {
   const [modelState, setModelState] = useState<'empty' | 'demo'>('empty');
   // Prototype-only: which of the three candidate treatments the left panel is
   // wearing. See PaneBody.
-  const [paneBalance, setPaneBalance] = useState<PaneBalance>('tint');
+  const [paneBalance] = useState<PaneBalance>('box');
   const handleAddTable = (tableName: string) => {
     (window as any)._addTableManually?.(tableName);
   };
   const handleRemoveTable = (tableName: string) => {
     (window as any)._removeTableManually?.(tableName);
+  };
+  // Tables-section Option 3 (2026-09-22, Komal) — "Available" / "In this
+  // model" tabs. Revised (same day): "Add a plus next to tables name.
+  // Clicking on the add should add the table to the canvas, and move it
+  // under 'In this model'. From the in this model tab, user can add or
+  // remove columns." — table-level add is back (TablePickerV2's own "+",
+  // unmodified), and columns are added/removed in place once a table is in
+  // the model, via the same plain handleToggleColumn Option 1 uses. No
+  // auto-remove-on-empty-columns any more — that was part of the earlier,
+  // column-driven mechanism this replaces.
+  const [option3Tab, setOption3Tab] = useState<'available' | 'inModel'>('available');
+  const [option3OpenTable, setOption3OpenTable] = useState<string | null>(null);
+  // Tables-section Option 4 (2026-09-22, Komal) — flat table list, no
+  // expand/collapse to preview columns. Clicking a table's "+" opens a side
+  // panel to the right of this pane (a flex sibling in .content-row, not a
+  // modal) listing just that table's columns; nothing is added to the canvas
+  // until "Add to model" is clicked there. Cancel/closing discards the draft.
+  // The table NAME opens the identical panel too (2026-09-22, Komal: "I
+  // should be able to access the columns pane by clicking on the table name
+  // as well") — one panel, two entry points, same behavior either way.
+  const [option4PanelTable, setOption4PanelTable] = useState<string | null>(null);
+  const [option4Draft, setOption4Draft] = useState<string[]>([]);
+  const openOption4Panel = (tableName: string) => {
+    setOption4PanelTable(tableName);
+    setOption4Draft(columnTreeData.modelColumns.find(g => g.table === tableName)?.columns ?? []);
+  };
+  const closeOption4Panel = () => { setOption4PanelTable(null); setOption4Draft([]); };
+  const confirmOption4 = () => {
+    if (!option4PanelTable) return;
+    (window as any)._addTableManually?.(option4PanelTable);
+    option4Draft.forEach(c => (window as any)._toggleColumnManually?.(option4PanelTable, c, true));
+    closeOption4Panel();
   };
   // The "..." menu on a canvas card. Anchored to the click point rather than a
   // ref — the button lives inside the shared TableCard, so the ref isn't ours.
@@ -457,6 +590,13 @@ const SearchDataOnDataModelFinal: React.FC = () => {
   const [modelLoading, setModelLoading] = useState<{ visible: boolean; label: string }>({ visible: false, label: '' });
   // Formula/Filters/Parameters dock in the Tables left pane — only one open at a time.
   const [browserDockOpen, setBrowserDockOpen] = useState<string | null>('tables');
+  // Exactly one section is always open, and Tables is the one it falls back to
+  // (2026-09-22, Komal: "when none of these are expanded, or all of them are
+  // collapsed, auto expand the tables section") — an all-collapsed pane was a
+  // stack of headers over dead space, and the section that owns the model's
+  // contents is the sensible resting state. Collapsing Tables itself keeps it
+  // open rather than closing and snapping back, so there is no flicker.
+  const toggleDock = (id: string) => setBrowserDockOpen(cur => (cur === id ? 'tables' : id));
   // One query per section rather than one shared: the accordion shows a single
   // section at a time, but a filter should survive visiting another and coming
   // back. Matched against the name the row shows, not its hover detail.
@@ -481,6 +621,103 @@ const SearchDataOnDataModelFinal: React.FC = () => {
   // replaces (no real canvas zoom is wired up either way).
   const [zoomMenuOpen, setZoomMenuOpen] = useState(false);
   const zoomMenuBtnRef = useRef<HTMLButtonElement>(null);
+  // Tables-section left-nav redesign (2026-09-21, Komal) — 4 options to try,
+  // option 1 being the current design. Switcher only for now; picking 2/3/4
+  // does nothing until she asks for those designs to be built.
+  // Lands on 2.1 (2026-09-22, Komal: "make these the default when I land on
+  // the canvas") — the inline side-panel picker. Option 1 is still one click
+  // away in the Options menu.
+  const [tablesNavOption, setTablesNavOption] = useState<1 | 2 | 2.1 | 3 | 4>(2.1);
+  const [tablesNavMenuOpen, setTablesNavMenuOpen] = useState(false);
+  const tablesNavMenuBtnRef = useRef<HTMLButtonElement>(null);
+  // "In this model should be the first default tab, and available second...
+  // land them on available, until they have added tables" (2026-09-22,
+  // Komal) — landing default depends on whether the model already has
+  // tables the moment this view is switched into, not on every add/remove
+  // afterward (that would fight the user's own tab choice while working).
+  useEffect(() => {
+    if (tablesNavOption === 3) setOption3Tab(addedTableNames.size === 0 ? 'available' : 'inModel');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tablesNavOption]);
+
+  // Tables-section Option 2 (2026-09-21, Komal) — starts empty; a pop-up
+  // table browser is the only way in. `option2Draft` is the picker's own
+  // staged selection (same shape as columnTreeData.modelColumns) — nothing
+  // in the real model changes until "Add to model" is clicked, so browsing
+  // and re-browsing costs nothing.
+  const [option2ModalOpen, setOption2ModalOpen] = useState(false);
+  const [option2Draft, setOption2Draft] = useState<{ table: string; columns: string[] }[]>([]);
+  // Which added table is expanded in the populated nav list — one at a time,
+  // same as TablePickerV2 (Option 2 takes its row style from there, not from
+  // the drag-oriented ColumnTree: "why are they in pills? take inspiration
+  // from option 1" (2026-09-21). Nothing here is draggable — these tables are
+  // already on the canvas, and removal is the "..." menu only.
+  const [option2OpenTable, setOption2OpenTable] = useState<string | null>(null);
+  // Which table the picker should land on (2026-09-22, Komal: "world class
+  // UX... getting in and out of edit mode") — set when a specific row's own
+  // "edit" trigger opened the modal, so it jumps straight there instead of
+  // always landing on the catalog's first table. Left null from the section
+  // header's own "+", which has no specific table in mind.
+  const [option2FocusTable, setOption2FocusTable] = useState<string | null>(null);
+  // The empty-state illustration's loop is an attention-getter, and it has
+  // done its job the moment the picker is opened (2026-09-22, Komal: "the
+  // animation in this should stop once the user clicks on 'Add tables'. Post
+  // that, it becomes distraction"). One-way latch: it never restarts.
+  const [option2IlloPaused, setOption2IlloPaused] = useState(false);
+  const openOption2Modal = () => {
+    setOption2IlloPaused(true);
+    setOption2Draft(columnTreeData.modelColumns.map(g => ({ table: g.table, columns: [...g.columns] })));
+    setOption2FocusTable(null);
+    setOption2ModalOpen(true);
+  };
+  const openOption2ModalFor = (tableName: string) => {
+    setOption2IlloPaused(true);
+    setOption2Draft(columnTreeData.modelColumns.map(g => ({ table: g.table, columns: [...g.columns] })));
+    setOption2FocusTable(tableName);
+    setOption2ModalOpen(true);
+  };
+  const handleOption2DraftToggle = (tableName: string, colName: string, checked: boolean) => {
+    setOption2Draft(prev => {
+      const idx = prev.findIndex(g => g.table === tableName);
+      if (checked) {
+        if (idx === -1) return [...prev, { table: tableName, columns: [colName] }];
+        if (prev[idx].columns.includes(colName)) return prev;
+        const next = [...prev];
+        next[idx] = { ...next[idx], columns: [...next[idx].columns, colName] };
+        return next;
+      }
+      if (idx === -1) return prev;
+      const next = [...prev];
+      next[idx] = { ...next[idx], columns: next[idx].columns.filter(c => c !== colName) };
+      return next;
+    });
+  };
+  // Reconciles the draft against the real model in one pass: tables that lost
+  // every column get fully removed (canvas card and all), newly-checked
+  // tables get added, and each remaining table's columns are diffed against
+  // what's already there — same bridges Option 1's "+"/checkboxes use, just
+  // called once per difference instead of live per click.
+  const handleOption2Confirm = () => {
+    const prevTables = new Set(tableCanvasData.tables.map(t => t.name));
+    const prevColumns = columnTreeData.modelColumns;
+    const draftTables = new Set(option2Draft.filter(g => g.columns.length > 0).map(g => g.table));
+    prevTables.forEach(t => { if (!draftTables.has(t)) (window as any)._removeTableManually?.(t); });
+    draftTables.forEach(t => { if (!prevTables.has(t)) (window as any)._addTableManually?.(t); });
+    option2Draft.forEach(g => {
+      if (g.columns.length === 0) return;
+      const prevGroup = prevColumns.find(p => p.table === g.table);
+      const prevCols = new Set(prevGroup?.columns ?? []);
+      const draftCols = new Set(g.columns);
+      draftCols.forEach(c => { if (!prevCols.has(c)) (window as any)._toggleColumnManually?.(g.table, c, true); });
+      prevCols.forEach(c => { if (!draftCols.has(c)) (window as any)._toggleColumnManually?.(g.table, c, false); });
+    });
+    // Closes the loop on the way out too: if a specific table's own "edit"
+    // trigger opened the modal, land back on that table already expanded in
+    // the nav list, showing exactly what just changed — no extra click to
+    // re-expand it (2026-09-22, Komal: "getting in and out of edit mode").
+    if (option2FocusTable && draftTables.has(option2FocusTable)) setOption2OpenTable(option2FocusTable);
+    setOption2ModalOpen(false);
+  };
 
   // Option 2's bottom preview/query panel on the Tables tab (see .option-switcher above).
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -494,7 +731,12 @@ const SearchDataOnDataModelFinal: React.FC = () => {
   // Starts at 'model' so opening the panel before anything is selected lists
   // every column on the canvas — 'table' with no selected table scopes to
   // nothing now that both panel tabs respect the scope.
-  const [previewScope, setPreviewScope] = useState<'table' | 'join' | 'model'>('model');
+  // 'none' = nothing picked yet, added 2026-09-22 with Split's title-bar scope
+  // switcher: 'model' used to double as "nothing selected", and once Model
+  // became a real choice in that menu the two had to be told apart. Combined
+  // never sees 'none' — it is mapped back to 'model' at its own call sites, so
+  // it still lands on the whole model exactly as before.
+  const [previewScope, setPreviewScope] = useState<'none' | 'table' | 'join' | 'model'>('none');
   const [previewTable, setPreviewTable] = useState('');
   const [previewJoin, setPreviewJoin] = useState<JoinInfo | null>(null);
   // Option 3 only: switches PreviewPanel3 between embedding SearchDataExplorations
@@ -508,6 +750,14 @@ const SearchDataOnDataModelFinal: React.FC = () => {
   // is its own independent switcher, scoped entirely to Option 3 optimized.
   // Defaults to 2 (2026-09-10) — Option 2 is now the landing-state default.
   const dataSourceSelectorOption = 2 as 1 | 2;
+  // "Combined" (default) is today's experience, untouched: Builder/Semantics
+  // only, bottom panel keeps Query+Spreadsheet together (PreviewPanel3).
+  // "Split" adds a third Query pill (TAB_OPTIONS_SPLIT) that renders the as-is
+  // QueryAsIs component full-pane, and the bottom panel shows only the
+  // Spreadsheet (see PreviewPanel3's hideQueryTab prop below).
+  // Split is the landing layout (2026-09-22, Komal: "make these the default
+  // when I land on the canvas"); Combined is still in the Options menu.
+  const [dataModelLayout, setDataModelLayout] = useState<'combined' | 'split'>('split');
 
   const [spotterModelEnabled] = useState<boolean>(() => (window as any).__DME_CONFIG__?.spotterModel ?? true);
   const [welcomeVariant] = useState<'blank' | 'existing'>(() => (window as any).__DME_CONFIG__?.welcomeVariant ?? 'blank');
@@ -532,13 +782,15 @@ const SearchDataOnDataModelFinal: React.FC = () => {
 
   // Optimized only: expanding the preview panel auto-collapses the left
   // tables/columns panel and the SpotterModel panel, so the expanded preview
-  // gets the full width.
+  // gets the full width. Split only (2026-09-22, Komal): "when you expand and
+  // collapse the data preview panel, do not auto collapse the left panel and
+  // the spottermodel" — Combined keeps the original auto-collapse behavior.
   useEffect(() => {
-    if (previewOpen && tabOption === 3 && option3EmbedMode === 'optimized') {
+    if (previewOpen && tabOption === 3 && option3EmbedMode === 'optimized' && dataModelLayout === 'combined') {
       setLeftPaneCollapsed(true);
       setAgentPanelCollapsed(true);
     }
-  }, [previewOpen, tabOption, option3EmbedMode]);
+  }, [previewOpen, tabOption, option3EmbedMode, dataModelLayout]);
 
   useEffect(() => {
     const prev = document.body.style.overflow;
@@ -585,11 +837,13 @@ const SearchDataOnDataModelFinal: React.FC = () => {
       setModelFilters([]);
       setModelParameters([]);
     }
-    // Whichever way it went, the previous model's selections are gone.
+    // Whichever way it went, the previous model's selections are gone — which
+    // is 'none' now that 'model' is a scope the user can actually pick, not a
+    // stand-in for "nothing selected".
     setOpenTableV2(null);
     setPreviewTable('');
     setPreviewJoin(null);
-    setPreviewScope('model');
+    setPreviewScope('none');
   }, [modelState]);
 
   // Settings dock body — inline-editable join rule + security options.
@@ -603,6 +857,56 @@ const SearchDataOnDataModelFinal: React.FC = () => {
   );
   const settingsSectionHeading = (text: string) => (
     <Typography variant="content-label-subhead" as="div">{text}</Typography>
+  );
+
+  // The prototype's own switchers (model state / layout / tables-section
+  // option). Lived in the app header until 2026-09-22, when Komal asked to
+  // "move options inside the settings panel at the bottom so it's not visible
+  // upfront" — they are a reviewing aid, not part of the product surface, and
+  // the header is the first thing anyone looks at. Same state and same menu,
+  // just anchored from the Settings section now. AnchoredMenu flips and clamps
+  // to the viewport on its own, so sitting at the bottom of a scrollable dock
+  // is fine.
+  const optionsMenu = (
+    <div style={{ position: 'relative' }}>
+      <Button
+        ref={tablesNavMenuBtnRef}
+        variant="tertiary"
+        size="basic"
+        iconPosition="trailing"
+        icon={<Icon name={tablesNavMenuOpen ? 'chevron-up' : 'chevron-down'} size="s" color="var(--rd-sys-color-content-secondary)" />}
+        onClick={() => setTablesNavMenuOpen(o => !o)}
+        style={{ border: '1px solid var(--rd-sys-color-border-default)', borderRadius: 'var(--radius-lg)', color: 'var(--rd-sys-color-content-primary)', background: 'var(--rd-sys-color-background-base)' }}
+      >
+        Options
+      </Button>
+      <AnchoredMenu
+        open={tablesNavMenuOpen}
+        anchorRef={tablesNavMenuBtnRef}
+        onClose={() => setTablesNavMenuOpen(false)}
+        placement="bottom-start"
+      >
+        <Menu onClose={() => setTablesNavMenuOpen(false)}>
+          <Menu.Group label="Model state">
+            <Menu.Item active={modelState === 'empty'} onClick={() => { setModelState('empty'); setTablesNavMenuOpen(false); }}>Empty</Menu.Item>
+            <Menu.Item active={modelState === 'demo'} onClick={() => { setModelState('demo'); setTablesNavMenuOpen(false); }}>Demo</Menu.Item>
+          </Menu.Group>
+          <Menu.Divider />
+          <Menu.Group label="Layout">
+            <Menu.Item active={dataModelLayout === 'combined'} onClick={() => { setDataModelLayout('combined'); setTablesNavMenuOpen(false); }}>Combined</Menu.Item>
+            <Menu.Item active={dataModelLayout === 'split'} onClick={() => { setDataModelLayout('split'); setTablesNavMenuOpen(false); }}>Split</Menu.Item>
+          </Menu.Group>
+          <Menu.Divider />
+          <Menu.Group label="Tables section">
+            <Menu.Item active={tablesNavOption === 1} onClick={() => { setTablesNavOption(1); setTablesNavMenuOpen(false); }}>Option 1</Menu.Item>
+            <Menu.Item active={tablesNavOption === 2} onClick={() => { setTablesNavOption(2); setTablesNavMenuOpen(false); }}>Option 2</Menu.Item>
+            <Menu.Item active={tablesNavOption === 2.1} onClick={() => { setTablesNavOption(2.1); setTablesNavMenuOpen(false); }}>Option 2.1</Menu.Item>
+            <Menu.Item active={tablesNavOption === 3} onClick={() => { setTablesNavOption(3); setTablesNavMenuOpen(false); }}>Option 3</Menu.Item>
+            <Menu.Item active={tablesNavOption === 4} onClick={() => { setTablesNavOption(4); setTablesNavMenuOpen(false); }}>Option 4</Menu.Item>
+          </Menu.Group>
+        </Menu>
+      </AnchoredMenu>
+    </div>
   );
 
   const settingsDockPanel = (
@@ -665,6 +969,12 @@ const SearchDataOnDataModelFinal: React.FC = () => {
         </div>
       </section>
 
+      <Divider />
+
+      {/* Last in the panel, with no heading of its own — it isn't a product
+          setting, it's the prototype's own switcher, parked out of the way. */}
+      {optionsMenu}
+
     </div>
   );
 
@@ -691,6 +1001,28 @@ const SearchDataOnDataModelFinal: React.FC = () => {
       <span className="drag-hint">Or drag and drop from the left pane</span>
     </div>
   );
+
+  // Options 2 / 2.1 only: the left nav now carries the whole "start here"
+  // moment — illustration, copy and the "Add tables" button. Two competing
+  // calls to action in one screen is one too many, so the canvas steps back
+  // to a single muted line (2026-09-22, Komal: "make this empty state really
+  // muted so the focus goes on left. It should just say something like that
+  // your tables will appear here"). Every other option keeps the original
+  // canvas empty state untouched.
+  const tablesEmptyStateMuted = (
+    <div
+      id="tables-empty-state"
+      style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--spacing-2)' }}
+    >
+      <img src="/spotter-assets/Table=l.svg" width="24" height="24" alt="" style={{ opacity: 0.3 }} />
+      <Typography variant="footnote" as="div" color="gray-light" noMargin>
+        Your tables will appear here
+      </Typography>
+    </div>
+  );
+  const canvasEmptyState = tablesNavOption === 2 || tablesNavOption === 2.1
+    ? tablesEmptyStateMuted
+    : tablesEmptyState;
 
   return (
     <div className="sm-root">
@@ -722,6 +1054,7 @@ const SearchDataOnDataModelFinal: React.FC = () => {
           <div className="tab-pill" data-tab="filters">Filters</div>
           <div className="tab-pill" data-tab="parameters">Parameters</div>
           <div className="tab-pill" data-tab="query">Query</div>
+          <div className="tab-pill" data-tab="query-asis">Query</div>
           <div className="tab-pill" data-tab="settings">Settings</div>
         </div>
       </div>
@@ -748,7 +1081,7 @@ const SearchDataOnDataModelFinal: React.FC = () => {
                   aria-label={leftPaneCollapsed ? 'Expand tables panel' : 'Collapse tables panel'}
                   title={leftPaneCollapsed ? 'Expand panel' : 'Collapse panel'}
                 >
-                  <Icon name="hamburger" size="s" color="var(--rd-sys-color-content-secondary)" />
+                  <Icon name="hamburger" size="m" color="#1D232F" />
                 </button>
               )}
               <span className="model-name-placeholder">{modelName}</span>
@@ -785,12 +1118,14 @@ const SearchDataOnDataModelFinal: React.FC = () => {
             </div>
             {tabOption === 3 && (
               tabOption === 3 && option3EmbedMode === 'optimized' ? (
-                <SegmentedControl
-                  options={TAB_OPTIONS_OPTION3_OPTIMIZED}
-                  value={activeTab}
-                  onChange={handleTabChange}
-                  size="default"
-                />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-2)' }}>
+                  <SegmentedControl
+                    options={dataModelLayout === 'split' ? TAB_OPTIONS_SPLIT : TAB_OPTIONS_OPTION3_OPTIMIZED}
+                    value={activeTab}
+                    onChange={handleTabChange}
+                    size="default"
+                  />
+                </div>
               ) : (
                 <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }}>
                   <SegmentedControl
@@ -808,29 +1143,10 @@ const SearchDataOnDataModelFinal: React.FC = () => {
                  actions' own width. */
               <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 'var(--spacing-2)' }}>
                 <div className="sub-header-actions" id="actions-tables"></div>
-                {/* Moved here from the left-pane dock (2026-09-17, Komal) —
-                    "move to the top header on the left of the spottermodel
-                    icon". Same modelState/paneBalance state as before, just a
-                    new render site. */}
-                <SegmentedControl
-                  options={[{ id: 'empty', label: 'Empty' }, { id: 'demo', label: 'Demo' }]}
-                  value={modelState}
-                  onChange={v => setModelState(v as 'empty' | 'demo')}
-                  size="small"
-                />
-                <SegmentedControl
-                  options={[
-                    { id: 'tint', label: 'Tint' },
-                    { id: 'box',  label: 'Box' },
-                  ]}
-                  value={paneBalance}
-                  onChange={v => setPaneBalance(v as PaneBalance)}
-                  size="small"
-                />
                 {/* Rendered outside #actions-tables, which the legacy tab-switch
                     script hides on every tab but "tables" — this stays visible
                     across Tables and Columns. */}
-                {spotterModelEnabled && agentPanelCollapsed && activeTab !== 'query' && (
+                {spotterModelEnabled && agentPanelCollapsed && activeTab !== 'query' && activeTab !== 'query-asis' && (
                   <button
                     type="button"
                     className="agent-panel-collapsed-toggle"
@@ -841,8 +1157,18 @@ const SearchDataOnDataModelFinal: React.FC = () => {
                     <img src="/spotter-assets/SpotterModel avatar.svg" width="28" height="28" alt="" />
                   </button>
                 )}
-                <Button variant="secondary">Exit</Button>
+                {/* Save on the left, Exit last, with a rule between them
+                    (2026-09-22, Komal: "move exit to the right and save
+                    changes to the left. Between both, add a separator") — the
+                    divider marks Exit as leaving the editor rather than
+                    another step in the same sequence. */}
                 <Button variant="primary" onClick={() => (window as any)._showToast?.('Changes saved')}>Save changes</Button>
+                {/* Explicit 24px: Divider's vertical rule is height:100%, and
+                    in this centre-aligned row the span collapsed to the
+                    component's own 16px min-height, which read as a speck
+                    rather than a separator. */}
+                <span style={{ display: 'flex', alignItems: 'center', height: 24, marginInline: 'var(--spacing-1)' }}><Divider vertical /></span>
+                <Button variant="secondary">Exit</Button>
               </div>
             ) : (
               <>
@@ -855,7 +1181,7 @@ const SearchDataOnDataModelFinal: React.FC = () => {
                     <Select placeholder="100%" options={ZOOM_OPTIONS} className="sub-header-select" />
                   </div>
                 </div>
-                {spotterModelEnabled && agentPanelCollapsed && activeTab !== 'query' && (
+                {spotterModelEnabled && agentPanelCollapsed && activeTab !== 'query' && activeTab !== 'query-asis' && (
                   <button
                     type="button"
                     className="agent-panel-collapsed-toggle"
@@ -954,7 +1280,275 @@ const SearchDataOnDataModelFinal: React.FC = () => {
                   </div>
                 )}
                 <PaneBody mode={paneBalance}>
-                {tabOption === 3 && option3EmbedMode === 'optimized' && dataSourceSelectorOption === 2 ? (
+                {tabOption === 3 && option3EmbedMode === 'optimized' && dataSourceSelectorOption === 2 && (tablesNavOption === 2 || tablesNavOption === 2.1) ? (
+                  // Tables-section Option 2 (2026-09-21, Komal) — starts empty;
+                  // "+" and the empty state's own button both open the same
+                  // table browser. Option 2.1 (2026-09-22) is identical in
+                  // every way except which component renders that browser —
+                  // TableBrowserModal (pop-up) for Option 2, TableColumnSidePanel
+                  // (inline, no leaving context) for Option 2.1 — see the
+                  // render site further down. Option 1 above is untouched.
+                  <div className={`dock-${paneBalance} dock-tables`} data-open={browserDockOpen === 'tables'}>
+                    <DockRow
+                      balance={paneBalance}
+                      fill
+                      open={browserDockOpen === 'tables'}
+                      onToggle={() => toggleDock('tables')}
+                      icon={<span style={{ display: 'flex' }}><Icon name="table" size="xs" color="var(--rd-sys-color-content-secondary)" /></span>}
+                      label="Tables"
+                      count={addedTableNames.size}
+                      onAdd={addedTableNames.size > 0 ? openOption2Modal : undefined}
+                      addLabel="Add tables"
+                    >
+                      {addedTableNames.size === 0 ? (
+                        // A dedicated, richer empty state for this one spot
+                        // (2026-09-22, Komal: "make this empty state
+                        // significantly more delightful... without
+                        // onboarding, it tells users... they need to start
+                        // by adding tables") rather than stretching the
+                        // shared DockEmpty (Formulas/Filters/Parameters keep
+                        // their own compact version, untouched). Copy is
+                        // unchanged from what she already approved. The
+                        // illustration took several rounds of me guessing
+                        // before she sent her own mock to build from; see the
+                        // SVG below. Primary — not secondary — button, so the
+                        // single next action is unmistakable at a glance,
+                        // with the AI route offered under it as the "or".
+                        // flex:1 + centred both ways — DockRow's `fill` body is
+                        // a column flex container, so the whole state sits in
+                        // the middle of the Tables section rather than pinned
+                        // to its top under a tall stretch of white (2026-09-22,
+                        // Komal: "place the whole empty state in the centre of
+                        // the section").
+                        // Rhythm set per gap rather than one uniform 12px
+                        // (2026-09-22, Komal: "make the illustration slightly
+                        // smaller and balance the illustration + text + CTA +
+                        // link visually"): 20px under the illustration, 4px
+                        // between title and description, 20px above the
+                        // button, 12px down to the "or" and its link. The two
+                        // 20px gaps sit either side of the copy so it reads as
+                        // the middle of three even bands, and the "or" stays
+                        // tucked under the button it qualifies.
+                        <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 0, padding: '24px', textAlign: 'center' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginBottom: 'var(--spacing-5)' }}>
+                            {/* Traced from Komal's own mock. Paint order is
+                                back-to-front: dashed canvas + its dot grid,
+                                the muted table already parked inside it, then
+                                the blue table card overlapping its left edge.
+                                Dots are only placed where neither card covers
+                                them, so the grid reads as canvas behind the
+                                scene rather than texture on top of it.
+
+                                Drawn at 208px — 58% larger than the first pass
+                                (2026-09-22, Komal: "the illustration is so
+                                small it's not adding any value"). Size is what
+                                the scene needed: at 132px the four column bars
+                                were 4px tall and the motion that carries the
+                                whole idea was invisible. Every stroke is
+                                thinned from 1.5 to 1.1 user units and the dot
+                                grid is stepped from 20 to 16 so the extra size
+                                buys detail rather than weight — it stays as
+                                muted as she asked. */}
+                            <svg
+                              className={`empty-state-illo${option2IlloPaused ? ' empty-state-illo-paused' : ''}`}
+                              width="148"
+                              height="93"
+                              viewBox="0 0 140 88"
+                              fill="none"
+                              xmlns="http://www.w3.org/2000/svg"
+                            >
+                              {/* The canvas — dashed zone with its dot grid */}
+                              <rect x="42.5" y="12.5" width="96" height="74" rx="8" stroke="#C0C6CF" strokeWidth="1.1" strokeDasharray="4.5 3.5" />
+                              <g fill="#C0C6CF" fillOpacity="0.55">
+                                <circle cx="74" cy="28" r="0.9" />
+                                <circle cx="90" cy="28" r="0.9" />
+                                <circle cx="106" cy="28" r="0.9" />
+                                <circle cx="122" cy="28" r="0.9" />
+                                <circle cx="58" cy="60" r="0.9" />
+                                <circle cx="74" cy="60" r="0.9" />
+                                <circle cx="58" cy="76" r="0.9" />
+                                <circle cx="74" cy="76" r="0.9" />
+                                <circle cx="90" cy="76" r="0.9" />
+                                <circle cx="106" cy="76" r="0.9" />
+                                <circle cx="122" cy="76" r="0.9" />
+                              </g>
+
+                              {/* A second table, already on the canvas */}
+                              <rect x="80" y="42.5" width="51" height="32" rx="5" fill="#F6F8FA" stroke="#DBDFE7" strokeWidth="1.1" />
+                              <rect x="87.5" y="51.5" width="27.5" height="4" rx="2" fill="#C0C6CF" />
+                              <rect x="87.5" y="60" width="35" height="4" rx="2" fill="#EAEDF2" />
+
+                              {/* The table being added — a tinted (not solid)
+                                  blue header so the card leads the scene
+                                  without shouting, then the four column bars
+                                  that land one after another on loop.
+                                  76×48 → 67×42 (2026-09-22, Komal: "make the
+                                  size of the blue table slightly smaller"):
+                                  every inner element is scaled by the same
+                                  0.88/0.875, so the card's internal padding
+                                  and bar rhythm are unchanged — it is the one
+                                  object that shrank, not the composition. */}
+                              <g className="empty-state-illo-card">
+                                <rect x="4" y="4" width="67" height="42" rx="5" fill="#FFFFFF" stroke="#9CBDF7" strokeWidth="1.1" />
+                                <path d="M4 9A5 5 0 0 1 9 4H66A5 5 0 0 1 71 9V15.5H4Z" fill="#2770EF" fillOpacity="0.14" />
+                                <rect x="11" y="8.3" width="21" height="2.6" rx="1.3" fill="#2770EF" fillOpacity="0.5" />
+                                <rect className="empty-state-illo-col empty-state-illo-col-1" x="11" y="24" width="24.5" height="4.4" rx="2.2" fill="#EAEDF2" />
+                                <rect className="empty-state-illo-col empty-state-illo-col-2" x="42" y="24" width="21" height="4.4" rx="2.2" fill="#EAEDF2" />
+                                <rect className="empty-state-illo-col empty-state-illo-col-3" x="11" y="33" width="19.5" height="4.4" rx="2.2" fill="#EAEDF2" />
+                                <rect className="empty-state-illo-col empty-state-illo-col-4" x="42" y="33" width="17" height="4.4" rx="2.2" fill="#EAEDF2" />
+                              </g>
+                            </svg>
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-1)' }}>
+                            <Typography variant="content-label" as="div" noMargin>Start with your data</Typography>
+                            <Typography variant="footnote" as="div" color="gray-light" noMargin style={{ maxWidth: 230 }}>
+                              Browse tables and pick the columns you need.
+                            </Typography>
+                          </div>
+                          <Button variant="primary" icon="plus" onClick={openOption2Modal} style={{ marginTop: 'var(--spacing-5)' }}>Add tables</Button>
+                          {/* The AI route, ranked below the manual one
+                              (2026-09-22, Komal: "cta, THEN or, THEN this") —
+                              same suggestion-link markup the canvas empty
+                              state already uses, so it reads as one pattern
+                              across the screen rather than a second style. */}
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--spacing-1)', marginTop: 'var(--spacing-3)' }}>
+                            <Typography variant="footnote" as="div" color="gray-light" noMargin>or</Typography>
+                            <div className="suggestion-row">
+                              <a className="suggestion-link" href="#" onClick={e => e.preventDefault()}>
+                                <img src="/spotter-assets/ai icon.svg" width="14" height="14" alt="" />
+                                Get table suggestions
+                              </a>
+                              <img className="moving-arrow" src="/spotter-assets/Moving arrow.svg" width="14" height="12" alt="" />
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="dock-search-row">
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <SearchInput placeholder="Search tables" />
+                            </div>
+                            <Button variant="secondary" icon="filter" iconOnly title="Filter tables">Filter tables</Button>
+                            <Button variant="secondary" icon="sort" iconOnly title="Sort tables">Sort tables</Button>
+                          </div>
+                          <div className={tablePickerStyles.list}>
+                            {tableCanvasData.tables.map(t => {
+                              const added = columnTreeData.modelColumns.find(g => g.table === t.name)?.columns ?? [];
+                              return (
+                                <AddedTableRow
+                                  key={t.name}
+                                  name={t.name}
+                                  addedColumns={added}
+                                  isOpen={option2OpenTable === t.name}
+                                  onToggleOpen={() => setOption2OpenTable(o => o === t.name ? null : t.name)}
+                                  onEdit={() => openOption2ModalFor(t.name)}
+                                />
+                              );
+                            })}
+                          </div>
+                        </>
+                      )}
+                    </DockRow>
+                  </div>
+                ) : tabOption === 3 && option3EmbedMode === 'optimized' && dataSourceSelectorOption === 2 && tablesNavOption === 3 ? (
+                  // Tables-section Option 3 (2026-09-22, Komal) — "Available" /
+                  // "In this model" tabs; lands on Available by default. Reuses
+                  // Option 1's TablePickerV2 completely unmodified (its own
+                  // "+" adds the table and moves it to "In this model";
+                  // columns are added/removed there, in place), so Options 1
+                  // and 2 above are untouched by this branch.
+                  <div className={`dock-${paneBalance} dock-tables`} data-open={browserDockOpen === 'tables'}>
+                    <DockRow
+                      balance={paneBalance}
+                      fill
+                      open={browserDockOpen === 'tables'}
+                      onToggle={() => toggleDock('tables')}
+                      icon={<span style={{ display: 'flex' }}><Icon name="table" size="xs" color="var(--rd-sys-color-content-secondary)" /></span>}
+                      label="Tables"
+                      count={addedTableNames.size}
+                    >
+                      <div style={{ padding: '0 var(--spacing-4)', flexShrink: 0 }}>
+                        <Tabs
+                          tabs={[{ id: 'inModel', label: 'In this model' }, { id: 'available', label: 'Available' }]}
+                          activeTab={option3Tab}
+                          onTabChange={id => setOption3Tab(id as 'available' | 'inModel')}
+                        />
+                      </div>
+                      <div className="dock-search-row">
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <SearchInput placeholder="Search tables" />
+                        </div>
+                        <Button variant="secondary" icon="filter" iconOnly title="Filter tables">Filter tables</Button>
+                        <Button variant="secondary" icon="sort" iconOnly title="Sort tables">Sort tables</Button>
+                      </div>
+                      <TablePickerV2
+                        data={{
+                          tables: unifiedTreeData.tables.filter(t => option3Tab === 'inModel' ? addedTableNames.has(t.name) : !addedTableNames.has(t.name)),
+                          dataSourceTables: unifiedTreeData.dataSourceTables,
+                          modelColumns: unifiedTreeData.modelColumns,
+                        }}
+                        addedTableNames={addedTableNames}
+                        onToggleColumn={handleToggleColumn}
+                        onAddTable={handleAddTable}
+                        openTable={option3OpenTable}
+                        onOpenTableChange={setOption3OpenTable}
+                        readOnlyColumns={option3Tab === 'available'}
+                      />
+                    </DockRow>
+                  </div>
+                ) : tabOption === 3 && option3EmbedMode === 'optimized' && dataSourceSelectorOption === 2 && tablesNavOption === 4 ? (
+                  // Tables-section Option 4 (2026-09-22, Komal) — flat list,
+                  // no expand/collapse. Each row is just a name and a "+";
+                  // the "+" opens the side panel (rendered as a sibling of
+                  // #left-pane below, next to .main-content) rather than
+                  // expanding anything inline. Options 1-3 above untouched.
+                  <div className={`dock-${paneBalance} dock-tables`} data-open={browserDockOpen === 'tables'}>
+                    <DockRow
+                      balance={paneBalance}
+                      fill
+                      open={browserDockOpen === 'tables'}
+                      onToggle={() => toggleDock('tables')}
+                      icon={<span style={{ display: 'flex' }}><Icon name="table" size="xs" color="var(--rd-sys-color-content-secondary)" /></span>}
+                      label="Tables"
+                      count={addedTableNames.size}
+                    >
+                      <div className="dock-search-row">
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <SearchInput placeholder="Search tables" />
+                        </div>
+                        <Button variant="secondary" icon="filter" iconOnly title="Filter tables">Filter tables</Button>
+                        <Button variant="secondary" icon="sort" iconOnly title="Sort tables">Sort tables</Button>
+                      </div>
+                      <div className={tablePickerStyles.list}>
+                        {unifiedTreeData.tables.map(t => {
+                          const onCanvas = addedTableNames.has(t.name);
+                          return (
+                            <div key={t.name} className={`${tablePickerStyles.tableRow} option4-table-row`} style={{ cursor: 'default' }}>
+                              <button
+                                type="button"
+                                onClick={() => openOption4Panel(t.name)}
+                                className={tablePickerStyles.tableName}
+                                style={{ paddingLeft: 'var(--spacing-1)', border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left' }}
+                              >
+                                {t.name}
+                              </button>
+                              {!onCanvas && (
+                                <button
+                                  type="button"
+                                  className={`${tablePickerStyles.add} option4-add-btn`}
+                                  onClick={() => openOption4Panel(t.name)}
+                                  aria-label={`Add ${t.name} to the model`}
+                                >
+                                  <Icon name="plus" size="xs" />
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </DockRow>
+                  </div>
+                ) : tabOption === 3 && option3EmbedMode === 'optimized' && dataSourceSelectorOption === 2 ? (
                   <div className={`dock-${paneBalance} dock-tables`} data-open={browserDockOpen === 'tables'}>
                     {/* The count is tables in the model, matching what the
                         section counts below mean — not the 12 source tables the
@@ -963,7 +1557,7 @@ const SearchDataOnDataModelFinal: React.FC = () => {
                       balance={paneBalance}
                       fill
                       open={browserDockOpen === 'tables'}
-                      onToggle={() => setBrowserDockOpen(o => o === 'tables' ? null : 'tables')}
+                      onToggle={() => toggleDock('tables')}
                       icon={<span style={{ display: 'flex' }}><Icon name="table" size="xs" color="var(--rd-sys-color-content-secondary)" /></span>}
                       label="Tables"
                       count={addedTableNames.size}
@@ -1002,8 +1596,22 @@ const SearchDataOnDataModelFinal: React.FC = () => {
                   </div>
                 )}
                 {isOption3 ? (
-                  <div className={`dock-${paneBalance}`} style={{ flexShrink: 0 }}>
-                    <DockRow balance={paneBalance} icon={<span style={{ color: '#047857', display: 'flex' }}>{FORMULA_ICON}</span>} label="Formula" count={modelFormulas.length} open={browserDockOpen === 'formula'} onToggle={() => setBrowserDockOpen(o => o === 'formula' ? null : 'formula')} onAdd={() => { setEditingFormula(null); setFormulaEditorOpen(true); }} addLabel="Add formula">
+                  // Whichever section is open owns the pane's leftover height,
+                  // so the collapsed ones above it stay at the top and the
+                  // ones below it pin to the bottom (2026-09-22, Komal: "when
+                  // tables are expanded, the section should take full height
+                  // that's remaining after pinning the filters, parameters and
+                  // settings at the bottom. Similarly for filters and
+                  // parameters"). Tables' own wrapper already grows on its
+                  // own; this one grows whenever the open section is one of
+                  // the four it holds, and stays shrink-to-fit otherwise.
+                  <div
+                    className={`dock-${paneBalance}`}
+                    style={browserDockOpen && browserDockOpen !== 'tables'
+                      ? { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }
+                      : { flexShrink: 0 }}
+                  >
+                    <DockRow fill balance={paneBalance} icon={<span style={{ color: '#047857', display: 'flex' }}>{FORMULA_ICON}</span>} label="Formula" count={modelFormulas.length} open={browserDockOpen === 'formula'} onToggle={() => toggleDock('formula')} onAdd={() => { setEditingFormula(null); setFormulaEditorOpen(true); }} addLabel="Add formula">
                       {modelFormulas.length === 0 ? (
                         <DockEmpty icon={<span style={{ color: '#047857', display: 'flex' }}>{FORMULA_ICON}</span>} title="No formulas yet" subtitle="Add a calculated field from a column's ▾ menu — it'll show up here." />
                       ) : (
@@ -1029,7 +1637,7 @@ const SearchDataOnDataModelFinal: React.FC = () => {
                       )}
 
                     </DockRow>
-                    <DockRow balance={paneBalance} icon={<span style={{ color: '#92640A', display: 'flex' }}>{FILTER_ICON}</span>} label="Filters" count={modelFilters.length} open={browserDockOpen === 'filters'} onToggle={() => setBrowserDockOpen(o => o === 'filters' ? null : 'filters')} onAdd={() => {}} addLabel="Add filter">
+                    <DockRow fill balance={paneBalance} icon={<span style={{ color: '#92640A', display: 'flex' }}>{FILTER_ICON}</span>} label="Filters" count={modelFilters.length} open={browserDockOpen === 'filters'} onToggle={() => toggleDock('filters')} onAdd={() => {}} addLabel="Add filter">
                       {modelFilters.length === 0 ? (
                         <DockEmpty icon={<span style={{ color: '#92640A', display: 'flex' }}>{FILTER_ICON}</span>} title="No filters yet" subtitle='Filter a column, then check "Add this filter to this model" to see it here.' />
                       ) : (
@@ -1058,7 +1666,7 @@ const SearchDataOnDataModelFinal: React.FC = () => {
                       )}
 
                     </DockRow>
-                    <DockRow balance={paneBalance} icon={<span style={{ color: '#6B4FBF', display: 'flex', fontWeight: 700, fontSize: 12, width: 13, justifyContent: 'center' }}>@</span>} label="Parameters" count={modelParameters.length} open={browserDockOpen === 'parameters'} onToggle={() => setBrowserDockOpen(o => o === 'parameters' ? null : 'parameters')} onAdd={() => {}} addLabel="Add parameter">
+                    <DockRow fill balance={paneBalance} icon={<span style={{ color: '#6B4FBF', display: 'flex', fontWeight: 700, fontSize: 12, width: 13, justifyContent: 'center' }}>@</span>} label="Parameters" count={modelParameters.length} open={browserDockOpen === 'parameters'} onToggle={() => toggleDock('parameters')} onAdd={() => {}} addLabel="Add parameter">
                       {modelParameters.length === 0 ? (
                         <DockEmpty icon={<span style={{ color: '#6B4FBF', display: 'flex', fontWeight: 700, fontSize: 13 }}>@</span>} title="No parameters yet" subtitle="Add a named value to reuse across formulas and filters." />
                       ) : (
@@ -1086,11 +1694,12 @@ const SearchDataOnDataModelFinal: React.FC = () => {
                     </DockRow>
                     {tabOption === 3 && option3EmbedMode === 'optimized' && (
                       <DockRow
+                        fill
                         balance={paneBalance}
                         icon={<span style={{ display: 'flex' }}><Icon name="settings" size="xs" color="var(--rd-sys-color-content-secondary)" /></span>}
                         label="Settings"
                         open={browserDockOpen === 'settings'}
-                        onToggle={() => setBrowserDockOpen(o => o === 'settings' ? null : 'settings')}
+                        onToggle={() => toggleDock('settings')}
                       >
                         {settingsDockPanel}
                       </DockRow>
@@ -1106,6 +1715,63 @@ const SearchDataOnDataModelFinal: React.FC = () => {
 
             </div>{/* /left-pane */}
 
+            {/* OPTION 2.1 SIDE PANEL — same picker as Option 2's pop-up
+                (identical state/handlers), just an inline overlay here
+                instead of a Modal, so browsing tables/columns never covers
+                the left nav (2026-09-22, Komal: "prevent the user from
+                leaving context"). It overlays the canvas/preview panel
+                rather than shrinking them ("should be an overlay... instead
+                of shrinking these") — leftOffset positions it right where
+                #left-pane ends. */}
+            {tablesNavOption === 2.1 && (
+              <TableColumnSidePanel
+                open={option2ModalOpen}
+                onClose={() => setOption2ModalOpen(false)}
+                catalog={unifiedTreeData}
+                draft={option2Draft}
+                onToggleColumn={handleOption2DraftToggle}
+                onConfirm={handleOption2Confirm}
+                initialFocusTable={option2FocusTable}
+                leftOffset={leftPaneCollapsed ? 0 : leftPaneWidth}
+              />
+            )}
+
+            {/* OPTION 4 COLUMN PANEL — opens to the right of the left pane
+                (a flex sibling in .content-row, so it pushes .main-content
+                over rather than covering it) when a table's "+" is clicked.
+                Draft-only: nothing reaches the canvas until "Add to model". */}
+            {tablesNavOption === 4 && option4PanelTable && (
+              <div style={{ width: 280, flexShrink: 0, display: 'flex', flexDirection: 'column', background: 'var(--rd-sys-color-background-base)', borderRight: '1px solid var(--rd-sys-color-border-divider)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 'var(--spacing-3) var(--spacing-4)', borderBottom: '1px solid var(--rd-sys-color-border-divider)', flexShrink: 0 }}>
+                  <Typography variant="content-label" as="span" noMargin>{option4PanelTable}</Typography>
+                  <button
+                    type="button"
+                    onClick={closeOption4Panel}
+                    aria-label="Close"
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 24, height: 24, border: 'none', background: 'transparent', borderRadius: 'var(--radius-sm)', cursor: 'pointer', color: 'var(--rd-sys-color-content-secondary)' }}
+                  >
+                    <Icon name="cross" size="xs" />
+                  </button>
+                </div>
+                <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: 'var(--spacing-2) var(--spacing-4)' }}>
+                  {(columnTreeData.dataSourceTables.find(d => d.name === option4PanelTable)?.columns ?? []).map(c => (
+                    <label key={c} style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-2)', padding: '6px 0', cursor: 'pointer' }}>
+                      <Checkbox
+                        checked={option4Draft.includes(c)}
+                        onChange={checked => setOption4Draft(prev => checked ? [...prev, c] : prev.filter(x => x !== c))}
+                        showLabel={false}
+                      />
+                      <ColumnChip label={c} />
+                    </label>
+                  ))}
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--spacing-2)', padding: 'var(--spacing-3) var(--spacing-4)', borderTop: '1px solid var(--rd-sys-color-border-divider)', flexShrink: 0 }}>
+                  <Button variant="secondary" onClick={closeOption4Panel}>Cancel</Button>
+                  <Button variant="primary" onClick={confirmOption4} disabled={option4Draft.length === 0}>Add to model</Button>
+                </div>
+              </div>
+            )}
+
             {/* MAIN CONTENT */}
             <div className="main-content">
 
@@ -1115,7 +1781,7 @@ const SearchDataOnDataModelFinal: React.FC = () => {
                     empty state renders inside .model-canvas instead, so the
                     preview panel stays docked at the bottom either way. */}
                 {tableCanvasData.tables.length === 0 && !isOption3 ? (
-                  tablesEmptyState
+                  canvasEmptyState
                 ) : tabOption === 2 || isOption3 ? (
                   <div className="tables-canvas-wrap">
                     {/* Option 3 only (both "as is" and "optimized"): dotted-grid
@@ -1135,14 +1801,14 @@ const SearchDataOnDataModelFinal: React.FC = () => {
                       if (e.target !== e.currentTarget) return;
                       setPreviewTable('');
                       setPreviewJoin(null);
-                      setPreviewScope('model');
+                      setPreviewScope('none');
                     } : undefined}
                     >
                       {/* Empty canvas: same empty state as before, centred in
                           the canvas area the way .tab-content used to centre it. */}
                       {tableCanvasData.tables.length === 0 ? (
                         <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          {tablesEmptyState}
+                          {canvasEmptyState}
                         </div>
                       ) : (
                       <TableCanvas
@@ -1212,11 +1878,13 @@ const SearchDataOnDataModelFinal: React.FC = () => {
                         full={previewFull} setFull={setPreviewFull}
                         height={previewHeight} setHeight={setPreviewHeight}
                         panelTab={panelTab} setPanelTab={setPanelTab}
-                        scope={previewScope} setScope={setPreviewScope}
+                        scope={dataModelLayout === 'split' ? previewScope : previewScope === 'none' ? 'model' : previewScope}
+                        setScope={setPreviewScope}
                         selectedTable={previewTable} setSelectedTable={setPreviewTable}
                         join={previewJoin} setJoin={setPreviewJoin}
                         joins={tableCanvasData.joins}
                         embedMode={option3EmbedMode}
+                        hideQueryTab={dataModelLayout === 'split'}
                       />
                     ) : (
                       <PreviewPanel
@@ -1227,7 +1895,7 @@ const SearchDataOnDataModelFinal: React.FC = () => {
                         full={previewFull} setFull={setPreviewFull}
                         height={previewHeight} setHeight={setPreviewHeight}
                         panelTab={panelTab} setPanelTab={setPanelTab}
-                        scope={previewScope === 'join' ? 'table' : previewScope} setScope={setPreviewScope}
+                        scope={previewScope === 'join' ? 'table' : previewScope === 'none' ? 'model' : previewScope} setScope={setPreviewScope}
                         selectedTable={previewTable} setSelectedTable={setPreviewTable}
                       />
                     )}
@@ -1342,6 +2010,16 @@ const SearchDataOnDataModelFinal: React.FC = () => {
                 <SearchDataExplorations showSpotter={false} />
               </div>
 
+              {/* Query tab ("Split" layout only) — QueryAsIs, brought over
+                  byte-for-byte from the worksheet 2 source (see
+                  components/QueryAsIs.tsx), rendered content-only. Reachable
+                  only when the Combined/Split switcher above adds this pill
+                  to the tab list — unreachable, so inert, whenever
+                  dataModelLayout is 'combined'. */}
+              <div className="tab-content" id="content-query-asis" style={{ display: 'none' }}>
+                <QueryAsIs />
+              </div>
+
             </div>{/* /main-content */}
             {/* AGENT PANEL — hidden entirely on the Query tab, which needs the
                 width for its own full search/sheet experience. The collapse
@@ -1355,7 +2033,7 @@ const SearchDataOnDataModelFinal: React.FC = () => {
                 the sub-header full width. position/z-index keep it above
                 .content-row's absolutely-positioned model-loading overlay,
                 which covered only the canvas before this move. */}
-            {spotterModelEnabled && activeTab !== 'query' && (
+            {spotterModelEnabled && activeTab !== 'query' && activeTab !== 'query-asis' && (
               <div
                 style={{
                   width: agentPanelCollapsed ? 0 : undefined,
@@ -1374,9 +2052,17 @@ const SearchDataOnDataModelFinal: React.FC = () => {
                   // by its own overflow, so it paints correctly.
                   boxShadow: 'var(--shadow-surface)',
                   transition: 'width var(--duration-slow) var(--easing-standard)',
+                  // This wrapper was a plain block, so .agent-panel inside it
+                  // sized to its content — 460px in a 940px column — and its
+                  // body's own `justify-content: center` had nothing to centre
+                  // against, leaving the welcome content stranded at the top
+                  // (2026-09-22, Komal: "centre the main content in the
+                  // panel"). As a flex row the panel stretches to full height
+                  // and that existing rule does the rest.
+                  display: 'flex',
                 }}
               >
-                <AgentPanel welcomeVariant={welcomeVariant} onClose={() => setAgentPanelCollapsed(true)} />
+                <AgentPanel welcomeVariant={welcomeVariant} hideContextChip onClose={() => setAgentPanelCollapsed(true)} />
               </div>
             )}
 
@@ -1456,6 +2142,22 @@ const SearchDataOnDataModelFinal: React.FC = () => {
             (window as any)._addJoinManually?.(join);
             setJoinDraft(null);
           }}
+        />
+      )}
+
+      {/* TABLE BROWSER MODAL — Tables-section Option 2's only entry point.
+          Option 2.1 uses the same state but a different component (the
+          inline side panel, rendered as a .content-row sibling near
+          #left-pane — see TableColumnSidePanel below). */}
+      {tablesNavOption === 2 && (
+        <TableBrowserModal
+          isOpen={option2ModalOpen}
+          onClose={() => setOption2ModalOpen(false)}
+          catalog={unifiedTreeData}
+          draft={option2Draft}
+          onToggleColumn={handleOption2DraftToggle}
+          onConfirm={handleOption2Confirm}
+          initialFocusTable={option2FocusTable}
         />
       )}
     </div>

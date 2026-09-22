@@ -2303,13 +2303,26 @@
    (Previously 52px on the left, sized to align under the section HEADER's own
    chevron+icon instead — a different, uninvolved reference point that just
    happened to disagree with the search box directly above these rows.) */
+/* Metrics come from the Tables list, not from a second set invented here
+   (2026-09-22, Komal: "use the same styling for lists... make it consistent
+   across"): TablePickerV2.module.css gives .list `padding: var(--spacing-2)
+   var(--spacing-4)` and .tableRow `padding: var(--spacing-1) 0` with
+   `margin-top: var(--spacing-3)` on every row after the first. Split the same
+   way here — the horizontal inset and vertical padding on the list item, the
+   row-to-row rhythm as a margin — so a formula, filter or parameter row sits
+   on exactly the same grid as a table row. */
 .dock-list {
+  padding-top: var(--spacing-2, 8px);
   padding-bottom: var(--spacing-2, 8px);
 }
 
 .dock-list > [role="listitem"] {
   border-bottom: none;
-  padding: 5px var(--spacing-4);
+  padding: var(--spacing-1) var(--spacing-4);
+}
+
+.dock-list > [role="listitem"]:not(:first-child) {
+  margin-top: var(--spacing-3);
 }
 
 
@@ -2415,6 +2428,12 @@
 }
 .dock-row[data-fill="true"] > .dock-row-header {
   flex-shrink: 0;
+}
+/* Only Tables drops its top border — it leads the pane, and the wrapper above
+   it already draws that line. Every other section keeps the hairline that
+   separates it from the one before, now that they all carry data-fill so any
+   of them can take the pane's remaining height when expanded. */
+.dock-tables .dock-row[data-fill="true"] > .dock-row-header {
   border-top: none;
 }
 
@@ -2427,6 +2446,101 @@
   gap: var(--spacing-2);
   padding: var(--spacing-2) var(--spacing-4);
   flex-shrink: 0;
+}
+
+/* Tables-section Option 4's flat list (2026-09-22, Komal: "the plus icon
+   should appear on hover only") — hidden until the row is hovered/focused,
+   rather than always visible like Options 1-3's own "+". */
+.option4-add-btn {
+  opacity: 0;
+  transition: opacity var(--duration-faster, 120ms) var(--easing-standard);
+}
+.option4-table-row:hover .option4-add-btn,
+.option4-table-row:focus-within .option4-add-btn {
+  opacity: 1;
+}
+
+/* Tables-section Option 2's empty-state illustration — built directly from
+   Komal's own mock (2026-09-22: "build the illustration from this image and
+   add motion"), after four passes of me guessing at it. The scene is hers:
+   a filled blue table card sitting over a dashed canvas with a dotted grid,
+   a second muted table already parked inside it.
+
+   The motion tells the whole task in one loop (2026-09-22, Komal: "the
+   animation is also useless"): the four column bars land in the card one
+   after another — that's "pick the columns you need" — and only once they
+   are all in does the card itself glide across into the dashed canvas.
+   Columns first, then the table lands. The earlier version just blinked
+   the same bars on and off, which showed nothing.
+
+   The stagger is baked into each bar's own keyframes rather than done with
+   animation-delay, because a delayed infinite animation runs permanently
+   out of phase with the card's loop — the last bar would reappear while
+   the card was still fading out. */
+.empty-state-illo-card {
+  animation: empty-state-card-land 4.5s cubic-bezier(.4,0,.2,1) infinite;
+}
+.empty-state-illo-col { opacity: 0; }
+.empty-state-illo-col-1 { animation: empty-state-col-1 4.5s cubic-bezier(.4,0,.2,1) infinite; }
+.empty-state-illo-col-2 { animation: empty-state-col-2 4.5s cubic-bezier(.4,0,.2,1) infinite; }
+.empty-state-illo-col-3 { animation: empty-state-col-3 4.5s cubic-bezier(.4,0,.2,1) infinite; }
+.empty-state-illo-col-4 { animation: empty-state-col-4 4.5s cubic-bezier(.4,0,.2,1) infinite; }
+
+@keyframes empty-state-card-land {
+  0%        { transform: translate(0, 0); opacity: 0; }
+  5%, 52%   { transform: translate(0, 0); opacity: 1; }
+  64%, 88%  { transform: translate(6px, 5px); opacity: 1; }
+  97%, 100% { transform: translate(6px, 5px); opacity: 0; }
+}
+@keyframes empty-state-col-1 {
+  0%, 8% { opacity: 0; transform: translateX(-4px); }
+  16%, 100% { opacity: 1; transform: translateX(0); }
+}
+@keyframes empty-state-col-2 {
+  0%, 16% { opacity: 0; transform: translateX(-4px); }
+  24%, 100% { opacity: 1; transform: translateX(0); }
+}
+@keyframes empty-state-col-3 {
+  0%, 24% { opacity: 0; transform: translateX(-4px); }
+  32%, 100% { opacity: 1; transform: translateX(0); }
+}
+@keyframes empty-state-col-4 {
+  0%, 32% { opacity: 0; transform: translateX(-4px); }
+  40%, 100% { opacity: 1; transform: translateX(0); }
+}
+/* The loop is an attention-getter, so it stops for good the first time the
+   picker is opened (2026-09-22, Komal: "the animation... should stop once
+   the user clicks on 'Add tables'. Post that, it becomes distraction") — and
+   for anyone who has asked the OS for less motion. The card rests at its
+   start position with all four columns filled in. */
+@media (prefers-reduced-motion: reduce) {
+  .empty-state-illo-card,
+  .empty-state-illo-col-1,
+  .empty-state-illo-col-2,
+  .empty-state-illo-col-3,
+  .empty-state-illo-col-4 { animation: none; }
+  .empty-state-illo-col { opacity: 1; }
+}
+.empty-state-illo-paused .empty-state-illo-card,
+.empty-state-illo-paused .empty-state-illo-col-1,
+.empty-state-illo-paused .empty-state-illo-col-2,
+.empty-state-illo-paused .empty-state-illo-col-3,
+.empty-state-illo-paused .empty-state-illo-col-4 { animation: none; }
+.empty-state-illo-paused .empty-state-illo-col { opacity: 1; }
+
+/* Tables-section Option 2's populated nav list (2026-09-22, Komal: "world
+   class UX... getting in and out of edit mode") — same hover-reveal
+   convention as Option 4's "+", applied to a per-row "edit" trigger that
+   jumps straight into the pop-up table browser focused on that table,
+   instead of always reopening it on whichever table the catalog lists
+   first. */
+.option2-edit-btn {
+  opacity: 0;
+  transition: opacity var(--duration-faster, 120ms) var(--easing-standard);
+}
+.option2-table-row:hover .option2-edit-btn,
+.option2-table-row:focus-within .option2-edit-btn {
+  opacity: 1;
 }
 
 /* ── Model info popover ─────────────────────────────────────────── */

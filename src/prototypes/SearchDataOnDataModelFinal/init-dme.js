@@ -2,7 +2,7 @@
 export function initDME() {
   const welcomeVariant = window.__DME_CONFIG__?.welcomeVariant ?? 'blank';
 
-  const TAB_ORDER = ['tables','columns','formulas','filters','parameters','query','settings'];
+  const TAB_ORDER = ['tables','columns','formulas','filters','parameters','query','query-asis','settings'];
   let activeTab = 'tables';
 
   const _listenerAbort = new AbortController();
@@ -78,12 +78,36 @@ export function initDME() {
   }
 
   // ── Datasource schema ─────────────────────────────
+  // fact_customer / dim_product / fact_new_retail_sales carry 27-29 columns
+  // apiece (2026-09-22, Komal: "in some of the tables in split, add over 25
+  // columns to select from") — everything past the original list is new, so
+  // every existing hardcoded reference to a column by name (DEMO_* below,
+  // the model-column selections) still resolves. This is the one shared
+  // schema both layouts and every Tables-section option read from, so the
+  // extra columns show up in Combined too, not Split alone — there wasn't a
+  // way to give Split its own column count without the two disagreeing on
+  // what these tables contain.
   const DATASOURCE_TABLES = [
-    { name: 'fact_customer', columns: ['customer_id', 'first_name', 'last_name', 'email', 'phone', 'region', 'segment', 'acquisition_date', 'lifetime_value'] },
-    { name: 'fact_new_retail_sales', columns: ['sale_id', 'customer_id', 'product_id', 'store_id', 'sale_date', 'quantity', 'unit_price', 'discount', 'net_amount'] },
+    { name: 'fact_customer', columns: [
+      'customer_id', 'first_name', 'last_name', 'email', 'phone', 'region', 'segment', 'acquisition_date', 'lifetime_value',
+      'date_of_birth', 'gender', 'marital_status', 'occupation', 'income_bracket', 'education_level', 'household_size',
+      'loyalty_tier', 'loyalty_points', 'preferred_channel', 'preferred_language', 'opt_in_email', 'opt_in_sms',
+      'referral_source', 'credit_score', 'city', 'state', 'postal_code', 'country', 'account_status',
+    ] },
+    { name: 'fact_new_retail_sales', columns: [
+      'sale_id', 'customer_id', 'product_id', 'store_id', 'sale_date', 'quantity', 'unit_price', 'discount', 'net_amount',
+      'tax_amount', 'shipping_cost', 'payment_method', 'promo_code', 'channel', 'employee_id', 'return_flag',
+      'return_reason', 'gross_amount', 'cost_of_goods', 'margin_amount', 'order_id', 'line_item_number', 'currency',
+      'exchange_rate', 'fulfillment_status', 'delivery_date', 'customer_rating',
+    ] },
     { name: 'fact_sales', columns: ['sale_id', 'customer_id', 'product_id', 'sale_date', 'amount', 'quantity_sold', 'salesperson_id', 'channel'] },
     { name: 'dim_store', columns: ['store_id', 'store_name', 'city', 'state', 'region_id', 'open_date', 'sq_footage', 'manager_id'] },
-    { name: 'dim_product', columns: ['product_id', 'product_name', 'category', 'sub_category', 'brand', 'unit_price', 'cost', 'sku'] },
+    { name: 'dim_product', columns: [
+      'product_id', 'product_name', 'category', 'sub_category', 'brand', 'unit_price', 'cost', 'sku',
+      'weight_kg', 'length_cm', 'width_cm', 'height_cm', 'color', 'material', 'size', 'launch_date',
+      'discontinued_date', 'supplier_id', 'supplier_name', 'warranty_months', 'is_seasonal', 'is_returnable',
+      'min_order_qty', 'max_order_qty', 'margin_pct', 'tax_category', 'country_of_origin', 'barcode',
+    ] },
     { name: 'fact_region', columns: ['region_id', 'region_name', 'country', 'zone', 'timezone', 'manager_id'] },
     { name: 'fact_inventory', columns: ['inventory_id', 'product_id', 'store_id', 'quantity_on_hand', 'reorder_level', 'last_updated', 'unit_cost'] },
     { name: 'dim_shipping_method', columns: ['shipping_id', 'method_name', 'carrier', 'avg_days', 'cost_per_unit', 'tracking_available'] },
@@ -1418,7 +1442,10 @@ Only include the context field when there is genuinely meaningful content from t
     return html;
   }
 
-  if (spotterModelEnabled) document.getElementById('context-chip-btn').addEventListener('click', openContextModal, { signal });
+  // Optional chaining, not a bare lookup: the chip is gone from the panel
+  // header (2026-09-22, Komal: "remove context from spottermodel"), and this
+  // line threw on a null element, taking the whole prototype down with it.
+  if (spotterModelEnabled) document.getElementById('context-chip-btn')?.addEventListener('click', openContextModal, { signal });
 
   // ── Fallback keyword detection ────────────────────
   function getResponseType(prompt) {

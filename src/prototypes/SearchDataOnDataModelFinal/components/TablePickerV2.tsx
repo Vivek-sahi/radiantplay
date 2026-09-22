@@ -40,6 +40,14 @@ export interface TablePickerV2Props {
    */
   openTable: string | null;
   onOpenTableChange: (tableName: string | null) => void;
+  /**
+   * Additive, opt-in — Tables-section Option 3's "Available" tab only
+   * (2026-09-22). Komal: "the columns shouldn't have column level checkboxes
+   * and no selection will happen here" — expanding a table is preview-only,
+   * no Select all, no per-column checkbox, just the chip. Omit to keep
+   * Option 2's own interactive columns exactly as they were.
+   */
+  readOnlyColumns?: boolean;
 }
 
 // Same measure/attribute fills the preview panel's chips use.
@@ -48,7 +56,10 @@ const CHIP_BG = {
   attribute: rdComponentColors.light['chip-attribute-default'],
 } as const;
 
-const ColumnChip: React.FC<{ label: string }> = ({ label }) => (
+// Exported so Tables-section Option 2's populated nav list (2026-09-22,
+// Komal: "for the columns, use the same UI as option 1") can render the
+// identical column chip instead of reimplementing it.
+export const ColumnChip: React.FC<{ label: string }> = ({ label }) => (
   <span
     className={sheetStyles.dataToken}
     style={{ backgroundColor: CHIP_BG[isNumericColumn(label) ? 'measure' : 'attribute'], cursor: 'default' }}
@@ -80,6 +91,7 @@ export const TablePickerV2: React.FC<TablePickerV2Props> = ({
   onAddTable,
   openTable,
   onOpenTableChange,
+  readOnlyColumns = false,
 }) => {
   const { tables, dataSourceTables, modelColumns } = data;
 
@@ -170,22 +182,26 @@ export const TablePickerV2: React.FC<TablePickerV2Props> = ({
 
             {isOpen && (
               <div className={styles.colList}>
-                <div className={styles.selectAllRow}>
-                  <Checkbox
-                    checked={allChecked}
-                    indeterminate={someChecked}
-                    onChange={selectAll}
-                    showLabel={false}
-                  />
-                  <span className={styles.selectAllLabel}>Select all</span>
-                </div>
-                {cols.map(c => (
-                  <div key={c} className={styles.colItem}>
+                {!readOnlyColumns && (
+                  <div className={styles.selectAllRow}>
                     <Checkbox
-                      checked={added.includes(c)}
-                      onChange={checked => toggleColumn(c, checked)}
+                      checked={allChecked}
+                      indeterminate={someChecked}
+                      onChange={selectAll}
                       showLabel={false}
                     />
+                    <span className={styles.selectAllLabel}>Select all</span>
+                  </div>
+                )}
+                {cols.map(c => (
+                  <div key={c} className={styles.colItem}>
+                    {!readOnlyColumns && (
+                      <Checkbox
+                        checked={added.includes(c)}
+                        onChange={checked => toggleColumn(c, checked)}
+                        showLabel={false}
+                      />
+                    )}
                     <ColumnChip label={c} />
                   </div>
                 ))}
