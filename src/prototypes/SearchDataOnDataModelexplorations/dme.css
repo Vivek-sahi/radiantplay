@@ -1029,6 +1029,28 @@
   .panel-resize-handle.dragging {
     background: color-mix(in srgb, var(--rd-sys-color-content-brand) 25%, transparent);
   }
+  /* Option 3.2 only — SpotterModel docked on the LEFT of the body row.
+     .agent-panel's divider border flips sides, and its legacy resize handle
+     hides: the handle's drag math in init-dme.js (startX - clientX) assumes a
+     right-side panel, so it would resize backwards here. */
+  .agent-panel-left-wrap .agent-panel {
+    border-left: none;
+    border-right: 1px solid var(--rd-sys-color-border-divider);
+  }
+  .agent-panel-left-wrap .panel-resize-handle {
+    display: none;
+  }
+  /* 3.2: no Context chip in the panel header (removed per Vivek 2026-09-21).
+     Hidden, not unmounted — init-dme.js binds #context-chip-btn. */
+  .agent-panel-left-wrap .context-chip {
+    display: none;
+  }
+  /* 3.2: nudge the title so its left edge lines up with the sub-header's
+     hamburger glyph above it — both headers pad 16px (--spacing-4), and the
+     26px .grid-icon-btn centers a 16px icon, putting the glyph 5px further in. */
+  .agent-panel-left-wrap .agent-title {
+    margin-left: 5px;
+  }
   .agent-panel-header {
     height: 60px;
     padding: 0 var(--spacing-4);

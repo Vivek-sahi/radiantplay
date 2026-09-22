@@ -30,6 +30,17 @@ import { SearchDataExplorations } from './SearchDataExplorations';
 // browser panel) — fixed to the bottom of the Tables pane, table list scrolls
 // in the remaining space above.
 const FORMULA_ICON = <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M4 13V6a2 2 0 0 1 2-2h1" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/><path d="M2.5 8.5H7" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/><path d="M9 8l4 5M13 8l-4 5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>;
+
+// 3.2 only: the SpotterModel header's collapse control — same panel-with-left-
+// arrow glyph the sheet's column-panel toggle uses, replacing the default ✕
+// (which reads as "dismiss", not "collapse", for a docked panel).
+const COLLAPSE_LEFT_ICON = (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+    <path d="M13.3333 1.14279H2.66663C1.82506 1.14279 1.14282 1.82502 1.14282 2.6666V13.3333C1.14282 14.1748 1.82506 14.8571 2.66663 14.8571H13.3333C14.1749 14.8571 14.8571 14.1748 14.8571 13.3333V2.6666C14.8571 1.82502 14.1749 1.14279 13.3333 1.14279Z" stroke="#1D232F" strokeWidth="1.5"/>
+    <path d="M5.71436 1.14279V14.8571" stroke="#1D232F" strokeWidth="1.5"/>
+    <path d="M11.0477 10.2858L8.76196 8.00013L11.0477 5.71442" stroke="#1D232F" strokeWidth="1.5"/>
+  </svg>
+);
 const FILTER_ICON = <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M1.5 3.5h11L8 8.5v3.5L6 11V8.5L1.5 3.5z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/></svg>;
 
 // count/children are optional so a row can be a plain entry (e.g. Settings)
@@ -211,6 +222,9 @@ const SearchDataOnDataModelexplorations: React.FC = () => {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewFull, setPreviewFull] = useState(false);
   const [previewHeight, setPreviewHeight] = useState(280);
+  // Option 3.2 only: the vertical preview panel's width (the bottom-dock
+  // branches keep using previewHeight).
+  const [previewWidth, setPreviewWidth] = useState(480);
   // Default 'preview' (Option 2). Option 3 defaults to 'query' instead —
   // see the effect below, scoped to tabOption === 3 only.
   const [panelTab, setPanelTab] = useState<'preview' | 'query'>('preview');
@@ -221,7 +235,14 @@ const SearchDataOnDataModelexplorations: React.FC = () => {
   const [previewJoin, setPreviewJoin] = useState<JoinInfo | null>(null);
   // Option 3 only: switches PreviewPanel3 between embedding SearchDataExplorations
   // completely as-is vs. optimized for the docked panel (see .option-switcher below).
-  const [option3EmbedMode, setOption3EmbedMode] = useState<'asis' | 'optimized'>('optimized');
+  // 'v32' is Option 3.2 (2026-09-21): Optimized inherited whole, with exactly two
+  // differences — SpotterModel becomes the LEFT panel, and the preview opens as a
+  // vertical panel on the RIGHT, overlaying the canvas instead of docking bottom.
+  const [option3EmbedMode, setOption3EmbedMode] = useState<'asis' | 'optimized' | 'v32'>('optimized');
+  // 3.2 inherits every Optimized behaviour (optimizedLike covers both); the few
+  // places that stay Optimized-only, or are 3.2-only, check the exact mode.
+  const optimizedLike = option3EmbedMode !== 'asis';
+  const isV32 = option3EmbedMode === 'v32';
   // Option 3 "optimized" only: two competing designs for the left panel's
   // Tables/Columns data-source selector. Option 1 = existing pattern (the
   // current SegmentedControl in the sub-header, untouched). Option 2 = new
@@ -252,15 +273,17 @@ const SearchDataOnDataModelexplorations: React.FC = () => {
     if (tabOption === 3) setPanelTab(option3EmbedMode === 'asis' ? 'query' : 'preview');
   }, [tabOption, option3EmbedMode]);
 
-  // Optimized only: expanding the preview panel auto-collapses the left
+  // Optimized: expanding the preview panel auto-collapses the left
   // tables/columns panel and the SpotterModel panel, so the expanded preview
-  // gets the full width.
+  // gets the full width. 3.2: its vertical panel overlays the canvas, so the
+  // left pane stays put — but SpotterModel still auto-collapses when the
+  // preview opens (Vivek, 2026-09-21), reopenable from the sub-header avatar.
   useEffect(() => {
-    if (previewOpen && tabOption === 3 && option3EmbedMode === 'optimized') {
-      setLeftPaneCollapsed(true);
+    if (previewOpen && tabOption === 3 && optimizedLike) {
+      if (option3EmbedMode === 'optimized') setLeftPaneCollapsed(true);
       setAgentPanelCollapsed(true);
     }
-  }, [previewOpen, tabOption, option3EmbedMode]);
+  }, [previewOpen, tabOption, option3EmbedMode, optimizedLike]);
 
   useEffect(() => {
     const prev = document.body.style.overflow;
@@ -310,22 +333,33 @@ const SearchDataOnDataModelexplorations: React.FC = () => {
   const optionSwitcherControls = (
     <>
       <div className="option-switcher">
-        {([1, 2, 3] as const).map(opt => (
-          <button
-            key={opt}
-            type="button"
-            className={`option-switcher-btn${tabOption === opt ? ' active' : ''}`}
-            onClick={() => {
-              setTabOption(opt);
-              if (opt !== 1 && activeTab === 'query') handleTabChange('tables');
-            }}
-            title={opt === 1 ? 'Option 1 — Query next to Parameters' : opt === 2 ? 'Option 2 — original tabs, no Query' : 'Option 3 — Option 2 + table select/Data-Semantic under both Preview and Query'}
-          >{opt}</button>
-        ))}
+        {([1, 2, 3, 3.2] as const).map(opt => {
+          // 3.2 sits at THIS level per Vivek (2026-09-21: "put 3.2 in review
+          // options 1, 2, 3, 3.2"). Internally it stays tabOption 3 with the
+          // 'v32' embed mode — Option 3 Optimized inherited whole, plus the
+          // two 3.2 layout changes.
+          const active = opt === 3.2 ? tabOption === 3 && isV32 : tabOption === opt && !(opt === 3 && isV32);
+          return (
+            <button
+              key={opt}
+              type="button"
+              className={`option-switcher-btn${active ? ' active' : ''}`}
+              style={opt === 3.2 ? { width: 'auto', padding: '0 10px' } : undefined}
+              onClick={() => {
+                setTabOption(opt === 3.2 ? 3 : opt);
+                if (opt === 3.2) setOption3EmbedMode('v32');
+                else if (isV32) setOption3EmbedMode('optimized');
+                if (opt !== 1 && activeTab === 'query') handleTabChange('tables');
+              }}
+              title={opt === 1 ? 'Option 1 — Query next to Parameters' : opt === 2 ? 'Option 2 — original tabs, no Query' : opt === 3 ? 'Option 3 — Option 2 + table select/Data-Semantic under both Preview and Query' : 'Option 3.2 — Option 3 Optimized + SpotterModel on the left + preview as a vertical right panel over the canvas'}
+            >{opt === 3.2 ? '3.2' : opt}</button>
+          );
+        })}
       </div>
-      {/* Option 3 only: as-is vs. optimized embedding of SearchDataExplorations
-          in the bottom panel — not part of Option 3's own design; remove once one is picked. */}
-      {tabOption === 3 && (
+      {/* Option 3 only — hidden on 3.2, which is Optimized by definition:
+          as-is vs. optimized embedding of SearchDataExplorations in the
+          bottom panel — not part of Option 3's own design; remove once one is picked. */}
+      {tabOption === 3 && !isV32 && (
         <div className="option-switcher">
           {(['asis', 'optimized'] as const).map(mode => (
             <button
@@ -430,6 +464,33 @@ const SearchDataOnDataModelexplorations: React.FC = () => {
     </div>
   );
 
+  // AGENT PANEL — hidden entirely on the Query tab, which needs the width for
+  // its own full search/sheet experience. The collapse toggle animates this
+  // wrapper's width to 0 (kept mounted, like #left-pane's own collapse), so it
+  // visually shrinks away in sync with the left pane and the Optimized preview
+  // panel instead of vanishing instantly. Rendered on the RIGHT of the body
+  // row in every mode but 3.2, which docks it on the LEFT of the content row —
+  // below the model's sub-header, before the workbench — the wrapper class
+  // flips .agent-panel's divider border and hides its legacy resize handle,
+  // whose drag math assumes a right-side panel (see dme.css).
+  const agentPanelEl = spotterModelEnabled && activeTab !== 'query' ? (
+    <div
+      className={isV32 ? 'agent-panel-left-wrap' : undefined}
+      style={{
+        width: agentPanelCollapsed ? 0 : undefined,
+        overflow: 'hidden',
+        flexShrink: 0,
+        transition: 'width var(--duration-slow) var(--easing-standard)',
+      }}
+    >
+      <AgentPanel
+        welcomeVariant={welcomeVariant}
+        onClose={() => setAgentPanelCollapsed(true)}
+        closeIcon={isV32 ? COLLAPSE_LEFT_ICON : undefined}
+      />
+    </div>
+  ) : null;
+
   return (
     <div className="sm-root">
 
@@ -471,14 +532,28 @@ const SearchDataOnDataModelexplorations: React.FC = () => {
 
           {/* SUB-HEADER */}
           <div
-            className={tabOption === 3 && option3EmbedMode === 'optimized' ? 'sub-header sub-header-dense' : 'sub-header'}
+            className={tabOption === 3 && optimizedLike ? 'sub-header sub-header-dense' : 'sub-header'}
             style={tabOption === 3 ? { position: 'relative' } : undefined}
           >
             <div
               className="sub-header-info"
-              style={tabOption === 3 && option3EmbedMode === 'optimized' ? { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 'var(--spacing-1)' } : undefined}
+              style={tabOption === 3 && optimizedLike ? { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 'var(--spacing-1)' } : undefined}
             >
-              {tabOption === 3 && option3EmbedMode === 'optimized' && (
+              {/* 3.2 only: the panel lives on the left, so its collapsed
+                  re-open control sits on the left too (the other modes keep
+                  it with the right-hand actions below). */}
+              {isV32 && spotterModelEnabled && agentPanelCollapsed && activeTab !== 'query' && (
+                <button
+                  type="button"
+                  className="agent-panel-collapsed-toggle"
+                  onClick={() => setAgentPanelCollapsed(false)}
+                  aria-label="Open SpotterModel panel"
+                  title="SpotterModel"
+                >
+                  <img src="/spotter-assets/SpotterModel avatar.svg" width="28" height="28" alt="" />
+                </button>
+              )}
+              {tabOption === 3 && optimizedLike && (
                 <button
                   type="button"
                   className="grid-icon-btn"
@@ -490,7 +565,7 @@ const SearchDataOnDataModelexplorations: React.FC = () => {
                 </button>
               )}
               <span className="model-name-placeholder">{modelName}</span>
-              {tabOption === 3 && option3EmbedMode === 'optimized' && (
+              {tabOption === 3 && optimizedLike && (
                 <Tooltip
                   placement="bottom"
                   content={
@@ -505,12 +580,12 @@ const SearchDataOnDataModelexplorations: React.FC = () => {
                   </span>
                 </Tooltip>
               )}
-              {!(tabOption === 3 && option3EmbedMode === 'optimized') && (
+              {!(tabOption === 3 && optimizedLike) && (
                 <span className="model-desc-placeholder">{modelDesc}</span>
               )}
             </div>
             {tabOption === 3 && (
-              tabOption === 3 && option3EmbedMode === 'optimized' ? (
+              tabOption === 3 && optimizedLike ? (
                 <SegmentedControl
                   options={TAB_OPTIONS_OPTION3_OPTIMIZED}
                   value={activeTab}
@@ -528,7 +603,7 @@ const SearchDataOnDataModelexplorations: React.FC = () => {
                 </div>
               )
             )}
-            {tabOption === 3 && option3EmbedMode === 'optimized' ? (
+            {tabOption === 3 && optimizedLike ? (
               /* Mirrors sub-header-info's flex:1 so the tab switch above lands
                  at the true center of the header, regardless of the name's or
                  actions' own width. */
@@ -536,8 +611,9 @@ const SearchDataOnDataModelexplorations: React.FC = () => {
                 <div className="sub-header-actions" id="actions-tables"></div>
                 {/* Rendered outside #actions-tables, which the legacy tab-switch
                     script hides on every tab but "tables" — this stays visible
-                    across Tables and Columns. */}
-                {spotterModelEnabled && agentPanelCollapsed && activeTab !== 'query' && (
+                    across Tables and Columns. 3.2 renders it on the left of the
+                    sub-header instead (see sub-header-info above). */}
+                {!isV32 && spotterModelEnabled && agentPanelCollapsed && activeTab !== 'query' && (
                   <button
                     type="button"
                     className="agent-panel-collapsed-toggle"
@@ -582,6 +658,11 @@ const SearchDataOnDataModelexplorations: React.FC = () => {
           <div className="content-row">
             <OverlayLoading variant="dots" isVisible={modelLoading.visible} label={modelLoading.label} />
 
+            {/* 3.2 only: SpotterModel docks on the left, BELOW the model's
+                sub-header — the header is the global frame of the model, the
+                agent works within it (2026-09-21 hierarchy call). */}
+            {isV32 && agentPanelEl}
+
             {/* LEFT PANE — Optimized only: collapsible + resizable in width.
                 Collapses to a slim icon rail (sibling, below) instead of
                 unmounting, so #pane-tables-section/#pane-columns-section stay
@@ -589,7 +670,7 @@ const SearchDataOnDataModelexplorations: React.FC = () => {
             <div
               className="left-pane"
               id="left-pane"
-              style={tabOption === 3 && option3EmbedMode === 'optimized' ? {
+              style={tabOption === 3 && optimizedLike ? {
                 width: leftPaneCollapsed ? 0 : leftPaneWidth,
                 minWidth: leftPaneCollapsed ? 0 : leftPaneWidth,
                 borderRightWidth: leftPaneCollapsed ? 0 : undefined,
@@ -597,7 +678,7 @@ const SearchDataOnDataModelexplorations: React.FC = () => {
                 transition: leftPaneResizing ? 'none' : undefined,
               } : undefined}
             >
-              {tabOption === 3 && option3EmbedMode === 'optimized' && !leftPaneCollapsed && (
+              {tabOption === 3 && optimizedLike && !leftPaneCollapsed && (
                 <div
                   className="left-pane-resize-handle"
                   onPointerDown={e => {
@@ -620,7 +701,7 @@ const SearchDataOnDataModelexplorations: React.FC = () => {
               <div id="pane-tables-section" className="pane-section">
                 <div className="left-pane-header">
                   {/* Optimized: moved into the info icon next to the model name, to save space. */}
-                  {!(tabOption === 3 && option3EmbedMode === 'optimized') && (
+                  {!(tabOption === 3 && optimizedLike) && (
                     <div className="connection-row">
                       <img src="/spotter-assets/Snowflake.svg" width="14" height="14" alt="connection" />
                       <span className="connection-name">Global sales connection</span>
@@ -628,7 +709,7 @@ const SearchDataOnDataModelexplorations: React.FC = () => {
                   )}
                   <div className="pane-title-row">
                     <span className="pane-title">Tables</span>
-                    {!(tabOption === 3 && option3EmbedMode === 'optimized') && (
+                    {!(tabOption === 3 && optimizedLike) && (
                       <div className="grid-icon-btn">
                         <img src="/spotter-assets/Knowledge card button.svg" width="24" height="24" alt="layout" />
                       </div>
@@ -654,7 +735,7 @@ const SearchDataOnDataModelexplorations: React.FC = () => {
                     </>
                   )}
                 </div>
-                {tabOption === 3 && option3EmbedMode === 'optimized' && dataSourceSelectorOption === 2 ? (
+                {tabOption === 3 && optimizedLike && dataSourceSelectorOption === 2 ? (
                   <ColumnTree data={unifiedTreeData} addedTableNames={addedTableNames} draggableTables checkboxColumns onToggleColumn={handleToggleColumn} />
                 ) : (
                   <div className="table-list">
@@ -672,7 +753,7 @@ const SearchDataOnDataModelexplorations: React.FC = () => {
                   <div style={{ flexShrink: 0 }}>
                     <DockRow icon={<span style={{ color: '#047857', display: 'flex' }}>{FORMULA_ICON}</span>} label="Formula" count={0} open={browserDockOpen === 'formula'} onToggle={() => setBrowserDockOpen(o => o === 'formula' ? null : 'formula')}>
                       <DockEmpty icon={<span style={{ color: '#047857', display: 'flex' }}>{FORMULA_ICON}</span>} title="No formulas yet" subtitle="Add a calculated field from a column's ▾ menu — it'll show up here." />
-                      <DockAddLink label="Add formula" center={tabOption === 3 && option3EmbedMode === 'optimized'} />
+                      <DockAddLink label="Add formula" center={tabOption === 3 && optimizedLike} />
                     </DockRow>
                     <DockRow icon={<span style={{ color: '#92640A', display: 'flex' }}>{FILTER_ICON}</span>} label="Filters" count={modelFilters.length} open={browserDockOpen === 'filters'} onToggle={() => setBrowserDockOpen(o => o === 'filters' ? null : 'filters')}>
                       {modelFilters.length === 0 ? (
@@ -692,13 +773,13 @@ const SearchDataOnDataModelexplorations: React.FC = () => {
                           </div>
                         ))
                       )}
-                      <DockAddLink label="Add filter" center={tabOption === 3 && option3EmbedMode === 'optimized'} />
+                      <DockAddLink label="Add filter" center={tabOption === 3 && optimizedLike} />
                     </DockRow>
                     <DockRow icon={<span style={{ color: '#6B4FBF', display: 'flex', fontWeight: 700, fontSize: 12, width: 13, justifyContent: 'center' }}>@</span>} label="Parameters" count={0} open={browserDockOpen === 'parameters'} onToggle={() => setBrowserDockOpen(o => o === 'parameters' ? null : 'parameters')}>
                       <DockEmpty icon={<span style={{ color: '#6B4FBF', display: 'flex', fontWeight: 700, fontSize: 13 }}>@</span>} title="No parameters yet" subtitle="Add a named value to reuse across formulas and filters." />
-                      <DockAddLink label="Add parameter" center={tabOption === 3 && option3EmbedMode === 'optimized'} />
+                      <DockAddLink label="Add parameter" center={tabOption === 3 && optimizedLike} />
                     </DockRow>
-                    {tabOption === 3 && option3EmbedMode === 'optimized' && (
+                    {tabOption === 3 && optimizedLike && (
                       <DockRow
                         icon={<span style={{ display: 'flex' }}><Icon name="settings" size="xs" color="var(--rd-sys-color-content-secondary)" /></span>}
                         label="Settings"
@@ -719,7 +800,7 @@ const SearchDataOnDataModelexplorations: React.FC = () => {
               <div id="pane-columns-section" className="pane-section" style={{ display: 'none' }}>
                 <div className="left-pane-header">
                   {/* Optimized: moved into the info icon next to the model name, to save space. */}
-                  {!(tabOption === 3 && option3EmbedMode === 'optimized') && (
+                  {!(tabOption === 3 && optimizedLike) && (
                     <div className="connection-row">
                       <img src="/spotter-assets/Snowflake.svg" width="14" height="14" alt="connection" />
                       <span className="connection-name">Global sales connection</span>
@@ -727,7 +808,7 @@ const SearchDataOnDataModelexplorations: React.FC = () => {
                   )}
                   <div className="pane-title-row">
                     <span className="pane-title">Columns</span>
-                    {!(tabOption === 3 && option3EmbedMode === 'optimized') && (
+                    {!(tabOption === 3 && optimizedLike) && (
                       <div className="grid-icon-btn">
                         <img src="/spotter-assets/Knowledge card button.svg" width="24" height="24" alt="layout" />
                       </div>
@@ -742,14 +823,14 @@ const SearchDataOnDataModelexplorations: React.FC = () => {
                   </div>
                 </div>
                 <ColumnTree
-                  data={tabOption === 3 && option3EmbedMode === 'optimized' && dataSourceSelectorOption === 2 ? unifiedTreeData : columnTreeData}
-                  {...(tabOption === 3 && option3EmbedMode === 'optimized' && dataSourceSelectorOption === 2 ? { addedTableNames, draggableTables: true, checkboxColumns: true, onToggleColumn: handleToggleColumn } : {})}
+                  data={tabOption === 3 && optimizedLike && dataSourceSelectorOption === 2 ? unifiedTreeData : columnTreeData}
+                  {...(tabOption === 3 && optimizedLike && dataSourceSelectorOption === 2 ? { addedTableNames, draggableTables: true, checkboxColumns: true, onToggleColumn: handleToggleColumn } : {})}
                 />
                 {isOption3 ? (
                   <div style={{ flexShrink: 0 }}>
                     <DockRow icon={<span style={{ color: '#047857', display: 'flex' }}>{FORMULA_ICON}</span>} label="Formula" count={0} open={browserDockOpen === 'formula'} onToggle={() => setBrowserDockOpen(o => o === 'formula' ? null : 'formula')}>
                       <DockEmpty icon={<span style={{ color: '#047857', display: 'flex' }}>{FORMULA_ICON}</span>} title="No formulas yet" subtitle="Add a calculated field from a column's ▾ menu — it'll show up here." />
-                      <DockAddLink label="Add formula" center={tabOption === 3 && option3EmbedMode === 'optimized'} />
+                      <DockAddLink label="Add formula" center={tabOption === 3 && optimizedLike} />
                     </DockRow>
                     <DockRow icon={<span style={{ color: '#92640A', display: 'flex' }}>{FILTER_ICON}</span>} label="Filters" count={modelFilters.length} open={browserDockOpen === 'filters'} onToggle={() => setBrowserDockOpen(o => o === 'filters' ? null : 'filters')}>
                       {modelFilters.length === 0 ? (
@@ -769,13 +850,13 @@ const SearchDataOnDataModelexplorations: React.FC = () => {
                           </div>
                         ))
                       )}
-                      <DockAddLink label="Add filter" center={tabOption === 3 && option3EmbedMode === 'optimized'} />
+                      <DockAddLink label="Add filter" center={tabOption === 3 && optimizedLike} />
                     </DockRow>
                     <DockRow icon={<span style={{ color: '#6B4FBF', display: 'flex', fontWeight: 700, fontSize: 12, width: 13, justifyContent: 'center' }}>@</span>} label="Parameters" count={0} open={browserDockOpen === 'parameters'} onToggle={() => setBrowserDockOpen(o => o === 'parameters' ? null : 'parameters')}>
                       <DockEmpty icon={<span style={{ color: '#6B4FBF', display: 'flex', fontWeight: 700, fontSize: 13 }}>@</span>} title="No parameters yet" subtitle="Add a named value to reuse across formulas and filters." />
-                      <DockAddLink label="Add parameter" center={tabOption === 3 && option3EmbedMode === 'optimized'} />
+                      <DockAddLink label="Add parameter" center={tabOption === 3 && optimizedLike} />
                     </DockRow>
-                    {tabOption === 3 && option3EmbedMode === 'optimized' && (
+                    {tabOption === 3 && optimizedLike && (
                       <DockRow
                         icon={<span style={{ display: 'flex' }}><Icon name="settings" size="xs" color="var(--rd-sys-color-content-secondary)" /></span>}
                         label="Settings"
@@ -830,7 +911,7 @@ const SearchDataOnDataModelexplorations: React.FC = () => {
                         backgroundSize: '20px 20px',
                       } : {}),
                     }}
-                    onClick={tabOption === 3 && option3EmbedMode === 'optimized' ? e => {
+                    onClick={tabOption === 3 && optimizedLike ? e => {
                       // Only the canvas background itself, not a bubbled click
                       // from a table card or join line/badge.
                       if (e.target !== e.currentTarget) return;
@@ -851,7 +932,7 @@ const SearchDataOnDataModelexplorations: React.FC = () => {
                           highlightedTables: previewScope === 'join' && previewJoin ? [previewJoin.leftTable, previewJoin.rightTable] : undefined,
                         } : {})}
                       />
-                      {tabOption === 3 && option3EmbedMode === 'optimized' && (
+                      {tabOption === 3 && optimizedLike && (
                         <div style={{ position: 'absolute', top: 16, right: 16, zIndex: 20, display: 'flex', alignItems: 'center', gap: 'var(--spacing-2)' }}>
                           <Button variant="secondary" iconOnly icon="search" aria-label="Find">Find</Button>
                           <div style={{ position: 'relative' }}>
@@ -884,6 +965,23 @@ const SearchDataOnDataModelexplorations: React.FC = () => {
                           </div>
                         </div>
                       )}
+                      {/* 3.2 only, while the vertical preview overlays the
+                          canvas: a 1px spacer one panel-width past the
+                          rightmost card (cards are 200px wide — TableCanvas's
+                          CARD_W) extends the scrollable area, so any card the
+                          panel covers can always be scrolled clear of it. */}
+                      {isV32 && previewOpen && tableCanvasData.tables.length > 0 && (
+                        <div
+                          aria-hidden
+                          style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: Math.max(...tableCanvasData.tables.map(t => t.x)) + 200 + previewWidth + 24,
+                            width: 1,
+                            height: 1,
+                          }}
+                        />
+                      )}
                     </div>
                     {tabOption === 3 ? (
                       <PreviewPanel3
@@ -893,6 +991,7 @@ const SearchDataOnDataModelexplorations: React.FC = () => {
                         open={previewOpen} setOpen={setPreviewOpen}
                         full={previewFull} setFull={setPreviewFull}
                         height={previewHeight} setHeight={setPreviewHeight}
+                        width={previewWidth} setWidth={setPreviewWidth}
                         panelTab={panelTab} setPanelTab={setPanelTab}
                         scope={previewScope} setScope={setPreviewScope}
                         selectedTable={previewTable} setSelectedTable={setPreviewTable}
@@ -1028,24 +1127,9 @@ const SearchDataOnDataModelexplorations: React.FC = () => {
           </div>{/* /content-row */}
         </div>{/* /left-and-main */}
 
-        {/* AGENT PANEL — hidden entirely on the Query tab, which needs the
-            width for its own full search/sheet experience. The collapse
-            toggle instead animates this wrapper's width to 0 (kept mounted,
-            like #left-pane's own collapse), so it visually shrinks away in
-            sync with the left pane and the Optimized preview panel instead
-            of vanishing instantly. */}
-        {spotterModelEnabled && activeTab !== 'query' && (
-          <div
-            style={{
-              width: agentPanelCollapsed ? 0 : undefined,
-              overflow: 'hidden',
-              flexShrink: 0,
-              transition: 'width var(--duration-slow) var(--easing-standard)',
-            }}
-          >
-            <AgentPanel welcomeVariant={welcomeVariant} onClose={() => setAgentPanelCollapsed(true)} />
-          </div>
-        )}
+        {/* Every mode but 3.2: SpotterModel keeps its home on the right
+            (see agentPanelEl above). */}
+        {!isV32 && agentPanelEl}
 
       </div>{/* /body-row */}
 
@@ -1053,7 +1137,7 @@ const SearchDataOnDataModelexplorations: React.FC = () => {
           Discard/Save actions already live in the Optimized sub-header
           (Exit/Save changes), and the review-only option switcher moves to
           a popover off the sub-header's settings icon instead (see below). */}
-      {!(tabOption === 3 && option3EmbedMode === 'optimized') && (
+      {!(tabOption === 3 && optimizedLike) && (
         <div className="app-footer">
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-3)' }}>
             <Button variant="secondary" id="discard-btn">Discard changes and close</Button>

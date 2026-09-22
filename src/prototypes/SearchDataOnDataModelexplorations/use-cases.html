@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Search data on model — use-cases</title>
+<style>
+  :root {
+    --ink: #1d232f;
+    --muted: #6b7280;
+    --line: #e8eaef;
+    --accent: #2770ef;
+    --bg: #ffffff;
+    --subtle: #f6f8fa;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 15px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  .page { max-width: 760px; margin: 0 auto; padding: 56px 24px 96px; }
+  h1 { font-size: 26px; letter-spacing: -0.4px; margin: 0 0 4px; }
+  .meta { color: var(--muted); font-size: 13px; margin-bottom: 40px; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); margin: 48px 0 16px; }
+  .principle { border-left: 3px solid var(--accent); padding: 2px 0 2px 14px; margin: 0 0 14px; }
+  .principle b { display: block; }
+  .uc { border: 1px solid var(--line); border-radius: 10px; padding: 18px 20px 16px; margin-bottom: 14px; }
+  .uc-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 6px; }
+  .uc-num { color: var(--accent); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .uc-title { font-weight: 600; font-size: 16px; letter-spacing: -0.2px; }
+  .uc p { margin: 6px 0; }
+  .path { display: grid; grid-template-columns: 110px 1fr; gap: 4px 14px; margin-top: 10px; font-size: 14px; }
+  .path dt { color: var(--muted); }
+  .path dd { margin: 0; }
+  .hyp { background: var(--subtle); border-radius: 8px; padding: 8px 12px; font-size: 14px; margin-top: 10px; }
+  .hyp b { color: var(--accent); font-weight: 600; }
+  .ruling { font-size: 13px; color: var(--muted); margin-top: 10px; }
+  .open { border: 1px dashed #c9ced8; border-radius: 10px; padding: 16px 20px; margin-bottom: 14px; }
+  .open .uc-title { color: var(--muted); }
+  @media (max-width: 560px) { .path { grid-template-columns: 1fr; } .path dt { margin-top: 6px; } }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <h1>Search data on model — use-cases and workflows</h1>
+  <div class="meta">For review · 21 Sep 2026 · the working list for wrapping the exploration. Nothing here is final until Vivek calls it.</div>
+
+  <h2>Principles that run through every story</h2>
+  <div class="principle">
+    <b>SpotterModel is a copilot for the entire journey.</b>
+    Every use-case below has two first-class paths: the user does it by hand, or asks SpotterModel to do it. Neither is a fallback for the other.
+  </div>
+  <div class="principle">
+    <b>Users iterate by trying, not by planning.</b>
+    Finding the right table isn't a separate discovery step: the user adds a table, previews it, and swaps it for another if it's wrong. SpotterModel copilots the trying. The workflows below assume this loop everywhere.
+  </div>
+
+  <h2>The use-cases</h2>
+
+  <div class="uc">
+    <div class="uc-head"><span class="uc-num">1</span><span class="uc-title">Add tables and columns into a model</span></div>
+    <p>The user builds the model's foundation by bringing in tables — choosing which columns come along as they do.</p>
+    <div class="hyp"><b>Hypothesis:</b> users don't want empty tables, and practically never want all columns (loading everything is also computationally heavy). So adding is a two-step flow — pick the table, then pick its columns — with "select all" available for the user who does want everything.</div>
+    <dl class="path">
+      <dt>Manual</dt><dd>Browse or search the source tables, add one, select its columns in the same flow. Wrong table? Preview it, remove it, try another.</dd>
+      <dt>SpotterModel</dt><dd>Suggests the right tables and columns for what the user is trying to build; the user accepts, trims, or redirects.</dd>
+    </dl>
+  </div>
+
+  <div class="uc">
+    <div class="uc-head"><span class="uc-num">2</span><span class="uc-title">View the data in the added columns</span></div>
+    <p>First and foremost the user just wants to <em>see the rows</em>. They may or may not query. They may want a data snapshot — average, total, median — to get a feel for what's in a column.</p>
+    <dl class="path">
+      <dt>Manual</dt><dd>Open the preview; the spreadsheet shows the data across all added columns. Pull a snapshot of a column when curiosity strikes.</dd>
+      <dt>SpotterModel</dt><dd>Answers "what does this column look like" — summaries, distributions, oddities — without the user leaving the flow.</dd>
+    </dl>
+  </div>
+
+  <div class="uc">
+    <div class="uc-head"><span class="uc-num">3</span><span class="uc-title">Join tables</span></div>
+    <p>Two tables per join, done visually on the canvas; the join's configuration opens as a modal.</p>
+    <dl class="path">
+      <dt>Manual</dt><dd>Draw the join on the canvas, configure keys and type in the modal.</dd>
+      <dt>SpotterModel</dt><dd>Proposes joins — which tables, which keys, what type — for the user to accept or adjust.</dd>
+    </dl>
+  </div>
+
+  <div class="uc">
+    <div class="uc-head"><span class="uc-num">4</span><span class="uc-title">Preview the joined data — and trust it</span></div>
+    <p>After joining, the user wants to see the joined rows. Trusting the join is part of this same story: the preview is where a row explosion, null keys, or a wrong cardinality should become visible — seeing the rows and believing the join are one act.</p>
+    <dl class="path">
+      <dt>Manual</dt><dd>Click the join, preview its data, sanity-check what the join did to the rows.</dd>
+      <dt>SpotterModel</dt><dd>Flags what the user might miss — "this join doubled your row count", "12% of keys didn't match".</dd>
+    </dl>
+    <div class="ruling">Ruling: join-trust folds into previewing, not a separate story.</div>
+  </div>
+
+  <div class="uc">
+    <div class="uc-head"><span class="uc-num">5</span><span class="uc-title">Query the joined tables</span></div>
+    <p>Beyond seeing rows: asking question-shaped things of the model — aggregates, group-bys, the answers end users will eventually want.</p>
+    <dl class="path">
+      <dt>Manual</dt><dd>Build queries in the Query view against the joined model.</dd>
+      <dt>SpotterModel</dt><dd>Takes the question in natural language and runs it against the model.</dd>
+    </dl>
+  </div>
+
+  <div class="uc">
+    <div class="uc-head"><span class="uc-num">6</span><span class="uc-title">Add formulas</span></div>
+    <dl class="path">
+      <dt>Manual</dt><dd>Create a calculated field; it becomes part of the model like any column.</dd>
+      <dt>SpotterModel</dt><dd>Writes the formula from a description of what it should compute.</dd>
+    </dl>
+  </div>
+
+  <div class="uc">
+    <div class="uc-head"><span class="uc-num">7</span><span class="uc-title">Add filters</span></div>
+    <dl class="path">
+      <dt>Manual</dt><dd>Filter a column and save the filter to the model.</dd>
+      <dt>SpotterModel</dt><dd>Applies the filter the user describes — "only the last two years, only retail".</dd>
+    </dl>
+  </div>
+
+  <div class="uc">
+    <div class="uc-head"><span class="uc-num">8</span><span class="uc-title">Add parameters</span></div>
+    <dl class="path">
+      <dt>Manual</dt><dd>Create a named value to reuse across formulas and filters.</dd>
+      <dt>SpotterModel</dt><dd>Suggests where a parameter would serve better than a hard-coded value, and creates it.</dd>
+    </dl>
+  </div>
+
+  <div class="uc">
+    <div class="uc-head"><span class="uc-num">9</span><span class="uc-title">Review the semantics</span></div>
+    <p>The model answers only as well as its semantics are curated: friendly column names, descriptions, synonyms, measure vs attribute, formats, AI context. This is what makes the model AI-ready rather than merely joined.</p>
+    <dl class="path">
+      <dt>Manual</dt><dd>Work through the Semantics view — rename, describe, add synonyms and AI context column by column.</dd>
+      <dt>SpotterModel</dt><dd>Drafts descriptions and synonyms, flags columns with weak or missing semantics, and lets the user approve in bulk.</dd>
+    </dl>
+  </div>
+
+  <div class="uc">
+    <div class="uc-head"><span class="uc-num">10</span><span class="uc-title">Validate the model end-to-end</span></div>
+    <p>Before handing the model over, the user confirms it answers the questions their users will actually ask. Try representative questions, check the answers are right, trace a wrong number back to its cause, fix, retry. Query is the test bench; this is the exit criterion for the whole journey.</p>
+    <dl class="path">
+      <dt>Manual</dt><dd>Run the questions that matter in Query; verify against known numbers.</dd>
+      <dt>SpotterModel</dt><dd>Generates the representative questions, runs them, and reports which ones the model handles poorly and why.</dd>
+    </dl>
+  </div>
+
+  <div class="uc">
+    <div class="uc-head"><span class="uc-num">11</span><span class="uc-title">View model contents</span></div>
+    <p>See everything the model holds in one place — tables, columns, joins, formulas, filters, parameters — and understand its shape at a glance.</p>
+    <dl class="path">
+      <dt>Manual</dt><dd>Open the model's contents view and read it.</dd>
+      <dt>SpotterModel</dt><dd>Explains the model — "what's in here, what joins what, what would I use this for".</dd>
+    </dl>
+  </div>
+
+  <div class="uc">
+    <div class="uc-head"><span class="uc-num">12</span><span class="uc-title">Remove and modify what's there</span></div>
+    <p>Every add has a counterpart: remove or reconfigure tables, columns, joins, formulas, filters, parameters. The hard design lives in removal with dependents — deleting a column a formula uses, deleting a table that's joined. This is also how a user recovers from mistakes: undo is remove-and-modify, not a separate story.</p>
+    <dl class="path">
+      <dt>Manual</dt><dd>Remove or edit any item; the model explains the consequences on dependents rather than silently breaking them.</dd>
+      <dt>SpotterModel</dt><dd>Does the removal or change on request, and narrates what else it touches.</dd>
+    </dl>
+    <div class="ruling">Ruling: sits after "view model contents" in the journey. Undo folds in here.</div>
+  </div>
+
+  <div class="uc">
+    <div class="uc-head"><span class="uc-num">13</span><span class="uc-title">Save the model</span></div>
+    <p>The user keeps their work. What saving makes available, and to whom, is the open question below.</p>
+    <dl class="path">
+      <dt>Manual</dt><dd>Save with a name and description.</dd>
+      <dt>SpotterModel</dt><dd>Suggests the name and description from what the model contains.</dd>
+    </dl>
+  </div>
+
+  <h2>Open — needs Vivek's call</h2>
+
+  <div class="open">
+    <div class="uc-head"><span class="uc-title">The model's life after day zero</span></div>
+    <p>Two candidate stories, currently in neither list:</p>
+    <p><b>Returning to an existing model.</b> A user reopens a model next week — or opens one a teammate built — orients quickly, and makes a change without breaking what works. The prototype already seeds this (the "existing" welcome variant).</p>
+    <p><b>Save vs publish.</b> Is saving the same as making the model live for Spotter users, or is there a separate publish step with access control? Settings already carries row-level security and join rules, which implies the question.</p>
+    <p class="ruling">In this pass, or parked?</p>
+  </div>
+
+</div>
+</body>
+</html>

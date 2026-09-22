@@ -4773,6 +4773,11 @@ export interface SearchDataExplorationsProps {
   // (box-shadow using content-primary) to a thin default-border-colored one.
   // Default false (Option 1's usage keeps the darker line).
   lightAnswerTableHeader?: boolean;
+  // Spreadsheet tab only (canvasScope): removes the column-picker sidebar and
+  // its toggle button — the sheet always shows every column of the current
+  // scope instead. The Query tab keeps its own data panel either way. Default
+  // false (Option 3.2's vertical preview is the only consumer, 2026-09-21).
+  sheetAllColumns?: boolean;
   // Optional external Table/Join/Model scoping — when provided, the
   // "(Sample) Retail - Apparel" data-model button (Query tab + Spreadsheet
   // sub-header) becomes a Table/Join/Model selector reflecting a host
@@ -6857,7 +6862,7 @@ const SpotterDataPanel: React.FC<{
   );
 };
 
-export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ onExit, onSave, onSaveChanges, initialSnapshot, mode, showSpotter = true, editMode = false, liveboardName, onOpenInSearchData, sheetTab: sheetTabProp, onSheetTabChange, hideSheetToggle = false, hideHeaderBar = false, edgeToEdge = false, hideColumnPanelTabs = false, compactPanelSearch = false, alignColumnCheckboxes = false, lightAnswerTableHeader = false, canvasScope }) => {
+export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ onExit, onSave, onSaveChanges, initialSnapshot, mode, showSpotter = true, editMode = false, liveboardName, onOpenInSearchData, sheetTab: sheetTabProp, onSheetTabChange, hideSheetToggle = false, hideHeaderBar = false, edgeToEdge = false, hideColumnPanelTabs = false, compactPanelSearch = false, alignColumnCheckboxes = false, lightAnswerTableHeader = false, sheetAllColumns = false, canvasScope }) => {
   // ── Real Table/Join/Model column scoping (see SearchDataExplorationsProps.canvasScope) ──
   const hasCanvasScope = !!canvasScope;
   // Hoisted above scopedCols (its normal declaration spot is much further
@@ -6890,6 +6895,11 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
 
   const dynamicMeasureIds = useMemo(() => new Set(scopedCols.filter(c => c.measure).map(c => c.key)), [scopedCols]);
   const dynamicDimIds = useMemo(() => new Set(scopedCols.filter(c => !c.measure).map(c => c.key)), [scopedCols]);
+  // sheetAllColumns only: every scoped column key, in scopedCols' own order —
+  // what the sheet renders instead of the picker's sheetColKeys. On the
+  // Spreadsheet tab scopedCols is already every column of every canvas table
+  // (see the widening note above), so this is "all columns" of the model.
+  const allScopedColKeys = useMemo(() => new Set(scopedCols.map(c => c.key)), [scopedCols]);
 
   const dynamicSections: SectionDef[] = useMemo(() => [
     { id: 'measures', label: 'Measures', kind: 'expandable', columns: scopedCols.filter(c => c.measure).map(c => ({ id: c.key, label: c.label, type: 'measure' as TokenType })) },
@@ -8412,7 +8422,10 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
             background: '#fff',
           }}>
             {/* Left: model control — width matches data panel so divider aligns with panel edge */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4, width: 260, flexShrink: 0, padding: edgeToEdge ? 0 : '0 8px 0 24px', position: 'relative' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, width: sheetAllColumns ? 'auto' : 260, flexShrink: 0, padding: edgeToEdge ? 0 : '0 8px 0 24px', position: 'relative' }}>
+              {/* sheetAllColumns: no column picker on this tab, so no toggle
+                  button (and no divider after it) either. */}
+              {!sheetAllColumns && (<>
               <button
                 style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, border: 'none', background: 'transparent', borderRadius: 6, cursor: 'pointer', flexShrink: 0 }}
                 onClick={() => setSheetDataPanelOpen(o => !o)}
@@ -8444,6 +8457,7 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
                 )}
               </button>
               <div style={{ width: 1, height: 24, background: 'var(--rd-sys-color-border-divider, #eaedf2)', flexShrink: 0 }} />
+              </>)}
               <Button
                 ref={scopeBtnRef}
                 variant="tertiary"
@@ -8539,7 +8553,7 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
           </div>
           {/* Body: inline flex row — data panel sits as a persistent sidebar, sheet fills remaining space */}
           <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'row' }}>
-          {sheetDataPanelOpen && (
+          {sheetDataPanelOpen && !sheetAllColumns && (
             <div style={{ width: 260, flexShrink: 0, borderRight: '1px solid var(--rd-sys-color-border-divider, #eaedf2)', overflowY: 'auto' }}>
               <SheetDataPanel
                 // Optimized: both the checkbox state and the sheet's columns
@@ -8569,7 +8583,7 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
               sheetDataView={sheetDataView}
               onSheetDataViewChange={setSheetDataView}
               hideExpandButton
-              emptyMode={hasCanvasScope ? sheetColKeys.size === 0 : (!hasQuery && !isAnswerLoading)}
+              emptyMode={hasCanvasScope ? (sheetAllColumns ? scopedCols.length === 0 : sheetColKeys.size === 0) : (!hasQuery && !isAnswerLoading)}
               // canvasScope: omitted on purpose. The sheetColKeys effect above
               // is the ONLY writer of pendingQuery in this mode — routing the
               // sheet's internal picker here as a second writer is what kept
@@ -8590,7 +8604,9 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
               dataModelCols={hasCanvasScope ? dynamicDataModelCols : undefined}
               canAddFormula={!canvasScope || canvasScope.scope === 'model'}
               canvasScopeMode={hasCanvasScope}
-              controlledColKeys={hasCanvasScope ? sheetColKeys : undefined}
+              // sheetAllColumns: the sheet renders every scoped column instead
+              // of the (now hidden) picker's selection. Query keeps sheetColKeys.
+              controlledColKeys={hasCanvasScope ? (sheetAllColumns ? allScopedColKeys : sheetColKeys) : undefined}
             />
           </div>
           </div>

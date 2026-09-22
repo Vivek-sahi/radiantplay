@@ -9,9 +9,13 @@ import type { MessageItem, SuggType, ReasoningData } from './types';
 export interface AgentPanelProps {
   welcomeVariant: 'blank' | 'existing';
   onClose?: () => void;
+  // Optional replacement for the header's default ✕ close icon — additive,
+  // omitted everywhere except a consumer that docks the panel on the left
+  // and wants a collapse-to-left glyph instead.
+  closeIcon?: React.ReactNode;
 }
 
-export const AgentPanel: React.FC<AgentPanelProps> = ({ welcomeVariant, onClose }) => {
+export const AgentPanel: React.FC<AgentPanelProps> = ({ welcomeVariant, onClose, closeIcon }) => {
   const [messages, setMessages] = useState<MessageItem[]>([]);
   const [chatStarted, setChatStarted] = useState(false);
   const chatMsgsRef = useRef<HTMLDivElement>(null);
@@ -70,7 +74,7 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({ welcomeVariant, onClose 
           <span>Context</span>
         </div>
         <div className="close-btn" onClick={onClose} role={onClose ? 'button' : undefined} aria-label={onClose ? 'Collapse SpotterModel panel' : undefined}>
-          <img src="/spotter-assets/cross-s.svg" width="14" height="14" alt="close" />
+          {closeIcon ?? <img src="/spotter-assets/cross-s.svg" width="14" height="14" alt="close" />}
         </div>
       </div>
 
