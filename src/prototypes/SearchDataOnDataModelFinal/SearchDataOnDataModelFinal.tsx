@@ -772,9 +772,57 @@ const SearchDataOnDataModelFinal: React.FC = () => {
   // became a real choice in that menu the two had to be told apart. Combined
   // never sees 'none' — it is mapped back to 'model' at its own call sites, so
   // it still lands on the whole model exactly as before.
-  const [previewScope, setPreviewScope] = useState<'none' | 'table' | 'join' | 'model'>('none');
+  const [previewScope, setPreviewScope] = useState<'none' | 'table' | 'join' | 'model'>('model');
   const [previewTable, setPreviewTable] = useState('');
   const [previewJoin, setPreviewJoin] = useState<JoinInfo | null>(null);
+  // ── Preview interaction directions (2026-09-23, see preview-interaction-plan.html) ──
+  // Split layout only; Combined keeps its existing behavior throughout.
+  // 1 · Select to preview — home is Nothing; background click → 'none';
+  //     Model CTA on canvas + dropdown. (≈ the 21 Sep shipped behavior.)
+  // 2 · Model is home (DEFAULT) — grid defaults to the model; clicking drills
+  //     in; background click zooms back out to 'model'; no Model CTA.
+  // 3 · Explicit preview — selection only highlights (selTable/selJoin below,
+  //     decoupled from preview); preview icons on cards/joins + the Model CTA
+  //     are the only preview triggers. (Built, off the menu.)
+  // 4 · Select to preview WITHOUT icons (2026-09-24) — direction 1's exact
+  //     behavior, minus the eye icons: the card/join click itself is the
+  //     trigger, plus the Preview-model CTA and dropdown.
+  const [previewDirection, setPreviewDirection] = useState<1 | 2 | 3 | 4>(2);
+  const previewDirectionRef = useRef(previewDirection);
+  previewDirectionRef.current = previewDirection;
+  // The two mental models bake their refresh in (Vivek, 2026-09-23: "these
+  // are 2 mental models"): Model-is-home refreshes automatically (auto +
+  // cached returns); select-explicitly refreshes on a click ('explicit' +
+  // fresh loads). See the previewBehavior prop below. Direction 3 (the
+  // icons-only explicit variant) stays built but off the menu; likewise
+  // secondDoorIcons — flip to true to demo preview icons in Model-is-home.
+  const secondDoorIcons = false;
+  // Direction 3 only: canvas highlight, decoupled from what the panel previews.
+  const [selTable, setSelTable] = useState('');
+  const [selJoin, setSelJoin] = useState<JoinInfo | null>(null);
+  // Switching directions resets to that direction's home with nothing selected.
+  const applyPreviewDirection = (d: 1 | 2 | 3 | 4) => {
+    setPreviewDirection(d);
+    setPreviewTable(''); setPreviewJoin(null);
+    setSelTable(''); setSelJoin(null);
+    setPreviewScope(d === 2 ? 'model' : 'none');
+  };
+  // Explicit preview actions (direction 3's icons/CTA, and direction 2's
+  // second-door icons): preview implies selection, so icon and highlight
+  // never disagree. Also the one selection-ish action that opens a closed
+  // panel — an explicit ask to see data, unlike a plain canvas click.
+  const previewTableExplicit = (name: string) => {
+    setSelTable(name); setSelJoin(null);
+    setPreviewTable(name); setPreviewJoin(null);
+    setPreviewScope('table');
+    setPreviewOpen(true);
+  };
+  const previewJoinExplicit = (j: JoinInfo) => {
+    setSelJoin(j); setSelTable('');
+    setPreviewJoin(j); setPreviewTable('');
+    setPreviewScope('join');
+    setPreviewOpen(true);
+  };
   // Option 3 only: switches PreviewPanel3 between embedding SearchDataExplorations
   // completely as-is vs. optimized for the docked panel (see .option-switcher below).
   const option3EmbedMode = 'optimized' as 'asis' | 'optimized';
@@ -873,13 +921,16 @@ const SearchDataOnDataModelFinal: React.FC = () => {
       setModelFilters([]);
       setModelParameters([]);
     }
-    // Whichever way it went, the previous model's selections are gone — which
-    // is 'none' now that 'model' is a scope the user can actually pick, not a
-    // stand-in for "nothing selected".
+    // Whichever way it went, the previous model's selections are gone — reset
+    // to the active direction's home ('model' for direction 2, 'none' for
+    // 1/3). Read through the ref so this effect stays keyed on modelState
+    // alone and a direction switch doesn't re-run the demo/empty rebuild.
     setOpenTableV2(null);
     setPreviewTable('');
     setPreviewJoin(null);
-    setPreviewScope('none');
+    setSelTable('');
+    setSelJoin(null);
+    setPreviewScope(previewDirectionRef.current === 2 ? 'model' : 'none');
   }, [modelState]);
 
   // Settings dock body — inline-editable join rule + security options.
@@ -944,6 +995,20 @@ const SearchDataOnDataModelFinal: React.FC = () => {
           <Menu.Group label="Table info panel">
             <Menu.Item active={tableInfoMode === 'icon'} onClick={() => { setTableInfoMode('icon'); setTablesNavMenuOpen(false); }}>Row icon</Menu.Item>
             <Menu.Item active={tableInfoMode === 'tab'} onClick={() => { setTableInfoMode('tab'); setTablesNavMenuOpen(false); }}>Side panel tab</Menu.Item>
+          </Menu.Group>
+          {/* Preview interaction directions (Split only) — see
+              preview-interaction-plan.html. Direction 2's sub-knobs render
+              only while it's the active direction. Menu stays open on these
+              so the sub-knobs can be set in one visit. */}
+          <Menu.Divider />
+          {/* The two preview mental models (Vivek, 2026-09-23: "we then need
+              2 options only"). Direction 3 — the icons-only explicit-preview
+              variant — stays fully built but off the menu; re-add an
+              applyPreviewDirection(3) row here to demo it. */}
+          <Menu.Group label="Data preview (Split)">
+            <Menu.Item active={previewDirection === 2} onClick={() => applyPreviewDirection(2)}>Model is home · auto refresh</Menu.Item>
+            <Menu.Item active={previewDirection === 1} onClick={() => applyPreviewDirection(1)}>Select to preview · eye icons</Menu.Item>
+            <Menu.Item active={previewDirection === 4} onClick={() => applyPreviewDirection(4)}>Select to preview · card click only</Menu.Item>
           </Menu.Group>
         </Menu>
       </AnchoredMenu>
@@ -1840,6 +1905,16 @@ const SearchDataOnDataModelFinal: React.FC = () => {
                       // Only the canvas background itself, not a bubbled click
                       // from a table card or join line/badge.
                       if (e.target !== e.currentTarget) return;
+                      if (dataModelLayout === 'split') {
+                        // Background clicks never touch the data preview
+                        // (Vivek, 2026-09-23: "it is breaking the flow") —
+                        // selection and scope both hold; the panel moves only
+                        // when the user clicks an object, the dropdown, or a
+                        // preview control. Direction 3 (hidden) still clears
+                        // its decoupled highlight.
+                        if (previewDirection === 3) { setSelTable(''); setSelJoin(null); }
+                        return;
+                      }
                       setPreviewTable('');
                       setPreviewJoin(null);
                       setPreviewScope('none');
@@ -1856,12 +1931,33 @@ const SearchDataOnDataModelFinal: React.FC = () => {
                         tables={tableCanvasData.tables}
                         joins={tableCanvasData.joins}
                         onTableDragEnd={(name, x, y) => (window as any)._handleTableDrag?.(name, x, y)}
-                        selectedTable={tabOption === 3 && previewScope !== 'table' ? '' : previewTable}
-                        onSelectTable={name => { setPreviewTable(name); setPreviewJoin(null); setPreviewScope('table'); }}
+                        selectedTable={dataModelLayout === 'split' && previewDirection === 3 ? selTable : tabOption === 3 && previewScope !== 'table' ? '' : previewTable}
+                        onSelectTable={dataModelLayout === 'split' && previewDirection === 3
+                          // Direction 3: a plain card click highlights only —
+                          // the preview icon (or Model CTA/dropdown) previews.
+                          ? name => { setSelTable(name); setSelJoin(null); }
+                          : name => { setPreviewTable(name); setPreviewJoin(null); setPreviewScope('table'); }}
                         {...(tabOption === 3 ? {
-                          selectedJoinKey: previewScope === 'join' && previewJoin ? joinKey(previewJoin) : undefined,
-                          onSelectJoin: (j: JoinInfo) => { setPreviewJoin(j); setPreviewScope('join'); },
-                          highlightedTables: previewScope === 'join' && previewJoin ? [previewJoin.leftTable, previewJoin.rightTable] : undefined,
+                          selectedJoinKey: dataModelLayout === 'split' && previewDirection === 3
+                            ? (selJoin ? joinKey(selJoin) : undefined)
+                            : (previewScope === 'join' && previewJoin ? joinKey(previewJoin) : undefined),
+                          onSelectJoin: dataModelLayout === 'split' && previewDirection === 3
+                            ? (j: JoinInfo) => { setSelJoin(j); setSelTable(''); }
+                            : (j: JoinInfo) => { setPreviewJoin(j); setPreviewScope('join'); },
+                          highlightedTables: dataModelLayout === 'split' && previewDirection === 3
+                            ? (selJoin ? [selJoin.leftTable, selJoin.rightTable] : undefined)
+                            : (previewScope === 'join' && previewJoin ? [previewJoin.leftTable, previewJoin.rightTable] : undefined),
+                          // Preview icons on cards/join badges — direction 1
+                          // shows them (Vivek, 2026-09-23: "add the eye icon
+                          // in the explicit preview option"); direction 4 is
+                          // the same option WITHOUT them (2026-09-24) — the
+                          // card click itself is the trigger. Direction 3
+                          // (hidden) keeps them as its only trigger, and
+                          // Model-is-home can opt in via secondDoorIcons.
+                          ...(dataModelLayout === 'split' && (previewDirection === 1 || previewDirection === 3 || (previewDirection === 2 && secondDoorIcons)) ? {
+                            onPreviewTable: previewTableExplicit,
+                            onPreviewJoin: previewJoinExplicit,
+                          } : {}),
                           hoverAffordance: true,
                           onCreateJoin: (from: string, to?: string) => setJoinDraft({ left: from, right: to }),
                           onTableMenu: (name: string, e: React.MouseEvent) => {
@@ -1876,6 +1972,23 @@ const SearchDataOnDataModelFinal: React.FC = () => {
                       )}
                       {tableCanvasData.tables.length > 0 && tabOption === 3 && option3EmbedMode === 'optimized' && (
                         <div style={{ position: 'absolute', top: 16, right: 16, zIndex: 20, display: 'flex', alignItems: 'center', gap: 'var(--spacing-2)' }}>
+                          {/* Directions 1 and 3 only: the model's canvas route
+                              (direction 2 doesn't need one — background click
+                              zooms out to it). An explicit preview ask, so it
+                              also opens a closed panel. */}
+                          {dataModelLayout === 'split' && previewDirection !== 2 && (
+                            <Button
+                              variant="secondary"
+                              onClick={() => {
+                                setPreviewTable(''); setPreviewJoin(null);
+                                setSelTable(''); setSelJoin(null);
+                                setPreviewScope('model');
+                                setPreviewOpen(true);
+                              }}
+                            >
+                              Preview model
+                            </Button>
+                          )}
                           <Button variant="secondary" iconOnly icon="search" aria-label="Find">Find</Button>
                           <div style={{ position: 'relative' }}>
                             <Button
@@ -1921,11 +2034,40 @@ const SearchDataOnDataModelFinal: React.FC = () => {
                         panelTab={panelTab} setPanelTab={setPanelTab}
                         scope={dataModelLayout === 'split' ? previewScope : previewScope === 'none' ? 'model' : previewScope}
                         setScope={setPreviewScope}
-                        selectedTable={previewTable} setSelectedTable={setPreviewTable}
-                        join={previewJoin} setJoin={setPreviewJoin}
+                        // Direction 3 decouples canvas selection from preview,
+                        // but an explicit pick in the panel's scope dropdown is
+                        // a preview that also selects — mirror it into the
+                        // canvas highlight so the two never disagree.
+                        selectedTable={previewTable}
+                        setSelectedTable={name => {
+                          setPreviewTable(name);
+                          if (dataModelLayout === 'split' && previewDirection === 3) { setSelTable(name); if (name) setSelJoin(null); }
+                        }}
+                        join={previewJoin}
+                        setJoin={j => {
+                          setPreviewJoin(j);
+                          if (dataModelLayout === 'split' && previewDirection === 3) { setSelJoin(j); if (j) setSelTable(''); }
+                        }}
                         joins={tableCanvasData.joins}
                         embedMode={option3EmbedMode}
                         hideQueryTab={dataModelLayout === 'split'}
+                        // Directions 1 and 2 share the refresh defaults (Vivek,
+                        // 2026-09-23: "refresh should be there even when model
+                        // is not home"). Direction 3 is 'explicit': manual
+                        // refresh for EVERY scope — modifying whatever is
+                        // being previewed shows a "needs refresh" banner, and
+                        // removing it is an error state ("it goes hand in hand
+                        // with explicit user selection").
+                        // The two mental models: Model-is-home = automatic
+                        // (auto refresh, cached returns); everything else =
+                        // user-controlled ('explicit': every load is a click,
+                        // modifications raise the needs-refresh banner,
+                        // removals are errors).
+                        previewBehavior={dataModelLayout === 'split' ? (
+                          previewDirection === 2
+                            ? { refresh: 'auto', reentry: 'cached' }
+                            : { refresh: 'explicit', reentry: 'fresh' }
+                        ) : undefined}
                       />
                     ) : (
                       <PreviewPanel

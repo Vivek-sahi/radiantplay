@@ -52,6 +52,11 @@ export interface PreviewPanelProps {
   // Optional and defaulted so every existing "Combined" call site is
   // untouched.
   hideQueryTab?: boolean;
+  // Split only (2026-09-23, preview-interaction directions): how the model
+  // view reacts to model changes (auto|manual) and to being re-entered
+  // (cached|fresh). Passed through to QueryAsIs untouched; omitted (Combined,
+  // As-is) keeps today's load-on-every-scope-change behavior.
+  previewBehavior?: { refresh: 'auto' | 'manual' | 'explicit'; reentry: 'cached' | 'fresh' };
 }
 
 const ExpandIcon = () => (
@@ -87,6 +92,7 @@ type OptimizedProps = BranchProps & {
   setJoin: (v: JoinInfo | null) => void;
   joins: JoinInfo[];
   hideQueryTab?: boolean;
+  previewBehavior?: { refresh: 'auto' | 'manual' | 'explicit'; reentry: 'cached' | 'fresh' };
 };
 
 // ─── "Optimized" branch ─────────────────────────────────────────────────────
@@ -105,6 +111,7 @@ const PreviewPanel3Optimized: React.FC<OptimizedProps> = ({
   scope, setScope, selectedTable, setSelectedTable,
   join, setJoin, joins,
   hideQueryTab = false,
+  previewBehavior,
 }) => {
   // Default height = 40% of the canvas area (this panel's parent, which spans
   // canvas + panel). Measured once on mount; after that the user's own drag
@@ -326,6 +333,7 @@ const PreviewPanel3Optimized: React.FC<OptimizedProps> = ({
                 tables, joins, dataSourceTables, modelColumns,
                 scope, selectedTable, selectedJoin: join,
               }}
+              previewBehavior={previewBehavior}
             />
           ) : (
             <SearchDataExplorations
@@ -460,6 +468,7 @@ const PreviewPanel3: React.FC<PreviewPanelProps> = ({
   join, setJoin, joins,
   embedMode,
   hideQueryTab,
+  previewBehavior,
 }) => {
   const branchProps: BranchProps = { open, setOpen, full, setFull, height, setHeight, panelTab, setPanelTab };
   return embedMode === 'optimized'
@@ -469,6 +478,7 @@ const PreviewPanel3: React.FC<PreviewPanelProps> = ({
         scope={scope} setScope={setScope} selectedTable={selectedTable} setSelectedTable={setSelectedTable}
         join={join} setJoin={setJoin} joins={joins}
         hideQueryTab={hideQueryTab}
+        previewBehavior={previewBehavior}
       />
     : <PreviewPanel3AsIs {...branchProps} />;
 };

@@ -4247,6 +4247,17 @@ export interface SearchDataExplorationsProps {
     selectedTable: string;
     selectedJoin: { leftTable: string; rightTable: string } | null;
   };
+  /**
+   * canvasScope only (2026-09-23, the Split preview-interaction directions):
+   * how the MODEL view behaves. `refresh` — the model changed while the model
+   * view is showing: 'auto' re-queries immediately, 'manual' keeps the rows
+   * it loaded and shows a "Model changed — Refresh" banner. `reentry` —
+   * returning to the model view: 'cached' serves the last loaded result
+   * instantly (stale then defers to `refresh`), 'fresh' re-queries every
+   * return. Omitted (Combined, As-is): today's behavior exactly — every scope
+   * change loads, content changes update live.
+   */
+  previewBehavior?: { refresh: 'auto' | 'manual' | 'explicit'; reentry: 'cached' | 'fresh' };
 }
 
 // ─── SpotterData panel ───────────────────────────────────────────────────────
@@ -6310,7 +6321,7 @@ const SpotterDataPanel: React.FC<{
   );
 };
 
-export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ onExit: _onExit, onSave, onSaveChanges: _onSaveChanges, initialSnapshot, mode, showSpotter = true, editMode = false, liveboardName, onOpenInSearchData, onHamburgerClick: _onHamburgerClick, canvasScope }) => {
+export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ onExit: _onExit, onSave, onSaveChanges: _onSaveChanges, initialSnapshot, mode, showSpotter = true, editMode = false, liveboardName, onOpenInSearchData, onHamburgerClick: _onHamburgerClick, canvasScope, previewBehavior }) => {
   const isSpreadsheetMode = mode === 'spreadsheet';
   const hasCanvasScope = !!canvasScope;
   // Split only: clicking a table or a join on the canvas holds the preview on
@@ -6328,12 +6339,68 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
   // Combined sheet already uses for its own "Add a table first"; only the
   // second case is new, and it is the one that tells the user the panel is
   // waiting on a selection rather than on data.
+  // Whether every table on the canvas is reachable from every other through
+  // joins (single-table models count as connected). More than one table with
+  // any left out = the model is BROKEN: its preview is an error, never a
+  // partial result and never a query (Vivek, 2026-09-23: "when all things are
+  // not joined — except the single-table case — the model is broken and
+  // preview won't work"). previewBehavior consumers only — Combined keeps its
+  // existing joined-subset model preview.
+  const modelConnected = React.useMemo(() => {
+    if (!canvasScope || canvasScope.tables.length <= 1) return true;
+    const adj = new Map<string, string[]>();
+    canvasScope.tables.forEach(t => adj.set(t.name, []));
+    canvasScope.joins.forEach(j => { adj.get(j.leftTable)?.push(j.rightTable); adj.get(j.rightTable)?.push(j.leftTable); });
+    const seen = new Set<string>([canvasScope.tables[0].name]);
+    const stack = [canvasScope.tables[0].name];
+    while (stack.length) {
+      const n = stack.pop()!;
+      for (const m of adj.get(n) ?? []) if (!seen.has(m)) { seen.add(m); stack.push(m); }
+    }
+    return seen.size === canvasScope.tables.length;
+  }, [canvasScope]);
+  const modelBroken = !!previewBehavior && !!canvasScope && canvasScope.tables.length > 1 && !modelConnected;
+  // The live join entry matching the previewed join — read from the canvas's
+  // current joins so a modified join (type/keys changed in the modal) is seen,
+  // and a deleted one reads as gone.
+  const currentJoinEntry = canvasScope?.scope === 'join' && canvasScope.selectedJoin
+    ? canvasScope.joins.find(j => j.leftTable === canvasScope.selectedJoin!.leftTable && j.rightTable === canvasScope.selectedJoin!.rightTable) ?? null
+    : null;
+  // The previewed object no longer exists — the selected table left the model,
+  // or the selected join was deleted. An error state in every direction:
+  // never rows, never a query (Vivek, 2026-09-23: "some will be error").
+  // previewBehavior consumers only.
+  const scopeGone = !canvasScope || !previewBehavior ? false
+    : canvasScope.scope === 'table'
+      ? !!canvasScope.selectedTable && !canvasScope.tables.some(t => t.name === canvasScope.selectedTable)
+      : canvasScope.scope === 'join' && !!canvasScope.selectedJoin
+        ? !currentJoinEntry
+        : false;
+
   const canvasEmptyState = !hasCanvasScope ? undefined : canvasScope!.tables.length === 0 ? (
     <NoData
       className={styles.sheetNoData}
       illustration={<img src="/spotter-assets/empty states/empty state icon when tables are added.svg" width={32} height={32} alt="" />}
       title="Add a table first"
       description="Add tables from the left pane to preview your data."
+    />
+  ) : scopeGone ? (
+    // The previewed table/join was removed from the model out from under the
+    // preview — its own error, not "Nothing selected".
+    <NoData
+      className={styles.sheetNoData}
+      illustration={previewEmptyIllustration}
+      title="No longer in the model"
+      description={canvasScope!.scope === 'join' ? 'This join was removed. Select a table or another join to preview.' : 'This table was removed. Select a table or a join to preview.'}
+    />
+  ) : canvasScope!.scope === 'model' && modelBroken ? (
+    // A distinct error, not "Nothing selected" — the user asked for the model
+    // and the model itself isn't previewable yet.
+    <NoData
+      className={styles.sheetNoData}
+      illustration={previewEmptyIllustration}
+      title="Model preview isn't available"
+      description="All tables need to be joined to preview the model. Join the remaining tables, or preview a table or a join instead."
     />
   ) : (
     <NoData
@@ -6353,12 +6420,10 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
         : canvasScope!.scope === 'model'
           ? 'model'
           : null;
-  useEffect(() => {
-    if (!scopeKey) { setScopeLoading(false); return; }
-    setScopeLoading(true);
-    const t = setTimeout(() => setScopeLoading(false), 2000);
-    return () => clearTimeout(t);
-  }, [scopeKey]);
+  // The load-on-scope-change effect moved below dynamicRows (2026-09-23) —
+  // it now also implements previewBehavior's refresh/re-entry rules, which
+  // need the scoped columns/rows to snapshot. Without previewBehavior it
+  // reproduces the old effect exactly.
   // Mirrors SearchDataExplorations.tsx's own `scopedCols` (Combined mode)
   // exactly — table scope: that table's columns; join: union of both joined
   // tables'; model: every joined table's (a lone table still counts as a
@@ -6387,6 +6452,10 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
     // a real choice in the title bar's scope switcher.
     if (canvasScope.scope === 'none') return [];
     if (canvasScope.scope === 'model') {
+      // Broken model (previewBehavior only): no columns at all — the grid
+      // falls into the "Model preview isn't available" error state instead
+      // of showing the joined subset as if it were the model.
+      if (modelBroken) return [];
       if (canvasScope.tables.length <= 1) return canvasScope.tables.flatMap(t => colsFor(t.name));
       const joinedTables = new Set<string>();
       canvasScope.joins.forEach(j => { joinedTables.add(j.leftTable); joinedTables.add(j.rightTable); });
@@ -6398,6 +6467,111 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
     () => generateMockRows(scopedCols.map(c => ({ col: c.key, table: c.table })), 60),
     [scopedCols]
   );
+  // ── Scope loading + previewBehavior machinery (2026-09-23) ────────────────
+  // currentSig identifies the CURRENT scope's content — its columns, plus the
+  // join configuration where that shapes the rows (the previewed join's own
+  // entry; the whole join list for the model). The view is stale when the rows
+  // on screen were built at an older sig.
+  const currentSig = scopedCols.map(c => c.key).join('|') + '#' + (
+    canvasScope?.scope === 'join' ? JSON.stringify(currentJoinEntry ?? null)
+    : canvasScope?.scope === 'model' ? JSON.stringify(canvasScope.joins)
+    : ''
+  );
+  const modelSnapRef = React.useRef<{ sig: string; cols: ScopedCol[]; rows: Record<string, unknown>[] } | null>(null);
+  // What the last completed load showed, whatever its scope — 'explicit'
+  // (direction 3) staleness holds these rows for table/join scopes the way
+  // modelSnapRef does for the model.
+  const loadedSnapRef = React.useRef<{ key: string; sig: string; cols: ScopedCol[]; rows: Record<string, unknown>[] } | null>(null);
+  // "The current preview is stale" — model scope under auto/manual, any scope
+  // under 'explicit'.
+  const [modelStale, setModelStale] = useState(false);
+  const scopedColsRef = React.useRef(scopedCols); scopedColsRef.current = scopedCols;
+  const dynamicRowsRef = React.useRef(dynamicRows); dynamicRowsRef.current = dynamicRows;
+  const currentSigRef = React.useRef(currentSig); currentSigRef.current = currentSig;
+  const loadTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  // The 2s "query" every scope entry runs today; when it completes for the
+  // model view it also snapshots what was loaded, so cached re-entry and the
+  // manual-refresh banner have something to hold on to.
+  const scopeKeyRef = React.useRef(scopeKey); scopeKeyRef.current = scopeKey;
+  const runScopeLoad = (forModel: boolean) => {
+    if (loadTimerRef.current) clearTimeout(loadTimerRef.current);
+    setModelStale(false);
+    setScopeLoading(true);
+    loadTimerRef.current = setTimeout(() => {
+      setScopeLoading(false);
+      const snap = { sig: currentSigRef.current, cols: scopedColsRef.current, rows: dynamicRowsRef.current };
+      if (scopeKeyRef.current) loadedSnapRef.current = { key: scopeKeyRef.current, ...snap };
+      if (forModel) modelSnapRef.current = snap;
+    }, 2000);
+  };
+  const prevScopeRef = React.useRef<{ key: string | null; sig: string } | null>(null);
+  useEffect(() => {
+    const prev = prevScopeRef.current;
+    const scopeChanged = !prev || scopeKey !== prev.key;
+    const sigChanged = !!prev && currentSig !== prev.sig;
+    prevScopeRef.current = { key: scopeKey, sig: currentSig };
+    // StrictMode note: the mount replay (run → cleanup → run) makes the second
+    // run a no-op here (prev already equals current). That is fine ONLY
+    // because nothing cancels the first run's load timer — there is no
+    // unmount clearTimeout on purpose. A timer surviving a real unmount fires
+    // once into a dead component (setState no-ops; the snapshot write is
+    // guarded by scopeKeyRef) and is harmless. Do NOT add a cleanup that
+    // clears the timer, and do NOT "undo" the prev write in a cleanup — both
+    // were tried (2026-09-23) and each breaks a different path: the clear
+    // leaves scopeLoading stuck true on mount, the undo makes consecutive
+    // content changes read as scope changes and reload instead of going stale.
+    if (!scopeKey) { setScopeLoading(false); setModelStale(false); return; }
+    // No previewBehavior (Combined, As-is): the pre-2026-09-23 behavior
+    // exactly — every scope change loads, content changes update live.
+    if (!previewBehavior) { if (scopeChanged) runScopeLoad(false); return; }
+    // The previewed object was removed out from under the preview: error
+    // state — no query, no staleness (Vivek: "some will be error").
+    if (scopeGone) { setScopeLoading(false); setModelStale(false); return; }
+    // 'explicit': refresh requires a click, for EVERY scope. Entering a scope
+    // (itself a click) loads fresh; modifying whatever is being previewed —
+    // columns removed, join reconfigured, model edited — holds the loaded
+    // rows and raises the needs-refresh banner.
+    if (previewBehavior.refresh === 'explicit') {
+      if (scopeKey === 'model' && (!canvasScope || canvasScope.tables.length === 0 || modelBroken)) { setScopeLoading(false); setModelStale(false); return; }
+      if (scopeChanged) { runScopeLoad(scopeKey === 'model'); return; }
+      if (sigChanged) {
+        if (loadedSnapRef.current && loadedSnapRef.current.key === scopeKey) { setModelStale(true); return; }
+        runScopeLoad(scopeKey === 'model');
+      }
+      return;
+    }
+    if (scopeKey !== 'model') { setModelStale(false); if (scopeChanged) runScopeLoad(false); return; }
+    // Zero tables, or a broken join graph: the model view is an empty/error
+    // state — never a query, never stale, no snapshot (Vivek, 2026-09-23:
+    // "we need to get error states right").
+    if (!canvasScope || canvasScope.tables.length === 0 || modelBroken) { setScopeLoading(false); setModelStale(false); return; }
+    if (scopeChanged) {
+      const snap = modelSnapRef.current;
+      if (previewBehavior.reentry === 'cached' && snap) {
+        // Cache hit — instant, no query.
+        if (snap.sig === currentSig) { setScopeLoading(false); setModelStale(false); return; }
+        // Stale cache under manual refresh — show it, with the banner.
+        if (previewBehavior.refresh === 'manual') { setScopeLoading(false); setModelStale(true); return; }
+      }
+      runScopeLoad(true);
+      return;
+    }
+    if (sigChanged) {
+      // The model changed while the model view is showing.
+      if (previewBehavior.refresh === 'auto') { runScopeLoad(true); return; }
+      // Manual with nothing loaded yet (e.g. the model just became fully
+      // joined): load now — there is nothing on screen to hold on to.
+      if (!modelSnapRef.current) { runScopeLoad(true); return; }
+      setModelStale(true);
+    }
+  }, [scopeKey, currentSig]);
+  // While stale, the grid keeps showing what was loaded — the model snapshot
+  // at model scope, the last completed load ('explicit') anywhere else.
+  const staleSnap = scopeKey === 'model' ? (modelSnapRef.current ?? loadedSnapRef.current) : loadedSnapRef.current;
+  const showStaleSnap = !!previewBehavior && modelStale && !!staleSnap
+    && (scopeKey === 'model' || previewBehavior.refresh === 'explicit');
+  const effScopedCols = showStaleSnap ? staleSnap!.cols : scopedCols;
+  const effDynamicRows = showStaleSnap ? staleSnap!.rows : dynamicRows;
   // ── Version controller ────────────────────────────────────────────────────
   const { version, colDetailIconStyle } = useVersion();
 
@@ -6798,7 +6972,7 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
   // on a table, all the selected columns get displayed in the data preview.
   // Similarly for joins").
   // Base data — then inject formula values into each row
-  const _baseDisplayData = hasCanvasScope ? dynamicRows : (hasQuery ? buildDisplayData(queryState) : []);
+  const _baseDisplayData = hasCanvasScope ? effDynamicRows : (hasQuery ? buildDisplayData(queryState) : []);
   const displayData = hasCanvasScope ? _baseDisplayData : _baseDisplayData.map((row, ri) => {
     if (!parentFormulaCols.length) return row;
     const extra: Record<string, unknown> = {};
@@ -6807,7 +6981,7 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
   });
   // Base columns — then append formula columns
   const _allDisplayColumns = hasCanvasScope
-    ? scopedCols.map(c => ({
+    ? effScopedCols.map(c => ({
         key: c.key,
         label: c.label,
         sortable: true,
@@ -7446,6 +7620,15 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
             </div>
           )}
           <div style={{ flex: 1, position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+            {/* previewBehavior + manual refresh only: the model changed while
+                its rows were on screen (or a stale cache was re-entered) —
+                hold the old rows, say so, and hand the re-query to the user. */}
+            {!!previewBehavior && modelStale && !scopeLoading && (scopeKey === 'model' || previewBehavior.refresh === 'explicit') && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '6px 8px 6px 16px', background: '#FFF8E8', borderBottom: '1px solid #F2E3BC', fontSize: 13, color: '#92640A', flexShrink: 0 }}>
+                <span style={{ flex: 1 }}>{scopeKey === 'model' ? 'Model' : 'Data'} changed — this preview shows the rows from before the change.</span>
+                <Button variant="secondary" size="small" onClick={() => runScopeLoad(scopeKey === 'model')}>Refresh</Button>
+              </div>
+            )}
             <SheetView
               columns={displayColumns}
               rows={displayData}
@@ -7458,7 +7641,7 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
               sheetDataView={sheetDataView}
               onSheetDataViewChange={setSheetDataView}
               hideExpandButton
-              emptyMode={hasCanvasScope ? scopedCols.length === 0 : !hasQuery && !isAnswerLoading}
+              emptyMode={hasCanvasScope ? (scopeGone || effScopedCols.length === 0) : !hasQuery && !isAnswerLoading}
               canvasScopeMode={hasCanvasScope}
               canvasEmptyState={canvasEmptyState}
               onColumnsChange={handleSheetColumnsChange}

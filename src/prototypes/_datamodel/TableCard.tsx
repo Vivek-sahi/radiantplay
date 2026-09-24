@@ -26,6 +26,10 @@ export interface TableCardProps {
   // yet, swap the "0/n Columns" count for an "Add columns" link that calls
   // this. Omit to keep the plain count every existing consumer shows.
   onAddColumns?: (name: string) => void;
+  // Additive, opt-in: renders an explicit preview (eye) button in the card
+  // header. SearchDataOnDataModelFinal's explicit-preview direction only
+  // (2026-09-23); omit to keep every other consumer's header unchanged.
+  onPreview?: (name: string) => void;
 }
 
 const MORE_SVG = (
@@ -42,8 +46,15 @@ const PLUS_SVG = (
   </svg>
 );
 
+const EYE_SVG = (
+  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+    <path d="M1.8 8s2.3-4.3 6.2-4.3S14.2 8 14.2 8s-2.3 4.3-6.2 4.3S1.8 8 1.8 8z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
+    <circle cx="8" cy="8" r="1.9" stroke="currentColor" strokeWidth="1.3" />
+  </svg>
+);
+
 const TableCard = React.forwardRef<HTMLDivElement, TableCardProps>(
-  ({ name, totalColumns, addedColumns, x, y, onDrag, onDragEnd, onMenuClick, selected, onSelect, hoverAffordance = false, onJoinHandleMouseDown, onAddColumns }, ref) => {
+  ({ name, totalColumns, addedColumns, x, y, onDrag, onDragEnd, onMenuClick, selected, onSelect, hoverAffordance = false, onJoinHandleMouseDown, onAddColumns, onPreview }, ref) => {
     const [isDragging, setIsDragging] = React.useState(false);
     const currentPos = useRef({ x, y });
 
@@ -89,6 +100,22 @@ const TableCard = React.forwardRef<HTMLDivElement, TableCardProps>(
       >
         <div className={styles.header}>
           <span className={styles.label}>Table</span>
+          {/* data-menu keeps the card's own mousedown-to-drag handler off it,
+              same as the more-options button; stopPropagation keeps the card's
+              click-to-select from also firing (preview selects on its own). */}
+          {onPreview && (
+            <button
+              className={styles.menu}
+              data-menu=""
+              onClick={e => { e.stopPropagation(); onPreview(name); }}
+              title="Preview data"
+              // .header is space-between; the auto margin groups this with the
+              // more-options button on the right instead of floating centred.
+              style={{ marginLeft: 'auto', marginRight: 4 }}
+            >
+              {EYE_SVG}
+            </button>
+          )}
           <button className={styles.menu} data-menu="" onClick={onMenuClick} title="More options">
             {MORE_SVG}
           </button>

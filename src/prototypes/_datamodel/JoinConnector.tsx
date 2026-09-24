@@ -21,6 +21,10 @@ export interface JoinConnectorProps {
   // one is highlighted.
   selectedJoinKey?: string;
   onSelectJoin?: (join: JoinInfo) => void;
+  // Additive, opt-in: renders an explicit preview (eye) button beside each
+  // join badge. SearchDataOnDataModelFinal's explicit-preview direction only
+  // (2026-09-23); omit to keep every other consumer's badges unchanged.
+  onPreviewJoin?: (join: JoinInfo) => void;
 }
 
 export function joinKey(j: JoinInfo): string {
@@ -107,7 +111,7 @@ function elbowPath(
 
 const OFFSET_STEP = 12;
 
-const JoinConnector: React.FC<JoinConnectorProps> = ({ joins, cardRects, selectedJoinKey, onSelectJoin }) => {
+const JoinConnector: React.FC<JoinConnectorProps> = ({ joins, cardRects, selectedJoinKey, onSelectJoin, onPreviewJoin }) => {
   const interactive = !!onSelectJoin;
   type Resolved = { j: JoinInfo; rectA: CardRect; rectB: CardRect; edgeA: Edge; edgeB: Edge };
 
@@ -193,9 +197,28 @@ const JoinConnector: React.FC<JoinConnectorProps> = ({ joins, cardRects, selecte
         <div
           key={i}
           onClick={interactive ? () => onSelectJoin?.(b.j) : undefined}
-          style={{ position: 'absolute', left: b.x, top: b.y, zIndex: 1, pointerEvents: interactive ? 'auto' : 'none', cursor: interactive ? 'pointer' : undefined }}
+          style={{ position: 'absolute', left: b.x, top: b.y, zIndex: 1, pointerEvents: interactive || onPreviewJoin ? 'auto' : 'none', cursor: interactive ? 'pointer' : undefined }}
         >
           <img src="/spotter-assets/Join UI.svg" width="32" height="14" alt="join" />
+          {onPreviewJoin && (
+            <button
+              type="button"
+              onClick={e => { e.stopPropagation(); onPreviewJoin(b.j); }}
+              title="Preview join data"
+              style={{
+                position: 'absolute', left: 36, top: -3, width: 20, height: 20,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                border: '1px solid var(--rd-sys-color-border-default, #d5dae2)', borderRadius: 10,
+                background: 'var(--rd-sys-color-background-base, #fff)', cursor: 'pointer', padding: 0,
+                color: 'var(--rd-sys-color-content-secondary, #6b7280)',
+              }}
+            >
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <path d="M1.8 8s2.3-4.3 6.2-4.3S14.2 8 14.2 8s-2.3 4.3-6.2 4.3S1.8 8 1.8 8z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
+                <circle cx="8" cy="8" r="1.9" stroke="currentColor" strokeWidth="1.3" />
+              </svg>
+            </button>
+          )}
         </div>
       ))}
     </>

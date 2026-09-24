@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Preview interaction — build plan</title>
+<style>
+  :root { --ink:#1d232f; --muted:#6b7280; --line:#e8eaef; --accent:#2770ef; --bg:#fff; --subtle:#f6f8fa; --warn:#92640a; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  .page { max-width:800px; margin:0 auto; padding:56px 24px 96px; }
+  h1 { font-size:26px; letter-spacing:-0.4px; margin:0 0 4px; }
+  .meta { color:var(--muted); font-size:13px; margin-bottom:36px; }
+  h2 { font-size:13px; text-transform:uppercase; letter-spacing:0.8px; color:var(--muted); margin:44px 0 14px; }
+  p { margin:8px 0; }
+  code { background:var(--subtle); border-radius:4px; padding:1px 5px; font-size:13px; }
+  table { border-collapse:collapse; width:100%; font-size:14px; margin:12px 0; }
+  th, td { border:1px solid var(--line); padding:7px 10px; text-align:left; vertical-align:top; }
+  th { background:var(--subtle); font-weight:600; }
+  .dir { border:1px solid var(--line); border-radius:10px; padding:16px 20px; margin-bottom:12px; }
+  .dir-head { display:flex; gap:10px; align-items:baseline; margin-bottom:6px; }
+  .dir-num { color:var(--accent); font-weight:600; }
+  .dir-title { font-weight:600; font-size:16px; }
+  .dir.default { border-color:var(--accent); }
+  .badge { font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:var(--accent); border:1px solid var(--accent); border-radius:10px; padding:1px 8px; margin-left:auto; }
+  ul { margin:8px 0; padding-left:22px; }
+  li { margin:4px 0; }
+  .sub { background:var(--subtle); border-radius:8px; padding:10px 14px; font-size:14px; margin-top:10px; }
+  .warn { border-left:3px solid var(--warn); padding-left:12px; font-size:14px; margin:14px 0; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <h1>Data preview interaction — build plan</h1>
+  <div class="meta">SearchDataOnDataModelFinal · Split layout · 23 Sep 2026 · three directions, click-through in Settings, for stakeholder buy-in on one. Good cases only — trap/degrade cases deferred.</div>
+
+  <h2>Constants — true in every direction</h2>
+  <ul>
+    <li>The scope dropdown in the preview panel always offers Model, every table, every join.</li>
+    <li>Panel presence is the user's: closed by default, stays open once opened, selection never auto-opens it.</li>
+    <li>Table/join drills use the existing loading treatment. Creation flows untouched. Combined layout and Test tab untouched.</li>
+    <li>Creation selects the created thing: drop a table → it's selected; make a join → it's selected. What "selected" does to the panel depends on the direction.</li>
+  </ul>
+
+  <h2>The three directions — a top-level switcher, Settings → Data preview</h2>
+
+  <div class="dir">
+    <div class="dir-head"><span class="dir-num">1</span><span class="dir-title">Select to preview</span></div>
+    <p>Home is Nothing. Clicking a table or join previews it; clicking the canvas background returns to "Nothing selected". A <b>Model</b> button in the canvas actions (next to Find/zoom) gives the model a canvas route; the dropdown is the second route. Refresh fixed: Manual · Cached.</p>
+    <p style="color:var(--muted); font-size:13px;">≈ today's shipped Split behavior + the Model CTA. The market-convention option.</p>
+  </div>
+
+  <div class="dir default">
+    <div class="dir-head"><span class="dir-num">2</span><span class="dir-title">Model is home</span><span class="badge">default</span></div>
+    <p>Grid defaults to the model. Clicking a table or join drills in; clicking the background zooms back out to Model. No Model CTA — the canvas is the way back. "Nothing selected" is unreachable once a table exists.</p>
+    <div class="sub">
+      <b>Sub-knobs — render only while direction 2 is selected:</b>
+      <ul>
+        <li><b>Refresh: Auto | Manual</b> — model changes while the model grid is showing. Auto re-queries immediately; Manual holds rows and shows "Model changed — <b>Refresh</b>" in the panel header. <i>Default: Auto.</i></li>
+        <li><b>Re-entry: Cached | Fresh</b> — returning to the model view (zoom out, reopen panel). Cached is instant from the last result (stale then defers to the Refresh knob); Fresh re-queries every return. <i>Default: Cached. Fresh exists to demonstrate why Cached wins.</i></li>
+        <li><b>Second-door icons: Off | On</b> — preview icons on cards/joins as an explicit door that also opens a closed panel. <i>Default: Off.</i></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="dir">
+    <div class="dir-head"><span class="dir-num">3</span><span class="dir-title">Explicit preview only</span></div>
+    <p>Home is Nothing. Preview icons on table cards and join badges are the <b>only</b> preview trigger — selection highlights on canvas but never touches the panel; background clicks are inert to the panel. The Model CTA is the model's preview icon; dropdown as always. Refresh fixed: Manual · Cached.</p>
+    <p style="color:var(--muted); font-size:13px;">The teammate's proposal — selection and preview fully decoupled.</p>
+  </div>
+
+  <h2>State machine</h2>
+  <table>
+    <tr><th>State</th><th>Notes</th></tr>
+    <tr><td><code>previewDirection: 1 | 2 | 3</code></td><td>Default 2. Switching directions resets scope to that direction's home and clears canvas selection.</td></tr>
+    <tr><td><code>previewScope</code></td><td>Existing union kept. Direction 2: default <code>'model'</code>, background click → <code>'model'</code>, <code>'none'</code> unreachable with ≥1 table. Directions 1/3: default <code>'none'</code>, background click → <code>'none'</code> (direction 1) / inert (direction 3).</td></tr>
+    <tr><td>Canvas selection (dir 3 only)</td><td>New highlight-only state, decoupled from preview — clicking a card selects without previewing; the icon previews (and selects, so icon and selection never disagree).</td></tr>
+    <tr><td><code>modelVersion / modelLoadedVersion</code></td><td>Version bumped by structural changes (tables, joins, columns, formulas, filters — all already in React state; no init-dme surgery). <code>loaded &lt; current</code> = stale, read by Refresh/Re-entry logic.</td></tr>
+    <tr><td>Sub-knobs</td><td><code>refreshMode: 'auto'|'manual'</code>, <code>reentry: 'cached'|'fresh'</code>, <code>secondDoorIcons: boolean</code> — consulted only in direction 2; directions 1/3 hard-code Manual · Cached.</td></tr>
+  </table>
+
+  <h2>UI components and their gates</h2>
+  <table>
+    <tr><th>Component</th><th>Appears when</th></tr>
+    <tr><td>Model CTA in canvas actions</td><td>Direction 1 or 3</td></tr>
+    <tr><td>Preview icons on cards / join badges (shared <code>_datamodel</code> components — additive optional props)</td><td>Direction 3, or direction 2 with second-door On</td></tr>
+    <tr><td>"Model changed — Refresh" banner in panel header</td><td>Model view showing + stale + Manual (dir 2) or always-Manual (dirs 1/3)</td></tr>
+    <tr><td>Settings → "Data preview": direction switcher + dir-2 sub-rows</td><td>Always; sub-rows only while direction 2</td></tr>
+    <tr><td><i>Behavior-only, no component:</i> zoom-out, Auto reload, Cached re-entry</td><td>—</td></tr>
+  </table>
+
+  <h2>Build order</h2>
+  <ol>
+    <li>Base + direction switcher + directions 1 and 2 (shared selection-coupling; differ in home, deselect target, Model CTA).</li>
+    <li>Direction 2 sub-knobs: version tracking, Auto/Manual, Cached/Fresh, the banner.</li>
+    <li>Direction 3: decoupled canvas selection + preview icons (additive props on TableCard/JoinConnector) + second-door mode for direction 2.</li>
+    <li>Verify each stage: typecheck vs the 511 baseline, build. Deploy after your click-through.</li>
+  </ol>
+
+  <p class="warn">This replaces Split behavior Komal shipped 21 Sep (the deliberate 'none' scope / "Select data" label) — though direction 1 preserves it as a clickable option. She gets a heads-up before this lands; the preview icons touch shared <code>_datamodel</code> components (additive props only).</p>
+
+</div>
+</body>
+</html>

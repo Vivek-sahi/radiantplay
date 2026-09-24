@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Data preview — two mental models</title>
+<style>
+  :root { --ink:#1d232f; --muted:#6b7280; --line:#e8eaef; --accent:#2770ef; --bg:#fff; --subtle:#f6f8fa; --good:#047857; --bad:#b4232a; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  .page { max-width:820px; margin:0 auto; padding:56px 24px 96px; }
+  h1 { font-size:26px; letter-spacing:-0.4px; margin:0 0 4px; }
+  .meta { color:var(--muted); font-size:13px; margin-bottom:36px; }
+  h2 { font-size:13px; text-transform:uppercase; letter-spacing:0.8px; color:var(--muted); margin:44px 0 14px; }
+  p { margin:8px 0; }
+  ul { margin:6px 0; padding-left:20px; }
+  li { margin:4px 0; }
+  .opt { border:1px solid var(--line); border-radius:10px; padding:18px 20px 16px; margin-bottom:16px; }
+  .opt.default { border-color:var(--accent); }
+  .opt-head { display:flex; gap:10px; align-items:baseline; margin-bottom:4px; }
+  .opt-num { color:var(--accent); font-weight:600; }
+  .opt-title { font-weight:600; font-size:17px; letter-spacing:-0.2px; }
+  .badge { font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:var(--accent); border:1px solid var(--accent); border-radius:10px; padding:1px 8px; margin-left:auto; }
+  .what { margin:6px 0 12px; }
+  .pc { display:grid; grid-template-columns:1fr 1fr; gap:0 24px; }
+  .pc h4 { margin:0 0 4px; font-size:12px; text-transform:uppercase; letter-spacing:0.6px; }
+  .pc .pro h4 { color:var(--good); }
+  .pc .con h4 { color:var(--bad); }
+  .pc ul { font-size:14px; }
+  .prec { font-size:13px; color:var(--muted); margin-top:12px; }
+  .variant { background:var(--subtle); border-radius:8px; padding:10px 14px; font-size:14px; margin-top:12px; }
+  table { border-collapse:collapse; width:100%; font-size:14px; margin:12px 0; }
+  th, td { border:1px solid var(--line); padding:7px 10px; text-align:left; vertical-align:top; }
+  th { background:var(--subtle); font-weight:600; }
+  @media (max-width:560px) { .pc { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <h1>Data preview — two mental models</h1>
+  <div class="meta">SearchDataOnDataModelFinal · Split layout · 23 Sep 2026 · both are live in the prototype: Settings → Options → "Data preview (Split)". The question: does the preview work <em>for</em> the user automatically, or <em>at the user's command</em>?</div>
+
+  <h2>Rules shared by both</h2>
+  <ul>
+    <li>The preview panel's scope dropdown always offers Model, every table, and every join.</li>
+    <li>The panel is the user's: closed by default, stays open once opened, never opens itself on a plain canvas click.</li>
+    <li><b>Error states are the same everywhere:</b> no tables → "Add a table first". More than one table and not all joined into one connected model → <b>"Model preview isn't available"</b> — an error, never a partial result and never a query (a single lone table counts as a valid model). And if the table or join being previewed is <b>removed</b> from the model → <b>"No longer in the model"</b> — its own error, not "Nothing selected".</li>
+  </ul>
+
+  <div class="opt default">
+    <div class="opt-head"><span class="opt-num">1</span><span class="opt-title">Model is home · auto refresh</span><span class="badge">current default</span></div>
+    <p class="what">The preview shows the model by default and keeps itself current. Clicking a table or join drills in; the model is one pick away in the scope dropdown (returns are instant, from the last result). When the model changes while its preview is showing, the grid re-queries on its own. Clicking the canvas background never touches the panel. The system works for the user.</p>
+    <div class="pc">
+      <div class="pro"><h4>Pros</h4>
+        <ul>
+          <li>The default state is useful — the model is on screen without asking.</li>
+          <li>Feedback at the moment of action: join two tables and the effect appears right where you're looking.</li>
+          <li>Fewest clicks for the common loop (do a thing → see the result: zero).</li>
+          <li>Creation actions get a natural home — the grid rests at model level, where formulas and filters live.</li>
+          <li>Always current — the preview never lies about the model's present state.</li>
+        </ul>
+      </div>
+      <div class="con"><h4>Cons</h4>
+        <ul>
+          <li>The grid moves on its own — responds to canvas actions without being asked, which can read as loss of control.</li>
+          <li>Queries fire automatically — cost is the system's judgement, not the user's.</li>
+          <li>Leans hardest on the model being valid — the broken-model error carries real weight.</li>
+        </ul>
+      </div>
+    </div>
+    <p class="prec">Precedent: Sigma's workbook grid, Omni's create-where-you-work — the modern, model-centric direction.</p>
+  </div>
+
+  <div class="opt">
+    <div class="opt-head"><span class="opt-num">2</span><span class="opt-title">Select to preview · refresh on click</span></div>
+    <p class="what">Nothing shows until the user selects something; every query traces to a click. Clicking a table or join (or its eye icon, which also opens a closed panel) previews it; a <b>Preview model</b> button by the zoom controls (plus the dropdown) reaches the model. Clicking the canvas background never touches the panel. When something being previewed is <em>modified</em> — a column removed, a join reconfigured, the model edited — the grid holds its rows and shows <b>"Data changed — Refresh"</b>: the re-query is the user's click. The user commands the system.</p>
+    <div class="pc">
+      <div class="pro"><h4>Pros</h4>
+        <ul>
+          <li>Matches the current market's mental model — familiar on first touch.</li>
+          <li>User control as a tenet: what the user selects previews; what changed refreshes when they say so.</li>
+          <li>Query cost is entirely user-controlled — nothing runs uninvited.</li>
+          <li>The needs-refresh banner doubles as feedback: it says <em>your action changed this data</em> without presuming to act on it.</li>
+        </ul>
+      </div>
+      <div class="con"><h4>Cons</h4>
+        <ul>
+          <li>Every look at the data costs a click; the refresh costs another.</li>
+          <li>The preview can sit knowingly stale — correct only as of the last click.</li>
+          <li>The model is a destination to remember, not the ground; creation-from-grid has a weaker home.</li>
+        </ul>
+      </div>
+    </div>
+    <p class="prec">Precedent: Tableau's data-source grid, Power BI's data view for selection; warehouse consoles (BigQuery, Databricks) and dbt for query-on-demand.</p>
+    <div class="variant"><b>Two affordance variants, both clickable in the prototype:</b> with <b>eye icons</b> on cards and join badges (they signal previewability and also open a closed panel; the card click previews too), or <b>card click only</b> (no icons — the selection itself is the ask). Same mental model either way; the demo can compare the affordance live. A third explored variant — icons as the <em>only</em> trigger, plain clicks never previewing — is built but off the menu; parked because it adds a click to the hottest loop and lets selection and preview disagree.</div>
+  </div>
+
+  <h2>The dividing line</h2>
+  <p>Earlier framings treated "where does the preview start" and "when does data update" as separate knobs. They collapse into one question because each answer only makes sense with its partner: a model that greets you but shows stale rows breaks its own promise, and a preview you summon click-by-click that then updates itself breaks the other one. <b>Automatic is a package, and manual is a package.</b> That's why there are two options, not a matrix.</p>
+
+  <h2>One-line comparison</h2>
+  <table>
+    <tr><th></th><th>1 · Model is home</th><th>2 · Select to preview</th></tr>
+    <tr><td>Default view</td><td>The model</td><td>Nothing selected</td></tr>
+    <tr><td>Clicks to see what you just did</td><td>0</td><td>1</td></tr>
+    <tr><td>Data currency</td><td>Always current (auto re-query)</td><td>Current as of the last click (banner when stale)</td></tr>
+    <tr><td>Query cost decided by</td><td>The system</td><td>The user</td></tr>
+    <tr><td>Panel ever moves uninvited</td><td>Yes — that's the point</td><td>Never — that's the point</td></tr>
+    <tr><td>Fits grid-as-workbench (creation)</td><td>Naturally</td><td>Summoned</td></tr>
+    <tr><td>Convention</td><td>Modern (Sigma/Omni)</td><td>Today's market (Tableau/PBI)</td></tr>
+  </table>
+
+</div>
+</body>
+</html>

@@ -41,9 +41,14 @@ export interface TableCanvasProps {
   // consumer can anchor its own menu there. Omitted by default, which leaves
   // that button inert exactly as it is for the other consumers.
   onTableMenu?: (tableName: string, e: React.MouseEvent) => void;
+  // Additive, opt-in pair: explicit preview (eye) buttons on cards and join
+  // badges — see TableCard.onPreview / JoinConnector.onPreviewJoin. Omitted
+  // by default so every other consumer keeps its current cards and badges.
+  onPreviewTable?: (tableName: string) => void;
+  onPreviewJoin?: (join: JoinInfo) => void;
 }
 
-const TableCanvas: React.FC<TableCanvasProps> = ({ tables, joins, onTableDragEnd, selectedTable, onSelectTable, selectedJoinKey, onSelectJoin, highlightedTables, hoverAffordance, onCreateJoin, onAddColumns, onTableMenu }) => {
+const TableCanvas: React.FC<TableCanvasProps> = ({ tables, joins, onTableDragEnd, selectedTable, onSelectTable, selectedJoinKey, onSelectJoin, highlightedTables, hoverAffordance, onCreateJoin, onAddColumns, onTableMenu, onPreviewTable, onPreviewJoin }) => {
   // Live dotted line while dragging from a card's join handle.
   const [joinDrag, setJoinDrag] = useState<{ from: string; x: number; y: number } | null>(null);
 
@@ -119,10 +124,11 @@ const TableCanvas: React.FC<TableCanvasProps> = ({ tables, joins, onTableDragEnd
             onJoinHandleMouseDown={handleJoinHandleMouseDown}
             onAddColumns={onAddColumns}
             onMenuClick={onTableMenu ? e => onTableMenu(t.name, e) : undefined}
+            onPreview={onPreviewTable}
           />
         );
       })}
-      <JoinConnector joins={joins} cardRects={cardRects} selectedJoinKey={selectedJoinKey} onSelectJoin={onSelectJoin} />
+      <JoinConnector joins={joins} cardRects={cardRects} selectedJoinKey={selectedJoinKey} onSelectJoin={onSelectJoin} onPreviewJoin={onPreviewJoin} />
       {joinDrag && cardRects[joinDrag.from] && (
         <svg
           style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', overflow: 'visible', zIndex: 1 }}
