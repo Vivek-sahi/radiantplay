@@ -503,12 +503,17 @@
   overflow: hidden;
   transition: width 220ms ease, opacity 220ms ease, margin-right 220ms ease;
   opacity: 1;
-  /* 2026-09-25, Komal: "increase the height of the column selector panel to
-     top align with the query bar" — pulls the panel's top up past .main's
-     own 20px top padding and .queryBarRow's height (24px padding + 40px
-     single-line bar) so it starts flush with the query bar's top instead of
-     below it. A fixed value, not a dynamic one — matches a single-line bar. */
-  margin-top: -84px;
+  /* Positions the panel top relative to the outer container top.
+     -84px (= 20px main padding + 24px queryBarRow padding + 40px bar)
+     would flush the panel's top with the query bar's outer container top
+     — but the query bar itself starts 24px down (queryBarRow padding-top).
+     2026-09-25, Komal: "add the same 26px margin as on top of the query bar"
+     — use -58px instead (-84 + 26 = -58) so the panel starts 26px lower than
+     the outer container top, leaving 26px of page background (gray) above the
+     panel card. The query bar has the same ~26px gap above its white box from
+     the queryBarRow's own 24px padding-top. A fixed value; matches a
+     single-line bar. */
+  margin-top: -58px;
 }
 
 .dataPanelHidden {
@@ -2775,12 +2780,12 @@
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   grid-template-rows: auto auto;
-  column-gap: var(--spacing-4, var(--spacing-4));
-  row-gap: var(--spacing-2, var(--spacing-2));
+  column-gap: var(--spacing-4);
+  row-gap: var(--spacing-2);
   align-content: center;
   justify-content: center;
   text-align: left;
-  padding: var(--spacing-4, var(--spacing-4)) var(--spacing-8, var(--spacing-8));
+  padding: var(--spacing-4) var(--spacing-8);
 }
 .sheetNoData > :first-child {
   grid-row: 1 / span 2;

@@ -3896,9 +3896,10 @@ const SECTIONS: SectionDef[] = [
     ],
   },
   { id: 'formulas',    label: 'Formulas',    kind: 'leaf' },
-  { id: 'set',         label: 'Set',         kind: 'leaf' },
   { id: 'parameters',  label: 'Parameters',  kind: 'leaf' },
-  { id: 'customData',  label: 'Custom data', kind: 'leaf' },
+  // 2026-09-25, Komal: "remove custom data and set from the column selector"
+  // — 'set' and 'customData' dropped. Nothing else in this file reads either
+  // id (checked before removing), so no other branch is left dangling.
 ];
 
 // ─── Currency ──────────────────────────────────────────────────────────────────
@@ -7626,7 +7627,11 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
                   where the question gets asked, so the state just says what
                   this tab is for. */}
               <h2 className={styles.emptySearchTitle}>Test your model</h2>
-              <p className={styles.emptySearchDescription}>Ask a question of your data and see how your model answers it.</p>
+              {/* 2026-09-25, Komal: "improve the description... make it
+                  compelling" — tightened to lead with the action and pay it
+                  off with a concrete result, instead of describing the
+                  mechanism ("ask a question of your data"). */}
+              <p className={styles.emptySearchDescription}>Ask a question and watch your model turn it into an answer.</p>
             </div>
           </div>
         </div>

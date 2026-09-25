@@ -81,22 +81,33 @@ export const TableColumnSidePanel: React.FC<TableColumnSidePanelProps> = ({
     // Same background and shadow #left-pane itself uses (dme.css: box-shadow:
     // var(--shadow-surface)) — Komal, 2026-09-22: "it doesn't look like it's
     // part of the tables panel visually" — matching it makes this read as a
-    // continuation of the Tables section. zIndex 35: must clear the preview
-    // panel (PreviewPanel3.tsx docked z, 30 since 2026-09-25 — raised there
-    // so its modal overlay/menus beat the canvas pills at 20), which sits
-    // later in the DOM and otherwise paints over this panel's bottom and
-    // eats its clicks (Vivek, 2026-09-25: "this panel should come above
-    // preview panel"; originally 10-vs-3 for the same reason).
+    // continuation of the Tables section. zIndex 40 — the DS scale's next
+    // step above the preview panel (tokens.css: --z-index-sticky 20 = the
+    // canvas's floating pills, --z-index-overlay 30 = PreviewPanel3's docked
+    // panel, --z-index-modal 40 = here). The literal, not var(--z-index-modal):
+    // that token is overridden to 10000 inside several prototype subtrees, so
+    // binding to it would make this panel's layer depend on where it renders.
+    // Without clearing 30 the preview panel paints over this panel's bottom
+    // and eats its clicks (Vivek + Komal both hit it, 2026-09-25).
     // 480 — the columns list went back to single-column (Komal, 2026-09-22:
     // "I don't like the double column stacking... make it single column"),
     // so the 640px width sized for a 2-up grid was excess; narrowed back
     // down ("reduce the width of columns") now that a single column of
     // names doesn't need that much room.
-    <div data-side-panel-root="" style={{ position: 'absolute', top: 0, bottom: 0, left: leftOffset, width: 480, display: 'flex', flexDirection: 'column', background: 'var(--rd-sys-color-background-base)', borderRight: '1px solid var(--rd-sys-color-border-divider)', boxShadow: 'var(--shadow-surface)', zIndex: 35 }}>
+    <div data-side-panel-root="" style={{ position: 'absolute', top: 0, bottom: 0, left: leftOffset, width: 480, display: 'flex', flexDirection: 'column', background: 'var(--rd-sys-color-background-base)', borderRight: '1px solid var(--rd-sys-color-border-divider)', boxShadow: 'var(--shadow-surface)', zIndex: 40 }}>
       {/* No close "x" (Komal, 2026-09-22: "remove") and no footer any more
           either — clicking outside closes it, and there's nothing left to
-          confirm or cancel. */}
-      <div style={{ display: 'flex', alignItems: 'center', padding: 'var(--spacing-3) var(--spacing-4)', background: 'var(--rd-sys-color-background-sunken)', borderBottom: '1px solid var(--rd-sys-color-border-divider)', flexShrink: 0 }}>
+          confirm or cancel.
+          2026-09-25, Komal: "both the titles should have the same space at
+          the top and bottom of the text. Balance and align it" — comparing
+          this header against .left-pane-inventory-title's own (spacing-4
+          top/bottom, its bottom already netting a 16px perceived gap against
+          the sunken ground below it). Padding here moves from spacing-3 to
+          spacing-4 top/bottom to match: this header draws its own
+          border-bottom right below the padding (unlike that title, which
+          relies on a sibling's padding to close its gap), so a plain
+          symmetric spacing-4 is the whole fix, no compensation needed. */}
+      <div style={{ display: 'flex', alignItems: 'center', padding: 'var(--spacing-4)', background: 'var(--rd-sys-color-background-sunken)', borderBottom: '1px solid var(--rd-sys-color-border-divider)', flexShrink: 0 }}>
         {/* 2026-09-24, Komal: "in data browser, update the title of the panel
             to 'Data browser'". */}
         <Typography variant="content-label" as="span" noMargin>Data browser</Typography>

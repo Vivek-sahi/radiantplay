@@ -48,8 +48,8 @@
 
 /* Expand/collapse, back on the left of the name. */
 .chevron {
-  width: 18px;
-  height: 18px;
+  width: var(--spacing-5);
+  height: var(--spacing-5);
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -73,10 +73,15 @@
 .tableName {
   flex: 1;
   min-width: 0;
+  /* 2026-09-25, Komal: "the fonts of the table name... look too thick. Use
+     the correct font... strictly from Radiant." These are list rows, not
+     labels, so they take Radiant's body variant rather than a label one:
+     font-size-sm + font-weight-regular + line-height-md is body-normal
+     exactly. The columns nested under a table sit lighter still, so the
+     parent/child read the medium weight was carrying survives the drop. */
   font-size: var(--font-size-sm);
-  /* Medium, where the column chips are light — the table has to read as the
-     parent of the columns nested under it. */
-  font-weight: var(--font-weight-medium);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-md);
   color: var(--rd-sys-color-content-primary);
   font-family: var(--font-family-primary);
   white-space: nowrap;
@@ -85,8 +90,8 @@
 }
 
 .add {
-  width: 20px;
-  height: 20px;
+  width: var(--spacing-5);
+  height: var(--spacing-5);
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -120,12 +125,16 @@
   opacity: 0.35;
 }
 
-/* Indented to sit under the table name (chevron 18px + row gap 8px), so the
-   nesting is visible rather than implied. */
+/* Indented to sit under the table name (chevron + row gap), so the nesting is
+   visible rather than implied. */
 .colList {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-1);
+  /* 2026-09-25, Komal: "use consistent spacing between columns everywhere.
+     Data browser uses the right spacing" — TableColumnBrowserBody's own
+     column rows (padding: 6px 0, no row) net a 12px gap between chips;
+     matched here directly since these rows carry no padding of their own. */
+  gap: var(--spacing-3);
   /* 4px under the table row it belongs to, against 12px between tables. */
   padding: var(--spacing-1) 0 0 var(--spacing-6);
   align-items: flex-start;

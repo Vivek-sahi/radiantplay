@@ -190,13 +190,22 @@ export const TableColumnBrowserBody: React.FC<TableColumnBrowserBodyProps> = ({
             borderBottom: '1px solid var(--rd-sys-color-border-divider)',
             background: 'var(--rd-sys-color-background-base)',
           }}>
-            {/* Icon + label (2026-09-25, Komal: "make it visually appealing
-                and beautiful") — the same icon+label pairing every table row
-                below already uses, so the header reads as one more step of
-                the same pattern rather than a plainer, unrelated banner. */}
+            {/* 2026-09-25, Komal: "remove the columns and table icons from
+                here in the data browser" — label only now. */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-2)' }}>
-              <Icon name="table" size="xs" color="var(--rd-sys-color-content-secondary)" />
+              {/* Iconless header — Komal's Data browser direction (2026-09-25;
+                  Vivek: "for data panel we follow her direction"). Type stays
+                  on tokens rather than her raw 13/600. */}
               <span style={{ fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-semibold)', color: 'var(--rd-sys-color-content-primary)' }}>Tables</span>
+            </div>
+            {/* 2026-09-25, Komal: "under the tables header in data browser,
+                add the connection name" — sits under "Tables" the same way
+                the Columns header's own second line (the focused table name)
+                sits under "Columns", so the two headers keep reading as a
+                matched pair. */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-1)', marginTop: 2 }}>
+              <img src="/spotter-assets/Snowflake.svg" width="12" height="12" alt="" />
+              <span style={{ fontSize: 12, color: 'var(--rd-sys-color-content-secondary)' }}>Global sales connection</span>
             </div>
           </div>
           <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
@@ -319,13 +328,10 @@ export const TableColumnBrowserBody: React.FC<TableColumnBrowserBodyProps> = ({
                 // rather than the two bars ending up different sizes.
                 <div style={{ flexShrink: 0, height: PANEL_HEADER_HEIGHT, boxSizing: 'border-box', padding: '10px var(--spacing-3)', display: 'flex', flexDirection: 'column', justifyContent: 'center', borderBottom: '1px solid var(--rd-sys-color-border-divider)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-2)' }}>
-                    <Icon name="data-column" size="xs" color="var(--rd-sys-color-content-secondary)" />
                     <span style={{ fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-semibold)', color: 'var(--rd-sys-color-content-primary)' }}>Columns</span>
                   </div>
-                  {/* Indented past the icon (18px = xs icon width + spacing-2
-                      gap) so the table name lines up under "Columns" itself,
-                      not under the icon beside it. */}
-                  <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--rd-sys-color-content-secondary)', marginTop: 2, marginLeft: 18 }}>
+                  {/* No icon, so no indent to clear it (Komal's direction). */}
+                  <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--rd-sys-color-content-secondary)', marginTop: 2 }}>
                     {focusedTable}
                   </div>
                 </div>

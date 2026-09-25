@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { Checkbox } from '@components/Checkbox';
+import { Icon } from '@components/icons';
 import { rdComponentColors } from '@tokens/colors';
 import type { ColumnTreeData } from '../../_datamodel/index';
 import { isNumericColumn } from './previewMockData';
@@ -68,21 +69,15 @@ export const ColumnChip: React.FC<{ label: string }> = ({ label }) => (
   </span>
 );
 
+// 2026-09-25, Komal: audit item C — these were hand-drawn stroke SVGs sitting
+// next to Radiant's own solid-fill icons, so the row chevron didn't match the
+// section-header chevron directly above it. Both glyphs exist in the registry;
+// use those. `xs` is the size the section header's chevron already uses.
 const Chevron: React.FC<{ open: boolean }> = ({ open }) => (
-  <svg
-    className={open ? styles.chevronOpen : undefined}
-    width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true"
-  >
-    <path d="M3.5 1.5L7 5l-3.5 3.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
+  <Icon name="chevron-right" size="xs" className={open ? styles.chevronOpen : undefined} />
 );
 
-const Plus: React.FC = () => (
-  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-    <path d="M6 1.5v9" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-    <path d="M1.5 6h9" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-  </svg>
-);
+const Plus: React.FC = () => <Icon name="plus" size="xs" />;
 
 export const TablePickerV2: React.FC<TablePickerV2Props> = ({
   data,

@@ -7,6 +7,7 @@ import { Radio } from '@components/Radio';
 import { Checkbox } from '@components/Checkbox';
 import { Typography } from '@components/Typography';
 import { Divider } from '@components/Divider';
+import { Link } from '@components/Link';
 import { SegmentedControl } from '@components/SegmentedControl';
 import { Tabs } from '@components/Tabs';
 import { Select } from '@components/Select';
@@ -32,6 +33,8 @@ import TablePickerV2, { ColumnChip } from './components/TablePickerV2';
 import tablePickerStyles from './components/TablePickerV2.module.css';
 import FormulaEditorModal from './components/FormulaEditorModal';
 import type { FormulaDraft } from './components/FormulaEditorModal';
+import ParameterEditorModal from './components/ParameterEditorModal';
+import type { ParameterDraft } from './components/ParameterEditorModal';
 import EditJoinModal from './components/EditJoinModal';
 import type { EditJoinResult } from './components/EditJoinModal';
 import TableBrowserModal from './components/TableBrowserModal';
@@ -42,23 +45,6 @@ import { SearchDataExplorations as QueryAsIs } from './components/QueryAsIs';
 // Formula/Filters/Parameters dock (ported exactly from DataStudioV2 MVP's left
 // browser panel) — fixed to the bottom of the Tables pane, table list scrolls
 // in the remaining space above.
-// No "parameter" icon exists in the Radiant registry (2026-09-24, Komal:
-// "build a custom one" — for Parameters only; Formula and Filters use the
-// registry's own 'formula'/'funnel' icons, the same ones the spreadsheet
-// toolbar's own Add formula/Filter buttons already use). Drawn in the
-// registry's own idiom — solid currentColor fill, no stroke, 18×18 canvas —
-// so it sits next to real Radiant icons without reading as a different
-// species: two sliders at different positions, the plainest available
-// metaphor for "an adjustable value."
-const PARAMETER_ICON = (
-  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <rect x="2" y="4.25" width="14" height="1.5" rx="0.75" fill="currentColor" />
-    <circle cx="11" cy="5" r="2.5" fill="currentColor" />
-    <rect x="2" y="12.25" width="14" height="1.5" rx="0.75" fill="currentColor" />
-    <circle cx="7" cy="13" r="2.5" fill="currentColor" />
-  </svg>
-);
-
 // count/children are optional so a row can be a plain entry (e.g. Settings)
 // rather than a counted collection with an expandable body.
 // `onAdd` puts the section's "+" in the header, left of the chevron — Komal:
@@ -76,13 +62,19 @@ const PARAMETER_ICON = (
 const CountBadge: React.FC<{ count: number }> = ({ count }) => (
   <span style={{
     display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-    flexShrink: 0, minWidth: 18, padding: '0 var(--spacing-1)',
+    // 2026-09-25, audit item D: was a raw 18, which is off the 4px scale.
+    flexShrink: 0, minWidth: 'var(--spacing-5)', padding: '0 var(--spacing-1)',
     borderRadius: 'var(--radius-full)',
     background: 'var(--rd-sys-color-background-subtle)',
   }}>
     <Typography variant="footnote" as="span" color="gray-light" noMargin>{count}</Typography>
   </span>
 );
+
+// The collapsed/expanded drawer height for every section except Tables, which
+// takes the pane's remaining height instead. No Radiant token covers a drawer
+// height, so it is at least named rather than inline (2026-09-25, audit D).
+const DOCK_DRAWER_MAX_HEIGHT = 220;
 
 // `fill` is the Tables section: it collapses like every other section, but
 // while open its body takes the pane's remaining height rather than animating
@@ -93,46 +85,72 @@ const DockRow: React.FC<{ balance: PaneBalance; icon: React.ReactNode; label: st
   // row, the count plain on the right. Box stays compact: its icon, an
   // uppercase overline label, and the count as a badge beside it.
   const tint = balance === 'tint';
-  const headerStyle: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: tint ? 12 : 7, width: '100%', padding: tint ? '14px 16px' : '9px 14px', border: 'none', textAlign: 'left' };
+  // 2026-09-25, audit item D: gap/padding were 7, 9, 14 and 12/16 inline —
+  // 7, 9 and 14 sit off the 4px scale entirely. On-scale now, and the
+  // horizontal inset matches .dock-search-row and .dock-list's own
+  // var(--spacing-4), so a section label lines up with the search field and
+  // the rows underneath it instead of starting 2px to their left.
+  const toggleStyle: React.CSSProperties = {
+    display: 'flex', alignItems: 'center', gap: tint ? 'var(--spacing-3)' : 'var(--spacing-2)',
+    flex: 1, minWidth: 0,
+    padding: tint ? 'var(--spacing-4)' : 'var(--spacing-2) var(--spacing-4)',
+    border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer',
+  };
   const headerContent = (
     <>
-      <span style={{ display: 'flex', flexShrink: 0, transition: 'transform 200ms cubic-bezier(0.4,0,0.2,1)', transform: open ? 'rotate(90deg)' : 'none' }}>
+      <span style={{ display: 'flex', flexShrink: 0, transition: 'transform var(--duration-normal) var(--easing-standard)', transform: open ? 'rotate(90deg)' : 'none' }}>
         <Icon name="chevron-right" size={tint ? 's' : 'xs'} color={tint ? 'var(--rd-sys-color-content-primary)' : 'var(--rd-sys-color-content-secondary)'} />
       </span>
       {!tint && icon}
-      {/* Section chrome, not content: in box, Radiant's 'overline' (12px / 500 /
-          uppercase / 0.02em) in content-secondary keeps the weight on the rows
-          underneath. Tint instead matches the reference's sentence-case
-          14px/500 label in content-primary. The count itself — CountBadge — is
-          now the same pill in both treatments, next to the title (Komal:
-          "in tint, use badges... placed next to the section title similar to
-          box"); only the label's own type/case still tells the two apart. */}
-      <span style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
-        <Typography variant={tint ? 'content-label-subhead' : 'overline'} as="span" color={tint ? 'base' : 'gray-light'} noMargin style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</Typography>
+      {/* Section chrome, not content. 2026-09-25, Komal: "use the same
+          section headers font and color in the left panel that are being
+          used in the query column selector" — box now matches that same
+          'content-label' / color 'base' (16px / 500 / content-primary,
+          sentence case) instead of its previous uppercase 'overline'
+          treatment. Tint keeps its own 'content-label-subhead' (14px)
+          unchanged — only the box label was called out. The count itself —
+          CountBadge — is the same pill in both treatments, next to the
+          title (Komal: "in tint, use badges... placed next to the section
+          title similar to box"). */}
+      <span style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 'var(--spacing-2)' }}>
+        {/* 2026-09-25, Komal: "the fonts of the table name, formula, filters
+            and parameters look too thick. Use the correct font... strictly
+            from Radiant." Box was on 'content-label' (16/500) — Radiant's
+            label for content headings on full-width surfaces. In a 300px
+            rail that reads heavy; the next step down its own label scale,
+            'content-label-subhead' (14/500), is the one meant for subheads,
+            and is what tint already used. Both treatments now share it. */}
+        <Typography variant="content-label-subhead" as="span" color="base" noMargin style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</Typography>
         {typeof count === 'number' && <CountBadge count={count} />}
       </span>
-      {onAdd && (
-        <span
-          style={{ display: 'flex' }}
-          role="presentation"
-          onClick={e => { e.stopPropagation(); onAdd(); }}
-        >
-          <Button variant="tertiary" size="small" iconOnly icon="plus" aria-label={addLabel ?? `Add to ${label}`}>
-            {addLabel ?? `Add to ${label}`}
-          </Button>
-        </span>
-      )}
     </>
   );
 
+  // 2026-09-25, audit item E: the header used to be one <button> with the
+  // section's own "+" Button nested inside it — invalid HTML — reached
+  // through a <span role="presentation" onClick> that stopped propagation, so
+  // the "+" was a click target with no role and the whole row was a button
+  // containing a button. Now the header is a plain flex row holding two real
+  // sibling controls: the toggle (chevron, icon, label, count) and the "+".
+  // Both are genuinely focusable and neither nests inside the other, so the
+  // stopPropagation hack is gone too.
   return (
     <div className="dock-row" data-open={open} data-fill={fill ? 'true' : undefined}>
-      <button type="button" className="dock-row-header" onClick={onToggle} style={{ ...headerStyle, cursor: 'pointer' }}>
-        {headerContent}
-      </button>
+      <div className="dock-row-header">
+        <button type="button" className="dock-row-toggle" onClick={onToggle} style={toggleStyle} aria-expanded={open}>
+          {headerContent}
+        </button>
+        {onAdd && (
+          <span style={{ display: 'flex', flexShrink: 0, paddingRight: 'var(--spacing-2)' }}>
+            <Button variant="tertiary" size="small" iconOnly icon="plus" aria-label={addLabel ?? `Add to ${label}`} onClick={onAdd}>
+              {addLabel ?? `Add to ${label}`}
+            </Button>
+          </span>
+        )}
+      </div>
       <div style={fill && open
         ? { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflowY: 'auto' }
-        : { maxHeight: open ? 220 : 0, overflowY: open ? 'auto' : 'hidden', transition: 'max-height 220ms cubic-bezier(0.4,0,0.2,1)' }}>
+        : { maxHeight: open ? DOCK_DRAWER_MAX_HEIGHT : 0, overflowY: open ? 'auto' : 'hidden', transition: 'max-height var(--duration-normal) var(--easing-standard)' }}>
         {children}
       </div>
     </div>
@@ -250,8 +268,13 @@ const AddedTableRow: React.FC<{
           onClick={onToggleOpen}
           style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-2)', flex: 1, minWidth: 0, padding: 0, border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left' }}
         >
+          {/* 2026-09-25, Komal: "always keep the table expand/collapse
+              active" — content-secondary read as a muted/disabled-looking
+              gray even though the control was always fully clickable;
+              content-primary keeps it looking active regardless of hover
+              state. */}
           <span className={`${tablePickerStyles.chevron} ${isOpen ? tablePickerStyles.chevronOpen : ''}`}>
-            <Icon name="chevron-right" size="xs" color="var(--rd-sys-color-content-secondary)" />
+            <Icon name="chevron-right" size="xs" color="var(--rd-sys-color-content-primary)" />
           </span>
           <span className={tablePickerStyles.tableName}>{name}</span>
         </button>
@@ -261,7 +284,9 @@ const AddedTableRow: React.FC<{
           onClick={onEdit}
           aria-label={`Edit ${name}`}
           title={`Edit ${name}`}
-          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 20, height: 20, flexShrink: 0, border: 'none', background: 'transparent', borderRadius: 'var(--radius-sm)', cursor: 'pointer', color: 'var(--rd-sys-color-content-secondary)' }}
+          // 2026-09-25, audit item D: the 20x20 hit area was raw; it is the
+          // same box TablePickerV2.module.css's own .add/.chevron use.
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 'var(--spacing-5)', height: 'var(--spacing-5)', flexShrink: 0, border: 'none', background: 'transparent', borderRadius: 'var(--radius-sm)', cursor: 'pointer', color: 'var(--rd-sys-color-content-secondary)' }}
         >
           <Icon name="pencil" size="xs" />
         </button>
@@ -303,7 +328,6 @@ const withCopy = <T extends { name: string }>(list: T[], item: T): T[] => {
 // purely by the dock wrapper's class styling.
 type PaneBalance = 'tint' | 'box';
 
-const PaneBody: React.FC<{ mode: PaneBalance; children: React.ReactNode }> = ({ children }) => <>{children}</>;
 
 
 // The search at the top of a section's body, matching the one Tables carries.
@@ -316,34 +340,195 @@ const DockSearch: React.FC<{ placeholder: string; value: string; onChange: (v: s
   </div>
 );
 
-// Formula/Filters/Parameters empty states (2026-09-24: first "similar to
-// tables, update the empty states... consistently" gave each one a bespoke
-// hand-drawn scene; then "use radiant style illustrations... currently
-// everything you have built is custom" replaced those scenes with this —
-// Radiant's own "Muted alert illustration" pattern: a single icon centred in
-// a plain muted circle, the same convention used for empty/error states
-// across the product (see the Figma Radiant 3.0 file, "Muted Alert" page,
-// e.g. its 56px row). Formula and Filters use the exact icons already doing
-// this job elsewhere in this same prototype — Icon 'formula'/'funnel', the
-// same two the spreadsheet toolbar's own Add formula/Filter buttons use — so
-// nothing new was invented for either. Parameters has no equivalent
-// anywhere (Radiant's registry has no "parameter" icon), so it's the one
-// deliberate exception: PARAMETER_ICON above, drawn in the registry's own
-// solid-fill idiom so it still reads as part of the same family sitting
-// beside the two real ones.
-const panelEmptyIcon = (icon: React.ReactNode) => (
-  <div style={{
-    width: 56, height: 56, borderRadius: '50%', flexShrink: 0,
-    background: 'var(--rd-sys-color-background-subtle)',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    color: 'var(--rd-sys-color-content-secondary)',
-  }}>
-    {icon}
-  </div>
+// Radiant's "Muted alert illustration" pattern (Figma Radiant 3.0, "Muted
+// Alert" page, node 25122:178936) — every instance is the same 140×118
+// canvas, a corner-to-corner clip, and a centerpiece with the family's slow
+// bob/twinkle motion; only the centerpiece's own content (and where its own
+// accents sit) differs per instance. First used for Tables' own empty state
+// (2026-09-25, Komal: "use this illustration for the empty state of
+// tables"), extracted here into a shared, accent-agnostic frame so Formula/
+// Filters/Parameters (2026-09-25, Komal: "use the same format, illustration
+// style... instead of data, use relevant illustrations") can reuse the exact
+// canvas/clip/motion plumbing while supplying their own accent layout inside
+// `centerpiece` — see DATA_CENTERPIECE vs. ROUND_CENTERPIECE below, which are
+// two different Muted Alert templates in the same Figma family (traced disc
+// stack vs. a plain muted circle with the icon knocked out in white, e.g.
+// "Pinboard", node 25122:178958).
+const MutedAlertIllustration: React.FC<{ centerpiece: React.ReactNode; paused?: boolean; clipId: string }> = ({ centerpiece, paused, clipId }) => (
+  <svg
+    className={`empty-state-illo${paused ? ' empty-state-illo-paused' : ''}`}
+    width="96"
+    height="81"
+    viewBox="0 0 140 118"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <g clipPath={`url(#${clipId})`}>
+      {centerpiece}
+    </g>
+    <defs>
+      <clipPath id={clipId}>
+        <rect width="140" height="118" fill="white" />
+      </clipPath>
+    </defs>
+  </svg>
 );
-const FORMULA_ILLUSTRATION = panelEmptyIcon(<Icon name="formula" size="l" />);
-const FILTER_ILLUSTRATION = panelEmptyIcon(<Icon name="funnel" size="l" />);
-const PARAMETER_ILLUSTRATION = panelEmptyIcon(PARAMETER_ICON);
+
+// Tables' own centerpiece — the traced disc-stack template, unchanged from
+// its original inline markup (corner dot-grid bottom-right, diagonal-stripe
+// square top-left, the stack itself), just lifted out so it can be passed
+// into the shared frame above.
+const DATA_CENTERPIECE = (
+  <>
+    <g className="illo2-accent-dots" fill="#777E8B">
+      {[
+        { x0: 127.877, y0: 60.7886 },
+        { x0: 98.78, y0: 60.7886 },
+        { x0: 98.7799, y0: 92.0922 },
+        { x0: 127.877, y0: 91.9998 },
+      ].map((block, bi) => (
+        Array.from({ length: 5 }).map((_, col) => (
+          Array.from({ length: 5 }).map((_, row) => (
+            <circle key={`${bi}-${col}-${row}`} cx={block.x0 - col * 6.005} cy={block.y0 + row * 6.005} r={1.38868} />
+          ))
+        ))
+      ))}
+    </g>
+    <g className="illo2-accent-stripe">
+      <mask id="illo-data-stripe-mask" style={{ maskType: 'alpha' }} maskUnits="userSpaceOnUse" x="11" y="-1" width="60" height="60">
+        <path d="M67.4535 58.9996L63.0659 59L11.9994 26.129L11.9994 23.3049L67.4535 58.9996ZM70.9995 56.0324L70.9995 58.8575L11.9993 20.8805L11.9994 18.0564L70.9995 56.0324ZM59.2997 58.9996L54.9112 59L11.9994 31.3775L11.9996 28.5544L59.2997 58.9996ZM51.1441 58.9997L46.7565 58.9991L11.9996 36.627L11.9997 33.8029L51.1441 58.9997ZM42.9904 58.9996L38.6018 58.9991L11.9997 41.8755L11.9998 39.0514L42.9904 58.9996ZM34.8347 58.9997L30.4471 58.9991L11.9988 47.125L11.9989 44.3009L34.8347 58.9997ZM26.6801 58.9997L22.2934 58.9991L11.9989 52.3735L11.999 49.5494L26.6801 58.9997ZM18.5264 58.9997L14.1378 58.9992L12 57.6229L11.9991 54.7979L18.5264 58.9997ZM70.9994 50.7839L70.9993 53.608L11.9992 15.632L11.9992 12.8069L70.9994 50.7839ZM70.9993 45.5344L70.9992 48.3585L11.999 10.3825L11.9991 7.55841L70.9993 45.5344ZM70.9992 40.2849L70.9991 43.11L11.9998 5.13201L12 2.30889L70.9992 40.2849ZM16.5655 -0.000182211L70.9991 35.0364L70.999 37.8615L12.4079 0.147334L12.4622 -0.000219907L16.5655 -0.000182211ZM24.7201 -0.0001991L70.999 29.7879L70.9989 32.612L20.3335 -0.000796976L24.7201 -0.0001991ZM32.8758 -0.000251076L70.9998 24.5384L70.9997 27.3625L28.4892 -0.000848952L32.8758 -0.000251076ZM41.0305 -0.000267966L70.9997 19.2899L70.9996 22.114L36.6429 -0.000830755L41.0305 -0.000267966ZM49.1852 -0.000284855L70.9996 14.0414L70.9995 16.8655L44.7966 -0.000812558L49.1852 -0.000284855ZM57.3398 -0.000301745L70.9995 8.79195L70.9994 11.616L52.9522 -0.000864534L57.3398 -0.000301745ZM65.4945 -0.000318634L70.9994 3.54344L70.9993 6.36754L61.1069 9.4509e-05L65.4945 -0.000318634ZM71 0.000118459L70.9992 1.11806L69.2616 7.76195e-05L71 0.000118459Z" fill="black" />
+      </mask>
+      <g mask="url(#illo-data-stripe-mask)">
+        <rect x="12.0793" y="0.551514" width="58.8495" height="58.8495" fill="#777E8B" />
+      </g>
+    </g>
+    <g className="illo2-stack">
+      <g>
+        <ellipse cx="72.4003" cy="88.9367" rx="33.8384" ry="8.71596" fill="#C0C6CF" />
+        <path d="M38.5619 81.2461V89.4493H106.239V81.2461H38.5619Z" fill="#C0C6CF" />
+        <ellipse cx="72.4003" cy="80.7335" rx="33.8384" ry="8.71596" fill="#C0C6CF" />
+      </g>
+      <g>
+        <ellipse cx="72.4003" cy="70.0676" rx="33.8384" ry="8.71596" fill="#EAEDF2" />
+        <path d="M38.5619 62.3773V70.5806H106.239V62.3773H38.5619Z" fill="#EAEDF2" />
+        <ellipse cx="72.4003" cy="61.8644" rx="33.8384" ry="8.71596" fill="white" />
+      </g>
+      <g>
+        <ellipse cx="72.4003" cy="58.1743" rx="33.8384" ry="8.71596" fill="#C0C6CF" />
+        <ellipse cx="72.4003" cy="66.3771" rx="33.8384" ry="8.71596" fill="#C0C6CF" />
+        <path d="M38.5619 58.6868V66.89H106.239V58.6868H38.5619Z" fill="#C0C6CF" />
+      </g>
+      <g>
+        <ellipse cx="72.4003" cy="47.7559" rx="33.8384" ry="8.71596" fill="#EAEDF2" />
+        <path d="M38.5619 40.0654V48.2686H106.239V40.0654H38.5619Z" fill="#EAEDF2" />
+        <ellipse cx="72.4003" cy="39.5527" rx="33.8384" ry="8.71596" fill="white" />
+      </g>
+      <g>
+        <ellipse cx="72.4004" cy="43.8189" rx="33.8384" ry="8.71596" fill="#C0C6CF" />
+        <ellipse cx="72.4003" cy="35.6152" rx="33.8384" ry="8.71596" fill="#C0C6CF" />
+      </g>
+      {/* Diagonal-stripe sheen on the top disc — same motif as the corner
+          accent, reused as a mask so the highlight only shows through its
+          stripes. */}
+      <path d="M38.5619 36.1276V44.3308H106.239V36.1276H38.5619Z" fill="#C0C6CF" />
+      <mask id="illo2-mask1" style={{ maskType: 'alpha' }} maskUnits="userSpaceOnUse" x="12" y="0" width="59" height="60">
+        <mask id="illo2-mask2" style={{ maskType: 'alpha' }} maskUnits="userSpaceOnUse" x="11" y="-1" width="60" height="61">
+          <path d="M67.4535 58.9997L63.0659 59.0001L11.9994 26.129L11.9994 23.305L67.4535 58.9997ZM70.9995 56.0325L70.9995 58.8575L11.9993 20.8805L11.9994 18.0565L70.9995 56.0325ZM59.2997 58.9997L54.9112 59.0001L11.9995 31.3785L11.9996 28.5544L59.2997 58.9997ZM51.1441 58.9997L46.7565 58.9992L11.9996 36.627L11.9997 33.8029L51.1441 58.9997ZM42.9904 58.9997L38.6018 58.9992L11.9997 41.8755L11.9998 39.0514L42.9904 58.9997ZM34.8347 58.9997L30.4461 58.9992L11.9988 47.125L11.9989 44.3009L34.8347 58.9997ZM26.6801 58.9998L22.2915 58.9992L11.999 52.3745L11.999 49.5495L26.6801 58.9998ZM18.5254 58.9998L14.1378 58.9992L12 57.623L11.9991 54.7989L18.5254 58.9998ZM70.9994 50.784L70.9993 53.6081L11.9992 15.632L11.9993 12.8079L70.9994 50.784ZM70.9993 45.5345L70.9992 48.3586L11.999 10.3826L11.9991 7.55847L70.9993 45.5345ZM70.9992 40.286L70.9991 43.1101L11.9999 5.13305L12 2.30896L70.9992 40.286ZM16.5655 -0.000121176L70.9991 35.0365L70.999 37.8616L12.4079 0.147395L12.4622 -0.000158872L16.5655 -0.000121176ZM24.7211 -0.000173152L70.999 29.788L70.9989 32.6121L20.3335 -0.000735941L24.7211 -0.000173152ZM32.8758 -0.000190041L70.9999 24.5395L70.9998 27.3636L28.4882 -0.00075283L32.8758 -0.000190041ZM41.0305 -0.000206931L70.9997 19.29L70.9997 22.1151L36.6429 -0.000769719L41.0305 -0.000206931ZM49.1842 -0.000188734L70.9996 14.0415L70.9995 16.8656L44.7966 -0.000751522L49.1842 -0.000188734ZM57.3398 -0.000240709L70.9995 8.79201L70.9994 11.6161L52.9522 -0.000803498L57.3398 -0.000240709ZM65.4945 -0.000257599L70.9994 3.54351L70.9993 6.3676L61.1069 -0.000820388L65.4945 -0.000257599ZM71 0.000179494L70.9992 1.11812L69.2616 0.000138655L71 0.000179494Z" fill="black" />
+        </mask>
+        <g mask="url(#illo2-mask2)">
+          <rect x="12.0793" y="0.551514" width="58.8495" height="58.8495" fill="#777E8B" />
+        </g>
+      </mask>
+      <g mask="url(#illo2-mask1)">
+        <path d="M106.239 43.8184C106.239 48.6321 91.0888 52.5344 72.4004 52.5344C53.7119 52.5344 38.5619 48.6321 38.5619 43.8184C38.5619 39.0047 38.5619 35.8604 38.5619 35.8604C57.2503 35.8604 106.239 39.0047 106.239 43.8184Z" fill="white" />
+        <ellipse cx="72.4003" cy="35.6153" rx="33.8384" ry="8.71596" fill="white" />
+      </g>
+    </g>
+  </>
+);
+
+// Formula/Filters/Parameters' own centerpiece — Radiant's OTHER Muted Alert
+// template, e.g. "Pinboard" (figma.com/design/1QlRveXx4wppvDXyPVWUTK, node
+// 25122:178958): a plain muted circle with the icon knocked out in white
+// (here: drawn in white over the circle — same result, since the page behind
+// it is white too), a striped-circle accent tucked behind its top edge, and
+// the same dot-grid accent as Tables' own illustration, mirrored to the
+// opposite corner. 2026-09-25, Komal: "i dont like bottom oval that you have
+// added. Simply add the symbol in a round like this" — replaces the earlier
+// ground-ellipse-plus-bare-icon attempt. Formula and Filters reuse the exact
+// icons already doing this job elsewhere in this prototype — Icon
+// 'formula'/'funnel', the same two the spreadsheet toolbar's own Add
+// formula/Filter buttons use. Parameters wears Icon 'tag' — the same glyph
+// its section header shows, so the two read as one thing (2026-09-25: the
+// prototype-local ParameterIcon it used to carry was dropped for the
+// registry, per "we should use our icons").
+// Geometry below is traced 1:1 from the node's own exported vectors, not
+// eyeballed: disc = the "Subtract" layer (81.7803 box at 29.56/18.3, so
+// r 40.8896 centred on 70.4496/59.1896); ring = the "Subtract" stripe layer
+// (49.8311x49.9551 box at 79.17/0.33, i.e. r 24.97755 centred on
+// 104.0856/25.3076, with 3-unit bands on a 7-unit pitch starting at
+// y -0.94441); the white bands over the disc are the node's own "Mask Group"
+// (same bands, masked to the disc); dots are its four "Group 5" blocks at
+// 12.66/35.86 x 74.79/97.6, each a 5x5 grid of r-1.07139 circles.
+const RING_BANDS = [-0.94441, 6.05559, 13.05559, 20.05559, 27.05559, 34.05559, 41.05559, 48.05559];
+const DOT_COLS = [1.07176, 5.70436, 10.3374, 14.9704, 19.6034];
+const DOT_ROWS = [1.07213, 5.70412, 10.3375, 14.9702, 19.2171];
+const DOT_BLOCKS = [
+  { x: 12.66, y: 74.79 }, { x: 12.66, y: 97.6 },
+  { x: 35.86, y: 74.79 }, { x: 35.86, y: 97.6 },
+];
+const ROUND_CENTERPIECE = (icon: React.ReactNode, id: string) => (
+  <>
+    <defs>
+      {/* The disc, minus the icon — the node ships this as one flattened
+          "Subtract" path; punching the icon out with a luminance mask is the
+          same result while leaving the glyph swappable, which is the whole
+          point here. */}
+      <mask id={`${id}-knockout`} maskUnits="userSpaceOnUse" x="29.56" y="18.3" width="81.7803" height="81.7803">
+        <circle cx="70.4496" cy="59.1896" r="40.8896" fill="#fff" />
+        <g style={{ color: '#000' }} transform="translate(70.4496 59.1896) scale(2.4) translate(-9 -9)">
+          {icon}
+        </g>
+      </mask>
+      <clipPath id={`${id}-ring`}>
+        <circle cx="104.0856" cy="25.3076" r="24.97755" />
+      </clipPath>
+      <clipPath id={`${id}-disc`}>
+        <circle cx="70.4496" cy="59.1896" r="40.8896" />
+      </clipPath>
+    </defs>
+    {/* Disc, ring and the ring's white run across the disc bob as one piece:
+        they interlock (the white bands have to stay registered with both the
+        grey ones above them and the disc edge below), so moving any one of
+        them on its own would tear the overlap. */}
+    <g className="illo2-stack">
+      <circle cx="70.4496" cy="59.1896" r="40.8896" fill="#C0C6CF" mask={`url(#${id}-knockout)`} />
+      <g clipPath={`url(#${id}-ring)`}>
+        {RING_BANDS.map(y => <rect key={y} x="79" y={y} width="51" height="3" fill="#777E8B" />)}
+      </g>
+      <g clipPath={`url(#${id}-disc)`}>
+        <g clipPath={`url(#${id}-ring)`}>
+          {RING_BANDS.map(y => <rect key={y} x="79" y={y} width="51" height="3" fill="#fff" />)}
+        </g>
+      </g>
+    </g>
+    <g className="illo2-accent-dots" fill="#777E8B">
+      {DOT_BLOCKS.map((block, bi) => (
+        DOT_COLS.map((cx, ci) => (
+          DOT_ROWS.map((cy, ri) => (
+            <circle key={`${bi}-${ci}-${ri}`} cx={block.x + cx} cy={block.y + cy} r={1.07139} />
+          ))
+        ))
+      ))}
+    </g>
+  </>
+);
+const FORMULA_CENTERPIECE = ROUND_CENTERPIECE(<Icon name="formula" size="l" color="currentColor" />, 'illo-formula');
+const FILTER_CENTERPIECE = ROUND_CENTERPIECE(<Icon name="funnel" size="l" color="currentColor" />, 'illo-filter');
+const PARAMETER_CENTERPIECE = ROUND_CENTERPIECE(<Icon name="tag" size="l" color="currentColor" />, 'illo-parameter');
+const FORMULA_ILLUSTRATION = <MutedAlertIllustration clipId="illo-formula-clip" centerpiece={FORMULA_CENTERPIECE} />;
+const FILTER_ILLUSTRATION = <MutedAlertIllustration clipId="illo-filter-clip" centerpiece={FILTER_CENTERPIECE} />;
+const PARAMETER_ILLUSTRATION = <MutedAlertIllustration clipId="illo-parameter-clip" centerpiece={PARAMETER_CENTERPIECE} />;
 
 const PanelEmptyState: React.FC<{ illustration: React.ReactNode; title: string; description: string; buttonLabel: string; onAdd: () => void }> = ({ illustration, title, description, buttonLabel, onAdd }) => (
   <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 0, padding: 'var(--spacing-6)', textAlign: 'center' }}>
@@ -531,6 +716,41 @@ const SearchDataOnDataModelFinal: React.FC = () => {
     dataSourceTables: columnTreeData.dataSourceTables,
     modelColumns: columnTreeData.modelColumns,
   };
+  // 2026-09-25, audit item F: the Tables section's search field carried no
+  // value/onChange and its sort button no onClick — both looked live and did
+  // nothing. Search matches a table by its own name or by any column inside
+  // it, the same rule TableColumnBrowserBody's search already uses, so the
+  // two searches in this prototype behave identically. Sort offers the same
+  // two options as the Data browser's own sort, "modified" likewise falling
+  // back to the catalogue's order because the source tables carry a
+  // createdDate but no modified timestamp.
+  const [tableQuery, setTableQuery] = useState('');
+  const [tableSort, setTableSort] = useState<'name' | 'modified'>('name');
+  const [tableSortMenuOpen, setTableSortMenuOpen] = useState(false);
+  const tableSortBtnRef = useRef<HTMLButtonElement>(null);
+  // Reuses the dock searches' own matchesQuery so all four section searches
+  // compare the same way; a table matches on its own name or on any of its
+  // columns, the rule TableColumnBrowserBody's search already uses.
+  const tableMatches = (name: string, columns: string[]) => (
+    !tableQuery.trim() || matchesQuery(name, tableQuery) || columns.some(c => matchesQuery(c, tableQuery))
+  );
+  const byTableSort = <T extends { name: string }>(list: T[]) => (
+    tableSort === 'name' ? [...list].sort((a, b) => a.name.localeCompare(b.name)) : list
+  );
+  // The list the populated Tables section actually renders: the tables on the
+  // canvas, matched on their own name or any column already added from them.
+  const visibleCanvasTables = byTableSort(
+    tableCanvasData.tables.filter(t => tableMatches(t.name, columnTreeData.modelColumns.find(g => g.table === t.name)?.columns ?? []))
+  );
+  // Same query and sort applied to the full source catalogue, for the
+  // Tables-section options that browse every source table rather than the
+  // ones already in the model.
+  const visibleTreeData: ColumnTreeData = {
+    ...unifiedTreeData,
+    tables: byTableSort(
+      unifiedTreeData.tables.filter(t => tableMatches(t.name, unifiedTreeData.dataSourceTables.find(d => d.name === t.name)?.columns ?? []))
+    ),
+  };
   // Which tables are actually on the canvas — drives ColumnTree's
   // addedTableNames prop so added tables look distinct in the unified list.
   const addedTableNames = new Set(tableCanvasData.tables.map(t => t.name));
@@ -573,18 +793,21 @@ const SearchDataOnDataModelFinal: React.FC = () => {
   const openFormulaEditor = (f: FormulaDraft) => { setEditingFormula(f); setFormulaEditorOpen(true); };
   const deleteFormula = (name: string) => setModelFormulas(prev => prev.filter(x => x.name !== name));
   const copyFormula = (f: FormulaDraft) => setModelFormulas(prev => withCopy(prev, f));
-  // Parameters shown in the left pane's Parameters dock. Only the Demo state
-  // fills this today — there's no add-parameter flow yet, so the "+" on that
-  // dock header is still a no-op like the Filters one.
+  // Parameters shown in the left pane's Parameters dock.
   const [modelParameters, setModelParameters] = useState<ModelParameter[]>([]);
   const deleteParameter = (name: string) => setModelParameters(prev => prev.filter(x => x.name !== name));
   const copyParameter = (p: ModelParameter) => setModelParameters(prev => withCopy(prev, p));
+  // 2026-09-25, Komal: "clicking on 'Add a parameter' and the plus icon
+  // should open this popup" — same "+ opens a modal, empty state's own
+  // button opens the same modal" wiring formulaEditorOpen already uses.
+  const [parameterEditorOpen, setParameterEditorOpen] = useState(false);
   // Prototype-only: 'empty' is the manually-built starting point, 'demo' is the
   // finished five-table model. Switched from the dock footer next to the
   // Option 1/2 selector. See DEMO_MODEL above.
   const [modelState, setModelState] = useState<'empty' | 'demo'>('empty');
-  // Prototype-only: which of the three candidate treatments the left panel is
-  // wearing. See PaneBody.
+  // Prototype-only: which candidate treatment the left panel is wearing —
+  // 'box' (bordered cards, the finalized one) or 'tint'. Drives the
+  // dock-box/dock-tint class on each wrapper and DockRow's own branch.
   const [paneBalance] = useState<PaneBalance>('box');
   const handleAddTable = (tableName: string) => {
     (window as any)._addTableManually?.(tableName);
@@ -984,7 +1207,12 @@ const SearchDataOnDataModelFinal: React.FC = () => {
   const [welcomeVariant] = useState<'blank' | 'existing'>(() => (window as any).__DME_CONFIG__?.welcomeVariant ?? 'blank');
   const [agentPanelCollapsed, setAgentPanelCollapsed] = useState(false);
 
-  const modelName = welcomeVariant === 'blank' ? 'Add model name' : 'Retail Sales Analytics';
+  // 2026-09-25, Komal: "this should be Untitled model, clicking on it should
+  // make the name editable" — was a static placeholder string; now real
+  // state with a click-to-edit affordance (see the sub-header render below).
+  const [modelName, setModelName] = useState(() => welcomeVariant === 'blank' ? 'Untitled model' : 'Retail Sales Analytics');
+  const [editingModelName, setEditingModelName] = useState(false);
+  const [modelNameDraft, setModelNameDraft] = useState(modelName);
   const modelDesc = welcomeVariant === 'blank' ? 'Add description' : 'Sales performance model for Spotter AI search';
 
   const handleTabChange = (tabId: string) => {
@@ -1091,13 +1319,31 @@ const SearchDataOnDataModelFinal: React.FC = () => {
   // Control labels are rendered as our own <span> (showLabel={false}) because the
   // DS Radio/Checkbox/Toggle label is white-space: nowrap, which truncates in
   // this narrow dock. Typography/Divider/spacing tokens otherwise come from the DS.
+  // 2026-09-25, Komal: "significantly improve the UI of this by using the
+  // right fonts, font colors, grouping and spacing". Three things were doing
+  // the damage: every gap in the panel was the same spacing-2, so a heading
+  // sat as far from its own content as that content sat from the next
+  // section; every line was content-primary, so a heading, a choosable label
+  // and helper text all carried the same weight of voice; and the section
+  // rules were doing the grouping that spacing should have been doing.
+  //
+  // Now: a heading hugs its own helper line (spacing-1) and its control group
+  // sits clearly below it (spacing-3), sections are separated by spacing-6 of
+  // air instead of a rule, and helper text drops to gray-light so the eye
+  // sorts heading / label / explanation without reading a word.
   const settingsRowLabel = (text: string, onToggle: () => void) => (
     <Typography variant="footnote" as="span" onClick={onToggle} style={{ cursor: 'pointer' }}>
       {text}
     </Typography>
   );
+  const settingsHelpText = (text: string, style?: React.CSSProperties) => (
+    <Typography variant="caption" as="div" color="gray-light" style={style}>{text}</Typography>
+  );
   const settingsSectionHeading = (text: string) => (
     <Typography variant="content-label-subhead" as="div">{text}</Typography>
+  );
+  const settingsSection = (children: React.ReactNode) => (
+    <section style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-3)' }}>{children}</section>
   );
 
   // The prototype's own switchers (model state / layout / tables-section
@@ -1122,9 +1368,13 @@ const SearchDataOnDataModelFinal: React.FC = () => {
   // SHOW_TABLES_OPTION_2 (2026-09-25, Komal: "hide option 2 and default it to
   // option 2.1") narrows "Tables section" down to just 2.1 — tablesNavOption
   // already defaults to 2.1.
+  // SHOW_TABLES_OPTION_21 (2026-09-25, Komal: "remove [Option 2.1]") hides the
+  // last remaining item — Tables section group disappears entirely. Flip back
+  // to true to restore it.
   const SHOW_LAYOUT_SWITCHER = false;
   const SHOW_ALL_TABLES_OPTIONS = false;
   const SHOW_TABLES_OPTION_2 = false;
+  const SHOW_TABLES_OPTION_21 = false;
   const SHOW_TABLE_INFO_MODE_SWITCHER = false;
 
   const optionsMenu = (
@@ -1173,21 +1423,25 @@ const SearchDataOnDataModelFinal: React.FC = () => {
               two live candidates (tablesNavOption already defaults to 2.1).
               Flip SHOW_ALL_TABLES_OPTIONS back to true to bring the other
               three back exactly as they were. */}
-          <Menu.Group label="Tables section">
-            {SHOW_ALL_TABLES_OPTIONS && (
-              <Menu.Item active={tablesNavOption === 1} onClick={() => { setTablesNavOption(1); setTablesNavMenuOpen(false); }}>Option 1</Menu.Item>
-            )}
-            {SHOW_TABLES_OPTION_2 && (
-              <Menu.Item active={tablesNavOption === 2} onClick={() => { setTablesNavOption(2); setTablesNavMenuOpen(false); }}>Option 2</Menu.Item>
-            )}
-            <Menu.Item active={tablesNavOption === 2.1} onClick={() => { setTablesNavOption(2.1); setTablesNavMenuOpen(false); }}>Option 2.1</Menu.Item>
-            {SHOW_ALL_TABLES_OPTIONS && (
-              <>
-                <Menu.Item active={tablesNavOption === 3} onClick={() => { setTablesNavOption(3); setTablesNavMenuOpen(false); }}>Option 3</Menu.Item>
-                <Menu.Item active={tablesNavOption === 4} onClick={() => { setTablesNavOption(4); setTablesNavMenuOpen(false); }}>Option 4</Menu.Item>
-              </>
-            )}
-          </Menu.Group>
+          {(SHOW_ALL_TABLES_OPTIONS || SHOW_TABLES_OPTION_2 || SHOW_TABLES_OPTION_21) && (
+            <Menu.Group label="Tables section">
+              {SHOW_ALL_TABLES_OPTIONS && (
+                <Menu.Item active={tablesNavOption === 1} onClick={() => { setTablesNavOption(1); setTablesNavMenuOpen(false); }}>Option 1</Menu.Item>
+              )}
+              {SHOW_TABLES_OPTION_2 && (
+                <Menu.Item active={tablesNavOption === 2} onClick={() => { setTablesNavOption(2); setTablesNavMenuOpen(false); }}>Option 2</Menu.Item>
+              )}
+              {SHOW_TABLES_OPTION_21 && (
+                <Menu.Item active={tablesNavOption === 2.1} onClick={() => { setTablesNavOption(2.1); setTablesNavMenuOpen(false); }}>Option 2.1</Menu.Item>
+              )}
+              {SHOW_ALL_TABLES_OPTIONS && (
+                <>
+                  <Menu.Item active={tablesNavOption === 3} onClick={() => { setTablesNavOption(3); setTablesNavMenuOpen(false); }}>Option 3</Menu.Item>
+                  <Menu.Item active={tablesNavOption === 4} onClick={() => { setTablesNavOption(4); setTablesNavMenuOpen(false); }}>Option 4</Menu.Item>
+                </>
+              )}
+            </Menu.Group>
+          )}
           {/* 2026-09-24, Komal: "finalize footer CTA as the final option" —
               tableInfoMode already defaults to 'footer'; flip
               SHOW_TABLE_INFO_MODE_SWITCHER back to true to bring the other
@@ -1238,65 +1492,87 @@ const SearchDataOnDataModelFinal: React.FC = () => {
   );
 
   const settingsDockPanel = (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-4)', padding: 'var(--spacing-3) var(--spacing-4) var(--spacing-4)' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-6)', padding: 'var(--spacing-4)' }}>
 
       {/* ── Join rule ─────────────────────────────────────────────── */}
-      <section style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-2)' }}>
-        {settingsSectionHeading('Data model join rule')}
-        <Typography variant="caption" color="gray" as="div">
-          Join rules can be specified in the schema section of this data model
-        </Typography>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-2)' }}>
-          {([
-            ['progressive', 'Apply joins progressively (recommended for most cases)'],
-            ['all', 'Apply all joins'],
-          ] as const).map(([value, text]) => (
-            <div key={value} style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--spacing-2)' }}>
-              <Radio
-                name="dm-join-rule"
-                value={value}
-                checked={joinRule === value}
-                onChange={() => setJoinRule(value)}
-                showLabel={false}
-              />
-              {settingsRowLabel(text, () => setJoinRule(value))}
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <Divider />
+      {settingsSection(
+        <>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-1)' }}>
+            {settingsSectionHeading('Data model join rule')}
+            {settingsHelpText('Join rules can be specified in the schema section of this data model')}
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-2)' }}>
+            {([
+              ['progressive', 'Apply joins progressively', 'Recommended for most cases'],
+              ['all', 'Apply all joins', null],
+            ] as const).map(([value, text, hint]) => (
+              <div key={value} style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--spacing-2)' }}>
+                <Radio
+                  name="dm-join-rule"
+                  value={value}
+                  checked={joinRule === value}
+                  onChange={() => setJoinRule(value)}
+                  showLabel={false}
+                />
+                {/* The recommendation used to ride inline in the label as
+                    "(recommended for most cases)", which wrapped onto a line
+                    of its own anyway — as a parenthetical in the same colour
+                    and size as the choice itself. It is an explanation, so it
+                    now reads as one, under the label it explains. */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 }}>
+                  {settingsRowLabel(text, () => setJoinRule(value))}
+                  {hint && settingsHelpText(hint)}
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
 
       {/* ── Join options (moved from the sub-header dropdown) ─────── */}
-      <section style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-2)' }}>
-        {settingsSectionHeading('Join options')}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--spacing-2)' }}>
-          {settingsRowLabel('Turn off recommendations', () => setTurnOffRecommendations(v => !v))}
-          <Toggle checked={turnOffRecommendations} onChange={setTurnOffRecommendations} showLabel={false} />
-        </div>
-        {/* Actions, not settings — brand-coloured text buttons, matching the
-            dock's own "Add formula"/"Add filter" links. */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 'var(--spacing-1)' }}>
-          <Button variant="tertiary" size="small">Clear All Recommendations</Button>
-          <Button variant="tertiary" size="small">Accept All Recommendations</Button>
-        </div>
-      </section>
-
-      <Divider />
+      {settingsSection(
+        <>
+          {settingsSectionHeading('Join options')}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-3)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--spacing-2)' }}>
+              {settingsRowLabel('Turn off recommendations', () => setTurnOffRecommendations(v => !v))}
+              <Toggle checked={turnOffRecommendations} onChange={setTurnOffRecommendations} showLabel={false} />
+            </div>
+            {/* Radiant Link, not a tertiary Button: these are text actions,
+                and Button's own horizontal padding was pushing them out of
+                line with every label above them. Sentence case per the
+                content guidelines — they were Title Case.
+                2026-09-25, Komal: "when the recommendations are turned off,
+                no need to show" these — there's nothing to clear or accept
+                once recommendations themselves are off. */}
+            {!turnOffRecommendations && (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 'var(--spacing-2)' }}>
+                <Link href="#" size="small" onClick={e => e.preventDefault()}>Clear all recommendations</Link>
+                <Link href="#" size="small" onClick={e => e.preventDefault()}>Accept all recommendations</Link>
+              </div>
+            )}
+          </div>
+        </>
+      )}
 
       {/* ── Security ──────────────────────────────────────────────── */}
-      <section style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-2)' }}>
-        {settingsSectionHeading('Security')}
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--spacing-2)' }}>
-          <Checkbox
-            checked={disableRowLevelSecurity}
-            onChange={setDisableRowLevelSecurity}
-            showLabel={false}
-          />
-          {settingsRowLabel('Disable row level security for data model', () => setDisableRowLevelSecurity(v => !v))}
-        </div>
-      </section>
+      {settingsSection(
+        <>
+          {settingsSectionHeading('Security')}
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--spacing-2)' }}>
+            <Checkbox
+              checked={disableRowLevelSecurity}
+              onChange={setDisableRowLevelSecurity}
+              showLabel={false}
+            />
+            {settingsRowLabel('Disable row level security for data model', () => setDisableRowLevelSecurity(v => !v))}
+          </div>
+        </>
+      )}
 
+      {/* The one rule left in the panel. The three product settings above are
+          grouped by spacing alone; this separates them from the prototype's
+          own switcher below, which is a different class of thing entirely. */}
       <Divider />
 
       {/* Last in the panel, with no heading of its own — it isn't a product
@@ -1399,10 +1675,58 @@ const SearchDataOnDataModelFinal: React.FC = () => {
                   aria-label={leftPaneCollapsed ? 'Expand tables panel' : 'Collapse tables panel'}
                   title={leftPaneCollapsed ? 'Expand panel' : 'Collapse panel'}
                 >
-                  <Icon name="hamburger" size="m" color="var(--rd-sys-color-content-primary)" />
+                  {/* Taken from Komal 2026-09-25 (left panel = her direction).
+                      Radiant has no panel-toggle glyph, so this inline SVG
+                      fills a real registry gap — logged for the DS ask. Her
+                      hardcoded #1D232F swapped for currentColor so it themes. */}
+                  {/* 2026-09-25, Komal: "use this icon from Query tab, to open
+                      and close model inventory instead of [hamburger]" — same
+                      two-state bracket/chevron SVG as QueryAsIs.tsx's own
+                      "Toggle data panel" button (its `dataPanelVisible`
+                      branch), just keyed off leftPaneCollapsed instead. */}
+                  {!leftPaneCollapsed ? (
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                      <g clipPath="url(#sdw-model-inv-close)">
+                        <path d="M13.3333 1.14279H2.66663C1.82506 1.14279 1.14282 1.82502 1.14282 2.6666V13.3333C1.14282 14.1748 1.82506 14.8571 2.66663 14.8571H13.3333C14.1749 14.8571 14.8571 14.1748 14.8571 13.3333V2.6666C14.8571 1.82502 14.1749 1.14279 13.3333 1.14279Z" stroke="currentColor" strokeWidth="1.5"/>
+                        <path d="M5.71436 1.14279V14.8571" stroke="currentColor" strokeWidth="1.5"/>
+                        <path d="M11.0477 10.2858L8.76196 8.00013L11.0477 5.71442" stroke="currentColor" strokeWidth="1.5"/>
+                      </g>
+                      <defs><clipPath id="sdw-model-inv-close"><rect width="16" height="16" fill="white"/></clipPath></defs>
+                    </svg>
+                  ) : (
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                      <g clipPath="url(#sdw-model-inv-open)">
+                        <path d="M13.3333 1.14279H2.66663C1.82506 1.14279 1.14282 1.82502 1.14282 2.6666V13.3333C1.14282 14.1748 1.82506 14.8571 2.66663 14.8571H13.3333C14.1749 14.8571 14.8571 14.1748 14.8571 13.3333V2.6666C14.8571 1.82502 14.1749 1.14279 13.3333 1.14279Z" stroke="currentColor" strokeWidth="1.5"/>
+                        <path d="M5.71436 1.14279V14.8571" stroke="currentColor" strokeWidth="1.5"/>
+                        <path d="M8.76189 10.2858L11.0476 8.00013L8.76189 5.71442" stroke="currentColor" strokeWidth="1.5"/>
+                      </g>
+                      <defs><clipPath id="sdw-model-inv-open"><rect width="16" height="16" fill="white"/></clipPath></defs>
+                    </svg>
+                  )}
                 </button>
               )}
-              <span className="model-name-placeholder">{modelName}</span>
+              {editingModelName ? (
+                <input
+                  autoFocus
+                  className="model-name-input"
+                  value={modelNameDraft}
+                  onChange={e => setModelNameDraft(e.target.value)}
+                  onFocus={e => e.currentTarget.select()}
+                  onBlur={() => { setModelName(modelNameDraft.trim() || modelName); setEditingModelName(false); }}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') { e.currentTarget.blur(); }
+                    if (e.key === 'Escape') { setModelNameDraft(modelName); setEditingModelName(false); }
+                  }}
+                />
+              ) : (
+                <button
+                  type="button"
+                  className="model-name-placeholder"
+                  onClick={() => { setModelNameDraft(modelName); setEditingModelName(true); }}
+                >
+                  {modelName}
+                </button>
+              )}
               {tabOption === 3 && option3EmbedMode === 'optimized' && (
                 // Popover, not Tooltip (Komal: "open on click, close on clicking
                 // outside") — Radiant's Tooltip is hover/focus-only with no
@@ -1556,6 +1880,14 @@ const SearchDataOnDataModelFinal: React.FC = () => {
                 />
               )}
 
+              {/* 2026-09-25, Komal: "add a model inventory title" — optimized
+                  layout only: this is the case with no left-pane-header of its
+                  own (Tables is just another docked section, see comment
+                  below), so the pane otherwise opened with no title at all. */}
+              {tabOption === 3 && option3EmbedMode === 'optimized' && (
+                <div className="left-pane-inventory-title">Model inventory</div>
+              )}
+
               <div id="pane-tables-section" className={`pane-section${tabOption === 3 && option3EmbedMode === 'optimized' ? ' pane-section-docked' : ''}`}>
                 {/* Optimized: the pane has no header of its own — label, count
                     and search all sit inside the Tables card below, so Tables is
@@ -1581,8 +1913,8 @@ const SearchDataOnDataModelFinal: React.FC = () => {
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <SearchInput placeholder="Search tables" />
                         </div>
-                        <Button variant="secondary" icon="filter" iconOnly title="Filter tables">Filter tables</Button>
-                        <Button variant="secondary" icon="sort" iconOnly title="Sort tables">Sort tables</Button>
+                        <Button variant="secondary" icon="filter" iconOnly aria-label="Filter tables">Filter tables</Button>
+                        <Button variant="secondary" icon="sort" iconOnly aria-label="Sort tables">Sort tables</Button>
                       </div>
                     ) : (
                       <>
@@ -1597,7 +1929,6 @@ const SearchDataOnDataModelFinal: React.FC = () => {
                     )}
                   </div>
                 )}
-                <PaneBody mode={paneBalance}>
                 {tabOption === 3 && option3EmbedMode === 'optimized' && dataSourceSelectorOption === 2 && (tablesNavOption === 2 || tablesNavOption === 2.1) ? (
                   // Tables-section Option 2 (2026-09-21, Komal) — starts empty;
                   // "+" and the empty state's own button both open the same
@@ -1612,7 +1943,7 @@ const SearchDataOnDataModelFinal: React.FC = () => {
                       fill
                       open={browserDockOpen === 'tables'}
                       onToggle={() => toggleDock('tables')}
-                      icon={<span style={{ display: 'flex' }}><Icon name="table" size="xs" color="var(--rd-sys-color-content-secondary)" /></span>}
+                      icon={<span style={{ display: 'flex' }}><Icon name="table" size="s" color="var(--rd-sys-color-content-primary)" /></span>}
                       label="Tables"
                       count={addedTableNames.size}
                       // Always shown now (2026-09-24, Komal: "add the plus
@@ -1657,73 +1988,25 @@ const SearchDataOnDataModelFinal: React.FC = () => {
                         // tucked under the button it qualifies.
                         <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 0, padding: 'var(--spacing-6)', textAlign: 'center' }}>
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginBottom: 'var(--spacing-5)' }}>
-                            {/* Traced from Komal's own mock. Paint order is
-                                back-to-front: dashed canvas + its dot grid,
-                                the muted table already parked inside it, then
-                                the blue table card overlapping its left edge.
-                                Dots are only placed where neither card covers
-                                them, so the grid reads as canvas behind the
-                                scene rather than texture on top of it.
+                            {/* 2026-09-25, Komal: "use this illustration for
+                                the empty state of tables" — Radiant 3.0's own
+                                "Muted alert illustration" (figma.com/design/
+                                1QlRveXx4wppvDXyPVWUTK, node 25122:178959),
+                                traced 1:1 from its exported vectors. Frame +
+                                centerpiece now live in MutedAlertIllustration
+                                / DATA_CENTERPIECE above, shared with Formula/
+                                Filters/Parameters' own illustrations.
 
-                                Drawn at 208px — 58% larger than the first pass
-                                (2026-09-22, Komal: "the illustration is so
-                                small it's not adding any value"). Size is what
-                                the scene needed: at 132px the four column bars
-                                were 4px tall and the motion that carries the
-                                whole idea was invisible. Every stroke is
-                                thinned from 1.5 to 1.1 user units and the dot
-                                grid is stepped from 20 to 16 so the extra size
-                                buys detail rather than weight — it stays as
-                                muted as she asked. */}
-                            <svg
-                              className={`empty-state-illo${option2IlloPaused ? ' empty-state-illo-paused' : ''}`}
-                              width="148"
-                              height="93"
-                              viewBox="0 0 140 88"
-                              fill="none"
-                              xmlns="http://www.w3.org/2000/svg"
-                            >
-                              {/* The canvas — dashed zone with its dot grid */}
-                              <rect x="42.5" y="12.5" width="96" height="74" rx="8" stroke="#C0C6CF" strokeWidth="1.1" strokeDasharray="4.5 3.5" />
-                              <g fill="#C0C6CF" fillOpacity="0.55">
-                                <circle cx="74" cy="28" r="0.9" />
-                                <circle cx="90" cy="28" r="0.9" />
-                                <circle cx="106" cy="28" r="0.9" />
-                                <circle cx="122" cy="28" r="0.9" />
-                                <circle cx="58" cy="60" r="0.9" />
-                                <circle cx="74" cy="60" r="0.9" />
-                                <circle cx="58" cy="76" r="0.9" />
-                                <circle cx="74" cy="76" r="0.9" />
-                                <circle cx="90" cy="76" r="0.9" />
-                                <circle cx="106" cy="76" r="0.9" />
-                                <circle cx="122" cy="76" r="0.9" />
-                              </g>
-
-                              {/* A second table, already on the canvas */}
-                              <rect x="80" y="42.5" width="51" height="32" rx="5" fill="#F6F8FA" stroke="#DBDFE7" strokeWidth="1.1" />
-                              <rect x="87.5" y="51.5" width="27.5" height="4" rx="2" fill="#C0C6CF" />
-                              <rect x="87.5" y="60" width="35" height="4" rx="2" fill="#EAEDF2" />
-
-                              {/* The table being added — a tinted (not solid)
-                                  blue header so the card leads the scene
-                                  without shouting, then the four column bars
-                                  that land one after another on loop.
-                                  76×48 → 67×42 (2026-09-22, Komal: "make the
-                                  size of the blue table slightly smaller"):
-                                  every inner element is scaled by the same
-                                  0.88/0.875, so the card's internal padding
-                                  and bar rhythm are unchanged — it is the one
-                                  object that shrank, not the composition. */}
-                              <g className="empty-state-illo-card">
-                                <rect x="4" y="4" width="67" height="42" rx="5" fill="#FFFFFF" stroke="#9CBDF7" strokeWidth="1.1" />
-                                <path d="M4 9A5 5 0 0 1 9 4H66A5 5 0 0 1 71 9V15.5H4Z" fill="#2770EF" fillOpacity="0.14" />
-                                <rect x="11" y="8.3" width="21" height="2.6" rx="1.3" fill="#2770EF" fillOpacity="0.5" />
-                                <rect className="empty-state-illo-col empty-state-illo-col-1" x="11" y="24" width="24.5" height="4.4" rx="2.2" fill="#EAEDF2" />
-                                <rect className="empty-state-illo-col empty-state-illo-col-2" x="42" y="24" width="21" height="4.4" rx="2.2" fill="#EAEDF2" />
-                                <rect className="empty-state-illo-col empty-state-illo-col-3" x="11" y="33" width="19.5" height="4.4" rx="2.2" fill="#EAEDF2" />
-                                <rect className="empty-state-illo-col empty-state-illo-col-4" x="42" y="33" width="17" height="4.4" rx="2.2" fill="#EAEDF2" />
-                              </g>
-                            </svg>
+                                "Add motion to bring attention" — the disc
+                                stack gets a slow breathing bob and the two
+                                corner accents twinkle out of phase with it,
+                                so the eye keeps finding the icon without
+                                anything reading as busy. Stops for good the
+                                first time "Add data" opens the picker
+                                (.empty-state-illo-paused, driven by
+                                option2IlloPaused) and honours
+                                prefers-reduced-motion. */}
+                            <MutedAlertIllustration clipId="illo-data-clip" centerpiece={DATA_CENTERPIECE} paused={option2IlloPaused} />
                           </div>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-1)' }}>
                             <Typography variant="content-label" as="div" noMargin>Start with your data</Typography>
@@ -1737,13 +2020,42 @@ const SearchDataOnDataModelFinal: React.FC = () => {
                         <>
                           <div className="dock-search-row">
                             <div style={{ flex: 1, minWidth: 0 }}>
-                              <SearchInput placeholder="Search tables" />
+                              {/* 2026-09-25, Komal: "the placeholder text
+                                  should not overflow the search bar" — this
+                                  row's own width (search input squeezed
+                                  between the panel edge and the Filter/Sort
+                                  buttons) only fits ~145px of text; "Search
+                                  tables and columns" measured ~174px and
+                                  clipped. Dropping the redundant "Search"
+                                  (the icon already says that) keeps the
+                                  meaning intact at ~128px. */}
+                              <SearchInput placeholder="Tables and columns" value={tableQuery} onChange={e => setTableQuery(e.target.value)} />
                             </div>
-                            <Button variant="secondary" icon="filter" iconOnly title="Filter tables">Filter tables</Button>
-                            <Button variant="secondary" icon="sort" iconOnly title="Sort tables">Sort tables</Button>
+                            <Button variant="secondary" icon="filter" iconOnly aria-label="Filter tables">Filter tables</Button>
+                            <Button
+                              ref={tableSortBtnRef}
+                              variant="secondary"
+                              icon="sort"
+                              iconOnly
+                              aria-label="Sort tables"
+                              onClick={() => setTableSortMenuOpen(o => !o)}
+                            >
+                              Sort tables
+                            </Button>
+                            <AnchoredMenu
+                              open={tableSortMenuOpen}
+                              anchorRef={tableSortBtnRef}
+                              onClose={() => setTableSortMenuOpen(false)}
+                              placement="bottom-end"
+                            >
+                              <Menu onClose={() => setTableSortMenuOpen(false)}>
+                                <Menu.Item active={tableSort === 'name'} onClick={() => { setTableSort('name'); setTableSortMenuOpen(false); }}>Sort by name</Menu.Item>
+                                <Menu.Item active={tableSort === 'modified'} onClick={() => { setTableSort('modified'); setTableSortMenuOpen(false); }}>Sort by modified</Menu.Item>
+                              </Menu>
+                            </AnchoredMenu>
                           </div>
                           <div className={tablePickerStyles.list}>
-                            {tableCanvasData.tables.map(t => {
+                            {visibleCanvasTables.map(t => {
                               const added = columnTreeData.modelColumns.find(g => g.table === t.name)?.columns ?? [];
                               return (
                                 <AddedTableRow
@@ -1756,6 +2068,13 @@ const SearchDataOnDataModelFinal: React.FC = () => {
                                 />
                               );
                             })}
+                            {/* A live search needs somewhere to land when it
+                                matches nothing, or it reads as broken. Same
+                                wording TableColumnBrowserBody's own search
+                                already uses. */}
+                            {visibleCanvasTables.length === 0 && (
+                              <div className={tablePickerStyles.empty}>No tables match "{tableQuery}"</div>
+                            )}
                           </div>
                         </>
                       )}
@@ -1774,7 +2093,7 @@ const SearchDataOnDataModelFinal: React.FC = () => {
                       fill
                       open={browserDockOpen === 'tables'}
                       onToggle={() => toggleDock('tables')}
-                      icon={<span style={{ display: 'flex' }}><Icon name="table" size="xs" color="var(--rd-sys-color-content-secondary)" /></span>}
+                      icon={<span style={{ display: 'flex' }}><Icon name="table" size="s" color="var(--rd-sys-color-content-primary)" /></span>}
                       label="Tables"
                       count={addedTableNames.size}
                     >
@@ -1789,8 +2108,8 @@ const SearchDataOnDataModelFinal: React.FC = () => {
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <SearchInput placeholder="Search tables" />
                         </div>
-                        <Button variant="secondary" icon="filter" iconOnly title="Filter tables">Filter tables</Button>
-                        <Button variant="secondary" icon="sort" iconOnly title="Sort tables">Sort tables</Button>
+                        <Button variant="secondary" icon="filter" iconOnly aria-label="Filter tables">Filter tables</Button>
+                        <Button variant="secondary" icon="sort" iconOnly aria-label="Sort tables">Sort tables</Button>
                       </div>
                       <TablePickerV2
                         data={{
@@ -1819,7 +2138,7 @@ const SearchDataOnDataModelFinal: React.FC = () => {
                       fill
                       open={browserDockOpen === 'tables'}
                       onToggle={() => toggleDock('tables')}
-                      icon={<span style={{ display: 'flex' }}><Icon name="table" size="xs" color="var(--rd-sys-color-content-secondary)" /></span>}
+                      icon={<span style={{ display: 'flex' }}><Icon name="table" size="s" color="var(--rd-sys-color-content-primary)" /></span>}
                       label="Tables"
                       count={addedTableNames.size}
                     >
@@ -1827,8 +2146,8 @@ const SearchDataOnDataModelFinal: React.FC = () => {
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <SearchInput placeholder="Search tables" />
                         </div>
-                        <Button variant="secondary" icon="filter" iconOnly title="Filter tables">Filter tables</Button>
-                        <Button variant="secondary" icon="sort" iconOnly title="Sort tables">Sort tables</Button>
+                        <Button variant="secondary" icon="filter" iconOnly aria-label="Filter tables">Filter tables</Button>
+                        <Button variant="secondary" icon="sort" iconOnly aria-label="Sort tables">Sort tables</Button>
                       </div>
                       <div className={tablePickerStyles.list}>
                         {unifiedTreeData.tables.map(t => {
@@ -1869,20 +2188,40 @@ const SearchDataOnDataModelFinal: React.FC = () => {
                       fill
                       open={browserDockOpen === 'tables'}
                       onToggle={() => toggleDock('tables')}
-                      icon={<span style={{ display: 'flex' }}><Icon name="table" size="xs" color="var(--rd-sys-color-content-secondary)" /></span>}
+                      icon={<span style={{ display: 'flex' }}><Icon name="table" size="s" color="var(--rd-sys-color-content-primary)" /></span>}
                       label="Tables"
                       count={addedTableNames.size}
                     >
                       <div className="dock-search-row">
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <SearchInput placeholder="Search tables" />
+                          <SearchInput placeholder="Search tables" value={tableQuery} onChange={e => setTableQuery(e.target.value)} />
                         </div>
-                        <Button variant="secondary" icon="filter" iconOnly title="Filter tables">Filter tables</Button>
-                        <Button variant="secondary" icon="sort" iconOnly title="Sort tables">Sort tables</Button>
+                        <Button variant="secondary" icon="filter" iconOnly aria-label="Filter tables">Filter tables</Button>
+                        <Button
+                          ref={tableSortBtnRef}
+                          variant="secondary"
+                          icon="sort"
+                          iconOnly
+                          aria-label="Sort tables"
+                          onClick={() => setTableSortMenuOpen(o => !o)}
+                        >
+                          Sort tables
+                        </Button>
+                        <AnchoredMenu
+                          open={tableSortMenuOpen}
+                          anchorRef={tableSortBtnRef}
+                          onClose={() => setTableSortMenuOpen(false)}
+                          placement="bottom-end"
+                        >
+                          <Menu onClose={() => setTableSortMenuOpen(false)}>
+                            <Menu.Item active={tableSort === 'name'} onClick={() => { setTableSort('name'); setTableSortMenuOpen(false); }}>Sort by name</Menu.Item>
+                            <Menu.Item active={tableSort === 'modified'} onClick={() => { setTableSort('modified'); setTableSortMenuOpen(false); }}>Sort by modified</Menu.Item>
+                          </Menu>
+                        </AnchoredMenu>
                       </div>
                       {tableSelectorOption === 2 ? (
                         <TablePickerV2
-                          data={unifiedTreeData}
+                          data={visibleTreeData}
                           addedTableNames={addedTableNames}
                           onToggleColumn={handleToggleColumn}
                           onAddTable={handleAddTable}
@@ -1890,7 +2229,7 @@ const SearchDataOnDataModelFinal: React.FC = () => {
                           onOpenTableChange={setOpenTableV2}
                         />
                       ) : (
-                        <ColumnTree data={unifiedTreeData} addedTableNames={addedTableNames} draggableTables checkboxColumns onToggleColumn={handleToggleColumn} />
+                        <ColumnTree data={visibleTreeData} addedTableNames={addedTableNames} draggableTables checkboxColumns onToggleColumn={handleToggleColumn} />
                       )}
                     </DockRow>
                   </div>
@@ -1922,7 +2261,7 @@ const SearchDataOnDataModelFinal: React.FC = () => {
                       ? { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }
                       : { flexShrink: 0 }}
                   >
-                    <DockRow fill balance={paneBalance} icon={<span style={{ display: 'flex' }}><Icon name="formula" size="xs" color="var(--rd-sys-color-content-secondary)" /></span>} label="Formula" count={modelFormulas.length} open={browserDockOpen === 'formula'} onToggle={() => toggleDock('formula')} onAdd={() => { setEditingFormula(null); setFormulaEditorOpen(true); }} addLabel="Add formula">
+                    <DockRow fill balance={paneBalance} icon={<span style={{ display: 'flex' }}><Icon name="formula" size="s" color="var(--rd-sys-color-content-primary)" /></span>} label="Formula" count={modelFormulas.length} open={browserDockOpen === 'formula'} onToggle={() => toggleDock('formula')} onAdd={() => { setEditingFormula(null); setFormulaEditorOpen(true); }} addLabel="Add formula">
                       {modelFormulas.length === 0 ? (
                         <PanelEmptyState
                           illustration={FORMULA_ILLUSTRATION}
@@ -1954,7 +2293,18 @@ const SearchDataOnDataModelFinal: React.FC = () => {
                       )}
 
                     </DockRow>
-                    <DockRow fill balance={paneBalance} icon={<span style={{ display: 'flex' }}><Icon name="filter" size="xs" color="var(--rd-sys-color-content-secondary)" /></span>} label="Filters" count={modelFilters.length} open={browserDockOpen === 'filters'} onToggle={() => toggleDock('filters')} onAdd={() => {}} addLabel="Add filter">
+                    {/* 2026-09-25, Komal: "update the filter icon in the left
+                        panel filter header to this" — figma.com/design/
+                        1QlRveXx4wppvDXyPVWUTK, node 25084:36683 "funnel
+                        solid". Radiant's registry already ships exactly that
+                        vector as 'funnel' (its own path is the node's export
+                        placed at 1/2.5 inside an 18x18 box — identical
+                        geometry), so this is the registry icon rather than
+                        another local copy. It also settles the mismatch this
+                        section had: its empty-state illustration was already
+                        wearing 'funnel' while the header wore the sliders
+                        glyph. */}
+                    <DockRow fill balance={paneBalance} icon={<span style={{ display: 'flex' }}><Icon name="funnel" size="s" color="var(--rd-sys-color-content-primary)" /></span>} label="Filters" count={modelFilters.length} open={browserDockOpen === 'filters'} onToggle={() => toggleDock('filters')} onAdd={() => {}} addLabel="Add filter">
                       {modelFilters.length === 0 ? (
                         <PanelEmptyState
                           illustration={FILTER_ILLUSTRATION}
@@ -1991,14 +2341,14 @@ const SearchDataOnDataModelFinal: React.FC = () => {
                       )}
 
                     </DockRow>
-                    <DockRow fill balance={paneBalance} icon={<span style={{ display: 'flex' }}><Icon name="tag" size="xs" color="var(--rd-sys-color-content-secondary)" /></span>} label="Parameters" count={modelParameters.length} open={browserDockOpen === 'parameters'} onToggle={() => toggleDock('parameters')} onAdd={() => {}} addLabel="Add parameter">
+                    <DockRow fill balance={paneBalance} icon={<span style={{ display: 'flex' }}><Icon name="tag" size="s" color="var(--rd-sys-color-content-primary)" /></span>} label="Parameters" count={modelParameters.length} open={browserDockOpen === 'parameters'} onToggle={() => toggleDock('parameters')} onAdd={() => setParameterEditorOpen(true)} addLabel="Add parameter">
                       {modelParameters.length === 0 ? (
                         <PanelEmptyState
                           illustration={PARAMETER_ILLUSTRATION}
                           title="Add a parameter"
                           description="A reusable value, like a growth rate or threshold, that formulas and filters can reference, so you can test different scenarios without rewriting them."
                           buttonLabel="Add parameter"
-                          onAdd={() => {}}
+                          onAdd={() => setParameterEditorOpen(true)}
                         />
                       ) : (
                         <>
@@ -2027,7 +2377,7 @@ const SearchDataOnDataModelFinal: React.FC = () => {
                       <DockRow
                         fill
                         balance={paneBalance}
-                        icon={<span style={{ display: 'flex' }}><Icon name="settings" size="xs" color="var(--rd-sys-color-content-secondary)" /></span>}
+                        icon={<span style={{ display: 'flex' }}><Icon name="settings" size="s" color="var(--rd-sys-color-content-primary)" /></span>}
                         label="Settings"
                         open={browserDockOpen === 'settings'}
                         onToggle={() => toggleDock('settings')}
@@ -2041,7 +2391,6 @@ const SearchDataOnDataModelFinal: React.FC = () => {
                     <Toggle checked={tablesUnselected} onChange={setTablesUnselected} label="Show unselected" labelPosition="right" />
                   </div>
                 )}
-                </PaneBody>
               </div>
 
             </div>{/* /left-pane */}
@@ -2763,6 +3112,17 @@ const SearchDataOnDataModelFinal: React.FC = () => {
           </Menu.Item>
         </Menu>
       </AnchoredMenu>
+
+
+      {parameterEditorOpen && (
+        <ParameterEditorModal
+          onCancel={() => setParameterEditorOpen(false)}
+          onSave={(p: ParameterDraft) => {
+            setModelParameters(prev => [...prev.filter(x => x.name !== p.name), p]);
+            setParameterEditorOpen(false);
+          }}
+        />
+      )}
 
       {/* EDIT JOIN MODAL — opened from a table card's join handle */}
       {joinDraft && (
