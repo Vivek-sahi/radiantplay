@@ -346,7 +346,7 @@ const FILTER_ILLUSTRATION = panelEmptyIcon(<Icon name="funnel" size="l" />);
 const PARAMETER_ILLUSTRATION = panelEmptyIcon(PARAMETER_ICON);
 
 const PanelEmptyState: React.FC<{ illustration: React.ReactNode; title: string; description: string; buttonLabel: string; onAdd: () => void }> = ({ illustration, title, description, buttonLabel, onAdd }) => (
-  <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 0, padding: '24px', textAlign: 'center' }}>
+  <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 0, padding: 'var(--spacing-6)', textAlign: 'center' }}>
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginBottom: 'var(--spacing-5)' }}>
       {illustration}
     </div>
@@ -1382,7 +1382,7 @@ const SearchDataOnDataModelFinal: React.FC = () => {
                   aria-label={leftPaneCollapsed ? 'Expand tables panel' : 'Collapse tables panel'}
                   title={leftPaneCollapsed ? 'Expand panel' : 'Collapse panel'}
                 >
-                  <Icon name="hamburger" size="m" color="#1D232F" />
+                  <Icon name="hamburger" size="m" color="var(--rd-sys-color-content-primary)" />
                 </button>
               )}
               <span className="model-name-placeholder">{modelName}</span>
@@ -1463,7 +1463,7 @@ const SearchDataOnDataModelFinal: React.FC = () => {
                     changes to the left. Between both, add a separator") — the
                     divider marks Exit as leaving the editor rather than
                     another step in the same sequence. */}
-                <Button variant="primary" onClick={openSaveReview}>Save changes</Button>
+                <Button variant="primary" onClick={openSaveReview}>Save model</Button>
                 {/* Explicit 24px: Divider's vertical rule is height:100%, and
                     in this centre-aligned row the span collapsed to the
                     component's own 16px min-height, which read as a speck
@@ -1638,7 +1638,7 @@ const SearchDataOnDataModelFinal: React.FC = () => {
                         // 20px gaps sit either side of the copy so it reads as
                         // the middle of three even bands, and the "or" stays
                         // tucked under the button it qualifies.
-                        <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 0, padding: '24px', textAlign: 'center' }}>
+                        <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 0, padding: 'var(--spacing-6)', textAlign: 'center' }}>
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginBottom: 'var(--spacing-5)' }}>
                             {/* Traced from Komal's own mock. Paint order is
                                 back-to-front: dashed canvas + its dot grid,
@@ -2241,14 +2241,14 @@ const SearchDataOnDataModelFinal: React.FC = () => {
                                 setPreviewOpen(true);
                               }}
                               // One recipe for all three canvas controls
-                              // (2026-09-25): white pill, border-default
-                              // stroke, soft shadow.
-                              style={{ background: 'var(--rd-sys-color-background-base)', border: '1px solid var(--rd-sys-color-border-default)', borderRadius: 'var(--radius-full, 999px)', boxShadow: '0 1px 3px rgba(25, 35, 49, 0.10)' }}
+                              // (2026-09-25): white pill, soft shadow, no
+                              // border (Vivek: "we can remove borders").
+                              style={{ background: 'var(--rd-sys-color-background-base)', border: 'none', borderRadius: 'var(--radius-full, 999px)', boxShadow: 'var(--shadow-surface)' }}
                             >
                               Preview model data
                             </Button>
                           )}
-                          <Button variant="secondary" iconOnly icon="search" aria-label="Find" style={{ background: 'var(--rd-sys-color-background-base)', border: '1px solid var(--rd-sys-color-border-default)', borderRadius: 'var(--radius-full, 999px)', boxShadow: '0 1px 3px rgba(25, 35, 49, 0.10)' }}>Find</Button>
+                          <Button variant="secondary" iconOnly icon="search" aria-label="Find" style={{ background: 'var(--rd-sys-color-background-base)', border: 'none', borderRadius: 'var(--radius-full, 999px)', boxShadow: 'var(--shadow-surface)' }}>Find</Button>
                           <div style={{ position: 'relative' }}>
                             <Button
                               ref={zoomMenuBtnRef}
@@ -2257,7 +2257,10 @@ const SearchDataOnDataModelFinal: React.FC = () => {
                               iconPosition="trailing"
                               icon={<Icon name={zoomMenuOpen ? 'chevron-up' : 'chevron-down'} size="s" color="var(--rd-sys-color-content-secondary)" />}
                               onClick={() => setZoomMenuOpen(o => !o)}
-                              style={{ border: '1px solid var(--rd-sys-color-border-default)', borderRadius: 'var(--radius-full, 999px)', color: 'var(--rd-sys-color-content-primary)', background: 'var(--rd-sys-color-background-base)', boxShadow: '0 1px 3px rgba(25, 35, 49, 0.10)' }}
+                              // More breathing room before "100%" (2026-09-25,
+                              // Vivek) — the tertiary recipe sits the label too
+                              // close to the pill's left edge.
+                              style={{ border: 'none', borderRadius: 'var(--radius-full, 999px)', color: 'var(--rd-sys-color-content-primary)', background: 'var(--rd-sys-color-background-base)', boxShadow: 'var(--shadow-surface)', paddingLeft: 'var(--spacing-4)' }}
                             >
                               100%
                             </Button>
@@ -2542,7 +2545,7 @@ const SearchDataOnDataModelFinal: React.FC = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-3)' }}>
             <Button variant="secondary" id="discard-btn">Discard changes and close</Button>
           </div>
-          <Button variant="primary" id="save-changes-btn">Save changes</Button>
+          <Button variant="primary" id="save-changes-btn">Save model</Button>
         </div>
       )}
 
@@ -2607,14 +2610,16 @@ const SearchDataOnDataModelFinal: React.FC = () => {
       )}
 
       {/* SAVE REVIEW MODAL (2026-09-25, Vivek): model name + description, and
-          every spreadsheet action not yet in the model, each with an
-          add-to-model checkbox (default checked — the sweep exists so work
-          isn't silently lost). Save promotes the checked ones; Dismiss
-          closes without saving. */}
+          the UNSAVED spreadsheet changes — filters and formulas not yet in
+          the model, each with a checkbox (default checked — the sweep exists
+          so work isn't silently lost), a Select all, and one list per kind
+          (his spec, same day: "more structured view — Filters list, Formula
+          list; we only show unsaved ones; make the modal bigger, wider").
+          Save promotes the checked ones; Dismiss closes without saving. */}
       {saveReviewOpen && (
         <RdModal
-          size="M1"
-          title="Save changes"
+          size="M2"
+          title="Save model"
           onClose={() => setSaveReviewOpen(false)}
           cancelLabel="Dismiss"
           onCancel={() => setSaveReviewOpen(false)}
@@ -2640,33 +2645,64 @@ const SearchDataOnDataModelFinal: React.FC = () => {
               <TextArea value={saveModelDesc} onChange={e => setSaveModelDesc(e.target.value)} placeholder="Add a description" rows={2} />
             </div>
             <div>
-              <Typography variant="content-label-subhead" as="div" style={{ marginBottom: 'var(--spacing-2)' }}>Review spreadsheet actions</Typography>
+              <Typography variant="content-label-subhead" as="div" style={{ marginBottom: 'var(--spacing-1)' }}>Unsaved spreadsheet changes</Typography>
               {sheetDrafts.filters.length === 0 && sheetDrafts.formulas.length === 0 ? (
-                <Typography variant="caption" color="gray" as="div">No spreadsheet actions to review.</Typography>
-              ) : (
-                <div style={{ border: '1px solid var(--rd-sys-color-border-divider)', borderRadius: 'var(--radius-md)', maxHeight: 240, overflowY: 'auto', padding: 'var(--spacing-2) var(--spacing-3)' }}>
-                  {sheetDrafts.filters.map(f => (
-                    <div key={`f:${f.col}`} style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-2)', padding: '4px 0' }}>
-                      <Checkbox
-                        checked={!!saveChecks[`f:${f.col}`]}
-                        onChange={v => setSaveChecks(prev => ({ ...prev, [`f:${f.col}`]: v }))}
-                        showLabel={false}
-                      />
-                      <Typography variant="footnote" as="span">Filter · {f.col} <b>{f.val}</b></Typography>
+                <Typography variant="caption" color="gray" as="div">No unsaved spreadsheet changes.</Typography>
+              ) : (() => {
+                const allKeys = [
+                  ...sheetDrafts.filters.map(f => `f:${f.col}`),
+                  ...sheetDrafts.formulas.map(x => `x:${x.name}`),
+                ];
+                const allChecked = allKeys.every(k => !!saveChecks[k]);
+                const setAll = (v: boolean) => setSaveChecks(prev => {
+                  const next = { ...prev };
+                  allKeys.forEach(k => { next[k] = v; });
+                  return next;
+                });
+                // Boxless, quieter hierarchy (2026-09-25, Vivek: "don't need
+                // a box for these... these font size and all are not good"):
+                // grey caption sub-heads, regular-weight rows (name primary,
+                // value secondary — no bold), Select all split off by a
+                // divider.
+                const draftRow = (key: string, name: string, val: string) => (
+                  <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-2)' }}>
+                    <Checkbox
+                      checked={!!saveChecks[key]}
+                      onChange={v => setSaveChecks(prev => ({ ...prev, [key]: v }))}
+                      showLabel={false}
+                    />
+                    <Typography variant="footnote" as="span">{name}</Typography>
+                    <Typography variant="footnote" color="gray" as="span">{val}</Typography>
+                  </div>
+                );
+                return (
+                  <>
+                    {/* Copy is Vivek's, verbatim (2026-09-25). */}
+                    <Typography variant="caption" color="gray" as="div" style={{ marginBottom: 'var(--spacing-3)' }}>
+                      Checked changes are added to the model when you save.
+                    </Typography>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-2)', maxHeight: 320, overflowY: 'auto' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-2)' }}>
+                        <Checkbox checked={allChecked} onChange={setAll} showLabel={false} />
+                        <Typography variant="footnote" as="span">Select all</Typography>
+                      </div>
+                      <Divider />
+                      {sheetDrafts.filters.length > 0 && (
+                        <>
+                          <Typography variant="caption" color="gray" as="div" style={{ marginTop: 'var(--spacing-1)' }}>Filters</Typography>
+                          {sheetDrafts.filters.map(f => draftRow(`f:${f.col}`, f.col, f.val))}
+                        </>
+                      )}
+                      {sheetDrafts.formulas.length > 0 && (
+                        <>
+                          <Typography variant="caption" color="gray" as="div" style={{ marginTop: 'var(--spacing-2)' }}>Formulas</Typography>
+                          {sheetDrafts.formulas.map(x => draftRow(`x:${x.name}`, x.name, x.expression))}
+                        </>
+                      )}
                     </div>
-                  ))}
-                  {sheetDrafts.formulas.map(x => (
-                    <div key={`x:${x.name}`} style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-2)', padding: '4px 0' }}>
-                      <Checkbox
-                        checked={!!saveChecks[`x:${x.name}`]}
-                        onChange={v => setSaveChecks(prev => ({ ...prev, [`x:${x.name}`]: v }))}
-                        showLabel={false}
-                      />
-                      <Typography variant="footnote" as="span">Formula · {x.name} <b>{x.expression}</b></Typography>
-                    </div>
-                  ))}
-                </div>
-              )}
+                  </>
+                );
+              })()}
             </div>
           </div>
         </RdModal>

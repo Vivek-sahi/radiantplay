@@ -45,7 +45,7 @@ import styles from './QueryAsIs.module.css';
 
 // ─── Typeahead column suggestion dropdown ─────────────────────────────────────
 
-const TA_FONT = '"Plain", -apple-system, sans-serif';
+const TA_FONT = 'var(--font-family-primary)';
 
 const TYPE_ICON: Record<string, string> = {
   measure:   '#',
@@ -98,10 +98,10 @@ const SearchTypeahead: React.FC<{
 // taStyles — panel is a plain white box; positioning is handled by wrapper divs in JSX.
 const taStyles: Record<string, React.CSSProperties> = {
   panel: {
-    background: '#fff',
-    border: '1px solid #eaedf2',
-    borderRadius: '8px',
-    boxShadow: '0 8px 24px rgba(25,35,49,0.12), 0 2px 6px rgba(25,35,49,0.06)',
+    background: 'var(--rd-sys-color-background-base)',
+    border: '1px solid var(--rd-sys-color-border-divider)',
+    borderRadius: 'var(--radius-lg)',
+    boxShadow: 'var(--shadow-menu)',
     overflow: 'hidden',
     fontFamily: TA_FONT,
   },
@@ -109,8 +109,8 @@ const taStyles: Record<string, React.CSSProperties> = {
     width: '20px',
     flexShrink: 0,
     fontStyle: 'italic',
-    fontSize: '14px',
-    color: '#777e8b',
+    fontSize: 'var(--font-size-sm)',
+    color: 'var(--rd-sys-color-content-secondary)',
     textAlign: 'center' as const,
     fontFamily: 'serif',
   },
@@ -119,9 +119,9 @@ const taStyles: Record<string, React.CSSProperties> = {
   },
   hints: {
     display: 'flex',
-    gap: '16px',
-    padding: '8px 16px',
-    borderTop: '1px solid #eaedf2',
+    gap: 'var(--spacing-4)',
+    padding: 'var(--spacing-2) var(--spacing-4)',
+    borderTop: '1px solid var(--rd-sys-color-border-divider)',
     fontSize: '11px',
     color: '#a0a9b4',
     fontFamily: TA_FONT,
@@ -131,9 +131,9 @@ const taStyles: Record<string, React.CSSProperties> = {
     background: '#f0f2f5',
     border: '1px solid #d4d9e2',
     borderRadius: '3px',
-    padding: '1px 4px',
+    padding: '1px var(--spacing-1)',
     fontSize: '10px',
-    color: '#1d232f',
+    color: 'var(--rd-sys-color-content-primary)',
     marginRight: '3px',
   },
 };
@@ -170,10 +170,10 @@ interface DataTokenProps {
 }
 
 // Inline checkmark for selected aggregate / view option
-const CheckIcon: React.FC<{ color?: string }> = ({ color = '#2770ef' }) => (
-  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
-    <path d="M2 7l3.5 3.5L12 3.5" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
+// Registry checkmark at s (14px), same box as the old inline tick
+// (2026-09-25 icons pass).
+const CheckIcon: React.FC<{ color?: string }> = ({ color = 'var(--rd-sys-color-content-brand)' }) => (
+  <Icon name="checkmark" size="s" color={color} />
 );
 
 // Panel variant — click opens a dropdown menu directly, no hover state change
@@ -207,10 +207,10 @@ const PanelToken: React.FC<{ label: string; type: TokenType }> = ({ label, type 
                   >
                     <button
                       className={styles.tokenDropdownItem}
-                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, width: '100%' }}
+                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--spacing-2)', width: '100%' }}
                     >
                       {item}
-                      <span style={{ color: '#a0a9b4', fontSize: 12, lineHeight: 1 }}>›</span>
+                      <span style={{ color: '#a0a9b4', fontSize: 'var(--font-size-xs)', lineHeight: 1 }}>›</span>
                     </button>
                     {aggSubmenuOpen && (
                       <div className={styles.tokenSubmenu}>
@@ -218,7 +218,7 @@ const PanelToken: React.FC<{ label: string; type: TokenType }> = ({ label, type 
                           <button
                             key={agg}
                             className={styles.tokenDropdownItem}
-                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}
+                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--spacing-3)' }}
                             onClick={() => { setSelectedAggregate(agg); setOpen(false); setAggSubmenuOpen(false); }}
                           >
                             {agg}
@@ -273,7 +273,7 @@ const SearchToken: React.FC<{ label: string; type: TokenType; onReplace?: (col: 
           style={{ width: Math.max(editValue.length * 8, 40) + 'px' }}
         />
         {/* Typeahead anchored below this specific token — 280px wide */}
-        <div style={{ position: 'absolute', top: '100%', left: 0, width: 280, zIndex: 200, marginTop: 4 }}>
+        <div style={{ position: 'absolute', top: '100%', left: 0, width: 280, zIndex: 200, marginTop: 'var(--spacing-1)' }}>
           <SearchTypeahead
             query={editValue === label ? '' : editValue}
             onSelect={col => {
@@ -319,7 +319,7 @@ const SearchToken: React.FC<{ label: string; type: TokenType; onReplace?: (col: 
           1px gap + chevron doesn't lose the hover state.              */}
       <span
         className={styles.searchTokenBorder}
-        style={{ position: 'absolute', top: -8, left: -8, right: -28, bottom: -8, border: '8px solid #fff', borderRadius: 12, pointerEvents: 'none', zIndex: 3 }}
+        style={{ position: 'absolute', top: -8, left: -8, right: -28, bottom: -8, border: '8px solid var(--rd-sys-color-background-base)', borderRadius: 'var(--radius-xl)', pointerEvents: 'none', zIndex: 3 }}
       />
 
       {menuOpen && (
@@ -338,10 +338,10 @@ const SearchToken: React.FC<{ label: string; type: TokenType; onReplace?: (col: 
                   >
                     <button
                       className={styles.tokenDropdownItem}
-                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, width: '100%' }}
+                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--spacing-2)', width: '100%' }}
                     >
                       {item}
-                      <span style={{ color: '#a0a9b4', fontSize: 12, lineHeight: 1 }}>›</span>
+                      <span style={{ color: '#a0a9b4', fontSize: 'var(--font-size-xs)', lineHeight: 1 }}>›</span>
                     </button>
                     {aggSubmenuOpen && (
                       <div className={styles.tokenSubmenu}>
@@ -349,7 +349,7 @@ const SearchToken: React.FC<{ label: string; type: TokenType; onReplace?: (col: 
                           <button
                             key={agg}
                             className={styles.tokenDropdownItem}
-                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}
+                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--spacing-3)' }}
                             onClick={() => { setSelectedAggregate(agg); setMenuOpen(false); setAggSubmenuOpen(false); }}
                           >
                             {agg}
@@ -493,9 +493,9 @@ const GO_BTN_BASE: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  fontFamily: '"Plain", -apple-system, sans-serif',
-  fontSize: '14px',
-  fontWeight: 500,
+  fontFamily: 'var(--font-family-primary)',
+  fontSize: 'var(--font-size-sm)',
+  fontWeight: 'var(--font-weight-medium)',
   flexShrink: 0,
   transition: 'background 120ms ease',
 };
@@ -510,7 +510,7 @@ const GoStopButton: React.FC<{
 
   if (state === 'stopping') {
     return (
-      <button disabled style={{ ...GO_BTN_BASE, background: '#c0c6cf', cursor: 'default' }}>
+      <button disabled style={{ ...GO_BTN_BASE, background: 'var(--rd-sys-color-background-inset)', cursor: 'default' }}>
         <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden>
           <rect width="10" height="10" rx="1" fill="#fff" opacity="0.7" />
         </svg>
@@ -519,7 +519,7 @@ const GoStopButton: React.FC<{
   }
   if (state === 'loading') {
     return (
-      <button onClick={onStop} style={{ ...GO_BTN_BASE, background: '#eaedf2' }}>
+      <button onClick={onStop} style={{ ...GO_BTN_BASE, background: 'var(--rd-sys-color-background-subtle)' }}>
         <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-label="Stop">
           <rect width="10" height="10" rx="1" fill="#1d232f" />
         </svg>
@@ -528,14 +528,14 @@ const GoStopButton: React.FC<{
   }
   if (state === 'focused') {
     return (
-      <button onClick={onGo} style={{ ...GO_BTN_BASE, background: '#2770ef', color: '#fff' }}>
+      <button onClick={onGo} style={{ ...GO_BTN_BASE, background: 'var(--rd-sys-color-background-brand)', color: 'var(--rd-sys-color-content-primary-inverse)' }}>
         Go
       </button>
     );
   }
   // idle — secondary button color states matching Figma
-  const bg = pressed ? '#DEE8FA' : hovered ? '#DBDFE7' : '#EAEDF2';
-  const color = pressed ? '#2770EF' : '#1d232f';
+  const bg = pressed ? '#DEE8FA' : hovered ? '#DBDFE7' : 'var(--rd-sys-color-background-subtle)';
+  const color = pressed ? 'var(--rd-sys-color-content-brand)' : 'var(--rd-sys-color-content-primary)';
   return (
     <button
       onClick={onGo}
@@ -630,12 +630,19 @@ const TbBtn: React.FC<{ children: React.ReactNode; label?: string; onClick?: () 
   const isDisabled = disabled || !onClick;
   return (
   <Tooltip content={disabled ? (disabledTooltip ?? label ?? '') : (label ?? '')} placement="top" showDelay={isDisabled ? 200 : 400}>
-    {/* aria-disabled + muted colour rather than the native disabled attribute,
-        so the explain-why tooltip still fires on hover. */}
+    {/* Stays a native button ON PURPOSE (components pass tried Radiant
+        Button 2026-09-25 and it was reverted the same day — tertiary Button
+        brand-colours its content from an inner rule, breaking the toolbar's
+        enabled=ink / disabled=tertiary contract; Vivek: "what happened to
+        toolbar icon colour?"). aria-disabled + muted colour rather than the
+        native disabled attribute, so the explain-why tooltip still fires on
+        hover; mousedown stays blocked so a click never focus-pins the
+        tooltip. */}
     <button
       className={styles.sheetTbBtn}
       aria-label={label}
       aria-disabled={isDisabled || undefined}
+      onMouseDown={e => e.preventDefault()}
       onClick={isDisabled ? (e => e.preventDefault()) : onClick}
     >
       {children}
@@ -704,11 +711,37 @@ const ColMenuIcon: React.FC<{ id: string }> = ({ id }) => {
   const sw = 1.4;
   const common = { width: 18, height: 18, viewBox: '0 0 18 18', fill: 'none' as const };
   switch (id) {
+    // Registry-backed glyphs (2026-09-25 icons pass): the Radiant icon
+    // wherever a true metaphor-equivalent exists, at size l (18px) to match
+    // the menu's glyph box. The sort variants below stay hand-drawn — the
+    // registry has only a generic 'sort'; flagged in the compliance audit.
     case 'formula':
-      return <FxIcon size={18} />;
+      return <Icon name="formula" size="l" color="currentColor" />;
     case 'filter':
     case 'filter-edit':
-      return <svg {...common}><path d="M2.5 4h13l-5 6v4l-3 1.5V10l-5-6Z" stroke="currentColor" strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round"/></svg>;
+      return <Icon name="funnel-line" size="l" color="currentColor" />;
+    case 'dup':
+      return <Icon name="copy" size="l" color="currentColor" />;
+    case 'rename':
+      // Product's rename glyph is the pencil-on-square (2026-09-25 screenshot).
+      return <Icon name="edit-text" size="l" color="currentColor" />;
+    case 'sort':
+      return <Icon name="sort" size="l" color="currentColor" />;
+    case 'text-wrap':
+      // No registry equivalent (like the sort variants) — product's
+      // lines-with-return-arrow wrap glyph, hand-drawn; flagged in the audit.
+      return <svg {...{ width: 18, height: 18, viewBox: '0 0 18 18', fill: 'none' as const }}><path d="M3 5h12M3 9h7.5M3 13h4" stroke="currentColor" strokeWidth={1.4} strokeLinecap="round"/><path d="M13 9h1a2 2 0 0 1 0 4h-3m0 0 1.5-1.5M11 13l1.5 1.5" stroke="currentColor" strokeWidth={1.4} strokeLinecap="round" strokeLinejoin="round"/></svg>;
+    case 'hide':
+      return <Icon name="eye-undo" size="l" color="currentColor" />;
+    case 'cond-fmt':
+      return <Icon name="conditional-format" size="l" color="currentColor" />;
+    case 'format':
+      // Product's Format glyph is the T (2026-09-25 screenshot), not 123.
+      return <Icon name="text" size="l" color="currentColor" />;
+    case 'delete':
+      return <Icon name="trash-can" size="l" color="currentColor" />;
+    case 'filter-remove':
+      return <Icon name="cross" size="l" color="currentColor" />;
     case 'sort-asc':
       return <svg {...common}><path d="M3 5h9M3 9h6M3 13h3" stroke="currentColor" strokeWidth={sw} strokeLinecap="round"/><path d="M14 12V4m0 0l-2 2m2-2l2 2" stroke="currentColor" strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round"/></svg>;
     case 'sort-desc':
@@ -717,45 +750,47 @@ const ColMenuIcon: React.FC<{ id: string }> = ({ id }) => {
       return <svg {...common}><path d="M5 4v10m0 0l-2-2m2 2l2-2" stroke="currentColor" strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round"/><path d="M13 14V4m0 0l-2 2m2-2l2 2" stroke="currentColor" strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round"/></svg>;
     case 'sort-clear':
       return <svg {...common}><path d="M4 5l10 8M14 5L4 13" stroke="currentColor" strokeWidth={sw} strokeLinecap="round"/></svg>;
-    case 'dup':
-      return <svg {...common}><rect x="6" y="6" width="8.5" height="8.5" rx="1.5" stroke="currentColor" strokeWidth={sw}/><path d="M11.5 6V4.5A1.5 1.5 0 0 0 10 3H4.5A1.5 1.5 0 0 0 3 4.5V10a1.5 1.5 0 0 0 1.5 1.5H6" stroke="currentColor" strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round"/></svg>;
-    case 'rename':
-      return <svg {...common}><path d="M3 12.5 11 4.5l2.5 2.5L5.5 15H3v-2.5Z" stroke="currentColor" strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round"/></svg>;
-    case 'hide':
-      return <svg {...common}><path d="M2.5 9S5 4.5 9 4.5 15.5 9 15.5 9 13 13.5 9 13.5 2.5 9 2.5 9Z" stroke="currentColor" strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round"/><circle cx="9" cy="9" r="1.8" stroke="currentColor" strokeWidth={sw}/><path d="M3 3l12 12" stroke="currentColor" strokeWidth={sw} strokeLinecap="round"/></svg>;
-    case 'cond-fmt':
-      return <svg {...common}><rect x="3" y="3.5" width="12" height="11" rx="1.5" stroke="currentColor" strokeWidth={sw}/><path d="M7.5 3.5v11M11 3.5v11" stroke="currentColor" strokeWidth={sw}/></svg>;
-    case 'format':
-      return <svg {...common}><path d="M4 5h10M9 5v9M7 14h4" stroke="currentColor" strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round"/></svg>;
-    case 'delete':
-      return <svg {...common}><path d="M4 5h10M7.5 5V3.5h3V5M5.5 5l.5 9h6l.5-9M8 7.5v4M10 7.5v4" stroke="currentColor" strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round"/></svg>;
-    case 'filter-remove':
-      return <svg {...common}><path d="M5 6l8 8M13 6l-8 8" stroke="currentColor" strokeWidth={sw} strokeLinecap="round"/></svg>;
     default:
       return null;
   }
 };
 
 // Column menu items per Figma 291:104562
+// Order, labels and grouping mirror the product's spreadsheet column menu
+// (2026-09-25, Vivek's screenshot: "this is our spreadsheet column menu from
+// another part of the product"): New calculated field / Aggregate ▸ / Filter
+// / Sort ▸ / Clear sort / Duplicate / Remove / Conditional formatting /
+// Format / Rename / Text wrapping ▸. Sort's three options fold into a hover
+// submenu; Clear sort stays top-level and greys out while no sort is applied
+// (this prototype's sorts are parity items, so it's always grey — exactly
+// what the product shows at rest). "Delete column" removed the same day
+// ("we do not have delete") — the sheet mirrors model state, so columns
+// leave via the model, not here.
 const COL_MENU_SECTIONS = [
-  [{ id: 'formula', label: 'Add formula' }],
+  [{ id: 'formula', label: 'New calculated field' }],
   [
     { id: 'filter',     label: 'Filter' },
-    { id: 'sort-asc',   label: 'Sort ascending' },
-    { id: 'sort-desc',  label: 'Sort descending' },
-    { id: 'sort-adv',   label: 'Advanced sort settings' },
+    { id: 'sort',       label: 'Sort' },
     { id: 'sort-clear', label: 'Clear sort' },
   ],
   [
-    { id: 'dup',    label: 'Duplicate column' },
-    { id: 'rename', label: 'Rename column' },
-    { id: 'hide',   label: 'Hide column' },
+    { id: 'dup',  label: 'Duplicate column' },
+    { id: 'hide', label: 'Remove column' },
   ],
   [
     { id: 'cond-fmt', label: 'Conditional formatting' },
     { id: 'format',   label: 'Format' },
   ],
-  [{ id: 'delete', label: 'Delete column' }],
+  [
+    { id: 'rename',    label: 'Rename' },
+    { id: 'text-wrap', label: 'Text wrapping' },
+  ],
+];
+
+const SORT_SUBMENU_OPTIONS = [
+  { id: 'sort-asc',  label: 'Sort ascending' },
+  { id: 'sort-desc', label: 'Sort descending' },
+  { id: 'sort-adv',  label: 'Advanced sort settings' },
 ];
 
 // All columns available in the sales data model (superset of defaults)
@@ -892,7 +927,7 @@ const CsvImportModal: React.FC<{ open: boolean; onClose: () => void; onImport?: 
     const map = { text: 'Aa', number: '123', date: 'D' };
     const color = { text: '#6B7A99', number: '#2770EF', date: '#7B5EA7' };
     return (
-      <span style={{ fontSize: 10, fontWeight: 600, color: color[t], background: `${color[t]}18`, borderRadius: 3, padding: '1px 5px', fontFamily: 'monospace' }}>
+      <span style={{ fontSize: 10, fontWeight: 'var(--font-weight-semibold)', color: color[t], background: `${color[t]}18`, borderRadius: 3, padding: '1px 5px', fontFamily: 'monospace' }}>
         {map[t]}
       </span>
     );
@@ -903,18 +938,18 @@ const CsvImportModal: React.FC<{ open: boolean; onClose: () => void; onImport?: 
       <div style={{ position: 'fixed', inset: 0, zIndex: 999, background: 'rgba(29,35,47,0.45)' }} onClick={handleClose} />
       <div style={{
         position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
-        zIndex: 1000, background: '#fff', borderRadius: 12,
+        zIndex: 1000, background: 'var(--rd-sys-color-background-base)', borderRadius: 'var(--radius-xl)',
         width: (step === 'match' || step === 'select' || step === 'preview') ? 880 : 600,
         maxHeight: '85vh', display: 'flex', flexDirection: 'column',
-        boxShadow: '0 8px 40px rgba(29,35,47,0.18)',
+        boxShadow: 'var(--shadow-modal)',
       }}>
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', padding: '20px 24px 16px', borderBottom: '1px solid var(--rd-sys-color-border-divider,#eaedf2)', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', padding: 'var(--spacing-5) var(--spacing-6) var(--spacing-4)', borderBottom: '1px solid var(--rd-sys-color-border-divider,#eaedf2)', flexShrink: 0 }}>
           <div style={{ flex: 1 }}>
             {step !== 'choose' && step !== 'done' && (
-              <div style={{ fontSize: 11, fontWeight: 600, color: '#9aa5b8', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 3 }}>Add custom data</div>
+              <div style={{ fontSize: 11, fontWeight: 'var(--font-weight-semibold)', color: 'var(--rd-sys-color-content-secondary)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 3 }}>Add custom data</div>
             )}
-            <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--rd-sys-color-content-primary,#1d232f)' }}>
+            <div style={{ fontSize: 15, fontWeight: 'var(--font-weight-semibold)', color: 'var(--rd-sys-color-content-primary,#1d232f)' }}>
               {step === 'choose'  && 'Import CSV'}
               {step === 'upload'  && 'Upload a .CSV file'}
               {step === 'preview' && 'Preview your .CSV file'}
@@ -928,29 +963,29 @@ const CsvImportModal: React.FC<{ open: boolean; onClose: () => void; onImport?: 
                 : ['upload', 'preview'];
               const cur = steps.indexOf(step);
               return (
-                <div style={{ display: 'flex', gap: 6, marginTop: 8, alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: 6, marginTop: 'var(--spacing-2)', alignItems: 'center' }}>
                   {steps.map((s, i) => (
                     <div key={s} style={{
                       height: 4, width: 40, borderRadius: 2,
-                      background: cur >= i ? 'var(--rd-sys-color-content-brand,#2770EF)' : '#eaedf2',
+                      background: cur >= i ? 'var(--rd-sys-color-content-brand,#2770EF)' : 'var(--rd-sys-color-background-subtle)',
                     }} />
                   ))}
                 </div>
               );
             })()}
           </div>
-          <button onClick={handleClose} style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: 4, color: '#6b7a99', borderRadius: 4 }}>
+          <button onClick={handleClose} style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: 'var(--spacing-1)', color: 'var(--rd-sys-color-content-secondary)', borderRadius: 'var(--radius-sm)' }}>
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg>
           </button>
         </div>
 
         {/* Body */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px' }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: 'var(--spacing-5) var(--spacing-6)' }}>
 
           {/* Step: choose flow */}
           {step === 'choose' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <p style={{ margin: '0 0 4px', fontSize: 13, color: 'var(--rd-sys-color-content-secondary,#6b7a99)' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-3)' }}>
+              <p style={{ margin: '0 0 var(--spacing-1)', fontSize: 'var(--font-size-sm)', color: 'var(--rd-sys-color-content-secondary,#6b7a99)' }}>
                 Choose how to import your CSV data
               </p>
               {([
@@ -961,20 +996,20 @@ const CsvImportModal: React.FC<{ open: boolean; onClose: () => void; onImport?: 
                   key={opt.id!}
                   onClick={() => setFlow(opt.id)}
                   style={{
-                    textAlign: 'left', padding: '16px 18px', borderRadius: 8, cursor: 'pointer',
+                    textAlign: 'left', padding: 'var(--spacing-4) 18px', borderRadius: 'var(--radius-lg)', cursor: 'pointer',
                     border: flow === opt.id ? '2px solid var(--rd-sys-color-content-brand,#2770EF)' : '1px solid var(--rd-sys-color-border-default,#d0d5dd)',
-                    background: flow === opt.id ? '#f0f5ff' : '#fff',
+                    background: flow === opt.id ? '#f0f5ff' : 'var(--rd-sys-color-background-base)',
                     transition: 'all 0.12s',
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 'var(--spacing-1)' }}>
                     {flow === opt.id
                       ? <svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" stroke="#2770EF" strokeWidth="1.5" fill="none"/><circle cx="8" cy="8" r="4" fill="#2770EF"/></svg>
                       : <svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" stroke="#d0d5dd" strokeWidth="1.5" fill="none"/></svg>
                     }
-                    <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--rd-sys-color-content-primary,#1d232f)' }}>{opt.title}</span>
+                    <span style={{ fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-semibold)', color: 'var(--rd-sys-color-content-primary,#1d232f)' }}>{opt.title}</span>
                   </div>
-                  <p style={{ margin: '0 0 0 26px', fontSize: 12, color: 'var(--rd-sys-color-content-secondary,#6b7a99)', lineHeight: 1.5 }}>{opt.desc}</p>
+                  <p style={{ margin: '0 0 0 26px', fontSize: 'var(--font-size-xs)', color: 'var(--rd-sys-color-content-secondary,#6b7a99)', lineHeight: 1.5 }}>{opt.desc}</p>
                 </button>
               ))}
             </div>
@@ -991,36 +1026,36 @@ const CsvImportModal: React.FC<{ open: boolean; onClose: () => void; onImport?: 
                 onDragLeave={() => setDragging(false)}
                 onDrop={e => { e.preventDefault(); setDragging(false); const f = e.dataTransfer.files?.[0]; if (f) handleFileSelect(f.name); }}
                 style={{
-                  border: `1.5px dashed ${dragging ? '#2770EF' : '#c8cdd6'}`,
-                  borderRadius: 8, padding: '60px 24px', textAlign: 'center',
-                  background: dragging ? '#f0f5ff' : '#fff', transition: 'all 0.12s',
+                  border: `1.5px dashed ${dragging ? '#2770EF' : 'var(--rd-sys-color-border-default)'}`,
+                  borderRadius: 'var(--radius-lg)', padding: '60px var(--spacing-6)', textAlign: 'center',
+                  background: dragging ? '#f0f5ff' : 'var(--rd-sys-color-background-base)', transition: 'all 0.12s',
                 }}
               >
                 <button
                   onClick={() => fileRef.current?.click()}
                   style={{
-                    fontSize: 13, fontWeight: 500, color: '#1d232f',
-                    background: '#f0f2f5', border: '1px solid #d0d5dd',
-                    borderRadius: 20, padding: '7px 18px', cursor: 'pointer', marginBottom: 12,
+                    fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-medium)', color: 'var(--rd-sys-color-content-primary)',
+                    background: '#f0f2f5', border: '1px solid var(--rd-sys-color-border-default)',
+                    borderRadius: 20, padding: '7px 18px', cursor: 'pointer', marginBottom: 'var(--spacing-3)',
                   }}
                 >Browse files</button>
-                <div style={{ fontSize: 12, color: '#6b7a99' }}>
+                <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--rd-sys-color-content-secondary)' }}>
                   Or drag a CSV file into this window. Maximum file size is 50 MB.
                 </div>
               </div>
 
               {/* Column names */}
-              <div style={{ marginTop: 20, display: 'flex', alignItems: 'center', gap: 20 }}>
-                <span style={{ fontSize: 13, color: '#1d232f', minWidth: 120 }}>Column names</span>
+              <div style={{ marginTop: 'var(--spacing-5)', display: 'flex', alignItems: 'center', gap: 'var(--spacing-5)' }}>
+                <span style={{ fontSize: 'var(--font-size-sm)', color: 'var(--rd-sys-color-content-primary)', minWidth: 120 }}>Column names</span>
                 {([
                   { id: 'header' as const, label: 'Define in header' },
                   { id: 'none'   as const, label: 'Not defined' },
                 ]).map(opt => (
-                  <label key={opt.id} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13, color: '#1d232f' }}>
+                  <label key={opt.id} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 'var(--font-size-sm)', color: 'var(--rd-sys-color-content-primary)' }}>
                     <span style={{
                       width: 16, height: 16, borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      border: colNames === opt.id ? '2px solid #2770EF' : '1.5px solid #c8cdd6',
-                      background: '#fff',
+                      border: colNames === opt.id ? '2px solid #2770EF' : '1.5px solid var(--rd-sys-color-border-default)',
+                      background: 'var(--rd-sys-color-background-base)',
                     }} onClick={() => setColNames(opt.id)}>
                       {colNames === opt.id && <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#2770EF', display: 'block' }} />}
                     </span>
@@ -1030,8 +1065,8 @@ const CsvImportModal: React.FC<{ open: boolean; onClose: () => void; onImport?: 
               </div>
 
               {/* Field separations */}
-              <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
-                <span style={{ fontSize: 13, color: '#1d232f', minWidth: 120 }}>Field separations</span>
+              <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 'var(--spacing-5)', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: 'var(--font-size-sm)', color: 'var(--rd-sys-color-content-primary)', minWidth: 120 }}>Field separations</span>
                 {([
                   { id: 'comma'     as const, label: 'Comma(,)' },
                   { id: 'semicolon' as const, label: 'Semicolon(;)' },
@@ -1039,11 +1074,11 @@ const CsvImportModal: React.FC<{ open: boolean; onClose: () => void; onImport?: 
                   { id: 'space'     as const, label: 'Space' },
                   { id: 'tab'       as const, label: 'Tab' },
                 ]).map(opt => (
-                  <label key={opt.id} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13, color: '#1d232f' }}>
+                  <label key={opt.id} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 'var(--font-size-sm)', color: 'var(--rd-sys-color-content-primary)' }}>
                     <span style={{
                       width: 16, height: 16, borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      border: fieldSep === opt.id ? '2px solid #2770EF' : '1.5px solid #c8cdd6',
-                      background: '#fff',
+                      border: fieldSep === opt.id ? '2px solid #2770EF' : '1.5px solid var(--rd-sys-color-border-default)',
+                      background: 'var(--rd-sys-color-background-base)',
                     }} onClick={() => setFieldSep(opt.id)}>
                       {fieldSep === opt.id && <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#2770EF', display: 'block' }} />}
                     </span>
@@ -1057,15 +1092,15 @@ const CsvImportModal: React.FC<{ open: boolean; onClose: () => void; onImport?: 
           {/* Step: preview the uploaded CSV */}
           {step === 'preview' && (
             <div>
-              <div style={{ fontSize: 12, color: '#6b7a99', marginBottom: 12 }}>
-                File: <strong style={{ color: '#1d232f' }}>{fileName}</strong> · {MOCK_CSV_COLS.length} columns · 41,288 rows detected
+              <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--rd-sys-color-content-secondary)', marginBottom: 'var(--spacing-3)' }}>
+                File: <strong style={{ color: 'var(--rd-sys-color-content-primary)' }}>{fileName}</strong> · {MOCK_CSV_COLS.length} columns · 41,288 rows detected
               </div>
-              <div style={{ border: '1px solid #eaedf2', borderRadius: 8, overflow: 'auto', maxHeight: 360 }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+              <div style={{ border: '1px solid var(--rd-sys-color-border-divider)', borderRadius: 'var(--radius-lg)', overflow: 'auto', maxHeight: 360 }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--font-size-xs)' }}>
                   <thead>
-                    <tr style={{ background: '#f8f9fb', borderBottom: '1px solid #eaedf2' }}>
+                    <tr style={{ background: '#f8f9fb', borderBottom: '1px solid var(--rd-sys-color-border-divider)' }}>
                       {MOCK_CSV_COLS.map(col => (
-                        <th key={col.name} style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 600, color: '#1d232f', whiteSpace: 'nowrap', borderRight: '1px solid #eaedf2' }}>
+                        <th key={col.name} style={{ padding: 'var(--spacing-2) var(--spacing-3)', textAlign: 'left', fontWeight: 'var(--font-weight-semibold)', color: 'var(--rd-sys-color-content-primary)', whiteSpace: 'nowrap', borderRight: '1px solid var(--rd-sys-color-border-divider)' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                             {typeTag(col.type)}
                             {col.name}
@@ -1082,34 +1117,34 @@ const CsvImportModal: React.FC<{ open: boolean; onClose: () => void; onImport?: 
                       ['1004','Mike','Torres','Engineering','130000','2019-05-20','Eve Chen'],
                       ['1005','Lisa','Wang','Product','115000','2021-09-30','Carol Lee'],
                     ].map((row, ri) => (
-                      <tr key={ri} style={{ background: ri % 2 === 0 ? '#fff' : '#fafbfc', borderBottom: '1px solid #eaedf2' }}>
+                      <tr key={ri} style={{ background: ri % 2 === 0 ? 'var(--rd-sys-color-background-base)' : '#fafbfc', borderBottom: '1px solid var(--rd-sys-color-border-divider)' }}>
                         {row.map((cell, ci) => (
-                          <td key={ci} style={{ padding: '7px 12px', color: '#1d232f', borderRight: '1px solid #eaedf2', whiteSpace: 'nowrap' }}>{cell}</td>
+                          <td key={ci} style={{ padding: '7px var(--spacing-3)', color: 'var(--rd-sys-color-content-primary)', borderRight: '1px solid var(--rd-sys-color-border-divider)', whiteSpace: 'nowrap' }}>{cell}</td>
                         ))}
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-              <div style={{ marginTop: 10, fontSize: 12, color: '#9aa5b8' }}>Showing 5 of 41,288 rows</div>
+              <div style={{ marginTop: 10, fontSize: 'var(--font-size-xs)', color: 'var(--rd-sys-color-content-secondary)' }}>Showing 5 of 41,288 rows</div>
             </div>
           )}
 
           {/* Step: match — link CSV to the Answer (flow = existing) */}
           {step === 'match' && (
             <div>
-              <div style={{ fontSize: 16, fontWeight: 600, color: '#1d232f', marginBottom: 18 }}>Choose columns with equivalent values</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div style={{ fontSize: 'var(--font-size-md)', fontWeight: 'var(--font-weight-semibold)', color: 'var(--rd-sys-color-content-primary)', marginBottom: 18 }}>Choose columns with equivalent values</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-4)' }}>
                 {matchPairs.map((pair, i) => (
-                  <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 28px', gap: 16, alignItems: 'end' }}>
+                  <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 28px', gap: 'var(--spacing-4)', alignItems: 'end' }}>
                     {/* Answer column */}
                     <div>
-                      <div style={{ fontSize: 12, color: '#6b7a99', marginBottom: 6 }}>Answer columns</div>
+                      <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--rd-sys-color-content-secondary)', marginBottom: 6 }}>Answer columns</div>
                       <div style={{ position: 'relative' }}>
                         <select
                           value={pair.answer}
                           onChange={e => setMatchPairs(ps => ps.map((p, idx) => idx === i ? { ...p, answer: e.target.value } : p))}
-                          style={{ width: '100%', appearance: 'none', fontSize: 14, fontWeight: 500, color: '#1d232f', padding: '11px 32px 11px 14px', border: '1px solid #d0d5dd', borderRadius: 8, background: '#fff', cursor: 'pointer' }}
+                          style={{ width: '100%', appearance: 'none', fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-medium)', color: 'var(--rd-sys-color-content-primary)', padding: '11px var(--spacing-8) 11px 14px', border: '1px solid var(--rd-sys-color-border-default)', borderRadius: 'var(--radius-lg)', background: 'var(--rd-sys-color-background-base)', cursor: 'pointer' }}
                         >
                           {DATA_MODEL_COLS.map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
                         </select>
@@ -1118,12 +1153,12 @@ const CsvImportModal: React.FC<{ open: boolean; onClose: () => void; onImport?: 
                     </div>
                     {/* CSV column */}
                     <div>
-                      <div style={{ fontSize: 12, color: '#6b7a99', marginBottom: 6 }}>CSV columns</div>
+                      <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--rd-sys-color-content-secondary)', marginBottom: 6 }}>CSV columns</div>
                       <div style={{ position: 'relative' }}>
                         <select
                           value={pair.csv}
                           onChange={e => setMatchPairs(ps => ps.map((p, idx) => idx === i ? { ...p, csv: e.target.value } : p))}
-                          style={{ width: '100%', appearance: 'none', fontSize: 14, fontWeight: 500, color: '#1d232f', padding: '11px 32px 11px 14px', border: '1px solid #d0d5dd', borderRadius: 8, background: '#fff', cursor: 'pointer' }}
+                          style={{ width: '100%', appearance: 'none', fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-medium)', color: 'var(--rd-sys-color-content-primary)', padding: '11px var(--spacing-8) 11px 14px', border: '1px solid var(--rd-sys-color-border-default)', borderRadius: 'var(--radius-lg)', background: 'var(--rd-sys-color-background-base)', cursor: 'pointer' }}
                         >
                           {MOCK_CSV_COLS.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
                         </select>
@@ -1133,7 +1168,7 @@ const CsvImportModal: React.FC<{ open: boolean; onClose: () => void; onImport?: 
                     {/* Remove */}
                     {i > 0 ? (
                       <button onClick={() => setMatchPairs(ps => ps.filter((_, idx) => idx !== i))}
-                        style={{ width: 28, height: 28, borderRadius: '50%', border: 'none', background: 'transparent', cursor: 'pointer', color: '#9aa5b8', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 8 }} aria-label="Remove pair">
+                        style={{ width: 28, height: 28, borderRadius: '50%', border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--rd-sys-color-content-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 'var(--spacing-2)' }} aria-label="Remove pair">
                         <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="9" fill="#c8cdd6"/><path d="M7 7l6 6M13 7l-6 6" stroke="#fff" strokeWidth="1.6" strokeLinecap="round"/></svg>
                       </button>
                     ) : <div />}
@@ -1142,27 +1177,27 @@ const CsvImportModal: React.FC<{ open: boolean; onClose: () => void; onImport?: 
               </div>
               <button
                 onClick={() => setMatchPairs(ps => [...ps, { answer: DATA_MODEL_COLS[0].key, csv: MOCK_CSV_COLS[0].name }])}
-                style={{ marginTop: 16, fontSize: 13, fontWeight: 500, color: '#2770EF', background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 6 }}
+                style={{ marginTop: 'var(--spacing-4)', fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-medium)', color: 'var(--rd-sys-color-content-brand)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 6 }}
               >
                 <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg>
                 Add another pair
               </button>
 
               {/* Preview data samples */}
-              <div style={{ marginTop: 28, borderTop: '1px solid #eaedf2', paddingTop: 20 }}>
-                <div style={{ fontSize: 16, fontWeight: 600, color: '#1d232f', marginBottom: 14 }}>Preview data samples</div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+              <div style={{ marginTop: 'var(--spacing-7)', borderTop: '1px solid var(--rd-sys-color-border-divider)', paddingTop: 'var(--spacing-5)' }}>
+                <div style={{ fontSize: 'var(--font-size-md)', fontWeight: 'var(--font-weight-semibold)', color: 'var(--rd-sys-color-content-primary)', marginBottom: 14 }}>Preview data samples</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--spacing-6)' }}>
                   {[
                     { label: '[ANSWER NAME] sample data' },
                     { label: '[CSV FILE NAME] sample data' },
                   ].map((tbl, ti) => (
                     <div key={ti}>
-                      <div style={{ fontSize: 12, color: '#9aa5b8', marginBottom: 8 }}>{tbl.label}</div>
-                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                      <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--rd-sys-color-content-secondary)', marginBottom: 'var(--spacing-2)' }}>{tbl.label}</div>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--font-size-sm)' }}>
                         <thead>
-                          <tr style={{ borderBottom: '2px solid #1d232f' }}>
+                          <tr style={{ borderBottom: '2px solid var(--rd-sys-color-content-primary)' }}>
                             {['First name', 'Last name', 'Employee ID'].map(h => (
-                              <th key={h} style={{ padding: '8px 10px', textAlign: 'left', fontWeight: 600, color: '#1d232f', whiteSpace: 'nowrap' }}>{h}</th>
+                              <th key={h} style={{ padding: 'var(--spacing-2) 10px', textAlign: 'left', fontWeight: 'var(--font-weight-semibold)', color: 'var(--rd-sys-color-content-primary)', whiteSpace: 'nowrap' }}>{h}</th>
                             ))}
                           </tr>
                         </thead>
@@ -1173,9 +1208,9 @@ const CsvImportModal: React.FC<{ open: boolean; onClose: () => void; onImport?: 
                             ['Jason', 'Day', '003'],
                             ['Jane', 'Doe', '004'],
                           ].map((row, ri) => (
-                            <tr key={ri} style={{ borderBottom: '1px solid #eaedf2' }}>
+                            <tr key={ri} style={{ borderBottom: '1px solid var(--rd-sys-color-border-divider)' }}>
                               {row.map((cell, ci) => (
-                                <td key={ci} style={{ padding: '9px 10px', color: '#1d232f' }}>{cell}</td>
+                                <td key={ci} style={{ padding: '9px 10px', color: 'var(--rd-sys-color-content-primary)' }}>{cell}</td>
                               ))}
                             </tr>
                           ))}
@@ -1191,12 +1226,12 @@ const CsvImportModal: React.FC<{ open: boolean; onClose: () => void; onImport?: 
           {/* Step: select columns to import (flow = existing) */}
           {step === 'select' && (
             <div>
-              <div style={{ fontSize: 13, color: '#6b7a99', marginBottom: 16 }}>
-                Choose which columns from <strong style={{ color: '#1d232f' }}>{fileName}</strong> to add. They’ll appear in the data panel under <strong style={{ color: '#1d232f' }}>Custom data</strong>.
+              <div style={{ fontSize: 'var(--font-size-sm)', color: 'var(--rd-sys-color-content-secondary)', marginBottom: 'var(--spacing-4)' }}>
+                Choose which columns from <strong style={{ color: 'var(--rd-sys-color-content-primary)' }}>{fileName}</strong> to add. They’ll appear in the data panel under <strong style={{ color: 'var(--rd-sys-color-content-primary)' }}>Custom data</strong>.
               </div>
-              <div style={{ border: '1px solid #eaedf2', borderRadius: 8, overflow: 'hidden' }}>
+              <div style={{ border: '1px solid var(--rd-sys-color-border-divider)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
                 {/* Select all */}
-                <label style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px', borderBottom: '1px solid #eaedf2', background: '#f8f9fb', cursor: 'pointer', fontSize: 12, fontWeight: 600, color: '#6b7a99' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px', borderBottom: '1px solid var(--rd-sys-color-border-divider)', background: '#f8f9fb', cursor: 'pointer', fontSize: 'var(--font-size-xs)', fontWeight: 'var(--font-weight-semibold)', color: 'var(--rd-sys-color-content-secondary)' }}>
                   <input type="checkbox"
                     checked={selectedCsvCols.size === MOCK_CSV_COLS.length}
                     ref={el => { if (el) el.indeterminate = selectedCsvCols.size > 0 && selectedCsvCols.size < MOCK_CSV_COLS.length; }}
@@ -1207,8 +1242,8 @@ const CsvImportModal: React.FC<{ open: boolean; onClose: () => void; onImport?: 
                 {MOCK_CSV_COLS.map((col, i) => (
                   <label key={col.name} style={{
                     display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px', cursor: 'pointer',
-                    borderBottom: i < MOCK_CSV_COLS.length - 1 ? '1px solid #eaedf2' : 'none',
-                    background: i % 2 === 0 ? '#fff' : '#fafbfc',
+                    borderBottom: i < MOCK_CSV_COLS.length - 1 ? '1px solid var(--rd-sys-color-border-divider)' : 'none',
+                    background: i % 2 === 0 ? 'var(--rd-sys-color-background-base)' : '#fafbfc',
                   }}>
                     <input type="checkbox"
                       checked={selectedCsvCols.has(col.name)}
@@ -1220,8 +1255,8 @@ const CsvImportModal: React.FC<{ open: boolean; onClose: () => void; onImport?: 
                     />
                     {typeTag(col.type)}
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 13, fontWeight: 500, color: '#1d232f' }}>{col.name}</div>
-                      <div style={{ fontSize: 11, color: '#9aa5b8' }}>e.g. {col.sample}</div>
+                      <div style={{ fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-medium)', color: 'var(--rd-sys-color-content-primary)' }}>{col.name}</div>
+                      <div style={{ fontSize: 11, color: 'var(--rd-sys-color-content-secondary)' }}>e.g. {col.sample}</div>
                     </div>
                   </label>
                 ))}
@@ -1231,12 +1266,12 @@ const CsvImportModal: React.FC<{ open: boolean; onClose: () => void; onImport?: 
 
           {/* Step: done */}
           {step === 'done' && (
-            <div style={{ textAlign: 'center', padding: '32px 0' }}>
-              <div style={{ width: 52, height: 52, borderRadius: '50%', background: '#e8f5e9', margin: '0 auto 16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ textAlign: 'center', padding: 'var(--spacing-8) 0' }}>
+              <div style={{ width: 52, height: 52, borderRadius: '50%', background: '#e8f5e9', margin: '0 auto var(--spacing-4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#2e7d32" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
               </div>
-              <div style={{ fontSize: 15, fontWeight: 600, color: '#1d232f', marginBottom: 6 }}>Import complete</div>
-              <div style={{ fontSize: 13, color: '#6b7a99' }}>
+              <div style={{ fontSize: 15, fontWeight: 'var(--font-weight-semibold)', color: 'var(--rd-sys-color-content-primary)', marginBottom: 6 }}>Import complete</div>
+              <div style={{ fontSize: 'var(--font-size-sm)', color: 'var(--rd-sys-color-content-secondary)' }}>
                 {flow === 'existing'
                   ? `${selectedCsvCols.size} column${selectedCsvCols.size === 1 ? '' : 's'} from ${fileName} added to Custom data`
                   : `${fileName} was imported as the data model with ${MOCK_CSV_COLS.length} columns`}
@@ -1246,7 +1281,7 @@ const CsvImportModal: React.FC<{ open: boolean; onClose: () => void; onImport?: 
         </div>
 
         {/* Footer */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 24px', borderTop: '1px solid var(--rd-sys-color-border-divider,#eaedf2)', flexShrink: 0 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px var(--spacing-6)', borderTop: '1px solid var(--rd-sys-color-border-divider,#eaedf2)', flexShrink: 0 }}>
           <div>
             {(step === 'preview' || step === 'match' || step === 'select') && (
               <Button variant="tertiary" size="basic" onClick={() => {
@@ -1256,7 +1291,7 @@ const CsvImportModal: React.FC<{ open: boolean; onClose: () => void; onImport?: 
               }}>Back</Button>
             )}
           </div>
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 'var(--spacing-2)' }}>
             {step === 'done' ? (
               <Button variant="primary" size="basic" onClick={handleClose}>Done</Button>
             ) : step === 'choose' ? (
@@ -1316,7 +1351,7 @@ const MoreMenu: React.FC<{
 
   if (!open) return null;
   return (
-    <div ref={ref} style={{ position: 'absolute', top: '100%', right: 0, zIndex: 600, marginTop: 4 }}>
+    <div ref={ref} style={{ position: 'absolute', top: '100%', right: 0, zIndex: 600, marginTop: 'var(--spacing-1)' }}>
       <Menu onClose={onClose}>
         {variant === 'answerCard' ? (
           <>
@@ -1400,7 +1435,7 @@ const DataModelPicker: React.FC<{
     <div style={{ display: 'flex', height: 480, margin: '-24px', borderTop: '1px solid var(--rd-sys-color-border-divider, #eaedf2)' }}>
       {/* Left pane */}
       <div style={{ width: 320, borderRight: '1px solid var(--rd-sys-color-border-divider, #eaedf2)', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
-        <div style={{ padding: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ padding: 'var(--spacing-4)', display: 'flex', alignItems: 'center', gap: 'var(--spacing-2)' }}>
           <div style={{ flex: 1 }}>
             <SearchInput
               placeholder="Find sources"
@@ -1410,12 +1445,12 @@ const DataModelPicker: React.FC<{
           </div>
           <button
             aria-label="Source settings"
-            style={{ width: 32, height: 32, borderRadius: '50%', border: '1px solid var(--rd-sys-color-border-divider, #eaedf2)', background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+            style={{ width: 32, height: 32, borderRadius: '50%', border: '1px solid var(--rd-sys-color-border-divider, #eaedf2)', background: 'var(--rd-sys-color-background-base)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
           >
             <Icon name="cog" size="s" color={systemColors.light['content-primary']} />
           </button>
         </div>
-        <div style={{ flex: 1, overflowY: 'auto', padding: '0 8px 8px' }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '0 var(--spacing-2) var(--spacing-2)' }}>
           {filtered.map(src => {
             const isSelected = src.id === selectedId;
             return (
@@ -1423,9 +1458,9 @@ const DataModelPicker: React.FC<{
                 key={src.id}
                 onClick={() => onSelectId(src.id)}
                 style={{
-                  width: '100%', display: 'flex', alignItems: 'flex-start', gap: 8, padding: '8px 12px', border: 'none',
+                  width: '100%', display: 'flex', alignItems: 'flex-start', gap: 'var(--spacing-2)', padding: 'var(--spacing-2) var(--spacing-3)', border: 'none',
                   background: isSelected ? 'var(--rd-sys-color-background-ghost-highlight, #ebf2ff)' : 'transparent',
-                  borderRadius: 4, cursor: 'pointer', textAlign: 'left', position: 'relative', marginBottom: 2,
+                  borderRadius: 'var(--radius-sm)', cursor: 'pointer', textAlign: 'left', position: 'relative', marginBottom: 2,
                 }}
               >
                 <span style={{ width: 16, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', paddingTop: 2 }}>
@@ -1436,8 +1471,8 @@ const DataModelPicker: React.FC<{
                   )}
                 </span>
                 <span style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0, flex: 1 }}>
-                  <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--rd-sys-color-content-primary, #1d232f)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{src.name}</span>
-                  <span style={{ fontSize: 12, color: 'var(--rd-sys-color-content-secondary, #777e8b)' }}>{src.type}</span>
+                  <span style={{ fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-medium)', color: 'var(--rd-sys-color-content-primary, #1d232f)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{src.name}</span>
+                  <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--rd-sys-color-content-secondary, #777e8b)' }}>{src.type}</span>
                 </span>
                 {isSelected && (
                   <span style={{ position: 'absolute', right: -8, top: '50%', transform: 'translateY(-50%)', width: 0, height: 0, borderTop: '6px solid transparent', borderBottom: '6px solid transparent', borderLeft: '7px solid #fff', filter: 'drop-shadow(1px 0 0 var(--rd-sys-color-border-divider, #eaedf2))' }} aria-hidden />
@@ -1446,53 +1481,53 @@ const DataModelPicker: React.FC<{
             );
           })}
         </div>
-        <div style={{ padding: 16, borderTop: '1px solid var(--rd-sys-color-border-divider, #eaedf2)', display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ padding: 'var(--spacing-4)', borderTop: '1px solid var(--rd-sys-color-border-divider, #eaedf2)', display: 'flex', alignItems: 'center', gap: 'var(--spacing-2)' }}>
           <Toggle checked={multiSources} onChange={setMultiSources} />
-          <span style={{ fontSize: 14, color: 'var(--rd-sys-color-content-primary, #1d232f)' }}>Enable multiple sources</span>
+          <span style={{ fontSize: 'var(--font-size-sm)', color: 'var(--rd-sys-color-content-primary, #1d232f)' }}>Enable multiple sources</span>
         </div>
       </div>
 
       {/* Right pane */}
-      <div style={{ flex: 1, padding: '20px 24px', overflowY: 'auto', minWidth: 0 }}>
-        <div style={{ fontSize: 18, fontWeight: 600, color: 'var(--rd-sys-color-content-primary, #1d232f)', marginBottom: 4 }}>{selected.name}</div>
-        <div style={{ fontSize: 14, color: 'var(--rd-sys-color-content-secondary, #777e8b)', marginBottom: 4 }}>{selected.type}</div>
+      <div style={{ flex: 1, padding: 'var(--spacing-5) var(--spacing-6)', overflowY: 'auto', minWidth: 0 }}>
+        <div style={{ fontSize: 'var(--font-size-lg)', fontWeight: 'var(--font-weight-semibold)', color: 'var(--rd-sys-color-content-primary, #1d232f)', marginBottom: 'var(--spacing-1)' }}>{selected.name}</div>
+        <div style={{ fontSize: 'var(--font-size-sm)', color: 'var(--rd-sys-color-content-secondary, #777e8b)', marginBottom: 'var(--spacing-1)' }}>{selected.type}</div>
         {selected.createdAt && (
-          <div style={{ fontSize: 13, color: 'var(--rd-sys-color-content-secondary, #777e8b)', marginBottom: 16 }}>Created on: {selected.createdAt}</div>
+          <div style={{ fontSize: 'var(--font-size-sm)', color: 'var(--rd-sys-color-content-secondary, #777e8b)', marginBottom: 'var(--spacing-4)' }}>Created on: {selected.createdAt}</div>
         )}
-        <div style={{ marginBottom: 8 }}>
-          <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--rd-sys-color-content-primary, #1d232f)' }}>Description: </span>
-          <span style={{ fontSize: 14, color: 'var(--rd-sys-color-content-primary, #1d232f)' }}>{selected.description ?? 'Not available'}</span>
+        <div style={{ marginBottom: 'var(--spacing-2)' }}>
+          <span style={{ fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-semibold)', color: 'var(--rd-sys-color-content-primary, #1d232f)' }}>Description: </span>
+          <span style={{ fontSize: 'var(--font-size-sm)', color: 'var(--rd-sys-color-content-primary, #1d232f)' }}>{selected.description ?? 'Not available'}</span>
         </div>
-        <div style={{ marginBottom: 16 }}>
-          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--rd-sys-color-content-primary, #1d232f)' }}>Tags:</div>
-          <div style={{ fontSize: 14, color: 'var(--rd-sys-color-content-primary, #1d232f)' }}>{selected.tags?.join(', ') ?? 'Not available'}</div>
+        <div style={{ marginBottom: 'var(--spacing-4)' }}>
+          <div style={{ fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-semibold)', color: 'var(--rd-sys-color-content-primary, #1d232f)' }}>Tags:</div>
+          <div style={{ fontSize: 'var(--font-size-sm)', color: 'var(--rd-sys-color-content-primary, #1d232f)' }}>{selected.tags?.join(', ') ?? 'Not available'}</div>
         </div>
-        <div style={{ height: 1, background: 'var(--rd-sys-color-border-divider, #eaedf2)', margin: '16px 0' }} />
+        <div style={{ height: 1, background: 'var(--rd-sys-color-border-divider, #eaedf2)', margin: 'var(--spacing-4) 0' }} />
         {selected.topLiveboards && selected.topLiveboards.length > 0 && (
           <>
-            <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--rd-sys-color-content-primary, #1d232f)', marginBottom: 12 }}>Top Liveboards created using {selected.name}</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 16 }}>
+            <div style={{ fontSize: 15, fontWeight: 'var(--font-weight-semibold)', color: 'var(--rd-sys-color-content-primary, #1d232f)', marginBottom: 'var(--spacing-3)' }}>Top Liveboards created using {selected.name}</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-3)', marginBottom: 'var(--spacing-4)' }}>
               {selected.topLiveboards.map(lb => (
                 <div key={lb.name} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-2)' }}>
                     <Icon name="liveboard" size="s" color={systemColors.light['content-secondary']} />
-                    <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--rd-sys-color-content-brand, #2770ef)', cursor: 'pointer' }}>{lb.name}</span>
+                    <span style={{ fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-medium)', color: 'var(--rd-sys-color-content-brand, #2770ef)', cursor: 'pointer' }}>{lb.name}</span>
                   </div>
-                  <span style={{ fontSize: 13, color: 'var(--rd-sys-color-content-secondary, #777e8b)', marginLeft: 22 }}>by {lb.author}</span>
+                  <span style={{ fontSize: 'var(--font-size-sm)', color: 'var(--rd-sys-color-content-secondary, #777e8b)', marginLeft: 22 }}>by {lb.author}</span>
                 </div>
               ))}
             </div>
-            <div style={{ height: 1, background: 'var(--rd-sys-color-border-divider, #eaedf2)', margin: '16px 0' }} />
+            <div style={{ height: 1, background: 'var(--rd-sys-color-border-divider, #eaedf2)', margin: 'var(--spacing-4) 0' }} />
           </>
         )}
         {selected.author && (
           <>
-            <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--rd-sys-color-content-primary, #1d232f)', marginBottom: 12 }}>Author</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#b39ddb', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 500, flexShrink: 0 }}>
+            <div style={{ fontSize: 15, fontWeight: 'var(--font-weight-semibold)', color: 'var(--rd-sys-color-content-primary, #1d232f)', marginBottom: 'var(--spacing-3)' }}>Author</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-3)' }}>
+              <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#b39ddb', color: 'var(--rd-sys-color-content-primary-inverse)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-medium)', flexShrink: 0 }}>
                 {selected.author.initial}
               </div>
-              <span style={{ fontSize: 14, color: 'var(--rd-sys-color-content-primary, #1d232f)' }}>{selected.author.name}</span>
+              <span style={{ fontSize: 'var(--font-size-sm)', color: 'var(--rd-sys-color-content-primary, #1d232f)' }}>{selected.author.name}</span>
             </div>
           </>
         )}
@@ -1625,7 +1660,7 @@ const SheetDataPanel: React.FC<{
             {/* Imported CSV columns, grouped by file, under "Custom data" */}
             {section.id === 'custom' && panelExpanded.has(section.id) && importedCsvGroups.map(group => (
               <div key={group.csvName}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px 2px', fontSize: 11, fontWeight: 600, color: '#9aa5b8' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px var(--spacing-3) 2px', fontSize: 11, fontWeight: 'var(--font-weight-semibold)', color: 'var(--rd-sys-color-content-secondary)' }}>
                   <svg width="12" height="12" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
                     <path d="M9 1.5H4a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V5.5L9 1.5Z" stroke="#9aa5b8" strokeWidth="1.2"/>
                     <path d="M9 1.5V5.5H13" stroke="#9aa5b8" strokeWidth="1.2"/>
@@ -1655,7 +1690,7 @@ const SheetDataPanel: React.FC<{
                     onClick={() => toggleTable(ti)}
                     style={{
                       display: 'flex', alignItems: 'center', gap: 5,
-                      width: '100%', height: 32, padding: '0 12px 0 40px',
+                      width: '100%', height: 32, padding: '0 var(--spacing-3) 0 var(--spacing-10)',
                       background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
                     }}
                   >
@@ -1667,7 +1702,7 @@ const SheetDataPanel: React.FC<{
                       <path d="M2 6.5h12" stroke="var(--rd-sys-color-content-secondary, #6b7280)" strokeWidth="1.2"/>
                       <path d="M6 6.5v6.5" stroke="var(--rd-sys-color-content-secondary, #6b7280)" strokeWidth="1.2"/>
                     </svg>
-                    <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--rd-sys-color-content-primary, #1d232f)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <span style={{ fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-medium)', color: 'var(--rd-sys-color-content-primary, #1d232f)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {table.tableName}
                     </span>
                   </button>
@@ -1676,7 +1711,7 @@ const SheetDataPanel: React.FC<{
                     <div
                       key={col.id}
                       className={styles.sheetPanelItem}
-                      style={{ paddingLeft: 64 }}
+                      style={{ paddingLeft: 'var(--spacing-16)' }}
                     >
                       <Checkbox checked={false} onChange={() => {}} showLabel={false} />
                       <span className={styles.sheetPanelItemLabel}>{col.name}</span>
@@ -1840,6 +1875,9 @@ const SheetView: React.FC<{
   const [colRenames, setColRenames] = useState<Record<string, string>>({});
   const [colAggregates, setColAggregates] = useState<Record<string, AggregateType>>({});
   const [colAggSubmenuKey, setColAggSubmenuKey] = useState<string | null>(null);
+  // Sort ▸ hover submenu (2026-09-25 product-parity menu) — same pattern as
+  // the Aggregate submenu above.
+  const [colSortSubmenuKey, setColSortSubmenuKey] = useState<string | null>(null);
   // Columns that currently have a filter applied + the open edit/remove popover
   const [filteredColKeys, setFilteredColKeys] = useState<Set<string>>(new Set());
   const [filterMenuKey, setFilterMenuKey] = useState<string | null>(null);
@@ -2175,53 +2213,51 @@ const SheetView: React.FC<{
   ];
 
   // Formula function catalogue shown on `=` trigger
+  // ThoughtSpot formula language, not Excel (2026-09-25, Vivek: "ts native
+  // language in bar") — lowercase names and TS syntax shapes, same language
+  // the formula editor and the product's spreadsheet EA speak. The '=' entry
+  // affordance is the Figma bar's chrome and stays.
   const FORMULA_FUNCTIONS: { name: string; syntax: string; description: string }[] = [
-    { name: 'SUM',          syntax: 'SUM(number1, [number2], …)',             description: 'Adds all numbers in a range' },
-    { name: 'AVERAGE',      syntax: 'AVERAGE(number1, [number2], …)',         description: 'Returns the average of a set of values' },
-    { name: 'COUNT',        syntax: 'COUNT(value1, [value2], …)',             description: 'Counts cells that contain numbers' },
-    { name: 'COUNTA',       syntax: 'COUNTA(value1, [value2], …)',            description: 'Counts non-empty cells' },
-    { name: 'MAX',          syntax: 'MAX(number1, [number2], …)',             description: 'Returns the largest value' },
-    { name: 'MIN',          syntax: 'MIN(number1, [number2], …)',             description: 'Returns the smallest value' },
-    { name: 'IF',           syntax: 'IF(condition, value_if_true, value_if_false)', description: 'Returns one of two values based on a condition' },
-    { name: 'IFS',          syntax: 'IFS(condition1, value1, [condition2, value2], …)', description: 'Checks multiple conditions in order' },
-    { name: 'ROUND',        syntax: 'ROUND(number, num_digits)',              description: 'Rounds a number to a given precision' },
-    { name: 'ROUNDUP',      syntax: 'ROUNDUP(number, num_digits)',            description: 'Rounds a number up, away from zero' },
-    { name: 'ROUNDDOWN',    syntax: 'ROUNDDOWN(number, num_digits)',          description: 'Rounds a number down, toward zero' },
-    { name: 'ABS',          syntax: 'ABS(number)',                            description: 'Returns the absolute value' },
-    { name: 'POWER',        syntax: 'POWER(number, power)',                   description: 'Raises a number to a given power' },
-    { name: 'SQRT',         syntax: 'SQRT(number)',                           description: 'Returns the square root' },
-    { name: 'MOD',          syntax: 'MOD(number, divisor)',                   description: 'Returns the remainder after division' },
-    { name: 'CONCAT',       syntax: 'CONCAT(text1, [text2], …)',              description: 'Joins text strings together' },
-    { name: 'LEFT',         syntax: 'LEFT(text, [num_chars])',                description: 'Returns the leftmost characters of a string' },
-    { name: 'RIGHT',        syntax: 'RIGHT(text, [num_chars])',               description: 'Returns the rightmost characters of a string' },
-    { name: 'MID',          syntax: 'MID(text, start_num, num_chars)',        description: 'Returns a substring from the middle' },
-    { name: 'LEN',          syntax: 'LEN(text)',                              description: 'Returns the length of a text string' },
-    { name: 'UPPER',        syntax: 'UPPER(text)',                            description: 'Converts text to uppercase' },
-    { name: 'LOWER',        syntax: 'LOWER(text)',                            description: 'Converts text to lowercase' },
-    { name: 'TRIM',         syntax: 'TRIM(text)',                             description: 'Removes extra spaces from text' },
-    { name: 'SUBSTITUTE',   syntax: 'SUBSTITUTE(text, old_text, new_text)',   description: 'Replaces occurrences of a substring' },
-    { name: 'FIND',         syntax: 'FIND(find_text, within_text)',           description: 'Finds the position of a substring' },
-    { name: 'ISNUMBER',     syntax: 'ISNUMBER(value)',                        description: 'Returns TRUE if value is a number' },
-    { name: 'ISBLANK',      syntax: 'ISBLANK(value)',                         description: 'Returns TRUE if value is blank' },
-    { name: 'ISTEXT',       syntax: 'ISTEXT(value)',                          description: 'Returns TRUE if value is text' },
-    { name: 'AND',          syntax: 'AND(logical1, [logical2], …)',           description: 'Returns TRUE if all conditions are true' },
-    { name: 'OR',           syntax: 'OR(logical1, [logical2], …)',            description: 'Returns TRUE if any condition is true' },
-    { name: 'NOT',          syntax: 'NOT(logical)',                           description: 'Reverses the logic of its argument' },
-    { name: 'TODAY',        syntax: 'TODAY()',                                description: 'Returns today\'s date' },
-    { name: 'NOW',          syntax: 'NOW()',                                  description: 'Returns the current date and time' },
-    { name: 'YEAR',         syntax: 'YEAR(date)',                             description: 'Returns the year from a date' },
-    { name: 'MONTH',        syntax: 'MONTH(date)',                            description: 'Returns the month from a date' },
-    { name: 'DAY',          syntax: 'DAY(date)',                              description: 'Returns the day of the month from a date' },
-    { name: 'DATEVALUE',    syntax: 'DATEVALUE(date_text)',                   description: 'Converts a date string to a date value' },
-    { name: 'SUMIF',        syntax: 'SUMIF(range, criteria, [sum_range])',    description: 'Sums cells that meet a condition' },
-    { name: 'AVERAGEIF',    syntax: 'AVERAGEIF(range, criteria, [avg_range])',description: 'Averages cells that meet a condition' },
-    { name: 'COUNTIF',      syntax: 'COUNTIF(range, criteria)',               description: 'Counts cells that meet a condition' },
-    { name: 'VLOOKUP',      syntax: 'VLOOKUP(lookup_value, table_array, col_index, [range_lookup])', description: 'Searches vertically in a table' },
+    { name: 'sum',           syntax: 'sum ( measure )',                          description: 'Adds all values of a measure' },
+    { name: 'average',       syntax: 'average ( measure )',                      description: 'Returns the average of a measure' },
+    { name: 'count',         syntax: 'count ( column )',                         description: 'Counts the values in a column' },
+    { name: 'unique_count',  syntax: 'unique_count ( column )',                  description: 'Counts the distinct values in a column' },
+    { name: 'min',           syntax: 'min ( measure )',                          description: 'Returns the smallest value' },
+    { name: 'max',           syntax: 'max ( measure )',                          description: 'Returns the largest value' },
+    { name: 'stddev',        syntax: 'stddev ( measure )',                       description: 'Returns the standard deviation' },
+    { name: 'variance',      syntax: 'variance ( measure )',                     description: 'Returns the variance' },
+    { name: 'cumulative_sum',syntax: 'cumulative_sum ( measure )',               description: 'Running total of a measure' },
+    { name: 'if',            syntax: 'if ( condition ) then value1 else value2', description: 'Returns one of two values based on a condition' },
+    { name: 'ifnull',        syntax: 'ifnull ( expression, fallback )',          description: 'Replaces null with a fallback value' },
+    { name: 'isnull',        syntax: 'isnull ( expression )',                    description: 'True when the expression is null' },
+    { name: 'abs',           syntax: 'abs ( number )',                           description: 'Returns the absolute value' },
+    { name: 'ceil',          syntax: 'ceil ( number )',                          description: 'Rounds a number up to the nearest integer' },
+    { name: 'floor',         syntax: 'floor ( number )',                         description: 'Rounds a number down to the nearest integer' },
+    { name: 'sqrt',          syntax: 'sqrt ( number )',                          description: 'Returns the square root' },
+    { name: 'exp',           syntax: 'exp ( number )',                           description: 'Returns e raised to a power' },
+    { name: 'ln',            syntax: 'ln ( number )',                            description: 'Returns the natural logarithm' },
+    { name: 'log10',         syntax: 'log10 ( number )',                         description: 'Returns the base-10 logarithm' },
+    { name: 'mod',           syntax: 'mod ( number, divisor )',                  description: 'Returns the remainder after division' },
+    { name: 'random',        syntax: 'random ( )',                               description: 'Returns a random number between 0 and 1' },
+    { name: 'concat',        syntax: 'concat ( text1, text2 )',                  description: 'Joins text values together' },
+    { name: 'contains',      syntax: 'contains ( text, substring )',             description: 'True when the text contains the substring' },
+    { name: 'strlen',        syntax: 'strlen ( text )',                          description: 'Returns the length of a text value' },
+    { name: 'strpos',        syntax: 'strpos ( text, pattern )',                 description: 'Finds the position of a pattern in text' },
+    { name: 'substr',        syntax: 'substr ( text, start, length )',           description: 'Returns part of a text value' },
+    { name: 'edit_distance', syntax: 'edit_distance ( text1, text2 )',           description: 'Edit distance between two text values' },
+    { name: 'spells_like',   syntax: 'spells_like ( text1, text2 )',             description: 'True when two text values sound alike' },
+    { name: 'now',           syntax: 'now ( )',                                  description: 'Returns the current date and time' },
+    { name: 'add_days',      syntax: 'add_days ( date, number )',                description: 'Adds days to a date' },
+    { name: 'diff_days',     syntax: 'diff_days ( date1, date2 )',               description: 'Days between two dates' },
+    { name: 'day',           syntax: 'day ( date )',                             description: 'Returns the day of the month from a date' },
+    { name: 'day_of_week',   syntax: 'day_of_week ( date )',                     description: 'Returns the weekday from a date' },
+    { name: 'month',         syntax: 'month ( date )',                           description: 'Returns the month from a date' },
+    { name: 'year',          syntax: 'year ( date )',                            description: 'Returns the year from a date' },
   ];
 
   // Determine if fxInput is in function-suggestion mode (starts with = or typed prefix after =)
   const fxIsFnMode = fxInput.startsWith('=') || fxInput === '';
-  const fnQuery = fxInput.startsWith('=') ? fxInput.slice(1).trim().toUpperCase() : '';
+  const fnQuery = fxInput.startsWith('=') ? fxInput.slice(1).trim().toLowerCase() : '';
   const fnSuggestions = fxFocus && (fxInput === '=' || fnQuery)
     ? FORMULA_FUNCTIONS.filter(f => f.name.startsWith(fnQuery) || f.name.includes(fnQuery)).slice(0, 8)
     : [];
@@ -2496,7 +2532,11 @@ const SheetView: React.FC<{
       if (modelCreation) {
         // Split preview: open the product's "Select value for :" modal,
         // scoped to this column. Seeds from the existing filter when editing.
-        setFilterModalPromote(sheetFilters[colKey] ? filterPromoted(colKey) : false);
+        // Checkbox seed: an existing filter shows its real membership; a new
+        // one defaults per creation option — checked under "Adds to model
+        // directly", unchecked under "Draft in preview" (2026-09-25, Vivek:
+        // the Add-to-model control lives in the modal in both options).
+        setFilterModalPromote(sheetFilters[colKey] ? filterPromoted(colKey) : modelCreation.mode === 'direct');
         setFilterModalCol(colKey);
       } else {
         // Legacy (no model bridge): surfaces a filter icon in the header only
@@ -2522,7 +2562,10 @@ const SheetView: React.FC<{
   const applyColFilter = (f: SheetFilter) => {
     if (!modelCreation || !filterModalCol) return;
     const key = filterModalCol;
-    const wantModel = modelCreation.mode === 'direct' || filterModalPromote;
+    // The modal checkbox is the membership control in BOTH creation options
+    // now — direct mode just seeds it checked for a new filter. Unchecking on
+    // an edit deletes from the model; the filter stays applied (grey).
+    const wantModel = filterModalPromote;
     const wasPromoted = filterPromoted(key);
     setSheetFilters(prev => ({ ...prev, [key]: f }));
     setFilteredColKeys(prev => new Set([...prev, key]));
@@ -2538,7 +2581,18 @@ const SheetView: React.FC<{
     modelCreation.onFilterAdd({ col: filterColLabel(colKey), val: describeFilter(f) });
   };
 
-  // Remove the filter from a column
+  // "Remove filter from Model" (funnel menu) — membership only: the filter
+  // stays applied to the preview as a grey filter (2026-09-25, Vivek:
+  // "add/remove only make change to model").
+  const demoteColFilter = (colKey: string) => {
+    if (!modelCreation) return;
+    modelCreation.onFilterRemove(filterColLabel(colKey));
+    setFilterMenuKey(null);
+  };
+
+  // "Delete filter" (funnel menu) — removes it everywhere: from the preview,
+  // and from the model too when it's promoted (2026-09-25, Vivek: "Delete
+  // filter (removes from both preview and model)").
   const removeColFilter = (colKey: string) => {
     if (modelCreation && filterPromoted(colKey)) modelCreation.onFilterRemove(filterColLabel(colKey));
     setSheetFilters(prev => { const n = { ...prev }; delete n[colKey]; return n; });
@@ -2583,7 +2637,7 @@ const SheetView: React.FC<{
           <>
             <div className={styles.sheetExpandedModelControl}>
               <button
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, border: 'none', background: 'transparent', borderRadius: 6, cursor: 'pointer', flexShrink: 0 }}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, border: 'none', background: 'transparent', borderRadius: 'var(--radius-md)', cursor: 'pointer', flexShrink: 0 }}
                 onClick={e => { e.stopPropagation(); setDataPanelOpen(o => !o); }}
               >
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
@@ -2609,7 +2663,7 @@ const SheetView: React.FC<{
         )}
 
         {/* Title + description + right actions */}
-        <div style={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0, paddingRight: 24 }}>
+        <div style={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0, paddingRight: 'var(--spacing-6)' }}>
           <div className={styles.sheetExpandedTitleGroup} style={{ flex: 1, minWidth: 0 }}>
             {titleEditing ? (
               <input
@@ -2655,7 +2709,7 @@ const SheetView: React.FC<{
           </div>
 
           {/* Share + more + divider + Reset + Save Answer */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-1)', flexShrink: 0 }}>
             <button className={styles.circleBtn} aria-label="Share">
               <Icon name="share" size="m" color={systemColors.light['content-primary']} />
             </button>
@@ -2669,7 +2723,7 @@ const SheetView: React.FC<{
                 onSaveInputTable={() => onOpenWritebackModal?.()}
               />
             </div>
-            <div style={{ width: 1, height: 24, background: 'var(--rd-sys-color-border-divider, #eaedf2)', flexShrink: 0, margin: '0 4px' }} />
+            <div style={{ width: 1, height: 24, background: 'var(--rd-sys-color-border-divider, #eaedf2)', flexShrink: 0, margin: '0 var(--spacing-1)' }} />
             <Button variant="tertiary" size="small">Reset</Button>
             <div style={{ width: 1, height: 20, background: 'var(--rd-sys-color-border-divider, #eaedf2)', flexShrink: 0 }} />
             <Button variant="secondary" size="small" onClick={() => onOpenSaveModal?.()}>Save Answer</Button>
@@ -2811,25 +2865,30 @@ const SheetView: React.FC<{
         {viewDropOpen && (
           <>
             <div style={{ position: 'fixed', inset: 0, zIndex: 299 }} onClick={() => setViewDropOpen(false)} />
-            <div className={styles.viewDropdown}>
-              {(['aggregated', 'row-level'] as const).map(mode => (
-                <button
-                  key={mode}
-                  className={styles.viewDropdownItem}
-                  onClick={() => { onSheetDataViewChange(mode); setViewDropOpen(false); }}
-                >
-                  <span>{mode === 'row-level' ? 'Row-level data' : 'Aggregated'}</span>
-                  {sheetDataView === mode && <CheckIcon />}
-                </button>
-              ))}
+            {/* Radiant Menu (2026-09-25 components pass) — the selected view
+                wears Menu.Item's active tint instead of the old right-side
+                check. Positioning wrapper only; Menu brings its own chrome. */}
+            <div style={{ position: 'absolute', top: 'calc(100% + 6px)', left: '50%', transform: 'translateX(-50%)', zIndex: 300, whiteSpace: 'nowrap' }}>
+              <Menu onClose={() => setViewDropOpen(false)}>
+                {(['aggregated', 'row-level'] as const).map(mode => (
+                  <Menu.Item
+                    key={mode}
+                    active={sheetDataView === mode}
+                    onClick={() => { onSheetDataViewChange(mode); setViewDropOpen(false); }}
+                  >
+                    {mode === 'row-level' ? 'Row-level data' : 'Aggregated'}
+                  </Menu.Item>
+                ))}
+              </Menu>
             </div>
           </>
         )}
       </div>
       <div className={styles.sheetTbDivider} />
-      {/* Export to CSV / Import CSV */}
+      {/* Export to CSV (Import CSV removed 2026-09-25, Vivek: "remove upload
+          feature from spreadsheet toolbar" — the CSV-import machinery stays
+          for the flows that still open it programmatically). */}
       <TbBtn label="Export to CSV"><Icon name="download" size="s" /></TbBtn>
-      <TbBtn label="Import CSV" onClick={() => setCsvImportOpen(true)}><Icon name="upload" size="s" /></TbBtn>
       {!hideExpandButton && (
         <>
           <div className={styles.sheetTbSpacer} />
@@ -2837,6 +2896,8 @@ const SheetView: React.FC<{
             <button
               className={styles.sheetTbBtn}
               aria-label={expanded ? 'Collapse' : 'Expand'}
+              // Same pinned-tooltip fix as TbBtn: don't take focus on click.
+              onMouseDown={e => e.preventDefault()}
               onClick={() => onExpandedChange(!expanded)}
             >
               {expanded ? (
@@ -2844,7 +2905,9 @@ const SheetView: React.FC<{
                   <path d="M7 3v4H3M11 3v4h4M7 15v-4H3M11 15v-4h4" stroke="currentColor" strokeWidth={1.4} strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               ) : (
-                <Icon name="fullscreen" size="s" />
+                // Diagonal expand, not the fullscreen glyph (2026-09-25,
+                // Vivek's product screenshot).
+                <Icon name="expand" size="s" />
               )}
             </button>
           </Tooltip>
@@ -2899,10 +2962,10 @@ const SheetView: React.FC<{
           >
             {/* Product reference (2026-09-25): static "=" prefix before the
                 formula text, like the real spreadsheet bar. */}
-            <span aria-hidden style={{ color: 'var(--rd-sys-color-content-tertiary, #a0a9b4)', fontSize: 14, marginRight: 6, flexShrink: 0 }}>=</span>
+            <span aria-hidden style={{ color: 'var(--rd-sys-color-content-tertiary, #a0a9b4)', fontSize: 'var(--font-size-sm)', marginRight: 6, flexShrink: 0 }}>=</span>
             {/* Mirror mode: editing formula inline in cell */}
             {editingFormulaCell ? (
-              <span style={{ fontSize: 13, color: 'var(--rd-sys-color-content-primary, #1d2329)', fontFamily: 'inherit' }}>
+              <span style={{ fontSize: 'var(--font-size-sm)', color: 'var(--rd-sys-color-content-primary, #1d2329)', fontFamily: 'inherit' }}>
                 {editingCellValue || <span style={{ color: 'var(--rd-sys-color-content-tertiary, #a0a9b4)' }}>Enter formula or value</span>}
               </span>
             ) : (
@@ -2976,34 +3039,11 @@ const SheetView: React.FC<{
               </div>
             )}
           </div>
-          {/* Promote option only: the at-creation "Add to model" checkbox in
-              the formula bar — Vivek weighed moving it to the column ▾ or a
-              save dialog, then ruled it stays: "there is no other place for
-              it" (2026-09-24). The ▾ menu's Add/Remove from model remains the
-              after-creation path. The direct option has no checkbox: every
-              commit is a model write. */}
-          {modelCreation?.mode === 'promote' && (() => {
-            const targetKey = activeFormulaKey
-              ?? (selectedColumn?.key.startsWith('__formula_') ? selectedColumn.key : null);
-            if (!targetKey) return null;
-            const promoted = fxPromoted(targetKey);
-            return (
-              <label style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0 12px', borderLeft: '1px solid var(--rd-sys-color-border-divider, #eaedf2)', fontSize: 12, whiteSpace: 'nowrap', cursor: 'pointer', color: 'var(--rd-sys-color-content-secondary, #6b7280)', alignSelf: 'stretch' }}>
-                <input
-                  type="checkbox"
-                  checked={promoted || !!fxAddToModel[targetKey]}
-                  onChange={e => {
-                    const on = e.target.checked;
-                    setFxAddToModel(prev => ({ ...prev, [targetKey]: on }));
-                    if (on) promoteFormula(targetKey);
-                    else if (promoted) modelCreation.onFormulaRemove(fxName(targetKey));
-                  }}
-                  style={{ width: 13, height: 13, cursor: 'pointer', accentColor: '#2770EF' }}
-                />
-                Add to model
-              </label>
-            );
-          })()}
+          {/* The fx bar's at-creation "Add to model" checkbox was REMOVED
+              (2026-09-25, Vivek: "people found it confusing") — it had stayed
+              per his 24 Sep "no other place for it" ruling, but user testing
+              overruled. A formula still reaches the model via the column ▾
+              menu's Add to model and the Save Model review sweep. */}
         </div>
       );
     })()}
@@ -3056,21 +3096,21 @@ const SheetView: React.FC<{
             >
               {isCustom && editableColStyle === 'header-badge' && (
                 <span style={{
-                  fontSize: 10, fontWeight: 600, color: 'var(--rd-sys-color-content-brand, #2770ef)',
+                  fontSize: 10, fontWeight: 'var(--font-weight-semibold)', color: 'var(--rd-sys-color-content-brand, #2770ef)',
                   background: 'var(--rd-sys-color-background-brand-subtle, #eef3fd)',
-                  borderRadius: 4, padding: '1px 5px', marginRight: 4, flexShrink: 0,
+                  borderRadius: 'var(--radius-sm)', padding: '1px 5px', marginRight: 'var(--spacing-1)', flexShrink: 0,
                 }}>Editable</span>
               )}
               {isFormula && (
                 // fx chip (product reference). Colour rule (2026-09-25,
                 // Vivek): grey glyph = applied to the preview only, blue =
                 // added to the model. Without the bridge: ink.
-                <span style={{ flexShrink: 0, marginRight: 4, display: 'flex', alignItems: 'center', padding: '1px 4px', borderRadius: 4, background: 'var(--rd-sys-color-background-subtle, #eaedf2)', color: !modelCreation ? 'var(--rd-sys-color-content-primary, #1d232f)' : fxPromoted(col.key) ? 'var(--rd-sys-color-content-brand, #2770EF)' : 'var(--rd-sys-color-content-secondary, #777e8b)' }}>
+                <span style={{ flexShrink: 0, marginRight: 'var(--spacing-1)', display: 'flex', alignItems: 'center', padding: '1px var(--spacing-1)', borderRadius: 'var(--radius-sm)', background: 'var(--rd-sys-color-background-subtle, #eaedf2)', color: !modelCreation ? 'var(--rd-sys-color-content-primary, #1d232f)' : fxPromoted(col.key) ? 'var(--rd-sys-color-content-brand, #2770EF)' : 'var(--rd-sys-color-content-secondary, #777e8b)' }}>
                   <FxIcon size={12} color="currentColor" />
                 </span>
               )}
               {isCustom && (
-                <span style={{ flexShrink: 0, marginRight: 4, display: 'flex', alignItems: 'center', color: showHeaderFill ? 'var(--rd-sys-color-content-brand, #2770ef)' : 'var(--rd-sys-color-content-secondary,#777e8b)' }}>
+                <span style={{ flexShrink: 0, marginRight: 'var(--spacing-1)', display: 'flex', alignItems: 'center', color: showHeaderFill ? 'var(--rd-sys-color-content-brand, #2770ef)' : 'var(--rd-sys-color-content-secondary,#777e8b)' }}>
                   <svg width={13} height={13} viewBox="0 0 16 16" fill={showHeaderFill ? 'currentColor' : 'none'}>
                     <path d="M12.5 2.5a1.414 1.414 0 0 1 2 2L5 14H2v-3L12.5 2.5Z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
@@ -3092,7 +3132,13 @@ const SheetView: React.FC<{
               ) : (
                 <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{col.label}</span>
               )}
-              {/* Filter indicator — shown when a filter is applied; opens edit/remove menu */}
+              {/* Filter indicator — shown when a filter is applied. State-
+                  based menu (2026-09-25 ruling, Vivek's labels verbatim):
+                  Edit / Delete filter / then the membership action — Promote
+                  when it's preview-only, Remove from Model when the model has
+                  it. Delete on a model filter removes it from BOTH the
+                  preview and the model; Remove from Model leaves it applied
+                  as a grey preview filter. */}
               {filteredColKeys.has(col.key) && (
                 <div style={{ position: 'relative' }} onClick={e => e.stopPropagation()}>
                   <button
@@ -3103,41 +3149,46 @@ const SheetView: React.FC<{
                     style={modelCreation ? { color: filterPromoted(col.key) ? 'var(--rd-sys-color-content-brand, #2770EF)' : 'var(--rd-sys-color-content-secondary, #777e8b)' } : undefined}
                     onClick={() => setFilterMenuKey(k => k === col.key ? null : col.key)}
                   >
-                    <svg width={12} height={12} viewBox="0 0 18 18" fill="none">
-                      <path d="M2.5 4h13l-5 6v4l-3 1.5V10l-5-6Z" fill="currentColor" stroke="currentColor" strokeWidth={1.2} strokeLinejoin="round"/>
-                    </svg>
+                    {/* Registry filled funnel at xs (12px) — the state
+                        indicator keeps its fill so the grey/blue colour rule
+                        reads at a glance (2026-09-25 icons pass). */}
+                    <Icon name="funnel" size="xs" color="currentColor" />
                   </button>
-                  {filterMenuKey === col.key && (
-                    <div className={styles.sheetColMenu} style={{ minWidth: 170 }}>
-                      <button className={styles.sheetColMenuItem} onClick={() => { setFilterMenuKey(null); handleColMenu('filter', col.key); }}>
-                        <span className={styles.sheetColMenuItemIcon}><ColMenuIcon id="filter-edit" /></span>
-                        <span className={styles.sheetColMenuItemLabel}>Edit filter</span>
-                      </button>
-                      {/* Promote an applied filter from its own icon menu
-                          (2026-09-25, Vivek) — disabled once it's in the model. */}
-                      {modelCreation && (() => {
-                        const promoted = filterPromoted(col.key);
-                        return (
-                          <button
-                            className={styles.sheetColMenuItem}
-                            aria-disabled={promoted || undefined}
-                            title={promoted ? 'Already added to this model' : undefined}
-                            style={promoted ? { color: 'var(--rd-sys-color-content-tertiary, #c0c6cf)', cursor: 'default' } : undefined}
-                            onClick={promoted ? undefined : () => { setFilterMenuKey(null); promoteColFilter(col.key); }}
+                  {filterMenuKey === col.key && (() => {
+                    const promoted = !!modelCreation && filterPromoted(col.key);
+                    return (
+                    /* Radiant Menu (2026-09-25 components pass); positioning
+                       wrapper only, Menu brings its own chrome. Item order
+                       per the same-day ruling: Edit / membership toggle /
+                       Delete last in all cases. */
+                    <div style={{ position: 'absolute', top: 'calc(100% + 4px)', right: 0, zIndex: 400, whiteSpace: 'nowrap' }}>
+                      <Menu onClose={() => setFilterMenuKey(null)}>
+                        <Menu.Item
+                          icon={<Icon name="funnel-line" size="m" color="currentColor" />}
+                          onClick={() => { setFilterMenuKey(null); handleColMenu('filter', col.key); }}
+                        >
+                          Edit filter
+                        </Menu.Item>
+                        {modelCreation && (
+                          <Menu.Item
+                            icon={promoted
+                              ? <svg width={16} height={16} viewBox="0 0 18 18" fill="none"><path d="M9 5v7M9 12l-2.5-2.5M9 12l2.5-2.5M4 14.5h10" stroke="currentColor" strokeWidth={1.4} strokeLinecap="round" strokeLinejoin="round"/></svg>
+                              : <svg width={16} height={16} viewBox="0 0 18 18" fill="none"><path d="M9 12V5M9 5L6.5 7.5M9 5l2.5 2.5M4 14.5h10" stroke="currentColor" strokeWidth={1.4} strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                            onClick={() => { setFilterMenuKey(null); if (promoted) demoteColFilter(col.key); else promoteColFilter(col.key); }}
                           >
-                            <span className={styles.sheetColMenuItemIcon} style={promoted ? { color: 'inherit' } : undefined}>
-                              <svg width={18} height={18} viewBox="0 0 18 18" fill="none"><path d="M9 12V5M9 5L6.5 7.5M9 5l2.5 2.5M4 14.5h10" stroke="currentColor" strokeWidth={1.4} strokeLinecap="round" strokeLinejoin="round"/></svg>
-                            </span>
-                            <span className={styles.sheetColMenuItemLabel}>Add to model</span>
-                          </button>
-                        );
-                      })()}
-                      <button className={styles.sheetColMenuItem} onClick={() => removeColFilter(col.key)}>
-                        <span className={styles.sheetColMenuItemIcon}><ColMenuIcon id="filter-remove" /></span>
-                        <span className={styles.sheetColMenuItemLabel}>Remove filter</span>
-                      </button>
+                            {promoted ? 'Remove filter from model' : 'Promote filter to model'}
+                          </Menu.Item>
+                        )}
+                        <Menu.Item
+                          icon={<Icon name="cross" size="m" color="currentColor" />}
+                          onClick={() => removeColFilter(col.key)}
+                        >
+                          Delete filter
+                        </Menu.Item>
+                      </Menu>
                     </div>
-                  )}
+                    );
+                  })()}
                 </div>
               )}
               {/* Clickable chevron → column menu */}
@@ -3238,19 +3289,49 @@ const SheetView: React.FC<{
                       </>
                     )}
                     {COL_MENU_SECTIONS.map((section, si) => {
-                      // Inject "Change aggregate" into section 0 for measure columns only
+                      // Inject "Aggregate ▸" into section 0 for measure
+                      // columns only (product label, 2026-09-25 screenshot).
                       const items = si === 0 && isMeasureCol(col)
-                        ? [...section, { id: 'change-agg', label: 'Change aggregate' }]
+                        ? [...section, { id: 'change-agg', label: 'Aggregate' }]
                         : section;
                       return (
                         <div key={si}>
                           {si > 0 && <div className={styles.sheetColMenuDivider} />}
                           {items.map(item =>
-                            item.id === 'change-agg' ? (
+                            item.id === 'sort' ? (
+                              // Sort ▸ hover submenu (2026-09-25 product-
+                              // parity): ascending/descending/advanced fold
+                              // in here; Clear sort stays top-level below.
                               <div
                                 key={item.id}
                                 className={styles.sheetColAggRow}
-                                onMouseEnter={() => setColAggSubmenuKey(col.key)}
+                                onMouseEnter={() => { setColSortSubmenuKey(col.key); setColAggSubmenuKey(null); }}
+                              >
+                                <button className={`${styles.sheetColMenuItem} ${styles.sheetColMenuItemFlyout}`}>
+                                  <span className={styles.sheetColMenuItemIcon}><ColMenuIcon id="sort" /></span>
+                                  <span className={styles.sheetColMenuItemLabel}>{item.label}</span>
+                                  <span className={styles.sheetColMenuChevron}>›</span>
+                                </button>
+                                {colSortSubmenuKey === col.key && (
+                                  <div className={styles.sheetColAggSubmenu}>
+                                    {SORT_SUBMENU_OPTIONS.map(opt => (
+                                      <button
+                                        key={opt.id}
+                                        className={styles.sheetColMenuItem}
+                                        onClick={() => { handleColMenu(opt.id, col.key); setColMenuKey(null); setColSortSubmenuKey(null); }}
+                                      >
+                                        <span className={styles.sheetColMenuItemIcon}><ColMenuIcon id={opt.id} /></span>
+                                        <span className={styles.sheetColMenuItemLabel}>{opt.label}</span>
+                                      </button>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            ) : item.id === 'change-agg' ? (
+                              <div
+                                key={item.id}
+                                className={styles.sheetColAggRow}
+                                onMouseEnter={() => { setColAggSubmenuKey(col.key); setColSortSubmenuKey(null); }}
                               >
                                 <button className={`${styles.sheetColMenuItem} ${styles.sheetColMenuItemFlyout}`}>
                                   <span className={styles.sheetColMenuItemIcon}>
@@ -3279,21 +3360,33 @@ const SheetView: React.FC<{
                                 )}
                               </div>
                             ) : (() => {
-                              // Creation is model-scope only (2026-09-25):
-                              // Add formula and Filter grey out at table/join
-                              // scope, with the explain-why tooltip.
-                              const itemDisabled = creationDisabled && (item.id === 'formula' || item.id === 'filter');
+                              // Creation actions are model-scope only — at
+                              // table/join preview scope they grey out with
+                              // the explain-why tooltip. Duplicate creates a
+                              // column, so it counts (2026-09-25, Vivek:
+                              // "all creation actions should not be allowed
+                              // in table or join preview"). Clear sort greys
+                              // while no sort is applied — this prototype's
+                              // sorts are parity items, so always (matches
+                              // the product's at-rest state). Text wrapping
+                              // is present-for-parity, inert (same treatment
+                              // as the canvas card menu's alias/
+                              // recommendation items).
+                              const itemDisabled = (creationDisabled && (item.id === 'formula' || item.id === 'filter' || item.id === 'dup'))
+                                || item.id === 'sort-clear';
+                              const isInertFlyout = item.id === 'text-wrap';
                               return (
                               <button
                                 key={item.id}
-                                className={styles.sheetColMenuItem}
-                                title={itemDisabled ? 'Allowed in model preview' : undefined}
+                                className={`${styles.sheetColMenuItem} ${isInertFlyout ? styles.sheetColMenuItemFlyout : ''}`}
+                                title={itemDisabled && item.id !== 'sort-clear' ? 'Allowed in model preview' : undefined}
                                 aria-disabled={itemDisabled || undefined}
                                 style={itemDisabled ? { color: 'var(--rd-sys-color-content-tertiary, #c0c6cf)', cursor: 'default' } : undefined}
-                                onClick={itemDisabled ? undefined : () => handleColMenu(item.id, col.key)}
+                                onClick={itemDisabled || isInertFlyout ? undefined : () => handleColMenu(item.id, col.key)}
                               >
                                 <span className={styles.sheetColMenuItemIcon} style={itemDisabled ? { color: 'var(--rd-sys-color-content-tertiary, #c0c6cf)' } : undefined}><ColMenuIcon id={item.id} /></span>
                                 <span className={styles.sheetColMenuItemLabel} style={itemDisabled ? { color: 'inherit' } : undefined}>{item.label}</span>
+                                {isInertFlyout && <span className={styles.sheetColMenuChevron}>›</span>}
                               </button>
                               );
                             })()
@@ -3449,9 +3542,9 @@ const SheetView: React.FC<{
                     // Suggestions: function list when value starts with =, column list otherwise
                     const isEditingFormula = isFormula || editingCellValue.startsWith('=');
                     const cellFnQuery = editingCellValue.startsWith('=')
-                      ? editingCellValue.replace(/^=/, '').split(/[+\-*/()\s,]/).pop()?.trim().toUpperCase() ?? ''
+                      ? editingCellValue.replace(/^=/, '').split(/[+\-*/()\s,]/).pop()?.trim().toLowerCase() ?? ''
                       : '';
-                    const cellFnSuggestions = editingCellValue.startsWith('=') && cellFnQuery && /^[A-Z]/.test(cellFnQuery)
+                    const cellFnSuggestions = editingCellValue.startsWith('=') && cellFnQuery && /^[a-z]/.test(cellFnQuery)
                       ? FORMULA_FUNCTIONS.filter(f => f.name.startsWith(cellFnQuery)).slice(0, 8)
                       : editingCellValue === '='
                         ? FORMULA_FUNCTIONS.slice(0, 8)
@@ -3470,7 +3563,7 @@ const SheetView: React.FC<{
                           ref={cellInputRef}
                           style={{
                             width: '100%', height: '100%', border: 'none', outline: 'none',
-                            padding: '0 8px', fontSize: 'inherit', fontFamily: 'inherit',
+                            padding: '0 var(--spacing-2)', fontSize: 'inherit', fontFamily: 'inherit',
                             background: 'transparent', color: 'var(--rd-sys-color-content-primary, #1d2329)',
                           }}
                           value={editingCellValue}
@@ -3494,7 +3587,7 @@ const SheetView: React.FC<{
                             position: 'absolute', top: '100%', left: 0, zIndex: 300,
                             background: 'var(--rd-sys-color-background-base, #fff)',
                             border: '1px solid var(--rd-sys-color-border-default, #e2e5eb)',
-                            borderRadius: 6, boxShadow: '0 4px 16px rgba(25,35,49,0.12)',
+                            borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-menu)',
                             minWidth: 300, overflow: 'hidden',
                           }}>
                             {cellFnSuggestions.map((fn, fi) => (
@@ -3502,7 +3595,7 @@ const SheetView: React.FC<{
                                 key={fn.name}
                                 style={{
                                   display: 'flex', flexDirection: 'column', gap: 2,
-                                  padding: '8px 14px', cursor: 'pointer',
+                                  padding: 'var(--spacing-2) 14px', cursor: 'pointer',
                                   borderTop: fi > 0 ? '1px solid var(--rd-sys-color-border-subtle, #eaedf2)' : 'none',
                                 }}
                                 onMouseEnter={e => (e.currentTarget.style.background = 'var(--rd-sys-color-background-subtle, #f5f7fa)')}
@@ -3515,7 +3608,7 @@ const SheetView: React.FC<{
                                   setTimeout(() => cellInputRef.current?.focus(), 10);
                                 }}
                               >
-                                <span style={{ fontSize: 12, fontWeight: 500, fontFamily: 'monospace', color: 'var(--rd-sys-color-content-brand, #2770ef)' }}>{fn.name}</span>
+                                <span style={{ fontSize: 'var(--font-size-xs)', fontWeight: 'var(--font-weight-medium)', fontFamily: 'monospace', color: 'var(--rd-sys-color-content-brand, #2770ef)' }}>{fn.name}</span>
                                 <span style={{ fontSize: 11, color: 'var(--rd-sys-color-content-secondary, #6b7280)' }}>{fn.description}</span>
                               </div>
                             ))}
@@ -3526,13 +3619,13 @@ const SheetView: React.FC<{
                             position: 'absolute', top: '100%', left: 0, zIndex: 300,
                             background: 'var(--rd-sys-color-background-base, #fff)',
                             border: '1px solid var(--rd-sys-color-border-default, #e2e5eb)',
-                            borderRadius: 6, boxShadow: '0 4px 12px rgba(0,0,0,0.10)',
-                            minWidth: 160, padding: '4px 0',
+                            borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-menu)',
+                            minWidth: 160, padding: 'var(--spacing-1) 0',
                           }}>
                             {cellSuggestions.map(s => (
                               <div
                                 key={s}
-                                style={{ padding: '6px 12px', fontSize: 12, cursor: 'pointer', color: 'var(--rd-sys-color-content-primary, #1d2329)' }}
+                                style={{ padding: '6px var(--spacing-3)', fontSize: 'var(--font-size-xs)', cursor: 'pointer', color: 'var(--rd-sys-color-content-primary, #1d2329)' }}
                                 onMouseEnter={e => (e.currentTarget.style.background = 'var(--rd-sys-color-background-subtle, #f5f7fa)')}
                                 onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                                 onMouseDown={e => {
@@ -3560,10 +3653,10 @@ const SheetView: React.FC<{
                         </svg>
                       )}
                       {showPlaceholder && (
-                        <span style={{ color: 'var(--rd-sys-color-content-secondary, #9aa0ab)', fontSize: 12, pointerEvents: 'none' }}>Add value</span>
+                        <span style={{ color: 'var(--rd-sys-color-content-secondary, #9aa0ab)', fontSize: 'var(--font-size-xs)', pointerEvents: 'none' }}>Add value</span>
                       )}
                       {isPendingC && isEditing && !editingCellValue && (
-                        <span style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: 'var(--rd-sys-color-content-tertiary, #a0a9b4)', fontSize: 12, pointerEvents: 'none' }}>Type = for formula</span>
+                        <span style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: 'var(--rd-sys-color-content-tertiary, #a0a9b4)', fontSize: 'var(--font-size-xs)', pointerEvents: 'none' }}>Type = for formula</span>
                       )}
                     </>
                   )}
@@ -3606,7 +3699,7 @@ const SheetView: React.FC<{
       </div>
       <span className={styles.sheetPagRows}>
         <span style={{ color: 'var(--rd-sys-color-content-secondary, #777e8b)' }}>Showing rows </span>
-        <span style={{ fontWeight: 500 }}>{displayRowIdxs.length > 0 ? `1-${displayRowIdxs.length} of ${displayRowIdxs.length}` : '0 rows'}</span>
+        <span style={{ fontWeight: 'var(--font-weight-medium)' }}>{displayRowIdxs.length > 0 ? `1-${displayRowIdxs.length} of ${displayRowIdxs.length}` : '0 rows'}</span>
       </span>
     </div>
     )}
@@ -3624,11 +3717,11 @@ const SheetView: React.FC<{
         key={filterModalCol}
         filter={sheetFilters[filterModalCol] ?? newFilter(filterColLabel(filterModalCol), kindForCol(filterModalCol))}
         distinctValues={colValues(filterModalCol)}
-        promote={modelCreation.mode === 'promote' ? {
+        promote={{
           checked: filterModalPromote,
           onChange: setFilterModalPromote,
           tooltip: 'Adds this filter to the model. It shows in the left panel and applies for everyone using this model.',
-        } : undefined}
+        }}
         onCancel={() => setFilterModalCol(null)}
         onApply={applyColFilter}
       />
@@ -3652,18 +3745,18 @@ const SheetView: React.FC<{
             zIndex: 500,
             width: 300,
             background: 'var(--rd-sys-color-background-base, #fff)',
-            borderRadius: 12,
-            boxShadow: '0 8px 32px rgba(25,35,49,0.18)',
-            padding: 16,
+            borderRadius: 'var(--radius-xl)',
+            boxShadow: 'var(--shadow-modal)',
+            padding: 'var(--spacing-4)',
             fontFamily: 'inherit',
           }}
         >
-          <p style={{ margin: '0 0 12px', fontSize: 13, color: 'var(--rd-sys-color-content-primary, #1d2329)', lineHeight: 1.5 }}>
+          <p style={{ margin: '0 0 var(--spacing-3)', fontSize: 'var(--font-size-sm)', color: 'var(--rd-sys-color-content-primary, #1d2329)', lineHeight: 1.5 }}>
             You need to select a "Key column" to add custom data.{' '}
             <span style={{ color: 'var(--rd-sys-color-content-brand, #2770ef)', cursor: 'pointer' }}>Learn more</span>
           </p>
           {/* Search */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--rd-sys-color-background-subtle, #f5f7fa)', borderRadius: 8, padding: '6px 10px', marginBottom: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--rd-sys-color-background-subtle, #f5f7fa)', borderRadius: 'var(--radius-lg)', padding: '6px 10px', marginBottom: 'var(--spacing-2)' }}>
             <svg width={14} height={14} viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, opacity: 0.45 }}>
               <circle cx="7" cy="7" r="5" stroke="currentColor" strokeWidth="1.5"/>
               <path d="M11 11l3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
@@ -3673,7 +3766,7 @@ const SheetView: React.FC<{
               value={keyPickerSearch}
               onChange={e => setKeyPickerSearch(e.target.value)}
               placeholder="Search"
-              style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: 13, color: 'var(--rd-sys-color-content-primary, #1d2329)', width: '100%', fontFamily: 'inherit' }}
+              style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: 'var(--font-size-sm)', color: 'var(--rd-sys-color-content-primary, #1d2329)', width: '100%', fontFamily: 'inherit' }}
             />
           </div>
           {/* Column list */}
@@ -3684,27 +3777,27 @@ const SheetView: React.FC<{
                 <div
                   key={c.key}
                   onClick={() => setKeyPickerSelected(checked ? null : c.key)}
-                  style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 4px', borderRadius: 6, cursor: 'pointer', background: checked ? 'var(--rd-sys-color-background-brand-subtle, #eef3fd)' : 'transparent' }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px var(--spacing-1)', borderRadius: 'var(--radius-md)', cursor: 'pointer', background: checked ? 'var(--rd-sys-color-background-brand-subtle, #eef3fd)' : 'transparent' }}
                   onMouseEnter={e => { if (!checked) (e.currentTarget as HTMLElement).style.background = 'var(--rd-sys-color-background-subtle, #f5f7fa)'; }}
                   onMouseLeave={e => { if (!checked) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
                 >
                   {/* Checkbox */}
-                  <span style={{ width: 16, height: 16, borderRadius: 4, border: checked ? 'none' : '1.5px solid #c8cdd6', background: checked ? 'var(--rd-sys-color-content-brand, #2770ef)' : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <span style={{ width: 16, height: 16, borderRadius: 'var(--radius-sm)', border: checked ? 'none' : '1.5px solid var(--rd-sys-color-border-default)', background: checked ? 'var(--rd-sys-color-content-brand, #2770ef)' : 'var(--rd-sys-color-background-base)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     {checked && <svg width={10} height={10} viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5L8 3" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                   </span>
-                  <span style={{ fontSize: 13, color: 'var(--rd-sys-color-content-primary, #1d2329)' }}>{c.label}</span>
+                  <span style={{ fontSize: 'var(--font-size-sm)', color: 'var(--rd-sys-color-content-primary, #1d2329)' }}>{c.label}</span>
                 </div>
               );
             })}
             {filtered.length === 0 && (
-              <p style={{ fontSize: 12, color: 'var(--rd-sys-color-content-secondary, #777e8b)', textAlign: 'center', padding: '12px 0', margin: 0 }}>No columns found</p>
+              <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--rd-sys-color-content-secondary, #777e8b)', textAlign: 'center', padding: 'var(--spacing-3) 0', margin: 0 }}>No columns found</p>
             )}
           </div>
           {/* Confirm */}
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 12 }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--spacing-2)', marginTop: 'var(--spacing-3)' }}>
             <button
               onClick={() => { setKeyPickerState(null); setKeyPickerSearch(''); setKeyPickerSelected(null); }}
-              style={{ fontSize: 13, padding: '6px 14px', borderRadius: 7, border: '1px solid var(--rd-sys-color-border-default, #e2e5eb)', background: 'transparent', cursor: 'pointer', fontFamily: 'inherit' }}
+              style={{ fontSize: 'var(--font-size-sm)', padding: '6px 14px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--rd-sys-color-border-default, #e2e5eb)', background: 'transparent', cursor: 'pointer', fontFamily: 'inherit' }}
             >Cancel</button>
             <button
               disabled={!keyPickerSelected}
@@ -3719,7 +3812,7 @@ const SheetView: React.FC<{
                 setEditingCellValue('');
                 setTimeout(() => cellInputRef.current?.focus(), 30);
               }}
-              style={{ fontSize: 13, padding: '6px 14px', borderRadius: 7, border: 'none', background: keyPickerSelected ? 'var(--rd-sys-color-content-brand, #2770ef)' : '#c8cdd6', color: '#fff', cursor: keyPickerSelected ? 'pointer' : 'default', fontFamily: 'inherit' }}
+              style={{ fontSize: 'var(--font-size-sm)', padding: '6px 14px', borderRadius: 'var(--radius-lg)', border: 'none', background: keyPickerSelected ? 'var(--rd-sys-color-content-brand, #2770ef)' : 'var(--rd-sys-color-background-subtle)', color: 'var(--rd-sys-color-content-primary-inverse)', cursor: keyPickerSelected ? 'pointer' : 'default', fontFamily: 'inherit' }}
             >Confirm</button>
           </div>
         </div>
@@ -3735,7 +3828,7 @@ const SheetView: React.FC<{
     title="Edit cell manually?"
     size="M1"
     footer={
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+      <div style={{ display: 'flex', gap: 'var(--spacing-2)', justifyContent: 'flex-end' }}>
         <Button variant="secondary" size="basic" onClick={() => setFormulaEditConfirm(null)}>Cancel</Button>
         <Button variant="primary" size="basic" onClick={() => {
           if (!formulaEditConfirm) return;
@@ -3748,10 +3841,10 @@ const SheetView: React.FC<{
       </div>
     }
   >
-    <p style={{ margin: 0, fontSize: 14, color: 'var(--rd-sys-color-content-primary, #1d232f)', lineHeight: 1.5 }}>
+    <p style={{ margin: 0, fontSize: 'var(--font-size-sm)', color: 'var(--rd-sys-color-content-primary, #1d232f)', lineHeight: 1.5 }}>
       Manually editing a cell will convert this into a custom column.
     </p>
-    <p style={{ margin: '8px 0 0', fontSize: 13, color: 'var(--rd-sys-color-content-secondary, #777e8b)', lineHeight: 1.5 }}>
+    <p style={{ margin: 'var(--spacing-2) 0 0', fontSize: 'var(--font-size-sm)', color: 'var(--rd-sys-color-content-secondary, #777e8b)', lineHeight: 1.5 }}>
       A custom column can only be saved in an input table.
     </p>
   </Modal>
@@ -4331,7 +4424,7 @@ const AnswerChart: React.FC<{ data: AggRow[]; metrics: string[]; groupBy: string
 
   const rows = [...data]; // preserve order from aggregate() which already applied sorts
 
-  const FONT = '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+  const FONT = 'var(--font-family-primary)';
   const L_PAD = 60;
   const R_PAD = metrics.length > 1 ? 70 : 16;
   const T_PAD = 16;
@@ -4367,9 +4460,9 @@ const AnswerChart: React.FC<{ data: AggRow[]; metrics: string[]; groupBy: string
     <div ref={wrapRef} className={styles.barChartWrap}>
       {/* Legend */}
       {metrics.length > 0 && (
-        <div style={{ display: 'flex', gap: 16, height: LEGEND_H, alignItems: 'center', justifyContent: 'flex-end', paddingRight: R_PAD, flexShrink: 0 }}>
+        <div style={{ display: 'flex', gap: 'var(--spacing-4)', height: LEGEND_H, alignItems: 'center', justifyContent: 'flex-end', paddingRight: R_PAD, flexShrink: 0 }}>
           {metrics.map((m, i) => (
-            <div key={m} style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: FONT, fontSize: 12, color: '#1d232f' }}>
+            <div key={m} style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: FONT, fontSize: 'var(--font-size-xs)', color: 'var(--rd-sys-color-content-primary)' }}>
               <span style={{ width: 10, height: 10, borderRadius: '50%', backgroundColor: colors[i] ?? '#ccc', flexShrink: 0 }} />
               {metricLabel(m)}
             </div>
@@ -4464,7 +4557,7 @@ const AnswerChart: React.FC<{ data: AggRow[]; metrics: string[]; groupBy: string
       </div>
 
       {/* Footer */}
-      <div style={{ fontFamily: FONT, fontSize: 12, color: '#777e8b', height: FOOTER_H, lineHeight: `${FOOTER_H}px`, flexShrink: 0 }}>
+      <div style={{ fontFamily: FONT, fontSize: 'var(--font-size-xs)', color: 'var(--rd-sys-color-content-secondary)', height: FOOTER_H, lineHeight: `${FOOTER_H}px`, flexShrink: 0 }}>
         Showing {rows.length} of {rows.length} data points
       </div>
     </div>
@@ -4525,7 +4618,7 @@ const AnswerTable: React.FC<{ columns: AnswerColDef[]; data: Record<string, unkn
                   <span className={styles.thLabel}>
                     {col.label}
                     {col.sortable && sortKey === col.key && (
-                      <span style={{ marginLeft: 4, opacity: 0.6 }}>{sortDir === 'asc' ? '↑' : '↓'}</span>
+                      <span style={{ marginLeft: 'var(--spacing-1)', opacity: 0.6 }}>{sortDir === 'asc' ? '↑' : '↓'}</span>
                     )}
                   </span>
                   <button className={styles.thMenuBtn} onClick={e => e.stopPropagation()} tabIndex={-1} aria-label="Column options">
@@ -6343,7 +6436,7 @@ const SpotterDataPanel: React.FC<{
         })}
         {analysisSuggestions.length > 0 && (
           <div className={styles.analysisNumberedSuggestions}>
-            <div className={styles.rspText} style={{ fontWeight: 600, marginBottom: 4 }}>Suggested next steps:</div>
+            <div className={styles.rspText} style={{ fontWeight: 'var(--font-weight-semibold)', marginBottom: 'var(--spacing-1)' }}>Suggested next steps:</div>
             {analysisSuggestions.map((s, i) => (
               <div key={i} className={styles.summaryBullet}><span>{i + 1}. {parseBold(s)}</span></div>
             ))}
@@ -7627,7 +7720,7 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
         title="Describe your answer"
         showCloseButton={false}
         footer={
-          <div style={{ display: 'flex', gap: 16, marginLeft: 'auto' }}>
+          <div style={{ display: 'flex', gap: 'var(--spacing-4)', marginLeft: 'auto' }}>
             <Button variant="secondary" size="basic" onClick={() => setSaveModalOpen(false)}>Cancel</Button>
             <Button variant="primary" size="basic" onClick={() => {
               const newTitle = saveAnswerName.trim() || computedTitle;
@@ -7639,7 +7732,7 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
           </div>
         }
       >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-6)' }}>
           <TextInput
             label="Name"
             value={saveAnswerName}
@@ -7670,7 +7763,7 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
         title="Select data model"
         showCloseButton={false}
         footer={
-          <div style={{ display: 'flex', gap: 16, marginLeft: 'auto' }}>
+          <div style={{ display: 'flex', gap: 'var(--spacing-4)', marginLeft: 'auto' }}>
             <Button variant="secondary" size="basic" onClick={() => setDataModelModalOpen(false)}>Cancel</Button>
             <Button variant="primary" size="basic" onClick={() => setDataModelModalOpen(false)}>Select</Button>
           </div>
@@ -7695,7 +7788,7 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
             type="simple"
             title="Unsaved columns"
             footer={
-              <div style={{ display: 'flex', alignItems: 'center', width: '100%', gap: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', width: '100%', gap: 'var(--spacing-3)' }}>
                 <Link
                   color="blue"
                   style={{ marginRight: 'auto', cursor: 'pointer' }}
@@ -7717,11 +7810,11 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
               </div>
             }
           >
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-3)' }}>
               <Typography variant="body-normal" color="gray">
                 The following custom columns are not saved. To include them in the answer, save them as an input table.
               </Typography>
-              <ul style={{ margin: 0, paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <ul style={{ margin: 0, paddingLeft: 'var(--spacing-5)', display: 'flex', flexDirection: 'column', gap: 'var(--spacing-1)' }}>
                 {unsavedCols.map(f => (
                   <li key={f.key}>
                     <Typography variant="body-normal">{f.name}</Typography>
@@ -7784,8 +7877,8 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
           }, [isOpen]);
           const filtered = options.filter(o => o.label.toLowerCase().includes(search.toLowerCase()));
           const panel = isOpen ? ReactDOM.createPortal(
-            <div onClick={e => e.stopPropagation()} style={{ ...dropdownStyle, background: '#fff', border: '1px solid var(--rd-sys-color-border-default, #e0e3e8)', borderRadius: 10, boxShadow: '0 8px 24px rgba(25,35,49,0.14)', overflow: 'hidden' }}>
-              <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--rd-sys-color-border-divider, #eaedf2)', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div onClick={e => e.stopPropagation()} style={{ ...dropdownStyle, background: 'var(--rd-sys-color-background-base)', border: '1px solid var(--rd-sys-color-border-default, #e0e3e8)', borderRadius: 10, boxShadow: 'var(--shadow-menu)', overflow: 'hidden' }}>
+              <div style={{ padding: 'var(--spacing-2) var(--spacing-3)', borderBottom: '1px solid var(--rd-sys-color-border-divider, #eaedf2)', display: 'flex', alignItems: 'center', gap: 'var(--spacing-2)' }}>
                 <svg width={14} height={14} viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5" stroke="#a0a7b4" strokeWidth="1.4"/><path d="M11 11l2.5 2.5" stroke="#a0a7b4" strokeWidth="1.4" strokeLinecap="round"/></svg>
                 <input
                   autoFocus
@@ -7793,16 +7886,16 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
                   onChange={e => onSearch(e.target.value)}
                   onKeyDown={e => e.stopPropagation()}
                   placeholder="Search"
-                  style={{ flex: 1, border: 'none', outline: 'none', fontSize: 13, color: 'var(--rd-sys-color-content-primary, #1d232f)', background: 'transparent' }}
+                  style={{ flex: 1, border: 'none', outline: 'none', fontSize: 'var(--font-size-sm)', color: 'var(--rd-sys-color-content-primary, #1d232f)', background: 'transparent' }}
                 />
               </div>
-              <div style={{ padding: '8px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--rd-sys-color-content-primary, #1d232f)' }}>Selected ({selected.size})</span>
-                <button onClick={e => { e.stopPropagation(); onClear(); }} style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, color: 'var(--rd-sys-color-content-brand, #2770ef)', padding: 0 }}>Clear</button>
+              <div style={{ padding: 'var(--spacing-2) var(--spacing-3)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: 'var(--font-size-xs)', fontWeight: 'var(--font-weight-semibold)', color: 'var(--rd-sys-color-content-primary, #1d232f)' }}>Selected ({selected.size})</span>
+                <button onClick={e => { e.stopPropagation(); onClear(); }} style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: 'var(--font-size-xs)', fontWeight: 'var(--font-weight-semibold)', color: 'var(--rd-sys-color-content-brand, #2770ef)', padding: 0 }}>Clear</button>
               </div>
               <div style={{ maxHeight: 200, overflowY: 'auto' }}>
                 {filtered.map(opt => (
-                  <div key={opt.id} onClick={e => { e.stopPropagation(); onToggle(opt.id); }} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', cursor: 'pointer', fontSize: 13 }}
+                  <div key={opt.id} onClick={e => { e.stopPropagation(); onToggle(opt.id); }} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 'var(--spacing-2) var(--spacing-3)', cursor: 'pointer', fontSize: 'var(--font-size-sm)' }}
                     onMouseEnter={e => (e.currentTarget.style.background = 'var(--rd-sys-color-background-subtle, #f5f7fa)')}
                     onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                   >
@@ -7812,7 +7905,7 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
                     {opt.icon && <span style={{ display: 'flex', alignItems: 'center', flexShrink: 0, color: 'var(--rd-sys-color-content-tertiary, #a0a7b4)' }}>{opt.icon}</span>}
                   </div>
                 ))}
-                {filtered.length === 0 && <div style={{ padding: '12px', fontSize: 13, color: 'var(--rd-sys-color-content-tertiary, #a0a7b4)', textAlign: 'center' }}>No results</div>}
+                {filtered.length === 0 && <div style={{ padding: 'var(--spacing-3)', fontSize: 'var(--font-size-sm)', color: 'var(--rd-sys-color-content-tertiary, #a0a7b4)', textAlign: 'center' }}>No results</div>}
               </div>
             </div>,
             document.body
@@ -7825,7 +7918,7 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
                 tabIndex={0}
                 onClick={() => onOpenChange(!isOpen)}
                 onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpenChange(!isOpen); } if (e.key === 'Escape') onOpenChange(false); }}
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 32, padding: '0 10px', border: '1.5px solid var(--rd-sys-color-border-default, #c8cdd6)', borderRadius: 8, cursor: 'pointer', fontSize: 14, background: '#fff', gap: 6, userSelect: 'none', ...(isOpen ? { borderColor: 'var(--rd-sys-color-content-brand, #2770ef)' } : {}) }}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 32, padding: '0 10px', border: '1.5px solid var(--rd-sys-color-border-default, #c8cdd6)', borderRadius: 'var(--radius-lg)', cursor: 'pointer', fontSize: 'var(--font-size-sm)', background: 'var(--rd-sys-color-background-base)', gap: 6, userSelect: 'none', ...(isOpen ? { borderColor: 'var(--rd-sys-color-content-brand, #2770ef)' } : {}) }}
               >
                 {multiSelectTriggerLabel(selected, options, 'Select')}
                 <svg width={14} height={14} viewBox="0 0 18 18" fill="none" style={{ flexShrink: 0, transform: isOpen ? 'rotate(180deg)' : undefined, transition: 'transform 150ms' }}><path d="M4.5 6.75L9 11.25L13.5 6.75" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
@@ -7842,7 +7935,7 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
             type="simple"
             title="Save as input table"
             footer={
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, width: '100%' }}>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--spacing-2)', width: '100%' }}>
                 <Button variant="secondary" size="basic" onClick={() => setWritebackModalOpen(false)}>Cancel</Button>
                 <Button variant="primary" size="basic" disabled={!hasCustomCols} onClick={() => {
                   const savedCols = [
@@ -7885,10 +7978,10 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
                   message="Custom columns not added to this input table will not be saved in an answer."
                 />
               )}
-              <Typography variant="body-normal" color="gray" style={{ marginBottom: 12 }}>
+              <Typography variant="body-normal" color="gray" style={{ marginBottom: 'var(--spacing-3)' }}>
                 Input tables allow saving custom columns to your data warehouse.
               </Typography>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--spacing-4)', marginBottom: 'var(--spacing-4)' }}>
                 <TextInput
                   label="Table name"
                   placeholder="e.g. Salary revision Q3"
@@ -7898,9 +7991,9 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
                 />
               </div>
               <Divider />
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 16 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--spacing-4)', marginTop: 'var(--spacing-4)' }}>
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--rd-sys-color-content-primary, #1d232f)', marginBottom: 4 }}>Custom columns</div>
+                  <div style={{ fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-medium)', color: 'var(--rd-sys-color-content-primary, #1d232f)', marginBottom: 'var(--spacing-1)' }}>Custom columns</div>
                   <MultiSelectDropdown
                     options={allEditableColOptions.map(opt => ({
                       id: opt.id,
@@ -7927,12 +8020,12 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
                     onOpenChange={v => { setWritebackCustomOpen(v); if (v) setWritebackKeyOpen(false); }}
                   />
                   {!hasCustomCols && (
-                    <Typography variant="footnote" color="warning" style={{ marginTop: 4 }}>Add a custom column to enable saving.</Typography>
+                    <Typography variant="footnote" color="warning" style={{ marginTop: 'var(--spacing-1)' }}>Add a custom column to enable saving.</Typography>
                   )}
-                  {hasCustomCols && <Typography variant="footnote" color="gray" style={{ marginTop: 4 }}>Only first 1,000 rows will be saved.</Typography>}
+                  {hasCustomCols && <Typography variant="footnote" color="gray" style={{ marginTop: 'var(--spacing-1)' }}>Only first 1,000 rows will be saved.</Typography>}
                 </div>
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--rd-sys-color-content-primary, #1d232f)', marginBottom: 4 }}>Key columns</div>
+                  <div style={{ fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-medium)', color: 'var(--rd-sys-color-content-primary, #1d232f)', marginBottom: 'var(--spacing-1)' }}>Key columns</div>
                   <MultiSelectDropdown
                     options={ALL_ATTR_COLS}
                     selected={writebackKeyColKeys}
@@ -7943,7 +8036,7 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
                     isOpen={writebackKeyOpen}
                     onOpenChange={v => { setWritebackKeyOpen(v); if (v) setWritebackCustomOpen(false); }}
                   />
-                  <Typography variant="footnote" color="gray" style={{ marginTop: 4 }}>Auto-selected unique row identifiers from the selected data model.</Typography>
+                  <Typography variant="footnote" color="gray" style={{ marginTop: 'var(--spacing-1)' }}>Auto-selected unique row identifiers from the selected data model.</Typography>
                 </div>
               </div>
             </div>
@@ -7990,7 +8083,7 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
 
       {/* ── V1 Sheet mode OR Spreadsheet mode: full-page sheet replaces search content ── */}
       {sheetTab === 'sheet' || isSpreadsheetMode ? (
-        <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden', background: '#fff', position: 'relative' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden', background: 'var(--rd-sys-color-background-base)', position: 'relative' }}>
           {/* Body: inline flex row — data panel sits as a persistent sidebar, sheet fills remaining space */}
           <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'row' }}>
           {sheetDataPanelOpen && (
@@ -8010,7 +8103,7 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
                 its rows were on screen (or a stale cache was re-entered) —
                 hold the old rows, say so, and hand the re-query to the user. */}
             {!!previewBehavior && modelStale && !scopeLoading && (scopeKey === 'model' || previewBehavior.refresh === 'explicit') && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '6px 8px 6px 16px', background: '#FFF8E8', borderBottom: '1px solid #F2E3BC', fontSize: 13, color: '#92640A', flexShrink: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-3)', padding: '6px var(--spacing-2) 6px var(--spacing-4)', background: '#FFF8E8', borderBottom: '1px solid #F2E3BC', fontSize: 'var(--font-size-sm)', color: '#92640A', flexShrink: 0 }}>
                 <span style={{ flex: 1 }}>{scopeKey === 'model' ? 'Model' : 'Data'} changed — this preview shows the rows from before the change.</span>
                 <Button variant="secondary" size="small" onClick={() => runScopeLoad(scopeKey === 'model')}>Refresh</Button>
               </div>
@@ -8061,17 +8154,17 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
           style={{
             height: 60, flexShrink: 0, display: 'flex', alignItems: 'center',
             borderBottom: '1px solid var(--rd-sys-color-border-divider, #EAEDF2)',
-            background: '#fff',
+            background: 'var(--rd-sys-color-background-base)',
             position: 'relative', zIndex: (searchFocused || isDirty) ? 110 : 'auto',
           }}
         >
           {/* Left section: hamburger + vdivider + source — always 260px wide */}
           <div style={{
             width: 260, flexShrink: 0,
-            display: 'flex', alignItems: 'center', gap: 4, padding: '0 8px 0 24px',
+            display: 'flex', alignItems: 'center', gap: 'var(--spacing-1)', padding: '0 var(--spacing-2) 0 var(--spacing-6)',
           }}>
             <button
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, border: 'none', background: 'transparent', borderRadius: 6, cursor: 'pointer', flexShrink: 0 }}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, border: 'none', background: 'transparent', borderRadius: 'var(--radius-md)', cursor: 'pointer', flexShrink: 0 }}
               aria-label="Toggle data panel"
               onClick={e => { e.stopPropagation(); setDataPanelVisible(v => !v); }}
             >
@@ -8097,7 +8190,7 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
 
           {/* Search area — fills remaining width */}
           <div
-            style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, padding: '0 16px', height: '100%', cursor: 'text' }}
+            style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 'var(--spacing-2)', padding: '0 var(--spacing-4)', height: '100%', cursor: 'text' }}
             onClick={() => { setSearchFocused(true); setBarActive(true); barInputRef.current?.focus(); }}
           >
             <Icon name="search" size="s" color={systemColors.light['content-secondary']} />
@@ -8139,7 +8232,7 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
                 </div>
               </span>
             )}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginLeft: 'auto' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-1)', marginLeft: 'auto' }} onClick={e => e.stopPropagation()}>
               {(searchFocused || hasPending || hasQuery || isAnswerLoading) && (
                 <button className={styles.iconBtn} aria-label="Clear search"
                   onMouseDown={e => {
@@ -8156,7 +8249,7 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
                 state={isTransitioning ? 'stopping' : isAnswerLoading ? 'loading' : (searchFocused || isDirty) ? 'focused' : 'idle'}
                 onGo={handleGo} onStop={handleStop}
               />
-              <div style={{ width: 1, height: 24, background: 'var(--rd-sys-color-border-divider, #EAEDF2)', flexShrink: 0, margin: '0 4px' }} />
+              <div style={{ width: 1, height: 24, background: 'var(--rd-sys-color-border-divider, #EAEDF2)', flexShrink: 0, margin: '0 var(--spacing-1)' }} />
               <button className={styles.iconBtn} aria-label="Undo"><Icon name="arrow-left" size="m" color={systemColors.light['content-primary']} /></button>
               <button className={styles.iconBtn} aria-label="Redo"><Icon name="arrow-right" size="m" color={systemColors.light['content-primary']} /></button>
               <button className={styles.iconBtn} aria-label="Reset"><RefreshIcon size="m" color={systemColors.light['content-primary']} /></button>
@@ -8164,8 +8257,8 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
           </div>
           {/* SpotterData: 24px from right edge, divider 20px before */}
           {showSpotter && !spotterOpen && (
-            <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0, paddingRight: 24 }} onClick={e => e.stopPropagation()}>
-              <div style={{ width: 1, height: 24, background: 'var(--rd-sys-color-border-divider, #EAEDF2)', flexShrink: 0, marginRight: 20 }} />
+            <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0, paddingRight: 'var(--spacing-6)' }} onClick={e => e.stopPropagation()}>
+              <div style={{ width: 1, height: 24, background: 'var(--rd-sys-color-border-divider, #EAEDF2)', flexShrink: 0, marginRight: 'var(--spacing-5)' }} />
               <button
                 className={styles.spotterIconOnlyBtn}
                 onClick={e => { e.stopPropagation(); setSpotterOpen(o => !o); }}
@@ -8190,7 +8283,7 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
                 width: 260, flexShrink: 0,
                 position: 'relative', zIndex: (searchFocused || isDirty) ? 60 : 'auto',
                 overflow: 'hidden', display: 'flex', flexDirection: 'column', height: '100%',
-                background: '#fff',
+                background: 'var(--rd-sys-color-background-base)',
               }}>
                 {/* Search + Add */}
                 <div className={styles.panelSearch}>
@@ -8574,34 +8667,34 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
 
         {/* ── Column detail panel — absolute overlay over answer area ── */}
         {colDetailOpen && (
-          <div style={{ position: 'absolute', left: 284, top: 20, bottom: 24, width: 480, background: '#fff', borderRadius: 4, boxShadow: '0 0 0 1px rgba(25,35,49,0.08), 0 4px 16px rgba(25,35,49,0.12)', display: 'flex', flexDirection: 'column', overflow: 'hidden', zIndex: 10 }}>
+          <div style={{ position: 'absolute', left: 284, top: 20, bottom: 24, width: 480, background: 'var(--rd-sys-color-background-base)', borderRadius: 'var(--radius-sm)', boxShadow: 'var(--shadow-menu)', display: 'flex', flexDirection: 'column', overflow: 'hidden', zIndex: 10 }}>
             {selectedColDetail ? (
               <>
-                <div style={{ padding: '20px 20px 16px', borderBottom: '1px solid var(--rd-sys-color-border-divider, #eaedf2)' }}>
-                  <div style={{ fontSize: 18, fontWeight: 600, color: 'var(--rd-sys-color-content-primary, #1d232f)', marginBottom: 4 }}>{selectedColDetail.label}</div>
-                  <div style={{ fontSize: 12, color: 'var(--rd-sys-color-content-secondary, #777e8b)' }}>
+                <div style={{ padding: 'var(--spacing-5) var(--spacing-5) var(--spacing-4)', borderBottom: '1px solid var(--rd-sys-color-border-divider, #eaedf2)' }}>
+                  <div style={{ fontSize: 'var(--font-size-lg)', fontWeight: 'var(--font-weight-semibold)', color: 'var(--rd-sys-color-content-primary, #1d232f)', marginBottom: 'var(--spacing-1)' }}>{selectedColDetail.label}</div>
+                  <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--rd-sys-color-content-secondary, #777e8b)' }}>
                     {selectedColDetail.type === 'measure' ? 'Measure · INT64' : selectedColDetail.type === 'attribute' ? 'Attribute · VARCHAR' : selectedColDetail.type === 'date' ? 'Date · DATETIME' : selectedColDetail.type.charAt(0).toUpperCase() + selectedColDetail.type.slice(1)}
                   </div>
                 </div>
-                <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 12, borderBottom: '1px solid var(--rd-sys-color-border-divider, #eaedf2)' }}>
+                <div style={{ padding: 'var(--spacing-4) var(--spacing-5)', display: 'flex', flexDirection: 'column', gap: 'var(--spacing-3)', borderBottom: '1px solid var(--rd-sys-color-border-divider, #eaedf2)' }}>
                   <div>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--rd-sys-color-content-primary, #1d232f)' }}>Description: </span>
-                    <span style={{ fontSize: 13, color: 'var(--rd-sys-color-content-secondary, #777e8b)' }}>Not provided</span>
+                    <span style={{ fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-semibold)', color: 'var(--rd-sys-color-content-primary, #1d232f)' }}>Description: </span>
+                    <span style={{ fontSize: 'var(--font-size-sm)', color: 'var(--rd-sys-color-content-secondary, #777e8b)' }}>Not provided</span>
                   </div>
                   <div>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--rd-sys-color-content-primary, #1d232f)' }}>Synonyms: </span>
-                    <span style={{ fontSize: 13, color: 'var(--rd-sys-color-content-secondary, #777e8b)' }}>Not provided</span>
+                    <span style={{ fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-semibold)', color: 'var(--rd-sys-color-content-primary, #1d232f)' }}>Synonyms: </span>
+                    <span style={{ fontSize: 'var(--font-size-sm)', color: 'var(--rd-sys-color-content-secondary, #777e8b)' }}>Not provided</span>
                   </div>
                 </div>
-                <div style={{ padding: '16px 20px' }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--rd-sys-color-content-primary, #1d232f)', marginBottom: 8 }}>Top Answers created using {selectedColDetail.label}</div>
-                  <div style={{ fontSize: 13, color: 'var(--rd-sys-color-content-secondary, #777e8b)' }}>No Answers have been created with "{selectedColDetail.label}"</div>
+                <div style={{ padding: 'var(--spacing-4) var(--spacing-5)' }}>
+                  <div style={{ fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-semibold)', color: 'var(--rd-sys-color-content-primary, #1d232f)', marginBottom: 'var(--spacing-2)' }}>Top Answers created using {selectedColDetail.label}</div>
+                  <div style={{ fontSize: 'var(--font-size-sm)', color: 'var(--rd-sys-color-content-secondary, #777e8b)' }}>No Answers have been created with "{selectedColDetail.label}"</div>
                 </div>
               </>
             ) : (
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24, gap: 8, textAlign: 'center' }}>
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 'var(--spacing-6)', gap: 'var(--spacing-2)', textAlign: 'center' }}>
                 <svg width="32" height="32" viewBox="0 0 24 24" fill="none" style={{ opacity: 0.3 }}><circle cx="12" cy="12" r="10" stroke="#777e8b" strokeWidth="1.5"/><path d="M12 7v5l3 3" stroke="#777e8b" strokeWidth="1.5" strokeLinecap="round"/></svg>
-                <div style={{ fontSize: 13, color: 'var(--rd-sys-color-content-secondary, #777e8b)' }}>Select a column to see its details</div>
+                <div style={{ fontSize: 'var(--font-size-sm)', color: 'var(--rd-sys-color-content-secondary, #777e8b)' }}>Select a column to see its details</div>
               </div>
             )}
           </div>

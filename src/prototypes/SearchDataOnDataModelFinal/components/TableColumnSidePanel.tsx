@@ -81,17 +81,18 @@ export const TableColumnSidePanel: React.FC<TableColumnSidePanelProps> = ({
     // Same background and shadow #left-pane itself uses (dme.css: box-shadow:
     // var(--shadow-surface)) — Komal, 2026-09-22: "it doesn't look like it's
     // part of the tables panel visually" — matching it makes this read as a
-    // continuation of the Tables section. zIndex 10, not 3 — the preview
-    // panel's own collapsed bar (PreviewPanel3.tsx) is ALSO z-index: 3 and,
-    // sitting later in the DOM (inside .main-content, which renders after
-    // this overlay), won every stacking tie at equal z-index and ate this
-    // panel's clicks. 10 clears it unambiguously.
+    // continuation of the Tables section. zIndex 35: must clear the preview
+    // panel (PreviewPanel3.tsx docked z, 30 since 2026-09-25 — raised there
+    // so its modal overlay/menus beat the canvas pills at 20), which sits
+    // later in the DOM and otherwise paints over this panel's bottom and
+    // eats its clicks (Vivek, 2026-09-25: "this panel should come above
+    // preview panel"; originally 10-vs-3 for the same reason).
     // 480 — the columns list went back to single-column (Komal, 2026-09-22:
     // "I don't like the double column stacking... make it single column"),
     // so the 640px width sized for a 2-up grid was excess; narrowed back
     // down ("reduce the width of columns") now that a single column of
     // names doesn't need that much room.
-    <div data-side-panel-root="" style={{ position: 'absolute', top: 0, bottom: 0, left: leftOffset, width: 480, display: 'flex', flexDirection: 'column', background: 'var(--rd-sys-color-background-base)', borderRight: '1px solid var(--rd-sys-color-border-divider)', boxShadow: 'var(--shadow-surface)', zIndex: 10 }}>
+    <div data-side-panel-root="" style={{ position: 'absolute', top: 0, bottom: 0, left: leftOffset, width: 480, display: 'flex', flexDirection: 'column', background: 'var(--rd-sys-color-background-base)', borderRight: '1px solid var(--rd-sys-color-border-divider)', boxShadow: 'var(--shadow-surface)', zIndex: 35 }}>
       {/* No close "x" (Komal, 2026-09-22: "remove") and no footer any more
           either — clicking outside closes it, and there's nothing left to
           confirm or cancel. */}

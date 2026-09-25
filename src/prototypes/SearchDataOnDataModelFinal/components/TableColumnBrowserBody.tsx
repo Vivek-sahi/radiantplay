@@ -185,7 +185,7 @@ export const TableColumnBrowserBody: React.FC<TableColumnBrowserBodyProps> = ({
               scrollable body" shape the right pane's header already had via
               "Select all"'s own border. */}
           <div style={{
-            flexShrink: 0, height: PANEL_HEADER_HEIGHT, boxSizing: 'border-box', padding: '10px 12px',
+            flexShrink: 0, height: PANEL_HEADER_HEIGHT, boxSizing: 'border-box', padding: '10px var(--spacing-3)',
             display: 'flex', flexDirection: 'column', justifyContent: 'center',
             borderBottom: '1px solid var(--rd-sys-color-border-divider)',
             background: 'var(--rd-sys-color-background-base)',
@@ -196,12 +196,12 @@ export const TableColumnBrowserBody: React.FC<TableColumnBrowserBodyProps> = ({
                 the same pattern rather than a plainer, unrelated banner. */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-2)' }}>
               <Icon name="table" size="xs" color="var(--rd-sys-color-content-secondary)" />
-              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--rd-sys-color-content-primary)' }}>Tables</span>
+              <span style={{ fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-semibold)', color: 'var(--rd-sys-color-content-primary)' }}>Tables</span>
             </div>
           </div>
           <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
           {filteredTables.length === 0 ? (
-            <div style={{ padding: 'var(--spacing-4)', fontSize: 12, color: 'var(--rd-sys-color-content-secondary)', textAlign: 'center' }}>No matches</div>
+            <div style={{ padding: 'var(--spacing-4)', fontSize: 'var(--font-size-xs)', color: 'var(--rd-sys-color-content-secondary)', textAlign: 'center' }}>No matches</div>
           ) : filteredTables.map(t => {
             const count = selectedCount(t.name);
             const total = columnsOf(t.name).length;
@@ -215,7 +215,7 @@ export const TableColumnBrowserBody: React.FC<TableColumnBrowserBodyProps> = ({
                 key={t.name}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 'var(--spacing-2)', width: '100%',
-                  padding: '9px 12px', borderLeft: active ? '2px solid var(--rd-sys-color-border-brand)' : '2px solid transparent',
+                  padding: '9px var(--spacing-3)', borderLeft: active ? '2px solid var(--rd-sys-color-border-brand)' : '2px solid transparent',
                   background: active ? 'var(--rd-sys-color-background-base)' : 'transparent',
                 }}
               >
@@ -231,7 +231,7 @@ export const TableColumnBrowserBody: React.FC<TableColumnBrowserBodyProps> = ({
                   <Icon name="table" size="xs" color="var(--rd-sys-color-content-secondary)" />
                   <span style={{
                     flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                    fontSize: 13, fontWeight: active ? 600 : 500, color: 'var(--rd-sys-color-content-primary)',
+                    fontSize: 'var(--font-size-sm)', fontWeight: active ? 600 : 500, color: 'var(--rd-sys-color-content-primary)',
                   }}>
                     {t.name}
                   </span>
@@ -239,7 +239,7 @@ export const TableColumnBrowserBody: React.FC<TableColumnBrowserBodyProps> = ({
                     <span style={{
                       flexShrink: 0, minWidth: 28, height: 18, padding: '0 6px', borderRadius: 9,
                       background: 'var(--rd-sys-color-background-brand-subtle, var(--rd-sys-color-background-information))',
-                      color: 'var(--rd-sys-color-content-brand)', fontSize: 11, fontWeight: 600,
+                      color: 'var(--rd-sys-color-content-brand)', fontSize: 11, fontWeight: 'var(--font-weight-semibold)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}>
                       {/* Selected vs. total, not just selected (Komal,
@@ -288,7 +288,7 @@ export const TableColumnBrowserBody: React.FC<TableColumnBrowserBodyProps> = ({
             pane now uses, for the same reason. */}
         <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
           {!focusedTable ? (
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--spacing-4)', fontSize: 12, color: 'var(--rd-sys-color-content-secondary)', textAlign: 'center' }}>Select a table to see its columns</div>
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--spacing-4)', fontSize: 'var(--font-size-xs)', color: 'var(--rd-sys-color-content-secondary)', textAlign: 'center' }}>Select a table to see its columns</div>
           ) : (
             <>
               {/* Header bar — same fixed-then-scrollable shape as the left
@@ -296,7 +296,7 @@ export const TableColumnBrowserBody: React.FC<TableColumnBrowserBodyProps> = ({
                   not part of what scrolls beneath it. */}
               {tableInfoMode === 'tab' ? (
                 <div style={{
-                  flexShrink: 0, height: PANEL_HEADER_HEIGHT, boxSizing: 'border-box', padding: '10px 12px',
+                  flexShrink: 0, height: PANEL_HEADER_HEIGHT, boxSizing: 'border-box', padding: '10px var(--spacing-3)',
                   display: 'flex', flexDirection: 'column', justifyContent: 'center',
                   borderBottom: '1px solid var(--rd-sys-color-border-divider)',
                 }}>
@@ -317,15 +317,15 @@ export const TableColumnBrowserBody: React.FC<TableColumnBrowserBodyProps> = ({
                 // — this one's naturally two lines tall, "Tables" is one, so
                 // that one centers vertically inside the same fixed height
                 // rather than the two bars ending up different sizes.
-                <div style={{ flexShrink: 0, height: PANEL_HEADER_HEIGHT, boxSizing: 'border-box', padding: '10px 12px', display: 'flex', flexDirection: 'column', justifyContent: 'center', borderBottom: '1px solid var(--rd-sys-color-border-divider)' }}>
+                <div style={{ flexShrink: 0, height: PANEL_HEADER_HEIGHT, boxSizing: 'border-box', padding: '10px var(--spacing-3)', display: 'flex', flexDirection: 'column', justifyContent: 'center', borderBottom: '1px solid var(--rd-sys-color-border-divider)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-2)' }}>
                     <Icon name="data-column" size="xs" color="var(--rd-sys-color-content-secondary)" />
-                    <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--rd-sys-color-content-primary)' }}>Columns</span>
+                    <span style={{ fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-semibold)', color: 'var(--rd-sys-color-content-primary)' }}>Columns</span>
                   </div>
                   {/* Indented past the icon (18px = xs icon width + spacing-2
                       gap) so the table name lines up under "Columns" itself,
                       not under the icon beside it. */}
-                  <div style={{ fontSize: 12, color: 'var(--rd-sys-color-content-secondary)', marginTop: 2, marginLeft: 18 }}>
+                  <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--rd-sys-color-content-secondary)', marginTop: 2, marginLeft: 18 }}>
                     {focusedTable}
                   </div>
                 </div>
@@ -334,7 +334,7 @@ export const TableColumnBrowserBody: React.FC<TableColumnBrowserBodyProps> = ({
                 {tableInfoMode === 'tab' && rightPaneTab === 'info' ? (
                   <TableInfoCard table={tableMetaOf(focusedTable)} />
                 ) : visibleCols.length === 0 ? (
-                  <div style={{ padding: 'var(--spacing-3) 0', fontSize: 12, color: 'var(--rd-sys-color-content-secondary)' }}>No columns match "{search}"</div>
+                  <div style={{ padding: 'var(--spacing-3) 0', fontSize: 'var(--font-size-xs)', color: 'var(--rd-sys-color-content-secondary)' }}>No columns match "{search}"</div>
                 ) : (
                   <>
                     {/* Select all — scoped to whatever's currently visible (the
@@ -347,7 +347,7 @@ export const TableColumnBrowserBody: React.FC<TableColumnBrowserBodyProps> = ({
                         onChange={next => visibleCols.forEach(c => onToggleColumn(focusedTable, c, next))}
                         showLabel={false}
                       />
-                      <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--rd-sys-color-content-secondary)' }}>Select all</span>
+                      <span style={{ fontSize: 'var(--font-size-xs)', fontWeight: 'var(--font-weight-medium)', color: 'var(--rd-sys-color-content-secondary)' }}>Select all</span>
                     </label>
                     {/* Single column (Komal, 2026-09-22: "I don't like the
                         double column stacking... make it single column") — the

@@ -541,9 +541,9 @@
      keep the plain 34px tab header. */
   .preview-bar-collapsed {
     width: 100%; height: 80px; box-sizing: border-box;
-    background: #fff; border: 1px solid #EAEDF2; border-radius: 10px;
-    box-shadow: 0 0 4px #1923311a, 0 2px 4px #1923310a;
-    display: flex; align-items: center; gap: 16px; padding: 0 18px;
+    background: var(--rd-sys-color-background-base); border: 1px solid var(--rd-sys-color-border-divider); border-radius: 10px;
+    box-shadow: var(--shadow-surface);
+    display: flex; align-items: center; gap: var(--spacing-4); padding: 0 18px;
     cursor: pointer;
   }
   .preview-bar-collapsed:hover .preview-bar-chevron {
@@ -2312,8 +2312,8 @@
    row-to-row rhythm as a margin — so a formula, filter or parameter row sits
    on exactly the same grid as a table row. */
 .dock-list {
-  padding-top: var(--spacing-2, 8px);
-  padding-bottom: var(--spacing-2, 8px);
+  padding-top: var(--spacing-2, var(--spacing-2));
+  padding-bottom: var(--spacing-2, var(--spacing-2));
 }
 
 .dock-list > [role="listitem"] {
@@ -2379,8 +2379,8 @@
 .dock-box {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-2, 8px);
-  padding: var(--spacing-2, 8px);
+  gap: var(--spacing-2, var(--spacing-2));
+  padding: var(--spacing-2, var(--spacing-2));
   background: var(--rd-sys-color-background-sunken);
 }
 .dock-box .dock-row {
@@ -2566,10 +2566,10 @@ body .model-info-popover {
   min-width: 220px;
   border-radius: var(--radius-lg);
   padding: var(--spacing-2) 0;
-  box-shadow: 0 8px 28px rgba(25, 35, 49, 0.14), 0 1px 4px rgba(25, 35, 49, 0.06);
+  box-shadow: var(--shadow-surface);
 }
 .sm-canvas-menu [role="menuitem"] {
-  padding: 10px 16px;
+  padding: 10px var(--spacing-4);
   font-size: var(--font-size-sm);
   line-height: var(--line-height-sm);
   color: var(--rd-sys-color-content-primary);

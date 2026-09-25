@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Radiant compliance audit — SearchDataOnDataModelFinal (Split)</title>
+<style>
+  :root {
+    --ink: #1D232F; --ink-2: #777E8B; --ink-3: #9AA5B8;
+    --brand: #2770EF; --line: #EAEDF2; --bg: #FFFFFF; --bg-2: #F6F8FA;
+    --ok: #1B8354; --warn: #B54708; --bad: #B42318;
+    --ok-bg: #EDFBF3; --warn-bg: #FFF6EB; --bad-bg: #FEF0EF;
+    --mono: "SF Mono", ui-monospace, Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg-2); color: var(--ink); font: 400 15px/1.6 -apple-system, "Helvetica Neue", sans-serif; }
+  .page { max-width: 980px; margin: 0 auto; padding: 48px 24px 96px; }
+  h1 { font-size: 26px; line-height: 1.25; margin: 0 0 6px; }
+  h2 { font-size: 19px; margin: 48px 0 12px; padding-top: 24px; border-top: 1px solid var(--line); }
+  h3 { font-size: 15px; margin: 24px 0 8px; }
+  p, li { color: #3a4354; }
+  .meta { color: var(--ink-2); font-size: 13px; margin-bottom: 32px; }
+  .card { background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 18px 20px; margin: 14px 0; }
+  table { width: 100%; border-collapse: collapse; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; font-size: 13.5px; margin: 12px 0; }
+  th { text-align: left; background: var(--bg-2); font-weight: 600; font-size: 12.5px; color: var(--ink-2); text-transform: none; }
+  th, td { padding: 8px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  code { font-family: var(--mono); font-size: 12.5px; background: var(--bg-2); border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px; white-space: nowrap; }
+  .pill { display: inline-block; font-size: 11.5px; font-weight: 600; border-radius: 999px; padding: 2px 10px; white-space: nowrap; }
+  .ok   { background: var(--ok-bg); color: var(--ok); }
+  .warn { background: var(--warn-bg); color: var(--warn); }
+  .bad  { background: var(--bad-bg); color: var(--bad); }
+  .neutral { background: var(--bg-2); color: var(--ink-2); border: 1px solid var(--line); }
+  .swatch { display: inline-block; width: 12px; height: 12px; border-radius: 3px; border: 1px solid rgba(0,0,0,.15); vertical-align: -1px; margin-right: 6px; }
+  .num { font-family: var(--mono); font-size: 12.5px; text-align: right; }
+  .small { font-size: 13px; color: var(--ink-2); }
+  ul { padding-left: 22px; margin: 8px 0; }
+  li { margin: 4px 0; }
+  .p0 { border-left: 3px solid var(--bad); padding-left: 14px; }
+  .p1 { border-left: 3px solid var(--warn); padding-left: 14px; }
+  .p2 { border-left: 3px solid var(--ink-3); padding-left: 14px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<h1>Radiant compliance audit — SearchDataOnDataModelFinal (Split)</h1>
+<div class="meta">25 Sep 2026 · audited at working-tree state (post filter-menu ruling, tooltip fix, Save Model rename) · tsc 511 (baseline), build green · goal: dev-handoff readiness</div>
+
+<div class="card" style="border-left: 3px solid var(--ok); background: var(--ok-bg);">
+<strong>Status — updated 25 Sep, evening.</strong> The token and component passes have RUN since this audit was written; the tables below are the morning's baseline, kept for reference. Executed: ~1,000 token replacements (colour incl. grey consolidation per Vivek's "few greys, from DS"; font family/sizes/weights with 13px→sm and 300→light rulings; spacing; radius; line-heights; shadows consolidated to surface/menu/modal/focus-ring). Icons: registry swaps landed inside ColMenuIcon + checkmark + the filled <code>funnel</code> state indicator; sort variants and a wrap glyph stay hand-drawn (no registry equivalent). Components: funnel menu and view dropdown are Radiant Menu; <strong>the toolbar's Radiant Button swap was tried and reverted</strong> — tertiary Button brand-colours its content, breaking the enabled=ink/disabled=tertiary contract, so TbBtn is a documented keep-custom. Column ▾ menu restructured to product parity (Sort ▸ submenu, Remove column, no Delete) but stays hand-rolled (hover submenus). Residual bare hexes are SVG illustration internals, the frozen As-is branch, and documented semantic keeps (type-colour triple, chart palette, Spotter gradient, brand tints). Corrections to below: dme.css's four <code>'Plain'</code> lines are @font-face definitions (never violations); the icon registry is far richer than Layer 3 claims (funnel/funnel-line/copy/pencil/eye-undo/conditional-format/number-format/trash-can/join-* all exist). Both P0 decisions RULED and implemented 25 Sep evening: the fx bar speaks the TS formula language (lowercase functions, TS syntax shapes; Excel-only functions dropped — verify <code>unique_count</code>/<code>cumulative_sum</code> spellings against the product's formula assist before demo), and labels follow DS sentence case ("Save model", "Promote filter to model" — bare "model" is generic per the terminology list; only "Data Model" as a feature name capitalizes).
+</div>
+
+<div class="card">
+<strong>Scope.</strong> The Split surface: canvas + cards + joins (<code>_datamodel/*</code>, <code>init-dme.js</code>, <code>dme.css</code>), spreadsheet + filter + formula behaviours (<code>QueryAsIs.tsx</code> + <code>.module.css</code>), modals (<code>FilterModal</code>, Save Model review, <code>TableBrowserModal</code>, <code>AddFiltersModal</code>), preview panel (<code>PreviewPanel3.tsx</code>), left-panel docks (in <code>SearchDataOnDataModelFinal.tsx</code>).
+<br><strong>Excluded:</strong> the frozen As-is branch (Komal's, do-not-edit), <code>Spreadsheet.tsx</code> (only its <code>DataSheetToolbar</code> is imported, and only by the Explorations surface — its 158 bare hexes and the unused <code>FilterValuesMenu</code> are not on this surface), DataStudio prototypes.
+</div>
+
+<h2>Readiness at a glance</h2>
+<table>
+<tr><th>Area</th><th>Tokens</th><th>Type</th><th>Components</th><th>Notes for handoff</th></tr>
+<tr><td>Filter modal (Select value for :)</td><td><span class="pill ok">clean</span></td><td><span class="pill ok">clean</span></td><td><span class="pill ok">Radiant</span></td><td>Best file on the surface — 0 bare hex, token imports throughout. Use as the reference for cleaning the rest.</td></tr>
+<tr><td>Save Model modal</td><td><span class="pill ok">clean</span></td><td><span class="pill ok">clean</span></td><td><span class="pill ok">Radiant</span></td><td>RdModal + Typography + Checkbox + TextArea; a couple of raw <code>4px 0</code> paddings.</td></tr>
+<tr><td>Left-panel docks</td><td><span class="pill ok">clean</span></td><td><span class="pill ok">clean</span></td><td><span class="pill ok">Radiant</span></td><td>List/Menu/AnchoredMenu/Icon; DockListRow's name is a styled native button by design.</td></tr>
+<tr><td>Cards + joins (shared _datamodel)</td><td><span class="pill ok">clean</span></td><td><span class="pill ok">clean</span></td><td><span class="pill warn">custom by design</span></td><td>0 bare hex; product-skin custom components are the point. Join lines/badges render through legacy init-dme DOM — port to React for dev.</td></tr>
+<tr><td>Canvas chrome (pills, menus, empty state)</td><td><span class="pill warn">mixed</span></td><td><span class="pill ok">clean</span></td><td><span class="pill ok">Radiant</span></td><td>Buttons + Menu ✓; pill recipe is inline-styled 3× — extract once; raw shadow rgba.</td></tr>
+<tr><td>Spreadsheet (grid, toolbar, menus)</td><td><span class="pill bad">heavy debt</span></td><td><span class="pill bad">heavy debt</span></td><td><span class="pill warn">mixed</span></td><td>205 bare hex in tsx + 91 in css; native toolbar buttons and column menus. Biggest handoff cost.</td></tr>
+<tr><td>Preview panel shell</td><td><span class="pill warn">mixed</span></td><td><span class="pill ok">minor</span></td><td><span class="pill ok">ok</span></td><td>51 bare hex; radius 10 raw; z-index 30 workaround documented below.</td></tr>
+<tr><td>Formula behaviour (fx bar)</td><td><span class="pill bad">debt</span></td><td><span class="pill bad">debt</span></td><td><span class="pill warn">native inputs</span></td><td><strong>Formula language ruling still open</strong> (fx bar speaks Excel, product is TS-native) — this is a handoff blocker, not a styling issue.</td></tr>
+<tr><td>AddFiltersModal + data browser (Komal, 25 Sep)</td><td><span class="pill ok">near-clean</span></td><td><span class="pill warn">minor</span></td><td><span class="pill ok">Radiant</span></td><td>1 bare hex; ~10 raw fontSize numbers.</td></tr>
+</table>
+
+<h2>Layer 1 · Colour tokens</h2>
+<p>Counting method: a hex inside <code>var(--token, #hex)</code> is a compliant fallback; a bare hex is a violation. The theme file defines a dark palette for every <code>--rd-sys-color-*</code> token — <strong>every bare hex is also a dark-mode break</strong>, which is the strongest argument for the sweep before handoff.</p>
+
+<table>
+<tr><th>File</th><th class="num">Bare hex</th><th class="num">Fallback hex (ok)</th><th class="num">rgb/rgba</th></tr>
+<tr><td><code>components/QueryAsIs.tsx</code></td><td class="num">205</td><td class="num">136</td><td class="num">12</td></tr>
+<tr><td><code>components/QueryAsIs.module.css</code></td><td class="num">91</td><td class="num">245</td><td class="num">—</td></tr>
+<tr><td><code>components/PreviewPanel3.tsx</code></td><td class="num">51</td><td class="num">2</td><td class="num">—</td></tr>
+<tr><td><code>init-dme.js</code> (legacy engine)</td><td class="num">17</td><td class="num">0</td><td class="num">—</td></tr>
+<tr><td><code>SearchDataOnDataModelFinal.tsx</code></td><td class="num">15</td><td class="num">2</td><td class="num">3</td></tr>
+<tr><td><code>dme.css</code></td><td class="num">9</td><td class="num">0</td><td class="num">5</td></tr>
+<tr><td><code>AddFiltersModal.tsx</code></td><td class="num">1</td><td class="num">3</td><td class="num">—</td></tr>
+<tr><td><code>FilterModal.tsx</code>, <code>TableColumnSidePanel.tsx</code>, <code>_datamodel/TableCard.*</code></td><td class="num">0</td><td class="num">—</td><td class="num">—</td></tr>
+</table>
+
+<h3>The mapping is mechanical for ~85% of them</h3>
+<p>The top recurring values are exact matches for existing tokens (counts = QueryAsIs tsx + css):</p>
+<table>
+<tr><th>Hardcoded</th><th class="num">Count</th><th>Replace with</th></tr>
+<tr><td><span class="swatch" style="background:#1d232f"></span><code>#1d232f</code></td><td class="num">128</td><td><code>var(--rd-sys-color-content-primary)</code></td></tr>
+<tr><td><span class="swatch" style="background:#eaedf2"></span><code>#eaedf2</code></td><td class="num">96</td><td><code>var(--rd-sys-color-border-divider)</code> (or <code>background-subtle</code> when used as a fill)</td></tr>
+<tr><td><span class="swatch" style="background:#fff"></span><code>#fff</code></td><td class="num">76</td><td><code>var(--rd-sys-color-background-base)</code></td></tr>
+<tr><td><span class="swatch" style="background:#2770ef"></span><code>#2770ef</code></td><td class="num">81</td><td><code>var(--rd-sys-color-content-brand)</code></td></tr>
+<tr><td><span class="swatch" style="background:#777e8b"></span><code>#777e8b</code></td><td class="num">62</td><td><code>var(--rd-sys-color-content-secondary)</code></td></tr>
+<tr><td><span class="swatch" style="background:#f6f8fa"></span><code>#f6f8fa</code></td><td class="num">10+</td><td><code>var(--rd-sys-color-background-sunken)</code></td></tr>
+<tr><td><span class="swatch" style="background:#c0c6cf"></span><code>#c0c6cf</code></td><td class="num">8+</td><td><code>border-default</code> / <code>content-tertiary</code> / <code>background-inset</code> — pick per role</td></tr>
+</table>
+
+<h3>Off-palette values that need a decision</h3>
+<p>These don't match any token; each needs a nearest-token call (or a deliberate keep, documented):
+<code>#6b7a99</code> (12×), <code>#f5f7fa</code> (32×), <code>#d0d5dd</code> (13×), <code>#9aa5b8</code> (8×), <code>#c8cdd6</code> (7×), <code>#1d2228</code> (9×), <code>#6b7280</code>. Most read as off-by-one greys — likely eyedropper artefacts from Figma rather than intentional.</p>
+
+<h3>Spacing, radius, shadows</h3>
+<ul>
+<li><strong>Spacing:</strong> ~58 raw-px padding/margin/gap in QueryAsIs.tsx inline styles, ~229 in its module.css. The 4px-base scale (<code>--spacing-1…</code>) covers nearly all of them.</li>
+<li><strong>Radius:</strong> raw <code>borderRadius: 8/6/4/12</code> across the sheet (<code>--radius-*</code> exists); one <code>7px</code> is a smell. PreviewPanel3's shell radius is a raw <code>10</code>.</li>
+<li><strong>Shadows:</strong> 33 raw <code>rgba(...)</code> box-shadows across the surface; the DS convention on this branch is <code>var(--shadow-surface)</code> (left pane, SpotterModel and the panel already use it).</li>
+</ul>
+
+<h2>Layer 2 · Typography</h2>
+<table>
+<tr><th>Check</th><th>State</th><th>Detail</th></tr>
+<tr><td>font-family</td><td><span class="pill ok">mostly ok</span></td><td><code>dme.css</code>: 70× <code>var(--font-family-primary)</code> ✓, 4× hardcoded <code>'Plain'</code> ✗. <code>QueryAsIs.module.css</code>: all 78 via var ✓. <code>QueryAsIs.tsx</code>: 22 inline <code>fontFamily</code> declarations ✗ (should inherit or use the token). Mono stacks (<code>SF Mono…</code>) for formula text are deliberate — document, don't token-ise.</td></tr>
+<tr><td>font-size</td><td><span class="pill bad">debt</span></td><td>87 raw numbers in QueryAsIs.tsx + 94 raw px in its css. Scale: <code>--font-size-xs</code> 12 / <code>sm</code> 14 / <code>md</code> 16 / <code>lg</code> 18. Sheet text is largely 12/13/14 — note <strong>13px has no token</strong>; decide 12 vs 14 per role or add a token.</td></tr>
+<tr><td>font-weight</td><td><span class="pill warn">mismatch</span></td><td>38 + 76 raw weights. Tokens: light 375 / regular 400 / medium 500 / semibold 600. <strong>15 uses of <code>font-weight: 300</code></strong> in QueryAsIs.module.css — 300 is not in the scale and renders lighter than Radiant's light (375). Dev handoff should map these to <code>--font-weight-light</code>.</td></tr>
+<tr><td>Typography component</td><td><span class="pill ok">where it matters</span></td><td>Save Model modal and docks use <code>Typography</code> variants ✓. The sheet uses raw spans (acceptable for a grid, but sizes should still come from tokens).</td></tr>
+</table>
+
+<h2>Layer 3 · Components</h2>
+
+<h3>Compliant (keep as-is)</h3>
+<ul>
+<li><strong>All modals are RdModal</strong> — FilterModal (M2), Save Model review (M1), TableBrowserModal, AddFiltersModal. Internals use SegmentedControl, Checkbox, Tooltip, Icon, Typography, TextArea.</li>
+<li><strong>Canvas menus are Radiant <code>Menu</code></strong> (card ••• and join-badge menus, via <code>.sm-canvas-menu</code> skin) with <code>AnchoredMenu</code> in the docks.</li>
+<li><strong>Canvas pills are Radiant <code>Button</code></strong> (Preview model data / Find / zoom).</li>
+<li><strong>Disabled pattern</strong> on the sheet toolbar: <code>aria-disabled</code> + muted colour + explain-why tooltip — good DS practice, keep it in the product build.</li>
+</ul>
+
+<h3>Native elements to swap (or consciously keep)</h3>
+<table>
+<tr><th>Where</th><th>Today</th><th>Handoff direction</th></tr>
+<tr><td>Sheet toolbar buttons (<code>TbBtn</code>)</td><td>native <code>&lt;button&gt;</code> + Tooltip</td><td><code>Button variant="tertiary" iconOnly</code> — one mechanical swap, 12 buttons.</td></tr>
+<tr><td>Column ▾ menu, funnel menu, view dropdown, fx suggestion dropdowns</td><td>hand-rolled fixed-position divs (incl. measure-and-flip logic, backdrop)</td><td><code>Menu</code> + <code>AnchoredMenu</code> gives flip + outside-click free. The keyboard navigation these menus lack today comes with it.</td></tr>
+<tr><td>Cell editor, rename input, fx bar input</td><td>native <code>&lt;input&gt;</code></td><td>Keep native — grid cell editing is a legitimate exception; document it.</td></tr>
+<tr><td>Pagination row</td><td>custom</td><td>Radiant <code>Pagination</code> exists — check fit before swapping (the sheet's is compact).</td></tr>
+<tr><td>Cards / joins / canvas</td><td>custom components + legacy <code>init-dme.js</code> DOM (lines, drag, zoom)</td><td>Cards/joins staying custom is the design. The init-dme layer (join geometry, drag math, <code>_addJoinManually</code>/<code>_removeJoinManually</code>) is prototype scaffolding — dev rebuild, not a port.</td></tr>
+</table>
+
+<h3>Icons</h3>
+<p>QueryAsIs.tsx carries 74 inline SVGs. Standing rule: icons come from the Radiant <code>Icon</code> registry. Split them three ways:</p>
+<ul>
+<li><strong>Swap — registry equivalents exist:</strong> funnel → <code>filter</code>, magnifier → <code>search</code>, <code>download</code>/<code>upload</code>, <code>chevron-up/down</code>, <code>more</code>, <code>plus</code>, <code>table</code>, <code>expand</code>/<code>fullscreen</code>, <code>formula</code> (the toolbar already uses <code>Icon name="formula"</code>; the col-menu <code>FxIcon</code> duplicates it inline).</li>
+<li><strong>No registry equivalent yet:</strong> sort-asc / sort-desc / advanced-sort / clear-sort (registry has only <code>sort</code>), filter-remove ✕, duplicate, rename. Either add to the DS or hand the SVGs over as specced assets.</li>
+<li><strong>Deliberately custom (keep):</strong> crow's-foot join ends, join capsule badge, the promote/demote arrows in the filter menu, grid dot pattern.</li>
+</ul>
+
+<h2>Layer 4 · Screens vs DS practice</h2>
+
+<h3>Copy & casing</h3>
+<ul>
+<li>DS rule is sentence case everywhere. Current labels with capital M: <strong>"Save Model"</strong>, <strong>"Promote filter to Model"</strong>, <strong>"Remove filter from Model"</strong>. These are your rulings from today — flagging only so the handoff records them as intentional (or normalises to "Save model" etc. — your call, one word).</li>
+<li>Buttons elsewhere are imperative and sentence case ✓ ("Preview model data", "Add filter", "Dismiss").</li>
+</ul>
+
+<h3>Filter behaviour (state machine, as ruled today)</h3>
+<ul>
+<li>Grey funnel = applied to preview only · blue = in the model. Menu: Edit filter · Promote filter to Model ⇄ Remove filter from Model · Delete filter (always last; on a model filter it removes from both).</li>
+<li>The modal's "Add this filter to this model" checkbox now appears in both creation options — seeded checked in direct mode, to current membership when editing. Unchecking on edit = remove from model, filter stays grey.</li>
+<li>Edge handled: out-of-scope filter configs go inert (never zero-out); deleting a filter's column scope survives re-entry via per-scope signatures.</li>
+<li>Dev note: promoted state derives from the model's filter list (single source of truth) — keep that derivation in the product build rather than duplicating a flag.</li>
+</ul>
+
+<h3>Formula behaviour</h3>
+<ul>
+<li><strong>Open ruling — handoff blocker:</strong> the fx bar speaks Excel-style (from the Spreadsheet Figma); the filter modal and the product's "Spreadsheet on live data" EA are TS-formula-language-native (docs 26.9.0.cl explicitly reject Excel syntax). Recommendation on file (grid-as-workbench.html): one language, two ergonomics. Needs your decision before dev picks this up.</li>
+<li>The fx-bar "Add to model" checkbox is now removed (user confusion); promotion paths are the column ▾ menu and the Save Model review sweep — both survive handoff cleanly.</li>
+<li>Validation exists (trailing-operator, empty states) but error presentation is a red outline only — DS error practice wants a message; spec it for dev.</li>
+</ul>
+
+<h3>Layering & overlays (fixed today, but document for dev)</h3>
+<ul>
+<li>The preview panel is a stacking context at z-index 30 so its modal overlays and menus beat the canvas pills (z 20). This works but is order-sensitive — the real fix for the product build is <strong>portal modals (and menus) to body</strong>; RdModal currently renders in place with a z-1000 overlay.</li>
+<li>Shared <code>Tooltip</code> shows on focus as well as hover; click-focus pinned tooltips until blur. Fixed locally by preventing click-focus on the sheet toolbar. The DS-level fix (show only on <code>:focus-visible</code>) would solve it for every consumer.</li>
+</ul>
+
+<h3>Accessibility quick pass</h3>
+<ul>
+<li>Good: aria-labels on funnel/chevron/toolbar buttons, <code>role="tooltip"</code>, aria-disabled pattern.</li>
+<li>Gaps for the product build: hand-rolled menus have no keyboard navigation or focus trap; the sheet grid has no roving tab-index; colour is the only promoted/preview signal on the funnel (blue vs grey) — pair with the menu labels it already has, fine, but note for a11y review.</li>
+</ul>
+
+<h2>Handoff checklist</h2>
+<div class="card p0">
+<strong>P0 — decide/fix before handoff</strong>
+<ul>
+<li>Formula language ruling (Excel vs TS-native in the fx bar) — blocks the formula spec.</li>
+<li>Colour sweep in <code>QueryAsIs.tsx</code> (205), <code>QueryAsIs.module.css</code> (91), <code>PreviewPanel3.tsx</code> (51) — mechanical for the top 7 values; decisions needed for the 7 off-palette greys. This is also the dark-mode fix.</li>
+<li>Casing decision: keep "Save Model / Promote filter to Model" capital-M copy, or normalise to sentence case.</li>
+</ul>
+</div>
+<div class="card p1">
+<strong>P1 — should land with handoff</strong>
+<ul>
+<li>font-weight 300 → <code>--font-weight-light</code> (15×); raw font sizes → token scale (settle the 13px question).</li>
+<li>TbBtn → Radiant Button; column/funnel/view menus → Menu + AnchoredMenu (brings keyboard support).</li>
+<li>Icon swaps where registry equivalents exist; hand over the 7 custom glyphs as assets or DS additions.</li>
+<li>Document the z-30 panel workaround + recommend RdModal portaling in the product build.</li>
+</ul>
+</div>
+<div class="card p2">
+<strong>P2 — polish</strong>
+<ul>
+<li>Extract the canvas-pill recipe (background/radius/shadow) to one shared style; shadows → <code>--shadow-surface</code>.</li>
+<li>Raw radii/spacing → token scale; kill the stray <code>7px</code> radius and <code>'Plain'</code> hardcodes in dme.css.</li>
+<li>fx error message spec; pagination component fit-check.</li>
+</ul>
+</div>
+
+<p class="small">Method: pattern sweeps (bare hex vs <code>var(--…, #hex)</code> fallback, raw font/spacing/radius/shadow values, inline SVG / native element counts) over the Split-surface files, cross-checked against <code>styles/tokens.css</code>, the icon registry, and the repo's content/design-system rules; component and behaviour review from the session's working knowledge of each screen. Frozen As-is branch and non-Split legacy (<code>Spreadsheet.tsx</code>) excluded.</p>
+
+</div>
+</body>
+</html>

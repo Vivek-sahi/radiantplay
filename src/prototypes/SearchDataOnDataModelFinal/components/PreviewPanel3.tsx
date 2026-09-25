@@ -151,10 +151,17 @@ const PreviewPanel3Optimized: React.FC<OptimizedProps> = ({
         right: PREVIEW_BAR_MARGIN,
         bottom: PREVIEW_BAR_MARGIN,
         height: open ? height : PREVIEW_BAR_HEIGHT,
-        zIndex: 3,
+        // Above the canvas's own floating controls (the Preview-model-data /
+        // Find / zoom pills sit at zIndex 20 in .model-canvas). This panel is
+        // a stacking context, so everything inside it — the Add-filter
+        // modal's fixed overlay (z 1000), the column menus (z 400) — competes
+        // at the PANEL's z against those pills; at 3 they painted underneath
+        // (2026-09-25, Vivek: "these actions should be behind the overlay",
+        // "the menu should open on top of the buttons").
+        zIndex: 30,
         borderRadius: 10,
         background: open ? 'var(--rd-sys-color-background-base)' : 'transparent',
-        border: open ? '1px solid #EAEDF2' : 'none',
+        border: open ? '1px solid var(--rd-sys-color-border-divider)' : 'none',
         // var(--shadow-surface) unconditionally, not just while open (Komal,
         // 2026-09-17: "preview panel should also use the same shadow when
         // collapsed") — this is also the one all the OTHER panels (left pane,
@@ -178,7 +185,7 @@ const PreviewPanel3Optimized: React.FC<OptimizedProps> = ({
           // .preview-panel's white background here, leaving a sliver of
           // white above the tab bar's grey (#F6F8FA) — filled in to match
           // instead, without touching the shared class (As-is keeps transparent).
-          style={{ background: '#F6F8FA' }}
+          style={{ background: 'var(--rd-sys-color-background-sunken)' }}
           onPointerDown={e => {
             e.preventDefault();
             const startY = e.clientY;
@@ -244,20 +251,20 @@ const PreviewPanel3Optimized: React.FC<OptimizedProps> = ({
                 </svg>
               )}
             </span>
-            <span style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1, textAlign: 'left' }}>
-              <span style={{ fontSize: 16, fontWeight: 600, color: '#1D232F', letterSpacing: '-0.3px' }}>
+            <span style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-1)', flex: 1, textAlign: 'left' }}>
+              <span style={{ fontSize: 'var(--font-size-md)', fontWeight: 'var(--font-weight-semibold)', color: 'var(--rd-sys-color-content-primary)', letterSpacing: '-0.3px' }}>
                 {hideQueryTab ? 'Preview your data' : 'Preview and test your data'}
               </span>
-              <span style={{ fontSize: 13, color: '#777E8B' }}>
+              <span style={{ fontSize: 'var(--font-size-sm)', color: 'var(--rd-sys-color-content-secondary)' }}>
                 {hideQueryTab ? 'See the rows behind your model as you build it' : 'See the rows behind your model before anyone else does'}
               </span>
             </span>
-            <span className="preview-bar-chevron" style={{ width: 30, height: 30, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748B', flexShrink: 0 }}>
+            <span className="preview-bar-chevron" style={{ width: 30, height: 30, borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748B', flexShrink: 0 }}>
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 9.5L8 5.5l4 4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg>
             </span>
           </button>
       ) : (
-      <div style={{ height: 34, display: 'flex', alignItems: 'center', padding: '0 12px', gap: 12, flexShrink: 0, background: '#F6F8FA', borderBottom: '1px solid #EAEDF2' }}>
+      <div style={{ height: 34, display: 'flex', alignItems: 'center', padding: '0 var(--spacing-3)', gap: 'var(--spacing-3)', flexShrink: 0, background: 'var(--rd-sys-color-background-sunken)', borderBottom: '1px solid var(--rd-sys-color-border-divider)' }}>
         {/* Three-region flex: equal flex:1 on both flanks with the control as a
             plain child between them, so it lands at the true centre of the row
             regardless of how wide the right-hand buttons are. Same technique as
@@ -270,7 +277,7 @@ const PreviewPanel3Optimized: React.FC<OptimizedProps> = ({
               "Spreadsheet" (2026-09-24, Vivek), the grid-as-workbench framing.
               Combined keeps this flank blank exactly as before. */}
           {hideQueryTab && (
-            <span style={{ fontSize: 13, fontWeight: 600, color: '#1D232F' }}>Spreadsheet</span>
+            <span style={{ fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-semibold)', color: 'var(--rd-sys-color-content-primary)' }}>Spreadsheet</span>
           )}
         </div>
         {!hideQueryTab ? (
@@ -297,7 +304,7 @@ const PreviewPanel3Optimized: React.FC<OptimizedProps> = ({
             onPickModel={() => { setScope('model'); setSelectedTable(''); setJoin(null); }}
           />
         )}
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 12 }}>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 'var(--spacing-3)' }}>
           <button
             type="button"
             className="preview-icon-btn"
@@ -408,7 +415,7 @@ const PreviewPanel3AsIs: React.FC<BranchProps> = ({
         />
       )}
 
-      <div style={{ height: 34, display: 'flex', alignItems: 'center', padding: '0 12px', gap: 12, flexShrink: 0, background: '#F6F8FA', borderBottom: '1px solid #EAEDF2' }}>
+      <div style={{ height: 34, display: 'flex', alignItems: 'center', padding: '0 12px', gap: 12, flexShrink: 0, background: 'var(--rd-sys-color-background-sunken)', borderBottom: '1px solid #EAEDF2' }}>
         <div style={{ display: 'flex', alignItems: 'stretch', gap: 24, height: 34, flexShrink: 0 }}>
           {([['query', 'Query'], ['preview', 'Spreadsheet']] as const).map(([tab, label]) => (
             <button
@@ -417,10 +424,10 @@ const PreviewPanel3AsIs: React.FC<BranchProps> = ({
               onClick={() => setPanelTab(tab)}
               style={{
                 height: 34, padding: '0 1px',
-                border: 'none', boxShadow: panelTab === tab ? 'inset 0 -2px 0 #2770EF' : 'inset 0 -2px 0 transparent',
+                border: 'none', boxShadow: panelTab === tab ? 'inset 0 -2px 0 var(--rd-sys-color-content-brand)' : 'inset 0 -2px 0 transparent',
                 background: 'transparent', cursor: 'pointer',
                 fontSize: 14, letterSpacing: '-0.1px', fontWeight: panelTab === tab ? 600 : 500,
-                color: panelTab === tab ? '#2770EF' : '#777E8B',
+                color: panelTab === tab ? 'var(--rd-sys-color-content-brand)' : 'var(--rd-sys-color-content-secondary)',
                 transition: 'color 150ms cubic-bezier(0.4,0,0.2,1), box-shadow 150ms cubic-bezier(0.4,0,0.2,1)', whiteSpace: 'nowrap',
               }}
             >{label}</button>
