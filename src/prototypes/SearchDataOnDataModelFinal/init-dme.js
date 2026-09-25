@@ -350,10 +350,14 @@ export function initDME() {
     });
   }
 
+  // 2026-09-25: card is 220×132 with the product skin; gaps widened so join
+  // lines, badges and crow's feet live in the gutters, never over a card
+  // (Vivek: "increase the space in between the cards, but lines should not
+  // come in card").
   const CARD_W        = 220;
-  const CARD_H        = 100;
-  const CARD_COL_GAP  = 280;
-  const CARD_ROW_GAP  = 180;
+  const CARD_H        = 132;
+  const CARD_COL_GAP  = 360;
+  const CARD_ROW_GAP  = 230;
   const CARD_ORIGIN_X = 40;
   const CARD_ORIGIN_Y = 40;
 
@@ -1755,21 +1759,48 @@ Only include the context field when there is genuinely meaningful content from t
   window._addJoinManually = function(join) {
     const state = window._modelState;
     if (!join || !join.leftTable || !join.rightTable) return;
-    const exists = state.model.joins.some(j =>
+    const existing = state.model.joins.find(j =>
       (j.leftTable === join.leftTable && j.rightTable === join.rightTable) ||
       (j.leftTable === join.rightTable && j.rightTable === join.leftTable)
     );
-    if (exists) return;
-    state.model.joins.push({
-      name: `Join ${state.model.joins.length + 1}`,
-      desc: '',
-      leftTable:   join.leftTable,
-      leftCol:     join.leftCol,
-      cardinality: join.cardinality,
-      rightTable:  join.rightTable,
-      rightCol:    join.rightCol,
-    });
-    state.addedJoins.push(`${join.leftTable}-${join.rightTable}`);
+    if (existing) {
+      // Editing an existing join (badge menu → Edit join, 2026-09-25):
+      // update its columns/cardinality in place instead of the old silent
+      // early-return, which made the Edit Join dialog's Save a no-op.
+      existing.leftTable   = join.leftTable;
+      existing.leftCol     = join.leftCol;
+      existing.cardinality = join.cardinality;
+      existing.rightTable  = join.rightTable;
+      existing.rightCol    = join.rightCol;
+    } else {
+      state.model.joins.push({
+        name: `Join ${state.model.joins.length + 1}`,
+        desc: '',
+        leftTable:   join.leftTable,
+        leftCol:     join.leftCol,
+        cardinality: join.cardinality,
+        rightTable:  join.rightTable,
+        rightCol:    join.rightCol,
+      });
+      state.addedJoins.push(`${join.leftTable}-${join.rightTable}`);
+    }
+    window._pendingManualChanges = true;
+    rebuildTablesCanvas();
+    rebuildColumnPane();
+  };
+
+  // Join removed from the canvas (join badge menu → Delete join, 2026-09-25).
+  // Mirrors _addJoinManually: mutate the model, then rebuild so the line and
+  // badge disappear. The preview panel's own scope-gone machinery turns a
+  // previewed-then-deleted join into its "No longer in the model" state.
+  window._removeJoinManually = function(leftTable, rightTable) {
+    const state = window._modelState;
+    state.model.joins = state.model.joins.filter(j =>
+      !((j.leftTable === leftTable && j.rightTable === rightTable) ||
+        (j.leftTable === rightTable && j.rightTable === leftTable))
+    );
+    state.addedJoins = state.addedJoins.filter(k =>
+      k !== `${leftTable}-${rightTable}` && k !== `${rightTable}-${leftTable}`);
     window._pendingManualChanges = true;
     rebuildTablesCanvas();
     rebuildColumnPane();

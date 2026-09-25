@@ -724,6 +724,9 @@ export interface FilterValuesMenuProps {
    * Filters left-panel list. Checked = permanently added there. */
   addToModel: boolean;
   onAddToModelChange: (v: boolean) => void;
+  /** Split preview's "direct to model" creation option — every Apply goes to
+   * the model, so the checkbox row would be a lie and is dropped entirely. */
+  hideAddToModel?: boolean;
   onApply: () => void;
   onCancel: () => void;
 }
@@ -731,7 +734,7 @@ export interface FilterValuesMenuProps {
 export function FilterValuesMenu({
   menu, columnLabel, values, selected, mode, onModeChange,
   onToggleValue, onToggleAll, search, onSearchChange,
-  addToModel, onAddToModelChange, onApply, onCancel,
+  addToModel, onAddToModelChange, hideAddToModel, onApply, onCancel,
 }: FilterValuesMenuProps) {
   const q = search.trim().toLowerCase();
   const shown = q ? values.filter(v => v.toLowerCase().includes(q)) : values;
@@ -800,6 +803,7 @@ export function FilterValuesMenu({
             </label>
           ))}
         </div>
+        {!hideAddToModel && (
         <label style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px 0', borderTop: BORDER, cursor: 'pointer', flexShrink: 0 }}>
           <input
             type="checkbox"
@@ -809,6 +813,7 @@ export function FilterValuesMenu({
           />
           <span style={{ fontSize: 12, color: '#1D232F' }}>Add this filter to this model</span>
         </label>
+        )}
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, padding: '10px 14px', flexShrink: 0 }}>
           <button
             onClick={onCancel}

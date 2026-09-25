@@ -25,6 +25,15 @@ export interface JoinConnectorProps {
   // join badge. SearchDataOnDataModelFinal's explicit-preview direction only
   // (2026-09-23); omit to keep every other consumer's badges unchanged.
   onPreviewJoin?: (join: JoinInfo) => void;
+  // Additive, opt-in (2026-09-24, the eye-icon direction): a badge click opens
+  // the consumer's join menu (Preview / Edit join / Delete join) instead of
+  // selecting directly — matching the product's join-click behaviour. Line
+  // clicks keep onSelectJoin. Omitted, badges select as before.
+  onJoinMenu?: (join: JoinInfo, e: React.MouseEvent) => void;
+  // Product-reference visual skin (2026-09-25): light grey line instead of
+  // content-primary, plus a crow's foot where the line meets the right table
+  // — matching the product screenshot. Omitted, lines render as before.
+  skin?: 'product';
 }
 
 export function joinKey(j: JoinInfo): string {
@@ -111,7 +120,7 @@ function elbowPath(
 
 const OFFSET_STEP = 12;
 
-const JoinConnector: React.FC<JoinConnectorProps> = ({ joins, cardRects, selectedJoinKey, onSelectJoin, onPreviewJoin }) => {
+const JoinConnector: React.FC<JoinConnectorProps> = ({ joins, cardRects, selectedJoinKey, onSelectJoin, onPreviewJoin, onJoinMenu, skin }) => {
   const interactive = !!onSelectJoin;
   type Resolved = { j: JoinInfo; rectA: CardRect; rectB: CardRect; edgeA: Edge; edgeB: Edge };
 
@@ -139,7 +148,7 @@ const JoinConnector: React.FC<JoinConnectorProps> = ({ joins, cardRects, selecte
   });
 
   // Pass 3: compute paths and badge midpoints
-  const paths: Array<{ d: string; j: JoinInfo }> = [];
+  const paths: Array<{ d: string; j: JoinInfo; footD?: string }> = [];
   const badges: Array<{ x: number; y: number; j: JoinInfo }> = [];
 
   resolved.forEach(({ j, rectA, rectB, edgeA, edgeB }) => {
@@ -158,8 +167,29 @@ const JoinConnector: React.FC<JoinConnectorProps> = ({ joins, cardRects, selecte
       edgesA[edgeA], edgeA, offset1,
       edgesB[edgeB], edgeB, offset2
     );
-    paths.push({ d, j });
-    badges.push({ x: Math.round(midX - 16), y: Math.round(midY - 7), j });
+    // Product skin: crow's foot where the line meets the right table's edge —
+    // two angled prongs to either side of the entry point (the line itself is
+    // the middle prong), fanned along the edge like the reference screenshot.
+    let footD: string | undefined;
+    if (skin === 'product') {
+      const isHorizB = edgeB === 'left' || edgeB === 'right';
+      const ex = edgesB[edgeB].x + (isHorizB ? 0 : offset2);
+      const ey = edgesB[edgeB].y + (isHorizB ? offset2 : 0);
+      // All three prongs land exactly on the card edge, like the product
+      // (2026-09-25, Vivek: "the central line is, the other 2 are not") —
+      // the earlier float came from stale card widths, fixed in cardRects.
+      const stem = 12, fan = 7;
+      if (edgeB === 'left')   footD = `M ${ex - stem} ${ey} L ${ex} ${ey - fan} M ${ex - stem} ${ey} L ${ex} ${ey + fan}`;
+      if (edgeB === 'right')  footD = `M ${ex + stem} ${ey} L ${ex} ${ey - fan} M ${ex + stem} ${ey} L ${ex} ${ey + fan}`;
+      if (edgeB === 'top')    footD = `M ${ex} ${ey - stem} L ${ex - fan} ${ey} M ${ex} ${ey - stem} L ${ex + fan} ${ey}`;
+      if (edgeB === 'bottom') footD = `M ${ex} ${ey + stem} L ${ex - fan} ${ey} M ${ex} ${ey + stem} L ${ex + fan} ${ey}`;
+    }
+    paths.push({ d, j, footD });
+    // Badge centred on the line's midpoint — the product-skin capsule is
+    // 40×22, the legacy Join UI.svg is 32×14.
+    badges.push(skin === 'product'
+      ? { x: Math.round(midX - 20), y: Math.round(midY - 11), j }
+      : { x: Math.round(midX - 16), y: Math.round(midY - 7), j });
   });
 
   return (
@@ -184,11 +214,21 @@ const JoinConnector: React.FC<JoinConnectorProps> = ({ joins, cardRects, selecte
               )}
               <path
                 d={p.d}
-                stroke={selected ? 'var(--rd-sys-color-content-brand, #2770EF)' : 'currentColor'}
+                stroke={selected ? 'var(--rd-sys-color-content-brand, #2770EF)' : skin === 'product' ? 'var(--rd-sys-color-border-default, #d5dae2)' : 'currentColor'}
                 strokeWidth={selected ? 2 : 1.5}
                 fill="none"
                 style={{ pointerEvents: 'none' }}
               />
+              {p.footD && (
+                <path
+                  d={p.footD}
+                  stroke={selected ? 'var(--rd-sys-color-content-brand, #2770EF)' : 'var(--rd-sys-color-border-default, #d5dae2)'}
+                  strokeWidth={selected ? 2 : 1.5}
+                  strokeLinecap="round"
+                  fill="none"
+                  style={{ pointerEvents: 'none' }}
+                />
+              )}
             </g>
           );
         })}
@@ -196,17 +236,36 @@ const JoinConnector: React.FC<JoinConnectorProps> = ({ joins, cardRects, selecte
       {badges.map((b, i) => (
         <div
           key={i}
-          onClick={interactive ? () => onSelectJoin?.(b.j) : undefined}
-          style={{ position: 'absolute', left: b.x, top: b.y, zIndex: 1, pointerEvents: interactive || onPreviewJoin ? 'auto' : 'none', cursor: interactive ? 'pointer' : undefined }}
+          onClick={onJoinMenu ? e => { e.stopPropagation(); onJoinMenu(b.j, e); } : interactive ? () => onSelectJoin?.(b.j) : undefined}
+          style={{ position: 'absolute', left: b.x, top: b.y, zIndex: 1, pointerEvents: interactive || onPreviewJoin || onJoinMenu ? 'auto' : 'none', cursor: interactive || onJoinMenu ? 'pointer' : undefined }}
         >
-          <img src="/spotter-assets/Join UI.svg" width="32" height="14" alt="join" />
+          {skin === 'product' ? (
+            // Product-reference badge (2026-09-25, Vivek's screenshot): a
+            // white capsule with Radiant's inner-join rings — replacing the
+            // legacy two-glyph Join UI.svg.
+            <div style={{
+              width: 40, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'var(--rd-sys-color-background-base, #fff)',
+              // Capsule stroke matches the join line; only the rings stay ink
+              // (2026-09-25, Vivek).
+              border: '1.5px solid var(--rd-sys-color-border-default, #d5dae2)', borderRadius: 11, boxSizing: 'border-box',
+              color: 'var(--rd-sys-color-content-primary, #1d232f)',
+            }}>
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                <path fillRule="evenodd" clipRule="evenodd" d="M4.66667 10.1111C6.38489 10.1111 7.77778 8.71823 7.77778 7.00001C7.77778 5.28179 6.38489 3.8889 4.66667 3.8889C2.94845 3.8889 1.55556 5.28179 1.55556 7.00001C1.55556 8.71823 2.94845 10.1111 4.66667 10.1111ZM4.66667 11.6667C7.24399 11.6667 9.33333 9.57734 9.33333 7.00001C9.33333 4.42268 7.24399 2.33334 4.66667 2.33334C2.08934 2.33334 0 4.42268 0 7.00001C0 9.57734 2.08934 11.6667 4.66667 11.6667Z" fill="currentColor"/>
+                <path fillRule="evenodd" clipRule="evenodd" d="M9.33333 10.1111C11.0516 10.1111 12.4444 8.71823 12.4444 7.00001C12.4444 5.28179 11.0516 3.8889 9.33333 3.8889C7.61511 3.8889 6.22222 5.28179 6.22222 7.00001C6.22222 8.71823 7.61511 10.1111 9.33333 10.1111ZM9.33333 11.6667C11.9107 11.6667 14 9.57734 14 7.00001C14 4.42268 11.9107 2.33334 9.33333 2.33334C6.75601 2.33334 4.66667 4.42268 4.66667 7.00001C4.66667 9.57734 6.75601 11.6667 9.33333 11.6667Z" fill="currentColor"/>
+              </svg>
+            </div>
+          ) : (
+            <img src="/spotter-assets/Join UI.svg" width="32" height="14" alt="join" />
+          )}
           {onPreviewJoin && (
             <button
               type="button"
               onClick={e => { e.stopPropagation(); onPreviewJoin(b.j); }}
               title="Preview join data"
               style={{
-                position: 'absolute', left: 36, top: -3, width: 20, height: 20,
+                position: 'absolute', left: skin === 'product' ? 44 : 36, top: skin === 'product' ? 1 : -3, width: 20, height: 20,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 border: '1px solid var(--rd-sys-color-border-default, #d5dae2)', borderRadius: 10,
                 background: 'var(--rd-sys-color-background-base, #fff)', cursor: 'pointer', padding: 0,

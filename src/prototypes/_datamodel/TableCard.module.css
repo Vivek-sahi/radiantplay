@@ -15,6 +15,45 @@
   box-sizing: border-box;
 }
 
+/* Product-reference skin (2026-09-25, opt-in via the skin="product" prop):
+   the card as the product screenshot shows it — light grey border, larger
+   radius, roomier padding and type. Declared before .dragging/.selected so
+   drag shadow, selection and hover borders still win. Other consumers
+   (DataModelEditor, explorations, CoachingScreen) keep the original card. */
+.skinProduct {
+  width: 220px;
+  height: 132px;
+  border-color: var(--rd-sys-color-border-default);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-4);
+  /* The card body has no click action (2026-09-25) — plain arrow at rest;
+     .dragging's grabbing cursor still wins during a drag. */
+  cursor: default;
+}
+.skinProduct .label {
+  font-size: var(--font-size-sm);
+  letter-spacing: 0;
+  line-height: var(--line-height-sm);
+}
+.skinProduct .name {
+  font-size: var(--font-size-md);
+  letter-spacing: -0.08px;
+  line-height: var(--line-height-md);
+}
+.skinProduct .colCount {
+  font-size: var(--font-size-sm);
+  letter-spacing: 0;
+  line-height: var(--line-height-sm);
+}
+
+/* Click-primary cards (additive, opt-in via the clickPrimary prop): the
+   resting cursor says "clickable" — the drag affordance is the canvas
+   convention + the movement threshold, not a grab hand at rest. Declared
+   before .dragging so the closed hand still wins during an actual drag. */
+.clickPrimary {
+  cursor: pointer;
+}
+
 .dragging {
   cursor: grabbing;
   box-shadow: var(--shadow-lg);
@@ -43,17 +82,27 @@
 }
 
 .menu {
-  width: 16px;
-  height: 16px;
+  width: 20px;
+  height: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   background: none;
   border: none;
+  border-radius: var(--radius-full, 999px);
   padding: 0;
   flex-shrink: 0;
   color: var(--rd-sys-color-content-primary);
+}
+/* Neutral interaction states (2026-09-25): the product's dots show no blue
+   fill — hover/press/focus get a quiet grey circle instead. */
+.menu:hover,
+.menu:active,
+.menu:focus,
+.menu:focus-visible {
+  outline: none;
+  background: var(--rd-sys-color-background-sunken);
 }
 
 .name {
@@ -86,6 +135,9 @@
 
 .joinHandle {
   position: absolute;
+  /* Above the join lines (svg z0) and badges (z1) — it's an action
+     (2026-09-25, Vivek: "the join + icon should come on top of the lines"). */
+  z-index: 2;
   right: calc(-1 * var(--spacing-3));
   top: 50%;
   transform: translateY(-50%);

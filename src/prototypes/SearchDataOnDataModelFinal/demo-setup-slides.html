@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spreadsheet &lt;&gt; Canvas interaction and Spreadsheet actions update</title>
+<style>
+  :root { --ink:#1d232f; --muted:#6b7280; --line:#e8eaef; --accent:#2770ef; --bg:#fff; --subtle:#f6f8fa; --amber:#b45309; }
+  * { box-sizing:border-box; margin:0; }
+  html, body { height:100%; }
+  body { background:#0f1217; font:16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color:var(--ink); overflow:hidden; }
+  .deck { height:100%; display:flex; transition:transform .3s ease; }
+  .slide { width:100vw; height:100%; flex-shrink:0; display:flex; align-items:center; justify-content:center; padding:32px; }
+  .frame { width:min(1180px, 96vw); aspect-ratio:16/9; max-height:92vh; background:var(--bg); border-radius:12px; padding:52px 60px; display:flex; flex-direction:column; overflow:hidden; }
+  .kicker { font-size:12.5px; text-transform:uppercase; letter-spacing:1px; color:var(--muted); font-weight:600; margin-bottom:10px; }
+  h1 { font-size:32px; letter-spacing:-0.4px; line-height:1.15; margin-bottom:32px; }
+  .sub { font-size:15.5px; color:var(--muted); margin-bottom:26px; }
+  h3 { font-size:13px; text-transform:uppercase; letter-spacing:0.7px; color:var(--muted); margin-bottom:10px; }
+  ul { list-style:none; }
+  li { padding-left:16px; position:relative; margin-bottom:9px; font-size:15.5px; }
+  li::before { content:''; position:absolute; left:0; top:9px; width:6px; height:6px; border-radius:50%; background:var(--accent); }
+  li b { font-weight:600; }
+  .cols { display:grid; grid-template-columns:1fr 1fr; gap:36px; flex:1; min-height:0; }
+  .foot { margin-top:auto; padding-top:16px; font-size:13.5px; color:var(--muted); }
+  .q { margin-bottom:18px; }
+  .q .qt { font-weight:600; font-size:16.5px; margin-bottom:4px; }
+  .q .why { font-size:14.5px; color:var(--muted); }
+  .opt { border:1px solid var(--line); border-radius:10px; padding:18px 22px; display:flex; flex-direction:column; }
+  .opt-title { font-weight:600; font-size:16.5px; margin-bottom:10px; }
+  .opt-title .n { color:var(--accent); margin-right:8px; }
+  .opt ul { margin-bottom:0; }
+  .opt li { font-size:14px; margin-bottom:6px; }
+  .opt li.cost::before { background:var(--amber); }
+  .opt .prec { margin-top:auto; padding-top:10px; font-size:12.5px; color:var(--muted); }
+  .reco { background:var(--subtle); border-left:3px solid var(--accent); border-radius:0 8px 8px 0; padding:14px 20px; font-size:16.5px; margin-top:auto; }
+  .title-frame { justify-content:center; }
+  .title-frame h1 { font-size:44px; margin-bottom:12px; }
+  .title-frame .sub { font-size:18px; margin:0; }
+  .nav { position:fixed; bottom:18px; right:26px; color:#8b93a2; font-size:12.5px; user-select:none; }
+</style>
+</head>
+<body>
+<div class="deck" id="deck">
+
+  <!-- 1 · Title -->
+  <section class="slide">
+    <div class="frame title-frame">
+      <h1>Spreadsheet &lt;&gt; Canvas interaction and Spreadsheet actions update</h1>
+    </div>
+  </section>
+
+  <!-- 2 · Interaction model (closing) -->
+  <section class="slide">
+    <div class="frame">
+      <h1>Spreadsheet &lt;&gt; canvas interaction model</h1>
+      <div class="cols">
+        <div>
+          <h3>Proposed model</h3>
+          <ul>
+            <li>Don't default to model.</li>
+            <li>Clicking on card to trigger preview.</li>
+            <li>Have an explicit model preview button.</li>
+            <li>Clicking on the canvas doesn't change the preview.</li>
+            <li>How to refresh data needs to be discussed with engg once.</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Why not the eye icon</h3>
+          <ul>
+            <li>In majority cases, users will want to see the data in the object, so we should make that path easier.</li>
+            <li>Other tasks like join, remove won't happen often, so we should keep them in a triple dot menu.</li>
+            <li>For drag, there is an established behaviour: you click on an object and hold to drag. Hence we should not worry about drag.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 · Spreadsheet actions (open) -->
+  <section class="slide">
+    <div class="frame">
+      <h1>Spreadsheet actions</h1>
+      <div class="q">
+        <div class="qt">On what level can the user take actions?</div>
+        <div class="why">Current canvas allows only model level. But we should not impose this behaviour on spreadsheet. In spreadsheet, users will apply filter and formula or any other action on the columns they're seeing. They should be allowed to act on the data that is in front of them without requiring to switch to a model view.</div>
+      </div>
+      <div class="q">
+        <div class="qt">Does a spreadsheet performed action get added to the model or is it treated as only exploratory?</div>
+        <div class="why">Is the user doing disposable calculation/explorations or are they modeling?</div>
+      </div>
+      <div class="cols" style="flex:1; min-height:0; gap:24px;">
+        <div class="opt">
+          <div class="opt-title"><span class="n">Option 1</span>Every user action is promoted to the model level.</div>
+          <ul>
+            <li>Hunch is with data preview available, more and more user action will get initiated from the data preview. Requiring an extra step to promote adds extra friction in that path.</li>
+            <li>Values show up in left panel model inventory serving as instant feedback for user.</li>
+            <li>The behavior is same from everywhere. Whatever you're doing, you're modeling. If you don't want, you can remove. It is not being auto-published, there is a save button so there is no risk of it causing pollution.</li>
+          </ul>
+        </div>
+        <div class="opt">
+          <div class="opt-title"><span class="n">Option 2</span>Action from spreadsheet are treated as disposable action that require a promote step.</div>
+          <ul>
+            <li>If most user actions are just ad-hoc explorations and not for the final model then option 2 is better.</li>
+            <li>But this also introduces a separate state where an action is performed and not promoted and then we'll need to design a path for promotion to model. Either with the save modal or inline with the actions.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+</div>
+<div class="nav">← → to move · 1/3</div>
+<script>
+  let i = 0;
+  const N = 3;
+  const deck = document.getElementById('deck');
+  const nav = document.querySelector('.nav');
+  const go = n => { i = Math.max(0, Math.min(N - 1, n)); deck.style.transform = `translateX(${-i * 100}vw)`; nav.textContent = `← → to move · ${i + 1}/${N}`; };
+  addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') go(i + 1);
+    if (e.key === 'ArrowLeft' || e.key === 'PageUp') go(i - 1);
+  });
+  addEventListener('click', () => go(i + 1));
+</script>
+</body>
+</html>

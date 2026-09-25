@@ -2558,3 +2558,19 @@ body .model-info-popover {
   padding: var(--spacing-2) var(--spacing-3);
   font-size: var(--font-size-xs);
 }
+
+/* ── Canvas menus (2026-09-25) — product-reference density for the table
+   card and join badge menus: sm type, primary ink, soft radius, quiet
+   shadow. Scoped by class so every other Radiant Menu keeps its defaults. ── */
+.sm-canvas-menu {
+  min-width: 220px;
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-2) 0;
+  box-shadow: 0 8px 28px rgba(25, 35, 49, 0.14), 0 1px 4px rgba(25, 35, 49, 0.06);
+}
+.sm-canvas-menu [role="menuitem"] {
+  padding: 10px 16px;
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-sm);
+  color: var(--rd-sys-color-content-primary);
+}

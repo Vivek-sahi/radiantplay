@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import ReactDOM from 'react-dom';
+import { FilterModal, SheetFilter, FilterKind, newFilter, describeFilter, cellPassesFilter } from './FilterModal';
 import { useVersion } from './queryAsIsDeps/VersionController';
 import { SpotterIcon } from '@components/icons/icons/Spotter';
 import { Button } from '@components/Button';
@@ -669,22 +670,69 @@ const DotsLoader: React.FC = () => (
 // Spreadsheet-style layout: toolbar + formula bar + column headers + data rows + pagination.
 
 // Toolbar icon button helper
-const TbBtn: React.FC<{ children: React.ReactNode; label?: string; onClick?: () => void }> = ({ children, label, onClick }) => (
-  <Tooltip content={label ?? ''} placement="top" showDelay={400}>
+const TbBtn: React.FC<{ children: React.ReactNode; label?: string; onClick?: () => void; disabled?: boolean; disabledTooltip?: string }> = ({ children, label, onClick, disabled, disabledTooltip }) => {
+  // A button with no handler is inert chrome — it reads as disabled too
+  // (2026-09-25, Vivek: "you can disable some of them").
+  const isDisabled = disabled || !onClick;
+  return (
+  <Tooltip content={disabled ? (disabledTooltip ?? label ?? '') : (label ?? '')} placement="top" showDelay={isDisabled ? 200 : 400}>
+    {/* aria-disabled + muted colour rather than the native disabled attribute,
+        so the explain-why tooltip still fires on hover. */}
     <button
       className={styles.sheetTbBtn}
       aria-label={label}
-      onClick={onClick ?? (e => e.preventDefault())}
+      aria-disabled={isDisabled || undefined}
+      onClick={isDisabled ? (e => e.preventDefault()) : onClick}
     >
       {children}
     </button>
   </Tooltip>
-);
+  );
+};
 
 
 // ─── Formula types ───────────────────────────────────────────────────────────
 export type FToken = { kind: 'col'; label: string } | { kind: 'op'; value: string } | { kind: 'num'; value: string };
 export type FormulaCol = { key: string; name: string; tokens: FToken[] };
+
+// ─── Model-creation bridge (Split preview only, 2026-09-24) ───────────────────
+// Grid-born formulas/filters can land in the model. 'direct' — every valid
+// creation writes to the model the moment it commits. 'promote' — the creation
+// stays preview-local (draft) until its "Add to model" checkbox is ticked
+// (FilterValuesMenu's existing checkbox pattern, extended to the fx bar).
+// Promoted state derives from formulaNames/filterCols, so a delete in the
+// left panel's Formula/Filters dock reflects back here as a demotion. Omitted
+// by every caller but PreviewPanel3's Split branch, so all other SheetView
+// usages keep their query-local behavior exactly.
+export type ModelCreationBridge = {
+  mode: 'direct' | 'promote';
+  /** Names of formulas currently in the model. */
+  formulaNames: string[];
+  /** Filters currently in the model (col = the column label). */
+  filters: { col: string; val: string }[];
+  /**
+   * A left-panel Filters row's Edit (or its name click) asking the preview to
+   * open the same Add-filter modal on that filter — `n` is a nonce so the
+   * same filter can be edited twice in a row (2026-09-24, Vivek: "if I click
+   * a filter from this list it should open the same UX").
+   */
+  filterEditRequest?: { col: string; n: number } | null;
+  onFormulaAdd: (f: { name: string; expression: string }) => void;
+  onFormulaRemove: (name: string) => void;
+  onFormulaRename: (oldName: string, newName: string) => void;
+  onFilterAdd: (f: { col: string; val: string }) => void;
+  onFilterRemove: (col: string) => void;
+  /**
+   * Reports the sheet's NOT-yet-promoted artifacts upward whenever they
+   * change, so the model's Save can offer them for review (2026-09-25,
+   * Vivek's save-review modal: "a way to review all actions done from
+   * spreadsheet").
+   */
+  onDraftsChange?: (drafts: {
+    formulas: { name: string; expression: string }[];
+    filters: { col: string; val: string }[];
+  }) => void;
+};
 
 // Inline fx icon (Radiant style, 18×18 viewBox) — from Figma 16730:18720
 const FxIcon: React.FC<{ size?: number; color?: string }> = ({ size = 14, color = 'currentColor' }) => (
@@ -1738,7 +1786,15 @@ const SheetView: React.FC<{
    * keeps the blank-rows behaviour every other caller relies on.
    */
   canvasEmptyState?: React.ReactNode;
-}> = ({ columns, rows, title = 'Answer', description = '', onTitleChange, onDescChange, expanded, onExpandedChange, sheetDataView, onSheetDataViewChange, hideExpandButton = false, hideModelControl = false, emptyMode = false, onColumnsChange, externalLoading = false, onOpenInSearchData: _onOpenInSearchData, initialFormulaCols, initialFormulaValues, onFormulaChange, onOpenDataModel, onOpenSaveModal, onOpenWritebackModal, importedCsvGroups: importedCsvGroupsProp, onImportCsv, activeSourceName = 'Sample Retail', style, canvasScopeMode = false, canvasEmptyState }) => {
+  /** Split preview only — see ModelCreationBridge above. */
+  modelCreation?: ModelCreationBridge;
+  /**
+   * Split preview only (2026-09-25, design review): filter and formula
+   * creation is allowed at MODEL scope only — while a table or join is
+   * previewed the triggers show disabled with an explain-why tooltip.
+   */
+  creationDisabled?: boolean;
+}> = ({ columns, rows, title = 'Answer', description = '', onTitleChange, onDescChange, expanded, onExpandedChange, sheetDataView, onSheetDataViewChange, hideExpandButton = false, hideModelControl = false, emptyMode = false, onColumnsChange, externalLoading = false, onOpenInSearchData: _onOpenInSearchData, initialFormulaCols, initialFormulaValues, onFormulaChange, onOpenDataModel, onOpenSaveModal, onOpenWritebackModal, importedCsvGroups: importedCsvGroupsProp, onImportCsv, activeSourceName = 'Sample Retail', style, canvasScopeMode = false, canvasEmptyState, modelCreation, creationDisabled = false }) => {
   const { editableColStyle } = useVersion();
   const [viewDropOpen, setViewDropOpen] = useState(false);
   const [dataPanelOpen, setDataPanelOpen] = useState(false);
@@ -1798,9 +1854,31 @@ const SheetView: React.FC<{
   // ── Cell selection ────────────────────────────────────────────────────────
   const [selectedCell, setSelectedCell] = useState<{ r: number; c: number } | null>(null);
   const [hoveredCell,  setHoveredCell]  = useState<{ r: number; c: number } | null>(null);
+  // Column selection (2026-09-25, Vivek): clicking a header selects the whole
+  // column — header highlighted, every cell in the selected tint, formula bar
+  // shows the column title. Exclusive with cell selection.
+  const [selectedHeaderCol, setSelectedHeaderCol] = useState<string | null>(null);
 
   // ── Column header menu ────────────────────────────────────────────────────
   const [colMenuKey, setColMenuKey] = useState<string | null>(null);
+  // The column ▾ menu positions itself against the VIEWPORT (fixed), not the
+  // header cell: in the docked preview panel the panel's own bounds clipped a
+  // downward menu after two items (2026-09-24, Vivek: "needs to open above the
+  // icon otherwise its options are not readable"). Below when it fits, flipped
+  // above the icon when it doesn't — the canvas above the panel has the room.
+  const [colMenuAnchor, setColMenuAnchor] = useState<{ top: number; bottom: number; left: number; right: number } | null>(null);
+  const [colMenuPlace, setColMenuPlace] = useState<{ left: number; top: number } | null>(null);
+  const colMenuRef = useRef<HTMLDivElement>(null);
+  React.useLayoutEffect(() => {
+    if (!colMenuKey || !colMenuAnchor) { setColMenuPlace(null); return; }
+    const el = colMenuRef.current;
+    if (!el) return;
+    const mw = el.offsetWidth, mh = el.offsetHeight, pad = 8;
+    const below = colMenuAnchor.bottom + 2;
+    const top = below + mh + pad <= window.innerHeight ? below : Math.max(pad, colMenuAnchor.top - mh - 2);
+    const left = Math.min(Math.max(pad, colMenuAnchor.left), window.innerWidth - mw - pad);
+    setColMenuPlace({ left, top });
+  }, [colMenuKey, colMenuAnchor]);
 
   // ── Column rename / hide / aggregate state ───────────────────────────────
   const [renamingCol, setRenamingCol] = useState<string | null>(null);
@@ -1914,6 +1992,21 @@ const SheetView: React.FC<{
   const [fxInput, setFxInput]   = useState('');
   const [fxFocus, setFxFocus]   = useState(false);
   const [formulaErrorKeys, setFormulaErrorKeys] = useState<Set<string>>(new Set());
+
+  // ── Model creation (Split preview only — modelCreation prop) ──────────────
+  // fxAddToModel: formula keys whose "Add to model" box is ticked (promote
+  // mode; direct mode promotes implicitly on commit). filterConfigs: the
+  // applied per-column value filters — these actually filter the displayed
+  // rows, unlike the legacy icon-only filteredColKeys path.
+  const [fxAddToModel, setFxAddToModel] = useState<Record<string, boolean>>({});
+  // Per-column sheet filters — the full product filter family (date rolling/
+  // fixed, number ops, string/boolean values), authored in the product's
+  // "Select value for :" modal (2026-09-25, Vivek: "we should refer radiant
+  // play" — FilterModal is the MVP's faithful copy of it). Keyed by column
+  // key; the SheetFilter's own `col` holds the display label.
+  const [sheetFilters, setSheetFilters] = useState<Record<string, SheetFilter>>({});
+  const [filterModalCol, setFilterModalCol] = useState<string | null>(null);
+  const [filterModalPromote, setFilterModalPromote] = useState(false);
   const fxRef = useRef<HTMLInputElement>(null);
 
   const activeFormula = formulaCols.find(f => f.key === activeFormulaKey) ?? null;
@@ -1932,6 +2025,7 @@ const SheetView: React.FC<{
   };
 
   const triggerFormulaCreate = () => {
+    if (creationDisabled) return;
     const n = formulaCols.length + 1;
     const newKey = `__formula_${n}`;
     setFormulaCols(cols => [...cols, { key: newKey, name: `Formula ${n}`, tokens: [] }]);
@@ -2015,6 +2109,97 @@ const SheetView: React.FC<{
   // bar, no bare column-header strip, no pager — none of them have anything
   // to act on, and a "Page 1 of 412" under an empty grid is just wrong.
   const showCanvasEmpty = emptyMode && allCols.length === 0 && !!canvasEmptyState;
+
+  // ── Model-creation helpers (Split preview only) ────────────────────────────
+  // A cell's comparable string value — formula columns read from their
+  // computed values, base columns from the row object, both by the same
+  // unfiltered sheetRows index so lookups stay aligned.
+  const cellStr = (i: number, key: string) =>
+    key.startsWith('__formula_') ? String(formulaValues[key]?.[i] ?? '') : String((sheetRows[i] as Record<string, unknown>)[key] ?? '');
+  // Distinct values of a column, first-seen order, capped for the menu.
+  const colValues = (key: string): string[] => {
+    const seen = new Set<string>(); const out: string[] = [];
+    for (let i = 0; i < sheetRows.length; i++) {
+      const s = cellStr(i, key);
+      if (!s || seen.has(s)) continue;
+      seen.add(s); out.push(s);
+      if (out.length >= 50) break;
+    }
+    return out;
+  };
+  // Which filter variant a column gets — the scoped grid carries no SQL types,
+  // so the kind is inferred from the label (date words) and a sample value.
+  const kindForCol = (key: string): FilterKind => {
+    if (/date|month|quarter|year|time|day/i.test(filterColLabel(key))) return 'date';
+    for (let i = 0; i < sheetRows.length; i++) {
+      const v = cellStr(i, key);
+      if (!v) continue;
+      if (v === 'true' || v === 'false') return 'boolean';
+      if (Number.isFinite(Number(v))) return 'number';
+      return 'string';
+    }
+    return 'string';
+  };
+
+  const fxName = (key: string) => formulaCols.find(c => c.key === key)?.name ?? key;
+  const fxExpression = (tokens: FToken[]) => tokens.map(t => t.kind === 'col' ? `[${t.label}]` : t.value).join(' ');
+  const fxPromoted = (key: string) => !!modelCreation && modelCreation.formulaNames.includes(fxName(key));
+  const promoteFormula = (key: string) => {
+    const col = formulaCols.find(c => c.key === key);
+    if (col && col.tokens.length > 0) modelCreation?.onFormulaAdd({ name: col.name, expression: fxExpression(col.tokens) });
+  };
+  const filterColLabel = (key: string) => colRenames[key] ?? allCols.find(c => c.key === key)?.label ?? key;
+  const filterPromoted = (key: string) => !!modelCreation && modelCreation.filters.some(f => f.col === filterColLabel(key));
+
+  // Report unpromoted sheet artifacts up for the save-review modal.
+  useEffect(() => {
+    if (!modelCreation?.onDraftsChange) return;
+    const draftFilters = Object.entries(sheetFilters)
+      .filter(([key]) => filteredColKeys.has(key) && !filterPromoted(key))
+      .map(([key, f]) => ({ col: filterColLabel(key), val: describeFilter(f) }));
+    const draftFormulas = formulaCols
+      .filter(fc => fc.key.startsWith('__formula_') && fc.tokens.length > 0 && !modelCreation.formulaNames.includes(fc.name))
+      .map(fc => ({ name: fc.name, expression: fxExpression(fc.tokens) }));
+    modelCreation.onDraftsChange({ formulas: draftFormulas, filters: draftFilters });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sheetFilters, filteredColKeys, formulaCols, modelCreation?.formulaNames, modelCreation?.filters]);
+
+  // Left-panel Filters row's Edit → open the same Add-filter modal here,
+  // seeded with the filter's value (grid config first, model value as the
+  // fallback for filters born before this scope). The box shows checked —
+  // the filter IS in the model; unchecking + Apply demotes it to a draft.
+  const lastFilterEditReq = useRef(0);
+  useEffect(() => {
+    const req = modelCreation?.filterEditRequest;
+    if (!req || req.n === lastFilterEditReq.current) return;
+    lastFilterEditReq.current = req.n;
+    const key = allCols.find(c => filterColLabel(c.key) === req.col)?.key ?? req.col;
+    setFilterModalPromote(true);
+    setFilterModalCol(key);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [modelCreation?.filterEditRequest]);
+
+  // Rows the grid displays: filterConfigs applied on top of sheetRows, kept as
+  // ORIGINAL indices into sheetRows so formula/custom cell lookups (computed
+  // over the unfiltered rows) stay aligned. A config whose column left the
+  // current scope goes inert rather than filtering everything out — the filter
+  // survives the scope switch and reactivates when its column returns.
+  const displayRowIdxs: number[] = [];
+  {
+    const activeColKeys = new Set(allCols.map(c => c.key));
+    const activeFilters = Object.entries(sheetFilters).filter(([key]) =>
+      filteredColKeys.has(key) && activeColKeys.has(key));
+    for (let i = 0; i < sheetRows.length; i++) {
+      let ok = true;
+      for (const [key, f] of activeFilters) {
+        const raw = key.startsWith('__formula_')
+          ? (formulaValues[key]?.[i] ?? null)
+          : (sheetRows[i] as Record<string, unknown>)[key];
+        if (!cellPassesFilter(f, raw)) { ok = false; break; }
+      }
+      if (ok) displayRowIdxs.push(i);
+    }
+  }
 
   // Auto-enter edit on row 0 after a new custom column's name is committed
   useEffect(() => {
@@ -2190,6 +2375,14 @@ const SheetView: React.FC<{
       ));
     }
     setFxInput('');
+
+    // Split preview: a committed formula lands in the model — always under
+    // "direct", only with its "Add to model" box ticked under "promote".
+    // Expression comes from finalTokens (the setFormulaCols above hasn't
+    // landed yet), name from current state (renames go through commitRename).
+    if (modelCreation && (modelCreation.mode === 'direct' || fxAddToModel[fkey] || fxPromoted(fkey))) {
+      modelCreation.onFormulaAdd({ name: fxName(fkey), expression: fxExpression(finalTokens) });
+    }
   };
 
   // Insert column token from typeahead
@@ -2253,6 +2446,10 @@ const SheetView: React.FC<{
     const trimmed = renameValue.trim();
     if (!trimmed) { setRenamingCol(null); return; }
     if (renamingCol.startsWith('__formula_') || renamingCol.startsWith('__custom_') || renamingCol.startsWith('__pending_')) {
+      // A promoted formula is identified in the model by name — rename it there too.
+      if (renamingCol.startsWith('__formula_') && modelCreation && fxPromoted(renamingCol)) {
+        modelCreation.onFormulaRename(fxName(renamingCol), trimmed);
+      }
       setFormulaCols(cols => cols.map(c => c.key === renamingCol ? { ...c, name: trimmed } : c));
     } else {
       setColRenames(prev => ({ ...prev, [renamingCol]: trimmed }));
@@ -2299,6 +2496,8 @@ const SheetView: React.FC<{
     const isFormula = colKey.startsWith('__formula_');
     const isPendingCol = colKey.startsWith('__pending_');
 
+    if ((action === 'formula' || action === 'filter') && creationDisabled) return;
+
     if (action === 'formula' || action === 'add-col') {
       const n = formulaCols.length + 1;
       const newKey = `__formula_${n}`;
@@ -2314,6 +2513,11 @@ const SheetView: React.FC<{
 
     if (action === 'delete' || action === 'hide') {
       if (isFormula || isPendingCol) {
+        // A promoted formula's column IS the artifact — deleting it removes
+        // the model formula too (the left panel row disappears with it).
+        if (isFormula && modelCreation && fxPromoted(colKey)) {
+          modelCreation.onFormulaRemove(fxName(colKey));
+        }
         // Remove formula/pending column and its computed values entirely
         setFormulaCols(cols => cols.filter(c => c.key !== colKey));
         setFormulaValues(prev => { const n = { ...prev }; delete n[colKey]; return n; });
@@ -2337,13 +2541,55 @@ const SheetView: React.FC<{
     }
 
     if (action === 'filter') {
-      // Apply a filter on this column — surfaces a filter icon in the header
-      setFilteredColKeys(prev => new Set([...prev, colKey]));
+      if (modelCreation) {
+        // Split preview: open the product's "Select value for :" modal,
+        // scoped to this column. Seeds from the existing filter when editing.
+        setFilterModalPromote(sheetFilters[colKey] ? filterPromoted(colKey) : false);
+        setFilterModalCol(colKey);
+      } else {
+        // Legacy (no model bridge): surfaces a filter icon in the header only
+        setFilteredColKeys(prev => new Set([...prev, colKey]));
+      }
     }
+
+    // Split preview, promote option: add/remove an existing formula column
+    // to/from the model from its own ▾ menu (the after-creation path).
+    if (action === 'promote' && isFormula && modelCreation) {
+      setFxAddToModel(prev => ({ ...prev, [colKey]: true }));
+      promoteFormula(colKey);
+    }
+    if (action === 'demote' && isFormula && modelCreation) {
+      setFxAddToModel(prev => ({ ...prev, [colKey]: false }));
+      modelCreation.onFormulaRemove(fxName(colKey));
+    }
+  };
+
+  // Apply the "Select value for :" modal (Split preview only). The model
+  // entry's `val` is the filter stated in words — describeFilter — the same
+  // words the modal's Preview chip shows and the Filters dock renders.
+  const applyColFilter = (f: SheetFilter) => {
+    if (!modelCreation || !filterModalCol) return;
+    const key = filterModalCol;
+    const wantModel = modelCreation.mode === 'direct' || filterModalPromote;
+    const wasPromoted = filterPromoted(key);
+    setSheetFilters(prev => ({ ...prev, [key]: f }));
+    setFilteredColKeys(prev => new Set([...prev, key]));
+    if (wantModel) modelCreation.onFilterAdd({ col: filterColLabel(key), val: describeFilter(f) });
+    else if (wasPromoted) modelCreation.onFilterRemove(filterColLabel(key));
+    setFilterModalCol(null);
+  };
+
+  // Promote an applied filter to the model as-is (funnel menu / save review).
+  const promoteColFilter = (colKey: string) => {
+    const f = sheetFilters[colKey];
+    if (!modelCreation || !f) return;
+    modelCreation.onFilterAdd({ col: filterColLabel(colKey), val: describeFilter(f) });
   };
 
   // Remove the filter from a column
   const removeColFilter = (colKey: string) => {
+    if (modelCreation && filterPromoted(colKey)) modelCreation.onFilterRemove(filterColLabel(colKey));
+    setSheetFilters(prev => { const n = { ...prev }; delete n[colKey]; return n; });
     setFilteredColKeys(prev => { const n = new Set(prev); n.delete(colKey); return n; });
     setFilterMenuKey(null);
   };
@@ -2578,8 +2824,26 @@ const SheetView: React.FC<{
       <div className={styles.sheetTbDivider} />
       {/* Filter, Add formula */}
       <div className={styles.sheetTbGroup}>
-        <TbBtn label="Filter"><Icon name="funnel" size="s" /></TbBtn>
-        <TbBtn label="Add formula" onClick={triggerFormulaCreate}><Icon name="formula" size="s" /></TbBtn>
+        {/* Model-creation options: the toolbar funnel filters the selected
+            cell's column (straight to the modal's value step, same flow as
+            the column ▾ menu); with nothing selected it opens the modal at
+            its own column step — the original two-step "Add filter" design.
+            Without the bridge it stays the original visual-only chrome. */}
+        {/* Filter is disabled until a column (or cell) is selected — it
+            always acts on that column (2026-09-25, Vivek). */}
+        {(() => {
+          const filterTarget = selectedCell ? allCols[selectedCell.c]
+            : selectedHeaderCol ? allCols.find(c => c.key === selectedHeaderCol) : undefined;
+          return (
+            <TbBtn
+              label="Filter"
+              disabled={creationDisabled || !filterTarget}
+              disabledTooltip={creationDisabled ? 'Allowed in model preview' : 'Select a column first'}
+              onClick={modelCreation && filterTarget ? () => handleColMenu('filter', filterTarget.key) : undefined}
+            ><Icon name="funnel" size="s" /></TbBtn>
+          );
+        })()}
+        <TbBtn label="Add formula" disabled={creationDisabled} disabledTooltip="Allowed in model preview" onClick={triggerFormulaCreate}><Icon name="formula" size="s" /></TbBtn>
       </div>
       <div className={styles.sheetTbDivider} />
       {/* View dropdown — aggregated vs row-level data */}
@@ -2639,7 +2903,11 @@ const SheetView: React.FC<{
     {/* ── Formula bar ─────────────────────────────────────────── */}
     {!showCanvasEmpty && (() => {
       const selectedColIdx = selectedCell?.c;
-      const selectedColumn = selectedColIdx != null ? allCols[selectedColIdx] : undefined;
+      // Cell selection or column selection — either way the bar's left box
+      // shows the column title (the sheet is column-level, 2026-09-25).
+      const selectedColumn = selectedColIdx != null
+        ? allCols[selectedColIdx]
+        : selectedHeaderCol != null ? allCols.find(c => c.key === selectedHeaderCol) : undefined;
       const selectedColLabel = selectedColumn?.label ?? '';
       const isCreating = !!activeFormula;
       // Inline cell formula editing — formula bar is a read-only mirror
@@ -2656,22 +2924,34 @@ const SheetView: React.FC<{
 
           <div className={styles.fbDivider} />
 
-          {/* Section 2: fx icon — static, no interactivity */}
-          <div className={styles.fbFxBox} aria-hidden>
+          {/* Section 2: fx icon — ink when formulas can be written here,
+              disabled colour at table/join scope (2026-09-25). */}
+          <div className={styles.fbFxBox} aria-hidden style={{ color: creationDisabled ? 'var(--rd-sys-color-content-tertiary, #c0c6cf)' : 'var(--rd-sys-color-content-primary, #1d232f)' }}>
             <FxIcon size={16} />
           </div>
 
           <div className={styles.fbDivider} />
 
-          {/* Section 3: Formula text — mirrors inline cell edit OR editable via formula bar */}
+          {/* Section 3: Formula text — mirrors inline cell edit OR editable
+              via formula bar. In the Split preview at model scope, clicking
+              the empty bar STARTS a formula (2026-09-25, Vivek: "user should
+              be able to write a formula in model view"); at table/join scope
+              creation is disabled so the click does nothing. */}
           <div
             className={styles.fbFormulaInput}
-            onClick={() => !editingFormulaCell && isCreating && fxRef.current?.focus()}
+            onClick={() => {
+              if (editingFormulaCell) return;
+              if (isCreating) { fxRef.current?.focus(); return; }
+              if (modelCreation && !creationDisabled) triggerFormulaCreate();
+            }}
           >
+            {/* Product reference (2026-09-25): static "=" prefix before the
+                formula text, like the real spreadsheet bar. */}
+            <span aria-hidden style={{ color: 'var(--rd-sys-color-content-tertiary, #a0a9b4)', fontSize: 14, marginRight: 6, flexShrink: 0 }}>=</span>
             {/* Mirror mode: editing formula inline in cell */}
             {editingFormulaCell ? (
               <span style={{ fontSize: 13, color: 'var(--rd-sys-color-content-primary, #1d2329)', fontFamily: 'inherit' }}>
-                {editingCellValue || <span style={{ color: 'var(--rd-sys-color-content-tertiary, #a0a9b4)' }}>Type your formula</span>}
+                {editingCellValue || <span style={{ color: 'var(--rd-sys-color-content-tertiary, #a0a9b4)' }}>Enter formula or value</span>}
               </span>
             ) : (
               <>
@@ -2711,7 +2991,7 @@ const SheetView: React.FC<{
                 }
               }}
               onKeyDown={handleFxKey}
-              placeholder={isCreating ? (activeFormula!.tokens.length === 0 && !fxInput ? 'Type your formula' : '') : 'Type your formula'}
+              placeholder={isCreating ? (activeFormula!.tokens.length === 0 && !fxInput ? 'Enter formula or value' : '') : 'Enter formula or value'}
               readOnly={!isCreating}
               spellCheck={false}
               style={{ minWidth: 4, flex: isCreating ? 1 : 'unset', width: isCreating ? undefined : 0 }}
@@ -2744,6 +3024,34 @@ const SheetView: React.FC<{
               </div>
             )}
           </div>
+          {/* Promote option only: the at-creation "Add to model" checkbox in
+              the formula bar — Vivek weighed moving it to the column ▾ or a
+              save dialog, then ruled it stays: "there is no other place for
+              it" (2026-09-24). The ▾ menu's Add/Remove from model remains the
+              after-creation path. The direct option has no checkbox: every
+              commit is a model write. */}
+          {modelCreation?.mode === 'promote' && (() => {
+            const targetKey = activeFormulaKey
+              ?? (selectedColumn?.key.startsWith('__formula_') ? selectedColumn.key : null);
+            if (!targetKey) return null;
+            const promoted = fxPromoted(targetKey);
+            return (
+              <label style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0 12px', borderLeft: '1px solid var(--rd-sys-color-border-divider, #eaedf2)', fontSize: 12, whiteSpace: 'nowrap', cursor: 'pointer', color: 'var(--rd-sys-color-content-secondary, #6b7280)', alignSelf: 'stretch' }}>
+                <input
+                  type="checkbox"
+                  checked={promoted || !!fxAddToModel[targetKey]}
+                  onChange={e => {
+                    const on = e.target.checked;
+                    setFxAddToModel(prev => ({ ...prev, [targetKey]: on }));
+                    if (on) promoteFormula(targetKey);
+                    else if (promoted) modelCreation.onFormulaRemove(fxName(targetKey));
+                  }}
+                  style={{ width: 13, height: 13, cursor: 'pointer', accentColor: '#2770EF' }}
+                />
+                Add to model
+              </label>
+            );
+          })()}
         </div>
       );
     })()}
@@ -2777,7 +3085,22 @@ const SheetView: React.FC<{
             <div
               key={col.key}
               className={`${styles.sheetColHeader} ${isFormula ? styles.sheetColHeaderFormula : ''} ${isFormula && formulaErrorKeys.has(col.key) ? styles.sheetColHeaderError : ''}`}
-              style={{ width: col.width ?? 140, minWidth: col.width ?? 140, ...headerAccentStyle }}
+              style={{ width: col.width ?? 140, minWidth: col.width ?? 140, ...headerAccentStyle, ...(selectedHeaderCol === col.key ? { background: 'rgba(39, 112, 239, 0.10)' } : {}) }}
+              // Header click selects the column (2026-09-25) — chevron, funnel
+              // and the rename input all stopPropagation, so only the plain
+              // header area lands here. A formula column also activates its
+              // formula in the bar, same as clicking its cells.
+              onClick={() => {
+                setSelectedHeaderCol(col.key);
+                setSelectedCell(null);
+                if (isFormula) {
+                  const fc = formulaCols.find(f => f.key === col.key);
+                  if (fc) { setActiveFormulaKey(fc.key); setTimeout(() => fxRef.current?.focus(), 30); }
+                } else if (activeFormulaKey) {
+                  setActiveFormulaKey(null);
+                  setFxInput('');
+                }
+              }}
             >
               {isCustom && editableColStyle === 'header-badge' && (
                 <span style={{
@@ -2787,8 +3110,11 @@ const SheetView: React.FC<{
                 }}>Editable</span>
               )}
               {isFormula && (
-                <span style={{ flexShrink: 0, marginRight: 4, display: 'flex', alignItems: 'center', color: showHeaderFill ? '#7c3aed' : 'var(--rd-sys-color-content-secondary,#777e8b)' }}>
-                  <FxIcon size={13} color="currentColor" />
+                // fx chip (product reference). Colour rule (2026-09-25,
+                // Vivek): grey glyph = applied to the preview only, blue =
+                // added to the model. Without the bridge: ink.
+                <span style={{ flexShrink: 0, marginRight: 4, display: 'flex', alignItems: 'center', padding: '1px 4px', borderRadius: 4, background: 'var(--rd-sys-color-background-subtle, #eaedf2)', color: !modelCreation ? 'var(--rd-sys-color-content-primary, #1d232f)' : fxPromoted(col.key) ? 'var(--rd-sys-color-content-brand, #2770EF)' : 'var(--rd-sys-color-content-secondary, #777e8b)' }}>
+                  <FxIcon size={12} color="currentColor" />
                 </span>
               )}
               {isCustom && (
@@ -2820,6 +3146,9 @@ const SheetView: React.FC<{
                   <button
                     className={styles.sheetColFilterBtn}
                     aria-label={`${col.label} filter`}
+                    // Colour rule (2026-09-25, Vivek): grey = applied to the
+                    // preview only, blue = added to the model.
+                    style={modelCreation ? { color: filterPromoted(col.key) ? 'var(--rd-sys-color-content-brand, #2770EF)' : 'var(--rd-sys-color-content-secondary, #777e8b)' } : undefined}
                     onClick={() => setFilterMenuKey(k => k === col.key ? null : col.key)}
                   >
                     <svg width={12} height={12} viewBox="0 0 18 18" fill="none">
@@ -2832,6 +3161,25 @@ const SheetView: React.FC<{
                         <span className={styles.sheetColMenuItemIcon}><ColMenuIcon id="filter-edit" /></span>
                         <span className={styles.sheetColMenuItemLabel}>Edit filter</span>
                       </button>
+                      {/* Promote an applied filter from its own icon menu
+                          (2026-09-25, Vivek) — disabled once it's in the model. */}
+                      {modelCreation && (() => {
+                        const promoted = filterPromoted(col.key);
+                        return (
+                          <button
+                            className={styles.sheetColMenuItem}
+                            aria-disabled={promoted || undefined}
+                            title={promoted ? 'Already added to this model' : undefined}
+                            style={promoted ? { color: 'var(--rd-sys-color-content-tertiary, #c0c6cf)', cursor: 'default' } : undefined}
+                            onClick={promoted ? undefined : () => { setFilterMenuKey(null); promoteColFilter(col.key); }}
+                          >
+                            <span className={styles.sheetColMenuItemIcon} style={promoted ? { color: 'inherit' } : undefined}>
+                              <svg width={18} height={18} viewBox="0 0 18 18" fill="none"><path d="M9 12V5M9 5L6.5 7.5M9 5l2.5 2.5M4 14.5h10" stroke="currentColor" strokeWidth={1.4} strokeLinecap="round" strokeLinejoin="round"/></svg>
+                            </span>
+                            <span className={styles.sheetColMenuItemLabel}>Add to model</span>
+                          </button>
+                        );
+                      })()}
                       <button className={styles.sheetColMenuItem} onClick={() => removeColFilter(col.key)}>
                         <span className={styles.sheetColMenuItemIcon}><ColMenuIcon id="filter-remove" /></span>
                         <span className={styles.sheetColMenuItemLabel}>Remove filter</span>
@@ -2845,14 +3193,32 @@ const SheetView: React.FC<{
                 <button
                   className={styles.sheetColChevron}
                   aria-label={`${col.label} options`}
-                  onClick={() => setColMenuKey(k => k === col.key ? null : col.key)}
+                  onClick={e => {
+                    const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                    setColMenuAnchor({ top: r.top, bottom: r.bottom, left: r.left, right: r.right });
+                    setColMenuKey(k => k === col.key ? null : col.key);
+                  }}
                 >
                   <svg viewBox="0 0 12 12" width={12} height={12} fill="none">
                     <path d="M3 4l3 4 3-4" stroke="currentColor" strokeWidth={1.2} strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </button>
                 {colMenuKey === col.key && (
-                  <div className={styles.sheetColMenu} onMouseLeave={() => { setColAggSubmenuKey(null); setColDataTypeSubmenuKey(null); }}>
+                  <>
+                  {/* Full-viewport backdrop: any click outside the menu —
+                      including outside the sheet — closes it (2026-09-25). */}
+                  <div
+                    style={{ position: 'fixed', inset: 0, zIndex: 399 }}
+                    onClick={e => { e.stopPropagation(); setColMenuKey(null); setColAggSubmenuKey(null); setColDataTypeSubmenuKey(null); }}
+                  />
+                  <div
+                    ref={colMenuRef}
+                    className={styles.sheetColMenu}
+                    // Fixed + measured placement (see colMenuPlace above);
+                    // hidden until the flip decision lands so it never flashes
+                    // clipped in the panel.
+                    style={{ position: 'fixed', left: colMenuPlace?.left ?? colMenuAnchor?.left ?? 0, top: colMenuPlace?.top ?? colMenuAnchor?.bottom ?? 0, visibility: colMenuPlace ? 'visible' : 'hidden', zIndex: 400 }}
+                    onMouseLeave={() => { setColAggSubmenuKey(null); setColDataTypeSubmenuKey(null); }}>
                     {/* Change data type — custom columns only, shown before all other sections */}
                     {isCustom && (
                       <>
@@ -2892,6 +3258,30 @@ const SheetView: React.FC<{
                             </div>
                           )}
                         </div>
+                        <div className={styles.sheetColMenuDivider} />
+                      </>
+                    )}
+                    {/* Model-creation options: promote/demote an existing
+                        formula column from its own menu — the after-creation
+                        path (the checkbox in the fx bar is the at-creation
+                        path). "Add to model" only appears under the promote
+                        option; "Remove from model" appears whenever the
+                        formula is currently promoted. */}
+                    {isFormula && modelCreation && (fxPromoted(col.key) || modelCreation.mode === 'promote') && (
+                      <>
+                        <button
+                          className={styles.sheetColMenuItem}
+                          onClick={() => { setColMenuKey(null); handleColMenu(fxPromoted(col.key) ? 'demote' : 'promote', col.key); }}
+                        >
+                          <span className={styles.sheetColMenuItemIcon}>
+                            <svg width={18} height={18} viewBox="0 0 18 18" fill="none">
+                              {fxPromoted(col.key)
+                                ? <path d="M9 4v7M9 4L6.5 6.5M9 4l2.5 2.5M4 13.5h10" stroke="currentColor" strokeWidth={1.4} strokeLinecap="round" strokeLinejoin="round" transform="rotate(180 9 9)"/>
+                                : <path d="M9 12V5M9 5L6.5 7.5M9 5l2.5 2.5M4 14.5h10" stroke="currentColor" strokeWidth={1.4} strokeLinecap="round" strokeLinejoin="round"/>}
+                            </svg>
+                          </span>
+                          <span className={styles.sheetColMenuItemLabel}>{fxPromoted(col.key) ? 'Remove from model' : 'Add to model'}</span>
+                        </button>
                         <div className={styles.sheetColMenuDivider} />
                       </>
                     )}
@@ -2936,21 +3326,31 @@ const SheetView: React.FC<{
                                   </div>
                                 )}
                               </div>
-                            ) : (
+                            ) : (() => {
+                              // Creation is model-scope only (2026-09-25):
+                              // Add formula and Filter grey out at table/join
+                              // scope, with the explain-why tooltip.
+                              const itemDisabled = creationDisabled && (item.id === 'formula' || item.id === 'filter');
+                              return (
                               <button
                                 key={item.id}
                                 className={styles.sheetColMenuItem}
-                                onClick={() => handleColMenu(item.id, col.key)}
+                                title={itemDisabled ? 'Allowed in model preview' : undefined}
+                                aria-disabled={itemDisabled || undefined}
+                                style={itemDisabled ? { color: 'var(--rd-sys-color-content-tertiary, #c0c6cf)', cursor: 'default' } : undefined}
+                                onClick={itemDisabled ? undefined : () => handleColMenu(item.id, col.key)}
                               >
-                                <span className={styles.sheetColMenuItemIcon}><ColMenuIcon id={item.id} /></span>
-                                <span className={styles.sheetColMenuItemLabel}>{item.label}</span>
+                                <span className={styles.sheetColMenuItemIcon} style={itemDisabled ? { color: 'var(--rd-sys-color-content-tertiary, #c0c6cf)' } : undefined}><ColMenuIcon id={item.id} /></span>
+                                <span className={styles.sheetColMenuItemLabel} style={itemDisabled ? { color: 'inherit' } : undefined}>{item.label}</span>
                               </button>
-                            )
+                              );
+                            })()
                           )}
                         </div>
                       );
                     })}
                   </div>
+                  </>
                 )}
               </div>
             </div>
@@ -2994,9 +3394,12 @@ const SheetView: React.FC<{
                 <div className={styles.sheetCellFlex} />
               </div>
             ))
-          : sheetRows.map((row, ri) => (
-          <div key={ri} className={ri % 2 === 0 ? styles.sheetRow : styles.sheetRowAlt}>
-            <div className={styles.sheetRowNum}>{ri + 1}</div>
+          // ri stays the ORIGINAL sheetRows index (formula/custom cell values
+          // are computed over the unfiltered rows); displayIdx drives what the
+          // eye sees — zebra striping and the row number.
+          : displayRowIdxs.map((ri, displayIdx) => { const row = sheetRows[ri]; return (
+          <div key={ri} className={displayIdx % 2 === 0 ? styles.sheetRow : styles.sheetRowAlt}>
+            <div className={styles.sheetRowNum}>{displayIdx + 1}</div>
             {allCols.map((col, ci) => {
               const isSelected = selectedCell?.r === ri && selectedCell?.c === ci;
               const isHovered  = !isSelected && hoveredCell?.r === ri && hoveredCell?.c === ci;
@@ -3012,15 +3415,15 @@ const SheetView: React.FC<{
                 ? (formulaResult != null ? String(Math.round(formulaResult * 100) / 100) : '')
                 : isEditable ? customVal
                 : (col.render ? col.render(val) : val != null ? String(val) : '');
-              const _rowCanvasBg = ri % 2 === 0
+              const _rowCanvasBg = displayIdx % 2 === 0
                 ? 'var(--rd-sys-color-background-base, #fff)'
                 : 'var(--rd-sys-color-background-sunken, #f6f8fa)';
               void _rowCanvasBg;
               const showCellTint = editableColStyle === 'cell-tint' || editableColStyle === 'accent-and-tint';
               const cellTintStyle: React.CSSProperties = (isEditable || isFormula) && !isEditing && showCellTint
                 ? isFormula
-                  ? { background: ri % 2 === 0 ? 'oklch(97.5% 0.012 300 / 1)' : 'oklch(95.5% 0.012 300 / 1)' }
-                  : { background: ri % 2 === 0 ? 'oklch(97.5% 0.012 240 / 1)' : 'oklch(95.5% 0.012 240 / 1)' }
+                  ? { background: displayIdx % 2 === 0 ? 'oklch(97.5% 0.012 300 / 1)' : 'oklch(95.5% 0.012 300 / 1)' }
+                  : { background: displayIdx % 2 === 0 ? 'oklch(97.5% 0.012 240 / 1)' : 'oklch(95.5% 0.012 240 / 1)' }
                 : {};
               const hoverIndicatorStyle: React.CSSProperties = (isEditable && isHovered && !isEditing && editableColStyle === 'hover-indicator')
                 ? { boxShadow: 'inset 0 0 0 1.5px var(--rd-sys-color-content-brand, #2770ef)' }
@@ -3047,6 +3450,9 @@ const SheetView: React.FC<{
                     position: 'relative',
                     overflow: isEditing ? 'visible' : 'hidden',
                     ...cellTintStyle,
+                    // Column selection: every cell of the selected column
+                    // wears the selected tint (2026-09-25).
+                    ...(col.key === selectedHeaderCol && !isEditing ? { background: 'rgba(39, 112, 239, 0.06)' } : {}),
                     ...hoverIndicatorStyle,
                     ...cursorStyle,
                   }}
@@ -3054,9 +3460,19 @@ const SheetView: React.FC<{
                   onMouseLeave={() => setHoveredCell(null)}
                   onClick={() => {
                     setSelectedCell({ r: ri, c: ci });
+                    setSelectedHeaderCol(null);
                     if (isFormula) {
                       const fc = formulaCols.find(f => f.key === col.key);
                       if (fc) { setActiveFormulaKey(fc.key); setTimeout(() => fxRef.current?.focus(), 30); }
+                    } else if (activeFormulaKey) {
+                      // Clicking away from the formula's own column deselects
+                      // it — the bar goes back to mirroring the clicked cell's
+                      // column instead of holding the last formula (2026-09-24,
+                      // Vivek: "once I create a formula and click elsewhere the
+                      // formula bar should clear up"). The commit itself already
+                      // happened on the fx input's blur.
+                      setActiveFormulaKey(null);
+                      setFxInput('');
                     }
                   }}
                   onDoubleClick={() => {
@@ -3204,7 +3620,7 @@ const SheetView: React.FC<{
             })}
             <div className={styles.sheetCellFlex} />
           </div>
-        ))}
+        ); })}
       </div>
     </div>
 
@@ -3226,7 +3642,7 @@ const SheetView: React.FC<{
             mode the page count is whatever those rows amount to — never the
             source spreadsheet's hardcoded 412, which read as 412 pages behind
             a 60-row preview. Non-canvas callers keep the original chrome. */}
-        <span className={styles.sheetPagLabel}>of {canvasScopeMode ? Math.max(1, Math.ceil(sheetRows.length / 60)) : 412}</span>
+        <span className={styles.sheetPagLabel}>of {canvasScopeMode ? Math.max(1, Math.ceil(displayRowIdxs.length / 60)) : 412}</span>
       </div>
       <div className={styles.sheetPagNav}>
         <button className={styles.sheetPagBtn} aria-label="Next page">
@@ -3238,11 +3654,33 @@ const SheetView: React.FC<{
       </div>
       <span className={styles.sheetPagRows}>
         <span style={{ color: 'var(--rd-sys-color-content-secondary, #777e8b)' }}>Showing rows </span>
-        <span style={{ fontWeight: 500 }}>{sheetRows.length > 0 ? `1-${sheetRows.length} of ${sheetRows.length}` : '0 rows'}</span>
+        <span style={{ fontWeight: 500 }}>{displayRowIdxs.length > 0 ? `1-${displayRowIdxs.length} of ${displayRowIdxs.length}` : '0 rows'}</span>
       </span>
     </div>
     )}
     <CsvImportModal open={csvImportOpen} onClose={() => setCsvImportOpen(false)} onImport={handleImportCsv} />
+
+    {/* ── "Select value for :" filter modal (Split preview creation options
+        only) — the product's filter dialog family (date rolling/fixed, number
+        ops, string/boolean values, Preview chip), copied from the MVP per
+        Vivek's "refer radiant play" (2026-09-25). Scoped to the clicked
+        column. Under the promote option the "Add this filter to this model"
+        checkbox (with its explain tooltip) decides where the filter lands;
+        under direct the checkbox is hidden — every Apply is a model write. ── */}
+    {modelCreation && filterModalCol && (
+      <FilterModal
+        key={filterModalCol}
+        filter={sheetFilters[filterModalCol] ?? newFilter(filterColLabel(filterModalCol), kindForCol(filterModalCol))}
+        distinctValues={colValues(filterModalCol)}
+        promote={modelCreation.mode === 'promote' ? {
+          checked: filterModalPromote,
+          onChange: setFilterModalPromote,
+          tooltip: 'Adds this filter to the model. It shows in the left panel and applies for everyone using this model.',
+        } : undefined}
+        onCancel={() => setFilterModalCol(null)}
+        onApply={applyColFilter}
+      />
+    )}
 
     {/* ── Key column picker popover ── */}
     {keyPickerState && (() => {
@@ -4258,6 +4696,12 @@ export interface SearchDataExplorationsProps {
    * change loads, content changes update live.
    */
   previewBehavior?: { refresh: 'auto' | 'manual' | 'explicit'; reentry: 'cached' | 'fresh' };
+  /**
+   * canvasScope only (2026-09-24, Split creation options): lets the preview
+   * grid's creations (formulas via the fx bar, filters via the values menu)
+   * land in the model's own stores. See ModelCreationBridge.
+   */
+  modelCreation?: ModelCreationBridge;
 }
 
 // ─── SpotterData panel ───────────────────────────────────────────────────────
@@ -6321,7 +6765,7 @@ const SpotterDataPanel: React.FC<{
   );
 };
 
-export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ onExit: _onExit, onSave, onSaveChanges: _onSaveChanges, initialSnapshot, mode, showSpotter = true, editMode = false, liveboardName, onOpenInSearchData, onHamburgerClick: _onHamburgerClick, canvasScope, previewBehavior }) => {
+export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ onExit: _onExit, onSave, onSaveChanges: _onSaveChanges, initialSnapshot, mode, showSpotter = true, editMode = false, liveboardName, onOpenInSearchData, onHamburgerClick: _onHamburgerClick, canvasScope, previewBehavior, modelCreation }) => {
   const isSpreadsheetMode = mode === 'spreadsheet';
   const hasCanvasScope = !!canvasScope;
   // Split only: clicking a table or a join on the canvas holds the preview on
@@ -7657,6 +8101,10 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
               onImportCsv={(csvName, cols) => setImportedCsvGroups(g => [...g, { csvName, cols }])}
               activeSourceName={activeSourceName}
               style={{ border: 'none', borderRadius: 0 }}
+              modelCreation={modelCreation}
+              // Filter/formula creation is model-scope only (2026-09-25):
+              // disabled with a tooltip while a table or join is previewed.
+              creationDisabled={!!modelCreation && hasCanvasScope && scopeKey !== 'model'}
             />
           </div>
           </div>

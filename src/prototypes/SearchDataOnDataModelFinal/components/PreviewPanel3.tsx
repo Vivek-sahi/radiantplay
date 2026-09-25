@@ -3,6 +3,7 @@ import type { TablePositionData, JoinInfo } from '../../_datamodel/index';
 import { SegmentedControl } from '@components/SegmentedControl';
 import { SearchDataExplorations } from '../SearchDataExplorations';
 import { SearchDataExplorations as QueryAsIs } from './QueryAsIs';
+import type { ModelCreationBridge } from './QueryAsIs';
 import { ScopeSwitcher, type PreviewScope } from './ScopeSwitcher';
 
 // Kept local (not imported from SearchDataOnDataModelFinal.tsx) to avoid a circular
@@ -57,6 +58,9 @@ export interface PreviewPanelProps {
   // (cached|fresh). Passed through to QueryAsIs untouched; omitted (Combined,
   // As-is) keeps today's load-on-every-scope-change behavior.
   previewBehavior?: { refresh: 'auto' | 'manual' | 'explicit'; reentry: 'cached' | 'fresh' };
+  // Split only (2026-09-24, creation options): grid-born formulas/filters land
+  // in the model stores upstream. Passed through to QueryAsIs untouched.
+  modelCreation?: ModelCreationBridge;
 }
 
 const ExpandIcon = () => (
@@ -93,6 +97,7 @@ type OptimizedProps = BranchProps & {
   joins: JoinInfo[];
   hideQueryTab?: boolean;
   previewBehavior?: { refresh: 'auto' | 'manual' | 'explicit'; reentry: 'cached' | 'fresh' };
+  modelCreation?: ModelCreationBridge;
 };
 
 // ─── "Optimized" branch ─────────────────────────────────────────────────────
@@ -112,11 +117,14 @@ const PreviewPanel3Optimized: React.FC<OptimizedProps> = ({
   join, setJoin, joins,
   hideQueryTab = false,
   previewBehavior,
+  modelCreation,
 }) => {
-  // Default height = 40% of the canvas area (this panel's parent, which spans
-  // canvas + panel). Measured once on mount; after that the user's own drag
-  // wins. Clamped to the same MIN/MAX the resize handle enforces so the
-  // default always stays within the draggable range.
+  // Default height = 50% of the canvas area (this panel's parent, which spans
+  // canvas + panel) — up from 40% (2026-09-24, Vivek: "take it till middle of
+  // the screen, I want to see at least 10 rows"). Measured once on mount;
+  // after that the user's own drag wins. Clamped to the same MIN/MAX the
+  // resize handle enforces so the default always stays within the draggable
+  // range.
   const rootRef = useRef<HTMLDivElement>(null);
   const didSetDefaultHeight = useRef(false);
   useEffect(() => {
@@ -124,7 +132,7 @@ const PreviewPanel3Optimized: React.FC<OptimizedProps> = ({
     const parentHeight = rootRef.current?.parentElement?.getBoundingClientRect().height ?? 0;
     if (!parentHeight) return;
     didSetDefaultHeight.current = true;
-    setHeight(Math.round(Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, parentHeight * 0.4))));
+    setHeight(Math.round(Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, parentHeight * 0.5))));
   }, [setHeight]);
 
   const containerStyle: React.CSSProperties = full
@@ -258,10 +266,11 @@ const PreviewPanel3Optimized: React.FC<OptimizedProps> = ({
         <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
           {/* "Split" layout only — hideQueryTab hides the centered
               Spreadsheet/Query switch below, leaving this left flank empty;
-              Komal, 2026-09-22: "Add a title here: Data preview". Combined
-              keeps this flank blank exactly as before. */}
+              Komal, 2026-09-22: "Add a title here: Data preview" — relabeled
+              "Spreadsheet" (2026-09-24, Vivek), the grid-as-workbench framing.
+              Combined keeps this flank blank exactly as before. */}
           {hideQueryTab && (
-            <span style={{ fontSize: 13, fontWeight: 600, color: '#1D232F' }}>Data preview</span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: '#1D232F' }}>Spreadsheet</span>
           )}
         </div>
         {!hideQueryTab ? (
@@ -334,6 +343,7 @@ const PreviewPanel3Optimized: React.FC<OptimizedProps> = ({
                 scope, selectedTable, selectedJoin: join,
               }}
               previewBehavior={previewBehavior}
+              modelCreation={modelCreation}
             />
           ) : (
             <SearchDataExplorations
@@ -469,6 +479,7 @@ const PreviewPanel3: React.FC<PreviewPanelProps> = ({
   embedMode,
   hideQueryTab,
   previewBehavior,
+  modelCreation,
 }) => {
   const branchProps: BranchProps = { open, setOpen, full, setFull, height, setHeight, panelTab, setPanelTab };
   return embedMode === 'optimized'
@@ -479,6 +490,7 @@ const PreviewPanel3: React.FC<PreviewPanelProps> = ({
         join={join} setJoin={setJoin} joins={joins}
         hideQueryTab={hideQueryTab}
         previewBehavior={previewBehavior}
+        modelCreation={modelCreation}
       />
     : <PreviewPanel3AsIs {...branchProps} />;
 };

@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Grid as workbench — market scan &amp; proposed interaction model</title>
+<style>
+  :root { --ink:#1d232f; --muted:#6b7280; --line:#e8eaef; --accent:#2770ef; --bg:#fff; --subtle:#f6f8fa; --good:#047857; --bad:#b4232a; --warn:#b45309; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  .page { max-width:880px; margin:0 auto; padding:56px 24px 96px; }
+  h1 { font-size:26px; letter-spacing:-0.4px; margin:0 0 4px; }
+  .meta { color:var(--muted); font-size:13px; margin-bottom:36px; }
+  h2 { font-size:13px; text-transform:uppercase; letter-spacing:0.8px; color:var(--muted); margin:48px 0 14px; }
+  h3 { font-size:16px; letter-spacing:-0.2px; margin:22px 0 6px; }
+  p { margin:8px 0; }
+  ul, ol { margin:6px 0; padding-left:20px; }
+  li { margin:4px 0; }
+  b { font-weight:600; }
+  .card { border:1px solid var(--line); border-radius:10px; padding:16px 20px 14px; margin-bottom:14px; }
+  .card h3 { margin:0 0 2px; }
+  .card .sub { color:var(--muted); font-size:13px; margin:0 0 8px; }
+  .card ul { font-size:14px; }
+  table { border-collapse:collapse; width:100%; font-size:13.5px; margin:12px 0; }
+  th, td { border:1px solid var(--line); padding:7px 10px; text-align:left; vertical-align:top; }
+  th { background:var(--subtle); font-weight:600; }
+  .tag { display:inline-block; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; border-radius:9px; padding:0 8px; border:1px solid; }
+  .tag.yes { color:var(--good); border-color:var(--good); }
+  .tag.no { color:var(--bad); border-color:var(--bad); }
+  .tag.part { color:var(--warn); border-color:var(--warn); }
+  .pattern { border-left:3px solid var(--accent); padding:2px 0 2px 16px; margin:16px 0; }
+  .pattern .p-title { font-weight:600; }
+  .qa { background:var(--subtle); border-radius:10px; padding:14px 18px; margin:14px 0; }
+  .qa .q { font-weight:600; margin-bottom:6px; }
+  .rule { display:flex; gap:12px; margin:12px 0; }
+  .rule .n { color:var(--accent); font-weight:600; flex-shrink:0; }
+  .open { border:1px dashed var(--warn); border-radius:10px; padding:14px 18px; margin:14px 0; }
+  .open h3 { margin-top:0; color:var(--warn); }
+  .src { font-size:12.5px; color:var(--muted); line-height:1.7; }
+  .note { font-size:13px; color:var(--muted); }
+  .walk { counter-reset:step; }
+  .walk .step { display:flex; gap:14px; margin:14px 0; }
+  .walk .step::before { counter-increment:step; content:counter(step); flex-shrink:0; width:24px; height:24px; border-radius:50%; background:var(--accent); color:#fff; font-size:13px; font-weight:600; display:flex; align-items:center; justify-content:center; margin-top:2px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <h1>Grid as workbench — market scan &amp; proposed interaction model</h1>
+  <div class="meta">SearchDataOnDataModelFinal · 24 Sep 2026 · research across Tableau, Power BI, Looker, Omni, Sigma + fresh players (Hex, Lightdash, Count, Quadratic, Row Zero, Equals), then a proposal. All market claims from official docs; unverified items flagged in the per-player notes.</div>
+
+  <h2>The question</h2>
+  <p>ThoughtSpot's modeling canvas works at model level: the left panel is the inventory of the whole model, and it is the only creation surface (formulas, filters). That made sense when there was no live data in the canvas. Now the Split layout has a live preview grid with per-scope previews (model / table / join). <b>Which creation and editing actions belong on the grid, and where do grid-born artifacts land?</b></p>
+
+  <h2>The market in one view</h2>
+  <table>
+    <tr><th>Player</th><th>Grid during modeling</th><th>Actionable?</th><th>Grid-born artifacts land in…</th><th>Promotion to shared model</th></tr>
+    <tr><td><b>Tableau</b> (Data Source page)</td><td>Bottom half of the modeling canvas, first 1,000 rows</td><td><span class="tag yes">Yes</span></td><td>Data source metadata directly (everyone sees it if published)</td><td>None needed — the grid <i>is inside</i> the model editor</td></tr>
+    <tr><td><b>Power BI</b> (Power Query)</td><td>The entire prep surface</td><td><span class="tag yes">Yes</span></td><td>Recorded Applied Steps (query level), loaded into the model on refresh</td><td>Publish the file</td></tr>
+    <tr><td><b>Power BI</b> (Table view)</td><td>Loaded rows inside the model editor</td><td><span class="tag part">Partial</span></td><td>DAX measures/columns + column metadata → semantic model directly</td><td>None needed — inside the model editor</td></tr>
+    <tr><td><b>Looker</b> (Explore)</td><td>Results table of a modeled query</td><td><span class="tag part">Query only</span></td><td>Table calcs &amp; custom fields — query/user level, <b>never</b> the model</td><td><b>None exists.</b> Manual re-creation in LookML by a developer</td></tr>
+    <tr><td><b>Omni</b> (workbook)</td><td>The modeling surface itself</td><td><span class="tag yes">Yes</span></td><td>Per-workbook model layer (staging)</td><td>Explicit: changes drawer → YAML diff → "Promote to shared" / branch</td></tr>
+    <tr><td><b>Sigma</b> (data model)</td><td>The model editor is literally a workbook page</td><td><span class="tag yes">Yes</span></td><td>Model document directly; workbook-born stays in the workbook</td><td>Weak: unsynced copy/paste only — a known gap</td></tr>
+    <tr><td><b>Lightdash</b></td><td>Explorer results table (dbt-defined model)</td><td><span class="tag yes">Yes</span></td><td>Custom metrics/dimensions — chart/space level</td><td>Strongest loop: "Write back to dbt" → opens a PR → merged YAML replaces the ad-hoc metric</td></tr>
+    <tr><td><b>Hex</b> (Explore)</td><td>No-code table over semantic models</td><td><span class="tag yes">Yes</span></td><td>Deliberately ephemeral (bookmark only)</td><td>"Convert to project" — whole exploration, not per-artifact</td></tr>
+  </table>
+  <p class="note">Also scanned: Count (canvas of cells, artifacts live in the canvas, no model layer), Quadratic / Row Zero / Equals (spreadsheet-on-warehouse; the sheet is the artifact, no semantic layer). Tableau's <b>View Data</b> pane is the market's one prominent view-only grid — and it exists for inspection, not modeling; its 2022 redesign happened because even inspection wanted more control.</p>
+
+  <h2>Per-player notes (compressed)</h2>
+
+  <div class="card">
+    <h3>Tableau — the closest structural parallel to us</h3>
+    <p class="sub">A modeling canvas (relationships/joins) with a live grid below it — the same anatomy as our Split layout.</p>
+    <ul>
+      <li><b>Column header menu on the Data Source grid:</b> Create Calculated Field (pre-scoped to that column), Split / Custom Split, Create Group, Hide, Rename (double-click too), Describe, Copy Values, Pivot (multi-select columns → unpivot). Data type via the type icon in the header.</li>
+      <li>Everything lands in <b>data source metadata</b> — the model. On a published source, edits hit every workbook and user; Tableau's mitigation is a warning + "test in a scratchpad workbook first" + Publish vs Publish As (fork).</li>
+      <li>A <b>metadata grid</b> toggle flips the same surface from rows-of-data to fields-as-rows for bulk ops — the grid and the inventory are two states of one surface.</li>
+      <li>Value-level editing was deliberately excluded from the modeling canvas and shipped as a separate product (<b>Prep</b>: inline value edit, keep-only/exclude from cells, fuzzy grouping — every action recorded in an ordered, editable <b>Changes pane</b>).</li>
+      <li>Structural work stays off the grid: relationships, joins, data source filters, LOD calcs — canvas + dialogs.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>Power BI — the recorded-step grid</h3>
+    <p class="sub">Two grids, sharply split: Power Query (pre-load shaping, maximal) and Table view (post-load model inspection, partial).</p>
+    <ul>
+      <li><b>Power Query grid:</b> the same transform is reachable from ribbon, header menu, and right-click — deliberately. Header: filter/sort dropdown, type icon, double-click rename, drag reorder. Right-click column: remove, duplicate, add-column-from-examples, change type, transform (trim/case/round), replace values, split, group by, fill down/up, unpivot. Right-click a <i>cell</i>: filter by this value, replace-values pre-filled with it. <b>Column profiling under every header</b> (quality bar, distribution) with quick actions on hover.</li>
+      <li>Every gesture becomes a named, reorderable <b>Applied Step</b> — the inventory. Nothing is ever a silent mutation.</li>
+      <li><b>No inline cell editing, by design.</b> Users ask for it repeatedly; Microsoft's standing answer: refresh would wipe it, use Replace Values (a recorded step). The market's clearest statement that <i>recorded transformation ≠ data editing</i>.</li>
+      <li><b>Table view</b> (inside the model editor): right-click header → New measure / New column / Rename / Hide; DAX formula bar above the grid, new column materializes immediately. No shaping here — that's PQ's job. Grid sort/filter are view-local only.</li>
+      <li>The web semantic-model editor has <b>no data grid at all</b> — and Microsoft's 2024–26 investment went to <i>more</i> model-authoring surfaces (Model explorer, TMDL/DAX code views), not toward making the row grid the model editor.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>Looker → Omni — the cautionary tale and its answer</h3>
+    <p class="sub">Same people, opposite bets. Looker walls the grid off from the model; Omni makes the grid the model's front door.</p>
+    <ul>
+      <li><b>Looker:</b> the Explore grid is rich at query level — shortcut calcs from the header gear menu (% of column, running total, rank…), custom fields, the new column menus (filter, pivot, sort, hide) — but <b>nothing grid-born can ever reach LookML</b>. Promotion = a developer manually re-creates it. This is Looker's most-complained-about gap ("modeling twice", "untangling LookML", self-serve gated on the data team) and literally Omni's founding pitch.</li>
+      <li><b>Omni:</b> type <code>=</code> in the grid for Excel-syntax formulas (XLOOKUP across tabs, cell refs); column three-dot menu: filter, aggregates, timeframes, quick calcs, <i>edit the field's model definition from the grid</i>; right-click a pivot value → create filtered measure; joins from the field browser (workbook-scoped). Every action writes to a <b>per-workbook model layer</b>.</li>
+      <li>Governance is a separate, explicit step: <b>changes drawer → summary + color-coded YAML diff → "Promote to shared"</b> (or add to an auto-created branch), gated on Modeler/Admin permissions.</li>
+      <li>Their thesis, verbatim: <i>"Explore first, then model what matters."</i> Customer evidence (Synthesia): business users define metrics in the UI, the data team reviews in a git workflow.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>Sigma — the modeling canvas IS the grid</h3>
+    <p class="sub">Datasets are dead (June 2026); the data model editor is a workbook page. Same gestures for exploring and modeling — the document type + publish step is the governance boundary.</p>
+    <ul>
+      <li>Formula bar in the Excel position; column-level formulas (<code>[Price] * [Quantity]</code>) compiled to warehouse SQL.</li>
+      <li>Header caret menu: add new column (opens formula bar), duplicate, sort, filter, set aggregate, truncate date, format, totals, group. Rename = double-click. <b>Add column via lookup</b> = a join expressed as "add a column" — their most-copied gesture.</li>
+      <li><b>Dual entry is deliberate:</b> columns/groupings are reachable from both the header menu and the right-side element panel. A grid-shaped thought never requires a panel round-trip.</li>
+      <li>Model-level extras live on the document: relationships (ERD view), metrics, "Visible as source" per element, publish-time content validation warning about breaking downstream columns.</li>
+      <li>Known gaps: <b>no column-level promote</b> from workbook → data model (copy/paste is unsynced); the documented cost of grid freedom is <b>metric divergence</b> across workbooks — not formula chaos.</li>
+    </ul>
+  </div>
+
+  <h2>Five patterns that repeat</h2>
+  <div class="pattern"><div class="p-title">1 · Nobody protects the model by making the grid view-only.</div>Every modeling-adjacent grid is actionable. The only view-only grid (Tableau View Data) is an inspection pane — and even it was redesigned for being too static. Governance lives elsewhere: publish steps, diffs, permissions.</div>
+  <div class="pattern"><div class="p-title">2 · Grid gestures are launchers; artifacts always land in a recorded, inspectable inventory.</div>Applied Steps, Prep's Changes pane, Tableau's Data pane, Omni's workbook model, Sigma's element panel. The grid and the inventory are two views of one state, and dual entry (same action from header menu and panel) is deliberate.</div>
+  <div class="pattern"><div class="p-title">3 · Column-level actions are grid-born; structural actions stay on the canvas.</div>Calculated fields, filters, type changes, renames, splits, cleans → header menu / right-click, pre-scoped to the column. Joins and relationships → canvas + dialogs everywhere (Sigma's lookup-as-a-column is the one softening of this line).</div>
+  <div class="pattern"><div class="p-title">4 · Raw cell mutation is universally excluded from model grids.</div>Power BI refuses it by design; Tableau shipped it as a separate product (Prep) with recorded changes; Sigma isolates it in input tables (explicit writeback). Recorded transformation, never silent edit.</div>
+  <div class="pattern"><div class="p-title">5 · The frontier differentiator is the promotion ladder.</div>Query-scope → model-scope with review: Omni's YAML diff, Lightdash's dbt pull request. Looker's missing rung is its top complaint; Sigma's missing column-level rung is its known gap. <b>But note who needs a ladder: tools whose grid lives in a consumption document. A grid inside the model editor (Tableau, PBI Table view) writes to the model directly and needs no ladder.</b></div>
+
+  <h2>The analyst's mental model — your three questions</h2>
+  <p class="note">Grounded in the tools' own designs (which encode observed behavior), practitioner sentiment from the research, and standard SQL practice.</p>
+
+  <div class="qa">
+    <div class="q">1 · Do they query as they build, or once the model is assembled?</div>
+    <p><b>As they build — at every step.</b> Every tool in the scan is built around incremental validation: Power Query previews the data after <i>each</i> step; Sigma's join UI shows key match rates and a preview before you commit; Omni's whole thesis is analysis-before-modeling; a SQL analyst writes <code>SELECT … LIMIT 100</code> between every clause they add.</p>
+    <p>The three validation moments, in order of frequency:</p>
+    <ul>
+      <li><b>On table arrival</b> — is this the right table, are the values sane (nulls, dupes, date range, test rows). This is why PQ puts quality/distribution bars under every header.</li>
+      <li><b>On every join</b> — the single most important mid-build check: did rows fan out (duplication) or vanish (key mismatch)? This can only be diagnosed cheaply <i>at the moment the join is made</i>; found at the end, it means unwinding the whole model to find which join broke it.</li>
+      <li><b>At the end</b> — a smoke test, not the primary validation: run 2–3 questions with known answers ("last quarter's revenue should be ~X") against the assembled model.</li>
+    </ul>
+    <p class="note">This maps directly onto our shipped preview options: per-table/per-join checks are the select-to-preview moments; the end smoke test is the model-scope moment. The build loop uses both.</p>
+  </div>
+
+  <div class="qa">
+    <div class="q">2 · Filters — at the table as it arrives, or on the finished model?</div>
+    <p><b>Depends which of three kinds of filter it is — and analysts instinctively separate them:</b></p>
+    <ul>
+      <li><b>Scoping / hygiene filters (the majority): table-level, on arrival.</b> "Last 2 years only", "exclude test accounts", "closed-won only". They define what the model <i>is</i>, and applying them early makes every later join check and preview faster and cleaner. This is Tableau's data source filter, a PQ filter step on the source query, the WHERE in a SQL analyst's first CTE — and the practitioner rule behind it is Roche's Maxim: shape data as far upstream as possible.</li>
+      <li><b>Cross-table filters (a minority): model-level, after joins exist.</b> "Only accounts that have at least one opportunity" needs the join to be expressible at all.</li>
+      <li><b>Consumption filters: not in the model.</b> "Let the exec slice by quarter" is left for the answer experience, not baked in.</li>
+    </ul>
+    <p>So for the GTM story: the all-time <code>opportunities</code> table gets its date filter <i>the moment the analyst first previews it</i> — that's precisely a grid-at-table-scope gesture.</p>
+  </div>
+
+  <div class="qa">
+    <div class="q">3 · Formulas — single-table or across the model?</div>
+    <p><b>Two populations, and every tool's type system splits them the same way:</b></p>
+    <ul>
+      <li><b>Row-level derivations — the majority, single-table, often single-column, born early.</b> Deal-size bands, name concatenation, quarter-of-date, flags like <code>is_won</code>, unit conversions. They're born the moment the analyst looks at a column and sees it isn't analysis-ready — which is why every tool's column menu has "Create calculated field" pre-scoped to the clicked column. (Power BI: calculated column · Tableau: row-level calc · Lightdash: custom dimension.)</li>
+      <li><b>Aggregate business metrics — the minority, high-value, often cross-table, born late.</b> Win rate, pipeline coverage (opportunities × quotas), CAC (spend × customers). These need the joins to exist and are aggregations, not row math. (Power BI: measure · LookML: measure · Lightdash: custom metric.) They're created at model scope, after assembly — and they're the artifacts governance fights are about (Sigma's metric divergence).</li>
+    </ul>
+  </div>
+
+  <h3>The GTM walkthrough, end to end</h3>
+  <div class="walk">
+    <div class="step"><div>Drop <b>opportunities</b> → preview it (table scope) → values look right, but it's all-time → <b>filter close_date on the grid</b> → and while looking at <code>amount</code>, <b>add the deal-band formula from its column menu</b>. Both land on that table in the model; the left panel shows them immediately.</div></div>
+    <div class="step"><div>Drop <b>accounts</b>, draw the join → preview the join (join scope) → row count looks right, no fan-out → move on. (If it fanned out: fix it now, while the cause is one join old.)</div></div>
+    <div class="step"><div>Drop <b>reps</b>, <b>quotas</b> — same loop per table: arrive → inspect → clean/scope → join → verify.</div></div>
+    <div class="step"><div>Model scope → smoke test → now create the cross-table metrics (win rate, coverage) at model scope, where they belong.</div></div>
+  </div>
+
+  <h2>Proposal — the interaction model</h2>
+  <p>One spine rule, then five supporting rules. All of it follows the market patterns above; none of it requires new machinery beyond what the Split prototype already has.</p>
+
+  <div class="rule"><div class="n">Spine</div><div><b>The scope you're previewing is the scope you're creating in.</b> A filter or formula born while previewing <code>opportunities</code> is a table-level artifact on <code>opportunities</code>. Born at model scope, it's a model-level artifact (the cross-table metrics). The scope switcher we already built gives every grid-born artifact its scope for free — no extra chrome, no "where should this live?" dialog.</div></div>
+
+  <div class="rule"><div class="n">1</div><div><b>Grid actions write to the model directly — no staging layer.</b> Omni and Sigma need promotion ladders because their grids live in consumption documents. Ours lives <i>inside the model editor</i> — the Tableau Data Source page / PBI Table view situation — where direct writes are the established pattern. The left panel inventory updating instantly is what makes direct writes feel safe.</div></div>
+
+  <div class="rule"><div class="n">2</div><div><b>Dual entry, always.</b> Everything grid-born stays panel-born too (Sigma's explicit principle; PQ's ribbon/menu equivalence). The grid never becomes the only path — it's the <i>in-context</i> path. The column menu's job is to launch the existing creation flows pre-scoped to the clicked column, not to grow parallel flows.</div></div>
+
+  <div class="rule"><div class="n">3</div><div><b>No inline cell editing — recorded actions only.</b> The market's firmest consensus. Our Clean ops (fix nulls, change type, replace value, text case, trim) are exactly the sanctioned form: a recorded, inspectable action on a column, never a silent mutation of a cell.</div></div>
+
+  <div class="rule"><div class="n">4</div><div><b>The grid shows model state back.</b> The <code>fx</code> badge and filter-funnel tints we already have are the start; a rename or type change done on the grid should read as model metadata, same as if done in the panel. Grid and panel are two views of one model.</div></div>
+
+  <div class="rule"><div class="n">5</div><div><b>Structural work stays on the canvas.</b> Joins and relationships remain canvas gestures (market-uniform). The grid's join contribution is verification — the fan-out check at join scope — not creation.</div></div>
+
+  <h2>As built (24 Sep) — the two creation options</h2>
+  <p>Ruled by Vivek: build both, demo both, document what each one costs. Switcher: <b>Settings → Options → "Creation from preview (Split)"</b>. The machinery underneath is shared — the fx formula bar and the <b>product's "Select value for :" filter dialog</b> (copied from the MVP's replica, 25 Sep: date rolling/fixed with the resolved Preview chip, number operators, string/boolean value lists; real row predicates) write into the same model stores the left panel's Formula and Filters docks render. Creation is <b>model-preview only</b> (25 Sep ruling) — at table/join scope the triggers grey out with "Allowed in model preview". Filters and formulas actually filter/compute the preview rows. Promotion state colours (25 Sep): <b>grey = applied to the preview only, blue = added to the model</b> (funnel and fx chip). Promote at creation (checkbox + ⓘ in the modal / fx bar checkbox), later (funnel menu / fx column ▾ "Add to model"), or at save (the review modal). <span class="note">(History: 24 Sep first build used an include/exclude values popover, then the Combined sheet's two-step modal; both superseded — the popover remains unused in Spreadsheet.tsx.)</span></p>
+
+  <div class="card">
+    <h3>Option 1 · Adds to model directly <span class="tag yes" style="margin-left:8px">default</span></h3>
+    <p class="sub">Commit = model write. Formula commits land in the Formula dock, filter Applies land in the Filters dock. No checkbox anywhere.</p>
+    <ul>
+      <li><b>Pros:</b> one mental model — the canvas is the model editor and the grid is part of it; zero extra steps; grid and left panel can never disagree; the Tableau Data Source page / PBI Table view precedent; nothing half-in, half-out to explain.</li>
+      <li><b>Cons:</b> no sandbox — every experiment is a model edit (undo = delete); a filter created "just to look at the rows" still lands in the model; a mis-click has model-level consequences.</li>
+      <li><b>Edge cases (few):</b> deleting the artifact from the <i>left panel</i> leaves its column/filter in the preview, now amber — the column survives as a local leftover in a mode that has no draft concept. Rename/delete from the grid sync to the panel (built); the reverse direction only demotes.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>Option 2 · Draft in preview · promote to model</h3>
+    <p class="sub">Creation lands as an amber preview-local draft. "Add this filter to this model" checkbox in the Add-filter modal; "Add to model" checkbox in the fx bar (the formula's edit view — select the fx column and the same box promotes/demotes later); "Add to model / Remove from model" also in the fx column's ▾ menu. Drafts survive scope switches.</p>
+    <ul>
+      <li><b>Pros:</b> a sandbox — explore without touching the model; every model write is explicit intent; it's Omni's staging thesis in miniature, and the team's requested pattern.</li>
+      <li><b>Cons:</b> a half-state ("in my preview but not in my model") <i>inside the model editor</i>; two states to teach; a user who never notices the checkbox ships a model missing their work.</li>
+      <li><b>Edge cases (the bloom):</b><ol style="margin:4px 0 0; padding-left:18px">
+        <li><b>The preview lies</b> — a draft filter changes the rows on screen while the model has no such filter; the amber funnel is the only tell. At model scope the preview no longer shows what a consumer of the model would get.</li>
+        <li><b>Draft lifetime</b> — survives scope switch and panel close (ruled + built); dies on reload. Unruled: should drafts persist with the model document itself?</li>
+        <li><b>Out-of-scope drafts</b> — a draft filter whose column leaves the current scope goes inert (rows stop filtering) and silently reactivates when the column returns. Built that way so a scope switch can't filter everything to zero, but it's still a surprise.</li>
+        <li><b>The skipped checkbox</b> — mitigated by the after-creation paths (▾ menu, edit view), but the user has to discover them.</li>
+        <li><b>Publish-time sweep</b> — BUILT (25 Sep, Vivek's ruling): "Save changes" opens a review modal — model name, description, and every unpromoted sheet filter/formula with an add-to-model checkbox (default checked). Omni's changes-drawer is the market precedent.</li>
+        <li><b>Demote vs delete</b> — unchecking removes the artifact from the model but keeps it in the preview; deleting the column removes both. Two removals, one artifact.</li>
+        <li><b>Name collisions</b> — model formulas are keyed by name, so promoting a draft named like an existing formula replaces it. Same rule as the modal editor, but easier to hit with casual grid names ("Formula 2").</li>
+      </ol></li>
+    </ul>
+  </div>
+
+  <p class="note"><b>Shared edge cases (both options):</b> a model-level formula's <i>values</i> are still scope-local — switch to a scope missing its referenced columns and it shows empty/zero rows. And the stale-refresh machinery listens to canvas changes (tables/joins), not grid-born artifacts — a grid-born model write never raises "Data changed — Refresh" because the grid already shows the result.</p>
+
+  <h2>The formula-language question (24 Sep, later)</h2>
+  <p>The gap Vivek raised: the grid's fx bar speaks Excel (SUM, SUMIF, VLOOKUP, <code>=</code> entry — verbatim from the Spreadsheet Figma) while the left panel's Formula Editor speaks the ThoughtSpot formula language (its spec even lists Connection passthrough). Product ground truth, verified against docs.thoughtspot.com 26.9.0.cl (Sep 2026):</p>
+  <ul>
+    <li><b>The shipped product chose one language.</b> The core "Spreadsheet on live data" mode (Early Access, 26.9.0.cl) is explicitly ThoughtSpot-native: docs verbatim — <i>"Functions use lowercase names and reference columns in square brackets, for example <code>sum([Revenue])</code>. Excel-style syntax (such as <code>SUM(A:A)</code>) is not supported in this release."</i> Entry is an fx toolbar button / column-header +, not <code>=</code>. Spreadsheet ergonomics, TS language.</li>
+    <li><b>Same language at both levels already:</b> Answer formulas and Model formulas use the identical language, editor and Formula Assistant — only scope differs (<code>sum (revenue)</code>, <code>if (cost > 500) then 'flag' else 'approve'</code>, <code>group_aggregate(…)</code>, <code>sql_…_op</code> passthroughs).</li>
+    <li><b>But no promotion exists in the product:</b> spreadsheet-mode formula columns "are stored in the Answer, not in the Model… not visible to other users"; Model formulas are "not reusable" outside their Model; the standing guidance is manual re-creation. The product today has the Looker wall — which is precisely the gap this exploration's two landing options address.</li>
+    <li><b>The Excel-ish signals live elsewhere:</b> Analyst Studio's spreadsheet (Mode-derived, Jul 2026 EA) markets "SUMIF, VLOOKUP-style lookups" alongside <code>group_aggregate</code> — its exact entry syntax is undocumented (flagged unverified) — and Analyst Studio calculated fields are a third dialect (SQL-ish uppercase, <code>[Status]</code> brackets). Different surface, different persona (analyst prep), not the model editor.</li>
+  </ul>
+  <p><b>Implication:</b> "one language, two ergonomics" isn't just the market recommendation (PBI Table view, Sigma) — it's what core ThoughtSpot shipped this month. Aligning the prototype = swap the fx bar's Excel suggestion list for lowercase TS functions with <code>[Column]</code> refs, commit the same expression string the Formula Editor holds, and add "Edit in formula editor" to the fx column menu. The two-dialect option (grid Excel / panel TS) would put the prototype at odds with the shipped EA behavior. <span class="note">Awaiting Vivek's ruling.</span></p>
+
+  <h2>Rulings so far (24 Sep)</h2>
+  <ul>
+    <li>First principle agreed: <b>act on what you see</b> — the visible column is the launcher; switch scope to reach the rest; the editor sees the whole scope.</li>
+    <li>Both landing options built for stakeholder comparison; Vivek's own position is direct-to-model ("users will not intuitively understand" a promote step inside the model editor).</li>
+    <li>Promote-after-creation happens in the artifact's edit view (fx bar checkbox, ▾ menu, filter menu re-open) — built. The publish-time sweep stays a documented variant.</li>
+    <li>Unpromoted artifacts get their own colour (amber) — built. Drafts survive scope switch — built. The draft-filter "preview lies" hazard is accepted with the amber marker as the tell.</li>
+  </ul>
+
+  <div class="open">
+    <h3>Still open — your call</h3>
+    <ul>
+      <li><b>Chrome → real:</b> the column menu's visual-only items (Rename, Duplicate, Format, Conditional formatting, Text wrapping). In market terms Rename and Format are model metadata (Tableau/PBI both grid-launch them). Which become real, in what order? (Grid rename of a base column is currently view-local.)</li>
+      <li><b>Join scope:</b> creation actions at join-scope preview too, or only table + model scopes? (Market precedent is thin — join previews are for verification everywhere.)</li>
+      <li><b>Fan-out feedback:</b> Sigma shows join-key match rates at join time. A row-count / match-rate readout in the join-scope preview — this exploration or later?</li>
+      <li><b>Model-scope metrics:</b> when a cross-table formula is born at model scope, does it start from the grid at all (no single home column) or does model scope keep creation panel-first?</li>
+      <li><b>Option 2 only:</b> draft persistence beyond the session, and the publish-time sweep.</li>
+    </ul>
+  </div>
+
+  <h2>Sources (per cluster)</h2>
+  <p class="src">
+    <b>Tableau:</b> help.tableau.com — environment_datasource_page, split, pivot, inspectdata_viewdata, edit_datasources, prep_clean, server_desktop_web_edit_differences · just-tim.com (View Data redesign).<br>
+    <b>Power BI:</b> learn.microsoft.com — power-query/power-query-ui, applied-steps, data-profiling-tools, power-bi/desktop-data-view, desktop-calculated-columns, service-edit-data-models, desktop-tmdl-view · community.fabric.microsoft.com (cell-editing threads, PQ-vs-SQL threads).<br>
+    <b>Looker:</b> docs.cloud.google.com/looker — table-calculations, custom-fields, new-explore-experience, sql-runner-basics · sigmacomputing.com/blog/the-problem-with-lookml · medium.com (Pleasures and pitfalls of Looker).<br>
+    <b>Omni:</b> omni.co/blog — just-in-time-data-modeling (+ in-action) · docs.omni.co — promotion, model-management, relationships/build, calculations, filtered-measures, saved-views · dynamicdata.com/blog/platform-omni.<br>
+    <b>Sigma:</b> help.sigmacomputing.com — data models, tables, input tables, lookups, joins, workbook lifecycle, badges, version tags · VLDB paper "Sigma Workbook" · knowi.com Sigma review · G2.<br>
+    <b>Fresh players:</b> learn.hex.tech (Explore) · docs.lightdash.com (dbt-write-back, explores) · docs.count.co · docs.quadratichq.com · rowzero.io · equals.com.<br>
+    <b>Flagged unverified by the researchers:</b> Tableau Data Source grid alias gesture; full single-page listings of PBI header menus; Sigma column-level promotion (appears not to exist); Omni model-IDE inline preview; whether Tableau Next changes the Data Source page.
+  </p>
+
+</div>
+</body>
+</html>

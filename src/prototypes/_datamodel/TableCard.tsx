@@ -1,5 +1,6 @@
 import React, { useRef } from 'react';
 import { Link } from '@components/Link';
+import { Icon } from '@components/icons';
 import styles from './TableCard.module.css';
 
 export interface TableCardProps {
@@ -19,6 +20,16 @@ export interface TableCardProps {
   // this component (DataModelEditor, the explorations copy, CoachingScreen)
   // keep their current hover-less cards.
   hoverAffordance?: boolean;
+  /**
+   * Click-primary cursor treatment (additive, 2026-09-24, SearchDataOnDataModelFinal
+   * Split only): pointer at rest instead of grab — click (preview) is the
+   * primary action; drag still works from the whole body via the movement
+   * threshold, and the grabbing cursor still shows during an actual drag.
+   * Omitted everywhere else, so every other consumer keeps grab-at-rest.
+   */
+  clickPrimary?: boolean;
+  /** Product-reference visual skin (2026-09-25) — see TableCard.module.css. */
+  skin?: 'product';
   // Mousedown on the join handle. TableCanvas owns the click-vs-drag decision
   // and the dotted line, since only it knows the canvas coordinate space.
   onJoinHandleMouseDown?: (name: string, e: React.MouseEvent) => void;
@@ -46,15 +57,12 @@ const PLUS_SVG = (
   </svg>
 );
 
-const EYE_SVG = (
-  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-    <path d="M1.8 8s2.3-4.3 6.2-4.3S14.2 8 14.2 8s-2.3 4.3-6.2 4.3S1.8 8 1.8 8z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
-    <circle cx="8" cy="8" r="1.9" stroke="currentColor" strokeWidth="1.3" />
-  </svg>
-);
+// Radiant's Eye icon (2026-09-25, was a hand-drawn approximation) at 16px —
+// matching the more-options dots' optical weight.
+const EYE_SVG = <Icon name="eye" size="m" color="currentColor" aria-hidden />;
 
 const TableCard = React.forwardRef<HTMLDivElement, TableCardProps>(
-  ({ name, totalColumns, addedColumns, x, y, onDrag, onDragEnd, onMenuClick, selected, onSelect, hoverAffordance = false, onJoinHandleMouseDown, onAddColumns, onPreview }, ref) => {
+  ({ name, totalColumns, addedColumns, x, y, onDrag, onDragEnd, onMenuClick, selected, onSelect, hoverAffordance = false, clickPrimary = false, skin, onJoinHandleMouseDown, onAddColumns, onPreview }, ref) => {
     const [isDragging, setIsDragging] = React.useState(false);
     const currentPos = useRef({ x, y });
 
@@ -93,7 +101,7 @@ const TableCard = React.forwardRef<HTMLDivElement, TableCardProps>(
     return (
       <div
         ref={ref}
-        className={`${styles.card} ${isDragging ? styles.dragging : ''} ${selected ? styles.selected : ''} ${hoverAffordance ? styles.hoverable : ''}`}
+        className={`${styles.card} ${isDragging ? styles.dragging : ''} ${selected ? styles.selected : ''} ${hoverAffordance ? styles.hoverable : ''} ${clickPrimary ? styles.clickPrimary : ''} ${skin === 'product' ? styles.skinProduct : ''}`}
         style={{ left: x, top: y }}
         data-table={name}
         onMouseDown={handleMouseDown}

@@ -2446,9 +2446,17 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--rd-sys-color-content-secondary, #777e8b);
+  /* Enabled actions read as ink, not grey (2026-09-25, Vivek). */
+  color: var(--rd-sys-color-content-primary, #1d232f);
   padding: 0;
   transition: background 120ms ease, color 120ms ease;
+}
+.sheetTbBtn[aria-disabled='true'],
+.sheetTbBtn[aria-disabled='true']:hover,
+.sheetTbBtn[aria-disabled='true']:active {
+  background: transparent;
+  color: var(--rd-sys-color-content-tertiary, #c0c6cf);
+  cursor: default;
 }
 .sheetTbBtn:hover {
   background: var(--rd-sys-color-background-subtle, #eaedf2);
@@ -2677,7 +2685,8 @@
   padding: 0 8px;
   font-size: 12px;
   font-weight: 600;
-  color: var(--rd-sys-color-content-primary, #1d232f);
+  /* Product reference (2026-09-25): header titles read grey, not ink. */
+  color: var(--rd-sys-color-content-secondary, #777e8b);
   font-family: var(--font-family-primary, 'Plain', sans-serif);
   border-right: 1px solid var(--rd-sys-color-border-subtle, #eaedf2);
   box-sizing: border-box;

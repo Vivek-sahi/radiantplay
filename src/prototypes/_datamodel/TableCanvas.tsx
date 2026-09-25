@@ -5,6 +5,11 @@ import type { JoinInfo, CardRect } from './JoinConnector';
 
 const CARD_W = 200;
 const CARD_H = 120;
+// Product skin renders a larger card (TableCard.module.css .skinProduct) —
+// join geometry must use the real footprint or lines float short of the
+// edges (2026-09-25, Vivek: "lines should start from card edge only").
+const CARD_W_PRODUCT = 220;
+const CARD_H_PRODUCT = 132;
 
 export interface TablePositionData {
   name: string;
@@ -31,6 +36,8 @@ export interface TableCanvasProps {
   // Additive, opt-in — see TableCard's own prop. Off by default so the other
   // consumers of this canvas keep their current hover-less cards.
   hoverAffordance?: boolean;
+  // Additive, opt-in — see TableCard's own prop (pointer at rest, click-primary).
+  clickPrimary?: boolean;
   // Fired by the join handle: clicking it passes no target (the consumer asks
   // the user to choose one); dragging it onto another card passes that card.
   // Omitted by default, which also leaves the handle inert.
@@ -46,9 +53,13 @@ export interface TableCanvasProps {
   // by default so every other consumer keeps its current cards and badges.
   onPreviewTable?: (tableName: string) => void;
   onPreviewJoin?: (join: JoinInfo) => void;
+  // Additive, opt-in — see JoinConnector's own prop (badge click opens a menu).
+  onJoinMenu?: (join: JoinInfo, e: React.MouseEvent) => void;
+  // Additive, opt-in — the product-reference visual skin for cards and joins.
+  skin?: 'product';
 }
 
-const TableCanvas: React.FC<TableCanvasProps> = ({ tables, joins, onTableDragEnd, selectedTable, onSelectTable, selectedJoinKey, onSelectJoin, highlightedTables, hoverAffordance, onCreateJoin, onAddColumns, onTableMenu, onPreviewTable, onPreviewJoin }) => {
+const TableCanvas: React.FC<TableCanvasProps> = ({ tables, joins, onTableDragEnd, selectedTable, onSelectTable, selectedJoinKey, onSelectJoin, highlightedTables, hoverAffordance, clickPrimary, onCreateJoin, onAddColumns, onTableMenu, onPreviewTable, onPreviewJoin, onJoinMenu, skin }) => {
   // Live dotted line while dragging from a card's join handle.
   const [joinDrag, setJoinDrag] = useState<{ from: string; x: number; y: number } | null>(null);
 
@@ -96,13 +107,15 @@ const TableCanvas: React.FC<TableCanvasProps> = ({ tables, joins, onTableDragEnd
   }, [tables]);
 
   const cardRects = useMemo((): Record<string, CardRect> => {
+    const cw = skin === 'product' ? CARD_W_PRODUCT : CARD_W;
+    const ch = skin === 'product' ? CARD_H_PRODUCT : CARD_H;
     const rects: Record<string, CardRect> = {};
     tables.forEach(t => {
       const pos = positions[t.name] ?? { x: t.x, y: t.y };
-      rects[t.name] = { x: pos.x, y: pos.y, w: CARD_W, h: CARD_H };
+      rects[t.name] = { x: pos.x, y: pos.y, w: cw, h: ch };
     });
     return rects;
-  }, [tables, positions]);
+  }, [tables, positions, skin]);
 
   return (
     <>
@@ -121,6 +134,8 @@ const TableCanvas: React.FC<TableCanvasProps> = ({ tables, joins, onTableDragEnd
             selected={t.name === selectedTable || (highlightedTables?.includes(t.name) ?? false)}
             onSelect={onSelectTable}
             hoverAffordance={hoverAffordance}
+            clickPrimary={clickPrimary}
+            skin={skin}
             onJoinHandleMouseDown={handleJoinHandleMouseDown}
             onAddColumns={onAddColumns}
             onMenuClick={onTableMenu ? e => onTableMenu(t.name, e) : undefined}
@@ -128,7 +143,7 @@ const TableCanvas: React.FC<TableCanvasProps> = ({ tables, joins, onTableDragEnd
           />
         );
       })}
-      <JoinConnector joins={joins} cardRects={cardRects} selectedJoinKey={selectedJoinKey} onSelectJoin={onSelectJoin} onPreviewJoin={onPreviewJoin} />
+      <JoinConnector joins={joins} cardRects={cardRects} selectedJoinKey={selectedJoinKey} onSelectJoin={onSelectJoin} onPreviewJoin={onPreviewJoin} onJoinMenu={onJoinMenu} skin={skin} />
       {joinDrag && cardRects[joinDrag.from] && (
         <svg
           style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', overflow: 'visible', zIndex: 1 }}
