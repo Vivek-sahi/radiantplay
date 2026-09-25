@@ -2571,6 +2571,10 @@ body .model-info-popover {
 .sm-canvas-menu [role="menuitem"] {
   padding: 10px var(--spacing-4);
   font-size: var(--font-size-sm);
+  /* One step under Radiant Menu's own regular 400 (2026-09-25, Vivek) — the
+     sheet's column/funnel menus already sit at light, so canvas and sheet
+     menus now read the same weight. */
+  font-weight: var(--font-weight-light);
   line-height: var(--line-height-sm);
   color: var(--rd-sys-color-content-primary);
 }

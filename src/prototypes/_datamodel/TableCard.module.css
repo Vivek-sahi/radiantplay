@@ -30,20 +30,31 @@
      .dragging's grabbing cursor still wins during a drag. */
   cursor: default;
 }
+/* Card type — smaller and lighter alternative (2026-09-25, Vivek: "lets try
+   a smaller font size and lesser weight"). Now on Radiant's own recipes:
+   the name is content-label-subhead (14/20, medium 500) and the two
+   supporting lines are xs/16 regular. Letter-spacing is gone because the DS
+   defines no tracking tokens — the old −0.08px was a Figma export artifact.
+   TO REVERT to the product-screenshot sizing: name font-size-md +
+   letter-spacing -0.08px + line-height-md + weight semibold; label and
+   colCount font-size-sm + line-height-sm. */
 .skinProduct .label {
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-regular);
   letter-spacing: 0;
-  line-height: var(--line-height-sm);
+  line-height: var(--line-height-xs);
 }
 .skinProduct .name {
-  font-size: var(--font-size-md);
-  letter-spacing: -0.08px;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: 0;
   line-height: var(--line-height-md);
 }
 .skinProduct .colCount {
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-regular);
   letter-spacing: 0;
-  line-height: var(--line-height-sm);
+  line-height: var(--line-height-xs);
 }
 
 /* Click-primary cards (additive, opt-in via the clickPrimary prop): the

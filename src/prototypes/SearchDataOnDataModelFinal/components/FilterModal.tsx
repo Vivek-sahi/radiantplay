@@ -325,7 +325,7 @@ export function FilterModal({ filter, distinctValues, promote, onCancel, onApply
     : false;
 
   const label = (t: string) => (
-    <div style={{ fontSize: fs.xs, fontWeight: fw.medium, color: c['content-secondary'], marginBottom: sp.A, fontFamily: ff.primary }}>{t}</div>
+    <div style={{ fontSize: fs.xs, fontWeight: fw.regular, color: c['content-secondary'], marginBottom: sp.A, fontFamily: ff.primary }}>{t}</div>
   );
 
   // ⚠️ `SelectOption` keys on `id`, not `value` — `value` is the optional override that
@@ -476,7 +476,7 @@ export function FilterModal({ filter, distinctValues, promote, onCancel, onApply
             color: c['content-primary'], maxWidth: '100%',
           }}>
             <span>{draft.col}</span>
-            <strong style={{ fontWeight: fw.semibold }}>{describeFilter(draft)}</strong>
+            <strong style={{ fontWeight: fw.medium }}>{describeFilter(draft)}</strong>
           </span>
         </div>
       </Vertical>

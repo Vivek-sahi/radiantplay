@@ -3007,7 +3007,7 @@
   border: none;
   text-align: left;
   font-size: var(--font-size-sm);
-  font-weight: 375;
+  font-weight: var(--font-weight-light);
   font-family: var(--font-family-primary, 'Plain', sans-serif);
   color: var(--rd-sys-color-content-primary, #1d232f);
   cursor: pointer;
@@ -3045,7 +3045,7 @@
   border: none;
   text-align: left;
   font-size: var(--font-size-sm);
-  font-weight: 375;
+  font-weight: var(--font-weight-light);
   font-family: var(--font-family-primary, 'Plain', sans-serif);
   color: var(--rd-sys-color-content-primary, #1d232f);
   cursor: pointer;
@@ -3085,7 +3085,7 @@
   border: none;
   text-align: left;
   font-size: var(--font-size-sm);
-  font-weight: 375;
+  font-weight: var(--font-weight-light);
   font-family: var(--font-family-primary, 'Plain', sans-serif);
   color: var(--rd-sys-color-content-primary, #1d232f);
   cursor: pointer;
@@ -3330,7 +3330,7 @@
   display: block;
   font-family: var(--font-family-primary, 'Plain', sans-serif);
   font-size: var(--font-size-sm);
-  font-weight: 375;
+  font-weight: var(--font-weight-light);
   line-height: var(--line-height-md);
   color: var(--rd-sys-color-content-secondary, #777e8b);
   cursor: text;
@@ -3350,7 +3350,7 @@
   display: block;
   font-family: var(--font-family-primary, 'Plain', sans-serif);
   font-size: var(--font-size-sm);
-  font-weight: 375;
+  font-weight: var(--font-weight-light);
   line-height: var(--line-height-md);
   color: var(--rd-sys-color-content-primary, #1d232f);
   border: none;
@@ -3406,7 +3406,7 @@
 
 .colPickerLabel {
   font-size: var(--font-size-sm);
-  font-weight: 375;
+  font-weight: var(--font-weight-light);
   color: var(--rd-sys-color-content-primary, #1d232f);
   line-height: var(--line-height-md);
   font-family: var(--font-family-primary, 'Plain', sans-serif);

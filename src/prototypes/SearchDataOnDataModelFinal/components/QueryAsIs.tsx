@@ -7023,10 +7023,14 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
     if (previewBehavior.refresh === 'explicit') {
       if (scopeKey === 'model' && (!canvasScope || canvasScope.tables.length === 0 || modelBroken)) { setScopeLoading(false); setModelStale(false); return; }
       if (scopeChanged) { runScopeLoad(scopeKey === 'model'); return; }
-      if (sigChanged) {
-        if (loadedSnapRef.current && loadedSnapRef.current.key === scopeKey) { setModelStale(true); return; }
-        runScopeLoad(scopeKey === 'model');
-      }
+      // Content change inside the scope the user explicitly picked: just
+      // re-query (2026-09-25, Vivek: "I don't think we need the banner now
+      // because data preview scope is so explicit"). The explicitness is
+      // about WHICH object is previewed — picking it is the deliberate act —
+      // so rows for that object track it live rather than parking behind a
+      // needs-refresh banner. Staleness stays wired for the 'manual' mode
+      // below (off the menu, still built): set modelStale there, not here.
+      if (sigChanged) { setModelStale(false); runScopeLoad(scopeKey === 'model'); }
       return;
     }
     if (scopeKey !== 'model') { setModelStale(false); if (scopeChanged) runScopeLoad(false); return; }

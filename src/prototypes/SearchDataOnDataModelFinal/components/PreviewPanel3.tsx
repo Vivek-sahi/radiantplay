@@ -280,7 +280,7 @@ const PreviewPanel3Optimized: React.FC<OptimizedProps> = ({
               "Spreadsheet" (2026-09-24, Vivek), the grid-as-workbench framing.
               Combined keeps this flank blank exactly as before. */}
           {hideQueryTab && (
-            <span style={{ fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-semibold)', color: 'var(--rd-sys-color-content-primary)' }}>Spreadsheet</span>
+            <span style={{ fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-medium)', color: 'var(--rd-sys-color-content-primary)' }}>Spreadsheet</span>
           )}
         </div>
         {!hideQueryTab ? (

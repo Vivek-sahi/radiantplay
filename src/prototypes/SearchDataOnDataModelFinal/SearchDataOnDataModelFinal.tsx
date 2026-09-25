@@ -2586,9 +2586,12 @@ const SearchDataOnDataModelFinal: React.FC = () => {
         onClose={() => setTableCardMenu(null)}
         placement="bottom-start"
       >
-        {/* Product's table-card menu (2026-09-25, Vivek's screenshot):
-            Add join... / Create alias... / Remove table... . Create alias is
-            present-for-parity — no alias machinery in the prototype. */}
+        {/* Product's table-card menu (2026-09-25, Vivek's screenshot).
+            Remove table is LAST — same rule the filter menu follows, the
+            destructive action never sits mid-list (2026-09-25: "remove
+            should be last option in this"). Dividers stay (his call the same
+            day). Create alias and Show join recommendation are
+            present-for-parity — no machinery behind either. */}
         <Menu className="sm-canvas-menu" onClose={() => setTableCardMenu(null)}>
           <Menu.Item onClick={() => { if (tableCardMenu) setJoinDraft({ left: tableCardMenu.name }); setTableCardMenu(null); }}>
             Add join
@@ -2597,12 +2600,12 @@ const SearchDataOnDataModelFinal: React.FC = () => {
             Create alias
           </Menu.Item>
           <Menu.Divider />
-          <Menu.Item onClick={() => { if (tableCardMenu) handleRemoveTable(tableCardMenu.name); setTableCardMenu(null); }}>
-            Remove table
-          </Menu.Item>
-          <Menu.Divider />
           <Menu.Item onClick={() => setTableCardMenu(null)}>
             Show join recommendation
+          </Menu.Item>
+          <Menu.Divider />
+          <Menu.Item onClick={() => { if (tableCardMenu) handleRemoveTable(tableCardMenu.name); setTableCardMenu(null); }}>
+            Remove table
           </Menu.Item>
         </Menu>
       </AnchoredMenu>
@@ -2661,11 +2664,13 @@ const SearchDataOnDataModelFinal: React.FC = () => {
               <Typography variant="content-label-subhead" as="div" style={{ marginBottom: 'var(--spacing-2)' }}>Description</Typography>
               <TextArea value={saveModelDesc} onChange={e => setSaveModelDesc(e.target.value)} placeholder="Add a description" rows={2} />
             </div>
+            {/* The whole section drops out when there is nothing unsaved
+                (2026-09-25, Vivek) — a heading plus "nothing here" is noise
+                in the common case where Save is just Save. */}
+            {(sheetDrafts.filters.length > 0 || sheetDrafts.formulas.length > 0) && (
             <div>
               <Typography variant="content-label-subhead" as="div" style={{ marginBottom: 'var(--spacing-1)' }}>Unsaved spreadsheet changes</Typography>
-              {sheetDrafts.filters.length === 0 && sheetDrafts.formulas.length === 0 ? (
-                <Typography variant="body-normal" color="gray" as="div">No unsaved spreadsheet changes.</Typography>
-              ) : (() => {
+              {(() => {
                 const allKeys = [
                   ...sheetDrafts.filters.map(f => `f:${f.col}`),
                   ...sheetDrafts.formulas.map(x => `x:${x.name}`),
@@ -2692,31 +2697,35 @@ const SearchDataOnDataModelFinal: React.FC = () => {
                       onChange={v => setSaveChecks(prev => ({ ...prev, [key]: v }))}
                       showLabel={false}
                     />
-                    <Typography variant="body-normal" as="span">{name}</Typography>
-                    <Typography variant="body-normal" color="gray" as="span">{val}</Typography>
+                    <Typography variant="body-normal" as="span" style={{ fontWeight: 'var(--font-weight-light)' }}>{name}</Typography>
+                    <Typography variant="body-normal" color="gray" as="span" style={{ fontWeight: 'var(--font-weight-light)' }}>{val}</Typography>
                   </div>
                 );
                 return (
                   <>
-                    {/* Copy is Vivek's, verbatim (2026-09-25). */}
-                    <Typography variant="body-normal" color="gray" as="div" style={{ marginBottom: 'var(--spacing-3)' }}>
+                    {/* Copy is Vivek's, verbatim (2026-09-25). Light 375 so it
+                        reads as supporting text, not a second title — at
+                        regular 400 it sat only one weight step under the
+                        section header and the two ran together ("it reads
+                        same as title"). */}
+                    <Typography variant="body-normal" color="gray" as="div" style={{ fontWeight: 'var(--font-weight-light)', marginBottom: 'var(--spacing-3)' }}>
                       Checked changes are added to the model when you save.
                     </Typography>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-2)', maxHeight: 320, overflowY: 'auto' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-2)' }}>
                         <Checkbox checked={allChecked} onChange={setAll} showLabel={false} />
-                        <Typography variant="body-normal" as="span">Select all</Typography>
+                        <Typography variant="body-normal" as="span" style={{ fontWeight: 'var(--font-weight-light)' }}>Select all</Typography>
                       </div>
                       <Divider />
                       {sheetDrafts.filters.length > 0 && (
                         <>
-                          <Typography variant="content-label-subhead" as="div" style={{ marginTop: 'var(--spacing-1)' }}>Filters</Typography>
+                          <Typography variant="body-normal" as="div" style={{ marginTop: 'var(--spacing-1)' }}>Filters</Typography>
                           {sheetDrafts.filters.map(f => draftRow(`f:${f.col}`, f.col, f.val))}
                         </>
                       )}
                       {sheetDrafts.formulas.length > 0 && (
                         <>
-                          <Typography variant="content-label-subhead" as="div" style={{ marginTop: 'var(--spacing-2)' }}>Formulas</Typography>
+                          <Typography variant="body-normal" as="div" style={{ marginTop: 'var(--spacing-2)' }}>Formulas</Typography>
                           {sheetDrafts.formulas.map(x => draftRow(`x:${x.name}`, x.name, x.expression))}
                         </>
                       )}
@@ -2725,6 +2734,7 @@ const SearchDataOnDataModelFinal: React.FC = () => {
                 );
               })()}
             </div>
+            )}
           </div>
         </RdModal>
       )}
@@ -2742,7 +2752,7 @@ const SearchDataOnDataModelFinal: React.FC = () => {
       >
         <Menu className="sm-canvas-menu" onClose={() => setJoinMenu(null)}>
           <Menu.Item onClick={() => { if (joinMenu) previewJoinExplicit(joinMenu.j); setJoinMenu(null); }}>
-            Preview
+            Preview data
           </Menu.Item>
           <Menu.Item onClick={() => { if (joinMenu) setJoinDraft({ left: joinMenu.j.leftTable, right: joinMenu.j.rightTable }); setJoinMenu(null); }}>
             Edit join
