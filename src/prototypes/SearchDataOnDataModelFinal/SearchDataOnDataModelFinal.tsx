@@ -889,6 +889,23 @@ const SearchDataOnDataModelFinal: React.FC = () => {
   // Direction 3 only: canvas highlight, decoupled from what the panel previews.
   const [selTable, setSelTable] = useState('');
   const [selJoin, setSelJoin] = useState<JoinInfo | null>(null);
+  // A previewed join that gets deleted leaves the preview with nothing to
+  // show, so the scope drops to 'none' and the canvas selection clears —
+  // rather than holding the dead join's name in the scope switcher
+  // (2026-09-25, Vivek: "when a join is deleted but was being previewed,
+  // nothing should be left selected afterward"). Watches the canvas joins
+  // rather than hooking the delete handler, so every deletion path is
+  // covered.
+  useEffect(() => {
+    if (previewScope !== 'join' || !previewJoin) return;
+    const stillThere = tableCanvasData.joins.some(j => joinKey(j) === joinKey(previewJoin));
+    if (stillThere) return;
+    setPreviewJoin(null);
+    setPreviewTable('');
+    setPreviewScope('none');
+    setSelJoin(null);
+    setSelTable('');
+  }, [tableCanvasData.joins, previewScope, previewJoin]);
   // Switching directions resets to that direction's home with nothing selected.
   const applyPreviewDirection = (d: 1 | 2 | 3 | 4) => {
     setPreviewDirection(d);
@@ -902,7 +919,10 @@ const SearchDataOnDataModelFinal: React.FC = () => {
   // model as it commits. 'promote' (the team wants to see it) — the creation
   // stays a preview-local draft until its "Add to model" checkbox is ticked,
   // in the creation flow itself or later from the fx column's ▾ menu / fx bar.
-  const [creationMode, setCreationMode] = useState<'direct' | 'promote'>('direct');
+  // Default is the draft-then-promote journey (2026-09-25, Vivek: "draft in
+  // promote should be default in this") — it was 'direct' when that option
+  // was his working position on 24 Sep.
+  const [creationMode, setCreationMode] = useState<'direct' | 'promote'>('promote');
   // A left-panel Filters row's Edit asking the preview grid to open its
   // Add-filter modal on that filter (nonce so re-edits fire). Also opens the
   // panel — the modal lives inside it.
@@ -1193,26 +1213,23 @@ const SearchDataOnDataModelFinal: React.FC = () => {
               only while it's the active direction. Menu stays open on these
               so the sub-knobs can be set in one visit. */}
           <Menu.Divider />
-          {/* The two preview mental models (Vivek, 2026-09-23: "we then need
-              2 options only"). Direction 3 — the icons-only explicit-preview
-              variant — stays fully built but off the menu; re-add an
-              applyPreviewDirection(3) row here to demo it. */}
+          {/* Only the settled default of each group is on the menu now
+              (2026-09-25, Vivek: "hide the unselected option from here, only
+              keep defaults — if needed we'll bring them back later"). Every
+              alternative stays FULLY BUILT and reachable by re-adding its row
+              here; nothing below this menu was removed.
+                Data preview: directions 1 (icons + card click), 2 (model is
+              home · auto refresh) and 4 (card click only) are off the menu —
+              3 (eye icons, the 25 Sep design-review ruling) is the default
+              and the only one shown.
+                Creation: 'direct' (adds to model directly) is off the menu —
+              'promote' (draft in preview) is the default per the same day's
+              ruling. See grid-as-workbench.html for the pros/cons of each. */}
           <Menu.Group label="Data preview (Split)">
-            <Menu.Item active={previewDirection === 2} onClick={() => applyPreviewDirection(2)}>Model is home · auto refresh</Menu.Item>
-            {/* 25 Sep design review: the eye-icon option is now direction 3 —
-                icons are the ONLY preview trigger; a card click highlights but
-                never changes the previewed data. Direction 1 (click also
-                previews) is off the menu, still built. */}
             <Menu.Item active={previewDirection === 3} onClick={() => applyPreviewDirection(3)}>Select to preview · eye icons</Menu.Item>
-            <Menu.Item active={previewDirection === 4} onClick={() => applyPreviewDirection(4)}>Select to preview · card click only</Menu.Item>
           </Menu.Group>
           <Menu.Divider />
-          {/* Where a formula/filter born on the preview grid lands (2026-09-24,
-              Vivek: "one option is just direct... second has a checkbox for
-              promote — my team wants to see that option"). See
-              grid-as-workbench.html for the pros/cons/edge-cases writeup. */}
           <Menu.Group label="Creation from preview (Split)">
-            <Menu.Item active={creationMode === 'direct'} onClick={() => setCreationMode('direct')}>Adds to model directly</Menu.Item>
             <Menu.Item active={creationMode === 'promote'} onClick={() => setCreationMode('promote')}>Draft in preview · promote to model</Menu.Item>
           </Menu.Group>
         </Menu>
@@ -2647,7 +2664,7 @@ const SearchDataOnDataModelFinal: React.FC = () => {
             <div>
               <Typography variant="content-label-subhead" as="div" style={{ marginBottom: 'var(--spacing-1)' }}>Unsaved spreadsheet changes</Typography>
               {sheetDrafts.filters.length === 0 && sheetDrafts.formulas.length === 0 ? (
-                <Typography variant="caption" color="gray" as="div">No unsaved spreadsheet changes.</Typography>
+                <Typography variant="body-normal" color="gray" as="div">No unsaved spreadsheet changes.</Typography>
               ) : (() => {
                 const allKeys = [
                   ...sheetDrafts.filters.map(f => `f:${f.col}`),
@@ -2664,6 +2681,10 @@ const SearchDataOnDataModelFinal: React.FC = () => {
                 // grey caption sub-heads, regular-weight rows (name primary,
                 // value secondary — no bold), Select all split off by a
                 // divider.
+                // 14px throughout (2026-09-25, Vivek: "I find them too small")
+                // — footnote/caption are 12px, which sat below the rest of the
+                // modal and below the sheet's own 14px floor. Hierarchy comes
+                // from weight and colour now, not size.
                 const draftRow = (key: string, name: string, val: string) => (
                   <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-2)' }}>
                     <Checkbox
@@ -2671,31 +2692,31 @@ const SearchDataOnDataModelFinal: React.FC = () => {
                       onChange={v => setSaveChecks(prev => ({ ...prev, [key]: v }))}
                       showLabel={false}
                     />
-                    <Typography variant="footnote" as="span">{name}</Typography>
-                    <Typography variant="footnote" color="gray" as="span">{val}</Typography>
+                    <Typography variant="body-normal" as="span">{name}</Typography>
+                    <Typography variant="body-normal" color="gray" as="span">{val}</Typography>
                   </div>
                 );
                 return (
                   <>
                     {/* Copy is Vivek's, verbatim (2026-09-25). */}
-                    <Typography variant="caption" color="gray" as="div" style={{ marginBottom: 'var(--spacing-3)' }}>
+                    <Typography variant="body-normal" color="gray" as="div" style={{ marginBottom: 'var(--spacing-3)' }}>
                       Checked changes are added to the model when you save.
                     </Typography>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-2)', maxHeight: 320, overflowY: 'auto' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-2)' }}>
                         <Checkbox checked={allChecked} onChange={setAll} showLabel={false} />
-                        <Typography variant="footnote" as="span">Select all</Typography>
+                        <Typography variant="body-normal" as="span">Select all</Typography>
                       </div>
                       <Divider />
                       {sheetDrafts.filters.length > 0 && (
                         <>
-                          <Typography variant="caption" color="gray" as="div" style={{ marginTop: 'var(--spacing-1)' }}>Filters</Typography>
+                          <Typography variant="content-label-subhead" as="div" style={{ marginTop: 'var(--spacing-1)' }}>Filters</Typography>
                           {sheetDrafts.filters.map(f => draftRow(`f:${f.col}`, f.col, f.val))}
                         </>
                       )}
                       {sheetDrafts.formulas.length > 0 && (
                         <>
-                          <Typography variant="caption" color="gray" as="div" style={{ marginTop: 'var(--spacing-2)' }}>Formulas</Typography>
+                          <Typography variant="content-label-subhead" as="div" style={{ marginTop: 'var(--spacing-2)' }}>Formulas</Typography>
                           {sheetDrafts.formulas.map(x => draftRow(`x:${x.name}`, x.name, x.expression))}
                         </>
                       )}

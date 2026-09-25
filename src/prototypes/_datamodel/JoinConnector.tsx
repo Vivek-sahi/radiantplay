@@ -233,7 +233,12 @@ const JoinConnector: React.FC<JoinConnectorProps> = ({ joins, cardRects, selecte
           );
         })}
       </svg>
-      {badges.map((b, i) => (
+      {badges.map((b, i) => {
+        // Same selected test the line above uses, so badge and line always
+        // agree (2026-09-25, Vivek: "when join is selected, the stroke of
+        // join box should also be blue").
+        const badgeSelected = interactive && joinKey(b.j) === selectedJoinKey;
+        return (
         <div
           key={i}
           onClick={onJoinMenu ? e => { e.stopPropagation(); onJoinMenu(b.j, e); } : interactive ? () => onSelectJoin?.(b.j) : undefined}
@@ -248,7 +253,7 @@ const JoinConnector: React.FC<JoinConnectorProps> = ({ joins, cardRects, selecte
               background: 'var(--rd-sys-color-background-base, #fff)',
               // Capsule stroke matches the join line; only the rings stay ink
               // (2026-09-25, Vivek).
-              border: '1.5px solid var(--rd-sys-color-border-default, #d5dae2)', borderRadius: 11, boxSizing: 'border-box',
+              border: `1.5px solid ${badgeSelected ? 'var(--rd-sys-color-content-brand, #2770EF)' : 'var(--rd-sys-color-border-default, #d5dae2)'}`, borderRadius: 11, boxSizing: 'border-box',
               color: 'var(--rd-sys-color-content-primary, #1d232f)',
             }}>
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
@@ -279,7 +284,8 @@ const JoinConnector: React.FC<JoinConnectorProps> = ({ joins, cardRects, selecte
             </button>
           )}
         </div>
-      ))}
+        );
+      })}
     </>
   );
 };

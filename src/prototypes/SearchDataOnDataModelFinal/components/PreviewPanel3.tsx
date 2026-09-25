@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import type { TablePositionData, JoinInfo } from '../../_datamodel/index';
 import { SegmentedControl } from '@components/SegmentedControl';
+import { Icon } from '@components/icons';
 import { SearchDataExplorations } from '../SearchDataExplorations';
 import { SearchDataExplorations as QueryAsIs } from './QueryAsIs';
 import type { ModelCreationBridge } from './QueryAsIs';
@@ -63,9 +64,11 @@ export interface PreviewPanelProps {
   modelCreation?: ModelCreationBridge;
 }
 
-const ExpandIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M6 2.5H2.5V6M10 13.5h3.5V10" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/><path d="M13.5 6V2.5H10M2.5 10v3.5H6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
-);
+// Registry `expand` — the diagonal double-arrow, not the hand-drawn corner
+// brackets this used to draw (2026-09-25, Vivek: "this icon has another
+// alternative, we should use that"). Same glyph the sheet toolbar's expand
+// button uses, so the two read as one affordance.
+const ExpandIcon = () => <Icon name="expand" size="s" color="currentColor" />;
 const ChevronUpIcon = () => (
   <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style={{ transform: 'rotate(180deg)' }}><path d="M4 6.5L8 10.5l4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
 );
