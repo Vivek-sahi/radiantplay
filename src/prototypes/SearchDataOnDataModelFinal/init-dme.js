@@ -31,6 +31,17 @@ export function initDME() {
     } else if (newTab === 'formulas') {
       leftPane.classList.add('pane-hidden');
       rebuildFormulasContent();
+    } else if (newTab === 'query-asis') {
+      // Split's Query tab shares the same collapsible #left-pane as
+      // Build/Semantics now (2026-09-24, Komal: "when I click on the menu in
+      // the header, it should open the left panel similar to other tabs") —
+      // this legacy per-tab pane-hidden behaviour is for tabs whose content
+      // never moved into the pane (formulas/filters/etc. aren't reachable as
+      // their own top-level tabs any more; they're rows inside this same
+      // pane). React's own leftPaneCollapsed state already drives the pane's
+      // width here — this just stops the class from forcing it to 0
+      // regardless of that state.
+      leftPane.classList.remove('pane-hidden');
     } else {
       leftPane.classList.add('pane-hidden');
     }

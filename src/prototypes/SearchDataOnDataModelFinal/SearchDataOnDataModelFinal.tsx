@@ -42,8 +42,22 @@ import { SearchDataExplorations as QueryAsIs } from './components/QueryAsIs';
 // Formula/Filters/Parameters dock (ported exactly from DataStudioV2 MVP's left
 // browser panel) — fixed to the bottom of the Tables pane, table list scrolls
 // in the remaining space above.
-const FORMULA_ICON = <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M4 13V6a2 2 0 0 1 2-2h1" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/><path d="M2.5 8.5H7" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/><path d="M9 8l4 5M13 8l-4 5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>;
-const FILTER_ICON = <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M1.5 3.5h11L8 8.5v3.5L6 11V8.5L1.5 3.5z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/></svg>;
+// No "parameter" icon exists in the Radiant registry (2026-09-24, Komal:
+// "build a custom one" — for Parameters only; Formula and Filters use the
+// registry's own 'formula'/'funnel' icons, the same ones the spreadsheet
+// toolbar's own Add formula/Filter buttons already use). Drawn in the
+// registry's own idiom — solid currentColor fill, no stroke, 18×18 canvas —
+// so it sits next to real Radiant icons without reading as a different
+// species: two sliders at different positions, the plainest available
+// metaphor for "an adjustable value."
+const PARAMETER_ICON = (
+  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="2" y="4.25" width="14" height="1.5" rx="0.75" fill="currentColor" />
+    <circle cx="11" cy="5" r="2.5" fill="currentColor" />
+    <rect x="2" y="12.25" width="14" height="1.5" rx="0.75" fill="currentColor" />
+    <circle cx="7" cy="13" r="2.5" fill="currentColor" />
+  </svg>
+);
 
 // count/children are optional so a row can be a plain entry (e.g. Settings)
 // rather than a counted collection with an expandable body.
@@ -302,22 +316,51 @@ const DockSearch: React.FC<{ placeholder: string; value: string; onChange: (v: s
   </div>
 );
 
-// `action` is additive and optional (defaults undefined) — every existing
-// caller (Formulas/Filters/Parameters) omits it, so their empty state is
-// pixel-identical. Tables-section Option 2 is the only consumer that passes
-// it, per Komal: "Button inside the empty state" (2026-09-21).
-const DockEmpty: React.FC<{ icon: React.ReactNode; title: string; subtitle: string; action?: React.ReactNode }> = ({ icon, title, subtitle, action }) => (
-  // flex:1 + centred, for the same reason the Tables empty state is: an open
-  // section now takes the pane's whole remaining height, so a top-pinned
-  // empty state sat under a tall stretch of white (2026-09-22, Komal: "centre
-  // align the empty states in formula, filters and parameters"). DockRow's
-  // `fill` body is a column flex container, so this centres against the full
-  // section; in a collapsed/max-height body it simply behaves as before.
-  <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '18px 20px 20px', textAlign: 'center' }}>
-    <div style={{ width: 30, height: 30, borderRadius: 8, background: 'var(--rd-sys-color-background-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--rd-sys-color-content-secondary)', flexShrink: 0 }}>{icon}</div>
-    <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--rd-sys-color-content-primary)' }}>{title}</div>
-    <div style={{ fontSize: 11, color: 'var(--rd-sys-color-content-secondary)', lineHeight: 1.4, maxWidth: 200 }}>{subtitle}</div>
-    {action && <div style={{ marginTop: 4 }}>{action}</div>}
+// Formula/Filters/Parameters empty states (2026-09-24: first "similar to
+// tables, update the empty states... consistently" gave each one a bespoke
+// hand-drawn scene; then "use radiant style illustrations... currently
+// everything you have built is custom" replaced those scenes with this —
+// Radiant's own "Muted alert illustration" pattern: a single icon centred in
+// a plain muted circle, the same convention used for empty/error states
+// across the product (see the Figma Radiant 3.0 file, "Muted Alert" page,
+// e.g. its 56px row). Formula and Filters use the exact icons already doing
+// this job elsewhere in this same prototype — Icon 'formula'/'funnel', the
+// same two the spreadsheet toolbar's own Add formula/Filter buttons use — so
+// nothing new was invented for either. Parameters has no equivalent
+// anywhere (Radiant's registry has no "parameter" icon), so it's the one
+// deliberate exception: PARAMETER_ICON above, drawn in the registry's own
+// solid-fill idiom so it still reads as part of the same family sitting
+// beside the two real ones.
+const panelEmptyIcon = (icon: React.ReactNode) => (
+  <div style={{
+    width: 56, height: 56, borderRadius: '50%', flexShrink: 0,
+    background: 'var(--rd-sys-color-background-subtle)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    color: 'var(--rd-sys-color-content-secondary)',
+  }}>
+    {icon}
+  </div>
+);
+const FORMULA_ILLUSTRATION = panelEmptyIcon(<Icon name="formula" size="l" />);
+const FILTER_ILLUSTRATION = panelEmptyIcon(<Icon name="funnel" size="l" />);
+const PARAMETER_ILLUSTRATION = panelEmptyIcon(PARAMETER_ICON);
+
+const PanelEmptyState: React.FC<{ illustration: React.ReactNode; title: string; description: string; buttonLabel: string; onAdd: () => void }> = ({ illustration, title, description, buttonLabel, onAdd }) => (
+  <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 0, padding: '24px', textAlign: 'center' }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginBottom: 'var(--spacing-5)' }}>
+      {illustration}
+    </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-1)' }}>
+      <Typography variant="content-label" as="div" noMargin>{title}</Typography>
+      <Typography variant="footnote" as="div" color="gray-light" noMargin style={{ maxWidth: 230 }}>
+        {description}
+      </Typography>
+    </div>
+    {/* 2026-09-24, Komal: "for formula, filter and parameters, use a
+        secondary CTA in the left panel empty states" — PanelEmptyState is
+        exclusively these three (Tables keeps its own separate, bespoke
+        empty state above), so this one change covers all of them. */}
+    <Button variant="secondary" icon="plus" onClick={onAdd} style={{ marginTop: 'var(--spacing-5)' }}>{buttonLabel}</Button>
   </div>
 );
 
@@ -639,8 +682,20 @@ const SearchDataOnDataModelFinal: React.FC = () => {
   // Comparing two places to surface the table info card (2026-09-22, Komal:
   // "let's try 1 and 3") — 'icon' puts an info-circle on each row in "Add
   // tables and columns" (opens a popover); 'tab' adds an Info tab next to
-  // Columns in that same panel's right pane.
-  const [tableInfoMode, setTableInfoMode] = useState<'icon' | 'tab'>('icon');
+  // Columns in that same panel's right pane. Defaults to 'tab' (2026-09-22,
+  // Komal: "make side panel tab the default").
+  // 'footer' (2026-09-23, Komal: "add a third option... bring the CTAs back
+  // at the bottom... dynamic — Add to model / Update") reuses the row-icon
+  // info card, and additionally switches the side panel from its free-flowing
+  // live-write back to the same staged draft + confirm flow the pop-up modal
+  // (Option 2) already uses, so there's something for Cancel/the primary
+  // button to act on. See the side-panel call site for the draft wiring.
+  // Defaults to 'footer' (2026-09-24, Komal: "make footer CTAs the default").
+  const [tableInfoMode, setTableInfoMode] = useState<'icon' | 'tab' | 'footer'>('footer');
+  // Canvas and preview panel interactivity (2026-09-23, Komal: "Option 1 is
+  // the current design. Option 2 is what we will build and I'll tell you
+  // what to build") — switcher only for now; Option 2 has no behavior yet.
+  const [canvasPreviewOption, setCanvasPreviewOption] = useState<1 | 2>(1);
   // "In this model should be the first default tab, and available second...
   // land them on available, until they have added tables" (2026-09-22,
   // Komal) — landing default depends on whether the model already has
@@ -658,6 +713,13 @@ const SearchDataOnDataModelFinal: React.FC = () => {
   // and re-browsing costs nothing.
   const [option2ModalOpen, setOption2ModalOpen] = useState(false);
   const [option2Draft, setOption2Draft] = useState<{ table: string; columns: string[] }[]>([]);
+  // Snapshot of the draft at the moment the picker opened (2026-09-24, Komal:
+  // "the CTA should remain disabled until a change is made when user clicks
+  // on edit") — option2HasChanges below diffs against this rather than
+  // against columnTreeData.modelColumns live, so a change and then its own
+  // undo (re-check a box you just unchecked) correctly returns the button to
+  // disabled, not just "not empty".
+  const [option2DraftBaseline, setOption2DraftBaseline] = useState<{ table: string; columns: string[] }[]>([]);
   // Which added table is expanded in the populated nav list — one at a time,
   // same as TablePickerV2 (Option 2 takes its row style from there, not from
   // the drag-oriented ColumnTree: "why are they in pills? take inspiration
@@ -677,16 +739,31 @@ const SearchDataOnDataModelFinal: React.FC = () => {
   const [option2IlloPaused, setOption2IlloPaused] = useState(false);
   const openOption2Modal = () => {
     setOption2IlloPaused(true);
-    setOption2Draft(columnTreeData.modelColumns.map(g => ({ table: g.table, columns: [...g.columns] })));
+    const snapshot = columnTreeData.modelColumns.map(g => ({ table: g.table, columns: [...g.columns] }));
+    setOption2Draft(snapshot);
+    setOption2DraftBaseline(snapshot);
     setOption2FocusTable(null);
     setOption2ModalOpen(true);
   };
   const openOption2ModalFor = (tableName: string) => {
     setOption2IlloPaused(true);
-    setOption2Draft(columnTreeData.modelColumns.map(g => ({ table: g.table, columns: [...g.columns] })));
+    const snapshot = columnTreeData.modelColumns.map(g => ({ table: g.table, columns: [...g.columns] }));
+    setOption2Draft(snapshot);
+    setOption2DraftBaseline(snapshot);
     setOption2FocusTable(tableName);
     setOption2ModalOpen(true);
   };
+  // Set-based, not array-order (2026-09-21, Komal: toggling in TableColumnBrowserBody's
+  // right pane can append columns in any order) — two draft groups with the
+  // same columns in a different order must still read as "no change".
+  // Tables with zero columns are dropped before comparing, matching
+  // handleOption2Confirm's own treatment of an empty group as absent.
+  const draftSignature = (d: { table: string; columns: string[] }[]) =>
+    d.filter(g => g.columns.length > 0)
+      .map(g => `${g.table}:${[...g.columns].sort().join(',')}`)
+      .sort()
+      .join('|');
+  const option2HasChanges = draftSignature(option2Draft) !== draftSignature(option2DraftBaseline);
   const handleOption2DraftToggle = (tableName: string, colName: string, checked: boolean) => {
     setOption2Draft(prev => {
       const idx = prev.findIndex(g => g.table === tableName);
@@ -891,6 +968,23 @@ const SearchDataOnDataModelFinal: React.FC = () => {
   const modelDesc = welcomeVariant === 'blank' ? 'Add description' : 'Sales performance model for Spotter AI search';
 
   const handleTabChange = (tabId: string) => {
+    // Collapsed by default on landing (2026-09-24, Komal: "by default, the
+    // left panel should be collapsed when the user lands on Query. They can
+    // expand it on demand") — Query's own data panel (Measures/Attributes/…)
+    // already covers the same ground the Tables/Formula/etc. dock does, so
+    // leaving the dock open by default just eats width twice over.
+    // leftPaneCollapsed is one shared boolean for the whole pane, not a
+    // per-tab value, so each side of the Builder/Semantics <-> Query
+    // boundary re-asserts its OWN default the moment it's entered — Query
+    // collapses, Builder/Semantics re-opens — rather than one tab's manual
+    // toggle silently carrying over and stranding the other in the wrong
+    // state (caught in testing: expanding it on Query, then leaving, left
+    // Builder collapsed too). Both checks compare against the PREVIOUS
+    // activeTab (before setActiveTab below updates it), so a manual toggle
+    // made WHILE already on a tab is never fought — only a fresh landing
+    // re-applies that tab's default.
+    if (tabId === 'query-asis' && activeTab !== 'query-asis') setLeftPaneCollapsed(true);
+    else if ((tabId === 'tables' || tabId === 'columns') && activeTab === 'query-asis') setLeftPaneCollapsed(false);
     setActiveTab(tabId);
     const pill = document.querySelector<HTMLElement>(`.tab-pill[data-tab="${tabId}"]`);
     pill?.click();
@@ -994,6 +1088,25 @@ const SearchDataOnDataModelFinal: React.FC = () => {
   // just anchored from the Settings section now. AnchoredMenu flips and clamps
   // to the viewport on its own, so sitting at the bottom of a scrollable dock
   // is fine.
+  // Reviewing-aid flags — flip either back to true to restore that menu
+  // group exactly as it was; nothing else about the hidden options was
+  // touched, they're just unreachable with no menu item left to pick them.
+  // SHOW_LAYOUT_SWITCHER (2026-09-24, Komal: "finalize split and hide
+  // combined in a way i can bring it back when needed") drops the whole
+  // "Layout" group — dataModelLayout already defaults to 'split'.
+  // SHOW_ALL_TABLES_OPTIONS (2026-09-24, Komal: "hide options 1, 3 and 4")
+  // narrows "Tables section" down to 2 and 2.1 — tablesNavOption already
+  // defaults to 2.1. SHOW_TABLE_INFO_MODE_SWITCHER (2026-09-24, Komal:
+  // "finalize footer CTA as the final option") drops the whole "Table info
+  // panel" group — tableInfoMode already defaults to 'footer'.
+  // SHOW_TABLES_OPTION_2 (2026-09-25, Komal: "hide option 2 and default it to
+  // option 2.1") narrows "Tables section" down to just 2.1 — tablesNavOption
+  // already defaults to 2.1.
+  const SHOW_LAYOUT_SWITCHER = false;
+  const SHOW_ALL_TABLES_OPTIONS = false;
+  const SHOW_TABLES_OPTION_2 = false;
+  const SHOW_TABLE_INFO_MODE_SWITCHER = false;
+
   const optionsMenu = (
     <div style={{ position: 'relative' }}>
       <Button
@@ -1019,22 +1132,61 @@ const SearchDataOnDataModelFinal: React.FC = () => {
             <Menu.Item active={modelState === 'demo'} onClick={() => { setModelState('demo'); setTablesNavMenuOpen(false); }}>Demo</Menu.Item>
           </Menu.Group>
           <Menu.Divider />
-          <Menu.Group label="Layout">
-            <Menu.Item active={dataModelLayout === 'combined'} onClick={() => { setDataModelLayout('combined'); setTablesNavMenuOpen(false); }}>Combined</Menu.Item>
-            <Menu.Item active={dataModelLayout === 'split'} onClick={() => { setDataModelLayout('split'); setTablesNavMenuOpen(false); }}>Split</Menu.Item>
-          </Menu.Group>
-          <Menu.Divider />
+          {/* Split is finalized (2026-09-24, Komal: "finalize split and hide
+              combined in a way i can bring it back when needed") — the
+              switcher is gone from the menu, but nothing about Combined
+              itself was touched: dataModelLayout already defaults to
+              'split', and every dataModelLayout === 'combined' branch
+              elsewhere is still there, just unreachable with no menu item
+              left to set it. Flip SHOW_LAYOUT_SWITCHER back to true to
+              restore this group exactly as it was. */}
+          {SHOW_LAYOUT_SWITCHER && (
+            <>
+              <Menu.Group label="Layout">
+                <Menu.Item active={dataModelLayout === 'combined'} onClick={() => { setDataModelLayout('combined'); setTablesNavMenuOpen(false); }}>Combined</Menu.Item>
+                <Menu.Item active={dataModelLayout === 'split'} onClick={() => { setDataModelLayout('split'); setTablesNavMenuOpen(false); }}>Split</Menu.Item>
+              </Menu.Group>
+              <Menu.Divider />
+            </>
+          )}
+          {/* 2026-09-24, Komal: "hide options 1, 3 and 4" — narrowed to the
+              two live candidates (tablesNavOption already defaults to 2.1).
+              Flip SHOW_ALL_TABLES_OPTIONS back to true to bring the other
+              three back exactly as they were. */}
           <Menu.Group label="Tables section">
-            <Menu.Item active={tablesNavOption === 1} onClick={() => { setTablesNavOption(1); setTablesNavMenuOpen(false); }}>Option 1</Menu.Item>
-            <Menu.Item active={tablesNavOption === 2} onClick={() => { setTablesNavOption(2); setTablesNavMenuOpen(false); }}>Option 2</Menu.Item>
+            {SHOW_ALL_TABLES_OPTIONS && (
+              <Menu.Item active={tablesNavOption === 1} onClick={() => { setTablesNavOption(1); setTablesNavMenuOpen(false); }}>Option 1</Menu.Item>
+            )}
+            {SHOW_TABLES_OPTION_2 && (
+              <Menu.Item active={tablesNavOption === 2} onClick={() => { setTablesNavOption(2); setTablesNavMenuOpen(false); }}>Option 2</Menu.Item>
+            )}
             <Menu.Item active={tablesNavOption === 2.1} onClick={() => { setTablesNavOption(2.1); setTablesNavMenuOpen(false); }}>Option 2.1</Menu.Item>
-            <Menu.Item active={tablesNavOption === 3} onClick={() => { setTablesNavOption(3); setTablesNavMenuOpen(false); }}>Option 3</Menu.Item>
-            <Menu.Item active={tablesNavOption === 4} onClick={() => { setTablesNavOption(4); setTablesNavMenuOpen(false); }}>Option 4</Menu.Item>
+            {SHOW_ALL_TABLES_OPTIONS && (
+              <>
+                <Menu.Item active={tablesNavOption === 3} onClick={() => { setTablesNavOption(3); setTablesNavMenuOpen(false); }}>Option 3</Menu.Item>
+                <Menu.Item active={tablesNavOption === 4} onClick={() => { setTablesNavOption(4); setTablesNavMenuOpen(false); }}>Option 4</Menu.Item>
+              </>
+            )}
           </Menu.Group>
+          {/* 2026-09-24, Komal: "finalize footer CTA as the final option" —
+              tableInfoMode already defaults to 'footer'; flip
+              SHOW_TABLE_INFO_MODE_SWITCHER back to true to bring the other
+              two candidates (Row icon / Side panel tab) back exactly as
+              they were. */}
+          {SHOW_TABLE_INFO_MODE_SWITCHER && (
+            <>
+              <Menu.Divider />
+              <Menu.Group label="Table info panel">
+                <Menu.Item active={tableInfoMode === 'icon'} onClick={() => { setTableInfoMode('icon'); setTablesNavMenuOpen(false); }}>Row icon</Menu.Item>
+                <Menu.Item active={tableInfoMode === 'tab'} onClick={() => { setTableInfoMode('tab'); setTablesNavMenuOpen(false); }}>Side panel tab</Menu.Item>
+                <Menu.Item active={tableInfoMode === 'footer'} onClick={() => { setTableInfoMode('footer'); setTablesNavMenuOpen(false); }}>Footer CTAs</Menu.Item>
+              </Menu.Group>
+            </>
+          )}
           <Menu.Divider />
-          <Menu.Group label="Table info panel">
-            <Menu.Item active={tableInfoMode === 'icon'} onClick={() => { setTableInfoMode('icon'); setTablesNavMenuOpen(false); }}>Row icon</Menu.Item>
-            <Menu.Item active={tableInfoMode === 'tab'} onClick={() => { setTableInfoMode('tab'); setTablesNavMenuOpen(false); }}>Side panel tab</Menu.Item>
+          <Menu.Group label="Canvas and preview interactivity">
+            <Menu.Item active={canvasPreviewOption === 1} onClick={() => { setCanvasPreviewOption(1); setTablesNavMenuOpen(false); }}>Option 1</Menu.Item>
+            <Menu.Item active={canvasPreviewOption === 2} onClick={() => { setCanvasPreviewOption(2); setTablesNavMenuOpen(false); }}>Option 2</Menu.Item>
           </Menu.Group>
           {/* Preview interaction directions (Split only) — see
               preview-interaction-plan.html. Direction 2's sub-knobs render
@@ -1162,25 +1314,15 @@ const SearchDataOnDataModelFinal: React.FC = () => {
   );
 
   // Options 2 / 2.1 only: the left nav now carries the whole "start here"
-  // moment — illustration, copy and the "Add tables" button. Two competing
-  // calls to action in one screen is one too many, so the canvas steps back
-  // to a single muted line (2026-09-22, Komal: "make this empty state really
-  // muted so the focus goes on left. It should just say something like that
-  // your tables will appear here"). Every other option keeps the original
-  // canvas empty state untouched.
-  const tablesEmptyStateMuted = (
-    <div
-      id="tables-empty-state"
-      style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--spacing-2)' }}
-    >
-      <img src="/spotter-assets/Table=l.svg" width="24" height="24" alt="" style={{ opacity: 0.3 }} />
-      <Typography variant="footnote" as="div" color="gray-light" noMargin>
-        Your tables will appear here
-      </Typography>
-    </div>
-  );
+  // moment — illustration, copy and the "Add data" button. Two competing
+  // calls to action in one screen was one too many, so the canvas first
+  // stepped back to a single muted line (2026-09-22) and then, once the left
+  // nav's own empty state carried the whole moment on its own, dropped that
+  // line entirely too (2026-09-24, Komal: "remove this") — an empty canvas
+  // here is now just the dotted-grid background, no text at all. Every other
+  // option keeps the original canvas empty state untouched.
   const canvasEmptyState = tablesNavOption === 2 || tablesNavOption === 2.1
-    ? tablesEmptyStateMuted
+    ? null
     : tablesEmptyState;
 
   return (
@@ -1456,7 +1598,12 @@ const SearchDataOnDataModelFinal: React.FC = () => {
                       icon={<span style={{ display: 'flex' }}><Icon name="table" size="xs" color="var(--rd-sys-color-content-secondary)" /></span>}
                       label="Tables"
                       count={addedTableNames.size}
-                      onAdd={addedTableNames.size > 0 ? openOption2Modal : undefined}
+                      // Always shown now (2026-09-24, Komal: "add the plus
+                      // icon on the tables panel header") — previously hidden
+                      // at 0 tables since the empty state's own big "Add
+                      // tables" button covered that case; both open the same
+                      // browser via openOption2Modal either way.
+                      onAdd={openOption2Modal}
                       addLabel="Add tables"
                     >
                       {addedTableNames.size === 0 ? (
@@ -1464,12 +1611,15 @@ const SearchDataOnDataModelFinal: React.FC = () => {
                         // (2026-09-22, Komal: "make this empty state
                         // significantly more delightful... without
                         // onboarding, it tells users... they need to start
-                        // by adding tables") rather than stretching the
-                        // shared DockEmpty (Formulas/Filters/Parameters keep
-                        // their own compact version, untouched). Copy is
+                        // by adding tables") — Formulas/Filters/Parameters
+                        // later got the same PanelEmptyState treatment
+                        // (2026-09-24), each with their own bespoke
+                        // illustration too, but this one's is traced from
+                        // her own mock rather than an original scene. Copy is
                         // unchanged from what she already approved. The
-                        // illustration took several rounds of me guessing
-                        // before she sent her own mock to build from; see the
+                        // illustration took several
+                        // rounds of me guessing before she sent her own mock
+                        // to build from; see the
                         // SVG below. Primary — not secondary — button, so the
                         // single next action is unmistakable at a glance,
                         // with the AI route offered under it as the "or".
@@ -1564,22 +1714,7 @@ const SearchDataOnDataModelFinal: React.FC = () => {
                               Browse tables and pick the columns you need.
                             </Typography>
                           </div>
-                          <Button variant="primary" icon="plus" onClick={openOption2Modal} style={{ marginTop: 'var(--spacing-5)' }}>Add tables</Button>
-                          {/* The AI route, ranked below the manual one
-                              (2026-09-22, Komal: "cta, THEN or, THEN this") —
-                              same suggestion-link markup the canvas empty
-                              state already uses, so it reads as one pattern
-                              across the screen rather than a second style. */}
-                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--spacing-1)', marginTop: 'var(--spacing-3)' }}>
-                            <Typography variant="footnote" as="div" color="gray-light" noMargin>or</Typography>
-                            <div className="suggestion-row">
-                              <a className="suggestion-link" href="#" onClick={e => e.preventDefault()}>
-                                <img src="/spotter-assets/ai icon.svg" width="14" height="14" alt="" />
-                                Get table suggestions
-                              </a>
-                              <img className="moving-arrow" src="/spotter-assets/Moving arrow.svg" width="14" height="12" alt="" />
-                            </div>
-                          </div>
+                          <Button variant="secondary" icon="plus" onClick={openOption2Modal} style={{ marginTop: 'var(--spacing-5)' }}>Add data</Button>
                         </div>
                       ) : (
                         <>
@@ -1770,9 +1905,15 @@ const SearchDataOnDataModelFinal: React.FC = () => {
                       ? { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }
                       : { flexShrink: 0 }}
                   >
-                    <DockRow fill balance={paneBalance} icon={<span style={{ color: '#047857', display: 'flex' }}>{FORMULA_ICON}</span>} label="Formula" count={modelFormulas.length} open={browserDockOpen === 'formula'} onToggle={() => toggleDock('formula')} onAdd={() => { setEditingFormula(null); setFormulaEditorOpen(true); }} addLabel="Add formula">
+                    <DockRow fill balance={paneBalance} icon={<span style={{ display: 'flex' }}><Icon name="formula" size="xs" color="var(--rd-sys-color-content-secondary)" /></span>} label="Formula" count={modelFormulas.length} open={browserDockOpen === 'formula'} onToggle={() => toggleDock('formula')} onAdd={() => { setEditingFormula(null); setFormulaEditorOpen(true); }} addLabel="Add formula">
                       {modelFormulas.length === 0 ? (
-                        <DockEmpty icon={<span style={{ color: '#047857', display: 'flex' }}>{FORMULA_ICON}</span>} title="No formulas yet" subtitle="Add a calculated field from a column's ▾ menu — it'll show up here." />
+                        <PanelEmptyState
+                          illustration={FORMULA_ILLUSTRATION}
+                          title="Add a formula"
+                          description="A calculated field built from columns and functions that behaves just like any other column once added."
+                          buttonLabel="Add formula"
+                          onAdd={() => { setEditingFormula(null); setFormulaEditorOpen(true); }}
+                        />
                       ) : (
                         <>
                         <DockSearch placeholder="Search formulas" value={formulaQuery} onChange={setFormulaQuery} />
@@ -1796,9 +1937,15 @@ const SearchDataOnDataModelFinal: React.FC = () => {
                       )}
 
                     </DockRow>
-                    <DockRow fill balance={paneBalance} icon={<span style={{ color: '#92640A', display: 'flex' }}>{FILTER_ICON}</span>} label="Filters" count={modelFilters.length} open={browserDockOpen === 'filters'} onToggle={() => toggleDock('filters')} onAdd={() => {}} addLabel="Add filter">
+                    <DockRow fill balance={paneBalance} icon={<span style={{ display: 'flex' }}><Icon name="filter" size="xs" color="var(--rd-sys-color-content-secondary)" /></span>} label="Filters" count={modelFilters.length} open={browserDockOpen === 'filters'} onToggle={() => toggleDock('filters')} onAdd={() => {}} addLabel="Add filter">
                       {modelFilters.length === 0 ? (
-                        <DockEmpty icon={<span style={{ color: '#92640A', display: 'flex' }}>{FILTER_ICON}</span>} title="No filters yet" subtitle='Filter a column, then check "Add this filter to this model" to see it here.' />
+                        <PanelEmptyState
+                          illustration={FILTER_ILLUSTRATION}
+                          title="Add a filter"
+                          description="A rule that scopes this model to only the rows that matter, so every search and Liveboard built on it inherits the same limits automatically."
+                          buttonLabel="Add filter"
+                          onAdd={() => {}}
+                        />
                       ) : (
                         <>
                         <DockSearch placeholder="Search filters" value={filterQuery} onChange={setFilterQuery} />
@@ -1827,9 +1974,15 @@ const SearchDataOnDataModelFinal: React.FC = () => {
                       )}
 
                     </DockRow>
-                    <DockRow fill balance={paneBalance} icon={<span style={{ color: '#6B4FBF', display: 'flex', fontWeight: 700, fontSize: 12, width: 13, justifyContent: 'center' }}>@</span>} label="Parameters" count={modelParameters.length} open={browserDockOpen === 'parameters'} onToggle={() => toggleDock('parameters')} onAdd={() => {}} addLabel="Add parameter">
+                    <DockRow fill balance={paneBalance} icon={<span style={{ display: 'flex' }}><Icon name="tag" size="xs" color="var(--rd-sys-color-content-secondary)" /></span>} label="Parameters" count={modelParameters.length} open={browserDockOpen === 'parameters'} onToggle={() => toggleDock('parameters')} onAdd={() => {}} addLabel="Add parameter">
                       {modelParameters.length === 0 ? (
-                        <DockEmpty icon={<span style={{ color: '#6B4FBF', display: 'flex', fontWeight: 700, fontSize: 13 }}>@</span>} title="No parameters yet" subtitle="Add a named value to reuse across formulas and filters." />
+                        <PanelEmptyState
+                          illustration={PARAMETER_ILLUSTRATION}
+                          title="Add a parameter"
+                          description="A reusable value, like a growth rate or threshold, that formulas and filters can reference, so you can test different scenarios without rewriting them."
+                          buttonLabel="Add parameter"
+                          onAdd={() => {}}
+                        />
                       ) : (
                         <>
                         <DockSearch placeholder="Search parameters" value={parameterQuery} onChange={setParameterQuery} />
@@ -1887,13 +2040,21 @@ const SearchDataOnDataModelFinal: React.FC = () => {
             {tablesNavOption === 2.1 && (
               <TableColumnSidePanel
                 open={option2ModalOpen}
-                onClose={closeOption2Panel}
+                onClose={tableInfoMode === 'footer' ? () => setOption2ModalOpen(false) : closeOption2Panel}
                 catalog={unifiedTreeData}
-                draft={columnTreeData.modelColumns}
-                onToggleColumn={handleOption2LiveToggle}
+                draft={tableInfoMode === 'footer' ? option2Draft : columnTreeData.modelColumns}
+                onToggleColumn={tableInfoMode === 'footer' ? handleOption2DraftToggle : handleOption2LiveToggle}
                 initialFocusTable={option2FocusTable}
                 leftOffset={leftPaneCollapsed ? 0 : leftPaneWidth}
-                tableInfoMode={tableInfoMode}
+                tableInfoMode={tableInfoMode === 'footer' ? 'icon' : tableInfoMode}
+                footer={tableInfoMode === 'footer' ? (
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 'var(--spacing-3)', padding: 'var(--spacing-3) var(--spacing-4)', borderTop: '1px solid var(--rd-sys-color-border-divider)', flexShrink: 0 }}>
+                    <Button variant="secondary" onClick={() => setOption2ModalOpen(false)}>Cancel</Button>
+                    <Button variant="primary" onClick={handleOption2Confirm} disabled={!option2HasChanges}>
+                      {addedTableNames.size > 0 ? 'Update' : 'Add to model'}
+                    </Button>
+                  </div>
+                ) : undefined}
               />
             )}
 
@@ -1956,9 +2117,12 @@ const SearchDataOnDataModelFinal: React.FC = () => {
                         backgroundSize: '20px 20px',
                       } : {}),
                     }}
-                    onClick={tabOption === 3 && option3EmbedMode === 'optimized' ? e => {
+                    onClick={tabOption === 3 && option3EmbedMode === 'optimized' && canvasPreviewOption === 1 ? e => {
                       // Only the canvas background itself, not a bubbled click
-                      // from a table card or join line/badge.
+                      // from a table card or join line/badge. Option 2 (2026-
+                      // 09-23, Komal: "make preview very explicit... not by
+                      // clicking outside") drops this handler entirely — the
+                      // last explicit pick just persists.
                       if (e.target !== e.currentTarget) return;
                       if (dataModelLayout === 'split') {
                         // Background clicks never touch the data preview
@@ -2360,7 +2524,7 @@ const SearchDataOnDataModelFinal: React.FC = () => {
                   display: 'flex',
                 }}
               >
-                <AgentPanel welcomeVariant={welcomeVariant} hideContextChip onClose={() => setAgentPanelCollapsed(true)} />
+                <AgentPanel welcomeVariant={welcomeVariant} hideContextChip radianceBackground onClose={() => setAgentPanelCollapsed(true)} />
               </div>
             )}
 
@@ -2561,7 +2725,7 @@ const SearchDataOnDataModelFinal: React.FC = () => {
           onToggleColumn={handleOption2DraftToggle}
           onConfirm={handleOption2Confirm}
           initialFocusTable={option2FocusTable}
-          tableInfoMode={tableInfoMode}
+          tableInfoMode={tableInfoMode === 'footer' ? 'icon' : tableInfoMode}
         />
       )}
     </div>

@@ -550,52 +550,6 @@ const GoStopButton: React.FC<{
   );
 };
 
-// ─── Pin split button (Figma node 291:95457) ─────────────────────────────────
-// Left half: secondary pill (label + chevron). Right half: primary "Pin" pill.
-// Height: 32px. Gap between halves: 2px. Border-radius: 16px on outer corners.
-
-const PIN_FONT: React.CSSProperties = {
-  fontFamily: '"Plain", -apple-system, sans-serif',
-  fontSize: '14px',
-  fontWeight: 300,
-  lineHeight: '20px',
-  whiteSpace: 'nowrap',
-};
-
-const PinSplitButton: React.FC<{ label?: string; disabled?: boolean }> = ({ label = 'Umesh :: 28 March', disabled = false }) => (
-  <Tooltip
-    content={disabled ? 'Spreadsheet cannot be pinned to a Liveboard' : ''}
-    placement="bottom"
-    showDelay={300}
-  >
-    <div style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0, opacity: disabled ? 0.4 : 1, pointerEvents: disabled ? 'none' : 'auto' }}>
-      {/* Left — secondary: version label + chevron */}
-      <button disabled={disabled} style={{
-        display: 'flex', alignItems: 'center', gap: 8,
-        height: 32, padding: '6px 8px 6px 16px',
-        background: '#eaedf2', border: 'none', cursor: disabled ? 'default' : 'pointer',
-        borderRadius: '16px 0 0 16px',
-        ...PIN_FONT, color: '#1d232f',
-      }}>
-        {label}
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
-          <path d="M4 6l4 4 4-4" stroke="#1d232f" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
-        </svg>
-      </button>
-      {/* Right — primary: Pin */}
-      <button disabled={disabled} style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        height: 32, width: 52, padding: '6px 8px',
-        background: '#2770ef', border: 'none', cursor: disabled ? 'default' : 'pointer',
-        borderRadius: '0 16px 16px 0',
-        ...PIN_FONT, color: '#ffffff',
-      }}>
-        Pin
-      </button>
-    </div>
-  </Tooltip>
-);
-
 const ChartViewToggle: React.FC<{ value: string; onChange: (v: string) => void }> = ({
   value, onChange,
 }) => (
@@ -1348,9 +1302,8 @@ const MoreMenu: React.FC<{
   open: boolean;
   onClose: () => void;
   variant?: 'sheet' | 'answerCard';
-  onSave?: () => void;
   onSaveInputTable?: () => void;
-}> = ({ open, onClose, variant = 'sheet', onSave, onSaveInputTable }) => {
+}> = ({ open, onClose, variant = 'sheet', onSaveInputTable }) => {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!open) return;
@@ -1367,13 +1320,12 @@ const MoreMenu: React.FC<{
       <Menu onClose={onClose}>
         {variant === 'answerCard' ? (
           <>
-            <Menu.Item onClick={() => { onSave?.(); onClose(); }}>Save Answer</Menu.Item>
-            <Menu.Item>Save as view</Menu.Item>
-            <Menu.Divider />
+            {/* 2026-09-25, Komal: "remove [Save Answer/Save as view] from the
+                three dot menu" then "and sync as well" — Save Answer is still
+                reachable via the answer card's own header button
+                (onOpenSaveModal), just not duplicated here any more. */}
             <Menu.Item>Show underlying data</Menu.Item>
             <Menu.Item>Download</Menu.Item>
-            <Menu.Divider />
-            <Menu.Item shortcut="▸">Sync</Menu.Item>
             <Menu.Divider />
             <Menu.Item shortcut="▸">TML</Menu.Item>
           </>
@@ -7322,19 +7274,22 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
   const DERIVED_IDS  = new Set<string>([]);
 
   // Called when the sheet column picker adds/removes columns (Sheet → Search direction).
-  // Rebuilds the query state so both views stay in sync.
+  // 2026-09-24, Komal: "query should not build live — only after the user
+  // clicks Go should the answer be displayed" — only pendingQuery (search bar
+  // tokens, checkboxes) updates immediately; queryState (the answer card)
+  // stays untouched until handleGo commits pendingQuery into it.
   const handleSheetColumnsChange = (keys: Set<string>) => {
     const metrics     = [...keys].filter(k => MEASURE_IDS.has(k)) as QMetric[];
     const groupBy     = [...keys].filter(k => DIM_IDS.has(k))     as QDim[];
     const derivedCols = [...keys].filter(k => DERIVED_IDS.has(k));
     const newQuery: QueryState = { ...queryState, metrics, groupBy, derivedCols };
     setPendingQuery(newQuery);
-    setQueryState(newQuery);
     setChecked(new Set(keys));
+    setIsDirty(true);
   };
 
   const toggleColumn = (id: string) => {
-    // Compute next state outside the updater so we can call setQueryState at the same level
+    // Compute next state outside the updater so we can derive `checked` at the same level
     const next = { ...pendingQuery };
     if (MEASURE_IDS.has(id)) {
       const m = id as QMetric;
@@ -7351,16 +7306,11 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
         ? next.derivedCols.filter(x => x !== id)
         : [...next.derivedCols, id];
     }
-    // Both setters called at top level — mirrors handleSheetColumnsChange pattern
+    // Only the pending side updates here (2026-09-24, "query should not build
+    // live") — the answer card only ever updates via handleGo's commit.
     setPendingQuery(next);
-    setQueryState(next);
     setChecked(queryToActiveCols(next));
-    setIsDirty(false);
-    // Trigger loading animation
-    setIsTransitioning(true);
-    setTimeout(() => setIsTransitioning(false), 300);
-    setIsAnswerLoading(true);
-    setTimeout(() => setIsAnswerLoading(false), 500);
+    setIsDirty(true);
   };
 
   // ── Derived display values ────────────────────────────────────────────────
@@ -7613,22 +7563,14 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
                   {sheetTab !== 'sheet' && (
                     <ChartViewToggle value={queryState.viewMode} onChange={v => setQueryState(q => ({ ...q, viewMode: v as 'table' | 'chart' }))} />
                   )}
-                  <button className={styles.circleBtn} aria-label="Share"><Icon name="share" size="m" color={systemColors.light['content-primary']} /></button>
                   <div style={{ position: 'relative' }}>
                     <button className={styles.circleBtn} aria-label="More options" onClick={e => { e.stopPropagation(); setAnswerMoreOpen(o => !o); }}>
                       <Icon name="more" size="m" color={systemColors.light['content-primary']} />
                     </button>
                     <MoreMenu open={answerMoreOpen} onClose={() => setAnswerMoreOpen(false)}
                       variant="answerCard"
-                      onSave={openSaveModal}
                     />
                   </div>
-                  {!editMode && (
-                    <>
-                      <span className={styles.vDivider}><Divider vertical /></span>
-                      <PinSplitButton disabled={queryState.viewMode === 'sheet' || sheetTab === 'sheet'} />
-                    </>
-                  )}
                 </div>
               </div>
               {sheetTab !== 'sheet' && <CanvasBlocksPanel blocks={canvasBlocks} />}
@@ -8321,6 +8263,17 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
           Padding: 24px top (gap from header), 24px left/right, 0 bottom.
           Two white surface boxes: main search area + undo/redo/reset box.  */}
       <div className={styles.queryBarRow} style={{ position: 'relative', zIndex: (searchFocused || isDirty) ? 110 : 'auto' }}>
+        {/* 2026-09-25, Komal: "reduce the width of the query bar to start
+            with the answer card on left" — the answer card's left edge
+            (.chartContainer, in .main below) sits 260px + this row's own
+            20px gap to the right of the content edge whenever the data
+            panel is visible, matching .dataPanel's own width. queryBarMain
+            had no equivalent reserved space, so it started flush left
+            regardless. This spacer mirrors .dataPanel exactly — same width,
+            same conditional presence — so queryBarMain's left edge (and
+            therefore its width, since it's flex:1) tracks the answer card
+            in both panel states without hardcoding two different paddings. */}
+        {dataPanelVisible && <div style={{ width: 260, flexShrink: 0 }} aria-hidden="true" />}
         {/* Main search bar — clicks anywhere focus the typing input */}
         <div
           className={styles.queryBarMain}

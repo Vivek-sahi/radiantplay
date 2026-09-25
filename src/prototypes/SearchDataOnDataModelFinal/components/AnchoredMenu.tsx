@@ -122,6 +122,15 @@ export const AnchoredMenu: React.FC<AnchoredMenuProps> = ({
   return createPortal(
     <div
       ref={menuRef}
+      // Lets any OTHER outside-click-to-close listener (e.g. a panel this
+      // menu's trigger button lives inside) recognize this portaled content
+      // as still "inside" via closest('[data-portal-overlay]') — it renders
+      // under document.body, outside that panel's own DOM subtree, so a
+      // plain ref.contains() check on the panel's side can't see it
+      // (2026-09-25, Komal: "when I apply a sort, the panel should not
+      // automatically close" — TableColumnSidePanel's own listener was
+      // closing on a Sort-menu click for exactly this reason).
+      data-portal-overlay=""
       onClick={e => e.stopPropagation()}
       onPointerDown={e => e.stopPropagation()}
       style={{

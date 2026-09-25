@@ -61,64 +61,6 @@ const CARDS: OptionCardConfig[] = [
   },
 ];
 
-// ── SpotterModel powered badge ──
-// Sits flush in the bottom-left corner of the inner card surface.
-// When selected: animated conic-gradient border on top + right edges only.
-// When unselected: plain gray border on top + right edges only.
-// Left + bottom edges are always borderless (flush with the card).
-const AIPoweredPill: React.FC<{ isSelected?: boolean }> = ({ isSelected = false }) => (
-  <div style={{
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    zIndex: 2,
-    borderRadius: '0 14px 0 0',
-    overflow: 'hidden',
-    /* border thickness matches card: 1px when unselected, 1.5px for gradient when selected */
-    padding: isSelected ? '1.5px 1.5px 0 0' : '1px 1px 0 0',
-    display: 'inline-flex',
-  }}>
-    {/* Border layer — gradient when selected, plain gray when not */}
-    {isSelected ? (
-      <div style={{
-        position: 'absolute',
-        width: 300,
-        height: 300,
-        top: '50%',
-        left: '50%',
-        marginTop: -150,
-        marginLeft: -150,
-        background: 'conic-gradient(from 0deg, #8C62F5, #48D1E0, #2770EF, #8C62F5)',
-        animation: 'spotter-border-spin 3s linear infinite',
-      }} />
-    ) : (
-      <div style={{
-        position: 'absolute',
-        inset: 0,
-        backgroundColor: systemColors.light['border-default'],
-      }} />
-    )}
-    <div style={{
-      position: 'relative',
-      zIndex: 1,
-      backgroundColor: systemColors.light['background-base'],
-      borderRadius: '0 12px 0 0',
-      /* left padding matches card content padding (spacing.D) so avatar aligns with the icon box */
-      padding: `8px ${spacing.F}px 8px ${spacing.D}px`,
-      display: 'flex',
-      alignItems: 'center',
-      gap: spacing.B,
-      fontSize: 11,
-      fontWeight: fontWeight.medium,
-      color: systemColors.light['content-primary'],
-      whiteSpace: 'nowrap',
-    }}>
-      <img src="/spotter-assets/SpotterModel avatar.svg" width={24} height={24} alt="SpotterModel" />
-      SpotterModel powered
-    </div>
-  </div>
-);
-
 export interface ModelSelectionModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -279,7 +221,6 @@ export const ModelSelectionModal: React.FC<ModelSelectionModalProps> = ({
                     }}
                   >
                     {cardContent(card)}
-                    <AIPoweredPill isSelected={isSelected} />
                   </div>
                 </div>
               </div>

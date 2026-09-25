@@ -6,6 +6,18 @@ import { ReasoningBlock } from './ReasoningBlock';
 import { AgentResponseBlock } from './AgentResponseBlock';
 import type { MessageItem, SuggType, ReasoningData } from './types';
 
+// Radiance top-wash — copied from DataStudioV2's SpotterXShell.tsx ("Radiance
+// wash + grain") so the two stay pixel-identical. (2026-09-25, Komal: "add the
+// radiance background from radiantplay" to SpotterModel's welcome panel.)
+const RADIANCE_WASH = [
+  'linear-gradient(180deg, rgba(236,199,203,0.50) 0px, rgba(236,199,203,0.22) 140px, rgba(236,199,203,0) 420px)',
+  'radial-gradient(900px 500px at 12% 0%, rgba(244,181,178,0.35), transparent 70%)',
+  'radial-gradient(700px 480px at 45% 5%, rgba(228,190,214,0.25), transparent 70%)',
+  'radial-gradient(640px 420px at 92% 0%, rgba(205,218,246,0.30), transparent 70%)',
+].join(', ');
+const GRAIN_URI =
+  "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E\")";
+
 export interface AgentPanelProps {
   welcomeVariant: 'blank' | 'existing';
   onClose?: () => void;
@@ -16,9 +28,13 @@ export interface AgentPanelProps {
   /** Drops the "Context" chip from the header. Off by default — every existing
    *  caller keeps the chip. (SearchDataOnDataModelFinal, 2026-09-22.) */
   hideContextChip?: boolean;
+  /** Radiance top-wash + grain behind the whole panel, same treatment as
+   *  DataStudioV2's SpotterXShell. Off by default — every existing caller
+   *  keeps the plain background. (SearchDataOnDataModelFinal, 2026-09-25.) */
+  radianceBackground?: boolean;
 }
 
-export const AgentPanel: React.FC<AgentPanelProps> = ({ welcomeVariant, onClose, closeIcon, hideContextChip }) => {
+export const AgentPanel: React.FC<AgentPanelProps> = ({ welcomeVariant, onClose, closeIcon, hideContextChip, radianceBackground }) => {
   const [messages, setMessages] = useState<MessageItem[]>([]);
   const [chatStarted, setChatStarted] = useState(false);
   const chatMsgsRef = useRef<HTMLDivElement>(null);
@@ -67,6 +83,13 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({ welcomeVariant, onClose,
 
   return (
     <div className="agent-panel" id="agent-panel">
+      {radianceBackground && (
+        <>
+          <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: RADIANCE_WASH }} />
+          <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', backgroundImage: GRAIN_URI, opacity: 0.03 }} />
+        </>
+      )}
+      <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
       <div className="panel-resize-handle" id="panel-resize-handle"></div>
 
       {/* Header */}
@@ -189,6 +212,7 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({ welcomeVariant, onClose,
 
       <div className="agent-footer">
         SpotterModel responses should be reviewed. <a href="#">Learn more</a>
+      </div>
       </div>
     </div>
   );

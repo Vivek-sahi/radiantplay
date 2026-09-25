@@ -1,12 +1,16 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { SearchInput } from '@components/SearchInput';
+import { Button } from '@components/Button';
 import { Checkbox } from '@components/Checkbox';
 import { Icon } from '@components/icons';
 import { Popover } from '@components/Popover';
+import { Menu } from '@components/Menu';
 import { SegmentedControl } from '@components/SegmentedControl';
 import type { ColumnTreeData } from '../../_datamodel/index';
 import { ColumnChip } from './TablePickerV2';
 import { TableInfoCard } from './TableInfoCard';
+import { AnchoredMenu } from './AnchoredMenu';
+import { AddFiltersModal } from './AddFiltersModal';
 
 // The search + master-detail table/column list shared by Tables-section
 // Option 2 (pop-up, TableBrowserModal.tsx) and Option 2.1 (inline side
@@ -36,6 +40,12 @@ export interface TableColumnBrowserBodyProps {
   tableInfoMode?: 'icon' | 'tab';
 }
 
+// Shared by both panel header bars ("Tables" / "Columns") so they're the
+// same size regardless of how many lines each one's content needs — sized
+// to fit "Columns" plus the focused table name underneath it, the taller of
+// the two; "Tables" (one line) centers vertically inside the same height.
+const PANEL_HEADER_HEIGHT = 54;
+
 export const TableColumnBrowserBody: React.FC<TableColumnBrowserBodyProps> = ({
   isOpen, catalog, draft, onToggleColumn, initialFocusTable, height, tableInfoMode = 'icon',
 }) => {
@@ -55,16 +65,30 @@ export const TableColumnBrowserBody: React.FC<TableColumnBrowserBodyProps> = ({
   const [focusedTable, setFocusedTable] = useState<string | null>(() => initialFocusTable ?? null);
   const rowRefs = useRef<Record<string, HTMLButtonElement | null>>({});
 
+  // 2026-09-25, Komal: "Sort should open this dropdown" (Sort by name / Sort
+  // by modified). The catalog only carries a `createdDate`, not a real
+  // "last modified" timestamp, so "Sort by modified" falls back to the
+  // catalog's own default order rather than a fabricated recency.
+  const [sortBy, setSortBy] = useState<'name' | 'modified'>('name');
+  const [sortMenuOpen, setSortMenuOpen] = useState(false);
+  const sortBtnRef = useRef<HTMLButtonElement>(null);
+  // 2026-09-25, Komal: "for Add filters, recreate this pixel perfect" — the
+  // Filter button opens the full "Add filters" modal (databases/schemas,
+  // tags, authors) rather than a menu like Sort.
+  const [filtersModalOpen, setFiltersModalOpen] = useState(false);
+
   const draftCols = (table: string) => draft.find(g => g.table === table)?.columns ?? [];
   const selectedCount = (table: string) => draftCols(table).length;
 
   const q = search.trim().toLowerCase();
   const columnsOf = (name: string) => catalog.dataSourceTables.find(d => d.name === name)?.columns ?? [];
-  const filteredTables = useMemo(() => (
-    q
+  const filteredTables = useMemo(() => {
+    const base = q
       ? catalog.tables.filter(t => t.name.toLowerCase().includes(q) || columnsOf(t.name).some(c => c.toLowerCase().includes(q)))
-      : catalog.tables
-  ), [catalog, q]);
+      : catalog.tables;
+    return sortBy === 'name' ? [...base].sort((a, b) => a.name.localeCompare(b.name)) : base;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [catalog, q, sortBy]);
 
   // The lazy initializer above handles landing on initialFocusTable at mount
   // (every open is a fresh mount — see its own comment). This effect covers
@@ -109,38 +133,84 @@ export const TableColumnBrowserBody: React.FC<TableColumnBrowserBodyProps> = ({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-3)', minHeight: 0, height: height ? undefined : '100%' }}>
-      <SearchInput
-        placeholder="Search tables or columns"
-        value={search}
-        onChange={e => setSearch(e.target.value)}
-      />
+      {/* 2026-09-25, Komal: "add this filter and sort option inside the data
+          browser next to search as well" — icon-only buttons, same as the
+          reference screenshot. No filter/sort behavior wired up yet since
+          none was specified. */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-2)' }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <SearchInput
+            placeholder="Search tables or columns"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+        </div>
+        <Button variant="secondary" size="basic" iconOnly icon="filter" aria-label="Filter" onClick={() => setFiltersModalOpen(true)}>Filter</Button>
+        <Button
+          ref={sortBtnRef}
+          variant="secondary"
+          size="basic"
+          iconOnly
+          icon="sort"
+          aria-label="Sort"
+          onClick={() => setSortMenuOpen(o => !o)}
+        >
+          Sort
+        </Button>
+        <AnchoredMenu
+          open={sortMenuOpen}
+          anchorRef={sortBtnRef}
+          onClose={() => setSortMenuOpen(false)}
+          placement="bottom-end"
+        >
+          <Menu onClose={() => setSortMenuOpen(false)}>
+            <Menu.Item active={sortBy === 'name'} onClick={() => { setSortBy('name'); setSortMenuOpen(false); }}>Sort by name</Menu.Item>
+            <Menu.Item active={sortBy === 'modified'} onClick={() => { setSortBy('modified'); setSortMenuOpen(false); }}>Sort by modified</Menu.Item>
+          </Menu>
+        </AnchoredMenu>
+      </div>
       <div style={{ display: 'flex', height: height ?? undefined, flex: height ? undefined : 1, minHeight: 0, border: '1px solid var(--rd-sys-color-border-divider)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
         {/* Left — table list. Clicking a row focuses it on the right; it is
             not itself a selection control (Komal: "no row picker"). Equal
             flex:1 with the columns pane on the right (Komal, 2026-09-22:
             "the width of column for table and column should be the same.
             Balance it.") — was a fixed 240px before. */}
-        <div style={{ flex: 1, minWidth: 0, borderRight: '1px solid var(--rd-sys-color-border-divider)', overflowY: 'auto', background: 'var(--rd-sys-color-background-sunken)' }}>
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', borderRight: '1px solid var(--rd-sys-color-border-divider)', background: 'var(--rd-sys-color-background-sunken)' }}>
+          {/* 2026-09-24, Komal: "add headings to columns and table panels",
+              then "looks weird the way you have placed it" — the first pass
+              set the label loosely inline with the row list (no separation,
+              scrolled away with it). A proper header bar fixes both: it's
+              pinned above the scrolling rows, not part of them, with its own
+              border-bottom closing it off — same "label bar, divider,
+              scrollable body" shape the right pane's header already had via
+              "Select all"'s own border. */}
+          <div style={{
+            flexShrink: 0, height: PANEL_HEADER_HEIGHT, boxSizing: 'border-box', padding: '10px 12px',
+            display: 'flex', flexDirection: 'column', justifyContent: 'center',
+            borderBottom: '1px solid var(--rd-sys-color-border-divider)',
+            background: 'var(--rd-sys-color-background-base)',
+          }}>
+            {/* Icon + label (2026-09-25, Komal: "make it visually appealing
+                and beautiful") — the same icon+label pairing every table row
+                below already uses, so the header reads as one more step of
+                the same pattern rather than a plainer, unrelated banner. */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-2)' }}>
+              <Icon name="table" size="xs" color="var(--rd-sys-color-content-secondary)" />
+              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--rd-sys-color-content-primary)' }}>Tables</span>
+            </div>
+          </div>
+          <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
           {filteredTables.length === 0 ? (
             <div style={{ padding: 'var(--spacing-4)', fontSize: 12, color: 'var(--rd-sys-color-content-secondary)', textAlign: 'center' }}>No matches</div>
           ) : filteredTables.map(t => {
             const count = selectedCount(t.name);
             const total = columnsOf(t.name).length;
             const active = t.name === focusedTable;
-            // Checkbox reflects "at least one column of this table is
-            // selected" (2026-09-22, Komal: "if a user selects even one
-            // column in a table, it should check the table") — checked as
-            // soon as count > 0, not only when every column is. Toggling it
-            // the other way is table-level select-all/none, over every
-            // column the table has, not just whatever a search has filtered
-            // into view — checking the box is "select this whole table".
-            const tableChecked = count > 0;
             return (
-              // A row is now two separate interactive controls (checkbox +
-              // name), so it can no longer be one <button> — a checkbox
-              // can't nest inside a button. Same div>control+control shape
-              // Option 2's own AddedTableRow already uses for the same
-              // reason.
+              // Kept as div>button rather than one <button> (2026-09-22,
+              // Komal: "remove the checkboxes from tables") — the row still
+              // needs to host the info-icon popover as a sibling control in
+              // "row icon" mode, which can't nest inside the name button.
               <div
                 key={t.name}
                 style={{
@@ -149,11 +219,6 @@ export const TableColumnBrowserBody: React.FC<TableColumnBrowserBodyProps> = ({
                   background: active ? 'var(--rd-sys-color-background-base)' : 'transparent',
                 }}
               >
-                <Checkbox
-                  checked={tableChecked}
-                  onChange={next => columnsOf(t.name).forEach(c => onToggleColumn(t.name, c, next))}
-                  showLabel={false}
-                />
                 <button
                   ref={el => { rowRefs.current[t.name] = el; }}
                   type="button"
@@ -214,18 +279,27 @@ export const TableColumnBrowserBody: React.FC<TableColumnBrowserBodyProps> = ({
               </div>
             );
           })}
+          </div>
         </div>
 
         {/* Right — the focused table's columns (plus, in "tab" mode, an Info
             tab showing the same table info card the "icon" mode puts in a
-            popover). */}
-        <div style={{ flex: 1, minWidth: 0, overflowY: 'auto', padding: 'var(--spacing-3) var(--spacing-4)' }}>
+            popover). Same header-bar-then-scrollable-body shape as the left
+            pane now uses, for the same reason. */}
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
           {!focusedTable ? (
-            <div style={{ padding: 'var(--spacing-4)', fontSize: 12, color: 'var(--rd-sys-color-content-secondary)', textAlign: 'center' }}>Select a table to see its columns</div>
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--spacing-4)', fontSize: 12, color: 'var(--rd-sys-color-content-secondary)', textAlign: 'center' }}>Select a table to see its columns</div>
           ) : (
             <>
+              {/* Header bar — same fixed-then-scrollable shape as the left
+                  pane's "Tables": a pinned bar with its own border-bottom,
+                  not part of what scrolls beneath it. */}
               {tableInfoMode === 'tab' ? (
-                <div style={{ marginBottom: 'var(--spacing-3)' }}>
+                <div style={{
+                  flexShrink: 0, height: PANEL_HEADER_HEIGHT, boxSizing: 'border-box', padding: '10px 12px',
+                  display: 'flex', flexDirection: 'column', justifyContent: 'center',
+                  borderBottom: '1px solid var(--rd-sys-color-border-divider)',
+                }}>
                   <SegmentedControl
                     size="small"
                     options={[{ id: 'columns', label: 'Columns' }, { id: 'info', label: 'Info' }]}
@@ -234,61 +308,86 @@ export const TableColumnBrowserBody: React.FC<TableColumnBrowserBodyProps> = ({
                   />
                 </div>
               ) : (
-                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--rd-sys-color-content-primary)', marginBottom: 'var(--spacing-2)' }}>
-                  {focusedTable}
+                // "Columns" — the pane's own generic heading, same size/weight
+                // and bar treatment as "Tables" on the left so the two read
+                // as a pair — with the specific table still named right under
+                // it, since knowing WHICH table's columns these are stays
+                // useful context. Both bars share PANEL_HEADER_HEIGHT (Komal,
+                // 2026-09-25: "both the headers should be of the same size")
+                // — this one's naturally two lines tall, "Tables" is one, so
+                // that one centers vertically inside the same fixed height
+                // rather than the two bars ending up different sizes.
+                <div style={{ flexShrink: 0, height: PANEL_HEADER_HEIGHT, boxSizing: 'border-box', padding: '10px 12px', display: 'flex', flexDirection: 'column', justifyContent: 'center', borderBottom: '1px solid var(--rd-sys-color-border-divider)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-2)' }}>
+                    <Icon name="data-column" size="xs" color="var(--rd-sys-color-content-secondary)" />
+                    <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--rd-sys-color-content-primary)' }}>Columns</span>
+                  </div>
+                  {/* Indented past the icon (18px = xs icon width + spacing-2
+                      gap) so the table name lines up under "Columns" itself,
+                      not under the icon beside it. */}
+                  <div style={{ fontSize: 12, color: 'var(--rd-sys-color-content-secondary)', marginTop: 2, marginLeft: 18 }}>
+                    {focusedTable}
+                  </div>
                 </div>
               )}
-              {tableInfoMode === 'tab' && rightPaneTab === 'info' ? (
-                <TableInfoCard table={tableMetaOf(focusedTable)} />
-              ) : visibleCols.length === 0 ? (
-                <div style={{ padding: 'var(--spacing-3) 0', fontSize: 12, color: 'var(--rd-sys-color-content-secondary)' }}>No columns match "{search}"</div>
-              ) : (
-                <>
-                  {/* Select all — scoped to whatever's currently visible (the
-                      search-filtered set), same "select what you see"
-                      convention as Gmail/Drive-style list pickers. */}
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-2)', padding: '6px 0', marginBottom: 'var(--spacing-1)', borderBottom: '1px solid var(--rd-sys-color-border-divider)', cursor: 'pointer' }}>
-                    <Checkbox
-                      checked={allChecked}
-                      indeterminate={someChecked}
-                      onChange={next => visibleCols.forEach(c => onToggleColumn(focusedTable, c, next))}
-                      showLabel={false}
-                    />
-                    <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--rd-sys-color-content-secondary)' }}>Select all</span>
-                  </label>
-                  {/* Single column (Komal, 2026-09-22: "I don't like the
-                      double column stacking... make it single column") — the
-                      earlier 2-up grid tried to use the extra width the wider
-                      panel now has, but reverted back to a plain list per her
-                      call. The panel's own width increase stays. */}
-                  <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    {visibleCols.map(c => {
-                      const checked = draftCols(focusedTable).includes(c);
-                      return (
-                        <label key={c} style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-2)', padding: '6px 0', cursor: 'pointer', minWidth: 0 }}>
-                          <Checkbox
-                            checked={checked}
-                            onChange={next => onToggleColumn(focusedTable, c, next)}
-                            showLabel={false}
-                          />
-                          {/* Same ColumnChip every other column list already
-                              uses — Option 1's ColumnTree, the populated
-                              Option 2 nav row, Option 4's panel (2026-09-22,
-                              Komal: "use consistent styling for columns
-                              everywhere. Even in the table and column
-                              browser"). This was the one holdout still on a
-                              plain text label. */}
-                          <ColumnChip label={c} />
-                        </label>
-                      );
-                    })}
-                  </div>
-                </>
-              )}
+              <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: 'var(--spacing-3) var(--spacing-4)' }}>
+                {tableInfoMode === 'tab' && rightPaneTab === 'info' ? (
+                  <TableInfoCard table={tableMetaOf(focusedTable)} />
+                ) : visibleCols.length === 0 ? (
+                  <div style={{ padding: 'var(--spacing-3) 0', fontSize: 12, color: 'var(--rd-sys-color-content-secondary)' }}>No columns match "{search}"</div>
+                ) : (
+                  <>
+                    {/* Select all — scoped to whatever's currently visible (the
+                        search-filtered set), same "select what you see"
+                        convention as Gmail/Drive-style list pickers. */}
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-2)', padding: '6px 0', marginBottom: 'var(--spacing-1)', cursor: 'pointer' }}>
+                      <Checkbox
+                        checked={allChecked}
+                        indeterminate={someChecked}
+                        onChange={next => visibleCols.forEach(c => onToggleColumn(focusedTable, c, next))}
+                        showLabel={false}
+                      />
+                      <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--rd-sys-color-content-secondary)' }}>Select all</span>
+                    </label>
+                    {/* Single column (Komal, 2026-09-22: "I don't like the
+                        double column stacking... make it single column") — the
+                        earlier 2-up grid tried to use the extra width the wider
+                        panel now has, but reverted back to a plain list per her
+                        call. The panel's own width increase stays. */}
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      {visibleCols.map(c => {
+                        const checked = draftCols(focusedTable).includes(c);
+                        return (
+                          <label key={c} style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-2)', padding: '6px 0', cursor: 'pointer', minWidth: 0 }}>
+                            <Checkbox
+                              checked={checked}
+                              onChange={next => onToggleColumn(focusedTable, c, next)}
+                              showLabel={false}
+                            />
+                            {/* Same ColumnChip every other column list already
+                                uses — Option 1's ColumnTree, the populated
+                                Option 2 nav row, Option 4's panel (2026-09-22,
+                                Komal: "use consistent styling for columns
+                                everywhere. Even in the table and column
+                                browser"). This was the one holdout still on a
+                                plain text label. */}
+                            <ColumnChip label={c} />
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
+              </div>
             </>
           )}
         </div>
       </div>
+      <AddFiltersModal
+        isOpen={filtersModalOpen}
+        onCancel={() => setFiltersModalOpen(false)}
+        onAdd={() => setFiltersModalOpen(false)}
+      />
     </div>
   );
 };

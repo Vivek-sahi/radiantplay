@@ -506,6 +506,12 @@
   overflow: hidden;
   transition: width 220ms ease, opacity 220ms ease, margin-right 220ms ease;
   opacity: 1;
+  /* 2026-09-25, Komal: "increase the height of the column selector panel to
+     top align with the query bar" — pulls the panel's top up past .main's
+     own 20px top padding and .queryBarRow's height (24px padding + 40px
+     single-line bar) so it starts flush with the query bar's top instead of
+     below it. A fixed value, not a dynamic one — matches a single-line bar. */
+  margin-top: -84px;
 }
 
 .dataPanelHidden {
