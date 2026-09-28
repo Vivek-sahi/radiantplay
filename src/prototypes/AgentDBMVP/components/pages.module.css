@@ -1,0 +1,97 @@
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--spacing-4);
+}
+
+.twoCol {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+  gap: var(--spacing-4);
+  align-items: start;
+}
+
+.welcome {
+  padding: var(--spacing-4) var(--spacing-5);
+  border-radius: var(--radius-md);
+  background: var(--rd-sys-color-background-information);
+  border: 1px solid var(--rd-sys-color-border-accent-blue);
+}
+.welcomeIcon { color: var(--rd-sys-color-content-information); display: inline-flex; padding-top: var(--spacing-1); }
+.welcomeActions { padding-top: var(--spacing-2); }
+
+.alertRow {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-3);
+  padding-bottom: var(--spacing-3);
+  border-bottom: 1px solid var(--rd-sys-color-border-divider);
+}
+.alertRow:last-child { border-bottom: 0; padding-bottom: 0; }
+
+.grow { flex: 1; min-width: 0; }
+
+.num { font-variant-numeric: tabular-nums; }
+
+.mono {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-sm);
+  color: var(--rd-sys-color-content-primary);
+}
+
+.stackBar {
+  display: flex;
+  height: 12px;
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  background: var(--rd-sys-color-background-subtle);
+}
+.segPulse { background: var(--rd-sys-color-background-brand); }
+.segPipeline { background: var(--rd-sys-color-content-accent-purple); }
+.segUpload { background: var(--rd-sys-color-content-accent-yellow); }
+
+.filters { padding: 0 var(--spacing-5); }
+.search { width: 280px; height: 32px; }
+
+.note {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--spacing-2);
+  padding: var(--spacing-3) var(--spacing-4);
+  border-radius: var(--radius-md);
+  background: var(--rd-sys-color-background-sunken);
+}
+
+.facts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.barCell { min-width: 160px; }
+
+.sqlLayout {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: var(--spacing-4);
+  align-items: start;
+}
+
+.leftAlign { justify-content: flex-start !important; }
+
+.sqlInput textarea {
+  font-family: var(--font-family-mono) !important;
+  font-size: var(--font-size-sm) !important;
+}
+
+.resultMeta { padding: 0 var(--spacing-5) var(--spacing-3); }
+
+.typeCell { flex: 0 0 280px; }
+.iconSpacer { flex: 0 0 32px; }
+.previewScroll {
+  max-height: 320px;
+  overflow: auto;
+  border: 1px solid var(--rd-sys-color-border-divider);
+  border-radius: var(--radius-md);
+}

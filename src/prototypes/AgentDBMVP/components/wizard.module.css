@@ -1,0 +1,47 @@
+.grow { flex: 1; min-width: 0; }
+.dbField { flex: 0 0 220px; }
+.typeField { flex: 0 0 200px; }
+
+.sqlInput textarea {
+  font-family: var(--font-family-mono) !important;
+  font-size: var(--font-size-sm) !important;
+}
+
+.prefill {
+  padding: var(--spacing-3) var(--spacing-4);
+  border-radius: var(--radius-md);
+  background: var(--rd-sys-color-background-information);
+}
+
+.inlineCode {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-sm);
+}
+
+.choice {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  padding: var(--spacing-3) var(--spacing-4);
+  border: 1px solid var(--rd-sys-color-border-default);
+  border-radius: var(--radius-md);
+}
+.choiceOn { border-color: var(--rd-sys-color-border-brand); }
+.choiceNote { padding-left: var(--spacing-6); }
+
+.keyGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--spacing-2) var(--spacing-4);
+}
+
+.readBack {
+  padding: var(--spacing-2) var(--spacing-3);
+  border-radius: var(--radius-md);
+  background: var(--rd-sys-color-background-success);
+}
+
+.advanced {
+  padding-top: var(--spacing-4);
+  border-top: 1px solid var(--rd-sys-color-border-divider);
+}

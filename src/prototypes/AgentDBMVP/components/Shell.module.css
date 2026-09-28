@@ -1,0 +1,79 @@
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--rd-sys-color-background-sunken);
+  font-family: var(--font-family-primary);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+  flex: 0 0 auto;
+  padding: 0 var(--spacing-6);
+  background: var(--rd-sys-color-background-base);
+  border-bottom: 1px solid var(--rd-sys-color-border-divider);
+}
+
+.mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-md);
+  background: var(--rd-sys-color-background-brand);
+  color: var(--rd-sys-color-content-primary-inverse);
+}
+
+.divider {
+  width: 1px;
+  height: 20px;
+  background: var(--rd-sys-color-border-divider);
+}
+
+.body {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+.nav {
+  flex: 0 0 232px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: var(--spacing-5) var(--spacing-3);
+  background: var(--rd-sys-color-background-base);
+  border-right: 1px solid var(--rd-sys-color-border-divider);
+}
+
+.groupLabel {
+  padding: 0 var(--spacing-3) var(--spacing-1);
+}
+
+.navItem {
+  justify-content: flex-start !important;
+  color: var(--rd-sys-color-content-primary) !important;
+}
+
+.navActive {
+  background: var(--rd-sys-color-background-active) !important;
+  color: var(--rd-sys-color-content-brand) !important;
+}
+
+.navFoot {
+  padding: 0 var(--spacing-3);
+}
+
+.content {
+  flex: 1;
+  min-width: 0;
+  padding: var(--spacing-8);
+}
+
+.page {
+  max-width: 1200px;
+}

@@ -39,10 +39,20 @@ const DataNotebook = React.lazy(() => import('./DataNotebook'));
 const SpotterPrep = React.lazy(() => import('./SpotterPrep'));
 const SpotterPrep2 = React.lazy(() => import('./SpotterPrep2'));
 const NearStore = React.lazy(() => import('./NearStore'));
+const AgentDBMVP = React.lazy(() => import('./AgentDBMVP'));
 const SearchDataOnDataModelexplorations = React.lazy(() => import('./SearchDataOnDataModelexplorations'));
 const SearchDataOnDataModelFinal = React.lazy(() => import('./SearchDataOnDataModelFinal'));
 
 export const myRegistry: ProjectMeta[] = [
+  {
+    id: 'AgentDBMVP',
+    name: 'AgentDB MVP',
+    description: 'Standalone AgentDB SaaS console concept: overview, data by source, activity by identity, usage and billing, service accounts with budgets, connect (SQL, ThoughtSpot, pipelines, MCP), SQL editor.',
+    author: 'Vivek Sahi',
+    lastModified: '2026-09-28',
+    component: AgentDBMVP,
+    section: 'mine',
+  },
   {
     id: 'SearchDataOnDataModelFinal',
     name: 'SearchDataOnDataModelFinal',
