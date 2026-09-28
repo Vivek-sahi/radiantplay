@@ -2413,13 +2413,26 @@ const SearchDataOnDataModelFinal: React.FC = () => {
                 initialFocusTable={option2FocusTable}
                 leftOffset={leftPaneCollapsed ? 0 : leftPaneWidth}
                 tableInfoMode={tableInfoMode === 'footer' ? 'icon' : tableInfoMode}
-                footer={tableInfoMode === 'footer' ? (
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 'var(--spacing-3)', padding: 'var(--spacing-3) var(--spacing-4)', borderTop: '1px solid var(--rd-sys-color-border-divider)', flexShrink: 0 }}>
-                    <Button variant="secondary" onClick={() => setOption2ModalOpen(false)}>Cancel</Button>
+                // CTAs moved from a footer row to the header's top right
+                // (2026-09-28, Komal: "Add to model and separator and close.
+                // Something like this" — pointing at the top bar's Save model
+                // | divider | Exit). Same recipe as that pair: primary first,
+                // a 24px vertical Divider, the dismiss last.
+                headerActions={tableInfoMode === 'footer' ? (
+                  <>
                     <Button variant="primary" onClick={handleOption2Confirm} disabled={!option2HasChanges}>
                       {addedTableNames.size > 0 ? 'Update' : 'Add to model'}
                     </Button>
-                  </div>
+                    <span style={{ display: 'flex', alignItems: 'center', height: 24, marginInline: 'var(--spacing-1)' }}><Divider vertical /></span>
+                    {/* Cancel is a secondary link, not a button (2026-09-28,
+                        Komal: "make close a secondary link instead of button.
+                        Follow Radiant strictly") — Radiant Link's own `gray`
+                        colour, which the component documents as its
+                        subtle/secondary link (content-secondary), default
+                        14px size, no overrides. Labelled "Cancel" (Komal, same
+                        day: "say cancel instead of close"). */}
+                    <Link href="#" color="gray" onClick={e => { e.preventDefault(); setOption2ModalOpen(false); }}>Cancel</Link>
+                  </>
                 ) : undefined}
               />
             )}
@@ -2599,7 +2612,11 @@ const SearchDataOnDataModelFinal: React.FC = () => {
                           {dataModelLayout === 'split' && previewDirection !== 2 && (
                             <Button
                               variant="secondary"
-                              icon={<Icon name="table" size="s" />}
+                              // `eye`, the preview icon used everywhere else
+                              // (table cards, join menu) — 2026-09-28, Komal:
+                              // "use the correct preview icon thats used
+                              // everywhere" (was `table`).
+                              icon={<Icon name="eye" size="s" />}
                               onClick={() => {
                                 setPreviewTable(''); setPreviewJoin(null);
                                 setSelTable(''); setSelJoin(null);
@@ -2609,7 +2626,10 @@ const SearchDataOnDataModelFinal: React.FC = () => {
                               // One recipe for all three canvas controls
                               // (2026-09-25): white pill, soft shadow, no
                               // border (Vivek: "we can remove borders").
-                              style={{ background: 'var(--rd-sys-color-background-base)', border: 'none', borderRadius: 'var(--radius-full, 999px)', boxShadow: 'var(--shadow-surface)' }}
+                              // White background lives in .canvas-preview-btn (dme.css),
+                              // not inline, so its :hover can override it.
+                              className="canvas-preview-btn"
+                              style={{ border: 'none', borderRadius: 'var(--radius-full, 999px)', boxShadow: 'var(--shadow-surface)' }}
                             >
                               Preview model data
                             </Button>
@@ -3100,14 +3120,18 @@ const SearchDataOnDataModelFinal: React.FC = () => {
         placement="bottom-start"
       >
         <Menu className="sm-canvas-menu" onClose={() => setJoinMenu(null)}>
-          <Menu.Item onClick={() => { if (joinMenu) previewJoinExplicit(joinMenu.j); setJoinMenu(null); }}>
+          {/* Leading icons (2026-09-28, Komal: "add icons here on the
+              left") — Radiant registry glyphs through Menu.Item's own `icon`
+              slot, size m = the slot's 16px box. Preview uses the same `eye`
+              the table cards' preview icon uses. */}
+          <Menu.Item icon={<Icon name="eye" size="m" color="currentColor" />} onClick={() => { if (joinMenu) previewJoinExplicit(joinMenu.j); setJoinMenu(null); }}>
             Preview data
           </Menu.Item>
-          <Menu.Item onClick={() => { if (joinMenu) setJoinDraft({ left: joinMenu.j.leftTable, right: joinMenu.j.rightTable }); setJoinMenu(null); }}>
+          <Menu.Item icon={<Icon name="pencil" size="m" color="currentColor" />} onClick={() => { if (joinMenu) setJoinDraft({ left: joinMenu.j.leftTable, right: joinMenu.j.rightTable }); setJoinMenu(null); }}>
             Edit join
           </Menu.Item>
           <Menu.Divider />
-          <Menu.Item onClick={() => { if (joinMenu) (window as any)._removeJoinManually?.(joinMenu.j.leftTable, joinMenu.j.rightTable); setJoinMenu(null); }}>
+          <Menu.Item icon={<Icon name="trash-can" size="m" color="currentColor" />} onClick={() => { if (joinMenu) (window as any)._removeJoinManually?.(joinMenu.j.leftTable, joinMenu.j.rightTable); setJoinMenu(null); }}>
             Delete join
           </Menu.Item>
         </Menu>

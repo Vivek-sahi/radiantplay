@@ -113,7 +113,7 @@ const TableCard = React.forwardRef<HTMLDivElement, TableCardProps>(
               click-to-select from also firing (preview selects on its own). */}
           {onPreview && (
             <button
-              className={styles.menu}
+              className={`${styles.menu} ${styles.previewBtn}`}
               data-menu=""
               onClick={e => { e.stopPropagation(); onPreview(name); }}
               title="Preview data"

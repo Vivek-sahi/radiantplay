@@ -31,10 +31,16 @@ export interface TableColumnSidePanelProps {
    * Omit to keep the free-flowing, no-footer panel exactly as it is.
    */
   footer?: React.ReactNode;
+  /**
+   * Additive, opt-in (2026-09-28, Komal: "move the CTAs to top right of the
+   * header"): actions rendered at the right end of the "Data browser" title
+   * row. Omit to keep the title-only header exactly as it is.
+   */
+  headerActions?: React.ReactNode;
 }
 
 export const TableColumnSidePanel: React.FC<TableColumnSidePanelProps> = ({
-  open, onClose, catalog, draft, onToggleColumn, initialFocusTable, leftOffset, tableInfoMode, footer,
+  open, onClose, catalog, draft, onToggleColumn, initialFocusTable, leftOffset, tableInfoMode, footer, headerActions,
 }) => {
   // No footer to confirm or cancel any more (2026-09-22, Komal: "remove the
   // 'add to model' and cancel from the bottom. It should be free flowing
@@ -111,6 +117,11 @@ export const TableColumnSidePanel: React.FC<TableColumnSidePanelProps> = ({
         {/* 2026-09-24, Komal: "in data browser, update the title of the panel
             to 'Data browser'". */}
         <Typography variant="content-label" as="span" noMargin>Data browser</Typography>
+        {headerActions && (
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 'var(--spacing-2)' }}>
+            {headerActions}
+          </div>
+        )}
       </div>
       <div style={{ flex: 1, minHeight: 0, padding: 'var(--spacing-3) var(--spacing-4)', display: 'flex', flexDirection: 'column' }}>
         <TableColumnBrowserBody

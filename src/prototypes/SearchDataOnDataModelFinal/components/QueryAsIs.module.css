@@ -2661,6 +2661,12 @@
   position: sticky;
   top: 0;
   z-index: 2;
+  /* As wide as its cells, not just the scroll viewport (2026-09-28, Komal:
+     "the header is breaking") — .sheetGrid is a flex column, so this row
+     was stretched to the grid's visible width only; scrolled sideways, the
+     grey background and bottom border stopped partway and the cells past
+     that edge sat on white. Still at least the viewport's width. */
+  min-width: max-content;
   background: var(--rd-sys-color-background-sunken, #f6f8fa);
   border-bottom: 1px solid var(--rd-sys-color-border-default, #d0d5dd);
 }

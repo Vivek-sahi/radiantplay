@@ -115,6 +115,15 @@
   outline: none;
   background: var(--rd-sys-color-background-sunken);
 }
+/* Preview eye only (2026-09-28, Komal: "for the eye icon in the table cards
+   ... add a hover state"; she picked Radiant's secondary-button greys). The
+   sunken grey above barely registers on the white card, so hover takes
+   button-secondary-default instead. Only rendered when onPreview is passed
+   (SearchDataOnDataModelFinal), so no other consumer is affected. Placed
+   after .menu:hover so it wins at equal specificity. */
+.previewBtn:hover {
+  background: var(--rd-comp-color-button-secondary-default);
+}
 
 .name {
   font-size: var(--font-size-xs);

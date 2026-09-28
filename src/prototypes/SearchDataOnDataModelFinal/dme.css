@@ -2612,3 +2612,11 @@ body .model-info-popover {
   line-height: var(--line-height-sm);
   color: var(--rd-sys-color-content-primary);
 }
+
+/* "Preview model data" canvas pill (2026-09-28, Komal: "add a hover state";
+   she picked Radiant's secondary-button greys). White at rest like the other
+   canvas pills; hover takes button-secondary-hover. Repeated class so each
+   rule out-ranks Radiant Button's own .secondary.standard (2 classes) and
+   .secondary.standard:hover:not(.disabled) (4) backgrounds. */
+.canvas-preview-btn.canvas-preview-btn.canvas-preview-btn { background: var(--rd-sys-color-background-base); }
+.canvas-preview-btn.canvas-preview-btn.canvas-preview-btn:hover:not(:disabled) { background: var(--rd-comp-color-button-secondary-hover); }
