@@ -1,0 +1,48 @@
+/* One stacked bar across the whole plan: 2px surface gaps between segments, 4px rounded ends. */
+.bar {
+  display: flex;
+  gap: 2px;
+  height: 16px;
+  width: 100%;
+}
+
+.segment {
+  display: block;
+  min-width: 4px;
+  height: 100%;
+  border-radius: 2px;
+  cursor: default;
+  transition: opacity 120ms;
+}
+@media (prefers-reduced-motion: reduce) { .segment { transition: none; } }
+.dim { opacity: 0.35; }
+.segment:first-child { border-radius: var(--radius-xs) 2px 2px var(--radius-xs); }
+.segment:focus-visible { outline: 2px solid var(--rd-sys-color-border-focus); outline-offset: 2px; }
+
+.free {
+  display: block;
+  height: 100%;
+  border-radius: 2px var(--radius-xs) var(--radius-xs) 2px;
+  background: var(--rd-sys-color-background-subtle);
+  border: 1px dashed var(--rd-sys-color-border-default);
+  box-sizing: border-box;
+}
+
+.muted { color: var(--rd-sys-color-content-secondary); }
+
+.swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex: 0 0 auto;
+}
+.swatchFree {
+  background: var(--rd-sys-color-background-subtle);
+  border: 1px dashed var(--rd-sys-color-border-default);
+  box-sizing: border-box;
+}
+
+/* Radiant Table aligns cells but not headers; keep numeric headers over their numbers. */
+.legendTable th:not(:first-child) { text-align: right; }
+.legendTable th:not(:first-child) > * { justify-content: flex-end; }

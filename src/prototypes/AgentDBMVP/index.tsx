@@ -4,12 +4,11 @@ import { SERVICE_ACCOUNTS, TABLES } from './data';
 import { Shell } from './components/Shell';
 import { OverviewPage } from './components/OverviewPage';
 import { DataPage } from './components/DataPage';
-import { TableDetailModal } from './components/TableDetailModal';
+import { TableDetailPage } from './components/TableDetailPage';
 import { ActivityPage } from './components/ActivityPage';
 import { UsagePage } from './components/UsagePage';
 import { AccessPage } from './components/AccessPage';
 import { ConnectPage } from './components/ConnectPage';
-import { SqlPage } from './components/SqlPage';
 import { FloatingToast } from './components/primitives';
 import { accountsFor, DEFAULT_VARIANT, tablesFor, Variant, VariantContext } from './variant';
 import { CreateTableWizard, NewTableInput } from './components/CreateTableWizard';
@@ -51,42 +50,41 @@ const AgentDBMVP: React.FC = () => {
     ]);
     setCreatingTable(false);
     setToast(`${input.database}.${input.name} created`);
-    setOpenTable(id);
+    openTablePage(id);
   };
 
   const viewTables = tablesFor(variant, tables);
   const viewAccounts = accountsFor(variant, accounts);
   const active = viewTables.find((t) => t.id === openTable);
+  const openTablePage = (id: string) => {
+    setPage('data');
+    setOpenTable(id);
+  };
 
   return (
     <VariantContext.Provider value={variant}>
-    <Shell page={page} onNavigate={setPage} variant={variant} onVariantChange={setVariant}>
-      {page === 'overview' && <OverviewPage onNavigate={setPage} onOpenTable={setOpenTable} />}
-      {page === 'data' && (
+    <Shell
+      page={page}
+      onNavigate={(p) => {
+        setPage(p);
+        setOpenTable(null);
+      }}
+      variant={variant}
+      onVariantChange={setVariant}
+    >
+      {page === 'overview' && <OverviewPage onNavigate={setPage} onOpenTable={openTablePage} />}
+      {page === 'data' && !active && (
         <DataPage
           tables={viewTables}
-          onOpenTable={setOpenTable}
+          onOpenTable={openTablePage}
           onUpload={() => setToast('File upload: pick a CSV or Parquet file')}
           onCreateTable={() => setCreatingTable(true)}
         />
       )}
-      {page === 'sql' && <SqlPage tables={viewTables} />}
-      {page === 'activity' && <ActivityPage />}
-      {page === 'connect' && <ConnectPage onNavigate={setPage} toast={setToast} />}
-      {page === 'access' && (
-        <AccessPage
-          accounts={viewAccounts}
-          onCreate={(a) => setAccounts((prev) => [...prev, a])}
-          onUpdate={(a) => setAccounts((prev) => prev.map((x) => (x.id === a.id ? { ...x, revoked: a.revoked, passwordSetAt: a.passwordSetAt } : x)))}
-          toast={setToast}
-        />
-      )}
-      {page === 'usage' && <UsagePage toast={setToast} />}
-
-      {active && (
-        <TableDetailModal
+      {page === 'data' && active && (
+        <TableDetailPage
           table={active}
-          onClose={() => setOpenTable(null)}
+          onBack={() => setOpenTable(null)}
           toast={setToast}
           onUpdate={(updated, message) => {
             setTables((prev) => prev.map((x) => (x.id === updated.id ? { ...x, ...updated, writer: x.writer } : x)));
@@ -99,6 +97,18 @@ const AgentDBMVP: React.FC = () => {
           }}
         />
       )}
+      {page === 'activity' && <ActivityPage />}
+      {page === 'connect' && <ConnectPage onNavigate={setPage} toast={setToast} />}
+      {page === 'access' && (
+        <AccessPage
+          accounts={viewAccounts}
+          onCreate={(a) => setAccounts((prev) => [...prev, a])}
+          onUpdate={(a) => setAccounts((prev) => prev.map((x) => (x.id === a.id ? { ...x, revoked: a.revoked, passwordSetAt: a.passwordSetAt } : x)))}
+          toast={setToast}
+        />
+      )}
+      {page === 'usage' && <UsagePage toast={setToast} />}
+
       {creatingTable && (
         <CreateTableWizard
           databases={[...new Set(tables.map((t) => t.database))]}

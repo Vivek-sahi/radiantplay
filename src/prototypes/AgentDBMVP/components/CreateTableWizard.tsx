@@ -1,13 +1,14 @@
 import React, { useMemo, useState } from 'react';
 import {
+  Accordion,
   Button,
   Checkbox,
   Horizontal,
   Modal,
   ModalFooter,
   Radio,
-  SegmentedControl,
   Select,
+  Stepper,
   TextArea,
   TextInput,
   Toggle,
@@ -28,10 +29,13 @@ export interface NewTableInput {
   splitBy: string | null;
 }
 
-const STEPS = ['Define the table', 'How rows arrive', 'Review'];
+const STEPS = [
+  { title: 'Define table', description: 'Name and columns' },
+  { title: 'Row handling', description: 'Updates and splitting' },
+  { title: 'Review', description: 'Check and create' },
+];
 const NAME_RE = /^[a-z][a-z0-9_]*$/;
 const TYPE_OPTIONS = PLAIN_TYPES.map((t) => ({ id: t.id, label: t.id }));
-
 
 const EXAMPLE_SQL = `CREATE TABLE retail_sales.returns (
   return_date DATE,
@@ -51,14 +55,16 @@ export const CreateTableWizard: React.FC<{
 }> = ({ databases, existingNames, onCancel, onCreate }) => {
   const [step, setStep] = useState(0);
   const [mode, setMode] = useState<'form' | 'sql'>('form');
-  // Form mode fields. In SQL mode these are filled from the statement when it's read.
   const [database, setDatabase] = useState(databases[0]);
   const [name, setName] = useState('');
   const [columns, setColumns] = useState<DraftColumn[]>([
-    { name: '', type: 'Whole number' },
+    { name: '', type: 'Big whole number' },
     { name: '', type: 'Text' },
   ]);
   const [sql, setSql] = useState('');
+  const [sqlNotice, setSqlNotice] = useState<string | null>(null);
+  // The starter statement written when switching to SQL; if it's untouched, going back changes nothing.
+  const [scaffold, setScaffold] = useState<string | null>(null);
   const [ignored, setIgnored] = useState<string[]>([]);
   const [rowMode, setRowMode] = useState<RowMode | null>(null);
   const [keys, setKeys] = useState<string[]>([]);
@@ -77,7 +83,7 @@ export const CreateTableWizard: React.FC<{
   const dupCol = cleanCols.find((c, i) => cleanCols.findIndex((x) => x.name === c.name) !== i);
   const badCol = cleanCols.find((c) => !NAME_RE.test(c.name));
 
-  /** SQL mode: read the full statement live, so the user sees what will be created as they type. */
+  /** SQL mode: read the statement live, so the user sees what will be created as they type. */
   const parsed = useMemo(() => {
     if (!sql.trim()) return null;
     const res = parseSql(sql);
@@ -90,7 +96,7 @@ export const CreateTableWizard: React.FC<{
     return { ...res, errors };
   }, [sql, databases, existingNames]);
 
-  /** Copy what the SQL says into the shared fields (and pre-fill step 2 if it states row behaviour). */
+  /** Copy what the SQL says into the shared fields, and pre-fill step 2 if it states row handling or a split. */
   const applyParsed = () => {
     if (!parsed || parsed.errors.length) return false;
     setDatabase(parsed.database!);
@@ -109,25 +115,35 @@ export const CreateTableWizard: React.FC<{
     return true;
   };
 
-  const switchMode = (next: string) => {
-    if (next === mode) return;
-    if (next === 'sql') {
-      // Carry over whatever was entered, as a full statement.
-      const body = cleanCols.length ? columnsToSql(cleanCols).split('\n').map((l) => `  ${l}`).join('\n') : '  ';
-      setSql(`CREATE TABLE ${database}.${name || 'table_name'} (\n${body}\n);`);
-      setMode('sql');
-    } else if (!sql.trim() || applyParsed()) {
-      setMode('form');
-    }
+  const toSql = () => {
+    const body = cleanCols.length ? columnsToSql(cleanCols).split('\n').map((l) => `  ${l}`).join('\n') : '  column_name BIGINT';
+    const statement = `CREATE TABLE ${database}.${name || 'table_name'} (\n${body}\n);`;
+    setSql(statement);
+    setScaffold(statement);
+    setSqlNotice(null);
+    setMode('sql');
   };
+
+  /** Going back to the form always works. If the SQL can't be read, the form keeps what it had. */
+  const toForm = () => {
+    if (sql === scaffold) {
+      setSqlNotice(null);
+    } else if (sql.trim() && !applyParsed()) {
+      setSqlNotice("Your SQL couldn't be read, so the form shows what you had before.");
+    } else {
+      setSqlNotice(null);
+    }
+    setMode('form');
+  };
+
+  // Doris: a table whose rows get replaced can only be split by one of its identifying columns.
+  const splitOptions = cleanCols.filter((c) => isDateType(c.type) && (rowMode !== 'replace' || keys.includes(c.name)));
+  const effectiveSplit = splitOn && splitCol && splitOptions.some((c) => c.name === splitCol) ? splitCol : null;
 
   const step1Valid =
     mode === 'sql'
       ? !!parsed && parsed.errors.length === 0
       : NAME_RE.test(name) && !existingNames.includes(fullName) && cleanCols.length > 0 && !dupCol && !badCol;
-  // Doris: a table whose rows get replaced can only be split by one of its identifying columns.
-  const splitOptions = cleanCols.filter((c) => isDateType(c.type) && (rowMode !== 'replace' || keys.includes(c.name)));
-  const effectiveSplit = splitOn && splitCol && splitOptions.some((c) => c.name === splitCol) ? splitCol : null;
   const step2Valid = (rowMode === 'add' || (rowMode === 'replace' && keys.length > 0)) && (!splitOn || !!effectiveSplit);
 
   const next = () => {
@@ -149,22 +165,29 @@ export const CreateTableWizard: React.FC<{
 
   const footer = (
     <ModalFooter
+      tertiaryAction={
+        <Button variant="tertiary" onClick={onCancel}>
+          Cancel
+        </Button>
+      }
       secondaryAction={
-        step === 0 ? (
-          <Button variant="secondary" onClick={onCancel}>Cancel</Button>
-        ) : (
-          <Button variant="secondary" onClick={() => setStep((s) => s - 1)}>Back</Button>
-        )
+        step > 0 ? (
+          <Button variant="secondary" onClick={() => setStep((s) => s - 1)}>
+            Back
+          </Button>
+        ) : undefined
       }
       primaryAction={
         step < 2 ? (
           <Button variant="primary" disabled={step === 0 ? !step1Valid : !step2Valid} onClick={next}>
-            Next
+            Next: {STEPS[step + 1].title}
           </Button>
         ) : (
           <Button
             variant="primary"
-            onClick={() => onCreate({ database, name, columns: cleanCols, mode: rowMode!, keys: rowMode === 'replace' ? keys : [], splitBy: effectiveSplit })}
+            onClick={() =>
+              onCreate({ database, name, columns: cleanCols, mode: rowMode!, keys: rowMode === 'replace' ? keys : [], splitBy: effectiveSplit })
+            }
           >
             Create table
           </Button>
@@ -174,114 +197,135 @@ export const CreateTableWizard: React.FC<{
   );
 
   return (
-    <Modal isOpen onClose={onCancel} eyebrow={`Step ${step + 1} of 3 · ${STEPS[step]}`} title="Create table" size="large" footer={footer}>
-      {step === 0 && (
-        <Vertical gap={spacing.E}>
-          <Horizontal justify="space-between" align="center">
-            <Typography variant="body-normal" color="gray-light" noMargin>
-              {mode === 'form' ? 'Fill in the table step by step.' : 'Write or paste a CREATE TABLE statement.'}
-            </Typography>
-            <SegmentedControl
-              size="small"
-              value={mode}
-              onChange={switchMode}
-              options={[
-                { id: 'form', label: 'Form' },
-                { id: 'sql', label: 'SQL' },
-              ]}
-            />
-          </Horizontal>
+    <Modal isOpen onClose={onCancel} title="Create table" size="large" footer={footer}>
+      <Vertical gap={spacing.F}>
+        <Stepper steps={STEPS} currentStep={step} sequential onStepClick={(i) => i < step && setStep(i)} />
 
-          {mode === 'form' ? (
-            <Vertical gap={spacing.E}>
-              <Horizontal gap={spacing.D} align="start">
-                <div className={styles.dbField}>
-                  <Select label="Database" options={databases.map((d) => ({ id: d, label: d }))} value={database} onChange={setDatabase} fullWidth />
-                </div>
-                <div className={styles.grow}>
-                  <TextInput
-                    label="Table name"
-                    placeholder="e.g. orders"
-                    value={name}
-                    onChange={(e) => setName(e.target.value.toLowerCase())}
-                    error={!!nameError}
-                    errorMessage={nameError}
-                  />
-                </div>
-              </Horizontal>
+        {/* ---------- Step 1: define ---------- */}
+        {step === 0 && mode === 'form' && (
+          <Vertical gap={spacing.F}>
+            <Horizontal justify="space-between" align="center">
+              <Typography variant="body-normal" color="gray-light" noMargin>
+                Name the table and list its columns.
+              </Typography>
+              <Button variant="tertiary" size="small" icon="formula" onClick={toSql}>
+                Write SQL instead
+              </Button>
+            </Horizontal>
 
-              <Vertical gap={spacing.B}>
-                <Typography variant="content-label" color="base" noMargin>
-                  Columns
+            {sqlNotice && (
+              <div className={styles.notice}>
+                <Typography variant="body-normal" color="base" noMargin>
+                  {sqlNotice}
                 </Typography>
-                {columns.map((c, i) => (
-                  <Horizontal key={i} gap={spacing.C} align="start">
-                    <div className={styles.grow}>
-                      <TextInput
-                        label={`Column ${i + 1} name`}
-                        showLabel={false}
-                        placeholder="Column name"
-                        value={c.name}
-                        onChange={(e) =>
-                          setColumns((cols) => cols.map((x, j) => (j === i ? { ...x, name: e.target.value.toLowerCase() } : x)))
-                        }
-                        error={!!c.name && (!NAME_RE.test(c.name) || dupCol?.name === c.name)}
-                      />
-                    </div>
-                    <div className={styles.typeField}>
-                      <Select
-                        options={TYPE_OPTIONS}
-                        value={c.type}
-                        onChange={(v) => setColumns((cols) => cols.map((x, j) => (j === i ? { ...x, type: v as PlainType } : x)))}
-                        fullWidth
-                      />
-                    </div>
-                    <Button
-                      variant="tertiary"
-                      icon="trash-can"
-                      iconOnly
-                      aria-label={`Remove column ${i + 1}`}
-                      disabled={columns.length === 1}
-                      onClick={() => setColumns((cols) => cols.filter((_, j) => j !== i))}
-                    >
-                      Remove
-                    </Button>
-                  </Horizontal>
-                ))}
-                {(dupCol || badCol) && (
-                  <Typography variant="footnote" color="failure" noMargin>
-                    {dupCol ? `Two columns are called ${dupCol.name}` : `${badCol!.name}: use lowercase letters, numbers and underscores`}
-                  </Typography>
-                )}
-                <div>
-                  <Button variant="tertiary" size="small" icon="plus" onClick={() => setColumns((cols) => [...cols, { name: '', type: 'Text' }])}>
-                    Add column
-                  </Button>
-                </div>
-              </Vertical>
-            </Vertical>
-          ) : (
+              </div>
+            )}
+
+            <Horizontal gap={spacing.D} align="start">
+              <div className={styles.dbField}>
+                <Select label="Database" options={databases.map((d) => ({ id: d, label: d }))} value={database} onChange={setDatabase} fullWidth />
+              </div>
+              <div className={styles.grow}>
+                <TextInput
+                  label="Table name"
+                  placeholder="e.g. returns"
+                  value={name}
+                  onChange={(e) => setName(e.target.value.toLowerCase())}
+                  error={!!nameError}
+                  errorMessage={nameError}
+                />
+              </div>
+            </Horizontal>
+
             <Vertical gap={spacing.B}>
-              <TextArea
-                label="CREATE TABLE statement"
-                showLabel={false}
-                rows={12}
-                resize="vertical"
-                placeholder={'CREATE TABLE retail_sales.orders (\n  order_id BIGINT,\n  order_date DATE,\n  amount DECIMAL(12,2)\n);'}
-                value={sql}
-                onChange={(e) => setSql(e.target.value)}
-                className={styles.sqlInput}
-              />
-              {!parsed ? (
-                <Horizontal gap={spacing.B} align="center" wrap>
-                  <Typography variant="footnote" color="gray-light" noMargin>
-                    Include the database and table name. If it says how rows are handled, we&apos;ll fill that in for the next step.
-                  </Typography>
-                  <Button variant="tertiary" size="small" onClick={() => setSql(EXAMPLE_SQL)}>
-                    Paste an example
+              <Horizontal gap={spacing.C} className={styles.colHead}>
+                <Typography variant="footnote" color="gray-light" noMargin className={styles.grow}>
+                  Column name
+                </Typography>
+                <Typography variant="footnote" color="gray-light" noMargin className={styles.typeField}>
+                  Type
+                </Typography>
+                <span className={styles.iconSpacer} />
+              </Horizontal>
+              {columns.map((c, i) => (
+                <Horizontal key={i} gap={spacing.C} align="start">
+                  <div className={styles.grow}>
+                    <TextInput
+                      label={`Column ${i + 1} name`}
+                      showLabel={false}
+                      placeholder="e.g. order_id"
+                      value={c.name}
+                      onChange={(e) =>
+                        setColumns((cols) => cols.map((x, j) => (j === i ? { ...x, name: e.target.value.toLowerCase() } : x)))
+                      }
+                      error={!!c.name && (!NAME_RE.test(c.name) || dupCol?.name === c.name)}
+                    />
+                  </div>
+                  <div className={styles.typeField}>
+                    <Select
+                      options={TYPE_OPTIONS}
+                      value={c.type}
+                      onChange={(v) => setColumns((cols) => cols.map((x, j) => (j === i ? { ...x, type: v as PlainType } : x)))}
+                      fullWidth
+                    />
+                  </div>
+                  <Button
+                    variant="tertiary"
+                    icon="trash-can"
+                    iconOnly
+                    aria-label={`Remove column ${i + 1}`}
+                    disabled={columns.length === 1}
+                    onClick={() => setColumns((cols) => cols.filter((_, j) => j !== i))}
+                  >
+                    Remove
                   </Button>
                 </Horizontal>
-              ) : parsed.errors.length > 0 ? (
+              ))}
+              {(dupCol || badCol) && (
+                <Typography variant="footnote" color="failure" noMargin>
+                  {dupCol ? `Two columns are called ${dupCol.name}` : `${badCol!.name}: use lowercase letters, numbers and underscores`}
+                </Typography>
+              )}
+              <div>
+                <Button variant="secondary" size="small" icon="plus" onClick={() => setColumns((cols) => [...cols, { name: '', type: 'Text' }])}>
+                  Add column
+                </Button>
+              </div>
+            </Vertical>
+          </Vertical>
+        )}
+
+        {step === 0 && mode === 'sql' && (
+          <Vertical gap={spacing.D}>
+            <Horizontal justify="space-between" align="center">
+              <Typography variant="body-normal" color="gray-light" noMargin>
+                Write or paste a CREATE TABLE statement, including the database.
+              </Typography>
+              <Button variant="tertiary" size="small" icon="arrow-left" onClick={toForm}>
+                Use the form instead
+              </Button>
+            </Horizontal>
+            <TextArea
+              label="CREATE TABLE statement"
+              showLabel={false}
+              rows={12}
+              resize="vertical"
+              placeholder={'CREATE TABLE retail_sales.returns (\n  return_id BIGINT,\n  return_date DATE,\n  amount DECIMAL(12,2)\n);'}
+              value={sql}
+              onChange={(e) => setSql(e.target.value)}
+              className={styles.sqlInput}
+            />
+            {!parsed ? (
+              <Horizontal gap={spacing.B} align="center" wrap>
+                <Typography variant="footnote" color="gray-light" noMargin>
+                  If it says how rows are handled or how the table is split, we&apos;ll fill that in for the next step.
+                </Typography>
+                <Button variant="tertiary" size="small" onClick={() => setSql(EXAMPLE_SQL)}>
+                  Paste an example
+                </Button>
+              </Horizontal>
+            ) : parsed.errors.length > 0 ? (
+              <div className={styles.errorBox}>
                 <Vertical gap={spacing.A}>
                   {parsed.errors.map((e) => (
                     <Typography key={e} variant="footnote" color="failure" noMargin>
@@ -289,144 +333,154 @@ export const CreateTableWizard: React.FC<{
                     </Typography>
                   ))}
                 </Vertical>
-              ) : (
-                <div className={styles.readBack}>
-                  <Typography variant="body-normal" color="base" noMargin>
-                    Will create <b>{parsed.database}.{parsed.tableName}</b> · {parsed.columns.length}{' '}
-                    {parsed.columns.length === 1 ? 'column' : 'columns'}
-                    {parsed.rowMode ? ` · row handling found (${parsed.keyClause})` : ''}
-                  </Typography>
-                </div>
-              )}
-            </Vertical>
-          )}
-        </Vertical>
-      )}
-
-      {step === 1 && (
-        <Vertical gap={spacing.E}>
-          {prefilledFrom && (
-            <div className={styles.prefill}>
-              <Typography variant="body-normal" color="base" noMargin>
-                Filled in from your SQL: <code className={styles.inlineCode}>{prefilledFrom}</code>. Check it before you continue.
-              </Typography>
-            </div>
-          )}
-          <Vertical gap={spacing.C}>
-            <Typography variant="content-label" color="base" noMargin>
-              When your tool sends a row that&apos;s already in the table, what should happen?
-            </Typography>
-            <div className={`${styles.choice} ${rowMode === 'replace' ? styles.choiceOn : ''}`}>
-              <Radio
-                name="rowMode"
-                value="replace"
-                checked={rowMode === 'replace'}
-                onChange={() => setRowMode('replace')}
-                label="Replace the old row"
-              />
-              <Typography variant="footnote" color="gray-light" noMargin className={styles.choiceNote}>
-                For records that change, like customers, orders or accounts. The table keeps one row for each record.
-              </Typography>
-            </div>
-            <div className={`${styles.choice} ${rowMode === 'add' ? styles.choiceOn : ''}`}>
-              <Radio name="rowMode" value="add" checked={rowMode === 'add'} onChange={() => setRowMode('add')} label="Add it as a new row" />
-              <Typography variant="footnote" color="gray-light" noMargin className={styles.choiceNote}>
-                For things that only happen once, like events, clicks or log lines. Every row is kept.
-              </Typography>
-            </div>
+              </div>
+            ) : (
+              <div className={styles.readBack}>
+                <Typography variant="body-normal" color="base" noMargin>
+                  Will create <b>{parsed.database}.{parsed.tableName}</b> with {parsed.columns.length}{' '}
+                  {parsed.columns.length === 1 ? 'column' : 'columns'}
+                  {parsed.rowMode ? '. Row handling found, so the next step is pre-filled.' : '.'}
+                </Typography>
+              </div>
+            )}
           </Vertical>
+        )}
 
-          {rowMode === 'replace' && (
-            <Vertical gap={spacing.C}>
+        {/* ---------- Step 2: row handling ---------- */}
+        {step === 1 && (
+          <Vertical gap={spacing.E}>
+            {prefilledFrom && (
+              <div className={styles.notice}>
+                <Typography variant="body-normal" color="base" noMargin>
+                  Filled in from your SQL: <code className={styles.inlineCode}>{prefilledFrom}</code>. Check it before you continue.
+                </Typography>
+              </div>
+            )}
+
+            <Vertical gap={spacing.A}>
               <Typography variant="content-label" color="base" noMargin>
-                Which column(s) identify a row?
+                When your tool sends a row that&apos;s already in the table
               </Typography>
               <Typography variant="footnote" color="gray-light" noMargin>
-                Rows with the same value here count as the same record. Usually an ID.
+                Required. This is set when the table is created and can&apos;t be changed later.
               </Typography>
-              <div className={styles.keyGrid}>
-                {cleanCols.map((c) => (
-                  <Checkbox
-                    key={c.name}
-                    label={`${c.name} · ${c.type}`}
-                    checked={keys.includes(c.name)}
-                    onChange={(on) => setKeys((k) => (on ? [...k, c.name] : k.filter((x) => x !== c.name)))}
-                  />
-                ))}
+            </Vertical>
+
+            <Vertical gap={spacing.C}>
+              <div className={`${styles.choice} ${rowMode === 'replace' ? styles.choiceOn : ''}`} onClick={() => setRowMode('replace')}>
+                <Radio name="rowMode" value="replace" checked={rowMode === 'replace'} onChange={() => setRowMode('replace')} label="Replace the old row" />
+                <Typography variant="footnote" color="gray-light" noMargin className={styles.choiceNote}>
+                  For records that change, like customers, orders or accounts. The table keeps one row per record.
+                </Typography>
+                {rowMode === 'replace' && (
+                  <div className={styles.nested} onClick={(e) => e.stopPropagation()}>
+                    <Typography variant="content-label-subhead" color="base" noMargin>
+                      Which column(s) identify a record?
+                    </Typography>
+                    <Typography variant="footnote" color="gray-light" noMargin>
+                      Rows with the same value here count as the same record. Usually an ID.
+                    </Typography>
+                    <div className={styles.keyGrid}>
+                      {cleanCols.map((c) => (
+                        <Checkbox
+                          key={c.name}
+                          label={`${c.name} · ${c.type}`}
+                          checked={keys.includes(c.name)}
+                          onChange={(on) => setKeys((k) => (on ? [...k, c.name] : k.filter((x) => x !== c.name)))}
+                        />
+                      ))}
+                    </div>
+                    {keys.length === 0 && (
+                      <Typography variant="footnote" color="failure" noMargin>
+                        Pick at least one column.
+                      </Typography>
+                    )}
+                  </div>
+                )}
+              </div>
+              <div className={`${styles.choice} ${rowMode === 'add' ? styles.choiceOn : ''}`} onClick={() => setRowMode('add')}>
+                <Radio name="rowMode" value="add" checked={rowMode === 'add'} onChange={() => setRowMode('add')} label="Add it as a new row" />
+                <Typography variant="footnote" color="gray-light" noMargin className={styles.choiceNote}>
+                  For things that happen once, like events, clicks or log lines. Every row is kept.
+                </Typography>
               </div>
             </Vertical>
-          )}
 
-          <Vertical gap={spacing.C} className={styles.advanced}>
-            <Typography variant="overline" color="gray-light" noMargin>
-              Advanced
-            </Typography>
-            <Toggle
-              label="Split this table by date"
-              checked={splitOn}
-              onChange={(on) => {
-                setSplitOn(on);
-                if (on && !splitCol && splitOptions[0]) setSplitCol(splitOptions[0].name);
-              }}
-            />
-            <Typography variant="footnote" color="gray-light" noMargin>
-              Queries on recent data only read the months they need. Worth it for large tables that grow over time.
-            </Typography>
-            {splitOn &&
-              (splitOptions.length ? (
-                <div className={styles.dbField}>
-                  <Select
-                    label="Date column"
-                    options={splitOptions.map((c) => ({ id: c.name, label: c.name }))}
-                    value={effectiveSplit ?? undefined}
-                    onChange={setSplitCol}
-                    fullWidth
+            <Accordion variant="bordered" defaultExpanded={splitOn ? 0 : undefined}>
+              <Accordion.Item title="Advanced" subtitle={effectiveSplit ? `Split by date on ${effectiveSplit}` : 'Split by date: off'}>
+                <Vertical gap={spacing.C}>
+                  <Toggle
+                    label="Split this table by date"
+                    checked={splitOn}
+                    onChange={(on) => {
+                      setSplitOn(on);
+                      if (on && !splitCol && splitOptions[0]) setSplitCol(splitOptions[0].name);
+                    }}
                   />
-                </div>
-              ) : (
-                <Typography variant="footnote" color="failure" noMargin>
-                  {rowMode === 'replace'
-                    ? 'To split a table whose rows get replaced, the date column must also be one of the columns that identify a row.'
-                    : 'This table has no date column to split by.'}
-                </Typography>
-              ))}
+                  <Typography variant="footnote" color="gray-light" noMargin>
+                    Queries on recent data only read the months they need. Worth it for large tables that grow over time. Can&apos;t be
+                    changed later.
+                  </Typography>
+                  {splitOn &&
+                    (splitOptions.length ? (
+                      <div className={styles.dbField}>
+                        <Select
+                          label="Date column"
+                          options={splitOptions.map((c) => ({ id: c.name, label: c.name }))}
+                          value={effectiveSplit ?? undefined}
+                          onChange={setSplitCol}
+                          fullWidth
+                        />
+                      </div>
+                    ) : (
+                      <Typography variant="footnote" color="failure" noMargin>
+                        {rowMode === 'replace'
+                          ? 'To split a table whose rows get replaced, the date column must also identify a record.'
+                          : 'This table has no date column to split by.'}
+                      </Typography>
+                    ))}
+                </Vertical>
+              </Accordion.Item>
+            </Accordion>
           </Vertical>
+        )}
 
-          <Typography variant="footnote" color="gray-light" noMargin>
-            These choices can&apos;t be changed after the table is created.
-          </Typography>
-        </Vertical>
-      )}
-
-      {step === 2 && built && (
-        <Vertical gap={spacing.E}>
-          <Vertical gap={spacing.C}>
-            <KeyValue label="Table">{fullName}</KeyValue>
-            <KeyValue label="Columns">{cleanCols.map((c) => c.name).join(', ')}</KeyValue>
-            <KeyValue label="How rows arrive">
-              {rowMode === 'replace' ? `Replaced when ${keys.join(' + ')} matches` : 'Only added, every row kept'}
-            </KeyValue>
-            <KeyValue label="Split by date">{effectiveSplit ? `By month, on ${effectiveSplit}` : 'No'}</KeyValue>
-            <KeyValue label="After it's created">Empty until your tool sends its first load</KeyValue>
-          </Vertical>
-          <Vertical gap={spacing.B}>
-            <Typography variant="content-label" color="base" noMargin>
-              SQL that will run
-            </Typography>
-            <CodeBlock>{built.sql}</CodeBlock>
+        {/* ---------- Step 3: review ---------- */}
+        {step === 2 && built && (
+          <Vertical gap={spacing.E}>
+            <div className={styles.summary}>
+              <Vertical gap={spacing.C}>
+                <KeyValue label="Table">{fullName}</KeyValue>
+                <KeyValue label="Columns">
+                  {cleanCols.length} · {cleanCols.map((c) => c.name).join(', ')}
+                </KeyValue>
+                <KeyValue label="Row handling">
+                  {rowMode === 'replace' ? `Replace the old row when ${keys.join(' + ')} matches` : 'Add every row'}
+                </KeyValue>
+                <KeyValue label="Split by date">{effectiveSplit ? `By month, on ${effectiveSplit}` : 'No'}</KeyValue>
+                <KeyValue label="After it's created">Empty until your pipeline sends its first load</KeyValue>
+              </Vertical>
+            </div>
             {built.reordered.length > 0 && (
               <Typography variant="footnote" color="gray-light" noMargin>
-                Moved {built.reordered.join(', ')} to the start of the table. Identifying columns have to come first.
+                {built.reordered.join(', ')} will be moved to the start of the table. Identifying columns have to come first.
               </Typography>
             )}
-            {ignored.length > 0 && (
-              <Typography variant="footnote" color="gray-light" noMargin>
-                Not used from your SQL: {ignored.join(', ')}. AgentDB sets these for you.
-              </Typography>
-            )}
+            <Accordion variant="bordered">
+              <Accordion.Item title="SQL that will run" subtitle="For data engineers">
+                <Vertical gap={spacing.B}>
+                  <CodeBlock>{built.sql}</CodeBlock>
+                  {ignored.length > 0 && (
+                    <Typography variant="footnote" color="gray-light" noMargin>
+                      Not used from your SQL: {ignored.join(', ')}. AgentDB sets these for you.
+                    </Typography>
+                  )}
+                </Vertical>
+              </Accordion.Item>
+            </Accordion>
           </Vertical>
-        </Vertical>
-      )}
+        )}
+      </Vertical>
     </Modal>
   );
 };

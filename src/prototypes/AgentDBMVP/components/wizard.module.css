@@ -1,16 +1,30 @@
 .grow { flex: 1; min-width: 0; }
 .dbField { flex: 0 0 220px; }
-.typeField { flex: 0 0 200px; }
+.typeField { flex: 0 0 220px; }
+.iconSpacer { flex: 0 0 32px; }
+.colHead { padding: 0 0 var(--spacing-1); }
 
 .sqlInput textarea {
   font-family: var(--font-family-mono) !important;
   font-size: var(--font-size-sm) !important;
 }
 
-.prefill {
+.notice {
   padding: var(--spacing-3) var(--spacing-4);
   border-radius: var(--radius-md);
   background: var(--rd-sys-color-background-information);
+}
+
+.readBack {
+  padding: var(--spacing-3) var(--spacing-4);
+  border-radius: var(--radius-md);
+  background: var(--rd-sys-color-background-success);
+}
+
+.errorBox {
+  padding: var(--spacing-3) var(--spacing-4);
+  border-radius: var(--radius-md);
+  background: var(--rd-sys-color-background-failure);
 }
 
 .inlineCode {
@@ -18,6 +32,7 @@
   font-size: var(--font-size-sm);
 }
 
+/* Radio cards: the whole card is the target; the chosen one gets the brand border. */
 .choice {
   display: flex;
   flex-direction: column;
@@ -25,9 +40,22 @@
   padding: var(--spacing-3) var(--spacing-4);
   border: 1px solid var(--rd-sys-color-border-default);
   border-radius: var(--radius-md);
+  cursor: pointer;
 }
-.choiceOn { border-color: var(--rd-sys-color-border-brand); }
+.choice:hover { border-color: var(--rd-sys-color-border-hover); }
+.choiceOn,
+.choiceOn:hover { border-color: var(--rd-sys-color-border-brand); }
 .choiceNote { padding-left: var(--spacing-6); }
+
+.nested {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  margin: var(--spacing-3) 0 var(--spacing-1) var(--spacing-6);
+  padding-top: var(--spacing-3);
+  border-top: 1px solid var(--rd-sys-color-border-divider);
+  cursor: default;
+}
 
 .keyGrid {
   display: grid;
@@ -35,13 +63,9 @@
   gap: var(--spacing-2) var(--spacing-4);
 }
 
-.readBack {
-  padding: var(--spacing-2) var(--spacing-3);
+.summary {
+  padding: var(--spacing-4) var(--spacing-5);
+  border: 1px solid var(--rd-sys-color-border-divider);
   border-radius: var(--radius-md);
-  background: var(--rd-sys-color-background-success);
-}
-
-.advanced {
-  padding-top: var(--spacing-4);
-  border-top: 1px solid var(--rd-sys-color-border-divider);
+  background: var(--rd-sys-color-background-sunken);
 }

@@ -14,7 +14,6 @@ const NAV: { group: string; items: { id: Page; label: string; icon: IconName }[]
     items: [
       { id: 'overview', label: 'Overview', icon: 'grid-view' },
       { id: 'data', label: 'Data', icon: 'database' },
-      { id: 'sql', label: 'SQL editor', icon: 'formula' },
       { id: 'activity', label: 'Activity', icon: 'clock' },
     ],
   },

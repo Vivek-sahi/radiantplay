@@ -1,32 +1,89 @@
 import React, { useState } from 'react';
-import { Button, Horizontal, Icon, ProgressBar, Table, Typography, Vertical } from '@/components';
+import { Button, Horizontal, Icon, ProgressBar, Typography, Vertical } from '@/components';
 import { spacing } from '@tokens/spacing';
 import { Page } from '../types';
-import { formatGB, formatUSD, PLAN, SERVICE_ACCOUNTS, SPEND, storageByWriter, TABLES, KIND_LABEL } from '../data';
+import { formatGB, formatUSD, PLAN, SERVICE_ACCOUNTS, SPEND, storageByWriter, TABLES } from '../data';
 import { accountsFor, tablesFor, useVariant } from '../variant';
-import { PageHeader, Panel, StatTile, StatusPill, Swatch } from './primitives';
+import { PageHeader, Panel, StatTile, StatusPill } from './primitives';
+import { StorageBySource } from './StorageBySource';
 import styles from './pages.module.css';
+
+type Severity = 'critical' | 'warning' | 'info';
+
+interface Alert {
+  id: string;
+  severity: Severity;
+  title: string;
+  detail: string;
+  since: string;
+  action: { label: string; go: () => void };
+}
+
+const SEVERITY: Record<Severity, { label: string; pill: 'failure' | 'warning' | 'info'; icon: 'exclamation-point-circle' | 'info-circle' }> = {
+  critical: { label: 'Critical', pill: 'failure', icon: 'exclamation-point-circle' },
+  warning: { label: 'Warning', pill: 'warning', icon: 'exclamation-point-circle' },
+  info: { label: 'Info', pill: 'info', icon: 'info-circle' },
+};
+const ORDER: Severity[] = ['critical', 'warning', 'info'];
 
 export const OverviewPage: React.FC<{ onNavigate: (p: Page) => void; onOpenTable: (id: string) => void }> = ({
   onNavigate,
   onOpenTable,
 }) => {
   const [welcome, setWelcome] = useState(true);
+  const [dismissed, setDismissed] = useState<string[]>([]);
   const variant = useVariant();
   const tables = tablesFor(variant, TABLES);
   const accounts = accountsFor(variant, SERVICE_ACCOUNTS);
   const byWriter = storageByWriter(TABLES);
-  // v2: storage grouped by whoever wrote it — ThoughtSpot is one writer among several.
-  const byLabel = Object.entries(
-    tables.reduce<Record<string, number>>((acc, t) => ({ ...acc, [t.writer.label]: (acc[t.writer.label] ?? 0) + t.sizeGB }), {}),
-  ).sort((a, b) => b[1] - a[1]);
-  const used = byWriter.pulse + byWriter.pipeline + byWriter.upload;
+  const used = tables.reduce((s, t) => s + t.sizeGB, 0);
   const pulseTables = TABLES.filter((t) => t.writer.kind === 'pulse');
   const pulseModels = new Set(pulseTables.map((t) => t.writer.detail)).size;
-  const late = tables.filter((t) => t.late);
-  const nearBudget = accounts.filter((a) => a.budget && a.spent / a.budget >= 0.9);
-  const topReaders = [...accounts].sort((a, b) => b.spent - a.spent).slice(0, 5);
+  const sources = new Set(tables.map((t) => t.writer.label)).size;
   const spend = SPEND.storage + SPEND.compute;
+
+  // Every alert is something AgentDB can see for itself: arrivals, metering, refusals, growth.
+  const alerts: Alert[] = [
+    ...tables
+      .filter((t) => t.late)
+      .map<Alert>((t) => ({
+        id: `late-${t.id}`,
+        severity: 'critical',
+        title: `No new data in ${t.database}.${t.name} for ${t.late!.since}`,
+        detail: `It usually updates ${t.late!.usual}. AgentDB can't see why. Check the ${t.writer.label} job that writes it.`,
+        since: 'Since yesterday, 09:14',
+        action: { label: 'View table', go: () => onOpenTable(t.id) },
+      })),
+    ...accounts
+      .filter((a) => a.budget && a.spent / a.budget >= 0.9)
+      .map<Alert>((a) => ({
+        id: `budget-${a.id}`,
+        severity: 'warning',
+        title: `${a.name} has used ${Math.round((a.spent / a.budget!) * 100)}% of its monthly budget`,
+        detail: `${formatUSD(a.spent)} of ${formatUSD(a.budget!)}. Its queries will be refused when it reaches the limit.`,
+        since: 'Today, 10:41',
+        action: { label: 'Review account', go: () => onNavigate('access') },
+      })),
+    {
+      id: 'perm-support-copilot',
+      severity: 'warning',
+      title: 'support-copilot was refused 46 times in the last 24 hours',
+      detail: 'It keeps trying to read stripe.charges, which it has no access to. Grant access, or check what the agent is asking for.',
+      since: 'Today, 08:02',
+      action: { label: 'Review account', go: () => onNavigate('access') },
+    },
+    {
+      id: 'storage-projection',
+      severity: 'info',
+      title: 'Storage will be full in about 6 weeks',
+      detail: `${formatGB(used)} of ${PLAN.includedGB} GB used, growing about 32 GB a week, mostly events.app_events.`,
+      since: 'Today',
+      action: { label: 'See usage', go: () => onNavigate('usage') },
+    },
+  ];
+  const open = alerts
+    .filter((a) => !dismissed.includes(a.id))
+    .sort((a, b) => ORDER.indexOf(a.severity) - ORDER.indexOf(b.severity));
 
   return (
     <Vertical gap={spacing.F}>
@@ -44,17 +101,8 @@ export const OverviewPage: React.FC<{ onNavigate: (p: Page) => void; onOpenTable
                   Your AgentDB was set up when you turned on Pulse in ThoughtSpot
                 </Typography>
                 <Typography variant="body-normal" color="gray-light" noMargin>
-                  {pulseModels} cached models ({formatGB(byWriter.pulse)}) are stored here and count toward your
-                  storage. You can also load your own data and connect other tools and agents.
+                  {pulseModels} cached models ({formatGB(byWriter.pulse)}) are stored here and count toward your storage.
                 </Typography>
-                <Horizontal gap={spacing.B} className={styles.welcomeActions}>
-                  <Button variant="secondary" size="small" onClick={() => onNavigate('data')}>
-                    See your data
-                  </Button>
-                  <Button variant="tertiary" size="small" onClick={() => onNavigate('connect')}>
-                    Connect a pipeline or agent
-                  </Button>
-                </Horizontal>
               </Vertical>
             </Horizontal>
             <Button variant="tertiary" size="small" icon="cross" iconOnly aria-label="Dismiss" onClick={() => setWelcome(false)}>
@@ -70,135 +118,71 @@ export const OverviewPage: React.FC<{ onNavigate: (p: Page) => void; onOpenTable
         </StatTile>
         <StatTile label="Spend this month" value={formatUSD(spend)} note={`Last month ${formatUSD(SPEND.lastMonth)}`} />
         <StatTile label="Queries, last 24 hours" value="48.2K" note="Median response 180 ms" />
-        <StatTile label="Tables" value={String(TABLES.length)} note={variant === 'v1' ? `${pulseTables.length} managed by Pulse` : `Written by ${byLabel.length} sources`} />
+        <StatTile label="Tables" value={String(tables.length)} note={`Written by ${sources} sources`} />
       </div>
 
-      <div className={styles.twoCol}>
-        <Panel title="Needs attention">
+      <Panel
+        title="Alerts"
+        actions={
+          open.length > 0 ? (
+            <StatusPill kind={open.some((a) => a.severity === 'critical') ? 'failure' : 'warning'} label={`${open.length} open`} />
+          ) : undefined
+        }
+      >
+        {open.length === 0 ? (
+          <Horizontal gap={spacing.B}>
+            <Icon name="checkmark-circle" size="m" aria-hidden />
+            <Typography variant="body-normal" color="gray-light" noMargin>
+              No open alerts.
+            </Typography>
+          </Horizontal>
+        ) : (
           <Vertical gap={spacing.C}>
-            {late.map((t) => (
-              <div key={t.id} className={styles.alertRow}>
-                <StatusPill kind="warning" label="Late" />
+            {open.map((a) => (
+              <div key={a.id} className={`${styles.alert} ${styles[`alert_${a.severity}`]}`}>
+                <span className={`${styles.alertIcon} ${styles[`alertIcon_${a.severity}`]}`}>
+                  <Icon name={SEVERITY[a.severity].icon} size="l" aria-hidden />
+                </span>
                 <Vertical gap={spacing.A} className={styles.grow}>
-                  <Typography variant="body-normal" color="base" noMargin>
-                    Nothing has arrived in {t.database}.{t.name} for {t.late!.since}
-                  </Typography>
-                  <Typography variant="footnote" color="gray-light" noMargin>
-                    It usually updates {t.late!.usual}. Check the {t.writer.label} job that writes it.
-                  </Typography>
-                </Vertical>
-                <Button variant="tertiary" size="small" onClick={() => onOpenTable(t.id)}>
-                  View table
-                </Button>
-              </div>
-            ))}
-            {nearBudget.map((a) => (
-              <div key={a.id} className={styles.alertRow}>
-                <StatusPill kind="warning" label="Budget" />
-                <Vertical gap={spacing.A} className={styles.grow}>
-                  <Typography variant="body-normal" color="base" noMargin>
-                    {a.name} has used {formatUSD(a.spent)} of its {formatUSD(a.budget!)} monthly budget
-                  </Typography>
-                  <Typography variant="footnote" color="gray-light" noMargin>
-                    Its queries will be refused once it reaches the limit.
-                  </Typography>
-                </Vertical>
-                <Button variant="tertiary" size="small" onClick={() => onNavigate('access')}>
-                  Review
-                </Button>
-              </div>
-            ))}
-            <div className={styles.alertRow}>
-              <StatusPill kind="info" label="Storage" />
-              <Vertical gap={spacing.A} className={styles.grow}>
-                <Typography variant="body-normal" color="base" noMargin>
-                  At the current rate you&apos;ll reach {PLAN.includedGB} GB in about 7 weeks
-                </Typography>
-                <Typography variant="footnote" color="gray-light" noMargin>
-                  events.app_events is growing fastest (about 4 GB a day).
-                </Typography>
-              </Vertical>
-              <Button variant="tertiary" size="small" onClick={() => onNavigate('usage')}>
-                See usage
-              </Button>
-            </div>
-          </Vertical>
-        </Panel>
-
-        <Panel title="Storage by source">
-          {variant === 'v2' ? (
-            <Vertical gap={spacing.C}>
-              <ProgressBar value={used} max={PLAN.includedGB} size="small" />
-              {byLabel.map(([label, gb]) => (
-                <Horizontal key={label} justify="space-between">
-                  <Typography variant="body-normal" color="base" noMargin>
-                    {label}
-                  </Typography>
-                  <Typography variant="body-normal" color="base" noMargin className={styles.num}>
-                    {formatGB(gb)}
-                  </Typography>
-                </Horizontal>
-              ))}
-              <Horizontal justify="space-between">
-                <Typography variant="body-normal" color="gray-light" noMargin>
-                  Available
-                </Typography>
-                <Typography variant="body-normal" color="gray-light" noMargin className={styles.num}>
-                  {formatGB(PLAN.includedGB - used)}
-                </Typography>
-              </Horizontal>
-            </Vertical>
-          ) : (
-          <Vertical gap={spacing.C}>
-            <div className={styles.stackBar} role="img" aria-label="Storage split by source">
-              <span className={styles.segPulse} style={{ width: `${(byWriter.pulse / PLAN.includedGB) * 100}%` }} />
-              <span className={styles.segPipeline} style={{ width: `${(byWriter.pipeline / PLAN.includedGB) * 100}%` }} />
-              <span className={styles.segUpload} style={{ width: `${Math.max((byWriter.upload / PLAN.includedGB) * 100, 0.6)}%` }} />
-            </div>
-            {(
-              [
-                ['pulse', 'Pulse (cached models)', byWriter.pulse, 'Rebuilt from your warehouse if removed'],
-                ['pipeline', 'Pipelines', byWriter.pipeline, 'The only copy, written by your tools'],
-                ['upload', 'File uploads', byWriter.upload, 'The only copy'],
-                ['free', 'Available', PLAN.includedGB - used, ''],
-              ] as const
-            ).map(([kind, label, gb, note]) => (
-              <Horizontal key={kind} gap={spacing.C} align="start" justify="space-between">
-                <Horizontal gap={spacing.B} align="center">
-                  <Swatch kind={kind} />
-                  <Vertical gap={0}>
-                    <Typography variant="body-normal" color="base" noMargin>
-                      {label}
+                  <Horizontal gap={spacing.B} wrap>
+                    <StatusPill kind={SEVERITY[a.severity].pill} label={SEVERITY[a.severity].label} />
+                    <Typography variant="content-label" color="base" noMargin>
+                      {a.title}
                     </Typography>
-                    {note && (
-                      <Typography variant="footnote" color="gray-light" noMargin>
-                        {note}
-                      </Typography>
-                    )}
-                  </Vertical>
+                  </Horizontal>
+                  <Typography variant="body-normal" color="gray-light" noMargin>
+                    {a.detail}
+                  </Typography>
+                  <Typography variant="footnote" color="gray-light" noMargin>
+                    {a.since}
+                  </Typography>
+                </Vertical>
+                <Horizontal gap={spacing.B} align="center">
+                  <Button variant="secondary" size="small" onClick={a.action.go}>
+                    {a.action.label}
+                  </Button>
+                  <Button
+                    variant="tertiary"
+                    size="small"
+                    icon="cross"
+                    iconOnly
+                    aria-label={`Dismiss: ${a.title}`}
+                    onClick={() => setDismissed((d) => [...d, a.id])}
+                  >
+                    Dismiss
+                  </Button>
                 </Horizontal>
-                <Typography variant="body-normal" color="base" noMargin className={styles.num}>
-                  {formatGB(gb)}
-                </Typography>
-              </Horizontal>
+              </div>
             ))}
+            <Typography variant="footnote" color="gray-light" noMargin>
+              Admins also get critical alerts by email.
+            </Typography>
           </Vertical>
-          )}
-        </Panel>
-      </div>
+        )}
+      </Panel>
 
-      <Panel title="Top consumers this month" actions={<Button variant="tertiary" size="small" onClick={() => onNavigate('activity')}>View activity</Button>} flush>
-        <Table
-          compact
-          rowKey="id"
-          data={topReaders as unknown as Record<string, unknown>[]}
-          columns={[
-            { key: 'name', label: 'Name', render: (v) => <code className={styles.mono}>{String(v)}</code> },
-            { key: 'kind', label: 'Type', render: (v) => KIND_LABEL[v as keyof typeof KIND_LABEL] },
-            { key: 'lastUsed', label: 'Last used' },
-            { key: 'spent', label: 'Spend', align: 'right', render: (v) => formatUSD(v as number) },
-          ]}
-        />
+      <Panel title="Storage by source">
+        <StorageBySource tables={tables} capacityGB={PLAN.includedGB} />
       </Panel>
     </Vertical>
   );
