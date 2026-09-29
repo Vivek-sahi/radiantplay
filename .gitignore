@@ -61,3 +61,7 @@ tsconfig.node.tsbuildinfo
 
 # LibreOffice lock files
 .~lock.*#
+
+# Unpacked copy of radiantplay_1_click_model_gen (1).zip — its screens were
+# copied into SearchDataOnDataModelFinal; the folder itself is a separate repo.
+/radiantplay_1_click_model_gen/
