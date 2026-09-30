@@ -3891,3 +3891,11 @@
 .staleAnswerAlert button {
   align-self: flex-start;
 }
+/* Same width as the answer card (2026-09-30, Komal: "this should be the same
+   width as the answer card") — lifts Radiant Alert's 454px cap. Doubled
+   class so it wins over the Alert's own max-width regardless of CSS order. */
+.staleAnswerAlert.staleAnswerAlert {
+  max-width: none;
+  width: 100%;
+  box-sizing: border-box;
+}
