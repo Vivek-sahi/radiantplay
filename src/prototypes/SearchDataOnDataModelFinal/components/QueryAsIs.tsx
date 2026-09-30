@@ -7860,12 +7860,13 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
                   {/* Radiant Alert's page variant — the one that carries a
                       button, on the same line as the message (2026-09-30,
                       Komal: "use a button for re-run instead and place it in
-                      the same line as the text"). Not dismissible: the prompt
+                      the same line as the text"; wording is her pick, no
+                      dash). Not dismissible: the prompt
                       stays until the answer is re-run. */}
                   <Alert
                     status="warning"
                     variant="page"
-                    message="Model changed — this answer shows the results from before the change."
+                    message="The model has changed. Re-run to see the latest results."
                     buttonText="Re-run"
                     onButtonClick={rerunModelQuery}
                     dismissible={false}
