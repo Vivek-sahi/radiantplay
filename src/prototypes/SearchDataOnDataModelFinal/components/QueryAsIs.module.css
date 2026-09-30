@@ -3883,3 +3883,11 @@
   background: var(--rd-sys-color-background-subtle, #f5f7fa);
   border-color: var(--rd-sys-color-content-brand, #2770ef);
 }
+
+/* Query tab stale-answer prompt (2026-09-30). Radiant's section-multiline
+   Alert stacks its link in a flex column, so the link button stretches and
+   the browser centres its text; start-align it here rather than editing the
+   shared component. */
+.staleAnswerAlert button {
+  align-self: flex-start;
+}

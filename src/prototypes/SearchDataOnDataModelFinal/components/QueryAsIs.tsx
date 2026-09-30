@@ -6859,6 +6859,19 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
     { id: 'modelParameters', label: 'Parameters', kind: 'expandable', columns: queryParameters.map(p => ({ id: `param:${p.name}`, label: `${p.name} = ${p.value}`, type: 'attribute' as const })) },
   ] : SECTIONS;
   const queryTypeaheadCols = hasQueryModel ? querySections.flatMap(sec => sec.kind === 'expandable' ? sec.columns : []) : null;
+  // What an answer depends on in the model (2026-09-30, Komal: re-run prompt,
+  // option 2 — "we need a way to ask users to re-run"). Compared at Go and
+  // on every render: any table or join added/removed, a used column removed,
+  // a used formula's expression edited or a used parameter's value changed
+  // makes the answer stale. Adding unrelated columns doesn't; card positions
+  // aren't part of it.
+  const queryModelSig = (q: { metrics: string[]; groupBy: string[] }, params: string[]) => !hasQueryModel ? '' : JSON.stringify({
+    t: queryModel!.tables.map(t => t.name).sort(),
+    j: queryModel!.joins.map(j => [j.leftTable, j.rightTable].sort().join('~')).sort(),
+    c: [...q.metrics, ...q.groupBy].map(k => [k, queryModelCols.some(c => c.key === k) || queryFormulas.some(f => f.name === k)]),
+    f: q.metrics.map(m => queryFormulas.find(f => f.name === m)?.expression ?? null),
+    p: params.map(n => queryParameters.find(x => x.name === n)?.value ?? null),
+  });
   // Split only: clicking a table or a join on the canvas holds the preview on
   // a loader for 2s before the rows appear (2026-09-22, Komal: "when a table
   // is clicked, add 2 secs of loading in the data preview panel before
@@ -7336,6 +7349,10 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
   // bar, committed on Go, like columns.
   const [pendingParams, setPendingParams] = useState<string[]>([]);
   const [queryParams, setQueryParams] = useState<string[]>([]);
+  // The model as it was at the last Go: the answer is built from these rows
+  // and formulas, so a Builder change doesn't redraw it — the stale banner
+  // asks for a Re-run instead.
+  const [queryModelSnap, setQueryModelSnap] = useState<{ rows: Record<string, string | number>[]; formulas: { name: string; expression: string }[]; sig: string } | null>(null);
   // Drop anything picked that has since left the model (a column unticked, a
   // table or join removed, a formula or parameter deleted in Builder), so the
   // bar and the answer never reference what isn't there.
@@ -7350,10 +7367,9 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
       groupBy: q.groupBy.filter(d => valid.has(d)),
       sorts: q.sorts.filter(x => valid.has(x.col)),
     });
+    // Only the bar is pruned — the answer stays as it ran until Re-run.
     setPendingQuery(prune);
-    setQueryState(prune);
     setPendingParams(prev => prev.filter(n => params.has(n)));
-    setQueryParams(prev => prev.filter(n => params.has(n)));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [queryValidKey]);
   const [canvasBlocks, setCanvasBlocks] = useState<CanvasBlock[]>([]);
@@ -7388,6 +7404,7 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
     if (!active && !isDirty) return;
     setQueryState(pendingQueryRef.current);   // commit pending → answer card
     setQueryParams(pendingParams);
+    if (hasQueryModel) setQueryModelSnap({ rows: queryModelRows, formulas: queryFormulas, sig: queryModelSig(pendingQueryRef.current, pendingParams) });
     setIsDirty(false);
     // 300ms transition → then loading (500ms — short enough not to feel slow)
     setIsTransitioning(true);
@@ -7562,8 +7579,31 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
   // Query tab's model: grouped and totalled from the model's sample rows —
   // one result feeds both the table and the chart.
   const modelAnswer = hasQueryModel && hasQuery
-    ? buildModelAnswer({ metrics: queryState.metrics, groupBy: queryState.groupBy, sorts: queryState.sorts }, queryModelRows, queryFormulas)
+    ? buildModelAnswer({ metrics: queryState.metrics, groupBy: queryState.groupBy, sorts: queryState.sorts }, queryModelSnap?.rows ?? queryModelRows, queryModelSnap?.formulas ?? queryFormulas)
     : [];
+  const queryModelStale = hasQueryModel && hasQuery && !!queryModelSnap && queryModelSnap.sig !== queryModelSig(queryState, queryParams);
+  // Re-run: the answer's own query against the current model, minus anything
+  // that has left it; the bar follows the answer.
+  const rerunModelQuery = () => {
+    const valid = new Set<string>([...queryModelCols.map(c => c.key), ...queryFormulas.map(f => f.name)]);
+    const paramNames = new Set(queryParameters.map(x => x.name));
+    const nextQ: QueryState = {
+      ...queryState,
+      metrics: queryState.metrics.filter(m => valid.has(m)),
+      groupBy: queryState.groupBy.filter(d => valid.has(d)),
+      sorts: queryState.sorts.filter(x => valid.has(x.col)),
+    };
+    const nextP = queryParams.filter(n => paramNames.has(n));
+    setQueryState(nextQ);
+    setQueryParams(nextP);
+    setPendingQuery(nextQ);
+    setPendingParams(nextP);
+    setChecked(queryToActiveCols(nextQ));
+    setIsDirty(false);
+    setQueryModelSnap({ rows: queryModelRows, formulas: queryFormulas, sig: queryModelSig(nextQ, nextP) });
+    setIsAnswerLoading(true);
+    setTimeout(() => setIsAnswerLoading(false), 500);
+  };
   const aggData        = hasQueryModel ? (modelAnswer as unknown as AggRow[]) : hasQuery ? aggregate(queryState) : [];
   // canvasScope bypasses the search-query-driven SALES_DATA path entirely —
   // the grid shows exactly the canvas's current table/join selection, live,
@@ -7809,6 +7849,25 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
                   </div>
                 </div>
               </div>
+              {/* Stale-answer prompt (2026-09-30, Komal: option 2; copy
+                  mirrors the Spreadsheet's banner, "Re-run", Radiant
+                  warning, top of the answer — all her picks). */}
+              {queryModelStale && (
+                <div style={{ marginBottom: 'var(--spacing-3)' }}>
+                  {/* section-multiline: the single-line section alert caps
+                      at 454px and truncates this sentence. Not dismissible —
+                      the prompt stays until the answer is re-run. */}
+                  <Alert
+                    status="warning"
+                    variant="section-multiline"
+                    message="Model changed — this answer shows the results from before the change."
+                    linkText="Re-run"
+                    onLinkClick={rerunModelQuery}
+                    dismissible={false}
+                    className={styles.staleAnswerAlert}
+                  />
+                </div>
+              )}
               {sheetTab !== 'sheet' && <CanvasBlocksPanel blocks={canvasBlocks} />}
 	              {queryState.viewMode === 'chart' ? (
 	                <AnswerChart
@@ -8626,6 +8685,7 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
                   setQueryState(EMPTY_QUERY);
                   setPendingParams([]);
                   setQueryParams([]);
+                  setQueryModelSnap(null);
                   setCanvasBlocks([]);
                   setChecked(new Set());
                   setTokenResetKey(k => k + 1);
