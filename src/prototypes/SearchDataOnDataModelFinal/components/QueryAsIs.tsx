@@ -7768,7 +7768,10 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
               className={styles.queryNoData}
               illustration={<MutedAlertIllustration clipId="illo-q-notables-clip" centerpiece={ROUND_CENTERPIECE(<Icon name="table" size="l" color="currentColor" />, 'illo-q-notables')} />}
               title="Add a table first"
-              description="Add tables from the left pane to preview your data."
+              // Query-specific (2026-09-30, Komal's pick): tables are added in
+              // Builder, not from Query's own left panel. Title stays the
+              // Spreadsheet's.
+              description="Your model needs at least one table before you can query it. Add tables in Builder."
             />
           ) : (
             // Query-specific description (Query works at the model level
