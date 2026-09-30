@@ -8524,35 +8524,10 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
               immediately after the toggle instead of a third of the way in.
               The "Select data model" modal itself is untouched; it is still
               reachable from the sheet's own menu. */}
-          <div className={styles.queryBarLeft}>
-            <button
-              className={styles.iconBtn}
-              aria-label="Toggle data panel"
-              onClick={e => { e.stopPropagation(); setDataPanelVisible(v => !v); }}
-            >
-              {dataPanelVisible ? (
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                  <g clipPath="url(#sdw-panel-close)">
-                    <path d="M13.3333 1.14279H2.66663C1.82506 1.14279 1.14282 1.82502 1.14282 2.6666V13.3333C1.14282 14.1748 1.82506 14.8571 2.66663 14.8571H13.3333C14.1749 14.8571 14.8571 14.1748 14.8571 13.3333V2.6666C14.8571 1.82502 14.1749 1.14279 13.3333 1.14279Z" stroke="#1D232F" strokeWidth="1.5"/>
-                    <path d="M5.71436 1.14279V14.8571" stroke="#1D232F" strokeWidth="1.5"/>
-                    <path d="M11.0477 10.2858L8.76196 8.00013L11.0477 5.71442" stroke="#1D232F" strokeWidth="1.5"/>
-                  </g>
-                  <defs><clipPath id="sdw-panel-close"><rect width="16" height="16" fill="white"/></clipPath></defs>
-                </svg>
-              ) : (
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                  <g clipPath="url(#sdw-panel-open)">
-                    <path d="M13.3333 1.14279H2.66663C1.82506 1.14279 1.14282 1.82502 1.14282 2.6666V13.3333C1.14282 14.1748 1.82506 14.8571 2.66663 14.8571H13.3333C14.1749 14.8571 14.8571 14.1748 14.8571 13.3333V2.6666C14.8571 1.82502 14.1749 1.14279 13.3333 1.14279Z" stroke="#1D232F" strokeWidth="1.5"/>
-                    <path d="M5.71436 1.14279V14.8571" stroke="#1D232F" strokeWidth="1.5"/>
-                    <path d="M8.76189 10.2858L11.0476 8.00013L8.76189 5.71442" stroke="#1D232F" strokeWidth="1.5"/>
-                  </g>
-                  <defs><clipPath id="sdw-panel-open"><rect width="16" height="16" fill="white"/></clipPath></defs>
-                </svg>
-              )}
-            </button>
-
-            <span className={styles.vDivider}><Divider vertical /></span>
-          </div>
+          {/* Column-panel toggle and its divider removed (2026-09-30, Komal:
+              "remove the column panel expand and collapse icon, and the
+              separator next to it") — the column panel stays open; the
+              search now starts at the bar's left edge. */}
 
           {/* Center: search icon (fixed) + token area (wraps internally) */}
           <div className={`${styles.queryBarSearch}${!searchBarExpanded ? ` ${styles.queryBarSearchCollapsed}` : ''}`}>
