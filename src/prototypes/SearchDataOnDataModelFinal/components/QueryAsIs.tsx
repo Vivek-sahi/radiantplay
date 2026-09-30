@@ -7854,15 +7854,17 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
                   warning, top of the answer — all her picks). */}
               {queryModelStale && (
                 <div style={{ marginBottom: 'var(--spacing-3)' }}>
-                  {/* section-multiline: the single-line section alert caps
-                      at 454px and truncates this sentence. Not dismissible —
-                      the prompt stays until the answer is re-run. */}
+                  {/* Radiant Alert's page variant — the one that carries a
+                      button, on the same line as the message (2026-09-30,
+                      Komal: "use a button for re-run instead and place it in
+                      the same line as the text"). Not dismissible: the prompt
+                      stays until the answer is re-run. */}
                   <Alert
                     status="warning"
-                    variant="section-multiline"
+                    variant="page"
                     message="Model changed — this answer shows the results from before the change."
-                    linkText="Re-run"
-                    onLinkClick={rerunModelQuery}
+                    buttonText="Re-run"
+                    onButtonClick={rerunModelQuery}
                     dismissible={false}
                     className={styles.staleAnswerAlert}
                   />
