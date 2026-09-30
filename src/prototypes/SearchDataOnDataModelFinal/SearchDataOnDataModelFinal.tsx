@@ -1608,7 +1608,9 @@ const SearchDataOnDataModelFinal: React.FC = () => {
                     changes to the left. Between both, add a separator") — the
                     divider marks Exit as leaving the editor rather than
                     another step in the same sequence. */}
-                <Button variant="primary" onClick={openSaveReview}>Save model</Button>
+                {/* Disabled while the model is empty; enables the moment its
+                    first table lands on the canvas (2026-09-30, Komal). */}
+                <Button variant="primary" onClick={openSaveReview} disabled={tableCanvasData.tables.length === 0}>Save model</Button>
                 {/* Explicit 24px: Divider's vertical rule is height:100%, and
                     in this centre-aligned row the span collapsed to the
                     component's own 16px min-height, which read as a speck
