@@ -22,6 +22,7 @@ import { Link } from '@components/Link';
 import { NoData } from '@components/NoData';
 import { buildQueryModelColumns, queryModelStatus, generateQueryRows, buildModelAnswer, type QueryModelInput } from './queryModelData';
 import { Alert } from '@components/Alert';
+import { MutedAlertIllustration, ROUND_CENTERPIECE } from './MutedAlertIllustration';
 import { rdComponentColors, systemColors } from '@tokens/colors';
 import {
   AdvancedSortingIcon, AlignLeftIcon, ColumnSizeIcon, CurrencyIcon,
@@ -7757,22 +7758,22 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
       {hasQueryModel && queryModelReadiness !== 'ready' ? (
         // The Spreadsheet's own messages, word for word (Komal: "Reuse
         // spreadsheet messages"), so both surfaces say the same thing.
+        // Radiant NoData as-is (no layout override) with the Muted Alert
+        // illustration, table icon (2026-09-30, Komal: "use the empty state
+        // component strictly from radiant. Use the muted alert for
+        // illustration"; "Round + table icon").
         <div className={styles.emptyCanvas}>
           {queryModelReadiness === 'no-tables' ? (
             <NoData
-              className={styles.sheetNoData}
-              illustration={<img src="/spotter-assets/empty states/empty state icon when tables are added.svg" width={32} height={32} alt="" />}
+              illustration={<MutedAlertIllustration clipId="illo-q-notables-clip" centerpiece={ROUND_CENTERPIECE(<Icon name="table" size="l" color="currentColor" />, 'illo-q-notables')} />}
               title="Add a table first"
               description="Add tables from the left pane to preview your data."
             />
           ) : (
-            // Query-specific wording (2026-09-30, Komal: Query "operates at a
-            // model level only" — no table or join preview to point to here).
-            // Title kept identical to the Spreadsheet's ("keep the title
-            // consistent"); only the description differs.
+            // Query-specific description (Query works at the model level
+            // only); title kept identical to the Spreadsheet's.
             <NoData
-              className={styles.sheetNoData}
-              illustration={previewEmptyIllustration}
+              illustration={<MutedAlertIllustration clipId="illo-q-notjoined-clip" centerpiece={ROUND_CENTERPIECE(<Icon name="table" size="l" color="currentColor" />, 'illo-q-notjoined')} />}
               title="Model preview isn't available"
               description="Every table in the model needs to be joined before you can query it. Join the remaining tables in Builder."
             />
@@ -7780,41 +7781,14 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
         </div>
       ) : !hasQuery && !isAnswerLoading ? (
         <div className={styles.emptyCanvas}>
-          <div className={styles.emptySearchHero}>
-            <svg className={styles.emptySearchIllustration} viewBox="0 0 270 200" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
-              <rect x="0" y="146" width="28" height="48" fill="currentColor" opacity="0.85" />
-              <path d="M38 94V195" stroke="currentColor" strokeWidth="5" strokeDasharray="4 8" />
-              <path d="M46 94V195" stroke="currentColor" strokeWidth="5" strokeDasharray="4 8" />
-              <path d="M54 94V195" stroke="currentColor" strokeWidth="5" strokeDasharray="4 8" />
-              <path d="M62 118V195" stroke="currentColor" strokeWidth="5" strokeDasharray="4 8" />
-              <circle cx="112" cy="86" r="62" stroke="currentColor" strokeWidth="25" />
-              <path d="M157 134L197 193" stroke="currentColor" strokeWidth="25" strokeLinecap="square" />
-              <circle cx="216" cy="78" r="60" fill="currentColor" opacity="0.45" />
-              <path d="M174 24H250" stroke="var(--rd-sys-color-background-sunken, #f5f7fa)" strokeWidth="8" />
-              <path d="M160 50H262" stroke="var(--rd-sys-color-background-sunken, #f5f7fa)" strokeWidth="8" />
-              <path d="M155 76H267" stroke="var(--rd-sys-color-background-sunken, #f5f7fa)" strokeWidth="8" />
-              <path d="M162 102H260" stroke="var(--rd-sys-color-background-sunken, #f5f7fa)" strokeWidth="8" />
-              <path d="M182 128H240" stroke="var(--rd-sys-color-background-sunken, #f5f7fa)" strokeWidth="8" />
-            </svg>
-            <div className={styles.emptySearchContent}>
-              {/* No product name anywhere in this state (2026-09-22, Komal:
-                  "from this empty state text, remove Spotter completely. Make
-                  it more like test your model by asking a question") — the
-                  frame is what the tab is for: checking the model answers
-                  correctly, not searching for its own sake. The button still
-                  opens the same assistant; only its label changed. */}
-              {/* Title and description only — the button is gone (2026-09-22,
-                  Komal: "remove the cta"). The query bar directly above is
-                  where the question gets asked, so the state just says what
-                  this tab is for. */}
-              <h2 className={styles.emptySearchTitle}>Test your model</h2>
-              {/* 2026-09-25, Komal: "improve the description... make it
-                  compelling" — tightened to lead with the action and pay it
-                  off with a concrete result, instead of describing the
-                  mechanism ("ask a question of your data"). */}
-              <p className={styles.emptySearchDescription}>Ask a question and watch your model turn it into an answer.</p>
-            </div>
-          </div>
+          {/* Radiant NoData + Muted Alert, table icon (2026-09-30) — replaces
+              the custom magnifier scene and hero layout. Copy unchanged:
+              "Test your model" (2026-09-22) and the 2026-09-25 description. */}
+          <NoData
+            illustration={<MutedAlertIllustration clipId="illo-q-test-clip" centerpiece={ROUND_CENTERPIECE(<Icon name="table" size="l" color="currentColor" />, 'illo-q-test')} />}
+            title="Test your model"
+            description="Ask a question and watch your model turn it into an answer."
+          />
         </div>
       ) : (
         <div className={styles.chartContainer} style={{ ...(version === 'minimal' ? { borderRadius: 0, boxShadow: 'none' } : {}), position: 'relative' }}>
@@ -7830,7 +7804,10 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
                   ) : (
                     <span className={styles.answerTitleDisplay} onClick={() => { setTitleEditing(true); setTimeout(() => titleEditRef.current?.select(), 10); }}>{answerTitle}</span>
                   )}
-                  {descEditing ? (
+                  {/* No description on the Query tab (2026-09-30, Komal: "remove
+                      the 'add description'. Since we aren't saving the answers
+                      - don't need the description"). */}
+                  {hasQueryModel ? null : descEditing ? (
                     <input ref={descEditRef} className={styles.answerDescInput} defaultValue={customDesc} autoFocus placeholder="Add description"
                       onBlur={e => { setDescEditing(false); setCustomDesc(e.target.value); }}
                       onKeyDown={e => { if (e.key === 'Enter' || e.key === 'Escape') { setDescEditing(false); setCustomDesc((e.target as HTMLInputElement).value); } }}
