@@ -3900,4 +3900,9 @@
    takes content-secondary. Nothing else about NoData is overridden. */
 .queryNoData > p + p {
   color: var(--rd-sys-color-content-secondary);
+  /* NoData sets no weight or line height on its description, so it inherited
+     400 / 21px. Tokens instead, matching the Spreadsheet's empty states
+     (.sheetNoData) — 2026-09-30, Komal: "fix just the description". */
+  font-weight: var(--font-weight-light);
+  line-height: var(--line-height-md);
 }
