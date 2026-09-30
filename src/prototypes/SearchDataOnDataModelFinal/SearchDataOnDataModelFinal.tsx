@@ -2868,7 +2868,20 @@ const SearchDataOnDataModelFinal: React.FC = () => {
                   to the tab list — unreachable, so inert, whenever
                   dataModelLayout is 'combined'. */}
               <div className="tab-content" id="content-query-asis" style={{ display: 'none' }}>
-                <QueryAsIs />
+                {/* 2026-09-29, Komal: "The Query tab should talk to the model
+                    the user is building" — the same tables, joins and added
+                    columns the canvas and Spreadsheet read, plus the model's
+                    formulas and parameters. */}
+                <QueryAsIs
+                  queryModel={{
+                    tables: tableCanvasData.tables,
+                    joins: tableCanvasData.joins,
+                    dataSourceTables: columnTreeData.dataSourceTables,
+                    modelColumns: columnTreeData.modelColumns,
+                    formulas: modelFormulas,
+                    parameters: modelParameters,
+                  }}
+                />
               </div>
 
             </div>{/* /main-content */}

@@ -20,6 +20,7 @@ import { Menu } from '@components/Menu';
 import { Toggle } from '@components/Toggle';
 import { Link } from '@components/Link';
 import { NoData } from '@components/NoData';
+import { buildQueryModelColumns, queryModelStatus, generateQueryRows, buildModelAnswer, type QueryModelInput } from './queryModelData';
 import { Alert } from '@components/Alert';
 import { rdComponentColors, systemColors } from '@tokens/colors';
 import {
@@ -54,15 +55,28 @@ const TYPE_ICON: Record<string, string> = {
   filter:    'f',
 };
 
+// Query tab only (2026-09-29, Komal: "The Query tab should talk to the model
+// the user is building"): when set, every typeahead — the bar's and each
+// token's own replace menu — lists the model's columns, formulas and
+// parameters instead of the sample SECTIONS. null everywhere else.
+const QueryColumnsContext = React.createContext<ColumnDef[] | null>(null);
+
+// Case- and underscore-insensitive, so "net amount" finds
+// fact_new_retail_sales.net_amount.
+const normColText = (s: string) => s.toLowerCase().replace(/_/g, ' ');
+function matchQueryColumns(cols: ColumnDef[], query: string): ColumnDef[] {
+  const q = normColText(query.trim());
+  return q ? cols.filter(c => normColText(c.label).includes(q)) : cols;
+}
+
 const SearchTypeahead: React.FC<{
   query: string;
   onSelect: (col: ColumnDef) => void;
 }> = ({ query, onSelect }) => {
-  const allCols = SECTIONS.flatMap(s => s.kind === 'expandable' ? s.columns : []);
-  const q = query.trim().toLowerCase();
-  const matches = q
-    ? allCols.filter(c => c.label.toLowerCase().includes(q))
-    : allCols;
+  const modelCols = React.useContext(QueryColumnsContext);
+  const allCols = modelCols ?? SECTIONS.flatMap(s => s.kind === 'expandable' ? s.columns : []);
+  const q = normColText(query.trim());
+  const matches = matchQueryColumns(allCols, query);
 
   if (!matches.length) return null;
 
@@ -70,7 +84,7 @@ const SearchTypeahead: React.FC<{
     <div style={taStyles.panel}>
       {matches.map(col => {
         const label = col.label;
-        const idx = q ? label.toLowerCase().indexOf(q) : -1;
+        const idx = q ? normColText(label).indexOf(q) : -1;
         return (
           <button key={col.id} className={styles.taItem} onMouseDown={e => { e.preventDefault(); onSelect(col); }}>
             <span style={taStyles.icon}>{TYPE_ICON[col.type] ?? 'a'}</span>
@@ -4721,6 +4735,16 @@ export interface SearchDataExplorationsProps {
    * entirely. Omitted everywhere else, so every other QueryAsIs usage is
    * unaffected.
    */
+  /**
+   * Query tab only (2026-09-29, Komal: "The Query tab should talk to the
+   * model the user is building"). The model under construction: its column
+   * list, typed search, formulas and parameters replace the sample sales
+   * dataset, and answers are built from generated sample rows for the chosen
+   * columns (queryModelData.ts). Separate from canvasScope on purpose —
+   * canvasScope swaps the answer for the spreadsheet grid. Omitted
+   * everywhere else (the Spreadsheet preview), which is unaffected.
+   */
+  queryModel?: QueryModelInput;
   canvasScope?: {
     tables: { name: string }[];
     joins: { leftTable: string; rightTable: string }[];
@@ -6811,9 +6835,30 @@ const SpotterDataPanel: React.FC<{
   );
 };
 
-export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ onExit: _onExit, onSave, onSaveChanges: _onSaveChanges, initialSnapshot, mode, showSpotter = true, editMode = false, liveboardName, onOpenInSearchData, onHamburgerClick: _onHamburgerClick, canvasScope, previewBehavior, modelCreation }) => {
+export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ onExit: _onExit, onSave, onSaveChanges: _onSaveChanges, initialSnapshot, mode, showSpotter = true, editMode = false, liveboardName, onOpenInSearchData, onHamburgerClick: _onHamburgerClick, canvasScope, previewBehavior, modelCreation, queryModel }) => {
   const isSpreadsheetMode = mode === 'spreadsheet';
   const hasCanvasScope = !!canvasScope;
+  // ── Query tab's model (see queryModel prop) ─────────────────────────────
+  const hasQueryModel = !!queryModel && !isSpreadsheetMode;
+  const queryModelCols = hasQueryModel ? buildQueryModelColumns(queryModel!) : [];
+  const queryModelReadiness = hasQueryModel ? queryModelStatus(queryModel!) : 'ready';
+  const queryModelColKey = queryModelCols.map(c => c.key).join('|');
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const queryModelRows = React.useMemo(() => generateQueryRows(queryModelCols), [queryModelColKey]);
+  const queryFormulas = hasQueryModel ? queryModel!.formulas : [];
+  const queryParameters = hasQueryModel ? queryModel!.parameters : [];
+  const queryDateKeys = new Set(queryModelCols.filter(c => c.type === 'date').map(c => c.key));
+  // Same five groups as the sample list (Komal: "By type, as today"); Formulas
+  // and Parameters get their own ids so they don't collide with the answer's
+  // own 'formulas' leaf (parentFormulaCols).
+  const querySections: SectionDef[] = hasQueryModel ? [
+    { id: 'measures', label: 'Measures', kind: 'expandable', columns: queryModelCols.filter(c => c.type === 'measure').map(c => ({ id: c.key, label: c.label, type: 'measure' as const })) },
+    { id: 'attributes', label: 'Attributes', kind: 'expandable', columns: queryModelCols.filter(c => c.type === 'attribute').map(c => ({ id: c.key, label: c.label, type: 'attribute' as const })) },
+    { id: 'date', label: 'Date', kind: 'expandable', columns: queryModelCols.filter(c => c.type === 'date').map(c => ({ id: c.key, label: c.label, type: 'date' as const })) },
+    { id: 'modelFormulas', label: 'Formulas', kind: 'expandable', columns: queryFormulas.map(f => ({ id: f.name, label: f.name, type: 'measure' as const })) },
+    { id: 'modelParameters', label: 'Parameters', kind: 'expandable', columns: queryParameters.map(p => ({ id: `param:${p.name}`, label: `${p.name} = ${p.value}`, type: 'attribute' as const })) },
+  ] : SECTIONS;
+  const queryTypeaheadCols = hasQueryModel ? querySections.flatMap(sec => sec.kind === 'expandable' ? sec.columns : []) : null;
   // Split only: clicking a table or a join on the canvas holds the preview on
   // a loader for 2s before the rows appear (2026-09-22, Komal: "when a table
   // is clicked, add 2 secs of loading in the data preview panel before
@@ -7287,6 +7332,30 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
   // queryState:   committed on Go — drives the answer card only
   const [pendingQuery, setPendingQuery] = useState<QueryState>(initialSnapshot?.queryState ?? EMPTY_QUERY);
   const [queryState, setQueryState] = useState<QueryState>(initialSnapshot?.queryState ?? EMPTY_QUERY);
+  // Query tab's model parameters picked in the list (names) — pending on the
+  // bar, committed on Go, like columns.
+  const [pendingParams, setPendingParams] = useState<string[]>([]);
+  const [queryParams, setQueryParams] = useState<string[]>([]);
+  // Drop anything picked that has since left the model (a column unticked, a
+  // table or join removed, a formula or parameter deleted in Builder), so the
+  // bar and the answer never reference what isn't there.
+  const queryValidKey = hasQueryModel ? `${queryModelColKey}#${queryFormulas.map(f => f.name).join('|')}#${queryParameters.map(p => p.name).join('|')}` : '';
+  useEffect(() => {
+    if (!hasQueryModel) return;
+    const valid = new Set<string>([...queryModelCols.map(c => c.key), ...queryFormulas.map(f => f.name)]);
+    const params = new Set(queryParameters.map(p => p.name));
+    const prune = (q: QueryState): QueryState => ({
+      ...q,
+      metrics: q.metrics.filter(m => valid.has(m)),
+      groupBy: q.groupBy.filter(d => valid.has(d)),
+      sorts: q.sorts.filter(x => valid.has(x.col)),
+    });
+    setPendingQuery(prune);
+    setQueryState(prune);
+    setPendingParams(prev => prev.filter(n => params.has(n)));
+    setQueryParams(prev => prev.filter(n => params.has(n)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [queryValidKey]);
   const [canvasBlocks, setCanvasBlocks] = useState<CanvasBlock[]>([]);
 
   // Refs for stable closure access inside setTimeout
@@ -7318,6 +7387,7 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
     const active = pendingQueryRef.current.metrics.length > 0 || pendingQueryRef.current.groupBy.length > 0;
     if (!active && !isDirty) return;
     setQueryState(pendingQueryRef.current);   // commit pending → answer card
+    setQueryParams(pendingParams);
     setIsDirty(false);
     // 300ms transition → then loading (500ms — short enough not to feel slow)
     setIsTransitioning(true);
@@ -7367,8 +7437,13 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
   }, [parentFormulaCols.length]);
 
   // Must match MIDS/DIDS in handleSpotterAction so data panel and Spotter stay in sync.
-  const MEASURE_IDS  = new Set<string>(['revenue', 'unitsSold', 'profit', 'profitMarginPct', 'discountPct']);
-  const DIM_IDS      = new Set<string>(['orderDate', 'orderMonth', 'orderQuarter', 'orderYear', 'region', 'state', 'city', 'productCategory', 'productSubCategory', 'productName', 'customerSegment', 'customerType', 'salesChannel']);
+  // Query tab's model: its own measures (+ formulas) and labels/dates instead.
+  const MEASURE_IDS  = hasQueryModel
+    ? new Set<string>([...queryModelCols.filter(c => c.type === 'measure').map(c => c.key), ...queryFormulas.map(f => f.name)])
+    : new Set<string>(['revenue', 'unitsSold', 'profit', 'profitMarginPct', 'discountPct']);
+  const DIM_IDS      = hasQueryModel
+    ? new Set<string>(queryModelCols.filter(c => c.type !== 'measure').map(c => c.key))
+    : new Set<string>(['orderDate', 'orderMonth', 'orderQuarter', 'orderYear', 'region', 'state', 'city', 'productCategory', 'productSubCategory', 'productName', 'customerSegment', 'customerType', 'salesChannel']);
   const DERIVED_IDS  = new Set<string>([]);
 
   // Called when the sheet column picker adds/removes columns (Sheet → Search direction).
@@ -7387,6 +7462,12 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
   };
 
   const toggleColumn = (id: string) => {
+    if (hasQueryModel && id.startsWith('param:')) {
+      const name = id.slice('param:'.length);
+      setPendingParams(prev => prev.includes(name) ? prev.filter(n => n !== name) : [...prev, name]);
+      setIsDirty(true);
+      return;
+    }
     // Compute next state outside the updater so we can derive `checked` at the same level
     const next = { ...pendingQuery };
     if (MEASURE_IDS.has(id)) {
@@ -7414,15 +7495,36 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
   // ── Derived display values ────────────────────────────────────────────────
   // hasPending: drives search bar tokens, X button, Go button, checkboxes
   // hasQuery:   drives answer card (only updates on Go)
-  const hasPending     = pendingQuery.metrics.length > 0 || pendingQuery.groupBy.length > 0;
-  const hasQuery       = queryState.metrics.length > 0 || queryState.groupBy.length > 0 || queryState.derivedCols.length > 0 || parentFormulaCols.length > 0;
-  const _baseSearchTokens = hasPending ? queryToTokens(pendingQuery) : [];
+  const hasPending     = pendingQuery.metrics.length > 0 || pendingQuery.groupBy.length > 0 || (hasQueryModel && pendingParams.length > 0);
+  const hasQuery       = hasQueryModel
+    ? queryModelReadiness === 'ready' && (queryState.metrics.length > 0 || queryState.groupBy.length > 0)
+    : queryState.metrics.length > 0 || queryState.groupBy.length > 0 || queryState.derivedCols.length > 0 || parentFormulaCols.length > 0;
+  const paramLabel = (name: string) => {
+    const p = queryParameters.find(x => x.name === name);
+    return p ? `${p.name} = ${p.value}` : name;
+  };
+  // Query tab's model: labels are the ids themselves (table.column, formula
+  // names), so tokens are built here rather than from the sample label maps.
+  const _baseSearchTokens: SearchToken[] = !hasPending ? [] : hasQueryModel ? [
+    ...pendingQuery.metrics.map(m => ({ id: m, label: m, type: 'measure' as TokenType })),
+    ...pendingQuery.groupBy.map(d => ({ id: d, label: d, type: (queryDateKeys.has(d) ? 'date' : 'attribute') as TokenType })),
+    ...pendingParams.map(n => ({ id: `param:${n}`, label: paramLabel(n), type: 'attribute' as TokenType })),
+  ] : queryToTokens(pendingQuery);
   const searchTokens   = [
     ..._baseSearchTokens,
     ...parentFormulaCols.map(f => ({ id: f.key, label: f.name, type: 'measure' as TokenType })),
   ];
-  const activeCols     = queryToActiveCols(pendingQuery);
-  const computedTitle  = hasQuery ? queryToTitle(queryState) : 'Answer';
+  const activeCols     = hasQueryModel
+    ? new Set<string>([...queryToActiveCols(pendingQuery), ...pendingParams.map(n => `param:${n}`)])
+    : queryToActiveCols(pendingQuery);
+  const modelTitle = () => {
+    const metrics = queryState.metrics.join(', ');
+    const dims = queryState.groupBy.join(', ');
+    let t = metrics && dims ? `${metrics} by ${dims}` : metrics || dims;
+    if (queryParams.length) t += ` (${queryParams.map(paramLabel).join(', ')})`;
+    return t;
+  };
+  const computedTitle  = hasQuery ? (hasQueryModel ? modelTitle() : queryToTitle(queryState)) : 'Answer';
   const answerTitle    = customTitle ?? computedTitle;
   const allDataSources = [...dynamicDataSources, ...dataModelSources];
   const activeSourceName = (allDataSources.find(s => s.id === dataModelSelectedId) ?? allDataSources[0])?.name ?? 'Sample Retail';
@@ -7457,15 +7559,20 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
       setSaveModalOpen(true);
     }
   };
-  const aggData        = hasQuery ? aggregate(queryState) : [];
+  // Query tab's model: grouped and totalled from the model's sample rows —
+  // one result feeds both the table and the chart.
+  const modelAnswer = hasQueryModel && hasQuery
+    ? buildModelAnswer({ metrics: queryState.metrics, groupBy: queryState.groupBy, sorts: queryState.sorts }, queryModelRows, queryFormulas)
+    : [];
+  const aggData        = hasQueryModel ? (modelAnswer as unknown as AggRow[]) : hasQuery ? aggregate(queryState) : [];
   // canvasScope bypasses the search-query-driven SALES_DATA path entirely —
   // the grid shows exactly the canvas's current table/join selection, live,
   // with no query to build or run (Komal, 2026-09-22: "when someone clicks
   // on a table, all the selected columns get displayed in the data preview.
   // Similarly for joins").
   // Base data — then inject formula values into each row
-  const _baseDisplayData = hasCanvasScope ? effDynamicRows : (hasQuery ? buildDisplayData(queryState) : []);
-  const displayData = hasCanvasScope ? _baseDisplayData : _baseDisplayData.map((row, ri) => {
+  const _baseDisplayData = hasCanvasScope ? effDynamicRows : hasQueryModel ? modelAnswer : (hasQuery ? buildDisplayData(queryState) : []);
+  const displayData = hasCanvasScope || hasQueryModel ? _baseDisplayData : _baseDisplayData.map((row, ri) => {
     if (!parentFormulaCols.length) return row;
     const extra: Record<string, unknown> = {};
     parentFormulaCols.forEach(f => { extra[f.key] = parentFormulaValues[f.key]?.[ri] ?? null; });
@@ -7481,6 +7588,13 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
         width: c.measure ? 140 : 160,
         render: String,
       }))
+    : hasQueryModel ? [
+        ...queryState.groupBy.map(d => ({ key: d, label: d, sortable: true, width: 180, render: String })),
+        ...queryState.metrics.map(m => ({
+          key: m, label: m, sortable: true, align: 'right' as const, width: 180,
+          render: (v: unknown) => v == null || v === '' ? '' : Number(v).toLocaleString(undefined, { maximumFractionDigits: 2 }),
+        })),
+      ]
     : [
         ...buildDisplayColumns(queryState),
         ...parentFormulaCols.map(f => ({
@@ -7597,7 +7711,27 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
   // ── Pre-render: answer area shared between Current and Minimal layouts ──────
   const answerContent = (
     <>
-      {!hasQuery && !isAnswerLoading ? (
+      {hasQueryModel && queryModelReadiness !== 'ready' ? (
+        // The Spreadsheet's own messages, word for word (Komal: "Reuse
+        // spreadsheet messages"), so both surfaces say the same thing.
+        <div className={styles.emptyCanvas}>
+          {queryModelReadiness === 'no-tables' ? (
+            <NoData
+              className={styles.sheetNoData}
+              illustration={<img src="/spotter-assets/empty states/empty state icon when tables are added.svg" width={32} height={32} alt="" />}
+              title="Add a table first"
+              description="Add tables from the left pane to preview your data."
+            />
+          ) : (
+            <NoData
+              className={styles.sheetNoData}
+              illustration={previewEmptyIllustration}
+              title="Model preview isn't available"
+              description="All tables need to be joined to preview the model. Join the remaining tables, or preview a table or a join instead."
+            />
+          )}
+        </div>
+      ) : !hasQuery && !isAnswerLoading ? (
         <div className={styles.emptyCanvas}>
           <div className={styles.emptySearchHero}>
             <svg className={styles.emptySearchIllustration} viewBox="0 0 270 200" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
@@ -7679,7 +7813,7 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
 	              {queryState.viewMode === 'chart' ? (
 	                <AnswerChart
 	                  data={aggData}
-	                  metrics={queryState.metrics.length ? queryState.metrics : ['revenue']}
+	                  metrics={queryState.metrics.length ? queryState.metrics : hasQueryModel ? [] : ['revenue']}
 	                  groupBy={queryState.groupBy}
 	                  colors={chartColors}
 	                  currencySymbol={CURRENCY_SYMBOLS[queryState.currency] ?? ''}
@@ -7718,6 +7852,7 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
   );
 
   return (
+    <QueryColumnsContext.Provider value={queryTypeaheadCols}>
     <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', alignSelf: 'stretch', overflow: 'hidden' }}>
       {/* ── Save answer modal (M1, Figma 340:122546) ─────────────────── */}
       {/* z-index wrapper: sheet expanded overlay is 9500, modal default is 1000 */}
@@ -8457,7 +8592,14 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
                     onClick={e => e.stopPropagation()}
                     onKeyDown={e => {
                       if (e.key === 'Escape') { setSearchFocused(false); setBarActive(false); setBarTypedValue(''); }
-                      if (e.key === 'Enter')  { handleGo(); }
+                      if (e.key === 'Enter') {
+                        // Query tab's model: Enter on typed text picks the top
+                        // suggestion, the way search does; Enter on an empty
+                        // bar runs the query.
+                        const top = hasQueryModel && barTypedValue.trim() ? matchQueryColumns(queryTypeaheadCols ?? [], barTypedValue)[0] : undefined;
+                        if (top) { e.preventDefault(); toggleColumn(top.id); setBarTypedValue(''); requestAnimationFrame(() => barInputRef.current?.focus()); return; }
+                        handleGo();
+                      }
                     }}
                     onBlur={() => {
                       setTimeout(() => {
@@ -8507,6 +8649,8 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
                   e.preventDefault();
                   setPendingQuery(EMPTY_QUERY);
                   setQueryState(EMPTY_QUERY);
+                  setPendingParams([]);
+                  setQueryParams([]);
                   setCanvasBlocks([]);
                   setChecked(new Set());
                   setTokenResetKey(k => k + 1);
@@ -8611,7 +8755,7 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
 
           {/* Expandable column sections */}
           <div className={styles.columnSections}>
-            {SECTIONS.map(section => (
+            {querySections.map(section => (
               <div key={section.id}>
                 <button
                   className={styles.sectionHeader}
@@ -8631,6 +8775,9 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
                   )}
                 </button>
 
+                {hasQueryModel && section.kind === 'expandable' && expanded.has(section.id) && section.columns.length === 0 && (
+                  <div className={styles.formulaSectionEmpty}>No {section.label.toLowerCase()} yet</div>
+                )}
                 {section.kind === 'expandable' &&
                   expanded.has(section.id) &&
                   section.columns.map(col => (
@@ -8742,5 +8889,6 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
     </div>{/* end root inner wrapper */}
       </div>
     </div>
+    </QueryColumnsContext.Provider>
   );
 };
