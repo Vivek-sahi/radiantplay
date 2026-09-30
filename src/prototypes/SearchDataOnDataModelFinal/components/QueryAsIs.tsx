@@ -66,7 +66,8 @@ const QueryColumnsContext = React.createContext<ColumnDef[] | null>(null);
 const normColText = (s: string) => s.toLowerCase().replace(/_/g, ' ');
 function matchQueryColumns(cols: ColumnDef[], query: string): ColumnDef[] {
   const q = normColText(query.trim());
-  return q ? cols.filter(c => normColText(c.label).includes(q)) : cols;
+  // Label first; the table.column id too, so typing a table name still finds its columns.
+  return q ? cols.filter(c => normColText(c.label).includes(q) || normColText(c.id).includes(q)) : cols;
 }
 
 const SearchTypeahead: React.FC<{
@@ -4422,7 +4423,7 @@ function niceSteps(max: number, steps = 5): number[] {
   return Array.from({ length: steps + 1 }, (_, i) => i * nice);
 }
 
-const AnswerChart: React.FC<{ data: AggRow[]; metrics: string[]; groupBy: string[]; colors?: readonly string[]; currencySymbol?: string }> = ({ data, metrics, groupBy, colors = CHART_COLORS, currencySymbol = '' }) => {
+const AnswerChart: React.FC<{ data: AggRow[]; metrics: string[]; groupBy: string[]; colors?: readonly string[]; currencySymbol?: string; labelFor?: (key: string) => string }> = ({ data, metrics, groupBy, colors = CHART_COLORS, currencySymbol = '', labelFor }) => {
   const wrapRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 800, h: 440 });
 
@@ -4469,7 +4470,7 @@ const AnswerChart: React.FC<{ data: AggRow[]; metrics: string[]; groupBy: string
 
   // Returns the prefix to use for axis labels — $ when currencySymbol is set and metric is monetary
   const isCurrency = (m: string) => ['revenue', 'profit'].includes(m) ? currencySymbol : '';
-  const metricLabel = (m: string): string => METRIC_LABELS[m as QMetric] ?? m;
+  const metricLabel = (m: string): string => labelFor ? labelFor(m) : METRIC_LABELS[m as QMetric] ?? m;
 
   return (
     <div ref={wrapRef} className={styles.barChartWrap}>
@@ -4565,7 +4566,7 @@ const AnswerChart: React.FC<{ data: AggRow[]; metrics: string[]; groupBy: string
           {groupBy.length > 0 && (
             <text x={(L_PAD + totalW - R_PAD) / 2} y={T_PAD + CHART_H + B_PAD - 6}
               textAnchor="middle" fontSize={12} fill="#1d232f" fontFamily={FONT}>
-              {DIM_LABELS[groupBy[0] as QDim] ?? groupBy[0]} ▾
+              {labelFor ? labelFor(groupBy[0]) : DIM_LABELS[groupBy[0] as QDim] ?? groupBy[0]} ▾
             </text>
           )}
         </svg>
@@ -6848,6 +6849,8 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
   const queryFormulas = hasQueryModel ? queryModel!.formulas : [];
   const queryParameters = hasQueryModel ? queryModel!.parameters : [];
   const queryDateKeys = new Set(queryModelCols.filter(c => c.type === 'date').map(c => c.key));
+  // Display name for a column key (formula names are their own label).
+  const queryLabelFor = (key: string) => queryModelCols.find(c => c.key === key)?.label ?? key;
   // Same five groups as the sample list (Komal: "By type, as today"); Formulas
   // and Parameters get their own ids so they don't collide with the answer's
   // own 'formulas' leaf (parentFormulaCols).
@@ -7523,8 +7526,8 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
   // Query tab's model: labels are the ids themselves (table.column, formula
   // names), so tokens are built here rather than from the sample label maps.
   const _baseSearchTokens: SearchToken[] = !hasPending ? [] : hasQueryModel ? [
-    ...pendingQuery.metrics.map(m => ({ id: m, label: m, type: 'measure' as TokenType })),
-    ...pendingQuery.groupBy.map(d => ({ id: d, label: d, type: (queryDateKeys.has(d) ? 'date' : 'attribute') as TokenType })),
+    ...pendingQuery.metrics.map(m => ({ id: m, label: queryLabelFor(m), type: 'measure' as TokenType })),
+    ...pendingQuery.groupBy.map(d => ({ id: d, label: queryLabelFor(d), type: (queryDateKeys.has(d) ? 'date' : 'attribute') as TokenType })),
     ...pendingParams.map(n => ({ id: `param:${n}`, label: paramLabel(n), type: 'attribute' as TokenType })),
   ] : queryToTokens(pendingQuery);
   const searchTokens   = [
@@ -7535,8 +7538,8 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
     ? new Set<string>([...queryToActiveCols(pendingQuery), ...pendingParams.map(n => `param:${n}`)])
     : queryToActiveCols(pendingQuery);
   const modelTitle = () => {
-    const metrics = queryState.metrics.join(', ');
-    const dims = queryState.groupBy.join(', ');
+    const metrics = queryState.metrics.map(queryLabelFor).join(', ');
+    const dims = queryState.groupBy.map(queryLabelFor).join(', ');
     let t = metrics && dims ? `${metrics} by ${dims}` : metrics || dims;
     if (queryParams.length) t += ` (${queryParams.map(paramLabel).join(', ')})`;
     return t;
@@ -7629,9 +7632,9 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
         render: String,
       }))
     : hasQueryModel ? [
-        ...queryState.groupBy.map(d => ({ key: d, label: d, sortable: true, width: 180, render: String })),
+        ...queryState.groupBy.map(d => ({ key: d, label: queryLabelFor(d), sortable: true, width: 180, render: String })),
         ...queryState.metrics.map(m => ({
-          key: m, label: m, sortable: true, align: 'right' as const, width: 180,
+          key: m, label: queryLabelFor(m), sortable: true, align: 'right' as const, width: 180,
           render: (v: unknown) => v == null || v === '' ? '' : Number(v).toLocaleString(undefined, { maximumFractionDigits: 2 }),
         })),
       ]
@@ -7875,6 +7878,7 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
 	                <AnswerChart
 	                  data={aggData}
 	                  metrics={queryState.metrics.length ? queryState.metrics : hasQueryModel ? [] : ['revenue']}
+	                  labelFor={hasQueryModel ? queryLabelFor : undefined}
 	                  groupBy={queryState.groupBy}
 	                  colors={chartColors}
 	                  currencySymbol={CURRENCY_SYMBOLS[queryState.currency] ?? ''}

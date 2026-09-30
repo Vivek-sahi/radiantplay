@@ -14,8 +14,12 @@
 export type QueryColumnType = 'measure' | 'attribute' | 'date';
 
 export interface QueryModelColumn {
-  /** Qualified "table.column" — also the label, the same naming the Spreadsheet uses. */
+  /** Qualified "table.column" — the id; unique across the model. */
   key: string;
+  /** What the Query tab shows: the bare column name, with the table in
+   * brackets only when another table in the model has the same name
+   * (2026-09-30, Komal: "simply show column names, and not table.column";
+   * "add table on duplicates"). */
   label: string;
   table: string;
   col: string;
@@ -94,9 +98,12 @@ export function buildQueryModelColumns(m: QueryModelInput): QueryModelColumn[] {
     const source = m.dataSourceTables.find(s => s.name === t);
     const added = new Set(m.modelColumns.find(mc => mc.table === t)?.columns ?? []);
     (source?.columns ?? []).filter(c => added.has(c)).forEach(c => {
-      out.push({ key: `${t}.${c}`, label: `${t}.${c}`, table: t, col: c, type: inferColumnType(c) });
+      out.push({ key: `${t}.${c}`, label: c, table: t, col: c, type: inferColumnType(c) });
     });
   });
+  const seen = new Map<string, number>();
+  out.forEach(c => seen.set(c.col, (seen.get(c.col) ?? 0) + 1));
+  out.forEach(c => { if ((seen.get(c.col) ?? 0) > 1) c.label = `${c.col} (${c.table})`; });
   return out;
 }
 
