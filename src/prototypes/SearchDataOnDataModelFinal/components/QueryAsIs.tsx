@@ -7765,6 +7765,7 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
         <div className={styles.emptyCanvas}>
           {queryModelReadiness === 'no-tables' ? (
             <NoData
+              className={styles.queryNoData}
               illustration={<MutedAlertIllustration clipId="illo-q-notables-clip" centerpiece={ROUND_CENTERPIECE(<Icon name="table" size="l" color="currentColor" />, 'illo-q-notables')} />}
               title="Add a table first"
               description="Add tables from the left pane to preview your data."
@@ -7773,6 +7774,7 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
             // Query-specific description (Query works at the model level
             // only); title kept identical to the Spreadsheet's.
             <NoData
+              className={styles.queryNoData}
               illustration={<MutedAlertIllustration clipId="illo-q-notjoined-clip" centerpiece={ROUND_CENTERPIECE(<Icon name="table" size="l" color="currentColor" />, 'illo-q-notjoined')} />}
               title="Model preview isn't available"
               description="Every table in the model needs to be joined before you can query it. Join the remaining tables in Builder."
@@ -7785,6 +7787,7 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
               the custom magnifier scene and hero layout. Copy unchanged:
               "Test your model" (2026-09-22) and the 2026-09-25 description. */}
           <NoData
+            className={styles.queryNoData}
             illustration={<MutedAlertIllustration clipId="illo-q-test-clip" centerpiece={ROUND_CENTERPIECE(<Icon name="table" size="l" color="currentColor" />, 'illo-q-test')} />}
             title="Test your model"
             description="Ask a question and watch your model turn it into an answer."

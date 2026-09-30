@@ -3892,3 +3892,12 @@
   width: 100%;
   box-sizing: border-box;
 }
+
+/* Query tab empty states (2026-09-30). Radiant NoData colours its
+   description with --rd-sys-color-content-subtle, a token that doesn't exist,
+   so it falls back to dark ink. Komal chose a local fix over editing the
+   shared component: the description (NoData's second <p>, after the title)
+   takes content-secondary. Nothing else about NoData is overridden. */
+.queryNoData > p + p {
+  color: var(--rd-sys-color-content-secondary);
+}
