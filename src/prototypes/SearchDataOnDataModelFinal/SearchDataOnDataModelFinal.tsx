@@ -1820,7 +1820,8 @@ const SearchDataOnDataModelFinal: React.FC = () => {
                               Browse tables and pick the columns you need.
                             </Typography>
                           </div>
-                          <Button variant="secondary" icon="plus" onClick={openOption2Modal} style={{ marginTop: 'var(--spacing-5)' }}>Add data</Button>
+                          {/* Primary (2026-09-30, Komal: "make add data button primary now"). */}
+                          <Button variant="primary" icon="plus" onClick={openOption2Modal} style={{ marginTop: 'var(--spacing-5)' }}>Add data</Button>
                         </div>
                       ) : (
                         <>
