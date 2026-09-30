@@ -7766,11 +7766,15 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
               description="Add tables from the left pane to preview your data."
             />
           ) : (
+            // Query-specific wording (2026-09-30, Komal: Query "operates at a
+            // model level only" — no table or join preview to point to here).
+            // Title kept identical to the Spreadsheet's ("keep the title
+            // consistent"); only the description differs.
             <NoData
               className={styles.sheetNoData}
               illustration={previewEmptyIllustration}
               title="Model preview isn't available"
-              description="All tables need to be joined to preview the model. Join the remaining tables, or preview a table or a join instead."
+              description="Every table in the model needs to be joined before you can query it. Join the remaining tables in Builder."
             />
           )}
         </div>
