@@ -7779,7 +7779,10 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
             <NoData
               className={styles.queryNoData}
               illustration={<MutedAlertIllustration clipId="illo-q-notjoined-clip" centerpiece={ROUND_CENTERPIECE(<Icon name="table" size="l" color="currentColor" />, 'illo-q-notjoined')} />}
-              title="Model preview isn't available"
+              // Action-led like the other Query states (2026-09-30, Komal:
+              // "make the title actionable"); the Spreadsheet keeps "Model
+              // preview isn't available".
+              title="Join all tables first"
               description="Every table in the model needs to be joined before you can query it. Join the remaining tables in Builder."
             />
           )}
