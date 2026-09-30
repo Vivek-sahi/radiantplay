@@ -55,22 +55,6 @@ import { SearchDataExplorations as QueryAsIs } from './components/QueryAsIs';
 // The border and ground moved out of inline styles into .dock-row /
 // .dock-row-header in dme.css, so the tint/box treatments below can restyle
 // them from a parent class instead of fighting inline styles with !important.
-// Radiant has no badge component — Chip is the lavender column chip, which
-// would read as data rather than chrome — so the count in both treatments is
-// a token-styled span around a Radiant Typography. Tokens only, no
-// hardcoded values.
-const CountBadge: React.FC<{ count: number }> = ({ count }) => (
-  <span style={{
-    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-    // 2026-09-25, audit item D: was a raw 18, which is off the 4px scale.
-    flexShrink: 0, minWidth: 'var(--spacing-5)', padding: '0 var(--spacing-1)',
-    borderRadius: 'var(--radius-full)',
-    background: 'var(--rd-sys-color-background-subtle)',
-  }}>
-    <Typography variant="footnote" as="span" color="gray-light" noMargin>{count}</Typography>
-  </span>
-);
-
 // The collapsed/expanded drawer height for every section except Tables, which
 // takes the pane's remaining height instead. No Radiant token covers a drawer
 // height, so it is at least named rather than inline (2026-09-25, audit D).
@@ -79,7 +63,7 @@ const DOCK_DRAWER_MAX_HEIGHT = 220;
 // `fill` is the Tables section: it collapses like every other section, but
 // while open its body takes the pane's remaining height rather than animating
 // to a 220px drawer, so the table list scrolls in the space that's left.
-const DockRow: React.FC<{ balance: PaneBalance; icon: React.ReactNode; label: string; count?: number; open: boolean; onToggle?: () => void; onAdd?: () => void; addLabel?: string; fill?: boolean; children?: React.ReactNode }> = ({ balance, icon, label, count, open, onToggle, onAdd, addLabel, fill, children }) => {
+const DockRow: React.FC<{ balance: PaneBalance; icon: React.ReactNode; label: string; count?: number; open: boolean; onToggle?: () => void; onAdd?: () => void; addLabel?: string; fill?: boolean; children?: React.ReactNode }> = ({ balance, icon, label, open, onToggle, onAdd, addLabel, fill, children }) => {
   // The chevron leads the row in both treatments. Tint otherwise follows the
   // product's column browser — no type icon, a sentence-case label, a taller
   // row, the count plain on the right. Box stays compact: its icon, an
@@ -111,7 +95,7 @@ const DockRow: React.FC<{ balance: PaneBalance; icon: React.ReactNode; label: st
           unchanged — only the box label was called out. The count itself —
           CountBadge — is the same pill in both treatments, next to the
           title (Komal: "in tint, use badges... placed next to the section
-          title similar to box"). */}
+          title similar to box"). Removed 2026-09-30 — see below. */}
       <span style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 'var(--spacing-2)' }}>
         {/* 2026-09-25, Komal: "the fonts of the table name, formula, filters
             and parameters look too thick. Use the correct font... strictly
@@ -121,7 +105,9 @@ const DockRow: React.FC<{ balance: PaneBalance; icon: React.ReactNode; label: st
             'content-label-subhead' (14/500), is the one meant for subheads,
             and is what tint already used. Both treatments now share it. */}
         <Typography variant="content-label-subhead" as="span" color="base" noMargin style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</Typography>
-        {typeof count === 'number' && <CountBadge count={count} />}
+        {/* No count badge beside the title (2026-09-30, Komal: "remove the
+            total number badges from next to the title"). Callers still pass
+            `count`; CountBadge is in git history (d8145d4 and earlier). */}
       </span>
     </>
   );
