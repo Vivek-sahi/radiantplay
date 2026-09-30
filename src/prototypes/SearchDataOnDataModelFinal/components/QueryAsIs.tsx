@@ -7837,7 +7837,9 @@ export const SearchDataExplorations: React.FC<SearchDataExplorationsProps> = ({ 
                   mirrors the Spreadsheet's banner, "Re-run", Radiant
                   warning, top of the answer — all her picks). */}
               {queryModelStale && (
-                <div style={{ marginBottom: 'var(--spacing-3)' }}>
+                // No margin of its own: the table's own 16px top gap is the
+                // space below, matching the 16px above (2026-09-30).
+                <div>
                   {/* Radiant Alert's page variant — the one that carries a
                       button, on the same line as the message (2026-09-30,
                       Komal: "use a button for re-run instead and place it in

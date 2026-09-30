@@ -39,11 +39,17 @@ type Row = Record<string, string | number>;
 
 // ─── Column types ────────────────────────────────────────────────────────────
 
-const MEASURE_WORDS = [
+// A column is a number when the LAST word of its name is a measure word
+// (2026-09-30 fix: substring matching put country ("count"), education_level
+// and tax_category under Measures). Unit suffixes (_kg, _cm) are skipped, and
+// a few compound names are listed outright.
+const MEASURE_WORDS = new Set([
   'amount', 'price', 'cost', 'quantity', 'qty', 'count', 'value', 'total', 'score', 'points',
-  'rating', 'margin', 'discount', 'tax', 'revenue', 'weight', 'length', 'width', 'height',
-  'footage', 'days', 'level', 'rate', 'pct', 'percent', 'size', 'months', 'on_hand', 'nps',
-];
+  'rating', 'margin', 'discount', 'tax', 'revenue', 'sales', 'weight', 'length', 'width', 'height',
+  'footage', 'days', 'rate', 'pct', 'percent', 'months', 'nps', 'probability',
+]);
+const MEASURE_COLUMNS = new Set(['quantity_on_hand', 'cost_per_unit', 'household_size', 'reorder_level', 'cost_of_goods', 'quantity_sold']);
+const UNIT_SUFFIXES = new Set(['kg', 'cm', 'usd']);
 const DATE_PARTS = new Set(['day', 'month', 'quarter', 'year', 'week_of_year']);
 
 export function inferColumnType(col: string): QueryColumnType {
@@ -51,8 +57,11 @@ export function inferColumnType(col: string): QueryColumnType {
   if (n === 'id' || n.endsWith('_id')) return 'attribute';
   if (n.startsWith('is_') || n.startsWith('opt_in') || n.endsWith('_flag') || n.includes('bracket')) return 'attribute';
   if (n.includes('date') || n.endsWith('_at') || DATE_PARTS.has(n)) return 'date';
-  if (MEASURE_WORDS.some(w => n.includes(w))) return 'measure';
-  return 'attribute';
+  if (MEASURE_COLUMNS.has(n)) return 'measure';
+  const words = n.split('_');
+  let last = words[words.length - 1];
+  if (UNIT_SUFFIXES.has(last) && words.length > 1) last = words[words.length - 2];
+  return MEASURE_WORDS.has(last) ? 'measure' : 'attribute';
 }
 
 /** Averaged rather than summed — a total of ratings or percentages means nothing. */
