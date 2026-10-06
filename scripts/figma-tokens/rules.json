@@ -1,0 +1,104 @@
+{
+  "$comment": "Decisions for the Figma token sync. Edit here when a decision changes, then re-run diff.mjs. See docs/2026-10-06-figma-token-sync-plan.md.",
+
+  "figma": {
+    "fileKey": "1QlRveXx4wppvDXyPVWUTK",
+    "fileName": "Radiant 3.0 Design system",
+    "typographySpecFrame": "25084:37052",
+    "ignoreFrames": ["25133:87727"]
+  },
+
+  "sourceOfTruth": "figma",
+
+  "semantic": {
+    "$comment": "Figma Theme names Background/*, Content/*, Border/* map to systemColors keys by lowercasing and joining with '-'. Overrides cover names that differ today. Figma names are added as aliases next to ours; nothing is renamed in this pass.",
+    "overrides": {
+      "Border/Subtle": "border-divider",
+      "Border/Bold": "border-default",
+      "Border/Bold Hover": "border-hover",
+      "Background/Inverse": "background-base-inverse",
+      "Content/Inverse": "content-primary-inverse",
+      "Background/Secondary Action": "background-subtle"
+    }
+  },
+
+  "component": {
+    "$comment": "Figma Button/Background/<Variant>/<State> maps to button-<variant>-<state>; other component names lowercase and join with '-'. Overrides cover the rest.",
+    "overrides": {
+      "Chip/Loading": "chip-loading-default",
+      "Button/Background/Overlay": "button-overlay",
+      "Segmented Control/Content/Active": "segmented-control-content-active"
+    }
+  },
+
+  "primitive": {
+    "$comment": "Figma Color/<Hue>/<Stop> maps to referenceColors[hue][stop]. Stops are zero-padded to two digits. Alpha stops (ending in A) map to referenceColors.alpha['<hue>-<stop>a'].",
+    "hueMap": {
+      "Gray": "gray",
+      "Dark Gray": "darkGray",
+      "Brand": "brand",
+      "Blue": "blue",
+      "Red": "red",
+      "Green": "green",
+      "Yellow": "yellow",
+      "Purple": "purple",
+      "Teal": "teal",
+      "Orange": "orange"
+    },
+    "spacing": "Space/<Letter> maps to spacing[<Letter>]",
+    "radius": {
+      "Radius/4 px": "sm",
+      "Radius/6 px": "md",
+      "Radius/8 px": "lg",
+      "Radius/12 px": "xl",
+      "Radius/16 px": "2xl"
+    }
+  },
+
+  "shadow": {
+    "$comment": "Figma Shadow/<Level>/<1|2>/<Blur|Color> and the Elevation/* effect styles map to shadowPrimitives[mode][level].",
+    "levels": { "Surface": "surface", "Menu": "menu", "Modal": "modal" }
+  },
+
+  "typography": {
+    "$comment": "Figma text style name to v2TextStyles key.",
+    "styles": {
+      "Display/Large Headline": "headlineLarge",
+      "Title/Page Title": "pageTitle",
+      "Title/Modal Title": "modalTitle",
+      "Label/Section Label": "sectionLabel",
+      "Label/Content Label": "contentLabel",
+      "Label/Content Label Subhead": "contentLabelSubhead",
+      "Body/Large": "bodyLarge",
+      "Body/Normal": "bodyNormal",
+      "Footnote & Caption & Overline/Regular": "footnote"
+    },
+    "weights": {
+      "$comment": "Decided 2026-10-06. emphasis is new; semibold and light stay as deprecated aliases pointing at the new values.",
+      "emphasis": 550,
+      "regular": 400,
+      "semibold": "alias:emphasis",
+      "light": "alias:regular"
+    },
+    "letterSpacingUnit": "em",
+    "mono": "Geist Mono"
+  },
+
+  "proposed": {
+    "$comment": "Ours only, not in Figma. Kept and flagged 'proposed' for handoff. Decided 2026-10-06; naming revisited after the Scaligent tally.",
+    "semantic": [
+      "background-inset",
+      "background-raised-inverse",
+      "content-alternate",
+      "content-alternate-inverse",
+      "content-brand-inverse",
+      "content-link",
+      "content-link-inverse",
+      "content-link-inverse-hover",
+      "border-brand-inverse",
+      "border-default-inverse",
+      "border-divider-inverse",
+      "border-hover-inverse"
+    ]
+  }
+}

@@ -28,6 +28,14 @@ export interface VersionEntry {
  */
 export const versionHistory: VersionEntry[] = [
   {
+    version: '26.10.1a',
+    date: '2026-10-06',
+    type: 'figma-sync',
+    changes: [
+      { type: 'added', group: 'Tooling', component: 'Figma token sync', description: 'Snapshot of the Radiant 3.0 Figma variables, text styles and effect styles, plus a diff against the TS tokens and tokens.css (npm run figma-tokens:diff). Tooling only.' },
+    ],
+  },
+  {
     version: '26.9.1c',
     date: '2026-09-03',
     type: 'patch',

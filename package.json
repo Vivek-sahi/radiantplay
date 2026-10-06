@@ -10,7 +10,9 @@
     "preview": "vite preview",
     "new-prototype": "node scripts/create-prototype.js",
     "sync-icons": "node scripts/sync-icons-from-figma.mjs",
-    "sync-icons:dry": "node scripts/sync-icons-from-figma.mjs --dry-run"
+    "sync-icons:dry": "node scripts/sync-icons-from-figma.mjs --dry-run",
+    "figma-tokens:diff": "node scripts/figma-tokens/diff.mjs",
+    "figma-tokens:pull-styles": "node scripts/figma-tokens/pull-styles.mjs"
   },
   "keywords": [
     "design-system",

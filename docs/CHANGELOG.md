@@ -1,5 +1,11 @@
 # Changelog
 
+## 26.10.1a — unreleased
+
+Figma sync: bringing tokens and typography up to date with the Radiant 3.0 Figma design system. In progress on `feat/figma-sync`.
+
+- Added `scripts/figma-tokens/`: a snapshot of the Figma design system's variables, text styles and effect styles, and a diff that compares it with `src/tokens/*` and `src/styles/tokens.css`. Run `npm run figma-tokens:diff`; refresh steps are in its README. Tooling only, no product changes yet
+
 ## 26.9.1c — 2026-09-03
 
 Guided Coolify setup for designers. Docs and tooling only, no product changes.
