@@ -47,6 +47,10 @@ export const versionHistory: VersionEntry[] = [
       { type: 'added', group: 'Dark mode', component: 'Ctrl+D shortcut', description: 'Press Ctrl+D anywhere in the app to switch between light and dark mode. The choice is saved across reloads.' },
       { type: 'added', group: 'Dark mode', component: 'Theme controller', description: 'ThemeContext with light, dark and system modes, saved in the browser, light by default. The only writer of data-theme; useTheme() and useIsDarkMode() for components. An inline script in index.html applies the saved theme before first paint.' },
       { type: 'added', group: 'Tooling', component: 'Scaligent token tally', description: 'Compares our colour tokens with the product codebase (match, differs, proposed, Scaligent-only), with a Figma name check. npm run scaligent-tokens:tally. Tooling only.' },
+      { type: 'modified', group: 'Tokens', component: 'Product token names', description: 'Shadows are --rd-sys-color-shadow-surface/-menu/-modal and button-overlay is button-bg-overlay, matching the product. The older names stay as aliases.' },
+      { type: 'added', group: 'Tokens', component: 'New product tokens', description: 'background-secondary-hover and the circular progress tokens (progress-track-active, progress-track-empty, progress-indicator-default). Nothing uses them yet.' },
+      { type: 'removed', group: 'Dark mode', component: 'System-dark copy', description: 'The prefers-color-scheme copy of the dark tokens in tokens.css. The theme controller handles the system setting.' },
+      { type: 'added', group: 'Tokens', component: 'Differences list', description: 'docs/2026-10-06-scaligent-token-differences.md lists the 33 values where Figma and the product disagree.' },
     ],
   },
   {

@@ -26,11 +26,17 @@ Figma sync: bringing tokens and typography up to date with the Radiant 3.0 Figma
 - Native buttons, inputs, selects and text areas inherit the page font instead of the browser default (Arial), and `code`, `kbd`, `samp`, `pre` use Geist Mono
 - `npm run figma-tokens:diff` also checks the Typography component's CSS against Figma
 - Added `scripts/visual-snapshots/`: screenshots every page and sample prototype of a build in light and dark, and compares two builds in a review page. Playwright stays outside `package.json`; setup is in its README
-- The token count on the Radiant home page goes from 373 to 392 (new Figma tokens and aliases)
+- The token count on the Radiant home page goes from 373 to 400 (new Figma tokens, the product's token names, and aliases)
 - Press Ctrl+D anywhere in the app to switch between light and dark mode. The choice is saved, so it survives a reload
 - Added a theme controller (`src/context/ThemeContext.tsx`): light, dark or system mode, saved in the browser, light by default. It is the only code that sets `data-theme`; use `useTheme()` to change the theme and `useIsDarkMode()` to read it. A small script in `index.html` applies the saved theme before the page paints, so a reload never flashes the wrong one. Native scrollbars and form controls follow the theme (`color-scheme`)
 - Added `scripts/scaligent-tokens/`: compares our colour tokens with the ThoughtSpot product's (Scaligent `radiant-styles`) and reports match, differs, proposed and Scaligent-only per token. `--names` adds Figma names to the check. Run `npm run scaligent-tokens:tally`; needs a local Scaligent checkout. Tooling only
 - Visual snapshots pick dark mode through the saved theme instead of setting the attribute after load
+- Token names now follow the product (Scaligent) where Figma and the product differ. Older names keep working as aliases:
+  - Shadows are `--rd-sys-color-shadow-surface`, `-menu` and `-modal`, with light and dark values. `--shadow-surface`, `--shadow-menu` and `--shadow-modal` still work and point at them
+  - `button-overlay` is now `button-bg-overlay`; `button-overlay` still works
+- Added `background-secondary-hover` (Gray/30, dark Dark Gray/30) and the circular progress tokens `progress-track-active`, `progress-track-empty` and `progress-indicator-default`, from the product. Nothing uses them yet
+- Removed the `prefers-color-scheme` copy of the dark tokens from `tokens.css` (about 130 lines). The theme controller resolves the system setting and sets `data-theme`, so the copy was never used. `npm run figma-tokens:diff` no longer checks it
+- Added `docs/2026-10-06-scaligent-token-differences.md`: the 33 token values where Figma and the product disagree, grouped by cause
 
 ## 26.9.1c — 2026-09-03
 

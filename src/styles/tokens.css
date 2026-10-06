@@ -5,7 +5,8 @@
  * Usage:
  * - Import this file in your main CSS/JS entry point
  * - Use CSS variables like: var(--color-primary-default)
- * - Switch themes by adding data-theme="dark" to html element
+ * - The theme is switched by ThemeProvider (src/context/ThemeContext.tsx), which sets
+ *   data-theme on <html>. Don't set it anywhere else
  */
 
 /* ============================================
@@ -93,11 +94,12 @@
   --shadow-focus-ring: 0 0 0 3px rgba(39, 112, 239, 0.4);
   --shadow-focus-ring-error: 0 0 0 3px rgba(226, 43, 61, 0.4);
 
-  /* Phase 4: Semantic shadow primitives (light values; dark override below).
+  /* Semantic shadows. The values are --rd-sys-color-shadow-* in the theme blocks
+     (the product's names); these older names stay as aliases.
      surface → Card, Tooltip, Nav. menu → Dropdown, Popover. modal → Modal, Dialog. */
-  --shadow-surface: 0 0 4px #1923311a, 0 2px 4px #1923310a;
-  --shadow-menu: 0 0 4px #19233114, 0 12px 24px #1923311f;
-  --shadow-modal: 0 0 4px #1923311a, 0 24px 32px #19233129;
+  --shadow-surface: var(--rd-sys-color-shadow-surface);
+  --shadow-menu: var(--rd-sys-color-shadow-menu);
+  --shadow-modal: var(--rd-sys-color-shadow-modal);
 
   /* Border Widths */
   --border-width-none: 0px;
@@ -175,6 +177,11 @@
 
 :root,
 [data-theme="light"] {
+  /* ---- System Tokens: Shadow ---- */
+  --rd-sys-color-shadow-surface: 0 0 4px #1923311a, 0 2px 4px #1923310a;
+  --rd-sys-color-shadow-menu: 0 0 4px #19233114, 0 12px 24px #1923311f;
+  --rd-sys-color-shadow-modal: 0 0 4px #1923311a, 0 24px 32px #19233129;
+
   /* ---- System Tokens: Background ---- */
   --rd-sys-color-background-base: #FFFFFF;
   --rd-sys-color-background-raised: #FFFFFF;
@@ -191,6 +198,7 @@
   --rd-sys-color-background-information: #DEE8FA;
   --rd-sys-color-background-ghost-hover: rgba(192, 198, 207, 0.12);
   --rd-sys-color-background-ghost-highlight: #71A1F41F;     /* Phase 2 fix */
+  --rd-sys-color-background-secondary-hover: #DBDFE7;        /* Gray/30, hover on background-secondary-action */
   --rd-sys-color-background-on-base: #F6F8FA;
   --rd-sys-color-background-active: #FFFFFF;
   --rd-sys-color-background-accent-green: #E0F8EF;
@@ -257,7 +265,7 @@
   --rd-comp-color-button-secondary-pressed: #C0C6CF;
   --rd-comp-color-button-tertiary-hover: rgba(192, 198, 207, 0.12);
   --rd-comp-color-button-tertiary-pressed: #71A1F41F;
-  --rd-comp-color-button-overlay: #20293A99;
+  --rd-comp-color-button-bg-overlay: #20293A99;
 
   /* ---- New Component Tokens: Toggle ---- */
   --rd-comp-color-toggle-track-off: #C0C6CF;
@@ -301,6 +309,11 @@
   --rd-comp-color-chip-error-hover: #FCD4D7;
   --rd-comp-color-chip-error-active-border: #DBDFE7;
 
+  /* ---- Component Tokens: Progress (circular, purple) ---- */
+  --rd-comp-color-progress-track-active: #F0EBFF;
+  --rd-comp-color-progress-track-empty: #EAEDF2;
+  --rd-comp-color-progress-indicator-default: #8C62F5;
+
   /* ---- Figma Radiant 3.0 names (aliases of the tokens above) ---- */
   --rd-sys-color-background-inverse: var(--rd-sys-color-background-base-inverse);
   --rd-sys-color-background-secondary-action: var(--rd-sys-color-background-subtle);
@@ -308,6 +321,9 @@
   --rd-sys-color-border-subtle: var(--rd-sys-color-border-divider);
   --rd-sys-color-border-bold: var(--rd-sys-color-border-default);
   --rd-sys-color-border-bold-hover: var(--rd-sys-color-border-hover);
+
+  /* ---- Older names kept as aliases of the product's names ---- */
+  --rd-comp-color-button-overlay: var(--rd-comp-color-button-bg-overlay);
 }
 
 /* ============================================
@@ -315,10 +331,10 @@
    ============================================ */
 
 [data-theme="dark"] {
-  /* Phase 4: Semantic shadow primitives — pure-black tints for cool dark base */
-  --shadow-surface: 0 0 4px rgba(0,0,0,0.24), 0 2px 8px rgba(0,0,0,0.2);
-  --shadow-menu: 0 0 6px rgba(0,0,0,0.16), 0 12px 28px rgba(0,0,0,0.32);
-  --shadow-modal: 0 0 4px rgba(0,0,0,0.4), 0 24px 32px rgba(0,0,0,0.6);
+  /* ---- System Tokens: Shadow (pure-black tints for the cool dark base) ---- */
+  --rd-sys-color-shadow-surface: 0 0 4px rgba(0,0,0,0.24), 0 2px 8px rgba(0,0,0,0.2);
+  --rd-sys-color-shadow-menu: 0 0 6px rgba(0,0,0,0.16), 0 12px 28px rgba(0,0,0,0.32);
+  --rd-sys-color-shadow-modal: 0 0 4px rgba(0,0,0,0.4), 0 24px 32px rgba(0,0,0,0.6);
 
   /* ---- New System Tokens: Background ---- */
   --rd-sys-color-background-base: #1F2024;
@@ -336,6 +352,7 @@
   --rd-sys-color-background-information: #082559;
   --rd-sys-color-background-ghost-hover: #C0C6CF1F;
   --rd-sys-color-background-ghost-highlight: #71A1F41F;
+  --rd-sys-color-background-secondary-hover: #46494E;
 
   /* ---- New System Tokens: Content ---- */
   --rd-sys-color-content-primary: #DFE0E2;
@@ -380,7 +397,7 @@
   --rd-comp-color-button-secondary-pressed: #5D636A;
   --rd-comp-color-button-tertiary-hover: #C0C6CF1F;
   --rd-comp-color-button-tertiary-pressed: #71A1F41F;
-  --rd-comp-color-button-overlay: #EAEDF299;
+  --rd-comp-color-button-bg-overlay: #EAEDF299;
 
   /* ---- New Component Tokens: Toggle ---- */
   --rd-comp-color-toggle-track-off: #5D636A;
@@ -424,6 +441,11 @@
   --rd-comp-color-chip-error-hover: #721F27;
   --rd-comp-color-chip-error-active-border: #B6313E;
 
+  /* ---- Component Tokens: Progress (circular, purple) ---- */
+  --rd-comp-color-progress-track-active: #210F4F;
+  --rd-comp-color-progress-track-empty: #1D232F;
+  --rd-comp-color-progress-indicator-default: #B094F8;
+
   /* ---- Added in the Figma sync (2026-10-06) ---- */
   --rd-sys-color-background-accent-blue: #082559;
   --rd-sys-color-background-accent-gray: #2D2F34;
@@ -447,147 +469,6 @@
   --rd-sys-color-content-accent-purple: #B094F8;
   --rd-sys-color-content-accent-red: #F47E89;
   --rd-sys-color-content-accent-yellow: #FCD977;
-}
-
-/* ============================================
-   SYSTEM PREFERENCE DARK MODE
-   ============================================ */
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    /* Semantic shadow primitives, same as [data-theme="dark"] */
-    --shadow-surface: 0 0 4px rgba(0,0,0,0.24), 0 2px 8px rgba(0,0,0,0.2);
-    --shadow-menu: 0 0 6px rgba(0,0,0,0.16), 0 12px 28px rgba(0,0,0,0.32);
-    --shadow-modal: 0 0 4px rgba(0,0,0,0.4), 0 24px 32px rgba(0,0,0,0.6);
-
-    /* ---- New System Tokens: Background ---- */
-    --rd-sys-color-background-base: #1F2024;
-    --rd-sys-color-background-raised: #2D2F34;
-    --rd-sys-color-background-sunken: #18191B;
-    --rd-sys-color-background-subtle: #34363C;
-    --rd-sys-color-background-inset: #777E8B;
-    --rd-sys-color-background-brand: #71A1F4;
-    --rd-sys-color-background-overlay: #00030ABA;
-    --rd-sys-color-background-base-inverse: #DFE0E2;
-    --rd-sys-color-background-raised-inverse: #F6F8FA;
-    --rd-sys-color-background-success: #003B26;
-    --rd-sys-color-background-warning: #4F3D09;
-    --rd-sys-color-background-failure: #3D090E;
-    --rd-sys-color-background-information: #082559;
-    --rd-sys-color-background-ghost-hover: #C0C6CF1F;
-    --rd-sys-color-background-ghost-highlight: #71A1F41F;
-
-    /* ---- New System Tokens: Content ---- */
-    --rd-sys-color-content-primary: #DFE0E2;
-    --rd-sys-color-content-secondary: #9A9EA2;
-    --rd-sys-color-content-tertiary: #5D636A;
-    --rd-sys-color-content-alternate: #1D232F;
-    --rd-sys-color-content-brand: #71A1F4;
-    --rd-sys-color-content-primary-inverse: #1F2024;
-    --rd-sys-color-content-alternate-inverse: #FFFFFF;
-    --rd-sys-color-content-brand-inverse: #2770EF;
-    --rd-sys-color-content-success: #56D3A8;
-    --rd-sys-color-content-warning: #FCD977;
-    --rd-sys-color-content-failure: #F47E89;
-    --rd-sys-color-content-information: #71A1F4;
-    --rd-sys-color-content-link: #71A1F4;
-    --rd-sys-color-content-link-inverse: #1D232F;
-    --rd-sys-color-content-link-inverse-hover: #4A515E;
-
-    /* ---- New System Tokens: Border ---- */
-    --rd-sys-color-border-default: #5D636A;
-    --rd-sys-color-border-hover: #7A7D85;
-    --rd-sys-color-border-divider: #34363C;
-    --rd-sys-color-border-brand: #71A1F4;
-    --rd-sys-color-border-warning: #FCD977;
-    --rd-sys-color-border-failure: #F47E89;
-    --rd-sys-color-border-default-inverse: #C0C6CF;
-    --rd-sys-color-border-hover-inverse: #A5ACB9;
-    --rd-sys-color-border-divider-inverse: #DBDFE7;
-    --rd-sys-color-border-brand-inverse: #2770EF;
-    --rd-sys-color-border-focus: #2770EF;
-    --rd-sys-color-border-gap: #1F2024;
-
-    /* ---- New Component Tokens: Button ---- */
-    --rd-comp-color-button-primary-default: #71A1F4;
-    --rd-comp-color-button-primary-hover: #ABC7F9;
-    --rd-comp-color-button-primary-pressed: #CEDCF5;
-    --rd-comp-color-button-primary-on-color-default: #1F2024;
-    --rd-comp-color-button-primary-on-color-hover: #2D2F34;
-    --rd-comp-color-button-primary-on-color-pressed: #46494E;
-    --rd-comp-color-button-secondary-default: #34363C;
-    --rd-comp-color-button-secondary-hover: #46494E;
-    --rd-comp-color-button-secondary-pressed: #5D636A;
-    --rd-comp-color-button-tertiary-hover: #C0C6CF1F;
-    --rd-comp-color-button-tertiary-pressed: #71A1F41F;
-    --rd-comp-color-button-overlay: #EAEDF299;
-
-    /* ---- New Component Tokens: Toggle ---- */
-    --rd-comp-color-toggle-track-off: #5D636A;
-    --rd-comp-color-toggle-track-on: #163772;
-    --rd-comp-color-toggle-thumb-off: #C7C9CC;
-    --rd-comp-color-toggle-thumb-on: #CEDCF5;
-    --rd-comp-color-toggle-thumb-outline-off: #C7C9CC;
-
-    /* ---- Component Tokens: Segmented control ---- */
-    --rd-comp-color-segmented-control-content-active: #DFE0E2;
-
-    /* ---- Component Tokens: Chip ---- */
-    --rd-comp-color-chip-loading-default: #26282C;
-    --rd-comp-color-chip-attribute-default: #082559;
-    --rd-comp-color-chip-attribute-hover: #163772;
-    --rd-comp-color-chip-attribute-pressed: #2359B6;
-    --rd-comp-color-chip-attribute-icon: #71A1F4;
-    --rd-comp-color-chip-attribute-active-border: #163772;
-    --rd-comp-color-chip-measure-default: #003B26;
-    --rd-comp-color-chip-measure-hover: #025B3C;
-    --rd-comp-color-chip-measure-pressed: #049160;
-    --rd-comp-color-chip-measure-icon: #56D3A8;
-    --rd-comp-color-chip-measure-active-border: #025B3C;
-    --rd-comp-color-chip-filter-default: #34363C;
-    --rd-comp-color-chip-filter-hover: #46494E;
-    --rd-comp-color-chip-filter-pressed: #5D636A;
-    --rd-comp-color-chip-filter-icon: #9A9EA2;
-    --rd-comp-color-chip-filter-active-border: #46494E;
-    --rd-comp-color-chip-date-default: #210F4F;
-    --rd-comp-color-chip-date-hover: #422E75;
-    --rd-comp-color-chip-date-pressed: #6A4ABA;
-    --rd-comp-color-chip-date-icon: #B094F8;
-    --rd-comp-color-chip-date-active-border: #422E75;
-    --rd-comp-color-chip-input-default: #1F2024;
-    --rd-comp-color-chip-input-hover: #2D2F34;
-    --rd-comp-color-chip-input-pressed: #34363C;
-    --rd-comp-color-chip-input-selected-default: #AFB2B6;
-    --rd-comp-color-chip-input-selected-hover: #C7C9CC;
-    --rd-comp-color-chip-input-selected-pressed: #DFE0E2;
-    --rd-comp-color-chip-error-default: #3D090E;
-    --rd-comp-color-chip-error-hover: #721F27;
-    --rd-comp-color-chip-error-active-border: #B6313E;
-
-    /* ---- Added in the Figma sync (2026-10-06) ---- */
-    --rd-sys-color-background-accent-blue: #082559;
-    --rd-sys-color-background-accent-gray: #2D2F34;
-    --rd-sys-color-background-accent-green: #003B26;
-    --rd-sys-color-background-accent-purple-bold: #B094F8;
-    --rd-sys-color-background-accent-purple-subtle: #422E75;
-    --rd-sys-color-background-accent-red: #3D090E;
-    --rd-sys-color-background-accent-yellow: #4F3D09;
-    --rd-sys-color-background-active: #5D636A;
-    --rd-sys-color-background-on-base: #26282C;
-    --rd-sys-color-border-accent-blue: #71A1F4;
-    --rd-sys-color-border-accent-gray: #5D636A;
-    --rd-sys-color-border-accent-green: #56D3A8;
-    --rd-sys-color-border-accent-purple: #B094F8;
-    --rd-sys-color-border-accent-red: #F47E89;
-    --rd-sys-color-border-accent-yellow: #FCD977;
-    --rd-sys-color-border-subtle-hover: #46494E;
-    --rd-sys-color-content-accent-blue: #71A1F4;
-    --rd-sys-color-content-accent-gray: #5D636A;
-    --rd-sys-color-content-accent-green: #56D3A8;
-    --rd-sys-color-content-accent-purple: #B094F8;
-    --rd-sys-color-content-accent-red: #F47E89;
-    --rd-sys-color-content-accent-yellow: #FCD977;
-  }
 }
 
 /* ============================================

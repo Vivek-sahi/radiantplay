@@ -14,14 +14,8 @@
 
   "_nameMap": "Scaligent name to the CSS variable we use today, where they differ. Phase 2 renames ours to the Scaligent name; remove the row when it does.",
   "nameMap": {
-    "system": {
-      "shadow-surface": "--shadow-surface",
-      "shadow-menu": "--shadow-menu",
-      "shadow-modal": "--shadow-modal"
-    },
-    "component": {
-      "button-bg-overlay": "--rd-comp-color-button-overlay"
-    }
+    "system": {},
+    "component": {}
   },
 
   "_aliases": "Our older names for a token that also exists under the Scaligent name. Reported as proposed, with the canonical name.",
@@ -31,7 +25,8 @@
     "border-divider": "border-subtle",
     "border-hover": "border-bold-hover",
     "background-base-inverse": "background-inverse",
-    "content-primary-inverse": "content-inverse"
+    "content-primary-inverse": "content-inverse",
+    "button-overlay": "button-bg-overlay"
   },
 
   "_proposed": "Radiant Play tokens Scaligent does not have. Same naming scheme, one line on why each exists.",

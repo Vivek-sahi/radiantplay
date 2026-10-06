@@ -27,7 +27,7 @@
     "$comment": "Figma Button/Background/<Variant>/<State> maps to button-<variant>-<state>; other component names lowercase and join with '-'. Overrides cover the rest.",
     "overrides": {
       "Chip/Loading": "chip-loading-default",
-      "Button/Background/Overlay": "button-overlay",
+      "Button/Background/Overlay": "button-bg-overlay",
       "Segmented Control/Content/Active": "segmented-control-content-active"
     }
   },
