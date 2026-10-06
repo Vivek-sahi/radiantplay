@@ -963,7 +963,7 @@ const styles: Record<string, React.CSSProperties> = {
     lineHeight: '20px',
   },
   code: {
-    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+    fontFamily: 'var(--font-family-mono)',
     fontSize: '12px',
     background: systemColors.light['background-subtle'],
     padding: '1px 6px',
@@ -1206,7 +1206,7 @@ const styles: Record<string, React.CSSProperties> = {
     border: `1px solid ${systemColors.light['background-subtle']}`,
     borderRadius: 8,
     padding: 16,
-    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+    fontFamily: 'var(--font-family-mono)',
     fontSize: '12px',
     lineHeight: '18px',
     color: systemColors.light['content-primary'],

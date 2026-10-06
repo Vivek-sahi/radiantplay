@@ -2804,13 +2804,13 @@ const styles: Record<string, React.CSSProperties> = {
     lineHeight: '20px',
   },
   propCode: {
-    fontFamily: '"SF Mono", Monaco, Inconsolata, monospace',
+    fontFamily: 'var(--font-family-mono)',
     fontSize: '13px',
     fontWeight: 500,
     color: systemColors.light['content-brand'],
   },
   typeCode: {
-    fontFamily: '"SF Mono", Monaco, Inconsolata, monospace',
+    fontFamily: 'var(--font-family-mono)',
     fontSize: '12px',
     color: referenceColors.gray['70'],
     background: systemColors.light['background-sunken'],
@@ -2818,7 +2818,7 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: '4px',
   },
   defaultCode: {
-    fontFamily: '"SF Mono", Monaco, Inconsolata, monospace',
+    fontFamily: 'var(--font-family-mono)',
     fontSize: '12px',
     color: systemColors.light['content-success'],
   },

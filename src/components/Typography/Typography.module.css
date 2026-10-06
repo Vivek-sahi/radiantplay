@@ -45,66 +45,75 @@
 .headlineLarge {
   font-size: var(--font-size-3xl, 32px);
   line-height: var(--line-height-3xl, 40px);
-  font-weight: var(--font-weight-medium, 500);
-  letter-spacing: var(--letter-spacing-tight, -0.01em);
+  font-weight: var(--font-weight-emphasis);
+  letter-spacing: var(--letter-spacing-normal);
 }
 
 /* Titles */
 .pageTitle {
   font-size: var(--font-size-2xl, 24px);
   line-height: var(--line-height-2xl, 32px);
-  font-weight: var(--font-weight-medium, 500);
+  font-weight: var(--font-weight-emphasis);
+  letter-spacing: var(--letter-spacing-normal);
 }
 
 .modalTitle {
   font-size: var(--font-size-xl, 20px);
   line-height: var(--line-height-xl, 28px);
-  font-weight: var(--font-weight-medium, 500);
+  font-weight: var(--font-weight-emphasis);
+  letter-spacing: var(--letter-spacing-normal);
 }
 
 /* Labels */
 .sectionLabel {
   font-size: var(--font-size-lg, 18px);
   line-height: var(--line-height-lg, 24px);
-  font-weight: var(--font-weight-medium, 500);
+  font-weight: var(--font-weight-emphasis);
+  letter-spacing: var(--letter-spacing-relaxed);
 }
 
 .contentLabel {
   font-size: var(--font-size-md, 16px);
   line-height: var(--line-height-lg, 24px);
-  font-weight: var(--font-weight-medium, 500);
+  font-weight: var(--font-weight-emphasis);
+  letter-spacing: var(--letter-spacing-relaxed);
 }
 
 .contentLabelSubhead {
   font-size: var(--font-size-sm, 14px);
   line-height: var(--line-height-md, 20px);
-  font-weight: var(--font-weight-medium, 500);
+  font-weight: var(--font-weight-emphasis);
+  letter-spacing: var(--letter-spacing-loose);
 }
 
 /* Body */
 .bodyLarge {
   font-size: var(--font-size-md, 16px);
   line-height: var(--line-height-lg, 24px);
-  font-weight: var(--font-weight-regular, 400);
+  font-weight: var(--font-weight-regular);
+  letter-spacing: var(--letter-spacing-loose);
 }
 
 .bodyNormal {
   font-size: var(--font-size-sm, 14px);
   line-height: var(--line-height-md, 20px);
-  font-weight: var(--font-weight-regular, 400);
+  font-weight: var(--font-weight-regular);
+  letter-spacing: var(--letter-spacing-relaxed);
 }
 
 /* Small text */
 .footnote {
   font-size: var(--font-size-xs, 12px);
   line-height: var(--line-height-sm, 18px);
-  font-weight: var(--font-weight-regular, 400);
+  font-weight: var(--font-weight-regular);
+  letter-spacing: var(--letter-spacing-loose);
 }
 
 .caption {
   font-size: var(--font-size-xs, 12px);
   line-height: var(--line-height-sm, 18px);
-  font-weight: var(--font-weight-regular, 400);
+  font-weight: var(--font-weight-regular);
+  letter-spacing: var(--letter-spacing-loose);
 }
 
 .overline {

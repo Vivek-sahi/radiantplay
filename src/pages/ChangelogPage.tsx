@@ -1030,7 +1030,7 @@ const styles: Record<string, React.CSSProperties> = {
   versionBadge: {
     padding: '6px 12px',
     borderRadius: '6px',
-    fontFamily: '"SF Mono", Monaco, monospace',
+    fontFamily: 'var(--font-family-mono)',
     fontSize: '13px',
     fontWeight: 550,
     color: systemColors.light['background-base'],
@@ -1087,7 +1087,7 @@ const styles: Record<string, React.CSSProperties> = {
     marginBottom: '40px',
   },
   heroLabel: {
-    fontFamily: '"SF Mono", Monaco, monospace',
+    fontFamily: 'var(--font-family-mono)',
     fontSize: '11px',
     fontWeight: 700,
     letterSpacing: '0.16em',
@@ -1129,7 +1129,7 @@ const styles: Record<string, React.CSSProperties> = {
     flexShrink: 0,
     padding: '2px 8px',
     borderRadius: '4px',
-    fontFamily: '"SF Mono", Monaco, monospace',
+    fontFamily: 'var(--font-family-mono)',
     fontSize: '11px',
     fontWeight: 550,
     letterSpacing: '0.04em',

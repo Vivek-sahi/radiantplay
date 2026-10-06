@@ -474,7 +474,7 @@ const styles: Record<string, React.CSSProperties> = {
   branchRoute: {
     fontSize: 12,
     color: 'rgba(255,255,255,.38)',
-    fontFamily: '"SF Mono", "Fira Code", monospace',
+    fontFamily: 'var(--font-family-mono)',
   },
   branchDot: {
     width: 8,
@@ -525,7 +525,7 @@ const styles: Record<string, React.CSSProperties> = {
   priorityFile: {
     fontSize: 13,
     fontWeight: 700,
-    fontFamily: '"SF Mono", "Fira Code", monospace',
+    fontFamily: 'var(--font-family-mono)',
     marginBottom: 2,
   },
   priorityRole: {
@@ -626,7 +626,7 @@ const styles: Record<string, React.CSSProperties> = {
 
   // Inline code
   inlineCode: {
-    fontFamily: '"SF Mono", "Fira Code", monospace',
+    fontFamily: 'var(--font-family-mono)',
     fontSize: 12,
     fontWeight: 500,
     color: '#71A1F4',

@@ -21,6 +21,12 @@ Figma sync: bringing tokens and typography up to date with the Radiant 3.0 Figma
   - Replaced hardcoded Plain font stacks and `600` / `375` weights with the tokens across components, Spotter, pages and sample prototypes (including `_template` and the `/new-prototype` scaffold, so new prototypes start on Geist)
   - DataModelEditor uses Geist; its bundled Plain font files are removed
   - Rule and skill docs updated to Geist and the new weights
+- Typography component variants (headline, titles, labels) now use the 550 emphasis weight and Figma letter spacing; they were at 500. The Typography page's spec labels match Figma
+- Conditional weights (`active ? 600 : 400`, used on selected tabs) and 45 hardcoded monospace stacks now use the tokens; code text renders in Geist Mono
+- Native buttons, inputs, selects and text areas inherit the page font instead of the browser default (Arial), and `code`, `kbd`, `samp`, `pre` use Geist Mono
+- `npm run figma-tokens:diff` also checks the Typography component's CSS against Figma
+- Added `scripts/visual-snapshots/`: screenshots every page and sample prototype of a build in light and dark, and compares two builds in a review page. Playwright stays outside `package.json`; setup is in its README
+- The token count on the Radiant home page goes from 373 to 392 (new Figma tokens and aliases)
 
 ## 26.9.1c — 2026-09-03
 

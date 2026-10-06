@@ -354,7 +354,7 @@ const styles: Record<string, React.CSSProperties> = {
     transition: 'background 0.15s ease',
   },
   code: {
-    fontFamily: '"SF Mono", Monaco, Inconsolata, monospace',
+    fontFamily: 'var(--font-family-mono)',
     fontSize: '13px',
     lineHeight: '22px',
     color: '#e5e5e5',
@@ -473,7 +473,7 @@ const styles: Record<string, React.CSSProperties> = {
     color: systemColors.light['content-primary'],
   },
   sizeRefPixels: {
-    fontFamily: '"SF Mono", Monaco, Inconsolata, monospace',
+    fontFamily: 'var(--font-family-mono)',
     fontSize: '12px',
     color: systemColors.light['content-secondary'],
   },

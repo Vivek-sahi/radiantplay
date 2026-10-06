@@ -439,7 +439,7 @@ const tooltipStyles: Record<string, React.CSSProperties> = {
     gap: '8px',
   },
   tokenCode: {
-    fontFamily: '"SF Mono", "Monaco", "Inconsolata", monospace',
+    fontFamily: 'var(--font-family-mono)',
     fontSize: '12px',
     color: referenceColors.green['50'],
     backgroundColor: 'rgba(6, 191, 127, 0.15)',
@@ -447,7 +447,7 @@ const tooltipStyles: Record<string, React.CSSProperties> = {
     borderRadius: '3px',
   },
   tokenValue: {
-    fontFamily: '"SF Mono", "Monaco", "Inconsolata", monospace',
+    fontFamily: 'var(--font-family-mono)',
     fontSize: '12px',
     color: systemColors.light['border-default'],
     display: 'flex',

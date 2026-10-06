@@ -500,7 +500,7 @@ export const UsageAdoptionPageContent: React.FC = () => {
                   <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
                     padding: '0 14px 16px', border: 'none', background: 'none',
                     cursor: 'pointer', fontFamily: font, fontSize: '13.5px',
-                    fontWeight: activeTab === tab.id ? 600 : 400,
+                    fontWeight: activeTab === tab.id ? 'var(--font-weight-emphasis)' : 'var(--font-weight-regular)',
                     color: activeTab === tab.id ? brand : '#6B7280',
                     borderBottom: activeTab === tab.id ? `2px solid ${brand}` : '2px solid transparent',
                     marginBottom: '-1px', transition: 'color 0.15s', whiteSpace: 'nowrap',

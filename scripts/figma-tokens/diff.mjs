@@ -299,9 +299,44 @@ tsCss.figmaOnly.push(
   ...drift.dark.tsOnly.map((x) => `TS only (dark): ${x}`),
 );
 
+// ---------------------------------------------------------------- 7. Typography component CSS
+
+const typeCss = newSection('Typography component (Typography.module.css)');
+{
+  const tcss = await fs.readFile(path.join(ROOT, 'src/components/Typography/Typography.module.css'), 'utf8');
+  const val = (body, prop) => {
+    const m = body.match(new RegExp(`${prop}\\s*:\\s*([^;]+);`));
+    return m ? resolveVar(m[1].trim(), cssLight) : undefined;
+  };
+  const toPx = (v, size) => {
+    if (v === undefined) return 0;
+    const s = String(v).trim();
+    if (s.endsWith('em')) return Math.round(parseFloat(s) * size * 1000) / 1000;
+    return Math.round((parseFloat(s) || 0) * 1000) / 1000;
+  };
+  for (const [figName, cls] of Object.entries(rules.typography.styles)) {
+    const f = styles.text[figName];
+    const m = tcss.match(new RegExp(`\\n\\.${cls}\\s*\\{([^}]*)\\}`));
+    if (!m) {
+      typeCss.figmaOnly.push(`${figName} → .${cls}`);
+      continue;
+    }
+    const size = parseFloat(val(m[1], 'font-size'));
+    const checks = [
+      ['size', size, f.size],
+      ['line height', parseFloat(val(m[1], 'line-height')), f.lineHeight],
+      ['weight', Number(val(m[1], 'font-weight')), f.weight],
+      ['letter spacing (px)', toPx(val(m[1], 'letter-spacing'), size), Math.round(((f.letterSpacing.value * f.size) / 100) * 1000) / 1000],
+    ];
+    const bad = checks.filter(([, a, b]) => a !== b);
+    if (!bad.length) typeCss.match.push(figName);
+    else typeCss.differs.push(`${figName} → .${cls}: ${bad.map(([k, a, b]) => `${k} ours ${a} Figma ${b}`).join('; ')}`);
+  }
+}
+
 // ---------------------------------------------------------------- report
 
-const sections = [prim, sem, comp, shadow, type];
+const sections = [prim, sem, comp, shadow, type, typeCss];
 const pad = (s, n) => String(s).padEnd(n);
 console.log(`\nFigma ${rules.figma.fileName} (${rules.figma.fileKey}) vs Radiant Play tokens\n`);
 console.log(`${pad('Area', 44)}${pad('match', 8)}${pad('differs', 9)}${pad('Figma only', 12)}ours only`);

@@ -455,7 +455,7 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     justifyContent: 'center',
     fontWeight: 'var(--font-weight-emphasis)',
-    fontFamily: '"SF Mono", Monaco, monospace',
+    fontFamily: 'var(--font-family-mono)',
   },
   scalesSection: {
     marginBottom: 48,
@@ -506,7 +506,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: 8,
   },
   swatchLevel: {
-    fontFamily: '"SF Mono", Monaco, monospace',
+    fontFamily: 'var(--font-family-mono)',
     fontSize: 12,
     fontWeight: 'var(--font-weight-emphasis)',
   },
@@ -518,13 +518,13 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 2,
   },
   swatchValue: {
-    fontFamily: '"SF Mono", Monaco, monospace',
+    fontFamily: 'var(--font-family-mono)',
     fontSize: 11,
     color: systemColors.light['content-primary'],
     fontWeight: 500,
   },
   swatchToken: {
-    fontFamily: '"SF Mono", Monaco, monospace',
+    fontFamily: 'var(--font-family-mono)',
     fontSize: 10,
     color: systemColors.light['content-secondary'],
   },

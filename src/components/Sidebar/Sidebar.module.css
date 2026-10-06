@@ -154,7 +154,7 @@
 }
 
 .version {
-  font-family: 'SF Mono', Monaco, Inconsolata, monospace;
+  font-family: var(--font-family-mono);
   font-size: 11px;
   color: rgba(255, 255, 255, 0.5);
 }
@@ -268,7 +268,7 @@
 }
 
 .versionNumber {
-  font-family: 'SF Mono', Monaco, Inconsolata, monospace;
+  font-family: var(--font-family-mono);
   font-size: 12px;
   font-weight: var(--font-weight-emphasis);
   color: #2770EF;
@@ -305,7 +305,7 @@
 }
 
 .changeIcon {
-  font-family: 'SF Mono', Monaco, Inconsolata, monospace;
+  font-family: var(--font-family-mono);
   font-size: 12px;
   font-weight: 700;
   width: 14px;

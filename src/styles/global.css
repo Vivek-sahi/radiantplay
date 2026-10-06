@@ -44,6 +44,23 @@ body {
   min-height: 100vh;
 }
 
+/* Native form controls don't inherit the page font; without this they render
+   in the browser default (Arial). Family only, so sizes and weights stay as set. */
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+/* Code elements default to the browser's monospace; use Geist Mono. */
+code,
+kbd,
+samp,
+pre {
+  font-family: var(--font-family-mono);
+}
+
 /* Utility classes */
 .visually-hidden {
   position: absolute;

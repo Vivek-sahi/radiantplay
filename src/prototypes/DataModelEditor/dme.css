@@ -1760,7 +1760,7 @@
   .formula-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: var(--spacing-1); }
   .formula-name { font-size: var(--font-size-sm); font-weight: var(--font-weight-regular); line-height: var(--line-height-md); color: var(--rd-sys-color-content-primary); font-family: var(--font-family-primary); }
   .formula-code-wrap { display: block; }
-  .formula-code { font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; font-size: var(--font-size-xs); line-height: var(--line-height-xs); color: var(--rd-sys-color-content-secondary); white-space: pre-wrap; word-break: break-all; display: inline; }
+  .formula-code { font-family: var(--font-family-mono); font-size: var(--font-size-xs); line-height: var(--line-height-xs); color: var(--rd-sys-color-content-secondary); white-space: pre-wrap; word-break: break-all; display: inline; }
   .formula-show-more {
     color: var(--rd-sys-color-content-brand); font-size: var(--font-size-xs);
     font-family: var(--font-family-primary);

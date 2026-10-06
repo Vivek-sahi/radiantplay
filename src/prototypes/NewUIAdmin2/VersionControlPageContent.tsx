@@ -82,7 +82,7 @@ const Dropdown: React.FC<{ value: string; options: string[]; width?: number; lab
               style={{
                 display: 'block', width: '100%', padding: '10px 16px',
                 border: 'none', textAlign: 'left', fontFamily: font, fontSize: '13.5px',
-                fontWeight: opt === selected ? 500 : 400,
+                fontWeight: opt === selected ? 'var(--font-weight-medium)' : 'var(--font-weight-regular)',
                 color: opt === selected ? brand : '#111827',
                 backgroundColor: opt === selected ? `${brand}10` : 'transparent',
                 cursor: 'pointer', transition: 'background-color 0.1s',
@@ -407,7 +407,7 @@ const SetupWizardModal: React.FC<{
                   style={{
                     display: 'block', width: '100%', padding: '14px 20px',
                     border: 'none', textAlign: 'left', fontFamily: font, fontSize: '13.5px',
-                    fontWeight: org.id === selectedOrgId ? 600 : 400, color: '#111827',
+                    fontWeight: org.id === selectedOrgId ? 'var(--font-weight-emphasis)' : 'var(--font-weight-regular)', color: '#111827',
                     backgroundColor: org.id === selectedOrgId ? '#F5F8FF' : 'transparent',
                     cursor: 'pointer',
                     borderLeft: org.id === selectedOrgId ? `3px solid ${brand}` : '3px solid transparent',

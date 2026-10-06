@@ -91,7 +91,7 @@ const Dropdown: React.FC<{ value: string; options: string[]; width?: number; onC
               style={{
                 display: 'block', width: '100%', padding: '10px 16px',
                 border: 'none', textAlign: 'left', fontFamily: font, fontSize: '13px',
-                fontWeight: opt === selected ? 500 : 400,
+                fontWeight: opt === selected ? 'var(--font-weight-medium)' : 'var(--font-weight-regular)',
                 color: opt === selected ? brand : '#111827',
                 backgroundColor: opt === selected ? `${brand}10` : 'transparent',
                 cursor: 'pointer', transition: 'background-color 0.1s',
@@ -550,7 +550,7 @@ const AddConnectorModal: React.FC<{ onClose: () => void; onSave: () => void }> =
                   style={{
                     display: 'block', width: '100%', padding: '11px 16px',
                     border: 'none', textAlign: 'left', fontFamily: font, fontSize: '13px',
-                    fontWeight: opt === authType ? 500 : 400,
+                    fontWeight: opt === authType ? 'var(--font-weight-medium)' : 'var(--font-weight-regular)',
                     color: opt === authType ? brand : '#111827',
                     backgroundColor: opt === authType ? `${brand}10` : 'transparent',
                     cursor: 'pointer', transition: 'background-color 0.1s',
@@ -832,7 +832,7 @@ export const AISettingsPageContent: React.FC = () => {
               display: 'flex', alignItems: 'center',
               padding: '0 14px', border: 'none', background: 'none',
               cursor: 'pointer', fontFamily: font, fontSize: '13.5px',
-              fontWeight: activeTab === tab.id ? 600 : 400,
+              fontWeight: activeTab === tab.id ? 'var(--font-weight-emphasis)' : 'var(--font-weight-regular)',
               color: activeTab === tab.id ? brand : '#6B7280',
               borderBottom: activeTab === tab.id ? `2px solid ${brand}` : '2px solid transparent',
               marginBottom: '-1px', transition: 'color 0.15s', whiteSpace: 'nowrap',

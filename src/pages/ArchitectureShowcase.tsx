@@ -632,7 +632,7 @@ const styles: Record<string, React.CSSProperties> = {
     marginBottom: '12px',
   },
   tokenExample: {
-    fontFamily: '"SF Mono", "Monaco", "Inconsolata", monospace',
+    fontFamily: 'var(--font-family-mono)',
     fontSize: '12px',
     color: referenceColors.gray['70'],
     backgroundColor: 'rgba(255,255,255,0.7)',
@@ -697,14 +697,14 @@ const styles: Record<string, React.CSSProperties> = {
   codeHeader: {
     padding: '8px 16px',
     backgroundColor: systemColors.light['background-raised-inverse'],
-    fontFamily: '"SF Mono", "Monaco", "Inconsolata", monospace',
+    fontFamily: 'var(--font-family-mono)',
     fontSize: '12px',
     color: systemColors.light['border-default'],
   },
   code: {
     padding: '16px',
     margin: 0,
-    fontFamily: '"SF Mono", "Monaco", "Inconsolata", monospace',
+    fontFamily: 'var(--font-family-mono)',
     fontSize: '13px',
     color: referenceColors.gray['30'],
     lineHeight: '20px',
@@ -763,7 +763,7 @@ const styles: Record<string, React.CSSProperties> = {
     gap: '8px',
   },
   stepCode: {
-    fontFamily: '"SF Mono", "Monaco", "Inconsolata", monospace',
+    fontFamily: 'var(--font-family-mono)',
     fontSize: '11px',
     color: referenceColors.gray['70'],
     backgroundColor: systemColors.light['background-base'],
@@ -891,7 +891,7 @@ const styles: Record<string, React.CSSProperties> = {
     boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
   },
   fileTree: {
-    fontFamily: '"SF Mono", "Monaco", "Inconsolata", monospace',
+    fontFamily: 'var(--font-family-mono)',
     fontSize: '13px',
     lineHeight: '28px',
   },

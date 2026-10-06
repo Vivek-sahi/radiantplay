@@ -488,11 +488,11 @@
   background-clip: padding-box;
 }
 
-/* Code text — Menlo 14/22, no top padding (header carries the gap). */
+/* Code text — Geist Mono 14/22, no top padding (header carries the gap). */
 .pre {
   margin: 0;
   padding: 0 var(--spacing-4, 16px) var(--spacing-3, 12px);
-  font-family: 'Menlo', 'SF Mono', Monaco, 'Fira Mono', monospace;
+  font-family: var(--font-family-mono);
   font-size: var(--font-size-sm, 14px);
   line-height: 22px;
   letter-spacing: -0.056px;

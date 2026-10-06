@@ -91,7 +91,7 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 4,
   },
   fontStack: {
-    fontFamily: '"SF Mono", Monaco, monospace',
+    fontFamily: 'var(--font-family-mono)',
     fontSize: 11,
     color: systemColors.light['content-secondary'],
     marginTop: 8,
@@ -120,7 +120,7 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 4,
   },
   variantCode: {
-    fontFamily: '"SF Mono", Monaco, monospace',
+    fontFamily: 'var(--font-family-mono)',
     fontSize: 12,
     fontWeight: 500,
     color: systemColors.light['content-brand'],
@@ -148,7 +148,7 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 8,
   },
   colorCode: {
-    fontFamily: '"SF Mono", Monaco, monospace',
+    fontFamily: 'var(--font-family-mono)',
     fontSize: 11,
     color: systemColors.light['content-secondary'],
   },
@@ -172,7 +172,7 @@ const styles: Record<string, React.CSSProperties> = {
     overflow: 'auto',
   },
   codeContent: {
-    fontFamily: '"SF Mono", Monaco, monospace',
+    fontFamily: 'var(--font-family-mono)',
     fontSize: 13,
     lineHeight: '22px',
     color: referenceColors.gray['30'],
@@ -209,7 +209,7 @@ const styles: Record<string, React.CSSProperties> = {
     borderBottom: `1px solid ${systemColors.light['background-sunken']}`,
   },
   propsCell: {
-    fontFamily: '"SF Mono", Monaco, monospace',
+    fontFamily: 'var(--font-family-mono)',
     fontSize: 12,
     color: referenceColors.gray['70'],
   },
@@ -260,17 +260,17 @@ const TypographyExample: React.FC<TypographyExampleProps> = ({ variant, label, s
 
 const TypographyPageContent: React.FC = () => {
   const typographyVariants = [
-    { variant: 'headline-large', label: 'Headline Large', specs: '32px / 700 / -0.5px' },
-    { variant: 'page-title', label: 'Page Title', specs: '24px / 600 / -0.25px' },
-    { variant: 'modal-title', label: 'Modal Title', specs: '20px / 600 / 0' },
-    { variant: 'section-label', label: 'Section Label', specs: '18px / 600 / 0' },
-    { variant: 'content-label', label: 'Content Label', specs: '16px / 600 / 0' },
-    { variant: 'content-label-subhead', label: 'Content Label Subhead', specs: '16px / 500 / 0' },
-    { variant: 'body-large', label: 'Body Large', specs: '16px / 400 / 0' },
-    { variant: 'body-normal', label: 'Body Normal', specs: '14px / 400 / 0' },
-    { variant: 'footnote', label: 'Footnote', specs: '12px / 400 / 0' },
-    { variant: 'overline', label: 'OVERLINE', specs: '12px / 600 / 0.5px uppercase' },
-    { variant: 'caption', label: 'Caption', specs: '12px / 400 / 0' },
+    { variant: 'headline-large', label: 'Headline Large', specs: '32px / 550 / 0' },
+    { variant: 'page-title', label: 'Page Title', specs: '24px / 550 / 0' },
+    { variant: 'modal-title', label: 'Modal Title', specs: '20px / 550 / 0' },
+    { variant: 'section-label', label: 'Section Label', specs: '18px / 550 / 0.4%' },
+    { variant: 'content-label', label: 'Content Label', specs: '16px / 550 / 0.4%' },
+    { variant: 'content-label-subhead', label: 'Content Label Subhead', specs: '14px / 550 / 0.6%' },
+    { variant: 'body-large', label: 'Body Large', specs: '16px / 400 / 0.6%' },
+    { variant: 'body-normal', label: 'Body Normal', specs: '14px / 400 / 0.4%' },
+    { variant: 'footnote', label: 'Footnote', specs: '12px / 400 / 0.6%' },
+    { variant: 'overline', label: 'OVERLINE', specs: '12px / 500 / 0.02em uppercase' },
+    { variant: 'caption', label: 'Caption', specs: '12px / 400 / 0.6%' },
   ];
 
   const colorVariants = [
@@ -314,15 +314,15 @@ const TypographyPageContent: React.FC = () => {
         </div>
         <div style={styles.fontCard}>
           <div style={styles.fontPreview}>
-            <span style={{ ...styles.fontSample, fontFamily: '"SF Mono", Monaco, monospace' }}>Aa</span>
+            <span style={{ ...styles.fontSample, fontFamily: 'var(--font-family-mono)' }}>Aa</span>
           </div>
           <div style={styles.fontInfo}>
-            <Typography variant="content-label" noMargin>SF Mono</Typography>
+            <Typography variant="content-label" noMargin>Geist Mono</Typography>
             <Typography variant="footnote" color="gray" noMargin>
               Monospace font for code, tokens, and technical content
             </Typography>
             <code style={styles.fontStack}>
-              "SF Mono", Monaco, Inconsolata, "Roboto Mono", monospace
+              "Geist Mono", "SF Mono", Monaco, Inconsolata, monospace
             </code>
           </div>
         </div>

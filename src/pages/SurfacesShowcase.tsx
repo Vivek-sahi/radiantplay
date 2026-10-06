@@ -512,7 +512,7 @@ const styles: Record<string, React.CSSProperties> = {
     color: systemColors.light['content-primary'],
   },
   cardBadge: {
-    fontFamily: '"SF Mono", Monaco, monospace',
+    fontFamily: 'var(--font-family-mono)',
     fontSize: 11,
     fontWeight: 500,
     color: systemColors.light['content-brand'],
@@ -578,7 +578,7 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 4,
   },
   code: {
-    fontFamily: '"SF Mono", Monaco, Inconsolata, monospace',
+    fontFamily: 'var(--font-family-mono)',
     fontSize: 13,
     lineHeight: '22px',
     color: '#e5e5e5',
@@ -618,7 +618,7 @@ const styles: Record<string, React.CSSProperties> = {
     color: systemColors.light['content-secondary'],
   },
   specValue: {
-    fontFamily: '"SF Mono", Monaco, monospace',
+    fontFamily: 'var(--font-family-mono)',
     fontSize: 12,
     color: systemColors.light['content-primary'],
   },

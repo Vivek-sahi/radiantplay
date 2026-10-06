@@ -500,7 +500,7 @@ const styles: Record<string, React.CSSProperties> = {
     marginBottom: '4px',
   },
   tokenLayerDesc: {
-    fontFamily: '"SF Mono", Monaco, monospace',
+    fontFamily: 'var(--font-family-mono)',
     fontSize: '11px',
     color: systemColors.light['content-secondary'],
     margin: 0,
