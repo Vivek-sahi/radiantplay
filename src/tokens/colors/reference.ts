@@ -148,20 +148,20 @@ export const referenceColors = {
 
   /**
    * Dark Gray — neutral (non-blue-tinted) scale used by dark mode surfaces.
-   * Foundation for Phase 6 dark mode remap; not yet referenced in light mode.
+   * Values from Figma Radiant 3.0 (Color/Dark Gray, synced 2026-10-06).
    */
   darkGray: {
-    '00': '#131416',
-    '05': '#1A1B1E',
-    '10': '#212326',
-    '15': '#282A2E',
-    '20': '#303136',
-    '30': '#43474B',
-    '40': '#585E64',
-    '50': '#73767D',
-    '60': '#8C9196',
-    '70': '#AAADB1',
-    '80': '#C4C6CA',
+    '00': '#18191B',
+    '05': '#1F2024',
+    '10': '#26282C',
+    '15': '#2D2F34',
+    '20': '#34363C',
+    '30': '#46494E',
+    '40': '#5D636A',
+    '50': '#7A7D85',
+    '60': '#9A9EA2',
+    '70': '#AFB2B6',
+    '80': '#C7C9CC',
     '90': '#DFE0E2',
   },
 

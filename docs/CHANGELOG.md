@@ -12,6 +12,7 @@ Figma sync: bringing tokens and typography up to date with the Radiant 3.0 Figma
 - Added tokens from Figma: `button-overlay`, `segmented-control-content-active`, and the `gray-20a`, `brand-10a` and `purple-20a` alpha colours
 - Added Figma's names as aliases next to ours: `background-inverse`, `background-secondary-action`, `content-inverse`, `border-subtle`, `border-bold`, `border-bold-hover`. Nothing is renamed
 - Chip component tokens are now CSS variables (`--rd-comp-color-chip-*`), so CSS Modules can use them
+- Dark mode values now match Figma: the neutral Dark Gray scale (every stop except 90 moved), all 52 semantic and 48 component dark values, and the 22 dark values `tokens.css` was missing. The system-dark (`prefers-color-scheme`) block now matches the dark theme, including shadows. Dark mode isn't switched on anywhere yet, so nothing changes on screen. Tokens Figma doesn't have (`content-alternate`, the `*-inverse` set, links, `background-inset`) keep their older dark values
 
 ## 26.9.1c — 2026-09-03
 
