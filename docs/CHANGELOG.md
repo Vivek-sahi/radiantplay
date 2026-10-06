@@ -27,6 +27,7 @@ Figma sync: bringing tokens and typography up to date with the Radiant 3.0 Figma
 - `npm run figma-tokens:diff` also checks the Typography component's CSS against Figma
 - Added `scripts/visual-snapshots/`: screenshots every page and sample prototype of a build in light and dark, and compares two builds in a review page. Playwright stays outside `package.json`; setup is in its README
 - The token count on the Radiant home page goes from 373 to 392 (new Figma tokens and aliases)
+- Press Ctrl+D anywhere in the app to switch between light and dark mode, for checking the dark tokens. It resets to light on reload
 
 ## 26.9.1c — 2026-09-03
 
