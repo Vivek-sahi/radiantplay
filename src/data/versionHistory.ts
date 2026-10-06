@@ -33,6 +33,11 @@ export const versionHistory: VersionEntry[] = [
     type: 'figma-sync',
     changes: [
       { type: 'added', group: 'Tooling', component: 'Figma token sync', description: 'Snapshot of the Radiant 3.0 Figma variables, text styles and effect styles, plus a diff against the TS tokens and tokens.css (npm run figma-tokens:diff). Tooling only.' },
+      { type: 'synced', group: 'Tokens', component: 'background-base-inverse', description: 'Gray/80 (#323946) per Figma Background/Inverse. Tooltips and the Liveboard edit header get slightly lighter. Undoes the 26.5.4a revert to #1D232F; Figma is now the source of truth.' },
+      { type: 'synced', group: 'Tokens', component: 'Light mode values', description: 'brand/10 is #F2F7FF; button-secondary-pressed, button-tertiary-pressed, toggle-track-on and toggle-thumb-on match Figma.' },
+      { type: 'added', group: 'Tokens', component: 'New Figma tokens', description: 'button-overlay, segmented-control-content-active, and the gray-20a, brand-10a and purple-20a alpha colours.' },
+      { type: 'added', group: 'Tokens', component: 'Figma name aliases', description: 'background-inverse, background-secondary-action, content-inverse, border-subtle, border-bold and border-bold-hover, next to our existing names. Nothing renamed.' },
+      { type: 'added', group: 'Tokens', component: 'Chip CSS variables', description: '--rd-comp-color-chip-* in tokens.css (light, dark and system dark), so CSS Modules can use chip tokens.' },
     ],
   },
   {

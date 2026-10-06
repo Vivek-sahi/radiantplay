@@ -133,7 +133,7 @@ for (const [hue, scale] of Object.entries(tokens.referenceColors)) {
 
 // ---------------------------------------------------------------- 2. semantic + 3. component colours
 
-function compareThemed(section, filter, keyFn, light, dark) {
+function compareThemed(section, filter, keyFn, light, dark, legacy = {}) {
   const seen = new Set();
   for (const [name, v] of Object.entries(variables)) {
     if (v.collection !== 'Theme' || !filter(name)) continue;
@@ -157,7 +157,14 @@ function compareThemed(section, filter, keyFn, light, dark) {
       section.differs.push(`${name} → ${key}: ${parts.join('; ')}`);
     }
   }
-  for (const key of Object.keys(light)) if (!seen.has(key)) section.oursOnly.push(key);
+  for (const key of Object.keys(light)) {
+    if (seen.has(key)) continue;
+    const target = legacy[key];
+    if (!target) section.oursOnly.push(key);
+    else if (light[key] !== light[target] || dark[key] !== dark[target]) {
+      section.differs.push(`${key}: legacy name no longer equals its Figma alias ${target}`);
+    }
+  }
   return section;
 }
 
@@ -170,6 +177,7 @@ const sem = compareThemed(
   semanticKey,
   tokens.systemColors.light,
   tokens.systemColors.dark,
+  rules.semantic.legacy,
 );
 const comp = compareThemed(
   newSection('Component colours (rdComponentColors)'),

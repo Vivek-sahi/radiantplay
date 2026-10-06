@@ -10,9 +10,12 @@
  * using Material Color Utilities tone mappings.
  *
  * SCSS map names: $rd-sys-color-map, $rd-sys-color-map-dark
+ *
+ * Figma Radiant 3.0 names that differ from ours are added as aliases
+ * (see figmaNameAliases below), so either name works. Nothing is renamed.
  */
 
-export const systemColors = {
+const baseSystemColors = {
   light: {
     // Background (15 original + 9 accents = 24)
     'background-base': '#FFFFFF',
@@ -22,7 +25,7 @@ export const systemColors = {
     'background-inset': '#C0C6CF',
     'background-brand': '#2770EF',
     'background-overlay': '#1F2632CC',          // was rgba(29,35,47,0.5) — Phase 2 fix
-    'background-base-inverse': '#1D232F',       // Matches production --ts-var-liveboard-edit-bar-background (Gray/90). Phase 2 had #323946 but production never aligned.
+    'background-base-inverse': '#323946',       // Gray/80, Figma Background/Inverse. Was #1D232F to match the production Liveboard edit bar (c7d04ac0); Figma is the source of truth
     'background-raised-inverse': '#323946',
     'background-success': '#E0F8EF',
     'background-warning': '#FFF8E5',
@@ -159,6 +162,35 @@ export const systemColors = {
     'border-accent-gray': '#777E8B',
     'border-accent-purple': '#8C62F5',
   },
+} as const;
+
+/**
+ * Figma Radiant 3.0 token name → our existing token it equals.
+ * Aliases resolve to the same value in each mode.
+ */
+export const figmaNameAliases = {
+  'background-inverse': 'background-base-inverse',
+  'background-secondary-action': 'background-subtle',
+  'content-inverse': 'content-primary-inverse',
+  'border-subtle': 'border-divider',
+  'border-bold': 'border-default',
+  'border-bold-hover': 'border-hover',
+} as const satisfies Record<string, keyof typeof baseSystemColors.light>;
+
+type WithFigmaAliases<M> = M & { readonly [K in keyof typeof figmaNameAliases]: string };
+
+function withFigmaAliases<M extends Record<keyof typeof baseSystemColors.light, string>>(
+  mode: M,
+): WithFigmaAliases<M> {
+  const aliases = Object.fromEntries(
+    Object.entries(figmaNameAliases).map(([alias, source]) => [alias, mode[source]]),
+  );
+  return { ...mode, ...aliases } as WithFigmaAliases<M>;
+}
+
+export const systemColors = {
+  light: withFigmaAliases(baseSystemColors.light),
+  dark: withFigmaAliases(baseSystemColors.dark),
 } as const;
 
 export type SystemColors = typeof systemColors;

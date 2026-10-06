@@ -4,7 +4,14 @@
 
 Figma sync: bringing tokens and typography up to date with the Radiant 3.0 Figma design system. In progress on `feat/figma-sync`.
 
-- Added `scripts/figma-tokens/`: a snapshot of the Figma design system's variables, text styles and effect styles, and a diff that compares it with `src/tokens/*` and `src/styles/tokens.css`. Run `npm run figma-tokens:diff`; refresh steps are in its README. Tooling only, no product changes yet
+- Added `scripts/figma-tokens/`: a snapshot of the Figma design system's variables, text styles and effect styles, and a diff that compares it with `src/tokens/*` and `src/styles/tokens.css`. Run `npm run figma-tokens:diff`; refresh steps are in its README. Tooling only
+- Light mode tokens now match Figma:
+  - `background-base-inverse` is Gray/80 (`#323946`) per Figma `Background/Inverse`. Tooltips and the Liveboard edit header get slightly lighter. This undoes the 26.5.4a revert to `#1D232F`, which had matched the production edit bar; Figma is now the source of truth
+  - `brand/10` is `#F2F7FF` (was `#EBF2FD`)
+  - Component tokens: `button-secondary-pressed`, `button-tertiary-pressed`, `toggle-track-on` and `toggle-thumb-on` match Figma. No component reads these tokens yet, so nothing changes on screen
+- Added tokens from Figma: `button-overlay`, `segmented-control-content-active`, and the `gray-20a`, `brand-10a` and `purple-20a` alpha colours
+- Added Figma's names as aliases next to ours: `background-inverse`, `background-secondary-action`, `content-inverse`, `border-subtle`, `border-bold`, `border-bold-hover`. Nothing is renamed
+- Chip component tokens are now CSS variables (`--rd-comp-color-chip-*`), so CSS Modules can use them
 
 ## 26.9.1c — 2026-09-03
 

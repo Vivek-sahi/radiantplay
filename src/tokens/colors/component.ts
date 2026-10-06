@@ -1,7 +1,7 @@
 /**
  * Component Color Tokens
  *
- * Per-component tokens for button, chip, and toggle.
+ * Per-component tokens for button, chip, toggle and segmented control.
  * Mode-aware with separate light and dark maps.
  *
  * SCSS map names: $rd-comp-color-map, $rd-comp-color-map-dark
@@ -9,7 +9,7 @@
 
 export const rdComponentColors = {
   light: {
-    // Button (11)
+    // Button (12)
     'button-primary-default': '#2770EF',
     'button-primary-hover': '#2359B6',
     'button-primary-pressed': '#163772',
@@ -18,9 +18,10 @@ export const rdComponentColors = {
     'button-primary-on-color-pressed': '#CEDCF5',
     'button-secondary-default': '#EAEDF2',
     'button-secondary-hover': '#DBDFE7',
-    'button-secondary-pressed': '#DEE8FA',
+    'button-secondary-pressed': '#C0C6CF',
     'button-tertiary-hover': 'rgba(192, 198, 207, 0.12)',
-    'button-tertiary-pressed': 'rgba(192, 198, 207, 0.24)',
+    'button-tertiary-pressed': '#71A1F41F',
+    'button-overlay': '#20293A99',
 
     // Chip - Loading (1)
     'chip-loading-default': '#F6F8FA',
@@ -68,14 +69,17 @@ export const rdComponentColors = {
 
     // Toggle (5)
     'toggle-track-off': '#C0C6CF',
-    'toggle-track-on': '#2770EF',
+    'toggle-track-on': '#CEDCF5',
     'toggle-thumb-off': '#FFFFFF',
-    'toggle-thumb-on': '#FFFFFF',
+    'toggle-thumb-on': '#2770EF',
     'toggle-thumb-outline-off': '#DBDFE7',
+
+    // Segmented control (1)
+    'segmented-control-content-active': '#2770EF',
   },
 
   dark: {
-    // Button (11)
+    // Button (12)
     'button-primary-default': '#2770EF',
     'button-primary-hover': '#71A1F4',
     'button-primary-pressed': '#ABC7F9',
@@ -87,6 +91,7 @@ export const rdComponentColors = {
     'button-secondary-pressed': 'rgba(39, 112, 239, 0.3)',
     'button-tertiary-hover': 'rgba(119, 126, 139, 0.24)',
     'button-tertiary-pressed': 'rgba(119, 126, 139, 0.36)',
+    'button-overlay': '#EAEDF299',
 
     // Chip - Loading (1)
     'chip-loading-default': '#323946',
@@ -138,6 +143,9 @@ export const rdComponentColors = {
     'toggle-thumb-off': '#A5ACB9',
     'toggle-thumb-on': '#FFFFFF',
     'toggle-thumb-outline-off': '#4A515E',
+
+    // Segmented control (1)
+    'segmented-control-content-active': '#DFE0E2',
   },
 } as const;
 

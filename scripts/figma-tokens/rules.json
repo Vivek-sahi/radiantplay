@@ -11,14 +11,15 @@
   "sourceOfTruth": "figma",
 
   "semantic": {
-    "$comment": "Figma Theme names Background/*, Content/*, Border/* map to systemColors keys by lowercasing and joining with '-'. Overrides cover names that differ today. Figma names are added as aliases next to ours; nothing is renamed in this pass.",
-    "overrides": {
-      "Border/Subtle": "border-divider",
-      "Border/Bold": "border-default",
-      "Border/Bold Hover": "border-hover",
-      "Background/Inverse": "background-base-inverse",
-      "Content/Inverse": "content-primary-inverse",
-      "Background/Secondary Action": "background-subtle"
+    "$comment": "Figma Theme names Background/*, Content/*, Border/* map to systemColors keys by lowercasing and joining with '-'. Where Figma's name differs from ours, systemColors carries the Figma name as an alias (figmaNameAliases in src/tokens/colors/system.ts) and our older name is listed under legacy. Nothing is renamed in this pass.",
+    "overrides": {},
+    "legacy": {
+      "background-base-inverse": "background-inverse",
+      "background-subtle": "background-secondary-action",
+      "content-primary-inverse": "content-inverse",
+      "border-divider": "border-subtle",
+      "border-default": "border-bold",
+      "border-hover": "border-bold-hover"
     }
   },
 

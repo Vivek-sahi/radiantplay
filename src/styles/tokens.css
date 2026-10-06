@@ -150,8 +150,11 @@
   --rd-ref-color-gray-70a: #1F2632CC;       /* 80% */
   --rd-ref-color-gray-60a: #20293A99;       /* 60% */
   --rd-ref-color-gray-40a: #16223A42;       /* 26% */
+  --rd-ref-color-gray-20a: #EAEDF299;       /* 60% */
   --rd-ref-color-gray-10a: #C0C6CF1F;       /* 12% */
   --rd-ref-color-blue-10a: #71A1F41F;       /* 12% */
+  --rd-ref-color-brand-10a: #71A1F41F;      /* 12% */
+  --rd-ref-color-purple-20a: #B094F82E;     /* 18% */
   --rd-ref-color-dark-gray-30a: #00030ABA;  /* 73% */
 
 }
@@ -170,7 +173,7 @@
   --rd-sys-color-background-inset: #C0C6CF;
   --rd-sys-color-background-brand: #2770EF;
   --rd-sys-color-background-overlay: #1F2632CC;             /* Phase 2 fix */
-  --rd-sys-color-background-base-inverse: #1D232F;          /* Matches production --ts-var-liveboard-edit-bar-background */
+  --rd-sys-color-background-base-inverse: #323946;          /* Gray/80, Figma Background/Inverse (was #1D232F, c7d04ac0) */
   --rd-sys-color-background-raised-inverse: #323946;
   --rd-sys-color-background-success: #E0F8EF;
   --rd-sys-color-background-warning: #FFF8E5;
@@ -241,17 +244,60 @@
   --rd-comp-color-button-primary-on-color-pressed: #CEDCF5;
   --rd-comp-color-button-secondary-default: #EAEDF2;
   --rd-comp-color-button-secondary-hover: #DBDFE7;
-  --rd-comp-color-button-secondary-pressed: #DEE8FA;
+  --rd-comp-color-button-secondary-pressed: #C0C6CF;
   --rd-comp-color-button-tertiary-hover: rgba(192, 198, 207, 0.12);
-  --rd-comp-color-button-tertiary-pressed: rgba(192, 198, 207, 0.24);
+  --rd-comp-color-button-tertiary-pressed: #71A1F41F;
+  --rd-comp-color-button-overlay: #20293A99;
 
   /* ---- New Component Tokens: Toggle ---- */
   --rd-comp-color-toggle-track-off: #C0C6CF;
-  --rd-comp-color-toggle-track-on: #2770EF;
+  --rd-comp-color-toggle-track-on: #CEDCF5;
   --rd-comp-color-toggle-thumb-off: #FFFFFF;
-  --rd-comp-color-toggle-thumb-on: #FFFFFF;
+  --rd-comp-color-toggle-thumb-on: #2770EF;
   --rd-comp-color-toggle-thumb-outline-off: #DBDFE7;
 
+  /* ---- Component Tokens: Segmented control ---- */
+  --rd-comp-color-segmented-control-content-active: #2770EF;
+
+  /* ---- Component Tokens: Chip ---- */
+  --rd-comp-color-chip-loading-default: #F6F8FA;
+  --rd-comp-color-chip-attribute-default: #DEE8FA;
+  --rd-comp-color-chip-attribute-hover: #CEDCF5;
+  --rd-comp-color-chip-attribute-pressed: #ABC7F9;
+  --rd-comp-color-chip-attribute-icon: #2770EF;
+  --rd-comp-color-chip-attribute-active-border: #CEDCF5;
+  --rd-comp-color-chip-measure-default: #E0F8EF;
+  --rd-comp-color-chip-measure-hover: #C7F2E3;
+  --rd-comp-color-chip-measure-pressed: #9BE5CB;
+  --rd-comp-color-chip-measure-icon: #06BF7F;
+  --rd-comp-color-chip-measure-active-border: #C7F2E3;
+  --rd-comp-color-chip-filter-default: #EAEDF2;
+  --rd-comp-color-chip-filter-hover: #DBDFE7;
+  --rd-comp-color-chip-filter-pressed: #C0C6CF;
+  --rd-comp-color-chip-filter-icon: #777E8B;
+  --rd-comp-color-chip-filter-active-border: #DBDFE7;
+  --rd-comp-color-chip-date-default: #F0EBFF;
+  --rd-comp-color-chip-date-hover: #E3D9FC;
+  --rd-comp-color-chip-date-pressed: #D1C0FB;
+  --rd-comp-color-chip-date-icon: #8C62F5;
+  --rd-comp-color-chip-date-active-border: #E3D9FC;
+  --rd-comp-color-chip-input-default: #FFFFFF;
+  --rd-comp-color-chip-input-hover: #F6F8FA;
+  --rd-comp-color-chip-input-pressed: #EAEDF2;
+  --rd-comp-color-chip-input-selected-default: #4A515E;
+  --rd-comp-color-chip-input-selected-hover: #323946;
+  --rd-comp-color-chip-input-selected-pressed: #1D232F;
+  --rd-comp-color-chip-error-default: #FFEBEC;
+  --rd-comp-color-chip-error-hover: #FCD4D7;
+  --rd-comp-color-chip-error-active-border: #DBDFE7;
+
+  /* ---- Figma Radiant 3.0 names (aliases of the tokens above) ---- */
+  --rd-sys-color-background-inverse: var(--rd-sys-color-background-base-inverse);
+  --rd-sys-color-background-secondary-action: var(--rd-sys-color-background-subtle);
+  --rd-sys-color-content-inverse: var(--rd-sys-color-content-primary-inverse);
+  --rd-sys-color-border-subtle: var(--rd-sys-color-border-divider);
+  --rd-sys-color-border-bold: var(--rd-sys-color-border-default);
+  --rd-sys-color-border-bold-hover: var(--rd-sys-color-border-hover);
 }
 
 /* ============================================
@@ -324,6 +370,7 @@
   --rd-comp-color-button-secondary-pressed: rgba(39, 112, 239, 0.3);
   --rd-comp-color-button-tertiary-hover: rgba(119, 126, 139, 0.24);
   --rd-comp-color-button-tertiary-pressed: rgba(119, 126, 139, 0.36);
+  --rd-comp-color-button-overlay: #EAEDF299;
 
   /* ---- New Component Tokens: Toggle ---- */
   --rd-comp-color-toggle-track-off: #777E8B;
@@ -331,6 +378,41 @@
   --rd-comp-color-toggle-thumb-off: #A5ACB9;
   --rd-comp-color-toggle-thumb-on: #FFFFFF;
   --rd-comp-color-toggle-thumb-outline-off: #4A515E;
+
+  /* ---- Component Tokens: Segmented control ---- */
+  --rd-comp-color-segmented-control-content-active: #DFE0E2;
+
+  /* ---- Component Tokens: Chip ---- */
+  --rd-comp-color-chip-loading-default: #323946;
+  --rd-comp-color-chip-attribute-default: rgba(39, 112, 239, 0.2);
+  --rd-comp-color-chip-attribute-hover: rgba(39, 112, 239, 0.3);
+  --rd-comp-color-chip-attribute-pressed: rgba(39, 112, 239, 0.4);
+  --rd-comp-color-chip-attribute-icon: #71A1F4;
+  --rd-comp-color-chip-attribute-active-border: #71A1F4;
+  --rd-comp-color-chip-measure-default: rgba(6, 191, 127, 0.2);
+  --rd-comp-color-chip-measure-hover: rgba(6, 191, 127, 0.3);
+  --rd-comp-color-chip-measure-pressed: rgba(6, 191, 127, 0.4);
+  --rd-comp-color-chip-measure-icon: #56D3A8;
+  --rd-comp-color-chip-measure-active-border: #56D3A8;
+  --rd-comp-color-chip-filter-default: #4A515E;
+  --rd-comp-color-chip-filter-hover: #323946;
+  --rd-comp-color-chip-filter-pressed: #777E8B;
+  --rd-comp-color-chip-filter-icon: #A5ACB9;
+  --rd-comp-color-chip-filter-active-border: #777E8B;
+  --rd-comp-color-chip-date-default: rgba(140, 98, 245, 0.2);
+  --rd-comp-color-chip-date-hover: rgba(140, 98, 245, 0.3);
+  --rd-comp-color-chip-date-pressed: rgba(140, 98, 245, 0.4);
+  --rd-comp-color-chip-date-icon: #B094F8;
+  --rd-comp-color-chip-date-active-border: #B094F8;
+  --rd-comp-color-chip-input-default: #323946;
+  --rd-comp-color-chip-input-hover: #4A515E;
+  --rd-comp-color-chip-input-pressed: #777E8B;
+  --rd-comp-color-chip-input-selected-default: #A5ACB9;
+  --rd-comp-color-chip-input-selected-hover: #C0C6CF;
+  --rd-comp-color-chip-input-selected-pressed: #DBDFE7;
+  --rd-comp-color-chip-error-default: rgba(226, 43, 61, 0.2);
+  --rd-comp-color-chip-error-hover: rgba(226, 43, 61, 0.3);
+  --rd-comp-color-chip-error-active-border: #777E8B;
 }
 
 /* ============================================
@@ -399,6 +481,7 @@
     --rd-comp-color-button-secondary-pressed: rgba(39, 112, 239, 0.3);
     --rd-comp-color-button-tertiary-hover: rgba(119, 126, 139, 0.24);
     --rd-comp-color-button-tertiary-pressed: rgba(119, 126, 139, 0.36);
+    --rd-comp-color-button-overlay: #EAEDF299;
 
     /* ---- New Component Tokens: Toggle ---- */
     --rd-comp-color-toggle-track-off: #777E8B;
@@ -406,6 +489,41 @@
     --rd-comp-color-toggle-thumb-off: #A5ACB9;
     --rd-comp-color-toggle-thumb-on: #FFFFFF;
     --rd-comp-color-toggle-thumb-outline-off: #4A515E;
+
+    /* ---- Component Tokens: Segmented control ---- */
+    --rd-comp-color-segmented-control-content-active: #DFE0E2;
+
+    /* ---- Component Tokens: Chip ---- */
+    --rd-comp-color-chip-loading-default: #323946;
+    --rd-comp-color-chip-attribute-default: rgba(39, 112, 239, 0.2);
+    --rd-comp-color-chip-attribute-hover: rgba(39, 112, 239, 0.3);
+    --rd-comp-color-chip-attribute-pressed: rgba(39, 112, 239, 0.4);
+    --rd-comp-color-chip-attribute-icon: #71A1F4;
+    --rd-comp-color-chip-attribute-active-border: #71A1F4;
+    --rd-comp-color-chip-measure-default: rgba(6, 191, 127, 0.2);
+    --rd-comp-color-chip-measure-hover: rgba(6, 191, 127, 0.3);
+    --rd-comp-color-chip-measure-pressed: rgba(6, 191, 127, 0.4);
+    --rd-comp-color-chip-measure-icon: #56D3A8;
+    --rd-comp-color-chip-measure-active-border: #56D3A8;
+    --rd-comp-color-chip-filter-default: #4A515E;
+    --rd-comp-color-chip-filter-hover: #323946;
+    --rd-comp-color-chip-filter-pressed: #777E8B;
+    --rd-comp-color-chip-filter-icon: #A5ACB9;
+    --rd-comp-color-chip-filter-active-border: #777E8B;
+    --rd-comp-color-chip-date-default: rgba(140, 98, 245, 0.2);
+    --rd-comp-color-chip-date-hover: rgba(140, 98, 245, 0.3);
+    --rd-comp-color-chip-date-pressed: rgba(140, 98, 245, 0.4);
+    --rd-comp-color-chip-date-icon: #B094F8;
+    --rd-comp-color-chip-date-active-border: #B094F8;
+    --rd-comp-color-chip-input-default: #323946;
+    --rd-comp-color-chip-input-hover: #4A515E;
+    --rd-comp-color-chip-input-pressed: #777E8B;
+    --rd-comp-color-chip-input-selected-default: #A5ACB9;
+    --rd-comp-color-chip-input-selected-hover: #C0C6CF;
+    --rd-comp-color-chip-input-selected-pressed: #DBDFE7;
+    --rd-comp-color-chip-error-default: rgba(226, 43, 61, 0.2);
+    --rd-comp-color-chip-error-hover: rgba(226, 43, 61, 0.3);
+    --rd-comp-color-chip-error-active-border: #777E8B;
   }
 }
 
