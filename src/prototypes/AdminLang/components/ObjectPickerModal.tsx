@@ -138,9 +138,9 @@ export const ObjectPickerModal: React.FC<ObjectPickerModalProps> = ({
               onChange={handleSelectAll}
             />
           </div>
-          <div style={{ ...s.colName, fontWeight: 600 }}>Name</div>
-          <div style={{ ...s.colOwner, fontWeight: 600 }}>Owner</div>
-          <div style={{ ...s.colType, fontWeight: 600 }}>Type</div>
+          <div style={{ ...s.colName, fontWeight: 'var(--font-weight-emphasis)' }}>Name</div>
+          <div style={{ ...s.colOwner, fontWeight: 'var(--font-weight-emphasis)' }}>Owner</div>
+          <div style={{ ...s.colType, fontWeight: 'var(--font-weight-emphasis)' }}>Type</div>
         </div>
 
         {/* Data rows */}

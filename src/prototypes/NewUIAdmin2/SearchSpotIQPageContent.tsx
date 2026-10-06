@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { systemColors, referenceColors } from '../../tokens/colors';
 import { ConfirmDialog } from './ConfirmDialog';
 
-const font = '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+const font = 'var(--font-family-primary)';
 const brand = systemColors.light['content-brand'];
 
 // ─── Toggle ───────────────────────────────────────────────────────────────────
@@ -171,12 +171,12 @@ const Section: React.FC<{
             style={{ flexShrink: 0, transform: isOpen ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.22s ease' }}>
             <path d="M3 5.5l4 4 4-4" stroke="#6B7280" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
-          <span style={{ fontSize: '14px', fontWeight: 600, color: '#111827', fontFamily: font }}>{title}</span>
+          <span style={{ fontSize: '14px', fontWeight: 'var(--font-weight-emphasis)', color: '#111827', fontFamily: font }}>{title}</span>
           {subtitle && <span style={{ fontSize: '12.5px', color: '#9CA3AF', fontFamily: font, fontWeight: 400 }}>{subtitle}</span>}
         </button>
       ) : (
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
-          <span style={{ fontSize: '14px', fontWeight: 600, color: '#111827', fontFamily: font }}>{title}</span>
+          <span style={{ fontSize: '14px', fontWeight: 'var(--font-weight-emphasis)', color: '#111827', fontFamily: font }}>{title}</span>
           {subtitle && <span style={{ fontSize: '12.5px', color: '#9CA3AF', fontFamily: font, fontWeight: 400 }}>{subtitle}</span>}
         </div>
       )}

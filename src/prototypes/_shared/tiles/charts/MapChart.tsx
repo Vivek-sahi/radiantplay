@@ -46,7 +46,7 @@ export const MapChart: React.FC<Props> = ({ height }) => {
         fontFamily: chartFont,
         fontSize: 10,
         color: '#fff',
-        fontWeight: 600,
+        fontWeight: 550,
         position: 'inside',
       },
     })),

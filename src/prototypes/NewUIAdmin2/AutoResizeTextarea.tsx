@@ -10,7 +10,7 @@ import { systemColors } from '@tokens/colors';
 //   overflow   : scrollable once content exceeds 104px
 //   line-height: 20px
 
-const font = '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+const font = 'var(--font-family-primary)';
 const MIN_HEIGHT = 32;
 const MAX_HEIGHT = 104;
 

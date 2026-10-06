@@ -377,7 +377,7 @@ const s: Record<string, React.CSSProperties> = {
   },
   bandLabel: {
     fontSize: 10,
-    fontWeight: fontWeight.semibold,
+    fontWeight: fontWeight.emphasis,
     fontVariantNumeric: 'tabular-nums',
     letterSpacing: '0.02em',
   },
@@ -450,14 +450,14 @@ const s: Record<string, React.CSSProperties> = {
     margin: `0 0 ${spacing.B}px`,
     fontSize: fontSize.xl,
     lineHeight: `${lineHeight.xl}px`,
-    fontWeight: fontWeight.semibold,
+    fontWeight: fontWeight.emphasis,
     color: 'var(--rd-sys-color-content-primary)',
   },
   h3: {
     margin: `${spacing.E}px 0 ${spacing.A}px`,
     fontSize: fontSize.lg,
     lineHeight: `${lineHeight.lg}px`,
-    fontWeight: fontWeight.semibold,
+    fontWeight: fontWeight.emphasis,
     color: 'var(--rd-sys-color-content-primary)',
   },
   body: {

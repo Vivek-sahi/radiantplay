@@ -28,7 +28,7 @@ export const referenceColors = {
 
   brand: {
     '00': '#FFFFFF',
-    '10': '#EBF2FD',
+    '10': '#F2F7FF',  // Figma Brand/10 (was #EBF2FD)
     '20': '#DEE8FA',
     '30': '#CEDCF5',
     '40': '#ABC7F9',
@@ -148,20 +148,20 @@ export const referenceColors = {
 
   /**
    * Dark Gray — neutral (non-blue-tinted) scale used by dark mode surfaces.
-   * Foundation for Phase 6 dark mode remap; not yet referenced in light mode.
+   * Values from Figma Radiant 3.0 (Color/Dark Gray, synced 2026-10-06).
    */
   darkGray: {
-    '00': '#131416',
-    '05': '#1A1B1E',
-    '10': '#212326',
-    '15': '#282A2E',
-    '20': '#303136',
-    '30': '#43474B',
-    '40': '#585E64',
-    '50': '#73767D',
-    '60': '#8C9196',
-    '70': '#AAADB1',
-    '80': '#C4C6CA',
+    '00': '#18191B',
+    '05': '#1F2024',
+    '10': '#26282C',
+    '15': '#2D2F34',
+    '20': '#34363C',
+    '30': '#46494E',
+    '40': '#5D636A',
+    '50': '#7A7D85',
+    '60': '#9A9EA2',
+    '70': '#AFB2B6',
+    '80': '#C7C9CC',
     '90': '#DFE0E2',
   },
 
@@ -173,8 +173,11 @@ export const referenceColors = {
     'gray-70a': '#1F2632CC',      // 80%
     'gray-60a': '#20293A99',      // 60%
     'gray-40a': '#16223A42',      // 26%
+    'gray-20a': '#EAEDF299',      // 60%
     'gray-10a': '#C0C6CF1F',      // 12%
     'blue-10a': '#71A1F41F',      // 12%
+    'brand-10a': '#71A1F41F',     // 12%
+    'purple-20a': '#B094F82E',    // 18%
     'dark-gray-30a': '#00030ABA', // 73%
   },
 

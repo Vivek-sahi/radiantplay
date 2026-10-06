@@ -76,7 +76,7 @@
   border: none;
   background: transparent;
   font-family: inherit;
-  font-weight: var(--font-weight-light);
+  font-weight: var(--font-weight-regular);
   color: var(--rd-sys-color-content-secondary);
   cursor: pointer;
   border-radius: 9999px;

@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { systemColors } from '../../tokens/colors';
 
-const font = '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+const font = 'var(--font-family-primary)';
 const brand = systemColors.light['content-brand'];
 
 const Toggle: React.FC<{ checked: boolean; onChange: () => void }> = ({ checked, onChange }) => (
@@ -168,7 +168,7 @@ const FeatureRow: React.FC<FeatureItem> = ({ label, orgs, orgsExtra, extraOrgsLi
       padding: '16px 20px',
     }}>
       {/* Label row */}
-      <div style={{ fontSize: '14px', fontWeight: 600, color: '#111827', fontFamily: font, marginBottom: '8px' }}>
+      <div style={{ fontSize: '14px', fontWeight: 'var(--font-weight-emphasis)', color: '#111827', fontFamily: font, marginBottom: '8px' }}>
         {label}
       </div>
 
@@ -322,7 +322,7 @@ const EarlyAccessRow: React.FC<EarlyFeature> = ({ label, defaultEnabled, orgs = 
         gap: '16px', padding: '18px 20px',
         borderBottom: (enabled && orgs.length > 0) ? '1px solid #E5E7EB' : 'none',
       }}>
-        <span style={{ fontSize: '14px', fontWeight: 600, color: '#111827', fontFamily: font }}>
+        <span style={{ fontSize: '14px', fontWeight: 'var(--font-weight-emphasis)', color: '#111827', fontFamily: font }}>
           {label}
         </span>
         <button onClick={() => setEnabled(!enabled)} role="switch" aria-checked={enabled}
@@ -470,7 +470,7 @@ const PrimaryOrgFeatureRow: React.FC<{ label: string; description: string; defau
       backgroundColor: '#FFFFFF', border: '1px solid #E9EAEC', borderRadius: '8px',
     }}>
       <div style={{ flex: 1 }}>
-        <div style={{ fontSize: '13.5px', fontWeight: 600, color: '#111827', fontFamily: font, lineHeight: 1.4 }}>{label}</div>
+        <div style={{ fontSize: '13.5px', fontWeight: 'var(--font-weight-emphasis)', color: '#111827', fontFamily: font, lineHeight: 1.4 }}>{label}</div>
         <div style={{ fontSize: '12.5px', color: '#9CA3AF', fontFamily: font, marginTop: '3px', lineHeight: 1.5 }}>{description}</div>
       </div>
       <Toggle checked={enabled} onChange={() => setEnabled(!enabled)} />
@@ -570,7 +570,7 @@ export const FeatureManagementPageContent: React.FC<{ scope?: 'all-orgs' | 'prim
             <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
               padding: '0 14px 16px', border: 'none', background: 'none',
               cursor: 'pointer', fontFamily: font, fontSize: '13.5px',
-              fontWeight: activeTab === tab.id ? 600 : 400,
+              fontWeight: activeTab === tab.id ? 'var(--font-weight-emphasis)' : 'var(--font-weight-regular)',
               color: activeTab === tab.id ? brand : '#6B7280',
               borderBottom: activeTab === tab.id ? `2px solid ${brand}` : '2px solid transparent',
               marginBottom: '-1px', transition: 'color 0.15s', whiteSpace: 'nowrap',

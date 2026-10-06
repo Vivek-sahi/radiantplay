@@ -28,6 +28,25 @@ export interface VersionEntry {
  */
 export const versionHistory: VersionEntry[] = [
   {
+    version: '26.10.1a',
+    date: '2026-10-06',
+    type: 'figma-sync',
+    changes: [
+      { type: 'added', group: 'Tooling', component: 'Figma token sync', description: 'Snapshot of the Radiant 3.0 Figma variables, text styles and effect styles, plus a diff against the TS tokens and tokens.css (npm run figma-tokens:diff). Tooling only.' },
+      { type: 'synced', group: 'Tokens', component: 'background-base-inverse', description: 'Gray/80 (#323946) per Figma Background/Inverse. Tooltips and the Liveboard edit header get slightly lighter. Undoes the 26.5.4a revert to #1D232F; Figma is now the source of truth.' },
+      { type: 'synced', group: 'Tokens', component: 'Light mode values', description: 'brand/10 is #F2F7FF; button-secondary-pressed, button-tertiary-pressed, toggle-track-on and toggle-thumb-on match Figma.' },
+      { type: 'added', group: 'Tokens', component: 'New Figma tokens', description: 'button-overlay, segmented-control-content-active, and the gray-20a, brand-10a and purple-20a alpha colours.' },
+      { type: 'added', group: 'Tokens', component: 'Figma name aliases', description: 'background-inverse, background-secondary-action, content-inverse, border-subtle, border-bold and border-bold-hover, next to our existing names. Nothing renamed.' },
+      { type: 'added', group: 'Tokens', component: 'Chip CSS variables', description: '--rd-comp-color-chip-* in tokens.css (light, dark and system dark), so CSS Modules can use chip tokens.' },
+      { type: 'synced', group: 'Typography', component: 'Geist', description: 'Geist and Geist Mono variable fonts, self-hosted and preloaded. Headings and labels at the new emphasis weight (550), body at 400, letter spacing per Figma. semibold and light remain as deprecated aliases (550 and 400).' },
+      { type: 'modified', group: 'Typography', component: 'Hardcoded fonts and weights', description: 'Plain font stacks and 600/375 weights replaced with tokens across components, Spotter, pages, sample prototypes, the prototype template and the scaffold. DataModelEditor switched to Geist; its Plain font files removed.' },
+      { type: 'modified', group: 'Typography', component: 'Typography', description: 'Headline, title and label variants at the 550 emphasis weight with Figma letter spacing (were 500). Spec labels on the Typography page match Figma.' },
+      { type: 'modified', group: 'Typography', component: 'Global font rules', description: 'Form controls inherit the page font instead of Arial; code elements use Geist Mono; conditional weights and hardcoded monospace stacks use tokens.' },
+      { type: 'added', group: 'Tooling', component: 'Visual snapshots', description: 'Screenshot every page and sample prototype in light and dark, and compare two builds side by side (scripts/visual-snapshots). Playwright stays outside package.json.' },
+      { type: 'synced', group: 'Dark mode', component: 'Dark values', description: 'Dark Gray scale, 52 semantic and 48 component dark values match Figma; 22 missing dark values added to tokens.css; system-dark block matches the dark theme including shadows. Not visible until dark mode is switched on.' },
+    ],
+  },
+  {
     version: '26.9.1c',
     date: '2026-09-03',
     type: 'patch',

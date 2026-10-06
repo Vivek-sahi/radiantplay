@@ -5,7 +5,7 @@ import { Button } from '@components/Button';
 import { Toast } from '@components/Toast';
 import { ConfirmDialog } from './ConfirmDialog';
 
-const font = '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+const font = 'var(--font-family-primary)';
 const brand = systemColors.light['content-brand'];
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -551,7 +551,7 @@ export const VariablesPageContent: React.FC = () => {
                 onBlur={(e) => { e.currentTarget.style.borderColor = '#D1D5DB'; e.currentTarget.style.boxShadow = 'none'; }}
               />
             </div>
-            <button onClick={openCreate} style={{ display: 'flex', alignItems: 'center', gap: '6px', height: '36px', padding: '0 18px', borderRadius: '20px', border: 'none', backgroundColor: rdComponentColors.light['button-secondary-default'], cursor: 'pointer', fontFamily: font, fontSize: '13px', fontWeight: 600, color: '#111827', transition: 'opacity 0.15s' }}
+            <button onClick={openCreate} style={{ display: 'flex', alignItems: 'center', gap: '6px', height: '36px', padding: '0 18px', borderRadius: '20px', border: 'none', backgroundColor: rdComponentColors.light['button-secondary-default'], cursor: 'pointer', fontFamily: font, fontSize: '13px', fontWeight: 'var(--font-weight-emphasis)', color: '#111827', transition: 'opacity 0.15s' }}
               onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = '0.8'; }}
               onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = '1'; }}
             >
@@ -569,7 +569,7 @@ export const VariablesPageContent: React.FC = () => {
                 <th style={{ width: '44px', padding: '10px 12px 10px 0', textAlign: 'left' }}>
                   <Checkbox checked={allSelected} onChange={toggleAll} />
                 </th>
-                <th style={{ padding: '10px 16px 10px 0', textAlign: 'left', fontSize: '13px', fontWeight: 600, color: '#374151' }}>Name</th>
+                <th style={{ padding: '10px 16px 10px 0', textAlign: 'left', fontSize: '13px', fontWeight: 'var(--font-weight-emphasis)', color: '#374151' }}>Name</th>
                 <th style={{ padding: '10px 16px 10px 0', textAlign: 'left', fontSize: '13px', fontWeight: 500, color: '#9CA3AF' }}>Type</th>
                 <th style={{ padding: '10px 16px 10px 0', textAlign: 'left', fontSize: '13px', fontWeight: 500, color: '#9CA3AF' }}>Sensitive values</th>
                 <th style={{ padding: '10px 16px 10px 0', textAlign: 'left', fontSize: '13px', fontWeight: 500, color: '#9CA3AF' }}>Values assigned</th>

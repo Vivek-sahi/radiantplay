@@ -20,7 +20,7 @@ import { BillingQueryStatsPageContent } from './BillingQueryStatsPageContent';
 import { TermsPageContent } from './TermsPageContent';
 import { ScheduledMaintenancePageContent } from './ScheduledMaintenancePageContent';
 
-const font = '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+const font = 'var(--font-family-primary)';
 const brand = systemColors.light['content-brand'];
 
 type SidebarTabId = 'insights' | 'data' | 'develop' | 'admin';
@@ -248,7 +248,7 @@ const Dropdown: React.FC<{ value: string; options: string[]; width?: number }> =
                 textAlign: 'left',
                 fontFamily: font,
                 fontSize: '13px',
-                fontWeight: opt === selected ? 500 : 400,
+                fontWeight: opt === selected ? 'var(--font-weight-medium)' : 'var(--font-weight-regular)',
                 color: opt === selected ? brand : '#111827',
                 backgroundColor: opt === selected ? `${brand}10` : 'transparent',
                 cursor: 'pointer',
@@ -290,7 +290,7 @@ const SettingRow: React.FC<{
     }}
   >
     <div style={{ flex: 1 }}>
-      <div style={{ fontSize: '14px', fontWeight: 600, color: '#111827', fontFamily: font, lineHeight: 1.4 }}>
+      <div style={{ fontSize: '14px', fontWeight: 'var(--font-weight-emphasis)', color: '#111827', fontFamily: font, lineHeight: 1.4 }}>
         {label}
       </div>
       {description && (
@@ -346,7 +346,7 @@ const Card: React.FC<{
             >
               <path d="M3 5.5l4 4 4-4" stroke="#6B7280" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
-            <span style={{ fontSize: '14px', fontWeight: 600, color: '#111827', fontFamily: font }}>
+            <span style={{ fontSize: '14px', fontWeight: 'var(--font-weight-emphasis)', color: '#111827', fontFamily: font }}>
               {title}
             </span>
           </button>
@@ -361,7 +361,7 @@ const Card: React.FC<{
         </div>
       ) : (
         <div style={{ padding: '16px 24px 12px', borderBottom: '1px solid #E5E7EB' }}>
-          <div style={{ fontSize: '14px', fontWeight: 600, color: '#111827', fontFamily: font }}>
+          <div style={{ fontSize: '14px', fontWeight: 'var(--font-weight-emphasis)', color: '#111827', fontFamily: font }}>
             {title}
           </div>
           {description && (
@@ -551,7 +551,7 @@ export const NewUIAdmin2: React.FC = () => {
                   padding: '0 14px',
                   border: 'none', background: 'none', cursor: 'pointer',
                   fontFamily: font, fontSize: '13.5px',
-                  fontWeight: activeTab === tab.id ? 600 : 400,
+                  fontWeight: activeTab === tab.id ? 'var(--font-weight-emphasis)' : 'var(--font-weight-regular)',
                   color: activeTab === tab.id ? brand : '#6B7280',
                   borderBottom: activeTab === tab.id ? `2px solid ${brand}` : '2px solid transparent',
                   marginBottom: '-1px', transition: 'color 0.15s', whiteSpace: 'nowrap',

@@ -11,7 +11,7 @@
 }
 
 .label {
-  font-family: var(--font-family-primary, 'Plain', -apple-system, BlinkMacSystemFont, sans-serif);
+  font-family: var(--font-family-primary);
   font-size: var(--font-size-sm, 12px);
   font-weight: var(--font-weight-medium, 500);
   line-height: var(--line-height-md, 1.5);
@@ -31,9 +31,9 @@
   background-color: var(--rd-sys-color-background-base);
   border: 1px solid var(--rd-sys-color-border-default);
   border-radius: var(--radius-lg, 8px);
-  font-family: var(--font-family-primary, 'Plain', -apple-system, BlinkMacSystemFont, sans-serif);
+  font-family: var(--font-family-primary);
   font-size: var(--font-size-sm, 14px);
-  font-weight: var(--font-weight-light, 375);
+  font-weight: var(--font-weight-regular);
   line-height: var(--line-height-md, 1.5);
   color: var(--rd-sys-color-content-primary);
   transition: border-color var(--duration-fast, 150ms) var(--easing-standard, ease),
@@ -81,7 +81,7 @@
 }
 
 .helperText {
-  font-family: var(--font-family-primary, 'Plain', -apple-system, BlinkMacSystemFont, sans-serif);
+  font-family: var(--font-family-primary);
   font-size: var(--font-size-xs, 12px);
   font-weight: var(--font-weight-regular, 400);
   line-height: var(--line-height-xs, 1.4);
@@ -89,7 +89,7 @@
 }
 
 .counter {
-  font-family: var(--font-family-primary, 'Plain', -apple-system, BlinkMacSystemFont, sans-serif);
+  font-family: var(--font-family-primary);
   font-size: var(--font-size-xs, 12px);
   font-weight: var(--font-weight-regular, 400);
   color: var(--rd-sys-color-content-tertiary);
@@ -107,7 +107,7 @@
 }
 
 .errorMessage {
-  font-family: var(--font-family-primary, 'Plain', -apple-system, BlinkMacSystemFont, sans-serif);
+  font-family: var(--font-family-primary);
   font-size: var(--font-size-xs, 12px);
   font-weight: var(--font-weight-regular, 400);
   line-height: var(--line-height-xs, 1.4);

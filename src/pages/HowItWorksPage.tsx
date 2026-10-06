@@ -135,7 +135,7 @@ export const HowItWorksPage: React.FC = () => {
 
               {/* Left: Input */}
               <rect x="30" y="60" width="120" height="40" rx="10" fill="rgba(255,255,255,.05)" stroke="rgba(255,255,255,.1)" strokeWidth="1" />
-              <text x="90" y="84" fill="rgba(255,255,255,.6)" fontSize="12" fontWeight="600" fontFamily="Inter, sans-serif" textAnchor="middle">Your prompt</text>
+              <text x="90" y="84" fill="rgba(255,255,255,.6)" fontSize="12" fontWeight={550} fontFamily="Inter, sans-serif" textAnchor="middle">Your prompt</text>
               <path d="M 150 80 L 280 80" stroke="rgba(113,161,244,.3)" strokeWidth="1.5" strokeDasharray="4 3" markerEnd="url(#arrowB)" />
 
               {/* Right: outputs */}
@@ -148,7 +148,7 @@ export const HowItWorksPage: React.FC = () => {
                 <g key={i}>
                   <path d={`M 420 80 Q 470 ${item.y + 15} 530 ${item.y + 15}`} stroke={`${item.color}50`} strokeWidth="1.5" fill="none" />
                   <circle cx="530" cy={item.y + 15} r="4" fill={item.color} />
-                  <text x="542" y={item.y + 19} fill="rgba(255,255,255,.55)" fontSize="11" fontWeight="600" fontFamily="Inter, sans-serif">{item.label}</text>
+                  <text x="542" y={item.y + 19} fill="rgba(255,255,255,.55)" fontSize="11" fontWeight={550} fontFamily="Inter, sans-serif">{item.label}</text>
                 </g>
               ))}
 
@@ -219,7 +219,7 @@ export const HowItWorksPage: React.FC = () => {
 
               {/* Arrow */}
               <path d="M 220 60 L 310 60" stroke="rgba(255,255,255,.15)" strokeWidth="1.5" strokeDasharray="4 3" />
-              <text x="265" y="50" fill="rgba(255,255,255,.25)" fontSize="10" fontWeight="600" fontFamily="Inter, sans-serif" textAnchor="middle">imports</text>
+              <text x="265" y="50" fill="rgba(255,255,255,.25)" fontSize="10" fontWeight={550} fontFamily="Inter, sans-serif" textAnchor="middle">imports</text>
 
               {/* Prototype box */}
               <rect x="310" y="20" width="200" height="80" rx="16" fill="rgba(39,112,239,.06)" stroke="rgba(39,112,239,.25)" strokeWidth="1.5" />
@@ -474,7 +474,7 @@ const styles: Record<string, React.CSSProperties> = {
   branchRoute: {
     fontSize: 12,
     color: 'rgba(255,255,255,.38)',
-    fontFamily: '"SF Mono", "Fira Code", monospace',
+    fontFamily: 'var(--font-family-mono)',
   },
   branchDot: {
     width: 8,
@@ -525,7 +525,7 @@ const styles: Record<string, React.CSSProperties> = {
   priorityFile: {
     fontSize: 13,
     fontWeight: 700,
-    fontFamily: '"SF Mono", "Fira Code", monospace',
+    fontFamily: 'var(--font-family-mono)',
     marginBottom: 2,
   },
   priorityRole: {
@@ -626,7 +626,7 @@ const styles: Record<string, React.CSSProperties> = {
 
   // Inline code
   inlineCode: {
-    fontFamily: '"SF Mono", "Fira Code", monospace',
+    fontFamily: 'var(--font-family-mono)',
     fontSize: 12,
     fontWeight: 500,
     color: '#71A1F4',

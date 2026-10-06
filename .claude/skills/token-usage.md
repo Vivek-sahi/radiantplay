@@ -156,10 +156,10 @@ import { fontFamily, fontSize, fontWeight, lineHeight, v2TextStyles } from '../.
 ```typescript
 import { v2TextStyles } from '../../tokens/typography';
 
-style={{ ...v2TextStyles.pageTitle }}    // 24px, semibold
-style={{ ...v2TextStyles.modalTitle }}   // 20px, medium
-style={{ ...v2TextStyles.sectionLabel }} // 18px, medium
-style={{ ...v2TextStyles.contentLabel }} // 16px, medium
+style={{ ...v2TextStyles.pageTitle }}    // 24px, emphasis (550)
+style={{ ...v2TextStyles.modalTitle }}   // 20px, emphasis (550)
+style={{ ...v2TextStyles.sectionLabel }} // 18px, emphasis (550)
+style={{ ...v2TextStyles.contentLabel }} // 16px, emphasis (550)
 style={{ ...v2TextStyles.bodyNormal }}   // 14px, regular
 style={{ ...v2TextStyles.footnote }}     // 12px, regular
 style={{ ...v2TextStyles.overline }}     // 12px, uppercase
@@ -306,14 +306,14 @@ import { systemColors } from '../../tokens/colors';
 ```typescript
 // BAD — never hardcode font stacks
 {
-  fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, sans-serif',
+  fontFamily: '"Geist", -apple-system, BlinkMacSystemFont, sans-serif',
   fontFamily: 'Arial, sans-serif',
 }
 
 // GOOD — import the token
 import { fontFamily } from '../../tokens/typography';
 {
-  fontFamily: fontFamily.primary,   // full "Plain" stack
+  fontFamily: fontFamily.primary,   // full "Geist" stack
   fontFamily: fontFamily.mono,      // monospace stack
 }
 ```

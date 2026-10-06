@@ -15,7 +15,7 @@ export const styles = {
     flexDirection: 'column',
     height: '100vh',
     backgroundColor: systemColors.light['background-sunken'],
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
   } as CSSProperties,
 
   // Header area
@@ -64,7 +64,7 @@ export const headerStyles = {
     padding: `0 ${spacing.F}px`,
     backgroundColor: systemColors.light['content-primary'],
     color: systemColors.light['background-base'],
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
   } as CSSProperties,
 
   left: {
@@ -78,7 +78,7 @@ export const headerStyles = {
     alignItems: 'center',
     gap: `${spacing.B}px`,
     color: systemColors.light['background-base'],
-    fontWeight: 600,
+    fontWeight: 'var(--font-weight-emphasis)',
     fontSize: '16px',
   } as CSSProperties,
 
@@ -171,7 +171,7 @@ export const headerStyles = {
 export const sidebarStyles = {
   container: {
     padding: `${spacing.C}px 0`,
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
   } as CSSProperties,
 
   section: {
@@ -190,14 +190,14 @@ export const sidebarStyles = {
 
   sectionTitle: {
     fontSize: '13px',
-    fontWeight: 600,
+    fontWeight: 'var(--font-weight-emphasis)',
     color: systemColors.light['content-primary'],
     letterSpacing: '-0.1px',
   } as CSSProperties,
 
   sectionLabel: {
     fontSize: '11px',
-    fontWeight: 600,
+    fontWeight: 'var(--font-weight-emphasis)',
     color: systemColors.light['content-tertiary'],
     textTransform: 'uppercase',
     letterSpacing: '0.6px',
@@ -245,7 +245,7 @@ export const pageHeaderStyles = {
 
   title: {
     fontSize: '20px',
-    fontWeight: 600,
+    fontWeight: 'var(--font-weight-emphasis)',
     color: systemColors.light['content-primary'],
     margin: 0,
     marginBottom: `${spacing.B}px`,

@@ -27,7 +27,7 @@
   color: var(--rd-sys-color-content-primary);
   font-family: var(--font-family-primary);
   font-size: var(--font-size-2xl, 24px);
-  font-weight: var(--font-weight-semibold, 600);
+  font-weight: var(--font-weight-emphasis);
   line-height: var(--line-height-2xl, 32px);
 }
 
@@ -90,7 +90,7 @@
   color: #ffffff;
   font-family: var(--font-family-primary);
   font-size: var(--font-size-md, 16px);
-  font-weight: var(--font-weight-semibold, 600);
+  font-weight: var(--font-weight-emphasis);
   line-height: 1;
 }
 
@@ -98,7 +98,7 @@
   color: var(--rd-sys-color-content-primary);
   font-family: var(--font-family-primary);
   font-size: var(--font-size-sm, 14px);
-  font-weight: var(--font-weight-semibold, 600);
+  font-weight: var(--font-weight-emphasis);
   line-height: var(--line-height-md, 20px);
 }
 

@@ -20,7 +20,7 @@
 
 .table {
   font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
+  font-weight: var(--font-weight-emphasis);
   color: var(--rd-sys-color-content-primary);
   font-family: var(--font-family-primary);
   white-space: nowrap;

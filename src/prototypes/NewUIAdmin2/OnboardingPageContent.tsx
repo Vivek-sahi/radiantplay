@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { systemColors } from '../../tokens/colors';
 import { ConfirmDialog } from './ConfirmDialog';
 
-const font = '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+const font = 'var(--font-family-primary)';
 const brand = systemColors.light['content-brand'];
 
 // ─── Toggle ───────────────────────────────────────────────────────────────────
@@ -125,7 +125,7 @@ const CollapsibleSection: React.FC<{
             </svg>
           )}
           <div>
-            <div style={{ fontSize: '14px', fontWeight: 600, color: '#111827', fontFamily: font }}>{title}</div>
+            <div style={{ fontSize: '14px', fontWeight: 'var(--font-weight-emphasis)', color: '#111827', fontFamily: font }}>{title}</div>
             {subtitle && (
               <div style={{ fontSize: '12.5px', color: '#6B7280', fontFamily: font, marginTop: '2px' }}>{subtitle}</div>
             )}

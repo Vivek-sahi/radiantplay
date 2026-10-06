@@ -49,7 +49,7 @@ export const chartUi = {
  * Radiant chart font — use for all SVG text elements.
  * Matches fontFamily.primary from @tokens/typography.
  */
-export const chartFont = '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+export const chartFont = 'var(--font-family-primary)';
 
 /**
  * Chart font sizes — from Radiant fontSize tokens (xs = 12, sm = 14).

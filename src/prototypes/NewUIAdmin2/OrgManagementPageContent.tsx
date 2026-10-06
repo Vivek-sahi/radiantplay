@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { systemColors } from '../../tokens/colors';
 
-const font = '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+const font = 'var(--font-family-primary)';
 const brand = systemColors.light['content-brand'];
 
 // ─── Mock data ────────────────────────────────────────────────────────────────
@@ -259,7 +259,7 @@ export const OrgManagementPageContent: React.FC = () => {
               height: '36px', padding: '0 20px',
               border: 'none', borderRadius: '999px',
               backgroundColor: brand, cursor: 'pointer',
-              fontFamily: font, fontSize: '13px', fontWeight: 600, color: '#FFFFFF',
+              fontFamily: font, fontSize: '13px', fontWeight: 'var(--font-weight-emphasis)', color: '#FFFFFF',
               transition: 'opacity 0.15s',
             }}
               onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = '0.9'; }}
@@ -334,13 +334,13 @@ export const OrgManagementPageContent: React.FC = () => {
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             gap: '8px', marginTop: '32px',
-            fontFamily: font, fontSize: '13.5px', fontWeight: 600, color: '#111827',
+            fontFamily: font, fontSize: '13.5px', fontWeight: 'var(--font-weight-emphasis)', color: '#111827',
           }}>
             1-20 of 500
             <button style={{
               display: 'inline-flex', alignItems: 'center', gap: '2px',
               background: 'none', border: 'none', cursor: 'pointer',
-              fontFamily: font, fontSize: '13.5px', fontWeight: 600, color: brand,
+              fontFamily: font, fontSize: '13.5px', fontWeight: 'var(--font-weight-emphasis)', color: brand,
               padding: '0 4px',
             }}>
               Next

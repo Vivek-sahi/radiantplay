@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { systemColors } from '../../tokens/colors';
 
-const font = '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+const font = 'var(--font-family-primary)';
 const brand = systemColors.light['content-brand'];
 
 type TabId = 'overview' | 'productivity' | 'object-usage' | 'object-stats';
@@ -21,7 +21,7 @@ const KpiCard: React.FC<{
     display: 'flex', flexDirection: 'column', gap: '3px', flex: 1,
     ...style,
   }}>
-    <div style={{ fontSize: '13.5px', fontWeight: 600, color: '#111827', fontFamily: font }}>{title}</div>
+    <div style={{ fontSize: '13.5px', fontWeight: 'var(--font-weight-emphasis)', color: '#111827', fontFamily: font }}>{title}</div>
     <div style={{ fontSize: '12px', color: '#6B7280', fontFamily: font, lineHeight: 1.4 }}>{subtitle}</div>
     {date && <div style={{ fontSize: '11.5px', color: '#9CA3AF', fontFamily: font, marginTop: '1px' }}>{date}</div>}
     <div style={{ fontSize: '30px', fontWeight: 700, color: '#111827', fontFamily: font, marginTop: '10px', letterSpacing: '-0.8px' }}>{value}</div>
@@ -55,7 +55,7 @@ const SparklineCard: React.FC<{
       borderRadius: '12px', padding: '20px', flex: 1,
       display: 'flex', flexDirection: 'column', gap: '3px',
     }}>
-      <div style={{ fontSize: '13.5px', fontWeight: 600, color: '#111827', fontFamily: font }}>{title}</div>
+      <div style={{ fontSize: '13.5px', fontWeight: 'var(--font-weight-emphasis)', color: '#111827', fontFamily: font }}>{title}</div>
       <div style={{ fontSize: '12px', color: '#6B7280', fontFamily: font }}>{subtitle}</div>
       <div style={{ fontSize: '11.5px', color: '#9CA3AF', fontFamily: font, marginTop: '1px' }}>{date}</div>
       <div style={{ fontSize: '28px', fontWeight: 700, color: '#111827', fontFamily: font, marginTop: '8px', letterSpacing: '-0.6px' }}>{value}</div>
@@ -67,7 +67,7 @@ const SparklineCard: React.FC<{
           backgroundColor: isPositive ? '#D1FAE5' : '#FEE2E2',
           color: isPositive ? '#065F46' : '#991B1B',
           borderRadius: '4px', padding: '2px 6px',
-          fontFamily: font, fontSize: '11.5px', fontWeight: 600,
+          fontFamily: font, fontSize: '11.5px', fontWeight: 'var(--font-weight-emphasis)',
         }}>
           {isPositive ? '↑' : '↓'} {Math.abs(change).toFixed(2)}%
         </span>
@@ -124,15 +124,15 @@ const ChampionsTable: React.FC = () => (
     width: '380px', flexShrink: 0,
     display: 'flex', flexDirection: 'column',
   }}>
-    <div style={{ fontSize: '13.5px', fontWeight: 600, color: '#111827', fontFamily: font }}>ThoughtSpot Champions</div>
+    <div style={{ fontSize: '13.5px', fontWeight: 'var(--font-weight-emphasis)', color: '#111827', fontFamily: font }}>ThoughtSpot Champions</div>
     <div style={{ fontSize: '12px', color: '#6B7280', fontFamily: font, marginTop: '3px', marginBottom: '16px' }}>
       Users who were most active, last 30 days
     </div>
     <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: font }}>
       <thead>
         <tr style={{ borderBottom: '1.5px solid #E5E7EB' }}>
-          <th style={{ fontSize: '12px', fontWeight: 600, color: '#374151', textAlign: 'left', paddingBottom: '10px', paddingRight: '8px' }}>User</th>
-          <th style={{ fontSize: '12px', fontWeight: 600, color: '#374151', textAlign: 'right', paddingBottom: '10px', whiteSpace: 'nowrap' }}>
+          <th style={{ fontSize: '12px', fontWeight: 'var(--font-weight-emphasis)', color: '#374151', textAlign: 'left', paddingBottom: '10px', paddingRight: '8px' }}>User</th>
+          <th style={{ fontSize: '12px', fontWeight: 'var(--font-weight-emphasis)', color: '#374151', textAlign: 'right', paddingBottom: '10px', whiteSpace: 'nowrap' }}>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
               User Actions
               <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
@@ -198,7 +198,7 @@ const BarChartCard: React.FC<{
       backgroundColor: '#FFFFFF', border: '1px solid #E5E7EB',
       borderRadius: '12px', padding: '20px', flex: 1,
     }}>
-      <div style={{ fontSize: '13.5px', fontWeight: 600, color: '#111827', fontFamily: font }}>{title}</div>
+      <div style={{ fontSize: '13.5px', fontWeight: 'var(--font-weight-emphasis)', color: '#111827', fontFamily: font }}>{title}</div>
       <div style={{ fontSize: '12px', color: '#6B7280', fontFamily: font, marginTop: '3px', marginBottom: '16px' }}>{subtitle}</div>
 
       <div style={{ display: 'flex', gap: '0' }}>
@@ -500,7 +500,7 @@ export const UsageAdoptionPageContent: React.FC = () => {
                   <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
                     padding: '0 14px 16px', border: 'none', background: 'none',
                     cursor: 'pointer', fontFamily: font, fontSize: '13.5px',
-                    fontWeight: activeTab === tab.id ? 600 : 400,
+                    fontWeight: activeTab === tab.id ? 'var(--font-weight-emphasis)' : 'var(--font-weight-regular)',
                     color: activeTab === tab.id ? brand : '#6B7280',
                     borderBottom: activeTab === tab.id ? `2px solid ${brand}` : '2px solid transparent',
                     marginBottom: '-1px', transition: 'color 0.15s', whiteSpace: 'nowrap',
@@ -518,7 +518,7 @@ export const UsageAdoptionPageContent: React.FC = () => {
                 height: '32px', padding: '0 14px', border: 'none',
                 borderRadius: '999px', backgroundColor: brand,
                 cursor: 'pointer', fontFamily: font, fontSize: '12.5px',
-                fontWeight: 600, color: '#FFFFFF',
+                fontWeight: 'var(--font-weight-emphasis)', color: '#FFFFFF',
               }}>
                 <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
                   <path d="M6.5 1L7.8 4.7l3.7 1.3-3.7 1.3L6.5 11l-1.3-3.7L1.5 6l3.7-1.3z" fill="white" />

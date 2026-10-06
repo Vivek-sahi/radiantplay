@@ -442,7 +442,7 @@ export const StylingPanel: React.FC = () => {
   const canvasH    = PAD + maxBottom * ROW_UNIT - GUTTER + PAD;
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: stylingSettings.spacing === 'no-gutter' ? '#FFFFFF' : (LIVEBOARD_BG[previewLiveboardColor ?? stylingSettings.color] ?? '#F6F8FA'), fontFamily: "'Plain', -apple-system, BlinkMacSystemFont, sans-serif" }}>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: stylingSettings.spacing === 'no-gutter' ? '#FFFFFF' : (LIVEBOARD_BG[previewLiveboardColor ?? stylingSettings.color] ?? '#F6F8FA'), fontFamily: "var(--font-family-primary)" }}>
 
       {/* Edit toolbar — sticky, never covered by the panel */}
       <div style={{ position: 'sticky', top: 0, zIndex: 100, flexShrink: 0 }}>
@@ -475,7 +475,7 @@ export const StylingPanel: React.FC = () => {
             '--tile-outer-border-color':      stylingSettings.spacing === 'no-gutter' ? 'transparent' : (TILE_BORDER[previewLiveboardColor ?? stylingSettings.color] ?? '#EAEDF2'),
             '--group-header-divider':         stylingSettings.spacing === 'no-gutter' ? 'transparent' : (TILE_BORDER[previewLiveboardColor ?? stylingSettings.color] ?? '#EAEDF2'),
             '--tile-title-size':              stylingSettings.density === 'spacious' ? '18px' : '16px',
-            '--tile-title-weight':            stylingSettings.density === 'compact'  ? '400' : '600',
+            '--tile-title-weight':            stylingSettings.density === 'compact'  ? 'var(--font-weight-regular)' : 'var(--font-weight-emphasis)',
             '--tile-title-lh':                stylingSettings.density === 'spacious' ? '28px' : '24px',
             '--tile-toolbar-btn-size':        stylingSettings.density === 'spacious' ? '32px' : '24px',
             '--tile-kpi-weight':              stylingSettings.density === 'compact'  ? '400' : '500',

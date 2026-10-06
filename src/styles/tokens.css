@@ -14,8 +14,8 @@
 
 :root {
   /* Font Families */
-  --font-family-primary: "Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-family-mono: "SF Mono", "Monaco", "Inconsolata", "Fira Mono", "Droid Sans Mono", "Source Code Pro", monospace;
+  --font-family-primary: "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-family-mono: "Geist Mono", "SF Mono", "Monaco", "Inconsolata", "Fira Mono", "Droid Sans Mono", "Source Code Pro", monospace;
 
   /* Font Sizes */
   --font-size-xs: 12px;
@@ -28,10 +28,11 @@
   --font-size-4xl: 40px;
 
   /* Font Weights */
-  --font-weight-light: 375;
   --font-weight-regular: 400;
   --font-weight-medium: 500;
-  --font-weight-semibold: 600;
+  --font-weight-emphasis: 550;                 /* Figma "Emphasis": headings and labels */
+  --font-weight-light: var(--font-weight-regular);       /* deprecated: use regular */
+  --font-weight-semibold: var(--font-weight-emphasis);   /* deprecated: use emphasis */
 
   /* Line Heights */
   --line-height-xs: 16px;
@@ -42,6 +43,15 @@
   --line-height-2xl: 32px;
   --line-height-3xl: 40px;
   --line-height-4xl: 48px;
+
+  /* Letter spacing. Figma (Geist) uses normal, relaxed (0.4%) and loose (0.6%) */
+  --letter-spacing-tighter: -0.6px;
+  --letter-spacing-tight: -0.4px;
+  --letter-spacing-normal: 0;
+  --letter-spacing-relaxed: 0.004em;
+  --letter-spacing-loose: 0.006em;
+  --letter-spacing-wide: 0.01em;
+  --letter-spacing-wider: 0.02em;
 
   /* Spacing */
   --spacing-0: 0px;
@@ -133,25 +143,28 @@
      ============================================ */
 
   /* Dark Gray scale (neutral, dark-mode foundation) */
-  --rd-ref-color-dark-gray-00: #131416;
-  --rd-ref-color-dark-gray-05: #1A1B1E;
-  --rd-ref-color-dark-gray-10: #212326;
-  --rd-ref-color-dark-gray-15: #282A2E;
-  --rd-ref-color-dark-gray-20: #303136;
-  --rd-ref-color-dark-gray-30: #43474B;
-  --rd-ref-color-dark-gray-40: #585E64;
-  --rd-ref-color-dark-gray-50: #73767D;
-  --rd-ref-color-dark-gray-60: #8C9196;
-  --rd-ref-color-dark-gray-70: #AAADB1;
-  --rd-ref-color-dark-gray-80: #C4C6CA;
+  --rd-ref-color-dark-gray-00: #18191B;
+  --rd-ref-color-dark-gray-05: #1F2024;
+  --rd-ref-color-dark-gray-10: #26282C;
+  --rd-ref-color-dark-gray-15: #2D2F34;
+  --rd-ref-color-dark-gray-20: #34363C;
+  --rd-ref-color-dark-gray-30: #46494E;
+  --rd-ref-color-dark-gray-40: #5D636A;
+  --rd-ref-color-dark-gray-50: #7A7D85;
+  --rd-ref-color-dark-gray-60: #9A9EA2;
+  --rd-ref-color-dark-gray-70: #AFB2B6;
+  --rd-ref-color-dark-gray-80: #C7C9CC;
   --rd-ref-color-dark-gray-90: #DFE0E2;
 
   /* Alpha variants */
   --rd-ref-color-gray-70a: #1F2632CC;       /* 80% */
   --rd-ref-color-gray-60a: #20293A99;       /* 60% */
   --rd-ref-color-gray-40a: #16223A42;       /* 26% */
+  --rd-ref-color-gray-20a: #EAEDF299;       /* 60% */
   --rd-ref-color-gray-10a: #C0C6CF1F;       /* 12% */
   --rd-ref-color-blue-10a: #71A1F41F;       /* 12% */
+  --rd-ref-color-brand-10a: #71A1F41F;      /* 12% */
+  --rd-ref-color-purple-20a: #B094F82E;     /* 18% */
   --rd-ref-color-dark-gray-30a: #00030ABA;  /* 73% */
 
 }
@@ -170,7 +183,7 @@
   --rd-sys-color-background-inset: #C0C6CF;
   --rd-sys-color-background-brand: #2770EF;
   --rd-sys-color-background-overlay: #1F2632CC;             /* Phase 2 fix */
-  --rd-sys-color-background-base-inverse: #1D232F;          /* Matches production --ts-var-liveboard-edit-bar-background */
+  --rd-sys-color-background-base-inverse: #323946;          /* Gray/80, Figma Background/Inverse (was #1D232F, c7d04ac0) */
   --rd-sys-color-background-raised-inverse: #323946;
   --rd-sys-color-background-success: #E0F8EF;
   --rd-sys-color-background-warning: #FFF8E5;
@@ -241,17 +254,60 @@
   --rd-comp-color-button-primary-on-color-pressed: #CEDCF5;
   --rd-comp-color-button-secondary-default: #EAEDF2;
   --rd-comp-color-button-secondary-hover: #DBDFE7;
-  --rd-comp-color-button-secondary-pressed: #DEE8FA;
+  --rd-comp-color-button-secondary-pressed: #C0C6CF;
   --rd-comp-color-button-tertiary-hover: rgba(192, 198, 207, 0.12);
-  --rd-comp-color-button-tertiary-pressed: rgba(192, 198, 207, 0.24);
+  --rd-comp-color-button-tertiary-pressed: #71A1F41F;
+  --rd-comp-color-button-overlay: #20293A99;
 
   /* ---- New Component Tokens: Toggle ---- */
   --rd-comp-color-toggle-track-off: #C0C6CF;
-  --rd-comp-color-toggle-track-on: #2770EF;
+  --rd-comp-color-toggle-track-on: #CEDCF5;
   --rd-comp-color-toggle-thumb-off: #FFFFFF;
-  --rd-comp-color-toggle-thumb-on: #FFFFFF;
+  --rd-comp-color-toggle-thumb-on: #2770EF;
   --rd-comp-color-toggle-thumb-outline-off: #DBDFE7;
 
+  /* ---- Component Tokens: Segmented control ---- */
+  --rd-comp-color-segmented-control-content-active: #2770EF;
+
+  /* ---- Component Tokens: Chip ---- */
+  --rd-comp-color-chip-loading-default: #F6F8FA;
+  --rd-comp-color-chip-attribute-default: #DEE8FA;
+  --rd-comp-color-chip-attribute-hover: #CEDCF5;
+  --rd-comp-color-chip-attribute-pressed: #ABC7F9;
+  --rd-comp-color-chip-attribute-icon: #2770EF;
+  --rd-comp-color-chip-attribute-active-border: #CEDCF5;
+  --rd-comp-color-chip-measure-default: #E0F8EF;
+  --rd-comp-color-chip-measure-hover: #C7F2E3;
+  --rd-comp-color-chip-measure-pressed: #9BE5CB;
+  --rd-comp-color-chip-measure-icon: #06BF7F;
+  --rd-comp-color-chip-measure-active-border: #C7F2E3;
+  --rd-comp-color-chip-filter-default: #EAEDF2;
+  --rd-comp-color-chip-filter-hover: #DBDFE7;
+  --rd-comp-color-chip-filter-pressed: #C0C6CF;
+  --rd-comp-color-chip-filter-icon: #777E8B;
+  --rd-comp-color-chip-filter-active-border: #DBDFE7;
+  --rd-comp-color-chip-date-default: #F0EBFF;
+  --rd-comp-color-chip-date-hover: #E3D9FC;
+  --rd-comp-color-chip-date-pressed: #D1C0FB;
+  --rd-comp-color-chip-date-icon: #8C62F5;
+  --rd-comp-color-chip-date-active-border: #E3D9FC;
+  --rd-comp-color-chip-input-default: #FFFFFF;
+  --rd-comp-color-chip-input-hover: #F6F8FA;
+  --rd-comp-color-chip-input-pressed: #EAEDF2;
+  --rd-comp-color-chip-input-selected-default: #4A515E;
+  --rd-comp-color-chip-input-selected-hover: #323946;
+  --rd-comp-color-chip-input-selected-pressed: #1D232F;
+  --rd-comp-color-chip-error-default: #FFEBEC;
+  --rd-comp-color-chip-error-hover: #FCD4D7;
+  --rd-comp-color-chip-error-active-border: #DBDFE7;
+
+  /* ---- Figma Radiant 3.0 names (aliases of the tokens above) ---- */
+  --rd-sys-color-background-inverse: var(--rd-sys-color-background-base-inverse);
+  --rd-sys-color-background-secondary-action: var(--rd-sys-color-background-subtle);
+  --rd-sys-color-content-inverse: var(--rd-sys-color-content-primary-inverse);
+  --rd-sys-color-border-subtle: var(--rd-sys-color-border-divider);
+  --rd-sys-color-border-bold: var(--rd-sys-color-border-default);
+  --rd-sys-color-border-bold-hover: var(--rd-sys-color-border-hover);
 }
 
 /* ============================================
@@ -265,33 +321,33 @@
   --shadow-modal: 0 0 4px rgba(0,0,0,0.4), 0 24px 32px rgba(0,0,0,0.6);
 
   /* ---- New System Tokens: Background ---- */
-  --rd-sys-color-background-base: #1D232F;
-  --rd-sys-color-background-raised: #323946;
-  --rd-sys-color-background-sunken: #323946;
-  --rd-sys-color-background-subtle: #4A515E;
+  --rd-sys-color-background-base: #1F2024;
+  --rd-sys-color-background-raised: #2D2F34;
+  --rd-sys-color-background-sunken: #18191B;
+  --rd-sys-color-background-subtle: #34363C;
   --rd-sys-color-background-inset: #777E8B;
-  --rd-sys-color-background-brand: #2770EF;
-  --rd-sys-color-background-overlay: rgba(0, 0, 0, 0.6);
-  --rd-sys-color-background-base-inverse: #FFFFFF;
+  --rd-sys-color-background-brand: #71A1F4;
+  --rd-sys-color-background-overlay: #00030ABA;
+  --rd-sys-color-background-base-inverse: #DFE0E2;
   --rd-sys-color-background-raised-inverse: #F6F8FA;
-  --rd-sys-color-background-success: rgba(6, 191, 127, 0.2);
-  --rd-sys-color-background-warning: rgba(252, 200, 56, 0.2);
-  --rd-sys-color-background-failure: rgba(226, 43, 61, 0.2);
-  --rd-sys-color-background-information: rgba(39, 112, 239, 0.2);
-  --rd-sys-color-background-ghost-hover: rgba(119, 126, 139, 0.24);
-  --rd-sys-color-background-ghost-highlight: rgba(39, 112, 239, 0.3);
+  --rd-sys-color-background-success: #003B26;
+  --rd-sys-color-background-warning: #4F3D09;
+  --rd-sys-color-background-failure: #3D090E;
+  --rd-sys-color-background-information: #082559;
+  --rd-sys-color-background-ghost-hover: #C0C6CF1F;
+  --rd-sys-color-background-ghost-highlight: #71A1F41F;
 
   /* ---- New System Tokens: Content ---- */
-  --rd-sys-color-content-primary: #FFFFFF;
-  --rd-sys-color-content-secondary: #A5ACB9;
-  --rd-sys-color-content-tertiary: #777E8B;
+  --rd-sys-color-content-primary: #DFE0E2;
+  --rd-sys-color-content-secondary: #9A9EA2;
+  --rd-sys-color-content-tertiary: #5D636A;
   --rd-sys-color-content-alternate: #1D232F;
   --rd-sys-color-content-brand: #71A1F4;
-  --rd-sys-color-content-primary-inverse: #1D232F;
+  --rd-sys-color-content-primary-inverse: #1F2024;
   --rd-sys-color-content-alternate-inverse: #FFFFFF;
   --rd-sys-color-content-brand-inverse: #2770EF;
-  --rd-sys-color-content-success: #06BF7F;
-  --rd-sys-color-content-warning: #FCC838;
+  --rd-sys-color-content-success: #56D3A8;
+  --rd-sys-color-content-warning: #FCD977;
   --rd-sys-color-content-failure: #F47E89;
   --rd-sys-color-content-information: #71A1F4;
   --rd-sys-color-content-link: #71A1F4;
@@ -299,38 +355,98 @@
   --rd-sys-color-content-link-inverse-hover: #4A515E;
 
   /* ---- New System Tokens: Border ---- */
-  --rd-sys-color-border-default: #777E8B;
-  --rd-sys-color-border-hover: #A5ACB9;
-  --rd-sys-color-border-divider: #4A515E;
+  --rd-sys-color-border-default: #5D636A;
+  --rd-sys-color-border-hover: #7A7D85;
+  --rd-sys-color-border-divider: #34363C;
   --rd-sys-color-border-brand: #71A1F4;
-  --rd-sys-color-border-warning: #FCC838;
+  --rd-sys-color-border-warning: #FCD977;
   --rd-sys-color-border-failure: #F47E89;
   --rd-sys-color-border-default-inverse: #C0C6CF;
   --rd-sys-color-border-hover-inverse: #A5ACB9;
   --rd-sys-color-border-divider-inverse: #DBDFE7;
   --rd-sys-color-border-brand-inverse: #2770EF;
-  --rd-sys-color-border-focus: #71A1F4;
-  --rd-sys-color-border-gap: #1D232F;
+  --rd-sys-color-border-focus: #2770EF;
+  --rd-sys-color-border-gap: #1F2024;
 
   /* ---- New Component Tokens: Button ---- */
-  --rd-comp-color-button-primary-default: #2770EF;
-  --rd-comp-color-button-primary-hover: #71A1F4;
-  --rd-comp-color-button-primary-pressed: #ABC7F9;
-  --rd-comp-color-button-primary-on-color-default: #1D232F;
-  --rd-comp-color-button-primary-on-color-hover: rgba(39, 112, 239, 0.3);
-  --rd-comp-color-button-primary-on-color-pressed: rgba(39, 112, 239, 0.4);
-  --rd-comp-color-button-secondary-default: #4A515E;
-  --rd-comp-color-button-secondary-hover: #323946;
-  --rd-comp-color-button-secondary-pressed: rgba(39, 112, 239, 0.3);
-  --rd-comp-color-button-tertiary-hover: rgba(119, 126, 139, 0.24);
-  --rd-comp-color-button-tertiary-pressed: rgba(119, 126, 139, 0.36);
+  --rd-comp-color-button-primary-default: #71A1F4;
+  --rd-comp-color-button-primary-hover: #ABC7F9;
+  --rd-comp-color-button-primary-pressed: #CEDCF5;
+  --rd-comp-color-button-primary-on-color-default: #1F2024;
+  --rd-comp-color-button-primary-on-color-hover: #2D2F34;
+  --rd-comp-color-button-primary-on-color-pressed: #46494E;
+  --rd-comp-color-button-secondary-default: #34363C;
+  --rd-comp-color-button-secondary-hover: #46494E;
+  --rd-comp-color-button-secondary-pressed: #5D636A;
+  --rd-comp-color-button-tertiary-hover: #C0C6CF1F;
+  --rd-comp-color-button-tertiary-pressed: #71A1F41F;
+  --rd-comp-color-button-overlay: #EAEDF299;
 
   /* ---- New Component Tokens: Toggle ---- */
-  --rd-comp-color-toggle-track-off: #777E8B;
-  --rd-comp-color-toggle-track-on: #2770EF;
-  --rd-comp-color-toggle-thumb-off: #A5ACB9;
-  --rd-comp-color-toggle-thumb-on: #FFFFFF;
-  --rd-comp-color-toggle-thumb-outline-off: #4A515E;
+  --rd-comp-color-toggle-track-off: #5D636A;
+  --rd-comp-color-toggle-track-on: #163772;
+  --rd-comp-color-toggle-thumb-off: #C7C9CC;
+  --rd-comp-color-toggle-thumb-on: #CEDCF5;
+  --rd-comp-color-toggle-thumb-outline-off: #C7C9CC;
+
+  /* ---- Component Tokens: Segmented control ---- */
+  --rd-comp-color-segmented-control-content-active: #DFE0E2;
+
+  /* ---- Component Tokens: Chip ---- */
+  --rd-comp-color-chip-loading-default: #26282C;
+  --rd-comp-color-chip-attribute-default: #082559;
+  --rd-comp-color-chip-attribute-hover: #163772;
+  --rd-comp-color-chip-attribute-pressed: #2359B6;
+  --rd-comp-color-chip-attribute-icon: #71A1F4;
+  --rd-comp-color-chip-attribute-active-border: #163772;
+  --rd-comp-color-chip-measure-default: #003B26;
+  --rd-comp-color-chip-measure-hover: #025B3C;
+  --rd-comp-color-chip-measure-pressed: #049160;
+  --rd-comp-color-chip-measure-icon: #56D3A8;
+  --rd-comp-color-chip-measure-active-border: #025B3C;
+  --rd-comp-color-chip-filter-default: #34363C;
+  --rd-comp-color-chip-filter-hover: #46494E;
+  --rd-comp-color-chip-filter-pressed: #5D636A;
+  --rd-comp-color-chip-filter-icon: #9A9EA2;
+  --rd-comp-color-chip-filter-active-border: #46494E;
+  --rd-comp-color-chip-date-default: #210F4F;
+  --rd-comp-color-chip-date-hover: #422E75;
+  --rd-comp-color-chip-date-pressed: #6A4ABA;
+  --rd-comp-color-chip-date-icon: #B094F8;
+  --rd-comp-color-chip-date-active-border: #422E75;
+  --rd-comp-color-chip-input-default: #1F2024;
+  --rd-comp-color-chip-input-hover: #2D2F34;
+  --rd-comp-color-chip-input-pressed: #34363C;
+  --rd-comp-color-chip-input-selected-default: #AFB2B6;
+  --rd-comp-color-chip-input-selected-hover: #C7C9CC;
+  --rd-comp-color-chip-input-selected-pressed: #DFE0E2;
+  --rd-comp-color-chip-error-default: #3D090E;
+  --rd-comp-color-chip-error-hover: #721F27;
+  --rd-comp-color-chip-error-active-border: #B6313E;
+
+  /* ---- Added in the Figma sync (2026-10-06) ---- */
+  --rd-sys-color-background-accent-blue: #082559;
+  --rd-sys-color-background-accent-gray: #2D2F34;
+  --rd-sys-color-background-accent-green: #003B26;
+  --rd-sys-color-background-accent-purple-bold: #B094F8;
+  --rd-sys-color-background-accent-purple-subtle: #422E75;
+  --rd-sys-color-background-accent-red: #3D090E;
+  --rd-sys-color-background-accent-yellow: #4F3D09;
+  --rd-sys-color-background-active: #5D636A;
+  --rd-sys-color-background-on-base: #26282C;
+  --rd-sys-color-border-accent-blue: #71A1F4;
+  --rd-sys-color-border-accent-gray: #5D636A;
+  --rd-sys-color-border-accent-green: #56D3A8;
+  --rd-sys-color-border-accent-purple: #B094F8;
+  --rd-sys-color-border-accent-red: #F47E89;
+  --rd-sys-color-border-accent-yellow: #FCD977;
+  --rd-sys-color-border-subtle-hover: #46494E;
+  --rd-sys-color-content-accent-blue: #71A1F4;
+  --rd-sys-color-content-accent-gray: #5D636A;
+  --rd-sys-color-content-accent-green: #56D3A8;
+  --rd-sys-color-content-accent-purple: #B094F8;
+  --rd-sys-color-content-accent-red: #F47E89;
+  --rd-sys-color-content-accent-yellow: #FCD977;
 }
 
 /* ============================================
@@ -339,34 +455,39 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
+    /* Semantic shadow primitives, same as [data-theme="dark"] */
+    --shadow-surface: 0 0 4px rgba(0,0,0,0.24), 0 2px 8px rgba(0,0,0,0.2);
+    --shadow-menu: 0 0 6px rgba(0,0,0,0.16), 0 12px 28px rgba(0,0,0,0.32);
+    --shadow-modal: 0 0 4px rgba(0,0,0,0.4), 0 24px 32px rgba(0,0,0,0.6);
+
     /* ---- New System Tokens: Background ---- */
-    --rd-sys-color-background-base: #1D232F;
-    --rd-sys-color-background-raised: #323946;
-    --rd-sys-color-background-sunken: #323946;
-    --rd-sys-color-background-subtle: #4A515E;
+    --rd-sys-color-background-base: #1F2024;
+    --rd-sys-color-background-raised: #2D2F34;
+    --rd-sys-color-background-sunken: #18191B;
+    --rd-sys-color-background-subtle: #34363C;
     --rd-sys-color-background-inset: #777E8B;
-    --rd-sys-color-background-brand: #2770EF;
-    --rd-sys-color-background-overlay: rgba(0, 0, 0, 0.6);
-    --rd-sys-color-background-base-inverse: #FFFFFF;
+    --rd-sys-color-background-brand: #71A1F4;
+    --rd-sys-color-background-overlay: #00030ABA;
+    --rd-sys-color-background-base-inverse: #DFE0E2;
     --rd-sys-color-background-raised-inverse: #F6F8FA;
-    --rd-sys-color-background-success: rgba(6, 191, 127, 0.2);
-    --rd-sys-color-background-warning: rgba(252, 200, 56, 0.2);
-    --rd-sys-color-background-failure: rgba(226, 43, 61, 0.2);
-    --rd-sys-color-background-information: rgba(39, 112, 239, 0.2);
-    --rd-sys-color-background-ghost-hover: rgba(119, 126, 139, 0.24);
-    --rd-sys-color-background-ghost-highlight: rgba(39, 112, 239, 0.3);
+    --rd-sys-color-background-success: #003B26;
+    --rd-sys-color-background-warning: #4F3D09;
+    --rd-sys-color-background-failure: #3D090E;
+    --rd-sys-color-background-information: #082559;
+    --rd-sys-color-background-ghost-hover: #C0C6CF1F;
+    --rd-sys-color-background-ghost-highlight: #71A1F41F;
 
     /* ---- New System Tokens: Content ---- */
-    --rd-sys-color-content-primary: #FFFFFF;
-    --rd-sys-color-content-secondary: #A5ACB9;
-    --rd-sys-color-content-tertiary: #777E8B;
+    --rd-sys-color-content-primary: #DFE0E2;
+    --rd-sys-color-content-secondary: #9A9EA2;
+    --rd-sys-color-content-tertiary: #5D636A;
     --rd-sys-color-content-alternate: #1D232F;
     --rd-sys-color-content-brand: #71A1F4;
-    --rd-sys-color-content-primary-inverse: #1D232F;
+    --rd-sys-color-content-primary-inverse: #1F2024;
     --rd-sys-color-content-alternate-inverse: #FFFFFF;
     --rd-sys-color-content-brand-inverse: #2770EF;
-    --rd-sys-color-content-success: #06BF7F;
-    --rd-sys-color-content-warning: #FCC838;
+    --rd-sys-color-content-success: #56D3A8;
+    --rd-sys-color-content-warning: #FCD977;
     --rd-sys-color-content-failure: #F47E89;
     --rd-sys-color-content-information: #71A1F4;
     --rd-sys-color-content-link: #71A1F4;
@@ -374,38 +495,98 @@
     --rd-sys-color-content-link-inverse-hover: #4A515E;
 
     /* ---- New System Tokens: Border ---- */
-    --rd-sys-color-border-default: #777E8B;
-    --rd-sys-color-border-hover: #A5ACB9;
-    --rd-sys-color-border-divider: #4A515E;
+    --rd-sys-color-border-default: #5D636A;
+    --rd-sys-color-border-hover: #7A7D85;
+    --rd-sys-color-border-divider: #34363C;
     --rd-sys-color-border-brand: #71A1F4;
-    --rd-sys-color-border-warning: #FCC838;
+    --rd-sys-color-border-warning: #FCD977;
     --rd-sys-color-border-failure: #F47E89;
     --rd-sys-color-border-default-inverse: #C0C6CF;
     --rd-sys-color-border-hover-inverse: #A5ACB9;
     --rd-sys-color-border-divider-inverse: #DBDFE7;
     --rd-sys-color-border-brand-inverse: #2770EF;
-    --rd-sys-color-border-focus: #71A1F4;
-    --rd-sys-color-border-gap: #1D232F;
+    --rd-sys-color-border-focus: #2770EF;
+    --rd-sys-color-border-gap: #1F2024;
 
     /* ---- New Component Tokens: Button ---- */
-    --rd-comp-color-button-primary-default: #2770EF;
-    --rd-comp-color-button-primary-hover: #71A1F4;
-    --rd-comp-color-button-primary-pressed: #ABC7F9;
-    --rd-comp-color-button-primary-on-color-default: #1D232F;
-    --rd-comp-color-button-primary-on-color-hover: rgba(39, 112, 239, 0.3);
-    --rd-comp-color-button-primary-on-color-pressed: rgba(39, 112, 239, 0.4);
-    --rd-comp-color-button-secondary-default: #4A515E;
-    --rd-comp-color-button-secondary-hover: #323946;
-    --rd-comp-color-button-secondary-pressed: rgba(39, 112, 239, 0.3);
-    --rd-comp-color-button-tertiary-hover: rgba(119, 126, 139, 0.24);
-    --rd-comp-color-button-tertiary-pressed: rgba(119, 126, 139, 0.36);
+    --rd-comp-color-button-primary-default: #71A1F4;
+    --rd-comp-color-button-primary-hover: #ABC7F9;
+    --rd-comp-color-button-primary-pressed: #CEDCF5;
+    --rd-comp-color-button-primary-on-color-default: #1F2024;
+    --rd-comp-color-button-primary-on-color-hover: #2D2F34;
+    --rd-comp-color-button-primary-on-color-pressed: #46494E;
+    --rd-comp-color-button-secondary-default: #34363C;
+    --rd-comp-color-button-secondary-hover: #46494E;
+    --rd-comp-color-button-secondary-pressed: #5D636A;
+    --rd-comp-color-button-tertiary-hover: #C0C6CF1F;
+    --rd-comp-color-button-tertiary-pressed: #71A1F41F;
+    --rd-comp-color-button-overlay: #EAEDF299;
 
     /* ---- New Component Tokens: Toggle ---- */
-    --rd-comp-color-toggle-track-off: #777E8B;
-    --rd-comp-color-toggle-track-on: #2770EF;
-    --rd-comp-color-toggle-thumb-off: #A5ACB9;
-    --rd-comp-color-toggle-thumb-on: #FFFFFF;
-    --rd-comp-color-toggle-thumb-outline-off: #4A515E;
+    --rd-comp-color-toggle-track-off: #5D636A;
+    --rd-comp-color-toggle-track-on: #163772;
+    --rd-comp-color-toggle-thumb-off: #C7C9CC;
+    --rd-comp-color-toggle-thumb-on: #CEDCF5;
+    --rd-comp-color-toggle-thumb-outline-off: #C7C9CC;
+
+    /* ---- Component Tokens: Segmented control ---- */
+    --rd-comp-color-segmented-control-content-active: #DFE0E2;
+
+    /* ---- Component Tokens: Chip ---- */
+    --rd-comp-color-chip-loading-default: #26282C;
+    --rd-comp-color-chip-attribute-default: #082559;
+    --rd-comp-color-chip-attribute-hover: #163772;
+    --rd-comp-color-chip-attribute-pressed: #2359B6;
+    --rd-comp-color-chip-attribute-icon: #71A1F4;
+    --rd-comp-color-chip-attribute-active-border: #163772;
+    --rd-comp-color-chip-measure-default: #003B26;
+    --rd-comp-color-chip-measure-hover: #025B3C;
+    --rd-comp-color-chip-measure-pressed: #049160;
+    --rd-comp-color-chip-measure-icon: #56D3A8;
+    --rd-comp-color-chip-measure-active-border: #025B3C;
+    --rd-comp-color-chip-filter-default: #34363C;
+    --rd-comp-color-chip-filter-hover: #46494E;
+    --rd-comp-color-chip-filter-pressed: #5D636A;
+    --rd-comp-color-chip-filter-icon: #9A9EA2;
+    --rd-comp-color-chip-filter-active-border: #46494E;
+    --rd-comp-color-chip-date-default: #210F4F;
+    --rd-comp-color-chip-date-hover: #422E75;
+    --rd-comp-color-chip-date-pressed: #6A4ABA;
+    --rd-comp-color-chip-date-icon: #B094F8;
+    --rd-comp-color-chip-date-active-border: #422E75;
+    --rd-comp-color-chip-input-default: #1F2024;
+    --rd-comp-color-chip-input-hover: #2D2F34;
+    --rd-comp-color-chip-input-pressed: #34363C;
+    --rd-comp-color-chip-input-selected-default: #AFB2B6;
+    --rd-comp-color-chip-input-selected-hover: #C7C9CC;
+    --rd-comp-color-chip-input-selected-pressed: #DFE0E2;
+    --rd-comp-color-chip-error-default: #3D090E;
+    --rd-comp-color-chip-error-hover: #721F27;
+    --rd-comp-color-chip-error-active-border: #B6313E;
+
+    /* ---- Added in the Figma sync (2026-10-06) ---- */
+    --rd-sys-color-background-accent-blue: #082559;
+    --rd-sys-color-background-accent-gray: #2D2F34;
+    --rd-sys-color-background-accent-green: #003B26;
+    --rd-sys-color-background-accent-purple-bold: #B094F8;
+    --rd-sys-color-background-accent-purple-subtle: #422E75;
+    --rd-sys-color-background-accent-red: #3D090E;
+    --rd-sys-color-background-accent-yellow: #4F3D09;
+    --rd-sys-color-background-active: #5D636A;
+    --rd-sys-color-background-on-base: #26282C;
+    --rd-sys-color-border-accent-blue: #71A1F4;
+    --rd-sys-color-border-accent-gray: #5D636A;
+    --rd-sys-color-border-accent-green: #56D3A8;
+    --rd-sys-color-border-accent-purple: #B094F8;
+    --rd-sys-color-border-accent-red: #F47E89;
+    --rd-sys-color-border-accent-yellow: #FCD977;
+    --rd-sys-color-border-subtle-hover: #46494E;
+    --rd-sys-color-content-accent-blue: #71A1F4;
+    --rd-sys-color-content-accent-gray: #5D636A;
+    --rd-sys-color-content-accent-green: #56D3A8;
+    --rd-sys-color-content-accent-purple: #B094F8;
+    --rd-sys-color-content-accent-red: #F47E89;
+    --rd-sys-color-content-accent-yellow: #FCD977;
   }
 }
 

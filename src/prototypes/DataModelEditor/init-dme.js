@@ -1270,7 +1270,7 @@ Only include the context field when there is genuinely meaningful content from t
       toast = document.createElement('div');
       toast.id = 'claude-toast';
       toast.style.cssText = `position:fixed;bottom:80px;left:50%;transform:translateX(-50%);
-        padding:8px 16px;border-radius:8px;font-size:12px;font-family:'Plain',sans-serif;
+        padding:8px 16px;border-radius:8px;font-size:12px;font-family:var(--font-family-primary);
         z-index:9999;transition:opacity 0.4s ease;pointer-events:none;white-space:nowrap;
         box-shadow:0 2px 8px rgba(0,0,0,0.15);`;
       document.body.appendChild(toast);
@@ -1306,7 +1306,7 @@ Only include the context field when there is genuinely meaningful content from t
       <div style="display:flex;align-items:center;gap:12px;flex:1;min-width:0;">
         <img src="/spotter-assets/checkmark.svg" width="18" height="18" alt="" style="flex-shrink:0;"/>
         <span style="font-size:14px;font-weight:300;color:#FFFFFF;
-          font-family:'Plain','Helvetica Neue',Arial,sans-serif;line-height:20px;white-space:nowrap;">
+          font-family:var(--font-family-primary);line-height:20px;white-space:nowrap;">
           Version restored successfully!
         </span>
       </div>

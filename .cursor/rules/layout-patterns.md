@@ -283,7 +283,7 @@ const styles = {
   },
   sectionTitle: {
     fontSize: '20px',
-    fontWeight: 600,
+    fontWeight: 'var(--font-weight-emphasis)',
     color: systemColors.light['content-primary'],
     marginBottom: `${spacing.F}px`,
   },
@@ -405,7 +405,7 @@ const styles = {
   },
   stepTitle: {
     fontSize: '20px',
-    fontWeight: 600,
+    fontWeight: 'var(--font-weight-emphasis)',
     color: systemColors.light['content-primary'],
     margin: 0,
   },
@@ -550,7 +550,7 @@ const styles = {
   },
   title: {
     fontSize: '24px',
-    fontWeight: 600,
+    fontWeight: 'var(--font-weight-emphasis)',
     color: systemColors.light['content-primary'],
     margin: 0,
     marginBottom: `${spacing.D}px`,

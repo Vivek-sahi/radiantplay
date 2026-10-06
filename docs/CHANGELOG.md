@@ -1,5 +1,33 @@
 # Changelog
 
+## 26.10.1a — unreleased
+
+Figma sync: bringing tokens and typography up to date with the Radiant 3.0 Figma design system. In progress on `feat/figma-sync`.
+
+- Added `scripts/figma-tokens/`: a snapshot of the Figma design system's variables, text styles and effect styles, and a diff that compares it with `src/tokens/*` and `src/styles/tokens.css`. Run `npm run figma-tokens:diff`; refresh steps are in its README. Tooling only
+- Light mode tokens now match Figma:
+  - `background-base-inverse` is Gray/80 (`#323946`) per Figma `Background/Inverse`. Tooltips and the Liveboard edit header get slightly lighter. This undoes the 26.5.4a revert to `#1D232F`, which had matched the production edit bar; Figma is now the source of truth
+  - `brand/10` is `#F2F7FF` (was `#EBF2FD`)
+  - Component tokens: `button-secondary-pressed`, `button-tertiary-pressed`, `toggle-track-on` and `toggle-thumb-on` match Figma. No component reads these tokens yet, so nothing changes on screen
+- Added tokens from Figma: `button-overlay`, `segmented-control-content-active`, and the `gray-20a`, `brand-10a` and `purple-20a` alpha colours
+- Added Figma's names as aliases next to ours: `background-inverse`, `background-secondary-action`, `content-inverse`, `border-subtle`, `border-bold`, `border-bold-hover`. Nothing is renamed
+- Chip component tokens are now CSS variables (`--rd-comp-color-chip-*`), so CSS Modules can use them
+- Dark mode values now match Figma: the neutral Dark Gray scale (every stop except 90 moved), all 52 semantic and 48 component dark values, and the 22 dark values `tokens.css` was missing. The system-dark (`prefers-color-scheme`) block now matches the dark theme, including shadows. Dark mode isn't switched on anywhere yet, so nothing changes on screen. Tokens Figma doesn't have (`content-alternate`, the `*-inverse` set, links, `background-inset`) keep their older dark values
+- Typography is now Geist, matching Figma:
+  - Geist and Geist Mono variable fonts are self-hosted in `public/fonts/geist/` (SIL Open Font License, licence file alongside) and preloaded. Plain was never shipped for most users, so most screens were falling back to system fonts; they now render in Geist
+  - New `--font-weight-emphasis` (550), Figma's "Emphasis" weight for headings and labels. `semibold` and `light` stay as deprecated aliases that point at 550 and 400, so older code follows the new weights
+  - Text styles: headings and labels at 550, body and footnote at 400, letter spacing per Figma (0, 0.4% and 0.6% as `normal`, `relaxed`, `loose`). New `--letter-spacing-*` CSS variables
+  - Monospace is now Geist Mono
+  - Replaced hardcoded Plain font stacks and `600` / `375` weights with the tokens across components, Spotter, pages and sample prototypes (including `_template` and the `/new-prototype` scaffold, so new prototypes start on Geist)
+  - DataModelEditor uses Geist; its bundled Plain font files are removed
+  - Rule and skill docs updated to Geist and the new weights
+- Typography component variants (headline, titles, labels) now use the 550 emphasis weight and Figma letter spacing; they were at 500. The Typography page's spec labels match Figma
+- Conditional weights (`active ? 600 : 400`, used on selected tabs) and 45 hardcoded monospace stacks now use the tokens; code text renders in Geist Mono
+- Native buttons, inputs, selects and text areas inherit the page font instead of the browser default (Arial), and `code`, `kbd`, `samp`, `pre` use Geist Mono
+- `npm run figma-tokens:diff` also checks the Typography component's CSS against Figma
+- Added `scripts/visual-snapshots/`: screenshots every page and sample prototype of a build in light and dark, and compares two builds in a review page. Playwright stays outside `package.json`; setup is in its README
+- The token count on the Radiant home page goes from 373 to 392 (new Figma tokens and aliases)
+
 ## 26.9.1c — 2026-09-03
 
 Guided Coolify setup for designers. Docs and tooling only, no product changes.

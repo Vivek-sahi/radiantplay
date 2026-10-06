@@ -48,7 +48,7 @@ export const AppShellFullscreen: React.FC = () => {
         }}
       >
         <div style={{ padding: 32, height: '100%', overflowY: 'auto' }}>
-          <h1 style={{ fontFamily: '"Plain", sans-serif', fontSize: 28, fontWeight: 600, margin: 0 }}>Home</h1>
+          <h1 style={{ fontFamily: 'var(--font-family-primary)', fontSize: 28, fontWeight: 'var(--font-weight-emphasis)', margin: 0 }}>Home</h1>
           <p style={{ marginTop: 8, color: '#777E8B', maxWidth: 700 }}>
             Fullscreen preview of AppShell. The header and sidebar are composed automatically; the content area fills the rest of the viewport.
           </p>

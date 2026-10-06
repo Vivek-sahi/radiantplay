@@ -42,7 +42,7 @@
   height: 32px;
   padding: 6px var(--spacing-4);
   font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-light);
+  font-weight: var(--font-weight-regular);
   line-height: var(--line-height-md);
   border-radius: var(--radius-2xl);
   gap: var(--spacing-2);
@@ -52,7 +52,7 @@
   height: 32px;
   padding: 6px var(--spacing-4);
   font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-light);
+  font-weight: var(--font-weight-regular);
   line-height: var(--line-height-md);
   border-radius: var(--radius-2xl);
   gap: var(--spacing-2);

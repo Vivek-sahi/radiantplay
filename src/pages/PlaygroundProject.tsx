@@ -86,7 +86,7 @@ const styles: Record<string, React.CSSProperties> = {
   container: {
     minHeight: '100vh',
     position: 'relative',
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
   },
 
   // Project Container
@@ -144,7 +144,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   notFoundTitle: {
     fontSize: '24px',
-    fontWeight: 600,
+    fontWeight: 'var(--font-weight-emphasis)',
     color: systemColors.light['content-primary'],
     marginBottom: '12px',
   },

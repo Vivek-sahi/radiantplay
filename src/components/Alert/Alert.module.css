@@ -127,7 +127,7 @@
 
 .message {
   font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-light);
+  font-weight: var(--font-weight-regular);
   line-height: var(--line-height-md);
   color: var(--rd-sys-color-content-primary);
   white-space: nowrap;
@@ -137,7 +137,7 @@
 
 .messageMulti {
   font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-light);
+  font-weight: var(--font-weight-regular);
   line-height: var(--line-height-md);
   color: var(--rd-sys-color-content-primary);
   margin: 0;
@@ -147,7 +147,7 @@
 .link {
   font-family: var(--font-family-primary);
   font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-light);
+  font-weight: var(--font-weight-regular);
   line-height: var(--line-height-md);
   color: var(--rd-sys-color-content-brand);
   background: none;

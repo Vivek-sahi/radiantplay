@@ -24,7 +24,7 @@ export const TableChart: React.FC<Props> = ({ height }) => (
                 padding: '6px 10px',
                 textAlign: 'left',
                 fontSize: 10,
-                fontWeight: 600,
+                fontWeight: 'var(--font-weight-emphasis)',
                 color: chartUi.labelColor,
                 whiteSpace: 'nowrap',
               }}

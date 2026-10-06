@@ -9,7 +9,7 @@
   color: var(--rd-sys-color-content-primary);
   font-family: var(--font-family-primary);
   font-size: var(--font-size-lg, 18px);
-  font-weight: var(--font-weight-semibold, 600);
+  font-weight: var(--font-weight-emphasis);
   line-height: var(--line-height-lg, 24px);
   letter-spacing: -0.2px;
 }
@@ -50,7 +50,7 @@
   color: var(--rd-sys-color-content-primary);
   font-family: var(--font-family-primary);
   font-size: var(--font-size-sm, 14px);
-  font-weight: var(--font-weight-light, 375);
+  font-weight: var(--font-weight-regular);
   line-height: var(--line-height-md, 20px);
   white-space: nowrap;
 }
@@ -166,7 +166,7 @@
   color: var(--rd-sys-color-content-secondary);
   font-family: var(--font-family-primary);
   font-size: var(--font-size-md, 16px);
-  font-weight: var(--font-weight-light, 375);
+  font-weight: var(--font-weight-regular);
   line-height: var(--line-height-lg, 24px);
   text-align: center;
   padding: var(--spacing-6, 24px);
@@ -178,7 +178,7 @@
   overflow: auto;
   font-family: var(--font-family-primary);
   font-size: var(--font-size-sm, 14px);
-  font-weight: var(--font-weight-light, 375);
+  font-weight: var(--font-weight-regular);
   line-height: var(--line-height-md, 20px);
 }
 
@@ -229,7 +229,7 @@
   color: var(--rd-sys-color-content-secondary);
   font-family: var(--font-family-primary);
   font-size: var(--font-size-sm, 14px);
-  font-weight: var(--font-weight-light, 375);
+  font-weight: var(--font-weight-regular);
   line-height: var(--line-height-md, 20px);
   cursor: pointer;
   border-radius: var(--radius-sm, 4px);
@@ -282,7 +282,7 @@
   color: var(--rd-sys-color-content-primary);
   font-family: var(--font-family-primary);
   font-size: var(--font-size-xl, 20px);
-  font-weight: var(--font-weight-semibold, 600);
+  font-weight: var(--font-weight-emphasis);
   line-height: var(--line-height-xl, 28px);
   letter-spacing: -0.2px;
 }
@@ -307,6 +307,6 @@
   color: var(--rd-sys-color-content-secondary);
   font-family: var(--font-family-primary);
   font-size: var(--font-size-sm, 14px);
-  font-weight: var(--font-weight-light, 375);
+  font-weight: var(--font-weight-regular);
   line-height: var(--line-height-md, 20px);
 }

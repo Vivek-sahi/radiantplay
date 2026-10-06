@@ -35,7 +35,7 @@ export const ConfirmDialog: React.FC<{
   >
     <div style={{
       fontSize: '14px', color: '#374151', lineHeight: 1.65,
-      fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      fontFamily: 'var(--font-family-primary)',
     }}>
       {message}
     </div>

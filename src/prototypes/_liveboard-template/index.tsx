@@ -730,7 +730,7 @@ const shadowStyle: React.CSSProperties = {
 
 const s: Record<string, React.CSSProperties> = {
   page: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     background: '#F6F8FA',
     minHeight: '100vh',
     display: 'flex',

@@ -2,7 +2,7 @@ import { CSSProperties } from 'react';
 import { systemColors, referenceColors } from '../../tokens/colors';
 import { spacing } from '../../tokens/spacing';
 
-const FONT_FAMILY = '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+const FONT_FAMILY = 'var(--font-family-primary)';
 
 /** Main content area styles */
 export const contentStyles = {
@@ -36,7 +36,7 @@ export const sectionStyles = {
 
   title: {
     fontSize: '18px',
-    fontWeight: 600,
+    fontWeight: 'var(--font-weight-emphasis)',
     color: systemColors.light['content-primary'],
     margin: 0,
     lineHeight: 1.4,
@@ -216,7 +216,7 @@ export const uploadModalStyles = {
 
   validationTitle: {
     fontSize: '14px',
-    fontWeight: 600,
+    fontWeight: 'var(--font-weight-emphasis)',
     margin: 0,
   } as CSSProperties,
 
@@ -261,7 +261,7 @@ export const pickerStyles = {
     backgroundColor: systemColors.light['background-sunken'],
     borderBottom: `1px solid ${referenceColors.gray['20']}`,
     fontSize: '12px',
-    fontWeight: 600,
+    fontWeight: 'var(--font-weight-emphasis)',
     color: systemColors.light['content-secondary'],
     textTransform: 'uppercase' as const,
     letterSpacing: '0.3px',
@@ -319,7 +319,7 @@ export const adminSidebarStyles = {
 
   title: {
     fontSize: '16px',
-    fontWeight: 600,
+    fontWeight: 'var(--font-weight-emphasis)',
     color: systemColors.light['content-primary'],
     marginBottom: `${spacing.C}px`,
     fontFamily: FONT_FAMILY,
@@ -355,7 +355,7 @@ export const adminSidebarStyles = {
 
   sectionLabel: {
     fontSize: '11px',
-    fontWeight: 600,
+    fontWeight: 'var(--font-weight-emphasis)',
     color: systemColors.light['content-tertiary'],
     textTransform: 'uppercase' as const,
     letterSpacing: '0.6px',

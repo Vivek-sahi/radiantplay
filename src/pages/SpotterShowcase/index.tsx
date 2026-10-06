@@ -312,7 +312,7 @@ const ResponseGridSpec: React.FC = () => (
     {RESPONSE_GRID_ROWS.map((row) => (
       <Vertical key={row.label} gap={spacing.A}>
         <Horizontal gap={spacing.C} align="baseline" justify="space-between">
-          <span style={{ fontSize: fontSize.sm, fontWeight: fontWeight.semibold, color: 'var(--rd-sys-color-content-primary)' }}>
+          <span style={{ fontSize: fontSize.sm, fontWeight: fontWeight.emphasis, color: 'var(--rd-sys-color-content-primary)' }}>
             {row.label}
           </span>
           <code style={{ fontSize: fontSize.xs, fontFamily: 'var(--font-family-mono)', color: 'var(--rd-sys-color-content-secondary)' }}>
@@ -484,7 +484,7 @@ const ChartBgSwatches: React.FC = () => (
     {(Object.entries(spotterChartBg) as Array<[keyof typeof spotterChartBg, string]>).map(([key, color]) => (
       <div key={key} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         <div style={{ height: 64, background: color, borderRadius: 8, border: '1px solid var(--rd-sys-color-background-subtle)' }} />
-        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--rd-sys-color-content-primary)' }}>{key}</div>
+        <div style={{ fontSize: 13, fontWeight: 'var(--font-weight-emphasis)', color: 'var(--rd-sys-color-content-primary)' }}>{key}</div>
         <code style={{ fontSize: 11, fontFamily: 'var(--font-family-mono)', color: 'var(--rd-sys-color-content-secondary)' }}>{color}</code>
       </div>
     ))}
@@ -495,7 +495,7 @@ const LayoutSwatch: React.FC = () => (
   <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 16 }}>
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--rd-sys-color-content-primary)' }}>chatMaxWidth</span>
+        <span style={{ fontSize: 13, fontWeight: 'var(--font-weight-emphasis)', color: 'var(--rd-sys-color-content-primary)' }}>chatMaxWidth</span>
         <code style={{ fontSize: 12, fontFamily: 'var(--font-family-mono)', color: 'var(--rd-sys-color-content-secondary)' }}>{spotterLayout.chatMaxWidth}px</code>
       </div>
       <div style={{ height: 8, background: 'var(--rd-sys-color-content-brand)', borderRadius: 4, width: '100%' }} />
@@ -505,7 +505,7 @@ const LayoutSwatch: React.FC = () => (
     </div>
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--rd-sys-color-content-primary)' }}>textMaxWidth</span>
+        <span style={{ fontSize: 13, fontWeight: 'var(--font-weight-emphasis)', color: 'var(--rd-sys-color-content-primary)' }}>textMaxWidth</span>
         <code style={{ fontSize: 12, fontFamily: 'var(--font-family-mono)', color: 'var(--rd-sys-color-content-secondary)' }}>{spotterLayout.textMaxWidth}px</code>
       </div>
       <div style={{ height: 8, background: 'var(--rd-sys-color-content-brand)', borderRadius: 4, width: `${(spotterLayout.textMaxWidth / spotterLayout.chatMaxWidth) * 100}%` }} />

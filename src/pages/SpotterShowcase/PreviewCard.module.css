@@ -17,9 +17,9 @@
 
 .name {
   margin: 0;
-  font-family: "Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-family-primary);
   font-size: 18px;
-  font-weight: 600;
+  font-weight: var(--font-weight-emphasis);
   color: var(--rd-sys-color-content-primary);
   line-height: 1.3;
 }
@@ -97,7 +97,7 @@
 
 .variantLabel {
   font-size: 13px;
-  font-weight: 600;
+  font-weight: var(--font-weight-emphasis);
   color: var(--rd-sys-color-content-primary);
 }
 
