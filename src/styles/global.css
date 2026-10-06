@@ -27,6 +27,15 @@
   box-sizing: border-box;
 }
 
+/* Native scrollbars, form controls and select popups follow the app theme */
+:root {
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}
+
 html {
   font-size: 16px;
   -webkit-font-smoothing: antialiased;

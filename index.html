@@ -5,6 +5,21 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Radiant Play</title>
+    <script>
+      // Set the saved theme before first paint, so a reload never flashes the wrong one.
+      // Keep the key and the light default in step with src/context/ThemeContext.tsx.
+      (function () {
+        var mode = 'light';
+        try {
+          var stored = localStorage.getItem('rp-theme-mode');
+          if (stored === 'light' || stored === 'dark' || stored === 'system') mode = stored;
+        } catch (e) {}
+        if (mode === 'system') {
+          mode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        document.documentElement.setAttribute('data-theme', mode);
+      })();
+    </script>
     <link rel="preload" href="/fonts/geist/Geist-Variable.woff2" as="font" type="font/woff2" crossorigin />
   </head>
   <body>

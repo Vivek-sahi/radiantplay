@@ -19,7 +19,7 @@ export VISUAL_DEPS=~/.radiantplay-visual
    npm run build && npx vite preview --outDir dist --port 4802 --strictPort
    ```
 
-2. Screenshot each one. `--theme` is `light`, `dark` or `both`. Dark forces `data-theme="dark"` on the page.
+2. Screenshot each one. `--theme` is `light`, `dark` or `both`. Dark saves `rp-theme-mode` before each page loads, so the theme controller applies it; for builds older than the controller it sets `data-theme="dark"` after load.
 
    ```bash
    node scripts/visual-snapshots/snapshot.mjs --base http://localhost:4801 --out /tmp/shots/before --theme light

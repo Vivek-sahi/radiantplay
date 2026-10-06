@@ -94,6 +94,10 @@ async function main() {
     const dir = path.join(OUT, theme);
     await fs.mkdir(dir, { recursive: true });
     const context = await browser.newContext({ viewport: { width: WIDTH, height: 900 }, deviceScaleFactor: 1 });
+    // Save the mode before any page loads, so the app's theme controller picks it up as a user's choice would.
+    await context.addInitScript((mode) => {
+      try { localStorage.setItem('rp-theme-mode', mode); } catch {}
+    }, theme);
     for (const route of list) {
       const page = await context.newPage();
       const errors = [];
@@ -106,7 +110,10 @@ async function main() {
       try {
         await page.goto(BASE + route, { waitUntil: 'networkidle', timeout: 30000 });
         await page.addStyleTag({ content: FREEZE + (INJECT_CSS ?? '') });
-        if (theme === 'dark') await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'dark'));
+        // Builds from before the theme controller ignore the saved mode; set the attribute for those.
+        if (theme === 'dark') await page.evaluate(() => {
+          if (document.documentElement.getAttribute('data-theme') !== 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+        });
         await page.evaluate(() => document.fonts.ready);
         await page.waitForTimeout(400);
         const height = await page.evaluate(() => document.documentElement.scrollHeight);

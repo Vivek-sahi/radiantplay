@@ -1,0 +1,72 @@
+{
+  "_readme": "Rules for scripts/scaligent-tokens/tally.mjs. Edit here when a decision changes, then re-run `npm run scaligent-tokens:tally`. Decisions: Scaligent names in code, Figma wins on values (docs/2026-10-06-dark-mode-rollout-plan.md section 9).",
+
+  "scaligentDirDefault": "~/code/scaligent",
+  "scaligentFiles": {
+    "reference": "js/ts-packages/radiant-styles/css/foundations/_tokens-reference.scss",
+    "system": "js/ts-packages/radiant-styles/css/foundations/_tokens-system.scss",
+    "componentGlob": "js/ts-packages/radiant-styles/css/foundations/_tokens-component-*.scss"
+  },
+  "systemMaps": { "light": "rd-sys-color-map", "dark": "rd-sys-color-map-dark" },
+  "componentMapPattern": { "light": "^rd-comp-[a-z-]+-color-map$", "dark": "^rd-comp-[a-z-]+-color-map-dark$" },
+
+  "oursFile": "src/styles/tokens.css",
+
+  "_nameMap": "Scaligent name to the CSS variable we use today, where they differ. Phase 2 renames ours to the Scaligent name; remove the row when it does.",
+  "nameMap": {
+    "system": {
+      "shadow-surface": "--shadow-surface",
+      "shadow-menu": "--shadow-menu",
+      "shadow-modal": "--shadow-modal"
+    },
+    "component": {
+      "button-bg-overlay": "--rd-comp-color-button-overlay"
+    }
+  },
+
+  "_aliases": "Our older names for a token that also exists under the Scaligent name. Reported as proposed, with the canonical name.",
+  "aliases": {
+    "background-subtle": "background-secondary-action",
+    "border-default": "border-bold",
+    "border-divider": "border-subtle",
+    "border-hover": "border-bold-hover",
+    "background-base-inverse": "background-inverse",
+    "content-primary-inverse": "content-inverse"
+  },
+
+  "_proposed": "Radiant Play tokens Scaligent does not have. Same naming scheme, one line on why each exists.",
+  "proposed": {
+    "background-inset": "Gray/40 fill (light #C0C6CF) for recessed tracks and wells; Scaligent has no equivalent",
+    "background-raised-inverse": "Raised surface on an inverse (dark in light mode) area",
+    "border-brand-inverse": "Brand border on an inverse surface",
+    "border-default-inverse": "Default border on an inverse surface",
+    "border-divider-inverse": "Divider on an inverse surface",
+    "border-hover-inverse": "Hover border on an inverse surface",
+    "content-alternate": "Text on coloured fills (light #FFFFFF); overlaps content-inverse in light mode",
+    "content-alternate-inverse": "content-alternate on an inverse surface",
+    "content-brand-inverse": "Brand text on an inverse surface",
+    "content-link": "Link text, separate from content-brand so links can change without changing brand text",
+    "content-link-inverse": "Link text on an inverse surface",
+    "content-link-inverse-hover": "Hovered link text on an inverse surface"
+  },
+
+  "_figmaNameMap": "Figma variable names (kebab-cased from the Theme collection) that differ from the Scaligent name. Used by --names. Figma wins on values only.",
+  "figmaNameMap": {
+    "button-background-overlay": "button-bg-overlay",
+    "button-background-primary-default": "button-primary-default",
+    "button-background-primary-hover": "button-primary-hover",
+    "button-background-primary-pressed": "button-primary-pressed",
+    "button-background-primary-on-color-default": "button-primary-on-color-default",
+    "button-background-primary-on-color-hover": "button-primary-on-color-hover",
+    "button-background-primary-on-color-pressed": "button-primary-on-color-pressed",
+    "button-background-secondary-default": "button-secondary-default",
+    "button-background-secondary-hover": "button-secondary-hover",
+    "button-background-secondary-pressed": "button-secondary-pressed",
+    "button-background-tertiary-hover": "button-tertiary-hover",
+    "button-background-tertiary-pressed": "button-tertiary-pressed",
+    "chip-loading": "chip-loading-default"
+  },
+  "_figmaShadowParts": "Figma stores each shadow as four variables (-1-blur, -1-color, -2-blur, -2-color). They all map to the one Scaligent shadow token.",
+  "figmaShadowParts": ["shadow-surface", "shadow-menu", "shadow-modal"],
+  "figmaSnapshot": "scripts/figma-tokens/snapshot/variables.json"
+}

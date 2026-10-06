@@ -22,6 +22,7 @@ import RdModalDemo from './pages/RdModalDemo';
 
 import { systemColors } from './tokens/colors';
 import { getCurrentVersion } from './data/versionHistory';
+import { useTheme } from './context/ThemeContext';
 import { getIconCount } from './data/componentRegistry';
 
 // Navigation icons
@@ -527,17 +528,17 @@ const RadiantHomePageWrapper: React.FC = () => {
 };
 
 const App: React.FC = () => {
-  // Ctrl+D flips the whole app between the light and dark token sets.
+  // Ctrl+D switches between light and dark anywhere in the app, and the choice is saved.
+  const { toggle: toggleTheme } = useTheme();
   React.useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (!e.ctrlKey || e.metaKey || e.altKey || e.shiftKey || e.key.toLowerCase() !== 'd') return;
       e.preventDefault();
-      const root = document.documentElement;
-      root.dataset.theme = root.dataset.theme === 'dark' ? 'light' : 'dark';
+      toggleTheme();
     };
     window.addEventListener('keydown', onKeyDown, true);
     return () => window.removeEventListener('keydown', onKeyDown, true);
-  }, []);
+  }, [toggleTheme]);
 
   return (
     <Routes>

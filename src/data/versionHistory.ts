@@ -44,7 +44,9 @@ export const versionHistory: VersionEntry[] = [
       { type: 'modified', group: 'Typography', component: 'Global font rules', description: 'Form controls inherit the page font instead of Arial; code elements use Geist Mono; conditional weights and hardcoded monospace stacks use tokens.' },
       { type: 'added', group: 'Tooling', component: 'Visual snapshots', description: 'Screenshot every page and sample prototype in light and dark, and compare two builds side by side (scripts/visual-snapshots). Playwright stays outside package.json.' },
       { type: 'synced', group: 'Dark mode', component: 'Dark values', description: 'Dark Gray scale, 52 semantic and 48 component dark values match Figma; 22 missing dark values added to tokens.css; system-dark block matches the dark theme including shadows. Not visible until dark mode is switched on.' },
-      { type: 'added', group: 'Dark mode', component: 'Ctrl+D shortcut', description: 'Press Ctrl+D anywhere in the app to switch between light and dark mode. Resets to light on reload.' },
+      { type: 'added', group: 'Dark mode', component: 'Ctrl+D shortcut', description: 'Press Ctrl+D anywhere in the app to switch between light and dark mode. The choice is saved across reloads.' },
+      { type: 'added', group: 'Dark mode', component: 'Theme controller', description: 'ThemeContext with light, dark and system modes, saved in the browser, light by default. The only writer of data-theme; useTheme() and useIsDarkMode() for components. An inline script in index.html applies the saved theme before first paint.' },
+      { type: 'added', group: 'Tooling', component: 'Scaligent token tally', description: 'Compares our colour tokens with the product codebase (match, differs, proposed, Scaligent-only), with a Figma name check. npm run scaligent-tokens:tally. Tooling only.' },
     ],
   },
   {
