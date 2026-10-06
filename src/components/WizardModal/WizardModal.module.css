@@ -78,7 +78,7 @@
 .stepTitle {
   font-family: var(--font-family-primary);
   font-size: var(--font-size-lg, 18px);
-  font-weight: var(--font-weight-semibold, 600);
+  font-weight: var(--font-weight-emphasis);
   color: var(--rd-sys-color-content-primary);
 }
 

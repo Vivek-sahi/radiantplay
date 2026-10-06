@@ -209,7 +209,7 @@ const styles: Record<string, React.CSSProperties> = {
     minHeight: '100vh',
     backgroundColor: systemColors.light['background-sunken'],
     padding: \`\${spacing.H}px\`,
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
   },
   header: {
     marginBottom: \`\${spacing.H}px\`,

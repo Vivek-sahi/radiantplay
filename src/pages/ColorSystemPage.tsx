@@ -389,7 +389,7 @@ const styles: Record<string, React.CSSProperties> = {
   systemTokenName: {
     fontFamily: fontFamily.primary,
     fontSize: 14,
-    fontWeight: 600,
+    fontWeight: 'var(--font-weight-emphasis)',
     color: systemColors.light['content-primary'],
     lineHeight: '20px',
   },
@@ -412,14 +412,14 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 500,
   },
   title: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: 36,
     fontWeight: 700,
     color: systemColors.light['content-primary'],
     marginBottom: 12,
   },
   description: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: 16,
     fontWeight: 400,
     color: systemColors.light['content-secondary'],
@@ -454,7 +454,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    fontWeight: 600,
+    fontWeight: 'var(--font-weight-emphasis)',
     fontFamily: '"SF Mono", Monaco, monospace',
   },
   scalesSection: {
@@ -481,7 +481,7 @@ const styles: Record<string, React.CSSProperties> = {
     paddingLeft: 20,
   },
   usageItem: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: 13,
     color: referenceColors.gray['70'],
     lineHeight: '22px',
@@ -508,7 +508,7 @@ const styles: Record<string, React.CSSProperties> = {
   swatchLevel: {
     fontFamily: '"SF Mono", Monaco, monospace',
     fontSize: 12,
-    fontWeight: 600,
+    fontWeight: 'var(--font-weight-emphasis)',
   },
   swatchInfo: {
     padding: 8,

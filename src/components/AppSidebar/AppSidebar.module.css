@@ -94,7 +94,7 @@
 .headerTitle {
   color: var(--as-text);
   font-size: 18px;
-  font-weight: 600;
+  font-weight: var(--font-weight-emphasis);
   letter-spacing: -0.072px;
   line-height: 24px;
   margin: 0;
@@ -143,7 +143,7 @@
   flex: 1;
   font-family: inherit;
   font-size: 14px;
-  font-weight: 375;
+  font-weight: var(--font-weight-regular);
   line-height: 20px;
   padding: 4px 16px;
   white-space: nowrap;
@@ -204,7 +204,7 @@
   cursor: pointer;
   display: flex;
   font-size: 14px;
-  font-weight: 375;
+  font-weight: var(--font-weight-regular);
   gap: 8px;
   justify-content: space-between;
   line-height: 20px;
@@ -227,7 +227,7 @@
 .itemActive {
   background: var(--as-active-bg);
   color: var(--as-active);
-  font-weight: 600;
+  font-weight: var(--font-weight-emphasis);
 }
 
 .itemHighlighted {

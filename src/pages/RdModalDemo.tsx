@@ -39,7 +39,7 @@ export default function RdModalDemo() {
     <div style={{ minHeight: '100vh', backgroundColor: bg, padding: spacing.J }}>
       <Vertical gap={spacing.H}>
         <div>
-          <p style={{ margin: 0, fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: contentSecondary }}>Dev demo</p>
+          <p style={{ margin: 0, fontSize: 11, fontWeight: 'var(--font-weight-emphasis)', letterSpacing: '0.08em', textTransform: 'uppercase', color: contentSecondary }}>Dev demo</p>
           <h1 style={{ margin: `${spacing.A}px 0 0`, fontSize: 24, fontWeight: 700, color: contentPrimary }}>RdModal</h1>
           <p style={{ margin: `${spacing.B}px 0 0`, fontSize: 14, color: contentSecondary }}>Sizes M1–M4, simple / eyebrow / wizard variants</p>
         </div>
@@ -63,7 +63,7 @@ export default function RdModalDemo() {
                 fontFamily: 'inherit',
               }}
             >
-              <div style={{ fontSize: 13, fontWeight: 600, color: contentPrimary }}>{demo.label}</div>
+              <div style={{ fontSize: 13, fontWeight: 'var(--font-weight-emphasis)', color: contentPrimary }}>{demo.label}</div>
               {demo.eyebrow && <div style={{ fontSize: 12, color: contentSecondary, marginTop: 4 }}>{demo.eyebrow}{demo.totalSteps ? ` · ${demo.totalSteps} steps` : ''}</div>}
             </button>
           ))}

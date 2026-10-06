@@ -7,7 +7,7 @@ import { ConfirmDialog } from './ConfirmDialog';
 import { Modal, ModalFooter } from '@components/Modal';
 import { Button } from '@components/Button';
 
-const font = '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+const font = 'var(--font-family-primary)';
 const brand = systemColors.light['content-brand'];
 
 type SidebarTabId = 'insights' | 'data' | 'develop' | 'admin';
@@ -186,7 +186,7 @@ const Card: React.FC<{
         >
           <Chevron open={isOpen} />
           <div>
-            <span style={{ fontSize: '14px', fontWeight: 600, color: '#111827', fontFamily: font }}>{title}</span>
+            <span style={{ fontSize: '14px', fontWeight: 'var(--font-weight-emphasis)', color: '#111827', fontFamily: font }}>{title}</span>
             {description && (
               <div style={{ fontSize: '12px', color: '#9CA3AF', fontFamily: font, marginTop: '2px', lineHeight: 1.5 }}>{description}</div>
             )}
@@ -195,7 +195,7 @@ const Card: React.FC<{
       ) : (
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
           <div>
-            <span style={{ fontSize: '14px', fontWeight: 600, color: '#111827', fontFamily: font }}>{title}</span>
+            <span style={{ fontSize: '14px', fontWeight: 'var(--font-weight-emphasis)', color: '#111827', fontFamily: font }}>{title}</span>
             {description && (
               <div style={{ fontSize: '12px', color: '#9CA3AF', fontFamily: font, marginTop: '2px', lineHeight: 1.5 }}>{description}</div>
             )}
@@ -232,7 +232,7 @@ const SettingRow: React.FC<{
     border: noBg ? 'none' : '1px solid #E9EAEC', borderRadius: '8px',
   }}>
     <div style={{ flex: 1 }}>
-      <div style={{ fontSize: '14px', fontWeight: 600, color: '#111827', fontFamily: font, lineHeight: 1.4 }}>
+      <div style={{ fontSize: '14px', fontWeight: 'var(--font-weight-emphasis)', color: '#111827', fontFamily: font, lineHeight: 1.4 }}>
         {label}
       </div>
       {description && (
@@ -309,7 +309,7 @@ const ImageUploadArea: React.FC = () => {
 // ─── Font options ─────────────────────────────────────────────────────────────
 
 const FONT_OPTIONS: { label: string; fontFamily: string; color?: string; fontWeight?: number }[] = [
-  { label: 'Optimo Plain, helvetica Neue, Helvetica, Arial, Sans serif', fontFamily: '"Plain", -apple-system, sans-serif', color: brand },
+  { label: 'Optimo Plain, helvetica Neue, Helvetica, Arial, Sans serif', fontFamily: 'var(--font-family-primary)', color: brand },
   { label: 'Testing font', fontFamily: 'Georgia, "Times New Roman", serif', color: '#111827' },
   { label: 'Ashu all org 2 font', fontFamily: '"Brush Script MT", "Segoe Script", cursive', color: '#1F2937' },
   { label: 'Primary Org style', fontFamily: 'Papyrus, fantasy', color: '#14B8A6' },
@@ -398,7 +398,7 @@ const DoubleDropdownRow: React.FC<{
     display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '24px',
     padding: '14px 20px', backgroundColor: '#FFFFFF', border: '1px solid #E9EAEC', borderRadius: '8px',
   }}>
-    <span style={{ fontSize: '14px', fontWeight: 600, color: '#111827', fontFamily: font }}>
+    <span style={{ fontSize: '14px', fontWeight: 'var(--font-weight-emphasis)', color: '#111827', fontFamily: font }}>
       {label}
     </span>
     <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
@@ -537,7 +537,7 @@ const TextInputRow: React.FC<{ label: string; placeholder?: string }> = ({ label
     display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '24px',
     padding: '14px 20px', backgroundColor: '#FFFFFF', border: '1px solid #E9EAEC', borderRadius: '8px',
   }}>
-    <span style={{ fontSize: '14px', fontWeight: 600, color: '#111827', fontFamily: font }}>
+    <span style={{ fontSize: '14px', fontWeight: 'var(--font-weight-emphasis)', color: '#111827', fontFamily: font }}>
       {label}
     </span>
     <input
@@ -781,7 +781,7 @@ const ChartAvatar: React.FC = () => (
     width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
     background: 'linear-gradient(135deg, #6366f1, #a855f7)',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    fontSize: 10, fontWeight: 600, color: '#fff', fontFamily: font,
+    fontSize: 10, fontWeight: 'var(--font-weight-emphasis)', color: '#fff', fontFamily: font,
   }}>
     AK
   </div>
@@ -1162,7 +1162,7 @@ export const CustomisationPageContent: React.FC<{ scope?: 'all-orgs' | 'primary-
                   <span style={{ fontSize: '13.5px', color: '#6B7280', fontFamily: font }}>
                     Add and manage custom chart types available to your users.
                   </span>
-                  <button style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'none', border: 'none', cursor: 'pointer', fontFamily: font, fontSize: '13px', fontWeight: 600, color: brand, padding: 0, flexShrink: 0, marginLeft: '16px' }}>
+                  <button style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'none', border: 'none', cursor: 'pointer', fontFamily: font, fontSize: '13px', fontWeight: 'var(--font-weight-emphasis)', color: brand, padding: 0, flexShrink: 0, marginLeft: '16px' }}>
                     <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><line x1="6.5" y1="1" x2="6.5" y2="12" stroke={brand} strokeWidth="1.6" strokeLinecap="round"/><line x1="1" y1="6.5" x2="12" y2="6.5" stroke={brand} strokeWidth="1.6" strokeLinecap="round"/></svg>
                     Add chart
                   </button>
@@ -1203,7 +1203,7 @@ export const CustomisationPageContent: React.FC<{ scope?: 'all-orgs' | 'primary-
                   <span style={{ fontSize: '13.5px', color: '#6B7280', fontFamily: font }}>
                     For optimal display, choose your custom chart colour palettes.
                   </span>
-                  <button style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'none', border: 'none', cursor: 'pointer', fontFamily: font, fontSize: '13px', fontWeight: 600, color: brand, padding: 0, flexShrink: 0, marginLeft: '16px' }}>
+                  <button style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'none', border: 'none', cursor: 'pointer', fontFamily: font, fontSize: '13px', fontWeight: 'var(--font-weight-emphasis)', color: brand, padding: 0, flexShrink: 0, marginLeft: '16px' }}>
                     <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><line x1="6.5" y1="1" x2="6.5" y2="12" stroke={brand} strokeWidth="1.6" strokeLinecap="round"/><line x1="1" y1="6.5" x2="12" y2="6.5" stroke={brand} strokeWidth="1.6" strokeLinecap="round"/></svg>
                     Add maps
                   </button>
@@ -1350,7 +1350,7 @@ export const CustomisationPageContent: React.FC<{ scope?: 'all-orgs' | 'primary-
                   </div>
                 </div>
                 <div style={{ padding: '14px 20px' }}>
-                  <button style={{ height: '36px', padding: '0 28px', borderRadius: '20px', border: 'none', backgroundColor: '#1F2937', color: '#FFFFFF', fontSize: '13.5px', fontWeight: 600, fontFamily: font, cursor: 'default', letterSpacing: '0.01em' }}>
+                  <button style={{ height: '36px', padding: '0 28px', borderRadius: '20px', border: 'none', backgroundColor: '#1F2937', color: '#FFFFFF', fontSize: '13.5px', fontWeight: 'var(--font-weight-emphasis)', fontFamily: font, cursor: 'default', letterSpacing: '0.01em' }}>
                     View KPI
                   </button>
                 </div>
@@ -1368,19 +1368,19 @@ export const CustomisationPageContent: React.FC<{ scope?: 'all-orgs' | 'primary-
                 <div style={{ padding: '14px 20px' }}>
                   <div style={{ backgroundColor: '#DCFCE7', border: '1px solid #BBF7D0', borderRadius: '8px', padding: '16px 24px', display: 'flex', alignItems: 'stretch', gap: '24px', maxWidth: '420px' }}>
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: '10px', fontWeight: 600, color: '#166534', fontFamily: font, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px' }}>CURRENT (1/12/23)</div>
+                      <div style={{ fontSize: '10px', fontWeight: 'var(--font-weight-emphasis)', color: '#166534', fontFamily: font, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px' }}>CURRENT (1/12/23)</div>
                       <div style={{ fontSize: '44px', fontWeight: 800, color: '#14532D', fontFamily: font, lineHeight: 1 }}>88.2M</div>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '10px' }}>
                       <div>
-                        <div style={{ fontSize: '10px', fontWeight: 600, color: '#166534', fontFamily: font, textTransform: 'uppercase', letterSpacing: '0.06em' }}>% CHANGE</div>
+                        <div style={{ fontSize: '10px', fontWeight: 'var(--font-weight-emphasis)', color: '#166534', fontFamily: font, textTransform: 'uppercase', letterSpacing: '0.06em' }}>% CHANGE</div>
                         <div style={{ fontSize: '15px', fontWeight: 700, color: '#166534', fontFamily: font, display: 'flex', alignItems: 'center', gap: '3px' }}>
                           20.74%
                           <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 10V3M3.5 6L6.5 3l3 3" stroke="#166534" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
                         </div>
                       </div>
                       <div>
-                        <div style={{ fontSize: '10px', fontWeight: 600, color: '#166534', fontFamily: font, textTransform: 'uppercase', letterSpacing: '0.06em' }}>LAST (12/29/22)</div>
+                        <div style={{ fontSize: '10px', fontWeight: 'var(--font-weight-emphasis)', color: '#166534', fontFamily: font, textTransform: 'uppercase', letterSpacing: '0.06em' }}>LAST (12/29/22)</div>
                         <div style={{ fontSize: '15px', fontWeight: 700, color: '#166534', fontFamily: font }}>79.9M</div>
                       </div>
                     </div>
@@ -1405,7 +1405,7 @@ export const CustomisationPageContent: React.FC<{ scope?: 'all-orgs' | 'primary-
               {/* Address */}
               <EmailShownRow label="Address">
                 <div style={{ backgroundColor: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: '8px', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                  <span style={{ fontSize: '13px', fontWeight: 600, color: '#374151', fontFamily: font }}>Thoughtspot</span>
+                  <span style={{ fontSize: '13px', fontWeight: 'var(--font-weight-emphasis)', color: '#374151', fontFamily: font }}>Thoughtspot</span>
                   <span style={{ fontSize: '12.5px', color: '#6B7280', fontFamily: font }}>(800) 508-7008</span>
                   <span style={{ fontSize: '12.5px', color: '#6B7280', fontFamily: font }}>444 Castro St, Suite 1000 Mountain View, CA 94041</span>
                 </div>
@@ -1418,10 +1418,10 @@ export const CustomisationPageContent: React.FC<{ scope?: 'all-orgs' | 'primary-
                     <div style={{ fontSize: '14px', fontWeight: 700, color: '#111827', fontFamily: font, marginBottom: '6px' }}>Want data at your fingertips?</div>
                     <div style={{ fontSize: '12.5px', color: '#6B7280', fontFamily: font, lineHeight: 1.5, marginBottom: '10px' }}>Scan the QR code to download the latest ThoughtSpot mobile app on your phone.</div>
                     <div style={{ display: 'flex', gap: '8px' }}>
-                      <div style={{ backgroundColor: '#111827', color: '#fff', borderRadius: '6px', padding: '6px 12px', fontSize: '10px', fontWeight: 600, display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1.3, fontFamily: font }}>
+                      <div style={{ backgroundColor: '#111827', color: '#fff', borderRadius: '6px', padding: '6px 12px', fontSize: '10px', fontWeight: 'var(--font-weight-emphasis)', display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1.3, fontFamily: font }}>
                         <span style={{ fontSize: '8px' }}>Download on the</span><span>App Store</span>
                       </div>
-                      <div style={{ backgroundColor: '#111827', color: '#fff', borderRadius: '6px', padding: '6px 12px', fontSize: '10px', fontWeight: 600, display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1.3, fontFamily: font }}>
+                      <div style={{ backgroundColor: '#111827', color: '#fff', borderRadius: '6px', padding: '6px 12px', fontSize: '10px', fontWeight: 'var(--font-weight-emphasis)', display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1.3, fontFamily: font }}>
                         <span style={{ fontSize: '8px' }}>GET IT ON</span><span>Google Play</span>
                       </div>
                     </div>
@@ -1459,8 +1459,8 @@ export const CustomisationPageContent: React.FC<{ scope?: 'all-orgs' | 'primary-
           <div style={{ backgroundColor: '#F3F4F6', border: '1px solid #E5E7EB', borderRadius: '12px', overflow: 'hidden' }}>
             {/* Header */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 24px', borderBottom: '1px solid #E5E7EB' }}>
-              <span style={{ fontSize: '14px', fontWeight: 600, color: '#111827', fontFamily: font }}>List of help menu items</span>
-              <button onClick={() => { setHelpMenuMode('add'); setHelpMenuEditItem(null); setHelpMenuItemModal(true); }} style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'none', border: 'none', cursor: 'pointer', fontFamily: font, fontSize: '13px', fontWeight: 600, color: brand, padding: 0 }}>
+              <span style={{ fontSize: '14px', fontWeight: 'var(--font-weight-emphasis)', color: '#111827', fontFamily: font }}>List of help menu items</span>
+              <button onClick={() => { setHelpMenuMode('add'); setHelpMenuEditItem(null); setHelpMenuItemModal(true); }} style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'none', border: 'none', cursor: 'pointer', fontFamily: font, fontSize: '13px', fontWeight: 'var(--font-weight-emphasis)', color: brand, padding: 0 }}>
                 <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><line x1="6.5" y1="1" x2="6.5" y2="12" stroke={brand} strokeWidth="1.6" strokeLinecap="round"/><line x1="1" y1="6.5" x2="12" y2="6.5" stroke={brand} strokeWidth="1.6" strokeLinecap="round"/></svg>
                 Add menu item
               </button>

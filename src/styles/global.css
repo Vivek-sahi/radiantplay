@@ -1,6 +1,26 @@
 /* Global Styles */
 @import './tokens.css';
 
+/* Geist (SIL Open Font License, public/fonts/geist/OFL.txt). Variable fonts:
+   the weight range must be declared or 550 snaps to the nearest static weight. */
+@font-face {
+  font-family: 'Geist';
+  src: url('/fonts/geist/Geist-Variable.woff2') format('woff2-variations'),
+       url('/fonts/geist/Geist-Variable.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Geist Mono';
+  src: url('/fonts/geist/GeistMono-Variable.woff2') format('woff2-variations'),
+       url('/fonts/geist/GeistMono-Variable.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -14,7 +34,7 @@ html {
 }
 
 body {
-  font-family: var(--font-family-primary, 'Plain', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif);
+  font-family: var(--font-family-primary, 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif);
   background-color: var(--rd-sys-color-background-base, #ffffff);
   color: var(--rd-sys-color-content-primary, #1D232F);
   line-height: 1.5;

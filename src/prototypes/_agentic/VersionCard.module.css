@@ -58,7 +58,7 @@
 
 .title {
   font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
+  font-weight: var(--font-weight-emphasis);
   color: var(--rd-sys-color-content-primary);
   line-height: var(--line-height-md);
   font-family: var(--font-family-primary);
@@ -69,7 +69,7 @@
 
 .sub {
   font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-light);
+  font-weight: var(--font-weight-regular);
   color: var(--rd-sys-color-content-secondary);
   line-height: var(--line-height-sm);
   letter-spacing: -0.072px;

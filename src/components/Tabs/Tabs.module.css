@@ -40,7 +40,7 @@
 .tab.active {
   color: var(--rd-sys-color-content-brand);
   border-bottom-color: var(--rd-sys-color-content-brand);
-  font-weight: var(--font-weight-semibold);
+  font-weight: var(--font-weight-emphasis);
 }
 
 .icon {

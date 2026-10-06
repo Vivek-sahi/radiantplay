@@ -4,7 +4,7 @@ import { ConfirmDialog } from './ConfirmDialog';
 import { Modal, ModalFooter } from '@components/Modal';
 import { Button } from '@components/Button';
 
-const font = '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+const font = 'var(--font-family-primary)';
 const brand = systemColors.light['content-brand'];
 
 // ─── Mock data ─────────────────────────────────────────────────────────────────
@@ -214,7 +214,7 @@ const OrgBranchForm: React.FC<{ org: typeof VC_ORGS[number] }> = ({ org }) => {
   return (
     <div style={{ padding: '20px 28px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
       <div>
-        <div style={{ fontSize: '15px', fontWeight: 600, color: '#111827', fontFamily: font }}>{org.name}</div>
+        <div style={{ fontSize: '15px', fontWeight: 'var(--font-weight-emphasis)', color: '#111827', fontFamily: font }}>{org.name}</div>
         <div style={{ fontSize: '12px', color: '#9CA3AF', fontFamily: font, marginTop: '2px' }}>
           {org.isPrimary ? 'Primary org' : 'Org'}
         </div>
@@ -621,7 +621,7 @@ export const VersionControlPageContent: React.FC<{ scope?: 'all-orgs' | 'primary
                     style={{
                       height: '38px', padding: '0 24px', borderRadius: '20px',
                       border: 'none', backgroundColor: brand,
-                      cursor: 'pointer', fontFamily: font, fontSize: '13.5px', fontWeight: 600, color: '#FFFFFF',
+                      cursor: 'pointer', fontFamily: font, fontSize: '13.5px', fontWeight: 'var(--font-weight-emphasis)', color: '#FFFFFF',
                       transition: 'opacity 0.15s',
                     }}
                     onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = '0.9'; }}
@@ -659,7 +659,7 @@ export const VersionControlPageContent: React.FC<{ scope?: 'all-orgs' | 'primary
                       style={{ flexShrink: 0, transform: credCardOpen ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.22s ease' }}>
                       <path d="M3 5.5l4 4 4-4" stroke="#6B7280" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
-                    <span style={{ fontSize: '14px', fontWeight: 600, color: '#111827', fontFamily: font }}>
+                    <span style={{ fontSize: '14px', fontWeight: 'var(--font-weight-emphasis)', color: '#111827', fontFamily: font }}>
                       Manage credentials and branch settings
                     </span>
                   </button>
@@ -748,7 +748,7 @@ export const VersionControlPageContent: React.FC<{ scope?: 'all-orgs' | 'primary
                 <div style={{
                   padding: '16px 24px',
                   borderBottom: '1px solid #E5E7EB',
-                  fontSize: '14px', fontWeight: 600, color: '#111827', fontFamily: font,
+                  fontSize: '14px', fontWeight: 'var(--font-weight-emphasis)', color: '#111827', fontFamily: font,
                 }}>
                   Manage version control
                 </div>

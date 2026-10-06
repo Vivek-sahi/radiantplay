@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { systemColors } from '../../tokens/colors';
 
-const font = '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+const font = 'var(--font-family-primary)';
 const brand = systemColors.light['content-brand'];
 
 // ─── Shared icons ──────────────────────────────────────────────────────────────
@@ -65,7 +65,7 @@ const KpiCard: React.FC<{
   value: string;
 }> = ({ title, subtitle, value }) => (
   <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: '12px', padding: '20px 20px 24px', display: 'flex', flexDirection: 'column', gap: '3px', flex: 1, minWidth: 0 }}>
-    <div style={{ fontSize: '13.5px', fontWeight: 600, color: '#111827', fontFamily: font }}>{title}</div>
+    <div style={{ fontSize: '13.5px', fontWeight: 'var(--font-weight-emphasis)', color: '#111827', fontFamily: font }}>{title}</div>
     {subtitle && <div style={{ fontSize: '12px', color: '#6B7280', fontFamily: font, lineHeight: 1.4 }}>{subtitle}</div>}
     <div style={{ fontSize: '30px', fontWeight: 700, color: '#111827', fontFamily: font, marginTop: '10px', letterSpacing: '-0.8px' }}>{value}</div>
   </div>
@@ -115,12 +115,12 @@ const SparklineCard: React.FC<{
 
   return (
     <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: '12px', padding: '20px', flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '3px' }}>
-      <div style={{ fontSize: '13.5px', fontWeight: 600, color: '#111827', fontFamily: font }}>{title}</div>
+      <div style={{ fontSize: '13.5px', fontWeight: 'var(--font-weight-emphasis)', color: '#111827', fontFamily: font }}>{title}</div>
       <div style={{ fontSize: '12px', color: '#6B7280', fontFamily: font }}>{subtitle}</div>
       <div style={{ fontSize: '11.5px', color: '#9CA3AF', fontFamily: font, marginTop: '1px' }}>{date}</div>
       <div style={{ fontSize: '28px', fontWeight: 700, color: '#111827', fontFamily: font, marginTop: '8px', letterSpacing: '-0.6px' }}>{value}</div>
       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px', flexWrap: 'wrap' }}>
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', backgroundColor: isPositive ? '#D1FAE5' : '#FEE2E2', color: isPositive ? '#065F46' : '#991B1B', borderRadius: '4px', padding: '2px 6px', fontFamily: font, fontSize: '11.5px', fontWeight: 600 }}>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', backgroundColor: isPositive ? '#D1FAE5' : '#FEE2E2', color: isPositive ? '#065F46' : '#991B1B', borderRadius: '4px', padding: '2px 6px', fontFamily: font, fontSize: '11.5px', fontWeight: 'var(--font-weight-emphasis)' }}>
           {isPositive ? '↑' : '↓'} {Math.abs(change).toFixed(2)}%
         </span>
         <span style={{ fontFamily: font, fontSize: '11.5px', color: '#6B7280' }}>{comparison}</span>
@@ -208,7 +208,7 @@ const HourlyUsersCard: React.FC = () => {
 
   return (
     <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: '12px', padding: '20px', flex: 2, minWidth: 0 }}>
-      <div style={{ fontSize: '13.5px', fontWeight: 600, color: '#111827', fontFamily: font }}>Hourly Active Query Users</div>
+      <div style={{ fontSize: '13.5px', fontWeight: 'var(--font-weight-emphasis)', color: '#111827', fontFamily: font }}>Hourly Active Query Users</div>
       <div style={{ fontSize: '12px', color: '#6B7280', fontFamily: font, marginBottom: '12px' }}>Per Day of Week in Filtered Range</div>
       {/* Legend */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 16px', marginBottom: '12px' }}>
@@ -455,7 +455,7 @@ export const AIBIStatsPageContent: React.FC = () => {
 
             {/* Right: AI Highlights + share + dots */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', flexShrink: 0 }}>
-              <button style={{ display: 'flex', alignItems: 'center', gap: '6px', height: '32px', padding: '0 14px', border: 'none', borderRadius: '999px', backgroundColor: brand, cursor: 'pointer', fontFamily: font, fontSize: '12.5px', fontWeight: 600, color: '#FFFFFF' }}>
+              <button style={{ display: 'flex', alignItems: 'center', gap: '6px', height: '32px', padding: '0 14px', border: 'none', borderRadius: '999px', backgroundColor: brand, cursor: 'pointer', fontFamily: font, fontSize: '12.5px', fontWeight: 'var(--font-weight-emphasis)', color: '#FFFFFF' }}>
                 <SparkleIcon />
                 AI Highlights
               </button>

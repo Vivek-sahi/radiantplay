@@ -207,12 +207,15 @@ When recreating a Figma design, use this guide to map Figma elements to Radiant 
 
 ### Font Weights
 
+Figma uses Geist, a variable font. Headings and labels use the "Emphasis" weight (550).
+
 | Figma Weight | Radiant Token |
 |--------------|---------------|
-| Light / 300-400 | `fontWeight.light` (375) |
 | Regular / 400 | `fontWeight.regular` (400) |
 | Medium / 500 | `fontWeight.medium` (500) |
-| Semibold / 600 | `fontWeight.semibold` (600) |
+| Emphasis / 550 | `fontWeight.emphasis` (550) |
+
+`fontWeight.light` and `fontWeight.semibold` are deprecated aliases (400 and 550). Don't use them in new code.
 
 ### Text Style Mapping
 

@@ -3,7 +3,7 @@ import { systemColors, referenceColors, rdComponentColors } from '../../tokens/c
 import { ConfirmDialog } from './ConfirmDialog';
 import { RdModal } from '@components/RdModal';
 
-const font = '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+const font = 'var(--font-family-primary)';
 const brand = systemColors.light['content-brand'];
 
 // ─── Toggle ───────────────────────────────────────────────────────────────────
@@ -124,7 +124,7 @@ const Toast: React.FC<{ message: string; cta?: string; onCta?: () => void; onClo
     {cta && (
       <button onClick={onCta} style={{
         border: 'none', background: 'none', cursor: 'pointer',
-        color: brand, fontFamily: font, fontSize: '13.5px', fontWeight: 600, padding: 0,
+        color: brand, fontFamily: font, fontSize: '13.5px', fontWeight: 'var(--font-weight-emphasis)', padding: 0,
       }}>{cta}</button>
     )}
     <button onClick={onClose} style={{
@@ -330,10 +330,10 @@ const CollapsibleSection: React.FC<{
               style={{ flexShrink: 0, transform: isOpen ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.22s ease' }}>
               <path d="M3 5.5l4 4 4-4" stroke="#6B7280" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
-            <span style={{ fontSize: '14px', fontWeight: 600, color: '#111827', fontFamily: font }}>{title}</span>
+            <span style={{ fontSize: '14px', fontWeight: 'var(--font-weight-emphasis)', color: '#111827', fontFamily: font }}>{title}</span>
           </button>
         ) : (
-          <span style={{ fontSize: '14px', fontWeight: 600, color: '#111827', fontFamily: font, flex: 1 }}>{title}</span>
+          <span style={{ fontSize: '14px', fontWeight: 'var(--font-weight-emphasis)', color: '#111827', fontFamily: font, flex: 1 }}>{title}</span>
         )}
         {showReset && <ResetLink onClick={onReset} />}
       </div>
@@ -364,7 +364,7 @@ const FlatSection: React.FC<{
   <div style={{ backgroundColor: '#F3F4F6', border: '1px solid #E5E7EB', borderRadius: '12px', overflow: 'hidden' }}>
     <div style={{ padding: '16px 24px 10px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', borderBottom: '1px solid #E5E7EB' }}>
       <div>
-        <div style={{ fontSize: '14px', fontWeight: 600, color: '#111827', fontFamily: font }}>{title}</div>
+        <div style={{ fontSize: '14px', fontWeight: 'var(--font-weight-emphasis)', color: '#111827', fontFamily: font }}>{title}</div>
         {subtitle && (
           <div style={{ fontSize: '12.5px', color: '#9CA3AF', fontFamily: font, marginTop: '3px', lineHeight: 1.5 }}>{subtitle}</div>
         )}
@@ -855,7 +855,7 @@ export const AISettingsPageContent: React.FC = () => {
               <div style={{ backgroundColor: '#F3F4F6', border: '1px solid #E5E7EB', borderRadius: '12px', padding: '18px 24px' }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '24px' }}>
                   <div>
-                    <div style={{ fontSize: '14px', fontWeight: 600, color: '#111827', fontFamily: font }}>LLM Configuration</div>
+                    <div style={{ fontSize: '14px', fontWeight: 'var(--font-weight-emphasis)', color: '#111827', fontFamily: font }}>LLM Configuration</div>
                     <div style={{ fontSize: '12.5px', color: '#9CA3AF', fontFamily: font, marginTop: '6px', lineHeight: 1.6 }}>
                       Manage LLM connections for your ThoughtSpot environment. If you want connect your own model, contact{' '}
                       <a href="#" style={{ color: brand, textDecoration: 'none' }}>ThoughtSpot support.</a>
@@ -906,7 +906,7 @@ export const AISettingsPageContent: React.FC = () => {
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                   padding: '18px 24px', backgroundColor: '#FFFFFF', border: '1px solid #E9EAEC', borderRadius: '8px',
                 }}>
-                  <span style={{ fontSize: '14px', fontWeight: 600, color: '#111827', fontFamily: font }}>
+                  <span style={{ fontSize: '14px', fontWeight: 'var(--font-weight-emphasis)', color: '#111827', fontFamily: font }}>
                     AI on data models
                   </span>
                   <button style={{
@@ -931,7 +931,7 @@ export const AISettingsPageContent: React.FC = () => {
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                   padding: '18px 24px', backgroundColor: '#FFFFFF', border: '1px solid #E9EAEC', borderRadius: '8px',
                 }}>
-                  <span style={{ fontSize: '14px', fontWeight: 600, color: '#111827', fontFamily: font }}>
+                  <span style={{ fontSize: '14px', fontWeight: 'var(--font-weight-emphasis)', color: '#111827', fontFamily: font }}>
                     Manage user groups for AI search
                   </span>
                   <button style={{

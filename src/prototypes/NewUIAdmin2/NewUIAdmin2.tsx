@@ -20,7 +20,7 @@ import { BillingQueryStatsPageContent } from './BillingQueryStatsPageContent';
 import { TermsPageContent } from './TermsPageContent';
 import { ScheduledMaintenancePageContent } from './ScheduledMaintenancePageContent';
 
-const font = '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+const font = 'var(--font-family-primary)';
 const brand = systemColors.light['content-brand'];
 
 type SidebarTabId = 'insights' | 'data' | 'develop' | 'admin';
@@ -290,7 +290,7 @@ const SettingRow: React.FC<{
     }}
   >
     <div style={{ flex: 1 }}>
-      <div style={{ fontSize: '14px', fontWeight: 600, color: '#111827', fontFamily: font, lineHeight: 1.4 }}>
+      <div style={{ fontSize: '14px', fontWeight: 'var(--font-weight-emphasis)', color: '#111827', fontFamily: font, lineHeight: 1.4 }}>
         {label}
       </div>
       {description && (
@@ -346,7 +346,7 @@ const Card: React.FC<{
             >
               <path d="M3 5.5l4 4 4-4" stroke="#6B7280" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
-            <span style={{ fontSize: '14px', fontWeight: 600, color: '#111827', fontFamily: font }}>
+            <span style={{ fontSize: '14px', fontWeight: 'var(--font-weight-emphasis)', color: '#111827', fontFamily: font }}>
               {title}
             </span>
           </button>
@@ -361,7 +361,7 @@ const Card: React.FC<{
         </div>
       ) : (
         <div style={{ padding: '16px 24px 12px', borderBottom: '1px solid #E5E7EB' }}>
-          <div style={{ fontSize: '14px', fontWeight: 600, color: '#111827', fontFamily: font }}>
+          <div style={{ fontSize: '14px', fontWeight: 'var(--font-weight-emphasis)', color: '#111827', fontFamily: font }}>
             {title}
           </div>
           {description && (

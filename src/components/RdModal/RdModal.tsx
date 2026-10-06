@@ -1,7 +1,7 @@
 import React from 'react';
 import { systemColors, rdComponentColors } from '@tokens/colors';
 
-const font = '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+const font = 'var(--font-family-primary)';
 const brand = systemColors.light['content-brand'];
 
 // ─── RdModal ───────────────────────────────────────────────────────────────────
@@ -244,7 +244,7 @@ export const RdModal: React.FC<RdModalProps> = ({
                     height: '36px', padding: '0 24px', borderRadius: '20px',
                     border: 'none', backgroundColor: brand,
                     cursor: 'pointer', fontFamily: font, fontSize: '13.5px',
-                    fontWeight: 600, color: '#FFFFFF', transition: 'opacity 0.15s',
+                    fontWeight: 'var(--font-weight-emphasis)', color: '#FFFFFF', transition: 'opacity 0.15s',
                   }}
                   onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = '0.9'; }}
                   onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = '1'; }}

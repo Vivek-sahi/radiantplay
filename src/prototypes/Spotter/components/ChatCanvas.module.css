@@ -37,7 +37,7 @@
   color: var(--rd-sys-color-content-secondary);
   font-family: var(--font-family-primary);
   font-size: var(--font-size-xs, 12px);
-  font-weight: var(--font-weight-light, 375);
+  font-weight: var(--font-weight-regular);
   line-height: var(--line-height-sm, 18px);
   text-align: center;
 }

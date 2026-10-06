@@ -17,9 +17,9 @@ Run these checks on every `.tsx` file you create or modify. Do NOT declare done 
 
 ## Fonts — no hardcoded families
 
-- No `fontFamily: '"Plain", -apple-system, ...'`
-- No `fontFamily: 'Arial, sans-serif'`
-- Use `fontFamily.primary` from `../../tokens/typography`
+- No hardcoded stacks: `fontFamily: '"Geist", -apple-system, ...'`, the old `"Plain"` stack, or `'Arial, sans-serif'`
+- Use `fontFamily.primary` from `../../tokens/typography`, or `var(--font-family-primary)` in CSS
+- No hardcoded weights (`600`, `375`). Use `var(--font-weight-emphasis)` (550) for headings and labels, `var(--font-weight-regular)` (400) for body
 
 ## HTML — no raw elements with Radiant equivalents
 

@@ -164,6 +164,6 @@
 }
 
 .rangeStrong {
-  font-weight: var(--font-weight-semibold, 600);
+  font-weight: var(--font-weight-emphasis);
   color: var(--rd-sys-color-content-primary);
 }

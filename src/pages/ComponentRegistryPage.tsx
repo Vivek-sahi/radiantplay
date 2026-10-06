@@ -316,14 +316,14 @@ const styles: Record<string, React.CSSProperties> = {
   },
   headerContent: {},
   title: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '36px',
     fontWeight: 700,
     color: systemColors.light['content-primary'],
     marginBottom: '12px',
   },
   subtitle: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '16px',
     fontWeight: 400,
     color: systemColors.light['content-secondary'],
@@ -393,7 +393,7 @@ const styles: Record<string, React.CSSProperties> = {
     gap: '2px',
   },
   componentName: {
-    fontWeight: 600,
+    fontWeight: 'var(--font-weight-emphasis)',
     color: systemColors.light['content-primary'],
   },
   componentCategory: {
@@ -421,7 +421,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   statusBadge: {
     fontSize: '11px',
-    fontWeight: 600,
+    fontWeight: 'var(--font-weight-emphasis)',
     padding: '4px 8px',
     borderRadius: '6px',
     textTransform: 'capitalize',
@@ -438,7 +438,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   variantCount: {
     fontSize: '13px',
-    fontWeight: 600,
+    fontWeight: 'var(--font-weight-emphasis)',
     color: referenceColors.gray['70'],
   },
   linkButton: {
@@ -448,7 +448,7 @@ const styles: Record<string, React.CSSProperties> = {
     border: 'none',
     borderRadius: '6px',
     cursor: 'pointer',
-    fontWeight: 600,
+    fontWeight: 'var(--font-weight-emphasis)',
     transition: 'all 150ms ease',
   },
   legend: {
@@ -459,7 +459,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   legendTitle: {
     fontSize: '12px',
-    fontWeight: 600,
+    fontWeight: 'var(--font-weight-emphasis)',
     color: referenceColors.gray['70'],
     marginBottom: '12px',
     display: 'block',

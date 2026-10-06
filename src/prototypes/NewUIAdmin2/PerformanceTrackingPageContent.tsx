@@ -1,7 +1,7 @@
 import React from 'react';
 import { systemColors } from '../../tokens/colors';
 
-const font = '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+const font = 'var(--font-family-primary)';
 const brand = systemColors.light['content-brand'];
 
 // ─── Shared header icons ──────────────────────────────────────────────────────
@@ -85,7 +85,7 @@ const ScatterCard: React.FC = () => {
 
   return (
     <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: '12px', padding: '20px', flex: 1.4, minWidth: 0 }}>
-      <div style={{ fontSize: '13.5px', fontWeight: 600, color: '#111827', fontFamily: font, marginBottom: '16px' }}>
+      <div style={{ fontSize: '13.5px', fontWeight: 'var(--font-weight-emphasis)', color: '#111827', fontFamily: font, marginBottom: '16px' }}>
         User Queries and Latency
       </div>
       <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ display: 'block' }}>
@@ -139,7 +139,7 @@ const LatencyTrendCard: React.FC = () => {
 
   return (
     <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: '12px', padding: '20px', flex: 1, minWidth: 0 }}>
-      <div style={{ fontSize: '13.5px', fontWeight: 600, color: '#111827', fontFamily: font }}>Average Latency Trend</div>
+      <div style={{ fontSize: '13.5px', fontWeight: 'var(--font-weight-emphasis)', color: '#111827', fontFamily: font }}>Average Latency Trend</div>
       <div style={{ fontSize: '12px', color: '#6B7280', fontFamily: font, marginBottom: '16px' }}>Last 60 Days</div>
       <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ display: 'block' }}>
         {/* Gridlines + Y labels */}
@@ -189,7 +189,7 @@ const LatencyRatioCard: React.FC<{ title: string; showSpotter?: boolean }> = ({ 
   return (
     <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: '12px', padding: '20px', flex: 1, minWidth: 0 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
-        <div style={{ fontSize: '13.5px', fontWeight: 600, color: '#111827', fontFamily: font, flex: 1 }}>{title}</div>
+        <div style={{ fontSize: '13.5px', fontWeight: 'var(--font-weight-emphasis)', color: '#111827', fontFamily: font, flex: 1 }}>{title}</div>
         {showSpotter && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', backgroundColor: '#F3F4F6', border: '1px solid #E5E7EB', borderRadius: '999px', padding: '2px 10px', fontSize: '11.5px', fontFamily: font, color: '#374151' }}>
@@ -233,7 +233,7 @@ const LatencyRatioCard: React.FC<{ title: string; showSpotter?: boolean }> = ({ 
               <g key={i}>
                 <rect x={x} y={y} width={barW} height={barH} fill="#5EEAD4" rx="2" />
                 {i === 0 && (
-                  <text x={x + barW / 2} y={y - 5} textAnchor="middle" fontFamily={font} fontSize="10" fill="#374151" fontWeight={600}>
+                  <text x={x + barW / 2} y={y - 5} textAnchor="middle" fontFamily={font} fontSize="10" fill="#374151" fontWeight={550}>
                     {val.toFixed(2)}
                   </text>
                 )}
@@ -275,7 +275,7 @@ export const PerformanceTrackingPageContent: React.FC = () => {
 
             {/* Right: AI Highlights + share + dots */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-              <button style={{ display: 'flex', alignItems: 'center', gap: '6px', height: '32px', padding: '0 14px', border: 'none', borderRadius: '999px', backgroundColor: brand, cursor: 'pointer', fontFamily: font, fontSize: '12.5px', fontWeight: 600, color: '#FFFFFF' }}>
+              <button style={{ display: 'flex', alignItems: 'center', gap: '6px', height: '32px', padding: '0 14px', border: 'none', borderRadius: '999px', backgroundColor: brand, cursor: 'pointer', fontFamily: font, fontSize: '12.5px', fontWeight: 'var(--font-weight-emphasis)', color: '#FFFFFF' }}>
                 <SparkleIcon />
                 AI Highlights
               </button>

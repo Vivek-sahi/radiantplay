@@ -20,7 +20,7 @@ const c = {
   chipBorderSubtle: '#4a515e',
 };
 
-const FONT = "'Plain', -apple-system, BlinkMacSystemFont, sans-serif";
+const FONT = "var(--font-family-primary)";
 
 const SUGGESTIONS = [
   'For the CEO, to track monthly sales, trends, regional splits, and top items.',
@@ -43,7 +43,7 @@ const SuggestionChip: React.FC<{ text: string; onClick?: () => void }> = ({ text
         background: hover ? c.chipBg : 'transparent',
         color: c.textPrimary,
         fontSize: 14,
-        fontWeight: 375,
+        fontWeight: 'var(--font-weight-regular)',
         lineHeight: '20px',
         fontFamily: FONT,
         textAlign: 'left',
@@ -162,7 +162,7 @@ const s: Record<string, React.CSSProperties> = {
   },
   title: {
     fontSize: 18,
-    fontWeight: 600,
+    fontWeight: 'var(--font-weight-emphasis)',
     lineHeight: '24px',
     letterSpacing: '-0.072px',
     color: c.textPrimary,
@@ -200,7 +200,7 @@ const s: Record<string, React.CSSProperties> = {
   },
   greeting: {
     fontSize: 20,
-    fontWeight: 600,
+    fontWeight: 'var(--font-weight-emphasis)',
     lineHeight: '28px',
     letterSpacing: '-0.08px',
     color: c.textWhite,
@@ -208,7 +208,7 @@ const s: Record<string, React.CSSProperties> = {
   },
   tagline: {
     fontSize: 16,
-    fontWeight: 375,
+    fontWeight: 'var(--font-weight-regular)',
     lineHeight: '24px',
     letterSpacing: '-0.064px',
     color: c.textWhite,
@@ -248,7 +248,7 @@ const s: Record<string, React.CSSProperties> = {
     color: c.textPrimary,
     fontFamily: FONT,
     fontSize: 14,
-    fontWeight: 375,
+    fontWeight: 'var(--font-weight-regular)',
     lineHeight: '20px',
     padding: 0,
   },

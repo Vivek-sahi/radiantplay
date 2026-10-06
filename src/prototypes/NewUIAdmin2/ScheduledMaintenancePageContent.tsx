@@ -1,6 +1,6 @@
 import React from 'react';
 
-const font = '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+const font = 'var(--font-family-primary)';
 
 export const ScheduledMaintenancePageContent: React.FC = () => (
   <div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundColor: '#FFFFFF' }}>
@@ -23,7 +23,7 @@ export const ScheduledMaintenancePageContent: React.FC = () => (
         <div style={{ backgroundColor: '#F3F4F6', border: '1px solid #E5E7EB', borderRadius: '12px', overflow: 'hidden' }}>
           {/* Card header */}
           <div style={{ padding: '16px 24px', borderBottom: '1px solid #E5E7EB', backgroundColor: '#F3F4F6' }}>
-            <span style={{ fontSize: '14px', fontWeight: 600, color: '#111827', fontFamily: font }}>Status</span>
+            <span style={{ fontSize: '14px', fontWeight: 'var(--font-weight-emphasis)', color: '#111827', fontFamily: font }}>Status</span>
           </div>
           {/* Card body */}
           <div style={{ padding: '0', backgroundColor: '#FFFFFF' }}>

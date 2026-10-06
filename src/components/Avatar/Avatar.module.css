@@ -76,7 +76,7 @@
   justify-content: center;
   width: 100%;
   height: 100%;
-  font-weight: var(--font-weight-semibold, 600);
+  font-weight: var(--font-weight-emphasis);
   color: var(--rd-sys-color-content-alternate);
   text-transform: uppercase;
   user-select: none;
@@ -158,7 +158,7 @@
   background-color: var(--rd-sys-color-background-failure);
   color: var(--rd-sys-color-content-alternate);
   font-size: 10px;
-  font-weight: var(--font-weight-semibold, 600);
+  font-weight: var(--font-weight-emphasis);
   display: flex;
   align-items: center;
   justify-content: center;

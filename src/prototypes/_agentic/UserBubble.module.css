@@ -33,7 +33,7 @@
 
 .text {
   font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-light);
+  font-weight: var(--font-weight-regular);
   color: var(--rd-sys-color-content-primary);
   line-height: var(--line-height-md);
   font-family: var(--font-family-primary);

@@ -212,7 +212,7 @@ export const AdminLang: React.FC = () => {
               border: '1px dashed #D1D5DB',
             }}
           >
-            <p style={{ fontSize: '12px', fontWeight: 600, color: systemColors.light['content-tertiary'], textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 8px' }}>
+            <p style={{ fontSize: '12px', fontWeight: 'var(--font-weight-emphasis)', color: systemColors.light['content-tertiary'], textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 8px' }}>
               Prototype controls
             </p>
             <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: systemColors.light['content-secondary'], cursor: 'pointer' }}>

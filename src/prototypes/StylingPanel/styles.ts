@@ -36,7 +36,7 @@ export const spacing = {
 } as const;
 
 export const typography = {
-  fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+  fontFamily: 'var(--font-family-primary)',
 } as const;
 
 export const borderRadius = {

@@ -38,6 +38,8 @@ export const versionHistory: VersionEntry[] = [
       { type: 'added', group: 'Tokens', component: 'New Figma tokens', description: 'button-overlay, segmented-control-content-active, and the gray-20a, brand-10a and purple-20a alpha colours.' },
       { type: 'added', group: 'Tokens', component: 'Figma name aliases', description: 'background-inverse, background-secondary-action, content-inverse, border-subtle, border-bold and border-bold-hover, next to our existing names. Nothing renamed.' },
       { type: 'added', group: 'Tokens', component: 'Chip CSS variables', description: '--rd-comp-color-chip-* in tokens.css (light, dark and system dark), so CSS Modules can use chip tokens.' },
+      { type: 'synced', group: 'Typography', component: 'Geist', description: 'Geist and Geist Mono variable fonts, self-hosted and preloaded. Headings and labels at the new emphasis weight (550), body at 400, letter spacing per Figma. semibold and light remain as deprecated aliases (550 and 400).' },
+      { type: 'modified', group: 'Typography', component: 'Hardcoded fonts and weights', description: 'Plain font stacks and 600/375 weights replaced with tokens across components, Spotter, pages, sample prototypes, the prototype template and the scaffold. DataModelEditor switched to Geist; its Plain font files removed.' },
       { type: 'synced', group: 'Dark mode', component: 'Dark values', description: 'Dark Gray scale, 52 semantic and 48 component dark values match Figma; 22 missing dark values added to tokens.css; system-dark block matches the dark theme including shadows. Not visible until dark mode is switched on.' },
     ],
   },

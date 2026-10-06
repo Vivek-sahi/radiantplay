@@ -47,7 +47,7 @@ export const NavigationSidebar: React.FC = () => {
 
   const sectionTitleStyle: React.CSSProperties = {
     fontSize: '13px',
-    fontWeight: 600,
+    fontWeight: 'var(--font-weight-emphasis)',
     color: systemColors.light['content-primary'],
     letterSpacing: '-0.1px',
   };
@@ -70,7 +70,7 @@ export const NavigationSidebar: React.FC = () => {
 
   const sectionLabelStyle: React.CSSProperties = {
     fontSize: '10px',
-    fontWeight: 600,
+    fontWeight: 'var(--font-weight-emphasis)',
     color: systemColors.light['content-tertiary'],
     textTransform: 'uppercase',
     letterSpacing: '0.8px',

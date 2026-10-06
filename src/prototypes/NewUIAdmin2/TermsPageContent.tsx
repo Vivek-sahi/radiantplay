@@ -1,7 +1,7 @@
 import React from 'react';
 import { systemColors } from '../../tokens/colors';
 
-const font = '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+const font = 'var(--font-family-primary)';
 const brand = systemColors.light['content-brand'];
 
 export const TermsPageContent: React.FC = () => (
@@ -22,7 +22,7 @@ export const TermsPageContent: React.FC = () => (
         <div style={{ backgroundColor: '#F3F4F6', border: '1px solid #E5E7EB', borderRadius: '12px', overflow: 'hidden' }}>
           {/* Card header */}
           <div style={{ padding: '16px 24px', borderBottom: '1px solid #E5E7EB', backgroundColor: '#F3F4F6' }}>
-            <span style={{ fontSize: '14px', fontWeight: 600, color: '#111827', fontFamily: font }}>User agreement</span>
+            <span style={{ fontSize: '14px', fontWeight: 'var(--font-weight-emphasis)', color: '#111827', fontFamily: font }}>User agreement</span>
           </div>
           {/* Card body */}
           <div style={{ padding: '20px 24px', backgroundColor: '#FFFFFF' }}>

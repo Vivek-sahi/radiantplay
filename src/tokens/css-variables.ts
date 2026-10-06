@@ -8,7 +8,7 @@
 import { referenceColors } from './colors/reference';
 import { systemColors } from './colors/system';
 import { rdComponentColors } from './colors/component';
-import { fontSize, fontWeight, lineHeight, fontFamily } from './typography';
+import { fontSize, fontWeight, lineHeight, letterSpacing, fontFamily } from './typography';
 import { spacing } from './spacing';
 import { radius } from './radius';
 import { shadows, elevation } from './shadows';
@@ -69,6 +69,11 @@ export const generateCSSVariables = () => {
   // Line Heights
   Object.entries(lineHeight).forEach(([key, value]) => {
     variables[`line-height-${toKebabCase(key)}`] = `${value}px`;
+  });
+
+  // Letter Spacing
+  Object.entries(letterSpacing).forEach(([key, value]) => {
+    variables[`letter-spacing-${toKebabCase(key)}`] = value;
   });
 
   // Spacing

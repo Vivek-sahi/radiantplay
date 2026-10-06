@@ -107,7 +107,7 @@
   align-items: center;
   justify-content: center;
   font-size: var(--font-size-xs, 12px);
-  font-weight: var(--font-weight-semibold, 600);
+  font-weight: var(--font-weight-emphasis);
   border: var(--border-width-medium, 2px) solid var(--rd-sys-color-border-default);
   background-color: var(--rd-sys-color-background-base);
   color: var(--rd-sys-color-content-secondary);

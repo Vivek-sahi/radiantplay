@@ -168,9 +168,9 @@
 }
 
 .eyebrow {
-  font-family: var(--font-family-primary, 'Plain', sans-serif);
+  font-family: var(--font-family-primary);
   font-size: var(--font-size-sm, 14px);
-  font-weight: var(--font-weight-light, 375);
+  font-weight: var(--font-weight-regular);
   line-height: var(--line-height-md, 20px);
   color: var(--rd-sys-color-content-secondary);
   margin: 0;
@@ -178,7 +178,7 @@
 
 .title {
   margin: 0;
-  font-family: var(--font-family-primary, 'Plain', sans-serif);
+  font-family: var(--font-family-primary);
   font-size: var(--font-size-xl, 20px);
   font-weight: var(--font-weight-medium, 500);
   line-height: var(--line-height-xl, 28px);
@@ -223,9 +223,9 @@
   border: none;
   background-color: transparent;
   border-radius: var(--radius-md, 6px);
-  font-family: var(--font-family-primary, 'Plain', sans-serif);
+  font-family: var(--font-family-primary);
   font-size: var(--font-size-sm, 14px);
-  font-weight: var(--font-weight-light, 375);
+  font-weight: var(--font-weight-regular);
   line-height: var(--line-height-md, 20px);
   color: var(--rd-sys-color-content-brand);
   cursor: pointer;
@@ -373,9 +373,9 @@
   padding: 0 var(--spacing-4, 16px);
   border: none;
   background-color: transparent;
-  font-family: var(--font-family-primary, 'Plain', sans-serif);
+  font-family: var(--font-family-primary);
   font-size: var(--font-size-sm, 14px);
-  font-weight: var(--font-weight-light, 375);
+  font-weight: var(--font-weight-regular);
   line-height: var(--line-height-md, 20px);
   color: var(--rd-sys-color-content-primary);
   text-align: left;
@@ -440,7 +440,7 @@
 .splashTitle {
   flex: 1;
   margin: 0;
-  font-family: var(--font-family-primary, 'Plain', sans-serif);
+  font-family: var(--font-family-primary);
   font-size: var(--font-size-2xl, 24px);
   font-weight: var(--font-weight-medium, 500);
   line-height: var(--line-height-2xl, 32px);
@@ -460,9 +460,9 @@
 }
 
 .splashBulletItem {
-  font-family: var(--font-family-primary, 'Plain', sans-serif);
+  font-family: var(--font-family-primary);
   font-size: var(--font-size-sm, 14px);
-  font-weight: var(--font-weight-light, 375);
+  font-weight: var(--font-weight-regular);
   line-height: var(--line-height-md, 20px);
   color: var(--rd-sys-color-content-primary);
   margin-bottom: var(--spacing-2, 8px);
@@ -475,9 +475,9 @@
 .splashDescription {
   flex: 1;
   margin: 0;
-  font-family: var(--font-family-primary, 'Plain', sans-serif);
+  font-family: var(--font-family-primary);
   font-size: var(--font-size-sm, 14px);
-  font-weight: var(--font-weight-light, 375);
+  font-weight: var(--font-weight-regular);
   line-height: var(--line-height-md, 20px);
   color: var(--rd-sys-color-content-primary);
   max-width: 294px;

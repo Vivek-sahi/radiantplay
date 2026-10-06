@@ -26,7 +26,7 @@
   background: transparent;
   color: var(--rd-sys-color-border-default-inverse);
   font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-light);
+  font-weight: var(--font-weight-regular);
   font-family: var(--font-family-primary);
   line-height: var(--line-height-md);
   cursor: pointer;

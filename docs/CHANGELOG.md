@@ -13,6 +13,14 @@ Figma sync: bringing tokens and typography up to date with the Radiant 3.0 Figma
 - Added Figma's names as aliases next to ours: `background-inverse`, `background-secondary-action`, `content-inverse`, `border-subtle`, `border-bold`, `border-bold-hover`. Nothing is renamed
 - Chip component tokens are now CSS variables (`--rd-comp-color-chip-*`), so CSS Modules can use them
 - Dark mode values now match Figma: the neutral Dark Gray scale (every stop except 90 moved), all 52 semantic and 48 component dark values, and the 22 dark values `tokens.css` was missing. The system-dark (`prefers-color-scheme`) block now matches the dark theme, including shadows. Dark mode isn't switched on anywhere yet, so nothing changes on screen. Tokens Figma doesn't have (`content-alternate`, the `*-inverse` set, links, `background-inset`) keep their older dark values
+- Typography is now Geist, matching Figma:
+  - Geist and Geist Mono variable fonts are self-hosted in `public/fonts/geist/` (SIL Open Font License, licence file alongside) and preloaded. Plain was never shipped for most users, so most screens were falling back to system fonts; they now render in Geist
+  - New `--font-weight-emphasis` (550), Figma's "Emphasis" weight for headings and labels. `semibold` and `light` stay as deprecated aliases that point at 550 and 400, so older code follows the new weights
+  - Text styles: headings and labels at 550, body and footnote at 400, letter spacing per Figma (0, 0.4% and 0.6% as `normal`, `relaxed`, `loose`). New `--letter-spacing-*` CSS variables
+  - Monospace is now Geist Mono
+  - Replaced hardcoded Plain font stacks and `600` / `375` weights with the tokens across components, Spotter, pages and sample prototypes (including `_template` and the `/new-prototype` scaffold, so new prototypes start on Geist)
+  - DataModelEditor uses Geist; its bundled Plain font files are removed
+  - Rule and skill docs updated to Geist and the new weights
 
 ## 26.9.1c — 2026-09-03
 

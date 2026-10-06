@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { systemColors } from '../../tokens/colors';
 import { Icon } from '../../components/icons/Icon';
 
-const font = '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+const font = 'var(--font-family-primary)';
 const brand = systemColors.light['content-brand'];
 
 // ─── Mock data ────────────────────────────────────────────────────────────────
@@ -450,7 +450,7 @@ export const UserManagementPageContent: React.FC<{ scope?: 'all-orgs' | 'primary
                 <div style={{ display: 'flex', borderRadius: '999px', overflow: 'hidden' }}>
                   <button style={{
                     height: '36px', padding: '0 16px', border: 'none', backgroundColor: brand,
-                    cursor: 'pointer', fontFamily: font, fontSize: '13px', fontWeight: 600, color: '#FFFFFF',
+                    cursor: 'pointer', fontFamily: font, fontSize: '13px', fontWeight: 'var(--font-weight-emphasis)', color: '#FFFFFF',
                     transition: 'opacity 0.15s', borderRight: `1px solid ${brand}cc`,
                   }}
                     onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = '0.9'; }}
@@ -604,13 +604,13 @@ export const UserManagementPageContent: React.FC<{ scope?: 'all-orgs' | 'primary
               gap: '8px', padding: '28px 40px 48px',
               fontFamily: font, fontSize: '13.5px',
             }}>
-              <span style={{ color: '#374151', fontWeight: 600 }}>1-20</span>
+              <span style={{ color: '#374151', fontWeight: 'var(--font-weight-emphasis)' }}>1-20</span>
               <span style={{ color: '#374151' }}>of</span>
-              <span style={{ color: '#374151', fontWeight: 600 }}>500</span>
+              <span style={{ color: '#374151', fontWeight: 'var(--font-weight-emphasis)' }}>500</span>
               <button style={{
                 display: 'flex', alignItems: 'center', gap: '4px',
                 border: 'none', background: 'none', cursor: 'pointer',
-                fontFamily: font, fontSize: '13.5px', fontWeight: 600, color: brand,
+                fontFamily: font, fontSize: '13.5px', fontWeight: 'var(--font-weight-emphasis)', color: brand,
                 marginLeft: '8px', padding: 0,
               }}>
                 Next
@@ -667,7 +667,7 @@ export const UserManagementPageContent: React.FC<{ scope?: 'all-orgs' | 'primary
                 <div style={{ display: 'flex', borderRadius: '999px', overflow: 'hidden' }}>
                   <button style={{
                     height: '36px', padding: '0 16px', border: 'none', backgroundColor: brand,
-                    cursor: 'pointer', fontFamily: font, fontSize: '13px', fontWeight: 600, color: '#FFFFFF',
+                    cursor: 'pointer', fontFamily: font, fontSize: '13px', fontWeight: 'var(--font-weight-emphasis)', color: '#FFFFFF',
                     transition: 'opacity 0.15s', borderRight: `1px solid ${brand}cc`,
                   }}
                     onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = '0.9'; }}
@@ -758,13 +758,13 @@ export const UserManagementPageContent: React.FC<{ scope?: 'all-orgs' | 'primary
               gap: '8px', padding: '28px 40px 48px',
               fontFamily: font, fontSize: '13.5px',
             }}>
-              <span style={{ color: '#374151', fontWeight: 600 }}>1-20</span>
+              <span style={{ color: '#374151', fontWeight: 'var(--font-weight-emphasis)' }}>1-20</span>
               <span style={{ color: '#374151' }}>of</span>
-              <span style={{ color: '#374151', fontWeight: 600 }}>500</span>
+              <span style={{ color: '#374151', fontWeight: 'var(--font-weight-emphasis)' }}>500</span>
               <button style={{
                 display: 'flex', alignItems: 'center', gap: '4px',
                 border: 'none', background: 'none', cursor: 'pointer',
-                fontFamily: font, fontSize: '13.5px', fontWeight: 600, color: brand,
+                fontFamily: font, fontSize: '13.5px', fontWeight: 'var(--font-weight-emphasis)', color: brand,
                 marginLeft: '8px', padding: 0,
               }}>
                 Next
@@ -824,7 +824,7 @@ export const UserManagementPageContent: React.FC<{ scope?: 'all-orgs' | 'primary
               <div style={{ display: 'flex', borderRadius: '999px', overflow: 'hidden' }}>
                 <button style={{
                   height: '36px', padding: '0 16px', border: 'none', backgroundColor: brand,
-                  cursor: 'pointer', fontFamily: font, fontSize: '13px', fontWeight: 600, color: '#FFFFFF',
+                  cursor: 'pointer', fontFamily: font, fontSize: '13px', fontWeight: 'var(--font-weight-emphasis)', color: '#FFFFFF',
                   transition: 'opacity 0.15s', borderRight: `1px solid ${brand}cc`,
                 }}
                   onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = '0.9'; }}
@@ -925,13 +925,13 @@ export const UserManagementPageContent: React.FC<{ scope?: 'all-orgs' | 'primary
               gap: '8px', padding: '28px 40px 48px',
               fontFamily: font, fontSize: '13.5px',
             }}>
-              <span style={{ color: '#374151', fontWeight: 600 }}>1-20</span>
+              <span style={{ color: '#374151', fontWeight: 'var(--font-weight-emphasis)' }}>1-20</span>
               <span style={{ color: '#374151' }}>of</span>
-              <span style={{ color: '#374151', fontWeight: 600 }}>500</span>
+              <span style={{ color: '#374151', fontWeight: 'var(--font-weight-emphasis)' }}>500</span>
               <button style={{
                 display: 'flex', alignItems: 'center', gap: '4px',
                 border: 'none', background: 'none', cursor: 'pointer',
-                fontFamily: font, fontSize: '13.5px', fontWeight: 600, color: brand,
+                fontFamily: font, fontSize: '13.5px', fontWeight: 'var(--font-weight-emphasis)', color: brand,
                 marginLeft: '8px', padding: 0,
               }}>
                 Next
@@ -989,7 +989,7 @@ export const UserManagementPageContent: React.FC<{ scope?: 'all-orgs' | 'primary
               <button style={{
                 height: '36px', padding: '0 20px', borderRadius: '20px',
                 border: 'none', backgroundColor: brand,
-                cursor: 'pointer', fontFamily: font, fontSize: '13px', fontWeight: 600, color: '#FFFFFF',
+                cursor: 'pointer', fontFamily: font, fontSize: '13px', fontWeight: 'var(--font-weight-emphasis)', color: '#FFFFFF',
                 transition: 'opacity 0.15s',
               }}
                 onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = '0.9'; }}
@@ -1086,13 +1086,13 @@ export const UserManagementPageContent: React.FC<{ scope?: 'all-orgs' | 'primary
               gap: '8px', padding: '28px 40px 48px',
               fontFamily: font, fontSize: '13.5px',
             }}>
-              <span style={{ color: '#374151', fontWeight: 600 }}>1-20</span>
+              <span style={{ color: '#374151', fontWeight: 'var(--font-weight-emphasis)' }}>1-20</span>
               <span style={{ color: '#374151' }}>of</span>
-              <span style={{ color: '#374151', fontWeight: 600 }}>500</span>
+              <span style={{ color: '#374151', fontWeight: 'var(--font-weight-emphasis)' }}>500</span>
               <button style={{
                 display: 'flex', alignItems: 'center', gap: '4px',
                 border: 'none', background: 'none', cursor: 'pointer',
-                fontFamily: font, fontSize: '13.5px', fontWeight: 600, color: brand,
+                fontFamily: font, fontSize: '13.5px', fontWeight: 'var(--font-weight-emphasis)', color: brand,
                 marginLeft: '8px', padding: 0,
               }}>
                 Next

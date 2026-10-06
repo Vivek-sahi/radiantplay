@@ -39,7 +39,7 @@ export const GroupsTable: React.FC<GroupsTableProps> = ({
           backgroundColor: systemColors.light['background-sunken'],
           borderBottom: `1px solid ${systemColors.light['background-subtle']}`,
           fontSize: '12px',
-          fontWeight: 600,
+          fontWeight: 'var(--font-weight-emphasis)',
           color: systemColors.light['content-secondary'],
           textTransform: 'uppercase',
           letterSpacing: '0.3px',

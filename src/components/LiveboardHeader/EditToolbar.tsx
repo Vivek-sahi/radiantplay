@@ -132,7 +132,7 @@ const s: Record<string, React.CSSProperties> = {
   },
   toolLabel: {
     fontSize: 14,
-    fontWeight: 375,
+    fontWeight: 'var(--font-weight-regular)',
     color: colors.textOnDarkMuted,
     lineHeight: '20px',
     whiteSpace: 'nowrap' as const,

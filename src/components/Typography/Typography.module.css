@@ -5,7 +5,7 @@
 
 /* Base styles */
 .typography {
-  font-family: var(--font-family-primary, "Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
+  font-family: var(--font-family-primary);
   margin: 0;
 }
 
@@ -119,42 +119,42 @@
 .h1 {
   font-size: var(--font-size-3xl, 32px);
   line-height: var(--line-height-3xl, 40px);
-  font-weight: var(--font-weight-semibold, 600);
+  font-weight: var(--font-weight-emphasis);
   margin-bottom: var(--spacing-4, 16px);
 }
 
 .h2 {
   font-size: var(--font-size-2xl, 24px);
   line-height: var(--line-height-2xl, 32px);
-  font-weight: var(--font-weight-semibold, 600);
+  font-weight: var(--font-weight-emphasis);
   margin-bottom: var(--spacing-3, 12px);
 }
 
 .h3 {
   font-size: var(--font-size-xl, 20px);
   line-height: var(--line-height-xl, 28px);
-  font-weight: var(--font-weight-semibold, 600);
+  font-weight: var(--font-weight-emphasis);
   margin-bottom: var(--spacing-2, 8px);
 }
 
 .h4 {
   font-size: var(--font-size-lg, 18px);
   line-height: var(--line-height-lg, 24px);
-  font-weight: var(--font-weight-semibold, 600);
+  font-weight: var(--font-weight-emphasis);
   margin-bottom: var(--spacing-2, 8px);
 }
 
 .h5 {
   font-size: var(--font-size-md, 16px);
   line-height: var(--line-height-lg, 24px);
-  font-weight: var(--font-weight-semibold, 600);
+  font-weight: var(--font-weight-emphasis);
   margin-bottom: var(--spacing-1, 4px);
 }
 
 .h6 {
   font-size: var(--font-size-sm, 14px);
   line-height: var(--line-height-md, 20px);
-  font-weight: var(--font-weight-semibold, 600);
+  font-weight: var(--font-weight-emphasis);
   margin-bottom: var(--spacing-1, 4px);
 }
 
@@ -169,7 +169,7 @@
 .pBold {
   font-size: var(--font-size-sm, 14px);
   line-height: var(--line-height-md, 20px);
-  font-weight: var(--font-weight-semibold, 600);
+  font-weight: var(--font-weight-emphasis);
 }
 
 .pSmall {
@@ -181,7 +181,7 @@
 .pSmallBold {
   font-size: var(--font-size-xs, 12px);
   line-height: var(--line-height-sm, 18px);
-  font-weight: var(--font-weight-semibold, 600);
+  font-weight: var(--font-weight-emphasis);
 }
 
 .pLarge {
@@ -193,7 +193,7 @@
 .pLargeBold {
   font-size: var(--font-size-md, 16px);
   line-height: var(--line-height-lg, 24px);
-  font-weight: var(--font-weight-semibold, 600);
+  font-weight: var(--font-weight-emphasis);
 }
 
 /* ========== Color Styles ========== */

@@ -42,14 +42,14 @@ const styles: Record<string, React.CSSProperties> = {
     marginBottom: 40,
   },
   pageTitle: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: 36,
     fontWeight: 700,
     color: systemColors.light['content-primary'],
     marginBottom: 12,
   },
   pageDescription: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: 16,
     fontWeight: 400,
     color: systemColors.light['content-secondary'],
@@ -79,9 +79,9 @@ const styles: Record<string, React.CSSProperties> = {
     justifyContent: 'center',
   },
   fontSample: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: 36,
-    fontWeight: 600,
+    fontWeight: 'var(--font-weight-emphasis)',
     color: systemColors.light['content-primary'],
   },
   fontInfo: {
@@ -126,7 +126,7 @@ const styles: Record<string, React.CSSProperties> = {
     color: systemColors.light['content-brand'],
   },
   specsLabel: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: 11,
     color: systemColors.light['content-secondary'],
   },
@@ -194,9 +194,9 @@ const styles: Record<string, React.CSSProperties> = {
     borderBottom: `1px solid ${systemColors.light['background-subtle']}`,
   },
   propsHeaderCell: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: 12,
-    fontWeight: 600,
+    fontWeight: 'var(--font-weight-emphasis)',
     color: referenceColors.gray['70'],
     textTransform: 'uppercase',
     letterSpacing: '0.5px',
@@ -291,7 +291,7 @@ const TypographyPageContent: React.FC = () => {
         <h1 style={styles.pageTitle}>Typography</h1>
         <p style={styles.pageDescription}>
           The Radiant typography system provides consistent text styling across all components.
-          Built on the "Plain" font family with a comprehensive scale from headlines to footnotes.
+          Built on the Geist font family, with a comprehensive scale from headlines to footnotes.
         </p>
       </div>
 
@@ -303,12 +303,12 @@ const TypographyPageContent: React.FC = () => {
             <span style={styles.fontSample}>Aa</span>
           </div>
           <div style={styles.fontInfo}>
-            <Typography variant="content-label" noMargin>Plain</Typography>
+            <Typography variant="content-label" noMargin>Geist</Typography>
             <Typography variant="footnote" color="gray" noMargin>
               Primary typeface for UI text, labels, and body content
             </Typography>
             <code style={styles.fontStack}>
-              "Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif
+              "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif
             </code>
           </div>
         </div>

@@ -459,7 +459,7 @@ export const ArchitectureShowcase: React.FC = () => {
             <div style={{ ...styles.categoryIcon, backgroundColor: referenceColors.purple['10'] }}>🔤</div>
             <h4 style={styles.categoryTitle}>Typography</h4>
             <ul style={styles.categoryList}>
-              <li>Font family: Plain</li>
+              <li>Font family: Geist</li>
               <li>Sizes: 12-40px</li>
               <li>Weights: 375-600</li>
               <li>Line heights</li>
@@ -523,16 +523,16 @@ const styles: Record<string, React.CSSProperties> = {
     boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
   },
   pageTitle: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '28px',
-    fontWeight: 600,
+    fontWeight: 'var(--font-weight-emphasis)',
     color: systemColors.light['content-primary'],
     marginBottom: '12px',
   },
   pageDescription: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '16px',
-    fontWeight: 375,
+    fontWeight: 'var(--font-weight-regular)',
     color: systemColors.light['content-secondary'],
     lineHeight: '24px',
     maxWidth: '800px',
@@ -540,16 +540,16 @@ const styles: Record<string, React.CSSProperties> = {
 
   // Section styles
   sectionTitle: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '20px',
-    fontWeight: 600,
+    fontWeight: 'var(--font-weight-emphasis)',
     color: systemColors.light['content-primary'],
     marginBottom: '8px',
   },
   sectionDescription: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '14px',
-    fontWeight: 375,
+    fontWeight: 'var(--font-weight-regular)',
     color: systemColors.light['content-secondary'],
     marginBottom: '24px',
   },
@@ -609,16 +609,16 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     justifyContent: 'center',
     fontSize: '14px',
-    fontWeight: 600,
+    fontWeight: 'var(--font-weight-emphasis)',
   },
   layerTitle: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '18px',
-    fontWeight: 600,
+    fontWeight: 'var(--font-weight-emphasis)',
     color: systemColors.light['content-primary'],
   },
   layerSubtitle: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '13px',
     color: systemColors.light['content-secondary'],
     marginLeft: '40px',
@@ -661,7 +661,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'block',
   },
   arrowLabel: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '11px',
     color: systemColors.light['content-secondary'],
     marginTop: '-8px',
@@ -676,14 +676,14 @@ const styles: Record<string, React.CSSProperties> = {
     border: `1px solid ${systemColors.light['background-subtle']}`,
   },
   detailsTitle: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '16px',
-    fontWeight: 600,
+    fontWeight: 'var(--font-weight-emphasis)',
     color: systemColors.light['content-primary'],
     marginBottom: '8px',
   },
   detailsDescription: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '14px',
     color: systemColors.light['content-secondary'],
     lineHeight: '20px',
@@ -749,12 +749,12 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     justifyContent: 'center',
     fontSize: '12px',
-    fontWeight: 600,
+    fontWeight: 'var(--font-weight-emphasis)',
   },
   stepTitle: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '13px',
-    fontWeight: 600,
+    fontWeight: 'var(--font-weight-emphasis)',
     color: systemColors.light['content-primary'],
   },
   stepContent: {
@@ -797,9 +797,9 @@ const styles: Record<string, React.CSSProperties> = {
     color: systemColors.light['background-base'],
     border: 'none',
     borderRadius: '16px',
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '14px',
-    fontWeight: 375,
+    fontWeight: 'var(--font-weight-regular)',
     cursor: 'pointer',
   },
 
@@ -830,7 +830,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   consumptionBadge: {
     fontSize: '12px',
-    fontWeight: 600,
+    fontWeight: 'var(--font-weight-emphasis)',
     padding: '3px 10px',
     borderRadius: '6px',
     backgroundColor: referenceColors.blue['10'],
@@ -845,7 +845,7 @@ const styles: Record<string, React.CSSProperties> = {
     backgroundColor: systemColors.light['background-subtle'],
   },
   consumptionDesc: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '13px',
     fontWeight: 400,
     color: systemColors.light['content-secondary'],
@@ -862,7 +862,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   consumptionUsageLabel: {
     fontSize: '11px',
-    fontWeight: 600,
+    fontWeight: 'var(--font-weight-emphasis)',
     color: systemColors.light['content-secondary'],
     textTransform: 'uppercase' as const,
     letterSpacing: '0.5px',
@@ -950,9 +950,9 @@ const styles: Record<string, React.CSSProperties> = {
     margin: '0 auto 12px',
   },
   categoryTitle: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '16px',
-    fontWeight: 600,
+    fontWeight: 'var(--font-weight-emphasis)',
     color: systemColors.light['content-primary'],
     marginBottom: '8px',
   },
@@ -960,7 +960,7 @@ const styles: Record<string, React.CSSProperties> = {
     listStyle: 'none',
     padding: 0,
     margin: 0,
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '13px',
     color: systemColors.light['content-secondary'],
     lineHeight: '22px',
@@ -989,14 +989,14 @@ const styles: Record<string, React.CSSProperties> = {
     marginBottom: '12px',
   },
   benefitTitle: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '16px',
-    fontWeight: 600,
+    fontWeight: 'var(--font-weight-emphasis)',
     color: systemColors.light['background-base'],
     marginBottom: '8px',
   },
   benefitDesc: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '13px',
     color: systemColors.light['border-default'],
     lineHeight: '18px',

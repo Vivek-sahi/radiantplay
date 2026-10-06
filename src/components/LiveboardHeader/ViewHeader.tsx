@@ -284,7 +284,7 @@ const s: Record<string, React.CSSProperties> = {
     height: layout.headerHeight,
     padding: '0 6px',
     fontSize: 16,
-    fontWeight: 600,
+    fontWeight: 'var(--font-weight-emphasis)',
     color: colors.textPrimary,
     background: 'none',
     border: 'none',
@@ -342,7 +342,7 @@ const s: Record<string, React.CSSProperties> = {
   },
   viewLabel: {
     fontSize: 14,
-    fontWeight: 375,
+    fontWeight: 'var(--font-weight-regular)',
     color: colors.brand,
     lineHeight: '20px',
   },

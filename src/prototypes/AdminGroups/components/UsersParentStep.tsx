@@ -110,7 +110,7 @@ export const UsersParentStep: React.FC<UsersParentStepProps> = ({
                 borderRadius: '6px',
                 fontSize: '14px',
                 outline: 'none',
-                fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                fontFamily: 'var(--font-family-primary)',
               }}
             />
           </div>

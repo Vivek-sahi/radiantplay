@@ -24,7 +24,7 @@ export const LastUpdated: React.FC<LastUpdatedProps> = ({ componentId, date }) =
   return (
     <div
       style={{
-        fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+        fontFamily: 'var(--font-family-primary)',
         fontSize: 12,
         color: systemColors.light['content-secondary'],
         marginBottom: spacing.B,

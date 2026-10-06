@@ -118,7 +118,7 @@ Three levels: **Compact / Medium / Spacious** (labelled in UI as Compact / Regul
 | Group inner tile gutter | 4px | 8px | 8px |
 | Group header divider | hidden | visible | visible |
 | Tile title size | 16px | 16px | 18px |
-| Tile title weight | 400 | 600 | 600 |
+| Tile title weight | 400 | 550 (emphasis) | 550 (emphasis) |
 | Tile title line-height | 24px | 24px | 28px |
 | KPI value weight | 400 | 500 | 500 |
 | Toolbar button size | 24px | 24px | 32px |
@@ -135,7 +135,7 @@ const GROUP_GUTTER:    Record<string, number> = { compact: 4,  medium: 8,  spaci
 
 ```ts
 '--tile-title-size':       density === 'spacious' ? '18px' : '16px'
-'--tile-title-weight':     density === 'compact'  ? '400'  : '600'
+'--tile-title-weight':     density === 'compact'  ? 'var(--font-weight-regular)'  : 'var(--font-weight-emphasis)'
 '--tile-title-lh':         density === 'spacious' ? '28px' : '24px'
 '--tile-toolbar-btn-size': density === 'spacious' ? '32px' : '24px'
 '--tile-kpi-weight':       density === 'compact'  ? '400'  : '500'
@@ -221,7 +221,7 @@ These variables are set on the **canvas container element** (`style={{ ... }}`).
     '--tile-outer-border-color':     spacing === 'no-gutter' ? 'transparent' : (TILE_BORDER[color] ?? '#EAEDF2'),
     '--group-header-divider':        spacing === 'no-gutter' ? 'transparent' : (TILE_BORDER[color] ?? '#EAEDF2'),
     '--tile-title-size':             density === 'spacious' ? '18px' : '16px',
-    '--tile-title-weight':           density === 'compact'  ? '400' : '600',
+    '--tile-title-weight':           density === 'compact'  ? 'var(--font-weight-regular)' : 'var(--font-weight-emphasis)',
     '--tile-title-lh':               density === 'spacious' ? '28px' : '24px',
     '--tile-toolbar-btn-size':       density === 'spacious' ? '32px' : '24px',
     '--tile-kpi-weight':             density === 'compact'  ? '400' : '500',

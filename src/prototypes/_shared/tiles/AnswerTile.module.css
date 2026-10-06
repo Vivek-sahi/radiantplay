@@ -122,9 +122,9 @@
 
 .title {
   display: block;
-  font-family: 'Plain', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: var(--font-family-primary);
   font-size:      var(--tile-title-size,   16px);
-  font-weight:    var(--tile-title-weight, 600);
+  font-weight:    var(--tile-title-weight, var(--font-weight-emphasis));
   line-height:    var(--tile-title-lh,     24px);
   letter-spacing: var(--tile-title-ls,     -0.4px);
   color: var(--rd-sys-color-content-primary, #1d232f);
@@ -136,9 +136,9 @@
 /* Inline edit input — matches the span's visual footprint exactly */
 .titleEditInput {
   display: block;
-  font-family: 'Plain', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: var(--font-family-primary);
   font-size:      var(--tile-title-size,   16px);
-  font-weight:    var(--tile-title-weight, 600);
+  font-weight:    var(--tile-title-weight, var(--font-weight-emphasis));
   line-height:    var(--tile-title-lh,     24px);
   letter-spacing: var(--tile-title-ls,     -0.4px);
   color: var(--rd-sys-color-content-primary, #1d232f);
@@ -159,9 +159,9 @@
 
 .description {
   display: block;
-  font-family: 'Plain', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: var(--font-family-primary);
   font-size: 14px;
-  font-weight: 375;
+  font-weight: var(--font-weight-regular);
   line-height: 20px;
   color: #4a515e;
   white-space: nowrap;
@@ -171,9 +171,9 @@
 
 .descEditInput {
   display: block;
-  font-family: 'Plain', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: var(--font-family-primary);
   font-size: 14px;
-  font-weight: 375;
+  font-weight: var(--font-weight-regular);
   line-height: 20px;
   color: #4a515e;
   background: transparent;
@@ -362,8 +362,8 @@
   border: none;
   color: rgba(255, 255, 255, 0.85);
   font-size: 13px;
-  font-weight: 375;
-  font-family: 'Plain', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-weight: var(--font-weight-regular);
+  font-family: var(--font-family-primary);
   cursor: pointer;
   text-align: left;
   white-space: nowrap;
