@@ -132,7 +132,7 @@ Always use Radiant tokens for styling:
 ```typescript
 // Import tokens
 import { spacing, componentSpacing } from '@/tokens';
-import { systemColors } from '../../tokens/colors';
+import { sysVar } from '../../tokens/colors';
 import { v2TextStyles } from '@/tokens';
 import { componentShadows } from '@/tokens';
 
@@ -142,11 +142,11 @@ componentSpacing.modal.headerPaddingY // 20px
 componentSpacing.modal.footerPaddingY // 16px
 
 // Colors
-systemColors.light['background-base']      // Modal surface (white)
-systemColors.light['background-sunken']    // Footer background (gray-10)
-systemColors.light['border-divider']       // Borders (gray-20)
-systemColors.light['content-primary']      // Title text (gray-90)
-systemColors.light['content-brand']        // Tertiary button text (blue-60)
+sysVar('background-base')      // Modal surface (white)
+sysVar('background-sunken')    // Footer background (gray-10)
+sysVar('border-divider')       // Borders (gray-20)
+sysVar('content-primary')      // Title text (gray-90)
+sysVar('content-brand')        // Tertiary button text (blue-60)
 
 // Typography
 v2TextStyles.modalTitle     // 20px Medium, 28px line-height
@@ -171,8 +171,8 @@ Follow Figma spec for footer button arrangement:
 ## Wizard Progress Bar
 
 - Supports 2-4 steps
-- Active steps: Primary blue (`systemColors.light['content-brand']`)
-- Inactive steps: Gray (`systemColors.light['border-subtle']`)
+- Active steps: Primary blue (`sysVar('content-brand')`)
+- Inactive steps: Gray (`sysVar('border-subtle')`)
 - Height: 4px with 6px gaps
 
 ## Accessibility

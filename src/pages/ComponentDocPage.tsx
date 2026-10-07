@@ -527,6 +527,7 @@ const componentDocs: Record<string, {
       { name: 'highlightedItem', type: 'string | null', default: 'null', description: 'Item ID to flash-highlight (e.g., after command palette navigation)' },
       { name: 'headerSlot', type: 'ReactNode', description: 'Custom content rendered below the tab title (e.g., search input)' },
       { name: 'isOverlay', type: 'boolean', default: 'false', description: 'Render in overlay mode with shadow (for fullscreen views)' },
+      { name: 'theme', type: "'auto' | 'light' | 'dark'", default: "'auto'", description: 'auto follows the app theme, like the product nav. light is the same as auto. dark is the legacy always-dark navy nav.' },
       { name: 'onClose', type: '() => void', description: 'Close handler for overlay mode' },
       { name: 'width', type: 'number', default: '261', description: 'Sidebar width in pixels' },
     ],

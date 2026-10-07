@@ -35,7 +35,7 @@ Standard layouts for building prototypes. Use these patterns as starting points.
 ```tsx
 // Preferred — use AppShell
 import { AppShell } from '../../components/AppShell';
-import { systemColors } from '../../tokens/colors';
+import { sysVar } from '../../tokens/colors';
 import { spacing } from '../../tokens/spacing';
 import { fontFamily } from '../../tokens/typography';
 
@@ -43,7 +43,7 @@ const FullPageLayout: React.FC = () => (
   <AppShell
     headerProps={{ searchPlaceholder: 'Search', userName: 'User Name' }}
     sidebarProps={{ tabs, activeTab, onTabChange, categories, selectedNav, onNavSelect }}
-    contentBackground={systemColors.light['background-sunken']}
+    contentBackground={sysVar('background-sunken')}
   >
     <div style={{ padding: `${spacing.F}px ${spacing.H}px`, fontFamily: fontFamily.primary }}>
       {/* Page content */}
@@ -55,7 +55,7 @@ const FullPageLayout: React.FC = () => (
 If you cannot use `AppShell` (e.g. embedding inside an existing shell), use the manual layout below:
 
 ```tsx
-import { systemColors } from '../../tokens/colors';
+import { sysVar } from '../../tokens/colors';
 import { spacing } from '../../tokens/spacing';
 import { fontFamily } from '../../tokens/typography';
 
@@ -64,7 +64,7 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     height: '100vh',
-    backgroundColor: systemColors.light['background-sunken'],
+    backgroundColor: sysVar('background-sunken'),
     fontFamily: fontFamily.primary,
   },
   header: {
@@ -79,15 +79,15 @@ const styles = {
   sidebar: {
     width: '260px',
     flexShrink: 0,
-    backgroundColor: systemColors.light['background-base'],
-    borderRight: `1px solid ${systemColors.light['border-divider']}`,
+    backgroundColor: sysVar('background-base'),
+    borderRight: `1px solid ${sysVar('border-divider')}`,
     overflowY: 'auto',
   },
   main: {
     flex: 1,
     overflowY: 'auto',
     padding: `${spacing.F}px ${spacing.H}px`,
-    backgroundColor: systemColors.light['background-base'],
+    backgroundColor: sysVar('background-base'),
   },
   content: {
     maxWidth: '1280px',
@@ -146,7 +146,7 @@ const DashboardLayout: React.FC = () => {
 const styles = {
   container: {
     padding: `${spacing.F}px`,
-    backgroundColor: systemColors.light['background-sunken'],
+    backgroundColor: sysVar('background-sunken'),
     minHeight: '100vh',
   },
   metricsGrid: {
@@ -162,15 +162,15 @@ const styles = {
     marginBottom: `${spacing.F}px`,
   },
   chartCard: {
-    backgroundColor: systemColors.light['background-base'],
+    backgroundColor: sysVar('background-base'),
     borderRadius: '8px',
     padding: `${spacing.F}px`,
-    border: `1px solid ${systemColors.light['border-subtle']}`,
+    border: `1px solid ${sysVar('border-subtle')}`,
   },
   tableSection: {
-    backgroundColor: systemColors.light['background-base'],
+    backgroundColor: sysVar('background-base'),
     borderRadius: '8px',
-    border: `1px solid ${systemColors.light['border-subtle']}`,
+    border: `1px solid ${sysVar('border-subtle')}`,
     overflow: 'hidden',
   },
 };
@@ -222,7 +222,7 @@ const DataTablePageLayout: React.FC = () => {
           <Icon name="chevron-right" size="xs" />
           <span>Section</span>
           <Icon name="chevron-right" size="xs" />
-          <span style={{ color: systemColors.light['content-primary'] }}>Page</span>
+          <span style={{ color: sysVar('content-primary') }}>Page</span>
         </div>
         <h1 style={styles.title}>Page Title</h1>
         <Tabs tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />

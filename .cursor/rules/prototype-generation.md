@@ -52,7 +52,7 @@ When the designer pastes a screenshot (no Figma URL), apply these rules:
 
 1. **Identify layout pattern** — Match the screenshot to a layout template from `layout-patterns.md` (dashboard, admin, form, table, wizard)
 2. **Map components visually** — For each UI element, find the closest Radiant component from `component-inventory.md`. Prefer semantic matches over pixel-perfect recreation.
-3. **Approximate colors** — Use `figma-component-mapping.md` hex → token tables. When a color doesn't match exactly, choose the semantically closest token (e.g. "this looks like secondary text" → `systemColors.light['content-secondary']`).
+3. **Approximate colors** — Use `figma-component-mapping.md` hex → token tables. When a color doesn't match exactly, choose the semantically closest token (e.g. "this looks like secondary text" → `sysVar('content-secondary')`).
 4. **Approximate spacing** — Round to the nearest spacing scale value (`spacing.A` through `spacing.H`). Don't try to match 13px or 17px exactly.
 5. **Flag unknowns** — If a UI element doesn't map to any Radiant component, add a TODO comment: `{/* TODO: No Radiant component for [description] — using placeholder */}`
 
@@ -192,7 +192,7 @@ import React, { useState } from 'react';
 import { Button, TextInput } from '../../components/Button';
 import { Table } from '../../components/Table';
 // 2. Import tokens — NEVER hard-code colors, fonts, or spacing
-import { systemColors, referenceColors } from '../../tokens/colors';
+import { sysVar } from '../../tokens/colors';
 import { spacing } from '../../tokens/spacing';
 import { fontFamily } from '../../tokens/typography';
 // 3. Import mock data if needed
@@ -223,7 +223,7 @@ export const PrototypeName: React.FC = () => {
 // 7. Styles object — ONLY use design tokens; never hard-code hex values or font strings
 const styles: Record<string, React.CSSProperties> = {
   container: {
-    backgroundColor: systemColors.light['background-sunken'],
+    backgroundColor: sysVar('background-sunken'),
     padding: `${spacing.F}px`,
     minHeight: '100vh',
     fontFamily: fontFamily.primary,
@@ -257,15 +257,15 @@ Use these token-based patterns for consistent styling:
 ```tsx
 // Card container
 container: {
-  backgroundColor: systemColors.light['background-base'],
-  border: `1px solid ${systemColors.light['border-subtle']}`,
+  backgroundColor: sysVar('background-base'),
+  border: `1px solid ${sysVar('border-subtle')}`,
   borderRadius: '8px',
   padding: `${spacing.F}px`,  // 24px
 }
 
 // Section with border
 section: {
-  borderBottom: `1px solid ${systemColors.light['border-subtle']}`,
+  borderBottom: `1px solid ${sysVar('border-subtle')}`,
   paddingBottom: `${spacing.F}px`,
   marginBottom: `${spacing.F}px`,
 }

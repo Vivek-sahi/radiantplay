@@ -270,6 +270,14 @@
         "literal"
       ],
       "reason": "AI gradient cyan; there is no teal or cyan accent token yet"
+    },
+    {
+      "path": "src/components/AppSidebar/AppSidebar.tsx",
+      "kinds": [
+        "literal",
+        "light-read"
+      ],
+      "reason": "The legacy theme='dark' variant is always dark; the default 'auto' variant uses sysVar()"
     }
   ],
   "_exclude_note": "HowItWorksPage has its own styling and RoadmapPage's route is commented out; both are outside the dark mode rollout."

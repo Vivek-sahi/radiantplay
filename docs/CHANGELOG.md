@@ -60,6 +60,9 @@ Figma sync: bringing tokens and typography up to date with the Radiant 3.0 Figma
 - A prototype without a thumbnail shows a live preview of itself instead of a folder icon. At most four previews load at once, only while on screen
 - `/new-prototype` no longer draws a blank placeholder thumbnail. Hand-made SVG thumbnails still work, and `scripts/thumbnails/tokenize-svg.mjs` converts one to theme tokens so it follows light and dark
 - The SpotterViz side panel uses the nav surface and follows the theme
+- The guidance Claude follows now teaches theme-aware colour. `CLAUDE.md`, the `.cursor/rules` files, the repo skills and the `/new-prototype` templates use `sysVar()`, `compVar()` and `shadowVar()` instead of `systemColors.light[...]`, which stays light in dark mode, and font weights through tokens. `systemColors` and `rdComponentColors` carry a note that they are token data, not for UI. `/new-prototype` ends with a dark readiness scan
+- `AppSidebar` takes `theme`: `auto` (default) follows the app theme, `dark` keeps the legacy navy nav, like `GlobalHeader`. Forks that pass `theme: 'dark'` keep working after sync
+- `/sync-upstream` always builds after merging and repairs `systemColors` reads that a clean merge can break, found in a dry run of this release against the maintainer's own fork
 
 ## 26.9.1c — 2026-09-03
 

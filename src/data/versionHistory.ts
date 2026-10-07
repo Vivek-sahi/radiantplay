@@ -60,6 +60,8 @@ export const versionHistory: VersionEntry[] = [
       { type: 'modified', group: 'Dark mode', component: 'ThoughtSpot nav', description: 'GlobalHeader, AppSidebar, the Liveboard primary nav, edit toolbar and styling drawer follow the theme on background-on-base, matching the product. GlobalHeader theme defaults to auto; dark is the legacy always-dark nav.' },
       { type: 'modified', group: 'Dark mode', component: 'Sample prototypes', description: 'Every sample prototype works in dark mode, NewUIAdmin2 included. A registry entry can set theme: light-only to stay light until it is ready.' },
       { type: 'added', group: 'Gallery', component: 'Thumbnails', description: 'Light and dark screenshots per prototype (/thumbnail, npm run thumbnails). Prototypes without one show a live preview instead of a folder icon. /new-prototype no longer draws a placeholder.' },
+      { type: 'modified', group: 'Guidance', component: 'Theme-aware examples', description: 'CLAUDE.md, cursor rules, skills and /new-prototype teach sysVar(), compVar() and shadowVar() instead of systemColors.light, so new prototypes work in dark mode.' },
+      { type: 'added', group: 'Components', component: 'AppSidebar theme', description: 'auto (default) follows the app theme; dark keeps the legacy navy nav, like GlobalHeader.' },
     ],
   },
   {

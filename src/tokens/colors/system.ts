@@ -189,6 +189,11 @@ function withFigmaAliases<M extends Record<keyof typeof baseSystemColors.light, 
   return { ...mode, ...aliases } as WithFigmaAliases<M>;
 }
 
+/**
+ * Token values as data, for docs pages, swatches and canvas charts.
+ * Don't use these for UI: they are fixed values and stay light in dark mode.
+ * For UI use sysVar('...') (a theme-aware CSS variable).
+ */
 export const systemColors = {
   light: withFigmaAliases(baseSystemColors.light),
   dark: withFigmaAliases(baseSystemColors.dark),

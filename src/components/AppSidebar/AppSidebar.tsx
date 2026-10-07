@@ -1,7 +1,35 @@
 import React, { forwardRef, useMemo } from 'react';
 import { Icon } from '../icons';
-import { sysVar } from '../../tokens/colors';
+import { sysVar, systemColors, referenceColors } from '../../tokens/colors';
 import styles from './AppSidebar.module.css';
+
+/**
+ * 'auto' (default) follows the app theme, like the product's nav with the Radiant theme on.
+ * 'light' is the same as 'auto'. 'dark' is the legacy always-dark navy nav.
+ */
+export type AppSidebarTheme = 'auto' | 'light' | 'dark';
+
+// Legacy always-dark navy nav. Product-level values that are not in the Radiant scale.
+const LEGACY_DARK_PANEL = '#232f43';
+const LEGACY_DARK_PANEL_SELECTED = '#2f3a4e';
+const brand50At = (pct: number) => `color-mix(in srgb, ${referenceColors.brand['50']} ${pct}%, transparent)`;
+const LEGACY_DARK: Record<string, string> = {
+  '--as-bg':              systemColors.dark['background-base'],
+  '--as-border':          referenceColors.gray['90'],
+  '--as-panel-bg':        LEGACY_DARK_PANEL,
+  '--as-panel-selected':  LEGACY_DARK_PANEL_SELECTED,
+  '--as-text':            referenceColors.gray['30'],
+  '--as-muted':           systemColors.dark['content-tertiary'],
+  '--as-subtle':          systemColors.dark['content-tertiary'],
+  '--as-icon':            referenceColors.gray['40'],
+  '--as-active':          systemColors.dark['content-brand'],
+  '--as-active-bg':       brand50At(12),
+  '--as-hover-bg':        brand50At(6),
+  '--as-highlight-bg':    brand50At(30),
+  '--as-focus':           systemColors.dark['border-focus'],
+  '--as-scope-active':    systemColors.dark['content-brand-inverse'],
+  '--as-scope-active-bg': referenceColors.gray['00'],
+};
 
 const DATA_TAB_ICON_PATH =
   'M17 8.5C17 9.63333 13.5067 10.8611 9 10.8611C4.50667 10.8611 1.02667 9.63333 1 8.51889V5.23222C2.97333 6.10111 5.85333 6.61111 9 6.61111C12.1467 6.61111 15.0267 6.10111 17 5.23222V8.5ZM17 11.3711V14.6767C16.9467 15.9611 13.3867 17 9 17C4.61333 17 1.05333 15.9611 1 14.6672V11.3617C2.97333 12.24 5.85333 12.75 9 12.75C12.1467 12.75 15.0267 12.24 17 11.3711ZM9 4.72222C4.58667 4.72222 1 3.66444 1 2.36111C1 1.05778 4.58667 0 9 0C13.4133 0 17 1.05778 17 2.36111C17 3.66444 13.4133 4.72222 9 4.72222Z';
@@ -133,6 +161,8 @@ export interface AppSidebarProps {
   isOverlay?: boolean;
   onClose?: () => void;
   width?: number;
+  /** 'auto' (default) follows the app theme; 'dark' is the legacy always-dark nav */
+  theme?: AppSidebarTheme;
   className?: string;
   style?: React.CSSProperties;
 }
@@ -152,6 +182,7 @@ export const AppSidebar = forwardRef<HTMLElement, AppSidebarProps>(
       isOverlay = false,
       onClose,
       width = 260,
+      theme = 'auto',
       className,
       style,
     },
@@ -189,6 +220,7 @@ export const AppSidebar = forwardRef<HTMLElement, AppSidebarProps>(
       // Scope toggle
       '--as-scope-active':    sysVar('content-brand'),
       '--as-scope-active-bg': sysVar('background-base'),
+      ...(theme === 'dark' ? LEGACY_DARK : {}),
     } as React.CSSProperties;
 
     const mergedStyles: React.CSSProperties = {
