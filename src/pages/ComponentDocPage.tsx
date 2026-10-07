@@ -68,7 +68,7 @@ import { FormBuilder } from '../components/FormBuilder';
 import { DynamicForm } from '../components/DynamicForm';
 import { FacetSortBar } from '../components/FacetSortBar';
 import { LiveboardHeader } from '../components/LiveboardHeader';
-import { systemColors, referenceColors } from '../tokens/colors';
+import { sysVar } from '../tokens/colors';
 import { getComponent, getSourceLabel, ComponentSource } from '../data/componentRegistry';
 import { LastUpdated } from '../components/LastUpdated';
 
@@ -975,7 +975,7 @@ const getSourceBadgeStyle = (source: ComponentSource): React.CSSProperties => {
   };
   switch (source) {
     case 'figma':
-      return { ...base, backgroundColor: 'var(--rd-ref-color-purple-10, #f4effe)', color: 'var(--rd-ref-color-purple-60, #8C62F5)' };
+      return { ...base, backgroundColor: sysVar('background-accent-purple-subtle'), color: sysVar('content-accent-purple') };
     case 'scaligent':
       return { ...base, backgroundColor: 'var(--rd-sys-color-background-success)', color: 'var(--rd-sys-color-content-success)' };
     case 'custom':
@@ -1240,7 +1240,7 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
                 </>
               }
             >
-              <p style={{ margin: 0, color: referenceColors.gray['70'] }}>
+              <p style={{ margin: 0, color: sysVar('content-primary') }}>
                 This is the modal content. You can put any content here.
               </p>
             </Modal>
@@ -1259,7 +1259,7 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
               activeTab={activeTab}
               onTabChange={setActiveTab}
             />
-            <div style={{ marginTop: '16px', padding: '16px', background: systemColors.light['background-sunken'], borderRadius: '8px' }}>
+            <div style={{ marginTop: '16px', padding: '16px', background: sysVar('background-sunken'), borderRadius: '8px' }}>
               Content for {activeTab}
             </div>
           </div>
@@ -1445,7 +1445,7 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
                   <div style={{ padding: '8px', minWidth: '150px' }}>
                     <Button variant="tertiary" fullWidth style={{ justifyContent: 'flex-start' }}>Edit</Button>
                     <Button variant="tertiary" fullWidth style={{ justifyContent: 'flex-start' }}>Duplicate</Button>
-                    <Button variant="tertiary" fullWidth style={{ justifyContent: 'flex-start', color: systemColors.light['content-failure'] }}>Delete</Button>
+                    <Button variant="tertiary" fullWidth style={{ justifyContent: 'flex-start', color: sysVar('content-failure') }}>Delete</Button>
                   </div>
                 }
                 placement="bottom-start"
@@ -1456,7 +1456,7 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
               <Popover
                 content={
                   <div style={{ padding: '12px' }}>
-                    <p style={{ margin: 0, fontSize: '14px', color: referenceColors.gray['70'] }}>
+                    <p style={{ margin: 0, fontSize: '14px', color: sysVar('content-primary') }}>
                       This popover appears on hover
                     </p>
                   </div>
@@ -1504,11 +1504,11 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
                   <LoadingIndicator.Contextual size="xl" />
                 </div>
                 <div style={{ ...styles.exampleRow, marginTop: '8px' }}>
-                  <span style={{ fontSize: '12px', color: systemColors.light['content-secondary'] }}>xs (12px)</span>
-                  <span style={{ fontSize: '12px', color: systemColors.light['content-secondary'] }}>s (16px)</span>
-                  <span style={{ fontSize: '12px', color: systemColors.light['content-secondary'] }}>m (24px)</span>
-                  <span style={{ fontSize: '12px', color: systemColors.light['content-secondary'] }}>l (32px)</span>
-                  <span style={{ fontSize: '12px', color: systemColors.light['content-secondary'] }}>xl (48px)</span>
+                  <span style={{ fontSize: '12px', color: sysVar('content-secondary') }}>xs (12px)</span>
+                  <span style={{ fontSize: '12px', color: sysVar('content-secondary') }}>s (16px)</span>
+                  <span style={{ fontSize: '12px', color: sysVar('content-secondary') }}>m (24px)</span>
+                  <span style={{ fontSize: '12px', color: sysVar('content-secondary') }}>l (32px)</span>
+                  <span style={{ fontSize: '12px', color: sysVar('content-secondary') }}>xl (48px)</span>
                 </div>
               </div>
               <div>
@@ -1622,19 +1622,19 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
               <Card>
                 <Card.Header title="Basic Card" subtitle="With header and body" />
                 <Card.Body>
-                  <p style={{ margin: 0, color: referenceColors.gray['70'] }}>Card content goes here.</p>
+                  <p style={{ margin: 0, color: sysVar('content-primary') }}>Card content goes here.</p>
                 </Card.Body>
               </Card>
               <Card interactive onClick={() => alert('Card clicked!')}>
                 <Card.Header title="Interactive Card" />
                 <Card.Body>
-                  <p style={{ margin: 0, color: referenceColors.gray['70'] }}>Click me!</p>
+                  <p style={{ margin: 0, color: sysVar('content-primary') }}>Click me!</p>
                 </Card.Body>
               </Card>
               <Card isSelected>
                 <Card.Header title="Selected Card" />
                 <Card.Body>
-                  <p style={{ margin: 0, color: referenceColors.gray['70'] }}>This card is selected.</p>
+                  <p style={{ margin: 0, color: sysVar('content-primary') }}>This card is selected.</p>
                 </Card.Body>
                 <Card.Footer>
                   <Button variant="secondary" size="small">Cancel</Button>
@@ -1644,7 +1644,7 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
               <Card isDisabled>
                 <Card.Header title="Disabled Card" />
                 <Card.Body>
-                  <p style={{ margin: 0, color: referenceColors.gray['70'] }}>This card is disabled.</p>
+                  <p style={{ margin: 0, color: sysVar('content-primary') }}>This card is disabled.</p>
                 </Card.Body>
               </Card>
             </div>
@@ -1678,14 +1678,14 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
         return (
           <div style={styles.exampleContent}>
             <div style={styles.exampleColumn}>
-              <p style={{ margin: 0, color: referenceColors.gray['70'] }}>Content above divider</p>
+              <p style={{ margin: 0, color: sysVar('content-primary') }}>Content above divider</p>
               <Divider />
-              <p style={{ margin: 0, color: referenceColors.gray['70'] }}>Content below divider</p>
+              <p style={{ margin: 0, color: sysVar('content-primary') }}>Content below divider</p>
             </div>
             <div style={styles.exampleColumn}>
-              <p style={{ margin: 0, color: referenceColors.gray['70'] }}>With spacing="m"</p>
+              <p style={{ margin: 0, color: sysVar('content-primary') }}>With spacing="m"</p>
               <Divider spacing="m" />
-              <p style={{ margin: 0, color: referenceColors.gray['70'] }}>More space around</p>
+              <p style={{ margin: 0, color: sysVar('content-primary') }}>More space around</p>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px', height: '40px' }}>
               <span>Item 1</span>
@@ -1900,7 +1900,7 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
             </div>
             <div style={styles.interactiveBox}>
               <h4 style={styles.interactiveLabel}>Selected date:</h4>
-              <p style={{ margin: 0, color: referenceColors.gray['70'] }}>
+              <p style={{ margin: 0, color: sysVar('content-primary') }}>
                 {selectedDate ? selectedDate.toLocaleDateString() : 'No date selected'}
               </p>
             </div>
@@ -1928,7 +1928,7 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
               />
               <div>
                 <Typography variant="overline" style={{ marginBottom: '8px', display: 'block' }}>Trigger mode (default)</Typography>
-                <div style={{ borderRadius: '8px', overflow: 'hidden', border: `1px solid ${referenceColors.gray['20']}` }}>
+                <div style={{ borderRadius: '8px', overflow: 'hidden', border: `1px solid ${sysVar('border-divider')}` }}>
                   <GlobalHeader
                     theme={globalHeaderTheme}
                     userName="Acme Apparel"
@@ -1940,7 +1940,7 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
               </div>
               <div>
                 <Typography variant="overline" style={{ marginBottom: '8px', display: 'block' }}>Input mode</Typography>
-                <div style={{ borderRadius: '8px', overflow: 'hidden', border: `1px solid ${referenceColors.gray['20']}` }}>
+                <div style={{ borderRadius: '8px', overflow: 'hidden', border: `1px solid ${sysVar('border-divider')}` }}>
                   <GlobalHeader
                     theme={globalHeaderTheme}
                     searchMode="input"
@@ -1952,7 +1952,7 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
               </div>
               <div>
                 <Typography variant="overline" style={{ marginBottom: '8px', display: 'block' }}>With hamburger (fullscreen mode)</Typography>
-                <div style={{ borderRadius: '8px', overflow: 'hidden', border: `1px solid ${referenceColors.gray['20']}` }}>
+                <div style={{ borderRadius: '8px', overflow: 'hidden', border: `1px solid ${sysVar('border-divider')}` }}>
                   <GlobalHeader
                     theme={globalHeaderTheme}
                     showHamburger
@@ -1970,7 +1970,7 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
         return (
           <div style={styles.exampleContent}>
             <div style={{ display: 'flex', gap: '24px' }}>
-              <div style={{ height: '480px', borderRadius: '8px', overflow: 'hidden', border: `1px solid ${referenceColors.gray['20']}` }}>
+              <div style={{ height: '480px', borderRadius: '8px', overflow: 'hidden', border: `1px solid ${sysVar('border-divider')}` }}>
                 <AppSidebar
                   tabs={[
                     { id: 'insights', label: 'Insights', headerTitle: 'Insights', showAddButton: true },
@@ -2031,7 +2031,7 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{
-                  color: systemColors.light['content-brand'],
+                  color: sysVar('content-brand'),
                   textDecoration: 'none',
                   fontSize: 13,
                   fontWeight: 500,
@@ -2040,7 +2040,7 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
                 View fullscreen ↗
               </a>
             </div>
-            <div style={{ height: '500px', borderRadius: '8px', overflow: 'hidden', border: `1px solid ${referenceColors.gray['20']}`, position: 'relative' }}>
+            <div style={{ height: '500px', borderRadius: '8px', overflow: 'hidden', border: `1px solid ${sysVar('border-divider')}`, position: 'relative' }}>
               <AppShell
                 headerProps={{
                   userName: 'Demo User',
@@ -2098,12 +2098,12 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
               <Button variant="secondary" size="small">Cancel</Button>
             </Horizontal>
             <Horizontal gap={16} justify="space-between">
-              <span style={{ fontSize: 14, color: systemColors.light['content-primary'] }}>Left content</span>
-              <span style={{ fontSize: 14, color: systemColors.light['content-secondary'] }}>Right content</span>
+              <span style={{ fontSize: 14, color: sysVar('content-primary') }}>Left content</span>
+              <span style={{ fontSize: 14, color: sysVar('content-secondary') }}>Right content</span>
             </Horizontal>
             <Horizontal gap={8} wrap>
               {['React', 'TypeScript', 'Vite', 'CSS Modules', 'Radiant'].map(t => (
-                <span key={t} style={{ padding: '4px 10px', background: systemColors.light['background-subtle'], borderRadius: 99, fontSize: 12 }}>{t}</span>
+                <span key={t} style={{ padding: '4px 10px', background: sysVar('background-subtle'), borderRadius: 99, fontSize: 12 }}>{t}</span>
               ))}
             </Horizontal>
           </div>
@@ -2137,21 +2137,21 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <Grid columns={3} gap={12}>
               {['Alpha', 'Beta', 'Gamma', 'Delta', 'Epsilon', 'Zeta'].map(n => (
-                <div key={n} style={{ background: systemColors.light['background-subtle'], borderRadius: 8, padding: '12px 16px', fontSize: 13, textAlign: 'center' }}>{n}</div>
+                <div key={n} style={{ background: sysVar('background-subtle'), borderRadius: 8, padding: '12px 16px', fontSize: 13, textAlign: 'center' }}>{n}</div>
               ))}
             </Grid>
             <Grid columns={3} gap={12}>
-              <RdGridItem colSpan={2} style={{ background: systemColors.light['background-information'], borderRadius: 8, padding: '12px 16px', fontSize: 13 }}>Spans 2 columns</RdGridItem>
-              <div style={{ background: systemColors.light['background-subtle'], borderRadius: 8, padding: '12px 16px', fontSize: 13 }}>1 column</div>
+              <RdGridItem colSpan={2} style={{ background: sysVar('background-information'), borderRadius: 8, padding: '12px 16px', fontSize: 13 }}>Spans 2 columns</RdGridItem>
+              <div style={{ background: sysVar('background-subtle'), borderRadius: 8, padding: '12px 16px', fontSize: 13 }}>1 column</div>
             </Grid>
           </div>
         );
 
       case 'splitpane':
         return (
-          <div style={{ height: 200, border: `1px solid ${systemColors.light['border-default']}`, borderRadius: 8, overflow: 'hidden' }}>
+          <div style={{ height: 200, border: `1px solid ${sysVar('border-default')}`, borderRadius: 8, overflow: 'hidden' }}>
             <SplitPane
-              left={<div style={{ padding: 16, height: '100%', background: systemColors.light['background-subtle'], fontSize: 13 }}>Left panel — drag the divider to resize</div>}
+              left={<div style={{ padding: 16, height: '100%', background: sysVar('background-subtle'), fontSize: 13 }}>Left panel — drag the divider to resize</div>}
               right={<div style={{ padding: 16, height: '100%', fontSize: 13 }}>Right panel content</div>}
               defaultSize={35}
             />
@@ -2176,7 +2176,7 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 480 }}>
             <ExplainerCard
-              icon={<svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="9" stroke="#2770EF" strokeWidth="1.5"/><path d="M10 6v4l2.5 2.5" stroke="#2770EF" strokeWidth="1.5" strokeLinecap="round"/></svg>}
+              icon={<svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ color: sysVar('content-brand') }}><circle cx="10" cy="10" r="9" stroke="currentColor" strokeWidth="1.5"/><path d="M10 6v4l2.5 2.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>}
               title="Schedule your first report"
               description="Reports can be scheduled to run automatically and delivered to your inbox."
               action={<Button variant="primary" size="small">Set up schedule</Button>}
@@ -2193,7 +2193,7 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
         return (
           <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
             <Image src="https://picsum.photos/seed/radiant/240/160" alt="Sample image" style={{ width: 240 }} rounded />
-            <Image src="broken-url" alt="Fallback demo" style={{ width: 240, height: 160 }} fallback={<div style={{ width: 240, height: 160, background: systemColors.light['background-subtle'], display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 8, fontSize: 13, color: systemColors.light['content-secondary'] }}>Image failed to load</div>} />
+            <Image src="broken-url" alt="Fallback demo" style={{ width: 240, height: 160 }} fallback={<div style={{ width: 240, height: 160, background: sysVar('background-subtle'), display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 8, fontSize: 13, color: sysVar('content-secondary') }}>Image failed to load</div>} />
           </div>
         );
 
@@ -2203,7 +2203,7 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
             {(['no-data', 'error', 'success', 'welcome', 'no-access', 'loading'] as const).map(id => (
               <div key={id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
                 <Illustration id={id} size="sm" />
-                <span style={{ fontSize: 11, color: systemColors.light['content-secondary'] }}>{id}</span>
+                <span style={{ fontSize: 11, color: sysVar('content-secondary') }}>{id}</span>
               </div>
             ))}
           </div>
@@ -2212,8 +2212,8 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
       case 'legend':
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-            <Legend items={[{ color: '#2770EF', label: 'Revenue', value: '$1.2M' }, { color: '#06BF7F', label: 'Profit', value: '$340K' }, { color: '#F5A623', label: 'Expenses', value: '$860K' }]} orientation="horizontal" />
-            <Legend items={[{ color: '#2770EF', label: 'Completed' }, { color: '#F5A623', label: 'In progress' }, { color: '#E22B3D', label: 'Blocked' }]} orientation="vertical" dotShape="square" />
+            <Legend items={[{ color: sysVar('content-accent-blue'), label: 'Revenue', value: '$1.2M' }, { color: sysVar('content-accent-green'), label: 'Profit', value: '$340K' }, { color: sysVar('content-accent-yellow'), label: 'Expenses', value: '$860K' }]} orientation="horizontal" />
+            <Legend items={[{ color: sysVar('content-accent-blue'), label: 'Completed' }, { color: sysVar('content-accent-yellow'), label: 'In progress' }, { color: sysVar('content-accent-red'), label: 'Blocked' }]} orientation="vertical" dotShape="square" />
           </div>
         );
 
@@ -2227,7 +2227,7 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
 
       case 'overlayloading':
         return (
-          <div style={{ position: 'relative', height: 140, border: `1px solid ${systemColors.light['border-default']}`, borderRadius: 8, padding: 16 }}>
+          <div style={{ position: 'relative', height: 140, border: `1px solid ${sysVar('border-default')}`, borderRadius: 8, padding: 16 }}>
             <p style={{ fontSize: 14 }}>Content underneath the overlay — set isVisible to true to block it.</p>
             <OverlayLoading isVisible={true} text="Loading data…" transparent />
           </div>
@@ -2274,7 +2274,7 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 300 }}>
             <DirectionControl label="Text direction" value={directionValue} onChange={setDirectionValue} />
-            <span style={{ fontSize: 13, color: systemColors.light['content-secondary'] }}>Selected: {directionValue}</span>
+            <span style={{ fontSize: 13, color: sysVar('content-secondary') }}>Selected: {directionValue}</span>
             <DirectionControl label="Disabled" value="ltr" disabled />
           </div>
         );
@@ -2283,11 +2283,11 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
         return (
           <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap', alignItems: 'flex-start' }}>
             <div>
-              <p style={{ fontSize: 12, marginBottom: 8, color: systemColors.light['content-secondary'] }}>Hex mode</p>
+              <p style={{ fontSize: 12, marginBottom: 8, color: sysVar('content-secondary') }}>Hex mode</p>
               <ColorPicker value={colorValue} onChange={setColorValue} selectorType="hex" />
             </div>
             <div>
-              <p style={{ fontSize: 12, marginBottom: 8, color: systemColors.light['content-secondary'] }}>Palette mode</p>
+              <p style={{ fontSize: 12, marginBottom: 8, color: sysVar('content-secondary') }}>Palette mode</p>
               <ColorPicker value={colorValue} onChange={setColorValue} selectorType="palette" />
             </div>
           </div>
@@ -2440,7 +2440,7 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
       // ── Data Visualization ─────────────────────────────────────────────
       case 'tree':
         return (
-          <div style={{ maxWidth: 320, border: `1px solid ${systemColors.light['border-default']}`, borderRadius: 8, overflow: 'hidden' }}>
+          <div style={{ maxWidth: 320, border: `1px solid ${sysVar('border-default')}`, borderRadius: 8, overflow: 'hidden' }}>
             <Tree
               nodes={[
                 { id: 'src', label: 'src', children: [
@@ -2462,7 +2462,7 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
 
       case 'treetable':
         return (
-          <div style={{ border: `1px solid ${systemColors.light['border-default']}`, borderRadius: 8, overflow: 'hidden' }}>
+          <div style={{ border: `1px solid ${sysVar('border-default')}`, borderRadius: 8, overflow: 'hidden' }}>
             <TreeTable
               nodes={[
                 { id: 'q1', label: 'Q1 2026', data: { revenue: '$1.2M', growth: '+12%' }, children: [
@@ -2484,15 +2484,15 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
             <div style={{ display: 'flex', gap: 24, alignItems: 'center', flexWrap: 'wrap' }}>
-              <div><p style={{ fontSize: 11, color: systemColors.light['content-secondary'], marginBottom: 4 }}>Text</p><Formatters.Text value="Sample text" bold /></div>
-              <div><p style={{ fontSize: 11, color: systemColors.light['content-secondary'], marginBottom: 4 }}>Currency</p><Formatters.Number value={1234567} format="currency" /></div>
-              <div><p style={{ fontSize: 11, color: systemColors.light['content-secondary'], marginBottom: 4 }}>Percent</p><Formatters.Number value={0.724} format="percent" /></div>
-              <div><p style={{ fontSize: 11, color: systemColors.light['content-secondary'], marginBottom: 4 }}>Compact</p><Formatters.Number value={48200} format="compact" /></div>
+              <div><p style={{ fontSize: 11, color: sysVar('content-secondary'), marginBottom: 4 }}>Text</p><Formatters.Text value="Sample text" bold /></div>
+              <div><p style={{ fontSize: 11, color: sysVar('content-secondary'), marginBottom: 4 }}>Currency</p><Formatters.Number value={1234567} format="currency" /></div>
+              <div><p style={{ fontSize: 11, color: sysVar('content-secondary'), marginBottom: 4 }}>Percent</p><Formatters.Number value={0.724} format="percent" /></div>
+              <div><p style={{ fontSize: 11, color: sysVar('content-secondary'), marginBottom: 4 }}>Compact</p><Formatters.Number value={48200} format="compact" /></div>
             </div>
             <div style={{ display: 'flex', gap: 24, alignItems: 'center', flexWrap: 'wrap' }}>
-              <div><p style={{ fontSize: 11, color: systemColors.light['content-secondary'], marginBottom: 4 }}>Sparkline</p><Formatters.Line data={[10, 25, 18, 40, 35, 55, 48, 62]} width={100} height={28} /></div>
-              <div><p style={{ fontSize: 11, color: systemColors.light['content-secondary'], marginBottom: 4 }}>Interval</p><Formatters.Interval start="2026-01-01" end="2026-03-31" format="range" /></div>
-              <div style={{ display: 'flex', gap: 8 }}><Formatters.Marker color="#06BF7F" /><Formatters.Marker color="#2770EF" /><Formatters.Marker color="#E22B3D" size="lg" /></div>
+              <div><p style={{ fontSize: 11, color: sysVar('content-secondary'), marginBottom: 4 }}>Sparkline</p><Formatters.Line data={[10, 25, 18, 40, 35, 55, 48, 62]} width={100} height={28} /></div>
+              <div><p style={{ fontSize: 11, color: sysVar('content-secondary'), marginBottom: 4 }}>Interval</p><Formatters.Interval start="2026-01-01" end="2026-03-31" format="range" /></div>
+              <div style={{ display: 'flex', gap: 8 }}><Formatters.Marker color={sysVar('content-accent-green')} /><Formatters.Marker color={sysVar('content-accent-blue')} /><Formatters.Marker color={sysVar('content-accent-red')} size="lg" /></div>
             </div>
           </div>
         );
@@ -2582,7 +2582,7 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
                 <Button variant={lbMode === 'view' ? 'primary' : 'secondary'} size="small" onClick={() => { setLbMode('view'); setLbSpotterOpen(false); }}>View mode</Button>
                 <Button variant={lbMode === 'edit' ? 'primary' : 'secondary'} size="small" onClick={() => setLbMode('edit')}>Edit mode</Button>
               </div>
-              <div style={{ borderRadius: '8px', overflow: 'hidden', border: `1px solid ${referenceColors.gray['20']}` }}>
+              <div style={{ borderRadius: '8px', overflow: 'hidden', border: `1px solid ${sysVar('border-divider')}` }}>
                 <LiveboardHeader
                   mode={lbMode}
                   title="Online retail sales"
@@ -2693,31 +2693,31 @@ const styles: Record<string, React.CSSProperties> = {
   breadcrumbItem: {
     fontFamily: 'var(--font-family-primary)',
     fontSize: '13px',
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
   },
   breadcrumbSeparator: {
     fontFamily: 'var(--font-family-primary)',
     fontSize: '13px',
-    color: referenceColors.gray['30'],
+    color: sysVar('content-tertiary'),
   },
   breadcrumbCurrent: {
     fontFamily: 'var(--font-family-primary)',
     fontSize: '13px',
-    color: systemColors.light['content-primary'],
+    color: sysVar('content-primary'),
     fontWeight: 500,
   },
   title: {
     fontFamily: 'var(--font-family-primary)',
     fontSize: '36px',
     fontWeight: 700,
-    color: systemColors.light['content-primary'],
+    color: sysVar('content-primary'),
     margin: 0,
   },
   description: {
     fontFamily: 'var(--font-family-primary)',
     fontSize: '16px',
     fontWeight: 400,
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
     lineHeight: '26px',
     maxWidth: '700px',
   },
@@ -2728,13 +2728,13 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: 'var(--font-family-primary)',
     fontSize: '20px',
     fontWeight: 'var(--font-weight-emphasis)',
-    color: systemColors.light['content-primary'],
+    color: sysVar('content-primary'),
     marginBottom: '16px',
   },
   exampleBox: {
     padding: '32px',
-    background: systemColors.light['background-base'],
-    border: `1px solid ${systemColors.light['background-subtle']}`,
+    background: sysVar('background-base'),
+    border: `1px solid ${sysVar('background-subtle')}`,
     borderRadius: '12px',
   },
   exampleContent: {
@@ -2755,7 +2755,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   interactiveBox: {
     padding: '20px',
-    background: systemColors.light['background-sunken'],
+    background: sysVar('background-sunken'),
     borderRadius: '8px',
     marginTop: '8px',
   },
@@ -2763,14 +2763,14 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: 'var(--font-family-primary)',
     fontSize: '12px',
     fontWeight: 'var(--font-weight-emphasis)',
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
     textTransform: 'uppercase',
     letterSpacing: '0.5px',
     marginBottom: '12px',
   },
   propsTable: {
-    background: systemColors.light['background-base'],
-    border: `1px solid ${systemColors.light['background-subtle']}`,
+    background: sysVar('background-base'),
+    border: `1px solid ${sysVar('background-subtle')}`,
     borderRadius: '12px',
     overflow: 'hidden',
   },
@@ -2778,12 +2778,12 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'grid',
     gridTemplateColumns: '140px 200px 100px 1fr',
     padding: '14px 20px',
-    background: systemColors.light['background-sunken'],
-    borderBottom: `1px solid ${systemColors.light['background-subtle']}`,
+    background: sysVar('background-sunken'),
+    borderBottom: `1px solid ${sysVar('background-subtle')}`,
     fontFamily: 'var(--font-family-primary)',
     fontSize: '11px',
     fontWeight: 'var(--font-weight-emphasis)',
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
     textTransform: 'uppercase',
     letterSpacing: '0.5px',
   },
@@ -2791,7 +2791,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'grid',
     gridTemplateColumns: '140px 200px 100px 1fr',
     padding: '14px 20px',
-    borderBottom: `1px solid ${systemColors.light['background-sunken']}`,
+    borderBottom: `1px solid ${sysVar('background-sunken')}`,
     alignItems: 'flex-start',
   },
   propName: {},
@@ -2800,27 +2800,27 @@ const styles: Record<string, React.CSSProperties> = {
   propDescription: {
     fontFamily: 'var(--font-family-primary)',
     fontSize: '13px',
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
     lineHeight: '20px',
   },
   propCode: {
     fontFamily: 'var(--font-family-mono)',
     fontSize: '13px',
     fontWeight: 500,
-    color: systemColors.light['content-brand'],
+    color: sysVar('content-brand'),
   },
   typeCode: {
     fontFamily: 'var(--font-family-mono)',
     fontSize: '12px',
-    color: referenceColors.gray['70'],
-    background: systemColors.light['background-sunken'],
+    color: sysVar('content-primary'),
+    background: sysVar('background-sunken'),
     padding: '2px 6px',
     borderRadius: '4px',
   },
   defaultCode: {
     fontFamily: 'var(--font-family-mono)',
     fontSize: '12px',
-    color: systemColors.light['content-success'],
+    color: sysVar('content-success'),
   },
 };
 

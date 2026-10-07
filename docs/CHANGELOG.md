@@ -47,6 +47,9 @@ Figma sync: bringing tokens and typography up to date with the Radiant 3.0 Figma
   - Added 13 chart tokens (`--rd-comp-color-chart-*`) with the product's names and dark values. The product has no light values yet, so ours are proposed, taken from the current chart colours
   - New `useChartTheme()` gives ECharts its colours for the current theme. Dark series colours come from the product's OKLCH lightness remap, ported so our charts match. All shared chart types and the Spotter chart block use it and redraw when the theme changes
   - User-picked note text colours are lightened on dark tiles
+- Added `ThemeSwitch` (`src/components/ThemeSwitch/`): Light, Dark and System, built on `SegmentedControl` and bound to the theme controller. It sits in the gallery header and at the foot of the Radiant docs sidebar (new `footerContent` slot on `Sidebar`). Ctrl+D still works and the two stay in step
+- The gallery, home pages, Radiant docs pages and changelog follow the theme. Code blocks on the docs pages stay dark in both themes. A few light values moved to the nearest token, mostly mid-grey text that is now `content-primary` and pale tints that are now the matching background token
+- The Colours page shows every system, shadow, component and chart token with its light and dark value side by side, and lists aliases under the token they point at. The Architecture page describes how theming works now
 
 ## 26.9.1c — 2026-09-03
 

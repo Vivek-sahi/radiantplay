@@ -31,6 +31,8 @@ export interface SidebarProps {
   onSelect: (id: string) => void;
   /** Header content */
   header?: React.ReactNode;
+  /** Content above the version and inspect row, such as a ThemeSwitch */
+  footerContent?: React.ReactNode;
 }
 
 // Inspect icon component
@@ -112,6 +114,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   activeId,
   onSelect,
   header,
+  footerContent,
 }) => {
   const { inspectMode, toggleInspectMode } = useInspector();
   const [isVersionPanelOpen, setIsVersionPanelOpen] = useState(false);
@@ -173,6 +176,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
         })}
       </nav>
       
+      <div className={styles.footerArea}>
+      {footerContent && <div className={styles.footerSlot}>{footerContent}</div>}
       <div className={styles.footer}>
         <button
           className={styles.versionButton}
@@ -190,6 +195,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <InspectIcon active={inspectMode} />
           <span>{inspectMode ? 'Inspecting' : 'Inspect'}</span>
         </button>
+      </div>
       </div>
 
       {isVersionPanelOpen && (

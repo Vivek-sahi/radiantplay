@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { systemColors, referenceColors } from '../tokens/colors';
+import { sysVar } from '../tokens/colors';
 import { spacing } from '../tokens/spacing';
 import { getComponentCount, getIconCount, getTokenCountLabel } from '../data/componentRegistry';
 import { getCurrentVersion } from '../data/versionHistory';
@@ -82,12 +82,12 @@ export const HomePage: React.FC = () => {
               href="/how-it-works.html"
               style={styles.secondaryBtn}
               onMouseEnter={(e) => {
-                e.currentTarget.style.background = systemColors.light['background-subtle'];
-                e.currentTarget.style.borderColor = systemColors.light['border-default'];
+                e.currentTarget.style.background = sysVar('background-subtle');
+                e.currentTarget.style.borderColor = sysVar('border-default');
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.background = systemColors.light['background-base'];
-                e.currentTarget.style.borderColor = systemColors.light['background-subtle'];
+                e.currentTarget.style.background = sysVar('background-base');
+                e.currentTarget.style.borderColor = sysVar('background-subtle');
               }}
             >
               How prototyping works
@@ -103,7 +103,7 @@ export const HomePage: React.FC = () => {
             onClick={() => navigate('/radiant')}
             onMouseEnter={(e) => {
               e.currentTarget.style.transform = 'translateY(-6px)';
-              e.currentTarget.style.boxShadow = '0 20px 48px rgba(39, 112, 239, 0.18), 0 0 0 1px rgba(39, 112, 239, 0.08)';
+              e.currentTarget.style.boxShadow = `0 20px 48px color-mix(in srgb, ${sysVar('content-brand')} 18%, transparent), 0 0 0 1px color-mix(in srgb, ${sysVar('content-brand')} 8%, transparent)`;
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.transform = 'translateY(0)';
@@ -111,11 +111,11 @@ export const HomePage: React.FC = () => {
             }}
           >
             <div style={styles.cardIconWrapper}>
-              <div style={{ ...styles.cardIcon, background: referenceColors.blue['20'], boxShadow: 'none' }}>
+              <div style={{ ...styles.cardIcon, background: sysVar('background-information'), boxShadow: 'none' }}>
                 <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke={referenceColors.blue['70']} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M2 17L12 22L22 17" stroke={referenceColors.blue['70']} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M2 12L12 17L22 12" stroke={referenceColors.blue['70']} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke={sysVar('content-brand')} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M2 17L12 22L22 17" stroke={sysVar('content-brand')} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M2 12L12 17L22 12" stroke={sysVar('content-brand')} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               </div>
             </div>
@@ -143,7 +143,7 @@ export const HomePage: React.FC = () => {
             onClick={() => navigate('/playground')}
             onMouseEnter={(e) => {
               e.currentTarget.style.transform = 'translateY(-6px)';
-              e.currentTarget.style.boxShadow = '0 20px 48px rgba(6, 191, 127, 0.18), 0 0 0 1px rgba(6, 191, 127, 0.08)';
+              e.currentTarget.style.boxShadow = `0 20px 48px color-mix(in srgb, ${sysVar('content-success')} 18%, transparent), 0 0 0 1px color-mix(in srgb, ${sysVar('content-success')} 8%, transparent)`;
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.transform = 'translateY(0)';
@@ -151,10 +151,10 @@ export const HomePage: React.FC = () => {
             }}
           >
             <div style={styles.cardIconWrapper}>
-              <div style={{ ...styles.cardIcon, background: referenceColors.blue['20'], boxShadow: 'none' }}>
+              <div style={{ ...styles.cardIcon, background: sysVar('background-information'), boxShadow: 'none' }}>
                 <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M20 14.66V20C20 20.5304 19.7893 21.0391 19.4142 21.4142C19.0391 21.7893 18.5304 22 18 22H4C3.46957 22 2.96086 21.7893 2.58579 21.4142C2.21071 21.0391 2 20.5304 2 20V6C2 5.46957 2.21071 4.96086 2.58579 4.58579C2.96086 4.21071 3.46957 4 4 4H9.34" stroke={referenceColors.blue['70']} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M18 2L22 6L12 16H8V12L18 2Z" stroke={referenceColors.blue['70']} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M20 14.66V20C20 20.5304 19.7893 21.0391 19.4142 21.4142C19.0391 21.7893 18.5304 22 18 22H4C3.46957 22 2.96086 21.7893 2.58579 21.4142C2.21071 21.0391 2 20.5304 2 20V6C2 5.46957 2.21071 4.96086 2.58579 4.58579C2.96086 4.21071 3.46957 4 4 4H9.34" stroke={sysVar('content-brand')} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M18 2L22 6L12 16H8V12L18 2Z" stroke={sysVar('content-brand')} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               </div>
             </div>
@@ -166,7 +166,7 @@ export const HomePage: React.FC = () => {
               <span style={styles.cardStatPill}>Full-page experience</span>
               <span style={styles.cardStatPill}>AI-powered</span>
             </div>
-            <div style={{ ...styles.cardCtaButton, color: referenceColors.blue['60'], background: referenceColors.blue['10'], borderColor: referenceColors.blue['20'] }}>
+            <div style={{ ...styles.cardCtaButton, borderColor: sysVar('background-information') }}>
               <span>Open projects</span>
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M3.33334 8H12.6667" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -196,12 +196,16 @@ export const HomePage: React.FC = () => {
   );
 };
 
+// Theme-aware tints. brandTintSubtle lands within a few RGB steps of Blue/10 in light.
+const brandTintSubtle = `color-mix(in srgb, ${sysVar('background-information')} 40%, ${sysVar('background-base')})`;
+const green = sysVar('content-success');
+
 const styles: Record<string, React.CSSProperties> = {
   container: {
     minHeight: '100vh',
     display: 'flex',
     flexDirection: 'column',
-    background: `linear-gradient(180deg, ${systemColors.light['background-sunken']} 0%, ${systemColors.light['background-base']} 100%)`,
+    background: `linear-gradient(180deg, ${sysVar('background-sunken')} 0%, ${sysVar('background-base')} 100%)`,
     fontFamily: 'var(--font-family-primary)',
   },
   main: {
@@ -231,9 +235,9 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     fontSize: '12px',
     fontWeight: 700,
-    color: systemColors.light['content-brand'],
-    background: referenceColors.blue['10'],
-    border: `1px solid ${referenceColors.blue['20']}`,
+    color: sysVar('content-brand'),
+    background: brandTintSubtle,
+    border: `1px solid ${sysVar('background-information')}`,
     borderRadius: '99px',
     padding: `${spacing.A}px ${spacing.D}px`,
     textTransform: 'uppercase',
@@ -242,20 +246,20 @@ const styles: Record<string, React.CSSProperties> = {
   title: {
     fontSize: '56px',
     fontWeight: 800,
-    color: referenceColors.blue['85'],
+    color: sysVar('content-primary'),
     marginBottom: `${spacing.D}px`,
     letterSpacing: '-.03em',
     lineHeight: 1.1,
   },
   titleAccent: {
-    color: referenceColors.blue['60'],
+    color: sysVar('content-brand'),
   },
   versionBadge: {
     display: 'inline-block',
     fontSize: '12px',
     fontWeight: 500,
-    color: systemColors.light['content-secondary'],
-    backgroundColor: systemColors.light['background-subtle'],
+    color: sysVar('content-secondary'),
+    backgroundColor: sysVar('background-subtle'),
     padding: `${spacing.A}px ${spacing.B}px`,
     borderRadius: '20px',
     letterSpacing: '0.01em',
@@ -263,7 +267,7 @@ const styles: Record<string, React.CSSProperties> = {
   subtitle: {
     fontSize: '18px',
     fontWeight: 400,
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
     lineHeight: 1.6,
     maxWidth: '520px',
     margin: '0 auto',
@@ -303,9 +307,9 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '15px',
     fontWeight: 'var(--font-weight-emphasis)',
     fontFamily: 'var(--font-family-primary)',
-    color: systemColors.light['content-primary'],
-    background: systemColors.light['background-base'],
-    border: `1.5px solid ${systemColors.light['background-subtle']}`,
+    color: sysVar('content-primary'),
+    background: sysVar('background-base'),
+    border: `1.5px solid ${sysVar('background-subtle')}`,
     borderRadius: '12px',
     cursor: 'pointer',
     transition: 'all 200ms cubic-bezier(0.23, 1, 0.32, 1)',
@@ -328,8 +332,8 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     textAlign: 'center',
     padding: `${spacing.G}px ${spacing.H}px`,
-    background: systemColors.light['background-base'],
-    border: `1px solid ${systemColors.light['background-subtle']}`,
+    background: sysVar('background-base'),
+    border: `1px solid ${sysVar('background-subtle')}`,
     borderRadius: '24px',
     cursor: 'pointer',
     transition: 'all 250ms cubic-bezier(0.23, 1, 0.32, 1)',
@@ -350,14 +354,14 @@ const styles: Record<string, React.CSSProperties> = {
   cardTitle: {
     fontSize: '24px',
     fontWeight: 700,
-    color: systemColors.light['content-primary'],
+    color: sysVar('content-primary'),
     marginBottom: `${spacing.C}px`,
     letterSpacing: '-0.5px',
   },
   cardDescription: {
     fontSize: '15px',
     fontWeight: 400,
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
     lineHeight: 1.6,
     marginBottom: `${spacing.E}px`,
     maxWidth: '280px',
@@ -373,11 +377,11 @@ const styles: Record<string, React.CSSProperties> = {
   cardStatPill: {
     fontSize: '13px',
     fontWeight: 500,
-    color: systemColors.light['content-secondary'],
-    background: systemColors.light['background-sunken'],
+    color: sysVar('content-secondary'),
+    background: sysVar('background-sunken'),
     padding: `${spacing.A}px ${spacing.C}px`,
     borderRadius: '6px',
-    border: `1px solid ${systemColors.light['background-subtle']}`,
+    border: `1px solid ${sysVar('background-subtle')}`,
   },
   cardCtaButton: {
     display: 'inline-flex',
@@ -385,11 +389,11 @@ const styles: Record<string, React.CSSProperties> = {
     gap: `${spacing.B}px`,
     fontSize: '15px',
     fontWeight: 'var(--font-weight-emphasis)',
-    color: systemColors.light['content-brand'],
-    background: referenceColors.blue['10'],
+    color: sysVar('content-brand'),
+    background: brandTintSubtle,
     padding: `${spacing.C}px ${spacing.F}px`,
     borderRadius: '10px',
-    border: `1px solid ${systemColors.light['background-information']}`,
+    border: `1px solid ${sysVar('background-information')}`,
     transition: 'all 150ms ease',
   },
 
@@ -402,27 +406,27 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '15px',
     fontWeight: 400,
     fontFamily: 'var(--font-family-primary)',
-    color: '#059669',
-    background: 'linear-gradient(90deg, rgba(6,191,127,0.08) 0%, rgba(6,191,127,0.08) 40%, rgba(6,191,127,0.18) 50%, rgba(6,191,127,0.08) 60%, rgba(6,191,127,0.08) 100%)',
+    color: sysVar('content-success'),
+    background: `linear-gradient(90deg, color-mix(in srgb, ${green} 8%, transparent) 0%, color-mix(in srgb, ${green} 8%, transparent) 40%, color-mix(in srgb, ${green} 18%, transparent) 50%, color-mix(in srgb, ${green} 8%, transparent) 60%, color-mix(in srgb, ${green} 8%, transparent) 100%)`,
     backgroundSize: '200% 100%',
     animation: 'shimmer 3s ease-in-out infinite',
-    border: '1.5px solid rgba(6, 191, 127, 0.2)',
+    border: `1.5px solid color-mix(in srgb, ${green} 20%, transparent)`,
     borderRadius: '14px',
     cursor: 'pointer',
     transition: 'all .2s cubic-bezier(0.23, 1, 0.32, 1)',
     marginBottom: `${spacing.L}px`,
-    boxShadow: '0 2px 12px rgba(6, 191, 127, 0.1)',
+    boxShadow: `0 2px 12px color-mix(in srgb, ${green} 10%, transparent)`,
   },
   latestDot: {
     width: '8px',
     height: '8px',
     borderRadius: '50%',
-    background: '#06BF7F',
+    background: sysVar('content-success'),
     flexShrink: 0,
-    boxShadow: '0 0 8px rgba(6, 191, 127, 0.5)',
+    boxShadow: `0 0 8px color-mix(in srgb, ${green} 50%, transparent)`,
   },
   latestName: {
-    color: '#059669',
+    color: sysVar('content-success'),
     fontWeight: 700,
     fontSize: '15px',
   },
@@ -444,20 +448,20 @@ const styles: Record<string, React.CSSProperties> = {
   funFooter: {
     fontSize: '14px',
     fontWeight: 400,
-    color: systemColors.light['content-tertiary'],
+    color: sysVar('content-tertiary'),
     textAlign: 'center',
     fontStyle: 'italic',
     cursor: 'default',
     userSelect: 'none',
-    borderBottom: `1px dashed ${systemColors.light['border-divider']}`,
+    borderBottom: `1px dashed ${sysVar('border-divider')}`,
     paddingBottom: `${spacing.A}px`,
   },
   eggTooltip: {
     fontSize: '12px',
     fontWeight: 500,
-    color: systemColors.light['content-secondary'],
-    backgroundColor: systemColors.light['background-base'],
-    border: `1px solid ${systemColors.light['background-subtle']}`,
+    color: sysVar('content-secondary'),
+    backgroundColor: sysVar('background-base'),
+    border: `1px solid ${sysVar('background-subtle')}`,
     borderRadius: '8px',
     padding: `${spacing.B}px ${spacing.C}px`,
     boxShadow: '0 2px 8px rgba(0,0,0,0.08)',

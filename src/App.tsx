@@ -20,9 +20,10 @@ import { TypographyPage } from './pages/TypographyPage';
 import RdModalDemo from './pages/RdModalDemo';
 // import { RoadmapPage } from './pages/RoadmapPage';
 
-import { systemColors, sysVar } from './tokens/colors';
+import { sysVar } from './tokens/colors';
 import { getCurrentVersion } from './data/versionHistory';
 import { useTheme } from './context/ThemeContext';
+import { ThemeSwitch } from './components/ThemeSwitch';
 import { getIconCount } from './data/componentRegistry';
 
 // Navigation icons
@@ -464,6 +465,7 @@ const RadiantLayout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         activeId={getActiveId()}
         onSelect={handleNavigate}
         header={<SidebarHeader />}
+        footerContent={<ThemeSwitch fullWidth />}
       />
       <main style={styles.main}>
         <div style={styles.content}>
@@ -690,7 +692,7 @@ const styles: Record<string, React.CSSProperties> = {
   app: {
     display: 'flex',
     minHeight: '100vh',
-    backgroundColor: systemColors.light['background-sunken'],
+    backgroundColor: sysVar('background-sunken'),
   },
   main: {
     flex: 1,

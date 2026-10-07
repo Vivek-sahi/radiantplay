@@ -54,6 +54,8 @@ export const versionHistory: VersionEntry[] = [
       { type: 'added', group: 'Tokens', component: 'sysVar, compVar, shadowVar', description: 'Helpers that return the CSS variable for a token, for inline styles that follow the theme. Use them instead of systemColors.light[...].' },
       { type: 'modified', group: 'Dark mode', component: 'Shared layers', description: 'Components, Spotter, Liveboard tiles and the prototype templates follow the theme. The docs sidebar follows the theme; the product primary nav stays dark. 11 undefined token names now point at real tokens.' },
       { type: 'added', group: 'Dark mode', component: 'Chart theme', description: '13 chart tokens with the product names and dark values, and useChartTheme() for ECharts. Dark series colours use the product OKLCH remap. Charts redraw on theme change.' },
+      { type: 'added', group: 'Dark mode', component: 'ThemeSwitch', description: 'Light, Dark and System control on SegmentedControl, in the gallery header and the Radiant docs sidebar. Stays in step with Ctrl+D.' },
+      { type: 'modified', group: 'Dark mode', component: 'Pages', description: 'Gallery, home, Radiant docs and changelog pages follow the theme. The Colours page shows light and dark values side by side for every token.' },
     ],
   },
   {

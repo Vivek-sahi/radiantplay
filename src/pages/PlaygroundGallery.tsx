@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { systemColors, referenceColors } from '../tokens/colors';
+import { sysVar, compVar } from '../tokens/colors';
 import { spacing } from '../tokens/spacing';
 import { getAllProjects, ProjectMeta } from '../prototypes/registry';
 import { getCurrentVersion } from '../data/versionHistory';
 import { Icon } from '../components/icons';
+import { ThemeSwitch } from '../components/ThemeSwitch';
 
 type SectionId = 'prototypes' | 'archived';
 type Override = 'archived' | 'restored';
@@ -259,17 +260,18 @@ export const PlaygroundGallery: React.FC = () => {
               href={href}
               style={styles.navLink}
               onMouseEnter={(e) => {
-                e.currentTarget.style.background = '#D6E8FF';
-                e.currentTarget.style.borderColor = '#2770EF';
-                e.currentTarget.style.color = '#2770EF';
+                e.currentTarget.style.background = sysVar('background-information');
+                e.currentTarget.style.borderColor = sysVar('border-brand');
+                e.currentTarget.style.color = sysVar('content-brand');
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.background = '#EBF2FF';
-                e.currentTarget.style.borderColor = '#C3D9FF';
-                e.currentTarget.style.color = systemColors.light['content-primary'];
+                e.currentTarget.style.background = brandTint;
+                e.currentTarget.style.borderColor = brandTintBorder;
+                e.currentTarget.style.color = sysVar('content-primary');
               }}
             >{label}</a>
           ))}
+          <ThemeSwitch />
         </div>
       </header>
 
@@ -285,7 +287,7 @@ export const PlaygroundGallery: React.FC = () => {
                 onClick={() => setActiveSection(item.id)}
                 style={{ ...styles.navItem, ...(isActive ? styles.navItemActive : {}) }}
                 onMouseEnter={(e) => {
-                  if (!isActive) e.currentTarget.style.background = systemColors.light['background-sunken'];
+                  if (!isActive) e.currentTarget.style.background = sysVar('background-sunken');
                 }}
                 onMouseLeave={(e) => {
                   if (!isActive) e.currentTarget.style.background = 'transparent';
@@ -308,8 +310,8 @@ export const PlaygroundGallery: React.FC = () => {
                 type="button"
                 onClick={() => setSaveModalOpen(true)}
                 style={styles.saveBtn}
-                onMouseEnter={(e) => { e.currentTarget.style.background = '#1E5BBB'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = '#2770EF'; }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = compVar('button-primary-hover'); }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = sysVar('background-brand'); }}
               >
                 Save to code
                 <span style={styles.saveBtnBadge}>{totalUnsavedChanges}</span>
@@ -575,14 +577,14 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
         setHovered(true);
         e.currentTarget.style.transform = 'translateY(-2px)';
         e.currentTarget.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.12)';
-        e.currentTarget.style.borderColor = referenceColors.brand['40'];
+        e.currentTarget.style.borderColor = `color-mix(in srgb, ${sysVar('border-brand')} 40%, transparent)`;
         e.currentTarget.style.opacity = '1';
       }}
       onMouseLeave={(e) => {
         setHovered(false);
         e.currentTarget.style.transform = 'translateY(0)';
         e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.06)';
-        e.currentTarget.style.borderColor = systemColors.light['background-subtle'];
+        e.currentTarget.style.borderColor = sysVar('background-subtle');
         e.currentTarget.style.opacity = archived ? '0.78' : '1';
       }}
       role="button"
@@ -680,12 +682,18 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
 
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Brand tints mixed from theme tokens so they follow light and dark mode.
+// In light they land within a few RGB steps of the old brand tint literals.
+const brandTint = `color-mix(in srgb, ${sysVar('background-information')} 60%, ${sysVar('background-base')})`;
+const brandTintSubtle = `color-mix(in srgb, ${sysVar('background-information')} 40%, ${sysVar('background-base')})`;
+const brandTintBorder = `color-mix(in srgb, ${sysVar('border-brand')} 25%, transparent)`;
+
 const styles: Record<string, React.CSSProperties> = {
   container: {
     height: '100vh',
     display: 'flex',
     flexDirection: 'column',
-    backgroundColor: systemColors.light['background-sunken'],
+    backgroundColor: sysVar('background-sunken'),
     fontFamily: 'var(--font-family-primary)',
   },
 
@@ -695,8 +703,8 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: `${spacing.D}px ${spacing.H}px`,
-    backgroundColor: systemColors.light['background-base'],
-    borderBottom: `1px solid ${systemColors.light['background-subtle']}`,
+    backgroundColor: sysVar('background-base'),
+    borderBottom: `1px solid ${sysVar('background-subtle')}`,
     flexShrink: 0,
   },
   logoBtn: {
@@ -739,7 +747,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: 'var(--font-family-primary)',
     fontSize: '15px',
     fontWeight: 'var(--font-weight-emphasis)',
-    color: systemColors.light['content-primary'],
+    color: sysVar('content-primary'),
     letterSpacing: '-0.3px',
     lineHeight: '18px',
     whiteSpace: 'nowrap',
@@ -748,8 +756,8 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: 'var(--font-family-primary)',
     fontSize: '10px',
     fontWeight: 500,
-    color: systemColors.light['content-secondary'],
-    backgroundColor: systemColors.light['background-subtle'],
+    color: sysVar('content-secondary'),
+    backgroundColor: sysVar('background-subtle'),
     padding: `1px ${spacing.B}px`,
     borderRadius: '10px',
     letterSpacing: '0.2px',
@@ -764,7 +772,7 @@ const styles: Record<string, React.CSSProperties> = {
   title: {
     fontSize: '24px',
     fontWeight: 'var(--font-weight-emphasis)',
-    color: systemColors.light['content-primary'],
+    color: sysVar('content-primary'),
     margin: 0,
   },
   headerActions: {
@@ -777,13 +785,13 @@ const styles: Record<string, React.CSSProperties> = {
   navLink: {
     fontSize: '13px',
     fontWeight: 500,
-    color: '#2770EF',
+    color: sysVar('content-brand'),
     textDecoration: 'none',
     fontFamily: 'var(--font-family-primary)',
     padding: '5px 14px',
     borderRadius: '100px',
-    border: '1px solid #C3D9FF',
-    background: '#EBF2FF',
+    border: `1px solid ${brandTintBorder}`,
+    background: brandTint,
     transition: 'all 0.15s',
   },
 
@@ -799,8 +807,8 @@ const styles: Record<string, React.CSSProperties> = {
   sidebar: {
     width: '220px',
     flexShrink: 0,
-    backgroundColor: systemColors.light['background-base'],
-    borderRight: `1px solid ${systemColors.light['background-subtle']}`,
+    backgroundColor: sysVar('background-base'),
+    borderRight: `1px solid ${sysVar('background-subtle')}`,
     padding: `${spacing.C}px ${spacing.B}px`,
     display: 'flex',
     flexDirection: 'column',
@@ -818,14 +826,14 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: 'var(--font-family-primary)',
     fontSize: '14px',
     fontWeight: 500,
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
     textAlign: 'left',
     width: '100%',
     transition: 'background 120ms ease, color 120ms ease',
   },
   navItemActive: {
-    background: '#EBF2FF',
-    color: '#2770EF',
+    background: brandTint,
+    color: sysVar('content-brand'),
   },
   navItemIcon: {
     display: 'flex',
@@ -841,23 +849,23 @@ const styles: Record<string, React.CSSProperties> = {
   navItemBadge: {
     fontSize: '11px',
     fontWeight: 'var(--font-weight-emphasis)',
-    color: systemColors.light['content-secondary'],
-    background: systemColors.light['background-sunken'],
+    color: sysVar('content-secondary'),
+    background: sysVar('background-sunken'),
     padding: '2px 8px',
     borderRadius: '10px',
     minWidth: '20px',
     textAlign: 'center',
   },
   navItemBadgeActive: {
-    color: '#2770EF',
-    background: '#FFFFFF',
+    color: sysVar('content-brand'),
+    background: sysVar('background-base'),
   },
 
   // Sidebar footer — Save to code button
   sidebarFooter: {
     marginTop: 'auto',
     padding: `${spacing.C}px ${spacing.B}px ${spacing.B}px`,
-    borderTop: `1px solid ${systemColors.light['background-subtle']}`,
+    borderTop: `1px solid ${sysVar('background-subtle')}`,
     display: 'flex',
     flexDirection: 'column',
     gap: `${spacing.B}px`,
@@ -868,10 +876,10 @@ const styles: Record<string, React.CSSProperties> = {
     justifyContent: 'center',
     gap: `${spacing.B}px`,
     padding: `${spacing.B}px ${spacing.C}px`,
-    background: '#2770EF',
+    background: sysVar('background-brand'),
     border: 'none',
     borderRadius: '8px',
-    color: '#FFFFFF',
+    color: sysVar('content-alternate'),
     fontSize: '13px',
     fontWeight: 'var(--font-weight-emphasis)',
     cursor: 'pointer',
@@ -881,8 +889,8 @@ const styles: Record<string, React.CSSProperties> = {
   saveBtnBadge: {
     fontSize: '11px',
     fontWeight: 'var(--font-weight-emphasis)',
-    background: 'rgba(255,255,255,0.2)',
-    color: '#FFFFFF',
+    background: `color-mix(in srgb, ${sysVar('content-alternate')} 20%, transparent)`,
+    color: sysVar('content-alternate'),
     padding: '1px 6px',
     borderRadius: '8px',
     minWidth: '18px',
@@ -904,17 +912,17 @@ const styles: Record<string, React.CSSProperties> = {
     width: 6,
     height: 6,
     borderRadius: '50%',
-    background: systemColors.light['content-failure'],
-    boxShadow: '0 0 0 3px rgba(226, 43, 61, 0.15)',
+    background: sysVar('content-failure'),
+    boxShadow: `0 0 0 3px color-mix(in srgb, ${sysVar('content-failure')} 15%, transparent)`,
     flexShrink: 0,
   },
   sidebarFooterHintStrong: {
     fontSize: '11px',
-    color: systemColors.light['content-failure'],
+    color: sysVar('content-failure'),
     fontWeight: 'var(--font-weight-emphasis)',
   },
   sidebarFooterHintMuted: {
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
     fontWeight: 400,
     fontSize: '10px',
   },
@@ -931,7 +939,7 @@ const styles: Record<string, React.CSSProperties> = {
   sectionHeader: {
     fontSize: '14px',
     fontWeight: 'var(--font-weight-emphasis)',
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
     marginBottom: `${spacing.D}px`,
     textTransform: 'uppercase',
     letterSpacing: '0.04em',
@@ -953,19 +961,19 @@ const styles: Record<string, React.CSSProperties> = {
   emptyTitle: {
     fontSize: '16px',
     fontWeight: 'var(--font-weight-emphasis)',
-    color: systemColors.light['content-primary'],
+    color: sysVar('content-primary'),
     margin: `0 0 ${spacing.B}px 0`,
   },
   emptySubtitle: {
     fontSize: '14px',
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
     margin: 0,
     lineHeight: '20px',
   },
   code: {
     fontFamily: 'var(--font-family-mono)',
     fontSize: '12px',
-    background: systemColors.light['background-subtle'],
+    background: sysVar('background-subtle'),
     padding: '1px 6px',
     borderRadius: '4px',
   },
@@ -975,8 +983,8 @@ const styles: Record<string, React.CSSProperties> = {
     position: 'relative',
     display: 'flex',
     flexDirection: 'column',
-    backgroundColor: systemColors.light['background-base'],
-    border: `1px solid ${systemColors.light['background-subtle']}`,
+    backgroundColor: sysVar('background-base'),
+    border: `1px solid ${sysVar('background-subtle')}`,
     borderRadius: `${spacing.C}px`,
     overflow: 'hidden',
     cursor: 'pointer',
@@ -998,13 +1006,13 @@ const styles: Record<string, React.CSSProperties> = {
     width: 28,
     height: 28,
     borderRadius: 6,
-    background: 'rgba(255,255,255,0.95)',
-    border: `1px solid ${systemColors.light['background-subtle']}`,
+    background: `color-mix(in srgb, ${sysVar('background-base')} 95%, transparent)`,
+    border: `1px solid ${sysVar('background-subtle')}`,
     cursor: 'pointer',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
     padding: 0,
     boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
   },
@@ -1012,8 +1020,8 @@ const styles: Record<string, React.CSSProperties> = {
     position: 'absolute',
     top: 32,
     right: 0,
-    background: systemColors.light['background-base'],
-    border: `1px solid ${systemColors.light['background-subtle']}`,
+    background: sysVar('background-base'),
+    border: `1px solid ${sysVar('background-subtle')}`,
     borderRadius: 8,
     padding: 4,
     boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
@@ -1034,17 +1042,17 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: 'pointer',
     fontSize: '13px',
     fontFamily: 'var(--font-family-primary)',
-    color: systemColors.light['content-primary'],
+    color: sysVar('content-primary'),
     textAlign: 'left',
     width: '100%',
   },
   cardThumbnail: {
     height: '120px',
-    backgroundColor: systemColors.light['background-sunken'],
+    backgroundColor: sysVar('background-sunken'),
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    borderBottom: `1px solid ${systemColors.light['background-subtle']}`,
+    borderBottom: `1px solid ${sysVar('background-subtle')}`,
   },
   cardImage: {
     width: '100%',
@@ -1052,7 +1060,7 @@ const styles: Record<string, React.CSSProperties> = {
     objectFit: 'cover',
   },
   cardPlaceholder: {
-    color: systemColors.light['border-default'],
+    color: sysVar('border-default'),
   },
   cardContent: {
     padding: `${spacing.D}px`,
@@ -1061,13 +1069,13 @@ const styles: Record<string, React.CSSProperties> = {
   cardTitle: {
     fontSize: '15px',
     fontWeight: 'var(--font-weight-emphasis)',
-    color: systemColors.light['content-primary'],
+    color: sysVar('content-primary'),
     marginBottom: `${spacing.B}px`,
   },
   cardDescription: {
     fontSize: '13px',
     fontWeight: 400,
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
     lineHeight: '20px',
     marginBottom: `${spacing.C}px`,
     display: '-webkit-box',
@@ -1083,12 +1091,12 @@ const styles: Record<string, React.CSSProperties> = {
   cardAuthor: {
     fontSize: '12px',
     fontWeight: 500,
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
   },
   cardDate: {
     fontSize: '12px',
     fontWeight: 400,
-    color: systemColors.light['content-tertiary'],
+    color: sysVar('content-tertiary'),
   },
   cardPills: {
     display: 'flex',
@@ -1103,16 +1111,16 @@ const styles: Record<string, React.CSSProperties> = {
     gap: `${spacing.A}px`,
     fontSize: '12px',
     fontWeight: 500,
-    color: systemColors.light['content-brand'],
-    background: referenceColors.blue['10'],
+    color: sysVar('content-brand'),
+    background: brandTintSubtle,
     padding: `3px ${spacing.B}px`,
     borderRadius: `${spacing.A}px`,
-    border: `1px solid ${systemColors.light['background-information']}`,
+    border: `1px solid ${sysVar('background-information')}`,
   },
   cardPillCustom: {
-    color: '#8B5CF6',
-    background: 'rgba(139, 92, 246, 0.08)',
-    borderColor: 'rgba(139, 92, 246, 0.2)',
+    color: sysVar('content-accent-purple'),
+    background: `color-mix(in srgb, ${sysVar('content-accent-purple')} 8%, transparent)`,
+    borderColor: `color-mix(in srgb, ${sysVar('content-accent-purple')} 20%, transparent)`,
   },
 
   // Toast
@@ -1121,8 +1129,8 @@ const styles: Record<string, React.CSSProperties> = {
     bottom: 24,
     left: '50%',
     transform: 'translateX(-50%)',
-    background: '#1D232F',
-    color: '#FFFFFF',
+    background: sysVar('background-base-inverse'),
+    color: sysVar('content-primary-inverse'),
     padding: '10px 14px 10px 16px',
     borderRadius: 8,
     display: 'flex',
@@ -1134,12 +1142,12 @@ const styles: Record<string, React.CSSProperties> = {
     zIndex: 1000,
   },
   toastMsg: {
-    color: '#FFFFFF',
+    color: sysVar('content-primary-inverse'),
   },
   toastUndo: {
     background: 'transparent',
     border: 'none',
-    color: '#71A1F4',
+    color: sysVar('content-brand-inverse'),
     cursor: 'pointer',
     fontSize: '13px',
     fontWeight: 'var(--font-weight-emphasis)',
@@ -1160,7 +1168,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: 24,
   },
   modal: {
-    background: systemColors.light['background-base'],
+    background: sysVar('background-base'),
     borderRadius: 12,
     padding: 24,
     maxWidth: 600,
@@ -1182,13 +1190,13 @@ const styles: Record<string, React.CSSProperties> = {
   modalTitle: {
     fontSize: '18px',
     fontWeight: 'var(--font-weight-emphasis)',
-    color: systemColors.light['content-primary'],
+    color: sysVar('content-primary'),
     margin: 0,
     marginBottom: 4,
   },
   modalSubtitle: {
     fontSize: '13px',
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
     margin: 0,
     lineHeight: '18px',
   },
@@ -1196,20 +1204,20 @@ const styles: Record<string, React.CSSProperties> = {
     background: 'transparent',
     border: 'none',
     cursor: 'pointer',
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
     padding: 4,
     borderRadius: 4,
     flexShrink: 0,
   },
   modalSnippet: {
-    background: '#F6F8FA',
-    border: `1px solid ${systemColors.light['background-subtle']}`,
+    background: sysVar('background-sunken'),
+    border: `1px solid ${sysVar('background-subtle')}`,
     borderRadius: 8,
     padding: 16,
     fontFamily: 'var(--font-family-mono)',
     fontSize: '12px',
     lineHeight: '18px',
-    color: systemColors.light['content-primary'],
+    color: sysVar('content-primary'),
     margin: 0,
     whiteSpace: 'pre-wrap',
     wordBreak: 'break-word',
@@ -1223,29 +1231,29 @@ const styles: Record<string, React.CSSProperties> = {
   },
   modalSecondaryBtn: {
     padding: '8px 16px',
-    background: systemColors.light['background-base'],
-    border: `1px solid ${systemColors.light['border-default']}`,
+    background: sysVar('background-base'),
+    border: `1px solid ${sysVar('border-default')}`,
     borderRadius: 6,
     cursor: 'pointer',
     fontSize: '13px',
     fontWeight: 500,
-    color: systemColors.light['content-primary'],
+    color: sysVar('content-primary'),
     fontFamily: 'var(--font-family-primary)',
   },
   modalPrimaryBtn: {
     padding: '8px 16px',
-    background: '#2770EF',
+    background: sysVar('background-brand'),
     border: 'none',
     borderRadius: 6,
     cursor: 'pointer',
     fontSize: '13px',
     fontWeight: 'var(--font-weight-emphasis)',
-    color: '#FFFFFF',
+    color: sysVar('content-alternate'),
     fontFamily: 'var(--font-family-primary)',
   },
   modalHint: {
     fontSize: '13px',
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
     margin: 0,
     lineHeight: '18px',
   },

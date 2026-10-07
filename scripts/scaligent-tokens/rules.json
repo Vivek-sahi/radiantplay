@@ -1,5 +1,5 @@
 {
-  "_readme": "Rules for scripts/scaligent-tokens/tally.mjs. Edit here when a decision changes, then re-run `npm run scaligent-tokens:tally`. Decisions: Scaligent names in code, Figma wins on values (docs/2026-10-06-dark-mode-rollout-plan.md section 9).",
+  "_readme": "Rules for scripts/scaligent-tokens/tally.mjs. Edit here when a decision changes, then re-run `npm run scaligent-tokens:tally`. Decisions: Scaligent names in code, Figma wins on values (docs/2026-10-07-dark-mode-rollout-plan.md section 9).",
 
   "scaligentDirDefault": "~/code/scaligent",
   "scaligentFiles": {

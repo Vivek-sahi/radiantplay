@@ -2,7 +2,7 @@
 
 Compares Radiant Play's colour tokens with the ThoughtSpot product's (Scaligent `radiant-styles`), so prototypes stay easy to hand off to developers.
 
-Decisions it follows (plan: `docs/2026-10-06-dark-mode-rollout-plan.md`, section 9):
+Decisions it follows (plan: `docs/2026-10-07-dark-mode-rollout-plan.md`, section 9):
 
 - Scaligent names in code.
 - Figma wins on values. A "differs" row is a gap to report to the product team, not a change for us.
