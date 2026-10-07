@@ -76,9 +76,9 @@ The MCP returns React + Tailwind code. **Never use it verbatim.** Always adapt:
 
 | MCP output | Radiant equivalent |
 |------------|-------------------|
-| Tailwind classes (`className="bg-white p-4"`) | Inline styles with tokens (`backgroundColor: systemColors.light['background-base']`) |
+| Tailwind classes (`className="bg-white p-4"`) | Inline styles with tokens (`backgroundColor: sysVar('background-base')`) |
 | Raw `<button>`, `<input>` | `<Button>`, `<TextInput>` from `../../components` |
-| Hardcoded hex values | `systemColors.light[...]` or `referenceColors` tokens |
+| Hardcoded hex values | `sysVar('...')` / `compVar('...')` inline, `var(--rd-sys-color-*)` in CSS |
 | Hardcoded pixel spacing | `spacing.A` through `spacing.H` tokens |
 | Tailwind font sizes | `fontFamily.primary` from `../../tokens/typography` |
 
@@ -89,7 +89,7 @@ The response may include these enrichments — use them appropriately:
 - **Code Connect snippets** → The design links to an existing codebase component. Use that component directly.
 - **Component documentation links** → Follow them for usage context and prop APIs.
 - **Design annotations** → Follow any notes, constraints, or instructions from the designer.
-- **Design tokens as CSS variables** → Map to the project's `systemColors` / `referenceColors` token system.
+- **Design tokens as CSS variables** → Map to the matching system or component token: `sysVar()` / `compVar()` inline, `var(--rd-sys-color-*)` in CSS.
 - **Raw hex colors / absolute positioning** → The design is loosely structured; rely more on the screenshot for layout intent.
 
 ---
@@ -117,7 +117,7 @@ Recovery:
 
 ### Token mapping conflicts
 
-When MCP returns hex values that don't match any `systemColors` token exactly:
+When MCP returns hex values that don't match any system token exactly:
 
 1. Check `figma-component-mapping.md` for the closest Radiant token
 2. Use the **semantic meaning** (e.g. "this looks like secondary text") rather than exact hex matching
@@ -148,4 +148,4 @@ Designer pastes Figma URL
 - **Don't use MCP output as final code** — it's a reference, not a deliverable
 - **Don't skip the adaptation step** — Tailwind → inline styles, raw HTML → Radiant components
 - **Don't call `get_metadata` first** — always try `get_design_context` first (it includes metadata when needed)
-- **Don't hardcode hex values from the MCP response** — always map to `systemColors` / `referenceColors`
+- **Don't hardcode hex values from the MCP response** — always map to `sysVar()` / `compVar()` or `var(--rd-sys-color-*)`, so the colour follows the theme

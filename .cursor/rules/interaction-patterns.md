@@ -154,7 +154,7 @@ When a table has zero rows after filtering or searching:
 ```tsx
 {filteredData.length === 0 ? (
   <div style={styles.tableEmpty}>
-    <p style={{ color: systemColors.light['content-tertiary'] }}>
+    <p style={{ color: sysVar('content-tertiary') }}>
       No results match your search
     </p>
   </div>

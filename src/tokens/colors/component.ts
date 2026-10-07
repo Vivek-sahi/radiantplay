@@ -206,6 +206,11 @@ function withAliases<M extends Record<keyof typeof baseComponentColors.light, st
   return { ...mode, ...aliases } as WithAliases<M>;
 }
 
+/**
+ * Token values as data, for docs pages, swatches and canvas charts.
+ * Don't use these for UI: they are fixed values and stay light in dark mode.
+ * For UI use compVar('...') (a theme-aware CSS variable).
+ */
 export const rdComponentColors = {
   light: withAliases(baseComponentColors.light),
   dark: withAliases(baseComponentColors.dark),

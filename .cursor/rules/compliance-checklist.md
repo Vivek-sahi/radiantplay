@@ -13,11 +13,12 @@ Run these checks on every `.tsx` file you create or modify. Do NOT declare done 
 - No `#` hex values (outside SVG path data)
 - No `rgb()` / `rgba()` / `hsl()`
 - No deprecated `import { brandColors }`
-- Use `systemColors.light['...']` or `referenceColors`
+- Use `var(--rd-sys-color-*)` in CSS and `sysVar()` / `compVar()` / `shadowVar()` in inline styles
+- No `systemColors.light[...]`, `rdComponentColors.light[...]` or `referenceColors.*` in UI code: they stay light in dark mode
 
 ## Fonts — no hardcoded families
 
-- No hardcoded stacks: `fontFamily: '"Geist", -apple-system, ...'`, the old `"Plain"` stack, or `'Arial, sans-serif'`
+- No hardcoded stacks: `fontFamily: '"Geist", -apple-system, ...'`, the old Plain font stack, or `'Arial, sans-serif'`
 - Use `fontFamily.primary` from `../../tokens/typography`, or `var(--font-family-primary)` in CSS
 - No hardcoded weights (`600`, `375`). Use `var(--font-weight-emphasis)` (550) for headings and labels, `var(--font-weight-regular)` (400) for body
 

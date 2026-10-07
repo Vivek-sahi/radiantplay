@@ -180,13 +180,13 @@ Empty file — reserves the components folder.
 **`src/prototypes/<Name>/styles.ts`**
 ```ts
 import { CSSProperties } from 'react';
-import { systemColors } from '../../tokens/colors';
+import { sysVar } from '../../tokens/colors';
 import { spacing } from '../../tokens/spacing';
 
 export const styles: Record<string, CSSProperties> = {
   container: {
     minHeight: '100vh',
-    backgroundColor: systemColors.light['background-sunken'],
+    backgroundColor: sysVar('background-sunken'),
   },
   content: {
     padding: `${spacing.H}px`,
@@ -203,7 +203,7 @@ export const styles: Record<string, CSSProperties> = {
 **`src/prototypes/<Name>/index.tsx`**
 ```tsx
 import React, { useState } from 'react';
-import { systemColors } from '../../tokens/colors';
+import { sysVar } from '../../tokens/colors';
 import { spacing } from '../../tokens/spacing';
 
 /**
@@ -221,17 +221,17 @@ export const <Name>: React.FC = () => {
   const [activeSection, setActiveSection] = useState('overview');
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: systemColors.light['background-sunken'] }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: sysVar('background-sunken') }}>
       {/* Header */}
-      <header style={{ height: HEADER_HEIGHT, display: 'flex', alignItems: 'center', padding: `0 ${spacing.F}px`, backgroundColor: systemColors.light['background-base'], borderBottom: `1px solid ${systemColors.light['border-divider']}` }}>
-        <h1 style={{ fontSize: '16px', fontWeight: 600, color: systemColors.light['content-primary'] }}>
+      <header style={{ height: HEADER_HEIGHT, display: 'flex', alignItems: 'center', padding: `0 ${spacing.F}px`, backgroundColor: sysVar('background-base'), borderBottom: `1px solid ${sysVar('border-divider')}` }}>
+        <h1 style={{ fontSize: '16px', fontWeight: 'var(--font-weight-emphasis)', color: sysVar('content-primary') }}>
           <Name display name>
         </h1>
       </header>
 
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
         {/* Sidebar */}
-        <nav style={{ width: SIDEBAR_WIDTH, backgroundColor: systemColors.light['background-base'], borderRight: `1px solid ${systemColors.light['border-divider']}`, padding: `${spacing.D}px` }}>
+        <nav style={{ width: SIDEBAR_WIDTH, backgroundColor: sysVar('background-base'), borderRight: `1px solid ${sysVar('border-divider')}`, padding: `${spacing.D}px` }}>
           {/* Add navigation items here */}
         </nav>
 
@@ -252,7 +252,7 @@ export default <Name>;
 **`src/prototypes/<Name>/index.tsx`**
 ```tsx
 import React, { useState } from 'react';
-import { systemColors } from '../../tokens/colors';
+import { sysVar } from '../../tokens/colors';
 import { spacing } from '../../tokens/spacing';
 
 /**
@@ -272,33 +272,33 @@ export const <Name>: React.FC = () => {
   const handleBack = () => setCurrentStep((s) => Math.max(s - 1, 0));
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: systemColors.light['background-sunken'], display: 'flex', flexDirection: 'column', alignItems: 'center', padding: `${spacing.J}px ${spacing.F}px` }}>
+    <div style={{ minHeight: '100vh', backgroundColor: sysVar('background-sunken'), display: 'flex', flexDirection: 'column', alignItems: 'center', padding: `${spacing.J}px ${spacing.F}px` }}>
       {/* Step indicator */}
       <div style={{ display: 'flex', gap: `${spacing.D}px`, marginBottom: `${spacing.H}px` }}>
         {STEPS.map((label, i) => (
-          <div key={label} style={{ display: 'flex', alignItems: 'center', gap: `${spacing.B}px`, color: i <= currentStep ? systemColors.light['content-brand'] : systemColors.light['content-secondary'] }}>
-            <div style={{ width: 28, height: 28, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 600, backgroundColor: i <= currentStep ? systemColors.light['background-information'] : systemColors.light['background-subtle'] }}>
+          <div key={label} style={{ display: 'flex', alignItems: 'center', gap: `${spacing.B}px`, color: i <= currentStep ? sysVar('content-brand') : sysVar('content-secondary') }}>
+            <div style={{ width: 28, height: 28, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 'var(--font-weight-emphasis)', backgroundColor: i <= currentStep ? sysVar('background-information') : sysVar('background-subtle') }}>
               {i + 1}
             </div>
-            <span style={{ fontSize: '14px', fontWeight: 500 }}>{label}</span>
+            <span style={{ fontSize: '14px', fontWeight: 'var(--font-weight-medium)' }}>{label}</span>
           </div>
         ))}
       </div>
 
       {/* Step content */}
-      <div style={{ width: '100%', maxWidth: 600, backgroundColor: systemColors.light['background-base'], borderRadius: 12, padding: `${spacing.H}px`, border: `1px solid ${systemColors.light['border-divider']}` }}>
+      <div style={{ width: '100%', maxWidth: 600, backgroundColor: sysVar('background-base'), borderRadius: 12, padding: `${spacing.H}px`, border: `1px solid ${sysVar('border-divider')}` }}>
         {/* Start building your step content here */}
-        <p style={{ color: systemColors.light['content-secondary'] }}>Step {currentStep + 1} content</p>
+        <p style={{ color: sysVar('content-secondary') }}>Step {currentStep + 1} content</p>
       </div>
 
       {/* Navigation */}
       <div style={{ display: 'flex', gap: `${spacing.C}px`, marginTop: `${spacing.F}px` }}>
         {currentStep > 0 && (
-          <button onClick={handleBack} style={{ padding: `${spacing.B}px ${spacing.D}px`, borderRadius: 8, border: `1px solid ${systemColors.light['border-default']}`, backgroundColor: systemColors.light['background-base'], cursor: 'pointer' }}>
+          <button onClick={handleBack} style={{ padding: `${spacing.B}px ${spacing.D}px`, borderRadius: 8, border: `1px solid ${sysVar('border-default')}`, backgroundColor: sysVar('background-base'), cursor: 'pointer' }}>
             Back
           </button>
         )}
-        <button onClick={handleNext} style={{ padding: `${spacing.B}px ${spacing.D}px`, borderRadius: 8, border: 'none', backgroundColor: systemColors.light['content-brand'], color: '#fff', cursor: 'pointer' }}>
+        <button onClick={handleNext} style={{ padding: `${spacing.B}px ${spacing.D}px`, borderRadius: 8, border: 'none', backgroundColor: sysVar('content-brand'), color: sysVar('content-inverse'), cursor: 'pointer' }}>
           {currentStep === STEPS.length - 1 ? 'Finish' : 'Next'}
         </button>
       </div>
@@ -314,7 +314,7 @@ export default <Name>;
 **`src/prototypes/<Name>/index.tsx`**
 ```tsx
 import React from 'react';
-import { systemColors } from '../../tokens/colors';
+import { sysVar } from '../../tokens/colors';
 import { spacing } from '../../tokens/spacing';
 
 /**
@@ -326,7 +326,7 @@ import { spacing } from '../../tokens/spacing';
  */
 export const <Name>: React.FC = () => {
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: systemColors.light['background-sunken'] }}>
+    <div style={{ minHeight: '100vh', backgroundColor: sysVar('background-sunken') }}>
       <div style={{ padding: `${spacing.H}px`, maxWidth: 1200, margin: '0 auto' }}>
         {/* Start building your prototype here */}
       </div>
@@ -374,7 +374,13 @@ const <Name> = React.lazy(() => import('./<Name>'));
 
 ---
 
-### 8. Report
+### 8. Check dark mode
+
+Run `npm run scan:dark -- src/prototypes/<Name>`. The scaffold should report dark ready: yes. If it doesn't, fix the findings (use `sysVar()` / `var(--rd-sys-color-*)`, never `systemColors.light[...]` or hex) before reporting.
+
+---
+
+### 9. Report
 
 Print a summary in this format:
 

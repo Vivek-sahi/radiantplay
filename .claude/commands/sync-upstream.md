@@ -57,7 +57,12 @@ After merging, run `npm run build`. If it fails, the cause is usually one of:
 | `Cannot find module './<Name>'` in `registry-core.ts` | Upstream removed a sample prototype but a lazy import lingers. Remove the `React.lazy` line and its registry entry. |
 | `Cannot find module` in `registry-mine.ts` | A designer prototype was deleted but its entry remains. Remove the lazy import and entry. |
 | `Cannot find module` in another barrel/index file | An export references a deleted file. Remove the broken export. |
+| `Cannot find name 'systemColors'` (or `rdComponentColors`, `referenceColors`) in a file the designer changed | Git merged cleanly but upstream removed that import. Replace `systemColors.light['x']` with `sysVar('x')` and `rdComponentColors.light['x']` with `compVar('x')`, importing `sysVar` / `compVar` from `@tokens/colors`. Same token, same light value, and it now follows the theme. Don't re-add the old import. |
 | TypeScript error inside a designer prototype | Unrelated to the sync. Flag it but continue — the sync itself is fine. |
+
+Always run the build after a merge, even when Git reports no conflicts: a clean merge can still break the build (the dark mode dry run on 2026-10-07 hit exactly the `systemColors` case above).
+
+If the designer edited a shared component (`src/components/*`) and it conflicts, keep upstream's version and re-apply their change on top. For `GlobalHeader` and `AppSidebar`, a fork that wanted the old dark nav passes `theme="dark"`; upstream supports that, so keep the prop rather than the old colour code.
 
 Commit any cleanup as `fix: post-sync build cleanup` before pushing.
 

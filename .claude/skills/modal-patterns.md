@@ -131,18 +131,18 @@ import { Modal, ModalSplashContent } from '@/components/Modal';
 
 ```typescript
 import { spacing, componentSpacing } from '@/tokens';
-import { systemColors } from '../../tokens/colors';
+import { sysVar } from '../../tokens/colors';
 import { v2TextStyles } from '@/tokens';
 
 componentSpacing.modal.padding        // 24px
 componentSpacing.modal.headerPaddingY // 20px
 componentSpacing.modal.footerPaddingY // 16px
 
-systemColors.light['background-base']      // Modal surface
-systemColors.light['background-sunken']    // Footer background
-systemColors.light['border-divider']       // Borders
-systemColors.light['content-primary']      // Title text
-systemColors.light['content-brand']        // Tertiary button text
+sysVar('background-base')      // Modal surface
+sysVar('background-sunken')    // Footer background
+sysVar('border-divider')       // Borders
+sysVar('content-primary')      // Title text
+sysVar('content-brand')        // Tertiary button text
 
 v2TextStyles.modalTitle     // 20px Medium, 28px line-height
 v2TextStyles.bodyNormal     // 14px Light, 20px line-height
@@ -164,8 +164,8 @@ v2TextStyles.bodyNormal     // 14px Light, 20px line-height
 ## Wizard Progress Bar
 
 - Supports 2-4 steps
-- Active steps: Primary blue (`systemColors.light['content-brand']`)
-- Inactive steps: Gray (`systemColors.light['border-subtle']`)
+- Active steps: Primary blue (`sysVar('content-brand')`)
+- Inactive steps: Gray (`sysVar('border-subtle')`)
 - Height: 4px with 6px gaps
 
 ## Accessibility

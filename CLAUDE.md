@@ -108,8 +108,11 @@ src/
 ### 1. Design Tokens — NEVER hard-code values
 
 ```typescript
-// Colors (3-layer: reference → system → component)
-import { systemColors, referenceColors, rdComponentColors } from '@tokens/colors';
+// Colors: theme-aware CSS variables, so the UI follows light and dark mode
+import { sysVar, compVar, shadowVar } from '@tokens/colors';
+// sysVar('content-primary') → 'var(--rd-sys-color-content-primary)'
+// compVar('chip-filter-default') → 'var(--rd-comp-color-chip-filter-default)'
+// shadowVar('menu') → 'var(--rd-sys-color-shadow-menu)'
 
 // Spacing (4px base: A=4, B=8, C=12, D=16, E=20, F=24, G=28, H=32, I=40, J=48)
 import { spacing, componentSpacing } from '@tokens/spacing';
@@ -118,11 +121,13 @@ import { spacing, componentSpacing } from '@tokens/spacing';
 import { fontFamily, fontSize, fontWeight, lineHeight, v2TextStyles } from '@tokens/typography';
 ```
 
-Common system colors: `background-base`, `background-sunken`, `background-subtle`, `content-primary`, `content-secondary`, `content-brand`, `border-default`, `border-divider`.
+Common system colors: `background-base`, `background-sunken`, `background-on-base`, `background-secondary-action`, `content-primary`, `content-secondary`, `content-brand`, `border-subtle`, `border-bold`.
 
-In CSS Modules use CSS variables: `var(--rd-sys-color-content-primary)`, `var(--spacing-4)`, `var(--radius-md)`.
+In CSS Modules use CSS variables: `var(--rd-sys-color-content-primary)`, `var(--rd-sys-color-shadow-surface)`, `var(--spacing-4)`, `var(--radius-md)`.
 
-**Forbidden:** hardcoded hex (`#2770EF`), raw `rgb()`/`rgba()`, magic spacing (`17px`), hardcoded font families.
+**Dark mode.** Every prototype runs in light and dark (ThemeSwitch, Ctrl+D). Never read `systemColors.light[...]`, `rdComponentColors.light[...]` or `referenceColors.*` for UI: they stay light in dark mode. Those objects are token data for docs pages and canvas charts only. Charts use `useChartTheme()` from `src/prototypes/_shared/tiles/chartTheme`. For tints use `color-mix(in srgb, var(--x) 12%, transparent)`, not alpha suffixes on hex. Check a prototype with `npm run scan:dark -- src/prototypes/<Name>` or `/radiant-check`.
+
+**Forbidden:** hardcoded hex (`#2770EF`), raw `rgb()`/`rgba()`, `systemColors.light[...]` in UI, magic spacing (`17px`), hardcoded font families and weights (use `fontFamily.*` and the `--font-weight-*` tokens).
 
 ### 2. Always Use Radiant Components
 
