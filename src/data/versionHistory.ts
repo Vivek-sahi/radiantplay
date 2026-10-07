@@ -59,6 +59,7 @@ export const versionHistory: VersionEntry[] = [
       { type: 'added', group: 'Tooling', component: 'Dark readiness scan', description: 'npm run scan:dark counts colour code that will not follow the theme, per prototype; npm run lint:tokens fails on the shared layers. /radiant-check prints a dark ready line. Exceptions with reasons in scripts/radiant-check/rules.json.' },
       { type: 'modified', group: 'Dark mode', component: 'ThoughtSpot nav', description: 'GlobalHeader, AppSidebar, the Liveboard primary nav, edit toolbar and styling drawer follow the theme on background-on-base, matching the product. GlobalHeader theme defaults to auto; dark is the legacy always-dark nav.' },
       { type: 'modified', group: 'Dark mode', component: 'Sample prototypes', description: 'Every sample prototype works in dark mode, NewUIAdmin2 included. A registry entry can set theme: light-only to stay light until it is ready.' },
+      { type: 'added', group: 'Gallery', component: 'Thumbnails', description: 'Light and dark screenshots per prototype (/thumbnail, npm run thumbnails). Prototypes without one show a live preview instead of a folder icon. /new-prototype no longer draws a placeholder.' },
     ],
   },
   {

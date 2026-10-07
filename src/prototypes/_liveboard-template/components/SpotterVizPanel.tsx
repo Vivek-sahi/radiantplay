@@ -1,27 +1,25 @@
 import React, { useState } from 'react';
 import { Icon } from '@components/icons';
-import { sysVar } from '@tokens/colors';
+import { sysVar, shadowVar } from '@tokens/colors';
 import mascot from './spotterviz-mascot.png';
 
 interface SpotterVizPanelProps {
   onClose: () => void;
 }
 
-// Figma node 825:32553 draws the SpotterViz panel as a dark surface in light
-// mode. It reads the inverse tokens, so it stays dark in light mode and turns
-// light in dark mode. Muted text has no inverse token, so it mixes the inverse
-// content colour into the inverse surface.
+// The SpotterViz panel uses the same surface as the primary nav and edit
+// toolbar (background-on-base), so it follows the theme like the product.
 const c = {
-  bg:               sysVar('background-inverse'),
-  divider:          sysVar('border-divider-inverse'),
-  textPrimary:      sysVar('content-inverse'),
-  textWhite:        sysVar('content-inverse'),
-  textMuted:        `color-mix(in srgb, ${sysVar('content-inverse')} 60%, ${sysVar('background-inverse')})`,
-  textDim:          `color-mix(in srgb, ${sysVar('content-inverse')} 75%, ${sysVar('background-inverse')})`,
-  brand:            sysVar('content-brand-inverse'),
-  chipBg:           `color-mix(in srgb, ${sysVar('content-inverse')} 12%, transparent)`,
-  chipBorder:       sysVar('border-hover-inverse'),
-  chipBorderSubtle: sysVar('border-default-inverse'),
+  bg:               sysVar('background-on-base'),
+  divider:          sysVar('border-subtle'),
+  textPrimary:      sysVar('content-primary'),
+  textWhite:        sysVar('content-primary'),
+  textMuted:        sysVar('content-secondary'),
+  textDim:          sysVar('content-secondary'),
+  brand:            sysVar('content-brand'),
+  chipBg:           sysVar('background-secondary-action'),
+  chipBorder:       sysVar('border-bold'),
+  chipBorderSubtle: sysVar('border-subtle'),
 };
 
 const FONT = "var(--font-family-primary)";
@@ -237,7 +235,7 @@ const s: Record<string, React.CSSProperties> = {
     width: '100%',
     background: c.bg,
     border: `1px solid ${c.divider}`,
-    boxShadow: `0px 0px 2px color-mix(in srgb, ${c.textWhite} 10%, transparent), 0px 2px 2px color-mix(in srgb, ${c.textWhite} 4%, transparent)`,
+    boxShadow: shadowVar('surface'),
     borderRadius: 12,
     padding: 12,
     display: 'flex',

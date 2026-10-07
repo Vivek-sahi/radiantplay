@@ -56,6 +56,10 @@ Figma sync: bringing tokens and typography up to date with the Radiant 3.0 Figma
 - The ThoughtSpot nav follows the theme, matching the product with the Radiant theme on (checked on champagne): `GlobalHeader`, `AppSidebar`, the Liveboard primary nav, the Liveboard edit toolbar and the styling drawer use `background-on-base` with a `border-subtle` divider. In light mode that's light grey instead of the old dark navy. `GlobalHeader` takes `theme="auto"` by default; `light` is the older name for it and `dark` is the legacy always-dark nav. The GlobalHeader doc page shows both
 - All sample prototypes work in dark mode, including NewUIAdmin2. Tailwind-style greys map to Radiant tokens through `docs/2026-10-07-phase6-colour-mapping.md`, so light mode shifts slightly in those prototypes. Third-party logos, user-picked colours and palettes stay as they are
 - A prototype that isn't dark ready yet can set `theme: 'light-only'` in its registry entry. It stays light, charts included, while the rest of the app is dark
+- Gallery thumbnails are real screenshots, in light and dark, saved next to each prototype (`thumbnail.light.jpg`, `thumbnail.dark.jpg`, 640x360, 15 to 30 KB). Every sample prototype has them now. Capture with `/thumbnail` or `npm run thumbnails -- <Name>`; `npm run thumbnails:setup` installs the screenshot tool once, outside the project. `npm run thumbnails:check` lists missing or outdated ones, and `/sync-upstream` reports them
+- A prototype without a thumbnail shows a live preview of itself instead of a folder icon. At most four previews load at once, only while on screen
+- `/new-prototype` no longer draws a blank placeholder thumbnail. Hand-made SVG thumbnails still work, and `scripts/thumbnails/tokenize-svg.mjs` converts one to theme tokens so it follows light and dark
+- The SpotterViz side panel uses the nav surface and follows the theme
 
 ## 26.9.1c — 2026-09-03
 

@@ -1,14 +1,14 @@
 <svg width="800" height="450" viewBox="0 0 800 450" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="800" height="450" fill="#E8EBF0"/>
-  <rect x="200" y="80" width="400" height="290" rx="12" fill="white"/>
-  <rect x="200" y="80" width="400" height="50" fill="#F6F8FA"/>
-  <circle cx="230" cy="105" r="10" fill="#A5ACB9"/>
-  <rect x="250" y="98" width="200" height="14" rx="4" fill="#EAEDF2"/>
-  <rect x="220" y="150" width="280" height="12" rx="4" fill="#EAEDF2"/>
-  <rect x="220" y="175" width="320" height="12" rx="4" fill="#EAEDF2"/>
-  <rect x="220" y="200" width="250" height="12" rx="4" fill="#EAEDF2"/>
-  <rect x="220" y="225" width="300" height="12" rx="4" fill="#EAEDF2"/>
-  <rect x="220" y="250" width="270" height="12" rx="4" fill="#EAEDF2"/>
-  <rect x="200" y="340" width="400" height="30" fill="#F6F8FA"/>
-  <text x="400" y="410" fill="#64748B" font-family="system-ui" font-size="20" text-anchor="middle" font-weight="500">Command Palette</text>
+  <rect width="800" height="450" style="fill: var(--rd-sys-color-background-secondary-action)"/>
+  <rect x="200" y="80" width="400" height="290" rx="12" style="fill: var(--rd-sys-color-background-base)"/>
+  <rect x="200" y="80" width="400" height="50" style="fill: var(--rd-sys-color-background-sunken)"/>
+  <circle cx="230" cy="105" r="10" style="fill: var(--rd-sys-color-content-tertiary)"/>
+  <rect x="250" y="98" width="200" height="14" rx="4" style="fill: var(--rd-sys-color-background-secondary-action)"/>
+  <rect x="220" y="150" width="280" height="12" rx="4" style="fill: var(--rd-sys-color-background-secondary-action)"/>
+  <rect x="220" y="175" width="320" height="12" rx="4" style="fill: var(--rd-sys-color-background-secondary-action)"/>
+  <rect x="220" y="200" width="250" height="12" rx="4" style="fill: var(--rd-sys-color-background-secondary-action)"/>
+  <rect x="220" y="225" width="300" height="12" rx="4" style="fill: var(--rd-sys-color-background-secondary-action)"/>
+  <rect x="220" y="250" width="270" height="12" rx="4" style="fill: var(--rd-sys-color-background-secondary-action)"/>
+  <rect x="200" y="340" width="400" height="30" style="fill: var(--rd-sys-color-background-sunken)"/>
+  <text x="400" y="410" font-family="system-ui" font-size="20" text-anchor="middle" font-weight="500" style="fill: var(--rd-sys-color-content-secondary)">Command Palette</text>
 </svg>

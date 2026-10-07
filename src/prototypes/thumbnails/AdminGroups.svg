@@ -1,16 +1,16 @@
 <svg width="800" height="450" viewBox="0 0 800 450" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="800" height="450" fill="#F6F8FA"/>
-  <rect x="0" y="0" width="800" height="56" fill="white"/>
-  <rect x="0" y="56" width="200" height="394" fill="white"/>
-  <rect x="220" y="80" width="560" height="350" rx="8" fill="white"/>
-  <rect x="240" y="100" width="200" height="24" rx="4" fill="#C0C6CF"/>
-  <rect x="240" y="140" width="520" height="40" rx="4" fill="#F6F8FA"/>
-  <rect x="240" y="190" width="520" height="40" rx="4" fill="#F6F8FA"/>
-  <rect x="240" y="240" width="520" height="40" rx="4" fill="#F6F8FA"/>
-  <rect x="240" y="290" width="520" height="40" rx="4" fill="#F6F8FA"/>
-  <rect x="660" y="360" width="100" height="36" rx="4" fill="#8AAEE8"/>
-  <rect x="20" y="80" width="160" height="24" rx="4" fill="#F6F8FA"/>
-  <rect x="20" y="114" width="140" height="20" rx="4" fill="#F6F8FA"/>
-  <rect x="20" y="144" width="120" height="20" rx="4" fill="#F6F8FA"/>
-  <text x="400" y="430" fill="#64748B" font-family="system-ui" font-size="18" text-anchor="middle" font-weight="500">Admin Groups</text>
+  <rect width="800" height="450" style="fill: var(--rd-sys-color-background-sunken)"/>
+  <rect x="0" y="0" width="800" height="56" style="fill: var(--rd-sys-color-background-base)"/>
+  <rect x="0" y="56" width="200" height="394" style="fill: var(--rd-sys-color-background-base)"/>
+  <rect x="220" y="80" width="560" height="350" rx="8" style="fill: var(--rd-sys-color-background-base)"/>
+  <rect x="240" y="100" width="200" height="24" rx="4" style="fill: var(--rd-sys-color-background-inset)"/>
+  <rect x="240" y="140" width="520" height="40" rx="4" style="fill: var(--rd-sys-color-background-sunken)"/>
+  <rect x="240" y="190" width="520" height="40" rx="4" style="fill: var(--rd-sys-color-background-sunken)"/>
+  <rect x="240" y="240" width="520" height="40" rx="4" style="fill: var(--rd-sys-color-background-sunken)"/>
+  <rect x="240" y="290" width="520" height="40" rx="4" style="fill: var(--rd-sys-color-background-sunken)"/>
+  <rect x="660" y="360" width="100" height="36" rx="4" style="fill: color-mix(in srgb, var(--rd-sys-color-content-brand) 55%, var(--rd-sys-color-background-base))"/>
+  <rect x="20" y="80" width="160" height="24" rx="4" style="fill: var(--rd-sys-color-background-sunken)"/>
+  <rect x="20" y="114" width="140" height="20" rx="4" style="fill: var(--rd-sys-color-background-sunken)"/>
+  <rect x="20" y="144" width="120" height="20" rx="4" style="fill: var(--rd-sys-color-background-sunken)"/>
+  <text x="400" y="430" font-family="system-ui" font-size="18" text-anchor="middle" font-weight="500" style="fill: var(--rd-sys-color-content-secondary)">Admin Groups</text>
 </svg>

@@ -6,6 +6,13 @@ import { getAllProjects, ProjectMeta } from '../prototypes/registry';
 import { getCurrentVersion } from '../data/versionHistory';
 import { Icon } from '../components/icons';
 import { ThemeSwitch } from '../components/ThemeSwitch';
+import { GalleryLivePreview } from './GalleryLivePreview';
+import { useIsDarkMode } from '../context/ThemeContext';
+
+/** Make an inline thumbnail SVG fill its card, cropping like object-fit: cover. */
+const fitSvg = (svg: string): string =>
+  svg.replace(/<svg\b([^>]*)>/, (_, attrs: string) =>
+    `<svg${attrs.replace(/\s(width|height|preserveAspectRatio)="[^"]*"/g, '')} width="100%" height="100%" preserveAspectRatio="xMidYMid slice" style="display:block">`);
 
 type SectionId = 'prototypes' | 'archived';
 type Override = 'archived' | 'restored';
@@ -558,6 +565,32 @@ interface ProjectCardProps {
   onRestore?: () => void;
 }
 
+/**
+ * Card image, in order of preference: a captured light/dark screenshot, an inline
+ * SVG (theme tokens), a single image URL, then a live preview of the prototype.
+ */
+const CardThumbnail: React.FC<{ project: ProjectMeta }> = ({ project }) => {
+  const isDark = useIsDarkMode();
+  const thumb = project.thumbnail;
+  if (thumb && typeof thumb === 'object') {
+    const src = isDark && thumb.dark ? thumb.dark : thumb.light;
+    return <img src={src} alt={project.name} style={styles.cardImage} />;
+  }
+  if (thumb?.trimStart().startsWith('<svg')) {
+    // Inline SVG from the repo, so its theme tokens resolve against the page
+    return (
+      <div
+        role="img"
+        aria-label={project.name}
+        style={styles.cardImage}
+        dangerouslySetInnerHTML={{ __html: fitSvg(thumb) }}
+      />
+    );
+  }
+  if (thumb) return <img src={thumb} alt={project.name} style={styles.cardImage} />;
+  return <GalleryLivePreview id={project.id} name={project.name} />;
+};
+
 const ProjectCard: React.FC<ProjectCardProps> = ({
   project,
   onClick,
@@ -634,13 +667,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
       )}
 
       <div style={styles.cardThumbnail}>
-        {project.thumbnail ? (
-          <img src={project.thumbnail} alt={project.name} style={styles.cardImage} />
-        ) : (
-          <div style={styles.cardPlaceholder}>
-            <Icon name="folder" size="l" />
-          </div>
-        )}
+        <CardThumbnail project={project} />
       </div>
 
       <div style={styles.cardContent}>

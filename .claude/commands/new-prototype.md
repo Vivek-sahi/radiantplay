@@ -339,26 +339,9 @@ export default <Name>;
 
 ---
 
-### 6. Create the thumbnail
+### 6. No thumbnail yet
 
-Create a basic SVG thumbnail at `src/prototypes/thumbnails/<Name>.svg`:
-
-```svg
-<svg width="800" height="450" viewBox="0  0 800 450" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- Background -->
-  <rect width="800" height="450" fill="#F6F8FA"/>
-
-  <!-- UI representation -->
-  <rect x="100" y="80" width="600" height="300" rx="12" fill="white"/>
-
-  <!-- Title -->
-  <text x="400" y="420" fill="#1D232F" font-family="system-ui" font-size="18" text-anchor="middle" font-weight="500">
-    <Display Name>
-  </text>
-</svg>
-```
-
-Use the display name from the registry entry as the title text.
+Don't draw a placeholder thumbnail. A new prototype has nothing to show yet, so the gallery shows a live preview of it until a real screenshot is captured with `/thumbnail <Name>` once the prototype has its UI.
 
 ---
 
@@ -366,19 +349,13 @@ Use the display name from the registry entry as the title text.
 
 Open `src/prototypes/registry-mine.ts` — this is the designer's own file, never touched by upstream.
 
-**A — Add the thumbnail import** at the top of the file (after the existing import):
-
-```ts
-import <Name>Thumbnail from './thumbnails/<Name>.svg';
-```
-
-**B — Add the lazy import** before the `myRegistry` array:
+**A — Add the lazy import** before the `myRegistry` array:
 
 ```ts
 const <Name> = React.lazy(() => import('./<Name>'));
 ```
 
-**C — Add the registry entry** inside the `myRegistry` array:
+**B — Add the registry entry** inside the `myRegistry` array:
 
 ```ts
   {
@@ -387,7 +364,6 @@ const <Name> = React.lazy(() => import('./<Name>'));
     description: '<One sentence from the designer's goal answer>',
     author: '<designer's name from step 3>',
     lastModified: '<today's date as YYYY-MM-DD>',
-    thumbnail: <Name>Thumbnail,
     component: <Name>,
     section: 'mine',
   },
@@ -411,7 +387,6 @@ Files created:
   src/prototypes/<Name>/styles.ts          ← shared styles with tokens
   src/prototypes/<Name>/data/mockData.ts   ← mock data starter
   src/prototypes/<Name>/components/        ← put your local components here
-  src/prototypes/thumbnails/<Name>.svg     ← gallery thumbnail
 
 Registered in registry-mine.ts — it will appear in the gallery under "My prototypes".
 
@@ -419,5 +394,6 @@ What's next:
   • Describe your UI or paste a Figma screenshot — Claude will build it using Radiant components
   • To switch the AI model used in this prototype: /switch-model
   • To check design system compliance: /radiant-check
+  • When it looks right, capture its gallery thumbnail: /thumbnail
   • To pull in upstream updates: /sync-upstream (shows a preview first, then asks before merging)
 ```
