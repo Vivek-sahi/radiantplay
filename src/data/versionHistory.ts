@@ -56,6 +56,7 @@ export const versionHistory: VersionEntry[] = [
       { type: 'added', group: 'Dark mode', component: 'Chart theme', description: '13 chart tokens with the product names and dark values, and useChartTheme() for ECharts. Dark series colours use the product OKLCH remap. Charts redraw on theme change.' },
       { type: 'added', group: 'Dark mode', component: 'ThemeSwitch', description: 'Light, Dark and System control on SegmentedControl, in the gallery header and the Radiant docs sidebar. Stays in step with Ctrl+D.' },
       { type: 'modified', group: 'Dark mode', component: 'Pages', description: 'Gallery, home, Radiant docs and changelog pages follow the theme. The Colours page shows light and dark values side by side for every token.' },
+      { type: 'added', group: 'Tooling', component: 'Dark readiness scan', description: 'npm run scan:dark counts colour code that will not follow the theme, per prototype; npm run lint:tokens fails on the shared layers. /radiant-check prints a dark ready line. Exceptions with reasons in scripts/radiant-check/rules.json.' },
     ],
   },
   {
@@ -626,7 +627,7 @@ export const getChangeTypeColor = (type: ChangeType): string => {
     case 'removed':
       return 'var(--rd-sys-color-content-failure, #E22B3D)';
     case 'synced':
-      return 'var(--rd-ref-color-purple-60, #8C62F5)';
+      return 'var(--rd-sys-color-content-accent-purple, #8C62F5)';
     default:
       return 'var(--rd-sys-color-content-secondary, #777E8B)';
   }

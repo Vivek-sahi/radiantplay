@@ -50,6 +50,9 @@ Figma sync: bringing tokens and typography up to date with the Radiant 3.0 Figma
 - Added `ThemeSwitch` (`src/components/ThemeSwitch/`): Light, Dark and System, built on `SegmentedControl` and bound to the theme controller. It sits in the gallery header and at the foot of the Radiant docs sidebar (new `footerContent` slot on `Sidebar`). Ctrl+D still works and the two stay in step
 - The gallery, home pages, Radiant docs pages and changelog follow the theme. Code blocks on the docs pages stay dark in both themes. A few light values moved to the nearest token, mostly mid-grey text that is now `content-primary` and pale tints that are now the matching background token
 - The Colours page shows every system, shadow, component and chart token with its light and dark value side by side, and lists aliases under the token they point at. The Architecture page describes how theming works now
+- Added a dark readiness scan (`scripts/radiant-check/`): per prototype and layer it counts colour literals, light-only reads, unknown token names, `prefers-color-scheme` media queries and `data-theme` writes, with accepted exceptions and their reasons in `rules.json`. `npm run scan:dark` reports; `npm run lint:tokens` fails on the shared layers only and isn't wired into `/ship`. `/radiant-check` now prints a dark ready line and suggests `sysVar()` instead of `systemColors.light[...]`
+- Visual snapshots list light surfaces per page, so a dark run shows what didn't follow the theme
+- Component status badges (registry) and the "synced" changelog colour follow the theme
 
 ## 26.9.1c — 2026-09-03
 
