@@ -64,6 +64,7 @@ Figma sync: bringing tokens and typography up to date with the Radiant 3.0 Figma
 - `AppSidebar` takes `theme`: `auto` (default) follows the app theme, `dark` keeps the legacy navy nav, like `GlobalHeader`. Forks that pass `theme: 'dark'` keep working after sync
 - `/sync-upstream` always builds after merging and repairs `systemColors` reads that a clean merge can break, found in a dry run of this release against the maintainer's own fork
 - `/sync-upstream` knows how to resolve three more conflicts found in the second dry run: sample thumbnail SVGs (take upstream, including deletions), `package.json` scripts added on both sides (keep both), and guidance files (take upstream's block, keep the fork's other edits)
+- The readiness scan also checks fonts: hardcoded font stacks and the old Plain weights 600 and 375 written as numbers, with a "geist" column next to "dark". `node scripts/radiant-check/scan.mjs --mine` shows one row per prototype in `registry-mine.ts` with its theme and thumbnail status. Code under a `vendor/` folder is counted in its own column and left alone. Designers keep their own exceptions in `scripts/radiant-check/rules-mine.json`, which upstream never edits. `/radiant-check` prints a "Geist ready" line
 
 ## 26.9.1c — 2026-09-03
 
