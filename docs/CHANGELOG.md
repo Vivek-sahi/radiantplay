@@ -63,6 +63,7 @@ Figma sync: bringing tokens and typography up to date with the Radiant 3.0 Figma
 - The guidance Claude follows now teaches theme-aware colour. `CLAUDE.md`, the `.cursor/rules` files, the repo skills and the `/new-prototype` templates use `sysVar()`, `compVar()` and `shadowVar()` instead of `systemColors.light[...]`, which stays light in dark mode, and font weights through tokens. `systemColors` and `rdComponentColors` carry a note that they are token data, not for UI. `/new-prototype` ends with a dark readiness scan
 - `AppSidebar` takes `theme`: `auto` (default) follows the app theme, `dark` keeps the legacy navy nav, like `GlobalHeader`. Forks that pass `theme: 'dark'` keep working after sync
 - `/sync-upstream` always builds after merging and repairs `systemColors` reads that a clean merge can break, found in a dry run of this release against the maintainer's own fork
+- `/sync-upstream` knows how to resolve three more conflicts found in the second dry run: sample thumbnail SVGs (take upstream, including deletions), `package.json` scripts added on both sides (keep both), and guidance files (take upstream's block, keep the fork's other edits)
 
 ## 26.9.1c — 2026-09-03
 

@@ -48,6 +48,17 @@ git add src/prototypes/registry.ts src/prototypes/registry-core.ts src/prototype
 git commit --no-edit
 ```
 
+### Rule 2b — Other conflicts with a known resolution
+
+| Conflict | Resolution |
+|---|---|
+| A sample thumbnail in `src/prototypes/thumbnails/` that the fork edited and upstream deleted (modify/delete) | Accept upstream's deletion (`git rm <file>`). Sample prototypes now use screenshots in their own folders. A thumbnail the designer's own prototype still imports is not a sample one; if a deleted file is imported by `registry-mine.ts`, keep it and say so. |
+| A sample thumbnail SVG that both sides edited | Take upstream's version (`git checkout --theirs <file>`). |
+| `package.json` `scripts` added on both sides | Keep both sides' scripts: join the two lists, add the comma between them, and check the file is valid JSON (`node -e "JSON.parse(require('fs').readFileSync('package.json'))"`). For any other `package.json` conflict (dependencies, versions), stop and show it. |
+| Guidance files: `CLAUDE.md`, `.cursor/rules/*`, `.claude/commands/*`, `.claude/skills/*` | Take upstream's version for the conflicting block, and keep the fork's other edits to the file that merged cleanly. Upstream's guidance teaches the current conventions (for example theme-aware colour with `sysVar()`); keeping an old block brings back outdated patterns. Tell the designer which of their edits were replaced. |
+
+Resolve a conflict block, not the whole file, wherever the fork made other changes that merged cleanly: edit out the `<<<<<<<`, `=======`, `>>>>>>>` section and keep upstream's side.
+
 ### Rule 3 — Common post-merge build errors
 
 After merging, run `npm run build`. If it fails, the cause is usually one of:
