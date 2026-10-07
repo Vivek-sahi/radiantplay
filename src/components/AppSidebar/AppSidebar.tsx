@@ -1,13 +1,7 @@
 import React, { forwardRef, useMemo } from 'react';
 import { Icon } from '../icons';
-import { systemColors, referenceColors } from '../../tokens/colors';
+import { sysVar } from '../../tokens/colors';
 import styles from './AppSidebar.module.css';
-
-// Sidebar-specific panel colors — not yet in the Radiant reference scale.
-// These are ThoughtSpot product-level dark navy values used only in AppSidebar.
-// AppSidebar is the always-dark product nav, so it reads fixed values and does not follow the theme.
-const SIDEBAR_PANEL_BG = '#232f43';
-const SIDEBAR_PANEL_SELECTED = '#2f3a4e';
 
 const DATA_TAB_ICON_PATH =
   'M17 8.5C17 9.63333 13.5067 10.8611 9 10.8611C4.50667 10.8611 1.02667 9.63333 1 8.51889V5.23222C2.97333 6.10111 5.85333 6.61111 9 6.61111C12.1467 6.61111 15.0267 6.10111 17 5.23222V8.5ZM17 11.3711V14.6767C16.9467 15.9611 13.3867 17 9 17C4.61333 17 1.05333 15.9611 1 14.6672V11.3617C2.97333 12.24 5.85333 12.75 9 12.75C12.1467 12.75 15.0267 12.24 17 11.3711ZM9 4.72222C4.58667 4.72222 1 3.66444 1 2.36111C1 1.05778 4.58667 0 9 0C13.4133 0 17 1.05778 17 2.36111C17 3.66444 13.4133 4.72222 9 4.72222Z';
@@ -19,15 +13,6 @@ const DEVELOP_TAB_ICON_RIGHT_PATH =
 
 const classNames = (...values: Array<string | undefined | false>): string =>
   values.filter(Boolean).join(' ');
-
-const hexToRgba = (hex: string, alpha: number): string => {
-  const normalized = hex.replace('#', '');
-  const int = Number.parseInt(normalized, 16);
-  const r = (int >> 16) & 255;
-  const g = (int >> 8) & 255;
-  const b = int & 255;
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-};
 
 const InsightsTabIcon: React.FC = () => (
   <svg className={styles.tabSvg} fill="none" viewBox="0 0 18 18" aria-hidden="true">
@@ -181,27 +166,29 @@ export const AppSidebar = forwardRef<HTMLElement, AppSidebarProps>(
       [activeTabConfig, categories],
     );
 
+    // Follows the app theme, like the product's nav with the Radiant theme on:
+    // background-on-base surfaces and border-subtle dividers in both modes.
     const tokenStyles = {
       '--as-width': `${width}px`,
       // Surfaces
-      '--as-bg':             systemColors.dark['background-base'],        // #1D232F — tab switcher bg
-      '--as-border':         referenceColors.gray['90'],                  // #1D232F — seamless internal dividers; strong dark separator vs white content
-      '--as-panel-bg':       SIDEBAR_PANEL_BG,                            // #232F43 — main menu panel (no system token)
-      '--as-panel-selected': SIDEBAR_PANEL_SELECTED,                      // #2F3A4E — hover/selected panel (no system token)
+      '--as-bg':             sysVar('background-on-base'),
+      '--as-border':         sysVar('border-subtle'),
+      '--as-panel-bg':       sysVar('background-on-base'),
+      '--as-panel-selected': sysVar('background-secondary-action'),
       // Text & icons
-      '--as-text':           referenceColors.gray['30'],                  // #DBDFE7 — nav item text (Figma: Gray/30; darker than content-primary-dark=#FFF)
-      '--as-muted':          systemColors.dark['content-tertiary'],       // #777E8B — section header labels
-      '--as-subtle':         systemColors.dark['content-tertiary'],       // #777E8B — inactive scope button text
-      '--as-icon':           referenceColors.gray['40'],                  // #C0C6CF — unselected tab icons (no dark system token at this shade)
+      '--as-text':           sysVar('content-primary'),
+      '--as-muted':          sysVar('content-tertiary'),
+      '--as-subtle':         sysVar('content-secondary'),
+      '--as-icon':           sysVar('content-secondary'),
       // Interactive states
-      '--as-active':         systemColors.dark['content-brand'],          // #71A1F4 — active nav item text (Blue/50)
-      '--as-active-bg':      hexToRgba(referenceColors.brand['50'], 0.12), // rgba(113,161,244,0.12) — List State/Highlight
-      '--as-hover-bg':       hexToRgba(referenceColors.brand['50'], 0.06), // subtle hover tint
-      '--as-highlight-bg':   hexToRgba(referenceColors.brand['50'], 0.3),  // animated highlight tint
-      '--as-focus':          systemColors.dark['border-focus'],           // #71A1F4 — focus ring
-      // Scope toggle (segment control sits on white bg → needs light-mode brand color)
-      '--as-scope-active':    systemColors.dark['content-brand-inverse'], // #2770EF — active segment text on white
-      '--as-scope-active-bg': referenceColors.gray['00'],                 // #FFFFFF — active segment white pill
+      '--as-active':         sysVar('content-brand'),
+      '--as-active-bg':      sysVar('background-ghost-highlight'),
+      '--as-hover-bg':       sysVar('background-ghost-hover'),
+      '--as-highlight-bg':   `color-mix(in srgb, ${sysVar('border-focus')} 30%, transparent)`,
+      '--as-focus':          sysVar('border-focus'),
+      // Scope toggle
+      '--as-scope-active':    sysVar('content-brand'),
+      '--as-scope-active-bg': sysVar('background-base'),
     } as React.CSSProperties;
 
     const mergedStyles: React.CSSProperties = {

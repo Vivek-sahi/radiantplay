@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { systemColors } from '../../tokens/colors';
+import { sysVar } from '@tokens/colors';
 
 const font = 'var(--font-family-primary)';
-const brand = systemColors.light['content-brand'];
+const brand = sysVar('content-brand');
+const brandFill = sysVar('background-brand');
 
 type TabId = 'overview' | 'productivity' | 'object-usage' | 'object-stats';
 
@@ -16,15 +17,15 @@ const KpiCard: React.FC<{
   style?: React.CSSProperties;
 }> = ({ title, subtitle, date, value, style }) => (
   <div style={{
-    backgroundColor: '#FFFFFF', border: '1px solid #E5E7EB',
+    backgroundColor: sysVar('background-base'), border: '1px solid var(--rd-sys-color-border-subtle)',
     borderRadius: '12px', padding: '20px 20px 24px',
     display: 'flex', flexDirection: 'column', gap: '3px', flex: 1,
     ...style,
   }}>
-    <div style={{ fontSize: '13.5px', fontWeight: 'var(--font-weight-emphasis)', color: '#111827', fontFamily: font }}>{title}</div>
-    <div style={{ fontSize: '12px', color: '#6B7280', fontFamily: font, lineHeight: 1.4 }}>{subtitle}</div>
-    {date && <div style={{ fontSize: '11.5px', color: '#9CA3AF', fontFamily: font, marginTop: '1px' }}>{date}</div>}
-    <div style={{ fontSize: '30px', fontWeight: 700, color: '#111827', fontFamily: font, marginTop: '10px', letterSpacing: '-0.8px' }}>{value}</div>
+    <div style={{ fontSize: '13.5px', fontWeight: 'var(--font-weight-emphasis)', color: sysVar('content-primary'), fontFamily: font }}>{title}</div>
+    <div style={{ fontSize: '12px', color: sysVar('content-secondary'), fontFamily: font, lineHeight: 1.4 }}>{subtitle}</div>
+    {date && <div style={{ fontSize: '11.5px', color: sysVar('content-tertiary'), fontFamily: font, marginTop: '1px' }}>{date}</div>}
+    <div style={{ fontSize: '30px', fontWeight: 700, color: sysVar('content-primary'), fontFamily: font, marginTop: '10px', letterSpacing: '-0.8px' }}>{value}</div>
   </div>
 );
 
@@ -41,7 +42,7 @@ const SparklineCard: React.FC<{
   variant: 'positive' | 'anomaly';
 }> = ({ title, subtitle, date, value, change, comparison, label, variant }) => {
   const isPositive = change > 0;
-  const lineColor = variant === 'positive' ? '#3B82F6' : '#3B82F6';
+  const lineColor = variant === 'positive' ? sysVar('content-brand') : sysVar('content-brand');
   const fillId = `fill-${title.replace(/\s/g, '')}`;
 
   const impressionsPath = 'M0,55 C15,48 25,30 40,22 C55,14 65,32 80,38 C95,44 105,50 120,46 C135,42 150,44 180,48 C190,50 200,52 210,54';
@@ -51,27 +52,27 @@ const SparklineCard: React.FC<{
 
   return (
     <div style={{
-      backgroundColor: '#FFFFFF', border: '1px solid #E5E7EB',
+      backgroundColor: sysVar('background-base'), border: '1px solid var(--rd-sys-color-border-subtle)',
       borderRadius: '12px', padding: '20px', flex: 1,
       display: 'flex', flexDirection: 'column', gap: '3px',
     }}>
-      <div style={{ fontSize: '13.5px', fontWeight: 'var(--font-weight-emphasis)', color: '#111827', fontFamily: font }}>{title}</div>
-      <div style={{ fontSize: '12px', color: '#6B7280', fontFamily: font }}>{subtitle}</div>
-      <div style={{ fontSize: '11.5px', color: '#9CA3AF', fontFamily: font, marginTop: '1px' }}>{date}</div>
-      <div style={{ fontSize: '28px', fontWeight: 700, color: '#111827', fontFamily: font, marginTop: '8px', letterSpacing: '-0.6px' }}>{value}</div>
+      <div style={{ fontSize: '13.5px', fontWeight: 'var(--font-weight-emphasis)', color: sysVar('content-primary'), fontFamily: font }}>{title}</div>
+      <div style={{ fontSize: '12px', color: sysVar('content-secondary'), fontFamily: font }}>{subtitle}</div>
+      <div style={{ fontSize: '11.5px', color: sysVar('content-tertiary'), fontFamily: font, marginTop: '1px' }}>{date}</div>
+      <div style={{ fontSize: '28px', fontWeight: 700, color: sysVar('content-primary'), fontFamily: font, marginTop: '8px', letterSpacing: '-0.6px' }}>{value}</div>
 
       {/* Change badge */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px', flexWrap: 'wrap' }}>
         <span style={{
           display: 'inline-flex', alignItems: 'center', gap: '3px',
-          backgroundColor: isPositive ? '#D1FAE5' : '#FEE2E2',
-          color: isPositive ? '#065F46' : '#991B1B',
+          backgroundColor: isPositive ? sysVar('background-success') : sysVar('background-failure'),
+          color: isPositive ? sysVar('content-success') : sysVar('content-failure'),
           borderRadius: '4px', padding: '2px 6px',
           fontFamily: font, fontSize: '11.5px', fontWeight: 'var(--font-weight-emphasis)',
         }}>
           {isPositive ? '↑' : '↓'} {Math.abs(change).toFixed(2)}%
         </span>
-        <span style={{ fontFamily: font, fontSize: '11.5px', color: '#6B7280' }}>{comparison}</span>
+        <span style={{ fontFamily: font, fontSize: '11.5px', color: sysVar('content-secondary') }}>{comparison}</span>
       </div>
 
       {/* Sparkline SVG */}
@@ -88,8 +89,8 @@ const SparklineCard: React.FC<{
           {/* End dot */}
           <circle cx="210" cy={title.includes('Impressions') ? '54' : '45'} r="3.5" fill={lineColor} />
           {/* Label pill */}
-          <rect x={title.includes('Impressions') ? '120' : '110'} y="58" width="80" height="14" rx="3" fill="white" stroke="#E5E7EB" strokeWidth="0.8" />
-          <text x={title.includes('Impressions') ? '160' : '150'} y="68" textAnchor="middle" fontFamily={font} fontSize="9" fill="#6B7280">{label}</text>
+          <rect x={title.includes('Impressions') ? '120' : '110'} y="58" width="80" height="14" rx="3" fill="var(--rd-sys-color-background-base)" stroke="var(--rd-sys-color-border-subtle)" strokeWidth="0.8" />
+          <text x={title.includes('Impressions') ? '160' : '150'} y="68" textAnchor="middle" fontFamily={font} fontSize="9" fill="var(--rd-sys-color-content-secondary)">{label}</text>
         </svg>
       </div>
 
@@ -119,24 +120,24 @@ const CHAMPIONS = [
 
 const ChampionsTable: React.FC = () => (
   <div style={{
-    backgroundColor: '#FFFFFF', border: '1px solid #E5E7EB',
+    backgroundColor: sysVar('background-base'), border: '1px solid var(--rd-sys-color-border-subtle)',
     borderRadius: '12px', padding: '20px',
     width: '380px', flexShrink: 0,
     display: 'flex', flexDirection: 'column',
   }}>
-    <div style={{ fontSize: '13.5px', fontWeight: 'var(--font-weight-emphasis)', color: '#111827', fontFamily: font }}>ThoughtSpot Champions</div>
-    <div style={{ fontSize: '12px', color: '#6B7280', fontFamily: font, marginTop: '3px', marginBottom: '16px' }}>
+    <div style={{ fontSize: '13.5px', fontWeight: 'var(--font-weight-emphasis)', color: sysVar('content-primary'), fontFamily: font }}>ThoughtSpot Champions</div>
+    <div style={{ fontSize: '12px', color: sysVar('content-secondary'), fontFamily: font, marginTop: '3px', marginBottom: '16px' }}>
       Users who were most active, last 30 days
     </div>
     <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: font }}>
       <thead>
-        <tr style={{ borderBottom: '1.5px solid #E5E7EB' }}>
-          <th style={{ fontSize: '12px', fontWeight: 'var(--font-weight-emphasis)', color: '#374151', textAlign: 'left', paddingBottom: '10px', paddingRight: '8px' }}>User</th>
-          <th style={{ fontSize: '12px', fontWeight: 'var(--font-weight-emphasis)', color: '#374151', textAlign: 'right', paddingBottom: '10px', whiteSpace: 'nowrap' }}>
+        <tr style={{ borderBottom: '1.5px solid var(--rd-sys-color-border-subtle)' }}>
+          <th style={{ fontSize: '12px', fontWeight: 'var(--font-weight-emphasis)', color: sysVar('content-primary'), textAlign: 'left', paddingBottom: '10px', paddingRight: '8px' }}>User</th>
+          <th style={{ fontSize: '12px', fontWeight: 'var(--font-weight-emphasis)', color: sysVar('content-primary'), textAlign: 'right', paddingBottom: '10px', whiteSpace: 'nowrap' }}>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
               User Actions
               <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                <path d="M5 1v8M2 6l3 3 3-3" stroke="#6B7280" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M5 1v8M2 6l3 3 3-3" stroke="var(--rd-sys-color-content-secondary)" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </span>
           </th>
@@ -144,14 +145,14 @@ const ChampionsTable: React.FC = () => (
       </thead>
       <tbody>
         {CHAMPIONS.map((c, i) => (
-          <tr key={i} style={{ borderBottom: '1px solid #F3F4F6' }}>
-            <td style={{ fontSize: '12.5px', color: '#374151', padding: '9px 8px 9px 0', maxWidth: '240px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.user}</td>
-            <td style={{ fontSize: '12.5px', color: '#374151', textAlign: 'right', padding: '9px 0' }}>{c.actions}</td>
+          <tr key={i} style={{ borderBottom: '1px solid var(--rd-sys-color-border-subtle)' }}>
+            <td style={{ fontSize: '12.5px', color: sysVar('content-primary'), padding: '9px 8px 9px 0', maxWidth: '240px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.user}</td>
+            <td style={{ fontSize: '12.5px', color: sysVar('content-primary'), textAlign: 'right', padding: '9px 0' }}>{c.actions}</td>
           </tr>
         ))}
       </tbody>
     </table>
-    <div style={{ fontSize: '11.5px', color: '#9CA3AF', fontFamily: font, marginTop: '12px' }}>Showing 10 of 10 rows</div>
+    <div style={{ fontSize: '11.5px', color: sysVar('content-tertiary'), fontFamily: font, marginTop: '12px' }}>Showing 10 of 10 rows</div>
   </div>
 );
 
@@ -195,17 +196,17 @@ const BarChartCard: React.FC<{
 
   return (
     <div style={{
-      backgroundColor: '#FFFFFF', border: '1px solid #E5E7EB',
+      backgroundColor: sysVar('background-base'), border: '1px solid var(--rd-sys-color-border-subtle)',
       borderRadius: '12px', padding: '20px', flex: 1,
     }}>
-      <div style={{ fontSize: '13.5px', fontWeight: 'var(--font-weight-emphasis)', color: '#111827', fontFamily: font }}>{title}</div>
-      <div style={{ fontSize: '12px', color: '#6B7280', fontFamily: font, marginTop: '3px', marginBottom: '16px' }}>{subtitle}</div>
+      <div style={{ fontSize: '13.5px', fontWeight: 'var(--font-weight-emphasis)', color: sysVar('content-primary'), fontFamily: font }}>{title}</div>
+      <div style={{ fontSize: '12px', color: sysVar('content-secondary'), fontFamily: font, marginTop: '3px', marginBottom: '16px' }}>{subtitle}</div>
 
       <div style={{ display: 'flex', gap: '0' }}>
         {/* Y-axis labels */}
         <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', paddingBottom: '20px', width: '32px', flexShrink: 0 }}>
           {[2000, 1500, 1000, 500, 0].map((v) => (
-            <span key={v} style={{ fontSize: '10px', color: '#9CA3AF', fontFamily: font, lineHeight: 1 }}>
+            <span key={v} style={{ fontSize: '10px', color: sysVar('content-tertiary'), fontFamily: font, lineHeight: 1 }}>
               {v === 0 ? '' : `${v / 1000}K`}
             </span>
           ))}
@@ -218,7 +219,7 @@ const BarChartCard: React.FC<{
             {[0, 0.25, 0.5, 0.75, 1].map((r, i) => (
               <line key={i}
                 x1="0" y1={r * chartH} x2={chartW + 10} y2={r * chartH}
-                stroke="#F3F4F6" strokeWidth="1"
+                stroke="var(--rd-sys-color-border-subtle)" strokeWidth="1"
               />
             ))}
             {/* Bars */}
@@ -235,7 +236,7 @@ const BarChartCard: React.FC<{
                   />
                   <text
                     x={x + barW / 2} y={chartH + 14}
-                    textAnchor="middle" fontFamily={font} fontSize="8.5" fill="#9CA3AF"
+                    textAnchor="middle" fontFamily={font} fontSize="8.5" fill="var(--rd-sys-color-content-tertiary)"
                   >
                     {d.label}
                   </text>
@@ -464,36 +465,36 @@ export const UsageAdoptionPageContent: React.FC = () => {
   ];
 
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundColor: '#F3F4F6' }}>
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundColor: sysVar('background-sunken') }}>
       <div style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
 
         {/* Liveboard container */}
         <div style={{
-          backgroundColor: '#FFFFFF', border: '1px solid #E5E7EB',
+          backgroundColor: sysVar('background-base'), border: '1px solid var(--rd-sys-color-border-subtle)',
           borderRadius: '12px', overflow: 'hidden',
         }}>
 
           {/* Liveboard header */}
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            padding: '16px 20px 0', borderBottom: '1px solid #E5E7EB',
+            padding: '16px 20px 0', borderBottom: '1px solid var(--rd-sys-color-border-subtle)',
           }}>
             {/* Left: title + divider + tabs */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '0' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', flexShrink: 0 }}>
-                <span style={{ fontSize: '17px', fontWeight: 700, color: '#111827', fontFamily: font, letterSpacing: '-0.3px' }}>
+                <span style={{ fontSize: '17px', fontWeight: 700, color: sysVar('content-primary'), fontFamily: font, letterSpacing: '-0.3px' }}>
                   Usage &amp; Adoption
                 </span>
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                  <circle cx="7" cy="7" r="6" stroke="#9CA3AF" strokeWidth="1.3" />
-                  <path d="M7 6.5v4M7 5h.01" stroke="#9CA3AF" strokeWidth="1.3" strokeLinecap="round" />
+                  <circle cx="7" cy="7" r="6" stroke="var(--rd-sys-color-content-tertiary)" strokeWidth="1.3" />
+                  <path d="M7 6.5v4M7 5h.01" stroke="var(--rd-sys-color-content-tertiary)" strokeWidth="1.3" strokeLinecap="round" />
                 </svg>
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                  <path d="M7 1.5l1.5 3.2 3.5.5-2.5 2.4.6 3.5L7 9.3l-3.1 1.8.6-3.5L2 5.2l3.5-.5z" stroke="#9CA3AF" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M7 1.5l1.5 3.2 3.5.5-2.5 2.4.6 3.5L7 9.3l-3.1 1.8.6-3.5L2 5.2l3.5-.5z" stroke="var(--rd-sys-color-content-tertiary)" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </div>
 
-              <div style={{ width: '1px', height: '20px', backgroundColor: '#E5E7EB', margin: '0 16px 16px', flexShrink: 0 }} />
+              <div style={{ width: '1px', height: '20px', backgroundColor: sysVar('border-subtle'), margin: '0 16px 16px', flexShrink: 0 }} />
 
               <div style={{ display: 'flex', alignItems: 'flex-end' }}>
                 {tabs.map((tab) => (
@@ -501,7 +502,7 @@ export const UsageAdoptionPageContent: React.FC = () => {
                     padding: '0 14px 16px', border: 'none', background: 'none',
                     cursor: 'pointer', fontFamily: font, fontSize: '13.5px',
                     fontWeight: activeTab === tab.id ? 'var(--font-weight-emphasis)' : 'var(--font-weight-regular)',
-                    color: activeTab === tab.id ? brand : '#6B7280',
+                    color: activeTab === tab.id ? brand : sysVar('content-secondary'),
                     borderBottom: activeTab === tab.id ? `2px solid ${brand}` : '2px solid transparent',
                     marginBottom: '-1px', transition: 'color 0.15s', whiteSpace: 'nowrap',
                   }}>
@@ -516,38 +517,38 @@ export const UsageAdoptionPageContent: React.FC = () => {
               <button style={{
                 display: 'flex', alignItems: 'center', gap: '6px',
                 height: '32px', padding: '0 14px', border: 'none',
-                borderRadius: '999px', backgroundColor: brand,
+                borderRadius: '999px', backgroundColor: brandFill,
                 cursor: 'pointer', fontFamily: font, fontSize: '12.5px',
-                fontWeight: 'var(--font-weight-emphasis)', color: '#FFFFFF',
+                fontWeight: 'var(--font-weight-emphasis)', color: sysVar('content-inverse'),
               }}>
                 <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-                  <path d="M6.5 1L7.8 4.7l3.7 1.3-3.7 1.3L6.5 11l-1.3-3.7L1.5 6l3.7-1.3z" fill="white" />
+                  <path d="M6.5 1L7.8 4.7l3.7 1.3-3.7 1.3L6.5 11l-1.3-3.7L1.5 6l3.7-1.3z" fill="var(--rd-sys-color-content-inverse)" />
                 </svg>
                 AI Highlights
               </button>
-              <button style={{ width: '32px', height: '32px', borderRadius: '8px', border: '1px solid #E5E7EB', backgroundColor: '#FFFFFF', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <button style={{ width: '32px', height: '32px', borderRadius: '8px', border: '1px solid var(--rd-sys-color-border-subtle)', backgroundColor: sysVar('background-base'), cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                  <path d="M7 1v9M4 4l3-3 3 3M2 11h10" stroke="#6B7280" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M7 1v9M4 4l3-3 3 3M2 11h10" stroke="var(--rd-sys-color-content-secondary)" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </button>
-              <button style={{ width: '32px', height: '32px', borderRadius: '8px', border: '1px solid #E5E7EB', backgroundColor: '#FFFFFF', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <button style={{ width: '32px', height: '32px', borderRadius: '8px', border: '1px solid var(--rd-sys-color-border-subtle)', backgroundColor: sysVar('background-base'), cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                  <circle cx="3" cy="7" r="1.2" fill="#6B7280" />
-                  <circle cx="7" cy="7" r="1.2" fill="#6B7280" />
-                  <circle cx="11" cy="7" r="1.2" fill="#6B7280" />
+                  <circle cx="3" cy="7" r="1.2" fill="var(--rd-sys-color-content-secondary)" />
+                  <circle cx="7" cy="7" r="1.2" fill="var(--rd-sys-color-content-secondary)" />
+                  <circle cx="11" cy="7" r="1.2" fill="var(--rd-sys-color-content-secondary)" />
                 </svg>
               </button>
             </div>
           </div>
 
           {/* Filter chips */}
-          <div style={{ display: 'flex', gap: '8px', padding: '12px 20px', borderBottom: '1px solid #F3F4F6' }}>
+          <div style={{ display: 'flex', gap: '8px', padding: '12px 20px', borderBottom: '1px solid var(--rd-sys-color-border-subtle)' }}>
             {['User\u00a0(Select)', 'Org Name\u00a0(Select)'].map((chip) => (
               <button key={chip} style={{
                 height: '28px', padding: '0 12px',
-                border: '1px solid #E5E7EB', borderRadius: '999px',
-                backgroundColor: '#FFFFFF', cursor: 'pointer',
-                fontFamily: font, fontSize: '12px', color: '#374151',
+                border: '1px solid var(--rd-sys-color-border-subtle)', borderRadius: '999px',
+                backgroundColor: sysVar('background-base'), cursor: 'pointer',
+                fontFamily: font, fontSize: '12px', color: sysVar('content-primary'),
                 display: 'flex', alignItems: 'center', gap: '4px',
               }}>
                 {chip}

@@ -53,6 +53,9 @@ Figma sync: bringing tokens and typography up to date with the Radiant 3.0 Figma
 - Added a dark readiness scan (`scripts/radiant-check/`): per prototype and layer it counts colour literals, light-only reads, unknown token names, `prefers-color-scheme` media queries and `data-theme` writes, with accepted exceptions and their reasons in `rules.json`. `npm run scan:dark` reports; `npm run lint:tokens` fails on the shared layers only and isn't wired into `/ship`. `/radiant-check` now prints a dark ready line and suggests `sysVar()` instead of `systemColors.light[...]`
 - Visual snapshots list light surfaces per page, so a dark run shows what didn't follow the theme
 - Component status badges (registry) and the "synced" changelog colour follow the theme
+- The ThoughtSpot nav follows the theme, matching the product with the Radiant theme on (checked on champagne): `GlobalHeader`, `AppSidebar`, the Liveboard primary nav, the Liveboard edit toolbar and the styling drawer use `background-on-base` with a `border-subtle` divider. In light mode that's light grey instead of the old dark navy. `GlobalHeader` takes `theme="auto"` by default; `light` is the older name for it and `dark` is the legacy always-dark nav. The GlobalHeader doc page shows both
+- All sample prototypes work in dark mode, including NewUIAdmin2. Tailwind-style greys map to Radiant tokens through `docs/2026-10-07-phase6-colour-mapping.md`, so light mode shifts slightly in those prototypes. Third-party logos, user-picked colours and palettes stay as they are
+- A prototype that isn't dark ready yet can set `theme: 'light-only'` in its registry entry. It stays light, charts included, while the rest of the app is dark
 
 ## 26.9.1c — 2026-09-03
 

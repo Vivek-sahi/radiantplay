@@ -510,7 +510,7 @@ const componentDocs: Record<string, {
       { name: 'onHamburgerClick', type: '() => void', description: 'Handler when hamburger is clicked' },
       { name: 'showDefaultActions', type: 'boolean', default: 'true', description: 'Show help, notification, and profile actions' },
       { name: 'rightSlot', type: 'ReactNode', description: 'Custom content rendered after default actions' },
-      { name: 'theme', type: "'dark' | 'light'", default: "'dark'", description: 'Color theme for the header' },
+      { name: 'theme', type: "'auto' | 'light' | 'dark'", default: "'auto'", description: 'auto follows the app theme, like the product nav. light is the older name for auto. dark is the legacy always-dark nav.' },
     ],
   },
   appsidebar: {
@@ -998,7 +998,7 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
   const [activeTab, setActiveTab] = useState('tab1');
   const [selectValue, setSelectValue] = useState('');
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
-  const [globalHeaderTheme, setGlobalHeaderTheme] = useState<'dark' | 'light'>('dark');
+  const [globalHeaderTheme, setGlobalHeaderTheme] = useState<'auto' | 'dark'>('auto');
   // New component states
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [paginationPage, setPaginationPage] = useState(1);
@@ -1920,12 +1920,15 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
               <Tabs
                 tabs={[
-                  { id: 'dark', label: 'Dark theme' },
-                  { id: 'light', label: 'Light theme' },
+                  { id: 'auto', label: 'Follows theme' },
+                  { id: 'dark', label: 'Legacy dark' },
                 ]}
                 activeTab={globalHeaderTheme}
-                onTabChange={(id) => setGlobalHeaderTheme(id as 'dark' | 'light')}
+                onTabChange={(id) => setGlobalHeaderTheme(id as 'auto' | 'dark')}
               />
+              <Typography variant="body-normal" style={{ color: sysVar('content-secondary') }}>
+                By default the header follows the app theme, like the product nav with the Radiant theme on. Switch the theme with the control in the sidebar or Ctrl+D.
+              </Typography>
               <div>
                 <Typography variant="overline" style={{ marginBottom: '8px', display: 'block' }}>Trigger mode (default)</Typography>
                 <div style={{ borderRadius: '8px', overflow: 'hidden', border: `1px solid ${sysVar('border-divider')}` }}>

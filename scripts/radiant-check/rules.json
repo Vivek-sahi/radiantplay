@@ -8,27 +8,11 @@
   ],
   "allow": [
     {
-      "path": "src/components/AppSidebar/AppSidebar.tsx",
-      "kinds": [
-        "literal",
-        "light-read"
-      ],
-      "reason": "The ThoughtSpot product nav is dark in both themes"
-    },
-    {
       "path": "src/components/GlobalHeader/GlobalHeader.tsx",
       "kinds": [
         "light-read"
       ],
-      "reason": "The dark header variant is dark in both themes; the light variant uses sysVar()"
-    },
-    {
-      "path": "src/components/LiveboardHeader/styles.ts",
-      "kinds": [
-        "light-read"
-      ],
-      "match": "primaryNav",
-      "reason": "The ThoughtSpot primary nav is dark in both themes"
+      "reason": "The legacy theme='dark' variant is always dark; the default 'auto' variant uses sysVar()"
     },
     {
       "path": "src/components/ColorPicker/ColorPicker.tsx",
@@ -216,6 +200,76 @@
       ],
       "match": "description:",
       "reason": "Hex values and code names in changelog text"
+    },
+    {
+      "path": "src/prototypes/NewUIAdmin2/CustomisationPageContent.tsx",
+      "kinds": [
+        "literal"
+      ],
+      "reason": "Customer brand colours, palettes, logo and app badge previews are data the page edits"
+    },
+    {
+      "path": "src/prototypes/NewUIAdmin2/AISettingsPageContent.tsx",
+      "kinds": [
+        "literal"
+      ],
+      "reason": "Third-party product logos (Slack, Jira, Snowflake, Anthropic, Gemini and others)"
+    },
+    {
+      "path": "src/prototypes/NewUIAdmin2/UserManagementPageContent.tsx",
+      "kinds": [
+        "literal"
+      ],
+      "reason": "Identity provider logos (Google, Microsoft, Amazon, SAML)"
+    },
+    {
+      "path": "src/prototypes/NewUIAdmin2/AIBIStatsPageContent.tsx",
+      "kinds": [
+        "literal"
+      ],
+      "reason": "Day-of-week series colours in a hand-drawn chart"
+    },
+    {
+      "path": "src/prototypes/NewUIAdmin2/BillingQueryStatsPageContent.tsx",
+      "kinds": [
+        "literal"
+      ],
+      "reason": "Teal series colour, passed through useChartTheme().seriesColor"
+    },
+    {
+      "path": "src/prototypes/NewUIAdmin2/PerformanceTrackingPageContent.tsx",
+      "kinds": [
+        "literal"
+      ],
+      "reason": "Teal series colour, passed through useChartTheme().seriesColor"
+    },
+    {
+      "path": "src/prototypes/StylingPanel/StylingPanel.tsx",
+      "kinds": [
+        "literal"
+      ],
+      "reason": "User-picked tile themes and swatch palettes"
+    },
+    {
+      "path": "src/prototypes/StylingPanel/components/StylingPanelDrawer.tsx",
+      "kinds": [
+        "literal"
+      ],
+      "reason": "User-picked tile themes and swatch palettes"
+    },
+    {
+      "path": "src/prototypes/AdminGroups/components/AdminHeader.tsx",
+      "kinds": [
+        "literal"
+      ],
+      "reason": "ThoughtSpot logo colours"
+    },
+    {
+      "path": "src/prototypes/DataModelEditor/dme.css",
+      "kinds": [
+        "literal"
+      ],
+      "reason": "AI gradient cyan; there is no teal or cyan accent token yet"
     }
   ],
   "_exclude_note": "HowItWorksPage has its own styling and RoadmapPage's route is commented out; both are outside the dark mode rollout."

@@ -89,3 +89,23 @@ export const useTheme = (): ThemeContextState => {
 
 /** True while dark is showing. The one dark check for components, charts and canvases. */
 export const useIsDarkMode = (): boolean => useTheme().resolved === 'dark';
+
+/**
+ * Keeps everything inside it light while the app is dark. For prototypes that
+ * aren't dark ready yet: set `theme: 'light-only'` on the registry entry and
+ * PlaygroundProject wraps the prototype in this. Light token values cascade
+ * from the wrapper, and useIsDarkMode() returns false inside it, so charts
+ * stay light too. Portals rendered to document.body (some modals and menus)
+ * sit outside the wrapper and follow the app theme.
+ */
+export const LightOnly: React.FC<{ children: ReactNode; style?: React.CSSProperties }> = ({ children, style }) => {
+  const parent = useTheme();
+  const value = useMemo(() => ({ ...parent, resolved: 'light' as ThemeMode }), [parent]);
+  return (
+    <ThemeContext.Provider value={value}>
+      <div data-theme="light" style={style}>
+        {children}
+      </div>
+    </ThemeContext.Provider>
+  );
+};

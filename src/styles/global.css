@@ -36,6 +36,11 @@
   color-scheme: dark;
 }
 
+/* A light-only scope inside the dark app (see LightOnly in ThemeContext) */
+:root[data-theme="dark"] [data-theme="light"] {
+  color-scheme: light;
+}
+
 html {
   font-size: 16px;
   -webkit-font-smoothing: antialiased;

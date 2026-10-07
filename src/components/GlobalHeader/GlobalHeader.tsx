@@ -19,7 +19,11 @@ const hexToRgba = (hex: string, alpha: number): string => {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 };
 
-export type GlobalHeaderTheme = 'dark' | 'light';
+/**
+ * 'auto' (default) follows the app theme, like the product's nav with the Radiant theme on.
+ * 'light' is the older name for 'auto'. 'dark' is the legacy always-dark nav.
+ */
+export type GlobalHeaderTheme = 'auto' | 'light' | 'dark';
 
 export interface GlobalHeaderProps extends React.HTMLAttributes<HTMLElement> {
   logo?: React.ReactNode;
@@ -43,7 +47,7 @@ export interface GlobalHeaderProps extends React.HTMLAttributes<HTMLElement> {
   theme?: GlobalHeaderTheme;
 }
 
-const THEMES: Record<GlobalHeaderTheme, { cssVars: Record<string, string>; logoFill: string }> = {
+const THEMES: Record<'auto' | 'dark', { cssVars: Record<string, string>; logoFill: string }> = {
   dark: {
     cssVars: {
       '--gh-bg': referenceColors.gray['90'],
@@ -60,13 +64,14 @@ const THEMES: Record<GlobalHeaderTheme, { cssVars: Record<string, string>; logoF
     },
     logoFill: referenceColors.gray['00'],
   },
-  // Follows the app theme. The dark variant above stays dark in both themes.
-  light: {
+  // Follows the app theme, matching the product nav: background-on-base with a border-subtle divider.
+  // The dark variant above is the legacy always-dark nav.
+  auto: {
     cssVars: {
-      '--gh-bg': sysVar('background-base'),
-      '--gh-border': sysVar('border-divider'),
-      '--gh-surface': sysVar('background-sunken'),
-      '--gh-surface-hover': sysVar('background-subtle'),
+      '--gh-bg': sysVar('background-on-base'),
+      '--gh-border': sysVar('border-subtle'),
+      '--gh-surface': sysVar('background-secondary-action'),
+      '--gh-surface-hover': sysVar('background-secondary-hover'),
       '--gh-active': sysVar('border-focus'),
       '--gh-text': sysVar('content-primary'),
       '--gh-muted': sysVar('content-secondary'),
@@ -101,14 +106,14 @@ export const GlobalHeader = forwardRef<HTMLElement, GlobalHeaderProps>(
       onProfileClick,
       showDefaultActions = true,
       rightSlot,
-      theme = 'dark',
+      theme = 'auto',
       className,
       style,
       ...props
     },
     ref,
   ) => {
-    const { cssVars, logoFill } = THEMES[theme];
+    const { cssVars, logoFill } = THEMES[theme === 'dark' ? 'dark' : 'auto'];
     const mergedStyle: React.CSSProperties = {
       ...(cssVars as React.CSSProperties),
       ...style,

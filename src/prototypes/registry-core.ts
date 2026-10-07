@@ -31,6 +31,8 @@ export interface ProjectMeta {
   customComponents?: number;
   /** Which gallery section: 'sample' for built-in examples, 'mine' for user-created (default), 'archived' for deprecated prototypes kept for reference */
   section?: 'sample' | 'mine' | 'archived';
+  /** 'light-only' keeps the prototype light while the app is dark, until it is dark ready */
+  theme?: 'light-only';
 }
 
 // ── Thumbnails ────────────────────────────────────────────────────────────────

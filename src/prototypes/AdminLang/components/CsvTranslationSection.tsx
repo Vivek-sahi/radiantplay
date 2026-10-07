@@ -3,7 +3,7 @@ import { Button } from '../../../components/Button';
 import { sectionStyles as s } from '../styles';
 import { CsvUploadModal } from './CsvUploadModal';
 import { ObjectPickerModal } from './ObjectPickerModal';
-import { systemColors } from '../../../tokens/colors';
+import { sysVar, shadowVar } from '../../../tokens/colors';
 
 /** Placeholder URL — replace with actual docs URL */
 const LEARN_MORE_CSV_TRANSLATION_URL = '#';
@@ -114,8 +114,8 @@ export const CsvTranslationSection: React.FC<CsvTranslationSectionProps> = ({
                 fontSize: '14px',
                 fontWeight: 500,
                 color: isEnabled
-                  ? systemColors.light['content-brand']
-                  : systemColors.light['content-secondary'],
+                  ? sysVar('content-brand')
+                  : sysVar('content-secondary'),
               }}
             >
               <span
@@ -125,8 +125,8 @@ export const CsvTranslationSection: React.FC<CsvTranslationSectionProps> = ({
                   height: '20px',
                   borderRadius: '10px',
                   backgroundColor: isEnabled
-                    ? systemColors.light['content-brand']
-                    : '#C4C9D4',
+                    ? sysVar('content-brand')
+                    : sysVar('border-bold'),
                   position: 'relative',
                   transition: 'background-color 0.2s ease',
                 }}
@@ -139,9 +139,9 @@ export const CsvTranslationSection: React.FC<CsvTranslationSectionProps> = ({
                     width: '16px',
                     height: '16px',
                     borderRadius: '50%',
-                    backgroundColor: '#FFFFFF',
+                    backgroundColor: sysVar('content-inverse'),
                     transition: 'left 0.2s ease',
-                    boxShadow: '0 1px 2px rgba(0,0,0,0.2)',
+                    boxShadow: shadowVar('surface'),
                   }}
                 />
               </span>
@@ -152,8 +152,8 @@ export const CsvTranslationSection: React.FC<CsvTranslationSectionProps> = ({
           <span style={{
             ...s.statusValue,
             color: isEnabled
-              ? systemColors.light['content-primary']
-              : systemColors.light['content-secondary'],
+              ? sysVar('content-primary')
+              : sysVar('content-secondary'),
           }}>
             {isEnabled ? 'Enabled' : 'Disabled'}
           </span>

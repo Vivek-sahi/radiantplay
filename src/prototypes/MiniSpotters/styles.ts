@@ -1,24 +1,22 @@
-import { systemColors } from '../../tokens/colors/system';
+import { sysVar } from '../../tokens/colors/system';
 import { fontFamily, fontWeight, fontSize, lineHeight } from '../../tokens/typography';
 import { spacing } from '../../tokens/spacing';
 import { radius } from '../../tokens/radius';
 
-const c = systemColors.light;
-
 export const colors = {
-  bg: c['background-base'],
-  bgSunken: c['background-sunken'],
-  bgSubtle: c['background-subtle'],
-  bgBrand: c['background-brand'],
-  bgGhostHover: c['background-ghost-hover'],
-  textPrimary: c['content-primary'],
-  textSecondary: c['content-secondary'],
-  textTertiary: c['content-tertiary'],
-  textBrand: c['content-brand'],
-  textWhite: c['content-alternate'],
-  borderDefault: c['border-default'],
-  borderDivider: c['border-divider'],
-  borderBrand: c['border-brand'],
+  bg: sysVar('background-base'),
+  bgSunken: sysVar('background-sunken'),
+  bgSubtle: sysVar('background-subtle'),
+  bgBrand: sysVar('background-brand'),
+  bgGhostHover: sysVar('background-ghost-hover'),
+  textPrimary: sysVar('content-primary'),
+  textSecondary: sysVar('content-secondary'),
+  textTertiary: sysVar('content-tertiary'),
+  textBrand: sysVar('content-brand'),
+  textWhite: sysVar('content-alternate'),
+  borderDefault: sysVar('border-default'),
+  borderDivider: sysVar('border-divider'),
+  borderBrand: sysVar('border-brand'),
 };
 
 export const font = {
@@ -387,13 +385,13 @@ export const quickInsightStyles: Record<string, React.CSSProperties> = {
     borderColor: 'transparent',
   },
   cardIconFeatured: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: 'color-mix(in srgb, var(--rd-sys-color-content-alternate) 20%, transparent)',
   },
   cardTitleFeatured: {
     color: colors.textWhite,
   },
   cardDescFeatured: {
-    color: 'rgba(255,255,255,0.75)',
+    color: 'color-mix(in srgb, var(--rd-sys-color-content-alternate) 75%, transparent)',
   },
 };
 

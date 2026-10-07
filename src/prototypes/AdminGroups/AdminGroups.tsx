@@ -15,7 +15,7 @@ import { existingGroups, Group, groupTabs } from './data/mockData';
 import { Button } from '../../components/Button';
 import { Tabs } from '../../components/Tabs';
 import { Icon } from '../../components/icons';
-import { systemColors, referenceColors } from '../../tokens/colors';
+import { sysVar } from '../../tokens/colors';
 
 type SidebarTabId = 'insights' | 'data' | 'develop' | 'admin';
 
@@ -287,7 +287,7 @@ export const AdminGroups: React.FC = () => {
   };
 
   return (
-    <AppShell headerProps={headerProps} sidebarProps={sidebarProps} contentBackground="#FFFFFF" style={{ height: '100vh' }}>
+    <AppShell headerProps={headerProps} sidebarProps={sidebarProps} contentBackground={sysVar('background-base')} style={{ height: '100vh' }}>
       <div style={{ padding: '24px 32px' }}>
         {/* Page Header */}
         <div style={pageHeaderStyles.container}>
@@ -297,7 +297,7 @@ export const AdminGroups: React.FC = () => {
             <Icon name="chevron-right" size="xs" />
             <span>Users</span>
             <Icon name="chevron-right" size="xs" />
-            <span style={{ color: systemColors.light['content-primary'] }}>Groups</span>
+            <span style={{ color: sysVar('content-primary') }}>Groups</span>
           </div>
 
           {/* Title */}
@@ -323,7 +323,7 @@ export const AdminGroups: React.FC = () => {
                 left: '12px',
                 top: '50%',
                 transform: 'translateY(-50%)',
-                color: systemColors.light['content-tertiary'],
+                color: sysVar('content-tertiary'),
                 display: 'flex',
               }}>
                 <Icon name="magnifying-glass" size="s" color="currentColor" />
@@ -338,7 +338,7 @@ export const AdminGroups: React.FC = () => {
                   height: '36px',
                   paddingLeft: '40px',
                   paddingRight: '12px',
-                  border: `1px solid ${referenceColors.gray['30']}`,
+                  border: `1px solid ${sysVar('border-bold')}`,
                   borderRadius: '6px',
                   fontSize: '14px',
                   outline: 'none',

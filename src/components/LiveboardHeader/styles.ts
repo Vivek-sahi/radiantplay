@@ -1,4 +1,4 @@
-import { sysVar, shadowVar, systemColors } from '@tokens/colors/system';
+import { sysVar, shadowVar } from '@tokens/colors/system';
 import { fontFamily } from '@tokens/typography';
 
 export const colors = {
@@ -14,9 +14,10 @@ export const colors = {
   borderDark: sysVar('border-default-inverse'),
   divider: sysVar('border-default'),
   actionPillBg: sysVar('background-subtle'),
-  // The ThoughtSpot primary nav is dark in both themes, like AppSidebar, so it reads fixed values
-  primaryNavBg: systemColors.light['background-base-inverse'],
-  primaryNavText: systemColors.light['content-primary-inverse'],
+  // The ThoughtSpot primary nav follows the theme, like the product's Radiant nav
+  primaryNavBg: sysVar('background-on-base'),
+  primaryNavText: sysVar('content-primary'),
+  primaryNavBorder: sysVar('border-subtle'),
 } as const;
 
 export const typography = {

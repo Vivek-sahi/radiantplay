@@ -94,12 +94,9 @@
   --shadow-focus-ring: 0 0 0 3px rgba(39, 112, 239, 0.4);
   --shadow-focus-ring-error: 0 0 0 3px rgba(226, 43, 61, 0.4);
 
-  /* Semantic shadows. The values are --rd-sys-color-shadow-* in the theme blocks
-     (the product's names); these older names stay as aliases.
+  /* Semantic shadows live in the theme blocks as --rd-sys-color-shadow-* (the product's names).
+     The older --shadow-* names are aliases declared there too, so a nested light scope resolves them.
      surface → Card, Tooltip, Nav. menu → Dropdown, Popover. modal → Modal, Dialog. */
-  --shadow-surface: var(--rd-sys-color-shadow-surface);
-  --shadow-menu: var(--rd-sys-color-shadow-menu);
-  --shadow-modal: var(--rd-sys-color-shadow-modal);
 
   /* Border Widths */
   --border-width-none: 0px;
@@ -340,6 +337,9 @@
 
   /* ---- Older names kept as aliases of the product's names ---- */
   --rd-comp-color-button-overlay: var(--rd-comp-color-button-bg-overlay);
+  --shadow-surface: var(--rd-sys-color-shadow-surface);
+  --shadow-menu: var(--rd-sys-color-shadow-menu);
+  --shadow-modal: var(--rd-sys-color-shadow-modal);
 }
 
 /* ============================================

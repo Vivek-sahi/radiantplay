@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { sysVar } from '../tokens/colors';
 import { getProject } from '../prototypes/registry';
 import { Icon } from '../components/icons';
+import { LightOnly } from '../context/ThemeContext';
 
 /**
  * PlaygroundProject
@@ -63,7 +64,13 @@ export const PlaygroundProject: React.FC = () => {
       {/* Project Content */}
       <div style={styles.projectContainer}>
         <Suspense fallback={<LoadingState />}>
-          <ProjectComponent />
+          {project.theme === 'light-only' ? (
+            <LightOnly style={styles.lightOnly}>
+              <ProjectComponent />
+            </LightOnly>
+          ) : (
+            <ProjectComponent />
+          )}
         </Suspense>
       </div>
     </div>
@@ -90,6 +97,11 @@ const styles: Record<string, React.CSSProperties> = {
   },
 
   // Project Container
+  lightOnly: {
+    minHeight: '100%',
+    background: sysVar('background-base'),
+    color: sysVar('content-primary'),
+  },
   projectContainer: {
     minHeight: '100vh',
   },

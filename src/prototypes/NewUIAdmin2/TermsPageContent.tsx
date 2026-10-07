@@ -1,32 +1,32 @@
 import React from 'react';
-import { systemColors } from '../../tokens/colors';
+import { sysVar } from '@tokens/colors';
 
 const font = 'var(--font-family-primary)';
-const brand = systemColors.light['content-brand'];
+const brand = sysVar('content-brand');
 
 export const TermsPageContent: React.FC = () => (
-  <div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundColor: '#FFFFFF' }}>
+  <div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundColor: sysVar('background-base') }}>
 
     {/* Sticky header */}
-    <div style={{ flexShrink: 0, padding: '28px 40px 20px', borderBottom: '1px solid #E5E7EB', backgroundColor: '#FFFFFF' }}>
-      <h1 style={{ margin: 0, fontSize: '22px', fontWeight: 700, color: '#0F172A', fontFamily: font, letterSpacing: '-0.3px' }}>
+    <div style={{ flexShrink: 0, padding: '28px 40px 20px', borderBottom: `1px solid ${sysVar('border-subtle')}`, backgroundColor: sysVar('background-base') }}>
+      <h1 style={{ margin: 0, fontSize: '22px', fontWeight: 700, color: sysVar('content-primary'), fontFamily: font, letterSpacing: '-0.3px' }}>
         Terms
       </h1>
     </div>
 
     {/* Scrollable content */}
-    <div style={{ flex: 1, overflowY: 'auto', backgroundColor: '#F3F4F6' }}>
+    <div style={{ flex: 1, overflowY: 'auto', backgroundColor: sysVar('background-secondary-action') }}>
       <div style={{ padding: '24px 40px 64px' }}>
 
         {/* Card */}
-        <div style={{ backgroundColor: '#F3F4F6', border: '1px solid #E5E7EB', borderRadius: '12px', overflow: 'hidden' }}>
+        <div style={{ backgroundColor: sysVar('background-secondary-action'), border: `1px solid ${sysVar('border-subtle')}`, borderRadius: '12px', overflow: 'hidden' }}>
           {/* Card header */}
-          <div style={{ padding: '16px 24px', borderBottom: '1px solid #E5E7EB', backgroundColor: '#F3F4F6' }}>
-            <span style={{ fontSize: '14px', fontWeight: 'var(--font-weight-emphasis)', color: '#111827', fontFamily: font }}>User agreement</span>
+          <div style={{ padding: '16px 24px', borderBottom: `1px solid ${sysVar('border-subtle')}`, backgroundColor: sysVar('background-secondary-action') }}>
+            <span style={{ fontSize: '14px', fontWeight: 'var(--font-weight-emphasis)', color: sysVar('content-primary'), fontFamily: font }}>User agreement</span>
           </div>
           {/* Card body */}
-          <div style={{ padding: '20px 24px', backgroundColor: '#FFFFFF' }}>
-            <p style={{ margin: 0, fontSize: '13.5px', color: '#6B7280', fontFamily: font, lineHeight: 1.6 }}>
+          <div style={{ padding: '20px 24px', backgroundColor: sysVar('background-base') }}>
+            <p style={{ margin: 0, fontSize: '13.5px', color: sysVar('content-secondary'), fontFamily: font, lineHeight: 1.6 }}>
               Your organisation has accepted this{' '}
               <a
                 href="#"
