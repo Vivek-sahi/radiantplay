@@ -1,72 +1,54 @@
 import React, { useMemo, useState } from 'react';
 import { Button, Horizontal, SearchInput, Select, Table, Typography, Vertical } from '@/components';
 import { spacing } from '@tokens/spacing';
-import { StoreTable, WriterKind } from '../types';
+import { StoreTable } from '../types';
 import { formatGB, formatRows } from '../data';
-import { PageHeader, Panel, StatusPill } from './primitives';
-import { useVariant } from '../variant';
+import { PageHeader, Panel } from './primitives';
 import styles from './pages.module.css';
 
-const WRITER_FILTER = [
-  { id: 'all', label: 'All sources' },
-  { id: 'pulse', label: 'Pulse' },
-  { id: 'pipeline', label: 'Pipelines' },
-  { id: 'upload', label: 'File uploads' },
-];
-
-export const WriterCell: React.FC<{ t: StoreTable }> = ({ t }) =>
-  t.writer.kind === 'pulse' ? (
-    <Vertical gap={0}>
-      <StatusPill kind="info" label="Managed by Pulse" />
-      <Typography variant="footnote" color="gray-light" noMargin>
-        Model: {t.writer.detail}
-      </Typography>
-    </Vertical>
-  ) : (
-    <Vertical gap={0}>
-      <Typography variant="body-normal" color="base" noMargin>
-        {t.writer.label}
-      </Typography>
-      <Typography variant="footnote" color="gray-light" noMargin>
-        {t.writer.kind === 'upload' ? `Uploaded by ${t.writer.detail}` : t.writer.detail}
-      </Typography>
-    </Vertical>
-  );
+/** The tool on top, the service account that wrote it underneath. */
+export const SourceCell: React.FC<{ t: StoreTable }> = ({ t }) => (
+  <Vertical gap={0}>
+    <Typography variant="body-normal" color="base" noMargin>
+      {t.writer.label}
+    </Typography>
+    <Typography variant="footnote" color="gray-light" noMargin>
+      {t.writer.detail}
+    </Typography>
+  </Vertical>
+);
 
 export const DataPage: React.FC<{
   tables: StoreTable[];
   onOpenTable: (id: string) => void;
-  onUpload: () => void;
   onCreateTable: () => void;
-}> = ({ tables, onOpenTable, onUpload, onCreateTable }) => {
+}> = ({ tables, onOpenTable, onCreateTable }) => {
   const [q, setQ] = useState('');
-  const [writer, setWriter] = useState('all');
-  const variant = useVariant();
-  const writerOptions = variant === 'v1' ? WRITER_FILTER : WRITER_FILTER.filter((o) => o.id !== 'pulse');
+  const [source, setSource] = useState('all');
+
+  // The filter lists the real sources, built from the tables themselves.
+  const sourceOptions = useMemo(
+    () => [{ id: 'all', label: 'All sources' }, ...[...new Set(tables.map((t) => t.writer.label))].sort().map((s) => ({ id: s, label: s }))],
+    [tables],
+  );
 
   const rows = useMemo(
     () =>
       tables
-        .filter((t) => writer === 'all' || t.writer.kind === (writer as WriterKind))
-        .filter((t) => `${t.database}.${t.name}`.toLowerCase().includes(q.toLowerCase()))
+        .filter((t) => source === 'all' || t.writer.label === source)
+        .filter((t) => t.name.toLowerCase().includes(q.toLowerCase()))
         .sort((a, b) => b.sizeGB - a.sizeGB),
-    [tables, q, writer],
+    [tables, q, source],
   );
 
   return (
     <Vertical gap={spacing.F}>
       <PageHeader
         title="Data"
-        subtitle="Every table in AgentDB and where it came from."
         actions={
-          <>
-            <Button variant="secondary" icon="upload" onClick={onUpload}>
-              Upload a file
-            </Button>
-            <Button variant="primary" icon="plus" onClick={onCreateTable}>
-              Create table
-            </Button>
-          </>
+          <Button variant="primary" icon="plus" onClick={onCreateTable}>
+            Create table
+          </Button>
         }
       />
       <Panel title={`${rows.length} tables`} flush>
@@ -74,7 +56,7 @@ export const DataPage: React.FC<{
           <div className={styles.search}>
             <SearchInput placeholder="Search tables" value={q} onChange={(e) => setQ(e.target.value)} />
           </div>
-          <Select size="basic" options={writerOptions} value={writer} onChange={(v) => setWriter(v)} />
+          <Select size="basic" options={sourceOptions} value={source} onChange={(v) => setSource(v)} />
         </Horizontal>
         <Table
           hoverable
@@ -86,37 +68,17 @@ export const DataPage: React.FC<{
             {
               key: 'name',
               label: 'Table',
-              render: (_v, r) => {
-                const t = r as unknown as StoreTable;
-                return (
-                  <Vertical gap={0}>
-                    <Typography variant="content-label-subhead" color="accent" noMargin>
-                      {t.name}
-                    </Typography>
-                    <Typography variant="footnote" color="gray-light" noMargin>
-                      {t.database}
-                    </Typography>
-                  </Vertical>
-                );
-              },
+              render: (v) => (
+                <Typography variant="content-label-subhead" color="accent" noMargin>
+                  {String(v)}
+                </Typography>
+              ),
             },
-            { key: 'writer', label: 'Written by', render: (_v, r) => <WriterCell t={r as unknown as StoreTable} /> },
-            { key: 'rows', label: 'Rows', align: 'right', render: (v) => formatRows(v as number) },
-            { key: 'sizeGB', label: 'Size', align: 'right', render: (v, r) => ((r as unknown as StoreTable).empty ? '—' : formatGB(v as number)) },
-            {
-              key: 'lastArrived',
-              label: 'Last data arrived',
-              render: (v, r) => {
-                const t = r as unknown as StoreTable;
-                return (
-                  <Horizontal gap={spacing.B} align="center">
-                    {t.empty ? <StatusPill kind="neutral" label="Waiting for first load" /> : <span>{String(v)}</span>}
-                    {t.late && <StatusPill kind="warning" label="Late" />}
-                    {t.loading && <StatusPill kind="info" label="Load arriving" />}
-                  </Horizontal>
-                );
-              },
-            },
+            { key: 'writer', label: 'Source', render: (_v, r) => <SourceCell t={r as unknown as StoreTable} /> },
+            { key: 'rows', label: 'Rows', render: (v) => formatRows(v as number) },
+            { key: 'sizeGB', label: 'Size', render: (v, r) => ((r as unknown as StoreTable).empty ? '—' : formatGB(v as number)) },
+            { key: 'queries24h', label: 'Queries, 24 h', render: (v) => ((v as number) === 0 ? '—' : formatRows(v as number)) },
+            { key: 'lastUpdated', label: 'Last updated' },
           ]}
         />
       </Panel>

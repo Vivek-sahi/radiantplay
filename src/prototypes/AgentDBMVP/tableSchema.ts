@@ -1,8 +1,9 @@
 // Create-table logic: plain-English types <-> SQL, parsing pasted SQL, generating the final statement.
-// Ruled 28 Sep: SQL mode is equivalent to the form (structure only). Row behaviour is a separate,
-// required step with no default — and if pasted SQL already states it, we read it and pre-fill.
+// Ruled 28 Sep: SQL mode is equivalent to the form (structure only).
+// 7 Oct: V1 has no incremental load — every load replaces the table — so there is no row-handling
+// choice any more. Key clauses in pasted SQL are read and set aside; AgentDB sets them.
 
-// PRD Req 2: types come from a fixed list of 9, not every Doris type.
+// PRD Req 2: types come from a fixed list of 9, not every engine type.
 export const PLAIN_TYPES = [
   { id: 'Text', sql: 'VARCHAR(255)' },
   { id: 'Long text', sql: 'STRING' },
@@ -30,8 +31,6 @@ export interface DraftColumn {
   name: string;
   type: PlainType;
 }
-
-export type RowMode = 'replace' | 'add';
 
 const toSql = (t: PlainType) => PLAIN_TYPES.find((p) => p.id === t)!.sql;
 
@@ -74,17 +73,12 @@ const splitTopLevel = (s: string): string[] => {
 export interface ParseResult {
   columns: DraftColumn[];
   errors: string[];
-  /** Database and table name, if the SQL was a full CREATE TABLE */
+  /** The table name, and the database if the SQL qualified it */
   database?: string;
   tableName?: string;
-  /** Row behaviour stated in the SQL, if any — pre-fills step 2 */
-  rowMode?: RowMode;
-  keyColumns?: string[];
-  /** The clause we read the row behaviour from, shown to the user */
-  keyClause?: string;
-  /** Date column the SQL splits the table by (PARTITION BY RANGE on a date column) — pre-fills step 2 */
+  /** Date column the SQL splits the table by (PARTITION BY RANGE on a date column) */
   splitBy?: string;
-  /** Other table settings we found and will not use (AgentDB sets them) */
+  /** Table settings we found and will not use (AgentDB sets them) */
   ignored: string[];
 }
 
@@ -111,15 +105,8 @@ export const parseSql = (input: string): ParseResult => {
   }
 
   for (const part of splitTopLevel(body)) {
-    const pk = part.match(/^PRIMARY\s+KEY\s*\(([^)]*)\)/i);
-    if (pk) {
-      res.rowMode = 'replace';
-      res.keyColumns = pk[1].split(',').map((s) => s.trim().replace(/`/g, ''));
-      res.keyClause = part;
-      continue;
-    }
-    if (/^(INDEX|KEY|CONSTRAINT)\b/i.test(part)) {
-      res.ignored.push(part.split(/\s+/).slice(0, 2).join(' '));
+    if (/^(PRIMARY\s+KEY|INDEX|KEY|CONSTRAINT)\b/i.test(part)) {
+      res.ignored.push(part.split(/\s+/).slice(0, 2).join(' ').toUpperCase());
       continue;
     }
     const m = part.match(/^`?(\w+)`?\s+([A-Za-z]+(?:\s*\([^)]*\))?)/);
@@ -135,16 +122,10 @@ export const parseSql = (input: string): ParseResult => {
     res.columns.push({ name: m[1], type: plain });
   }
 
-  const key = tail.match(/\b(UNIQUE|DUPLICATE|AGGREGATE)\s+KEY\s*\(([^)]*)\)/i);
+  const key = tail.match(/\b(UNIQUE|DUPLICATE|AGGREGATE)\s+KEY\b/i);
   if (key) {
-    const kind = key[1].toUpperCase();
-    if (kind === 'AGGREGATE') {
-      res.errors.push('Tables that store running totals (AGGREGATE KEY) aren’t supported yet');
-    } else {
-      res.rowMode = kind === 'UNIQUE' ? 'replace' : 'add';
-      res.keyColumns = kind === 'UNIQUE' ? key[2].split(',').map((s) => s.trim().replace(/`/g, '')) : [];
-      res.keyClause = key[0];
-    }
+    if (key[1].toUpperCase() === 'AGGREGATE') res.errors.push('Tables that store running totals (AGGREGATE KEY) aren’t supported yet');
+    else res.ignored.push(`${key[1].toUpperCase()} KEY`);
   }
   if (/DISTRIBUTED\s+BY/i.test(tail)) res.ignored.push('DISTRIBUTED BY');
   const part = tail.match(/PARTITION\s+BY\s+RANGE\s*\(\s*(?:date_trunc\s*\(\s*)?`?(\w+)`?/i);
@@ -156,28 +137,10 @@ export const parseSql = (input: string): ParseResult => {
   return res;
 };
 
-/** The statement AgentDB will run: structure from step 1 + row behaviour from step 2. */
-export const buildCreateSql = (
-  database: string,
-  name: string,
-  cols: DraftColumn[],
-  mode: RowMode,
-  keys: string[],
-  splitBy: string | null = null,
-): { sql: string; reordered: string[] } => {
+/** The statement AgentDB will run. Every load replaces the table, so the key and distribution are engine details it sets itself. */
+export const buildCreateSql = (database: string, name: string, cols: DraftColumn[], splitBy: string | null = null): string => {
   const clean = cols.filter((c) => c.name.trim());
-  // Doris needs the identifying columns first, in order. Move them if they aren't.
-  const keyCols = mode === 'replace' ? keys.map((k) => clean.find((c) => c.name === k)!).filter(Boolean) : [];
-  const ordered = mode === 'replace' ? [...keyCols, ...clean.filter((c) => !keys.includes(c.name))] : clean;
-  const reordered = keyCols
-    .filter((k, i) => clean.indexOf(k) !== i)
-    .map((k) => k.name);
-  const keyClause =
-    mode === 'replace' ? `UNIQUE KEY (${keys.join(', ')})` : `DUPLICATE KEY (${ordered[0]?.name ?? ''})`;
-  const dist = mode === 'replace' ? keys[0] : ordered[0]?.name;
+  const first = clean[0]?.name ?? '';
   const partition = splitBy ? `\nAUTO PARTITION BY RANGE (date_trunc(${splitBy}, 'month')) ()` : '';
-  const sql = `CREATE TABLE ${database}.${name} (\n${ordered
-    .map((c) => `  ${c.name} ${toSql(c.type)}`)
-    .join(',\n')}\n)\n${keyClause}${partition}\nDISTRIBUTED BY HASH(${dist}) BUCKETS AUTO;`;
-  return { sql, reordered };
+  return `CREATE TABLE ${database}.${name} (\n${clean.map((c) => `  ${c.name} ${toSql(c.type)}`).join(',\n')}\n)\nDUPLICATE KEY (${first})${partition}\nDISTRIBUTED BY HASH(${first}) BUCKETS AUTO;`;
 };

@@ -2,9 +2,9 @@ import React, { useMemo, useState } from 'react';
 import { ActionMenu, ActionMenuItem, Button, Horizontal, Modal, ModalFooter, Select, Table, Tabs, TextInput, Typography, Vertical } from '@/components';
 import { spacing } from '@tokens/spacing';
 import { StoreTable, TableColumn } from '../types';
-import { formatGB, formatRows, rowBehaviour } from '../data';
+import { formatGB, formatRows } from '../data';
 import { PLAIN_TYPES, PlainType, WIDENS_TO } from '../tableSchema';
-import { KeyValue, Panel, StatusPill } from './primitives';
+import { KeyValue, Panel } from './primitives';
 import styles from './pages.module.css';
 
 const NAME_RE = /^[a-z][a-z0-9_]*$/;
@@ -17,7 +17,7 @@ const sampleValue = (col: TableColumn, row: number, table: StoreTable): string =
   switch (col.type) {
     case 'Whole number':
     case 'Big whole number':
-      return col.isKey ? String(88410000 + row) : String(n % 20000);
+      return col.name.endsWith('_id') ? String(88410000 + row) : String(n % 20000);
     case 'Decimal':
     case 'High-precision decimal':
       return ((n % 250000) / 100).toFixed(2);
@@ -42,15 +42,17 @@ const sampleValue = (col: TableColumn, row: number, table: StoreTable): string =
 
 type Draft = { id: string; name: string; type: PlainType; original?: TableColumn };
 
-type Confirm = null | 'delete' | 'empty' | 'blocked-delete' | 'blocked-empty' | 'review';
+type Confirm = null | 'delete' | 'empty' | 'review';
 
-/** Full-page table view (was a modal): it carries actions, so it gets a page. */
+/**
+ * Full-page table view. V1 (7 Oct): no status tags and no in-progress states — the page shows
+ * what the database knows (rows, size, last update) and the structure.
+ */
 export const TableDetailPage: React.FC<{
   table: StoreTable;
   onBack: () => void;
   onDelete: (t: StoreTable) => void;
   onUpdate: (t: StoreTable, message: string) => void;
-  toast: (m: string) => void;
 }> = ({ table: t, onBack, onDelete, onUpdate }) => {
   const [tab, setTab] = useState('columns');
   const [confirm, setConfirm] = useState<Confirm>(null);
@@ -58,8 +60,7 @@ export const TableDetailPage: React.FC<{
   const [editing, setEditing] = useState(false);
   const [menuKey, setMenuKey] = useState(0);
   const [drafts, setDrafts] = useState<Draft[]>([]);
-  const isPulse = t.writer.kind === 'pulse';
-  const fullName = `${t.database}.${t.name}`;
+  const source = t.empty ? 'your pipeline' : t.writer.label;
 
   const startEdit = () => {
     setDrafts(t.columns.map((c, i) => ({ id: `c${i}`, name: c.name, type: c.type as PlainType, original: c })));
@@ -70,7 +71,7 @@ export const TableDetailPage: React.FC<{
     const out: { kind: 'add' | 'rename' | 'widen'; text: string }[] = [];
     drafts.forEach((d) => {
       if (!d.original) {
-        if (d.name.trim()) out.push({ kind: 'add', text: `Add ${d.name} (${d.type}) — empty for existing rows` });
+        if (d.name.trim()) out.push({ kind: 'add', text: `Add ${d.name} (${d.type}) — empty until the next load` });
         return;
       }
       if (d.name !== d.original.name) out.push({ kind: 'rename', text: `Rename ${d.original.name} to ${d.name}` });
@@ -87,21 +88,12 @@ export const TableDetailPage: React.FC<{
       : '';
 
   const applyChanges = () => {
-    const widened = drafts.filter((d) => d.original && d.type !== d.original.type).map((d) => d.name);
     const columns: TableColumn[] = drafts
       .filter((d) => d.name.trim())
-      .map((d) =>
-        d.original
-          ? { ...d.original, name: d.name, type: d.type, updating: widened.includes(d.name) }
-          : { name: d.name, type: d.type, addedLater: !t.empty },
-      );
+      .map((d) => (d.original ? { ...d.original, name: d.name, type: d.type } : { name: d.name, type: d.type, addedLater: !t.empty }));
     onUpdate({ ...t, columns }, `${changes.length} ${changes.length === 1 ? 'change' : 'changes'} saved`);
     setEditing(false);
     setConfirm(null);
-    // PRD Req 3: widening takes a moment on big tables; "Updating" is the only status shown.
-    if (widened.length) {
-      window.setTimeout(() => onUpdate({ ...t, columns: columns.map((c) => ({ ...c, updating: false })) }, 'Column type updated'), 5000);
-    }
   };
 
   const previewRows = useMemo(
@@ -114,31 +106,13 @@ export const TableDetailPage: React.FC<{
     [t],
   );
 
-
   const renderConfirm = () => {
-  if (confirm === 'blocked-delete' || confirm === 'blocked-empty') {
-      return (
-        <Modal
-          isOpen
-          onClose={() => setConfirm(null)}
-          title="A load is arriving"
-          size="medium"
-          footer={<ModalFooter primaryAction={<Button variant="primary" onClick={() => setConfirm(null)}>OK</Button>} />}
-        >
-          <Typography variant="body-normal" color="base" noMargin>
-            {t.writer.label} is loading data into {fullName} right now. You can {confirm === 'blocked-delete' ? 'delete' : 'empty'} the
-            table once the load finishes.
-          </Typography>
-        </Modal>
-      );
-    }
-  
     if (confirm === 'delete') {
       return (
         <Modal
           isOpen
           onClose={() => setConfirm(null)}
-          title={`Delete ${fullName}?`}
+          title={`Delete ${t.name}?`}
           size="medium"
           footer={
             <ModalFooter
@@ -172,13 +146,13 @@ export const TableDetailPage: React.FC<{
         </Modal>
       );
     }
-  
+
     if (confirm === 'empty') {
       return (
         <Modal
           isOpen
           onClose={() => setConfirm(null)}
-          title={`Empty ${fullName}?`}
+          title={`Empty ${t.name}?`}
           size="medium"
           footer={
             <ModalFooter
@@ -187,7 +161,7 @@ export const TableDetailPage: React.FC<{
                 <Button
                   variant="primary"
                   onClick={() => {
-                    onUpdate({ ...t, rows: 0, sizeGB: 0, empty: true, lastArrived: '—', late: undefined }, `${fullName} emptied`);
+                    onUpdate({ ...t, rows: 0, sizeGB: 0, empty: true, lastUpdated: '—' }, `${t.name} emptied`);
                     setConfirm(null);
                   }}
                 >
@@ -209,7 +183,7 @@ export const TableDetailPage: React.FC<{
         </Modal>
       );
     }
-  
+
     if (confirm === 'review') {
       return (
         <Modal
@@ -231,24 +205,15 @@ export const TableDetailPage: React.FC<{
               </Typography>
             ))}
             <Typography variant="footnote" color="gray-light" noMargin>
-              Make the same change in {t.writer.label === 'Not loaded yet' ? 'your pipeline' : t.writer.label} so its next load
-              matches. Changing a type can take a few minutes on large tables.
+              Make the same change in {source} so its next load matches.
             </Typography>
           </Vertical>
         </Modal>
       );
     }
-  
+
     return null;
   };
-
-  const statusPills = (
-    <>
-      {t.loading && <StatusPill kind="info" label="Load arriving" />}
-      {t.late && <StatusPill kind="warning" label={`Late · usually ${t.late.usual}`} />}
-      {t.empty && <StatusPill kind="neutral" label="Waiting for first load" />}
-    </>
-  );
 
   return (
     <>
@@ -261,65 +226,55 @@ export const TableDetailPage: React.FC<{
           </div>
           <Horizontal justify="space-between" align="start" gap={spacing.D} wrap>
             <Vertical gap={spacing.A}>
-              <Typography variant="footnote" color="gray-light" noMargin>
-                {t.database}
+              <Typography variant="page-title" color="base" noMargin>
+                {t.name}
               </Typography>
-              <Horizontal gap={spacing.C} wrap>
-                <Typography variant="page-title" color="base" noMargin>
-                  {t.name}
-                </Typography>
-                {statusPills}
-              </Horizontal>
               <Typography variant="body-normal" color="gray-light" noMargin>
-                {isPulse
-                  ? `Managed by Pulse (model: ${t.writer.detail}). Change or stop caching from the model's Caching tab in ThoughtSpot.`
-                  : t.empty
-                    ? `Empty. Point your pipeline at ${fullName} using a service account with write access.`
-                    : `Written by ${t.writer.label} (${t.writer.detail}). The job itself is scheduled and managed in ${t.writer.label}.`}
+                {t.empty
+                  ? `Empty. Point your pipeline at ${t.name} using a service account with write access.`
+                  : `Written by ${t.writer.label} (${t.writer.detail}). The job itself is scheduled and managed in ${t.writer.label}.`}
               </Typography>
             </Vertical>
-            {!isPulse && (
-              <Horizontal gap={spacing.B}>
-                <Button
-                  variant="secondary"
-                  icon="pencil"
-                  disabled={editing}
-                  onClick={() => {
-                    setTab('columns');
-                    startEdit();
-                  }}
-                >
-                  Edit columns
-                </Button>
-                <ActionMenu
-                  key={menuKey}
-                  placement="bottom-end"
-                  trigger={
-                    <Button variant="secondary" icon="more" iconOnly aria-label="More actions">
-                      More
-                    </Button>
-                  }
-                >
-                  {!t.empty && (
-                    <ActionMenuItem
-                      label="Empty table"
-                      onClick={() => {
-                        setConfirm(t.loading ? 'blocked-empty' : 'empty');
-                        setMenuKey((k) => k + 1);
-                      }}
-                    />
-                  )}
+            <Horizontal gap={spacing.B}>
+              <Button
+                variant="secondary"
+                icon="pencil"
+                disabled={editing}
+                onClick={() => {
+                  setTab('columns');
+                  startEdit();
+                }}
+              >
+                Edit columns
+              </Button>
+              <ActionMenu
+                key={menuKey}
+                placement="bottom-end"
+                trigger={
+                  <Button variant="secondary" icon="more" iconOnly aria-label="More actions">
+                    More
+                  </Button>
+                }
+              >
+                {!t.empty && (
                   <ActionMenuItem
-                    label="Delete table"
+                    label="Empty table"
                     onClick={() => {
-                      setTyped('');
-                      setConfirm(t.loading ? 'blocked-delete' : 'delete');
+                      setConfirm('empty');
                       setMenuKey((k) => k + 1);
                     }}
                   />
-                </ActionMenu>
-              </Horizontal>
-            )}
+                )}
+                <ActionMenuItem
+                  label="Delete table"
+                  onClick={() => {
+                    setTyped('');
+                    setConfirm('delete');
+                    setMenuKey((k) => k + 1);
+                  }}
+                />
+              </ActionMenu>
+            </Horizontal>
           </Horizontal>
         </Vertical>
 
@@ -327,20 +282,7 @@ export const TableDetailPage: React.FC<{
           <div className={styles.factGrid}>
             <KeyValue label="Rows">{t.empty ? '0' : formatRows(t.rows)}</KeyValue>
             <KeyValue label="Size">{t.empty ? '—' : formatGB(t.sizeGB)}</KeyValue>
-            <KeyValue label="Last data arrived">{t.lastArrived}</KeyValue>
-            {t.nextRefresh && <KeyValue label="Next refresh">{t.nextRefresh}</KeyValue>}
-            <KeyValue label="How rows arrive">
-              <Vertical gap={0}>
-                <span>{rowBehaviour(t)}</span>
-                <Typography variant="footnote" color="gray-light" noMargin>
-                  Set at creation. Can&apos;t be changed.
-                </Typography>
-              </Vertical>
-            </KeyValue>
-            <KeyValue label="Split by date">{t.splitBy ? `By month, on ${t.splitBy}` : 'No'}</KeyValue>
-            <KeyValue label="Who can read it">
-              {isPulse ? 'ThoughtSpot only (cached model data)' : 'Admins, Editors, and 4 service accounts'}
-            </KeyValue>
+            <KeyValue label="Last updated">{t.lastUpdated}</KeyValue>
           </div>
         </Panel>
 
@@ -363,30 +305,8 @@ export const TableDetailPage: React.FC<{
                 rowKey="name"
                 data={t.columns as unknown as Record<string, unknown>[]}
                 columns={[
-                  {
-                    key: 'name',
-                    label: 'Column',
-                    render: (v, r) => {
-                      const c = r as unknown as TableColumn;
-                      return (
-                        <Horizontal gap={spacing.B}>
-                          <code className={styles.mono}>{String(v)}</code>
-                          {c.addedLater && <StatusPill kind="neutral" label="Empty for existing rows" />}
-                        </Horizontal>
-                      );
-                    },
-                  },
-                  {
-                    key: 'type',
-                    label: 'Type',
-                    render: (v, r) => (
-                      <Horizontal gap={spacing.B}>
-                        <span>{String(v)}</span>
-                        {(r as unknown as TableColumn).updating && <StatusPill kind="info" label="Updating" />}
-                      </Horizontal>
-                    ),
-                  },
-                  { key: 'isKey', label: 'Identifies a row', render: (v) => (v ? 'Yes' : '') },
+                  { key: 'name', label: 'Column', render: (v) => <code className={styles.mono}>{String(v)}</code> },
+                  { key: 'type', label: 'Type' },
                 ]}
               />
             )}
@@ -395,7 +315,6 @@ export const TableDetailPage: React.FC<{
               <Vertical gap={spacing.B}>
                 {drafts.map((d, i) => {
                   const widen = d.original ? WIDENS_TO[d.original.type as PlainType] : undefined;
-                  const locked = d.original?.isKey;
                   return (
                     <Horizontal key={d.id} gap={spacing.C} align="center">
                       <div className={styles.grow}>
@@ -415,7 +334,7 @@ export const TableDetailPage: React.FC<{
                             onChange={(v) => setDrafts((ds) => ds.map((x) => (x.id === d.id ? { ...x, type: v as PlainType } : x)))}
                             fullWidth
                           />
-                        ) : widen && !locked ? (
+                        ) : widen ? (
                           <Select
                             options={[
                               { id: d.original.type, label: d.original.type },
@@ -427,8 +346,7 @@ export const TableDetailPage: React.FC<{
                           />
                         ) : (
                           <Typography variant="body-normal" color="gray-light" noMargin>
-                            {d.type}
-                            {locked ? ' · identifies a row, type locked' : ' · can’t be changed'}
+                            {d.type} · can’t be changed
                           </Typography>
                         )}
                       </div>
@@ -473,7 +391,7 @@ export const TableDetailPage: React.FC<{
                 </Horizontal>
                 <Typography variant="footnote" color="gray-light" noMargin>
                   You can add columns, rename them, and change a type only in a direction that holds more. Columns can&apos;t be
-                  removed, and identifying columns keep their type.
+                  removed.
                 </Typography>
               </Vertical>
             )}

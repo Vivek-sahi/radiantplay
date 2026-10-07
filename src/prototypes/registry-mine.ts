@@ -47,9 +47,9 @@ export const myRegistry: ProjectMeta[] = [
   {
     id: 'AgentDBMVP',
     name: 'AgentDB MVP',
-    description: 'Standalone AgentDB SaaS console concept: overview, data by source, activity by identity, usage and billing, service accounts with budgets, connect (SQL, ThoughtSpot, pipelines, MCP), SQL editor.',
+    description: 'Standalone AgentDB SaaS console, V1 scope (7 Oct): Overview (storage, queries, tables, connections), Data (tables by source, create table), Queries (minimum observability), Connect (consumption, pipelines, service accounts), Access (people).',
     author: 'Vivek Sahi',
-    lastModified: '2026-09-28',
+    lastModified: '2026-10-07',
     component: AgentDBMVP,
     section: 'mine',
   },

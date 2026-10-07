@@ -11,24 +11,6 @@
   align-items: start;
 }
 
-.welcome {
-  padding: var(--spacing-4) var(--spacing-5);
-  border-radius: var(--radius-md);
-  background: var(--rd-sys-color-background-information);
-  border: 1px solid var(--rd-sys-color-border-accent-blue);
-}
-.welcomeIcon { color: var(--rd-sys-color-content-information); display: inline-flex; padding-top: var(--spacing-1); }
-.welcomeActions { padding-top: var(--spacing-2); }
-
-.alertRow {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--spacing-3);
-  padding-bottom: var(--spacing-3);
-  border-bottom: 1px solid var(--rd-sys-color-border-divider);
-}
-.alertRow:last-child { border-bottom: 0; padding-bottom: 0; }
-
 .grow { flex: 1; min-width: 0; }
 
 .num { font-variant-numeric: tabular-nums; }
@@ -95,24 +77,6 @@
   border: 1px solid var(--rd-sys-color-border-divider);
   border-radius: var(--radius-md);
 }
-
-/* Alerts: severity carried by icon + label + a left stripe, never colour alone. */
-.alert {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--spacing-3);
-  padding: var(--spacing-3) var(--spacing-4);
-  border: 1px solid var(--rd-sys-color-border-divider);
-  border-left-width: 4px;
-  border-radius: var(--radius-md);
-}
-.alert_critical { border-left-color: var(--rd-sys-color-border-failure); }
-.alert_warning { border-left-color: var(--rd-sys-color-border-warning); }
-.alert_info { border-left-color: var(--rd-sys-color-border-accent-blue); }
-.alertIcon { display: inline-flex; padding-top: var(--spacing-0, 2px); }
-.alertIcon_critical { color: var(--rd-sys-color-content-failure); }
-.alertIcon_warning { color: var(--rd-sys-color-content-warning); }
-.alertIcon_info { color: var(--rd-sys-color-content-information); }
 
 .factGrid {
   display: grid;

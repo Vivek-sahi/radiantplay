@@ -2,19 +2,18 @@ import React, { useState } from 'react';
 import { Page, ServiceAccount, StoreTable } from './types';
 import { SERVICE_ACCOUNTS, TABLES } from './data';
 import { Shell } from './components/Shell';
-import { OverviewPage } from './components/OverviewPage';
 import { DataPage } from './components/DataPage';
 import { TableDetailPage } from './components/TableDetailPage';
-import { ActivityPage } from './components/ActivityPage';
-import { UsagePage } from './components/UsagePage';
+import { QueriesPage } from './components/QueriesPage';
+import { OverviewPage } from './components/OverviewPage';
 import { AccessPage } from './components/AccessPage';
 import { ConnectPage } from './components/ConnectPage';
 import { FloatingToast } from './components/primitives';
-import { accountsFor, DEFAULT_VARIANT, tablesFor, Variant, VariantContext } from './variant';
+import { DEFAULT_VARIANT, Variant, VariantContext } from './variant';
 import { CreateTableWizard, NewTableInput } from './components/CreateTableWizard';
 
 /**
- * AgentDB MVP — a standalone SaaS console concept (28 Sep 2026).
+ * AgentDB MVP — a standalone SaaS console concept (28 Sep 2026; V1 scope cut 7 Oct 2026).
  * Deliberately separate from AgentDBStore and NearStore: no imports from either.
  */
 const AgentDBMVP: React.FC = () => {
@@ -28,34 +27,27 @@ const AgentDBMVP: React.FC = () => {
 
   const createTable = (input: NewTableInput) => {
     const id = `t_${Date.now()}`;
-    // Identifying columns go first, matching the SQL the wizard showed.
-    const ordered =
-      input.mode === 'replace'
-        ? [...input.keys.map((k) => input.columns.find((c) => c.name === k)!), ...input.columns.filter((c) => !input.keys.includes(c.name))]
-        : input.columns;
     setTables((prev) => [
       ...prev,
       {
         id,
-        database: input.database,
         name: input.name,
         writer: { kind: 'pipeline', label: 'Not loaded yet', detail: 'Created by Priya Nair' },
         rows: 0,
         sizeGB: 0,
-        lastArrived: '—',
+        lastUpdated: '—',
+        queries24h: 0,
         empty: true,
         splitBy: input.splitBy ?? undefined,
-        columns: ordered.map((c) => ({ name: c.name, type: c.type, isKey: input.keys.includes(c.name) })),
+        columns: input.columns.map((c) => ({ name: c.name, type: c.type })),
       },
     ]);
     setCreatingTable(false);
-    setToast(`${input.database}.${input.name} created`);
+    setToast(`${input.name} created`);
     openTablePage(id);
   };
 
-  const viewTables = tablesFor(variant, tables);
-  const viewAccounts = accountsFor(variant, accounts);
-  const active = viewTables.find((t) => t.id === openTable);
+  const active = tables.find((t) => t.id === openTable);
   const openTablePage = (id: string) => {
     setPage('data');
     setOpenTable(id);
@@ -72,20 +64,11 @@ const AgentDBMVP: React.FC = () => {
       variant={variant}
       onVariantChange={setVariant}
     >
-      {page === 'overview' && <OverviewPage onNavigate={setPage} onOpenTable={openTablePage} />}
-      {page === 'data' && !active && (
-        <DataPage
-          tables={viewTables}
-          onOpenTable={openTablePage}
-          onUpload={() => setToast('File upload: pick a CSV or Parquet file')}
-          onCreateTable={() => setCreatingTable(true)}
-        />
-      )}
+      {page === 'data' && !active && <DataPage tables={tables} onOpenTable={openTablePage} onCreateTable={() => setCreatingTable(true)} />}
       {page === 'data' && active && (
         <TableDetailPage
           table={active}
           onBack={() => setOpenTable(null)}
-          toast={setToast}
           onUpdate={(updated, message) => {
             setTables((prev) => prev.map((x) => (x.id === updated.id ? { ...x, ...updated, writer: x.writer } : x)));
             setToast(message);
@@ -93,26 +76,25 @@ const AgentDBMVP: React.FC = () => {
           onDelete={(t) => {
             setTables((prev) => prev.filter((x) => x.id !== t.id));
             setOpenTable(null);
-            setToast(`${t.database}.${t.name} deleted`);
+            setToast(`${t.name} deleted`);
           }}
         />
       )}
-      {page === 'activity' && <ActivityPage />}
-      {page === 'connect' && <ConnectPage onNavigate={setPage} toast={setToast} />}
-      {page === 'access' && (
-        <AccessPage
-          accounts={viewAccounts}
+      {page === 'queries' && <QueriesPage tables={tables} />}
+      {page === 'connect' && (
+        <ConnectPage
+          accounts={accounts}
           onCreate={(a) => setAccounts((prev) => [...prev, a])}
           onUpdate={(a) => setAccounts((prev) => prev.map((x) => (x.id === a.id ? { ...x, revoked: a.revoked, passwordSetAt: a.passwordSetAt } : x)))}
           toast={setToast}
         />
       )}
-      {page === 'usage' && <UsagePage toast={setToast} />}
+      {page === 'access' && <AccessPage toast={setToast} />}
+      {page === 'overview' && <OverviewPage tables={tables} />}
 
       {creatingTable && (
         <CreateTableWizard
-          databases={[...new Set(tables.map((t) => t.database))]}
-          existingNames={tables.map((t) => `${t.database}.${t.name}`)}
+          existingNames={tables.map((t) => t.name)}
           onCancel={() => setCreatingTable(false)}
           onCreate={createTable}
         />

@@ -3,20 +3,19 @@ import { Horizontal, Table, Typography, Vertical } from '@/components';
 import { referenceColors } from '@tokens/colors';
 import { spacing } from '@tokens/spacing';
 import { StoreTable } from '../types';
-import { formatGB } from '../data';
+import { formatGB, formatRows } from '../data';
 import styles from './storage.module.css';
 
 /**
  * Colour follows the source, never its rank. Radiant chart palette, snapped to the nearest
- * passing steps (validated 28 Sep: brand-60, orange-70, purple-60, green-70, yellow-70).
- * Yellow-70 is under 3:1 on white, so every segment is also named in the legend with its value.
+ * passing steps (validated 28 Sep: brand-60, orange-70, purple-60, green-70). ThoughtSpot left
+ * the chart on 7 Oct (it reads, it doesn't write); Airbyte took its colour.
  */
 const SOURCE_COLOR: Record<string, string> = {
-  ThoughtSpot: referenceColors.brand['60'],
+  Airbyte: referenceColors.brand['60'],
   Airflow: referenceColors.orange['70'],
   Fivetran: referenceColors.purple['60'],
   'dbt Cloud': referenceColors.green['70'],
-  'File upload': referenceColors.yellow['70'],
 };
 const FALLBACK = referenceColors.gray['60'];
 
@@ -25,23 +24,16 @@ const pct = (part: number, whole: number) => {
   return p > 0 && p < 1 ? '<1%' : `${Math.round(p)}%`;
 };
 
-/** GB added in the last 7 days, per source (sample data). */
-const WEEK_GROWTH: Record<string, number> = {
-  ThoughtSpot: 1.2,
-  Airflow: 28.4,
-  Fivetran: 2.1,
-  'dbt Cloud': 0.1,
-  'File upload': 0,
-};
-
+/** What is stored, by who wrote it. No forecast: AgentDB doesn't predict (7 Oct). */
 export const StorageBySource: React.FC<{ tables: StoreTable[]; capacityGB: number }> = ({ tables, capacityGB }) => {
   const [hovered, setHovered] = useState<string | null>(null);
   const bySource = Object.values(
-    tables.reduce<Record<string, { label: string; gb: number; count: number }>>((acc, t) => {
+    tables.reduce<Record<string, { label: string; gb: number; count: number; queries: number }>>((acc, t) => {
       const k = t.writer.label;
-      acc[k] = acc[k] ?? { label: k, gb: 0, count: 0 };
+      acc[k] = acc[k] ?? { label: k, gb: 0, count: 0, queries: 0 };
       acc[k].gb += t.sizeGB;
       acc[k].count += 1;
+      acc[k].queries += t.queries24h;
       return acc;
     }, {}),
   )
@@ -50,20 +42,9 @@ export const StorageBySource: React.FC<{ tables: StoreTable[]; capacityGB: numbe
 
   const used = bySource.reduce((s, x) => s + x.gb, 0);
   const free = Math.max(capacityGB - used, 0);
-  const top = bySource[0];
-  const fastest = [...bySource].sort((a, b) => (WEEK_GROWTH[b.label] ?? 0) - (WEEK_GROWTH[a.label] ?? 0))[0];
-  const weekTotal = bySource.reduce((s, x) => s + (WEEK_GROWTH[x.label] ?? 0), 0);
-  const weeksLeft = weekTotal > 0 ? Math.floor(free / weekTotal) : null;
 
   return (
     <Vertical gap={spacing.D}>
-      <Typography variant="body-normal" color="base" noMargin>
-        <b>{top.label}</b> holds {pct(top.gb, used)} of your data
-        {fastest.label === top.label ? ' and is growing fastest' : `; ${fastest.label} is growing fastest`} (
-        {formatGB(WEEK_GROWTH[fastest.label] ?? 0)} this week).
-        {weeksLeft !== null && ` At this rate, storage is full in about ${weeksLeft} weeks.`}
-      </Typography>
-
       <Vertical gap={spacing.A}>
         <div className={styles.bar} role="img" aria-label={`Storage: ${formatGB(used)} used of ${capacityGB} GB`}>
           {bySource.map((s) => (
@@ -105,11 +86,9 @@ export const StorageBySource: React.FC<{ tables: StoreTable[]; capacityGB: numbe
             label: s.label,
             color: SOURCE_COLOR[s.label] ?? FALLBACK,
             size: formatGB(s.gb),
-            share: pct(s.gb, used),
             count: String(s.count),
-            week: (WEEK_GROWTH[s.label] ?? 0) > 0 ? `+${formatGB(WEEK_GROWTH[s.label])}` : '—',
+            queries: s.queries ? formatRows(s.queries) : '—',
           })),
-          { label: 'Available', color: '', size: formatGB(free), share: '', count: '', week: '' },
         ]}
         columns={[
           {
@@ -117,19 +96,14 @@ export const StorageBySource: React.FC<{ tables: StoreTable[]; capacityGB: numbe
             label: 'Source',
             render: (v, r) => (
               <Horizontal gap={spacing.B}>
-                <span
-                  className={r.color ? styles.swatch : `${styles.swatch} ${styles.swatchFree}`}
-                  style={r.color ? { background: String(r.color) } : undefined}
-                  aria-hidden
-                />
-                <span className={r.color ? undefined : styles.muted}>{String(v)}</span>
+                <span className={styles.swatch} style={{ background: String(r.color) }} aria-hidden />
+                <span>{String(v)}</span>
               </Horizontal>
             ),
           },
           { key: 'size', label: 'Size', align: 'right' },
-          { key: 'share', label: 'Share of used', align: 'right' },
           { key: 'count', label: 'Tables', align: 'right' },
-          { key: 'week', label: 'Added this week', align: 'right' },
+          { key: 'queries', label: 'Queries, 24 h', align: 'right' },
         ]}
       />
     </Vertical>

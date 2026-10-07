@@ -44,19 +44,20 @@ export const PageHeader: React.FC<{ title: string; subtitle?: string; actions?: 
   </Horizontal>
 );
 
-/** A metric tile: label, big value, one line of context. */
-export const StatTile: React.FC<{ label: string; value: string; note?: React.ReactNode; children?: React.ReactNode }> = ({
-  label,
-  value,
-  note,
-  children,
-}) => (
+/** A metric tile: label, big value, one line of context. `tone` colours the value (Queries: completed / in progress / failed). */
+export const StatTile: React.FC<{
+  label: string;
+  value: string;
+  note?: React.ReactNode;
+  tone?: 'success' | 'info' | 'failure';
+  children?: React.ReactNode;
+}> = ({ label, value, note, tone, children }) => (
   <Card>
     <Vertical gap={spacing.B} className={styles.tile}>
       <Typography variant="footnote" color="gray-light" noMargin>
         {label}
       </Typography>
-      <Typography variant="headline-large" color="base" noMargin>
+      <Typography variant="headline-large" color={tone ?? 'base'} noMargin>
         {value}
       </Typography>
       {children}

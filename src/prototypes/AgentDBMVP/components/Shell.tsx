@@ -3,8 +3,6 @@ import { Avatar, Button, Horizontal, Icon, Select, Typography, Vertical } from '
 import type { IconName } from '@/components';
 import { spacing } from '@tokens/spacing';
 import { Page } from '../types';
-import { ORG_NAME } from '../data';
-import { StatusPill } from './primitives';
 import { SHOW_VARIANT_SWITCHER, Variant, VARIANT_OPTIONS } from '../variant';
 import styles from './Shell.module.css';
 
@@ -14,7 +12,7 @@ const NAV: { group: string; items: { id: Page; label: string; icon: IconName }[]
     items: [
       { id: 'overview', label: 'Overview', icon: 'grid-view' },
       { id: 'data', label: 'Data', icon: 'database' },
-      { id: 'activity', label: 'Activity', icon: 'clock' },
+      { id: 'queries', label: 'Queries', icon: 'list-view' },
     ],
   },
   {
@@ -22,7 +20,6 @@ const NAV: { group: string; items: { id: Page; label: string; icon: IconName }[]
     items: [
       { id: 'connect', label: 'Connect', icon: 'cord' },
       { id: 'access', label: 'Access', icon: 'key' },
-      { id: 'usage', label: 'Usage and billing', icon: 'chart' },
     ],
   },
 ];
@@ -47,16 +44,11 @@ export const Shell: React.FC<{
         <Typography variant="content-label" color="base" noMargin>
           AgentDB
         </Typography>
-        <span className={styles.divider} aria-hidden />
-        <Typography variant="body-normal" color="gray-light" noMargin>
-          {ORG_NAME}
-        </Typography>
       </Horizontal>
       <Horizontal gap={spacing.D} align="center">
         {SHOW_VARIANT_SWITCHER && (
           <Select size="small" options={VARIANT_OPTIONS} value={variant} onChange={(v) => onVariantChange(v as Variant)} aria-label="Prototype version" />
         )}
-        <StatusPill kind="success" label="All systems normal" />
         <Button variant="tertiary" size="small" icon="documentation">
           Docs
         </Button>
@@ -88,9 +80,6 @@ export const Shell: React.FC<{
             </Vertical>
           ))}
         </Vertical>
-        <Typography variant="footnote" color="gray-light" noMargin className={styles.navFoot}>
-          {variant === 'v1' ? 'Signed in with ThoughtSpot' : 'Signed in with single sign-on'}
-        </Typography>
       </nav>
       <main className={styles.content}>{children}</main>
     </div>
