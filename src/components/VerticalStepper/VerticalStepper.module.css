@@ -43,25 +43,25 @@
 .circle.pending {
   background: transparent;
   border: 2px solid var(--rd-sys-color-border-default);
-  color: var(--rd-sys-color-content-subtle);
+  color: var(--rd-sys-color-content-secondary);
 }
 
 .circle.active {
   background: var(--rd-sys-color-background-brand);
   border: 2px solid var(--rd-sys-color-background-brand);
-  color: var(--rd-sys-color-content-on-brand, #fff);
+  color: var(--rd-sys-color-content-alternate);
 }
 
 .circle.completed {
   background: var(--rd-sys-color-background-brand);
   border: 2px solid var(--rd-sys-color-background-brand);
-  color: var(--rd-sys-color-content-on-brand, #fff);
+  color: var(--rd-sys-color-content-alternate);
 }
 
 .circle.error {
-  background: var(--rd-sys-color-background-negative);
-  border: 2px solid var(--rd-sys-color-background-negative);
-  color: #fff;
+  background: var(--rd-sys-color-background-failure);
+  border: 2px solid var(--rd-sys-color-background-failure);
+  color: var(--rd-sys-color-content-alternate);
 }
 
 .circleIndex {

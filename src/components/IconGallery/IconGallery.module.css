@@ -71,7 +71,7 @@
 }
 
 .galleryDark .itemSelected {
-  background-color: rgba(39, 112, 239, 0.2);
+  background-color: color-mix(in srgb, var(--rd-sys-color-content-brand) 20%, transparent);
 }
 
 /* Icon container */
@@ -127,7 +127,7 @@
 .search:focus {
   outline: none;
   border-color: var(--rd-sys-color-content-brand);
-  box-shadow: 0 0 0 3px rgba(39, 112, 239, 0.12);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--rd-sys-color-border-brand) 12%, transparent);
 }
 
 .search::placeholder {

@@ -7,7 +7,7 @@
   border: 1px solid var(--rd-sys-color-border-default);
   border-radius: var(--radius-lg);
   overflow: hidden;
-  background: var(--rd-sys-color-background-surface);
+  background: var(--rd-sys-color-background-raised);
 }
 
 /* Search */
@@ -23,7 +23,7 @@
   display: flex;
   align-items: center;
   flex-shrink: 0;
-  color: var(--rd-sys-color-content-subtle);
+  color: var(--rd-sys-color-content-secondary);
 }
 
 .searchInput {
@@ -37,7 +37,7 @@
 }
 
 .searchInput::placeholder {
-  color: var(--rd-sys-color-content-subtle);
+  color: var(--rd-sys-color-content-secondary);
 }
 
 /* List */
@@ -120,7 +120,7 @@
 }
 
 .removeButton:hover {
-  color: var(--rd-sys-color-content-negative);
+  color: var(--rd-sys-color-content-failure);
 }
 
 /* Empty state */
@@ -131,7 +131,7 @@
   padding: var(--spacing-6) var(--spacing-4);
   font-family: var(--font-family-primary);
   font-size: var(--font-size-sm);
-  color: var(--rd-sys-color-content-subtle);
+  color: var(--rd-sys-color-content-secondary);
 }
 
 /* Add button */

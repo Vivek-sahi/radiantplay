@@ -4,14 +4,14 @@
   align-items: flex-start;
   gap: var(--spacing-4);
   padding: var(--spacing-5);
-  background-color: var(--rd-sys-color-background-surface);
+  background-color: var(--rd-sys-color-background-raised);
   border: 1px solid var(--rd-sys-color-border-default);
   border-radius: var(--radius-lg);
 }
 
 .highlighted {
   background-color: var(--rd-sys-color-background-information);
-  border-color: var(--rd-sys-color-border-information);
+  border-color: var(--rd-sys-color-border-brand);
 }
 
 .icon {
@@ -38,7 +38,7 @@
 
 .description {
   font-size: var(--font-size-sm);
-  color: var(--rd-sys-color-content-subtle);
+  color: var(--rd-sys-color-content-secondary);
   margin: 0;
 }
 

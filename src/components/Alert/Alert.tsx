@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { Icon } from '../icons';
 import type { IconName } from '../icons';
-import { systemColors } from '../../tokens/colors';
+import { sysVar } from '../../tokens/colors';
 import styles from './Alert.module.css';
 
 export type AlertStatus = 'info' | 'success' | 'warning' | 'failure' | 'muted';
@@ -39,28 +39,28 @@ const statusConfig: Record<AlertStatus, {
   iconName: IconName;
 }> = {
   info: {
-    background: systemColors.light['background-information'],
-    iconColor: systemColors.light['content-information'],
+    background: sysVar('background-information'),
+    iconColor: sysVar('content-information'),
     iconName: 'information',
   },
   success: {
-    background: systemColors.light['background-success'],
-    iconColor: systemColors.light['content-success'],
+    background: sysVar('background-success'),
+    iconColor: sysVar('content-success'),
     iconName: 'checkmark-circle',
   },
   warning: {
-    background: systemColors.light['background-warning'],
-    iconColor: systemColors.light['content-warning'],
+    background: sysVar('background-warning'),
+    iconColor: sysVar('content-warning'),
     iconName: 'exclamation-point-circle',
   },
   failure: {
-    background: systemColors.light['background-failure'],
-    iconColor: systemColors.light['content-failure'],
+    background: sysVar('background-failure'),
+    iconColor: sysVar('content-failure'),
     iconName: 'cross-circle',
   },
   muted: {
-    background: systemColors.light['background-sunken'],
-    iconColor: systemColors.light['content-secondary'],
+    background: sysVar('background-sunken'),
+    iconColor: sysVar('content-secondary'),
     iconName: 'information',
   },
 };
@@ -185,7 +185,7 @@ export const Alert: React.FC<AlertProps> = ({
             aria-label="Dismiss alert"
             type="button"
           >
-            <Icon name="cross" size="s" color={systemColors.light['content-primary']} />
+            <Icon name="cross" size="s" color={sysVar('content-primary')} />
           </button>
         )}
       </div>
@@ -229,7 +229,7 @@ export const Alert: React.FC<AlertProps> = ({
             aria-label="Dismiss alert"
             type="button"
           >
-            <Icon name="cross" size="s" color={systemColors.light['content-primary']} />
+            <Icon name="cross" size="s" color={sysVar('content-primary')} />
           </button>
         )}
       </div>
@@ -272,7 +272,7 @@ export const Alert: React.FC<AlertProps> = ({
           aria-label="Dismiss alert"
           type="button"
         >
-          <Icon name="cross" size="s" color={systemColors.light['content-primary']} />
+          <Icon name="cross" size="s" color={sysVar('content-primary')} />
         </button>
       )}
     </div>

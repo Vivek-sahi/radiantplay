@@ -55,7 +55,7 @@
 }
 
 .avatarInitial {
-  color: #ffffff;
+  color: var(--rd-sys-color-content-inverse);
   font-family: var(--font-family-primary);
   font-size: var(--font-size-2xl, 28px);
   font-weight: var(--font-weight-emphasis);

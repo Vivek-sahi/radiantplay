@@ -2,7 +2,7 @@ import React from 'react';
 import { Select } from '../../../components/Select';
 import { roleAssignStyles as styles } from '../styles';
 import { organizations, roles } from '../data/mockData';
-import { systemColors } from '../../../tokens/colors';
+import { sysVar } from '../../../tokens/colors';
 
 interface RoleAssignment {
   orgId: string;
@@ -103,7 +103,7 @@ export const RoleAssignStep: React.FC<RoleAssignStepProps> = ({
               key={org.id} 
               style={{
                 ...styles.tableRow,
-                borderBottom: index === selectedOrgs.length - 1 ? 'none' : `1px solid ${systemColors.light['background-subtle']}`,
+                borderBottom: index === selectedOrgs.length - 1 ? 'none' : `1px solid ${sysVar('background-subtle')}`,
               }}
             >
               <div style={styles.orgName}>{org.name}</div>
@@ -123,7 +123,7 @@ export const RoleAssignStep: React.FC<RoleAssignStepProps> = ({
           <div style={{ 
             padding: '24px', 
             textAlign: 'center',
-            color: systemColors.light['content-tertiary'],
+            color: sysVar('content-tertiary'),
             fontSize: '14px',
           }}>
             No organizations selected. Go back to select orgs.

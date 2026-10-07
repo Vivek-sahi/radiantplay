@@ -1,5 +1,5 @@
 import React from 'react';
-import { systemColors, referenceColors } from '../tokens/colors';
+import { sysVar } from '../tokens/colors';
 
 interface ChangelogEntry {
   version: string;
@@ -872,17 +872,17 @@ const CHANGELOG: ChangelogEntry[] = [
 ];
 
 const categoryColors = {
-  added: { bg: systemColors.light['background-success'], text: systemColors.light['content-success'], label: 'Added' },
-  changed: { bg: systemColors.light['background-warning'], text: systemColors.light['content-warning'], label: 'Changed' },
-  fixed: { bg: systemColors.light['background-information'], text: systemColors.light['content-information'], label: 'Fixed' },
-  removed: { bg: systemColors.light['background-failure'], text: systemColors.light['content-failure'], label: 'Removed' },
-  synced: { bg: systemColors.light['background-information'], text: systemColors.light['content-information'], label: 'Synced' },
+  added: { bg: sysVar('background-accent-green'), text: sysVar('content-accent-green'), label: 'Added' },
+  changed: { bg: sysVar('background-accent-yellow'), text: sysVar('content-accent-yellow'), label: 'Changed' },
+  fixed: { bg: sysVar('background-accent-blue'), text: sysVar('content-accent-blue'), label: 'Fixed' },
+  removed: { bg: sysVar('background-accent-red'), text: sysVar('content-accent-red'), label: 'Removed' },
+  synced: { bg: sysVar('background-accent-blue'), text: sysVar('content-accent-blue'), label: 'Synced' },
 };
 
 const typeColors = {
-  major: systemColors.light['content-failure'],
-  minor: systemColors.light['content-brand'],
-  patch: systemColors.light['content-tertiary'],
+  major: sysVar('content-failure'),
+  minor: sysVar('content-brand'),
+  patch: sysVar('content-tertiary'),
 };
 
 // Visible highlights: items from the last 60 days, OR the most recent 6 if
@@ -951,10 +951,10 @@ export const ChangelogPage: React.FC = () => {
                     style={{
                       ...styles.categoryBadge,
                       backgroundColor: change.label
-                        ? systemColors.light['background-subtle']
+                        ? sysVar('background-subtle')
                         : categoryColors[change.category].bg,
                       color: change.label
-                        ? systemColors.light['content-secondary']
+                        ? sysVar('content-secondary')
                         : categoryColors[change.category].text,
                     }}
                   >
@@ -991,14 +991,14 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: 'var(--font-family-primary)',
     fontSize: '36px',
     fontWeight: 700,
-    color: systemColors.light['content-primary'],
+    color: sysVar('content-primary'),
     marginBottom: '12px',
   },
   description: {
     fontFamily: 'var(--font-family-primary)',
     fontSize: '16px',
     fontWeight: 400,
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
     lineHeight: '26px',
     maxWidth: '700px',
   },
@@ -1009,9 +1009,9 @@ const styles: Record<string, React.CSSProperties> = {
   },
   entry: {
     position: 'relative',
-    backgroundColor: systemColors.light['background-base'],
+    backgroundColor: sysVar('background-base'),
     borderRadius: '12px',
-    border: `1px solid ${systemColors.light['background-subtle']}`,
+    border: `1px solid ${sysVar('background-subtle')}`,
     padding: '24px',
   },
   entryHeader: {
@@ -1033,18 +1033,18 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: 'var(--font-family-mono)',
     fontSize: '13px',
     fontWeight: 550,
-    color: systemColors.light['background-base'],
+    color: sysVar('content-alternate'),
   },
   entryTitle: {
     fontFamily: 'var(--font-family-primary)',
     fontSize: '18px',
     fontWeight: 550,
-    color: systemColors.light['content-primary'],
+    color: sysVar('content-primary'),
   },
   entryDate: {
     fontFamily: 'var(--font-family-primary)',
     fontSize: '14px',
-    color: systemColors.light['content-tertiary'],
+    color: sysVar('content-tertiary'),
   },
   changesContainer: {
     display: 'flex',
@@ -1076,12 +1076,12 @@ const styles: Record<string, React.CSSProperties> = {
   changeItem: {
     fontFamily: 'var(--font-family-primary)',
     fontSize: '14px',
-    color: referenceColors.gray['70'],
+    color: sysVar('content-primary'),
     lineHeight: '22px',
   },
   hero: {
-    backgroundColor: systemColors.light['background-subtle'],
-    border: `1px solid ${systemColors.light['background-subtle']}`,
+    backgroundColor: sysVar('background-subtle'),
+    border: `1px solid ${sysVar('background-subtle')}`,
     borderRadius: '12px',
     padding: '24px 28px',
     marginBottom: '40px',
@@ -1092,7 +1092,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 700,
     letterSpacing: '0.16em',
     textTransform: 'uppercase',
-    color: systemColors.light['content-brand'],
+    color: sysVar('content-brand'),
     marginBottom: '16px',
   },
   heroList: {
@@ -1104,8 +1104,8 @@ const styles: Record<string, React.CSSProperties> = {
     gap: '16px',
   },
   heroItem: {
-    backgroundColor: systemColors.light['background-base'],
-    border: `1px solid ${systemColors.light['background-subtle']}`,
+    backgroundColor: sysVar('background-base'),
+    border: `1px solid ${sysVar('background-subtle')}`,
     borderRadius: '8px',
     padding: '14px 16px',
     display: 'flex',
@@ -1122,7 +1122,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: 'var(--font-family-primary)',
     fontSize: '15px',
     fontWeight: 550,
-    color: systemColors.light['content-primary'],
+    color: sysVar('content-primary'),
     lineHeight: '20px',
   },
   heroVersion: {
@@ -1133,15 +1133,15 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '11px',
     fontWeight: 550,
     letterSpacing: '0.04em',
-    backgroundColor: systemColors.light['background-subtle'],
-    color: systemColors.light['content-secondary'],
+    backgroundColor: sysVar('background-subtle'),
+    color: sysVar('content-secondary'),
   },
   heroDescription: {
     margin: 0,
     fontFamily: 'var(--font-family-primary)',
     fontSize: '13px',
     fontWeight: 400,
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
     lineHeight: '19px',
   },
   connector: {
@@ -1151,7 +1151,7 @@ const styles: Record<string, React.CSSProperties> = {
     transform: 'translateX(-50%)',
     width: '2px',
     height: '32px',
-    backgroundColor: systemColors.light['background-subtle'],
+    backgroundColor: sysVar('background-subtle'),
   },
 };
 

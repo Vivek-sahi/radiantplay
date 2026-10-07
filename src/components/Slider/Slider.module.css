@@ -78,14 +78,14 @@
   border-radius: 50%;
   background: var(--rd-sys-color-background-brand);
   cursor: pointer;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--rd-sys-color-shadow-surface);
   transition: transform var(--duration-fast, 120ms) ease,
     box-shadow var(--duration-fast, 120ms) ease;
 }
 
 .input::-webkit-slider-thumb:hover {
   transform: scale(1.15);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--rd-sys-color-shadow-menu);
 }
 
 /* Firefox thumb */
@@ -95,7 +95,7 @@
   border-radius: 50%;
   background: var(--rd-sys-color-background-brand);
   cursor: pointer;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--rd-sys-color-shadow-surface);
   border: none;
   transition: transform var(--duration-fast, 120ms) ease;
 }
@@ -130,6 +130,6 @@
 .markLabel {
   font-family: var(--font-family-primary);
   font-size: var(--font-size-xs);
-  color: var(--rd-sys-color-content-subtle);
+  color: var(--rd-sys-color-content-secondary);
   white-space: nowrap;
 }

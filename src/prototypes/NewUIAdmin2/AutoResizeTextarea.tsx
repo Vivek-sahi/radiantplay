@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useCallback } from 'react';
-import { systemColors } from '@tokens/colors';
+import { sysVar } from '@tokens/colors';
 
 // ─── AutoResizeTextarea ────────────────────────────────────────────────────────
 // Dynamic-height textarea for NewUIAdmin2 instruction/text fields.
@@ -47,8 +47,8 @@ export const AutoResizeTextarea: React.FC<AutoResizeTextareaProps> = ({
   useEffect(() => { resize(); }, [value, resize]);
 
   const borderColor = focused
-    ? systemColors.light['content-brand']
-    : '#D1D5DB';
+    ? sysVar('content-brand')
+    : sysVar('border-bold');
 
   return (
     <textarea
@@ -70,8 +70,8 @@ export const AutoResizeTextarea: React.FC<AutoResizeTextareaProps> = ({
         fontFamily: font,
         fontSize: '13px',
         lineHeight: '20px',
-        color: '#111827',
-        background: disabled ? '#F9FAFB' : '#FFFFFF',
+        color: sysVar('content-primary'),
+        background: disabled ? sysVar('background-sunken') : sysVar('background-base'),
         outline: 'none',
         boxSizing: 'border-box',
         resize: 'none',

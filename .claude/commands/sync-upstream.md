@@ -116,6 +116,7 @@ Only after explicit yes. Follow Rule 1's flow. Use your judgment on the mechanic
 - If anything goes wrong (mid-merge state, leftover stash, divergent main, etc.), stop and explain in plain language — don't push through.
 - On any conflict, tell the designer exactly which files are affected, what each side changed, and the exact commands to resume (`git merge --continue`, `git stash pop`, etc.). Never abandon a stash silently.
 - Final report: confirm what branch they're on, what was pulled in, and that their work is intact.
+- Thumbnails: run `npm run thumbnails:check -- --mine` and include its result. If it lists prototypes, offer to capture them with `/thumbnail` (that command handles the one-time setup question). Prototypes without a thumbnail still show a live preview in the gallery, so this is never urgent.
 
 ---
 

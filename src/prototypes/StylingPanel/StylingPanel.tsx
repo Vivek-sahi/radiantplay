@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { AnswerTile, ChartType, NoteTile, GroupTile, NOTE_VARIATIONS, GroupInnerTile } from '../_shared/tiles';
-import { StylingPanelDrawer, StylingSettings, SelectedTileType, TileOverride, TILE_SWATCHES_DARK } from './components/StylingPanelDrawer';
+import { StylingPanelDrawer, StylingSettings, SelectedTileType, TileOverride, TILE_SWATCHES_DARK, DEFAULT_TILE_COLOR } from './components/StylingPanelDrawer';
+import { sysVar } from '@tokens/colors';
 import { EditToolbar } from '@components/LiveboardHeader/EditToolbar';
 import { EditSubHeader } from '@components/LiveboardHeader/EditSubHeader';
 
@@ -167,6 +168,9 @@ const DENSITY_PADDING: Record<string, number> = { compact: 0, medium: 4, spaciou
 const GROUP_GUTTER: Record<string, number> = { compact: 4, medium: 8, spacious: 8 };
 
 // ─── Highlight color map (from Liveboard-Styling Figma 3556:451388) ──────────
+// Theme palettes below are user-picked Liveboard styling options (data), so they
+// stay literal and look the same in light and dark mode. The neutral `gray`
+// default follows the app theme instead.
 
 const HIGHLIGHT_COLORS: Record<string, { bg: string; border: string }> = {
   gray:   { bg: '#323946', border: '#4A515E' },
@@ -182,7 +186,7 @@ const HIGHLIGHT_COLORS: Record<string, { bg: string; border: string }> = {
 
 // ─── Liveboard background map ─────────────────────────────────────────────────
 const LIVEBOARD_BG: Record<string, string> = {
-  gray:   '#F6F8FA',
+  gray:   sysVar('background-sunken'),
   purple: '#f0ebff',
   blue:   '#dee8fa',
   teal:   '#e1f7fa',
@@ -194,7 +198,7 @@ const LIVEBOARD_BG: Record<string, string> = {
 
 // ─── Tile border color per theme (image spec: theme/40 for colored, Gray/20 for gray) ──
 const TILE_BORDER: Record<string, string> = {
-  gray:   '#EAEDF2', // Gray/20
+  gray:   sysVar('border-subtle'), // Gray/20 (theme default)
   purple: '#D1C0FB', // Purple/40
   blue:   '#ABC7F9', // Blue/40
   teal:   '#B5ECF2', // Teal/40
@@ -213,7 +217,7 @@ const filters = [{ label: 'Region', value: 'North America' }, { label: 'Period',
 
 const shadowStyle: React.CSSProperties = {
   display: 'none', position: 'absolute',
-  background: 'rgba(39,112,239,0.08)', border: '1.5px solid rgba(39,112,239,0.35)',
+  background: 'color-mix(in srgb, var(--rd-sys-color-content-brand) 8%, transparent)', border: '1.5px solid color-mix(in srgb, var(--rd-sys-color-content-brand) 35%, transparent)',
   borderRadius: 16, pointerEvents: 'none', zIndex: 4, boxSizing: 'border-box',
 };
 
@@ -442,7 +446,7 @@ export const StylingPanel: React.FC = () => {
   const canvasH    = PAD + maxBottom * ROW_UNIT - GUTTER + PAD;
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: stylingSettings.spacing === 'no-gutter' ? '#FFFFFF' : (LIVEBOARD_BG[previewLiveboardColor ?? stylingSettings.color] ?? '#F6F8FA'), fontFamily: "var(--font-family-primary)" }}>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: stylingSettings.spacing === 'no-gutter' ? sysVar('background-base') : (LIVEBOARD_BG[previewLiveboardColor ?? stylingSettings.color] ?? LIVEBOARD_BG.gray), fontFamily: "var(--font-family-primary)" }}>
 
       {/* Edit toolbar — sticky, never covered by the panel */}
       <div style={{ position: 'sticky', top: 0, zIndex: 100, flexShrink: 0 }}>
@@ -471,9 +475,9 @@ export const StylingPanel: React.FC = () => {
           ref={containerRef}
           style={{
             position: 'relative', height: canvasH,
-            '--rd-sys-color-border-divider':  TILE_BORDER[previewLiveboardColor ?? stylingSettings.color] ?? '#EAEDF2',
-            '--tile-outer-border-color':      stylingSettings.spacing === 'no-gutter' ? 'transparent' : (TILE_BORDER[previewLiveboardColor ?? stylingSettings.color] ?? '#EAEDF2'),
-            '--group-header-divider':         stylingSettings.spacing === 'no-gutter' ? 'transparent' : (TILE_BORDER[previewLiveboardColor ?? stylingSettings.color] ?? '#EAEDF2'),
+            '--rd-sys-color-border-divider':  TILE_BORDER[previewLiveboardColor ?? stylingSettings.color] ?? TILE_BORDER.gray,
+            '--tile-outer-border-color':      stylingSettings.spacing === 'no-gutter' ? 'transparent' : (TILE_BORDER[previewLiveboardColor ?? stylingSettings.color] ?? TILE_BORDER.gray),
+            '--group-header-divider':         stylingSettings.spacing === 'no-gutter' ? 'transparent' : (TILE_BORDER[previewLiveboardColor ?? stylingSettings.color] ?? TILE_BORDER.gray),
             '--tile-title-size':              stylingSettings.density === 'spacious' ? '18px' : '16px',
             '--tile-title-weight':            stylingSettings.density === 'compact'  ? 'var(--font-weight-regular)' : 'var(--font-weight-emphasis)',
             '--tile-title-lh':                stylingSettings.density === 'spacious' ? '28px' : '24px',
@@ -488,7 +492,7 @@ export const StylingPanel: React.FC = () => {
 
           {/* Canvas separators — only in gutterless mode, only where tiles exist on both sides */}
           {stylingSettings.spacing === 'no-gutter' && (() => {
-            const sepColor = '#DBDFE7';
+            const sepColor = sysVar('border-subtle');
             const colBreaks = [...new Set(layout.map(t => t.x + t.w))].filter(x => x > 0 && x < COLUMNS);
             const rowBreaks = [...new Set(layout.map(t => t.y + t.h))].filter(y => y < maxBottom);
             return (
@@ -550,7 +554,7 @@ export const StylingPanel: React.FC = () => {
             const groupGutter    = GROUP_GUTTER[stylingSettings.density] ?? 8;
 
             // Tile color: from override.color (with preview), or white default
-            const committedColor = (!linked && override?.color) ? override.color : '#FFFFFF';
+            const committedColor = (!linked && override?.color) ? override.color : DEFAULT_TILE_COLOR;
             const effectiveTileColor = (previewTileColor && selectedTile === item.i) ? previewTileColor : committedColor;
             // Dark appearance: highlight toggle OR dark swatch selected
             const isDarkColor = TILE_SWATCHES_DARK.includes(effectiveTileColor as typeof TILE_SWATCHES_DARK[number]);
@@ -562,7 +566,7 @@ export const StylingPanel: React.FC = () => {
               : null;
             const resolvedBg = highlightColors
               ? highlightColors.bg
-              : (effectiveTileColor !== '#FFFFFF' ? effectiveTileColor : undefined);
+              : (effectiveTileColor !== DEFAULT_TILE_COLOR ? effectiveTileColor : undefined);
 
             // Group-specific effective settings
             const effectiveGroupDivider = stylingSettings.density !== 'compact';
@@ -605,13 +609,15 @@ export const StylingPanel: React.FC = () => {
                     {...commonProps}
                     style={{
                       ...commonProps.style,
+                      // Inverted tiles sit on a user-picked dark colour (data) in both themes,
+                      // so they keep a fixed light-on-dark palette rather than theme tokens.
                       ...(isInverted ? {
                         '--rd-sys-color-content-primary':   '#DBDFE7',
                         '--rd-sys-color-content-secondary':  '#A5ACB9',
                         '--rd-sys-color-border-divider':     'rgba(255,255,255,0.12)',
                         '--rd-sys-color-background-sunken':  'rgba(0,0,0,0.2)',
                         '--rd-sys-color-content-brand':      '#71A1F4',
-                        '--rd-sys-color-background-base':    resolvedBg ?? '#323946',
+                        '--rd-sys-color-background-base':    resolvedBg ?? TILE_SWATCHES_DARK[0],
                       } as React.CSSProperties : {}),
                     }}
                   />

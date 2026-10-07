@@ -11,11 +11,11 @@
 }
 
 .solid {
-  background-color: var(--rd-sys-color-background-surface);
+  background-color: var(--rd-sys-color-background-raised);
 }
 
 .transparent {
-  background-color: rgba(255, 255, 255, 0.7);
+  background-color: color-mix(in srgb, var(--rd-sys-color-background-base) 70%, transparent);
 }
 
 .content {
@@ -45,7 +45,7 @@
 
 .text {
   font-size: var(--font-size-sm);
-  color: var(--rd-sys-color-content-subtle);
+  color: var(--rd-sys-color-content-secondary);
 }
 
 /* ── Dots variant ───────────────────────────────── */

@@ -261,7 +261,6 @@ function block(selectorRegex) {
 const cssRoot = block(/^:root\s*\{/m);
 const cssLight = { ...cssRoot, ...block(/^\[data-theme="light"\]\s*\{/m) };
 const cssDark = block(/^\[data-theme="dark"\]\s*\{/m);
-const cssPrefers = block(/:root:not\(\[data-theme="light"\]\)\s*\{/m);
 
 function resolveVar(value, scope, depth = 0) {
   return value.replace(/var\(--([\w-]+)(?:\s*,\s*([^)]+))?\)/g, (_, name, fb) =>
@@ -275,7 +274,7 @@ const normVal = (v) => {
 
 const gen = (theme) => ({ ...tokens.generateCSSVariables(), ...tokens.generateThemeVariables(theme) });
 const tsCss = newSection('TS generator vs tokens.css');
-const drift = { light: { differs: [], cssOnly: [], tsOnly: [] }, dark: { differs: [], tsOnly: [] }, prefers: { differs: [], missing: [] } };
+const drift = { light: { differs: [], cssOnly: [], tsOnly: [] }, dark: { differs: [], tsOnly: [] } };
 const genLight = gen('light');
 const genDark = tokens.generateThemeVariables('dark');
 for (const [k, v] of Object.entries(genLight)) {
@@ -287,10 +286,6 @@ for (const k of Object.keys(cssLight)) if (genLight[k] === undefined) drift.ligh
 for (const [k, v] of Object.entries(genDark)) {
   if (cssDark[k] === undefined) drift.dark.tsOnly.push(k);
   else if (normVal(resolveVar(cssDark[k], { ...cssLight, ...cssDark })) !== normVal(v)) drift.dark.differs.push(`${k}: TS ${v}, CSS ${cssDark[k]}`);
-}
-for (const [k, v] of Object.entries(cssDark)) {
-  if (cssPrefers[k] === undefined) drift.prefers.missing.push(k);
-  else if (normVal(cssPrefers[k]) !== normVal(v)) drift.prefers.differs.push(`${k}: dark ${v}, prefers-color-scheme ${cssPrefers[k]}`);
 }
 tsCss.differs.push(...drift.light.differs.map((x) => `light ${x}`), ...drift.dark.differs.map((x) => `dark ${x}`));
 tsCss.oursOnly.push(...drift.light.cssOnly.map((x) => `CSS only: ${x}`));
@@ -347,9 +342,6 @@ console.log(
   `\n${pad('TS generator vs tokens.css', 44)}${pad(tsCss.match.length, 8)}${pad(tsCss.differs.length, 9)}` +
     `TS only ${drift.light.tsOnly.length + drift.dark.tsOnly.length}, CSS only ${drift.light.cssOnly.length}`,
 );
-console.log(
-  `${pad('tokens.css dark vs prefers-color-scheme', 44)}differs ${drift.prefers.differs.length}, missing from prefers block ${drift.prefers.missing.length}`,
-);
 
 if (!SUMMARY_ONLY) {
   const list = (label, items) => {
@@ -367,9 +359,6 @@ if (!SUMMARY_ONLY) {
   list('differs', tsCss.differs);
   list('TS only', tsCss.figmaOnly);
   list('CSS only', tsCss.oursOnly);
-  console.log('\n== tokens.css dark vs prefers-color-scheme block');
-  list('differs', drift.prefers.differs);
-  list('missing from prefers block', drift.prefers.missing);
 }
 
 if (JSON_OUT) {

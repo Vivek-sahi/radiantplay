@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactECharts from 'echarts-for-react';
-import { chartColors, chartUi, chartFont } from '../chartPalette';
+import { chartFont } from '../chartPalette';
+import { useChartTheme } from '../chartTheme';
 
 const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'];
 const seriesData = [
@@ -11,34 +12,36 @@ const seriesData = [
 interface Props { width?: number; height?: number; }
 
 export const LineChart: React.FC<Props> = ({ height }) => {
+  const { colors: themeColors, ui } = useChartTheme();
   const option = {
+    backgroundColor: 'transparent',
     grid: { top: 8, bottom: 28, left: 8, right: 8, containLabel: true },
     tooltip: { trigger: 'axis' },
     legend: {
       bottom: 0,
-      textStyle: { fontFamily: chartFont, fontSize: 10, color: chartUi.labelColor },
+      textStyle: { fontFamily: chartFont, fontSize: 10, color: ui.labelColor },
     },
     xAxis: {
       type: 'category',
       data: months,
-      axisLabel: { fontFamily: chartFont, fontSize: 10, color: chartUi.labelColor },
+      axisLabel: { fontFamily: chartFont, fontSize: 10, color: ui.labelColor },
       axisLine: { show: false },
       axisTick: { show: false },
     },
     yAxis: {
       type: 'value',
-      axisLabel: { fontFamily: chartFont, fontSize: 10, color: chartUi.labelColor },
+      axisLabel: { fontFamily: chartFont, fontSize: 10, color: ui.labelColor },
       axisLine: { show: false },
       axisTick: { show: false },
-      splitLine: { lineStyle: { color: chartUi.axis } },
+      splitLine: { lineStyle: { color: ui.axis } },
     },
     series: seriesData.map((s, i) => ({
       name: s.name,
       type: 'line',
       data: s.data,
       smooth: true,
-      lineStyle: { color: chartColors[i], width: 2 },
-      itemStyle: { color: chartColors[i] },
+      lineStyle: { color: themeColors[i % themeColors.length], width: 2 },
+      itemStyle: { color: themeColors[i % themeColors.length] },
       symbol: i === 0 ? 'circle' : 'none',
       symbolSize: 5,
     })),

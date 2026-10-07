@@ -2,7 +2,7 @@
   display: inline-flex;
   align-items: center;
   gap: var(--spacing-2);
-  background-color: var(--rd-sys-color-background-surface);
+  background-color: var(--rd-sys-color-background-raised);
   border: 1px solid var(--rd-sys-color-border-default);
   border-radius: var(--radius-2xl);
   padding: 0 var(--spacing-3);
@@ -32,7 +32,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--rd-sys-color-content-subtle);
+  color: var(--rd-sys-color-content-secondary);
   flex-shrink: 0;
 }
 
@@ -47,7 +47,7 @@
 }
 
 .input::placeholder {
-  color: var(--rd-sys-color-content-subtle);
+  color: var(--rd-sys-color-content-secondary);
 }
 
 .clearButton {
@@ -58,7 +58,7 @@
   border: none;
   cursor: pointer;
   padding: var(--spacing-1);
-  color: var(--rd-sys-color-content-subtle);
+  color: var(--rd-sys-color-content-secondary);
   flex-shrink: 0;
   border-radius: var(--radius-sm);
   transition: color var(--duration-fast, 150ms) ease, background-color var(--duration-fast, 150ms) ease;
@@ -66,7 +66,7 @@
 
 .clearButton:hover {
   color: var(--rd-sys-color-content-primary);
-  background-color: var(--rd-sys-color-background-hover);
+  background-color: var(--rd-sys-color-background-ghost-hover);
 }
 
 @keyframes rd-searchbar-spin {

@@ -46,7 +46,7 @@
   margin: 0;
   padding: var(--spacing-1) 0;
   list-style: none;
-  background: var(--rd-sys-color-background-surface, var(--rd-sys-color-background-raised));
+  background: var(--rd-sys-color-background-raised, var(--rd-sys-color-background-raised));
   border: 1px solid var(--rd-sys-color-border-default);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-menu);

@@ -61,8 +61,8 @@
 }
 
 .card:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  border-color: var(--rd-sys-color-border-active, var(--rd-sys-color-content-brand));
+  box-shadow: var(--rd-sys-color-shadow-surface);
+  border-color: var(--rd-sys-color-border-brand);
 }
 
 .card:focus-visible {
@@ -87,7 +87,7 @@
 }
 
 .cardAvatarInitial {
-  color: #ffffff;
+  color: var(--rd-sys-color-content-inverse);
   font-family: var(--font-family-primary);
   font-size: var(--font-size-md, 16px);
   font-weight: var(--font-weight-emphasis);

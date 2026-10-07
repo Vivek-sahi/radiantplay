@@ -1,6 +1,5 @@
 import React from 'react';
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { systemColors, referenceColors } from '@tokens/colors';
+import { sysVar, shadowVar, compVar } from '@tokens/colors';
 import { v2TextStyles, textStyles } from '@tokens/typography';
 import { Icon } from '@components/icons';
 
@@ -16,26 +15,25 @@ const ty = {
 };
 
 // ─── Tokens ───────────────────────────────────────────────────────────────────
-// d and r kept for future use
-const _d = systemColors.dark; void _d;
-const _r = referenceColors; void _r;
-
-// Colors from Liveboard-Styling Figma node 4431:494053
+// The panel uses the same surface as the primary nav and edit toolbar
+// (background-on-base), so it follows the theme like the product.
 const t = {
-  bg:            '#1D232F',   // Gray/90 — panel background
-  border:        '#303136',   // Border/Subtle — panel outer border
-  borderBold:    '#4A515E',   // Gray/70 — control borders, header divider
-  textTitle:     '#EAEDF2',   // Gray/20 — panel "Styling" title
-  textHeading:   '#F6F8FA',   // Gray/10 — section headings (Liveboard, Group, Tile)
-  textPrimary:   '#DBDFE7',   // Gray/30 — label text
-  textSecondary: '#A5ACB9',   // Gray/50 — secondary text, unchecked checkbox border
-  textTertiary:  '#777E8B',   // Gray/60 — tertiary
-  brand:         '#71A1F4',   // Blue/50 — active/brand/checked
-  highlight:     '#71A1F41F', // Blue/50 @ 12% — ghost highlight (selected icon picker)
-  checkboxBg:    '#323946',   // Gray/80 — checkbox background
-  // Toggle colors: pending confirmation from design
-  toggleOff:     '#4A515E',   // Gray/70 — best guess for off state
-  toggleOn:      '#71A1F4',   // Blue/50 — on state
+  bg:            sysVar('background-on-base'),           // panel background
+  raised:        sysVar('background-raised'),            // dropdowns and popovers
+  border:        sysVar('border-subtle'),                // panel outer border
+  borderBold:    sysVar('border-bold'),                  // control borders, header divider
+  textTitle:     sysVar('content-primary'),              // panel "Styling" title
+  textHeading:   sysVar('content-primary'),              // section headings
+  textPrimary:   sysVar('content-primary'),              // label text
+  textSecondary: sysVar('content-secondary'),            // secondary text, unchecked checkbox border
+  textTertiary:  sysVar('content-tertiary'),             // tertiary
+  brand:         sysVar('content-brand'),                // active/brand/checked
+  highlight:     sysVar('background-ghost-highlight'),   // selected icon picker
+  hover:         sysVar('background-ghost-hover'),       // icon picker hover
+  checkboxBg:    sysVar('background-base'),              // checkbox background
+  toggleOff:     compVar('toggle-track-off'),
+  toggleOn:      compVar('toggle-track-on'),
+  thumb:         compVar('toggle-thumb-on'),
 };
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -162,7 +160,7 @@ const DarkToggle: React.FC<{ checked?: boolean; onChange?: (v: boolean) => void 
       position: 'absolute', top: 2,
       left: checked ? 14 : 2,
       width: 12, height: 12, borderRadius: '50%',
-      background: '#ffffff',
+      background: t.thumb,
       transition: 'left 150ms',
     }} />
   </button>
@@ -207,8 +205,8 @@ const DarkSelect: React.FC<{
       {open && (
         <div style={{
           position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 200, marginTop: 2,
-          background: t.bg, border: `1px solid ${t.borderBold}`, borderRadius: 6,
-          overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+          background: t.raised, border: `1px solid ${t.borderBold}`, borderRadius: 6,
+          overflow: 'hidden', boxShadow: shadowVar('menu'),
         }}>
           {options.map(opt => (
             <button
@@ -251,8 +249,10 @@ const PropertyLinkRow: React.FC<{
 );
 
 // ─── Liveboard color swatches (8 theme keys → light BG colors) ────────────────
+// Swatch colours are user-picked styling options (data), so they stay literal.
+// The neutral gray default follows the app theme.
 const LIVEBOARD_SWATCHES = [
-  { key: 'gray',   color: '#F6F8FA' },
+  { key: 'gray',   color: sysVar('background-sunken') },
   { key: 'purple', color: '#f0ebff' },
   { key: 'blue',   color: '#dee8fa' },
   { key: 'teal',   color: '#e1f7fa' },
@@ -262,9 +262,15 @@ const LIVEBOARD_SWATCHES = [
   { key: 'red',    color: '#ffebec' },
 ] as const;
 
-// Tile color swatches — 2 rows: light (row 1) + dark/highlight (row 2)
+// Tile color swatches — 2 rows: light (row 1) + dark/highlight (row 2).
+// Data: user-picked tile colours. The first light swatch is "default", which
+// follows the theme's base surface.
+export const DEFAULT_TILE_COLOR = sysVar('background-base');
+// Checkmark colours sit on the fixed light / dark swatches above, so they are fixed too.
+const SWATCH_CHECK_ON_LIGHT = '#1D232F';
+const SWATCH_CHECK_ON_DARK  = '#FFFFFF';
 const TILE_SWATCHES_LIGHT = [
-  '#FFFFFF', '#F8F5FE', '#F3F6FC', '#F1FBFC', '#F1FCF8', '#FEFBF3', '#FFF6F2', '#FEF4F5',
+  DEFAULT_TILE_COLOR, '#F8F5FE', '#F3F6FC', '#F1FBFC', '#F1FCF8', '#FEFBF3', '#FFF6F2', '#FEF4F5',
 ];
 export const TILE_SWATCHES_DARK = [
   '#323946', '#422E75', '#163772', '#22636B', '#005D39', '#785F1A', '#7A3D1F', '#721F27',
@@ -292,14 +298,14 @@ const LiveboardColorPicker: React.FC<{ value: string; onChange: (k: string) => v
           <Icon name={open ? 'chevron-up' : 'chevron-down'} size="xs" color={t.textSecondary} />
         </button>
         {open && (
-          <div style={{ position: 'absolute', right: 0, top: '100%', marginTop: 4, zIndex: 200, background: '#2A2E3A', border: `1px solid ${t.borderBold}`, borderRadius: 8, padding: 10, display: 'flex', gap: 6, boxShadow: '0 4px 12px rgba(0,0,0,0.4)' }}>
+          <div style={{ position: 'absolute', right: 0, top: '100%', marginTop: 4, zIndex: 200, background: t.raised, border: `1px solid ${t.borderBold}`, borderRadius: 8, padding: 10, display: 'flex', gap: 6, boxShadow: shadowVar('menu') }}>
             {LIVEBOARD_SWATCHES.map(s => (
               <button key={s.key}
                 onClick={() => { onChange(s.key); onPreview?.(null); setOpen(false); }}
                 onMouseEnter={() => onPreview?.(s.key)}
                 onMouseLeave={() => onPreview?.(null)}
                 style={{ width: 28, height: 28, borderRadius: '50%', background: s.color, border: `2px solid ${s.key === value ? t.brand : 'transparent'}`, cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                {s.key === value && <Icon name="checkmark" size="xs" color="#1D232F" />}
+                {s.key === value && <Icon name="checkmark" size="xs" color={s.key === 'gray' ? sysVar('content-primary') : SWATCH_CHECK_ON_LIGHT} />}
               </button>
             ))}
           </div>
@@ -313,7 +319,7 @@ const LiveboardColorPicker: React.FC<{ value: string; onChange: (k: string) => v
 const TileColorPicker: React.FC<{ label: string; value?: string; onChange: (c: string) => void; onPreview?: (c: string | null) => void }> = ({ label, value, onChange, onPreview }) => {
   const [open, setOpen] = React.useState(false);
   const ref = React.useRef<HTMLDivElement>(null);
-  const current = value ?? '#FFFFFF';
+  const current = value ?? DEFAULT_TILE_COLOR;
 
   React.useEffect(() => {
     if (!open) return;
@@ -331,15 +337,15 @@ const TileColorPicker: React.FC<{ label: string; value?: string; onChange: (c: s
           <Icon name={open ? 'chevron-up' : 'chevron-down'} size="xs" color={t.textSecondary} />
         </button>
         {open && (
-          <div style={{ position: 'absolute', right: 0, top: '100%', marginTop: 4, zIndex: 200, background: '#2A2E3A', border: `1px solid ${t.borderBold}`, borderRadius: 8, padding: 10, display: 'flex', flexDirection: 'column', gap: 6, boxShadow: '0 4px 12px rgba(0,0,0,0.4)' }}>
+          <div style={{ position: 'absolute', right: 0, top: '100%', marginTop: 4, zIndex: 200, background: t.raised, border: `1px solid ${t.borderBold}`, borderRadius: 8, padding: 10, display: 'flex', flexDirection: 'column', gap: 6, boxShadow: shadowVar('menu') }}>
             <div style={{ display: 'flex', gap: 6 }}>
               {TILE_SWATCHES_LIGHT.map(c => (
                 <button key={c}
                   onClick={() => { onChange(c); onPreview?.(null); setOpen(false); }}
                   onMouseEnter={() => onPreview?.(c)}
                   onMouseLeave={() => onPreview?.(null)}
-                  style={{ width: 28, height: 28, borderRadius: '50%', background: c, border: `2px solid ${c === current ? t.brand : 'rgba(255,255,255,0.15)'}`, cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  {c === current && <Icon name="checkmark" size="xs" color="#1D232F" />}
+                  style={{ width: 28, height: 28, borderRadius: '50%', background: c, border: `2px solid ${c === current ? t.brand : sysVar('border-subtle')}`, cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {c === current && <Icon name="checkmark" size="xs" color={c === DEFAULT_TILE_COLOR ? sysVar('content-primary') : SWATCH_CHECK_ON_LIGHT} />}
                 </button>
               ))}
             </div>
@@ -350,7 +356,7 @@ const TileColorPicker: React.FC<{ label: string; value?: string; onChange: (c: s
                   onMouseEnter={() => onPreview?.(c)}
                   onMouseLeave={() => onPreview?.(null)}
                   style={{ width: 28, height: 28, borderRadius: '50%', background: c, border: `2px solid ${c === current ? t.brand : 'transparent'}`, cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  {c === current && <Icon name="checkmark" size="xs" color="#FFFFFF" />}
+                  {c === current && <Icon name="checkmark" size="xs" color={SWATCH_CHECK_ON_DARK} />}
                 </button>
               ))}
             </div>
@@ -438,7 +444,7 @@ const IconPicker: React.FC<{
           >
             <button onClick={() => onChange?.(opt.value)} style={{
               width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: value === opt.value ? t.highlight : hovered === opt.value ? '#323946' : 'transparent',
+              background: value === opt.value ? t.highlight : hovered === opt.value ? t.hover : 'transparent',
               border: 'none', cursor: 'pointer', padding: 0,
               color: value === opt.value ? t.brand : t.textPrimary,
               transition: 'background 120ms',
@@ -448,11 +454,11 @@ const IconPicker: React.FC<{
             {hovered === opt.value && (
               <div style={{
                 position: 'absolute', bottom: 'calc(100% + 6px)', right: 0,
-                background: 'rgba(50, 57, 70, 0.9)', borderRadius: 6, padding: '8px 12px',
-                boxShadow: '0 0 4px rgba(25,35,49,0.08), 0 12px 24px rgba(25,35,49,0.12)',
+                background: sysVar('background-raised'), borderRadius: 6, padding: '8px 12px',
+                boxShadow: shadowVar('menu'),
                 whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 300,
               }}>
-                <span style={{ fontSize: 12, fontWeight: 400, color: '#FFFFFF', lineHeight: '18px', letterSpacing: '-0.6px' }}>
+                <span style={{ fontSize: 12, fontWeight: 400, color: t.textTitle, lineHeight: '18px', letterSpacing: '-0.6px' }}>
                   {opt.tooltip}
                 </span>
               </div>

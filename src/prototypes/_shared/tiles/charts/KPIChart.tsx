@@ -1,6 +1,12 @@
 import React from 'react';
 import ReactECharts from 'echarts-for-react';
-import { chartFont, chartUi } from '../chartPalette';
+import { chartFont } from '../chartPalette';
+import { useChartTheme } from '../chartTheme';
+import { compVar, referenceColors, sysVar, systemColors } from '@tokens/colors';
+
+/** "#RRGGBB" plus an alpha, as rgba(). The sparkline gradient needs literal colours. */
+const withAlpha = (hex: string, alpha: number): string =>
+  `rgba(${parseInt(hex.slice(1, 3), 16)},${parseInt(hex.slice(3, 5), 16)},${parseInt(hex.slice(5, 7), 16)},${alpha})`;
 
 // ─── Sparkline data ───────────────────────────────────────────────────────────
 const DEFAULT_SPARK = [
@@ -32,15 +38,19 @@ export const KPIChart: React.FC<Props> = ({
   sparkData    = DEFAULT_SPARK,
   analyzeLabel = 'Analyze →',
 }) => {
+  const { isDark } = useChartTheme();
+  // ECharts needs literal colours, so read the brand token for the current theme
+  const sparkColor = systemColors[isDark ? 'dark' : 'light']['content-brand'];
   const isUp   = trend > 0;
   const isFlat = trend === 0;
-  const trendColor = isFlat ? chartUi.labelColor : isUp ? '#06BF7F' : '#E22B3D';
-  const trendBg    = isFlat ? '#F6F8FA'           : isUp ? '#E0F8EF' : '#FFEBEC';
+  const trendColor = isFlat ? compVar('chart-axis-label') : isUp ? sysVar('content-success') : sysVar('content-failure');
+  const trendBg    = isFlat ? sysVar('background-sunken') : isUp ? sysVar('background-success') : sysVar('background-failure');
   const arrow      = isFlat ? '→' : isUp ? '↑' : '↓';
   // Figma: 74.54 and % are separate spans, both 12px/500 in the same badge
   const trendAbs   = Math.abs(trend).toFixed(2);
 
   const sparkOption = {
+    backgroundColor: 'transparent',
     animation: false,
     grid: { top: 0, bottom: 0, left: 0, right: 0 },
     xAxis: { type: 'category', show: false, boundaryGap: false },
@@ -51,13 +61,13 @@ export const KPIChart: React.FC<Props> = ({
         data: sparkData,
         smooth: false,
         symbol: 'none',
-        lineStyle: { color: '#2770EF', width: 1.5 },
+        lineStyle: { color: sparkColor, width: 1.5 },
         areaStyle: {
           color: {
             type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
             colorStops: [
-              { offset: 0, color: 'rgba(39,112,239,0.18)' },
-              { offset: 1, color: 'rgba(39,112,239,0.02)' },
+              { offset: 0, color: withAlpha(sparkColor, 0.18) },
+              { offset: 1, color: withAlpha(sparkColor, 0.02) },
             ],
           },
         },
@@ -80,8 +90,8 @@ export const KPIChart: React.FC<Props> = ({
       {/* ── KPI info ── */}
       <div style={{ display: 'flex', flexDirection: 'column', flexShrink: 0, paddingLeft: 4 }}>
 
-        {/* Period — 14px / 400 / #777E8B */}
-        <div style={{ fontSize: 14, fontWeight: 400, color: chartUi.labelColor, lineHeight: '20px' }}>
+        {/* Period — 14px / 400 / chart-axis-label */}
+        <div style={{ fontSize: 14, fontWeight: 400, color: compVar('chart-axis-label'), lineHeight: '20px' }}>
           {period}
         </div>
 
@@ -90,7 +100,7 @@ export const KPIChart: React.FC<Props> = ({
           style={{
             fontSize: 24,
             fontWeight: 500,
-            color: '#1D232F',
+            color: sysVar('content-primary'),
             lineHeight: '32px',
             letterSpacing: '-0.096px',
           }}
@@ -100,7 +110,7 @@ export const KPIChart: React.FC<Props> = ({
 
         {/* Comparison row */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap', marginTop: 2 }}>
-          {/* Badge: arrow + number + % — Figma: 12px/500/#06BF7F on #E0F8EF */}
+          {/* Badge: arrow + number + % — Figma: 12px/500, content-success on background-success */}
           <span
             style={{
               display: 'inline-flex',
@@ -124,14 +134,14 @@ export const KPIChart: React.FC<Props> = ({
             </span>
           </span>
 
-          {/* "vs FY 2024" — 14px / 400 / #777E8B */}
-          <span style={{ fontSize: 14, fontWeight: 400, color: chartUi.labelColor, lineHeight: '20px', whiteSpace: 'nowrap' }}>
+          {/* "vs FY 2024" — 14px / 400 / chart-axis-label */}
+          <span style={{ fontSize: 14, fontWeight: 400, color: compVar('chart-axis-label'), lineHeight: '20px', whiteSpace: 'nowrap' }}>
             {trendLabel}
           </span>
 
-          {/* "(US$15.65M)" — 14px / 400 / #777E8B */}
+          {/* "(US$15.65M)" — 14px / 400 / chart-axis-label */}
           {trendCompare && (
-            <span style={{ fontSize: 14, fontWeight: 400, color: chartUi.labelColor, lineHeight: '20px', whiteSpace: 'nowrap' }}>
+            <span style={{ fontSize: 14, fontWeight: 400, color: compVar('chart-axis-label'), lineHeight: '20px', whiteSpace: 'nowrap' }}>
               {trendCompare}
             </span>
           )}
@@ -146,19 +156,19 @@ export const KPIChart: React.FC<Props> = ({
           style={{ width: '100%', height: '100%' }}
           opts={{ renderer: 'svg' }}
         />
-        {/* "As expected" — Figma: bg-#F2F7FF, border-top: 1px solid white, 12px/500/#777E8B */}
+        {/* "As expected" — Figma: bg brand-10, border-top border-gap, 12px/500 chart-axis-label */}
         {status && (
           <div
             style={{
               position: 'absolute',
               bottom: 0,
               right: 0,
-              background: '#F2F7FF',
-              borderTop: '1px solid #ffffff',
+              background: isDark ? sysVar('background-information') : referenceColors.brand['10'],
+              borderTop: `1px solid ${sysVar('border-gap')}`,
               padding: '2px 8px',
               fontSize: 12,
               fontWeight: 500,
-              color: chartUi.labelColor,
+              color: compVar('chart-axis-label'),
               lineHeight: '18px',
               letterSpacing: '-0.072px',
               pointerEvents: 'none',
@@ -169,13 +179,13 @@ export const KPIChart: React.FC<Props> = ({
         )}
       </div>
 
-      {/* ── Analyze link — 14px / 400 / #2770EF ── */}
+      {/* ── Analyze link — 14px / 400 / content-link ── */}
       {analyzeLabel && (
         <div
           style={{
             fontSize: 14,
             fontWeight: 400,
-            color: '#2770EF',
+            color: sysVar('content-link'),
             lineHeight: '20px',
             flexShrink: 0,
             cursor: 'pointer',

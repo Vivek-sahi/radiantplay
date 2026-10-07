@@ -1,30 +1,33 @@
-import { systemColors } from '@tokens/colors/system';
+import { sysVar, shadowVar } from '@tokens/colors';
+import { chartPalette } from '@tokens/colors/charts';
 
 export const colors = {
-  pageBg: systemColors.light['background-sunken'],
-  cardBg: systemColors.light['background-base'],
-  headerBg: systemColors.light['background-base'],
-  editHeaderBg: '#1C2029',
+  pageBg: sysVar('background-sunken'),
+  cardBg: sysVar('background-base'),
+  headerBg: sysVar('background-base'),
+  editHeaderBg: sysVar('background-inverse'),
 
-  textPrimary: systemColors.light['content-primary'],
-  textSecondary: systemColors.light['content-secondary'],
+  textPrimary: sysVar('content-primary'),
+  textSecondary: sysVar('content-secondary'),
 
-  brand: systemColors.light['content-brand'],
+  brand: sysVar('content-brand'),
 
-  border: systemColors.light['border-default'],
-  borderDivider: systemColors.light['border-divider'],
+  border: sysVar('border-default'),
+  borderDivider: sysVar('border-divider'),
 
-  chartBlue: '#2770EF',
-  chartGreen: '#5A9E8A',
+  // Chart series colours stay literal: ECharts draws to canvas and cannot read
+  // CSS variables. The shared chart theme remaps the palette for dark mode.
+  chartBlue: chartPalette.primary[0],
+  chartGreen: chartPalette.primary[2],
 
-  success: '#06BF7F',
-  successBg: '#E6F9F1',
+  success: sysVar('content-success'),
+  successBg: sysVar('background-success'),
 
-  panelBg: systemColors.light['background-base'],
-  panelBorder: systemColors.light['border-default'],
+  panelBg: sysVar('background-base'),
+  panelBorder: sysVar('border-default'),
 
-  spotterUserBubble: '#2770EF',
-  spotterAiBubble: systemColors.light['background-sunken'],
+  spotterUserBubble: sysVar('background-brand'),
+  spotterAiBubble: sysVar('background-sunken'),
 } as const;
 
 export const typography = {
@@ -32,8 +35,8 @@ export const typography = {
 } as const;
 
 export const shadows = {
-  header: '0px 0px 4px 0px rgba(25,35,49,0.1), 0px 2px 4px 0px rgba(25,35,49,0.04)',
-  panel: '-2px 0 8px rgba(0,0,0,0.08)',
+  header: shadowVar('surface'),
+  panel: shadowVar('surface'),
 } as const;
 
 export const layout = {

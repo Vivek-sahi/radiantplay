@@ -1,5 +1,6 @@
 import React, { forwardRef, useState, useEffect, useRef, Suspense } from 'react';
 import styles from './AnswerTile.module.css';
+import { sysVar } from '@tokens/colors';
 
 // Lazy-load the entire chart bundle — ECharts (~700 kB) only downloads
 // when an AnswerTile actually mounts, not on app startup.
@@ -253,8 +254,8 @@ export const AnswerTile = forwardRef<HTMLDivElement, AnswerTileProps>(
     const titleInputRef = useRef<HTMLInputElement>(null);
     const descInputRef  = useRef<HTMLInputElement>(null);
 
-    const titleBorder = titleFocused ? '1px solid #2770EF' : titleHovered ? '1px solid #C0C6CF' : '1px solid transparent';
-    const descBorder  = descFocused  ? '1px solid #2770EF' : descHovered  ? '1px solid #C0C6CF' : '1px solid transparent';
+    const titleBorder = titleFocused ? `1px solid ${sysVar('border-brand')}` : titleHovered ? `1px solid ${sysVar('border-default')}` : '1px solid transparent';
+    const descBorder  = descFocused  ? `1px solid ${sysVar('border-brand')}` : descHovered  ? `1px solid ${sysVar('border-default')}` : '1px solid transparent';
 
     // Chart type dropdown
     const [chartDropdownOpen, setChartDropdownOpen] = useState(false);

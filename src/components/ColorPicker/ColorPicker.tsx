@@ -12,6 +12,7 @@ export interface ColorPickerProps {
   className?: string;
 }
 
+// Swatch values are data (the colours a user can pick), so they stay as literals.
 const DEFAULT_PALETTE = [
   '#000000',
   '#ffffff',

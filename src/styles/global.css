@@ -27,6 +27,20 @@
   box-sizing: border-box;
 }
 
+/* Native scrollbars, form controls and select popups follow the app theme */
+:root {
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+/* A light-only scope inside the dark app (see LightOnly in ThemeContext) */
+:root[data-theme="dark"] [data-theme="light"] {
+  color-scheme: light;
+}
+
 html {
   font-size: 16px;
   -webkit-font-smoothing: antialiased;

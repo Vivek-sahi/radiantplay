@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { systemColors } from '../../tokens/colors';
+import { sysVar } from '@tokens/colors';
 import { ConfirmDialog } from './ConfirmDialog';
 
 const font = 'var(--font-family-primary)';
-const brand = systemColors.light['content-brand'];
+const brand = sysVar('content-brand');
+const brandFill = sysVar('background-brand');
 
 // ─── Toggle ───────────────────────────────────────────────────────────────────
 
@@ -15,7 +16,7 @@ const Toggle: React.FC<{ checked: boolean; onChange: () => void }> = ({ checked,
     style={{
       position: 'relative', width: '36px', height: '20px',
       borderRadius: '10px', border: 'none',
-      backgroundColor: checked ? brand : '#D1D5DB',
+      backgroundColor: checked ? brandFill : sysVar('border-bold'),
       cursor: 'pointer', padding: 0, flexShrink: 0, transition: 'background-color 0.2s',
     }}
   >
@@ -23,7 +24,7 @@ const Toggle: React.FC<{ checked: boolean; onChange: () => void }> = ({ checked,
       position: 'absolute', top: '3px',
       left: checked ? '19px' : '3px',
       width: '14px', height: '14px',
-      borderRadius: '50%', backgroundColor: '#FFFFFF',
+      borderRadius: '50%', backgroundColor: sysVar('background-base'),
       transition: 'left 0.2s', display: 'block',
     }} />
   </button>
@@ -39,9 +40,9 @@ const TextRow: React.FC<{ label: string; placeholder?: string; defaultValue?: st
     <div style={{
       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       gap: '32px', padding: '14px 20px',
-      backgroundColor: '#FFFFFF', border: '1px solid #E9EAEC', borderRadius: '8px',
+      backgroundColor: sysVar('background-base'), border: `1px solid ${sysVar('border-subtle')}`, borderRadius: '8px',
     }}>
-      <div style={{ fontSize: '13.5px', fontWeight: 500, color: '#111827', fontFamily: font, flexShrink: 0, minWidth: '200px' }}>
+      <div style={{ fontSize: '13.5px', fontWeight: 500, color: sysVar('content-primary'), fontFamily: font, flexShrink: 0, minWidth: '200px' }}>
         {label}
       </div>
       <input
@@ -51,13 +52,13 @@ const TextRow: React.FC<{ label: string; placeholder?: string; defaultValue?: st
         onChange={(e) => setValue(e.target.value)}
         style={{
           flex: 1, height: '34px', padding: '0 10px',
-          border: '1px solid #D1D5DB', borderRadius: '6px',
-          fontFamily: font, fontSize: '13px', color: '#111827',
-          outline: 'none', backgroundColor: '#FFFFFF',
+          border: `1px solid ${sysVar('border-bold')}`, borderRadius: '6px',
+          fontFamily: font, fontSize: '13px', color: sysVar('content-primary'),
+          outline: 'none', backgroundColor: sysVar('background-base'),
           maxWidth: '380px',
         }}
-        onFocus={(e) => { e.currentTarget.style.borderColor = brand; e.currentTarget.style.boxShadow = `0 0 0 2px ${brand}22`; }}
-        onBlur={(e) => { e.currentTarget.style.borderColor = '#D1D5DB'; e.currentTarget.style.boxShadow = 'none'; }}
+        onFocus={(e) => { e.currentTarget.style.borderColor = brand; e.currentTarget.style.boxShadow = `0 0 0 2px color-mix(in srgb, ${brand} 13%, transparent)`; }}
+        onBlur={(e) => { e.currentTarget.style.borderColor = sysVar('border-bold'); e.currentTarget.style.boxShadow = 'none'; }}
       />
     </div>
   );
@@ -71,9 +72,9 @@ const ToggleRow: React.FC<{ label: string; defaultEnabled?: boolean }> = ({ labe
     <div style={{
       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       gap: '32px', padding: '14px 20px',
-      backgroundColor: '#FFFFFF', border: '1px solid #E9EAEC', borderRadius: '8px',
+      backgroundColor: sysVar('background-base'), border: `1px solid ${sysVar('border-subtle')}`, borderRadius: '8px',
     }}>
-      <div style={{ fontSize: '13.5px', fontWeight: 500, color: '#111827', fontFamily: font }}>
+      <div style={{ fontSize: '13.5px', fontWeight: 500, color: sysVar('content-primary'), fontFamily: font }}>
         {label}
       </div>
       <Toggle checked={enabled} onChange={() => setEnabled(!enabled)} />
@@ -87,7 +88,7 @@ const ResetLink: React.FC<{ onClick?: () => void }> = ({ onClick }) => (
   <button onClick={onClick} style={{
     background: 'none', border: 'none', cursor: 'pointer',
     fontFamily: font, fontSize: '13px', fontWeight: 500,
-    color: '#6B7280', textDecoration: 'underline', padding: '0',
+    color: sysVar('content-secondary'), textDecoration: 'underline', padding: '0',
   }}>
     Reset
   </button>
@@ -107,27 +108,27 @@ const CollapsibleSection: React.FC<{
   const isOpen = multi ? open : true;
   return (
     <div style={{
-      backgroundColor: '#F3F4F6', border: '1px solid #E5E7EB',
+      backgroundColor: sysVar('background-secondary-action'), border: `1px solid ${sysVar('border-subtle')}`,
       borderRadius: '12px', overflow: 'hidden',
     }}>
       {/* Header */}
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '16px 20px',
-        borderBottom: isOpen ? '1px solid #E5E7EB' : 'none',
+        borderBottom: isOpen ? `1px solid ${sysVar('border-subtle')}` : 'none',
         cursor: multi ? 'pointer' : 'default',
       }} onClick={() => { if (multi) setOpen(!open); }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           {multi && (
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none"
               style={{ flexShrink: 0, transform: isOpen ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.15s ease' }}>
-              <path d="M3 5.5l4 4 4-4" stroke="#6B7280" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M3 5.5l4 4 4-4" stroke={sysVar('content-secondary')} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           )}
           <div>
-            <div style={{ fontSize: '14px', fontWeight: 'var(--font-weight-emphasis)', color: '#111827', fontFamily: font }}>{title}</div>
+            <div style={{ fontSize: '14px', fontWeight: 'var(--font-weight-emphasis)', color: sysVar('content-primary'), fontFamily: font }}>{title}</div>
             {subtitle && (
-              <div style={{ fontSize: '12.5px', color: '#6B7280', fontFamily: font, marginTop: '2px' }}>{subtitle}</div>
+              <div style={{ fontSize: '12.5px', color: sysVar('content-secondary'), fontFamily: font, marginTop: '2px' }}>{subtitle}</div>
             )}
           </div>
         </div>
@@ -154,7 +155,7 @@ export const OnboardingPageContent: React.FC = () => {
   const [resetSection, setResetSection] = useState<string | null>(null);
 
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundColor: '#FFFFFF' }}>
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundColor: sysVar('background-base') }}>
 
       {/* ── Reset confirm dialog ── */}
       {resetSection && (
@@ -171,9 +172,9 @@ export const OnboardingPageContent: React.FC = () => {
       {/* ── Sticky header ── */}
       <div style={{
         flexShrink: 0, padding: '28px 40px 20px',
-        borderBottom: '1px solid #E5E7EB', backgroundColor: '#FFFFFF',
+        borderBottom: `1px solid ${sysVar('border-subtle')}`, backgroundColor: sysVar('background-base'),
       }}>
-        <h1 style={{ margin: 0, fontSize: '22px', fontWeight: 700, color: '#0F172A', fontFamily: font, letterSpacing: '-0.3px' }}>
+        <h1 style={{ margin: 0, fontSize: '22px', fontWeight: 700, color: sysVar('content-primary'), fontFamily: font, letterSpacing: '-0.3px' }}>
           Onboarding
         </h1>
       </div>

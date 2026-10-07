@@ -1,8 +1,9 @@
 import React, { Suspense, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { systemColors, referenceColors } from '../tokens/colors';
+import { sysVar } from '../tokens/colors';
 import { getProject } from '../prototypes/registry';
 import { Icon } from '../components/icons';
+import { LightOnly } from '../context/ThemeContext';
 
 /**
  * PlaygroundProject
@@ -63,7 +64,13 @@ export const PlaygroundProject: React.FC = () => {
       {/* Project Content */}
       <div style={styles.projectContainer}>
         <Suspense fallback={<LoadingState />}>
-          <ProjectComponent />
+          {project.theme === 'light-only' ? (
+            <LightOnly style={styles.lightOnly}>
+              <ProjectComponent />
+            </LightOnly>
+          ) : (
+            <ProjectComponent />
+          )}
         </Suspense>
       </div>
     </div>
@@ -90,6 +97,11 @@ const styles: Record<string, React.CSSProperties> = {
   },
 
   // Project Container
+  lightOnly: {
+    minHeight: '100%',
+    background: sysVar('background-base'),
+    color: sysVar('content-primary'),
+  },
   projectContainer: {
     minHeight: '100vh',
   },
@@ -101,13 +113,13 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: '100vh',
-    backgroundColor: systemColors.light['background-sunken'],
+    backgroundColor: sysVar('background-sunken'),
   },
   loadingSpinner: {
     width: '40px',
     height: '40px',
-    border: `3px solid ${systemColors.light['background-subtle']}`,
-    borderTopColor: systemColors.light['content-brand'],
+    border: `3px solid ${sysVar('background-subtle')}`,
+    borderTopColor: sysVar('content-brand'),
     borderRadius: '50%',
     animation: 'spin 1s linear infinite',
     marginBottom: '16px',
@@ -115,7 +127,7 @@ const styles: Record<string, React.CSSProperties> = {
   loadingText: {
     fontSize: '14px',
     fontWeight: 400,
-    color: systemColors.light['content-tertiary'],
+    color: sysVar('content-tertiary'),
   },
 
   // Not Found
@@ -124,7 +136,7 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: '100vh',
-    backgroundColor: systemColors.light['background-sunken'],
+    backgroundColor: sysVar('background-sunken'),
     padding: '32px',
   },
   notFoundContent: {
@@ -135,23 +147,23 @@ const styles: Record<string, React.CSSProperties> = {
     width: '80px',
     height: '80px',
     borderRadius: '20px',
-    backgroundColor: referenceColors.red['10'],
+    backgroundColor: sysVar('background-failure'),
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    color: systemColors.light['content-failure'],
+    color: sysVar('content-failure'),
     margin: '0 auto 24px',
   },
   notFoundTitle: {
     fontSize: '24px',
     fontWeight: 'var(--font-weight-emphasis)',
-    color: systemColors.light['content-primary'],
+    color: sysVar('content-primary'),
     marginBottom: '12px',
   },
   notFoundDescription: {
     fontSize: '15px',
     fontWeight: 400,
-    color: systemColors.light['content-tertiary'],
+    color: sysVar('content-tertiary'),
     lineHeight: '24px',
     marginBottom: '24px',
   },
@@ -160,13 +172,13 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     gap: '8px',
     padding: '12px 20px',
-    backgroundColor: systemColors.light['content-brand'],
+    backgroundColor: sysVar('background-brand'),
     border: 'none',
     borderRadius: '10px',
     cursor: 'pointer',
     fontSize: '14px',
     fontWeight: 500,
-    color: systemColors.light['background-base'],
+    color: sysVar('content-alternate'),
     transition: 'all 150ms ease',
   },
 };

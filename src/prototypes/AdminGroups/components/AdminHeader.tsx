@@ -2,6 +2,7 @@ import React from 'react';
 import { Avatar } from '../../../components/Avatar';
 import { Icon } from '../../../components/icons';
 import { headerStyles as styles } from '../styles';
+import { sysVar } from '../../../tokens/colors';
 
 // Custom bell icon
 const BellIcon: React.FC = () => (
@@ -22,7 +23,7 @@ export const AdminHeader: React.FC = () => {
     <header style={styles.container}>
       {/* Left section: Logo */}
       <div style={styles.left}>
-        {/* ThoughtSpot Logo */}
+        {/* ThoughtSpot Logo. Brand mark colours are data, kept as literals. */}
         <div style={styles.logo}>
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
             <path d="M4 4h7v7H4V4z" fill="#48D1E0" />
@@ -42,7 +43,7 @@ export const AdminHeader: React.FC = () => {
                 left: '14px',
                 top: '50%',
                 transform: 'translateY(-50%)',
-                color: 'rgba(255, 255, 255, 0.5)',
+                color: sysVar('content-tertiary'),
                 display: 'flex',
               }}>
               <Icon name="magnifying-glass" size="s" />

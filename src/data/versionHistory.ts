@@ -44,7 +44,22 @@ export const versionHistory: VersionEntry[] = [
       { type: 'modified', group: 'Typography', component: 'Global font rules', description: 'Form controls inherit the page font instead of Arial; code elements use Geist Mono; conditional weights and hardcoded monospace stacks use tokens.' },
       { type: 'added', group: 'Tooling', component: 'Visual snapshots', description: 'Screenshot every page and sample prototype in light and dark, and compare two builds side by side (scripts/visual-snapshots). Playwright stays outside package.json.' },
       { type: 'synced', group: 'Dark mode', component: 'Dark values', description: 'Dark Gray scale, 52 semantic and 48 component dark values match Figma; 22 missing dark values added to tokens.css; system-dark block matches the dark theme including shadows. Not visible until dark mode is switched on.' },
-      { type: 'added', group: 'Dark mode', component: 'Ctrl+D shortcut', description: 'Press Ctrl+D anywhere in the app to switch between light and dark mode. Resets to light on reload.' },
+      { type: 'added', group: 'Dark mode', component: 'Ctrl+D shortcut', description: 'Press Ctrl+D anywhere in the app to switch between light and dark mode. The choice is saved across reloads.' },
+      { type: 'added', group: 'Dark mode', component: 'Theme controller', description: 'ThemeContext with light, dark and system modes, saved in the browser, light by default. The only writer of data-theme; useTheme() and useIsDarkMode() for components. An inline script in index.html applies the saved theme before first paint.' },
+      { type: 'added', group: 'Tooling', component: 'Scaligent token tally', description: 'Compares our colour tokens with the product codebase (match, differs, proposed, Scaligent-only), with a Figma name check. npm run scaligent-tokens:tally. Tooling only.' },
+      { type: 'modified', group: 'Tokens', component: 'Product token names', description: 'Shadows are --rd-sys-color-shadow-surface/-menu/-modal and button-overlay is button-bg-overlay, matching the product. The older names stay as aliases.' },
+      { type: 'added', group: 'Tokens', component: 'New product tokens', description: 'background-secondary-hover and the circular progress tokens (progress-track-active, progress-track-empty, progress-indicator-default). Nothing uses them yet.' },
+      { type: 'removed', group: 'Dark mode', component: 'System-dark copy', description: 'The prefers-color-scheme copy of the dark tokens in tokens.css. The theme controller handles the system setting.' },
+      { type: 'added', group: 'Tokens', component: 'Differences list', description: 'docs/2026-10-06-scaligent-token-differences.md lists the 33 values where Figma and the product disagree.' },
+      { type: 'added', group: 'Tokens', component: 'sysVar, compVar, shadowVar', description: 'Helpers that return the CSS variable for a token, for inline styles that follow the theme. Use them instead of systemColors.light[...].' },
+      { type: 'modified', group: 'Dark mode', component: 'Shared layers', description: 'Components, Spotter, Liveboard tiles and the prototype templates follow the theme. The docs sidebar follows the theme; the product primary nav stays dark. 11 undefined token names now point at real tokens.' },
+      { type: 'added', group: 'Dark mode', component: 'Chart theme', description: '13 chart tokens with the product names and dark values, and useChartTheme() for ECharts. Dark series colours use the product OKLCH remap. Charts redraw on theme change.' },
+      { type: 'added', group: 'Dark mode', component: 'ThemeSwitch', description: 'Light, Dark and System control on SegmentedControl, in the gallery header and the Radiant docs sidebar. Stays in step with Ctrl+D.' },
+      { type: 'modified', group: 'Dark mode', component: 'Pages', description: 'Gallery, home, Radiant docs and changelog pages follow the theme. The Colours page shows light and dark values side by side for every token.' },
+      { type: 'added', group: 'Tooling', component: 'Dark readiness scan', description: 'npm run scan:dark counts colour code that will not follow the theme, per prototype; npm run lint:tokens fails on the shared layers. /radiant-check prints a dark ready line. Exceptions with reasons in scripts/radiant-check/rules.json.' },
+      { type: 'modified', group: 'Dark mode', component: 'ThoughtSpot nav', description: 'GlobalHeader, AppSidebar, the Liveboard primary nav, edit toolbar and styling drawer follow the theme on background-on-base, matching the product. GlobalHeader theme defaults to auto; dark is the legacy always-dark nav.' },
+      { type: 'modified', group: 'Dark mode', component: 'Sample prototypes', description: 'Every sample prototype works in dark mode, NewUIAdmin2 included. A registry entry can set theme: light-only to stay light until it is ready.' },
+      { type: 'added', group: 'Gallery', component: 'Thumbnails', description: 'Light and dark screenshots per prototype (/thumbnail, npm run thumbnails). Prototypes without one show a live preview instead of a folder icon. /new-prototype no longer draws a placeholder.' },
     ],
   },
   {
@@ -615,7 +630,7 @@ export const getChangeTypeColor = (type: ChangeType): string => {
     case 'removed':
       return 'var(--rd-sys-color-content-failure, #E22B3D)';
     case 'synced':
-      return 'var(--rd-ref-color-purple-60, #8C62F5)';
+      return 'var(--rd-sys-color-content-accent-purple, #8C62F5)';
     default:
       return 'var(--rd-sys-color-content-secondary, #777E8B)';
   }

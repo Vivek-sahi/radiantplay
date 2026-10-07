@@ -1,7 +1,12 @@
 import React from 'react';
-import { systemColors, referenceColors } from '../tokens/colors';
+import { sysVar, type SystemColorKey } from '../tokens/colors';
 import { getComponentCount, getIconCount, getTokenCountLabel } from '../data/componentRegistry';
 import { PLATFORM_VERSION } from '../data/platformVersion';
+
+// Theme-aware tints from system tokens.
+// alphaTint matches the old 10% hex-alpha badges; softTint lands near the old */10 reference fills in light.
+const alphaTint = (key: SystemColorKey, pct: number) => `color-mix(in srgb, ${sysVar(key)} ${pct}%, transparent)`;
+const softTint = (key: SystemColorKey) => `color-mix(in srgb, ${sysVar(key)} 40%, ${sysVar('background-base')})`;
 
 interface ComponentCardProps {
   name: string;
@@ -21,9 +26,9 @@ const ComponentCard: React.FC<ComponentCardProps> = ({
   onClick,
 }) => {
   const statusColors = {
-    stable: { bg: '#06BF7F1A', text: '#06BF7F' },
-    beta: { bg: '#F5A6231A', text: '#F5A623' },
-    new: { bg: '#2770EF1A', text: '#2770EF' },
+    stable: { bg: alphaTint('content-accent-green', 10), text: sysVar('content-accent-green') },
+    beta: { bg: alphaTint('content-warning', 10), text: sysVar('content-warning') },
+    new: { bg: alphaTint('content-accent-blue', 10), text: sysVar('content-accent-blue') },
   };
 
   return (
@@ -190,8 +195,8 @@ export const RadiantHomePage: React.FC<RadiantHomePageProps> = ({ onNavigate }) 
         </div>
         <div style={styles.tokenFlow}>
           <div style={styles.tokenLayer} onClick={() => onNavigate('colours')}>
-            <div style={{ ...styles.tokenLayerIcon, backgroundColor: referenceColors.blue['10'] }}>
-              <span style={{ color: systemColors.light['content-brand'], fontSize: '20px' }}>1</span>
+            <div style={{ ...styles.tokenLayerIcon, backgroundColor: softTint('background-accent-blue') }}>
+              <span style={{ color: sysVar('content-brand'), fontSize: '20px' }}>1</span>
             </div>
             <div style={styles.tokenLayerContent}>
               <h4 style={styles.tokenLayerTitle}>Reference Tokens</h4>
@@ -200,8 +205,8 @@ export const RadiantHomePage: React.FC<RadiantHomePageProps> = ({ onNavigate }) 
           </div>
           <div style={styles.tokenArrow}>→</div>
           <div style={styles.tokenLayer} onClick={() => onNavigate('architecture')}>
-            <div style={{ ...styles.tokenLayerIcon, backgroundColor: referenceColors.green['10'] }}>
-              <span style={{ color: systemColors.light['content-success'], fontSize: '20px' }}>2</span>
+            <div style={{ ...styles.tokenLayerIcon, backgroundColor: softTint('background-accent-green') }}>
+              <span style={{ color: sysVar('content-success'), fontSize: '20px' }}>2</span>
             </div>
             <div style={styles.tokenLayerContent}>
               <h4 style={styles.tokenLayerTitle}>System Tokens</h4>
@@ -210,8 +215,8 @@ export const RadiantHomePage: React.FC<RadiantHomePageProps> = ({ onNavigate }) 
           </div>
           <div style={styles.tokenArrow}>→</div>
           <div style={styles.tokenLayer} onClick={() => onNavigate('button')}>
-            <div style={{ ...styles.tokenLayerIcon, backgroundColor: referenceColors.purple['10'] }}>
-              <span style={{ color: referenceColors.purple['60'], fontSize: '20px' }}>3</span>
+            <div style={{ ...styles.tokenLayerIcon, backgroundColor: softTint('background-accent-purple-subtle') }}>
+              <span style={{ color: sysVar('content-accent-purple'), fontSize: '20px' }}>3</span>
             </div>
             <div style={styles.tokenLayerContent}>
               <h4 style={styles.tokenLayerTitle}>Component Tokens</h4>
@@ -431,7 +436,7 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     gap: '8px',
     padding: '24px',
-    background: systemColors.light['background-base'],
+    background: sysVar('background-base'),
     borderRadius: '16px',
     boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)',
   },
@@ -442,13 +447,13 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: 'var(--font-family-primary)',
     fontSize: '32px',
     fontWeight: 700,
-    color: systemColors.light['content-primary'],
+    color: sysVar('content-primary'),
   },
   statLabel: {
     fontFamily: 'var(--font-family-primary)',
     fontSize: '13px',
     fontWeight: 500,
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
     textTransform: 'uppercase',
     letterSpacing: '0.5px',
   },
@@ -457,9 +462,9 @@ const styles: Record<string, React.CSSProperties> = {
   tokenSection: {
     marginBottom: '48px',
     padding: '32px',
-    backgroundColor: systemColors.light['background-base'],
+    backgroundColor: sysVar('background-base'),
     borderRadius: '20px',
-    border: `1px solid ${systemColors.light['background-subtle']}`,
+    border: `1px solid ${sysVar('background-subtle')}`,
   },
   tokenFlow: {
     display: 'flex',
@@ -474,7 +479,7 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     gap: '16px',
     padding: '20px',
-    backgroundColor: systemColors.light['background-sunken'],
+    backgroundColor: sysVar('background-sunken'),
     borderRadius: '12px',
     cursor: 'pointer',
     transition: 'all 200ms ease',
@@ -495,30 +500,30 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: 'var(--font-family-primary)',
     fontSize: '14px',
     fontWeight: 'var(--font-weight-emphasis)',
-    color: systemColors.light['content-primary'],
+    color: sysVar('content-primary'),
     margin: 0,
     marginBottom: '4px',
   },
   tokenLayerDesc: {
     fontFamily: 'var(--font-family-mono)',
     fontSize: '11px',
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
     margin: 0,
   },
   tokenArrow: {
     fontFamily: 'var(--font-family-primary)',
     fontSize: '24px',
-    color: referenceColors.gray['30'],
+    color: sysVar('border-subtle-hover'),
   },
   tokenCTA: {
     padding: '10px 20px',
     backgroundColor: 'transparent',
-    border: `1px solid ${referenceColors.gray['30']}`,
+    border: `1px solid ${sysVar('border-subtle-hover')}`,
     borderRadius: '8px',
     fontFamily: 'var(--font-family-primary)',
     fontSize: '13px',
     fontWeight: 500,
-    color: referenceColors.gray['70'],
+    color: sysVar('content-primary'),
     cursor: 'pointer',
     transition: 'all 150ms ease',
   },
@@ -534,14 +539,14 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: 'var(--font-family-primary)',
     fontSize: '28px',
     fontWeight: 'var(--font-weight-emphasis)',
-    color: systemColors.light['content-primary'],
+    color: sysVar('content-primary'),
     marginBottom: '8px',
   },
   sectionDescription: {
     fontFamily: 'var(--font-family-primary)',
     fontSize: '16px',
     fontWeight: 400,
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
   },
   categorySection: {
     marginBottom: '32px',
@@ -550,7 +555,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: 'var(--font-family-primary)',
     fontSize: '16px',
     fontWeight: 'var(--font-weight-emphasis)',
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
     marginBottom: '16px',
     textTransform: 'uppercase',
     letterSpacing: '0.5px',
@@ -565,8 +570,8 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     gap: '16px',
     padding: '20px',
-    background: systemColors.light['background-base'],
-    border: `1px solid ${systemColors.light['background-subtle']}`,
+    background: sysVar('background-base'),
+    border: `1px solid ${sysVar('background-subtle')}`,
     borderRadius: '16px',
     cursor: 'pointer',
     transition: 'all 200ms ease',
@@ -579,7 +584,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    background: systemColors.light['background-sunken'],
+    background: sysVar('background-sunken'),
     borderRadius: '12px',
   },
   cardContent: {
@@ -595,7 +600,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: 'var(--font-family-primary)',
     fontSize: '16px',
     fontWeight: 'var(--font-weight-emphasis)',
-    color: systemColors.light['content-primary'],
+    color: sysVar('content-primary'),
     margin: 0,
   },
   cardStatus: {
@@ -611,7 +616,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: 'var(--font-family-primary)',
     fontSize: '13px',
     fontWeight: 400,
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
     margin: 0,
     marginBottom: '8px',
     lineHeight: '18px',
@@ -625,12 +630,12 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: 'var(--font-family-primary)',
     fontSize: '12px',
     fontWeight: 500,
-    color: systemColors.light['border-default'],
+    color: sysVar('border-default'),
   },
   cardArrow: {
     fontFamily: 'var(--font-family-primary)',
     fontSize: '20px',
-    color: referenceColors.gray['30'],
+    color: sysVar('border-subtle-hover'),
     transition: 'all 200ms ease',
   },
 
@@ -645,8 +650,8 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'flex-start',
     gap: '20px',
     padding: '28px',
-    background: `linear-gradient(135deg, ${systemColors.light['background-sunken']} 0%, ${systemColors.light['background-base']} 100%)`,
-    border: `1px solid ${systemColors.light['background-subtle']}`,
+    background: `linear-gradient(135deg, ${sysVar('background-sunken')} 0%, ${sysVar('background-base')} 100%)`,
+    border: `1px solid ${sysVar('background-subtle')}`,
     borderRadius: '16px',
     cursor: 'pointer',
     transition: 'all 200ms ease',
@@ -661,14 +666,14 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: 'var(--font-family-primary)',
     fontSize: '18px',
     fontWeight: 'var(--font-weight-emphasis)',
-    color: systemColors.light['content-primary'],
+    color: sysVar('content-primary'),
     marginBottom: '8px',
   },
   quickLinkDescription: {
     fontFamily: 'var(--font-family-primary)',
     fontSize: '14px',
     fontWeight: 400,
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
     lineHeight: '22px',
     margin: 0,
   },

@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactECharts from 'echarts-for-react';
-import { chartColors, chartUi, chartFont } from '../chartPalette';
+import { chartFont } from '../chartPalette';
+import { useChartTheme } from '../chartTheme';
 
 const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'];
 const values = [42, 68, 55, 81, 47, 73, 60, 88];
@@ -8,23 +9,25 @@ const values = [42, 68, 55, 81, 47, 73, 60, 88];
 interface Props { width?: number; height?: number; colors?: string[]; }
 
 export const ColumnChart: React.FC<Props> = ({ height, colors }) => {
-  const palette = colors ?? chartColors;
+  const { colors: themeColors, seriesColor, ui } = useChartTheme();
+  const palette = colors ? colors.map(seriesColor) : themeColors;
   const option = {
+    backgroundColor: 'transparent',
     grid: { top: 8, bottom: 8, left: 8, right: 8, containLabel: true },
     tooltip: { trigger: 'axis' },
     xAxis: {
       type: 'category',
       data: months,
-      axisLabel: { fontFamily: chartFont, fontSize: 10, color: chartUi.labelColor },
+      axisLabel: { fontFamily: chartFont, fontSize: 10, color: ui.labelColor },
       axisLine: { show: false },
       axisTick: { show: false },
     },
     yAxis: {
       type: 'value',
-      axisLabel: { fontFamily: chartFont, fontSize: 10, color: chartUi.labelColor },
+      axisLabel: { fontFamily: chartFont, fontSize: 10, color: ui.labelColor },
       axisLine: { show: false },
       axisTick: { show: false },
-      splitLine: { lineStyle: { color: chartUi.axis } },
+      splitLine: { lineStyle: { color: ui.axis } },
     },
     series: [
       {

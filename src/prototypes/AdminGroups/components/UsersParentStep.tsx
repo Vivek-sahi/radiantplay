@@ -4,7 +4,7 @@ import { Chip } from '../../../components/Chip';
 import { Icon } from '../../../components/icons';
 import { usersParentStyles as styles } from '../styles';
 import { users, existingGroups } from '../data/mockData';
-import { systemColors } from '../../../tokens/colors';
+import { sysVar, shadowVar } from '../../../tokens/colors';
 
 interface UsersParentStepProps {
   parentGroupId: string;
@@ -87,7 +87,7 @@ export const UsersParentStep: React.FC<UsersParentStepProps> = ({
                 left: '12px',
                 top: '50%',
                 transform: 'translateY(-50%)',
-                color: systemColors.light['content-tertiary'],
+                color: sysVar('content-tertiary'),
                 display: 'flex',
               }}>
               <Icon name="magnifying-glass" size="m" />
@@ -106,7 +106,7 @@ export const UsersParentStep: React.FC<UsersParentStepProps> = ({
                 height: '36px',
                 paddingLeft: '40px',
                 paddingRight: '12px',
-                border: `1px solid ${systemColors.light['border-default']}`,
+                border: `1px solid ${sysVar('border-default')}`,
                 borderRadius: '6px',
                 fontSize: '14px',
                 outline: 'none',
@@ -124,10 +124,10 @@ export const UsersParentStep: React.FC<UsersParentStepProps> = ({
                 left: 0,
                 right: 0,
                 marginTop: '4px',
-                backgroundColor: systemColors.light['background-base'],
-                border: `1px solid ${systemColors.light['background-subtle']}`,
+                backgroundColor: sysVar('background-base'),
+                border: `1px solid ${sysVar('background-subtle')}`,
                 borderRadius: '6px',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                boxShadow: shadowVar('menu'),
                 maxHeight: '200px',
                 overflowY: 'auto',
                 zIndex: 10,
@@ -141,26 +141,26 @@ export const UsersParentStep: React.FC<UsersParentStepProps> = ({
                     style={{
                       padding: '10px 12px',
                       cursor: 'pointer',
-                      borderBottom: `1px solid ${systemColors.light['background-sunken']}`,
+                      borderBottom: `1px solid ${sysVar('background-sunken')}`,
                       transition: 'background-color 0.15s ease',
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = systemColors.light['background-sunken'];
+                      e.currentTarget.style.backgroundColor = sysVar('background-sunken');
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.backgroundColor = 'transparent';
                     }}
                   >
-                    <div style={{ fontSize: '14px', fontWeight: 500, color: systemColors.light['content-primary'] }}>
+                    <div style={{ fontSize: '14px', fontWeight: 500, color: sysVar('content-primary') }}>
                       {user.name}
                     </div>
-                    <div style={{ fontSize: '12px', color: systemColors.light['content-tertiary'] }}>
+                    <div style={{ fontSize: '12px', color: sysVar('content-tertiary') }}>
                       {user.email}
                     </div>
                   </div>
                 ))
               ) : (
-                <div style={{ padding: '12px', textAlign: 'center', color: systemColors.light['content-tertiary'], fontSize: '14px' }}>
+                <div style={{ padding: '12px', textAlign: 'center', color: sysVar('content-tertiary'), fontSize: '14px' }}>
                   No users found
                 </div>
               )}

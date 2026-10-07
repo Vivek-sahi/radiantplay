@@ -23,7 +23,7 @@
 
 .description {
   font-size: var(--font-size-sm);
-  color: var(--rd-sys-color-content-subtle);
+  color: var(--rd-sys-color-content-secondary);
   max-width: 320px;
   margin: 0;
 }

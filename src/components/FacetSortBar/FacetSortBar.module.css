@@ -38,19 +38,19 @@
 }
 
 .facetPill:hover {
-  background-color: var(--rd-sys-color-background-muted);
+  background-color: var(--rd-sys-color-background-sunken);
   color: var(--rd-sys-color-content-primary);
 }
 
 .facetPillSelected {
   background-color: var(--rd-sys-color-background-brand);
-  color: var(--rd-sys-color-content-on-brand);
+  color: var(--rd-sys-color-content-inverse);
   border-color: var(--rd-sys-color-background-brand);
 }
 
 .facetPillSelected:hover {
   background-color: var(--rd-sys-color-background-brand);
-  color: var(--rd-sys-color-content-on-brand);
+  color: var(--rd-sys-color-content-inverse);
   opacity: 0.9;
 }
 
@@ -82,7 +82,7 @@
 .sortSelect {
   height: 28px;
   padding: 0 var(--spacing-2);
-  background-color: var(--rd-sys-color-background-surface);
+  background-color: var(--rd-sys-color-background-raised);
   border: 1px solid var(--rd-sys-color-border-default);
   border-radius: var(--radius-md);
   font-family: var(--font-family-primary);

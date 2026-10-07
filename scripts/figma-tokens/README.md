@@ -26,7 +26,7 @@ npm run figma-tokens:diff              # summary and details
 npm run figma-tokens:diff -- --summary # summary only
 ```
 
-The diff reports per area: match, differs, Figma only, ours only. It also compares the TypeScript tokens (through the `css-variables.ts` generator) with the hand-written `tokens.css`, and the dark block with the `prefers-color-scheme` block.
+The diff reports per area: match, differs, Figma only, ours only. It also compares the TypeScript tokens (through the `css-variables.ts` generator) with the hand-written `tokens.css`.
 
 ## Refresh the snapshot
 

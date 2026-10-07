@@ -1,23 +1,25 @@
 import React, { useState } from 'react';
 import { Icon } from '@components/icons';
+import { sysVar, shadowVar } from '@tokens/colors';
 import mascot from './spotterviz-mascot.png';
 
 interface SpotterVizPanelProps {
   onClose: () => void;
 }
 
-// Colors from Figma node 825:32553 (SpotterViz panel — dark variant)
+// The SpotterViz panel uses the same surface as the primary nav and edit
+// toolbar (background-on-base), so it follows the theme like the product.
 const c = {
-  bg:               '#1d232f',
-  divider:          '#323946',
-  textPrimary:      '#eaedf2',
-  textWhite:        '#ffffff',
-  textMuted:        '#a5acb9',
-  textDim:          '#c0c6cf',
-  brand:            '#71a1f4',
-  chipBg:           'rgba(192, 198, 207, 0.12)',
-  chipBorder:       '#777e8b',
-  chipBorderSubtle: '#4a515e',
+  bg:               sysVar('background-on-base'),
+  divider:          sysVar('border-subtle'),
+  textPrimary:      sysVar('content-primary'),
+  textWhite:        sysVar('content-primary'),
+  textMuted:        sysVar('content-secondary'),
+  textDim:          sysVar('content-secondary'),
+  brand:            sysVar('content-brand'),
+  chipBg:           sysVar('background-secondary-action'),
+  chipBorder:       sysVar('border-bold'),
+  chipBorderSubtle: sysVar('border-subtle'),
 };
 
 const FONT = "var(--font-family-primary)";
@@ -233,7 +235,7 @@ const s: Record<string, React.CSSProperties> = {
     width: '100%',
     background: c.bg,
     border: `1px solid ${c.divider}`,
-    boxShadow: '0px 0px 2px rgba(255,255,255,0.1), 0px 2px 2px rgba(255,255,255,0.04)',
+    boxShadow: shadowVar('surface'),
     borderRadius: 12,
     padding: 12,
     display: 'flex',

@@ -26,8 +26,40 @@ Figma sync: bringing tokens and typography up to date with the Radiant 3.0 Figma
 - Native buttons, inputs, selects and text areas inherit the page font instead of the browser default (Arial), and `code`, `kbd`, `samp`, `pre` use Geist Mono
 - `npm run figma-tokens:diff` also checks the Typography component's CSS against Figma
 - Added `scripts/visual-snapshots/`: screenshots every page and sample prototype of a build in light and dark, and compares two builds in a review page. Playwright stays outside `package.json`; setup is in its README
-- The token count on the Radiant home page goes from 373 to 392 (new Figma tokens and aliases)
-- Press Ctrl+D anywhere in the app to switch between light and dark mode, for checking the dark tokens. It resets to light on reload
+- The token count on the Radiant home page goes from 373 to 400 (new Figma tokens, the product's token names, and aliases)
+- Press Ctrl+D anywhere in the app to switch between light and dark mode. The choice is saved, so it survives a reload
+- Added a theme controller (`src/context/ThemeContext.tsx`): light, dark or system mode, saved in the browser, light by default. It is the only code that sets `data-theme`; use `useTheme()` to change the theme and `useIsDarkMode()` to read it. A small script in `index.html` applies the saved theme before the page paints, so a reload never flashes the wrong one. Native scrollbars and form controls follow the theme (`color-scheme`)
+- Added `scripts/scaligent-tokens/`: compares our colour tokens with the ThoughtSpot product's (Scaligent `radiant-styles`) and reports match, differs, proposed and Scaligent-only per token. `--names` adds Figma names to the check. Run `npm run scaligent-tokens:tally`; needs a local Scaligent checkout. Tooling only
+- Visual snapshots pick dark mode through the saved theme instead of setting the attribute after load
+- Token names now follow the product (Scaligent) where Figma and the product differ. Older names keep working as aliases:
+  - Shadows are `--rd-sys-color-shadow-surface`, `-menu` and `-modal`, with light and dark values. `--shadow-surface`, `--shadow-menu` and `--shadow-modal` still work and point at them
+  - `button-overlay` is now `button-bg-overlay`; `button-overlay` still works
+- Added `background-secondary-hover` (Gray/30, dark Dark Gray/30) and the circular progress tokens `progress-track-active`, `progress-track-empty` and `progress-indicator-default`, from the product. Nothing uses them yet
+- Removed the `prefers-color-scheme` copy of the dark tokens from `tokens.css` (about 130 lines). The theme controller resolves the system setting and sets `data-theme`, so the copy was never used. `npm run figma-tokens:diff` no longer checks it
+- Added `docs/2026-10-06-scaligent-token-differences.md`: the 33 token values where Figma and the product disagree, grouped by cause
+- Shared components, Spotter, the Liveboard tiles and the prototype templates now follow the theme:
+  - Inline styles read CSS variables through new helpers, `sysVar()`, `compVar()` and `shadowVar()` from `@tokens/colors`, instead of `systemColors.light[...]`, which is always light. No component reads light-only values any more
+  - Hard-coded colours in component and tile CSS became tokens. A few light values moved to the nearest token: modal overlays use `background-overlay`, ad-hoc shadows use the three shadow tokens, the Liveboard toolbar is a touch lighter (`background-inverse`), and tile descriptions use `content-secondary`
+  - The docs sidebar follows the theme; its dark gradient is gone. The ThoughtSpot primary nav (Liveboard header, AppSidebar) stays dark in both themes
+  - 11 token names that never existed (`content-subtle`, `background-surface`, `content-negative` and others) now point at real tokens, so those colours show in both themes
+  - `_template` and `_liveboard-template` start new prototypes dark-ready, and the template README teaches `sysVar()`
+- Charts follow the theme:
+  - Added 13 chart tokens (`--rd-comp-color-chart-*`) with the product's names and dark values. The product has no light values yet, so ours are proposed, taken from the current chart colours
+  - New `useChartTheme()` gives ECharts its colours for the current theme. Dark series colours come from the product's OKLCH lightness remap, ported so our charts match. All shared chart types and the Spotter chart block use it and redraw when the theme changes
+  - User-picked note text colours are lightened on dark tiles
+- Added `ThemeSwitch` (`src/components/ThemeSwitch/`): Light, Dark and System, built on `SegmentedControl` and bound to the theme controller. It sits in the gallery header and at the foot of the Radiant docs sidebar (new `footerContent` slot on `Sidebar`). Ctrl+D still works and the two stay in step
+- The gallery, home pages, Radiant docs pages and changelog follow the theme. Code blocks on the docs pages stay dark in both themes. A few light values moved to the nearest token, mostly mid-grey text that is now `content-primary` and pale tints that are now the matching background token
+- The Colours page shows every system, shadow, component and chart token with its light and dark value side by side, and lists aliases under the token they point at. The Architecture page describes how theming works now
+- Added a dark readiness scan (`scripts/radiant-check/`): per prototype and layer it counts colour literals, light-only reads, unknown token names, `prefers-color-scheme` media queries and `data-theme` writes, with accepted exceptions and their reasons in `rules.json`. `npm run scan:dark` reports; `npm run lint:tokens` fails on the shared layers only and isn't wired into `/ship`. `/radiant-check` now prints a dark ready line and suggests `sysVar()` instead of `systemColors.light[...]`
+- Visual snapshots list light surfaces per page, so a dark run shows what didn't follow the theme
+- Component status badges (registry) and the "synced" changelog colour follow the theme
+- The ThoughtSpot nav follows the theme, matching the product with the Radiant theme on (checked on champagne): `GlobalHeader`, `AppSidebar`, the Liveboard primary nav, the Liveboard edit toolbar and the styling drawer use `background-on-base` with a `border-subtle` divider. In light mode that's light grey instead of the old dark navy. `GlobalHeader` takes `theme="auto"` by default; `light` is the older name for it and `dark` is the legacy always-dark nav. The GlobalHeader doc page shows both
+- All sample prototypes work in dark mode, including NewUIAdmin2. Tailwind-style greys map to Radiant tokens through `docs/2026-10-07-phase6-colour-mapping.md`, so light mode shifts slightly in those prototypes. Third-party logos, user-picked colours and palettes stay as they are
+- A prototype that isn't dark ready yet can set `theme: 'light-only'` in its registry entry. It stays light, charts included, while the rest of the app is dark
+- Gallery thumbnails are real screenshots, in light and dark, saved next to each prototype (`thumbnail.light.jpg`, `thumbnail.dark.jpg`, 640x360, 15 to 30 KB). Every sample prototype has them now. Capture with `/thumbnail` or `npm run thumbnails -- <Name>`; `npm run thumbnails:setup` installs the screenshot tool once, outside the project. `npm run thumbnails:check` lists missing or outdated ones, and `/sync-upstream` reports them
+- A prototype without a thumbnail shows a live preview of itself instead of a folder icon. At most four previews load at once, only while on screen
+- `/new-prototype` no longer draws a blank placeholder thumbnail. Hand-made SVG thumbnails still work, and `scripts/thumbnails/tokenize-svg.mjs` converts one to theme tokens so it follows light and dark
+- The SpotterViz side panel uses the nav surface and follows the theme
 
 ## 26.9.1c — 2026-09-03
 

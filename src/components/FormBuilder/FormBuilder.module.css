@@ -25,7 +25,7 @@
 }
 
 .required {
-  color: var(--rd-sys-color-content-negative);
+  color: var(--rd-sys-color-content-failure);
   font-size: var(--font-size-sm);
 }
 
@@ -36,7 +36,7 @@
 .select {
   width: 100%;
   padding: var(--spacing-2) var(--spacing-3);
-  background-color: var(--rd-sys-color-background-surface);
+  background-color: var(--rd-sys-color-background-raised);
   border: 1px solid var(--rd-sys-color-border-default);
   border-radius: var(--radius-md);
   font-family: var(--font-family-primary);
@@ -51,12 +51,12 @@
 .textarea:focus,
 .select:focus {
   border-color: var(--rd-sys-color-border-focus);
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--rd-sys-color-border-brand) 15%, transparent);
 }
 
 .input::placeholder,
 .textarea::placeholder {
-  color: var(--rd-sys-color-content-placeholder);
+  color: var(--rd-sys-color-content-tertiary);
 }
 
 .textarea {
@@ -65,12 +65,12 @@
 }
 
 .inputError {
-  border-color: var(--rd-sys-color-border-negative);
+  border-color: var(--rd-sys-color-border-failure);
 }
 
 .inputError:focus {
-  border-color: var(--rd-sys-color-border-negative);
-  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.15);
+  border-color: var(--rd-sys-color-border-failure);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--rd-sys-color-border-failure) 15%, transparent);
 }
 
 /* ─── Options (radio/checkbox) ──────────────────────────────────────────── */
@@ -125,7 +125,7 @@
   display: inline-block;
   width: 32px;
   height: 20px;
-  background-color: var(--rd-sys-color-background-muted);
+  background-color: var(--rd-sys-color-background-sunken);
   border-radius: var(--radius-2xl);
   transition: background-color var(--duration-fast) var(--easing-standard);
   flex-shrink: 0;
@@ -141,7 +141,7 @@
   left: 3px;
   width: 14px;
   height: 14px;
-  background-color: var(--rd-sys-color-content-on-brand);
+  background-color: var(--rd-sys-color-content-inverse);
   border-radius: 50%;
   transition: transform var(--duration-fast) var(--easing-standard);
 }
@@ -150,7 +150,7 @@
 
 .errorText {
   font-size: var(--font-size-xs);
-  color: var(--rd-sys-color-content-negative);
+  color: var(--rd-sys-color-content-failure);
 }
 
 /* ─── Submit button ─────────────────────────────────────────────────────── */
@@ -167,7 +167,7 @@
   justify-content: center;
   padding: var(--spacing-2) var(--spacing-5);
   background-color: var(--rd-sys-color-background-brand);
-  color: var(--rd-sys-color-content-on-brand);
+  color: var(--rd-sys-color-content-inverse);
   border: none;
   border-radius: var(--radius-md);
   cursor: pointer;

@@ -87,6 +87,16 @@ Scan for hardcoded values across all files. These are **not errors** — just do
 
 For each, note the file and what was hardcoded. Where a token exists that would directly replace it, mention it as an easy win — but only if it's a straightforward swap.
 
+**Dark readiness.** Also run the dark mode scan on the prototype folder and include its counts:
+
+```bash
+node scripts/radiant-check/scan.mjs src/prototypes/<Name> --details
+```
+
+It reports colour literals (outside `var()` fallbacks), light-only reads (`systemColors.light[...]`, `rdComponentColors.light[...]`, `referenceColors.*`), unknown token names, `prefers-color-scheme` media queries and `data-theme` writes. A prototype is dark ready when all five are zero. Accepted exceptions live in `scripts/radiant-check/rules.json`, each with a reason. This is a report, not a gate.
+
+Easy wins for colour: in CSS, `var(--rd-sys-color-*)`; in inline styles, `sysVar('content-primary')`, `compVar(...)` or `shadowVar('menu')` from `@tokens/colors`. Never suggest `systemColors.light[...]`: it stays light in dark mode.
+
 **Detailed output:** List every hardcoded value with file:line, token equivalent if available.
 **Summary output:** "X hardcoded values found (Y have easy token swaps)"
 
@@ -139,6 +149,7 @@ Focus: <focus area, or "Full check">
 HEALTH OVERVIEW
   Radiant coverage:    ~X%   (Y of Z components from the design system)
   Token coverage:      ~X%   (colors, spacing, typography)
+  Dark ready:          yes/no (N literals, N light-only reads, N unknown tokens)
   Content compliance:  ~X%   (labels, titles, button text)
   Custom components:   N     (breakdown below)
 
@@ -174,7 +185,7 @@ CUSTOM COMPONENTS                 ← only if focus includes this
 HARDCODED VALUES                  ← only if focus includes this
 ──────────────────────────────
   Colors (X found):
-    • FilterRow.tsx:42     #2770EF  — easy swap: systemColors.light['content-brand']
+    • FilterRow.tsx:42     #2770EF  — easy swap: sysVar('content-brand')
     • ChartTooltip.tsx:18  rgba(0,0,0,0.4)  — custom, no direct token equivalent
 
   Spacing (X found):

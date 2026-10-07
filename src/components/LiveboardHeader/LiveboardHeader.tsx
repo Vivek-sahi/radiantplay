@@ -20,7 +20,7 @@ export interface LiveboardHeaderProps {
   spotterOpen?: boolean;
 }
 
-// ThoughtSpot primary nav bar (dark, 60px). Clicking the brand mark returns
+// ThoughtSpot primary nav bar (60px), follows the theme. Clicking the brand mark returns
 // to the playground gallery — matches the GlobalHeader default behavior.
 const PrimaryNav: React.FC = () => {
   const navigate = useNavigate();
@@ -92,8 +92,10 @@ const s: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     height: layout.headerHeight,
     padding: '0 24px',
-    background: colors.editHeaderBg,
-    color: colors.textOnDark,
+    background: colors.primaryNavBg,
+    color: colors.primaryNavText,
+    borderBottom: `1px solid ${colors.primaryNavBorder}`,
+    boxSizing: 'border-box',
     flexShrink: 0,
   },
   logoBtn: {

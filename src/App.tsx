@@ -20,8 +20,10 @@ import { TypographyPage } from './pages/TypographyPage';
 import RdModalDemo from './pages/RdModalDemo';
 // import { RoadmapPage } from './pages/RoadmapPage';
 
-import { systemColors } from './tokens/colors';
+import { sysVar } from './tokens/colors';
 import { getCurrentVersion } from './data/versionHistory';
+import { useTheme } from './context/ThemeContext';
+import { ThemeSwitch } from './components/ThemeSwitch';
 import { getIconCount } from './data/componentRegistry';
 
 // Navigation icons
@@ -463,6 +465,7 @@ const RadiantLayout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         activeId={getActiveId()}
         onSelect={handleNavigate}
         header={<SidebarHeader />}
+        footerContent={<ThemeSwitch fullWidth />}
       />
       <main style={styles.main}>
         <div style={styles.content}>
@@ -527,17 +530,17 @@ const RadiantHomePageWrapper: React.FC = () => {
 };
 
 const App: React.FC = () => {
-  // Ctrl+D flips the whole app between the light and dark token sets.
+  // Ctrl+D switches between light and dark anywhere in the app, and the choice is saved.
+  const { toggle: toggleTheme } = useTheme();
   React.useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (!e.ctrlKey || e.metaKey || e.altKey || e.shiftKey || e.key.toLowerCase() !== 'd') return;
       e.preventDefault();
-      const root = document.documentElement;
-      root.dataset.theme = root.dataset.theme === 'dark' ? 'light' : 'dark';
+      toggleTheme();
     };
     window.addEventListener('keydown', onKeyDown, true);
     return () => window.removeEventListener('keydown', onKeyDown, true);
-  }, []);
+  }, [toggleTheme]);
 
   return (
     <Routes>
@@ -689,7 +692,7 @@ const styles: Record<string, React.CSSProperties> = {
   app: {
     display: 'flex',
     minHeight: '100vh',
-    backgroundColor: systemColors.light['background-sunken'],
+    backgroundColor: sysVar('background-sunken'),
   },
   main: {
     flex: 1,
@@ -741,15 +744,15 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: 'var(--font-family-primary)',
     fontSize: '16px',
     fontWeight: 'var(--font-weight-emphasis)',
-    color: '#ffffff',
+    color: sysVar('content-primary'),
     letterSpacing: '-0.3px',
   },
   logoVersion: {
     fontFamily: 'var(--font-family-primary)',
     fontSize: '10px',
     fontWeight: 500,
-    color: 'rgba(255, 255, 255, 0.45)',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    color: sysVar('content-secondary'),
+    backgroundColor: sysVar('background-subtle'),
     padding: '1px 6px',
     borderRadius: '10px',
     letterSpacing: '0.2px',
@@ -758,7 +761,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: 'var(--font-family-primary)',
     fontSize: '11px',
     fontWeight: 400,
-    color: 'rgba(255, 255, 255, 0.5)',
+    color: sysVar('content-secondary'),
     letterSpacing: '0.2px',
   },
 };

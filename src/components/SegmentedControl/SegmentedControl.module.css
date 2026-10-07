@@ -91,7 +91,7 @@
 
 .segment:hover:not(.selected):not(.segmentDisabled) {
   color: var(--rd-sys-color-content-primary);
-  background-color: rgba(0, 0, 0, 0.04);
+  background-color: color-mix(in srgb, var(--rd-sys-color-content-primary) 4%, transparent);
 }
 
 .segment:focus-visible {

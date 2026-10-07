@@ -1,4 +1,5 @@
 import React from 'react';
+import { sysVar } from '@tokens/colors';
 
 /**
  * Prototype Template
@@ -110,7 +111,7 @@ export const PrototypeTemplate: React.FC = () => {
 const styles: Record<string, React.CSSProperties> = {
   container: {
     minHeight: '100vh',
-    backgroundColor: '#F6F8FA',
+    backgroundColor: sysVar('background-sunken'),
     padding: '48px',
     fontFamily: 'var(--font-family-primary)',
   },
@@ -121,18 +122,18 @@ const styles: Record<string, React.CSSProperties> = {
   title: {
     fontSize: '32px',
     fontWeight: 'var(--font-weight-emphasis)',
-    color: '#1D232F',
+    color: sysVar('content-primary'),
     marginBottom: '16px',
   },
   description: {
     fontSize: '16px',
-    color: '#6B7280',
+    color: sysVar('content-secondary'),
     lineHeight: '24px',
     marginBottom: '32px',
   },
   placeholder: {
-    backgroundColor: '#FFFFFF',
-    border: '2px dashed #DBDFE7',
+    backgroundColor: sysVar('background-base'),
+    border: `2px dashed ${sysVar('border-default')}`,
     borderRadius: '12px',
     padding: '64px',
     textAlign: 'center' as const,
@@ -144,7 +145,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   placeholderText: {
     fontSize: '14px',
-    color: '#A5ACB9',
+    color: sysVar('content-secondary'),
     margin: 0,
   },
 };

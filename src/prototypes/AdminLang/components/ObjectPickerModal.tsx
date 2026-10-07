@@ -6,7 +6,7 @@ import { Checkbox } from '../../../components/Checkbox';
 import { Tabs } from '../../../components/Tabs';
 import { pickerStyles as s } from '../styles';
 import { mockLiveboards, mockAnswers, type LiveboardItem } from '../data/mockData';
-import { systemColors } from '../../../tokens/colors';
+import { sysVar } from '../../../tokens/colors';
 
 interface ObjectPickerModalProps {
   isOpen: boolean;
@@ -149,7 +149,7 @@ export const ObjectPickerModal: React.FC<ObjectPickerModalProps> = ({
             style={{
               padding: '32px',
               textAlign: 'center',
-              color: systemColors.light['content-tertiary'],
+              color: sysVar('content-tertiary'),
               fontSize: '14px',
             }}
           >

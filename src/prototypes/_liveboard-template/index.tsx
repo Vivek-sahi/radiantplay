@@ -6,6 +6,7 @@ import {
   GroupInnerTile,
   NOTE_VARIATIONS, NoteVariant,
 } from '../_shared/tiles';
+import { sysVar, shadowVar } from '@tokens/colors';
 import { SpotterVizPanel } from './components/SpotterVizPanel';
 import { tabsData, filterData, liveboardName } from './data/mockData';
 
@@ -494,7 +495,7 @@ export const LiveboardTemplate: React.FC = () => {
             if (!def) return null;
 
             const multiSelectedStyle: React.CSSProperties = isMultiSelect && selectedTiles.includes(item.i)
-              ? { outline: '2px dashed #7B61FF', outlineOffset: '1px', borderRadius: 16, background: 'rgba(123,97,255,0.04)' }
+              ? { outline: `2px dashed ${sysVar('content-accent-purple')}`, outlineOffset: '1px', borderRadius: 16, background: `color-mix(in srgb, ${sysVar('content-accent-purple')} 4%, transparent)` }
               : {};
 
             const commonProps = buildCommonTileProps(item);
@@ -648,8 +649,8 @@ export const LiveboardTemplate: React.FC = () => {
                 top:  PAD + anchor.y * ROW_UNIT - 48,
                 display: 'flex', alignItems: 'center', gap: 8,
                 padding: '4px 8px',
-                background: '#212326', border: '1px solid #303136',
-                borderRadius: 4, boxShadow: '0 0 4px rgba(0,0,0,0.24), 0 2px 8px rgba(0,0,0,0.2)',
+                background: sysVar('background-inverse'), border: `1px solid ${sysVar('border-divider-inverse')}`,
+                borderRadius: 4, boxShadow: shadowVar('menu'),
                 zIndex: 200,
               }}>
                 <button
@@ -685,7 +686,7 @@ export const LiveboardTemplate: React.FC = () => {
                     <rect x="9" y="9" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.2"/>
                   </svg>
                 </button>
-                <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.15)' }} />
+                <div style={{ width: 1, height: 20, background: `color-mix(in srgb, ${sysVar('content-inverse')} 15%, transparent)` }} />
                 <button
                   style={s.multiToolbarBtn}
                   title="Delete selected"
@@ -722,7 +723,8 @@ export default LiveboardTemplate;
 
 const shadowStyle: React.CSSProperties = {
   display: 'none', position: 'absolute',
-  background: 'rgba(39,112,239,0.08)', border: '1.5px solid rgba(39,112,239,0.35)',
+  background: `color-mix(in srgb, ${sysVar('content-brand')} 8%, transparent)`,
+  border: `1.5px solid color-mix(in srgb, ${sysVar('content-brand')} 35%, transparent)`,
   borderRadius: 16, pointerEvents: 'none', zIndex: 4, boxSizing: 'border-box', transition: 'none',
 };
 
@@ -731,7 +733,7 @@ const shadowStyle: React.CSSProperties = {
 const s: Record<string, React.CSSProperties> = {
   page: {
     fontFamily: 'var(--font-family-primary)',
-    background: '#F6F8FA',
+    background: sysVar('background-sunken'),
     minHeight: '100vh',
     display: 'flex',
     flexDirection: 'column',
@@ -751,7 +753,7 @@ const s: Record<string, React.CSSProperties> = {
     flex: 1,
     position: 'relative',
     overflowY: 'auto',
-    background: '#F6F8FA',
+    background: sysVar('background-sunken'),
   },
   viewPalette: {
     position: 'absolute',
@@ -769,13 +771,13 @@ const s: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    background: '#ffffff',
-    border: '1px solid #EAEDF2',
+    background: sysVar('background-base'),
+    border: `1px solid ${sysVar('border-divider')}`,
     borderRadius: 6,
     cursor: 'pointer',
-    color: '#1D232F',
+    color: sysVar('content-primary'),
     padding: 0,
-    boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+    boxShadow: shadowVar('surface'),
   },
   multiToolbarBtn: {
     display: 'flex',
@@ -787,7 +789,7 @@ const s: Record<string, React.CSSProperties> = {
     border: 'none',
     borderRadius: 2,
     cursor: 'pointer',
-    color: '#ffffff',
+    color: sysVar('content-inverse'),
     padding: 0,
   },
 };

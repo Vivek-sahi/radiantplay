@@ -9,6 +9,7 @@ import {
 } from '../data/versionHistory';
 import { getGroupedVisibleHighlights } from '../data/highlights';
 import { SearchInput } from '../components/SearchInput';
+import { sysVar } from '../tokens/colors';
 import styles from './VersionHistoryPage.module.css';
 
 /**
@@ -17,15 +18,15 @@ import styles from './VersionHistoryPage.module.css';
 const getVersionTypeBadgeColor = (type: VersionType): string => {
   switch (type) {
     case 'major':
-      return 'var(--rd-ref-color-purple-60, #8C62F5)';
+      return sysVar('content-accent-purple');
     case 'minor':
-      return 'var(--rd-sys-color-content-brand, #2770EF)';
+      return sysVar('content-brand');
     case 'patch':
-      return 'var(--rd-sys-color-content-success, #06BF7F)';
+      return sysVar('content-success');
     case 'figma-sync':
-      return 'var(--rd-sys-color-content-warning, #FCC838)';
+      return sysVar('content-warning');
     default:
-      return 'var(--rd-sys-color-content-secondary, #777E8B)';
+      return sysVar('content-secondary');
   }
 };
 

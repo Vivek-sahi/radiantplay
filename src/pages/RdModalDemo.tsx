@@ -2,12 +2,12 @@ import { useState } from 'react';
 import { RdModal, type ModalSize } from '../components/RdModal';
 import { Vertical } from '../components/Layout';
 import { spacing } from '@tokens/spacing';
-import { systemColors } from '@tokens/colors';
+import { sysVar } from '@tokens/colors';
 
-const bg = systemColors.light['background-sunken'];
-const border = systemColors.light['border-divider'];
-const contentPrimary = systemColors.light['content-primary'];
-const contentSecondary = systemColors.light['content-secondary'];
+const bg = sysVar('background-sunken');
+const border = sysVar('border-divider');
+const contentPrimary = sysVar('content-primary');
+const contentSecondary = sysVar('content-secondary');
 
 type Demo = {
   label: string;
@@ -57,7 +57,7 @@ export default function RdModalDemo() {
                 padding: `${spacing.D}px ${spacing.F}px`,
                 borderRadius: 8,
                 border: `1px solid ${border}`,
-                background: '#fff',
+                background: sysVar('background-base'),
                 textAlign: 'left',
                 cursor: 'pointer',
                 fontFamily: 'inherit',

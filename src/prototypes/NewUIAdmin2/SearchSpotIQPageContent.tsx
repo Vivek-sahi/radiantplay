@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { systemColors, referenceColors } from '../../tokens/colors';
+import { sysVar, shadowVar, compVar } from '@tokens/colors';
 import { ConfirmDialog } from './ConfirmDialog';
 
 const font = 'var(--font-family-primary)';
-const brand = systemColors.light['content-brand'];
+const brand = sysVar('content-brand');
 
 // ─── Toggle ───────────────────────────────────────────────────────────────────
 
@@ -12,7 +12,7 @@ const Toggle: React.FC<{ checked: boolean; onChange: () => void }> = ({ checked,
     onClick={onChange} role="switch" aria-checked={checked}
     style={{
       position: 'relative', width: '36px', height: '20px', borderRadius: '10px',
-      border: 'none', backgroundColor: checked ? brand : referenceColors.gray['30'],
+      border: 'none', backgroundColor: checked ? compVar('toggle-track-on') : compVar('toggle-track-off'),
       cursor: 'pointer', padding: 0, flexShrink: 0, transition: 'background-color 0.2s ease',
     }}
   >
@@ -20,8 +20,8 @@ const Toggle: React.FC<{ checked: boolean; onChange: () => void }> = ({ checked,
       position: 'absolute', top: '2px',
       left: checked ? '18px' : '2px',
       width: '16px', height: '16px', borderRadius: '50%',
-      backgroundColor: '#fff', transition: 'left 0.2s ease',
-      boxShadow: '0 1px 3px rgba(0,0,0,0.18)',
+      backgroundColor: sysVar('background-base'), transition: 'left 0.2s ease',
+      boxShadow: shadowVar('surface'),
     }} />
   </button>
 );
@@ -61,24 +61,24 @@ const Dropdown: React.FC<{ value: string; options: string[]; width?: number }> =
         style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           width: '100%', height: '36px', padding: '0 12px',
-          border: `1px solid ${open ? brand : '#D1D5DB'}`, borderRadius: '6px',
-          backgroundColor: '#FFFFFF', cursor: 'pointer', fontFamily: font,
-          fontSize: '13px', color: '#111827', outline: 'none', textAlign: 'left',
-          boxShadow: open ? `0 0 0 2px ${brand}22` : 'none',
+          border: `1px solid ${open ? brand : sysVar('border-bold')}`, borderRadius: '6px',
+          backgroundColor: sysVar('background-base'), cursor: 'pointer', fontFamily: font,
+          fontSize: '13px', color: sysVar('content-primary'), outline: 'none', textAlign: 'left',
+          boxShadow: open ? `0 0 0 2px color-mix(in srgb, ${brand} 13%, transparent)` : 'none',
           transition: 'border-color 0.15s, box-shadow 0.15s',
         }}
       >
         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{selected}</span>
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none"
           style={{ flexShrink: 0, marginLeft: '8px', transform: open ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.15s ease' }}>
-          <path d="M2.5 4.5l3.5 3.5 3.5-3.5" stroke="#9CA3AF" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M2.5 4.5l3.5 3.5 3.5-3.5" stroke="var(--rd-sys-color-content-tertiary)" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </button>
       {open && (
         <div style={{
           position: 'fixed', top: menuPos.top, left: menuPos.left, width: menuPos.width,
-          backgroundColor: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: '8px',
-          boxShadow: '0 8px 24px rgba(0,0,0,0.10)', zIndex: 9999, overflow: 'hidden',
+          backgroundColor: sysVar('background-raised'), border: '1px solid var(--rd-sys-color-border-subtle)', borderRadius: '8px',
+          boxShadow: shadowVar('menu'), zIndex: 9999, overflow: 'hidden',
         }}>
           {options.map((opt) => (
             <button key={opt} onClick={() => { setSelected(opt); setOpen(false); }}
@@ -86,11 +86,11 @@ const Dropdown: React.FC<{ value: string; options: string[]; width?: number }> =
                 display: 'block', width: '100%', padding: '10px 16px',
                 border: 'none', textAlign: 'left', fontFamily: font, fontSize: '13px',
                 fontWeight: opt === selected ? 500 : 400,
-                color: opt === selected ? brand : '#111827',
-                backgroundColor: opt === selected ? `${brand}10` : 'transparent',
+                color: opt === selected ? brand : sysVar('content-primary'),
+                backgroundColor: opt === selected ? `color-mix(in srgb, ${brand} 6%, transparent)` : 'transparent',
                 cursor: 'pointer', transition: 'background-color 0.1s',
               }}
-              onMouseEnter={(e) => { if (opt !== selected) (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#F9FAFB'; }}
+              onMouseEnter={(e) => { if (opt !== selected) (e.currentTarget as HTMLButtonElement).style.backgroundColor = sysVar('background-sunken'); }}
               onMouseLeave={(e) => { if (opt !== selected) (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent'; }}
             >
               {opt}
@@ -112,14 +112,14 @@ const SettingRow: React.FC<{
   <div style={{
     display: 'flex', alignItems: description ? 'flex-start' : 'center',
     justifyContent: 'space-between', gap: '32px', padding: '18px 24px',
-    backgroundColor: '#FFFFFF', border: '1px solid #E9EAEC', borderRadius: '8px',
+    backgroundColor: sysVar('background-base'), border: '1px solid var(--rd-sys-color-border-subtle)', borderRadius: '8px',
   }}>
     <div style={{ flex: 1 }}>
-      <div style={{ fontSize: '14px', fontWeight: 500, color: '#111827', fontFamily: font, lineHeight: 1.4 }}>
+      <div style={{ fontSize: '14px', fontWeight: 500, color: sysVar('content-primary'), fontFamily: font, lineHeight: 1.4 }}>
         {label}
       </div>
       {description && (
-        <div style={{ fontSize: '12.5px', color: '#9CA3AF', fontFamily: font, marginTop: '3px', lineHeight: 1.5 }}>
+        <div style={{ fontSize: '12.5px', color: sysVar('content-tertiary'), fontFamily: font, marginTop: '3px', lineHeight: 1.5 }}>
           {description}
         </div>
       )}
@@ -156,11 +156,11 @@ const Section: React.FC<{
   const isOpen = multi ? open : true;
   return (
   <div style={{
-    backgroundColor: '#F3F4F6', border: '1px solid #E5E7EB',
+    backgroundColor: sysVar('background-secondary-action'), border: '1px solid var(--rd-sys-color-border-subtle)',
     borderRadius: '12px', overflow: 'hidden',
   }}>
     {/* Header row */}
-    <div style={{ display: 'flex', alignItems: 'center', padding: '16px 24px', gap: '8px', borderBottom: isOpen ? '1px solid #E5E7EB' : 'none' }}>
+    <div style={{ display: 'flex', alignItems: 'center', padding: '16px 24px', gap: '8px', borderBottom: isOpen ? '1px solid var(--rd-sys-color-border-subtle)' : 'none' }}>
       {multi ? (
         <button onClick={onToggle} style={{
           display: 'flex', alignItems: 'center', gap: '8px',
@@ -169,15 +169,15 @@ const Section: React.FC<{
         }}>
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none"
             style={{ flexShrink: 0, transform: isOpen ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.22s ease' }}>
-            <path d="M3 5.5l4 4 4-4" stroke="#6B7280" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M3 5.5l4 4 4-4" stroke="var(--rd-sys-color-content-secondary)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
-          <span style={{ fontSize: '14px', fontWeight: 'var(--font-weight-emphasis)', color: '#111827', fontFamily: font }}>{title}</span>
-          {subtitle && <span style={{ fontSize: '12.5px', color: '#9CA3AF', fontFamily: font, fontWeight: 400 }}>{subtitle}</span>}
+          <span style={{ fontSize: '14px', fontWeight: 'var(--font-weight-emphasis)', color: sysVar('content-primary'), fontFamily: font }}>{title}</span>
+          {subtitle && <span style={{ fontSize: '12.5px', color: sysVar('content-tertiary'), fontFamily: font, fontWeight: 400 }}>{subtitle}</span>}
         </button>
       ) : (
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
-          <span style={{ fontSize: '14px', fontWeight: 'var(--font-weight-emphasis)', color: '#111827', fontFamily: font }}>{title}</span>
-          {subtitle && <span style={{ fontSize: '12.5px', color: '#9CA3AF', fontFamily: font, fontWeight: 400 }}>{subtitle}</span>}
+          <span style={{ fontSize: '14px', fontWeight: 'var(--font-weight-emphasis)', color: sysVar('content-primary'), fontFamily: font }}>{title}</span>
+          {subtitle && <span style={{ fontSize: '12.5px', color: sysVar('content-tertiary'), fontFamily: font, fontWeight: 400 }}>{subtitle}</span>}
         </div>
       )}
       <ResetLink onClick={onReset} />
@@ -231,16 +231,16 @@ export const SearchSpotIQPageContent: React.FC = () => {
   const [timeSeriesForecasting, setTimeSeriesForecasting] = useState(false);
 
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundColor: '#FFFFFF' }}>
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundColor: sysVar('background-base') }}>
 
       {/* ── Sticky header (title only — no tabs) ── */}
       <div style={{
         flexShrink: 0, padding: '28px 40px 20px',
-        borderBottom: '1px solid #E5E7EB', backgroundColor: '#FFFFFF',
+        borderBottom: '1px solid var(--rd-sys-color-border-subtle)', backgroundColor: sysVar('background-base'),
       }}>
         <h1 style={{
           margin: 0, fontSize: '22px', fontWeight: 700,
-          color: '#0F172A', fontFamily: font, letterSpacing: '-0.3px',
+          color: sysVar('content-primary'), fontFamily: font, letterSpacing: '-0.3px',
         }}>
           Search & SpotIQ
         </h1>

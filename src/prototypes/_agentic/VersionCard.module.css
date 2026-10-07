@@ -94,12 +94,12 @@
   position: absolute;
   bottom: calc(100% + 4px);
   left: 0;
-  background: rgba(50, 56, 89, 0.9);
+  background: color-mix(in srgb, var(--rd-sys-color-background-inverse) 90%, transparent);
   border-radius: var(--radius-md);
   padding: var(--spacing-2) var(--spacing-3);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-regular);
-  color: var(--rd-sys-color-background-base);
+  color: var(--rd-sys-color-content-inverse);
   letter-spacing: -0.072px;
   line-height: var(--line-height-sm);
   white-space: nowrap;

@@ -429,6 +429,14 @@
   color: var(--rd-sys-color-content-secondary);
 }
 
+.maskIcon {
+  width: 16px;
+  height: 16px;
+  background-color: currentColor;
+  -webkit-mask: var(--mask-icon-src) center / contain no-repeat;
+  mask: var(--mask-icon-src) center / contain no-repeat;
+}
+
 .menuItemLabel {
   flex: 1;
 }

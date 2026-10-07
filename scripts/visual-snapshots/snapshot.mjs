@@ -81,6 +81,30 @@ function audit() {
   out.tokens = ['--font-family-primary', '--font-weight-emphasis', '--font-weight-semibold', '--font-weight-light', '--letter-spacing-relaxed']
     .map((t) => `${t}: ${root.getPropertyValue(t).trim()}`);
   out.clipped = out.clipped.slice(0, 25);
+
+  // Light surfaces: large, mostly opaque backgrounds with high luminance. In a dark run these are
+  // usually leftovers that don't follow the theme (images and canvases are not counted).
+  const luminance = (c) => {
+    const m = c.match(/rgba?\(([^)]+)\)/);
+    if (!m) return null;
+    const p = m[1].split(/[ ,/]+/).filter(Boolean).map(Number);
+    if (p.length > 3 && p[3] < 0.5) return null;
+    const f = (v) => ((v /= 255) <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
+    return 0.2126 * f(p[0]) + 0.7152 * f(p[1]) + 0.0722 * f(p[2]);
+  };
+  out.lightSurfaces = [];
+  for (const el of els) {
+    const r = el.getBoundingClientRect();
+    if (r.width * r.height < 4000) continue;
+    const cs = getComputedStyle(el);
+    if (cs.display === 'none' || cs.visibility === 'hidden') continue;
+    const l = luminance(cs.backgroundColor);
+    if (l !== null && l > 0.6) {
+      const cls = typeof el.className === 'string' && el.className ? '.' + el.className.split(' ')[0] : '';
+      out.lightSurfaces.push(`${el.tagName.toLowerCase()}${cls} ${Math.round(r.width)}x${Math.round(r.height)} ${cs.backgroundColor}`);
+    }
+  }
+  out.lightSurfaces = out.lightSurfaces.slice(0, 25);
   return out;
 }
 
@@ -94,6 +118,10 @@ async function main() {
     const dir = path.join(OUT, theme);
     await fs.mkdir(dir, { recursive: true });
     const context = await browser.newContext({ viewport: { width: WIDTH, height: 900 }, deviceScaleFactor: 1 });
+    // Save the mode before any page loads, so the app's theme controller picks it up as a user's choice would.
+    await context.addInitScript((mode) => {
+      try { localStorage.setItem('rp-theme-mode', mode); } catch {}
+    }, theme);
     for (const route of list) {
       const page = await context.newPage();
       const errors = [];
@@ -106,7 +134,10 @@ async function main() {
       try {
         await page.goto(BASE + route, { waitUntil: 'networkidle', timeout: 30000 });
         await page.addStyleTag({ content: FREEZE + (INJECT_CSS ?? '') });
-        if (theme === 'dark') await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'dark'));
+        // Builds from before the theme controller ignore the saved mode; set the attribute for those.
+        if (theme === 'dark') await page.evaluate(() => {
+          if (document.documentElement.getAttribute('data-theme') !== 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+        });
         await page.evaluate(() => document.fonts.ready);
         await page.waitForTimeout(400);
         const height = await page.evaluate(() => document.documentElement.scrollHeight);
@@ -134,6 +165,11 @@ async function main() {
   const failed = report.filter((r) => !r.file);
   console.log(`\n${report.length - failed.length} screenshots, ${failed.length} failed -> ${OUT}`);
   for (const f of failed) console.log(`  failed ${f.theme} ${f.route}: ${f.error}`);
+  const leftovers = report.filter((r) => r.theme === 'dark' && r.audit?.lightSurfaces?.length);
+  if (leftovers.length) {
+    console.log(`\n${leftovers.length} dark pages with light surfaces (details in report.json, audit.lightSurfaces):`);
+    for (const r of leftovers) console.log(`  ${r.route}: ${r.audit.lightSurfaces.length}`);
+  }
 }
 
 main().catch((e) => {

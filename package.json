@@ -12,7 +12,13 @@
     "sync-icons": "node scripts/sync-icons-from-figma.mjs",
     "sync-icons:dry": "node scripts/sync-icons-from-figma.mjs --dry-run",
     "figma-tokens:diff": "node scripts/figma-tokens/diff.mjs",
-    "figma-tokens:pull-styles": "node scripts/figma-tokens/pull-styles.mjs"
+    "figma-tokens:pull-styles": "node scripts/figma-tokens/pull-styles.mjs",
+    "scaligent-tokens:tally": "node scripts/scaligent-tokens/tally.mjs",
+    "scan:dark": "node scripts/radiant-check/scan.mjs",
+    "lint:tokens": "node scripts/radiant-check/scan.mjs --strict src/components src/spotter src/prototypes/_shared",
+    "thumbnails": "node scripts/thumbnails/capture.mjs",
+    "thumbnails:setup": "bash scripts/thumbnails/setup.sh",
+    "thumbnails:check": "node scripts/thumbnails/check.mjs"
   },
   "keywords": [
     "design-system",

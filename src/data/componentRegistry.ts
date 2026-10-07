@@ -6,6 +6,8 @@
  */
 import { iconRegistry } from '../components/icons/registry';
 import { generateCSSVariables, generateThemeVariables } from '../tokens/css-variables';
+import { sysVar } from '../tokens/colors';
+import type { SystemColorKey } from '../tokens/colors';
 
 export type ComponentSource = 'figma' | 'scaligent' | 'custom';
 export type ComponentStatus = 'stable' | 'beta' | 'new' | 'deprecated';
@@ -1190,16 +1192,18 @@ export const getTokenCountLabel = (): string => {
  * Get status color
  */
 export const getStatusColor = (status: ComponentStatus): { bg: string; text: string } => {
+  // Text in the status colour, background a 10% tint of it, so both follow the theme
+  const tone = (key: SystemColorKey) => ({ bg: `color-mix(in srgb, ${sysVar(key)} 10%, transparent)`, text: sysVar(key) });
   switch (status) {
     case 'stable':
-      return { bg: '#06BF7F1A', text: '#06BF7F' };
+      return tone('content-success');
     case 'beta':
-      return { bg: '#F5A6231A', text: '#F5A623' };
+      return tone('content-warning');
     case 'new':
-      return { bg: '#2770EF1A', text: '#2770EF' };
+      return tone('content-brand');
     case 'deprecated':
-      return { bg: '#E22B3D1A', text: '#E22B3D' };
+      return tone('content-failure');
     default:
-      return { bg: '#777E8B1A', text: '#777E8B' };
+      return tone('content-secondary');
   }
 };

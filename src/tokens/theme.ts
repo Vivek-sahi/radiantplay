@@ -56,18 +56,13 @@ export const getSystemTheme = (): ThemeMode => {
 };
 
 /**
- * Apply theme to document
+ * Write the resolved theme to <html data-theme>.
+ * Only ThemeProvider (src/context/ThemeContext.tsx) calls this. Everything
+ * else changes the theme through useTheme().
  */
-export const applyTheme = (theme: ThemeName): void => {
+export const applyTheme = (mode: ThemeMode): void => {
   if (typeof document === 'undefined') return;
-
-  const root = document.documentElement;
-  
-  if (theme === 'system') {
-    root.removeAttribute('data-theme');
-  } else {
-    root.setAttribute('data-theme', theme);
-  }
+  document.documentElement.setAttribute('data-theme', mode);
 };
 
 /**

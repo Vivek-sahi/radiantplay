@@ -151,7 +151,7 @@
 }
 
 .tertiary.standard:hover:not(.disabled) {
-  background-color: rgba(192, 198, 207, 0.12);
+  background-color: var(--rd-comp-color-button-tertiary-hover);
 }
 
 .tertiary.standard.active:not(.disabled) {
@@ -176,10 +176,12 @@
 }
 
 .tertiary.white:hover:not(.disabled) {
+  /* Darkening tint on a coloured surface; no token fits */
   background-color: rgba(0, 0, 0, 0.24);
 }
 
 .tertiary.white.active:not(.disabled) {
+  /* Darkening tint on a coloured surface; no token fits */
   background-color: rgba(0, 0, 0, 0.48);
 }
 

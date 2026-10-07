@@ -34,6 +34,7 @@ const baseSystemColors = {
     'background-ghost-hover': 'rgba(192, 198, 207, 0.12)',
     'background-ghost-highlight': '#71A1F41F', // was #DEE8FA — Phase 2 fix (12% translucent)
     'background-on-base': '#F6F8FA',
+    'background-secondary-hover': '#DBDFE7',     // Gray/30, hover on background-secondary-action
     'background-active': '#FFFFFF',
     'background-accent-green': '#E0F8EF',
     'background-accent-yellow': '#FFF8E5',
@@ -108,6 +109,7 @@ const baseSystemColors = {
     'background-ghost-hover': '#C0C6CF1F',
     'background-ghost-highlight': '#71A1F41F',
     'background-on-base': '#26282C',
+    'background-secondary-hover': '#46494E',     // Dark Gray/30
     'background-active': '#5D636A',
     'background-accent-green': '#003B26',
     'background-accent-yellow': '#4F3D09',
@@ -194,3 +196,13 @@ export const systemColors = {
 
 export type SystemColors = typeof systemColors;
 export type SystemColorKey = keyof typeof systemColors.light;
+
+/**
+ * CSS variable for a system token, for inline styles in TSX:
+ * sysVar('content-primary') → 'var(--rd-sys-color-content-primary)'.
+ * Follows the theme. Use it instead of systemColors.light[...], which is always light.
+ */
+export const sysVar = (key: SystemColorKey): string => `var(--rd-sys-color-${key})`;
+
+/** CSS variable for a shadow token: shadowVar('menu') → 'var(--rd-sys-color-shadow-menu)'. */
+export const shadowVar = (level: 'surface' | 'menu' | 'modal'): string => `var(--rd-sys-color-shadow-${level})`;

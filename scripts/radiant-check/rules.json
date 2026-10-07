@@ -1,0 +1,276 @@
+{
+  "_readme": "Rules for scripts/radiant-check/scan.mjs. `exclude` skips files entirely (token definitions). `allow` lists accepted exceptions: path (a file, or a folder ending in /), optional kinds, optional match (text the line must contain), and a reason. Keep every entry's reason current.",
+  "exclude": [
+    "src/tokens/",
+    "src/styles/tokens.css",
+    "src/pages/HowItWorksPage.tsx",
+    "src/pages/RoadmapPage.tsx"
+  ],
+  "allow": [
+    {
+      "path": "src/components/GlobalHeader/GlobalHeader.tsx",
+      "kinds": [
+        "light-read"
+      ],
+      "reason": "The legacy theme='dark' variant is always dark; the default 'auto' variant uses sysVar()"
+    },
+    {
+      "path": "src/components/ColorPicker/ColorPicker.tsx",
+      "kinds": [
+        "literal"
+      ],
+      "reason": "Swatches and defaults are the colours a user picks, not UI colours"
+    },
+    {
+      "path": "src/components/Button/Button.module.css",
+      "kinds": [
+        "literal"
+      ],
+      "match": "rgba(0, 0, 0",
+      "reason": "White colorway hover and pressed tints sit on coloured surfaces; no token fits"
+    },
+    {
+      "path": "src/spotter/chat/PromptBar.tsx",
+      "kinds": [
+        "literal"
+      ],
+      "match": "color: '#",
+      "reason": "Connector brand colours (Google, Slack, Figma and so on) are data"
+    },
+    {
+      "path": "src/spotter/chat/PromptBar.module.css",
+      "kinds": [
+        "literal"
+      ],
+      "match": "--promptbar-glow-cyan",
+      "reason": "Cyan glow; there is no teal or cyan accent token yet"
+    },
+    {
+      "path": "src/prototypes/_shared/tiles/chartPalette.ts",
+      "kinds": [
+        "literal"
+      ],
+      "reason": "Source of the chart series palette. chartUi is light-only and kept for NewUIAdmin2; use useChartTheme()"
+    },
+    {
+      "path": "src/prototypes/_shared/tiles/GroupTile.tsx",
+      "kinds": [
+        "literal"
+      ],
+      "match": "--rd-sys-color-",
+      "reason": "Overrides for a group tile the user colours dark; content, not theme"
+    },
+    {
+      "path": "src/prototypes/_shared/tiles/noteContent.ts",
+      "kinds": [
+        "literal"
+      ],
+      "reason": "Note text colours are content; NoteTile lightens them on dark tiles"
+    },
+    {
+      "path": "src/prototypes/_shared/tiles/charts/HeatmapChart.tsx",
+      "kinds": [
+        "light-read"
+      ],
+      "match": "isDark ?",
+      "reason": "Picks the light or dark value by mode for a canvas chart"
+    },
+    {
+      "path": "src/prototypes/_shared/tiles/charts/KPIChart.tsx",
+      "kinds": [
+        "light-read"
+      ],
+      "match": "isDark ?",
+      "reason": "Picks the light or dark value by mode"
+    },
+    {
+      "path": "src/App.tsx",
+      "kinds": [
+        "literal"
+      ],
+      "reason": "Brand logo tile: blue gradient with white text in both themes"
+    },
+    {
+      "path": "src/pages/PlaygroundGallery.tsx",
+      "kinds": [
+        "literal"
+      ],
+      "match": "#2770EF",
+      "reason": "Brand logo tile gradient"
+    },
+    {
+      "path": "src/pages/PlaygroundGallery.tsx",
+      "kinds": [
+        "literal"
+      ],
+      "match": "#ffffff",
+      "reason": "White text on the brand logo tile"
+    },
+    {
+      "path": "src/pages/PlaygroundGallery.tsx",
+      "kinds": [
+        "literal"
+      ],
+      "match": "rgba(",
+      "reason": "Neutral black shadows and modal backdrop read on both themes"
+    },
+    {
+      "path": "src/pages/HomePage.tsx",
+      "kinds": [
+        "literal"
+      ],
+      "match": "#2770EF",
+      "reason": "Brand CTA gradient"
+    },
+    {
+      "path": "src/pages/HomePage.tsx",
+      "kinds": [
+        "literal"
+      ],
+      "match": "#ffffff",
+      "reason": "White text on the brand CTA"
+    },
+    {
+      "path": "src/pages/HomePage.tsx",
+      "kinds": [
+        "literal"
+      ],
+      "match": "rgba(",
+      "reason": "Neutral and brand glow shadows read on both themes"
+    },
+    {
+      "path": "src/pages/RadiantHomePage.tsx",
+      "kinds": [
+        "literal"
+      ],
+      "reason": "Hero banner is dark in both themes by design, with brand gradients"
+    },
+    {
+      "path": "src/pages/ColorSystemPage.tsx",
+      "kinds": [
+        "light-read",
+        "literal"
+      ],
+      "reason": "Swatches show token values as data, in both modes"
+    },
+    {
+      "path": "src/pages/TypographyPage.tsx",
+      "kinds": [
+        "light-read"
+      ],
+      "reason": "Colour variant table shows token values as documentation"
+    },
+    {
+      "path": "src/pages/ArchitectureShowcase.tsx",
+      "kinds": [
+        "light-read",
+        "literal"
+      ],
+      "reason": "Code samples, example token values and reference swatches are documentation"
+    },
+    {
+      "path": "src/pages/ComponentDocPage.tsx",
+      "kinds": [
+        "literal"
+      ],
+      "match": "useState('#",
+      "reason": "ColorPicker demo value"
+    },
+    {
+      "path": "src/pages/IconsShowcase.tsx",
+      "kinds": [
+        "literal"
+      ],
+      "match": "color=\"#666\"",
+      "reason": "Inside a code example"
+    },
+    {
+      "path": "src/context/InspectorContext.tsx",
+      "kinds": [
+        "light-read",
+        "literal"
+      ],
+      "reason": "Inspector shows token names and values as data. Its labels are stale (--color-brand-blue-60); fix in a separate pass"
+    },
+    {
+      "path": "src/data/versionHistory.ts",
+      "kinds": [
+        "literal",
+        "light-read"
+      ],
+      "match": "description:",
+      "reason": "Hex values and code names in changelog text"
+    },
+    {
+      "path": "src/prototypes/NewUIAdmin2/CustomisationPageContent.tsx",
+      "kinds": [
+        "literal"
+      ],
+      "reason": "Customer brand colours, palettes, logo and app badge previews are data the page edits"
+    },
+    {
+      "path": "src/prototypes/NewUIAdmin2/AISettingsPageContent.tsx",
+      "kinds": [
+        "literal"
+      ],
+      "reason": "Third-party product logos (Slack, Jira, Snowflake, Anthropic, Gemini and others)"
+    },
+    {
+      "path": "src/prototypes/NewUIAdmin2/UserManagementPageContent.tsx",
+      "kinds": [
+        "literal"
+      ],
+      "reason": "Identity provider logos (Google, Microsoft, Amazon, SAML)"
+    },
+    {
+      "path": "src/prototypes/NewUIAdmin2/AIBIStatsPageContent.tsx",
+      "kinds": [
+        "literal"
+      ],
+      "reason": "Day-of-week series colours in a hand-drawn chart"
+    },
+    {
+      "path": "src/prototypes/NewUIAdmin2/BillingQueryStatsPageContent.tsx",
+      "kinds": [
+        "literal"
+      ],
+      "reason": "Teal series colour, passed through useChartTheme().seriesColor"
+    },
+    {
+      "path": "src/prototypes/NewUIAdmin2/PerformanceTrackingPageContent.tsx",
+      "kinds": [
+        "literal"
+      ],
+      "reason": "Teal series colour, passed through useChartTheme().seriesColor"
+    },
+    {
+      "path": "src/prototypes/StylingPanel/StylingPanel.tsx",
+      "kinds": [
+        "literal"
+      ],
+      "reason": "User-picked tile themes and swatch palettes"
+    },
+    {
+      "path": "src/prototypes/StylingPanel/components/StylingPanelDrawer.tsx",
+      "kinds": [
+        "literal"
+      ],
+      "reason": "User-picked tile themes and swatch palettes"
+    },
+    {
+      "path": "src/prototypes/AdminGroups/components/AdminHeader.tsx",
+      "kinds": [
+        "literal"
+      ],
+      "reason": "ThoughtSpot logo colours"
+    },
+    {
+      "path": "src/prototypes/DataModelEditor/dme.css",
+      "kinds": [
+        "literal"
+      ],
+      "reason": "AI gradient cyan; there is no teal or cyan accent token yet"
+    }
+  ],
+  "_exclude_note": "HowItWorksPage has its own styling and RoadmapPage's route is commented out; both are outside the dark mode rollout."
+}

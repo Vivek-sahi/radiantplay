@@ -1,5 +1,6 @@
 import React, { forwardRef, useRef, useEffect, useState } from 'react';
 import styles from './GroupTile.module.css';
+import { sysVar } from '@tokens/colors';
 import type { ChartType, TileMode } from './AnswerTile';
 import { AnswerTile } from './AnswerTile';
 import { NoteTile } from './NoteTile';
@@ -221,7 +222,8 @@ const IconDelete = () => (
 
 const innerShadow: React.CSSProperties = {
   display: 'none', position: 'absolute',
-  background: 'rgba(39,112,239,0.08)', border: '1.5px solid rgba(39,112,239,0.35)',
+  background: `color-mix(in srgb, ${sysVar('content-brand')} 8%, transparent)`,
+  border: `1.5px solid color-mix(in srgb, ${sysVar('content-brand')} 35%, transparent)`,
   borderRadius: 6, pointerEvents: 'none', zIndex: 4, boxSizing: 'border-box',
   transition: 'none',
 };
@@ -260,8 +262,8 @@ export const GroupTile = forwardRef<HTMLDivElement, GroupTileProps>(
     const titleInputRef = useRef<HTMLInputElement>(null);
     const descInputRef  = useRef<HTMLInputElement>(null);
 
-    const titleBorder = titleFocused ? '1px solid #2770EF' : titleHovered ? '1px solid #C0C6CF' : '1px solid transparent';
-    const descBorder  = descFocused  ? '1px solid #2770EF' : descHovered  ? '1px solid #C0C6CF' : '1px solid transparent';
+    const titleBorder = titleFocused ? `1px solid ${sysVar('border-brand')}` : titleHovered ? `1px solid ${sysVar('border-default')}` : '1px solid transparent';
+    const descBorder  = descFocused  ? `1px solid ${sysVar('border-brand')}` : descHovered  ? `1px solid ${sysVar('border-default')}` : '1px solid transparent';
 
     // Body ref — ResizeObserver watches width changes to update innerCU
     const bodyRef = useRef<HTMLDivElement>(null);
@@ -691,6 +693,8 @@ export const GroupTile = forwardRef<HTMLDivElement, GroupTileProps>(
               overflow: 'visible',
               borderRadius: 6,
               ...(ov?.resolvedBg ? { background: ov.resolvedBg } : {}),
+              // A user-picked dark tile background (content, not theme): fixed light-on-dark
+              // values so text reads on it in either theme.
               ...(ov?.dark ? {
                 '--rd-sys-color-content-primary':   '#DBDFE7',
                 '--rd-sys-color-content-secondary': '#A5ACB9',

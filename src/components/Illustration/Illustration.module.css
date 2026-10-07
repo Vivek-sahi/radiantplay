@@ -2,6 +2,6 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: var(--rd-sys-color-content-subtle);
+  color: var(--rd-sys-color-content-secondary);
   flex-shrink: 0;
 }

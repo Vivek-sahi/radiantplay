@@ -1,5 +1,5 @@
 import { CSSProperties } from 'react';
-import { systemColors, referenceColors } from '../../tokens/colors';
+import { sysVar, shadowVar } from '../../tokens/colors';
 import { spacing } from '../../tokens/spacing';
 
 /**
@@ -14,7 +14,7 @@ export const styles = {
     display: 'flex',
     flexDirection: 'column',
     height: '100vh',
-    backgroundColor: systemColors.light['background-sunken'],
+    backgroundColor: sysVar('background-sunken'),
     fontFamily: 'var(--font-family-primary)',
   } as CSSProperties,
 
@@ -35,8 +35,8 @@ export const styles = {
   sidebar: {
     width: '240px',
     flexShrink: 0,
-    backgroundColor: systemColors.light['background-base'],
-    borderRight: `1px solid ${systemColors.light['background-subtle']}`,
+    backgroundColor: sysVar('background-base'),
+    borderRight: `1px solid ${sysVar('background-subtle')}`,
     overflowY: 'auto',
   } as CSSProperties,
 
@@ -45,7 +45,7 @@ export const styles = {
     flex: 1,
     overflowY: 'auto',
     padding: `${spacing.F}px ${spacing.H}px`,
-    backgroundColor: systemColors.light['background-base'],
+    backgroundColor: sysVar('background-base'),
   } as CSSProperties,
 
   // Content container
@@ -62,8 +62,10 @@ export const headerStyles = {
     justifyContent: 'space-between',
     height: '56px',
     padding: `0 ${spacing.F}px`,
-    backgroundColor: systemColors.light['content-primary'],
-    color: systemColors.light['background-base'],
+    // Product nav: background-on-base with a border-subtle divider, following the theme
+    backgroundColor: sysVar('background-on-base'),
+    borderBottom: `1px solid ${sysVar('border-subtle')}`,
+    color: sysVar('content-primary'),
     fontFamily: 'var(--font-family-primary)',
   } as CSSProperties,
 
@@ -77,7 +79,7 @@ export const headerStyles = {
     display: 'flex',
     alignItems: 'center',
     gap: `${spacing.B}px`,
-    color: systemColors.light['background-base'],
+    color: sysVar('content-primary'),
     fontWeight: 'var(--font-weight-emphasis)',
     fontSize: '16px',
   } as CSSProperties,
@@ -100,10 +102,10 @@ export const headerStyles = {
     height: '36px',
     padding: `0 ${spacing.C}px`,
     paddingLeft: '40px',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    border: '1px solid rgba(255, 255, 255, 0.1)',
+    backgroundColor: sysVar('background-secondary-action'),
+    border: `1px solid ${sysVar('border-subtle')}`,
     borderRadius: '6px',
-    color: systemColors.light['background-base'],
+    color: sysVar('content-primary'),
     fontSize: '14px',
     outline: 'none',
     transition: 'all 0.15s ease',
@@ -123,7 +125,7 @@ export const headerStyles = {
     height: '36px',
     borderRadius: '6px',
     cursor: 'pointer',
-    color: 'rgba(255, 255, 255, 0.7)',
+    color: sysVar('content-secondary'),
     transition: 'all 0.15s ease',
     position: 'relative',
   } as CSSProperties,
@@ -134,9 +136,9 @@ export const headerStyles = {
     right: '6px',
     width: '8px',
     height: '8px',
-    backgroundColor: systemColors.light['content-failure'],
+    backgroundColor: sysVar('content-failure'),
     borderRadius: '50%',
-    border: `2px solid ${systemColors.light['content-primary']}`,
+    border: `2px solid ${sysVar('background-on-base')}`,
   } as CSSProperties,
 };
 
@@ -149,20 +151,20 @@ export const sidebarStyles = {
 
   header: {
     padding: `${spacing.C}px ${spacing.D}px`,
-    borderBottom: `1px solid ${systemColors.light['background-subtle']}`,
+    borderBottom: `1px solid ${sysVar('background-subtle')}`,
     marginBottom: `${spacing.C}px`,
   } as CSSProperties,
 
   headerTitle: {
     fontSize: '14px',
     fontWeight: 'var(--font-weight-emphasis)',
-    color: systemColors.light['content-primary'],
+    color: sysVar('content-primary'),
     marginBottom: `${spacing.B}px`,
   } as CSSProperties,
 
   toggleContainer: {
     display: 'flex',
-    backgroundColor: systemColors.light['background-sunken'],
+    backgroundColor: sysVar('background-sunken'),
     borderRadius: '6px',
     padding: '2px',
     gap: '2px',
@@ -173,7 +175,7 @@ export const sidebarStyles = {
     padding: `${spacing.B}px ${spacing.C}px`,
     fontSize: '13px',
     fontWeight: 500,
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
     backgroundColor: 'transparent',
     border: 'none',
     borderRadius: '4px',
@@ -182,15 +184,15 @@ export const sidebarStyles = {
   } as CSSProperties,
 
   toggleButtonActive: {
-    backgroundColor: systemColors.light['background-base'],
-    color: systemColors.light['content-primary'],
-    boxShadow: '0 1px 2px rgba(0,0,0,0.08)',
+    backgroundColor: sysVar('background-base'),
+    color: sysVar('content-primary'),
+    boxShadow: shadowVar('surface'),
   } as CSSProperties,
 
   sectionLabel: {
     fontSize: '11px',
     fontWeight: 'var(--font-weight-emphasis)',
-    color: systemColors.light['content-tertiary'],
+    color: sysVar('content-tertiary'),
     textTransform: 'uppercase',
     letterSpacing: '0.6px',
     padding: `${spacing.D}px ${spacing.D}px ${spacing.B}px`,
@@ -203,7 +205,7 @@ export const sidebarStyles = {
     gap: `${spacing.B}px`,
     padding: `${spacing.B}px ${spacing.D}px`,
     fontSize: '13px',
-    color: referenceColors.gray['70'],
+    color: sysVar('content-secondary'),
     cursor: 'pointer',
     borderLeft: '3px solid transparent',
     transition: 'all 0.15s ease',
@@ -211,9 +213,9 @@ export const sidebarStyles = {
   } as CSSProperties,
 
   navItemActive: {
-    color: systemColors.light['content-brand'],
-    backgroundColor: `${systemColors.light['content-brand']}08`,
-    borderLeftColor: systemColors.light['content-brand'],
+    color: sysVar('content-brand'),
+    backgroundColor: `color-mix(in srgb, ${sysVar('content-brand')} 3%, transparent)`,
+    borderLeftColor: sysVar('content-brand'),
     fontWeight: 500,
   } as CSSProperties,
 
@@ -233,21 +235,21 @@ export const pageHeaderStyles = {
     alignItems: 'center',
     gap: `${spacing.B}px`,
     fontSize: '13px',
-    color: systemColors.light['content-tertiary'],
+    color: sysVar('content-tertiary'),
     marginBottom: `${spacing.B}px`,
   } as CSSProperties,
 
   title: {
     fontSize: '24px',
     fontWeight: 'var(--font-weight-emphasis)',
-    color: systemColors.light['content-primary'],
+    color: sysVar('content-primary'),
     margin: 0,
     marginBottom: `${spacing.D}px`,
     letterSpacing: '-0.3px',
   } as CSSProperties,
 
   tabs: {
-    borderBottom: `1px solid ${systemColors.light['background-subtle']}`,
+    borderBottom: `1px solid ${sysVar('background-subtle')}`,
   } as CSSProperties,
 };
 
@@ -270,14 +272,14 @@ export const toolbarStyles = {
 // Table styles
 export const tableStyles = {
   container: {
-    backgroundColor: systemColors.light['background-base'],
+    backgroundColor: sysVar('background-base'),
     borderRadius: '8px',
-    border: `1px solid ${systemColors.light['background-subtle']}`,
+    border: `1px solid ${sysVar('background-subtle')}`,
     overflow: 'hidden',
   } as CSSProperties,
 
   linkCell: {
-    color: systemColors.light['content-brand'],
+    color: sysVar('content-brand'),
     textDecoration: 'none',
     cursor: 'pointer',
     fontWeight: 500,
@@ -293,7 +295,7 @@ export const modalStyles = {
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(29, 35, 47, 0.5)',
+    backgroundColor: sysVar('background-overlay'),
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -303,9 +305,9 @@ export const modalStyles = {
   container: {
     width: '600px',
     maxHeight: '90vh',
-    backgroundColor: systemColors.light['background-base'],
+    backgroundColor: sysVar('background-base'),
     borderRadius: '6px',
-    boxShadow: '0px 24px 32px rgba(25, 35, 49, 0.16), 0px 0px 4px rgba(25, 35, 49, 0.08)',
+    boxShadow: shadowVar('modal'),
     display: 'flex',
     flexDirection: 'column',
     overflow: 'hidden',
@@ -313,20 +315,20 @@ export const modalStyles = {
 
   header: {
     padding: `${spacing.E}px ${spacing.F}px`,
-    borderBottom: `1px solid ${systemColors.light['background-subtle']}`,
+    borderBottom: `1px solid ${sysVar('background-subtle')}`,
   } as CSSProperties,
 
   contextLabel: {
     fontSize: '14px',
     fontWeight: 400,
-    color: systemColors.light['content-tertiary'],
+    color: sysVar('content-tertiary'),
     marginBottom: `${spacing.A}px`,
   } as CSSProperties,
 
   stepTitle: {
     fontSize: '20px',
     fontWeight: 'var(--font-weight-emphasis)',
-    color: systemColors.light['content-primary'],
+    color: sysVar('content-primary'),
     letterSpacing: '-0.4px',
     margin: 0,
   } as CSSProperties,
@@ -348,12 +350,12 @@ export const modalStyles = {
     flex: 1,
     height: '4px',
     borderRadius: '2px',
-    backgroundColor: systemColors.light['background-subtle'],
+    backgroundColor: sysVar('background-subtle'),
     transition: 'background-color 0.2s ease',
   } as CSSProperties,
 
   progressSegmentActive: {
-    backgroundColor: systemColors.light['content-brand'],
+    backgroundColor: sysVar('content-brand'),
   } as CSSProperties,
 
   footer: {
@@ -361,7 +363,7 @@ export const modalStyles = {
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: `${spacing.E}px ${spacing.F}px`,
-    backgroundColor: systemColors.light['background-sunken'],
+    backgroundColor: sysVar('background-sunken'),
     borderBottomLeftRadius: '6px',
     borderBottomRightRadius: '6px',
   } as CSSProperties,
@@ -369,7 +371,7 @@ export const modalStyles = {
   cancelButton: {
     background: 'none',
     border: 'none',
-    color: systemColors.light['content-brand'],
+    color: sysVar('content-brand'),
     fontSize: '14px',
     fontWeight: 400,
     cursor: 'pointer',
@@ -383,8 +385,8 @@ export const modalStyles = {
   } as CSSProperties,
 
   backButton: {
-    backgroundColor: systemColors.light['background-subtle'],
-    color: systemColors.light['content-primary'],
+    backgroundColor: sysVar('background-subtle'),
+    color: sysVar('content-primary'),
     border: 'none',
     padding: `6px ${spacing.D}px`,
     borderRadius: '16px',
@@ -395,8 +397,8 @@ export const modalStyles = {
   } as CSSProperties,
 
   nextButton: {
-    backgroundColor: systemColors.light['content-brand'],
-    color: systemColors.light['background-base'],
+    backgroundColor: sysVar('content-brand'),
+    color: sysVar('background-base'),
     border: 'none',
     padding: `6px ${spacing.D}px`,
     borderRadius: '16px',
@@ -407,7 +409,7 @@ export const modalStyles = {
   } as CSSProperties,
 
   nextButtonDisabled: {
-    backgroundColor: referenceColors.gray['30'],
+    backgroundColor: sysVar('background-secondary-hover'),
     cursor: 'not-allowed',
   } as CSSProperties,
 };
@@ -417,7 +419,7 @@ export const orgSelectStyles = {
   sectionLabel: {
     fontSize: '16px',
     fontWeight: 'var(--font-weight-emphasis)',
-    color: systemColors.light['content-primary'],
+    color: sysVar('content-primary'),
     marginBottom: `${spacing.C}px`,
     letterSpacing: '-0.4px',
   } as CSSProperties,
@@ -436,7 +438,7 @@ export const orgSelectStyles = {
   countLabel: {
     fontSize: '12px',
     fontWeight: 400,
-    color: systemColors.light['content-primary'],
+    color: sysVar('content-primary'),
     letterSpacing: '-0.6px',
   } as CSSProperties,
 
@@ -449,7 +451,7 @@ export const orgSelectStyles = {
   actionLink: {
     fontSize: '12px',
     fontWeight: 400,
-    color: systemColors.light['content-brand'],
+    color: sysVar('content-brand'),
     cursor: 'pointer',
     background: 'none',
     border: 'none',
@@ -459,14 +461,14 @@ export const orgSelectStyles = {
   divider: {
     width: '1px',
     height: '18px',
-    backgroundColor: systemColors.light['background-subtle'],
+    backgroundColor: sysVar('background-subtle'),
   } as CSSProperties,
 
   listContainer: {
-    border: `1px solid ${systemColors.light['background-subtle']}`,
+    border: `1px solid ${sysVar('background-subtle')}`,
     borderRadius: '6px',
     overflow: 'hidden',
-    backgroundColor: systemColors.light['background-base'],
+    backgroundColor: sysVar('background-base'),
   } as CSSProperties,
 
   listScroll: {
@@ -485,7 +487,7 @@ export const orgSelectStyles = {
   listItemLabel: {
     fontSize: '14px',
     fontWeight: 400,
-    color: systemColors.light['content-primary'],
+    color: sysVar('content-primary'),
   } as CSSProperties,
 
   toggleFooter: {
@@ -493,14 +495,14 @@ export const orgSelectStyles = {
     alignItems: 'center',
     gap: `${spacing.C}px`,
     padding: `${spacing.C}px ${spacing.D}px`,
-    borderTop: `1px solid ${systemColors.light['background-subtle']}`,
-    backgroundColor: systemColors.light['background-base'],
+    borderTop: `1px solid ${sysVar('background-subtle')}`,
+    backgroundColor: sysVar('background-base'),
   } as CSSProperties,
 
   toggleLabel: {
     fontSize: '14px',
     fontWeight: 400,
-    color: systemColors.light['content-primary'],
+    color: sysVar('content-primary'),
   } as CSSProperties,
 };
 
@@ -513,18 +515,18 @@ export const formStyles = {
   label: {
     fontSize: '14px',
     fontWeight: 500,
-    color: systemColors.light['content-primary'],
+    color: sysVar('content-primary'),
     marginBottom: `${spacing.B}px`,
     display: 'block',
   } as CSSProperties,
 
   required: {
-    color: systemColors.light['content-failure'],
+    color: sysVar('content-failure'),
   } as CSSProperties,
 
   helperText: {
     fontSize: '12px',
-    color: systemColors.light['content-tertiary'],
+    color: sysVar('content-tertiary'),
     marginTop: `${spacing.A}px`,
   } as CSSProperties,
 };
@@ -533,7 +535,7 @@ export const formStyles = {
 export const roleAssignStyles = {
   description: {
     fontSize: '14px',
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
     marginBottom: `${spacing.D}px`,
   } as CSSProperties,
 
@@ -542,7 +544,7 @@ export const roleAssignStyles = {
     alignItems: 'center',
     gap: `${spacing.C}px`,
     padding: `${spacing.C}px ${spacing.D}px`,
-    backgroundColor: systemColors.light['background-sunken'],
+    backgroundColor: sysVar('background-sunken'),
     borderRadius: '6px',
     marginBottom: `${spacing.D}px`,
   } as CSSProperties,
@@ -550,11 +552,11 @@ export const roleAssignStyles = {
   bulkLabel: {
     fontSize: '14px',
     fontWeight: 500,
-    color: systemColors.light['content-primary'],
+    color: sysVar('content-primary'),
   } as CSSProperties,
 
   tableContainer: {
-    border: `1px solid ${systemColors.light['background-subtle']}`,
+    border: `1px solid ${sysVar('background-subtle')}`,
     borderRadius: '6px',
     overflow: 'hidden',
   } as CSSProperties,
@@ -562,11 +564,11 @@ export const roleAssignStyles = {
   tableHeader: {
     display: 'flex',
     padding: `${spacing.C}px ${spacing.D}px`,
-    backgroundColor: systemColors.light['background-sunken'],
-    borderBottom: `1px solid ${systemColors.light['background-subtle']}`,
+    backgroundColor: sysVar('background-sunken'),
+    borderBottom: `1px solid ${sysVar('background-subtle')}`,
     fontSize: '12px',
     fontWeight: 'var(--font-weight-emphasis)',
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
     textTransform: 'uppercase',
     letterSpacing: '0.3px',
   } as CSSProperties,
@@ -575,13 +577,13 @@ export const roleAssignStyles = {
     display: 'flex',
     alignItems: 'center',
     padding: `${spacing.C}px ${spacing.D}px`,
-    borderBottom: `1px solid ${systemColors.light['background-subtle']}`,
+    borderBottom: `1px solid ${sysVar('background-subtle')}`,
   } as CSSProperties,
 
   orgName: {
     flex: 1,
     fontSize: '14px',
-    color: systemColors.light['content-primary'],
+    color: sysVar('content-primary'),
   } as CSSProperties,
 
   roleSelect: {
@@ -598,13 +600,13 @@ export const usersParentStyles = {
   sectionTitle: {
     fontSize: '14px',
     fontWeight: 500,
-    color: systemColors.light['content-primary'],
+    color: sysVar('content-primary'),
     marginBottom: `${spacing.B}px`,
   } as CSSProperties,
 
   sectionDescription: {
     fontSize: '13px',
-    color: systemColors.light['content-tertiary'],
+    color: sysVar('content-tertiary'),
     marginBottom: `${spacing.C}px`,
   } as CSSProperties,
 

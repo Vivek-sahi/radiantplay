@@ -165,7 +165,7 @@
 }
 
 .dark .itemActive {
-  background-color: rgba(39, 112, 239, 0.2);
+  background-color: color-mix(in srgb, var(--rd-sys-color-content-brand) 20%, transparent);
   color: var(--rd-comp-color-button-primary-pressed);
 }
 

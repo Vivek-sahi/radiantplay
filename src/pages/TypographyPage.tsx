@@ -1,5 +1,5 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { systemColors, referenceColors } from '../tokens/colors';
+import { systemColors, referenceColors, sysVar } from '../tokens/colors';
 
 // Error Boundary to catch React rendering errors
 class TypographyPageErrorBoundary extends Component<
@@ -45,14 +45,14 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: 'var(--font-family-primary)',
     fontSize: 36,
     fontWeight: 700,
-    color: systemColors.light['content-primary'],
+    color: sysVar('content-primary'),
     marginBottom: 12,
   },
   pageDescription: {
     fontFamily: 'var(--font-family-primary)',
     fontSize: 16,
     fontWeight: 400,
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
     lineHeight: '26px',
     maxWidth: 700,
   },
@@ -64,15 +64,15 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     gap: 24,
     padding: 24,
-    backgroundColor: systemColors.light['background-base'],
-    border: `1px solid ${systemColors.light['background-subtle']}`,
+    backgroundColor: sysVar('background-base'),
+    border: `1px solid ${sysVar('background-subtle')}`,
     borderRadius: 12,
     marginBottom: 12,
   },
   fontPreview: {
     width: 80,
     height: 80,
-    backgroundColor: systemColors.light['background-sunken'],
+    backgroundColor: sysVar('background-sunken'),
     borderRadius: 12,
     display: 'flex',
     alignItems: 'center',
@@ -82,7 +82,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: 'var(--font-family-primary)',
     fontSize: 36,
     fontWeight: 'var(--font-weight-emphasis)',
-    color: systemColors.light['content-primary'],
+    color: sysVar('content-primary'),
   },
   fontInfo: {
     flex: 1,
@@ -93,17 +93,17 @@ const styles: Record<string, React.CSSProperties> = {
   fontStack: {
     fontFamily: 'var(--font-family-mono)',
     fontSize: 11,
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
     marginTop: 8,
-    backgroundColor: systemColors.light['background-sunken'],
+    backgroundColor: sysVar('background-sunken'),
     padding: '6px 10px',
     borderRadius: 6,
   },
   typographyList: {
     display: 'flex',
     flexDirection: 'column',
-    backgroundColor: systemColors.light['background-base'],
-    border: `1px solid ${systemColors.light['background-subtle']}`,
+    backgroundColor: sysVar('background-base'),
+    border: `1px solid ${sysVar('background-subtle')}`,
     borderRadius: 12,
     overflow: 'hidden',
   },
@@ -111,7 +111,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     padding: '16px 24px',
-    borderBottom: `1px solid ${systemColors.light['background-sunken']}`,
+    borderBottom: `1px solid ${sysVar('background-sunken')}`,
   },
   typographyMeta: {
     width: 240,
@@ -123,12 +123,12 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: 'var(--font-family-mono)',
     fontSize: 12,
     fontWeight: 500,
-    color: systemColors.light['content-brand'],
+    color: sysVar('content-brand'),
   },
   specsLabel: {
     fontFamily: 'var(--font-family-primary)',
     fontSize: 11,
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
   },
   typographySample: {
     flex: 1,
@@ -140,8 +140,8 @@ const styles: Record<string, React.CSSProperties> = {
   },
   colorCard: {
     padding: 20,
-    backgroundColor: systemColors.light['background-base'],
-    border: `1px solid ${systemColors.light['background-subtle']}`,
+    backgroundColor: sysVar('background-base'),
+    border: `1px solid ${sysVar('background-subtle')}`,
     borderRadius: 12,
     display: 'flex',
     flexDirection: 'column',
@@ -150,7 +150,7 @@ const styles: Record<string, React.CSSProperties> = {
   colorCode: {
     fontFamily: 'var(--font-family-mono)',
     fontSize: 11,
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
   },
   guidelinesGrid: {
     display: 'grid',
@@ -159,14 +159,14 @@ const styles: Record<string, React.CSSProperties> = {
   },
   guidelineCard: {
     padding: 20,
-    backgroundColor: systemColors.light['background-sunken'],
+    backgroundColor: sysVar('background-sunken'),
     borderRadius: 12,
     display: 'flex',
     flexDirection: 'column',
     gap: 6,
   },
   codeBlock: {
-    backgroundColor: systemColors.light['content-primary'],
+    backgroundColor: 'var(--rd-ref-color-dark-gray-00)', // code blocks stay dark in both themes
     borderRadius: 12,
     padding: 24,
     overflow: 'auto',
@@ -175,13 +175,13 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: 'var(--font-family-mono)',
     fontSize: 13,
     lineHeight: '22px',
-    color: referenceColors.gray['30'],
+    color: 'var(--rd-ref-color-dark-gray-90)',
     margin: 0,
   },
   // Props Table
   propsTable: {
-    backgroundColor: systemColors.light['background-base'],
-    border: `1px solid ${systemColors.light['background-subtle']}`,
+    backgroundColor: sysVar('background-base'),
+    border: `1px solid ${sysVar('background-subtle')}`,
     borderRadius: 12,
     overflow: 'hidden',
   },
@@ -190,14 +190,14 @@ const styles: Record<string, React.CSSProperties> = {
     gridTemplateColumns: '150px 1fr 120px 2fr',
     gap: 16,
     padding: '12px 16px',
-    backgroundColor: systemColors.light['background-sunken'],
-    borderBottom: `1px solid ${systemColors.light['background-subtle']}`,
+    backgroundColor: sysVar('background-sunken'),
+    borderBottom: `1px solid ${sysVar('background-subtle')}`,
   },
   propsHeaderCell: {
     fontFamily: 'var(--font-family-primary)',
     fontSize: 12,
     fontWeight: 'var(--font-weight-emphasis)',
-    color: referenceColors.gray['70'],
+    color: sysVar('content-primary'),
     textTransform: 'uppercase',
     letterSpacing: '0.5px',
   },
@@ -206,17 +206,17 @@ const styles: Record<string, React.CSSProperties> = {
     gridTemplateColumns: '150px 1fr 120px 2fr',
     gap: 16,
     padding: '12px 16px',
-    borderBottom: `1px solid ${systemColors.light['background-sunken']}`,
+    borderBottom: `1px solid ${sysVar('background-sunken')}`,
   },
   propsCell: {
     fontFamily: 'var(--font-family-mono)',
     fontSize: 12,
-    color: referenceColors.gray['70'],
+    color: sysVar('content-primary'),
   },
   // Examples
   exampleCard: {
-    backgroundColor: systemColors.light['background-base'],
-    border: `1px solid ${systemColors.light['background-subtle']}`,
+    backgroundColor: sysVar('background-base'),
+    border: `1px solid ${sysVar('background-subtle')}`,
     borderRadius: 12,
     padding: 24,
     display: 'flex',

@@ -1,47 +1,47 @@
 <svg width="800" height="450" viewBox="0 0 800 450" fill="none" xmlns="http://www.w3.org/2000/svg">
   <!-- Background -->
-  <rect width="800" height="450" fill="#F6F8FA"/>
+  <rect width="800" height="450" style="fill: var(--rd-sys-color-background-sunken)"/>
   <!-- Blue impersonation border -->
-  <rect x="0" y="0" width="800" height="6" fill="#2770EF"/>
-  <rect x="0" y="444" width="800" height="6" fill="#2770EF"/>
-  <rect x="0" y="0" width="6" height="450" fill="#2770EF"/>
-  <rect x="794" y="0" width="6" height="450" fill="#2770EF"/>
+  <rect x="0" y="0" width="800" height="6" style="fill: var(--rd-sys-color-content-brand)"/>
+  <rect x="0" y="444" width="800" height="6" style="fill: var(--rd-sys-color-content-brand)"/>
+  <rect x="0" y="0" width="6" height="450" style="fill: var(--rd-sys-color-content-brand)"/>
+  <rect x="794" y="0" width="6" height="450" style="fill: var(--rd-sys-color-content-brand)"/>
   <!-- Header -->
-  <rect x="6" y="6" width="788" height="52" fill="white"/>
-  <rect x="24" y="22" width="100" height="14" rx="4" fill="#EAEDF2"/>
+  <rect x="6" y="6" width="788" height="52" style="fill: var(--rd-sys-color-background-base)"/>
+  <rect x="24" y="22" width="100" height="14" rx="4" style="fill: var(--rd-sys-color-background-secondary-action)"/>
   <!-- Impersonation badge in header -->
-  <rect x="270" y="18" width="260" height="22" rx="11" fill="rgba(39,112,239,0.1)"/>
-  <rect x="282" y="25" width="8" height="8" rx="4" fill="#2770EF"/>
-  <rect x="298" y="27" width="120" height="8" rx="3" fill="#2770EF"/>
-  <rect x="426" y="27" width="60" height="8" rx="3" fill="#A5ACB9"/>
+  <rect x="270" y="18" width="260" height="22" rx="11" style="fill: var(--rd-sys-color-background-ghost-highlight)"/>
+  <rect x="282" y="25" width="8" height="8" rx="4" style="fill: var(--rd-sys-color-content-brand)"/>
+  <rect x="298" y="27" width="120" height="8" rx="3" style="fill: var(--rd-sys-color-content-brand)"/>
+  <rect x="426" y="27" width="60" height="8" rx="3" style="fill: var(--rd-sys-color-content-tertiary)"/>
   <!-- Avatar icon in header right -->
-  <circle cx="740" cy="32" r="14" fill="#2770EF" fill-opacity="0.15"/>
-  <circle cx="740" cy="32" r="6" fill="#2770EF"/>
+  <circle cx="740" cy="32" r="14" fill-opacity="0.15" style="fill: var(--rd-sys-color-content-brand)"/>
+  <circle cx="740" cy="32" r="6" style="fill: var(--rd-sys-color-content-brand)"/>
   <!-- Main content area -->
-  <rect x="6" y="58" width="788" height="386" fill="#F6F8FA"/>
+  <rect x="6" y="58" width="788" height="386" style="fill: var(--rd-sys-color-background-sunken)"/>
   <!-- Content placeholder rows -->
-  <rect x="30" y="80" width="740" height="40" rx="6" fill="white"/>
-  <rect x="50" y="92" width="200" height="12" rx="4" fill="#EAEDF2"/>
-  <rect x="30" y="130" width="740" height="40" rx="6" fill="white"/>
-  <rect x="50" y="142" width="160" height="12" rx="4" fill="#EAEDF2"/>
-  <rect x="30" y="180" width="740" height="40" rx="6" fill="white"/>
-  <rect x="50" y="192" width="220" height="12" rx="4" fill="#EAEDF2"/>
+  <rect x="30" y="80" width="740" height="40" rx="6" style="fill: var(--rd-sys-color-background-base)"/>
+  <rect x="50" y="92" width="200" height="12" rx="4" style="fill: var(--rd-sys-color-background-secondary-action)"/>
+  <rect x="30" y="130" width="740" height="40" rx="6" style="fill: var(--rd-sys-color-background-base)"/>
+  <rect x="50" y="142" width="160" height="12" rx="4" style="fill: var(--rd-sys-color-background-secondary-action)"/>
+  <rect x="30" y="180" width="740" height="40" rx="6" style="fill: var(--rd-sys-color-background-base)"/>
+  <rect x="50" y="192" width="220" height="12" rx="4" style="fill: var(--rd-sys-color-background-secondary-action)"/>
   <!-- Session popup modal -->
-  <rect x="530" y="220" width="220" height="130" rx="10" fill="white" filter="url(#shadow)"/>
-  <rect x="530" y="220" width="220" height="130" rx="10" fill="white"/>
-  <rect x="530" y="220" width="220" height="130" rx="10" stroke="#EAEDF2" stroke-width="1"/>
-  <rect x="548" y="238" width="90" height="10" rx="3" fill="#1D232F"/>
-  <rect x="548" y="256" width="140" height="8" rx="3" fill="#A5ACB9"/>
-  <rect x="548" y="272" width="110" height="8" rx="3" fill="#A5ACB9"/>
+  <rect x="530" y="220" width="220" height="130" rx="10" filter="url(#shadow)" style="fill: var(--rd-sys-color-background-base)"/>
+  <rect x="530" y="220" width="220" height="130" rx="10" style="fill: var(--rd-sys-color-background-base)"/>
+  <rect x="530" y="220" width="220" height="130" rx="10" stroke-width="1" style="stroke: var(--rd-sys-color-border-subtle)"/>
+  <rect x="548" y="238" width="90" height="10" rx="3" style="fill: var(--rd-sys-color-content-primary)"/>
+  <rect x="548" y="256" width="140" height="8" rx="3" style="fill: var(--rd-sys-color-content-tertiary)"/>
+  <rect x="548" y="272" width="110" height="8" rx="3" style="fill: var(--rd-sys-color-content-tertiary)"/>
   <!-- Timer display -->
-  <rect x="548" y="292" width="80" height="24" rx="6" fill="rgba(39,112,239,0.08)"/>
-  <rect x="556" y="298" width="60" height="12" rx="3" fill="#2770EF"/>
+  <rect x="548" y="292" width="80" height="24" rx="6" style="fill: var(--rd-sys-color-background-ghost-highlight)"/>
+  <rect x="556" y="298" width="60" height="12" rx="3" style="fill: var(--rd-sys-color-content-brand)"/>
   <!-- End session button -->
   <rect x="638" y="292" width="94" height="24" rx="6" fill="#E22B3D" fill-opacity="0.1"/>
   <rect x="650" y="298" width="70" height="12" rx="3" fill="#E22B3D"/>
   <!-- Toast notification -->
-  <rect x="580" y="380" width="190" height="40" rx="8" fill="#1D232F"/>
-  <rect x="596" y="392" width="100" height="8" rx="3" fill="white"/>
-  <rect x="596" y="404" width="70" height="6" rx="3" fill="#A5ACB9"/>
-  <text x="400" y="435" fill="#A5ACB9" font-family="system-ui" font-size="13" text-anchor="middle" font-weight="400">Admin Impersonation</text>
+  <rect x="580" y="380" width="190" height="40" rx="8" style="fill: var(--rd-sys-color-content-primary)"/>
+  <rect x="596" y="392" width="100" height="8" rx="3" style="fill: var(--rd-sys-color-background-base)"/>
+  <rect x="596" y="404" width="70" height="6" rx="3" style="fill: var(--rd-sys-color-content-tertiary)"/>
+  <text x="400" y="435" font-family="system-ui" font-size="13" text-anchor="middle" font-weight="400" style="fill: var(--rd-sys-color-content-tertiary)">Admin Impersonation</text>
 </svg>
