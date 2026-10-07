@@ -18,7 +18,9 @@
     "lint:tokens": "node scripts/radiant-check/scan.mjs --strict src/components src/spotter src/prototypes/_shared",
     "thumbnails": "node scripts/thumbnails/capture.mjs",
     "thumbnails:setup": "bash scripts/thumbnails/setup.sh",
-    "thumbnails:check": "node scripts/thumbnails/check.mjs"
+    "thumbnails:check": "node scripts/thumbnails/check.mjs",
+    "migrate:codemod": "node scripts/radiant-check/codemod.mjs",
+    "codemod:check": "node scripts/radiant-check/codemod-check.mjs"
   },
   "keywords": [
     "design-system",
