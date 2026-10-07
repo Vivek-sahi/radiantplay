@@ -155,7 +155,7 @@
 
 .scopeButtonActive {
   background: var(--as-scope-active-bg);
-  box-shadow: 0px 2px 4px 0px rgba(25, 35, 49, 0.04);
+  box-shadow: var(--rd-sys-color-shadow-surface);
   color: var(--as-scope-active);
 }
 

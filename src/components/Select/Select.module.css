@@ -41,7 +41,7 @@
 
 .trigger:focus-visible {
   border-color: var(--rd-sys-color-border-brand);
-  box-shadow: 0 0 0 2px rgba(39, 112, 239, 0.2);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--rd-sys-color-border-brand) 20%, transparent);
 }
 
 /* Size variants */
@@ -71,7 +71,7 @@
 
 .error:focus-visible {
   border-color: var(--rd-sys-color-border-failure);
-  box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.2);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--rd-sys-color-border-failure) 20%, transparent);
 }
 
 .disabled {
@@ -122,7 +122,7 @@
   background-color: var(--rd-sys-color-background-base);
   border: 1px solid var(--rd-sys-color-border-divider);
   border-radius: var(--radius-md);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--rd-sys-color-shadow-menu);
   z-index: 1000;
   overflow: hidden;
 }

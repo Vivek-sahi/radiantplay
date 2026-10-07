@@ -1,6 +1,7 @@
 import React from 'react';
 import { Icon } from '@components/icons';
 import { Chip } from '@components/Chip';
+import { sysVar } from '@tokens/colors';
 import { colors, typography, layout } from './styles';
 
 interface EditSubHeaderProps {
@@ -56,7 +57,7 @@ const s: Record<string, React.CSSProperties> = {
   editSubHeader: {
     background: colors.headerBg,
     flexShrink: 0,
-    borderBottom: '1px solid #DBDFE7',
+    borderBottom: `1px solid ${sysVar('border-subtle-hover')}`,
   },
   vertSep: {
     width: 1,

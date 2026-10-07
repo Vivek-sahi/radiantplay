@@ -314,6 +314,22 @@
   --rd-comp-color-progress-track-empty: #EAEDF2;
   --rd-comp-color-progress-indicator-default: #8C62F5;
 
+  /* ---- Component Tokens: Charts. Names and dark values from the product;
+     the product has no light values yet, so these are proposed ---- */
+  --rd-comp-color-chart-surface: #FFFFFF;
+  --rd-comp-color-chart-border: transparent;
+  --rd-comp-color-chart-gridline: #F6F8FA;
+  --rd-comp-color-chart-axis-line: #EAEDF2;
+  --rd-comp-color-chart-axis-label: #777E8B;
+  --rd-comp-color-chart-label: #1D232F;
+  --rd-comp-color-chart-tooltip-surface: #323946;
+  --rd-comp-color-chart-tooltip-text: #FFFFFF;
+  --rd-comp-color-chart-tooltip-shadow: var(--rd-sys-color-shadow-menu);
+  --rd-comp-color-chart-control-surface: #EAEDF2;
+  --rd-comp-color-chart-table-striped-row: #F6F8FA;
+  --rd-comp-color-chart-data-label-halo: #FFFFFF;
+  --rd-comp-color-chart-scrollbar-track: #F6F8FA;
+
   /* ---- Figma Radiant 3.0 names (aliases of the tokens above) ---- */
   --rd-sys-color-background-inverse: var(--rd-sys-color-background-base-inverse);
   --rd-sys-color-background-secondary-action: var(--rd-sys-color-background-subtle);
@@ -445,6 +461,21 @@
   --rd-comp-color-progress-track-active: #210F4F;
   --rd-comp-color-progress-track-empty: #1D232F;
   --rd-comp-color-progress-indicator-default: #B094F8;
+
+  /* ---- Component Tokens: Charts ---- */
+  --rd-comp-color-chart-surface: #1F2024;
+  --rd-comp-color-chart-border: transparent;
+  --rd-comp-color-chart-gridline: #34363C;
+  --rd-comp-color-chart-axis-line: #5D636A;
+  --rd-comp-color-chart-axis-label: #AFB2B6;
+  --rd-comp-color-chart-label: #DFE0E2;
+  --rd-comp-color-chart-tooltip-surface: #DFE0E2;
+  --rd-comp-color-chart-tooltip-text: #1F2024;
+  --rd-comp-color-chart-tooltip-shadow: var(--rd-sys-color-shadow-menu);
+  --rd-comp-color-chart-control-surface: #34363C;
+  --rd-comp-color-chart-table-striped-row: var(--rd-sys-color-background-secondary-action);
+  --rd-comp-color-chart-data-label-halo: #1F2024;
+  --rd-comp-color-chart-scrollbar-track: #18191B;
 
   /* ---- Added in the Figma sync (2026-10-06) ---- */
   --rd-sys-color-background-accent-blue: #082559;

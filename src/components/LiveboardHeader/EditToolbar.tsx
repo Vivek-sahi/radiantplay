@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@components/Button';
 import { Icon } from '@components/icons';
 import { BrandMark } from '@components/BrandMark';
+import { sysVar } from '@tokens/colors';
 import { colors, typography, layout } from './styles';
 
 interface EditToolbarProps {
@@ -128,7 +129,7 @@ const s: Record<string, React.CSSProperties> = {
     fontFamily: typography.fontFamily,
   },
   toolBtnActive: {
-    background: 'rgba(255,255,255,0.1)',
+    background: `color-mix(in srgb, ${sysVar('content-primary-inverse')} 10%, transparent)`,
   },
   toolLabel: {
     fontSize: 14,

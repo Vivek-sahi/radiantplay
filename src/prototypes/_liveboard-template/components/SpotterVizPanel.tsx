@@ -1,23 +1,27 @@
 import React, { useState } from 'react';
 import { Icon } from '@components/icons';
+import { sysVar } from '@tokens/colors';
 import mascot from './spotterviz-mascot.png';
 
 interface SpotterVizPanelProps {
   onClose: () => void;
 }
 
-// Colors from Figma node 825:32553 (SpotterViz panel — dark variant)
+// Figma node 825:32553 draws the SpotterViz panel as a dark surface in light
+// mode. It reads the inverse tokens, so it stays dark in light mode and turns
+// light in dark mode. Muted text has no inverse token, so it mixes the inverse
+// content colour into the inverse surface.
 const c = {
-  bg:               '#1d232f',
-  divider:          '#323946',
-  textPrimary:      '#eaedf2',
-  textWhite:        '#ffffff',
-  textMuted:        '#a5acb9',
-  textDim:          '#c0c6cf',
-  brand:            '#71a1f4',
-  chipBg:           'rgba(192, 198, 207, 0.12)',
-  chipBorder:       '#777e8b',
-  chipBorderSubtle: '#4a515e',
+  bg:               sysVar('background-inverse'),
+  divider:          sysVar('border-divider-inverse'),
+  textPrimary:      sysVar('content-inverse'),
+  textWhite:        sysVar('content-inverse'),
+  textMuted:        `color-mix(in srgb, ${sysVar('content-inverse')} 60%, ${sysVar('background-inverse')})`,
+  textDim:          `color-mix(in srgb, ${sysVar('content-inverse')} 75%, ${sysVar('background-inverse')})`,
+  brand:            sysVar('content-brand-inverse'),
+  chipBg:           `color-mix(in srgb, ${sysVar('content-inverse')} 12%, transparent)`,
+  chipBorder:       sysVar('border-hover-inverse'),
+  chipBorderSubtle: sysVar('border-default-inverse'),
 };
 
 const FONT = "var(--font-family-primary)";
@@ -233,7 +237,7 @@ const s: Record<string, React.CSSProperties> = {
     width: '100%',
     background: c.bg,
     border: `1px solid ${c.divider}`,
-    boxShadow: '0px 0px 2px rgba(255,255,255,0.1), 0px 2px 2px rgba(255,255,255,0.04)',
+    boxShadow: `0px 0px 2px color-mix(in srgb, ${c.textWhite} 10%, transparent), 0px 2px 2px color-mix(in srgb, ${c.textWhite} 4%, transparent)`,
     borderRadius: 12,
     padding: 12,
     display: 'flex',

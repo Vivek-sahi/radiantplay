@@ -1,7 +1,7 @@
 /**
  * Component Color Tokens
  *
- * Per-component tokens for button, chip, toggle, progress and segmented control.
+ * Per-component tokens for button, chip, toggle, progress, charts and segmented control.
  * Mode-aware with separate light and dark maps.
  *
  * SCSS map names: $rd-comp-color-map, $rd-comp-color-map-dark
@@ -71,6 +71,21 @@ const baseComponentColors = {
     'progress-track-active': '#F0EBFF',
     'progress-track-empty': '#EAEDF2',
     'progress-indicator-default': '#8C62F5',
+
+    // Charts (13). Names and dark values from the product; light values are proposed
+    'chart-surface': '#FFFFFF',
+    'chart-border': 'transparent',
+    'chart-gridline': '#F6F8FA',
+    'chart-axis-line': '#EAEDF2',
+    'chart-axis-label': '#777E8B',
+    'chart-label': '#1D232F',
+    'chart-tooltip-surface': '#323946',
+    'chart-tooltip-text': '#FFFFFF',
+    'chart-tooltip-shadow': '0 0 4px #19233114, 0 12px 24px #1923311f',
+    'chart-control-surface': '#EAEDF2',
+    'chart-table-striped-row': '#F6F8FA',
+    'chart-data-label-halo': '#FFFFFF',
+    'chart-scrollbar-track': '#F6F8FA',
 
     // Toggle (5)
     'toggle-track-off': '#C0C6CF',
@@ -147,6 +162,21 @@ const baseComponentColors = {
     'progress-track-empty': '#1D232F',
     'progress-indicator-default': '#B094F8',
 
+    // Charts (13)
+    'chart-surface': '#1F2024',
+    'chart-border': 'transparent',
+    'chart-gridline': '#34363C',
+    'chart-axis-line': '#5D636A',
+    'chart-axis-label': '#AFB2B6',
+    'chart-label': '#DFE0E2',
+    'chart-tooltip-surface': '#DFE0E2',
+    'chart-tooltip-text': '#1F2024',
+    'chart-tooltip-shadow': '0 0 6px rgba(0,0,0,0.16), 0 12px 28px rgba(0,0,0,0.32)',
+    'chart-control-surface': '#34363C',
+    'chart-table-striped-row': '#34363C',
+    'chart-data-label-halo': '#1F2024',
+    'chart-scrollbar-track': '#18191B',
+
     // Toggle (5)
     'toggle-track-off': '#5D636A',
     'toggle-track-on': '#163772',
@@ -183,3 +213,10 @@ export const rdComponentColors = {
 
 export type RdComponentColors = typeof rdComponentColors;
 export type RdComponentColorKey = keyof typeof rdComponentColors.light;
+
+/**
+ * CSS variable for a component token, for inline styles in TSX:
+ * compVar('chip-filter-default') → 'var(--rd-comp-color-chip-filter-default)'.
+ * Follows the theme. Use it instead of rdComponentColors.light[...], which is always light.
+ */
+export const compVar = (key: RdComponentColorKey): string => `var(--rd-comp-color-${key})`;

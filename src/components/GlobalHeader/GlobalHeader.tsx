@@ -2,7 +2,7 @@ import React, { forwardRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Icon } from '../icons';
 import { BrandMark } from '../BrandMark';
-import { referenceColors } from '../../tokens/colors';
+import { referenceColors, sysVar } from '../../tokens/colors';
 import styles from './GlobalHeader.module.css';
 const BELL_ICON_PATH =
   'M14.809 11.7122C13.5183 11.0551 12.7668 9.7408 12.7668 8.28587V6.05578V5.8679C12.7668 3.45093 11.1004 1.69013 8.84765 1.22077V1.19717C8.84765 0.540043 8.30761 0 7.65048 0C6.99335 0 6.45331 0.540043 6.45331 1.19717V1.22077C4.20054 1.69001 2.53415 3.45086 2.53415 5.8679V6.05578V8.30855C2.53415 9.78711 1.73633 11.0315 0.44566 11.7586C0.187883 11.8993 0 12.275 0 12.6272C0 13.1437 0.422052 13.5893 0.962096 13.5893H14.387C14.9034 13.5893 15.3491 13.1672 15.3491 12.6272C15.3019 12.2288 15.0904 11.8529 14.809 11.7122Z';
@@ -60,21 +60,23 @@ const THEMES: Record<GlobalHeaderTheme, { cssVars: Record<string, string>; logoF
     },
     logoFill: referenceColors.gray['00'],
   },
+  // Follows the app theme. The dark variant above stays dark in both themes.
   light: {
     cssVars: {
-      '--gh-bg': referenceColors.gray['00'],
-      '--gh-border': referenceColors.gray['20'],
-      '--gh-surface': referenceColors.gray['10'],
-      '--gh-surface-hover': referenceColors.gray['20'],
-      '--gh-active': referenceColors.brand['50'],
-      '--gh-text': referenceColors.gray['90'],
-      '--gh-muted': referenceColors.gray['60'],
-      '--gh-subtle': referenceColors.gray['70'],
-      '--gh-danger': referenceColors.red['60'],
-      '--gh-focus': referenceColors.brand['60'],
-      '--gh-hover-ring': hexToRgba(referenceColors.brand['50'], 0.28),
+      '--gh-bg': sysVar('background-base'),
+      '--gh-border': sysVar('border-divider'),
+      '--gh-surface': sysVar('background-sunken'),
+      '--gh-surface-hover': sysVar('background-subtle'),
+      '--gh-active': sysVar('border-focus'),
+      '--gh-text': sysVar('content-primary'),
+      '--gh-muted': sysVar('content-secondary'),
+      '--gh-subtle': `color-mix(in srgb, ${sysVar('content-primary')}, ${sysVar('content-secondary')})`,
+      '--gh-danger': sysVar('content-failure'),
+      '--gh-focus': sysVar('border-brand'),
+      '--gh-hover-ring': `color-mix(in srgb, ${sysVar('border-focus')} 28%, transparent)`,
     },
-    logoFill: referenceColors.gray['90'],
+    // SVG fill attributes can't take var(), so the mark inherits the header text colour
+    logoFill: 'currentColor',
   },
 };
 

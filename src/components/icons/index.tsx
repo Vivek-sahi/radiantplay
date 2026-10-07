@@ -1,5 +1,5 @@
 import React from 'react';
-import { statusColors, textColors, systemColors } from '../../tokens/colors';
+import { statusColors, textColors, sysVar } from '../../tokens/colors';
 
 interface IconProps {
   size?: number;
@@ -46,7 +46,7 @@ export const CloseIcon: React.FC<IconProps> = ({
     <circle cx="8" cy="8" r="8" fill={color} />
     <path 
       d="M5.5 5.5L10.5 10.5M10.5 5.5L5.5 10.5" 
-      stroke={systemColors.light['background-base']} 
+      stroke={sysVar('background-base')} 
       strokeWidth="1.5" 
       strokeLinecap="round" 
       strokeLinejoin="round"

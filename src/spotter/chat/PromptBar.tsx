@@ -153,7 +153,9 @@ interface Connector {
   id: string;
   name: string;
   status: ConnectorStatus;
-  color: string; // placeholder logo background until real logos are added
+  // Placeholder logo background until real logos are added. These are the
+  // third-party brand colours (data), so they stay literal in both themes.
+  color: string;
 }
 
 const CONNECTORS: Connector[] = [
@@ -168,6 +170,17 @@ const CONNECTORS: Connector[] = [
 ];
 
 const MAX_VISIBLE_CONNECTORS = 6;
+
+/** Paints a single-colour SVG asset in currentColor (via CSS mask), so it follows the theme. */
+function MaskIcon({ src }: { src: string }) {
+  return (
+    <span
+      className={styles.maskIcon}
+      style={{ ['--mask-icon-src' as string]: `url(${src})` }}
+      aria-hidden="true"
+    />
+  );
+}
 
 function ConnectorsMenu() {
   const [connectors, setConnectors] = useState(CONNECTORS);
@@ -264,7 +277,7 @@ function PlusMenu({
         {/* Group 1 — file sources */}
         <button className={styles.menuItem}>
           <span className={styles.menuItemIcon}>
-            <img src={attachIcon} alt="" width={16} height={16} />
+            <MaskIcon src={attachIcon} />
           </span>
           <span className={styles.menuItemLabel}>Add files or photos</span>
         </button>
@@ -289,7 +302,7 @@ function PlusMenu({
             onMouseLeave={scheduleClose}
           >
             <span className={styles.menuItemIcon}>
-              <img src={connectorsIcon} alt="" width={16} height={16} />
+              <MaskIcon src={connectorsIcon} />
             </span>
             <span className={styles.menuItemLabel}>Connectors</span>
             <span className={styles.menuItemChevron}>
@@ -310,7 +323,7 @@ function PlusMenu({
         {skills && (
           <button className={styles.menuItem}>
             <span className={styles.menuItemIcon}>
-              <img src={skillsIcon} alt="" width={16} height={16} />
+              <MaskIcon src={skillsIcon} />
             </span>
             <span className={styles.menuItemLabel}>Skills</span>
             <span className={styles.menuItemChevron}>
@@ -320,7 +333,7 @@ function PlusMenu({
         )}
         <button className={styles.menuItem} onClick={() => onDeepToggle()}>
           <span className={styles.menuItemIcon}>
-            <img src={deepAnalysisIcon} alt="" width={16} height={16} />
+            <MaskIcon src={deepAnalysisIcon} />
           </span>
           <span className={styles.menuItemLabel}>Deep Analysis</span>
           <span className={styles.connectorControl}>

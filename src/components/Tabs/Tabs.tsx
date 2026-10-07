@@ -1,5 +1,5 @@
 import React from 'react';
-import { systemColors } from '../../tokens/colors';
+import { sysVar } from '../../tokens/colors';
 import styles from './Tabs.module.css';
 
 export interface Tab {
@@ -50,8 +50,8 @@ export const Tabs: React.FC<TabsProps> = ({
             className={`${styles.tab} ${isActive ? styles.active : ''}`}
             onClick={() => onTabChange(tab.id)}
             style={{
-              color: isActive ? systemColors.light['content-brand'] : systemColors.light['content-secondary'],
-              borderBottomColor: isActive ? systemColors.light['content-brand'] : 'transparent',
+              color: isActive ? sysVar('content-brand') : sysVar('content-secondary'),
+              borderBottomColor: isActive ? sysVar('content-brand') : 'transparent',
             }}
           >
             {tab.icon && <span className={styles.icon}>{tab.icon}</span>}

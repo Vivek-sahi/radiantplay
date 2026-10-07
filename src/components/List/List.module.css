@@ -22,7 +22,7 @@
 }
 
 .listItem:hover {
-  background: var(--rd-sys-color-background-surface);
+  background: var(--rd-sys-color-background-raised);
 }
 
 /* Drag states */
@@ -44,7 +44,7 @@
   width: 20px;
   height: 20px;
   margin-right: var(--spacing-2);
-  color: var(--rd-sys-color-content-subtle);
+  color: var(--rd-sys-color-content-secondary);
   cursor: grab;
 }
 
@@ -64,7 +64,7 @@
   align-items: center;
   justify-content: center;
   padding: var(--spacing-8) var(--spacing-4);
-  color: var(--rd-sys-color-content-subtle);
+  color: var(--rd-sys-color-content-secondary);
   font-family: var(--font-family-primary);
   font-size: var(--font-size-sm);
 }

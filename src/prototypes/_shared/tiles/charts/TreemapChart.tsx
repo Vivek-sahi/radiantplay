@@ -1,6 +1,8 @@
 import React from 'react';
 import ReactECharts from 'echarts-for-react';
-import { chartColors, chartFont } from '../chartPalette';
+import { chartFont } from '../chartPalette';
+import { useChartTheme } from '../chartTheme';
+import { systemColors } from '@tokens/colors';
 
 const data = [
   { name: 'Electronics', value: 320 },
@@ -14,7 +16,9 @@ const data = [
 interface Props { width?: number; height?: number; }
 
 export const TreemapChart: React.FC<Props> = ({ height }) => {
+  const { isDark, colors: themeColors } = useChartTheme();
   const option = {
+    backgroundColor: 'transparent',
     tooltip: {
       trigger: 'item',
       formatter: '{b}: {c}',
@@ -25,13 +29,14 @@ export const TreemapChart: React.FC<Props> = ({ height }) => {
         data: data.map((d, i) => ({
           name: d.name,
           value: d.value,
-          itemStyle: { color: chartColors[i % chartColors.length] },
+          itemStyle: { color: themeColors[i % themeColors.length] },
         })),
         label: {
           show: true,
           fontFamily: chartFont,
           fontSize: 11,
-          color: '#fff',
+          // Sits on a series colour: white on light, dark on the lifted dark palette
+          color: systemColors[isDark ? 'dark' : 'light']['content-primary-inverse'],
           formatter: '{b}\n{c}',
         },
         upperLabel: { show: false },

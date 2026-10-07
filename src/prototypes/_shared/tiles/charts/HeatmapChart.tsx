@@ -1,6 +1,8 @@
 import React from 'react';
 import ReactECharts from 'echarts-for-react';
-import { chartColors, chartUi, chartFont } from '../chartPalette';
+import { chartFont } from '../chartPalette';
+import { useChartTheme } from '../chartTheme';
+import { referenceColors, systemColors } from '@tokens/colors';
 
 const rows = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
 const cols = ['9am', '10am', '11am', '12pm', '1pm', '2pm', '3pm', '4pm', '5pm', '6pm', '7pm'];
@@ -24,7 +26,11 @@ rawData.forEach((row, ri) => {
 interface Props { width?: number; height?: number; }
 
 export const HeatmapChart: React.FC<Props> = ({ height }) => {
+  const { isDark, colors: themeColors, ui } = useChartTheme();
+  // Low end of the scale: a faint brand tint on light, a deep blue on dark
+  const scaleLow = isDark ? systemColors.dark['background-information'] : referenceColors.brand['10'];
   const option = {
+    backgroundColor: 'transparent',
     grid: { top: 8, bottom: 8, left: 8, right: 8, containLabel: true },
     tooltip: {
       trigger: 'item',
@@ -34,14 +40,14 @@ export const HeatmapChart: React.FC<Props> = ({ height }) => {
     xAxis: {
       type: 'category',
       data: cols,
-      axisLabel: { fontFamily: chartFont, fontSize: 10, color: chartUi.labelColor },
+      axisLabel: { fontFamily: chartFont, fontSize: 10, color: ui.labelColor },
       axisLine: { show: false },
       axisTick: { show: false },
     },
     yAxis: {
       type: 'category',
       data: rows,
-      axisLabel: { fontFamily: chartFont, fontSize: 10, color: chartUi.labelColor },
+      axisLabel: { fontFamily: chartFont, fontSize: 10, color: ui.labelColor },
       axisLine: { show: false },
       axisTick: { show: false },
     },
@@ -50,7 +56,7 @@ export const HeatmapChart: React.FC<Props> = ({ height }) => {
       max: 100,
       show: false,
       inRange: {
-        color: ['#EAF1FB', chartColors[0]],
+        color: [scaleLow, themeColors[0]],
       },
     },
     series: [

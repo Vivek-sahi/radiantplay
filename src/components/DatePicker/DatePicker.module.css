@@ -44,7 +44,7 @@
 .input:focus {
   outline: none;
   border-color: var(--rd-sys-color-border-brand);
-  box-shadow: 0 0 0 3px rgba(39, 112, 239, 0.12);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--rd-sys-color-border-brand) 12%, transparent);
 }
 
 .input::placeholder {
@@ -57,7 +57,7 @@
 
 .inputError:focus {
   border-color: var(--rd-sys-color-border-failure);
-  box-shadow: 0 0 0 3px rgba(226, 43, 61, 0.12);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--rd-sys-color-border-failure) 12%, transparent);
 }
 
 .inputDisabled {

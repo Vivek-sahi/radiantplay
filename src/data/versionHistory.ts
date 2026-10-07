@@ -51,6 +51,9 @@ export const versionHistory: VersionEntry[] = [
       { type: 'added', group: 'Tokens', component: 'New product tokens', description: 'background-secondary-hover and the circular progress tokens (progress-track-active, progress-track-empty, progress-indicator-default). Nothing uses them yet.' },
       { type: 'removed', group: 'Dark mode', component: 'System-dark copy', description: 'The prefers-color-scheme copy of the dark tokens in tokens.css. The theme controller handles the system setting.' },
       { type: 'added', group: 'Tokens', component: 'Differences list', description: 'docs/2026-10-06-scaligent-token-differences.md lists the 33 values where Figma and the product disagree.' },
+      { type: 'added', group: 'Tokens', component: 'sysVar, compVar, shadowVar', description: 'Helpers that return the CSS variable for a token, for inline styles that follow the theme. Use them instead of systemColors.light[...].' },
+      { type: 'modified', group: 'Dark mode', component: 'Shared layers', description: 'Components, Spotter, Liveboard tiles and the prototype templates follow the theme. The docs sidebar follows the theme; the product primary nav stays dark. 11 undefined token names now point at real tokens.' },
+      { type: 'added', group: 'Dark mode', component: 'Chart theme', description: '13 chart tokens with the product names and dark values, and useChartTheme() for ECharts. Dark series colours use the product OKLCH remap. Charts redraw on theme change.' },
     ],
   },
   {

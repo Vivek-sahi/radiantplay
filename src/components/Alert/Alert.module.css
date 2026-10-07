@@ -51,7 +51,7 @@
 }
 
 .page .dismissButton:hover {
-  background-color: rgba(0, 0, 0, 0.06);
+  background-color: color-mix(in srgb, var(--rd-sys-color-content-primary) 6%, transparent);
 }
 
 .page .dismissButton:focus-visible {
@@ -213,7 +213,7 @@
 }
 
 .dismissButtonSmall:hover {
-  background-color: rgba(0, 0, 0, 0.06);
+  background-color: color-mix(in srgb, var(--rd-sys-color-content-primary) 6%, transparent);
 }
 
 .dismissButtonSmall:focus-visible {

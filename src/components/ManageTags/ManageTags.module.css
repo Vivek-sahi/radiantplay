@@ -52,7 +52,7 @@
   border: none;
   background: transparent;
   cursor: pointer;
-  color: var(--rd-sys-color-content-subtle);
+  color: var(--rd-sys-color-content-secondary);
   border-radius: var(--radius-full);
   flex-shrink: 0;
   transition: color var(--duration-fast, 120ms) ease,
@@ -60,7 +60,7 @@
 }
 
 .removeTagButton:hover {
-  color: var(--rd-sys-color-content-negative);
+  color: var(--rd-sys-color-content-failure);
 }
 
 .removeTagButton:focus-visible {
@@ -90,7 +90,7 @@
 }
 
 .input::placeholder {
-  color: var(--rd-sys-color-content-subtle);
+  color: var(--rd-sys-color-content-secondary);
 }
 
 /* Suggestions dropdown */
@@ -102,10 +102,10 @@
   max-width: 320px;
   max-height: 200px;
   overflow-y: auto;
-  background: var(--rd-sys-color-background-surface);
+  background: var(--rd-sys-color-background-raised);
   border: 1px solid var(--rd-sys-color-border-default);
   border-radius: var(--radius-lg);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--rd-sys-color-shadow-menu);
   z-index: 100;
 }
 
@@ -126,6 +126,6 @@
 .limitMessage {
   font-family: var(--font-family-primary);
   font-size: var(--font-size-xs);
-  color: var(--rd-sys-color-content-subtle);
+  color: var(--rd-sys-color-content-secondary);
   padding: 2px var(--spacing-1);
 }

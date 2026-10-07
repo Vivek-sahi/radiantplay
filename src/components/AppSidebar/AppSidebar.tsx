@@ -5,6 +5,7 @@ import styles from './AppSidebar.module.css';
 
 // Sidebar-specific panel colors — not yet in the Radiant reference scale.
 // These are ThoughtSpot product-level dark navy values used only in AppSidebar.
+// AppSidebar is the always-dark product nav, so it reads fixed values and does not follow the theme.
 const SIDEBAR_PANEL_BG = '#232f43';
 const SIDEBAR_PANEL_SELECTED = '#2f3a4e';
 

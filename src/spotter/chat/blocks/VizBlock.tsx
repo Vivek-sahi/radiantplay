@@ -4,11 +4,10 @@ import ReactECharts from 'echarts-for-react';
 import { Icon } from '@components/icons';
 import { Modal } from '@components/Modal';
 import {
-  chartColors,
-  chartUi,
   chartFont,
   chartFontSize,
 } from '../../../prototypes/_shared/tiles/chartPalette';
+import { useChartTheme } from '../../../prototypes/_shared/tiles/chartTheme';
 import type {
   VizBlockData,
   VizChartKind,
@@ -391,9 +390,10 @@ const RealChart: React.FC<RealChartProps> = ({ chartKind, data, showLegend = tru
   const isLine = chartKind === 'line';
   const isPie = chartKind === 'pie';
   const isBar = chartKind === 'bar';
+  const { colors, seriesColor, ui } = useChartTheme();
 
   const seriesConfig = data.series.map((s, i) => {
-    const color = s.color ?? chartColors[i % chartColors.length];
+    const color = s.color ? seriesColor(s.color) : colors[i % colors.length];
     if (isPie) {
       return {
         name: s.label,
@@ -405,7 +405,7 @@ const RealChart: React.FC<RealChartProps> = ({ chartKind, data, showLegend = tru
           name: cat,
           value: s.data[idx] ?? 0,
           itemStyle: {
-            color: chartColors[idx % chartColors.length],
+            color: colors[idx % colors.length],
           },
         })),
       };
@@ -429,7 +429,7 @@ const RealChart: React.FC<RealChartProps> = ({ chartKind, data, showLegend = tru
             position: 'top',
             fontFamily: chartFont,
             fontSize: chartFontSize.value,
-            color: chartUi.valueColor,
+            color: ui.valueColor,
             formatter: (params: { value: number }) => formatNumber(params.value),
           }
         : undefined,
@@ -445,7 +445,8 @@ const RealChart: React.FC<RealChartProps> = ({ chartKind, data, showLegend = tru
       trigger: isPie ? 'item' : 'axis',
       textStyle: { fontFamily: chartFont, fontSize: chartFontSize.label },
     },
-    color: chartColors,
+    backgroundColor: 'transparent',
+    color: colors,
     series: seriesConfig,
   };
 
@@ -458,7 +459,7 @@ const RealChart: React.FC<RealChartProps> = ({ chartKind, data, showLegend = tru
       textStyle: {
         fontFamily: chartFont,
         fontSize: chartFontSize.label,
-        color: chartUi.labelColor,
+        color: ui.labelColor,
       },
     };
   }
@@ -473,12 +474,12 @@ const RealChart: React.FC<RealChartProps> = ({ chartKind, data, showLegend = tru
       nameTextStyle: {
         fontFamily: chartFont,
         fontSize: chartFontSize.label,
-        color: chartUi.labelColor,
+        color: ui.labelColor,
       },
       axisLabel: {
         fontFamily: chartFont,
         fontSize: chartFontSize.tick,
-        color: chartUi.labelColor,
+        color: ui.labelColor,
       },
       axisLine: { show: false },
       axisTick: { show: false },
@@ -492,17 +493,17 @@ const RealChart: React.FC<RealChartProps> = ({ chartKind, data, showLegend = tru
       nameTextStyle: {
         fontFamily: chartFont,
         fontSize: chartFontSize.label,
-        color: chartUi.labelColor,
+        color: ui.labelColor,
       },
       axisLabel: {
         fontFamily: chartFont,
         fontSize: chartFontSize.tick,
-        color: chartUi.labelColor,
+        color: ui.labelColor,
         formatter: (v: number) => formatNumber(v),
       },
       axisLine: { show: false },
       axisTick: { show: false },
-      splitLine: { lineStyle: { color: chartUi.axis } },
+      splitLine: { lineStyle: { color: ui.axis } },
     };
   }
 

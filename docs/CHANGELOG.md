@@ -37,6 +37,16 @@ Figma sync: bringing tokens and typography up to date with the Radiant 3.0 Figma
 - Added `background-secondary-hover` (Gray/30, dark Dark Gray/30) and the circular progress tokens `progress-track-active`, `progress-track-empty` and `progress-indicator-default`, from the product. Nothing uses them yet
 - Removed the `prefers-color-scheme` copy of the dark tokens from `tokens.css` (about 130 lines). The theme controller resolves the system setting and sets `data-theme`, so the copy was never used. `npm run figma-tokens:diff` no longer checks it
 - Added `docs/2026-10-06-scaligent-token-differences.md`: the 33 token values where Figma and the product disagree, grouped by cause
+- Shared components, Spotter, the Liveboard tiles and the prototype templates now follow the theme:
+  - Inline styles read CSS variables through new helpers, `sysVar()`, `compVar()` and `shadowVar()` from `@tokens/colors`, instead of `systemColors.light[...]`, which is always light. No component reads light-only values any more
+  - Hard-coded colours in component and tile CSS became tokens. A few light values moved to the nearest token: modal overlays use `background-overlay`, ad-hoc shadows use the three shadow tokens, the Liveboard toolbar is a touch lighter (`background-inverse`), and tile descriptions use `content-secondary`
+  - The docs sidebar follows the theme; its dark gradient is gone. The ThoughtSpot primary nav (Liveboard header, AppSidebar) stays dark in both themes
+  - 11 token names that never existed (`content-subtle`, `background-surface`, `content-negative` and others) now point at real tokens, so those colours show in both themes
+  - `_template` and `_liveboard-template` start new prototypes dark-ready, and the template README teaches `sysVar()`
+- Charts follow the theme:
+  - Added 13 chart tokens (`--rd-comp-color-chart-*`) with the product's names and dark values. The product has no light values yet, so ours are proposed, taken from the current chart colours
+  - New `useChartTheme()` gives ECharts its colours for the current theme. Dark series colours come from the product's OKLCH lightness remap, ported so our charts match. All shared chart types and the Spotter chart block use it and redraw when the theme changes
+  - User-picked note text colours are lightened on dark tiles
 
 ## 26.9.1c — 2026-09-03
 

@@ -20,7 +20,7 @@ import { TypographyPage } from './pages/TypographyPage';
 import RdModalDemo from './pages/RdModalDemo';
 // import { RoadmapPage } from './pages/RoadmapPage';
 
-import { systemColors } from './tokens/colors';
+import { systemColors, sysVar } from './tokens/colors';
 import { getCurrentVersion } from './data/versionHistory';
 import { useTheme } from './context/ThemeContext';
 import { getIconCount } from './data/componentRegistry';
@@ -742,15 +742,15 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: 'var(--font-family-primary)',
     fontSize: '16px',
     fontWeight: 'var(--font-weight-emphasis)',
-    color: '#ffffff',
+    color: sysVar('content-primary'),
     letterSpacing: '-0.3px',
   },
   logoVersion: {
     fontFamily: 'var(--font-family-primary)',
     fontSize: '10px',
     fontWeight: 500,
-    color: 'rgba(255, 255, 255, 0.45)',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    color: sysVar('content-secondary'),
+    backgroundColor: sysVar('background-subtle'),
     padding: '1px 6px',
     borderRadius: '10px',
     letterSpacing: '0.2px',
@@ -759,7 +759,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: 'var(--font-family-primary)',
     fontSize: '11px',
     fontWeight: 400,
-    color: 'rgba(255, 255, 255, 0.5)',
+    color: sysVar('content-secondary'),
     letterSpacing: '0.2px',
   },
 };

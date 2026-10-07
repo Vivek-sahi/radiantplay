@@ -92,17 +92,20 @@ export const MyPrototype: React.FC = () => {
 
 ## Design Tokens
 
-All components use the Radiant design token system. For custom styling:
+All components use the Radiant design token system. For custom styling, read colours through `sysVar()` (system tokens) or `compVar()` (component tokens). Each returns a CSS variable, so the colour follows light and dark mode:
 
 ```tsx
-import { systemColors } from '../../tokens/colors';
-import { spacing } from '../../tokens/spacing';
+import { sysVar } from '@tokens/colors';
+import { spacing } from '@tokens/spacing';
 
 const style = {
-  backgroundColor: systemColors.light['content-brand'],
+  backgroundColor: sysVar('background-brand'),
+  color: sysVar('content-primary-inverse'),
   padding: `${spacing.D}px`,
 };
 ```
+
+Do not read the `systemColors.light` object in a style, and do not hard-code hex or rgb colours. Both stay light when the theme switches to dark. For a translucent colour, mix the variable: `color-mix(in srgb, ${sysVar('content-brand')} 10%, transparent)`.
 
 ## Need Help?
 

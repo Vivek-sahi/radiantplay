@@ -57,7 +57,7 @@
 }
 
 .chevron:hover {
-  background-color: var(--rd-sys-color-background-muted);
+  background-color: var(--rd-sys-color-background-sunken);
 }
 
 .chevronExpanded {

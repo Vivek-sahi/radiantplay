@@ -8,7 +8,7 @@ export interface ActionMenuItemProps {
   icon?: React.ReactNode;
   onClick?: () => void;
   disabled?: boolean;
-  /** Red tint using --rd-sys-color-content-negative */
+  /** Red tint using --rd-sys-color-content-failure */
   destructive?: boolean;
   /** Keyboard shortcut display */
   shortcut?: string;

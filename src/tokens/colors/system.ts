@@ -196,3 +196,13 @@ export const systemColors = {
 
 export type SystemColors = typeof systemColors;
 export type SystemColorKey = keyof typeof systemColors.light;
+
+/**
+ * CSS variable for a system token, for inline styles in TSX:
+ * sysVar('content-primary') → 'var(--rd-sys-color-content-primary)'.
+ * Follows the theme. Use it instead of systemColors.light[...], which is always light.
+ */
+export const sysVar = (key: SystemColorKey): string => `var(--rd-sys-color-${key})`;
+
+/** CSS variable for a shadow token: shadowVar('menu') → 'var(--rd-sys-color-shadow-menu)'. */
+export const shadowVar = (level: 'surface' | 'menu' | 'modal'): string => `var(--rd-sys-color-shadow-${level})`;

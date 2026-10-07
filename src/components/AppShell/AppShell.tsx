@@ -1,5 +1,5 @@
 import React, { forwardRef, useEffect, useMemo, useState } from 'react';
-import { referenceColors } from '../../tokens/colors';
+import { sysVar } from '../../tokens/colors';
 import { AppSidebar, AppSidebarProps } from '../AppSidebar';
 import { GlobalHeader, GlobalHeaderProps } from '../GlobalHeader';
 import styles from './AppShell.module.css';
@@ -23,7 +23,7 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(
       sidebarProps,
       hideSidebar = false,
       overlaySlot,
-      contentBackground = referenceColors.gray['10'],
+      contentBackground = sysVar('background-sunken'),
       children,
       className,
       style,

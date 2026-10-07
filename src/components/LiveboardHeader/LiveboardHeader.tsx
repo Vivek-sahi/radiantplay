@@ -92,8 +92,8 @@ const s: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     height: layout.headerHeight,
     padding: '0 24px',
-    background: colors.editHeaderBg,
-    color: colors.textOnDark,
+    background: colors.primaryNavBg,
+    color: colors.primaryNavText,
     flexShrink: 0,
   },
   logoBtn: {

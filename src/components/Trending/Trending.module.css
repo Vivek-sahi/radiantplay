@@ -70,7 +70,7 @@
   font-family: var(--font-family-primary);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
-  color: var(--rd-sys-color-content-subtle);
+  color: var(--rd-sys-color-content-secondary);
   min-width: 16px;
   text-align: right;
 }
@@ -92,7 +92,7 @@
   font-family: var(--font-family-primary);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
-  color: var(--rd-sys-color-content-subtle);
+  color: var(--rd-sys-color-content-secondary);
   background: var(--rd-sys-color-background-subtle);
   padding: 1px var(--spacing-2);
   border-radius: var(--radius-full);
@@ -107,13 +107,13 @@
 }
 
 .trendUp {
-  color: var(--rd-sys-color-content-positive, #16a34a);
+  color: var(--rd-sys-color-content-success, #16a34a);
 }
 
 .trendDown {
-  color: var(--rd-sys-color-content-negative);
+  color: var(--rd-sys-color-content-failure);
 }
 
 .trendNeutral {
-  color: var(--rd-sys-color-content-subtle);
+  color: var(--rd-sys-color-content-secondary);
 }
