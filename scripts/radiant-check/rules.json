@@ -188,7 +188,8 @@
       "path": "src/context/InspectorContext.tsx",
       "kinds": [
         "light-read",
-        "literal"
+        "literal",
+        "font-family"
       ],
       "reason": "Inspector shows token names and values as data. Its labels are stale (--color-brand-blue-60); fix in a separate pass"
     },
@@ -196,7 +197,8 @@
       "path": "src/data/versionHistory.ts",
       "kinds": [
         "literal",
-        "light-read"
+        "light-read",
+        "font-family"
       ],
       "match": "description:",
       "reason": "Hex values and code names in changelog text"
@@ -278,6 +280,20 @@
         "light-read"
       ],
       "reason": "The legacy theme='dark' variant is always dark; the default 'auto' variant uses sysVar()"
+    },
+    {
+      "path": "src/prototypes/NewUIAdmin2/CustomisationPageContent.tsx",
+      "kinds": [
+        "font-family"
+      ],
+      "reason": "Customer font samples on the customisation page are data"
+    },
+    {
+      "path": "src/pages/TypographyPage.tsx",
+      "kinds": [
+        "font-family"
+      ],
+      "reason": "The font stack is shown as documentation text"
     }
   ],
   "_exclude_note": "HowItWorksPage has its own styling and RoadmapPage's route is commented out; both are outside the dark mode rollout."

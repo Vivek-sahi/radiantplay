@@ -48,6 +48,17 @@ git add src/prototypes/registry.ts src/prototypes/registry-core.ts src/prototype
 git commit --no-edit
 ```
 
+### Rule 2b — Other conflicts with a known resolution
+
+| Conflict | Resolution |
+|---|---|
+| A sample thumbnail in `src/prototypes/thumbnails/` that the fork edited and upstream deleted (modify/delete) | Accept upstream's deletion (`git rm <file>`). Sample prototypes now use screenshots in their own folders. A thumbnail the designer's own prototype still imports is not a sample one; if a deleted file is imported by `registry-mine.ts`, keep it and say so. |
+| A sample thumbnail SVG that both sides edited | Take upstream's version (`git checkout --theirs <file>`). |
+| `package.json` `scripts` added on both sides | Keep both sides' scripts: join the two lists, add the comma between them, and check the file is valid JSON (`node -e "JSON.parse(require('fs').readFileSync('package.json'))"`). For any other `package.json` conflict (dependencies, versions), stop and show it. |
+| Guidance files: `CLAUDE.md`, `.cursor/rules/*`, `.claude/commands/*`, `.claude/skills/*` | Take upstream's version for the conflicting block, and keep the fork's other edits to the file that merged cleanly. Upstream's guidance teaches the current conventions (for example theme-aware colour with `sysVar()`); keeping an old block brings back outdated patterns. Tell the designer which of their edits were replaced. |
+
+Resolve a conflict block, not the whole file, wherever the fork made other changes that merged cleanly: edit out the `<<<<<<<`, `=======`, `>>>>>>>` section and keep upstream's side.
+
 ### Rule 3 — Common post-merge build errors
 
 After merging, run `npm run build`. If it fails, the cause is usually one of:
@@ -117,10 +128,18 @@ Then ask: **"Proceed with sync? (yes / no)"** — and stop if no.
 
 Only after explicit yes. Follow Rule 1's flow. Use your judgment on the mechanics:
 
+- After the merge, re-read this file (`.claude/commands/sync-upstream.md`) from disk. If upstream changed it, follow the new version for the rest of the run. The sync that brings in a new step runs the fork's old copy of this command, so this is how that first sync picks the step up.
+
 - Stash with `--include-untracked` before any branch switch or merge. After stashing, verify `git status --porcelain` is empty — if it isn't, the stash didn't capture everything; stop and surface what's still in the working tree before switching branches.
 - If anything goes wrong (mid-merge state, leftover stash, divergent main, etc.), stop and explain in plain language — don't push through.
 - On any conflict, tell the designer exactly which files are affected, what each side changed, and the exact commands to resume (`git merge --continue`, `git stash pop`, etc.). Never abandon a stash silently.
+- Light-only policy, after the merge and once `npm run build` passes (Rule 3): run `node scripts/radiant-check/light-only.mjs --write`. It adds `theme: 'light-only'` with a dated comment to every `registry-mine.ts` entry the scan doesn't call dark ready, and prints each one it flagged. Don't edit the flag by hand, and don't add it to prototypes the script leaves alone (it remembers flags the designer deleted). Include `registry-mine.ts` and `scripts/radiant-check/rules-mine.json` in the post-sync cleanup commit on `main`, or create that commit (`fix: post-sync build cleanup`) if the build needed no cleanup. If the designer's prototypes live on their feature branch rather than `main`, run it again after the forward merge into that branch:
+  - If the stash doesn't touch `registry-mine.ts`, run it before popping the stash and commit it there as `fix: post-sync light-only flags`.
+  - If the stash touches `registry-mine.ts` (`git stash show --name-only <stash>` lists it), pop the stash first, then run it and leave the change uncommitted. Tell the designer: "I added the light-only flag to your prototypes in registry-mine.ts. It's mixed in with your unsaved changes there, so I didn't commit it."
+
+  The second case applies on `main` too: whenever the stash touches `registry-mine.ts`, run the script after the pop and leave it uncommitted. Skip this step if the script doesn't exist (an older upstream).
 - Final report: confirm what branch they're on, what was pulled in, and that their work is intact.
+- Prototype status: run `npm run scan:dark -- --mine` and show its table. Name every prototype the light-only step flagged. Then explain in plain words: "Light-only means the prototype stays in light mode when someone turns dark mode on, so it looks exactly as it did before. Nothing else changes. Run `/migrate-prototype` when you want your prototypes on the new font and dark mode. Nothing is urgent."
 - Thumbnails: run `npm run thumbnails:check -- --mine` and include its result. If it lists prototypes, offer to capture them with `/thumbnail` (that command handles the one-time setup question). Prototypes without a thumbnail still show a live preview in the gallery, so this is never urgent.
 
 ---

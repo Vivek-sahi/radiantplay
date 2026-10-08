@@ -1,0 +1,374 @@
+{
+  "_readme": "Expected numbers for codemod-check.mjs. before = parent of e0d1aa1 (pre-Geist, pre-dark); after = 3005216 (Phase 6). compareSkip lists rules newer than the reference (Phase 6 kept font sizes and standalone 400/500 weights), so the line comparison runs without them; autoSwaps counts every rule.",
+  "before": "e0d1aa1^",
+  "after": "3005216",
+  "compareSkip": [
+    "font-size",
+    "weight-400",
+    "weight-500"
+  ],
+  "fixtures": {
+    "AdminGroups": {
+      "autoSwaps": {
+        "alpha-suffix": 1,
+        "font-family": 6,
+        "font-size": 35,
+        "legacy-value": 1,
+        "light-read": 87,
+        "shadow": 3,
+        "weight-400": 8,
+        "weight-500": 9,
+        "weight-600": 8
+      },
+      "autoTotal": 158,
+      "judgement": 23,
+      "scanAfter": {
+        "light-read": 5,
+        "literal": 9
+      },
+      "lines": {
+        "match": 104,
+        "judgement": 18,
+        "mismatch": 1
+      },
+      "notInAfter": [],
+      "mismatches": [
+        {
+          "at": "src/prototypes/AdminGroups/components/AdminHeader.tsx:25",
+          "kind": "missed",
+          "codemod": "{/* ThoughtSpot Logo */}",
+          "reference": "{/* ThoughtSpot Logo. Brand mark colours are data, kept as literals. */}",
+          "reason": "Phase 6 rewrote a line the codemod neither changed nor listed",
+          "note": "Phase 6 only added a comment"
+        }
+      ]
+    },
+    "AdminLang": {
+      "autoSwaps": {
+        "alpha-suffix": 2,
+        "font-family": 1,
+        "font-size": 18,
+        "hex-tailwind": 2,
+        "hex-token": 2,
+        "light-read": 50,
+        "shadow": 2,
+        "weight-500": 8,
+        "weight-600": 9
+      },
+      "autoTotal": 94,
+      "judgement": 28,
+      "scanAfter": {
+        "light-read": 8,
+        "literal": 8
+      },
+      "lines": {
+        "match": 70,
+        "judgement": 17,
+        "mismatch": 0
+      },
+      "notInAfter": [],
+      "mismatches": []
+    },
+    "SpotterMemory": {
+      "autoSwaps": {
+        "alpha-suffix": 2,
+        "font-family": 3,
+        "font-size": 4,
+        "light-read": 35,
+        "weight-500": 4,
+        "weight-600": 6,
+        "weight-conditional": 2
+      },
+      "autoTotal": 56,
+      "judgement": 28,
+      "scanAfter": {
+        "light-read": 6,
+        "literal": 6
+      },
+      "lines": {
+        "match": 45,
+        "judgement": 15,
+        "mismatch": 1
+      },
+      "notInAfter": [],
+      "mismatches": [
+        {
+          "at": "src/prototypes/SpotterMemory/components/NavigationSidebar.tsx:68",
+          "kind": "overreach",
+          "codemod": "fontWeight: isActive ? 'var(--font-weight-medium)' : 'var(--font-weight-regular)',",
+          "reference": "fontWeight: isActive ? 500 : 400,",
+          "reason": "Codemod changed a line Phase 6 kept",
+          "note": "Phase 6 was inconsistent: it converted `? 500 : 400` in five other NewUIAdmin2 files and kept these. The plan converts every conditional weight"
+        }
+      ]
+    },
+    "MiniSpotters": {
+      "autoSwaps": {
+        "alpha-suffix": 1,
+        "font-size": 1,
+        "hex-token": 1,
+        "light-read": 14
+      },
+      "autoTotal": 17,
+      "judgement": 2,
+      "scanAfter": {
+        "literal": 2
+      },
+      "lines": {
+        "match": 17,
+        "judgement": 2,
+        "mismatch": 1
+      },
+      "notInAfter": [],
+      "mismatches": [
+        {
+          "at": "src/prototypes/MiniSpotters/MiniSpotters.tsx:107",
+          "kind": "overreach",
+          "codemod": "fill={sysVar('content-inverse')}",
+          "reference": "fill=\"white\"",
+          "reason": "Codemod changed a line Phase 6 kept",
+          "note": "White icon on a brand fill. Phase 6 kept the literal; content-inverse is the Phase 6 table choice for white on a fill"
+        }
+      ]
+    },
+    "StylingPanel": {
+      "autoSwaps": {
+        "font-family": 2,
+        "font-size": 1,
+        "hex-token": 2,
+        "weight-400": 1,
+        "weight-conditional": 4
+      },
+      "autoTotal": 10,
+      "judgement": 21,
+      "scanAfter": {
+        "literal": 94
+      },
+      "lines": {
+        "match": 1,
+        "judgement": 41,
+        "mismatch": 10
+      },
+      "notInAfter": [
+        "src/prototypes/StylingPanel/styles.ts"
+      ],
+      "mismatches": [
+        {
+          "at": "src/prototypes/StylingPanel/StylingPanel.tsx:3",
+          "kind": "missed",
+          "codemod": "import { StylingPanelDrawer, StylingSettings, SelectedTileType, TileOverride, TILE_SWATCHES_DARK } from './components/StylingPanelDrawer';",
+          "reference": "import { StylingPanelDrawer, StylingSettings, SelectedTileType, TileOverride, TILE_SWATCHES_DARK, DEFAULT_TILE_COLOR } from './components/StylingPanelDrawer';",
+          "reason": "Phase 6 rewrote a line the codemod neither changed nor listed",
+          "note": "Phase 6 redesigned the styling panel by hand: new constants, a panel that follows the theme, checkmark colours per swatch. Not a codemod job"
+        },
+        {
+          "at": "src/prototypes/StylingPanel/StylingPanel.tsx:481",
+          "kind": "overreach",
+          "codemod": "'--tile-kpi-weight':              stylingSettings.density === 'compact'  ? 'var(--font-weight-regular)' : 'var(--font-weight-medium)',",
+          "reference": "'--tile-kpi-weight':              stylingSettings.density === 'compact'  ? '400' : '500',",
+          "reason": "Codemod changed a line Phase 6 kept",
+          "note": "Phase 6 was inconsistent: it converted `? 500 : 400` in five other NewUIAdmin2 files and kept these. The plan converts every conditional weight"
+        },
+        {
+          "at": "src/prototypes/StylingPanel/components/StylingPanelDrawer.tsx:2",
+          "kind": "missed",
+          "codemod": "// eslint-disable-next-line @typescript-eslint/no-unused-vars",
+          "reference": "(deleted)",
+          "reason": "Phase 6 deleted or restructured this line",
+          "note": "Phase 6 redesigned the styling panel by hand: new constants, a panel that follows the theme, checkmark colours per swatch. Not a codemod job"
+        },
+        {
+          "at": "src/prototypes/StylingPanel/components/StylingPanelDrawer.tsx:19",
+          "kind": "missed",
+          "codemod": "// d and r kept for future use",
+          "reference": "(deleted)",
+          "reason": "Phase 6 deleted or restructured this line",
+          "note": "Phase 6 redesigned the styling panel by hand: new constants, a panel that follows the theme, checkmark colours per swatch. Not a codemod job"
+        },
+        {
+          "at": "src/prototypes/StylingPanel/components/StylingPanelDrawer.tsx:20",
+          "kind": "missed",
+          "codemod": "const _d = systemColors.dark; void _d;",
+          "reference": "(deleted)",
+          "reason": "Phase 6 deleted or restructured this line",
+          "note": "Phase 6 redesigned the styling panel by hand: new constants, a panel that follows the theme, checkmark colours per swatch. Not a codemod job"
+        },
+        {
+          "at": "src/prototypes/StylingPanel/components/StylingPanelDrawer.tsx:22",
+          "kind": "missed",
+          "codemod": "",
+          "reference": "(deleted)",
+          "reason": "Phase 6 deleted or restructured this line",
+          "note": "Phase 6 redesigned the styling panel by hand: new constants, a panel that follows the theme, checkmark colours per swatch. Not a codemod job"
+        },
+        {
+          "at": "src/prototypes/StylingPanel/components/StylingPanelDrawer.tsx:23",
+          "kind": "missed",
+          "codemod": "// Colors from Liveboard-Styling Figma node 4431:494053",
+          "reference": "(deleted)",
+          "reason": "Phase 6 deleted or restructured this line",
+          "note": "Phase 6 redesigned the styling panel by hand: new constants, a panel that follows the theme, checkmark colours per swatch. Not a codemod job"
+        },
+        {
+          "at": "src/prototypes/StylingPanel/components/StylingPanelDrawer.tsx:36",
+          "kind": "missed",
+          "codemod": "// Toggle colors: pending confirmation from design",
+          "reference": "(deleted)",
+          "reason": "Phase 6 deleted or restructured this line",
+          "note": "Phase 6 redesigned the styling panel by hand: new constants, a panel that follows the theme, checkmark colours per swatch. Not a codemod job"
+        },
+        {
+          "at": "src/prototypes/StylingPanel/components/StylingPanelDrawer.tsx:210",
+          "kind": "missed",
+          "codemod": "background: t.bg, border: `1px solid ${t.borderBold}`, borderRadius: 6,",
+          "reference": "background: t.raised, border: `1px solid ${t.borderBold}`, borderRadius: 6,",
+          "reason": "Phase 6 rewrote a line the codemod neither changed nor listed",
+          "note": "Phase 6 redesigned the styling panel by hand: new constants, a panel that follows the theme, checkmark colours per swatch. Not a codemod job"
+        },
+        {
+          "at": "src/prototypes/StylingPanel/components/StylingPanelDrawer.tsx:265",
+          "kind": "missed",
+          "codemod": "// Tile color swatches — 2 rows: light (row 1) + dark/highlight (row 2)",
+          "reference": "// Tile color swatches — 2 rows: light (row 1) + dark/highlight (row 2).",
+          "reason": "Phase 6 rewrote a line the codemod neither changed nor listed",
+          "note": "Phase 6 redesigned the styling panel by hand: new constants, a panel that follows the theme, checkmark colours per swatch. Not a codemod job"
+        }
+      ]
+    },
+    "NewUIAdmin2": {
+      "autoSwaps": {
+        "alpha-suffix": 21,
+        "comp-read": 3,
+        "font-family": 17,
+        "font-size": 91,
+        "hex-tailwind": 339,
+        "hex-token": 84,
+        "hover-handler": 32,
+        "light-read": 16,
+        "shadow": 13,
+        "weight-400": 12,
+        "weight-500": 110,
+        "weight-600": 88,
+        "weight-conditional": 30,
+        "weight-numeric": 1
+      },
+      "autoTotal": 857,
+      "judgement": 509,
+      "scanAfter": {
+        "font-family": 3,
+        "light-read": 4,
+        "literal": 717
+      },
+      "lines": {
+        "match": 486,
+        "judgement": 708,
+        "mismatch": 6
+      },
+      "notInAfter": [],
+      "mismatches": [
+        {
+          "at": "src/prototypes/NewUIAdmin2/BillingQueryStatsPageContent.tsx:81",
+          "kind": "missed",
+          "codemod": "const stroke = SPARKLINE_STROKES[color];",
+          "reference": "const stroke = strokes[color];",
+          "reason": "Phase 6 rewrote a line the codemod neither changed nor listed",
+          "note": "Phase 6 replaced the sparkline colour tables with theme-aware ones by hand"
+        },
+        {
+          "at": "src/prototypes/NewUIAdmin2/BillingQueryStatsPageContent.tsx:82",
+          "kind": "missed",
+          "codemod": "const fill = SPARKLINE_FILLS[color];",
+          "reference": "const fill = `color-mix(in srgb, ${stroke} 9%, transparent)`;",
+          "reason": "Phase 6 rewrote a line the codemod neither changed nor listed",
+          "note": "Phase 6 replaced the sparkline colour tables with theme-aware ones by hand"
+        },
+        {
+          "at": "src/prototypes/NewUIAdmin2/PerformanceTrackingPageContent.tsx:5",
+          "kind": "different",
+          "codemod": "const brand = sysVar('content-brand');",
+          "reference": "(deleted)",
+          "reason": "Codemod output differs from Phase 6",
+          "note": "Phase 6 deleted a constant that was no longer used"
+        },
+        {
+          "at": "src/prototypes/NewUIAdmin2/SearchSpotIQPageContent.tsx:88",
+          "kind": "overreach",
+          "codemod": "fontWeight: opt === selected ? 'var(--font-weight-medium)' : 'var(--font-weight-regular)',",
+          "reference": "fontWeight: opt === selected ? 500 : 400,",
+          "reason": "Codemod changed a line Phase 6 kept",
+          "note": "Phase 6 was inconsistent: it converted `? 500 : 400` in five other NewUIAdmin2 files and kept these. The plan converts every conditional weight"
+        },
+        {
+          "at": "src/prototypes/NewUIAdmin2/UsageAdoptionPageContent.tsx:467",
+          "kind": "different",
+          "codemod": "<div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundColor: sysVar('background-secondary-action') }}>",
+          "reference": "<div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundColor: sysVar('background-sunken') }}>",
+          "reason": "Different token: codemod background-secondary-action; Phase 6 background-sunken",
+          "note": "#F3F4F6 as a page background: Phase 6 chose background-sunken, the table maps #F3F4F6 fills to background-secondary-action. Same family, a judgement call"
+        },
+        {
+          "at": "src/prototypes/NewUIAdmin2/VariablesPageContent.tsx:70",
+          "kind": "different",
+          "codemod": "<path d=\"M7 4v3.5M7 9.5h.01\" stroke={sysVar('content-inverse')} strokeWidth=\"1.3\" strokeLinecap=\"round\" />",
+          "reference": "<path d=\"M7 4v3.5M7 9.5h.01\" stroke={sysVar('background-base')} strokeWidth=\"1.3\" strokeLinecap=\"round\" />",
+          "reason": "Different token: codemod content-inverse; Phase 6 background-base",
+          "note": "White stroke on a brand fill: Phase 6 used background-base, the codemod content-inverse (the table choice for white on a fill)"
+        }
+      ]
+    },
+    "Spotter": {
+      "autoSwaps": {
+        "hex-token": 2,
+        "shadow": 2,
+        "unknown-token": 1,
+        "weight-alias": 7
+      },
+      "autoTotal": 12,
+      "judgement": 2,
+      "scanAfter": {},
+      "lines": {
+        "match": 11,
+        "judgement": 0,
+        "mismatch": 1
+      },
+      "notInAfter": [],
+      "mismatches": [
+        {
+          "at": "src/prototypes/Spotter/components/AnalystListPage.module.css:65",
+          "kind": "different",
+          "codemod": "border-color: var(--rd-sys-color-content-brand);",
+          "reference": "border-color: var(--rd-sys-color-border-brand);",
+          "reason": "Different token: codemod content-brand; Phase 6 border-brand",
+          "note": "Unknown token with a fallback: the codemod keeps the fallback (content-brand), Phase 6 picked border-brand. Same light value"
+        }
+      ]
+    },
+    "DataModelEditor": {
+      "autoSwaps": {
+        "font-face": 4,
+        "font-family": 2,
+        "font-mono": 1,
+        "font-size": 2,
+        "hex-token": 11,
+        "hover-handler": 1,
+        "shadow": 2,
+        "weight-alias": 46
+      },
+      "autoTotal": 69,
+      "judgement": 25,
+      "scanAfter": {
+        "literal": 7
+      },
+      "lines": {
+        "match": 84,
+        "judgement": 12,
+        "mismatch": 0
+      },
+      "notInAfter": [],
+      "mismatches": []
+    }
+  },
+  "_changes": [
+    "2026-10-07: allow entries in rules.json / rules-mine.json now stop rewrites as well as listing (whole-file entries cover the whole file for their kinds), and logo or brand colours go to the judgement list. Whole-file allows on six NewUIAdmin2 pages and both StylingPanel files cut NewUIAdmin2 swaps 1571 to 857 and StylingPanel 24 to 10; the AdminHeader logo is no longer rewritten (AdminGroups 160 to 158, mismatches 3 to 1). Those lines now count as judgement."
+  ]
+}
