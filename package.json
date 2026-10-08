@@ -20,7 +20,8 @@
     "thumbnails:setup": "bash scripts/thumbnails/setup.sh",
     "thumbnails:check": "node scripts/thumbnails/check.mjs",
     "migrate:codemod": "node scripts/radiant-check/codemod.mjs",
-    "codemod:check": "node scripts/radiant-check/codemod-check.mjs"
+    "codemod:check": "node scripts/radiant-check/codemod-check.mjs",
+    "migrate:light-only": "node scripts/radiant-check/light-only.mjs"
   },
   "keywords": [
     "design-system",

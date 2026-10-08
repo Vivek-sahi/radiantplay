@@ -194,7 +194,9 @@ const geistReady = (c) => FONT.every((k) => c[k] === 0);
 
 if (JSON_OUT) {
   const meta = Object.fromEntries(mine.map((e) => [`src/prototypes/${e.id}`, { theme: e.theme, thumb: e.thumb }]));
-  console.log(JSON.stringify({ units, meta, findings: reported, allowed: allowedCount }, null, 2));
+  // The table's dark and geist columns, so tools such as light-only.mjs read the same verdict
+  const ready = Object.fromEntries(Object.entries(units).map(([u, c]) => [u, { dark: darkReady(c), geist: geistReady(c) }]));
+  console.log(JSON.stringify({ units, ready, meta, findings: reported, allowed: allowedCount }, null, 2));
 } else {
   const pad = (s, n) => String(s).padEnd(n);
   const extra = MINE ? `${pad('theme', 12)}${pad('thumb', 13)}` : '';
