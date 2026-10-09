@@ -8,11 +8,19 @@
  *   npm run thumbnails -- <Name> [<Name> ...]     capture these prototypes
  *   npm run thumbnails -- --all                   every registered prototype
  *   npm run thumbnails -- <Name> --base http://localhost:5173   use a running server
+ *   npm run thumbnails -- <Name> --json           end with a JSON summary, one row per prototype
  *
  * Without --base it starts its own Vite dev server and stops it afterwards.
  * Playwright lives outside package.json: run `npm run thumbnails:setup` once.
  * The capture blocks /api/* and external requests, so AI prototypes show their
  * starting state. A file is only rewritten when its pixels changed.
+ * --all skips prototypes in the archived section; an archived prototype named
+ * explicitly is captured.
+ *
+ * Dark check: when the dark shot comes out the same as the light one (byte for byte,
+ * or the same size within 1% with every sampled byte equal), the prototype isn't
+ * following the theme, whatever the scan says. It prints a warning and exits with
+ * code 2 at the end (1 when a capture failed). With --json, sameAsLight is true for it.
  */
 
 import fs from 'node:fs';
@@ -41,7 +49,7 @@ const flag = (name) => argv.includes(`--${name}`);
 const value = (name) => { const i = argv.indexOf(`--${name}`); return i > -1 ? argv[i + 1] : null; };
 const names = argv.filter((a, i) => !a.startsWith('--') && argv[i - 1] !== '--base');
 
-// Registered prototypes and their light-only flag, read from the registry source
+// Registered prototypes, their light-only flag and whether they are archived, read from the registry source
 function registered() {
   const out = {};
   for (const file of ['src/prototypes/registry-core.ts', 'src/prototypes/registry-mine.ts']) {
@@ -49,17 +57,31 @@ function registered() {
     if (!fs.existsSync(p)) continue;
     const src = fs.readFileSync(p, 'utf8');
     for (const m of src.matchAll(/\{\s*id:\s*'([^']+)'([\s\S]*?)\n\s*\}/g)) {
-      if (/section:\s*'archived'/.test(m[2])) continue;
-      out[m[1]] = { lightOnly: /theme:\s*'light-only'/.test(m[2]) };
+      out[m[1]] = { lightOnly: /theme:\s*'light-only'/.test(m[2]), archived: /section:\s*'archived'/.test(m[2]) };
     }
   }
   return out;
 }
 
+/** Same image? Byte for byte, or the same size within 1% with every sampled byte equal. */
+function looksSame(a, b) {
+  if (Buffer.compare(a, b) === 0) return true;
+  if (Math.abs(a.length - b.length) > Math.max(a.length, b.length) * 0.01) return false;
+  const n = Math.min(a.length, b.length);
+  // Skip the JPEG header, then sample 256 bytes spread across the image data
+  const from = Math.min(1024, Math.floor(n / 4));
+  for (let i = 0; i < 256; i++) {
+    const at = from + Math.floor(((n - from - 1) * i) / 255);
+    if (a[at] !== b[at]) return false;
+  }
+  return true;
+}
+
 const all = registered();
-const targets = flag('all') ? Object.keys(all) : names;
+// --all leaves archived prototypes out; one named explicitly is captured
+const targets = flag('all') ? Object.keys(all).filter((n) => !all[n].archived) : names;
 if (!targets.length) {
-  console.log('Name the prototypes to capture, or pass --all. Registered: ' + Object.keys(all).join(', '));
+  console.log('Name the prototypes to capture, or pass --all. Registered: ' + Object.keys(all).filter((n) => !all[n].archived).join(', '));
   process.exit(1);
 }
 const unknown = targets.filter((n) => !all[n]);
@@ -106,9 +128,11 @@ async function capture(browser, base, name, { lightOnly }) {
 
   const dir = path.join(ROOT, 'src/prototypes', name);
   const results = [];
+  const shots = {};
   const shoot = async (theme) => {
     const file = path.join(dir, `thumbnail.${theme}.jpg`);
     const buf = await page.screenshot({ type: 'jpeg', quality: 80 });
+    shots[theme] = buf;
     const same = fs.existsSync(file) && Buffer.compare(fs.readFileSync(file), buf) === 0;
     if (!same) fs.writeFileSync(file, buf);
     results.push(`${theme} ${same ? 'unchanged' : `${Math.round(buf.length / 1024)} KB`}`);
@@ -121,24 +145,40 @@ async function capture(browser, base, name, { lightOnly }) {
     await shoot('dark');
   }
   await context.close();
-  return results.join(', ');
+  // A dark shot that matches the light one means the screen ignored the theme switch
+  const sameAsLight = !!shots.dark && looksSame(shots.light, shots.dark);
+  return { text: results.join(', '), sameAsLight, lightOnly };
 }
 
 const { base, stop } = value('base') ? { base: value('base'), stop: () => {} } : await startServer();
 const launchOpts = process.env.PLAYWRIGHT_CHROMIUM_PATH ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_PATH } : {};
 const browser = await chromium.launch(launchOpts);
 let failed = 0;
+const sameAsLight = [];
+const summary = [];
 try {
   for (const name of targets) {
     try {
-      console.log(`${name}: ${await capture(browser, base, name, all[name])}`);
+      const r = await capture(browser, base, name, all[name]);
+      console.log(`${name}: ${r.text}`);
+      if (r.sameAsLight) {
+        sameAsLight.push(name);
+        console.log(`Warning: ${name}: dark looks the same as light; it isn't following the theme`);
+      }
+      summary.push({ name, result: r.text, lightOnly: r.lightOnly, sameAsLight: r.sameAsLight });
     } catch (e) {
       failed++;
       console.log(`${name}: failed, ${e.message.split('\n')[0]}`);
+      summary.push({ name, error: e.message.split('\n')[0] });
     }
   }
 } finally {
   await browser.close();
   stop();
 }
+if (sameAsLight.length) {
+  console.log(`\nNot dark ready: ${sameAsLight.join(', ')}. The dark thumbnail matches the light one. Likely causes: code imported from another prototype, a page in an iframe, or a light-only wrapper still set.`);
+}
+if (flag('json')) console.log(JSON.stringify({ captured: summary, sameAsLight, failed }, null, 2));
 if (failed) process.exit(1);
+if (sameAsLight.length) process.exit(2);

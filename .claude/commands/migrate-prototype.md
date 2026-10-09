@@ -20,7 +20,7 @@ Spec: `docs/2026-10-07-prototype-migration-plan.md`, section 4.2 (if the file is
 ## Hard rules
 
 - **Never commit, push, stash or switch branches.** The command runs in place on the current branch. It stops for review at the end.
-- **Never touch a `vendor/` folder.** That code came from outside the repo. Don't edit it and don't ask about it. A prototype whose remaining findings are in `vendor/` stays light-only, and the report says so.
+- **Leave `vendor/` folders alone by default.** That code came from outside the repo. Don't edit it and don't raise it. A prototype whose remaining findings are in `vendor/` stays light-only, and the report says so. The one exception: the designer asks for `vendor/` to be migrated too (see step 2). Then the codemod runs with `--include-vendor`.
 - Never edit `src/components`, `src/spotter`, `src/tokens`, `src/styles/tokens.css`, `registry-core.ts` or `registry.ts`. Only the picked prototypes' folders, `registry-mine.ts` and `scripts/radiant-check/rules-mine.json` change.
 - The light-only flag in `registry-mine.ts` is set and removed by `scripts/radiant-check/light-only.mjs`, never by hand.
 
@@ -87,7 +87,15 @@ Show **one table**, one row per prototype:
 - Mark a prototype **ready** when the scan says `dark` and `geist` are both yes, the thumbnail is `captured` and the theme is `global`. Ready prototypes are listed and skipped.
 - A prototype that is dark and Geist ready with a captured thumbnail but still flagged `light-only` needs no migration: don't offer it in step 2, and take it straight to step 8 so its flag is lifted. Say so in one line under the table.
 - If a prototype has findings in `vendor/`, add under the table: "<Name> stays light-only after this, because some of its code came from outside the repo (`vendor/`). Migrating still moves its own code to the new font and colours."
-- If one prototype imports another's folder (`from '../<Other>/...'`), say that migrating the one it imports from changes how both look.
+- The scan can say `dark: no` for a prototype whose own folder is clean. Its `meta.notReadyBecause` says why. Put it in plain words under the table:
+
+  | Reason in the scan | Say |
+  |---|---|
+  | `imports from <Other>, which isn't dark ready` | "<Name> shows screens from <Other>. It turns dark ready once <Other> does." |
+  | `renders a static page in an iframe (public/...)` | "<Name> shows a static page in a frame. The theme can't reach that page, so it stays light-only unless the page handles dark itself." |
+
+  The scan's `meta.dependsOn` lists every prototype folder a prototype imports from. Migrating the one it imports from changes how both look: say so.
+- A static page that does handle dark itself: add an allow entry with kind `iframe` to `rules-mine.json` (`{ "path": "src/prototypes/<Name>/", "kinds": ["iframe"], "reason": "The page follows prefers-color-scheme itself" }`). Only on the designer's word.
 
 Below the table, one line with the totals and the overall time.
 
@@ -101,13 +109,17 @@ If they pick none, stop.
 
 From here on, "picked" means the prototypes they chose. Remember each one's theme from step 1; step 8 needs it.
 
+**`vendor/` code.** Don't raise it. Only if the designer asks for the `vendor/` code to be migrated too (for example "the left nav comes from vendor/, do that as well"), confirm in one line that it changes code copied from outside the repo, and that the copy then no longer matches its source. On a yes, steps 3 and 6 add `--include-vendor`. When several picked prototypes carry the same `vendor/` copy, check with `diff -rq src/prototypes/<A>/vendor src/prototypes/<B>/vendor`. If it prints nothing, the copies are identical: migrate one, then copy that `vendor/` folder over the others, so they stay identical and every decision is made once.
+
 ## 3. Codemod, all picked prototypes in one run
 
 ```bash
 node scripts/radiant-check/codemod.mjs src/prototypes/<A> src/prototypes/<B> ... --write --json
 ```
 
-This applies only the mechanical rules (font stacks, weights 600/375/400/500, font sizes on the scale, `systemColors.light[...]` to `sysVar()`, hex values that equal a token in their role, neutral shadows). It skips `vendor/` by itself. It writes `src/prototypes/<Name>/migration-todo.md` for every prototype with decisions left. Keep the JSON: its `judgement` array is already grouped by distinct value across all picked prototypes, each with `at` (every file and line), `role`, `suggestion` and `reason`.
+Add `--include-vendor` only when the designer asked for `vendor/` in step 2. With identical `vendor/` copies, run it in two passes: first `--include-vendor` over one of those prototypes, then copy its migrated `vendor/` folder over the other copies, then the run above over the rest without the flag. Their `vendor/` is already done and the decisions are listed once.
+
+This applies only the mechanical rules (font stacks, weights 600/375/400/500, font sizes on the scale, `systemColors.light[...]` to `sysVar()`, hex values that equal a token in their role, neutral shadows). It skips `vendor/` by itself, unless `--include-vendor` is passed. It never rewrites colours or fonts inside chart options: those come back as decisions with role `chart` (step 5). It writes `src/prototypes/<Name>/migration-todo.md` for every prototype with decisions left. Keep the JSON: its `judgement` array is already grouped by distinct value across all picked prototypes, each with `at` (every file and line), `role`, `suggestion` and `reason`.
 
 Tell the designer the totals in one line ("Made 1,580 safe changes across 3 prototypes. 177 colours and sizes need a decision.").
 
@@ -130,8 +142,10 @@ Work from the codemod's `judgement` groups. One decision applies to every use of
 - **User-picked colours.** Colours the user chooses in the prototype (a colour picker, label colours, avatar colours). Default: keep them as data.
 - **Brand colours.** Logos and product colours (Google, Slack, the app's own accent). Default: keep them as data.
 - **Weight 700.** Keep it as a bold display weight, or use the emphasis weight (550). Default: emphasis, unless it's a big heading.
-- **Off-scale font sizes** (13px, 15px, 22px and so on). Default: the nearest size on the scale, which the codemod suggests.
+- **Off-scale font sizes** (13px, 15px, 22px and so on). Default: the nearest size on the scale, which the codemod suggests. Inside a migrated `vendor/` folder that copies a product screen, the default is "keep": the copy should match the product.
 - Any colour whose role you can't tell from the code.
+
+Items with role `chart` are not questions for the designer. Step 5 handles them.
 
 Sort every unclear item into one of those kinds first, including the codemod's catch-alls: "No colour property on the line (NAME)" items (constants such as `AVATAR_COLORS`, `GOOD_LINE`, `canvasColor`) and "Palette value" items (`referenceColors` reads). Read the constant's name and where it's used, and put it in the kind it belongs to: user-picked, brand, a role you can resolve yourself, or unclear.
 
@@ -157,16 +171,18 @@ End each message with: "Reply with the numbers you want to change, or 'all recom
 
   Use a folder path ending in `/` when the same value is data across a whole prototype. Keep the file's existing format and the `lightOnly` record if there is one.
 - **Always dark**: a surface that stays dark in both themes. Keep its literals (the panel and the text on it), comment them (`// stays dark in both themes`) and add `rules-mine.json` entries with that reason. Don't use theme tokens there: they flip in dark mode.
-- Never edit inside `vendor/`, even when the same value appears there.
+- Never edit inside `vendor/`, even when the same value appears there, unless the designer asked for `vendor/` in step 2.
 
 ## 5. Charts and canvases
 
-Find files in the picked prototypes (outside `vendor/`) that import `echarts` or `echarts-for-react`. ECharts draws on a canvas and can't read CSS variables, so:
+ECharts draws on a canvas and can't read CSS variables. The codemod lists every colour, light read and font stack inside a chart option as a decision with role `chart` (reason "Canvas chart option"). Resolve them all yourself, in the files listed in `at`:
 
-- Replace `chartColors` and `chartUi` with `useChartTheme()` from `@/prototypes/_shared/tiles` (`const { colors, ui, seriesColor, isDark } = useChartTheme();`), and set `backgroundColor: 'transparent'` on the option.
+- Use `useChartTheme()` from `@/prototypes/_shared/tiles` (`const { colors, ui, seriesColor, isDark } = useChartTheme();`). Replace `chartColors` and `chartUi` with it, and set `backgroundColor: 'transparent'` on the option.
 - Map literal axis, grid, label and tooltip colours to `ui.axis`, `ui.gridLine`, `ui.labelColor`, `ui.valueColor`, `ui.tooltipSurface`, `ui.tooltipText`.
-- Font weights inside the option stay numbers: `550` for emphasis, `400` regular, `500` medium.
+- **Never `sysVar()`, `var(--...)` or `color-mix()` in a chart option.** The canvas can't read them, and the chart draws black or nothing.
+- Numbers stay numbers. Font sizes stay as they are. Font weights stay numbers: `550` for emphasis, `400` regular, `500` medium. Never `'var(--font-size-*)'` or `'var(--font-weight-*)'`.
 - A chart with its own series palette: ask once (fold it into the step 4 message): keep it, passing each colour through `seriesColor()` so it adapts in dark mode, or use the theme's `colors`. Recommended: `seriesColor()`.
+- `useChartTheme()` is a hook. A chart option kept in a constant outside a component (`LINE_OPTION`, `VIZ_SPECS`) becomes a function that takes the theme, called inside the component.
 
 ## 6. Build once
 
@@ -177,7 +193,11 @@ npm run build
 
 If either fails, fix what the migration caused (a missing `sysVar` import, a `sysVar()` call in a place that needs a number, a type that expected a literal). If an error has nothing to do with the migration, or you can't fix it in two tries, stop: show the error in plain words and show the undo command (don't run it).
 
-Then run the codemod once more with `--write` over the picked prototypes, so each `migration-todo.md` matches what's left (it's deleted when nothing is left). This run no longer lists step 3's `check` items (second looks at rewrites it already made). That's fine only because step 4 resolved every one of them; if any is still open, resolve it before this run.
+Then run the codemod once more with `--write` over the picked prototypes (with `--include-vendor` if step 3 used it), so each `migration-todo.md` matches what's left (it's deleted when nothing is left). This run no longer lists step 3's `check` items (second looks at rewrites it already made). That's fine only because step 4 resolved every one of them; if any is still open, resolve it before this run.
+
+Before that `--write` run, do a dry run first (the same command without `--write`, with `--json`). If it proposes any rewrite inside a chart option you fixed by hand in step 5 (a `sysVar()` or `var(--font-*)` in a chart file), don't run `--write` over that folder: it would undo your chart fixes. This shouldn't happen any more; if it does, say so in the summary and leave that folder's `migration-todo.md` as it is.
+
+`migration-todo.md` can be deleted by hand when every item left in it is a deliberate keep (data, brand colours, a `vendor/` size kept to match the product).
 
 ## 7. Light and dark check, per prototype
 
@@ -197,6 +217,7 @@ Read each pair of images (`src/prototypes/<Name>/thumbnail.light.jpg` and `.dark
 - The light image: there's usually no earlier screenshot to compare with (most prototypes had a hand-drawn SVG). Check it shows the main screen with its content and nothing looks broken: missing text, a collapsed layout, empty panels.
 - The dark image: list light surfaces left behind (light panels, white cards), text you can't read (dark text on a dark background, invisible labels) and content that's missing compared with the light image. Fix the ones you can trace to a line of code in the prototype's own folder, then capture that prototype again. Leftovers that come from `vendor/` stay; note them.
 - An image that shows an error or an empty loading state: say what you see and don't wire it up.
+- **The dark image looks the same as the light one**: the prototype is not dark ready, whatever the scan says. `npm run thumbnails` warns ("dark looks the same as light") and exits with code 2. Likely causes: screens imported from another prototype's folder, a page in an iframe, or a light-only flag or wrapper still set. Look for the cause; if you can't fix it in the prototype's own folder, treat it as not dark ready in step 8.
 
 ## 8. Flag and thumbnail, per prototype
 
@@ -209,7 +230,14 @@ Run `node scripts/radiant-check/scan.mjs --mine --json` again. For each picked p
   node scripts/radiant-check/light-only.mjs <Name> [<Name> ...] --write --by /migrate-prototype
   ```
 
-  Wire the light image only (`thumbnail: { light: <Name>ThumbLight }`), delete the dark image you captured for the check, and drop the old thumbnail import. Give the reason in plain words: "stays light-only: code from outside the repo (`vendor/`)", or "stays light-only: 3 decisions still open".
+  Wire the light image only (`thumbnail: { light: <Name>ThumbLight }`), delete the dark image you captured for the check, and drop the old thumbnail import. Give the reason in plain words: "stays light-only: code from outside the repo (`vendor/`)", "stays light-only: it shows screens from <Other>", or "stays light-only: 3 decisions still open".
+- **The scan says dark ready, but it must stay light-only** (step 7 found the dark image the same as the light one, or the designer wants it light-only): the script skips a dark-ready prototype unless forced. Force it, with the reason in plain words:
+
+  ```bash
+  node scripts/radiant-check/light-only.mjs <Name> --write --by /migrate-prototype --force --reason "home screen comes from Native's vendor/ code"
+  ```
+
+  The reason goes in the registry comment and in `rules-mine.json`. Wire the light image only, as above.
 - **Not dark ready, and it was global in step 1** (the designer had removed the flag themselves): leave it global and say it isn't dark ready yet.
 
 If step 7 was skipped, leave the thumbnails as they are. For a dark-ready prototype, lift the flag only if the designer agrees without a dark check ("It's dark ready by the scan, but I couldn't check it in dark mode. Turn dark mode on for it now? Recommended: yes, then look at it with Ctrl+D.").
@@ -223,7 +251,7 @@ One summary, in this order:
 1. **Per prototype**: migrated (global, dark ready, Geist ready) or still light-only, and why.
 2. **What changed automatically**: totals by kind (fonts, weights, sizes, colours, shadows), from the codemod's `rules`.
 3. **Decisions made**: one line each, the ones you resolved and the ones the designer answered. Values kept as data, with the `rules-mine.json` entries added.
-4. **Left for later**: anything still in a `migration-todo.md`, and `vendor/` findings left as they are.
+4. **Left for later**: anything still in a `migration-todo.md`, and `vendor/` findings left as they are. A `migration-todo.md` whose items are all deliberate keeps can be deleted: say so, and delete it if the designer agrees.
 5. **Screenshots**: the image paths, and anything in them that still looks wrong.
 6. **Undo**: show the undo command from the top of this file. Say you'll run it only if they ask, and that you'll show which files it deletes first.
 7. End with: "Review the changes in the gallery, in light and dark (Ctrl+D). When you're happy, ask me to commit."
