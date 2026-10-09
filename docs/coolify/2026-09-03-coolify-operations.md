@@ -32,13 +32,13 @@ the same recipe against their own galaxy fork with their own deploy key.
 
 | Setting | Value | Why |
 |---|---|---|
-| Build pack | Nixpacks | `Static` copies the unbuilt repo into nginx and serves a blank page |
-| Is it a static site? | on | Serves `dist/` via `nginx:alpine` |
+| Build strategy (was Build pack) | Nixpacks | `Static` copies the unbuilt repo into nginx and serves a blank page |
+| Site type (was Is it a static site?) | Static | Serves `dist/` via `nginx:alpine` |
 | Install / build | `npm ci` / `npm run build` | Public registry only, no auth needed |
 | Publish directory | `/dist` | Leading slash required; the API 422s on `dist` |
-| Port | 80 | |
+| Ports exposes (was Port), under Networking | 80 | |
 | Env `NIXPACKS_NODE_VERSION` | `22` (build time) | Nixpacks defaults to Node 18; Vite 7 needs 20.19+ or 22.12+ |
-| Custom nginx configuration | contents of `docker/nginx.conf` | SPA fallback; without it deep links and refreshes 404 |
+| Custom nginx configuration | contents of `docker/nginx.conf` | SPA fallback, so deep links and refreshes don't 404, and `no-cache` on every `.html`, so browsers don't keep an old shell |
 
 `Dockerfile` + `docker/nginx.conf` bake the same recipe into an image for the
 no-git path in the designer guide.
@@ -94,12 +94,20 @@ way before the secret was aligned.
   `is_webhook: true`.
 - **`is_static` and `custom_nginx_configuration` cannot be set through the
   `coolify-write` MCP** (`application update` answers "Invalid request"), and
-  the REST API accepts them only on create. Set them in the UI: General → Is
-  it a static site? → Custom Nginx Configuration.
-- **Stale shell after deploy.** nginx serves `index.html` with no
-  `Cache-Control`, so browsers keep the old shell and load the old bundle. Hard
-  refresh. Permanent fix, not yet applied: `add_header Cache-Control "no-cache"`
-  for `index.html` in the custom nginx config.
+  the REST API accepts them only on create. Set them in the UI: General →
+  Build pipeline → Site type → Custom Nginx configuration. The nginx box is a
+  Monaco editor: set it with `monaco.editor.getEditors()` and `setValue()` in
+  Chrome, never by typing (see A6 in the designer guide).
+- **Stale shell after deploy.** Without the `location ~* \.html$` no-cache rule,
+  nginx serves `index.html` with no `Cache-Control`, so browsers keep the old
+  shell and load the old bundle. The rule is in `docker/nginx.conf`; it was
+  pasted into `radiantplay-faris` on 2026-09-08 and into
+  `radiantplay-staging` on 2026-10-09; `radiantplay` (main) still needs it.
+- **Coolify v4.4.3 (seen 2026-10-09)** renamed fields: Build pack → Build
+  strategy, Is it a static site? → Site type, Port → Ports exposes, and auto
+  deploy is a dropdown, Advanced → Deployment → Auto deploy → "Deploy on push
+  (webhooks)". The General page shows "You have changes that haven't been saved
+  yet" on load with nothing edited; ignore it.
 - **Two Coolify MCPs.** The read-only `coolify` MCP points at a different
   instance (an old `radiantplay-test` app). Use `coolify-write` for this one.
 - **Health checks are off** on all three apps, so status shows
@@ -114,7 +122,7 @@ way before the secret was aligned.
 | File | Role |
 |---|---|
 | `.claude/commands/coolify-deploy.md` | `/coolify-deploy` guided setup and `check` mode; reads these two docs at run time |
-| `docker/nginx.conf` | Canonical SPA fallback; paste into every app |
+| `docker/nginx.conf` | Canonical nginx config (SPA fallback + no-cache HTML); paste into every app |
 | `Dockerfile` | Multi-stage image (Node 22 build → nginx) for the no-git path |
 | `internal/scripts/push-faris.sh` | Push any branch to origin + galaxy in one step |
 | `scripts/hooks/pre-push` | Refuses force-push / deletion of `faris`; reminds on unversioned `main` pushes |

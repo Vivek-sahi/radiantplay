@@ -53,14 +53,20 @@ already in use."
 
 ## A4 — Build settings (Coolify's defaults are wrong for this app)
 
+Labels are as Coolify v4.4.3 shows them (checked 2026-10-09). Older versions
+used the names in brackets; find each field by its label. On v4.4.3 the
+General page shows "You have changes that haven't been saved yet" as soon as it
+loads, before anything is edited. Ignore it on load; save only after you set
+something.
+
 | Setting | Value | Why |
 |---|---|---|
-| **Build Pack** | **Nixpacks** | **Not "Static"** — Static serves your *unbuilt* source and shows a blank page. |
-| **Is it a static site?** | **ON** | Serves the built files via nginx. |
-| **Publish Directory** | `/dist` | Vite's output. |
-| **Install Command** | `npm ci` | No registry login needed. |
-| **Build Command** | `npm run build` | Runs `vite build`. |
-| **Port** | `80` | |
+| **Build strategy** (Build Pack) | **Nixpacks** | **Not "Static"** — Static serves your *unbuilt* source and shows a blank page. |
+| **Site type** (Is it a static site?) | **Static** | Serves the built files via nginx. |
+| **Publish directory** | `/dist` | Vite's output. |
+| **Install command** | `npm ci` | No registry login needed. |
+| **Build command** | `npm run build` | Runs `vite build`. |
+| **Ports exposes** (Port), under Networking | `80` | |
 
 ## A5 — Pin the Node version (required)
 
@@ -68,11 +74,11 @@ already in use."
 to Node 18, but Vite 7 needs 20.19+/22.12+, else the build fails with
 `crypto.hash is not a function`.
 
-## A6 — Fix deep links
+## A6 — Fix deep links and stale pages
 
-**Configuration** → **General** → tick **Is it a static site?** and save. The
-**Custom Nginx Configuration** box appears (Coolify pre-fills a default that
-404s on deep links). Replace it with the contents of `docker/nginx.conf` in
+**Configuration** → **General** → **Build pipeline**. With **Site type** set to
+Static, the **Custom Nginx configuration** box shows (Coolify pre-fills a default
+that 404s on deep links). Replace it with the contents of `docker/nginx.conf` in
 this repo, then save:
 
 ```nginx
@@ -82,11 +88,29 @@ server {
     server_name _;
     root /usr/share/nginx/html;
     index index.html;
-    location / { try_files $uri $uri/ /index.html; }
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    location ~* \.html$ {
+        add_header Cache-Control "no-cache";
+        try_files $uri =404;
+    }
 }
 ```
 
-Without this, shared deep links (`/playground/...`) and refreshes 404.
+Without the first block, shared deep links (`/playground/...`) and refreshes
+404. Without the second, browsers keep the previous deploy's page until a hard
+refresh, and a page added to `public/` can stay stuck on the app shell.
+
+The box is a Monaco code editor. Typing into it mangles the config (it
+auto-indents and auto-closes braces), and filling its hidden textarea does
+nothing. Paste the whole block in one go, or, with Claude in Chrome, set it
+with `monaco.editor.getEditors()`: pick the editor whose
+`getModel().getLanguageId()` is `nginx`, call `setValue()` with the block, then
+click **Save changes**. Check it by returning booleans (contains `try_files`,
+contains `no-cache`), never the editor's contents.
 
 Then set the domain (step "Domain & verify" below) and **Deploy**.
 
@@ -216,9 +240,10 @@ then click **Redeploy** on the resource in Coolify.
 | Build fails: `crypto.hash is not a function` | Node 18 vs Vite 7 (needs 20.19+/22.12+) | `NIXPACKS_NODE_VERSION=22` (A5); Docker image already uses Node 22 |
 | Deep links / refresh 404 | No SPA fallback in nginx | Custom nginx config (A6); Docker image already includes it |
 | Coolify can't find your Docker image | Image only exists locally | Push it to a registry first (B0, B3) |
-| Deploy finished but the browser shows the old build | nginx serves `index.html` without `Cache-Control`, so the browser keeps the old shell | Hard refresh; a `no-cache` header on `index.html` is the permanent fix (not yet applied) |
+| Deploy finished but the browser shows the old build | The app's nginx config lacks the `no-cache` rule, so the browser keeps the old shell | Paste the full block from A6 and redeploy; hard refresh meanwhile |
+| "You have changes that haven't been saved yet" right after the page loads | Coolify v4.4.3 shows it on load with nothing edited | Ignore it until you change something |
 | Push shows 200 on galaxy but a second app never deploys | That app's webhook secret differs from the one galaxy signs with; Coolify skips it silently | Copy the first app's GitHub manual webhook secret into the new app (A7) |
-| API / MCP call to set "static site" or nginx config returns "Invalid request" | Coolify's API accepts `is_static` and `custom_nginx_configuration` only on create, and the `coolify-write` MCP rejects both | Set them in the UI (A6) |
+| API / MCP call to set Site type or nginx config returns "Invalid request" | Coolify's API accepts `is_static` and `custom_nginx_configuration` only on create, and the `coolify-write` MCP rejects both | Set them in the UI (A6) |
 
 ## Notes
 
