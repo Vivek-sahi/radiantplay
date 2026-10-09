@@ -21,6 +21,18 @@
  * rules-mine.json (the designer's own, never touched by upstream), each with a reason.
  * Code under a vendor/ folder came from outside the repo: its findings are counted in
  * a separate column and still keep a prototype from being ready.
+ *
+ * A prototype can show screens the folder's own findings don't cover. Two more checks feed
+ * the dark verdict of each prototype folder:
+ *   imports      relative imports (or @/prototypes/...) into another prototype's folder. When that
+ *                folder isn't dark ready (colour or vendor findings, or the same checks in turn),
+ *                the importer isn't either. _shared, _template and other _ folders are scanned on their own.
+ *   iframe       an <iframe src="/..."> whose literal path is a file in public/. That page sits
+ *                outside the theme, so the prototype isn't dark ready. An allow entry with kind
+ *                "iframe" in rules-mine.json waives it, for a page that handles dark itself.
+ * The text output marks such a prototype "no*" when its own folder is clean and lists the reason
+ * below the table. The --json output adds meta[unit].dependsOn (the prototype folders it imports
+ * from) and meta[unit].notReadyBecause (short reasons, only when it isn't dark ready).
  * The scan reports; it only fails with --strict.
  */
 
@@ -192,10 +204,90 @@ const allowedCount = all.length - reported.length;
 const darkReady = (c) => COLOUR.every((k) => c[k] === 0) && c.vendor === 0;
 const geistReady = (c) => FONT.every((k) => c[k] === 0);
 
+// ---------------------------------------------------------------------------
+// Screens the scan can't see in the folder itself: imports from another prototype's folder,
+// and static pages from public/ shown in an iframe
+
+const PROTO_DIR = path.join(ROOT, 'src/prototypes');
+const protoNames = fs.existsSync(PROTO_DIR) ? fs.readdirSync(PROTO_DIR).filter((f) => fs.statSync(path.join(PROTO_DIR, f)).isDirectory()) : [];
+/** A prototype folder unit (not a _shared, _template or other _ folder, which are scanned on their own). */
+const protoOf = (unit) => unit.match(/^src\/prototypes\/([^_/][^/]*)$/)?.[1] ?? null;
+const IMPORT = /\bfrom\s*['"]([^'"]+)['"]|\bimport\s*\(\s*['"]([^'"]+)['"]\s*\)|^\s*import\s*['"]([^'"]+)['"]|\brequire\(\s*['"]([^'"]+)['"]\s*\)/gm;
+const IFRAME = /<iframe\b[^>]*?\bsrc\s*=\s*(?:"([^"]*)"|'([^']*)'|\{\s*['"`]([^'"`$]*)['"`]\s*\})/g;
+
+const folders = {};
+/** Files, findings, prototype imports and iframe pages of one prototype folder; scans it if the run didn't. */
+function folderInfo(name) {
+  if (folders[name]) return folders[name];
+  const unit = `src/prototypes/${name}`;
+  const own = files.filter((f) => unitOf(rel(f)) === unit);
+  const list = own.length ? own : walk(path.join(ROOT, unit), []).filter((f) => !EXCLUDE.some((e) => matches(rel(f), e)));
+  const findings = own.length ? reported.filter((f) => unitOf(f.file) === unit) : list.flatMap(scanFile).filter((f) => !allowed(f));
+  const deps = new Set();
+  const iframes = [];
+  for (const f of list.filter((x) => /\.tsx?$/.test(x))) {
+    const text = stripComments(fs.readFileSync(f, 'utf8'), false);
+    for (const m of text.matchAll(IMPORT)) {
+      const spec = m[1] ?? m[2] ?? m[3] ?? m[4];
+      const target = spec.startsWith('.') ? path.resolve(path.dirname(f), spec) : spec.startsWith('@/prototypes/') ? path.join(ROOT, 'src', spec.slice(2)) : null;
+      const other = target && rel(target).match(/^src\/prototypes\/([^/]+)\//)?.[1];
+      if (!other || other.startsWith('_')) continue;
+      // Match the folder's real spelling, so a case-insensitive disk doesn't hide the link
+      const real = protoNames.find((n) => n.toLowerCase() === other.toLowerCase());
+      if (real && real !== name) deps.add(real);
+    }
+    for (const m of text.matchAll(IFRAME)) {
+      const src = (m[1] ?? m[2] ?? m[3] ?? '').split(/[?#]/)[0];
+      if (!src.startsWith('/') || src.startsWith('//')) continue;
+      const page = path.join(ROOT, 'public', src.endsWith('/') ? `${src}index.html` : src);
+      if (!fs.existsSync(page)) continue;
+      const line = text.slice(0, m.index).split('\n').length;
+      const finding = { kind: 'iframe', file: rel(f), line, text: fs.readFileSync(f, 'utf8').split('\n')[line - 1].trim().slice(0, 140), page: rel(page) };
+      if (!allowed(finding)) iframes.push(finding);
+    }
+  }
+  const colour = findings.filter((f) => COLOUR.includes(f.kind) && !isVendor(f.file)).length;
+  const vendor = findings.filter((f) => isVendor(f.file)).length;
+  folders[name] = { colour, vendor, deps: [...deps].sort(), iframes };
+  return folders[name];
+}
+
+/** Dark verdict for a prototype folder, following its imports into other prototype folders. */
+function darkVerdict(name, seen = new Set()) {
+  seen.add(name);
+  const info = folderInfo(name);
+  const because = [];
+  const n = (k, word) => `${k} ${word}${k === 1 ? '' : 's'}`;
+  if (info.colour) because.push(n(info.colour, 'colour finding'));
+  if (info.vendor) because.push(`${n(info.vendor, 'finding')} in vendor/`);
+  for (const i of info.iframes) because.push(`renders a static page in an iframe (${i.page}), outside the theme`);
+  for (const d of info.deps) {
+    if (seen.has(d)) continue;
+    const v = darkVerdict(d, seen);
+    if (!v.ready) because.push(`imports from ${d}, which isn't dark ready (${v.because.join('; ')})`);
+  }
+  return { ready: !because.length, because };
+}
+
+const verdicts = {};
+for (const u of Object.keys(units)) {
+  const name = protoOf(u);
+  if (name && fs.existsSync(path.join(PROTO_DIR, name))) verdicts[u] = { ...darkVerdict(name), dependsOn: folderInfo(name).deps };
+}
+/** Dark ready: no findings of its own, and nothing it shows from elsewhere holds it back. */
+const isDark = (u, c) => (verdicts[u] ? verdicts[u].ready && darkReady(c) : darkReady(c));
+/** Reasons that the colour columns don't show: imports and iframe pages. */
+const elsewhere = (u) => (verdicts[u]?.because ?? []).filter((b) => /^(imports from|renders a static page)/.test(b));
+
 if (JSON_OUT) {
-  const meta = Object.fromEntries(mine.map((e) => [`src/prototypes/${e.id}`, { theme: e.theme, thumb: e.thumb }]));
+  const meta = {};
+  for (const e of mine) meta[`src/prototypes/${e.id}`] = { theme: e.theme, thumb: e.thumb };
+  for (const [u, v] of Object.entries(verdicts)) {
+    meta[u] = { ...meta[u], dependsOn: v.dependsOn };
+    if (!isDark(u, units[u])) meta[u].notReadyBecause = v.because.length ? v.because : ['colour findings'];
+  }
   // The table's dark and geist columns, so tools such as light-only.mjs read the same verdict
-  const ready = Object.fromEntries(Object.entries(units).map(([u, c]) => [u, { dark: darkReady(c), geist: geistReady(c) }]));
+  const ready = Object.fromEntries(Object.entries(units).map(([u, c]) => [u, { dark: isDark(u, c), geist: geistReady(c) }]));
   console.log(JSON.stringify({ units, ready, meta, findings: reported, allowed: allowedCount }, null, 2));
 } else {
   const pad = (s, n) => String(s).padEnd(n);
@@ -204,7 +296,14 @@ if (JSON_OUT) {
   for (const [u, c] of Object.entries(units).sort()) {
     const e = mine.find((m) => `src/prototypes/${m.id}` === u);
     const tail = MINE ? `${pad(e?.theme ?? '', 12)}${pad(e?.thumb ?? '', 13)}` : '';
-    console.log(`${pad(u, 40)}${pad(c.literal, 8)}${pad(c['light-read'], 6)}${pad(c['unknown-token'], 8)}${pad(c['media-query'], 6)}${pad(c['theme-write'], 6)}${pad(c['font-family'], 7)}${pad(c['font-weight'], 7)}${pad(c.vendor, 7)}${pad(darkReady(c) ? 'yes' : 'no', 5)}${pad(geistReady(c) ? 'yes' : 'no', 6)}${tail}`);
+    // no* = the folder itself is clean, but what it shows from elsewhere isn't (see the notes below)
+    const dark = isDark(u, c) ? 'yes' : elsewhere(u).length ? (darkReady(c) ? 'no*' : 'no') : 'no';
+    console.log(`${pad(u, 40)}${pad(c.literal, 8)}${pad(c['light-read'], 6)}${pad(c['unknown-token'], 8)}${pad(c['media-query'], 6)}${pad(c['theme-write'], 6)}${pad(c['font-family'], 7)}${pad(c['font-weight'], 7)}${pad(c.vendor, 7)}${pad(dark, 5)}${pad(geistReady(c) ? 'yes' : 'no', 6)}${tail}`);
+  }
+  const notes = Object.keys(verdicts).sort().filter((u) => elsewhere(u).length);
+  if (notes.length) {
+    console.log('\nNot dark ready because of screens from outside the folder:');
+    for (const u of notes) for (const b of elsewhere(u)) console.log(`  ${u}: ${b}`);
   }
   console.log(`\n${reported.length} findings, ${allowedCount} allowed by rules.json and rules-mine.json`);
   if (MINE && !mine.length) console.log('No prototypes in src/prototypes/registry-mine.ts.');

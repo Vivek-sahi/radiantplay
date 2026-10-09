@@ -20,13 +20,23 @@
  *   unknown-token             var(--rd-sys-color-missing, var(--x)) -> var(--x)
  * Anything else that needs a decision goes on the judgement list with a suggestion.
  *
+ * Canvas charts: ECharts draws on a canvas and can't read CSS variables. In a chart file (one that
+ * imports echarts or echarts-for-react, sits in a charts/ folder or is named chart*, renders
+ * <ReactECharts> or calls setOption, or declares an option constant such as LINE_OPTION, VIZ_SPECS or
+ * chartOption), colours, light reads and font stacks inside an option context (series, itemStyle,
+ * lineStyle, axisLabel, textStyle, label, tooltip, color: [...], option= / setOption(, or a constant
+ * named like an option) are never rewritten. Each goes on the judgement list with role `chart`:
+ * use useChartTheme() (ui.*, seriesColor()) instead. Font sizes there stay numbers; old weights become
+ * the numeric 550 / 400. Inline styles and JSX attributes in the same file are DOM and migrate as usual.
+ *
  * Usage:
- *   node scripts/radiant-check/codemod.mjs <path...> [--write] [--json] [--skip=rule,rule]
+ *   node scripts/radiant-check/codemod.mjs <path...> [--write] [--json] [--include-vendor] [--skip=rule,rule]
  *
  * Dry run by default. --write applies the rules and writes src/prototypes/<Name>/migration-todo.md
  * when a judgement list remains (and deletes it when the list is empty).
- * Never touches src/tokens, src/styles/tokens.css, src/components, src/spotter, anything in src outside
- * src/prototypes, or any vendor/ folder (code from outside the repo; it reports how many files it skipped).
+ * Never touches src/tokens, src/styles/tokens.css, src/components, src/spotter, or anything in src outside
+ * src/prototypes. vendor/ folders (code from outside the repo) are skipped and counted, unless
+ * --include-vendor is passed: use it once the owner has decided that copy is theirs to change.
  */
 
 import fs from 'node:fs';
@@ -75,6 +85,13 @@ function loadTables() {
 
 const T = loadTables();
 const BRAND_RE = new RegExp(`\\b(${RULES.brandNames.join('|')})\\b`, 'i');
+
+// Chart option contexts (canvas): see chartContext() in migrateText
+const CHART_CONST = /\b(?:const|let|var)\s+(?:[A-Z][A-Z0-9]*_(?:OPTIONS?|SPECS?)|VIZ_SPECS|chartOptions?)\b/;
+const CHART_NAME = /^(?:[A-Z][A-Z0-9]*_(?:OPTIONS?|SPECS?)|VIZ_SPECS|options?|chart[A-Z]\w*|chartOptions?|\w+ChartOptions?)$/;
+const CHART_KEY = /\b(series|xAxis|yAxis|itemStyle|lineStyle|areaStyle|axisLabel|axisLine|axisTick|axisPointer|splitLine|splitArea|legend|tooltip|grid|visualMap|markLine|markArea|markPoint|emphasis|blur|select|textStyle|nameTextStyle|label|labelLine|title|dataZoom|graphic|radar|polar|angleAxis|radiusAxis|geo|calendar|toolbox|color)\s*:/;
+const CHART_REASON = 'Canvas chart option: use useChartTheme() (ui.*, seriesColor()), not CSS variables';
+const CHART_SUGGESTION = 'useChartTheme(): ui.* or seriesColor()';
 
 const rgbOf = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
 const toHex = (r, g, b) => '#' + [r, g, b].map((n) => Math.round(n).toString(16).padStart(2, '0')).join('').toUpperCase();
@@ -340,6 +357,12 @@ export function migrateText(src, file, opts = {}) {
   const isCss = file.endsWith('.css');
   const isTs = /\.tsx?$/.test(file);
   const isEcharts = /from\s+['"](echarts|echarts-for-react)[^'"]*['"]|require\(\s*['"]echarts/.test(src);
+  // A chart file: imports ECharts, sits in a charts/ folder or is named chart*, renders <ReactECharts>,
+  // calls setOption, or declares an option constant (LINE_OPTION, VIZ_SPECS, chartOption).
+  // Inside its option objects colours and fonts go to a canvas, which can't read CSS variables.
+  const fileNorm = file.split(path.sep).join('/');
+  const chartFile = isTs && (isEcharts || /(^|\/)charts\//.test(fileNorm) || /(^|\/)chart[\w.-]*\.[tj]sx?$/i.test(fileNorm)
+    || /<ReactECharts\b|\.setOption\(/.test(src) || CHART_CONST.test(src));
   const lineStarts = [0];
   for (let i = 0; i < src.length; i++) if (src[i] === '\n') lineStarts.push(i + 1);
   const lineOf = (pos) => {
@@ -398,11 +421,11 @@ export function migrateText(src, file, opts = {}) {
     // An allow entry with a `match` names this exact colour as data: leave it
     if (opts.allowed?.(opts.display ?? file, 'literal', lineText(lineOf(pos))) === 'line') { allowedLines.add(lineOf(pos)); return null; }
     const label = lit.replace(/\s+/g, ' ');
-    if (c.norm && RULES.legacyValues[c.norm]) return { name: RULES.legacyValues[c.norm], rule: 'legacy-value' };
     if (ctx.echarts) {
-      judge(pos, label, role, 'useChartTheme()', "ECharts draws on canvas and can't read CSS variables");
+      judge(pos, label, 'chart', CHART_SUGGESTION, CHART_REASON);
       return null;
     }
+    if (c.norm && RULES.legacyValues[c.norm]) return { name: RULES.legacyValues[c.norm], rule: 'legacy-value' };
     if (!role || role === 'judgement') {
       const g = role === 'judgement' ? null : guessRole(ctx.name);
       const sug = c.a < 1 ? '' : g && T.table[c.hex]?.[g] ? T.table[c.hex][g] : nearest(c.hex, g)?.name;
@@ -467,11 +490,16 @@ export function migrateText(src, file, opts = {}) {
     const inner = [];
     const isWhole = (a, b) => form === 'ts' && src.slice(s, a).trim() === '' && src.slice(b, e).trim() === '' && tok.exprs.length === 0;
     const put = (a, b, text, rule, from) => inner.push({ s: a, e: b, text, rule, from });
-    const echarts = isEcharts;
+    // Inside a canvas chart option: no CSS variables, and font sizes and weights stay numbers
+    const chart = form === 'ts' && chartAt(s, ctx);
 
     // Font family
     if (/^font-?family$/i.test(p) || (ctx.byName && /font/i.test(ctx.name ?? '')) || (form === 'ts' && !p && value.includes(','))) {
       const kind = fontStack(value);
+      if (kind && chart) {
+        judge(s, value.trim(), 'chart', CHART_SUGGESTION, CHART_REASON, 'font');
+        return finish();
+      }
       if (kind) {
         put(s, e, `var(--font-family-${kind})`, kind === 'mono' ? 'font-mono' : 'font-family');
         return finish();
@@ -483,12 +511,12 @@ export function migrateText(src, file, opts = {}) {
     }
     // Font weight
     if (/weight$/i.test(p)) {
-      handleWeightText(s, e, form, ctx.numeric || echarts, put, ctx.conditional);
+      handleWeightText(s, e, form, ctx.numeric || chart, put, ctx.conditional);
       return finish();
     }
     // Font size
     if (/^font-?size$/i.test(p)) {
-      if (!(ctx.numeric || echarts)) {
+      if (!(ctx.numeric || chart)) {
         const m = value.match(/^\s*(\d+(?:\.\d+)?)(px)?\s*(!important)?\s*$/);
         if (m && (m[2] || form === 'ts')) sizeAt(s + value.indexOf(m[1]), m[1], m[2] ? m[1].length + 2 : m[1].length, put, 'var');
       }
@@ -522,6 +550,10 @@ export function migrateText(src, file, opts = {}) {
     for (const m of value.matchAll(COLOUR_RE)) {
       const a = s + m.index, b = a + m[0].length;
       if (/white/i.test(m[0]) && value.trim() !== m[0] && !/(solid|dashed|dotted)\s+$/.test(value.slice(0, m.index))) continue; // a bare `white` value, or a border colour
+      if (chart) {
+        resolveColour(m[0], role, a, { echarts: true });
+        continue;
+      }
       if (dataItem) {
         const pc = parseColour(m[0]);
         judge(a, m[0], role, pc && T.table[pc.hex]?.[role] ? T.table[pc.hex][role] : '', 'Colour in a list item (label, name, key): usually data such as a series or a user choice. Keep it, or pick a token');
@@ -535,9 +567,7 @@ export function migrateText(src, file, opts = {}) {
         judge(a, m[0], role, 'keep as data and add a rules-mine.json entry', 'Brand colour, keep as data?');
         continue;
       }
-      // In an ECharts file, inline styles and SVG attributes are still DOM; only chart options are canvas
-      const uiInChartFile = ctx.kind === 'jsx' || ctx.hover || /style=\{\{/.test(lineText(lineOf(a)));
-      const r = resolveColour(m[0], role, a, { echarts: echarts && !uiInChartFile && inChartOption(a), name: ctx.name ?? p, shadowBlock: role === 'surface' && inShadowBlock(a) });
+      const r = resolveColour(m[0], role, a, { echarts: false, name: ctx.name ?? p, shadowBlock: role === 'surface' && inShadowBlock(a) });
       if (!r) continue;
       const rule = hover && (r.rule === 'hex-token' || r.rule === 'hex-tailwind') ? 'hover-handler' : r.rule;
       if (r.mix !== undefined) put(a, b, mixOut(r.name, r.mix), rule);
@@ -553,21 +583,44 @@ export function migrateText(src, file, opts = {}) {
     }
   }
 
-  /** Inside an ECharts option object (series, itemStyle, axisLabel ...)? Those colours go to canvas. */
-  function inChartOption(pos) {
-    if (!isEcharts) return false;
-    const v = (isCss ? src : lexed.view);
-    const from = Math.max(0, pos - 2500);
-    const before = v.slice(from, pos);
-    let last = null;
-    for (const m of before.matchAll(/\b(series|xAxis|yAxis|itemStyle|lineStyle|areaStyle|axisLabel|axisLine|axisTick|splitLine|splitArea|legend|tooltip|grid|visualMap|markLine|markArea|markPoint|emphasis|textStyle|dataZoom|graphic|color)\s*:\s*[\[{]/g)) last = m;
-    if (!last) return /\bcolor\s*:\s*\[/.test(before.slice(-300));
+  /**
+   * Is pos inside a canvas chart option? Walks out through the brackets around pos and looks at
+   * what opens each one: an ECharts key (series, itemStyle, axisLabel, label, color: [...]),
+   * option= / option: / setOption(, or a constant named like an option (LINE_OPTION, VIZ_SPECS,
+   * chartOption, chartUi). Outside every bracket, a top-level constant with such a name counts too
+   * (const chartFont = '...'). Only in chart files (see chartFile).
+   */
+  function chartContext(pos) {
+    if (!chartFile || isCss) return false;
+    const v = lexed.view;
+    const stop = Math.max(0, pos - 20000);
+    const DELIMS = [',', ';', '{', '}', '(', ')', '[', ']'];
     let depth = 0;
-    for (const ch of before.slice(last.index + last[0].length - 1)) {
-      if (ch === '{' || ch === '[') depth++;
-      else if (ch === '}' || ch === ']') depth--;
+    let outer = pos;
+    for (let i = pos - 1; i >= stop; i--) {
+      const ch = v[i];
+      if (ch === ')' || ch === ']' || ch === '}') { depth++; continue; }
+      if (ch !== '(' && ch !== '[' && ch !== '{') continue;
+      if (depth > 0) { depth--; continue; }
+      // An opener that encloses pos: what opens it?
+      outer = i;
+      const lead = v.slice(Math.max(0, i - 160), i);
+      const cut = lead.slice(Math.max(...DELIMS.map((c) => lead.lastIndexOf(c))) + 1);
+      if (CHART_KEY.test(cut) || /\b(option|options)\s*[=:]\s*$/.test(cut) || /\bsetOption\s*$/.test(cut)) return true;
+      const decl = cut.match(/\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*(?::[^=]+)?=\s*$/);
+      if (decl && CHART_NAME.test(decl[1])) return true;
     }
-    return depth > 0;
+    if (outer !== pos) return false;
+    const ls = v.lastIndexOf('\n', pos - 1) + 1;
+    const decl = v.slice(ls, pos).match(/\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*(?::[^=]+)?=/);
+    return !!decl && CHART_NAME.test(decl[1]);
+  }
+
+  /** Chart context, except inline styles, JSX attributes and hover handlers: those are DOM even in a chart file. */
+  function chartAt(pos, ctx = {}) {
+    if (!chartFile || isCss) return false;
+    if (ctx.kind === 'jsx' || ctx.hover || /style=\{\{/.test(lineText(lineOf(pos)))) return false;
+    return chartContext(pos);
   }
 
   /** Is pos inside a logo or brand mark? An <svg> introduced by "logo"/"brand" or a brand name, a
@@ -755,6 +808,8 @@ export function migrateText(src, file, opts = {}) {
         || /^[A-Za-z_$][\w$]*(\.[A-Za-z_$][\w$]*)+$/.test(expr) && /(color|colour|brand|bg|text|border|fill|accent|primary|secondary|tertiary|surface)$/i.test(expr.split('.').pop())
         || /^[A-Za-z_$][\w$]*$/.test(expr) && /(color|colour|brand|accent)$/i.test(expr);
       if (!isColour) continue;
+      // color-mix() and CSS variables mean nothing to a canvas chart
+      if (chartAt(ex.start - 2)) { judge(ex.start - 2, `\${${expr}}${mm[1]}`, 'chart', CHART_SUGGESTION, CHART_REASON, lr ? 'light-read' : 'colour'); continue; }
       const exprOut = lr ? `${lr[1] === 'systemColors' ? 'sysVar' : 'compVar'}('${lr[3]}')` : expr;
       const p = pct(parseInt(mm[1], 16) / 255);
       edit(ex.start - 2, ex.end + 3, `color-mix(in srgb, \${${exprOut}} ${p}%, transparent)`, 'alpha-suffix');
@@ -769,14 +824,20 @@ export function migrateText(src, file, opts = {}) {
   for (const m of src.matchAll(/\b(systemColors|rdComponentColors)\.light\[\s*(['"])([\w-]+)\2\s*\]/g)) {
     if (view.slice(m.index, m.index + 5) !== src.slice(m.index, m.index + 5)) continue; // in a comment or string
     const fn = m[1] === 'systemColors' ? 'sysVar' : 'compVar';
+    if (chartAt(m.index)) { chartRead(m.index, m[0]); continue; }
     if (edit(m.index, m.index + m[0].length, `${fn}('${m[3]}')`, m[1] === 'systemColors' ? 'light-read' : 'comp-read')) roleSwapCheck(m.index, m[3]);
   }
   for (const a of aliasDecls) {
     const re = new RegExp(`(?<![\\w$.])${a.name.replace(/\$/g, '\\$')}\\[\\s*(['"])([\\w-]+)\\1\\s*\\]`, 'g');
     for (const m of src.matchAll(re)) {
       if (view[m.index] !== src[m.index]) continue;
+      if (chartAt(m.index)) { chartRead(m.index, m[0]); continue; }
       if (edit(m.index, m.index + m[0].length, `${a.src === 'systemColors' ? 'sysVar' : 'compVar'}('${m[2]}')`, a.src === 'systemColors' ? 'light-read' : 'comp-read')) roleSwapCheck(m.index, m[2]);
     }
+  }
+  /** A light read inside a canvas chart option: sysVar() would hand the chart a CSS variable. */
+  function chartRead(pos, text) {
+    judge(pos, text.replace(/\s+/g, ''), 'chart', CHART_SUGGESTION, CHART_REASON, 'light-read');
   }
   for (const m of view.matchAll(/\b(systemColors|rdComponentColors)\.light\[(?!\s*['"x])/g)) {
     judge(m.index, `${m[1]}.light[dynamic]`, null, "sysVar(key) if key is a SystemColorKey", 'Dynamic key; check the key type and switch to sysVar()', 'light-read');
@@ -837,7 +898,7 @@ export function migrateText(src, file, opts = {}) {
     const kind = c?.kind;
     const prop = c?.prop ?? null;
     const name = c?.name ?? prop;
-    const numeric = kind === 'jsx' || kind === 'attr' || isEcharts;
+    const numeric = kind === 'jsx' || kind === 'attr' || chartAt(t.start, { kind, hover: kind === 'hover' });
     const styleProp = prop && (roleOf(prop) || /^(font-?family|font-?weight|font-?size|box-?shadow|font)$/i.test(prop) || /weight$/i.test(prop));
     const condSpan = c ? src.slice(c.end, Math.min(src.length, t.end + 40)).split('\n')[0] : '';
     const conditional = c ? /\?/.test(view.slice(c.end, t.start)) || /^\s*:/.test(view.slice(t.end, t.end + 40)) : false;
@@ -876,18 +937,18 @@ export function migrateText(src, file, opts = {}) {
             if (brandContext(a)) { judge(a, lit, null, 'keep as data and add a rules-mine.json entry', 'Brand colour, keep as data?'); continue; }
             const strong = kind === 'decl' && t.exprs.length === 0 ? strongRole(name) : null;
             if (strong) {
-              const r = resolveColour(lit, strong, a, { echarts: isEcharts, name });
+              const r = resolveColour(lit, strong, a, { echarts: chartAt(a), name });
               if (r && r.mix !== undefined) inner.push({ s: a, e: a + lit.length, text: mixOut(r.name, r.mix), rule: 'hex-const' });
               else if (r && isTs) inner.push({ s: a, e: a + lit.length, text: sysOut(r.name, 'whole'), rule: 'hex-const', wholeToken: true });
               else if (r) inner.push({ s: a, e: a + lit.length, text: sysOut(r.name, 'var'), rule: 'hex-const' });
               continue;
             }
-            resolveColour(lit, prop && roleOf(prop) === 'judgement' ? 'judgement' : null, a, { echarts: isEcharts && inChartOption(a), name });
+            resolveColour(lit, prop && roleOf(prop) === 'judgement' ? 'judgement' : null, a, { echarts: chartAt(a), name });
           } else if (/#[0-9a-fA-F]{6}\b|rgba?\(\s*\d/.test(seg) && seg.length < 200) {
             for (const m of seg.matchAll(COLOUR_RE)) {
               if (/white/i.test(m[0])) continue;
-              if (/gradient\(/.test(seg) && !(isEcharts && inChartOption(s + m.index))) judge(s + m.index, m[0], null, 'a token per stop, or a named variable if it is decorative', 'Colour inside a gradient');
-              else resolveColour(m[0], null, s + m.index, { echarts: isEcharts && inChartOption(s + m.index), name });
+              if (/gradient\(/.test(seg) && !chartAt(s + m.index)) judge(s + m.index, m[0], null, 'a token per stop, or a named variable if it is decorative', 'Colour inside a gradient');
+              else resolveColour(m[0], null, s + m.index, { echarts: chartAt(s + m.index), name });
             }
           }
         }
@@ -937,7 +998,7 @@ export function migrateText(src, file, opts = {}) {
     const valueView = view.slice(vs, ve);
     const conditional = /\?/.test(valueView);
     const isWeight = /weight/i.test(prop);
-    const numeric = jsx || isEcharts;
+    const numeric = jsx || chartAt(vs, { hover: !!m[4] });
     if (!isWeight && numeric) continue;
     for (const n of valueView.matchAll(/(?<![\w.'"#$-])(\d+(?:\.\d+)?)(?![\w.%'"])/g)) {
       const pos = vs + n.index;
@@ -1067,7 +1128,7 @@ function walk(p, out, stats) {
     stats.protected++;
     return out;
   }
-  if (norm.includes(RULES.skipSegment) || norm.endsWith(RULES.skipSegment.slice(0, -1))) {
+  if (!INCLUDE_VENDOR && (norm.includes(RULES.skipSegment) || norm.endsWith(RULES.skipSegment.slice(0, -1)))) {
     stats.vendor += fs.statSync(abs).isDirectory() ? countFiles(abs) : 1;
     return out;
   }
@@ -1115,7 +1176,11 @@ function allowedBy(file, kind, line) {
 }
 
 /** Run the codemod over paths. Returns a report; writes files when opts.write. */
+// --include-vendor: migrate vendor/ folders too, when the owner has decided that code is theirs to change
+let INCLUDE_VENDOR = false;
+
 export function migrate(targets, opts = {}) {
+  INCLUDE_VENDOR = !!opts.includeVendor;
   const stats = { vendor: 0, protected: 0, excluded: 0 };
   const files = targets.flatMap((t) => walk(path.resolve(ROOT, t), [], stats)).filter((f) => {
     if (!opts.ignoreAllow && EXCLUDE.some((e) => ruleMatches(display(f), e))) { stats.excluded++; return false; }
@@ -1195,10 +1260,10 @@ function main() {
   const skipArg = argv.find((a) => a.startsWith('--skip='));
   const targets = argv.filter((a) => !a.startsWith('--'));
   if (!targets.length) {
-    console.error('Usage: node scripts/radiant-check/codemod.mjs <path...> [--write] [--json] [--skip=rule,rule]');
+    console.error('Usage: node scripts/radiant-check/codemod.mjs <path...> [--write] [--json] [--include-vendor] [--skip=rule,rule]');
     process.exit(2);
   }
-  const report = migrate(targets, { write: flags.has('--write'), skip: skipArg ? skipArg.slice(7).split(',') : [] });
+  const report = migrate(targets, { write: flags.has('--write'), includeVendor: flags.has('--include-vendor'), skip: skipArg ? skipArg.slice(7).split(',') : [] });
   if (flags.has('--json')) {
     console.log(JSON.stringify(report, null, 2));
     return;

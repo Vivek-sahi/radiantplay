@@ -11,12 +11,14 @@
  *        match      the codemod wrote what Phase 6 wrote
  *        judgement  the codemod left the line on the judgement list
  *        mismatch   the codemod wrote something else, missed the line, or changed a line Phase 6 kept
+ * Then it runs a few inline cases (CASES below) for rules no fixture covers, such as canvas chart
+ * options staying free of CSS variables.
  *
  * Usage:
  *   node scripts/radiant-check/codemod-check.mjs              compare with the recorded numbers, exit 1 on drift
  *   node scripts/radiant-check/codemod-check.mjs --update     record the current numbers (keeps hand-written reasons)
  *   node scripts/radiant-check/codemod-check.mjs --verbose    print every mismatch
- *   node scripts/radiant-check/codemod-check.mjs --only=Name  one fixture
+ *   node scripts/radiant-check/codemod-check.mjs --only=Name  one fixture (--only=cases: the inline cases)
  */
 
 import fs from 'node:fs';
@@ -24,7 +26,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFileSync, execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { migrate } from './codemod.mjs';
+import { migrate, migrateText } from './codemod.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '../..');
@@ -259,11 +261,83 @@ try {
   fs.rmSync(tmpRoot, { recursive: true, force: true });
 }
 
+// ---------------------------------------------------------------------------
+// Inline cases: small snippets with a fixed expectation, for rules no fixture covers.
+// Each lists strings the output must keep (keep), must contain (has), and how many judgement
+// items it must list with role `chart`.
+
+const CASES = [
+  {
+    name: 'echarts option',
+    file: 'src/prototypes/Demo/LineView.tsx',
+    src: [
+      "import ReactECharts from 'echarts-for-react';",
+      "import { systemColors } from '@tokens/colors';",
+      '',
+      'const LINE_OPTION = {',
+      "  color: ['#2770EF', '#FFA600'],",
+      "  textStyle: { fontFamily: 'Plain, sans-serif', fontSize: 12, fontWeight: 600 },",
+      "  xAxis: { axisLabel: { color: '#777E8B', fontSize: 12 }, axisLine: { lineStyle: { color: '#EAEDF2' } } },",
+      "  series: [{ type: 'line', itemStyle: { color: systemColors.light['content-brand'] }, areaStyle: { color: `${brandColor}40` } }],",
+      '};',
+      '',
+      'export const LineView = () => (',
+      "  <div style={{ color: '#1D232F', fontSize: 14 }}>",
+      "    <ReactECharts option={{ tooltip: { backgroundColor: '#FFFFFF', textStyle: { fontSize: 12 } } }} />",
+      '  </div>',
+      ');',
+    ].join('\n'),
+    keep: [
+      "color: ['#2770EF', '#FFA600'],",
+      "textStyle: { fontFamily: 'Plain, sans-serif', fontSize: 12, fontWeight: 550 },",
+      "xAxis: { axisLabel: { color: '#777E8B', fontSize: 12 }, axisLine: { lineStyle: { color: '#EAEDF2' } } },",
+      "itemStyle: { color: systemColors.light['content-brand'] }, areaStyle: { color: `${brandColor}40` }",
+      "<ReactECharts option={{ tooltip: { backgroundColor: '#FFFFFF', textStyle: { fontSize: 12 } } }} />",
+    ],
+    has: ["<div style={{ color: sysVar('content-primary'), fontSize: 'var(--font-size-sm)' }}>"],
+    chart: 8,
+  },
+  {
+    name: 'chart palette',
+    file: 'src/prototypes/Demo/chartPalette.ts',
+    src: "export const chartUi = {\n  axis: '#EAEDF2',\n  labelColor: '#777E8B',\n};\nexport const chartFont = '\"Plain\", -apple-system, sans-serif';\n",
+    keep: ["axis: '#EAEDF2',", "labelColor: '#777E8B',", "chartFont = '\"Plain\", -apple-system, sans-serif'"],
+    has: [],
+    chart: 3,
+  },
+  {
+    name: 'not a chart file',
+    file: 'src/prototypes/Demo/Panel.tsx',
+    src: "const styles = { label: { color: '#777E8B', fontSize: 12 } };\n",
+    keep: [],
+    has: ["label: { color: sysVar('content-secondary'), fontSize: 'var(--font-size-xs)' }"],
+    chart: 0,
+  },
+];
+
+if (!only || only === 'cases') {
+  for (const c of CASES) {
+    const res = migrateText(c.src, path.join(ROOT, c.file), {});
+    const charts = res.judgement.filter((j) => j.role === 'chart').length;
+    const fails = [
+      ...c.keep.filter((s) => !res.out.includes(s)).map((s) => `changed: ${s}`),
+      ...c.has.filter((s) => !res.out.includes(s)).map((s) => `missing: ${s}`),
+      ...(charts !== c.chart ? [`chart judgement items: expected ${c.chart}, got ${charts}`] : []),
+    ];
+    console.log(`${('case: ' + c.name).padEnd(28)} ${fails.length ? 'FAIL' : 'ok'}`);
+    if (fails.length) {
+      drift++;
+      for (const f of fails) console.log(`    ${f}`);
+      if (VERBOSE) console.log(res.out);
+    }
+  }
+}
+
 if (UPDATE) {
   for (const [name, now] of Object.entries(results)) fx.fixtures[name] = { ...fx.fixtures[name], ...now };
   fs.writeFileSync(FIXTURES, JSON.stringify(fx, null, 2) + '\n');
   console.log(`\nRecorded ${Object.keys(results).length} fixtures in ${path.relative(ROOT, FIXTURES)}`);
 } else if (drift) {
-  console.log(`\n${drift} fixture(s) drifted. If the change is intended, run with --update and commit codemod-fixtures.json with the codemod change.`);
+  console.log(`\n${drift} fixture(s) or case(s) drifted. If the change is intended, run with --update and commit codemod-fixtures.json with the codemod change.`);
   process.exit(1);
 }

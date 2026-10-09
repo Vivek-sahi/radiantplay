@@ -9,16 +9,24 @@
  *   node scripts/radiant-check/light-only.mjs --write             add the flag where the scan says "dark: no"
  *   node scripts/radiant-check/light-only.mjs <Name...> --write   the same, for these prototypes only
  *   node scripts/radiant-check/light-only.mjs --remove <Name>     dry run of lifting one flag (add --write to apply)
- *   --by <who>   who set it, for the comment (default "sync")
+ *   node scripts/radiant-check/light-only.mjs <Name> --force --reason "<why>" --write
+ *                flag a named prototype even though the scan calls it dark ready (say, its home
+ *                screen comes from code the scan doesn't read). Without --force a ready prototype is skipped.
+ *   --by <who>       who set it, for the comment (default "sync")
+ *   --reason <why>   why, added to the comment and to the record in rules-mine.json
+ *   --help           this text
  *
  * "Dark ready" is the dark column of `scan.mjs --mine --json`. The flag goes in as the entry's last
  * property with a dated comment:
  *   theme: 'light-only', // light-only until migrated (/migrate-prototype), set by sync on 2026-10-07
+ *   theme: 'light-only', // light-only until migrated (/migrate-prototype), set by /migrate-prototype on 2026-10-09: <why>
  * Only that line changes; the rest of the file keeps its formatting. Running it twice changes nothing.
  *
  * A designer who deletes the line by hand keeps it deleted: each flag it sets is recorded in
  * rules-mine.json (lightOnly, with the finding count at the time), and an entry that is recorded but
  * no longer flagged is left alone unless its findings have gone up since. --remove clears the record.
+ * A forced flag is recorded with forced: true and its reason, and the "dark ready but still
+ * light-only" note leaves it out.
  */
 
 import fs from 'node:fs';
@@ -32,13 +40,37 @@ const REGISTRY = path.join(ROOT, 'src/prototypes/registry-mine.ts');
 const RULES_MINE = path.join(HERE, 'rules-mine.json');
 
 const argv = process.argv.slice(2);
+if (argv.includes('--help') || argv.includes('-h')) {
+  console.log(`Usage:
+  node scripts/radiant-check/light-only.mjs                       dry run: what it would flag
+  node scripts/radiant-check/light-only.mjs --write               flag every prototype the scan calls "dark: no"
+  node scripts/radiant-check/light-only.mjs <Name...> --write     the same, for these prototypes only
+  node scripts/radiant-check/light-only.mjs <Name...> --force --reason "<why>" --write
+                                                                  flag them even if the scan calls them dark ready
+  node scripts/radiant-check/light-only.mjs --remove <Name>       dry run of lifting one flag (add --write to apply)
+Options:
+  --by <who>       who set it, for the comment (default "sync")
+  --reason <why>   why, added to the comment and recorded in rules-mine.json
+  --force          with names only: flag a prototype the scan calls dark ready`);
+  process.exit(0);
+}
 const WRITE = argv.includes('--write');
+const FORCE = argv.includes('--force');
 const valueOf = (name) => { const i = argv.indexOf(name); return i > -1 ? argv[i + 1] : null; };
 const REMOVE = valueOf('--remove');
 const BY = valueOf('--by') ?? 'sync';
-const NAMES = argv.filter((a, i) => !a.startsWith('--') && !['--remove', '--by'].includes(argv[i - 1]));
+const REASON = valueOf('--reason');
+const NAMES = argv.filter((a, i) => !a.startsWith('--') && !['--remove', '--by', '--reason'].includes(argv[i - 1]));
 if (argv.includes('--remove') && !REMOVE) {
   console.error('Usage: node scripts/radiant-check/light-only.mjs --remove <Name> [--write]');
+  process.exit(2);
+}
+if (FORCE && !NAMES.length) {
+  console.error('--force needs the prototypes named: light-only.mjs <Name> --force --reason "<why>" --write');
+  process.exit(2);
+}
+if (argv.includes('--reason') && !REASON) {
+  console.error('--reason needs a value, in quotes: --reason "home screen comes from vendor/ code"');
   process.exit(2);
 }
 
@@ -46,7 +78,9 @@ const today = () => {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 };
-const COMMENT = `// light-only until migrated (/migrate-prototype), set by ${BY} on ${today()}`;
+// The reason stays on one line, so the flag stays one line
+const REASON_TEXT = REASON ? REASON.replace(/\s+/g, ' ').trim() : '';
+const COMMENT = `// light-only until migrated (/migrate-prototype), set by ${BY} on ${today()}${REASON_TEXT ? `: ${REASON_TEXT}` : ''}`;
 const FLAG_LINE = /^[ \t]*theme:\s*['"]light-only['"],?[^\n]*\n/m;
 
 if (!fs.existsSync(REGISTRY)) {
@@ -115,18 +149,24 @@ for (const e of all) {
   const counts = scan.units?.[unit];
   if (!ready) { notes.push(`${e.id}: not scanned (no folder at ${unit}?), left as it is`); continue; }
   const n = colourFindings(counts);
-  if (ready.dark) {
+  const forced = FORCE && NAMES.includes(e.id);
+  if (ready.dark && !forced) {
+    if (e.flagged && record[e.id]?.forced) continue; // kept light-only on purpose (--force)
     if (e.flagged) notes.push(`${e.id}: dark ready but still light-only. /migrate-prototype ${e.id} can lift the flag`);
+    else if (NAMES.includes(e.id)) notes.push(`${e.id}: the scan calls it dark ready, so it was skipped. To keep it light-only anyway, add --force --reason "<why>"`);
     continue;
   }
   if (e.flagged) continue;
   const prev = record[e.id];
-  if (prev && n <= prev.findings) {
+  if (prev && n <= prev.findings && !forced) {
     notes.push(`${e.id}: not dark ready, but the flag was removed by hand after ${prev.set}; left global`);
     continue;
   }
   const vendor = counts.vendor ? `, ${counts.vendor} in vendor/` : '';
-  toFlag.push({ ...e, n, why: `${n} colour findings${vendor}` });
+  // The scan's own reasons cover what the counts don't: imports from another prototype, iframe pages
+  const because = scan.meta?.[unit]?.notReadyBecause;
+  const why = ready.dark ? `forced: ${REASON_TEXT || 'no reason given'}` : because?.length ? because.join('; ') : `${n} colour findings${vendor}`;
+  toFlag.push({ ...e, n, why, forced: ready.dark });
 }
 
 if (!toFlag.length) {
@@ -152,7 +192,7 @@ if (toFlag.length && WRITE) {
     lines.splice(last + 1, 0, `${indent}theme: 'light-only', ${COMMENT}`);
     const body = [...lines, closing].join('\n');
     src = src.slice(0, e.start) + body + src.slice(e.end);
-    record[e.id] = { set: today(), findings: e.n };
+    record[e.id] = { set: today(), findings: e.n, ...(REASON_TEXT ? { reason: REASON_TEXT } : {}), ...(e.forced ? { forced: true } : {}) };
     recordChanged = true;
   }
   fs.writeFileSync(REGISTRY, src);
