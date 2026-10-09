@@ -100,6 +100,48 @@ const HIGHLIGHTS: Highlight[] = [
 
 const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '26.10.1a',
+    date: '2026-10-09',
+    title: 'Dark mode, Geist and Figma 3.0 tokens',
+    type: 'major',
+    changes: [
+      {
+        category: 'added',
+        label: 'Dark mode',
+        items: [
+          'Press Ctrl+D anywhere to switch between light and dark. The choice is saved. Shared components, Spotter, the Liveboard tiles, charts and every sample prototype follow the theme.',
+          'A prototype that is not dark ready yet can set theme: light-only in its registry entry and stays light while the rest of the app is dark.',
+        ],
+      },
+      {
+        category: 'synced',
+        label: 'Tokens and type',
+        items: [
+          'Light and dark token values match the Radiant 3.0 Figma design system, with Figma and product names as aliases. Nothing is renamed.',
+          'Type is Geist and Geist Mono, self-hosted, with the 550 emphasis weight for headings and labels.',
+        ],
+      },
+      {
+        category: 'added',
+        label: 'Tooling',
+        items: [
+          '/migrate-prototype moves your prototypes onto Geist and dark mode in one pass, and never commits.',
+          '/sync-upstream marks prototypes that are not dark ready as light-only after a merge. On the first sync of this release, run npm run migrate:light-only -- --write once.',
+          '/thumbnail captures light and dark gallery screenshots. Sample prototypes have them already.',
+          'npm run scan:dark reports dark readiness per prototype.',
+        ],
+      },
+      {
+        category: 'changed',
+        label: 'Deployment',
+        items: [
+          'Coolify apps serve HTML with no-cache, so a new deploy shows up without a hard refresh. /coolify-deploy is written for Claude in Chrome and Coolify v4.4.3.',
+          'GlobalHeader and AppSidebar follow the theme by default. Pass theme="dark" for the old always-dark nav.',
+        ],
+      },
+    ],
+  },
+  {
     version: '26.9.1c',
     date: '2026-09-03',
     title: 'Guided Coolify setup for designers',

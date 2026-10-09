@@ -1,8 +1,8 @@
 # Changelog
 
-## 26.10.1a — unreleased
+## 26.10.1a — 2026-10-09
 
-Figma sync: bringing tokens and typography up to date with the Radiant 3.0 Figma design system. In progress on `feat/figma-sync`.
+Dark mode, Geist and the Radiant 3.0 Figma tokens. Every page, shared component and sample prototype works in light and dark (Ctrl+D), type is Geist, and tokens match Figma. `/migrate-prototype` moves your own prototypes across, and `/sync-upstream` keeps the ones that aren't ready in light mode until you do.
 
 - Added `scripts/figma-tokens/`: a snapshot of the Figma design system's variables, text styles and effect styles, and a diff that compares it with `src/tokens/*` and `src/styles/tokens.css`. Run `npm run figma-tokens:diff`; refresh steps are in its README. Tooling only
 - Light mode tokens now match Figma:

@@ -71,6 +71,13 @@ export const HIGHLIGHTS: Highlight[] = [
 
   // ── Radiant Play enhancements ──────────────────────────────────────────────
   {
+    title: 'Dark mode',
+    description: 'Press Ctrl+D anywhere. Every shared component, Spotter, the Liveboard tiles and every sample prototype follow the theme, on Radiant 3.0 Figma tokens and Geist type. Run /migrate-prototype to bring your own prototypes across.',
+    version: '26.10.1a',
+    date: '2026-10-09',
+    group: 'enhancements',
+  },
+  {
     title: 'Playground archive section + sidebar nav',
     description: 'Gallery has a light left sidebar with Prototypes and Archived sections. Per-card 3-dot menu archives or restores any prototype in your session. Save-to-code modal generates a Claude-ready prompt to commit the layout permanently. MiniSpotters and AdminLang now appear as archived by default.',
     version: '26.5.4a',
