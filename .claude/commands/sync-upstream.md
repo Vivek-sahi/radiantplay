@@ -68,6 +68,7 @@ After merging, run `npm run build`. If it fails, the cause is usually one of:
 | `Cannot find module './<Name>'` in `registry-core.ts` | Upstream removed a sample prototype but a lazy import lingers. Remove the `React.lazy` line and its registry entry. |
 | `Cannot find module` in `registry-mine.ts` | A designer prototype was deleted but its entry remains. Remove the lazy import and entry. |
 | `Cannot find module` in another barrel/index file | An export references a deleted file. Remove the broken export. |
+| `Could not resolve "./thumbnails/<Name>.svg"` from `registry-mine.ts` | The designer's entry imports a sample thumbnail that upstream deleted (sample prototypes now use screenshots in their own folders). Remove the import and the entry's `thumbnail` field; the gallery shows a live preview until the designer runs `/thumbnail`. Typecheck passes on this one, so only the build catches it. |
 | `Cannot find name 'systemColors'` (or `rdComponentColors`, `referenceColors`) in a file the designer changed | Git merged cleanly but upstream removed that import. Replace `systemColors.light['x']` with `sysVar('x')` and `rdComponentColors.light['x']` with `compVar('x')`, importing `sysVar` / `compVar` from `@tokens/colors`. Same token, same light value, and it now follows the theme. Don't re-add the old import. |
 | TypeScript error inside a designer prototype | Unrelated to the sync. Flag it but continue — the sync itself is fine. |
 

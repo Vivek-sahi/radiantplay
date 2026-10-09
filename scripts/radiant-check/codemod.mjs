@@ -1263,6 +1263,11 @@ function main() {
     console.error('Usage: node scripts/radiant-check/codemod.mjs <path...> [--write] [--json] [--include-vendor] [--skip=rule,rule]');
     process.exit(2);
   }
+  const missing = targets.filter((t) => !fs.existsSync(path.resolve(ROOT, t)));
+  if (missing.length) {
+    for (const t of missing) console.error(`No such prototype folder or file: ${t}`);
+    process.exit(2);
+  }
   const report = migrate(targets, { write: flags.has('--write'), includeVendor: flags.has('--include-vendor'), skip: skipArg ? skipArg.slice(7).split(',') : [] });
   if (flags.has('--json')) {
     console.log(JSON.stringify(report, null, 2));
