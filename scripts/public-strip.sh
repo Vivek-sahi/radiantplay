@@ -170,6 +170,20 @@ rm -f "$OUTPUT"/.cursor/rules/spotter-*.md
 echo "      glob: .cursor/rules/liveboard-*.md"
 rm -f "$OUTPUT"/.cursor/rules/liveboard-*.md
 
+# Radiance: vendored from a private ThoughtSpot-internal repo, so omitted from
+# the snapshot. RadianceBackground stays and renders nothing without the files;
+# radiance:check skips when the manifest is absent, so build:strict still passes.
+echo "      glob: public/vendor/radiance/, scripts/radiance/upstream/, .claude/skills/rp-radiance/"
+rm -rf "$OUTPUT/public/vendor/radiance" "$OUTPUT/scripts/radiance/upstream" "$OUTPUT/.claude/skills/rp-radiance"
+rm -f "$OUTPUT/scripts/radiance/update.mjs"
+if [[ -f "$OUTPUT/package.json" ]]; then
+  sed -i.bak '/"radiance:update"/d' "$OUTPUT/package.json" && rm -f "$OUTPUT/package.json.bak"
+# The guidance lines that point at the omitted rp-radiance skill are omitted too.
+for f in .claude/commands/new-prototype.md src/prototypes/CLAUDE.md; do
+  [ -f "${OUTPUT:?}/${f:?}" ] && sed -i.bak '/^\*\*Radiance (AI background)/d;/^- Radiance (the AI background)/d' "${OUTPUT:?}/${f:?}" && rm -f "${OUTPUT:?}/${f:?}.bak"
+done
+fi
+
 # Shape C internal tree (not present today, but be defensive for the future)
 if [[ -d "$OUTPUT/internal" ]]; then
   echo "      glob: internal/"

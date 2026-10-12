@@ -19,3 +19,4 @@ Loaded whenever Claude works in `src/prototypes/`. The root CLAUDE.md convention
 - Components only this prototype uses go in `src/prototypes/<Name>/components/`, never `src/components/`.
 - Mock data comes from `@/mocks` or `src/prototypes/<Name>/data/`.
 - Older prototypes move to dark mode with `/rp-migrate-prototype`, which sets `theme: 'global'` when they're ready.
+- Radiance (the AI background): a prototype of the Home page, SpotterX, a Liveboard with Spotter or sign up uses its Radiance product pattern even when unasked. Follow `.claude/skills/rp-radiance/SKILL.md`.

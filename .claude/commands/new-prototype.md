@@ -78,6 +78,8 @@ Before writing any code, ask the designer all questions in a single message. Pre
 
 Wait for the designer's answers before continuing.
 
+**Radiance (AI background), only for an AI or Spotter surface:** if the answers describe the Home page or Spotter home, SpotterX or a Spotter chat, a Liveboard with Spotter, sign up / sign in, or another AI surface (an AI welcome, onboarding, an agent's empty state), ask one more question: "Use the Radiance background? The `<pattern>` product pattern fits this screen. 1. Yes (default) 2. No". For a product-pattern surface default to yes; for other AI surfaces offer `top-wash-subtle-dynamic-fast` and default to no. Pick the pattern and, on yes, add `RadianceBackground` to the scaffold as `.claude/skills/rp-radiance/SKILL.md` says. Never ask for non-AI screens.
+
 **If the answer to question 4 is "Data model editor":** before proceeding to step 4, ask these follow-up questions in a single message. Do NOT ask for layout type — DME layout is fixed.
 
 > A few more questions to configure the Data model editor:

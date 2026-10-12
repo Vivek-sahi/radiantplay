@@ -43,6 +43,7 @@ export const versionHistory: VersionEntry[] = [
       { type: 'modified', group: 'Figma', component: 'Alert', description: 'Muted alerts sit on Secondary Action grey, a shade darker. The page alert dismiss icon is 18px inside the same 32px button.' },
       { type: 'modified', group: 'Figma', component: 'ProgressBar', description: 'Track and blue fill use the background tokens (same colours).' },
       { type: 'modified', group: 'Figma', component: 'WizardModal and TextArea', description: 'Corrected var() fallbacks (radius 12px, label 14px).' },
+      { type: 'added', group: 'Radiance', component: 'Managed Radiance', description: 'public/vendor/radiance/manifest.json records the source commit and a checksum per file; the vendored files add the SpotterX and Liveboard recipes and Radiance\'s own lint. npm run radiance:check (also in build:strict) fails if a copy is edited, npm run radiance:lint -- src/prototypes/<Name> checks a prototype, npm run radiance:update refreshes everything (maintainer), and /rp-sync-upstream brings updates to forks. RadianceBackground takes a pattern (home, signup, spotterx, liveboard or a template) and a state; existing pages are unchanged. Home page, SpotterX, Liveboard and sign up prototypes get their Radiance pattern automatically (rp-radiance skill), and /rp-new-prototype asks about Radiance for AI surfaces.' },
     ],
   },
   {

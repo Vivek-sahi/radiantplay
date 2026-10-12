@@ -18,6 +18,8 @@ Radiant components pick up the right Figma colours, and the playground header sw
 - Progress bar track and blue fill use the background tokens (same colours)
 - Corrected `var()` fallbacks in WizardModal (radius) and TextArea (label size)
 
+- Radiance is now managed: `public/vendor/radiance/manifest.json` records the source commit and a checksum per file, the vendored files include every product recipe (Home, SpotterX, Liveboard) and Radiance's own lint, `npm run radiance:check` (also in `build:strict`) fails if a copy is edited, `npm run radiance:lint -- src/prototypes/<Name>` checks a prototype, the maintainer refreshes everything with `npm run radiance:update`, and `/rp-sync-upstream` brings updates to forks. `RadianceBackground` takes a `pattern` (home, signup, spotterx, liveboard or a template) and a `state`; existing pages are unchanged. Prototypes of the Home page, SpotterX, a Liveboard with Spotter or sign up now get their Radiance pattern automatically (the `rp-radiance` skill), and `/rp-new-prototype` asks about Radiance for AI surfaces
+
 ## 26.10.2a — 2026-10-12
 
 Radiance, ThoughtSpot's AI identity background, comes to the playground, the home page and the design system page. `/rp-project-canvas` on a designer's fork now shows a canvas about the designer's own work.

@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "build:strict": "tsc && vite build",
+    "build:strict": "tsc && node scripts/radiance/check.mjs && vite build",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview",
     "new-prototype": "node scripts/create-prototype.js",
@@ -21,7 +21,10 @@
     "thumbnails:check": "node scripts/thumbnails/check.mjs",
     "migrate:codemod": "node scripts/radiant-check/codemod.mjs",
     "codemod:check": "node scripts/radiant-check/codemod-check.mjs",
-    "migrate:light-only": "node scripts/radiant-check/light-only.mjs"
+    "migrate:light-only": "node scripts/radiant-check/light-only.mjs",
+    "radiance:update": "node scripts/radiance/update.mjs",
+    "radiance:check": "node scripts/radiance/check.mjs",
+    "radiance:lint": "node scripts/radiance/lint.mjs"
   },
   "keywords": [
     "design-system",

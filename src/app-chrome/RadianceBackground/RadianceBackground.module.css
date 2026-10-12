@@ -15,3 +15,12 @@
 .stage {
   height: var(--radiance-hero-height);
 }
+
+/* signup and templates fill their parent (position: relative, overflow: hidden).
+   Content over them takes position: relative and z-index: 1. */
+.fill {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
