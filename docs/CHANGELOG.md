@@ -9,6 +9,8 @@ Every RadiantPlay command now starts with `rp-`, so typing `/rp-` lists them all
 - Designer prototypes stay light by default. A prototype in `registry-mine.ts` with no `theme` line stays light when someone turns dark mode on, exactly as it looked before; `theme: 'global'` puts it in dark mode. `/rp-migrate-prototype` sets `global` once a prototype is dark ready, and `/rp-new-prototype` sets it for new prototypes. `/rp-sync-upstream` no longer marks anything, so one sync is enough (26.10.1a's "run `npm run migrate:light-only` once" step isn't needed). Older `theme: 'light-only'` lines keep working
 - `/rp-new-prototype` points to `/rp-radiant-check` for the thumbnail, and to asking for a model switch
 - RadiantPlay commands now start with `rp-`: `/rp-new-prototype`, `/rp-radiant-check`, `/rp-migrate-prototype`, `/rp-sync-upstream`, `/rp-coolify-deploy`, `/rp-explore`, `/rp-project-canvas` and `/rp-prototype-census`. Type `/rp-` to see them all. The old names keep working too: for now the steps stay in the old files, so forks that edited a command merge cleanly, and each `rp-` command hands off to its old file
+- `npm run new-prototype <Name>` scaffolds from the token-based `_template` (or `_liveboard-template` with `--liveboard`), registers in `registry-mine.ts` instead of `registry.ts`, and marks the prototype `theme: 'global'` when the dark scan confirms it. It used to write `systemColors.light[...]` and register where the gallery never looked
+- New `src/prototypes/CLAUDE.md`: Claude Code loads it whenever it works in `src/prototypes/`, so a prototype made by just asking Claude also gets `theme: 'global'` after a dark check, and lands in `registry-mine.ts`
 
 ## 26.10.1a — 2026-10-09
 
