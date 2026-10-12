@@ -8,7 +8,7 @@ Every RadiantPlay command now starts with `rp-`, so typing `/rp-` lists them all
 - `/switch-model` is no longer a command: ask Claude to switch a prototype's model ("switch it to Sonnet") and the `rp-prototype-model` skill handles it. It changes the model AI prototypes call, not Claude Code's own `/model`
 - `/rp-sync-upstream` run on a fork that is already up to date still runs the light-only step and the thumbnail check, so running it a second time finishes the setup the first sync brought in. For 26.10: run `/rp-sync-upstream`, then run it once more
 - `/rp-new-prototype` points to `/rp-radiant-check` for the thumbnail, and to asking for a model switch
-- RadiantPlay commands now start with `rp-`: `/rp-new-prototype`, `/rp-radiant-check`, `/rp-migrate-prototype`, `/rp-sync-upstream`, `/rp-coolify-deploy`, `/rp-explore`, `/rp-project-canvas` and `/rp-prototype-census`. Type `/rp-` to see them all. The old names still work as aliases, so nothing breaks; they'll be retired in a later release
+- RadiantPlay commands now start with `rp-`: `/rp-new-prototype`, `/rp-radiant-check`, `/rp-migrate-prototype`, `/rp-sync-upstream`, `/rp-coolify-deploy`, `/rp-explore`, `/rp-project-canvas` and `/rp-prototype-census`. Type `/rp-` to see them all. The old names keep working too: for now the steps stay in the old files, so forks that edited a command merge cleanly, and each `rp-` command hands off to its old file
 
 ## 26.10.1a — 2026-10-09
 
