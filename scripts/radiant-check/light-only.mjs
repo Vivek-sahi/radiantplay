@@ -1,14 +1,16 @@
 #!/usr/bin/env node
 /**
- * Keeps prototypes that aren't dark ready in light mode, by setting theme: 'light-only' on their
- * registry-mine.ts entries. /rp-sync-upstream runs it after a merge; /rp-migrate-prototype lifts the flag
- * once a prototype is dark ready. Spec: docs/2026-10-07-prototype-migration-plan.md, section 5.
+ * Sets the theme line on registry-mine.ts entries. Since 26.10.1b a designer prototype with no theme
+ * line stays light (src/prototypes/registry.ts, isLightOnly), so nothing needs flagging after a sync.
+ * This script writes the explicit lines: theme: 'light-only' with a reason (used by /rp-migrate-prototype
+ * for a prototype that must stay light), and --remove, which switches a prototype to theme: 'global'
+ * so it follows light and dark. Spec: docs/2026-10-07-prototype-migration-plan.md, section 5.
  *
  * Usage:
  *   node scripts/radiant-check/light-only.mjs                     dry run: what it would flag
  *   node scripts/radiant-check/light-only.mjs --write             add the flag where the scan says "dark: no"
  *   node scripts/radiant-check/light-only.mjs <Name...> --write   the same, for these prototypes only
- *   node scripts/radiant-check/light-only.mjs --remove <Name>     dry run of lifting one flag (add --write to apply)
+ *   node scripts/radiant-check/light-only.mjs --remove <Name>     dry run of switching it to theme: 'global' (add --write)
  *   node scripts/radiant-check/light-only.mjs <Name> --force --reason "<why>" --write
  *                flag a named prototype even though the scan calls it dark ready (say, its home
  *                screen comes from code the scan doesn't read). Without --force a ready prototype is skipped.
@@ -47,7 +49,8 @@ if (argv.includes('--help') || argv.includes('-h')) {
   node scripts/radiant-check/light-only.mjs <Name...> --write     the same, for these prototypes only
   node scripts/radiant-check/light-only.mjs <Name...> --force --reason "<why>" --write
                                                                   flag them even if the scan calls them dark ready
-  node scripts/radiant-check/light-only.mjs --remove <Name>       dry run of lifting one flag (add --write to apply)
+  node scripts/radiant-check/light-only.mjs --remove <Name>       dry run of switching it to theme: 'global', so it follows
+                                                                  light and dark (add --write to apply)
 Options:
   --by <who>       who set it, for the comment (default "sync")
   --reason <why>   why, added to the comment and recorded in rules-mine.json
@@ -82,6 +85,7 @@ const today = () => {
 const REASON_TEXT = REASON ? REASON.replace(/\s+/g, ' ').trim() : '';
 const COMMENT = `// light-only until migrated (/rp-migrate-prototype), set by ${BY} on ${today()}${REASON_TEXT ? `: ${REASON_TEXT}` : ''}`;
 const FLAG_LINE = /^[ \t]*theme:\s*['"]light-only['"],?[^\n]*\n/m;
+const GLOBAL_LINE = /^[ \t]*theme:\s*['"]global['"],?[^\n]*\n/m;
 
 if (!fs.existsSync(REGISTRY)) {
   console.log('No src/prototypes/registry-mine.ts, nothing to do.');
@@ -94,9 +98,24 @@ function entries(text) {
   const out = [];
   for (const m of text.matchAll(/\{(\s*)id:\s*['"]([^'"]+)['"]([\s\S]*?)\n([ \t]*)\}/g)) {
     const indent = m[1].replace(/^\n/, '').replace(/[^ \t]/g, '');
-    out.push({ id: m[2], start: m.index, end: m.index + m[0].length, body: m[0], indent, flagged: /theme:\s*['"]light-only['"]/.test(m[3]) });
+    out.push({ id: m[2], start: m.index, end: m.index + m[0].length, body: m[0], indent, flagged: /theme:\s*['"]light-only['"]/.test(m[3]), global: /theme:\s*['"]global['"]/.test(m[3]) });
   }
   return out;
+}
+
+/** Add a property line as the entry's last property, keeping the file's formatting. */
+function withLine(e, line) {
+  const lines = e.body.split('\n');
+  const closing = lines.pop(); // the entry's closing brace line
+  let last = lines.length - 1;
+  while (last > 0 && !lines[last].trim()) last--;
+  // The last property needs a trailing comma before a new one follows it (unless it ends in a comment)
+  if (!/,\s*(\/\/.*)?$/.test(lines[last]) && !/^\s*\/\//.test(lines[last])) {
+    lines[last] = lines[last].replace(/(\s*)(\/\/.*)?$/, (m, sp, c) => (c ? `,${sp}${c}` : ','));
+  }
+  const indent = e.indent || (lines[1]?.match(/^[ \t]*/)?.[0] ?? '    ');
+  lines.splice(last + 1, 0, `${indent}${line}`);
+  return [...lines, closing].join('\n');
 }
 
 const rulesMine = fs.existsSync(RULES_MINE) ? JSON.parse(fs.readFileSync(RULES_MINE, 'utf8')) : { exclude: [], allow: [] };
@@ -117,15 +136,17 @@ if (REMOVE) {
     console.error(`No entry with id '${REMOVE}' in registry-mine.ts.`);
     process.exit(1);
   }
-  if (!e.flagged) {
-    console.log(`${REMOVE} has no light-only flag in registry-mine.ts.`);
+  if (e.global) {
+    console.log(`${REMOVE} already follows the light and dark theme (theme: 'global').`);
   } else {
-    const body = e.body.replace(FLAG_LINE, '');
+    const globalLine = `theme: 'global', // follows light and dark, set by ${BY} on ${today()}`;
+    const indent = e.indent || (e.body.split('\n')[1]?.match(/^[ \t]*/)?.[0] ?? '    ');
+    const body = e.flagged ? e.body.replace(FLAG_LINE, `${indent}${globalLine}\n`) : withLine(e, globalLine);
     if (WRITE) {
       fs.writeFileSync(REGISTRY, src.slice(0, e.start) + body + src.slice(e.end));
-      console.log(`Removed the light-only flag from ${REMOVE}. It now follows the light and dark theme.`);
+      console.log(`${REMOVE} now follows the light and dark theme (theme: 'global').`);
     } else {
-      console.log(`Would remove the light-only flag from ${REMOVE}. Run again with --write to apply.`);
+      console.log(`Would set theme: 'global' on ${REMOVE}, so it follows light and dark. Run again with --write to apply.`);
     }
   }
   if (record[REMOVE] && WRITE) { delete record[REMOVE]; recordChanged = true; }
@@ -150,9 +171,11 @@ for (const e of all) {
   if (!ready) { notes.push(`${e.id}: not scanned (no folder at ${unit}?), left as it is`); continue; }
   const n = colourFindings(counts);
   const forced = FORCE && NAMES.includes(e.id);
+  // A prototype set to 'global' is left alone, unless named (how /rp-migrate-prototype puts the flag back)
+  if (e.global && !forced && !NAMES.includes(e.id)) continue;
   if (ready.dark && !forced) {
     if (e.flagged && record[e.id]?.forced) continue; // kept light-only on purpose (--force)
-    if (e.flagged) notes.push(`${e.id}: dark ready but still light-only. /rp-migrate-prototype ${e.id} can lift the flag`);
+    if (e.flagged || !e.global) notes.push(`${e.id}: dark ready but still light. /rp-migrate-prototype ${e.id} can switch it to light and dark`);
     else if (NAMES.includes(e.id)) notes.push(`${e.id}: the scan calls it dark ready, so it was skipped. To keep it light-only anyway, add --force --reason "<why>"`);
     continue;
   }
@@ -180,17 +203,9 @@ for (const n of notes) console.log(`Note: ${n}`);
 if (toFlag.length && WRITE) {
   // Apply from the end of the file so earlier positions stay valid
   for (const e of [...toFlag].sort((a, b) => b.start - a.start)) {
-    const lines = e.body.split('\n');
-    const closing = lines.pop(); // the entry's closing brace line
-    let last = lines.length - 1;
-    while (last > 0 && !lines[last].trim()) last--;
-    // The last property needs a trailing comma before a new one follows it (unless it ends in a comment)
-    if (!/,\s*(\/\/.*)?$/.test(lines[last]) && !/^\s*\/\//.test(lines[last])) {
-      lines[last] = lines[last].replace(/(\s*)(\/\/.*)?$/, (m, sp, c) => (c ? `,${sp}${c}` : ','));
-    }
-    const indent = e.indent || (lines[1]?.match(/^[ \t]*/)?.[0] ?? '    ');
-    lines.splice(last + 1, 0, `${indent}theme: 'light-only', ${COMMENT}`);
-    const body = [...lines, closing].join('\n');
+    const flag = `theme: 'light-only', ${COMMENT}`;
+    const indent = e.indent || (e.body.split('\n')[1]?.match(/^[ \t]*/)?.[0] ?? '    ');
+    const body = e.global ? e.body.replace(GLOBAL_LINE, `${indent}${flag}\n`) : withLine(e, flag);
     src = src.slice(0, e.start) + body + src.slice(e.end);
     record[e.id] = { set: today(), findings: e.n, ...(REASON_TEXT ? { reason: REASON_TEXT } : {}), ...(e.forced ? { forced: true } : {}) };
     recordChanged = true;

@@ -2,11 +2,11 @@
 
 ## 26.10.1b — 2026-10-12
 
-Every RadiantPlay command now starts with `rp-`, so typing `/rp-` lists them all. Thumbnails happen as part of other work, and running `/rp-sync-upstream` twice finishes dark mode setup.
+Every RadiantPlay command now starts with `rp-`, so typing `/rp-` lists them all. Thumbnails happen as part of other work, and designers' prototypes stay light until they're migrated, so one sync is all it takes.
 
 - `/thumbnail` is no longer a command. `/rp-radiant-check` captures or refreshes a prototype's thumbnail after a check, `/rp-sync-upstream` captures missing ones after a sync, and `/rp-migrate-prototype` keeps capturing them in its light and dark check. Asking Claude to "update my thumbnail" works too. The steps live in the `rp-prototype-thumbnails` skill, which asks the one-time screenshot tool question once per machine
 - Ask Claude to switch a prototype's model ("switch it to Sonnet") and the `rp-prototype-model` skill handles it. It changes the model AI prototypes call, not Claude Code's own `/model`. `/switch-model` stays for now, since a fork has edited it
-- `/rp-sync-upstream` run on a fork that is already up to date still runs the light-only step and the thumbnail check, so running it a second time finishes the setup the first sync brought in. For 26.10: run `/rp-sync-upstream`, then run it once more
+- Designer prototypes stay light by default. A prototype in `registry-mine.ts` with no `theme` line stays light when someone turns dark mode on, exactly as it looked before; `theme: 'global'` puts it in dark mode. `/rp-migrate-prototype` sets `global` once a prototype is dark ready, and `/rp-new-prototype` sets it for new prototypes. `/rp-sync-upstream` no longer marks anything, so one sync is enough (26.10.1a's "run `npm run migrate:light-only` once" step isn't needed). Older `theme: 'light-only'` lines keep working
 - `/rp-new-prototype` points to `/rp-radiant-check` for the thumbnail, and to asking for a model switch
 - RadiantPlay commands now start with `rp-`: `/rp-new-prototype`, `/rp-radiant-check`, `/rp-migrate-prototype`, `/rp-sync-upstream`, `/rp-coolify-deploy`, `/rp-explore`, `/rp-project-canvas` and `/rp-prototype-census`. Type `/rp-` to see them all. The old names keep working too: for now the steps stay in the old files, so forks that edited a command merge cleanly, and each `rp-` command hands off to its old file
 

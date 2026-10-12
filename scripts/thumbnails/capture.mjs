@@ -57,7 +57,9 @@ function registered() {
     if (!fs.existsSync(p)) continue;
     const src = fs.readFileSync(p, 'utf8');
     for (const m of src.matchAll(/\{\s*id:\s*'([^']+)'([\s\S]*?)\n\s*\}/g)) {
-      out[m[1]] = { lightOnly: /theme:\s*'light-only'/.test(m[2]), archived: /section:\s*'archived'/.test(m[2]) };
+      // A designer prototype with no theme line stays light (26.10.1b); samples follow the theme unless flagged
+      const lightOnly = /theme:\s*'light-only'/.test(m[2]) || (file.endsWith('registry-mine.ts') && !/theme:\s*'global'/.test(m[2]));
+      out[m[1]] = { lightOnly, archived: /section:\s*'archived'/.test(m[2]) };
     }
   }
   return out;

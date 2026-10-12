@@ -95,10 +95,7 @@ git remote set-url upstream git@galaxy.corp.thoughtspot.com:mohammed-faris/radia
 ### Phase 1 — Preview (no merging yet)
 
 1. Fetch upstream.
-2. If `main` is already in sync with `upstream/main` (compare `main..upstream/main`, not `HEAD..upstream/main` — the designer may be on a feature branch), print "Already up to date". Before stopping, run the two after-sync steps that don't need a merge, so running `/rp-sync-upstream` a second time finishes any setup the first sync brought in:
-   - The light-only step from Phase 2, if `scripts/radiant-check/light-only.mjs` exists. It's safe to repeat: it flags only prototypes that aren't dark ready and remembers flags the designer removed. On the branch that holds the designer's prototypes, with a clean `registry-mine.ts`, commit what it changed as `fix: post-sync light-only flags`; otherwise leave it uncommitted and say so.
-   - The thumbnails step from Phase 2.
-   Then stop.
+2. If `main` is already in sync with `upstream/main` (compare `main..upstream/main`, not `HEAD..upstream/main` — the designer may be on a feature branch), print "Already up to date" and stop.
 3. Otherwise, show a preview structured like this:
 
 ```
@@ -137,13 +134,9 @@ Only after explicit yes. Follow Rule 1's flow. Use your judgment on the mechanic
 - Stash with `--include-untracked` before any branch switch or merge. After stashing, verify `git status --porcelain` is empty — if it isn't, the stash didn't capture everything; stop and surface what's still in the working tree before switching branches.
 - If anything goes wrong (mid-merge state, leftover stash, divergent main, etc.), stop and explain in plain language — don't push through.
 - On any conflict, tell the designer exactly which files are affected, what each side changed, and the exact commands to resume (`git merge --continue`, `git stash pop`, etc.). Never abandon a stash silently.
-- Light-only policy, after the merge and once `npm run build` passes (Rule 3): run `node scripts/radiant-check/light-only.mjs --write`. It adds `theme: 'light-only'` with a dated comment to every `registry-mine.ts` entry the scan doesn't call dark ready, and prints each one it flagged. Don't edit the flag by hand, and don't add it to prototypes the script leaves alone (it remembers flags the designer deleted). Include `registry-mine.ts` and `scripts/radiant-check/rules-mine.json` in the post-sync cleanup commit on `main`, or create that commit (`fix: post-sync build cleanup`) if the build needed no cleanup. If the designer's prototypes live on their feature branch rather than `main`, run it again after the forward merge into that branch:
-  - If the stash doesn't touch `registry-mine.ts`, run it before popping the stash and commit it there as `fix: post-sync light-only flags`.
-  - If the stash touches `registry-mine.ts` (`git stash show --name-only <stash>` lists it), pop the stash first, then run it and leave the change uncommitted. Tell the designer: "I added the light-only flag to your prototypes in registry-mine.ts. It's mixed in with your unsaved changes there, so I didn't commit it."
-
-  The second case applies on `main` too: whenever the stash touches `registry-mine.ts`, run the script after the pop and leave it uncommitted. Skip this step if the script doesn't exist (an older upstream).
+- Light-only: nothing to run. Since 26.10.1b a prototype in `registry-mine.ts` with no `theme` line stays light when someone turns dark mode on, so a sync never changes how a designer's prototype looks. Don't add `theme` lines during a sync. (Older forks may still have `theme: 'light-only'` lines from a 26.10.1a sync; leave them.)
 - Final report: confirm what branch they're on, what was pulled in, and that their work is intact.
-- Prototype status: run `npm run scan:dark -- --mine` and show its table. Name every prototype the light-only step flagged. Then explain in plain words: "Light-only means the prototype stays in light mode when someone turns dark mode on, so it looks exactly as it did before. Nothing else changes. Run `/rp-migrate-prototype` when you want your prototypes on the new font and dark mode. Nothing is urgent."
+- Prototype status: run `npm run scan:dark -- --mine` and show its table. Then explain in plain words: "Your prototypes stay in light mode when someone turns dark mode on, so they look exactly as they did before. Nothing else changes. Run `/rp-migrate-prototype` when you want them on the new font and dark mode. Nothing is urgent."
 - Thumbnails: run `npm run thumbnails:check -- --mine`. If it lists prototypes, capture them by following `.claude/skills/rp-prototype-thumbnails/SKILL.md` (it asks the one-time setup question once per machine and remembers a no). Leave the new images uncommitted and say they're ready to commit. Prototypes without a thumbnail still show a live preview in the gallery, so a declined setup or a failed capture is fine: say so in one line and finish.
 
 ---

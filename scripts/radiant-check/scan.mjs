@@ -156,7 +156,7 @@ function unitOf(file) {
   return top ? `src/${top[1]}` : file;
 }
 
-/** registry-mine.ts entries: id, light-only flag and thumbnail kind. */
+/** registry-mine.ts entries: id, theme (global only when set explicitly) and thumbnail kind. */
 function mineEntries() {
   const p = path.join(ROOT, 'src/prototypes/registry-mine.ts');
   if (!fs.existsSync(p)) return [];
@@ -172,7 +172,8 @@ function mineEntries() {
       const imp = src.match(new RegExp(`import\\s+${name}\\s+from\\s+'([^']+)'`))?.[1] ?? '';
       thumb = /\.svg\?raw$/.test(imp) ? 'svg (theme)' : /\.svg$/.test(imp) ? 'svg (light)' : imp ? 'image' : 'set';
     }
-    out.push({ id: m[1], theme: /theme:\s*'light-only'/.test(body) ? 'light-only' : 'global', thumb });
+    // Since 26.10.1b a designer prototype with no theme line stays light; only theme: 'global' follows dark
+    out.push({ id: m[1], theme: /theme:\s*'global'/.test(body) ? 'global' : 'light-only', thumb });
   }
   return out;
 }

@@ -1,7 +1,7 @@
 import React, { Suspense, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { sysVar } from '../tokens/colors';
-import { getProject } from '../prototypes/registry';
+import { getProject, isLightOnly } from '../prototypes/registry';
 import { Icon } from '../components/icons';
 import { LightOnly } from '../context/ThemeContext';
 
@@ -64,7 +64,7 @@ export const PlaygroundProject: React.FC = () => {
       {/* Project Content */}
       <div style={styles.projectContainer}>
         <Suspense fallback={<LoadingState />}>
-          {project.theme === 'light-only' ? (
+          {isLightOnly(project) ? (
             <LightOnly style={styles.lightOnly}>
               <ProjectComponent />
             </LightOnly>

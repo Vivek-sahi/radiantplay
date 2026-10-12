@@ -22,7 +22,7 @@ Spec: `docs/2026-10-07-prototype-migration-plan.md`, section 4.2 (if the file is
 - **Never commit, push, stash or switch branches.** The command runs in place on the current branch. It stops for review at the end.
 - **Leave `vendor/` folders alone by default.** That code came from outside the repo. Don't edit it and don't raise it. A prototype whose remaining findings are in `vendor/` stays light-only, and the report says so. The one exception: the designer asks for `vendor/` to be migrated too (see step 2). Then the codemod runs with `--include-vendor`.
 - Never edit `src/components`, `src/spotter`, `src/tokens`, `src/styles/tokens.css`, `registry-core.ts` or `registry.ts`. Only the picked prototypes' folders, `registry-mine.ts` and `scripts/radiant-check/rules-mine.json` change.
-- The light-only flag in `registry-mine.ts` is set and removed by `scripts/radiant-check/light-only.mjs`, never by hand.
+- The theme line in `registry-mine.ts` (`theme: 'light-only'` or `theme: 'global'`) is set by `scripts/radiant-check/light-only.mjs`, never by hand. Since 26.10.1b a prototype with no theme line stays light; only `theme: 'global'` follows dark mode. `--remove` sets `global`.
 
 ### The undo command
 
@@ -85,7 +85,7 @@ Show **one table**, one row per prototype:
 - Theme now: `global` or `light-only`. Thumbnail: the scan's `thumb` value as it is: `captured`, `svg (light)`, `svg (theme)`, `image`, `set` or `none`.
 - Rough size, from the distinct decisions: 0 to 10 "a few minutes", 11 to 40 "under an hour", over 40 "an hour or two".
 - Mark a prototype **ready** when the scan says `dark` and `geist` are both yes, the thumbnail is `captured` and the theme is `global`. Ready prototypes are listed and skipped.
-- A prototype that is dark and Geist ready with a captured thumbnail but still flagged `light-only` needs no migration: don't offer it in step 2, and take it straight to step 8 so its flag is lifted. Say so in one line under the table.
+- A prototype that is dark and Geist ready with a captured thumbnail but still light (theme isn't `global`) needs no migration: don't offer it in step 2, and take it straight to step 8 so it's switched to `global`. Say so in one line under the table.
 - If a prototype has findings in `vendor/`, add under the table: "<Name> stays light-only after this, because some of its code came from outside the repo (`vendor/`). Migrating still moves its own code to the new font and colours."
 - The scan can say `dark: no` for a prototype whose own folder is clean. Its `meta.notReadyBecause` says why. Put it in plain words under the table:
 
@@ -203,12 +203,12 @@ Before that `--write` run, do a dry run first (the same command without `--write
 
 Check the screenshot tools the way the thumbnails skill does (step 2 of `.claude/skills/rp-prototype-thumbnails/SKILL.md`): `~/.radiantplay-visual/.thumbnails-enabled` means ready; `.thumbnails-declined` means skip this step; otherwise ask the one-time setup question from that skill. If they say no, or setup fails, skip to step 8 and say the light and dark check was skipped.
 
-If this step stops early for any reason (a capture fails, the dev server won't start, the designer says stop), still run step 8. This step lifts light-only flags, and step 8 puts them back.
+If this step stops early for any reason (a capture fails, the dev server won't start, the designer says stop), still run step 8. This step switches picked prototypes to `global` for the capture, and step 8 puts back the light flag where needed.
 
-`npm run thumbnails` captures only a light image for a prototype flagged light-only. So first lift the flag on every picked prototype that has one, so both images get captured:
+`npm run thumbnails` captures only a light image for a prototype that stays light. So first switch every picked prototype that isn't `global` yet, so both images get captured:
 
 ```bash
-node scripts/radiant-check/light-only.mjs --remove <Name> --write     # once per flagged prototype
+node scripts/radiant-check/light-only.mjs --remove <Name> --write     # once per picked prototype that isn't global
 npm run thumbnails -- <A> <B> ...
 ```
 
@@ -223,8 +223,8 @@ Read each pair of images (`src/prototypes/<Name>/thumbnail.light.jpg` and `.dark
 
 Run `node scripts/radiant-check/scan.mjs --mine --json` again. For each picked prototype:
 
-- **Dark ready** (`ready.dark` is true, which means every leftover is fixed or listed in `rules-mine.json`): it stays global. Clear any record with `node scripts/radiant-check/light-only.mjs --remove <Name> --write` (harmless if step 7 already did it). Wire both thumbnails into its `registry-mine.ts` entry as `/thumbnail` step 4 describes (`thumbnail: { light: <Name>ThumbLight, dark: <Name>ThumbDark }`) and drop the old thumbnail import if nothing else uses it.
-- **Not dark ready, and it was light-only in step 1**: put the flag back:
+- **Dark ready** (`ready.dark` is true, which means every leftover is fixed or listed in `rules-mine.json`): it stays global. Clear any record with `node scripts/radiant-check/light-only.mjs --remove <Name> --write` (harmless if step 7 already did it). Wire both thumbnails into its `registry-mine.ts` entry as step 4 of `.claude/skills/rp-prototype-thumbnails/SKILL.md` describes (`thumbnail: { light: <Name>ThumbLight, dark: <Name>ThumbDark }`) and drop the old thumbnail import if nothing else uses it.
+- **Not dark ready, and it was light in step 1** (a `light-only` line or no theme line): put the flag back:
 
   ```bash
   node scripts/radiant-check/light-only.mjs <Name> [<Name> ...] --write --by /rp-migrate-prototype
@@ -238,9 +238,9 @@ Run `node scripts/radiant-check/scan.mjs --mine --json` again. For each picked p
   ```
 
   The reason goes in the registry comment and in `rules-mine.json`. Wire the light image only, as above.
-- **Not dark ready, and it was global in step 1** (the designer had removed the flag themselves): leave it global and say it isn't dark ready yet.
+- **Not dark ready, and it was `global` in step 1** (the designer had set it themselves): leave it global and say it isn't dark ready yet.
 
-If step 7 was skipped, leave the thumbnails as they are. For a dark-ready prototype, lift the flag only if the designer agrees without a dark check ("It's dark ready by the scan, but I couldn't check it in dark mode. Turn dark mode on for it now? Recommended: yes, then look at it with Ctrl+D.").
+If step 7 was skipped, leave the thumbnails as they are. For a dark-ready prototype, switch it to `global` only if the designer agrees without a dark check ("It's dark ready by the scan, but I couldn't check it in dark mode. Turn dark mode on for it now? Recommended: yes, then look at it with Ctrl+D.").
 
 Run `npm run typecheck` once more after the registry edits.
 

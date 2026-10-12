@@ -86,13 +86,13 @@ The comparison runs without `font-size`, `weight-400` and `weight-500`, which Ph
 
 ## Light-only flag
 
-`light-only.mjs` keeps a prototype in light mode until it's migrated, by setting `theme: 'light-only'` on its `registry-mine.ts` entry. It reads the `dark` column of `scan.mjs --mine --json`, so the flag goes on exactly the prototypes the scan calls not dark ready.
+Since 26.10.1b a designer prototype (`registry-mine.ts`) with no `theme` line stays light when the app is dark; only `theme: 'global'` follows dark mode (`isLightOnly` in `src/prototypes/registry.ts`). So nothing needs flagging after a sync. `light-only.mjs` writes the explicit lines: `theme: 'light-only'` with a dated reason, and `--remove`, which sets `theme: 'global'`. It reads the `dark` column of `scan.mjs --mine --json`.
 
 ```bash
 node scripts/radiant-check/light-only.mjs                        # dry run: what it would flag
 node scripts/radiant-check/light-only.mjs --write                # flag every entry that isn't dark ready
 node scripts/radiant-check/light-only.mjs MyProto --write        # the same, for named prototypes only
-node scripts/radiant-check/light-only.mjs --remove MyProto --write   # lift one flag
+node scripts/radiant-check/light-only.mjs --remove MyProto --write   # switch it to theme: 'global' (follows light and dark)
 ```
 
 It adds one line as the entry's last property and changes nothing else in the file:
@@ -105,13 +105,13 @@ Running it twice changes nothing. `--by <who>` changes "sync" in the comment. Ea
 
 ## How the commands use these tools
 
-`/rp-sync-upstream` runs `light-only.mjs --write` after a merge that builds, commits the flags with its post-sync cleanup, and shows `npm run scan:dark -- --mine` in its report.
+`/rp-sync-upstream` no longer runs it (26.10.1a did); it shows `npm run scan:dark -- --mine` in its report. `/rp-new-prototype` writes `theme: 'global'` for a new prototype, since the scaffold is dark ready.
 
 `/rp-migrate-prototype` (`.claude/commands/rp-migrate-prototype.md`) runs every prototype in `registry-mine.ts` through one pass, or one named prototype:
 
 1. `scan.mjs --mine --json` and `codemod.mjs <path> --json` (dry run) per prototype, for the status table.
 2. `codemod.mjs <paths...> --write --json` over the picked prototypes. Its `judgement` list is grouped by value across all of them, so each decision is asked once.
 3. Values kept as data get an `allow` entry in `rules-mine.json`.
-4. `light-only.mjs --remove` before `npm run thumbnails`, so both light and dark images are captured, then `light-only.mjs <Name...> --write` puts the flag back on any prototype that still isn't dark ready.
+4. `light-only.mjs --remove` before `npm run thumbnails` (sets `global`, so both light and dark images are captured), then `light-only.mjs <Name...> --write` puts the light flag back on any named prototype that still isn't dark ready.
 
 It never commits and never touches a `vendor/` folder.

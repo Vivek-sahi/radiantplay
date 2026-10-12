@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { sysVar, compVar } from '../tokens/colors';
 import { spacing } from '../tokens/spacing';
-import { getAllProjects, ProjectMeta } from '../prototypes/registry';
+import { getAllProjects, isLightOnly, ProjectMeta } from '../prototypes/registry';
 import { getCurrentVersion } from '../data/versionHistory';
 import { Icon } from '../components/icons';
 import { ThemeSwitch } from '../components/ThemeSwitch';
@@ -573,7 +573,7 @@ const CardThumbnail: React.FC<{ project: ProjectMeta }> = ({ project }) => {
   const isDark = useIsDarkMode();
   const thumb = project.thumbnail;
   if (thumb && typeof thumb === 'object') {
-    const src = isDark && thumb.dark ? thumb.dark : thumb.light;
+    const src = isDark && thumb.dark && !isLightOnly(project) ? thumb.dark : thumb.light;
     return <img src={src} alt={project.name} style={styles.cardImage} />;
   }
   if (thumb?.trimStart().startsWith('<svg')) {

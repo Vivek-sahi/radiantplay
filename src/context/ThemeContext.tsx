@@ -91,9 +91,9 @@ export const useTheme = (): ThemeContextState => {
 export const useIsDarkMode = (): boolean => useTheme().resolved === 'dark';
 
 /**
- * Keeps everything inside it light while the app is dark. For prototypes that
- * aren't dark ready yet: set `theme: 'light-only'` on the registry entry and
- * PlaygroundProject wraps the prototype in this. Light token values cascade
+ * Keeps everything inside it light while the app is dark. PlaygroundProject
+ * wraps a prototype in this when isLightOnly() says so: `theme: 'light-only'`,
+ * or a designer prototype not yet marked `theme: 'global'`. Light token values cascade
  * from the wrapper, and useIsDarkMode() returns false inside it, so charts
  * stay light too. Portals rendered to document.body (some modals and menus)
  * sit outside the wrapper and follow the app theme.

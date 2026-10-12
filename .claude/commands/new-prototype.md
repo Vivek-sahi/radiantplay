@@ -366,8 +366,11 @@ const <Name> = React.lazy(() => import('./<Name>'));
     lastModified: '<today's date as YYYY-MM-DD>',
     component: <Name>,
     section: 'mine',
+    theme: 'global', // follows light and dark; the scaffold is dark ready (step 8 checks it)
   },
 ```
+
+`theme: 'global'` puts the prototype in dark mode with the rest of the app. Without it a designer prototype stays light (the safe default for older prototypes).
 
 > **Important:** Always write to `registry-mine.ts`, never to `registry-core.ts` or `registry.ts`.
 > `registry-mine.ts` is the designer's file — upstream never changes it, so it never conflicts on sync.
@@ -376,7 +379,7 @@ const <Name> = React.lazy(() => import('./<Name>'));
 
 ### 8. Check dark mode
 
-Run `npm run scan:dark -- src/prototypes/<Name>`. The scaffold should report dark ready: yes. If it doesn't, fix the findings (use `sysVar()` / `var(--rd-sys-color-*)`, never `systemColors.light[...]` or hex) before reporting.
+Run `npm run scan:dark -- src/prototypes/<Name>`. The scaffold should report dark ready: yes. If it doesn't, fix the findings (use `sysVar()` / `var(--rd-sys-color-*)`, never `systemColors.light[...]` or hex) before reporting. If something can't be fixed now, change the entry's `theme: 'global'` to nothing (delete the line) so the prototype stays light until it's ready, and say so.
 
 ---
 
