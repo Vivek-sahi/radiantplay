@@ -21,14 +21,13 @@
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
   line-height: var(--line-height-md);
-  color: var(--rd-sys-color-content-secondary);
+  color: var(--rd-sys-color-content-primary);
   transition: all var(--duration-fast) var(--easing-standard);
   margin-bottom: -1px;
 }
 
 .tab:hover {
-  color: var(--rd-sys-color-content-primary);
-  background-color: var(--rd-sys-color-background-sunken);
+  color: var(--rd-sys-color-content-brand);
 }
 
 .tab:focus-visible {
@@ -39,7 +38,7 @@
 
 .tab.active {
   color: var(--rd-sys-color-content-brand);
-  border-bottom-color: var(--rd-sys-color-content-brand);
+  border-bottom-color: var(--rd-sys-color-border-brand);
   font-weight: var(--font-weight-emphasis);
 }
 

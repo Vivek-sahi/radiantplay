@@ -14,14 +14,6 @@
   cursor: not-allowed;
 }
 
-.toggle.left {
-  flex-direction: row;
-}
-
-.toggle.right {
-  flex-direction: row;
-}
-
 .input {
   position: absolute;
   width: 1px;
@@ -35,39 +27,57 @@
 }
 
 .track {
+  /* 28x16 box keeps the old footprint; the 8px Figma track sits centred in it */
   position: relative;
   width: 28px;
   height: 16px;
-  background-color: var(--rd-sys-color-background-inset);
-  border-radius: var(--radius-full);
   flex-shrink: 0;
+}
+
+.track::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 8px;
+  transform: translateY(-50%);
+  background-color: var(--rd-comp-color-toggle-track-off);
+  border-radius: var(--radius-sm);
   transition: background-color var(--duration-fast) var(--easing-standard);
 }
 
-.track.checked {
-  background-color: var(--rd-sys-color-background-brand);
-}
-
-.toggle:hover:not(.disabled) .track:not(.checked) {
-  background-color: var(--rd-sys-color-content-tertiary);
+.track.checked::before {
+  background-color: var(--rd-comp-color-toggle-track-on);
 }
 
 .input:focus-visible + .label + .track,
 .input:focus-visible + .track {
   outline: 2px solid var(--rd-sys-color-border-focus);
   outline-offset: 2px;
+  border-radius: var(--radius-full);
 }
 
 .thumb {
   position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 12px;
-  height: 12px;
-  background-color: var(--rd-sys-color-background-base);
+  top: 0;
+  left: 0;
+  box-sizing: border-box;
+  width: 16px;
+  height: 16px;
+  background-color: var(--rd-comp-color-toggle-thumb-off);
+  border: 1px solid var(--rd-comp-color-toggle-thumb-outline-off);
   border-radius: var(--radius-full);
-  box-shadow: var(--shadow-xs);
-  transition: transform var(--duration-fast) var(--easing-standard);
+  box-shadow: var(--rd-sys-color-shadow-surface);
+  transition: transform var(--duration-fast) var(--easing-standard),
+              background-color var(--duration-fast) var(--easing-standard),
+              border-color var(--duration-fast) var(--easing-standard);
+}
+
+.track.checked .thumb {
+  background-color: var(--rd-comp-color-toggle-thumb-on);
+  border-color: var(--rd-comp-color-toggle-thumb-on);
+  box-shadow: none;
 }
 
 .label {

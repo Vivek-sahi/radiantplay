@@ -28,6 +28,18 @@ export interface VersionEntry {
  */
 export const versionHistory: VersionEntry[] = [
   {
+    version: '26.10.2c',
+    date: '2026-10-12',
+    type: 'patch',
+    changes: [
+      { type: 'modified', group: 'Figma', component: 'Toggle', description: 'Thin 8px track with a 16px thumb that overhangs it, on the toggle tokens. Off: grey track, white outlined thumb with a soft shadow. On: light blue track, blue thumb. The outer box stays 28x16. The grey hover tint is gone; Figma has no hover state.' },
+      { type: 'modified', group: 'Figma', component: 'Toast', description: 'Dark grey (Background Inverse) with white text, 16px padding, 6px corners, 18px status icon and the menu shadow. The action is a real white Button (Primary White Small); dismiss is a 24px white icon button. About 8px taller, so a toast placed in the page flow pushes content down by that much while it shows.' },
+      { type: 'modified', group: 'Figma', component: 'Stepper and VerticalStepper', description: 'Done steps are green with a 16px check, the current step is a blue outline with a blue number, upcoming steps are grey outlines. 32px circles, 1px strokes and connectors; connectors turn green after done steps.' },
+      { type: 'modified', group: 'Figma', component: 'Tabs', description: 'Hover turns the label blue with no grey fill; inactive labels use the primary text colour. The active underline uses the Brand border token (same blue). Colours moved from inline styles into CSS, which had blocked the hover colour. Weight and padding unchanged.' },
+      { type: 'modified', group: 'Figma', component: 'Button Small', description: 'Primary Small and Primary White Small have 16px corners, matching the basic size.' },
+    ],
+  },
+  {
     version: '26.10.2b',
     date: '2026-10-12',
     type: 'patch',

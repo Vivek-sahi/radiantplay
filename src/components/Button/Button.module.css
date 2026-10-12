@@ -34,7 +34,7 @@
   font-weight: var(--font-weight-regular);
   line-height: var(--line-height-sm);
   letter-spacing: 0.072px;
-  border-radius: 14px;
+  border-radius: var(--radius-2xl);
   gap: var(--spacing-1);
 }
 
@@ -105,9 +105,9 @@
   cursor: not-allowed;
 }
 
-/* Override border-radius for small primary white */
+/* Small primary white: same 16px corner as Primary Small (Figma) */
 .primary.white.small {
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-2xl);
 }
 
 /* ============================================

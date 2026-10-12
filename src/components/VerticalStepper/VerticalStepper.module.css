@@ -23,70 +23,72 @@
   flex-direction: column;
   align-items: center;
   flex-shrink: 0;
-  width: 24px;
+  width: var(--spacing-8);
 }
 
 /* Circle indicator */
 .circle {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
+  width: var(--spacing-8);
+  height: var(--spacing-8);
+  border-radius: var(--radius-full);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   box-sizing: border-box;
-  transition: background-color var(--duration-fast, 120ms) ease,
-    border-color var(--duration-fast, 120ms) ease;
+  transition: background-color var(--duration-fast) var(--easing-standard),
+    border-color var(--duration-fast) var(--easing-standard);
 }
 
+/* Upcoming: bold stroke, primary number */
 .circle.pending {
   background: transparent;
-  border: 2px solid var(--rd-sys-color-border-default);
-  color: var(--rd-sys-color-content-secondary);
+  border: 1px solid var(--rd-sys-color-border-bold);
+  color: var(--rd-sys-color-content-primary);
 }
 
+/* Current: brand outline, brand number */
 .circle.active {
-  background: var(--rd-sys-color-background-brand);
-  border: 2px solid var(--rd-sys-color-background-brand);
-  color: var(--rd-sys-color-content-alternate);
+  background: transparent;
+  border: 1px solid var(--rd-sys-color-border-brand);
+  color: var(--rd-sys-color-content-brand);
 }
 
+/* Completed: green fill with a check */
 .circle.completed {
-  background: var(--rd-sys-color-background-brand);
-  border: 2px solid var(--rd-sys-color-background-brand);
+  background: var(--rd-sys-color-content-success);
+  border: 1px solid var(--rd-sys-color-content-success);
   color: var(--rd-sys-color-content-alternate);
 }
 
 .circle.error {
   background: var(--rd-sys-color-background-failure);
-  border: 2px solid var(--rd-sys-color-background-failure);
+  border: 1px solid var(--rd-sys-color-background-failure);
   color: var(--rd-sys-color-content-alternate);
 }
 
 .circleIndex {
   font-family: var(--font-family-primary);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
-  line-height: 1;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-md);
 }
 
 /* Connector line between steps */
 .connector {
-  width: 2px;
+  width: 1px;
   flex: 1;
   margin: var(--spacing-1) 0;
-  min-height: 16px;
-  border-radius: 1px;
-  transition: background-color var(--duration-fast, 120ms) ease;
+  min-height: var(--spacing-4);
+  transition: background-color var(--duration-fast) var(--easing-standard);
 }
 
 .connectorPending {
-  background: var(--rd-sys-color-border-default);
+  background: var(--rd-sys-color-border-bold);
 }
 
 .connectorCompleted {
-  background: var(--rd-sys-color-background-brand);
+  background: var(--rd-sys-color-content-success);
 }
 
 /* Right column: text content */
@@ -102,7 +104,16 @@
   font-weight: var(--font-weight-medium);
   color: var(--rd-sys-color-content-primary);
   line-height: var(--line-height-md);
-  padding-top: 2px; /* Visually align with circle center */
+  /* Centres the title line on the 32px circle */
+  padding-top: calc((var(--spacing-8) - var(--line-height-md)) / 2);
+}
+
+.titleActive {
+  color: var(--rd-sys-color-content-brand);
+}
+
+.titleCompleted {
+  color: var(--rd-sys-color-content-secondary);
 }
 
 .stepDescription {

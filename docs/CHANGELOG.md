@@ -1,5 +1,15 @@
 # Changelog
 
+## 26.10.2c — 2026-10-12
+
+Five Radiant components take their Figma shape. Each stays inside the space it used before, so layouts around them do not move; the Toast is the one exception noted below.
+
+- Toggle is a thin 8px track with a 16px round thumb that overhangs it. Off is a grey track with a white, outlined thumb and a soft shadow; on is a light blue track with a blue thumb. The outer box stays 28x16, so labels and rows do not shift. The grey hover tint is gone; Figma has no hover state
+- Toast is dark grey (Background Inverse) with white text, 16px padding, 6px corners, an 18px status icon and the menu shadow. Its action is a real white Button (Primary White Small) and the dismiss is a 24px white icon button. A toast is about 8px taller; prototypes that place it in the page flow (Variables in NewUIAdmin2) push content down by that much while it shows
+- Stepper and VerticalStepper: done steps are green with a 16px check, the current step is a blue outline with a blue number, upcoming steps are grey outlines. Circles are 32px with a 1px stroke, connectors are 1px and turn green after done steps. Titles: done in secondary grey, current in blue
+- Tabs hover turns the label blue with no grey fill behind it, and inactive tabs use the primary text colour, a shade darker. The active underline uses the Brand border token (same blue). The tab colours now live in CSS instead of inline styles, which had kept hover from changing the label. Weight and padding are unchanged
+- Small primary buttons are rounder: 16px corners on Primary Small and Primary White Small, matching the basic size
+
 ## 26.10.2b — 2026-10-12
 
 Radiant components pick up the right Figma colours, and the playground header switches theme with one icon button. Sizes, padding and heights are unchanged; only colours, weights and a few radii move.
