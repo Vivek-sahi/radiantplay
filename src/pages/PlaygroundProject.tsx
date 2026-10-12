@@ -1,7 +1,8 @@
 import React, { Suspense, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { sysVar } from '../tokens/colors';
-import { getProject, isLightOnly } from '../prototypes/registry';
+import { getProject } from '../prototypes/registry';
+import { isLightOnly } from '../prototypes/registry-theme';
 import { Icon } from '../components/icons';
 import { LightOnly } from '../context/ThemeContext';
 

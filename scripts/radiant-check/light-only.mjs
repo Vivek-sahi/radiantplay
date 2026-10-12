@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Sets the theme line on registry-mine.ts entries. Since 26.10.1b a designer prototype with no theme
- * line stays light (src/prototypes/registry.ts, isLightOnly), so nothing needs flagging after a sync.
+ * line stays light (src/prototypes/registry-theme.ts, isLightOnly), so nothing needs flagging after a sync.
  * This script writes the explicit lines: theme: 'light-only' with a reason (used by /rp-migrate-prototype
  * for a prototype that must stay light), and --remove, which switches a prototype to theme: 'global'
  * so it follows light and dark. Spec: docs/2026-10-07-prototype-migration-plan.md, section 5.

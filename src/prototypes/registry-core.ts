@@ -41,7 +41,7 @@ export interface ProjectMeta {
    * 'global' follows the app's light and dark theme. 'light-only' keeps the prototype light while the
    * app is dark. With no value, sample prototypes follow the theme and designer prototypes
    * (registry-mine.ts) stay light until they're marked 'global', which /rp-new-prototype and
-   * /rp-migrate-prototype do once a prototype is dark ready. See isLightOnly in registry.ts.
+   * /rp-migrate-prototype do once a prototype is dark ready. See isLightOnly in registry-theme.ts.
    */
   theme?: 'light-only' | 'global';
 }

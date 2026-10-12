@@ -86,7 +86,7 @@ The comparison runs without `font-size`, `weight-400` and `weight-500`, which Ph
 
 ## Light-only flag
 
-Since 26.10.1b a designer prototype (`registry-mine.ts`) with no `theme` line stays light when the app is dark; only `theme: 'global'` follows dark mode (`isLightOnly` in `src/prototypes/registry.ts`). So nothing needs flagging after a sync. `light-only.mjs` writes the explicit lines: `theme: 'light-only'` with a dated reason, and `--remove`, which sets `theme: 'global'`. It reads the `dark` column of `scan.mjs --mine --json`.
+Since 26.10.1b a designer prototype (`registry-mine.ts`) with no `theme` line stays light when the app is dark; only `theme: 'global'` follows dark mode (`isLightOnly` in `src/prototypes/registry-theme.ts`). So nothing needs flagging after a sync. `light-only.mjs` writes the explicit lines: `theme: 'light-only'` with a dated reason, and `--remove`, which sets `theme: 'global'`. It reads the `dark` column of `scan.mjs --mine --json`.
 
 ```bash
 node scripts/radiant-check/light-only.mjs                        # dry run: what it would flag
