@@ -31,6 +31,9 @@ npm-debug.log*
 *.local
 .vercel
 
+# A designer's own project canvas settings (*.local above doesn't match it)
+internal/status.local.sh
+
 # Local plans and reports (not for repo)
 plans/
 docs/*plan*.md

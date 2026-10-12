@@ -15,6 +15,8 @@
  * Usage:
  *   node scripts/radiant-check/scan.mjs [paths...] [--details] [--json] [--strict]
  *   node scripts/radiant-check/scan.mjs --mine     one row per prototype in registry-mine.ts, with theme and thumbnail
+ *   node scripts/radiant-check/scan.mjs --mine --json   the same as JSON; meta also carries each prototype's name and
+ *                                                  lastChange (YYYY-MM-DD), which the project canvas reads
  *   npm run lint:tokens                            strict scan of the shared layers (exits 1 on findings)
  *
  * Paths default to src. Accepted exceptions live in rules.json (upstream's) and
@@ -39,6 +41,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { execFileSync } from 'node:child_process';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '../..');
@@ -156,7 +159,7 @@ function unitOf(file) {
   return top ? `src/${top[1]}` : file;
 }
 
-/** registry-mine.ts entries: id, theme (global only when set explicitly) and thumbnail kind. */
+/** registry-mine.ts entries: id, name, theme (global only when set explicitly), thumbnail kind and lastModified. */
 function mineEntries() {
   const p = path.join(ROOT, 'src/prototypes/registry-mine.ts');
   if (!fs.existsSync(p)) return [];
@@ -173,9 +176,26 @@ function mineEntries() {
       thumb = /\.svg\?raw$/.test(imp) ? 'svg (theme)' : /\.svg$/.test(imp) ? 'svg (light)' : imp ? 'image' : 'set';
     }
     // Since 26.10.1b a designer prototype with no theme line stays light; only theme: 'global' follows dark
-    out.push({ id: m[1], theme: /theme:\s*'global'/.test(body) ? 'global' : 'light-only', thumb });
+    const name = body.match(/\bname:\s*(['"`])((?:\\.|(?!\1).)*)\1/)?.[2]?.replace(/\\(.)/g, '$1') ?? m[1];
+    const lastModified = body.match(/\blastModified:\s*['"]([^'"]+)['"]/)?.[1] ?? null;
+    out.push({ id: m[1], name, theme: /theme:\s*'global'/.test(body) ? 'global' : 'light-only', thumb, lastModified });
   }
   return out;
+}
+
+/**
+ * When a prototype last changed: its folder's last commit, else the registry's lastModified
+ * (an uncommitted folder), else the newest file date in the folder. YYYY-MM-DD, or null.
+ */
+function lastChange(e) {
+  const dir = `src/prototypes/${e.id}`;
+  try {
+    const d = execFileSync('git', ['log', '-1', '--format=%ad', '--date=short', '--', dir], { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+    if (d) return d;
+  } catch { /* not a git checkout */ }
+  if (e.lastModified) return e.lastModified;
+  const times = walk(path.join(ROOT, dir), []).map((f) => fs.statSync(f).mtimeMs);
+  return times.length ? new Date(Math.max(...times)).toISOString().slice(0, 10) : null;
 }
 
 // ---------------------------------------------------------------------------
@@ -282,7 +302,7 @@ const elsewhere = (u) => (verdicts[u]?.because ?? []).filter((b) => /^(imports f
 
 if (JSON_OUT) {
   const meta = {};
-  for (const e of mine) meta[`src/prototypes/${e.id}`] = { theme: e.theme, thumb: e.thumb };
+  for (const e of mine) meta[`src/prototypes/${e.id}`] = { theme: e.theme, thumb: e.thumb, name: e.name, lastChange: lastChange(e) };
   for (const [u, v] of Object.entries(verdicts)) {
     meta[u] = { ...meta[u], dependsOn: v.dependsOn };
     if (!isDark(u, units[u])) meta[u].notReadyBecause = v.because.length ? v.because : ['colour findings'];

@@ -1,5 +1,16 @@
 # Changelog
 
+## 26.10.2a — 2026-10-12
+
+`/rp-project-canvas` on a designer's fork now shows a canvas about the designer's own work. Tooling only, no product changes.
+
+- The designer canvas has two tabs. Home lists up to four next steps, each with the command that fixes it, says how many releases your fork is behind RadiantPlay with each release's summary and a link to `/radiant/changelog`, lists your branches, and links the designer guides. My prototypes shows each prototype in `registry-mine.ts` with its last change, theme, dark and Geist readiness, thumbnail and an open link, then your Coolify site (up or down, and whether pages are served `no-cache`).
+- The first run asks two questions, what to call the canvas and whether your fork is on Coolify, and saves the answers in `internal/status.local.sh`, which stays on your machine. Running `bash internal/scripts/status.sh` directly never asks anything
+- Off Twingate VPN the canvas no longer hangs: it checks the git host for 3 seconds before fetching RadiantPlay
+- `scan.mjs --mine --json` adds each prototype's `name` and `lastChange` to `meta`. Existing fields are unchanged
+- The designer canvas uses the Radiance look in Geist, light and dark, with Radiance's own Home wash drawn by its renderer. The renderer and its Home stylesheet sit in `public/vendor/radiance/`, an interim copy from the Radiance site until the Radiance repo is available
+- The maintainer canvas is unchanged. `STATUS_ROLE=designer bash internal/scripts/status.sh` previews the designer canvas on the maintainer's checkout
+
 ## 26.10.1b — 2026-10-12
 
 Every RadiantPlay command now starts with `rp-`, so typing `/rp-` lists them all. Thumbnails happen as part of other work, and designers' prototypes stay light until they're migrated, so one sync is all it takes.

@@ -28,6 +28,15 @@ export interface VersionEntry {
  */
 export const versionHistory: VersionEntry[] = [
   {
+    version: '26.10.2a',
+    date: '2026-10-12',
+    type: 'patch',
+    changes: [
+      { type: 'added', group: 'Tooling', component: 'Designer project canvas', description: '/rp-project-canvas on a designer fork shows your own work: next steps, your prototypes with dark, Geist and thumbnail readiness, how many releases you are behind RadiantPlay, your branches, your Coolify site and guides. The first run asks two questions and saves the answers in internal/status.local.sh, which stays on your machine. It uses the Radiance look in Geist, with Radiance\'s own Home wash.' },
+      { type: 'modified', group: 'Tooling', component: 'scan.mjs --mine --json', description: 'meta adds each prototype\'s name and lastChange. Existing fields are unchanged.' },
+    ],
+  },
+  {
     version: '26.10.1b',
     date: '2026-10-12',
     type: 'patch',
