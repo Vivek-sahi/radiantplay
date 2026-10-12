@@ -2,6 +2,10 @@ import React from 'react';
 import { sysVar, type SystemColorKey } from '../tokens/colors';
 import { getComponentCount, getIconCount, getTokenCountLabel } from '../data/componentRegistry';
 import { PLATFORM_VERSION } from '../data/platformVersion';
+import { RadianceBackground } from '../app-chrome/RadianceBackground/RadianceBackground';
+import { Button } from '../components/Button';
+import { spacing } from '../tokens/spacing';
+import { fontWeight } from '../tokens/typography';
 
 // Theme-aware tints from system tokens.
 // alphaTint matches the old 10% hex-alpha badges; softTint lands near the old */10 reference fills in light.
@@ -144,6 +148,7 @@ export const RadiantHomePage: React.FC<RadiantHomePageProps> = ({ onNavigate }) 
     <div style={styles.container}>
       {/* Hero Section */}
       <section style={styles.hero}>
+        <RadianceBackground heroHeight={300} />
         <div style={styles.heroContent}>
           <div style={styles.heroBadge}>
             <span style={styles.heroBadgeIcon}>✨</span>
@@ -155,22 +160,13 @@ export const RadiantHomePage: React.FC<RadiantHomePageProps> = ({ onNavigate }) 
             Designed for consistency, accessibility, and developer experience.
           </p>
           <div style={styles.heroActions}>
-            <button 
-              style={styles.primaryButton}
-              onClick={() => onNavigate('button')}
-            >
-              Browse Components
-            </button>
-            <button 
-              style={styles.secondaryButton}
-              onClick={() => onNavigate('architecture')}
-            >
-              Token Architecture
-            </button>
+            <Button variant="primary" size="large" onClick={() => onNavigate('button')}>
+              Browse components
+            </Button>
+            <Button variant="secondary" size="large" onClick={() => onNavigate('architecture')}>
+              Token architecture
+            </Button>
           </div>
-        </div>
-        <div style={styles.heroVisual}>
-          <div style={styles.heroPattern} />
         </div>
       </section>
 
@@ -324,103 +320,58 @@ const styles: Record<string, React.CSSProperties> = {
     margin: '0 auto',
   },
 
-  // Hero
+  // Hero: light and theme-aware, on the Radiance "home" wash behind it.
   hero: {
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: '60px',
-    padding: '60px',
-    background: 'linear-gradient(135deg, #1A1F2E 0%, #0F1419 100%)',
-    borderRadius: '24px',
-    marginBottom: '32px',
+    padding: `${spacing.N}px ${spacing.L}px`,
+    marginBottom: spacing.H,
     position: 'relative',
+    isolation: 'isolate',
     overflow: 'hidden',
+    borderRadius: 'var(--radius-3xl)',
+    border: `1px solid ${sysVar('border-subtle')}`,
   },
   heroContent: {
     flex: 1,
-    zIndex: 1,
   },
   heroBadge: {
     display: 'inline-flex',
     alignItems: 'center',
-    gap: '8px',
-    padding: '8px 16px',
-    background: 'rgba(39, 112, 239, 0.15)',
-    borderRadius: '20px',
-    marginBottom: '24px',
+    gap: spacing.B,
+    padding: `${spacing.B}px ${spacing.D}px`,
+    background: `color-mix(in srgb, ${sysVar('content-brand')} 12%, transparent)`,
+    borderRadius: 'var(--radius-full)',
+    marginBottom: spacing.F,
     fontFamily: 'var(--font-family-primary)',
-    fontSize: '13px',
-    fontWeight: 500,
-    color: '#5B9AFF',
+    fontSize: 'var(--font-size-sm)',
+    fontWeight: fontWeight.emphasis,
+    color: sysVar('content-brand'),
   },
   heroBadgeIcon: {
-    fontSize: '14px',
+    fontSize: 'var(--font-size-sm)',
   },
   heroTitle: {
     fontFamily: 'var(--font-family-primary)',
     fontSize: '64px',
-    fontWeight: 700,
-    color: '#ffffff',
-    marginBottom: '16px',
-    letterSpacing: '-2px',
-    background: 'linear-gradient(135deg, #ffffff 0%, #A5ACB9 100%)',
-    WebkitBackgroundClip: 'text',
-    WebkitTextFillColor: 'transparent',
+    fontWeight: fontWeight.emphasis,
+    color: sysVar('content-primary'),
+    margin: `0 0 ${spacing.D}px`,
+    letterSpacing: '-0.035em',
+    lineHeight: 1.02,
   },
   heroSubtitle: {
     fontFamily: 'var(--font-family-primary)',
     fontSize: '18px',
-    fontWeight: 400,
-    color: 'rgba(255, 255, 255, 0.6)',
-    lineHeight: '28px',
-    maxWidth: '480px',
-    marginBottom: '32px',
+    color: sysVar('content-primary'),
+    lineHeight: 1.5,
+    maxWidth: '520px',
+    margin: `0 0 ${spacing.H}px`,
   },
   heroActions: {
     display: 'flex',
-    gap: '16px',
-  },
-  primaryButton: {
-    padding: '14px 28px',
-    background: 'linear-gradient(135deg, #2770EF 0%, #1E5BBB 100%)',
-    border: 'none',
-    borderRadius: '12px',
-    fontFamily: 'var(--font-family-primary)',
-    fontSize: '15px',
-    fontWeight: 500,
-    color: '#ffffff',
-    cursor: 'pointer',
-    transition: 'all 150ms ease',
-    boxShadow: '0 4px 16px rgba(39, 112, 239, 0.4)',
-  },
-  secondaryButton: {
-    padding: '14px 28px',
-    background: 'rgba(255, 255, 255, 0.1)',
-    border: '1px solid rgba(255, 255, 255, 0.2)',
-    borderRadius: '12px',
-    fontFamily: 'var(--font-family-primary)',
-    fontSize: '15px',
-    fontWeight: 500,
-    color: 'rgba(255, 255, 255, 0.8)',
-    cursor: 'pointer',
-    transition: 'all 150ms ease',
-  },
-  heroVisual: {
-    width: '300px',
-    height: '300px',
-    position: 'relative',
-  },
-  heroPattern: {
-    width: '100%',
-    height: '100%',
-    background: `
-      radial-gradient(circle at 50% 50%, rgba(39, 112, 239, 0.3) 0%, transparent 50%),
-      radial-gradient(circle at 80% 20%, rgba(39, 112, 239, 0.2) 0%, transparent 40%),
-      radial-gradient(circle at 20% 80%, rgba(6, 191, 127, 0.2) 0%, transparent 40%)
-    `,
-    borderRadius: '50%',
-    animation: 'pulse 4s ease-in-out infinite',
+    flexWrap: 'wrap',
+    gap: spacing.C,
   },
 
   // Stats

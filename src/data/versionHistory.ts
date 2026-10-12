@@ -32,6 +32,8 @@ export const versionHistory: VersionEntry[] = [
     date: '2026-10-12',
     type: 'patch',
     changes: [
+      { type: 'added', group: 'Radiance', component: 'Playground and home page', description: 'Radiance\'s Home pattern, a subtle top wash, sits behind the top of the playground and the home page. It follows light and dark, freezes under reduced motion, and loads only on these pages and /radiant.' },
+      { type: 'modified', group: 'Radiance', component: 'Design system page', description: 'The /radiant hero is a light card with the Radiance wash instead of the dark gradient card, with Radiant buttons and token colours.' },
       { type: 'added', group: 'Tooling', component: 'Designer project canvas', description: '/rp-project-canvas on a designer fork shows your own work: next steps, your prototypes with dark, Geist and thumbnail readiness, how many releases you are behind RadiantPlay, your branches, your Coolify site and guides. The first run asks two questions and saves the answers in internal/status.local.sh, which stays on your machine. It uses the Radiance look in Geist, with Radiance\'s own Home wash.' },
       { type: 'modified', group: 'Tooling', component: 'scan.mjs --mine --json', description: 'meta adds each prototype\'s name and lastChange. Existing fields are unchanged.' },
     ],

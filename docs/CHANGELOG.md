@@ -2,7 +2,11 @@
 
 ## 26.10.2a — 2026-10-12
 
-`/rp-project-canvas` on a designer's fork now shows a canvas about the designer's own work. Tooling only, no product changes.
+Radiance, ThoughtSpot's AI identity background, comes to the playground, the home page and the design system page. `/rp-project-canvas` on a designer's fork now shows a canvas about the designer's own work.
+
+- The playground (`/`) and the home page (`/home`) carry Radiance's Home pattern, a subtle top wash that follows light and dark and freezes under reduced motion. It loads only on those pages and `/radiant`; prototype pages never fetch it
+- The design system page (`/radiant`) opens on a light hero card with the Radiance wash instead of the dark gradient card, with Radiant buttons
+- Text over the wash uses the primary text colour so it stays readable
 
 - The designer canvas has two tabs. Home lists up to four next steps, each with the command that fixes it, says how many releases your fork is behind RadiantPlay with each release's summary and a link to `/radiant/changelog`, lists your branches, and links the designer guides. My prototypes shows each prototype in `registry-mine.ts` with its last change, theme, dark and Geist readiness, thumbnail and an open link, then your Coolify site (up or down, and whether pages are served `no-cache`).
 - The first run asks two questions, what to call the canvas and whether your fork is on Coolify, and saves the answers in `internal/status.local.sh`, which stays on your machine. Running `bash internal/scripts/status.sh` directly never asks anything

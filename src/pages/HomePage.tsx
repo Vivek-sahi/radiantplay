@@ -4,6 +4,7 @@ import { sysVar } from '../tokens/colors';
 import { spacing } from '../tokens/spacing';
 import { getComponentCount, getIconCount, getTokenCountLabel } from '../data/componentRegistry';
 import { getCurrentVersion } from '../data/versionHistory';
+import { RadianceBackground } from '../app-chrome/RadianceBackground/RadianceBackground';
 
 /**
  * HomePage - Landing page for Radiant Play
@@ -35,6 +36,7 @@ export const HomePage: React.FC = () => {
 
   return (
     <div style={styles.container}>
+      <RadianceBackground heroHeight={440} />
       <style>{`
         @keyframes shimmer {
           0% { background-position: -200% 0; }
@@ -202,6 +204,8 @@ const green = sysVar('content-success');
 
 const styles: Record<string, React.CSSProperties> = {
   container: {
+    position: 'relative',
+    isolation: 'isolate',
     minHeight: '100vh',
     display: 'flex',
     flexDirection: 'column',
@@ -267,7 +271,7 @@ const styles: Record<string, React.CSSProperties> = {
   subtitle: {
     fontSize: '18px',
     fontWeight: 400,
-    color: sysVar('content-secondary'),
+    color: sysVar('content-primary'),
     lineHeight: 1.6,
     maxWidth: '520px',
     margin: '0 auto',

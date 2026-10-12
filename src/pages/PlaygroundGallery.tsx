@@ -9,6 +9,7 @@ import { Icon } from '../components/icons';
 import { ThemeSwitch } from '../components/ThemeSwitch';
 import { GalleryLivePreview } from './GalleryLivePreview';
 import { useIsDarkMode } from '../context/ThemeContext';
+import { RadianceBackground } from '../app-chrome/RadianceBackground/RadianceBackground';
 
 /** Make an inline thumbnail SVG fill its card, cropping like object-fit: cover. */
 const fitSvg = (svg: string): string =>
@@ -340,6 +341,7 @@ export const PlaygroundGallery: React.FC = () => {
         </nav>
 
         <main style={styles.main}>
+          <RadianceBackground heroHeight={440} />
           {activeSection === 'prototypes' && (
             <>
               {myProjects.length > 0 && (
@@ -957,6 +959,8 @@ const styles: Record<string, React.CSSProperties> = {
 
   // Main scrollable body
   main: {
+    position: 'relative',
+    isolation: 'isolate',
     flex: 1,
     overflowY: 'auto',
     padding: `${spacing.H}px`,
@@ -967,7 +971,7 @@ const styles: Record<string, React.CSSProperties> = {
   sectionHeader: {
     fontSize: '14px',
     fontWeight: 'var(--font-weight-emphasis)',
-    color: sysVar('content-secondary'),
+    color: sysVar('content-primary'),
     marginBottom: `${spacing.D}px`,
     textTransform: 'uppercase',
     letterSpacing: '0.04em',
