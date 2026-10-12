@@ -1,5 +1,21 @@
 # Changelog
 
+## 26.10.2b — 2026-10-12
+
+Radiant components pick up the right Figma colours. Sizes, padding and heights are unchanged; only colours, weights and a few radii move.
+
+- Button White (`colorway="white"`) is fully white, with Figma's hover and pressed fills. Disabled is the white fill at 40%
+- Button Tertiary White hovers with a fainter tint and presses with the light blue tint, instead of a black overlay
+- Button Secondary hover is now a darker grey (it showed no change before), and pressed is a deeper grey with dark text instead of blue
+- Button Primary, Secondary and Tertiary use their button colour tokens (same colours). Small buttons get Figma's positive letter spacing, so their labels are about 1px wider
+- Segmented control inactive labels are darker (primary text instead of secondary). The selected label stays blue in light mode and turns near-white in dark mode
+- Modal titles are bolder (550). The header sits on Raised and the footer on On Base with no top border; the footer stays 72px
+- Tooltips are rounder (6px), with the menu shadow and the inverse colours; the arrow matches
+- Checkbox and Radio borders use the border tokens (Brand, Failure, Bold), set in CSS instead of inline styles. The hover border that never showed is gone; Figma has no hover state
+- Muted alerts sit on Secondary Action grey, a shade darker. The page alert's dismiss icon is 18px inside the same 32px button
+- Progress bar track and blue fill use the background tokens (same colours)
+- Corrected `var()` fallbacks in WizardModal (radius) and TextArea (label size)
+
 ## 26.10.2a — 2026-10-12
 
 Radiance, ThoughtSpot's AI identity background, comes to the playground, the home page and the design system page. `/rp-project-canvas` on a designer's fork now shows a canvas about the designer's own work.

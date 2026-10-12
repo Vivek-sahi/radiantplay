@@ -33,7 +33,7 @@
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-regular);
   line-height: var(--line-height-sm);
-  letter-spacing: -0.072px;
+  letter-spacing: 0.072px;
   border-radius: 14px;
   gap: var(--spacing-1);
 }
@@ -64,8 +64,8 @@
    ============================================ */
 
 .primary.standard {
-  background-color: var(--rd-sys-color-background-brand);
-  color: var(--rd-sys-color-content-alternate);
+  background-color: var(--rd-comp-color-button-primary-default);
+  color: var(--rd-sys-color-content-inverse);
 }
 
 .primary.standard:hover:not(.disabled) {
@@ -86,21 +86,21 @@
    ============================================ */
 
 .primary.white {
-  background-color: var(--rd-sys-color-background-sunken);
+  background-color: var(--rd-comp-color-button-primary-on-color-default);
   color: var(--rd-sys-color-content-primary);
 }
 
 .primary.white:hover:not(.disabled) {
-  background-color: var(--rd-sys-color-background-ghost-highlight);
+  background-color: var(--rd-comp-color-button-primary-on-color-hover);
 }
 
 .primary.white.active:not(.disabled) {
-  background-color: var(--rd-sys-color-background-sunken);
-  color: var(--rd-sys-color-content-brand);
+  background-color: var(--rd-comp-color-button-primary-on-color-pressed);
+  color: var(--rd-sys-color-content-primary);
 }
 
+/* Disabled: the default fill at 40% */
 .primary.white.disabled {
-  background-color: var(--rd-sys-color-background-information);
   opacity: 0.4;
   cursor: not-allowed;
 }
@@ -115,17 +115,17 @@
    ============================================ */
 
 .secondary.standard {
-  background-color: var(--rd-sys-color-background-subtle);
+  background-color: var(--rd-comp-color-button-secondary-default);
   color: var(--rd-sys-color-content-primary);
 }
 
 .secondary.standard:hover:not(.disabled) {
-  background-color: var(--rd-sys-color-background-subtle);
+  background-color: var(--rd-comp-color-button-secondary-hover);
 }
 
 .secondary.standard.active:not(.disabled) {
-  background-color: var(--rd-sys-color-background-ghost-highlight);
-  color: var(--rd-sys-color-content-brand);
+  background-color: var(--rd-comp-color-button-secondary-pressed);
+  color: var(--rd-sys-color-content-primary);
 }
 
 .secondary.standard.disabled {
@@ -155,7 +155,7 @@
 }
 
 .tertiary.standard.active:not(.disabled) {
-  background-color: var(--rd-sys-color-background-ghost-highlight);
+  background-color: var(--rd-comp-color-button-tertiary-pressed);
 }
 
 .tertiary.standard.disabled {
@@ -169,20 +169,18 @@
 
 .tertiary.white {
   background-color: transparent;
-  color: var(--rd-sys-color-content-alternate);
+  color: var(--rd-sys-color-content-inverse);
   padding-left: var(--spacing-1);
   padding-right: var(--spacing-1);
   border-radius: var(--radius-md);
 }
 
 .tertiary.white:hover:not(.disabled) {
-  /* Darkening tint on a coloured surface; no token fits */
-  background-color: rgba(0, 0, 0, 0.24);
+  background-color: var(--rd-comp-color-button-tertiary-hover);
 }
 
 .tertiary.white.active:not(.disabled) {
-  /* Darkening tint on a coloured surface; no token fits */
-  background-color: rgba(0, 0, 0, 0.48);
+  background-color: var(--rd-comp-color-button-tertiary-pressed);
 }
 
 .tertiary.white.disabled {
@@ -225,7 +223,7 @@
 
 /* Icon colors for different variants */
 .primary.standard .icon {
-  color: var(--rd-sys-color-content-alternate);
+  color: var(--rd-sys-color-content-inverse);
 }
 
 .primary.white .icon {
@@ -233,7 +231,7 @@
 }
 
 .primary.white.active .icon {
-  color: var(--rd-sys-color-content-brand);
+  color: var(--rd-sys-color-content-primary);
 }
 
 .secondary.standard .icon {
@@ -241,7 +239,7 @@
 }
 
 .secondary.standard.active .icon {
-  color: var(--rd-sys-color-content-brand);
+  color: var(--rd-sys-color-content-primary);
 }
 
 .tertiary.standard .icon {
@@ -249,7 +247,7 @@
 }
 
 .tertiary.white .icon {
-  color: var(--rd-sys-color-content-alternate);
+  color: var(--rd-sys-color-content-inverse);
 }
 
 /* ============================================

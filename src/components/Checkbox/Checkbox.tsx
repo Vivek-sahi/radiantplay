@@ -78,13 +78,6 @@ export const Checkbox: React.FC<CheckboxProps> = ({
 
   const state = getCheckboxState();
 
-  // Determine border color - using semantic tokens
-  const getBorderColor = () => {
-    if (error) return sysVar('content-failure');
-    if (state !== 'unchecked') return sysVar('content-brand');
-    return sysVar('border-default');
-  };
-
   const getIconColor = () => {
     if (error) return sysVar('content-failure');
     return sysVar('content-brand');
@@ -113,9 +106,11 @@ export const Checkbox: React.FC<CheckboxProps> = ({
         className={styles.input}
         aria-checked={indeterminate ? 'mixed' : checked}
       />
-      <span 
-        className={styles.box}
-        style={{ borderColor: getBorderColor() }}
+      <span
+        className={[
+          styles.box,
+          error ? styles.boxError : state !== 'unchecked' && styles.boxSelected,
+        ].filter(Boolean).join(' ')}
       >
         {state === 'checked' && (
           <svg 

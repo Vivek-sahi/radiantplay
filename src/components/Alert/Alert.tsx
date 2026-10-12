@@ -59,7 +59,7 @@ const statusConfig: Record<AlertStatus, {
     iconName: 'cross-circle',
   },
   muted: {
-    background: sysVar('background-sunken'),
+    background: sysVar('background-secondary-action'),
     iconColor: sysVar('content-secondary'),
     iconName: 'information',
   },
@@ -185,7 +185,7 @@ export const Alert: React.FC<AlertProps> = ({
             aria-label="Dismiss alert"
             type="button"
           >
-            <Icon name="cross" size="s" color={sysVar('content-primary')} />
+            <Icon name="cross" size="l" color={sysVar('content-primary')} />
           </button>
         )}
       </div>

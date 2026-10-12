@@ -12,7 +12,7 @@
 
 .label {
   font-family: var(--font-family-primary);
-  font-size: var(--font-size-sm, 12px);
+  font-size: var(--font-size-sm, 14px);
   font-weight: var(--font-weight-medium, 500);
   line-height: var(--line-height-md, 1.5);
   color: var(--rd-sys-color-content-primary);

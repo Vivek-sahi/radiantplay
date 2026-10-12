@@ -158,6 +158,7 @@
   gap: var(--spacing-4, 16px);
   padding: var(--spacing-5, 20px) var(--spacing-6, 24px);
   border-bottom: 1px solid var(--rd-sys-color-border-divider);
+  background-color: var(--rd-sys-color-background-raised);
   flex-shrink: 0;
 }
 
@@ -180,7 +181,7 @@
   margin: 0;
   font-family: var(--font-family-primary);
   font-size: var(--font-size-xl, 20px);
-  font-weight: var(--font-weight-medium, 500);
+  font-weight: var(--font-weight-emphasis, 550);
   line-height: var(--line-height-xl, 28px);
   letter-spacing: -0.4px;
   color: var(--rd-sys-color-content-primary);
@@ -270,8 +271,7 @@
   gap: var(--spacing-4, 16px);
   height: 72px;
   padding: 0 var(--spacing-6, 24px);
-  border-top: 1px solid var(--rd-sys-color-border-divider);
-  background-color: var(--rd-sys-color-background-sunken);
+  background-color: var(--rd-sys-color-background-on-base);
   border-radius: 0 0 var(--radius-md, 6px) var(--radius-md, 6px);
   flex-shrink: 0;
 }

@@ -8,14 +8,14 @@
   position: fixed;
   z-index: 9999;
   padding: var(--spacing-2) var(--spacing-3);
-  background-color: var(--rd-sys-color-background-base-inverse);
-  color: var(--rd-sys-color-content-alternate);
+  background-color: var(--rd-sys-color-background-inverse);
+  color: var(--rd-sys-color-content-inverse);
   font-family: var(--font-family-primary);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-regular);
   line-height: 1.4;
-  border-radius: var(--radius-sm);
-  box-shadow: var(--shadow-surface);
+  border-radius: var(--radius-md);
+  box-shadow: var(--rd-sys-color-shadow-menu);
   animation: fadeIn var(--duration-fast) var(--easing-standard);
   pointer-events: none;
 }
@@ -36,7 +36,7 @@
   position: absolute;
   width: 8px;
   height: 8px;
-  background-color: var(--rd-sys-color-background-base-inverse);
+  background-color: var(--rd-sys-color-background-inverse);
   transform: rotate(45deg);
 }
 

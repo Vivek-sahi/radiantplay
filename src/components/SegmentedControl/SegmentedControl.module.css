@@ -7,7 +7,7 @@
   display: inline-flex;
   padding: 2px;
   background-color: var(--rd-sys-color-background-subtle);
-  border-radius: 9999px;
+  border-radius: var(--radius-full);
   gap: 2px;
 }
 
@@ -23,13 +23,13 @@
 
 /* Size variants */
 .container.small .segment {
-  padding: 4px 10px;
+  padding: var(--spacing-1) 10px;
   font-size: var(--font-size-xs);
   line-height: var(--line-height-sm);
 }
 
 .container.small .segment.iconOnly {
-  padding: 4px 8px;
+  padding: var(--spacing-1) var(--spacing-2);
 }
 
 .container.small .icon {
@@ -53,13 +53,13 @@
 }
 
 .container.large .segment {
-  padding: 8px 18px;
+  padding: var(--spacing-2) 18px;
   font-size: var(--font-size-sm);
   line-height: var(--line-height-md);
 }
 
 .container.large .segment.iconOnly {
-  padding: 8px 12px;
+  padding: var(--spacing-2) var(--spacing-3);
 }
 
 .container.large .icon {
@@ -77,9 +77,9 @@
   background: transparent;
   font-family: inherit;
   font-weight: var(--font-weight-regular);
-  color: var(--rd-sys-color-content-secondary);
+  color: var(--rd-sys-color-content-primary);
   cursor: pointer;
-  border-radius: 9999px;
+  border-radius: var(--radius-full);
   white-space: nowrap;
   transition: background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
   flex: 0 0 auto;
@@ -101,7 +101,7 @@
 
 .segment.selected {
   background-color: var(--rd-sys-color-background-base);
-  color: var(--rd-sys-color-content-brand);
+  color: var(--rd-comp-color-segmented-control-content-active);
   box-shadow: var(--shadow-surface);
 }
 

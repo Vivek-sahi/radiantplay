@@ -61,13 +61,6 @@ export const Radio: React.FC<RadioProps> = ({
     }
   }, [handleChange]);
 
-  // Determine border color - using semantic tokens
-  const getBorderColor = () => {
-    if (error) return sysVar('content-failure');
-    if (checked) return sysVar('content-brand');
-    return sysVar('border-default');
-  };
-
   const getDotColor = () => {
     if (error) return sysVar('content-failure');
     return sysVar('content-brand');
@@ -95,9 +88,11 @@ export const Radio: React.FC<RadioProps> = ({
         onKeyDown={handleKeyDown}
         className={styles.input}
       />
-      <span 
-        className={styles.circle}
-        style={{ borderColor: getBorderColor() }}
+      <span
+        className={[
+          styles.circle,
+          error ? styles.circleError : checked && styles.circleSelected,
+        ].filter(Boolean).join(' ')}
       >
         {checked && (
           <span 

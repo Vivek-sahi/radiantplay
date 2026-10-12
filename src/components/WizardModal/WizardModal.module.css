@@ -32,7 +32,7 @@
   display: flex;
   flex-direction: column;
   background-color: var(--rd-sys-color-background-base);
-  border-radius: var(--radius-xl, 16px);
+  border-radius: var(--radius-xl, 12px);
   box-shadow: var(--rd-sys-color-shadow-modal);
   max-height: calc(100vh - var(--spacing-12, 48px));
   overflow: hidden;

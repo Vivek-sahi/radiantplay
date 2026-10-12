@@ -28,6 +28,23 @@ export interface VersionEntry {
  */
 export const versionHistory: VersionEntry[] = [
   {
+    version: '26.10.2b',
+    date: '2026-10-12',
+    type: 'patch',
+    changes: [
+      { type: 'modified', group: 'Figma', component: 'Button White', description: 'Fully white, with Figma\'s on-colour hover and pressed fills; disabled is the white fill at 40%. Tertiary White hovers with a fainter tint and presses with the light blue tint instead of a black overlay.' },
+      { type: 'modified', group: 'Figma', component: 'Button Secondary', description: 'Hover is a darker grey (it showed no change before); pressed is a deeper grey with dark text instead of blue.' },
+      { type: 'modified', group: 'Figma', component: 'Button tokens', description: 'Primary, Secondary and Tertiary use their button colour tokens (same colours). Small buttons get Figma\'s positive letter spacing, so labels are about 1px wider.' },
+      { type: 'modified', group: 'Figma', component: 'SegmentedControl', description: 'Inactive labels are darker (primary text). The selected label uses the segmented control token: blue in light mode, near-white in dark mode.' },
+      { type: 'modified', group: 'Figma', component: 'Modal', description: 'Title is bolder (550). Header on Raised; footer on On Base with no top border, still 72px.' },
+      { type: 'modified', group: 'Figma', component: 'Tooltip', description: 'Rounder (6px), menu shadow, inverse background and text; the arrow matches.' },
+      { type: 'modified', group: 'Figma', component: 'Checkbox and Radio', description: 'Borders on the Brand, Failure and Bold border tokens, set in CSS instead of inline styles. The hover border that never showed is gone; Figma has no hover state.' },
+      { type: 'modified', group: 'Figma', component: 'Alert', description: 'Muted alerts sit on Secondary Action grey, a shade darker. The page alert dismiss icon is 18px inside the same 32px button.' },
+      { type: 'modified', group: 'Figma', component: 'ProgressBar', description: 'Track and blue fill use the background tokens (same colours).' },
+      { type: 'modified', group: 'Figma', component: 'WizardModal and TextArea', description: 'Corrected var() fallbacks (radius 12px, label 14px).' },
+    ],
+  },
+  {
     version: '26.10.2a',
     date: '2026-10-12',
     type: 'patch',

@@ -33,14 +33,19 @@
   width: 16px;
   height: 16px;
   background-color: var(--rd-sys-color-background-base);
-  border: 1px solid var(--rd-sys-color-border-default);
+  border: 1px solid var(--rd-sys-color-border-bold);
   border-radius: var(--radius-full);
   flex-shrink: 0;
   transition: border-color var(--duration-fast) var(--easing-standard);
 }
 
-.radio:hover:not(.disabled) .circle {
+/* Border colour by state. Figma has no hover state. */
+.circle.circleSelected {
   border-color: var(--rd-sys-color-border-brand);
+}
+
+.circle.circleError {
+  border-color: var(--rd-sys-color-border-failure);
 }
 
 .input:focus-visible + .circle {
@@ -52,7 +57,7 @@
   width: 8px;
   height: 8px;
   border-radius: var(--radius-full);
-  background-color: var(--rd-sys-color-background-brand);
+  background-color: var(--rd-sys-color-content-brand);
 }
 
 .label {
