@@ -1,14 +1,15 @@
 ---
-description: Capture gallery thumbnails (light and dark screenshots) for your prototypes. Pass prototype names, or nothing to refresh the ones that are missing or out of date.
+name: rp-prototype-thumbnails
+description: Capture or refresh a prototype's gallery thumbnails (light and dark screenshots, 640x360) and wire them into registry-mine.ts. Load when a designer asks to capture, update or refresh a thumbnail or screenshot for the gallery, and when /rp-radiant-check, /rp-sync-upstream or /rp-migrate-prototype reach their thumbnail step. Covers the one-time screenshot tool setup question (asked once per machine, remembered), capture, checking each image, and registry wiring. Never commits.
 ---
 
 # Capture prototype thumbnails
 
-The gallery shows a real screenshot for each prototype, in light and dark. Without one it falls back to a live preview, which works but is heavier. This command captures the screenshots.
+The gallery shows a real screenshot for each prototype, in light and dark. Without one it falls back to a live preview, which works but is heavier. There is no thumbnail command: /rp-radiant-check refreshes a prototype's thumbnail after a check, /rp-sync-upstream captures missing ones after a sync, /rp-migrate-prototype captures them as part of its light and dark check, and a designer can simply ask ("update my thumbnail"). Each of them follows the steps below.
 
 ## 1. Pick the prototypes
 
-- If the designer named prototypes in `$ARGUMENTS`, use those (ids as in `registry-mine.ts` or `registry-core.ts`).
+- If the designer or the calling command named prototypes, use those (ids as in `registry-mine.ts` or `registry-core.ts`).
 - Otherwise run `npm run thumbnails:check -- --mine` and use the prototypes it lists. If it says everything is up to date, tell the designer and stop.
 - On a fork, only capture prototypes from `registry-mine.ts`. Core prototypes get their thumbnails from upstream.
 

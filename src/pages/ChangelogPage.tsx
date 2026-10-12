@@ -100,6 +100,24 @@ const HIGHLIGHTS: Highlight[] = [
 
 const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '26.10.1b',
+    date: '2026-10-12',
+    title: 'One prefix for every command',
+    type: 'patch',
+    changes: [
+      {
+        category: 'changed',
+        label: 'Tooling',
+        items: [
+          'Every RadiantPlay command now starts with rp-, so typing /rp- lists them all: /rp-new-prototype, /rp-radiant-check, /rp-migrate-prototype, /rp-sync-upstream, /rp-coolify-deploy and more. The old names still work.',
+          'Thumbnails happen as part of other work: /rp-radiant-check captures one after a check, /rp-sync-upstream captures missing ones, /rp-migrate-prototype keeps capturing them. Or ask Claude to update a thumbnail. /thumbnail is gone.',
+          'Ask Claude to switch a prototype\'s AI model; /switch-model is gone. Claude Code\'s own /model is unrelated.',
+          'Run /rp-sync-upstream twice after a release like 26.10: the second run finishes dark mode setup even when there is nothing new to merge.',
+        ],
+      },
+    ],
+  },
+  {
     version: '26.10.1a',
     date: '2026-10-09',
     title: 'Dark mode, Geist and Figma 3.0 tokens',

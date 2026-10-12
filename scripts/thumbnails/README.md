@@ -9,7 +9,7 @@ The gallery shows each prototype as a small screenshot, in light and dark. The o
 
 ## Capture
 
-Designers ask Claude: `/thumbnail` (or `/thumbnail MyPrototype`). It handles the setup question, captures, and wires the files into `registry-mine.ts`.
+Designers get them without asking: `/rp-radiant-check` captures a prototype's thumbnail after a check, `/rp-sync-upstream` captures missing ones, and "update my thumbnail" works too (the `rp-prototype-thumbnails` skill). It handles the setup question, captures, and wires the files into `registry-mine.ts`.
 
 By hand:
 
@@ -36,4 +36,4 @@ Screenshots are preferred; they stay accurate as the prototype changes.
 
 ## Why no git hook
 
-Designer forks don't install hooks, and a hook would also run during Coolify and Vercel installs. So capture runs on request, through `/thumbnail`, the last step of `/new-prototype`, and the check in `/sync-upstream`.
+Designer forks don't install hooks, and a hook would also run during Coolify and Vercel installs. So capture runs as part of other work: after a `/rp-radiant-check`, after a `/rp-sync-upstream`, inside `/rp-migrate-prototype`, or when a designer asks. All of them follow `.claude/skills/rp-prototype-thumbnails/SKILL.md`.

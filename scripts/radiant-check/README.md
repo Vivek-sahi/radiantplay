@@ -1,6 +1,6 @@
 # Dark readiness scan
 
-Finds colour code that won't follow the light/dark theme. `/radiant-check` uses it for its dark readiness line.
+Finds colour code that won't follow the light/dark theme. `/rp-radiant-check` uses it for its dark readiness line.
 
 ```bash
 npm run scan:dark                              # whole of src, counts per prototype and layer
@@ -38,7 +38,7 @@ An allow entry has a `path` (a file, or a folder ending in `/`), optional `kinds
 ```bash
 node scripts/radiant-check/codemod.mjs src/prototypes/MyProto           # dry run: counts per rule, one sample each, judgement list
 node scripts/radiant-check/codemod.mjs src/prototypes/MyProto --write   # apply, and write migration-todo.md
-node scripts/radiant-check/codemod.mjs src/prototypes/MyProto --json    # machine output for /migrate-prototype
+node scripts/radiant-check/codemod.mjs src/prototypes/MyProto --json    # machine output for /rp-migrate-prototype
 ```
 
 `--skip=rule,rule` turns rules off. Run it on a clean tree so `git checkout -- src/prototypes/MyProto` undoes it.
@@ -98,16 +98,16 @@ node scripts/radiant-check/light-only.mjs --remove MyProto --write   # lift one 
 It adds one line as the entry's last property and changes nothing else in the file:
 
 ```ts
-    theme: 'light-only', // light-only until migrated (/migrate-prototype), set by sync on 2026-10-07
+    theme: 'light-only', // light-only until migrated (/rp-migrate-prototype), set by sync on 2026-10-07
 ```
 
 Running it twice changes nothing. `--by <who>` changes "sync" in the comment. Each flag it sets is recorded under `lightOnly` in `rules-mine.json` with the finding count at the time. If the designer deletes the line by hand, the next run leaves it deleted unless the findings have gone up. `--remove` clears the record.
 
 ## How the commands use these tools
 
-`/sync-upstream` runs `light-only.mjs --write` after a merge that builds, commits the flags with its post-sync cleanup, and shows `npm run scan:dark -- --mine` in its report.
+`/rp-sync-upstream` runs `light-only.mjs --write` after a merge that builds, commits the flags with its post-sync cleanup, and shows `npm run scan:dark -- --mine` in its report.
 
-`/migrate-prototype` (`.claude/commands/migrate-prototype.md`) runs every prototype in `registry-mine.ts` through one pass, or one named prototype:
+`/rp-migrate-prototype` (`.claude/commands/rp-migrate-prototype.md`) runs every prototype in `registry-mine.ts` through one pass, or one named prototype:
 
 1. `scan.mjs --mine --json` and `codemod.mjs <path> --json` (dry run) per prototype, for the status table.
 2. `codemod.mjs <paths...> --write --json` over the picked prototypes. Its `judgement` list is grouped by value across all of them, so each decision is asked once.

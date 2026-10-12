@@ -28,6 +28,17 @@ export interface VersionEntry {
  */
 export const versionHistory: VersionEntry[] = [
   {
+    version: '26.10.1b',
+    date: '2026-10-12',
+    type: 'patch',
+    changes: [
+      { type: 'removed', group: 'Tooling', component: '/thumbnail command', description: 'Thumbnails are captured by /rp-radiant-check after a check, by /rp-sync-upstream for missing ones, and by /rp-migrate-prototype; or ask Claude to update a thumbnail. The steps live in the rp-prototype-thumbnails skill.' },
+      { type: 'removed', group: 'Tooling', component: '/switch-model command', description: 'Ask Claude to switch the model a prototype calls; the rp-prototype-model skill handles it. Not the same as Claude Code\'s own /model.' },
+      { type: 'modified', group: 'Tooling', component: '/rp-sync-upstream', description: 'On a fork that is already up to date it still runs the light-only step and the thumbnail check, so a second run finishes the setup the first sync brought in.' },
+      { type: 'modified', group: 'Tooling', component: 'rp- command names', description: 'Every RadiantPlay command starts with rp- (/rp-new-prototype, /rp-radiant-check, /rp-migrate-prototype, /rp-sync-upstream, /rp-coolify-deploy, /rp-explore, /rp-project-canvas, /rp-prototype-census). Old names still work as aliases.' },
+    ],
+  },
+  {
     version: '26.10.1a',
     date: '2026-10-09',
     type: 'figma-sync',

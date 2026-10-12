@@ -145,9 +145,9 @@ Claude Code is now running inside the project. You can start prompting the same 
 ```
 /help          — see all available slash commands
 /status        — check current branch and uncommitted changes
-/new-prototype — scaffold a new prototype
-/radiant-check — run a compliance health check on a prototype
-/sync-upstream — pull latest changes from the upstream library
+/rp-new-prototype — scaffold a new prototype
+/rp-radiant-check — run a compliance health check on a prototype
+/rp-sync-upstream — pull latest changes from the upstream library
 ```
 
 ---
@@ -159,7 +159,7 @@ New components, tokens, and rules are pushed to the upstream library regularly. 
 ### Step 1 — Preview and sync
 
 ```
-/sync-upstream
+/rp-sync-upstream
 ```
 
 Fetches upstream, shows you a preview of what's changed (new components, token changes, rule updates, files that overlap with your work), and tells you exactly what it will do on your current branch. Then it asks before merging.
@@ -174,7 +174,7 @@ When you say yes, it stashes any in-progress work, syncs `main` against upstream
 
 Reports sync status between origin (GitHub) and galaxy (ThoughtSpot) across all branches.
 
-> **When to sync:** Run `/sync-upstream` at the start of any new prototype sprint. The preview shows you what's available before anything changes.
+> **When to sync:** Run `/rp-sync-upstream` at the start of any new prototype sprint. The preview shows you what's available before anything changes.
 
 ---
 
@@ -199,7 +199,7 @@ Reports sync status between origin (GitHub) and galaxy (ThoughtSpot) across all 
 | `.cursor/rules/` auto-loaded | Same rules still apply; Claude reads them on request |
 | `/` commands in chat panel | `/` commands in the Claude Code terminal session |
 
-The slash commands (`/new-prototype`, `/ship`, `/radiant-check`, etc.) work the same way — just type them in the Claude Code terminal instead of the Cursor chat panel.
+The slash commands (`/rp-new-prototype`, `/ship`, `/rp-radiant-check`, etc.) work the same way — just type them in the Claude Code terminal instead of the Cursor chat panel.
 
 ---
 

@@ -4,13 +4,13 @@
 # Auto-discovers forks from the galaxy GitHub Enterprise API (falling back to
 # internal/scripts/forks.txt if the API is unreachable), plus the maintainer
 # repo, counts prototypes (folders + registry entries by section, per creator,
-# archived included), and writes a cache that /project-canvas displays cheaply:
+# archived included), and writes a cache that /rp-project-canvas displays cheaply:
 #
 #   internal/cache/prototype-census.json   — machine-readable data
 #   internal/cache/prototype-census.html   — fragment embedded by status.sh
 #
-# This is intentionally NOT run by /project-canvas (it git-fetches ~16 repos and
-# takes a while). Run it explicitly via /prototype-census when you want fresh
+# This is intentionally NOT run by /rp-project-canvas (it git-fetches ~16 repos and
+# takes a while). Run it explicitly via /rp-prototype-census when you want fresh
 # numbers. The dashboard shows the last cached run + a refresh hint.
 #
 # Usage:  bash internal/scripts/prototype-census.sh
@@ -278,7 +278,7 @@ for a, n in sorted(by_author.items(), key=lambda kv: -kv[1]):
     tag = " <span class='badge'>base library</span>" if a in BASE_AUTHORS else ""
     rows_creators += f"<tr><td>{e(a)}{tag}</td><td>{n}</td></tr>"
 
-frag = f"""<p class="file-list">Last run <strong>{e(NOW)}</strong> · {totals['reachable_forks']}/{totals['total_targets']} forks reachable · run <code>/prototype-census</code> to refresh (slow — fetches every fork).</p>
+frag = f"""<p class="file-list">Last run <strong>{e(NOW)}</strong> · {totals['reachable_forks']}/{totals['total_targets']} forks reachable · run <code>/rp-prototype-census</code> to refresh (slow — fetches every fork).</p>
 <div class="stat-grid">
   <div class="stat"><div class="k">Prototype folders (all)</div><div class="v">{totals['folders_total']}</div></div>
   <div class="stat"><div class="k">Gallery-listed</div><div class="v">{totals['registry_total']}</div></div>
@@ -301,7 +301,7 @@ with open(os.path.join(CACHE_DIR, "prototype-census.html"), "w") as f:
 
 print(f"\n✓ {totals['folders_total']} prototype folders · {totals['registry_total']} gallery-listed "
       f"({totals['archived']} archived) across {totals['reachable_forks']} forks")
-print(f"  cache: {CACHE_DIR}/prototype-census.json + .html")
+print(f"  cache: {CACHE_DIR}/rp-prototype-census.json + .html")
 PY
 
 # Clean up fetched census refs so the working repo stays tidy.

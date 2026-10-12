@@ -59,7 +59,7 @@ if gh auth status --hostname "$HOST" >/dev/null 2>&1; then have_gh_galaxy=true; 
 # ── role detection ───────────────────────────────────────────────────────
 # Maintainer = has a remote (named `galaxy`) pointing to mohammed-faris/radiantplay
 # AND is the only one pushing to it. We approximate this by remote name + URL.
-# Designer = has an `upstream` remote (per /sync-upstream convention) pointing
+# Designer = has an `upstream` remote (per /rp-sync-upstream convention) pointing
 # at mohammed-faris/radiantplay. They want to know how behind their fork is,
 # not see the whole fork network.
 IS_MAINTAINER=false
@@ -220,7 +220,7 @@ CENSUS_CACHE="$REPO_ROOT/internal/cache/prototype-census.html"
 if [ -f "$CENSUS_CACHE" ]; then
   CENSUS_BLOCK=$(cat "$CENSUS_CACHE")
 else
-  CENSUS_BLOCK="<p class='empty'>No census yet. Run <code>/prototype-census</code> (slow — fetches every fork) to count prototypes across all forks.</p>"
+  CENSUS_BLOCK="<p class='empty'>No census yet. Run <code>/rp-prototype-census</code> (slow — fetches every fork) to count prototypes across all forks.</p>"
 fi
 
 # Build size (last dist if exists)
@@ -351,7 +351,7 @@ if $have_gh_galaxy && $IS_MAINTAINER; then
         done <<< "$msgs"
         PROTOTYPE_LINES="${PROTOTYPE_LINES}</ul></div>"
       fi
-      ACTION_LINES="${ACTION_LINES}<li><strong>${f}</strong> — ${behind} behind, ${ahead} ahead → suggest <code>/sync-upstream</code></li>"
+      ACTION_LINES="${ACTION_LINES}<li><strong>${f}</strong> — ${behind} behind, ${ahead} ahead → suggest <code>/rp-sync-upstream</code></li>"
     fi
   done
 
@@ -1343,12 +1343,12 @@ elif [ -n "$DESIGNER_UPSTREAM_REMOTE" ]; then
   </div>
   <h2>Upstream HEAD</h2>
   <pre class="file-list">${DESIGNER_UPSTREAM_HEAD:-—}</pre>
-  <p>If <strong>Behind</strong> is non-zero, run <code>/sync-upstream</code> to pull the latest changes.</p>
+  <p>If <strong>Behind</strong> is non-zero, run <code>/rp-sync-upstream</code> to pull the latest changes.</p>
 HTML
 else
   cat >> "$OUT" <<HTML
   <h2>Upstream sync</h2>
-  <p class="empty">No <code>upstream</code> remote configured. Run <code>/sync-upstream</code> to set one up — it adds <code>https://${HOST}/mohammed-faris/radiantplay.git</code> as <code>upstream</code> and fetches the latest changes.</p>
+  <p class="empty">No <code>upstream</code> remote configured. Run <code>/rp-sync-upstream</code> to set one up — it adds <code>https://${HOST}/mohammed-faris/radiantplay.git</code> as <code>upstream</code> and fetches the latest changes.</p>
 HTML
 fi
 

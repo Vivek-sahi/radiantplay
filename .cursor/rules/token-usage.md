@@ -27,7 +27,7 @@ Radiant Play has a light and a dark theme. Light is the default. Setting `data-t
 
 `systemColors.light[...]`, `rdComponentColors.light[...]` and `referenceColors.*` hold fixed values. They stay light in dark mode, so never use them for UI. They exist as token data for docs pages, swatches and canvas charts (charts read colours through `useChartTheme()` from `src/prototypes/_shared/tiles/chartTheme`).
 
-Check dark mode with the ThemeSwitch or Ctrl+D. Run `npm run scan:dark -- src/prototypes/<Name>` or `/radiant-check` to report dark readiness.
+Check dark mode with the ThemeSwitch or Ctrl+D. Run `npm run scan:dark -- src/prototypes/<Name>` or `/rp-radiant-check` to report dark readiness.
 
 ---
 

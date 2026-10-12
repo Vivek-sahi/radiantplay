@@ -232,7 +232,7 @@ export const roles = [
 
 ### Capturing a Thumbnail
 
-1. Run `/thumbnail` (or `/thumbnail MyPrototype`). It captures both themes and wires the files into `registry-mine.ts`.
+1. Run `/rp-radiant-check MyPrototype`, or ask Claude to update the thumbnail. Both capture light and dark and wire the files into `registry-mine.ts` (the `rp-prototype-thumbnails` skill).
 2. By hand: `npm run thumbnails -- MyPrototype`. Run `npm run thumbnails:setup` once per machine first.
 3. Run `npm run thumbnails:check` to list thumbnails that are missing or older than their prototype.
 
@@ -435,7 +435,7 @@ Before submitting a prototype:
 
 - [ ] Has `index.tsx` with proper exports and JSDoc
 - [ ] Main component has descriptive JSDoc
-- [ ] **Has light and dark screenshot thumbnails** (`/thumbnail` or `npm run thumbnails -- <Name>`)
+- [ ] **Has light and dark screenshot thumbnails** (`/rp-radiant-check` captures them, or `npm run thumbnails -- <Name>`)
 - [ ] Registered in `registry-mine.ts` with `thumbnail: { light, dark }`
 - [ ] Checked in dark mode (ThemeSwitch or Ctrl+D), and `npm run scan:dark -- src/prototypes/<Name>` is clean
 - [ ] Uses Radiant components (not custom HTML where components exist)

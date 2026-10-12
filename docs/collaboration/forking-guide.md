@@ -84,12 +84,12 @@ Use descriptive prefixes:
 
 ## Syncing with Upstream
 
-The easiest way is to use the `/sync-upstream` skill in Cursor — it handles fetching, merging, conflict resolution in `registry.ts`, build verification, and pushing automatically.
+The easiest way is to use the `/rp-sync-upstream` skill in Cursor — it handles fetching, merging, conflict resolution in `registry.ts`, build verification, and pushing automatically.
 
 Just open Cursor in your repo and type:
 
 ```
-/sync-upstream
+/rp-sync-upstream
 ```
 
 ### Manual sync (if needed)
@@ -110,7 +110,7 @@ git push origin main
 
 ### Resolving Conflicts
 
-The most common conflict is in `src/prototypes/registry.ts`. The `/sync-upstream` skill resolves this automatically — it keeps upstream entries first and preserves your prototype entries with `section: 'mine'`.
+The most common conflict is in `src/prototypes/registry.ts`. The `/rp-sync-upstream` skill resolves this automatically — it keeps upstream entries first and preserves your prototype entries with `section: 'mine'`.
 
 If you're resolving manually:
 

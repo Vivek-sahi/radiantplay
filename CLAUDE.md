@@ -125,7 +125,7 @@ Common system colors: `background-base`, `background-sunken`, `background-on-bas
 
 In CSS Modules use CSS variables: `var(--rd-sys-color-content-primary)`, `var(--rd-sys-color-shadow-surface)`, `var(--spacing-4)`, `var(--radius-md)`.
 
-**Dark mode.** Every prototype runs in light and dark (ThemeSwitch, Ctrl+D). Never read `systemColors.light[...]`, `rdComponentColors.light[...]` or `referenceColors.*` for UI: they stay light in dark mode. Those objects are token data for docs pages and canvas charts only. Charts use `useChartTheme()` from `src/prototypes/_shared/tiles/chartTheme`. For tints use `color-mix(in srgb, var(--x) 12%, transparent)`, not alpha suffixes on hex. Check a prototype with `npm run scan:dark -- src/prototypes/<Name>` or `/radiant-check`.
+**Dark mode.** Every prototype runs in light and dark (ThemeSwitch, Ctrl+D). Never read `systemColors.light[...]`, `rdComponentColors.light[...]` or `referenceColors.*` for UI: they stay light in dark mode. Those objects are token data for docs pages and canvas charts only. Charts use `useChartTheme()` from `src/prototypes/_shared/tiles/chartTheme`. For tints use `color-mix(in srgb, var(--x) 12%, transparent)`, not alpha suffixes on hex. Check a prototype with `npm run scan:dark -- src/prototypes/<Name>` or `/rp-radiant-check`.
 
 **Forbidden:** hardcoded hex (`#2770EF`), raw `rgb()`/`rgba()`, `systemColors.light[...]` in UI, magic spacing (`17px`), hardcoded font families and weights (use `fontFamily.*` and the `--font-weight-*` tokens).
 

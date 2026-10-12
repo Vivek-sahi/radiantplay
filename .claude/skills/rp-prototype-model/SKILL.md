@@ -1,5 +1,6 @@
 ---
-description: Switch the Claude model used by AI-capable prototypes in this project. Run this before testing (Haiku) or before a demo (Sonnet/Opus).
+name: rp-prototype-model
+description: Switch the Claude model that AI-capable prototypes call through /api/chat (today the Data Model Editor's SpotterModel agent) between Haiku, Sonnet and Opus, and set up ANTHROPIC_API_KEY in .env.local if missing. Load when a designer asks to change, switch or check the model a prototype's AI uses, or before testing (Haiku) or a demo (Sonnet or Opus). This is not Claude Code's own /model, which changes the model of the chat session itself.
 ---
 
 ## Switch LLM model
@@ -142,7 +143,7 @@ curl -s "https://api.anthropic.com/v1/models" \
 
 If the response contains `"error"` or the HTTP status is not 200, the key is invalid. Tell the designer:
 
-> That key doesn't seem to be valid — the Anthropic API returned an error. Please check the key and try again by re-running `/switch-model`.
+> That key doesn't seem to be valid — the Anthropic API returned an error. Please check the key and try again by asking me to switch the model again.
 
 Then stop. Do not proceed with an invalid key.
 
@@ -203,5 +204,5 @@ so a page reload is needed to pick up the new model.
 If any files were skipped due to disabled panels, include:
 ```
 Skipped (panel disabled):
-  [file] — enable the agent panel first, then re-run /switch-model
+  [file] — enable the agent panel first, then ask again
 ```

@@ -121,7 +121,7 @@ way before the secret was aligned.
 
 | File | Role |
 |---|---|
-| `.claude/commands/coolify-deploy.md` | `/coolify-deploy` guided setup and `check` mode; reads these two docs at run time |
+| `.claude/commands/rp-coolify-deploy.md` | `/rp-coolify-deploy` guided setup and `check` mode; reads these two docs at run time |
 | `docker/nginx.conf` | Canonical nginx config (SPA fallback + no-cache HTML); paste into every app |
 | `Dockerfile` | Multi-stage image (Node 22 build → nginx) for the no-git path |
 | `internal/scripts/push-faris.sh` | Push any branch to origin + galaxy in one step |

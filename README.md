@@ -132,7 +132,7 @@ After completing a full Tier 2 build, the system suggests clearing context (`/co
 .claude/                              # Claude Code native
 ├── skills/                           # Same rules as native Claude Code skills
 ├── hooks/                            # Automated convention enforcement
-└── commands/                         # Slash commands (/compact, /explore, etc.)
+└── commands/                         # Slash commands (/compact, /rp-explore, etc.)
 ```
 
 The same rules work across tools — `.cursor/rules/` for Cursor, `.claude/skills/` for Claude Code. You don't need to configure anything.
@@ -192,11 +192,11 @@ Radiant Play ships with slash commands you can run directly in Claude Code (or d
 
 | Command | What it does |
 |---------|-------------|
-| `/explore [scope]` | Suspends Radiant constraints for freeform exploration. Use when you want to try shadcn, Tailwind, custom CSS, or any direction outside the design system. The rest of the prototype stays Radiant-compliant. Example: `/explore shadcn form components` |
-| `/radiant-check [prototype]` | Runs a compliance health check on a prototype. Shows what's using the design system correctly, what's been customised, what's hardcoded, and where easy improvements exist. Non-blocking — it's a status check, not a gate. |
-| `/new-prototype [Name]` | Scaffolds a new prototype folder with the correct structure, registers it, and pulls the latest from main first. Same as `npm run new-prototype` but with AI guidance through the setup. |
-| `/project-canvas` | Opens the local project canvas: content, branches, sites, forks, plans and worktrees, with divergence vs main/staging/upstream. Pure shell, no AI tokens used. |
-| `/sync-upstream` | Previews and merges the latest upstream changes into your fork. Shows what's coming first, then asks before applying. Works from any branch — stashes WIP, syncs main, forwards changes into your feature branch, restores WIP. |
+| `/rp-explore [scope]` | Suspends Radiant constraints for freeform exploration. Use when you want to try shadcn, Tailwind, custom CSS, or any direction outside the design system. The rest of the prototype stays Radiant-compliant. Example: `/rp-explore shadcn form components` |
+| `/rp-radiant-check [prototype]` | Runs a compliance health check on a prototype. Shows what's using the design system correctly, what's been customised, what's hardcoded, and where easy improvements exist. Non-blocking — it's a status check, not a gate. |
+| `/rp-new-prototype [Name]` | Scaffolds a new prototype folder with the correct structure, registers it, and pulls the latest from main first. Same as `npm run new-prototype` but with AI guidance through the setup. |
+| `/rp-project-canvas` | Opens the local project canvas: content, branches, sites, forks, plans and worktrees, with divergence vs main/staging/upstream. Pure shell, no AI tokens used. |
+| `/rp-sync-upstream` | Previews and merges the latest upstream changes into your fork. Shows what's coming first, then asks before applying. Works from any branch — stashes WIP, syncs main, forwards changes into your feature branch, restores WIP. |
 | `/fork-status` | Reports on all downstream designer forks — which are up to date, which are behind, and what needs attention. |
 
 **Two automated hooks also run in the background (Claude Code only):**

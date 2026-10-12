@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Keeps prototypes that aren't dark ready in light mode, by setting theme: 'light-only' on their
- * registry-mine.ts entries. /sync-upstream runs it after a merge; /migrate-prototype lifts the flag
+ * registry-mine.ts entries. /rp-sync-upstream runs it after a merge; /rp-migrate-prototype lifts the flag
  * once a prototype is dark ready. Spec: docs/2026-10-07-prototype-migration-plan.md, section 5.
  *
  * Usage:
@@ -18,8 +18,8 @@
  *
  * "Dark ready" is the dark column of `scan.mjs --mine --json`. The flag goes in as the entry's last
  * property with a dated comment:
- *   theme: 'light-only', // light-only until migrated (/migrate-prototype), set by sync on 2026-10-07
- *   theme: 'light-only', // light-only until migrated (/migrate-prototype), set by /migrate-prototype on 2026-10-09: <why>
+ *   theme: 'light-only', // light-only until migrated (/rp-migrate-prototype), set by sync on 2026-10-07
+ *   theme: 'light-only', // light-only until migrated (/rp-migrate-prototype), set by /rp-migrate-prototype on 2026-10-09: <why>
  * Only that line changes; the rest of the file keeps its formatting. Running it twice changes nothing.
  *
  * A designer who deletes the line by hand keeps it deleted: each flag it sets is recorded in
@@ -80,7 +80,7 @@ const today = () => {
 };
 // The reason stays on one line, so the flag stays one line
 const REASON_TEXT = REASON ? REASON.replace(/\s+/g, ' ').trim() : '';
-const COMMENT = `// light-only until migrated (/migrate-prototype), set by ${BY} on ${today()}${REASON_TEXT ? `: ${REASON_TEXT}` : ''}`;
+const COMMENT = `// light-only until migrated (/rp-migrate-prototype), set by ${BY} on ${today()}${REASON_TEXT ? `: ${REASON_TEXT}` : ''}`;
 const FLAG_LINE = /^[ \t]*theme:\s*['"]light-only['"],?[^\n]*\n/m;
 
 if (!fs.existsSync(REGISTRY)) {
@@ -152,7 +152,7 @@ for (const e of all) {
   const forced = FORCE && NAMES.includes(e.id);
   if (ready.dark && !forced) {
     if (e.flagged && record[e.id]?.forced) continue; // kept light-only on purpose (--force)
-    if (e.flagged) notes.push(`${e.id}: dark ready but still light-only. /migrate-prototype ${e.id} can lift the flag`);
+    if (e.flagged) notes.push(`${e.id}: dark ready but still light-only. /rp-migrate-prototype ${e.id} can lift the flag`);
     else if (NAMES.includes(e.id)) notes.push(`${e.id}: the scan calls it dark ready, so it was skipped. To keep it light-only anyway, add --force --reason "<why>"`);
     continue;
   }

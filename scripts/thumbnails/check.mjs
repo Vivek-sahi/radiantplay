@@ -45,5 +45,5 @@ if (!missing.length && !stale.length) {
 } else {
   if (missing.length) console.log(`No thumbnail yet (the gallery shows a live preview): ${missing.join(', ')}`);
   if (stale.length) console.log(`Thumbnail older than the prototype: ${stale.join(', ')}`);
-  console.log(`Refresh with: npm run thumbnails -- ${[...missing, ...stale].join(' ')}  (or ask Claude: /thumbnail)`);
+  console.log(`Refresh with: npm run thumbnails -- ${[...missing, ...stale].join(' ')}  (or ask Claude to update the thumbnails)`);
 }
