@@ -2,7 +2,9 @@
 
 ## 26.10.2b — 2026-10-12
 
-Radiant components pick up the right Figma colours. Sizes, padding and heights are unchanged; only colours, weights and a few radii move.
+Radiant components pick up the right Figma colours, and the playground header switches theme with one icon button. Sizes, padding and heights are unchanged; only colours, weights and a few radii move.
+
+- The Light, Dark and System control at the top right of the playground is now one icon button. It shows the current theme (sun for light, moon for dark, half-filled circle for system) and a click moves to the next one: light, dark, system. Ctrl+D works as before. `ThemeSwitch` gains `variant="icon"`; the default stays the segmented control, so the Radiant docs sidebar and forks using `ThemeSwitch` are unchanged
 
 - Button White (`colorway="white"`) is fully white, with Figma's hover and pressed fills. Disabled is the white fill at 40%
 - Button Tertiary White hovers with a fainter tint and presses with the light blue tint, instead of a black overlay

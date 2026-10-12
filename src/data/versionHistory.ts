@@ -32,6 +32,7 @@ export const versionHistory: VersionEntry[] = [
     date: '2026-10-12',
     type: 'patch',
     changes: [
+      { type: 'modified', group: 'Dark mode', component: 'ThemeSwitch', description: 'New variant="icon": one icon button that shows the current theme (sun, moon or half-filled circle for system) and cycles light, dark, system on click. The playground header uses it; the default stays the segmented control, so the Radiant docs sidebar and forks are unchanged. Ctrl+D works as before.' },
       { type: 'modified', group: 'Figma', component: 'Button White', description: 'Fully white, with Figma\'s on-colour hover and pressed fills; disabled is the white fill at 40%. Tertiary White hovers with a fainter tint and presses with the light blue tint instead of a black overlay.' },
       { type: 'modified', group: 'Figma', component: 'Button Secondary', description: 'Hover is a darker grey (it showed no change before); pressed is a deeper grey with dark text instead of blue.' },
       { type: 'modified', group: 'Figma', component: 'Button tokens', description: 'Primary, Secondary and Tertiary use their button colour tokens (same colours). Small buttons get Figma\'s positive letter spacing, so labels are about 1px wider.' },

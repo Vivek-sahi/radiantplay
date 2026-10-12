@@ -280,7 +280,7 @@ export const PlaygroundGallery: React.FC = () => {
               }}
             >{label}</a>
           ))}
-          <ThemeSwitch />
+          <ThemeSwitch variant="icon" />
         </div>
       </header>
 
