@@ -25,6 +25,24 @@ interface Highlight {
 
 const HIGHLIGHTS: Highlight[] = [
   {
+    title: 'Radiance, ThoughtSpot\'s AI identity',
+    description: 'The Radiance wash comes to the playground, the home page and the design system page, and RadiantPlay now ships Radiance itself: new Spotter, SpotterX, Liveboard and sign up prototypes get their official pattern automatically, and /rp-sync-upstream keeps it current. The guide is at /radiant/radiance.',
+    version: '26.10.2b',
+    date: '2026-10-12',
+  },
+  {
+    title: 'Radiant components match Figma',
+    description: 'Four batches from the Radiant 3.0 audit: colour and token fixes across Button, Tooltip, Modal and more; a new Toggle, Toast and Stepper; Figma sizes as an opt-in look (new prototypes get it); card, raised, horizontal and brand variants, and a new WizardHeader.',
+    version: '26.10.2e',
+    date: '2026-10-12',
+  },
+  {
+    title: 'Your project canvas',
+    description: '/rp-project-canvas on a designer fork now shows your own work: next steps, your prototypes and their dark and Geist readiness, how far behind RadiantPlay you are, your branches and your site.',
+    version: '26.10.2a',
+    date: '2026-10-12',
+  },
+  {
     title: 'Spotter Refresh blocks in the shared Spotter DS',
     description: "Devanshi's Reasoning timeline, UserMessage bubble, PromptBar composer and ToolIcon now live in src/spotter/chat/. ReasoningBlock and UserBubble stay as adapters, so existing prototypes pick up the new look without changes. Front door on /radiant/spotter.",
     version: '26.9.1a',
@@ -99,6 +117,66 @@ const HIGHLIGHTS: Highlight[] = [
 ];
 
 const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '26.10.2e',
+    date: '2026-10-12',
+    title: 'Figma variants, WizardHeader and the Radiance guide',
+    type: 'patch',
+    changes: [
+      { category: 'added', label: 'Components', items: [
+        'Accordion variant="card", ExplainerCard appearance="raised" with media, dismiss and actions, NoData layout="horizontal" with statuses, and Tour tone="brand". Every default looks as before.',
+        'WizardHeader: the Figma wizard as a page header with Exit and a segmented progress bar.',
+      ] },
+      { category: 'added', label: 'Documentation', items: ['The Radiance guide at /radiant/radiance: the product patterns live, a template builder, the rules, and how Radiance reaches prototypes.'] },
+    ],
+  },
+  {
+    version: '26.10.2d',
+    date: '2026-10-12',
+    title: 'Figma sizes, opt-in',
+    type: 'patch',
+    changes: [
+      { category: 'added', label: 'Components', items: [
+        'Add look: \'radiant-3\' to a prototype\'s registry entry for Figma\'s sizes: 32px fields, menus without borders, 48 and 32px tabs and more. New prototypes get it; existing ones keep their look until they opt in, and /rp-migrate-prototype offers it.',
+        'TextInput gains readOnly, helperText and trailingIcon; Tabs gain size; Button gains size="xs".',
+      ] },
+    ],
+  },
+  {
+    version: '26.10.2c',
+    date: '2026-10-12',
+    title: 'Toggle, Toast and Stepper match Figma',
+    type: 'patch',
+    changes: [
+      { category: 'changed', label: 'Components', items: [
+        'Toggle has a thin track with an overhanging thumb, in the same box.',
+        'Toast is dark with a white action button; it is 8px taller.',
+        'Stepper shows done steps in green and the current step outlined.',
+        'Tabs turn blue on hover with no fill; small primary buttons have 16px corners.',
+      ] },
+    ],
+  },
+  {
+    version: '26.10.2b',
+    date: '2026-10-12',
+    title: 'Figma colours, one theme icon, Radiance built in',
+    type: 'patch',
+    changes: [
+      { category: 'changed', label: 'Components', items: ['Button, Checkbox, Radio, Tooltip, SegmentedControl, Alert, Modal and ProgressBar pick up Figma\'s colours and tokens. Nothing changes size.'] },
+      { category: 'changed', label: 'Playground', items: ['The theme control at the top right of the playground is one icon: click to go light, dark, system. Ctrl+D works as before.'] },
+      { category: 'added', label: 'Radiance', items: ['RadiantPlay ships Radiance, updated by the maintainer and brought to forks by /rp-sync-upstream. New Spotter, SpotterX, Liveboard and sign up prototypes get their pattern automatically; npm run radiance:lint checks a prototype.'] },
+    ],
+  },
+  {
+    version: '26.10.2a',
+    date: '2026-10-12',
+    title: 'Radiance on the playground, and your project canvas',
+    type: 'patch',
+    changes: [
+      { category: 'added', label: 'Radiance', items: ['The Radiance wash sits behind the playground and the home page, and the design system page opens on a light hero card with it.'] },
+      { category: 'added', label: 'Tooling', items: ['/rp-project-canvas on a designer fork shows your own work: next steps, prototypes, updates, branches and your site.'] },
+    ],
+  },
   {
     version: '26.10.1b',
     date: '2026-10-12',
