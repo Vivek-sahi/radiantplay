@@ -63,6 +63,6 @@ Continue with the designer's request using the relaxed constraints. Use whatever
 ### Notes
 
 - The `@explore` marker persists in the file across sessions
-- If a future session opens this file without invoking `/rp-explore`, the orchestrator will ask whether to continue in exploratory mode or return to Radiant compliance
+- If a future session opens this file without invoking `/explore`, the orchestrator will ask whether to continue in exploratory mode or return to Radiant compliance
 - The marker is visible in code review so the team can see what was explored
 - Partial exploration: the rest of the file outside the explored scope still follows Radiant rules

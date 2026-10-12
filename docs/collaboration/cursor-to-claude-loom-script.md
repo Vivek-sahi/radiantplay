@@ -123,7 +123,7 @@ claude
 
 *[Type /help to show the available commands]*
 
-> "All the slash commands you used before still work — /rp-new-prototype to scaffold a new prototype, /ship to push to staging, /rp-radiant-check to run a compliance check, /rp-sync-upstream to pull in the latest library updates. Just type them here instead of in the Cursor chat panel."
+> "All the slash commands you used before still work — /new-prototype to scaffold a new prototype, /ship to push to staging, /radiant-check to run a compliance check, /sync-upstream to pull in the latest library updates. Just type them here instead of in the Cursor chat panel."
 
 ---
 

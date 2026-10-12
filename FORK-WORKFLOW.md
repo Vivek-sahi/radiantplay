@@ -98,14 +98,14 @@ The main repo gets updates regularly — new components, bug fixes, tooling impr
 
 ### First time only: get the sync skill
 
-The `/rp-sync-upstream` skill automates the entire sync process. If you forked before March 17, 2026 you may not have it yet. Run these two commands once to get it:
+The `/sync-upstream` skill automates the entire sync process. If you forked before March 17, 2026 you may not have it yet. Run these two commands once to get it:
 
 ```bash
 git fetch upstream
-git checkout upstream/main -- .claude/commands/rp-sync-upstream.md
+git checkout upstream/main -- .claude/commands/sync-upstream.md
 ```
 
-This copies just the skill file from the main repo — no merge, no conflicts. You only need to do this once. From now on, `/rp-sync-upstream` handles all future syncs for you.
+This copies just the skill file from the main repo — no merge, no conflicts. You only need to do this once. From now on, `/sync-upstream` handles all future syncs for you.
 
 > If you forked after March 17, 2026 the skill is already in your clone. Skip this.
 
@@ -116,7 +116,7 @@ This copies just the skill file from the main repo — no merge, no conflicts. Y
 Open Claude Code in your project folder and run:
 
 ```
-/rp-sync-upstream
+/sync-upstream
 ```
 
 Claude will commit any unsaved work, fetch upstream, merge, move your prototype entries into `registry-mine.ts` if needed, verify the build, and push to your fork. Nothing else needed.
@@ -271,7 +271,7 @@ If you want your prototype to appear in the main repo:
 | Start dev server | `npm run dev` |
 | Create a prototype | `npm run new-prototype Name` |
 | Save changes | `git add . && git commit -m "message" && git push` |
-| Sync with main repo | `/rp-sync-upstream` (or manually: `git fetch upstream && git merge upstream/main`) |
+| Sync with main repo | `/sync-upstream` (or manually: `git fetch upstream && git merge upstream/main`) |
 | Check what you are missing | `git log --oneline HEAD..upstream/main` |
 | Check remotes | `git remote -v` |
 
