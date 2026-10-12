@@ -12,6 +12,8 @@ export interface TabsProps {
   activeTab: string;
   onTabChange: (tabId: string) => void;
   className?: string;
+  /** Tab height: medium 48px, small 32px. Unset keeps the classic 46px tabs (48px under look: 'radiant-3') */
+  size?: 'medium' | 'small';
 }
 
 /**
@@ -36,9 +38,10 @@ export const Tabs: React.FC<TabsProps> = ({
   activeTab,
   onTabChange,
   className,
+  size,
 }) => {
   return (
-    <nav className={`${styles.tabs} ${className || ''}`} role="tablist">
+    <nav className={`${styles.tabs}${size ? ` ${styles[size]}` : ''} ${className || ''}`} role="tablist">
       {tabs.map((tab) => {
         const isActive = tab.id === activeTab;
         return (

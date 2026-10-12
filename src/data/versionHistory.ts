@@ -28,6 +28,23 @@ export interface VersionEntry {
  */
 export const versionHistory: VersionEntry[] = [
   {
+    version: '26.10.2d',
+    date: '2026-10-12',
+    type: 'patch',
+    changes: [
+      { type: 'added', group: 'Figma', component: 'Radiant 3.0 look (opt-in)', description: 'Add look: \'radiant-3\' to a prototype\'s registry-mine.ts entry to switch its Radiant components to the Figma sizes. New prototypes get it from /rp-new-prototype and npm run new-prototype. Existing prototypes are unchanged until they opt in; /rp-migrate-prototype offers it after the dark check, never on its own, and /rp-sync-upstream never adds it.' },
+      { type: 'modified', group: 'Figma', component: 'Text fields (opt-in)', description: 'Under the look, TextInput, TextArea, Select, SearchInput and DatePicker fields are 32px with 16/12 side padding and a 6px radius; labels are 12/18 regular and turn brand blue on focus; hover darkens the border; no focus ring; disabled fades the whole field to 40%.' },
+      { type: 'modified', group: 'Figma', component: 'Menu and Select popup (opt-in)', description: 'Under the look: Raised, no border, 6px radius, 8px list padding, 32px items with 16px sides and a 12px gap, ghost hover fill.' },
+      { type: 'modified', group: 'Figma', component: 'Tabs (opt-in)', description: 'Under the look: 48px, 12px side padding, regular weight in every state. size="small" gives 32px.' },
+      { type: 'modified', group: 'Figma', component: 'Icon button (opt-in)', description: 'Under the look the 32px icon-only button uses an 18px icon.' },
+      { type: 'modified', group: 'Figma', component: 'DatePicker (opt-in)', description: 'Under the look: 24px panel padding, 6px radius, Raised, menu shadow, no border; 32px rounded-square day cells; 14/20 emphasis weekday labels in secondary text; month and year as brand tertiary buttons; 32px nav buttons with 18px chevrons.' },
+      { type: 'modified', group: 'Figma', component: 'Pagination Range (opt-in)', description: 'Under the look: 24px round secondary icon buttons and "results" in the label.' },
+      { type: 'added', group: 'Figma', component: 'TextInput', description: 'New readOnly state (On Base fill, no border), helperText and trailingIcon, in both looks. Existing props work as before.' },
+      { type: 'added', group: 'Figma', component: 'Tabs size and Button xs', description: 'Tabs size="medium" (48px) or "small" (32px); without it Tabs keep today\'s height. Button size="xs" is a 20px icon-only button with a 12px icon. Both work in either look.' },
+      { type: 'added', group: 'Figma', component: 'RadiantLook', description: 'RadiantLook, useRadiantLook() and RadiantLookScope in src/context/RadiantLookContext.tsx. Portaled content wraps itself in RadiantLookScope to keep the look; the Spotter VizBlock expand modal does.' },
+    ],
+  },
+  {
     version: '26.10.2c',
     date: '2026-10-12',
     type: 'patch',

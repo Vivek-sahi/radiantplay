@@ -176,3 +176,43 @@
 .dark .divider {
   background-color: var(--rd-sys-color-background-subtle);
 }
+
+/* ============================================
+   RADIANT 3.0 LOOK (opt-in: look: 'radiant-3')
+   Raised, no border, radius 6, list padding 8/0, 32px items (16px sides, gap 12)
+   ============================================ */
+
+:global([data-rd-look="radiant-3"]) .menu:not(.dark) {
+  padding: var(--spacing-2) 0;
+  background-color: var(--rd-sys-color-background-raised);
+  border: none;
+  border-radius: var(--radius-md);
+}
+
+:global([data-rd-look="radiant-3"]) .item,
+:global([data-rd-look="radiant-3"]) .compact .item {
+  gap: var(--spacing-3);
+  min-height: var(--spacing-8);
+  padding: 0 var(--spacing-4);
+  line-height: var(--line-height-md);
+  box-sizing: border-box;
+}
+
+:global([data-rd-look="radiant-3"]) .item:has(.itemDescription) {
+  min-height: var(--spacing-12);
+  padding-block: var(--spacing-1);
+}
+
+:global([data-rd-look="radiant-3"]) .menu:not(.dark) .item:hover:not(.itemActive):not(.itemDanger),
+:global([data-rd-look="radiant-3"]) .menu:not(.dark) .item:focus-visible:not(.itemActive):not(.itemDanger) {
+  background-color: var(--rd-sys-color-background-ghost-hover);
+}
+
+:global([data-rd-look="radiant-3"]) .groupLabel,
+:global([data-rd-look="radiant-3"]) .compact .groupLabel {
+  padding: var(--spacing-2) var(--spacing-4) var(--spacing-1) var(--spacing-4);
+}
+
+:global([data-rd-look="radiant-3"]) .divider {
+  margin: var(--spacing-2) 0;
+}

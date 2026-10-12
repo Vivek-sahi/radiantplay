@@ -1,5 +1,25 @@
 # Changelog
 
+## 26.10.2d — 2026-10-12
+
+Radiant 3.0 Figma sizes arrive as an opt-in look. Add `look: 'radiant-3'` to a prototype's entry in `registry-mine.ts` and its Radiant components switch to the Figma sizes. New prototypes get it from `/rp-new-prototype` and `npm run new-prototype`. Existing prototypes look exactly as before until they opt in, and `/rp-migrate-prototype` offers it after the dark check, never on its own. `/rp-sync-upstream` never adds it.
+
+Under `look: 'radiant-3'`:
+
+- Text fields (TextInput, TextArea, Select, SearchInput, DatePicker) are 32px tall with 16px left and 12px right padding and a 6px radius. Labels are 12/18 regular and turn brand blue while the field has focus. Hover darkens the border; focus shows the brand border with no ring. Disabled fades the whole field to 40%
+- Menus and the Select popup sit on Raised with no border and a 6px radius, 8px list padding and 32px items (16px sides, 12px gap). Hover uses the ghost hover fill
+- Tabs are 48px with 12px side padding and regular weight in every state (`size="small"` gives 32px)
+- The 32px icon-only button uses an 18px icon
+- DatePicker: the panel has 24px padding, a 6px radius, Raised background, menu shadow and no border. Day cells are 32px rounded squares (6px), weekday labels are 14/20 emphasis in secondary text, and the month and year are brand tertiary buttons with 32px nav buttons and 18px chevrons
+- Pagination Range uses 24px round secondary icon buttons and reads "Showing 1-20 of 500 results"
+
+Available in both looks:
+
+- TextInput gains `readOnly` (filled On Base background, no border), `helperText` and `trailingIcon`. Existing props work as before
+- Tabs gain `size` (`medium` 48px, `small` 32px). Without it Tabs keep today's height
+- Button gains `size="xs"`: a 20px icon-only button with a 12px icon
+- `RadiantLook`, `useRadiantLook()` and `RadiantLookScope` (in `src/context/RadiantLookContext.tsx`). Portaled content wraps itself in `RadiantLookScope` to keep the look; the Spotter VizBlock expand modal does
+
 ## 26.10.2c — 2026-10-12
 
 Five Radiant components take their Figma shape. Each stays inside the space it used before, so layouts around them do not move; the Toast is the one exception noted below.

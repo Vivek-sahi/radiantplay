@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import ReactECharts from 'echarts-for-react';
 import { Icon } from '@components/icons';
 import { Modal } from '@components/Modal';
+import { RadiantLookScope } from '@/context/RadiantLookContext';
 import {
   chartFont,
   chartFontSize,
@@ -169,6 +170,7 @@ export const VizBlock: React.FC<VizBlockProps> = ({
       */}
       {typeof document !== 'undefined' &&
         createPortal(
+          <RadiantLookScope>
           <Modal
             isOpen={expandedInternal}
             onClose={() => setExpandedInternal(false)}
@@ -227,7 +229,8 @@ export const VizBlock: React.FC<VizBlockProps> = ({
                 {getDataPointsLabel(block)}
               </div>
             </div>
-          </Modal>,
+          </Modal>
+          </RadiantLookScope>,
           document.body,
         )}
     </div>

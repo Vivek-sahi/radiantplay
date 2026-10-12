@@ -343,3 +343,110 @@
 .yearCellSelected:hover {
   background-color: var(--rd-comp-color-button-primary-hover);
 }
+
+/* ============================================
+   RADIANT 3.0 LOOK (opt-in: look: 'radiant-3')
+   ============================================ */
+
+/* Field: 32px, radius 6, regular 12/18 label, bold hover border, no focus ring */
+:global([data-rd-look="radiant-3"]) .label {
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-sm);
+  transition: color var(--duration-fast) var(--easing-standard);
+}
+
+:global([data-rd-look="radiant-3"]) .container:focus-within .label {
+  color: var(--rd-sys-color-content-brand);
+}
+
+:global([data-rd-look="radiant-3"]) .input {
+  height: var(--spacing-8);
+  padding: 0 var(--spacing-10) 0 var(--spacing-4);
+  border-radius: var(--radius-md);
+  box-sizing: border-box;
+}
+
+:global([data-rd-look="radiant-3"]) .input:hover:not(:focus):not(:disabled):not(.inputError) {
+  border-color: var(--rd-sys-color-border-bold-hover);
+}
+
+:global([data-rd-look="radiant-3"]) .input:focus,
+:global([data-rd-look="radiant-3"]) .inputError:focus {
+  box-shadow: none;
+}
+
+:global([data-rd-look="radiant-3"]) .inputDisabled {
+  opacity: 0.4;
+  background-color: var(--rd-sys-color-background-base);
+}
+
+/* Panel: padding 24, radius 6, Raised, menu shadow, no border */
+:global([data-rd-look="radiant-3"]) .calendar {
+  padding: var(--spacing-6);
+  background-color: var(--rd-sys-color-background-raised);
+  border: none;
+  border-radius: var(--radius-md);
+  box-shadow: var(--rd-sys-color-shadow-menu);
+}
+
+:global([data-rd-look="radiant-3"]) .calendarHeader {
+  margin-bottom: var(--spacing-2);
+}
+
+/* Month and year: brand tertiary buttons, 14/20 emphasis */
+:global([data-rd-look="radiant-3"]) .headerButton,
+:global([data-rd-look="radiant-3"]) .monthYear {
+  height: var(--spacing-8);
+  padding: 0 var(--spacing-1);
+  line-height: var(--line-height-md);
+  color: var(--rd-sys-color-content-brand);
+  border-radius: var(--radius-md);
+}
+
+:global([data-rd-look="radiant-3"]) .monthYear {
+  display: inline-flex;
+  align-items: center;
+}
+
+:global([data-rd-look="radiant-3"]) .headerButton:hover {
+  background-color: var(--rd-comp-color-button-tertiary-hover);
+  color: var(--rd-sys-color-content-brand);
+}
+
+/* Nav: 32px ghost buttons with 18px chevrons */
+:global([data-rd-look="radiant-3"]) .navButton {
+  width: var(--spacing-8);
+  height: var(--spacing-8);
+  border-radius: var(--radius-full);
+}
+
+:global([data-rd-look="radiant-3"]) .navButton:hover {
+  background-color: var(--rd-comp-color-button-tertiary-hover);
+}
+
+:global([data-rd-look="radiant-3"]) .navIcon {
+  width: 18px;
+  height: 18px;
+}
+
+/* Weekday labels: 14/20 emphasis, Content/Secondary */
+:global([data-rd-look="radiant-3"]) .weekday {
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-md);
+  color: var(--rd-sys-color-content-secondary);
+}
+
+/* Days: 32px rounded squares (radius 6), gap 4 */
+:global([data-rd-look="radiant-3"]) .day {
+  font-size: var(--font-size-sm);
+  border-radius: var(--radius-md);
+}
+
+:global([data-rd-look="radiant-3"]) .day:hover:not(.daySelected) {
+  background-color: var(--rd-sys-color-background-ghost-hover);
+}
+
+:global([data-rd-look="radiant-3"]) .monthCell,
+:global([data-rd-look="radiant-3"]) .yearCell {
+  font-size: var(--font-size-sm);
+}

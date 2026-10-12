@@ -6,6 +6,7 @@ Loaded whenever Claude works in `src/prototypes/`. The root CLAUDE.md convention
 
 - A designer's prototype goes in `registry-mine.ts`, never `registry-core.ts` or `registry.ts`.
 - A new prototype's entry includes `theme: 'global'`, so it follows light and dark with the rest of the app. Add it only once the dark check below passes. Without it a designer prototype stays light, which is the safe default for older prototypes.
+- A new prototype's entry also includes `look: 'radiant-3'`, which turns on the Radiant 3.0 Figma sizes (32px fields and menu items, 6px radii, 48px tabs). Older prototypes keep today's sizes until they add it; `/rp-migrate-prototype` offers it.
 - `/rp-new-prototype` (guided) and `npm run new-prototype <Name>` (quick) both scaffold from a template and register the entry for you.
 
 ## Before calling a prototype done

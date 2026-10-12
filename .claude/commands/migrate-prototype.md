@@ -244,6 +244,10 @@ If step 7 was skipped, leave the thumbnails as they are. For a dark-ready protot
 
 Run `npm run typecheck` once more after the registry edits.
 
+### 8b. Offer the Radiant 3.0 look (optional, never automatic)
+
+After the dark check, ask once for all picked prototypes: "Radiant 3.0 sizes are available: 32px text fields and menu items, 6px radii, 48px tabs. Turn them on for <Names>? Layouts can shift, so look at each one afterwards. Recommended: only for prototypes you're actively working on." Add `look: 'radiant-3',` to the `registry-mine.ts` entry of each prototype they name, and nothing else. Skip the question if every picked prototype already has it. Never add it without a yes; `/rp-sync-upstream` never adds it either. Mention the answer in the summary under step 9's first item.
+
 ## 9. Stop for review
 
 One summary, in this order:

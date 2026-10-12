@@ -220,3 +220,73 @@
 .errorText {
   color: var(--rd-sys-color-content-failure);
 }
+
+/* ============================================
+   RADIANT 3.0 LOOK (opt-in: look: 'radiant-3')
+   ============================================ */
+
+:global([data-rd-look="radiant-3"]) .label {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-sm);
+  margin-bottom: var(--spacing-1);
+  transition: color var(--duration-fast) var(--easing-standard);
+}
+
+:global([data-rd-look="radiant-3"]) .container:focus-within .label,
+:global([data-rd-look="radiant-3"]) .container:has(.open) .label {
+  color: var(--rd-sys-color-content-brand);
+}
+
+:global([data-rd-look="radiant-3"]) .trigger {
+  padding: 0 var(--spacing-3) 0 var(--spacing-4);
+  border-radius: var(--radius-md);
+}
+
+:global([data-rd-look="radiant-3"]) .trigger:hover:not(.disabled):not(.open):not(.error) {
+  border-color: var(--rd-sys-color-border-bold-hover);
+}
+
+:global([data-rd-look="radiant-3"]) .trigger:focus-visible,
+:global([data-rd-look="radiant-3"]) .error:focus-visible {
+  box-shadow: none;
+}
+
+/* Disabled: label and field at 40% on Background/Base */
+:global([data-rd-look="radiant-3"]) .container:has(.disabled) {
+  opacity: 0.4;
+}
+
+:global([data-rd-look="radiant-3"]) .disabled {
+  opacity: 1;
+  background-color: var(--rd-sys-color-background-base);
+  border-color: var(--rd-sys-color-border-default);
+}
+
+/* Popup: Raised, no border, radius 6, list padding 8/0, 32px items */
+:global([data-rd-look="radiant-3"]) .dropdown {
+  background-color: var(--rd-sys-color-background-raised);
+  border: none;
+  border-radius: var(--radius-md);
+}
+
+:global([data-rd-look="radiant-3"]) .optionsList {
+  padding: var(--spacing-2) 0;
+}
+
+:global([data-rd-look="radiant-3"]) .option {
+  gap: var(--spacing-3);
+  min-height: var(--spacing-8);
+  padding: 0 var(--spacing-4);
+  line-height: var(--line-height-md);
+  box-sizing: border-box;
+}
+
+:global([data-rd-look="radiant-3"]) .option:hover,
+:global([data-rd-look="radiant-3"]) .highlighted {
+  background-color: var(--rd-sys-color-background-ghost-hover);
+}
+
+:global([data-rd-look="radiant-3"]) .optionDisabled:hover {
+  background-color: transparent;
+}

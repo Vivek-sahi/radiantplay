@@ -124,3 +124,50 @@
   cursor: not-allowed;
   background-color: var(--rd-sys-color-background-sunken);
 }
+
+/* ============================================
+   RADIANT 3.0 LOOK (opt-in: look: 'radiant-3')
+   ============================================ */
+
+:global([data-rd-look="radiant-3"]) .label {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-sm);
+  transition: color var(--duration-fast) var(--easing-standard);
+}
+
+:global([data-rd-look="radiant-3"]) .container:focus-within .label {
+  color: var(--rd-sys-color-content-brand);
+}
+
+:global([data-rd-look="radiant-3"]) .textarea {
+  padding: var(--spacing-3) var(--spacing-4) var(--spacing-2) var(--spacing-4);
+  border-radius: var(--radius-md);
+}
+
+:global([data-rd-look="radiant-3"]) .textarea:hover:not(:focus):not(:disabled) {
+  border-color: var(--rd-sys-color-border-bold-hover);
+}
+
+:global([data-rd-look="radiant-3"]) .error .textarea:hover:not(:focus):not(:disabled) {
+  border-color: var(--rd-sys-color-border-failure);
+}
+
+:global([data-rd-look="radiant-3"]) .textarea:focus,
+:global([data-rd-look="radiant-3"]) .error .textarea:focus {
+  box-shadow: none;
+}
+
+/* Disabled: the whole field at 40% on Background/Base */
+:global([data-rd-look="radiant-3"]) .disabled {
+  opacity: 0.4;
+}
+
+:global([data-rd-look="radiant-3"]) .disabled .label {
+  color: var(--rd-sys-color-content-primary);
+}
+
+:global([data-rd-look="radiant-3"]) .disabled .textarea {
+  opacity: 1;
+  background-color: var(--rd-sys-color-background-base);
+}

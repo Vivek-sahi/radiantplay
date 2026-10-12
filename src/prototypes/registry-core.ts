@@ -44,6 +44,12 @@ export interface ProjectMeta {
    * /rp-migrate-prototype do once a prototype is dark ready. See isLightOnly in registry-theme.ts.
    */
   theme?: 'light-only' | 'global';
+  /**
+   * 'radiant-3' opts the prototype into the Radiant 3.0 Figma sizes (32px fields and menu items,
+   * 6px radii, Tabs 48/32 and more). With no value the prototype keeps today's sizes. New prototypes
+   * get it from /rp-new-prototype; /rp-migrate-prototype offers it. See RadiantLookContext.tsx.
+   */
+  look?: 'radiant-3';
 }
 
 // ── Thumbnails ────────────────────────────────────────────────────────────────

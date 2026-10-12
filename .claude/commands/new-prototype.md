@@ -369,6 +369,7 @@ const <Name> = React.lazy(() => import('./<Name>'));
     component: <Name>,
     section: 'mine',
     theme: 'global', // follows light and dark; the scaffold is dark ready (step 8 checks it)
+    look: 'radiant-3', // Radiant 3.0 Figma sizes (32px fields and menu items, 6px radii)
   },
 ```
 

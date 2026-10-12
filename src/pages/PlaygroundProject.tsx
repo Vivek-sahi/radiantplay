@@ -5,6 +5,7 @@ import { getProject } from '../prototypes/registry';
 import { isLightOnly } from '../prototypes/registry-theme';
 import { Icon } from '../components/icons';
 import { LightOnly } from '../context/ThemeContext';
+import { RadiantLook } from '../context/RadiantLookContext';
 
 /**
  * PlaygroundProject
@@ -59,6 +60,8 @@ export const PlaygroundProject: React.FC = () => {
   }
 
   const ProjectComponent = project.component;
+  // look: 'radiant-3' opts the prototype into the Radiant 3.0 Figma sizes (RadiantLookContext.tsx)
+  const content = project.look === 'radiant-3' ? <RadiantLook><ProjectComponent /></RadiantLook> : <ProjectComponent />;
 
   return (
     <div style={styles.container}>
@@ -67,10 +70,10 @@ export const PlaygroundProject: React.FC = () => {
         <Suspense fallback={<LoadingState />}>
           {isLightOnly(project) ? (
             <LightOnly style={styles.lightOnly}>
-              <ProjectComponent />
+              {content}
             </LightOnly>
           ) : (
-            <ProjectComponent />
+            content
           )}
         </Suspense>
       </div>

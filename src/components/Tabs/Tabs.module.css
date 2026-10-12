@@ -51,3 +51,34 @@
 .label {
   white-space: nowrap;
 }
+
+/* Sizes (both looks): medium 48px, small 32px */
+.medium .tab,
+.small .tab {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.medium .tab {
+  height: var(--spacing-12);
+}
+
+.small .tab {
+  height: var(--spacing-8);
+}
+
+/* ============================================
+   RADIANT 3.0 LOOK (opt-in: look: 'radiant-3')
+   48px by default, 12px sides, weight 400 in every state
+   ============================================ */
+
+:global([data-rd-look="radiant-3"]) .tab,
+:global([data-rd-look="radiant-3"]) .tab.active {
+  height: var(--spacing-12);
+  padding: 0 var(--spacing-3);
+  font-weight: var(--font-weight-regular);
+}
+
+:global([data-rd-look="radiant-3"]) .small .tab {
+  height: var(--spacing-8);
+}

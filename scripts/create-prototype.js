@@ -129,6 +129,7 @@ const entry = [
   `    component: ${prototypeName},`,
   `    section: 'mine',`,
   ...(darkReady ? [`    theme: 'global', // follows light and dark, checked by npm run new-prototype on ${today}`] : []),
+  `    look: 'radiant-3', // Radiant 3.0 Figma sizes (32px fields and menu items, 6px radii)`,
   '  },',
 ].join('\n');
 

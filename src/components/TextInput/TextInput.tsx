@@ -18,6 +18,12 @@ export interface TextInputProps extends Omit<React.InputHTMLAttributes<HTMLInput
   error?: boolean;
   /** Error message to display */
   errorMessage?: string;
+  /** Helper text below the field. Hidden while an error message shows */
+  helperText?: string;
+  /** Icon or element at the end of the field, such as `<Icon name="info" size="m" />` */
+  trailingIcon?: React.ReactNode;
+  /** Read-only: the value shows on a filled background with no border and can't be edited */
+  readOnly?: boolean;
   /** Additional CSS class name */
   className?: string;
 }
@@ -31,6 +37,8 @@ export interface TextInputProps extends Omit<React.InputHTMLAttributes<HTMLInput
  * ```tsx
  * <TextInput label="Name" placeholder="Enter your name" value={name} onChange={(e) => setName(e.target.value)} />
  * <TextInput label="Email" error errorMessage="Invalid email" />
+ * <TextInput label="Workspace" helperText="Shown to everyone in the org" />
+ * <TextInput label="ID" value="ws-0142" readOnly />
  * ```
  */
 export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(({
@@ -42,17 +50,40 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(({
   disabled = false,
   error = false,
   errorMessage,
+  helperText,
+  trailingIcon,
+  readOnly,
   className,
   ...props
 }, ref) => {
   const id = useId();
+  const showError = error && errorMessage;
+  const showHelper = !showError && helperText;
 
   const containerClasses = [
     styles.container,
     disabled && styles.disabled,
     error && styles.error,
+    readOnly && styles.readOnly,
     className,
   ].filter(Boolean).join(' ');
+
+  const input = (
+    <input
+      ref={ref}
+      id={id}
+      type="text"
+      className={styles.input}
+      placeholder={placeholder}
+      value={value}
+      onChange={onChange}
+      disabled={disabled}
+      readOnly={readOnly}
+      aria-invalid={error}
+      aria-describedby={showError ? `${id}-error` : showHelper ? `${id}-helper` : undefined}
+      {...props}
+    />
+  );
 
   return (
     <div className={containerClasses}>
@@ -61,22 +92,20 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(({
           {label}
         </label>
       )}
-      <input
-        ref={ref}
-        id={id}
-        type="text"
-        className={styles.input}
-        placeholder={placeholder}
-        value={value}
-        onChange={onChange}
-        disabled={disabled}
-        aria-invalid={error}
-        aria-describedby={error && errorMessage ? `${id}-error` : undefined}
-        {...props}
-      />
-      {error && errorMessage && (
+      {trailingIcon ? (
+        <div className={styles.field}>
+          {input}
+          <span className={styles.trailingIcon}>{trailingIcon}</span>
+        </div>
+      ) : input}
+      {showError && (
         <span id={`${id}-error`} className={styles.errorMessage}>
           {errorMessage}
+        </span>
+      )}
+      {showHelper && (
+        <span id={`${id}-helper`} className={styles.helperText}>
+          {helperText}
         </span>
       )}
     </div>

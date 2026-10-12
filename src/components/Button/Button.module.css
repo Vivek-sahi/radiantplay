@@ -316,3 +316,42 @@
 .tertiary.basic.iconTrailing {
   gap: var(--spacing-1);
 }
+
+/* ============================================
+   XS (both looks): 20px icon-only button, 12px icon
+   ============================================ */
+
+.xs {
+  height: var(--spacing-5);
+  padding: 0 var(--spacing-2);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-xs);
+  border-radius: var(--radius-full);
+  gap: var(--spacing-1);
+}
+
+.xs.iconOnly {
+  width: var(--spacing-5);
+  height: var(--spacing-5);
+  padding: 0;
+}
+
+.xs .icon,
+.xs .icon svg {
+  width: var(--spacing-3);
+  height: var(--spacing-3);
+}
+
+/* ============================================
+   RADIANT 3.0 LOOK (opt-in: look: 'radiant-3')
+   32px icon-only button uses an 18px icon
+   ============================================ */
+
+:global([data-rd-look="radiant-3"]) .basic.iconOnly .icon,
+:global([data-rd-look="radiant-3"]) .basic.iconOnly .icon svg,
+:global([data-rd-look="radiant-3"]) .large.iconOnly .icon,
+:global([data-rd-look="radiant-3"]) .large.iconOnly .icon svg {
+  width: 18px;
+  height: 18px;
+}

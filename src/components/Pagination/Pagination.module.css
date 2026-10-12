@@ -167,3 +167,29 @@
   font-weight: var(--font-weight-emphasis);
   color: var(--rd-sys-color-content-primary);
 }
+
+/* ============================================
+   RADIANT 3.0 LOOK (opt-in: look: 'radiant-3')
+   Range: 24px circular secondary icon buttons, disabled at 40%
+   ============================================ */
+
+:global([data-rd-look="radiant-3"]) .range .navButton {
+  width: var(--spacing-6);
+  height: var(--spacing-6);
+  border: none;
+  border-radius: var(--radius-full);
+  background-color: var(--rd-comp-color-button-secondary-default);
+}
+
+:global([data-rd-look="radiant-3"]) .range .navButton:hover:not(:disabled) {
+  background-color: var(--rd-comp-color-button-secondary-hover);
+}
+
+:global([data-rd-look="radiant-3"]) .range .navButton:disabled {
+  opacity: 0.4;
+}
+
+:global([data-rd-look="radiant-3"]) .range .navIcon {
+  width: 14px;
+  height: 14px;
+}

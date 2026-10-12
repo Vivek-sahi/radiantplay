@@ -46,3 +46,23 @@
   cursor: not-allowed;
 }
 
+
+/* ============================================
+   RADIANT 3.0 LOOK (opt-in: look: 'radiant-3')
+   ============================================ */
+
+:global([data-rd-look="radiant-3"]) .container {
+  gap: var(--spacing-3);
+  height: var(--spacing-8);
+  padding: 0 var(--spacing-3) 0 var(--spacing-4);
+  border-radius: var(--radius-md);
+  box-sizing: border-box;
+}
+
+:global([data-rd-look="radiant-3"]) .container:hover:not(:focus-within):not(.disabled) {
+  border-color: var(--rd-sys-color-border-bold-hover);
+}
+
+:global([data-rd-look="radiant-3"]) .input::placeholder {
+  color: var(--rd-sys-color-content-secondary);
+}
