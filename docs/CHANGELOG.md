@@ -9,6 +9,7 @@ Figma-shaped variants for five Radiant components, plus a new WizardHeader. Ever
 - NoData `layout="horizontal"`: icon left, title and description in secondary text. `type="section"` uses a 32px status icon, `type="page"` a status illustration; `status` is empty, warning or success. `primaryAction`, `secondaryAction` and `link` add Small Primary, Small Secondary and a tertiary link
 - Tour `tone="brand"`: the Figma spotlight card, a 340px brand-filled card with inverse text, a "2 of 4" step counter and white tertiary buttons
 - New `WizardHeader`: the Figma wizard as a 64px page header, eyebrow over a 20/28 title, Secondary and Primary buttons, a divider and a tertiary Exit button, with a 4px segmented progress bar below. It has its own page in the Radiant docs. WizardModal is unchanged
+- Radiance guide at /radiant/radiance: the four product patterns live, a template builder, the rules and how Radiance reaches prototypes
 
 ## 26.10.2d — 2026-10-12
 

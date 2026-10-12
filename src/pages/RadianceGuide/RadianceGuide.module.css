@@ -1,0 +1,238 @@
+/* Page frame, headings and toc mirror src/pages/SpotterShowcase/SpotterShowcase.module.css. */
+.page {
+  max-width: 1000px;
+  color: var(--rd-sys-color-content-primary);
+}
+
+.pageHeader {
+  margin-bottom: var(--spacing-10);
+}
+
+/* The hero card. The home pattern sits behind it: position relative and
+   isolation isolate keep its z-index -1 above this background. */
+.hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border: 1px solid var(--rd-sys-color-background-subtle);
+  border-radius: 12px;
+  background: var(--rd-sys-color-background-base);
+  padding: var(--spacing-12) var(--spacing-8) var(--spacing-10);
+  margin-bottom: var(--spacing-6);
+}
+
+.heroContent {
+  position: relative;
+}
+
+.pageTitle {
+  margin: 0 0 var(--spacing-3);
+  font-family: var(--font-family-primary);
+  font-size: 36px;
+  font-weight: var(--font-weight-emphasis);
+  color: var(--rd-sys-color-content-primary);
+  line-height: 1.2;
+}
+
+.pageSubtitle {
+  margin: 0 0 var(--spacing-5);
+  font-family: var(--font-family-primary);
+  color: var(--rd-sys-color-content-secondary);
+  font-size: 16px;
+  font-weight: var(--font-weight-regular);
+  line-height: 26px;
+  max-width: 640px;
+}
+
+.version {
+  font-family: var(--font-family-mono);
+  font-size: 12px;
+  color: var(--rd-sys-color-content-secondary);
+}
+
+.notice {
+  margin-bottom: var(--spacing-6);
+}
+
+.toc {
+  display: flex;
+  gap: var(--spacing-4);
+  flex-wrap: wrap;
+  padding: var(--spacing-3) 0;
+  border-top: 1px solid var(--rd-sys-color-background-subtle);
+  border-bottom: 1px solid var(--rd-sys-color-background-subtle);
+}
+
+.toc a {
+  color: var(--rd-sys-color-content-brand);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: var(--font-weight-medium);
+}
+
+.toc a:hover {
+  text-decoration: underline;
+}
+
+.section {
+  margin-bottom: var(--spacing-10);
+  scroll-margin-top: var(--spacing-6);
+}
+
+.sectionHeader {
+  margin-bottom: var(--spacing-4);
+}
+
+.sectionTitle {
+  margin: 0 0 var(--spacing-2);
+  font-family: var(--font-family-primary);
+  font-size: 20px;
+  font-weight: var(--font-weight-emphasis);
+  color: var(--rd-sys-color-content-primary);
+}
+
+.sectionLead {
+  margin: 0;
+  color: var(--rd-sys-color-content-secondary);
+  font-size: 14px;
+  line-height: 22px;
+  max-width: 700px;
+}
+
+.sectionLead code,
+.stepText code,
+.rulesList code {
+  font-family: var(--font-family-mono);
+  font-size: 13px;
+  background: var(--rd-sys-color-background-subtle);
+  padding: 2px var(--spacing-2);
+  border-radius: var(--radius-sm);
+}
+
+/* ── Preview stages ─────────────────────────────────────────────────────── */
+
+.stage {
+  position: relative;
+  height: 280px;
+  overflow: hidden;
+  background: var(--rd-sys-color-background-base);
+}
+
+/* home: the pattern sits at z-index -1 behind its parent. */
+.stageHome {
+  isolation: isolate;
+}
+
+/* signup and templates fill their parent. */
+.stageFill {
+  display: block;
+}
+
+/* spotterx is position: fixed in the product. A transform and paint
+   containment make this stage its containing block, so the field stays in
+   the card; isolation keeps its z-index -1 above the stage background. */
+.stageContained {
+  isolation: isolate;
+  transform: translateZ(0);
+  contain: paint;
+}
+
+/* liveboard: the workspace under the top bar. */
+.stageWorkspace {
+  isolation: isolate;
+}
+
+/* ── Template builder ───────────────────────────────────────────────────── */
+
+.builderControls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--spacing-5);
+  padding: var(--spacing-4);
+  border-bottom: 1px solid var(--rd-sys-color-background-subtle);
+}
+
+.builderField {
+  width: 180px;
+}
+
+.fieldLabel {
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--rd-sys-color-content-secondary);
+}
+
+/* ── Rules ──────────────────────────────────────────────────────────────── */
+
+/* Two cards, side by side when there is room, stacked on narrow screens. */
+.rulesGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-4);
+}
+
+.rulesCard {
+  flex: 1 1 320px;
+  min-width: 0;
+  background: var(--rd-sys-color-background-base);
+  border: 1px solid var(--rd-sys-color-background-subtle);
+  border-radius: 12px;
+  padding: var(--spacing-6);
+}
+
+.rulesTitle {
+  margin: 0 0 var(--spacing-3);
+  font-family: var(--font-family-primary);
+  font-size: 16px;
+  font-weight: var(--font-weight-emphasis);
+  color: var(--rd-sys-color-content-primary);
+}
+
+.rulesList {
+  margin: 0;
+  padding-left: var(--spacing-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--rd-sys-color-content-secondary);
+}
+
+/* ── In prototypes ──────────────────────────────────────────────────────── */
+
+.stepCard {
+  background: var(--rd-sys-color-background-base);
+  border: 1px solid var(--rd-sys-color-background-subtle);
+  border-radius: 12px;
+  padding: var(--spacing-8);
+  margin-bottom: var(--spacing-4);
+}
+
+.stepTitle {
+  margin: 0 0 var(--spacing-2);
+  font-family: var(--font-family-primary);
+  font-size: 18px;
+  font-weight: var(--font-weight-emphasis);
+  color: var(--rd-sys-color-content-primary);
+  line-height: 1.3;
+}
+
+.stepText {
+  margin: 0 0 var(--spacing-4);
+  color: var(--rd-sys-color-content-secondary);
+  font-size: 14px;
+  line-height: 22px;
+  max-width: 700px;
+}
+
+@media (max-width: 600px) {
+  .hero {
+    padding: var(--spacing-8) var(--spacing-4);
+  }
+
+  .stage {
+    height: 220px;
+  }
+}

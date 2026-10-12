@@ -1,0 +1,29 @@
+/* Same values as the code blocks on /radiant/architecture: dark in both themes. */
+.block {
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: var(--rd-ref-color-dark-gray-00);
+}
+
+.title {
+  padding: var(--spacing-2) var(--spacing-4);
+  background-color: var(--rd-ref-color-dark-gray-10);
+  font-family: var(--font-family-mono);
+  font-size: 12px;
+  color: var(--rd-ref-color-dark-gray-60);
+}
+
+.code {
+  padding: var(--spacing-4);
+  margin: 0;
+  font-family: var(--font-family-mono);
+  font-size: 13px;
+  color: var(--rd-ref-color-dark-gray-90);
+  line-height: 20px;
+  overflow-x: auto;
+  white-space: pre;
+}
+
+.line {
+  padding: var(--spacing-3) var(--spacing-4);
+}

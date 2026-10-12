@@ -4,6 +4,7 @@ import { Sidebar, NavItem } from './components/Sidebar';
 import { HomePage } from './pages/HomePage';
 import { RadiantHomePage } from './pages/RadiantHomePage';
 import { SpotterShowcase } from './pages/SpotterShowcase';
+import { RadianceGuide } from './pages/RadianceGuide';
 import { SpotterShellPage } from './pages/SpotterShellPage';
 import { SpotterShellFullscreen } from './pages/SpotterShellPage/SpotterShellFullscreen';
 import { AppShellFullscreen } from './pages/Fullscreen/AppShellFullscreen';
@@ -108,6 +109,7 @@ const ROUTES = {
   registry: '/radiant/registry',
   changelog: '/radiant/changelog',
   'spotter-showcase': '/radiant/spotter',
+  'radiance-guide': '/radiant/radiance',
   spottershell: '/radiant/components/spottershell',
   // Widgets
   liveboardheader: '/radiant/components/liveboardheader',
@@ -233,6 +235,7 @@ const RadiantLayout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       'registry': '/radiant/registry',
       'changelog': '/radiant/changelog',
       'spotter-showcase': '/radiant/spotter',
+      'radiance-guide': '/radiant/radiance',
       'spottershell': '/radiant/components/spottershell',
       // 'roadmap': '/radiant/roadmap',
       // Widgets
@@ -334,6 +337,7 @@ const RadiantLayout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     { id: 'registry', label: 'Component Registry', icon: <TableIcon />, type: 'item' },
     { id: 'changelog', label: 'Changelog', icon: <ChangelogIcon />, type: 'item' },
     { id: 'spotter-showcase', label: 'Spotter DS', icon: <ComponentIcon />, type: 'item', badge: 'New' },
+    { id: 'radiance-guide', label: 'Radiance', icon: <ComponentIcon />, type: 'item', badge: 'New' },
     // { id: 'roadmap', label: 'Roadmap', icon: <RoadmapIcon />, type: 'item', badge: 'New' },
     { id: 'divider0', label: '', type: 'divider' },
     { id: 'widgets-section', label: 'Widgets', type: 'section' },
@@ -560,6 +564,7 @@ const App: React.FC = () => {
       <Route path="/radiant/registry" element={<RadiantLayout><ComponentRegistryPage /></RadiantLayout>} />
       <Route path="/radiant/changelog" element={<RadiantLayout><VersionHistoryPage /></RadiantLayout>} />
       <Route path="/radiant/spotter" element={<RadiantLayout><SpotterShowcase /></RadiantLayout>} />
+      <Route path="/radiant/radiance" element={<RadiantLayout><RadianceGuide /></RadiantLayout>} />
       <Route path="/radiant/components/spottershell" element={<RadiantLayout><SpotterShellPage /></RadiantLayout>} />
 
       {/* Fullscreen preview routes — no RadiantLayout chrome */}

@@ -37,6 +37,7 @@ export const versionHistory: VersionEntry[] = [
       { type: 'modified', group: 'Figma', component: 'NoData', description: 'New layout="horizontal": icon left, secondary text, type page or section, status empty, warning or success, Small Secondary and Small Primary buttons and a tertiary link. The centred stack default is unchanged.' },
       { type: 'modified', group: 'Figma', component: 'Tour', description: 'New tone="brand": a 340px brand-filled spotlight card with inverse text, a "2 of 4" counter and white tertiary buttons. The default card is unchanged.' },
       { type: 'added', group: 'Figma', component: 'WizardHeader', description: 'The Figma wizard as a 64px page header: eyebrow, 20/28 title, Secondary and Primary buttons, a divider, a tertiary Exit button and a 4px segmented progress bar. WizardModal is unchanged.' },
+      { type: 'added', group: 'Documentation', component: 'Radiance guide', description: 'Radiance guide at /radiant/radiance: the four product patterns live, a template builder, the rules and how Radiance reaches prototypes.' },
     ],
   },
   {
