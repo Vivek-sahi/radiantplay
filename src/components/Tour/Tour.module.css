@@ -101,3 +101,33 @@
   outline: 2px solid var(--rd-sys-color-border-focus);
   outline-offset: 2px;
 }
+
+/* Tone: brand (Figma Spotlight card 970:0) */
+.popoverBrand {
+  width: 340px;
+  background-color: var(--rd-sys-color-background-brand);
+  border-radius: var(--radius-md);
+  color: var(--rd-sys-color-content-inverse);
+}
+
+.brandTitle {
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-lg);
+  font-weight: var(--font-weight-emphasis);
+  color: var(--rd-sys-color-content-inverse);
+  margin-bottom: var(--spacing-2);
+}
+
+.brandContent {
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-md);
+  color: var(--rd-sys-color-content-inverse);
+  margin-bottom: var(--spacing-4);
+}
+
+.brandStepCount {
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-xs);
+  color: var(--rd-sys-color-content-inverse);
+  flex-shrink: 0;
+}

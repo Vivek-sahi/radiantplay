@@ -260,6 +260,7 @@ const RadiantLayout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       'popover': '/radiant/components/popover',
       'loadingindicator': '/radiant/components/loadingindicator',
       'progressbar': '/radiant/components/progressbar',
+      'wizardheader': '/radiant/components/wizardheader',
       // Data Display
       'table': '/radiant/components/table',
       'chip': '/radiant/components/chip',
@@ -364,6 +365,7 @@ const RadiantLayout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     { id: 'popover', label: 'Popover', icon: <ComponentIcon />, type: 'item' },
     { id: 'loadingindicator', label: 'LoadingIndicator', icon: <ComponentIcon />, type: 'item', badge: 'New' },
     { id: 'progressbar', label: 'ProgressBar', icon: <ComponentIcon />, type: 'item', badge: 'New' },
+    { id: 'wizardheader', label: 'WizardHeader', icon: <ComponentIcon />, type: 'item', badge: 'New' },
     { id: 'divider4', label: '', type: 'divider' },
     { id: 'data-section', label: 'Data Display', type: 'section' },
     { id: 'table', label: 'Table', icon: <ComponentIcon />, type: 'item' },
@@ -596,6 +598,7 @@ const App: React.FC = () => {
       <Route path="/radiant/components/popover" element={<RadiantLayout><ComponentDocPage componentId="popover" /></RadiantLayout>} />
       <Route path="/radiant/components/loadingindicator" element={<RadiantLayout><ComponentDocPage componentId="loadingindicator" /></RadiantLayout>} />
       <Route path="/radiant/components/progressbar" element={<RadiantLayout><ComponentDocPage componentId="progressbar" /></RadiantLayout>} />
+      <Route path="/radiant/components/wizardheader" element={<RadiantLayout><ComponentDocPage componentId="wizardheader" /></RadiantLayout>} />
       
       {/* Component documentation pages - Data Display */}
       <Route path="/radiant/components/table" element={<RadiantLayout><ComponentDocPage componentId="table" /></RadiantLayout>} />

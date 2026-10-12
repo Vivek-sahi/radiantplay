@@ -136,3 +136,63 @@
   padding-left: 0;
   padding-right: 0;
 }
+
+/* Variant: Card (Figma Accordion 1118:3052)
+   Each item is a card: radius 6, background-base, surface shadow (menu on hover),
+   24px padding, leading 18px chevron, gap 12, title 16/24 emphasis,
+   body 12/16 indented to the title (24 + 18 + 12 = 54px). */
+.card {
+  gap: var(--spacing-3);
+}
+
+.card .item {
+  border-bottom: none;
+  border-radius: var(--radius-md);
+  background-color: var(--rd-sys-color-background-base);
+  box-shadow: var(--rd-sys-color-shadow-surface);
+  transition: box-shadow var(--duration-fast, 150ms) var(--easing-standard, ease);
+}
+
+.card .item:hover {
+  box-shadow: var(--rd-sys-color-shadow-menu);
+}
+
+.card .item:has(.headerDisabled):hover {
+  box-shadow: var(--rd-sys-color-shadow-surface);
+}
+
+.card .header {
+  justify-content: flex-start;
+  gap: var(--spacing-3);
+  padding: var(--spacing-6);
+  border-radius: var(--radius-md);
+}
+
+.card .header:hover,
+.card .headerDisabled:hover {
+  background-color: transparent;
+}
+
+.card .headerTitle {
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-lg);
+  font-weight: var(--font-weight-emphasis);
+  color: var(--rd-sys-color-content-primary);
+}
+
+.card .headerSubtitle {
+  line-height: var(--line-height-xs);
+}
+
+.cardChevron {
+  flex-shrink: 0;
+  color: var(--rd-sys-color-content-secondary);
+}
+
+.card .contentInner {
+  /* 18px = icon size l, the leading chevron */
+  padding: 0 var(--spacing-6) var(--spacing-6) calc(var(--spacing-6) + var(--spacing-3) + 18px);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-xs);
+  color: var(--rd-sys-color-content-primary);
+}

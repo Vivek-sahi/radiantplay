@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Button } from '../Button';
 import styles from './Tour.module.css';
+
+export type TourTone = 'default' | 'brand';
 
 export interface TourStep {
   target: string;
@@ -14,6 +17,13 @@ export interface TourProps {
   onFinish?: () => void;
   onSkip?: () => void;
   startIndex?: number;
+  /**
+   * `default`: raised white card.
+   * `brand`: the Figma spotlight card, brand fill with inverse text,
+   * a "2 of 4" counter and white tertiary buttons.
+   * @default 'default'
+   */
+  tone?: TourTone;
 }
 
 interface PopoverPosition {
@@ -67,6 +77,7 @@ export const Tour: React.FC<TourProps> = ({
   onFinish,
   onSkip,
   startIndex = 0,
+  tone = 'default',
 }) => {
   const [currentIndex, setCurrentIndex] = useState(startIndex);
   const [popoverPos, setPopoverPos] = useState<PopoverPosition>({ top: 0, left: 0 });
@@ -164,42 +175,73 @@ export const Tour: React.FC<TourProps> = ({
       )}
 
       {/* Popover */}
-      <div
-        ref={popoverRef}
-        className={styles.popover}
-        style={{ top: popoverPos.top, left: popoverPos.left }}
-        role="dialog"
-        aria-modal="true"
-        aria-label={currentStep.title ?? `Step ${currentIndex + 1} of ${steps.length}`}
-      >
-        {currentStep.title && (
-          <div className={styles.popoverTitle}>{currentStep.title}</div>
-        )}
-        <div className={styles.popoverContent}>{currentStep.content}</div>
-        <div className={styles.popoverFooter}>
-          <span className={styles.stepCount}>
-            Step {currentIndex + 1} of {steps.length}
-          </span>
-          <div className={styles.footerActions}>
-            {onSkip && (
-              <button
-                className={styles.skipButton}
-                onClick={handleSkip}
-                type="button"
-              >
-                Skip
-              </button>
-            )}
-            <button
-              className={styles.nextButton}
-              onClick={handleNext}
-              type="button"
-            >
-              {isLast ? 'Finish' : 'Next'}
-            </button>
+      {tone === 'brand' ? (
+        <div
+          ref={popoverRef}
+          className={`${styles.popover} ${styles.popoverBrand}`}
+          style={{ top: popoverPos.top, left: popoverPos.left }}
+          role="dialog"
+          aria-modal="true"
+          aria-label={currentStep.title ?? `Step ${currentIndex + 1} of ${steps.length}`}
+        >
+          {currentStep.title && (
+            <div className={styles.brandTitle}>{currentStep.title}</div>
+          )}
+          <div className={styles.brandContent}>{currentStep.content}</div>
+          <div className={styles.popoverFooter}>
+            <span className={styles.brandStepCount}>
+              {currentIndex + 1} of {steps.length}
+            </span>
+            <div className={styles.footerActions}>
+              {onSkip && (
+                <Button variant="tertiary" colorway="white" size="small" onClick={handleSkip}>
+                  Skip
+                </Button>
+              )}
+              <Button variant="tertiary" colorway="white" size="small" onClick={handleNext}>
+                {isLast ? 'Finish' : 'Next'}
+              </Button>
+            </div>
           </div>
         </div>
-      </div>
+      ) : (
+        <div
+          ref={popoverRef}
+          className={styles.popover}
+          style={{ top: popoverPos.top, left: popoverPos.left }}
+          role="dialog"
+          aria-modal="true"
+          aria-label={currentStep.title ?? `Step ${currentIndex + 1} of ${steps.length}`}
+        >
+          {currentStep.title && (
+            <div className={styles.popoverTitle}>{currentStep.title}</div>
+          )}
+          <div className={styles.popoverContent}>{currentStep.content}</div>
+          <div className={styles.popoverFooter}>
+            <span className={styles.stepCount}>
+              Step {currentIndex + 1} of {steps.length}
+            </span>
+            <div className={styles.footerActions}>
+              {onSkip && (
+                <button
+                  className={styles.skipButton}
+                  onClick={handleSkip}
+                  type="button"
+                >
+                  Skip
+                </button>
+              )}
+              <button
+                className={styles.nextButton}
+                onClick={handleNext}
+                type="button"
+              >
+                {isLast ? 'Finish' : 'Next'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };

@@ -63,6 +63,7 @@ import { Tree } from '../components/Tree';
 import { TreeTable } from '../components/TreeTable';
 import { Formatters } from '../components/Formatters';
 import { Tour } from '../components/Tour';
+import { WizardHeader } from '../components/WizardHeader';
 import { RichTextEditor } from '../components/RichTextEditor';
 import { FormBuilder } from '../components/FormBuilder';
 import { DynamicForm } from '../components/DynamicForm';
@@ -403,7 +404,7 @@ const componentDocs: Record<string, {
       { name: 'defaultExpanded', type: 'number | number[]', description: 'Initially expanded item(s)' },
       { name: 'expanded', type: 'number | number[]', description: 'Controlled expanded state' },
       { name: 'onExpandedChange', type: '(expanded: number[]) => void', description: 'Expansion change handler' },
-      { name: 'variant', type: "'default' | 'minimal' | 'bordered'", default: "'default'", description: 'Visual variant' },
+      { name: 'variant', type: "'default' | 'minimal' | 'bordered' | 'card'", default: "'default'", description: 'Visual variant. card is the Figma card: raised items with a leading chevron' },
       { name: 'Item.title', type: 'ReactNode', description: 'Item title' },
       { name: 'Item.subtitle', type: 'string', description: 'Item subtitle' },
       { name: 'Item.disabled', type: 'boolean', default: 'false', description: 'Disable item' },
@@ -434,6 +435,20 @@ const componentDocs: Record<string, {
       { name: 'Dots.currentPage', type: 'number', description: 'Current page for dot indicators' },
       { name: 'Range.itemsPerPage', type: 'number', description: 'Items per page for range display' },
       { name: 'Range.totalItems', type: 'number', description: 'Total items for range calculation' },
+    ],
+  },
+  wizardheader: {
+    name: 'WizardHeader',
+    description: 'The Figma wizard as a full-width page header: eyebrow over a 20/28 title, Secondary and Primary buttons, a divider and a tertiary Exit button, with a 4px segmented progress bar below. WizardModal stays for the modal form.',
+    props: [
+      { name: 'title', type: 'string', description: 'Step title (required)' },
+      { name: 'eyebrow', type: 'string', description: 'Small line above the title' },
+      { name: 'totalSteps', type: 'number', default: '0', description: 'Segments in the progress bar; 0 hides it' },
+      { name: 'currentStep', type: 'number', default: '0', description: 'Current step, 1-based; segments up to it are filled' },
+      { name: 'primaryAction', type: '{ label, onClick?, disabled? }', description: 'Primary button' },
+      { name: 'secondaryAction', type: '{ label, onClick?, disabled? }', description: 'Secondary button before the primary' },
+      { name: 'onExit', type: '() => void', description: 'Shows a divider and a tertiary Exit button' },
+      { name: 'exitLabel', type: 'string', default: "'Exit'", description: 'Exit button label' },
     ],
   },
   progressbar: {
@@ -609,17 +624,29 @@ const componentDocs: Record<string, {
       { name: 'description', type: 'string', description: 'Explanatory text below the title' },
       { name: 'illustration', type: 'ReactNode', description: 'Illustration or icon above the title' },
       { name: 'action', type: 'ReactNode', description: 'CTA button or link below the description' },
+      { name: 'layout', type: "'stack' | 'horizontal'", default: "'stack'", description: 'horizontal is the Figma Muted layout: icon left, text right' },
+      { name: 'type', type: "'page' | 'section'", default: "'section'", description: 'Horizontal only. section: 32px status icon; page: status illustration' },
+      { name: 'status', type: "'empty' | 'warning' | 'success'", default: "'empty'", description: 'Horizontal only. Picks the status icon or illustration' },
+      { name: 'icon', type: 'ReactNode', description: 'Horizontal section only. Replaces the status icon' },
+      { name: 'primaryAction', type: '{ label, onClick? }', description: 'Horizontal only. Small primary button' },
+      { name: 'secondaryAction', type: '{ label, onClick? }', description: 'Horizontal only. Small secondary button' },
+      { name: 'link', type: '{ label, onClick? }', description: 'Horizontal only. Tertiary link after the buttons' },
     ],
   },
   explainercard: {
     name: 'ExplainerCard',
     description: 'Educational card with an icon, title, description body, and optional CTA. Use to explain features or onboard users.',
     props: [
-      { name: 'title', type: 'string', description: 'Card heading (required)' },
-      { name: 'description', type: 'string', description: 'Body text (required)' },
+      { name: 'title', type: 'string', description: 'Card heading. Leave it out for the title-less layout' },
+      { name: 'description', type: 'ReactNode', description: 'Body text (required)' },
       { name: 'icon', type: 'ReactNode', description: 'Leading icon element' },
       { name: 'action', type: 'ReactNode', description: 'CTA button or link' },
       { name: 'variant', type: "'default' | 'highlighted'", default: "'default'", description: 'Background style' },
+      { name: 'appearance', type: "'bordered' | 'raised'", default: "'bordered'", description: 'raised is the Figma card: menu shadow, no border, radius 6, 18/24 title' },
+      { name: 'media', type: 'ReactNode', description: 'Image or video, 300 x 170 with radius 6' },
+      { name: 'onDismiss', type: '() => void', description: 'Shows a 24px close button' },
+      { name: 'primaryAction', type: '{ label, onClick? }', description: 'Small primary button' },
+      { name: 'secondaryAction', type: '{ label, onClick? }', description: 'Small tertiary button before the primary' },
     ],
   },
   image: {
@@ -895,6 +922,7 @@ const componentDocs: Record<string, {
       { name: 'onFinish', type: '() => void', description: 'Called after the last step' },
       { name: 'onSkip', type: '() => void', description: 'Called when Skip is clicked' },
       { name: 'startIndex', type: 'number', default: '0', description: 'Step to start from' },
+      { name: 'tone', type: "'default' | 'brand'", default: "'default'", description: 'brand is the Figma spotlight card: brand fill, inverse text, "2 of 4" counter, white tertiary buttons' },
     ],
   },
   richtexteditor: {
@@ -1036,6 +1064,8 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
   const [selectedTreeIds, setSelectedTreeIds] = useState<string[]>([]);
   const [richText, setRichText] = useState('<p>Start typing <strong>rich</strong> text here…</p>');
   const [isTourRunning, setIsTourRunning] = useState(false);
+  const [isBrandTourRunning, setIsBrandTourRunning] = useState(false);
+  const [wizardHeaderStep, setWizardHeaderStep] = useState(2);
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [selectedFacet, setSelectedFacet] = useState('all');
   const [selectedSort, setSelectedSort] = useState('newest');
@@ -1741,6 +1771,20 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
                 <Accordion.Item title="Section 2">Content for section 2</Accordion.Item>
               </Accordion>
             </div>
+            <div style={{ marginTop: '24px' }} data-demo="accordion-card">
+              <h4 style={styles.interactiveLabel}>Card variant:</h4>
+              <Accordion variant="card" defaultExpanded={0}>
+                <Accordion.Item title="What is a Liveboard?">
+                  A Liveboard is a set of answers pinned together, so you can track the numbers that matter in one place.
+                </Accordion.Item>
+                <Accordion.Item title="Who can see my answers?">
+                  Only people you share an answer with, or who can see the Liveboard it is pinned to.
+                </Accordion.Item>
+                <Accordion.Item title="Can I schedule a report?" disabled>
+                  This item is disabled.
+                </Accordion.Item>
+              </Accordion>
+            </div>
           </div>
         );
 
@@ -2173,6 +2217,29 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
               action={<Button variant="secondary" size="small">Clear filters</Button>}
             />
             <NoData title="No data available" description="Connect a data source to get started." />
+            <div data-demo="nodata-horizontal" style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+              <h4 style={styles.interactiveLabel}>Horizontal layout, section type:</h4>
+              <NoData
+                layout="horizontal"
+                status="empty"
+                title="No answers yet"
+                description="Ask a question to see answers here."
+                secondaryAction={{ label: 'Browse data' }}
+                primaryAction={{ label: 'Ask a question' }}
+                link={{ label: 'Learn more' }}
+              />
+              <NoData layout="horizontal" status="warning" title="Some columns are missing" description="Reconnect the data source to bring them back." />
+              <NoData layout="horizontal" status="success" title="All caught up" description="There are no new alerts." />
+              <h4 style={styles.interactiveLabel}>Horizontal layout, page type:</h4>
+              <NoData
+                layout="horizontal"
+                type="page"
+                title="No Liveboards yet"
+                description="Pin answers to a Liveboard to track them in one place."
+                secondaryAction={{ label: 'Import' }}
+                primaryAction={{ label: 'Create Liveboard' }}
+              />
+            </div>
           </div>
         );
 
@@ -2190,6 +2257,23 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
               description="You can pin answers to a Liveboard for quick access."
               variant="highlighted"
             />
+            <div data-demo="explainer-raised" style={{ display: 'flex', flexDirection: 'column', gap: 16, paddingTop: 8 }}>
+              <h4 style={styles.interactiveLabel}>Raised appearance:</h4>
+              <ExplainerCard
+                appearance="raised"
+                title="Meet Spotter"
+                description="Ask questions about your data in plain language and get answers as charts and tables."
+                media={<div style={{ width: '100%', height: '100%' }} />}
+                onDismiss={() => {}}
+                secondaryAction={{ label: 'Learn more' }}
+                primaryAction={{ label: 'Try it' }}
+              />
+              <ExplainerCard
+                appearance="raised"
+                description="Answers you pin show up here, so you can find them later."
+                onDismiss={() => {}}
+              />
+            </div>
           </div>
         );
 
@@ -2517,6 +2601,42 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
               onFinish={() => setIsTourRunning(false)}
               onSkip={() => setIsTourRunning(false)}
             />
+            <div style={{ marginTop: 24 }}>
+              <h4 style={styles.interactiveLabel}>Brand tone:</h4>
+              <Button variant="secondary" size="small" onClick={() => setIsBrandTourRunning(true)}>Start brand tour</Button>
+            </div>
+            <Tour
+              tone="brand"
+              steps={[
+                { target: '#tour-target-search', title: 'Search bar', content: 'Use this to search for any content in ThoughtSpot.', placement: 'bottom' },
+                { target: '#tour-target-search', title: 'Ask in plain language', content: 'Type a question and Spotter turns it into an answer.', placement: 'bottom' },
+                { target: '#tour-target-search', title: 'Pin what matters', content: 'Pin answers to a Liveboard to track them.', placement: 'bottom' },
+                { target: '#tour-target-search', title: 'Share', content: 'Share a Liveboard with your team.', placement: 'bottom' },
+              ]}
+              isRunning={isBrandTourRunning}
+              onFinish={() => setIsBrandTourRunning(false)}
+              onSkip={() => setIsBrandTourRunning(false)}
+            />
+          </div>
+        );
+
+      case 'wizardheader':
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+            <div data-demo="wizardheader" style={{ border: `1px solid ${sysVar('border-subtle')}`, borderRadius: 8, overflow: 'hidden' }}>
+              <WizardHeader
+                eyebrow="Create a connection"
+                title="Choose tables"
+                totalSteps={4}
+                currentStep={wizardHeaderStep}
+                secondaryAction={{ label: 'Back', onClick: () => setWizardHeaderStep((s) => Math.max(1, s - 1)), disabled: wizardHeaderStep === 1 }}
+                primaryAction={{ label: wizardHeaderStep === 4 ? 'Finish' : 'Next', onClick: () => setWizardHeaderStep((s) => Math.min(4, s + 1)) }}
+                onExit={() => setWizardHeaderStep(1)}
+              />
+            </div>
+            <div style={{ border: `1px solid ${sysVar('border-subtle')}`, borderRadius: 8, overflow: 'hidden' }}>
+              <WizardHeader title="Review and publish" totalSteps={3} currentStep={3} primaryAction={{ label: 'Publish' }} />
+            </div>
           </div>
         );
 

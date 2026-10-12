@@ -38,6 +38,7 @@ export * from './AppShell';
 // New modal-related components
 export * from './ConfirmDialog';
 export * from './WizardModal';
+export * from './WizardHeader';
 export * from './FilterDialog';
 export * from './FormModal';
 

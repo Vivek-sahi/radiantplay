@@ -28,6 +28,18 @@ export interface VersionEntry {
  */
 export const versionHistory: VersionEntry[] = [
   {
+    version: '26.10.2e',
+    date: '2026-10-12',
+    type: 'patch',
+    changes: [
+      { type: 'modified', group: 'Figma', component: 'Accordion', description: 'New variant="card": each item is a card with radius 6, surface shadow (menu shadow on hover), 24px padding, a leading 18px chevron, a 16/24 title at 550 and a 12/16 body lined up with the title. Existing variants are unchanged.' },
+      { type: 'modified', group: 'Figma', component: 'ExplainerCard', description: 'New appearance="raised": menu shadow, no border, radius 6, padding 20, an 18/24 title and body in primary text. New media, onDismiss, primaryAction and secondaryAction props; title is optional for the title-less layout. The bordered default is unchanged.' },
+      { type: 'modified', group: 'Figma', component: 'NoData', description: 'New layout="horizontal": icon left, secondary text, type page or section, status empty, warning or success, Small Secondary and Small Primary buttons and a tertiary link. The centred stack default is unchanged.' },
+      { type: 'modified', group: 'Figma', component: 'Tour', description: 'New tone="brand": a 340px brand-filled spotlight card with inverse text, a "2 of 4" counter and white tertiary buttons. The default card is unchanged.' },
+      { type: 'added', group: 'Figma', component: 'WizardHeader', description: 'The Figma wizard as a 64px page header: eyebrow, 20/28 title, Secondary and Primary buttons, a divider, a tertiary Exit button and a 4px segmented progress bar. WizardModal is unchanged.' },
+    ],
+  },
+  {
     version: '26.10.2d',
     date: '2026-10-12',
     type: 'patch',

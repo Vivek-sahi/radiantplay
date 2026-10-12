@@ -1,7 +1,8 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { Icon } from '../icons';
 import styles from './Accordion.module.css';
 
-export type AccordionVariant = 'default' | 'minimal' | 'bordered';
+export type AccordionVariant = 'default' | 'minimal' | 'bordered' | 'card';
 
 export interface AccordionItemProps {
   /**
@@ -34,6 +35,8 @@ export interface AccordionItemProps {
   isExpanded?: boolean;
   /** @internal */
   onToggle?: () => void;
+  /** @internal */
+  variant?: AccordionVariant;
 }
 
 /**
@@ -69,7 +72,9 @@ const AccordionItem: React.FC<AccordionItemProps> = ({
   className = '',
   isExpanded = false,
   onToggle,
+  variant,
 }) => {
+  const isCard = variant === 'card';
   const contentRef = useRef<HTMLDivElement>(null);
   const [height, setHeight] = useState<number | undefined>(0);
 
@@ -103,6 +108,13 @@ const AccordionItem: React.FC<AccordionItemProps> = ({
         aria-disabled={disabled}
         disabled={disabled}
       >
+        {isCard && (
+          <Icon
+            name={isExpanded ? 'chevron-down' : 'chevron-right'}
+            size="l"
+            className={styles.cardChevron}
+          />
+        )}
         <div className={styles.headerContent}>
           {icon}
           <div>
@@ -110,7 +122,7 @@ const AccordionItem: React.FC<AccordionItemProps> = ({
             {subtitle && <div className={styles.headerSubtitle}>{subtitle}</div>}
           </div>
         </div>
-        <ChevronIcon expanded={isExpanded} />
+        {!isCard && <ChevronIcon expanded={isExpanded} />}
       </button>
       <div 
         className={styles.content}
@@ -176,6 +188,7 @@ type AccordionComponent = React.FC<AccordionProps> & {
  * - `default` - Standard accordion with dividers
  * - `minimal` - No dividers, compact spacing
  * - `bordered` - Each item has a border and rounded corners
+ * - `card` - Figma card: each item is a raised card with a leading chevron
  * 
  * @example
  * ```tsx
@@ -251,6 +264,7 @@ const AccordionBase: React.FC<AccordionProps> = ({
           return React.cloneElement(child, {
             isExpanded: expandedSet.has(index),
             onToggle: () => handleToggle(index),
+            ...(variant === 'card' ? { variant } : {}),
           } as Partial<AccordionItemProps>);
         }
         return child;

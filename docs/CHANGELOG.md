@@ -1,5 +1,15 @@
 # Changelog
 
+## 26.10.2e — 2026-10-12
+
+Figma-shaped variants for five Radiant components, plus a new WizardHeader. Every variant is opt-in: each component's default looks and behaves exactly as before.
+
+- Accordion `variant="card"`: each item is a card (radius 6, Base background, surface shadow that lifts to the menu shadow on hover) with 24px padding, a leading 18px chevron (right when collapsed, down when open), a 16/24 title at 550 and a 12/16 body lined up with the title
+- ExplainerCard `appearance="raised"`: menu shadow, no border, radius 6, padding 20, gap 12, an 18/24 title and body in primary text. New props for both appearances: `media` (300 x 170, radius 6), `onDismiss` (24px close button), `primaryAction` and `secondaryAction` (small Primary and Tertiary buttons). `title` is now optional, for the title-less layout
+- NoData `layout="horizontal"`: icon left, title and description in secondary text. `type="section"` uses a 32px status icon, `type="page"` a status illustration; `status` is empty, warning or success. `primaryAction`, `secondaryAction` and `link` add Small Primary, Small Secondary and a tertiary link
+- Tour `tone="brand"`: the Figma spotlight card, a 340px brand-filled card with inverse text, a "2 of 4" step counter and white tertiary buttons
+- New `WizardHeader`: the Figma wizard as a 64px page header, eyebrow over a 20/28 title, Secondary and Primary buttons, a divider and a tertiary Exit button, with a 4px segmented progress bar below. It has its own page in the Radiant docs. WizardModal is unchanged
+
 ## 26.10.2d — 2026-10-12
 
 Radiant 3.0 Figma sizes arrive as an opt-in look. Add `look: 'radiant-3'` to a prototype's entry in `registry-mine.ts` and its Radiant components switch to the Figma sizes. New prototypes get it from `/rp-new-prototype` and `npm run new-prototype`. Existing prototypes look exactly as before until they opt in, and `/rp-migrate-prototype` offers it after the dark check, never on its own. `/rp-sync-upstream` never adds it.
