@@ -300,8 +300,8 @@ const DONT_RULES: React.ReactNode[] = [
 
 // ── Page ──────────────────────────────────────────────────────────────────
 
-// Room the layout's "On this page" list needs to the right of this page (its 220px plus the content's 32px padding)
-const RAIL_ROOM = 252;
+// Room the layout's "On this page" list needs to the right of this page (its 200px plus the content's 32px padding)
+const RAIL_ROOM = 232;
 
 const SECTIONS = [
   { id: 'templates', label: 'Template builder' },

@@ -31,7 +31,8 @@ function collect(root: HTMLElement): Heading[] {
   });
 }
 
-export const RAIL_SPACE = 220; // what the layout keeps free on the right for the list
+/** Class for the layout's content frame: centred, with room on both sides for the list on wide windows */
+export const onThisPageFrame = styles.frame;
 
 export const OnThisPage: React.FC<{
   contentRef: React.RefObject<HTMLElement | null>;
