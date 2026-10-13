@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { SegmentedControl } from '@components/SegmentedControl';
 import { Select } from '@components/Select';
 import { Alert } from '@components/Alert';
@@ -9,6 +9,7 @@ import type { RadianceState, RadianceTemplate } from '@/app-chrome/RadianceBackg
 import { PreviewCard } from './PreviewCard';
 import { CodeBlock, CodeLine } from './CodeBlock';
 import styles from './RadianceGuide.module.css';
+import { SectionLinks } from '@/app-chrome/OnThisPage/OnThisPage';
 
 /**
  * Radiance guide at /radiant/radiance. Radiance is vendored from a private repo
@@ -300,9 +301,6 @@ const DONT_RULES: React.ReactNode[] = [
 
 // ── Page ──────────────────────────────────────────────────────────────────
 
-// Room the layout's "On this page" list needs to the right of this page (its 200px plus the content's 32px padding)
-const RAIL_ROOM = 232;
-
 const SECTIONS = [
   { id: 'templates', label: 'Template builder' },
   { id: 'patterns', label: 'Product patterns' },
@@ -310,35 +308,13 @@ const SECTIONS = [
   { id: 'prototypes', label: 'In prototypes' },
 ];
 
-/**
- * The pill bar leads. Beside the content the layout's shared "On this page" list takes over once the reader
- * scrolls; when the window has no room for it, the pill bar stays pinned instead.
- */
-function useOnThisPage(pageRef: React.RefObject<HTMLElement | null>) {
-  const [railLeft, setRailLeft] = useState<number | null>(null);
-  useEffect(() => {
-    const measure = () => {
-      const page = pageRef.current;
-      if (!page) return;
-      const right = page.getBoundingClientRect().right;
-      setRailLeft(window.innerWidth - right >= RAIL_ROOM ? right + 32 : null);
-    };
-    measure();
-    window.addEventListener('resize', measure);
-    return () => window.removeEventListener('resize', measure);
-  }, [pageRef]);
-  return { railLeft };
-}
-
 export const RadianceGuide: React.FC = () => {
-  const pageRef = useRef<HTMLDivElement>(null);
-  const { railLeft } = useOnThisPage(pageRef);
   const availability = useRadianceAvailability();
   const manifest = useManifest();
   const commit = manifest?.source?.commit?.slice(0, 7);
 
   return (
-    <div ref={pageRef} className={styles.page}>
+    <div className={styles.page}>
       <header className={styles.pageHeader}>
         <div className={styles.hero}>
           <RadianceBackground pattern="home" heroHeight={220} />
@@ -376,9 +352,7 @@ export const RadianceGuide: React.FC = () => {
       </header>
 
       {/* Section links, pinned while scrolling; the template builder leads */}
-      <nav className={`${styles.toc} ${railLeft === null ? styles.tocPinned : ''}`} aria-label="Sections">
-        {SECTIONS.map((x) => <a key={x.id} href={`#${x.id}`}>{x.label}</a>)}
-      </nav>
+      <SectionLinks links={SECTIONS} />
 
 
       <section id="templates" className={styles.section}>

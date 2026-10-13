@@ -20,7 +20,7 @@ Thirteen new Radiant components from Figma (batch 5), a token sweep with no visu
 - Token sweep (no visual change): GlobalHeader, AppSidebar and DatePicker now use spacing, radius, font size, weight and line height tokens wherever a token has the exact same value (54 replacements). Values with no exact token, such as 999px pills, 120ms transitions and the legacy dark sidebar colours, are unchanged.
 - Design system pages: the theme icon sits at the top right, as on the playground, instead of the Light, Dark and System control in the sidebar footer; the Inspect button is gone from that footer (Sidebar gains `showInspect`, on by default)
 - On this page: design system pages with three or more sections list them on the right once you scroll, with the current section highlighted. Content starts after the sidebar on every page, up to 1200px, with the same room kept on the right for the list
-- One heading style across the design system: page titles at 32/40 and section headings at 20/28 in brand blue, on every page (demos keep their own type)
+- One heading style across the design system: page titles at 32/40 and section headings at 20/28, on every page; section links are blue pills (demos keep their own type)
 - Radiance guide: the template builder comes first and hands you a prompt for Claude with a Copy button instead of a code line; the section links are pills, pinned at the top when there's no room for the list
 - Colours page: each token is one swatch that follows the theme, with the current mode's value first and the other under it
 - Component Registry: rows for the new components, and the rows batches 1 to 4 changed now carry their real Figma node, file and sync date; placeholder Figma ids are gone

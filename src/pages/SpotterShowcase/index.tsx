@@ -51,6 +51,7 @@ import type {
 } from '@spotter/runtime';
 import { PreviewCard } from './PreviewCard';
 import styles from './SpotterShowcase.module.css';
+import { SectionLinks } from '@/app-chrome/OnThisPage/OnThisPage';
 
 // ── Mock messages for static previews ──────────────────────────────────────
 
@@ -535,13 +536,15 @@ const SpotterShowcaseInner: React.FC = () => {
           Every component in the Spotter design system — chat surface, block renderers, page shell,
           icons, and tokens. Static previews with the common variants.
         </p>
-        <nav className={styles.toc} aria-label="Sections">
-          <a href="#chat">Chat</a>
-          <a href="#blocks">Blocks</a>
-          <a href="#shell">Page shell</a>
-          <a href="#icons">Spotter icons</a>
-          <a href="#tokens">Spotter tokens</a>
-        </nav>
+        <SectionLinks
+          links={[
+            { id: 'chat', label: 'Chat' },
+            { id: 'blocks', label: 'Blocks' },
+            { id: 'shell', label: 'Page shell' },
+            { id: 'icons', label: 'Spotter icons' },
+            { id: 'tokens', label: 'Spotter tokens' },
+          ]}
+        />
       </header>
 
       {/* ─── Chat section ───────────────────────────────────────────────── */}

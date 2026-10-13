@@ -86,7 +86,39 @@
   font-weight: var(--font-weight-emphasis) !important;
   letter-spacing: normal !important;
   text-transform: none !important;
-  color: var(--rd-sys-color-content-brand) !important;
+  color: var(--rd-sys-color-content-primary) !important;
   /* The Radiance guide's section header spacing, everywhere */
   margin-bottom: var(--spacing-2) !important;
+}
+
+/* Section links at the top of a long page: pills on the base surface with a hairline border, like the cards */
+.links {
+  display: flex;
+  width: fit-content;
+  max-width: 100%;
+  flex-wrap: wrap;
+  gap: var(--spacing-1);
+  padding: var(--spacing-1);
+  margin: var(--spacing-6) 0 var(--spacing-8);
+  border: 1px solid var(--rd-sys-color-background-subtle);
+  border-radius: var(--radius-full);
+  background: var(--rd-sys-color-background-base);
+}
+
+.links a {
+  padding: var(--spacing-1) var(--spacing-3);
+  border-radius: var(--radius-full);
+  color: var(--rd-sys-color-content-brand);
+  text-decoration: none;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-emphasis);
+}
+
+.links a:hover {
+  background: var(--rd-sys-color-background-secondary-action);
+}
+
+.links a:focus-visible {
+  outline: 2px solid var(--rd-sys-color-border-brand);
+  outline-offset: 2px;
 }

@@ -114,4 +114,11 @@ export const OnThisPage: React.FC<{
   );
 };
 
+/** Section links at the top of a long design system page. The layout's On this page list takes over on scroll. */
+export const SectionLinks: React.FC<{ links: { id: string; label: string }[] }> = ({ links }) => (
+  <nav className={styles.links} aria-label="Sections">
+    {links.map((l) => <a key={l.id} href={`#${l.id}`}>{l.label}</a>)}
+  </nav>
+);
+
 export default OnThisPage;
