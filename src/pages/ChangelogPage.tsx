@@ -149,6 +149,21 @@ const HIGHLIGHTS: Highlight[] = [
 
 const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '26.10.3e',
+    date: '2026-10-13',
+    title: 'Set up with the Claude desktop app',
+    type: 'patch',
+    changes: [
+      { category: 'changed', label: 'Documentation', items: [
+        'The getting started guide, the Claude setup page and the onboarding docs set up Radiant Play in the Claude desktop app with a Galaxy fork, and start the first prototype with /rp-new-prototype. The guide gives the Galaxy repo URL.',
+        'The docs said Node 18+, but the project needs Node 22 or newer (20.19+ also works). They say so now.',
+      ] },
+      { category: 'changed', label: 'Tooling', items: [
+        'On the maintainer machine, one git push now reaches both GitHub and galaxy. Designer forks are unchanged.',
+      ] },
+    ],
+  },
+  {
     version: '26.10.3d',
     date: '2026-10-13',
     title: 'Thumbnail setup works again',
