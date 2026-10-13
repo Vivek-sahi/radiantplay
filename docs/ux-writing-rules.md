@@ -1,7 +1,7 @@
 # ThoughtSpot UX Writing Rules
 
 > **Source of truth** for all UI copy generated in prototypes and components.
-> These rules are shared with the Spotter Writer Figma plugin and the Cursor agent.
+> These rules are shared with the Spotter Writer Figma plugin and Claude.
 > Each rule is a standalone constraint, prefixed with "When writing..." for element-type matching.
 
 ---

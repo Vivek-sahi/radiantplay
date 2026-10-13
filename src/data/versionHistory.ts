@@ -28,6 +28,16 @@ export interface VersionEntry {
  */
 export const versionHistory: VersionEntry[] = [
   {
+    version: '26.10.3f',
+    date: '2026-10-13',
+    type: 'patch',
+    changes: [
+      { type: 'modified', group: 'Docs', component: 'Prototype template', description: 'The template README starts with /rp-new-prototype and describing the UI to Claude, not Cursor' },
+      { type: 'modified', group: 'Docs', component: 'UX writing rules', description: 'Says the rules are shared with Claude' },
+      { type: 'modified', group: 'Docs', component: 'Cursor docs', description: 'The Cursor model guide and the Cursor-to-Claude video script move to docs/archive/' },
+    ],
+  },
+  {
     version: '26.10.3e',
     date: '2026-10-13',
     type: 'patch',

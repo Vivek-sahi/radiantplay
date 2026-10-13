@@ -1,5 +1,13 @@
 # Changelog
 
+## 26.10.3f — 2026-10-13
+
+The last Cursor mentions outside the changelog are gone.
+
+- The prototype template's README (copied into every new prototype) starts with `/rp-new-prototype` and describing the UI to Claude
+- `docs/ux-writing-rules.md` says the rules are shared with Claude
+- `cursor-model-guide.md` and `cursor-to-claude-loom-script.md` move from `docs/collaboration/` to `docs/archive/`
+
 ## 26.10.3e — 2026-10-13
 
 The onboarding docs teach the Claude desktop app and name the Node version you need, and one push reaches both remotes on the maintainer machine.

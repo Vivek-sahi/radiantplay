@@ -4,13 +4,13 @@ This is your starting point for creating a new prototype using the Radiant desig
 
 ## Quick Start
 
-1. **Copy this folder** to create your prototype:
+1. **Create your prototype** by typing this in Claude's Code tab:
    ```
-   src/prototypes/YourPrototypeName/
+   /rp-new-prototype YourPrototypeName
    ```
 
-2. **Describe your UI** to Cursor AI:
-   - Paste a screenshot from Figma
+2. **Describe your UI** to Claude in the same chat:
+   - Drag in a screenshot from Figma
    - Describe the layout and interactions
    - Reference ThoughtSpot UI patterns
 
