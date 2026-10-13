@@ -776,8 +776,8 @@ const styles: Record<string, React.CSSProperties> = {
   },
   content: {
     minHeight: '100%',
-    padding: 'var(--spacing-14) 32px 32px var(--spacing-24)',
-    maxWidth: '1264px',
+    padding: 'var(--spacing-14) 32px 32px calc(var(--spacing-24) + var(--spacing-8))',
+    maxWidth: '1296px',
     margin: '0',
   },
   sidebarHeader: {
