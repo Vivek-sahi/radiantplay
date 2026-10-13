@@ -324,7 +324,7 @@ const styles: Record<string, React.CSSProperties> = {
   hero: {
     display: 'flex',
     alignItems: 'center',
-    padding: `${spacing.N}px ${spacing.L}px`,
+    padding: `${spacing.J}px`,
     marginBottom: spacing.H,
     position: 'relative',
     isolation: 'isolate',
