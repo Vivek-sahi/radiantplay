@@ -1,6 +1,7 @@
 ---
 name: rp-prototype-model
 description: Switch the Claude model that AI-capable prototypes call through /api/chat (today the Data Model Editor's SpotterModel agent) between Haiku, Sonnet and Opus, and set up ANTHROPIC_API_KEY in .env.local if missing. Load when a designer asks to change, switch or check the model a prototype's AI uses, or before testing (Haiku) or a demo (Sonnet or Opus). This is not Claude Code's own /model, which changes the model of the chat session itself.
+user-invocable: false
 ---
 
 ## Switch LLM model

@@ -1,6 +1,7 @@
 ---
 name: rp-radiance
 description: Radiance, ThoughtSpot's AI identity background (the animated wash behind AI surfaces). Load when a request mentions Radiance, an AI background, a wash or glow behind a page, and whenever a prototype recreates or extends a surface that has a Radiance product pattern even if Radiance is never mentioned - the Home page or Spotter home, SpotterX or a Spotter chat, a Liveboard with its Spotter panel, sign up or sign in - or another AI-flavoured surface such as an AI welcome, onboarding or an agent's empty state. Covers which pattern to use, the RadianceBackground component, and the lint.
+user-invocable: false
 ---
 
 # Radiance in prototypes

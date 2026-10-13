@@ -1,5 +1,11 @@
 # Changelog
 
+## 26.10.3a — 2026-10-13
+
+Typing `/rp-` lists only the commands you pick on purpose.
+
+- The `rp-radiance`, `rp-prototype-model` and `rp-prototype-thumbnails` skills no longer appear in the `/` menu. Claude still loads each one when a request needs it: mention Radiance or an AI background, ask to switch a prototype's model ("switch it to Sonnet"), or ask to update a thumbnail. `/rp-radiant-check`, `/rp-sync-upstream` and `/rp-migrate-prototype` still capture thumbnails as before
+
 ## 26.10.2e — 2026-10-12
 
 Figma-shaped variants for five Radiant components, plus a new WizardHeader. Every variant is opt-in: each component's default looks and behaves exactly as before.

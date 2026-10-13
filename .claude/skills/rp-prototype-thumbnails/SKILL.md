@@ -1,6 +1,7 @@
 ---
 name: rp-prototype-thumbnails
 description: Capture or refresh a prototype's gallery thumbnails (light and dark screenshots, 640x360) and wire them into registry-mine.ts. Load when a designer asks to capture, update or refresh a thumbnail or screenshot for the gallery, and when /rp-radiant-check, /rp-sync-upstream or /rp-migrate-prototype reach their thumbnail step. Covers the one-time screenshot tool setup question (asked once per machine, remembered), capture, checking each image, and registry wiring. Never commits.
+user-invocable: false
 ---
 
 # Capture prototype thumbnails

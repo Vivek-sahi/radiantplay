@@ -28,6 +28,14 @@ export interface VersionEntry {
  */
 export const versionHistory: VersionEntry[] = [
   {
+    version: '26.10.3a',
+    date: '2026-10-13',
+    type: 'patch',
+    changes: [
+      { type: 'modified', group: 'Tooling', component: 'Skills menu', description: 'rp-radiance, rp-prototype-model and rp-prototype-thumbnails no longer appear in the / menu. Claude still loads each when a request needs it (Radiance or an AI background, switching a prototype model, updating a thumbnail), and the commands that capture thumbnails still do.' },
+    ],
+  },
+  {
     version: '26.10.2e',
     date: '2026-10-12',
     type: 'patch',
