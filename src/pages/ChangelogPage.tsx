@@ -149,6 +149,44 @@ const HIGHLIGHTS: Highlight[] = [
 
 const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '26.10.3c',
+    date: '2026-10-13',
+    title: 'Coolify only',
+    type: 'patch',
+    changes: [
+      { category: 'changed', label: 'Documentation', items: ['RadiantPlay runs on Coolify only, and Vercel is switched off. The docs and the project canvas list Coolify sites only; forks still on Vercel keep working.'] },
+    ],
+  },
+  {
+    version: '26.10.3b',
+    date: '2026-10-13',
+    title: 'Thirteen Figma components and a tidier design system',
+    type: 'patch',
+    changes: [
+      { category: 'added', label: 'Components', items: [
+        'PageHeader, EditHeader, Breadcrumb, SplitButton, NumberInput, InlineEdit, FileUploader, DateRangePicker, Token, ChipIdentifier, UserChip, DotLoader and ScrollArea, built from Figma.',
+        'GlobalHeader, AppSidebar and DatePicker use tokens wherever one has the same value. Nothing changes on screen.',
+      ] },
+      { category: 'changed', label: 'Design system', items: [
+        'The theme icon sits at the top right, and longer pages list their sections on the right once you scroll.',
+        'One heading style and the same left spacing on every page; section links are blue pills.',
+        'The Radiance guide opens on its template builder, which hands you a prompt for Claude. The Colours page follows the theme.',
+      ] },
+    ],
+  },
+  {
+    version: '26.10.3a',
+    date: '2026-10-13',
+    title: 'A faster project canvas',
+    type: 'patch',
+    changes: [
+      { category: 'changed', label: 'Tooling', items: [
+        '/rp-project-canvas opens in seconds. /rp-project-canvas full also refreshes forks and the prototype census in the background, in under 10 minutes, and replaces /rp-prototype-census.',
+        'Skills Claude loads on its own (Radiance, prototype model, thumbnails) no longer crowd the / menu.',
+      ] },
+    ],
+  },
+  {
     version: '26.10.2e',
     date: '2026-10-12',
     title: 'Figma variants, WizardHeader and the Radiance guide',
