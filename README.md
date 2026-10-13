@@ -14,7 +14,7 @@ A tool-agnostic prototyping playground built on ThoughtSpot's Radiant design sys
 
 Radiant Play is a fork-ready repository for ThoughtSpot designers, PMs, and anyone building product prototypes. It ships with 75+ Radiant UI components, design tokens, mock data, and an AI rule system — so you can describe a UI in plain language and get working, compliant code in seconds.
 
-Works with any AI coding tool: **Claude Code**, **Cursor**, **Codex**, or any tool that reads project-level instructions.
+Built for **Claude** (the desktop app's Code tab or the `claude` terminal command). Any AI tool that reads project-level instructions can use the same rules.
 
 ---
 
@@ -23,8 +23,8 @@ Works with any AI coding tool: **Claude Code**, **Cursor**, **Codex**, or any to
 ### Option 1 — With Git (recommended)
 
 ```bash
-# Fork on GitHub or Galaxy, then clone your fork
-git clone https://github.com/YOUR-USERNAME/radiantplay.git
+# Fork on Galaxy (or GitHub), then clone your fork. Needs Node.js 22+ (or 20.19+)
+git clone https://galaxy.corp.thoughtspot.com/YOUR-USERNAME/radiantplay.git
 cd radiantplay
 npm install
 npm run dev
@@ -109,7 +109,7 @@ After completing a full Tier 2 build, the system suggests clearing context (`/co
 ## Rule files reference
 
 ```
-.cursor/rules/                        # Auto-loaded by Cursor
+.cursor/rules/                        # Rule files Claude reads via CLAUDE.md
 ├── _orchestration.md                 # Router — always loaded, classifies every task
 ├── component-summary.md              # Quick reference: all component names and icons
 ├── component-inventory.md            # Full component props, variants, code examples
@@ -134,7 +134,7 @@ After completing a full Tier 2 build, the system suggests clearing context (`/co
 └── commands/                         # Slash commands (/compact, /rp-explore, etc.)
 ```
 
-The same rules work across tools — `.cursor/rules/` for Cursor, `.claude/skills/` for Claude Code. You don't need to configure anything.
+Claude reaches these through `CLAUDE.md` and the matching `.claude/skills/`. You don't need to configure anything.
 
 ---
 
@@ -176,7 +176,7 @@ radiantplay/
 │   ├── styles/            # Global CSS
 │   ├── data/              # Component registry and roadmap data
 │   └── context/           # React context providers
-├── .cursor/rules/         # AI rule files — auto-loaded by Cursor
+├── .cursor/rules/         # AI rule files (Claude reads them via CLAUDE.md)
 ├── .claude/               # Claude Code skills, hooks, and commands
 ├── CLAUDE.md              # Project conventions — read by all AI tools
 ├── GETTING_STARTED.md     # Visual onboarding guide for beginners

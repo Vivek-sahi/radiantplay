@@ -78,7 +78,7 @@ npm run new-prototype MyPrototypeName
 
 This scaffolds `src/prototypes/MyPrototypeName/` and registers it in the gallery automatically.
 
-Then open `src/prototypes/MyPrototypeName/index.tsx` in Cursor and describe what you want to build. The AI knows all Radiant components, tokens, and patterns.
+Or type `/rp-new-prototype MyPrototypeName` in the Claude app's Code tab. Then describe what you want to build in the chat. Claude knows all Radiant components, tokens, and patterns.
 
 ### Save your work
 
@@ -195,7 +195,7 @@ The project uses a **split registry** to prevent conflicts:
 3. Move your prototype entries into `registry-mine.ts`:
    - Add your thumbnail imports and `React.lazy(...)` declarations
    - Add your entries to the `myRegistry` array with `section: 'mine'`
-4. Or just tell Claude/Cursor to do it: *"Move my prototype entries from the old registry into registry-mine.ts"*
+4. Or just tell Claude to do it: *"Move my prototype entries from the old registry into registry-mine.ts"*
 
 **On subsequent syncs:** No conflict. `registry-mine.ts` is never touched by upstream.
 
@@ -284,8 +284,8 @@ If you want your prototype to appear in the main repo:
 | `git merge` shows conflicts in registry files | Move your entries to `registry-mine.ts` — see Step 5 above |
 | My prototype disappeared after syncing | Check `registry-mine.ts` — your entry may have been lost during conflict resolution. Re-add it there. |
 | `upstream` remote not found | Run `git remote add upstream https://galaxy.corp.thoughtspot.com/mohammed-faris/radiantplay.git` |
-| `npm install` fails | Verify Node.js 18+: `node --version` |
-| AI in Cursor does not know Radiant components | Make sure you opened the `radiantplay` folder directly in Cursor, not a parent folder |
+| `npm install` or `npm run dev` fails | Check `node --version`. You need 22 or newer (20.19+ also works); install the LTS from nodejs.org |
+| Claude does not know Radiant components | Make sure the Claude session is open on the `radiantplay` folder itself, not a parent folder |
 | Changes not showing in browser | Make sure `npm run dev` is still running in a terminal |
 
 ---

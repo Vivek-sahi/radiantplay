@@ -316,7 +316,7 @@ kbd { background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);bor
 .wstep.active { display:flex;flex-direction:column;gap:10px; }
 .wstep-title { font-size:18px;font-weight:800;color:#fff;margin-bottom:2px; }
 .wstep-desc  { font-size:13px;color:rgba(255,255,255,.5);line-height:1.65; }
-.wcode { background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.08);border-radius:var(--r);padding:13px 16px;font-family:var(--mono);font-size:13px;color:#e2e8f0;line-height:1.75; }
+.wcode { background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.08);border-radius:var(--r);padding:13px 16px;font-family:var(--mono);font-size:13px;color:#e2e8f0;line-height:1.75;white-space:pre-wrap; }
 .wcode .cmd { color:var(--blue-40); }
 .wcode .cmt { color:rgba(255,255,255,.28); }
 .wcode .out { color:var(--green); }
@@ -356,7 +356,7 @@ kbd { background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);bor
 .bubble code { font-family:var(--mono);font-size:10.5px;background:rgba(255,255,255,.08);padding:1px 5px;border-radius:4px;color:var(--blue-40); }
 .bubble strong { font-weight:700;color:#fff; }
 
-/* ════ SLIDE 9 — MODEL USAGE ════ */
+/* ════ SLIDE 9 — SLASH COMMANDS ════ */
 .s-models { background:radial-gradient(ellipse at 60% 40%,#0d1a2e 0%,var(--gray-90) 60%); }
 .s-models .label { margin-bottom:10px; }
 .s-models .sec-title { font-size:clamp(22px,2.4vw,32px);margin-bottom:4px; }
@@ -367,6 +367,7 @@ kbd { background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);bor
 .model-tier-header { display:flex;align-items:center;gap:8px;margin-bottom:4px; }
 .model-tier-dot { width:8px;height:8px;border-radius:50%;flex-shrink:0; }
 .model-tier-name { font-size:13px;font-weight:800; }
+.model-tier-name.cmd { font-family:var(--mono);font-size:12px;font-weight:600;color:var(--blue-40); }
 .model-tier-cost { font-family:var(--mono);font-size:10px;color:rgba(255,255,255,.35);margin-left:auto; }
 .model-tier-tasks { list-style:none;padding:0;margin:0; }
 .model-tier-tasks li { font-size:11px;color:rgba(255,255,255,.5);padding:2px 0;padding-left:12px;position:relative; }
@@ -447,7 +448,7 @@ kbd { background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);bor
     <div style="font-size:14px;color:rgba(255,255,255,.4);margin-bottom:32px;line-height:1.6">This guide walks you through setup and building your first prototype.</div>
     <div class="hero-chips">
       <div class="hero-chip">73+ Radiant components</div>
-      <div class="hero-chip">AI-assisted in Cursor</div>
+      <div class="hero-chip">AI-assisted in Claude</div>
       <div class="hero-chip">Interactive in the browser</div>
     </div>
   </div>
@@ -475,8 +476,8 @@ kbd { background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);bor
       <div class="cc">
         <div class="cc-ico" style="background:var(--purple-bg)">✦</div>
         <div>
-          <h4>Cursor — AI code editor</h4>
-          <p>Describe what you want in plain English and it generates code using real Radiant components — instantly in the browser.</p>
+          <h4>Claude — your AI builder</h4>
+          <p>Describe what you want in plain English. Claude builds it with real Radiant components and checks it in a live preview.</p>
           <span class="cc-tag" style="background:var(--purple-bg);color:#b69dff">Where you build</span>
         </div>
       </div>
@@ -606,13 +607,13 @@ kbd { background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);bor
         <div class="pnum" style="background:rgba(39,112,239,.15);color:var(--blue-40)">1</div>
         <h3>Galaxy account</h3>
         <p>Your ThoughtSpot login works here. Sign in and confirm you can see the Radiant Play repo. Can't access it? Message your team lead on Slack.</p>
-        <span class="prereq-link">your internal Git host</span>
+        <span class="prereq-link">galaxy.corp.thoughtspot.com</span>
       </div>
       <div class="prereq-card pc-green">
         <div class="pnum" style="background:var(--green-bg);color:var(--green)">2</div>
-        <h3>Cursor IDE</h3>
-        <p>The AI editor where you build prototypes. Download it, then <strong style="color:rgba(255,255,255,.6)">create a free account</strong> at cursor.so to activate it. Handles git and npm automatically. Mac and Windows.</p>
-        <span class="prereq-link">cursor.so</span>
+        <h3>Claude desktop app</h3>
+        <p>Where you build prototypes. Download it and <strong style="color:rgba(255,255,255,.6)">sign in with your ThoughtSpot account</strong>. You'll work in its Code tab, which runs git and npm for you. Mac and Windows.</p>
+        <span class="prereq-link">claude.ai/download</span>
       </div>
     </div>
   </div>
@@ -632,7 +633,7 @@ kbd { background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);bor
           <div class="sn">1</div>
           <div>
             <h4>Go to Radiant Play on Galaxy</h4>
-            <p>Find the Radiant Play repository on Galaxy</p>
+            <p>Open <span style="font-family:var(--mono);font-size:11px;color:rgba(255,255,255,.65)">galaxy.corp.thoughtspot.com/mohammed-faris/radiantplay</span></p>
           </div>
         </div>
         <div class="step-item">
@@ -646,7 +647,7 @@ kbd { background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);bor
           <div class="sn">3</div>
           <div>
             <h4>Copy your fork's clone URL</h4>
-            <p>On your fork page, click the green <strong style="color:rgba(255,255,255,.65)">Code</strong> button → copy the <strong style="color:rgba(255,255,255,.65)">HTTPS</strong> URL. It looks like:<br><span style="font-family:var(--mono);font-size:11px;color:rgba(255,255,255,.4)">https://galaxy…/your-name/radiantplay.git</span></p>
+            <p>On your fork page, click the green <strong style="color:rgba(255,255,255,.65)">Code</strong> button → copy the <strong style="color:rgba(255,255,255,.65)">HTTPS</strong> URL. It looks like:<br><span style="font-family:var(--mono);font-size:11px;color:rgba(255,255,255,.4)">https://galaxy.corp.thoughtspot.com/your-name/radiantplay.git</span></p>
           </div>
         </div>
       </div>
@@ -686,26 +687,22 @@ kbd { background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);bor
     <div style="margin-bottom:22px">
       <div class="label">Step 2</div>
       <h2 class="h2" style="margin-bottom:8px">Get it running on your machine</h2>
-      <p class="sub">Steps 1–3 are one-time only. After that, only "Start the server" each time you come back.</p>
+      <p class="sub">Steps 1 to 3 are one-time only. After that, just "Start it up" each time you come back.</p>
     </div>
     <div class="wizard-wrap">
       <div class="wizard-tabs">
-        <button class="wtab active" onclick="setTab(0)"><div class="wnum">1</div><div class="wlabel">Clone in Cursor</div></button>
-        <button class="wtab" onclick="setTab(1)"><div class="wnum">2</div><div class="wlabel">Open terminal</div></button>
-        <button class="wtab" onclick="setTab(2)"><div class="wnum">3</div><div class="wlabel">npm install</div></button>
-        <button class="wtab" onclick="setTab(3)"><div class="wnum">4</div><div class="wlabel">npm run dev</div></button>
+        <button class="wtab active" onclick="setTab(0)"><div class="wnum">1</div><div class="wlabel">Open the Code tab</div></button>
+        <button class="wtab" onclick="setTab(1)"><div class="wnum">2</div><div class="wlabel">Clone your fork</div></button>
+        <button class="wtab" onclick="setTab(2)"><div class="wnum">3</div><div class="wlabel">Open the project</div></button>
+        <button class="wtab" onclick="setTab(3)"><div class="wnum">4</div><div class="wlabel">Start it up</div></button>
       </div>
       <div class="wizard-body">
 
         <div class="wstep active">
-          <div class="wstep-title">Clone in Cursor</div>
-          <div class="wstep-desc">Two ways to do this in Cursor:<br>
-          <strong style="color:#fff">Option A:</strong> File → Clone Git Repository<br>
-          <strong style="color:#fff">Option B:</strong> Click the branch icon in the left sidebar → "Clone Repository"<br>
-          Paste your fork URL, choose a folder (Desktop is fine). Cursor downloads the project.</div>
-          <div class="wcode"><span class="cmt"># Paste your fork URL — looks like this:</span>
-<span class="cmd">https://your-internal-git/your-name/radiantplay.git</span>
-<span class="cmt"># Replace "your-name" with your Galaxy username</span></div>
+          <div class="wstep-title">Open the Code tab</div>
+          <div class="wstep-desc">Open the Claude app and click <strong style="color:#fff">Code</strong> at the top. Start a new session and choose a folder to work in. Documents is fine; this is where your copy of the project will go.</div>
+          <div class="wcode"><span class="cmt"># Pick a parent folder, for example:</span>
+<span class="cmd">~/Documents</span></div>
           <div class="wizard-nav">
             <button class="wbtn-p" onclick="setTab(1)">Next →</button>
             <button class="wbtn-g" disabled>← Back</button>
@@ -713,10 +710,11 @@ kbd { background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);bor
         </div>
 
         <div class="wstep">
-          <div class="wstep-title">Open the terminal inside Cursor</div>
-          <div class="wstep-desc">Go to <strong style="color:#fff">Terminal → New Terminal</strong> in Cursor's menu bar. A panel opens at the bottom — this is where you type commands.</div>
-          <div class="wcode"><span class="cmt"># Keyboard shortcut (faster):</span>
-<span class="cmd">Ctrl + `</span>   <span class="cmt"># that's the backtick key, top-left of keyboard</span></div>
+          <div class="wstep-title">Clone your fork <span style="font-size:11px;background:var(--orange-bg);color:var(--orange);padding:2px 8px;border-radius:5px;margin-left:6px;vertical-align:middle;font-weight:700">one-time only</span></div>
+          <div class="wstep-desc">Paste your fork URL into the chat and ask Claude to clone it. Claude downloads the project into a <code style="font-family:var(--mono);font-size:11px;background:rgba(255,255,255,.08);padding:1px 5px;border-radius:4px">radiantplay</code> folder.<br><span style="color:rgba(245,166,35,.7)">⚠ If Galaxy asks you to sign in:</span> run the clone in the app's terminal panel instead, so you can type your login.</div>
+          <div class="wcode"><span class="cmt"># Type this in the chat:</span>
+<span class="cmd">Clone https://galaxy.corp.thoughtspot.com/your-name/radiantplay.git here</span>
+<span class="cmt"># Replace "your-name" with your Galaxy username</span></div>
           <div class="wizard-nav">
             <button class="wbtn-p" onclick="setTab(2)">Next →</button>
             <button class="wbtn-g" onclick="setTab(0)">← Back</button>
@@ -724,11 +722,10 @@ kbd { background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);bor
         </div>
 
         <div class="wstep">
-          <div class="wstep-title">Install dependencies <span style="font-size:11px;background:var(--orange-bg);color:var(--orange);padding:2px 8px;border-radius:5px;margin-left:6px;vertical-align:middle;font-weight:700">one-time only</span></div>
-          <div class="wstep-desc">Downloads all the packages the project needs. Takes ~1 minute. You'll never run this again.<br><span style="color:rgba(245,166,35,.7)">⚠ If this fails:</span> Node.js may not be installed. Run <code style="font-family:var(--mono);font-size:11px;background:rgba(255,255,255,.08);padding:1px 5px;border-radius:4px">node --version</code> to check — if nothing shows, install it from nodejs.org then retry.</div>
-          <div class="wcode"><span class="cmd">npm install</span>
-
-<span class="out">added 76 packages in 54s  ✓</span></div>
+          <div class="wstep-title">Open the project <span style="font-size:11px;background:var(--orange-bg);color:var(--orange);padding:2px 8px;border-radius:5px;margin-left:6px;vertical-align:middle;font-weight:700">one-time only</span></div>
+          <div class="wstep-desc">Start a new session and choose the <strong style="color:#fff">radiantplay</strong> folder this time. From now on, always open this folder. Claude reads the project's rules from it, so it already knows the Radiant components, tokens and conventions.</div>
+          <div class="wcode"><span class="cmt"># Your session folder:</span>
+<span class="cmd">~/Documents/radiantplay</span></div>
           <div class="wizard-nav">
             <button class="wbtn-p" onclick="setTab(3)">Next →</button>
             <button class="wbtn-g" onclick="setTab(1)">← Back</button>
@@ -736,16 +733,14 @@ kbd { background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);bor
         </div>
 
         <div class="wstep">
-          <div class="wstep-title">Start the dev server <span style="font-size:11px;background:var(--green-bg);color:var(--green);padding:2px 8px;border-radius:5px;margin-left:6px;vertical-align:middle;font-weight:700">every session</span></div>
-          <div class="wstep-desc">Run this each time you open the project. Leave the terminal running — it auto-updates the browser when you make changes.</div>
-          <div class="wcode"><span class="cmd">npm run dev</span>
-
-  VITE v7  ready in 312ms
-  ➜  Local:   <span class="url">http://localhost:5173/</span>
+          <div class="wstep-title">Start it up <span style="font-size:11px;background:var(--green-bg);color:var(--green);padding:2px 8px;border-radius:5px;margin-left:6px;vertical-align:middle;font-weight:700">every session</span></div>
+          <div class="wstep-desc">Ask Claude to start the dev server. The first time, it installs the project's packages too (about a minute). The app opens a preview pane that updates as Claude makes changes.<br><span style="color:rgba(245,166,35,.7)">⚠ If Node.js is missing:</span> Claude will tell you. You need Node 22 or newer: install the LTS from nodejs.org, then ask again.</div>
+          <div class="wcode"><span class="cmt"># Type this in the chat:</span>
+<span class="cmd">Start the dev server</span>
 
 <span class="cmt"># Two URLs to know:</span>
-<span class="out">localhost:5173           </span><span class="cmt">← Radiant DS browser (components, tokens)</span>
-<span class="out">localhost:5173/playground</span><span class="cmt">← YOUR prototypes live here  ✓</span></div>
+<span class="out">localhost:5173            </span><span class="cmt">← Radiant DS browser (components, tokens)</span>
+<span class="out">localhost:5173/playground </span><span class="cmt">← YOUR prototypes live here  ✓</span></div>
           <div class="wizard-nav">
             <button class="wbtn-p" onclick="nextSlide()">Build your first prototype →</button>
             <button class="wbtn-g" onclick="setTab(2)">← Back</button>
@@ -765,36 +760,36 @@ kbd { background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);bor
     <div>
       <div class="label">Step 3</div>
       <h2 class="h2" style="margin-bottom:12px">Build your first prototype</h2>
-      <p class="sub" style="margin-bottom:22px">Describe what you want. Cursor knows all 73+ components and ThoughtSpot patterns.</p>
+      <p class="sub" style="margin-bottom:22px">Describe what you want. Claude knows all 73+ components and ThoughtSpot patterns.</p>
       <div class="tips">
         <div class="tip">
           <div class="tip-ico">⌨️</div>
           <div>
             <h4>Create a new prototype</h4>
-            <p>In terminal: <code>npm run new-prototype SettingsPage</code><br>
+            <p>In the chat: <code>/rp-new-prototype SettingsPage</code><br>
             <span style="color:rgba(255,255,255,.3);font-size:11px">Must start with a capital, no spaces. ✓ SettingsPage &nbsp; ✗ settings-page</span></p>
           </div>
         </div>
         <div class="tip">
           <div class="tip-ico">📂</div>
           <div>
-            <h4>Open the generated file first</h4>
-            <p>In Cursor's file tree: <code>src/prototypes/SettingsPage/index.tsx</code><br>
-            <span style="color:rgba(255,255,255,.3);font-size:11px">Cursor AI needs a file open to know where to write the code</span></p>
+            <h4>Your prototype gets its own folder</h4>
+            <p><code>src/prototypes/SettingsPage/</code><br>
+            <span style="color:rgba(255,255,255,.3);font-size:11px">Claude adds it to the gallery and keeps working in this folder</span></p>
           </div>
         </div>
         <div class="tip">
           <div class="tip-ico">💬</div>
           <div>
-            <h4>Open AI chat and describe your UI</h4>
-            <p><code>Cmd+L</code> (Mac) / <code>Ctrl+L</code> (Windows) — type a description, or <strong style="color:rgba(255,255,255,.6)">drag a screenshot</strong> into the chat and say "Recreate this using Radiant components"</p>
+            <h4>Describe your UI</h4>
+            <p>Type a description in the same chat, or <strong style="color:rgba(255,255,255,.6)">drag a screenshot</strong> in and say "Recreate this using Radiant components". Watch it build in the preview pane.</p>
           </div>
         </div>
         <div class="tip">
           <div class="tip-ico">🔗</div>
           <div>
             <h4>Share your prototype</h4>
-            <p>Anyone on the same WiFi can open your URL locally at <code>localhost:5173/playground</code>. To share remotely, push to your Galaxy fork.</p>
+            <p>Push to your Galaxy fork, then run <code>/rp-coolify-deploy</code> once to get a live URL that updates on every push.</p>
           </div>
         </div>
       </div>
@@ -802,7 +797,7 @@ kbd { background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);bor
     <div class="chat-window">
       <div class="chat-bar">
         <div class="cdot r"></div><div class="cdot y"></div><div class="cdot g"></div>
-        <div class="chat-title">Cursor — AI Chat (Cmd+L)</div>
+        <div class="chat-title">Claude · Code tab</div>
       </div>
       <div class="chat-msgs">
         <div class="msg">
@@ -811,7 +806,7 @@ kbd { background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);bor
         </div>
         <div class="msg">
           <div class="ava a">✦</div>
-          <div class="bubble ai">Building with <strong>AppShell</strong>, <strong>TextInput</strong>, <strong>Toggle</strong>, and <strong>Vertical</strong> for the layout.<br><br><code>import &#123; AppShell, TextInput, Toggle, Vertical &#125; from '../../components'</code></div>
+          <div class="bubble ai">Building with <strong>AppShell</strong>, <strong>TextInput</strong>, <strong>Toggle</strong>, and <strong>Vertical</strong> for the layout.<br><br><code>import &#123; AppShell &#125; from '@components/AppShell'</code></div>
         </div>
         <div class="msg">
           <div class="ava u">F</div>
@@ -819,117 +814,88 @@ kbd { background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);bor
         </div>
         <div class="msg">
           <div class="ava a">✦</div>
-          <div class="bubble ai">Done — <strong>Button</strong> variant="primary" added and <strong>Toast</strong> wired to click. Check <code>localhost:5173/playground</code> ✓</div>
+          <div class="bubble ai">Done. <strong>Button</strong> variant="primary" added and <strong>Toast</strong> wired to click. Checked it in the preview ✓</div>
         </div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- ══════════════════════════════
-     SLIDE 9 — RESOURCES
-══════════════════════════════ -->
-<!-- ══════════════════════════════ SLIDE 9 — MODEL USAGE ══════════════════════════════ -->
+<!-- ══════════════════════════════ SLIDE 9 — SLASH COMMANDS ══════════════════════════════ -->
 <div class="slide s-models" data-index="8">
+  <div style="max-width:1020px;width:100%">
+  <div style="margin-bottom:22px">
+    <div class="label"><span class="label-dot"></span>Slash commands</div>
+    <h2 class="sec-title">Type /rp- to see them all</h2>
+    <p class="sec-sub" style="margin-bottom:0">Type them in the Code tab chat. Each one walks you through a task step by step.</p>
+  </div>
   <div class="models-layout">
-    <!-- Left: Models + when to use -->
     <div>
-      <div class="label"><span class="label-dot"></span>Model cheat sheet</div>
-      <h2 class="sec-title">500 credits / month</h2>
-      <p class="sec-sub">Click the model name next to "Agent" to switch anytime.</p>
-
+      <div class="model-insight-label">Build</div>
       <div class="model-tiers">
-        <div class="model-tier" style="border-color:rgba(39,112,239,.25);">
+        <div class="model-tier">
           <div class="model-tier-header">
             <div class="model-tier-dot" style="background:var(--blue-60)"></div>
-            <div class="model-tier-name">Opus high</div>
-            <div class="model-tier-cost">1 cr &middot; default</div>
+            <div class="model-tier-name cmd">/rp-new-prototype Name</div>
           </div>
-          <ul class="model-tier-tasks">
-            <li>Your everyday model for all tasks</li>
-            <li>Edits, questions, components, fixes</li>
-          </ul>
+          <ul class="model-tier-tasks"><li>Scaffold a prototype folder and add it to the gallery</li></ul>
         </div>
-
         <div class="model-tier">
           <div class="model-tier-header">
-            <div class="model-tier-dot" style="background:var(--orange)"></div>
-            <div class="model-tier-name">Opus high (thinking)</div>
-            <div class="model-tier-cost">2 cr &middot; deep work</div>
+            <div class="model-tier-dot" style="background:var(--blue-60)"></div>
+            <div class="model-tier-name cmd">/rp-radiant-check Name</div>
           </div>
-          <ul class="model-tier-tasks">
-            <li>Planning, architecture, multi-file changes</li>
-            <li>Complex bugs, full page builds</li>
-          </ul>
+          <ul class="model-tier-tasks"><li>Health check: components, tokens, content and layout</li></ul>
         </div>
-
-        <div class="model-tier">
-          <div class="model-tier-header">
-            <div class="model-tier-dot" style="background:var(--green)"></div>
-            <div class="model-tier-name">Sonnet medium</div>
-            <div class="model-tier-cost">1 cr &middot; budget</div>
-          </div>
-          <ul class="model-tier-tasks">
-            <li>Switch to this when credits run low</li>
-            <li>Keeps costs down in billing mode</li>
-          </ul>
-        </div>
-
         <div class="model-tier">
           <div class="model-tier-header">
             <div class="model-tier-dot" style="background:var(--purple)"></div>
-            <div class="model-tier-name">GPT Codex fast</div>
-            <div class="model-tier-cost">2 cr &middot; alternate</div>
+            <div class="model-tier-name cmd">/rp-explore scope</div>
           </div>
-          <ul class="model-tier-tasks">
-            <li>Boilerplate, general code questions</li>
-            <li>Less familiar with Radiant rules</li>
-          </ul>
+          <ul class="model-tier-tasks"><li>Step outside Radiant to try a freeform direction</li></ul>
+        </div>
+        <div class="model-tier">
+          <div class="model-tier-header">
+            <div class="model-tier-dot" style="background:var(--purple)"></div>
+            <div class="model-tier-name cmd">/rp-migrate-prototype</div>
+          </div>
+          <ul class="model-tier-tasks"><li>Move your prototypes onto the Geist font and dark mode</li></ul>
         </div>
       </div>
     </div>
 
-    <!-- Right: Usage data + flowchart -->
     <div>
-      <div class="model-insight">
-        <div class="model-insight-label">Team usage — what to fix</div>
-        <div class="model-bar-row">
-          <div class="model-bar-label">Regular</div>
-          <div class="model-bar-track"><div class="model-bar-fill good" style="width:55%">55%</div></div>
+      <div class="model-insight-label">Stay current and share</div>
+      <div class="model-tiers">
+        <div class="model-tier">
+          <div class="model-tier-header">
+            <div class="model-tier-dot" style="background:var(--green)"></div>
+            <div class="model-tier-name cmd">/rp-sync-upstream</div>
+          </div>
+          <ul class="model-tier-tasks"><li>Preview the latest library changes, then pull them into your fork</li><li>Asks before it merges anything</li></ul>
         </div>
-        <div class="model-bar-row">
-          <div class="model-bar-label">Thinking</div>
-          <div class="model-bar-track"><div class="model-bar-fill bad" style="width:37%">37%</div></div>
+        <div class="model-tier">
+          <div class="model-tier-header">
+            <div class="model-tier-dot" style="background:var(--green)"></div>
+            <div class="model-tier-name cmd">/rp-coolify-deploy</div>
+          </div>
+          <ul class="model-tier-tasks"><li>Give your fork a live URL that redeploys on every push</li></ul>
         </div>
-        <div class="model-bar-row">
-          <div class="model-bar-label">Other</div>
-          <div class="model-bar-track"><div class="model-bar-fill mid" style="width:8%">8%</div></div>
-        </div>
-        <div class="model-callout">
-          <div class="model-callout-icon">&#x26A0;</div>
-          <div>37% of requests used thinking mode (2 cr each). Save thinking for planning and hard problems — use Opus regular for everything else.</div>
+        <div class="model-tier">
+          <div class="model-tier-header">
+            <div class="model-tier-dot" style="background:var(--orange)"></div>
+            <div class="model-tier-name cmd">/rp-project-canvas</div>
+          </div>
+          <ul class="model-tier-tasks"><li>A local overview of your prototypes, branches and sites</li></ul>
         </div>
       </div>
 
-      <div class="model-flowchart">
-        <div class="model-insight-label">When to use what</div>
-        <div class="flow-step">
-          <div class="flow-q">Most tasks — edits, fixes, questions</div>
-          <div class="flow-arrow">&rarr;</div>
-          <div class="flow-answer" style="background:rgba(39,112,239,.15);color:var(--blue-50)">Opus &middot; 1</div>
-        </div>
-        <div class="flow-step">
-          <div class="flow-q">Planning, architecture, hard bugs</div>
-          <div class="flow-arrow">&rarr;</div>
-          <div class="flow-answer" style="background:var(--orange-bg);color:var(--orange)">Opus thinking &middot; 2</div>
-        </div>
-        <div class="flow-step">
-          <div class="flow-q">Credits running low or in billing</div>
-          <div class="flow-arrow">&rarr;</div>
-          <div class="flow-answer" style="background:rgba(6,191,127,.15);color:var(--green)">Sonnet &middot; 1</div>
-        </div>
+      <div class="model-callout">
+        <div class="model-callout-icon">💬</div>
+        <div>No command for it? Just ask. "Capture a thumbnail for my prototype" or "Switch my prototype's AI to Sonnet" work too.</div>
       </div>
     </div>
+  </div>
   </div>
 </div>
 
@@ -938,7 +904,7 @@ kbd { background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);bor
   <div class="res-inner">
     <span class="celebrate">🚀</span>
     <h1 class="fin-title">You're ready. Let's build.</h1>
-    <p class="fin-sub">You've got the tools, the components, and AI on your side. Open Cursor, describe what you want, and watch it come to life.</p>
+    <p class="fin-sub">You've got the tools, the components, and AI on your side. Open Claude, describe what you want, and watch it come to life.</p>
     <a class="fin-cta" href="/playground" target="_blank">
       Open the playground
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
@@ -959,8 +925,8 @@ kbd { background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);bor
       <div class="res-card">
         <div class="res-icon">🙋</div>
         <h4>Get help</h4>
-        <p>Stuck? Ask Cursor first — it knows the Radiant codebase. If that doesn't work, reach out.</p>
-        <code>Cmd+L → describe the issue</code>
+        <p>Stuck? Ask Claude first. It knows the Radiant codebase. If that doesn't work, reach out.</p>
+        <code>Code tab → describe the issue</code>
       </div>
       <div class="res-card">
         <div class="res-icon">💙</div>
