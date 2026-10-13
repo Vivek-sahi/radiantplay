@@ -1,205 +1,105 @@
-# Moving from Cursor to Claude Code — Setup Guide
+# Setting up Claude for Radiant Play
 
-This guide walks you through the five steps to get Claude Code running on your machine so you can continue prototyping in RadiantPlay exactly as before — just with Claude Code instead of Cursor.
-
----
-
-## Before you begin — update your skills first
-
-Your fork may have been created a while ago. The `.claude/commands/` folder may be outdated or missing skills. Run these four commands once before anything else.
-
-**A — Add the upstream remote**
-```bash
-git remote add upstream https://galaxy.corp.thoughtspot.com/mohammed-faris/radiantplay.git
-```
-> If you see `error: remote upstream already exists`, skip to B.
-
-**B — Fetch from upstream**
-```bash
-git fetch upstream
-```
-
-**C — Pull only the commands folder**
-```bash
-git checkout upstream/main -- .claude/commands/
-```
-This replaces only `.claude/commands/` with the latest version — your prototypes and all other files are untouched.
-
-**D — Restart your Claude session**
-
-Quit Claude and relaunch so the updated commands are picked up:
-```bash
-claude
-```
+This guide gets you from nothing to a running prototype in the Claude desktop app. It takes about ten minutes, once.
 
 ---
 
-## The five-step process
+## What you need
 
-1. Create your Claude account and API key
-2. Install Claude Code on your machine
-3. Configure your API key
-4. Verify Claude Code is working
-5. Open the RadiantPlay folder and start building
+- **A Galaxy account.** Your ThoughtSpot login works. Make sure you can see the Radiant Play repo and that you have your own fork of it. The [forking guide](forking-guide.md) covers forking.
+- **The Claude desktop app.** Download it from [claude.ai/download](https://claude.ai/download) (Mac and Windows) and sign in with your ThoughtSpot account.
+- **Node.js.** Radiant Play needs it to run. If it's missing, Claude will tell you when you first start the project; install the LTS version from [nodejs.org](https://nodejs.org).
 
----
-
-## Step 1 — Create your Claude account and API key
-
-1. Check your email for an invite from Anthropic (subject: *"You've been invited to Claude"* or similar). Click the link to create your account.
-2. Once logged in, go to [console.anthropic.com](https://console.anthropic.com) and sign in.
-3. In the left sidebar, click **API Keys**.
-4. Click **+ Create Key**, give it a name (e.g. `radiantplay-claude-code`), and click **Create**.
-5. **Copy the key immediately** — it is only shown once.
-6. Paste it somewhere safe (Notes app, 1Password, etc.) before closing the dialog.
-
-> The key starts with `sk-ant-...`. Keep it private — do not share it or commit it to git.
+You don't need an API key, and you don't need to install anything in the terminal.
 
 ---
 
-## Step 2 — Install Claude Code
+## Step 1: Open the Code tab
 
-Open your terminal and run:
+Open the Claude app and click **Code** at the top. Start a new session and choose a folder to work in. `~/Documents` is fine; your copy of the project goes inside it.
 
-```bash
-npm install -g @anthropic-ai/claude-code
+## Step 2: Clone your fork
+
+Paste your fork's URL into the chat and ask Claude to clone it:
+
+```
+Clone https://galaxy.corp.thoughtspot.com/YOUR-USERNAME/radiantplay.git here
 ```
 
-This installs the `claude` CLI globally. It requires Node.js 18 or later. To check your Node version:
+Claude downloads the project into a `radiantplay` folder.
 
-```bash
-node --version
+> If Galaxy asks you to sign in, run the clone in the app's terminal panel instead, so you can type your login:
+> `git clone https://galaxy.corp.thoughtspot.com/YOUR-USERNAME/radiantplay.git`
+
+## Step 3: Open the project
+
+Start a new session and choose the `radiantplay` folder. From now on, always open this folder. Claude reads the project's `CLAUDE.md` when the session starts, so it already knows the Radiant components, tokens and conventions.
+
+## Step 4: Start it up
+
+Type this in the chat:
+
+```
+Start the dev server
 ```
 
-If you see `v18.x.x` or higher, you're good. If not, install the latest LTS from [nodejs.org](https://nodejs.org).
+The first time, Claude installs the project's packages too (about a minute). The app opens a preview pane that updates as Claude makes changes. Do this each time you come back to the project.
+
+| URL | What's there |
+|-----|--------------|
+| `localhost:5173` | The Radiant DS browser: components and tokens |
+| `localhost:5173/playground` | Your prototypes |
+
+## Step 5: Build your first prototype
+
+```
+/rp-new-prototype SettingsPage
+```
+
+The name starts with a capital letter and has no spaces. Then describe what you want in the same chat, or drag in a screenshot and say "Recreate this using Radiant components". Claude builds it and checks it in the preview.
 
 ---
 
-## Step 3 — Configure your API key
+## Already have the project on your machine?
 
-Set your API key so Claude Code can authenticate. In your terminal:
-
-```bash
-export ANTHROPIC_API_KEY=sk-ant-your-key-here
-```
-
-To make this permanent (so you don't need to re-run it every session), add it to your shell config file. Run the appropriate command for your shell:
-
-**zsh (default on Mac):**
-```bash
-echo 'export ANTHROPIC_API_KEY=sk-ant-your-key-here' >> ~/.zshrc
-source ~/.zshrc
-```
-
-**bash:**
-```bash
-echo 'export ANTHROPIC_API_KEY=sk-ant-your-key-here' >> ~/.bash_profile
-source ~/.bash_profile
-```
-
-Replace `sk-ant-your-key-here` with your actual key.
+Skip the clone. Open your existing radiantplay folder in the Code tab (Step 3) and carry on; your fork, branches and prototypes stay as they are. If your fork is old, run `/rp-sync-upstream` first so you get the latest commands and rules. On a fork without `/rp-` commands, type `/sync-upstream`; the old name still works.
 
 ---
 
-## Step 4 — Verify Claude Code is working
+## Slash commands
 
-Run:
+Type `/rp-` in the chat to see them all.
 
-```bash
-claude --version
-```
+| Command | What it does |
+|---------|--------------|
+| `/rp-new-prototype Name` | Scaffolds a prototype folder and adds it to the gallery |
+| `/rp-radiant-check Name` | Health check: components, tokens, content and layout |
+| `/rp-explore scope` | Steps outside Radiant to try a freeform direction |
+| `/rp-migrate-prototype` | Moves your prototypes onto the Geist font and dark mode |
+| `/rp-sync-upstream` | Previews the latest library changes, then pulls them into your fork. Asks before it merges |
+| `/rp-coolify-deploy` | Gives your fork a live URL that redeploys on every push |
+| `/rp-project-canvas` | A local overview of your prototypes, branches and sites |
 
-You should see a version number printed. Then run:
+No command for it? Just ask. "Capture a thumbnail for my prototype" or "Switch my prototype's AI to Sonnet" work too.
 
-```bash
-claude
-```
+> **When to sync:** run `/rp-sync-upstream` at the start of any new prototype sprint. The preview shows you what's coming before anything changes.
 
-This opens an interactive session. Type `hello` and press Enter — Claude should respond. Type `/exit` to close.
+---
 
-### Troubleshooting
+## Troubleshooting
 
 | Symptom | Fix |
 |---------|-----|
-| `command not found: claude` | npm global bin is not in your PATH. Run `npm config get prefix` and add `<prefix>/bin` to your `PATH` in `.zshrc` / `.bash_profile`. |
-| `AuthenticationError` or `401` | API key is wrong or not exported. Double-check the value with `echo $ANTHROPIC_API_KEY`. |
-| `npm install` fails | Check Node version (`node --version`). Must be v18+. |
-| `rate_limit_error` | API usage limit reached — contact Mohammed to check quota. |
-| Session opens but no response | Check your internet connection. Claude Code requires outbound HTTPS. |
+| Claude says Node.js or npm is missing | Install the LTS version from [nodejs.org](https://nodejs.org), then ask Claude to start the dev server again |
+| The clone stops at a sign-in prompt | Run the clone in the app's terminal panel so you can type your Galaxy login |
+| `/rp-` commands don't show up | Check the session is open on the `radiantplay` folder, not its parent. On an old fork, ask Claude to run `/sync-upstream` |
+| The preview pane is blank | Ask Claude to check the dev server logs and fix what it finds |
 
 ---
 
-## Step 5 — Open RadiantPlay in Claude Code
+## Prefer the terminal?
 
-Navigate to your local RadiantPlay folder and launch Claude Code:
-
-```bash
-cd ~/code/radiantplay
-claude
-```
-
-Claude Code is now running inside the project. You can start prompting the same way you did in Cursor — ask it to build prototypes, modify components, or run commands.
-
-### Useful first commands
-
-```
-/help          — see all available slash commands
-/status        — check current branch and uncommitted changes
-/new-prototype — scaffold a new prototype
-/radiant-check — run a compliance health check on a prototype
-/sync-upstream — pull latest changes from the upstream library
-```
-
----
-
-## Keeping your library current
-
-New components, tokens, and rules are pushed to the upstream library regularly. Use these three commands to stay in sync.
-
-### Step 1 — Preview and sync
-
-```
-/sync-upstream
-```
-
-Fetches upstream, shows you a preview of what's changed (new components, token changes, rule updates, files that overlap with your work), and tells you exactly what it will do on your current branch. Then it asks before merging.
-
-When you say yes, it stashes any in-progress work, syncs `main` against upstream, resolves the `registry-core.ts` conflict automatically (your prototypes in `registry-mine.ts` are preserved), verifies the build, pushes `main` to your fork, forwards the changes into your feature branch, and restores your stashed work. You end up back on the branch you started on, with your WIP intact and the latest library available.
-
-### Step 2 — Verify your fork is in sync
-
-```
-/fork-status
-```
-
-Reports sync status between origin (GitHub) and galaxy (ThoughtSpot) across all branches.
-
-> **When to sync:** Run `/sync-upstream` at the start of any new prototype sprint. The preview shows you what's available before anything changes.
-
----
-
-## Quick reference card
-
-| Step | Command |
-|------|---------|
-| Install Claude Code | `npm install -g @anthropic-ai/claude-code` |
-| Set API key (temporary) | `export ANTHROPIC_API_KEY=sk-ant-...` |
-| Set API key (permanent) | Add export to `~/.zshrc` then `source ~/.zshrc` |
-| Verify installation | `claude --version` |
-| Open project | `cd ~/code/radiantplay && claude` |
-
----
-
-## What changes vs Cursor
-
-| Cursor | Claude Code |
-|--------|-------------|
-| GUI-based, opens in editor | Terminal-based, runs in your project folder |
-| Inline code completions | Conversational — describe what you want |
-| `.cursor/rules/` auto-loaded | Same rules still apply; Claude reads them on request |
-| `/` commands in chat panel | `/` commands in the Claude Code terminal session |
-
-The slash commands (`/new-prototype`, `/ship`, `/radiant-check`, etc.) work the same way — just type them in the Claude Code terminal instead of the Cursor chat panel.
+The same setup works with the `claude` command in a terminal. Follow the install steps at [claude.com/claude-code](https://claude.com/claude-code), sign in, then run `claude` inside your radiantplay folder. Slash commands work the same way.
 
 ---
 

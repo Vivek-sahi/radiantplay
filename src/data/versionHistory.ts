@@ -28,6 +28,16 @@ export interface VersionEntry {
  */
 export const versionHistory: VersionEntry[] = [
   {
+    version: '26.10.3e',
+    date: '2026-10-13',
+    type: 'patch',
+    changes: [
+      { type: 'modified', group: 'Docs', component: 'Getting started guide', description: 'Teaches the Claude desktop app: set up in the Code tab, start with /rp-new-prototype, share with /rp-coolify-deploy. The model credits slide is now a slash commands slide' },
+      { type: 'modified', group: 'Docs', component: 'How it works', description: 'Says Claude finds the rules in .cursor/rules/ through CLAUDE.md' },
+      { type: 'modified', group: 'Docs', component: 'Claude setup page', description: 'The gallery\'s Claude setup page and its markdown twin rewritten for the desktop app, with no API key and the /rp- commands' },
+    ],
+  },
+  {
     version: '26.10.3d',
     date: '2026-10-13',
     type: 'patch',

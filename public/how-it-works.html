@@ -517,7 +517,7 @@ code { font-family:var(--mono);font-size:12px;font-weight:500;color:var(--blue-5
   <div class="files-inner">
     <div class="label">Reference system</div>
     <h2 class="h2">Priority reference files</h2>
-    <p class="sub" style="margin-bottom:32px">The AI consults these 10 files in priority order. All live in <code>.cursor/rules/</code> and are loaded automatically.</p>
+    <p class="sub" style="margin-bottom:32px">The AI consults these 10 files in priority order. All live in <code>.cursor/rules/</code>, and Claude is pointed to them automatically.</p>
 
     <div class="files-grid">
       <div class="file-card"><div class="file-num">1</div><div><div class="file-name">_orchestration.md</div><div class="file-role">Router</div><div class="file-desc">Determines which guidelines to consult based on the task type</div></div></div>
@@ -600,7 +600,7 @@ code { font-family:var(--mono);font-size:12px;font-weight:500;color:var(--blue-5
     <p class="fin-sub">Every prototype follows the same structured rules, uses real components, and stays consistent with the design system.</p>
     <div class="fin-note">
       <span style="font-size:18px">📁</span>
-      <span>All guideline files live in <code>.cursor/rules/</code> and are automatically loaded by Cursor based on glob patterns matching the files you're editing.</span>
+      <span>All guideline files live in <code>.cursor/rules/</code>. Claude reads the project's <code>CLAUDE.md</code> at the start of every session, and it sends Claude to the right files for the task.</span>
     </div>
     <a class="fin-cta" href="/guide.html">
       Getting started guide

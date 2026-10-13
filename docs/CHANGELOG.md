@@ -1,5 +1,13 @@
 # Changelog
 
+## 26.10.3e — 2026-10-13
+
+The getting started guide and the Claude setup page teach the Claude desktop app.
+
+- `guide.html`: setup is now the Claude app's Code tab (clone, open the folder, ask Claude to start the dev server); the first prototype starts with `/rp-new-prototype`, and sharing points to `/rp-coolify-deploy`. The model credits slide is now a slash commands slide. The wizard's code boxes keep their line breaks
+- `how-it-works.html`: says Claude finds the rules in `.cursor/rules/` through `CLAUDE.md`
+- Claude setup page (`cursor-to-claude-setup.html`, linked from the gallery) and `docs/collaboration/cursor-to-claude-setup.md`: rewritten for the desktop app with no API key, with the `/rp-` commands, troubleshooting and a short section for anyone who already has the project
+
 ## 26.10.3d — 2026-10-13
 
 Thumbnail setup works again.
