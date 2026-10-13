@@ -104,3 +104,35 @@
   line-height: 18px;
   color: var(--rd-sys-color-content-secondary);
 }
+
+/* Prompt for Claude, under the stage */
+.prompt {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-4);
+  margin-top: var(--spacing-3);
+  padding: var(--spacing-3) var(--spacing-4);
+  border: 1px solid var(--rd-sys-color-border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--rd-sys-color-background-on-base);
+}
+
+.promptText {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  min-width: 0;
+}
+
+.promptLabel {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-emphasis);
+  color: var(--rd-sys-color-content-secondary);
+}
+
+.promptBody {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--rd-sys-color-content-primary);
+}

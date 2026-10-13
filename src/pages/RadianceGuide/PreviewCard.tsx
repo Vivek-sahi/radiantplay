@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { Button } from '@components/Button';
 import { CodeLine } from './CodeBlock';
 import styles from './PreviewCard.module.css';
 
@@ -22,9 +23,31 @@ export interface PreviewCardProps {
   /** The live surface. Gets a 280px stage. */
   preview: React.ReactNode;
   /** One line of code, shown under the stage. */
-  code: string;
+  code?: string;
+  /** A ready prompt for Claude, shown under the stage with a Copy button (instead of code). */
+  prompt?: string;
   footnote?: React.ReactNode;
 }
+
+/** The prompt a designer pastes into Claude, with a Copy button. */
+const PromptBox: React.FC<{ prompt: string }> = ({ prompt }) => {
+  const [copied, setCopied] = useState(false);
+  const copy = () => {
+    navigator.clipboard?.writeText(prompt).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    }, () => {});
+  };
+  return (
+    <div className={styles.prompt}>
+      <div className={styles.promptText}>
+        <span className={styles.promptLabel}>Ask Claude in your RadiantPlay project</span>
+        <p className={styles.promptBody}>{prompt}</p>
+      </div>
+      <Button variant="secondary" size="small" onClick={copy}>{copied ? 'Copied' : 'Copy prompt'}</Button>
+    </div>
+  );
+};
 
 export const PreviewCard: React.FC<PreviewCardProps> = ({
   id,
@@ -37,6 +60,7 @@ export const PreviewCard: React.FC<PreviewCardProps> = ({
   controls,
   preview,
   code,
+  prompt,
   footnote,
 }) => (
   <article className={styles.card} id={id}>
@@ -58,7 +82,7 @@ export const PreviewCard: React.FC<PreviewCardProps> = ({
       {preview}
     </section>
 
-    <CodeLine code={code} />
+    {prompt ? <PromptBox prompt={prompt} /> : code && <CodeLine code={code} />}
     {footnote && <p className={styles.footnote}>{footnote}</p>}
   </article>
 );

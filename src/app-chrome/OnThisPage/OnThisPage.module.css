@@ -1,0 +1,64 @@
+/* Fixed in the space to the right of the design system content; placed by OnThisPage.tsx */
+.rail {
+  position: fixed;
+  top: var(--spacing-16);
+  z-index: 5;
+  width: 180px;
+  max-height: calc(100vh - var(--spacing-20));
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  padding-left: var(--spacing-3);
+  border-left: 1px solid var(--rd-sys-color-border-subtle);
+  opacity: 0;
+  transform: translateY(var(--spacing-2));
+  transition: opacity var(--duration-normal, 200ms) var(--easing-standard, ease), transform var(--duration-normal, 200ms) var(--easing-standard, ease);
+  pointer-events: none;
+}
+
+.shown {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+
+.title {
+  margin: 0 0 var(--spacing-2);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-emphasis);
+  color: var(--rd-sys-color-content-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.rail a {
+  padding: var(--spacing-1) 0;
+  font-size: var(--font-size-sm);
+  line-height: 1.35;
+  color: var(--rd-sys-color-content-secondary);
+  text-decoration: none;
+}
+
+.rail a:hover {
+  color: var(--rd-sys-color-content-primary);
+}
+
+.rail a.active {
+  color: var(--rd-sys-color-content-brand);
+  font-weight: var(--font-weight-emphasis);
+}
+
+.rail a:focus-visible {
+  outline: 2px solid var(--rd-sys-color-border-brand);
+  outline-offset: 2px;
+}
+
+/* Headings the rail links to land below the top of the window */
+.target {
+  scroll-margin-top: var(--spacing-20);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rail { transition: none; }
+}

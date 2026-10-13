@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { Sidebar, NavItem } from './components/Sidebar';
 import { HomePage } from './pages/HomePage';
@@ -25,6 +25,7 @@ import { sysVar } from './tokens/colors';
 import { getCurrentVersion } from './data/versionHistory';
 import { useTheme } from './context/ThemeContext';
 import { ThemeSwitch } from './components/ThemeSwitch';
+import { OnThisPage, RAIL_SPACE } from './app-chrome/OnThisPage/OnThisPage';
 import { getIconCount } from './data/componentRegistry';
 
 // Navigation icons
@@ -202,8 +203,24 @@ const ROUTES = {
 
 // Layout component with sidebar for Radiant section
 const RadiantLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const contentRef = useRef<HTMLDivElement>(null);
+  // Pages with an "On this page" list keep room for it on the right; others keep their full width
+  const [hasToc, setHasToc] = React.useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  // A page whose content can't shrink into the remaining width (fixed-width previews) gives the room back,
+  // so there is never a sideways scroll; it gets no list at that window width.
+  const [tocBlocked, setTocBlocked] = React.useState(false);
+  const reserve = hasToc && !tocBlocked;
+  React.useEffect(() => {
+    setTocBlocked(false);
+    const onResize = () => setTocBlocked(false);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, [location.pathname]);
+  React.useLayoutEffect(() => {
+    if (reserve && document.documentElement.scrollWidth > window.innerWidth + 1) setTocBlocked(true);
+  });
 
   // Get active page ID from current path
   const getActiveId = (): string => {
@@ -506,9 +523,12 @@ const RadiantLayout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
             <ThemeSwitch variant="icon" />
           </div>
         </div>
-        <div style={styles.content}>
-          {children}
+        <div style={{ paddingRight: reserve ? RAIL_SPACE : 0 }}>
+          <div ref={contentRef} style={styles.content}>
+            {children}
+          </div>
         </div>
+        <OnThisPage contentRef={contentRef} onChange={setHasToc} />
       </main>
     </div>
   );
@@ -751,7 +771,9 @@ const styles: Record<string, React.CSSProperties> = {
     flex: 1,
     marginLeft: '260px',
     minHeight: '100vh',
-    overflowY: 'auto',
+    // The window scrolls, not main. 'clip' trims sideways overflow without making
+    // main a scroll container, so the theme icon and in-page section links can stick.
+    overflowX: 'clip',
   },
   themeBar: {
     position: 'sticky',

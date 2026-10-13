@@ -56,27 +56,47 @@
 
 .toc {
   display: flex;
-  gap: var(--spacing-4);
+  width: fit-content;
+  max-width: 100%;
   flex-wrap: wrap;
-  padding: var(--spacing-3) 0;
-  border-top: 1px solid var(--rd-sys-color-background-subtle);
-  border-bottom: 1px solid var(--rd-sys-color-background-subtle);
+  gap: var(--spacing-1);
+  padding: var(--spacing-1);
+  margin: var(--spacing-6) 0 var(--spacing-8);
+  border: 1px solid var(--rd-sys-color-border-subtle);
+  border-radius: var(--radius-full);
+  background: var(--rd-sys-color-background-raised);
+  box-shadow: var(--rd-sys-color-shadow-menu);
 }
 
 .toc a {
-  color: var(--rd-sys-color-content-brand);
+  padding: var(--spacing-2) var(--spacing-4);
+  border-radius: var(--radius-full);
+  color: var(--rd-sys-color-content-primary);
   text-decoration: none;
-  font-size: 13px;
-  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-emphasis);
 }
 
 .toc a:hover {
-  text-decoration: underline;
+  background: var(--rd-sys-color-background-secondary-action);
+  color: var(--rd-sys-color-content-brand);
+}
+
+.toc a:focus-visible {
+  outline: 2px solid var(--rd-sys-color-border-brand);
+  outline-offset: 2px;
+}
+
+/* With no room beside the content for the rail, the pill bar stays pinned while scrolling */
+.tocPinned {
+  position: sticky;
+  top: var(--spacing-3);
+  z-index: 5;
 }
 
 .section {
   margin-bottom: var(--spacing-10);
-  scroll-margin-top: var(--spacing-6);
+  scroll-margin-top: var(--spacing-20);
 }
 
 .sectionHeader {

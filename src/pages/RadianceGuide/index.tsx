@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { SegmentedControl } from '@components/SegmentedControl';
 import { Select } from '@components/Select';
 import { Alert } from '@components/Alert';
@@ -208,7 +208,7 @@ const TemplateBuilder: React.FC = () => {
       id="template-builder"
       name="Template builder"
       path="<placement>-<intensity>-<motion>-<speed>"
-      description="Pick the four factors. The preview and the code line update together. The host's background is the base, so the preview sits on Base."
+      description="Pick the four factors and watch the preview. When it looks right, copy the prompt and give it to Claude in your project: it adds the template, sets the base to your background and checks the Radiance rules."
       stageLabel="Live preview"
       stageNote={name}
       preview={
@@ -272,7 +272,7 @@ const TemplateBuilder: React.FC = () => {
           </div>
         </>
       }
-      code={`<RadianceBackground pattern="${name}" />`}
+      prompt={`Add the Radiance template ${name} behind the main area of my prototype.`}
       footnote="Speed has no effect on a static template, so a static name drops it. Prominent belongs on covers and heroes, never behind dense content (INT-2)."
     />
   );
@@ -300,13 +300,45 @@ const DONT_RULES: React.ReactNode[] = [
 
 // ── Page ──────────────────────────────────────────────────────────────────
 
+// Room the layout's "On this page" list needs to the right of this page (its 220px plus the content's 32px padding)
+const RAIL_ROOM = 252;
+
+const SECTIONS = [
+  { id: 'templates', label: 'Template builder' },
+  { id: 'patterns', label: 'Product patterns' },
+  { id: 'rules', label: 'Rules' },
+  { id: 'prototypes', label: 'In prototypes' },
+];
+
+/**
+ * The pill bar leads. Beside the content the layout's shared "On this page" list takes over once the reader
+ * scrolls; when the window has no room for it, the pill bar stays pinned instead.
+ */
+function useOnThisPage(pageRef: React.RefObject<HTMLElement | null>) {
+  const [railLeft, setRailLeft] = useState<number | null>(null);
+  useEffect(() => {
+    const measure = () => {
+      const page = pageRef.current;
+      if (!page) return;
+      const right = page.getBoundingClientRect().right;
+      setRailLeft(window.innerWidth - right >= RAIL_ROOM ? right + 32 : null);
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, [pageRef]);
+  return { railLeft };
+}
+
 export const RadianceGuide: React.FC = () => {
+  const pageRef = useRef<HTMLDivElement>(null);
+  const { railLeft } = useOnThisPage(pageRef);
   const availability = useRadianceAvailability();
   const manifest = useManifest();
   const commit = manifest?.source?.commit?.slice(0, 7);
 
   return (
-    <div className={styles.page}>
+    <div ref={pageRef} className={styles.page}>
       <header className={styles.pageHeader}>
         <div className={styles.hero}>
           <RadianceBackground pattern="home" heroHeight={220} />
@@ -341,13 +373,25 @@ export const RadianceGuide: React.FC = () => {
           </div>
         )}
 
-        <nav className={styles.toc} aria-label="Sections">
-          <a href="#patterns">Product patterns</a>
-          <a href="#templates">Templates</a>
-          <a href="#rules">Rules</a>
-          <a href="#prototypes">In prototypes</a>
-        </nav>
       </header>
+
+      {/* Section links, pinned while scrolling; the template builder leads */}
+      <nav className={`${styles.toc} ${railLeft === null ? styles.tocPinned : ''}`} aria-label="Sections">
+        {SECTIONS.map((x) => <a key={x.id} href={`#${x.id}`}>{x.label}</a>)}
+      </nav>
+
+
+      <section id="templates" className={styles.section}>
+        <header className={styles.sectionHeader}>
+          <h2 className={styles.sectionTitle}>Templates</h2>
+          <p className={styles.sectionLead}>
+            A product surface always uses its product pattern. Templates are for everything else: an AI welcome,
+            onboarding, an agent's empty state. Five placements, each subtle or prominent, dynamic or static, fast
+            or slow. With nothing else to go on, use <code>top-wash-subtle-dynamic-fast</code>.
+          </p>
+        </header>
+        <TemplateBuilder />
+      </section>
 
       <section id="patterns" className={styles.section}>
         <header className={styles.sectionHeader}>
@@ -362,18 +406,6 @@ export const RadianceGuide: React.FC = () => {
           </p>
         </header>
         <ProductPatterns />
-      </section>
-
-      <section id="templates" className={styles.section}>
-        <header className={styles.sectionHeader}>
-          <h2 className={styles.sectionTitle}>Templates</h2>
-          <p className={styles.sectionLead}>
-            A product surface always uses its product pattern. Templates are for everything else: an AI welcome,
-            onboarding, an agent's empty state. Five placements, each subtle or prominent, dynamic or static, fast
-            or slow. With nothing else to go on, use <code>top-wash-subtle-dynamic-fast</code>.
-          </p>
-        </header>
-        <TemplateBuilder />
       </section>
 
       <section id="rules" className={styles.section}>
