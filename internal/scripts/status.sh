@@ -4,6 +4,12 @@
 #
 # Usage:  bash internal/scripts/status.sh         (also opens browser)
 #         bash internal/scripts/status.sh --no-open
+#         bash internal/scripts/status.sh --full    (maintainer: also refresh Forks and Census)
+#
+# A plain run takes a few seconds: the maintainer's Forks and Census tabs show the
+# results saved by the last --full run (internal/cache/, gitignored). --full opens
+# that quick page first, then calls GitHub for every fork, runs the prototype
+# census, and rewrites the page; reload it to see the fresh numbers.
 
 set -u
 # Repo root, resolved via git so it stays correct no matter where this script
@@ -18,11 +24,14 @@ OUT="public/status.html"
 #   --no-open              write the page, don't open it
 #   --first-run-defaults   print role, default title and site guess, then exit
 #                          (/project-canvas reads these for its first-run questions)
+#   --full (or --census)   maintainer only: refresh the Forks and Census tabs (slow)
 NO_OPEN=false
 FIRST_RUN_DEFAULTS=false
+FULL=false
 for arg in "$@"; do
   case "$arg" in
     --no-open) NO_OPEN=true ;;
+    --full|--census|full|census) FULL=true ;;
     --first-run-defaults) FIRST_RUN_DEFAULTS=true; NO_OPEN=true ;;
   esac
 done
@@ -50,6 +59,8 @@ case "${STATUS_ROLE:-}" in
 esac
 CANVAS_ROLE="designer"
 $IS_MAINTAINER && CANVAS_ROLE="maintainer"
+# --full only means something on the maintainer canvas.
+$IS_MAINTAINER || FULL=false
 
 # ── config ───────────────────────────────────────────────────────────────
 # Settings load in layers: the defaults in this script, then
@@ -118,7 +129,8 @@ branch_purpose() {
 # gh is only used for the maintainer's Forks tab, and the check costs about a
 # second, so the designer canvas skips it.
 have_gh_galaxy=false
-if $IS_MAINTAINER && gh auth status --hostname "$HOST" >/dev/null 2>&1; then have_gh_galaxy=true; fi
+# Only a --full run calls GitHub, so only it needs to know whether gh is signed in.
+if $FULL && gh auth status --hostname "$HOST" >/dev/null 2>&1; then have_gh_galaxy=true; fi
 
 esc() { sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g'; }
 
@@ -274,16 +286,53 @@ MODIFIED_LIST=$(git diff --name-only | head -30 | esc)
 # PROTOTYPE_COUNT is derived from the two registries further down, once they
 # have been parsed for the Content tab.
 
-# Prototype census cache (populated by internal/scripts/prototype-census.sh).
-# Displayed cheaply here — never recomputed by this script.
-# Anchor to the real repo root so it resolves no matter what cwd this runs from.
+# Saved results for the slow tabs (maintainer): Forks and Census. A plain run
+# only reads them; --full refreshes them. Anchor to the real repo root so they
+# resolve no matter what cwd this runs from.
 REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || echo "$ROOT")"
-CENSUS_CACHE="$REPO_ROOT/internal/cache/prototype-census.html"
-if [ -f "$CENSUS_CACHE" ]; then
-  CENSUS_BLOCK=$(cat "$CENSUS_CACHE")
-else
-  CENSUS_BLOCK="<p class='empty'>No census yet. Run <code>/rp-prototype-census</code> (slow — fetches every fork) to count prototypes across all forks.</p>"
+CACHE_DIR="$REPO_ROOT/internal/cache"
+FORKS_CACHE="$CACHE_DIR/canvas-forks.sh"
+CENSUS_CACHE="$CACHE_DIR/prototype-census.html"
+FULL_CMD="/rp-project-canvas full"
+mkdir -p "$CACHE_DIR"
+
+# timed CMD...: run CMD, killing it after NET_LIMIT seconds (network calls only).
+NET_LIMIT="${NET_LIMIT:-20}"
+timed() {
+  "$@" & local pid=$!
+  ( sleep "$NET_LIMIT"; kill -9 "$pid" 2>/dev/null ) >/dev/null 2>&1 & local watch=$!
+  wait "$pid" 2>/dev/null; local rc=$?
+  kill "$watch" 2>/dev/null; wait "$watch" 2>/dev/null
+  return $rc
+}
+
+# --full: open the quick page now (a plain run of this script), then do the slow work:
+# the census runs in the background while this script makes the Forks GitHub calls.
+CENSUS_PID=""
+if $FULL; then
+  if $NO_OPEN; then bash "$ROOT/internal/scripts/status.sh" --no-open; else bash "$ROOT/internal/scripts/status.sh"; fi
+  NO_OPEN=true
+  if ! curl -s -o /dev/null -m 5 "https://$HOST/"; then
+    echo "Full refresh skipped: $HOST isn't answering (on Twingate VPN?). Forks and Census keep their saved results."
+    exit 0
+  fi
+  echo "Refreshing Forks and Census, under 10 minutes (GitHub calls and a git fetch per fork)..."
+  (cd "$REPO_ROOT" && bash internal/scripts/prototype-census.sh > "$CACHE_DIR/census-run.log" 2>&1) &
+  CENSUS_PID=$!
 fi
+
+# age_of EPOCH: "5 minutes ago", "2 days ago"
+age_of() {
+  local d=$(( EPOCH_NOW - $1 ))
+  if [ "$d" -lt 3600 ]; then echo "$(( d / 60 )) minutes ago"
+  elif [ "$d" -lt 86400 ]; then echo "$(( d / 3600 )) hours ago"
+  else echo "$(( d / 86400 )) days ago"; fi
+}
+# The command box shown where a slow tab has nothing saved, or is a week old.
+run_full_box() {
+  echo "<div class='runbox'><p>$1</p><div class='runbox-cmd'><code>${FULL_CMD}</code><button class='pill copy-cmd' data-cmd='${FULL_CMD}'>Copy</button></div><p class='runbox-note'>Opens this page straight away, then refreshes Forks and Census in the background. It takes a few minutes: it calls GitHub and fetches every fork. Reload the page when it says it's done.</p></div>"
+}
+
 
 # Build size (last dist if exists)
 BUILD_SIZE="—"
@@ -361,12 +410,13 @@ FORK_ROWS=""
 PROTOTYPE_LINES=""
 ACTION_LINES=""
 UPSTREAM_HEAD=""
-if $have_gh_galaxy && $IS_MAINTAINER; then
-  UPSTREAM_HEAD_JSON=$(gh api repos/mohammed-faris/radiantplay/commits/main --hostname "$HOST" --jq '{sha: .sha[:7], message: .commit.message | split("\n")[0], date: .commit.committer.date}' 2>/dev/null)
+FORKS_SAVED_AT=""
+if $FULL && $have_gh_galaxy && $IS_MAINTAINER; then
+  UPSTREAM_HEAD_JSON=$(timed gh api repos/mohammed-faris/radiantplay/commits/main --hostname "$HOST" --jq '{sha: .sha[:7], message: .commit.message | split("\n")[0], date: .commit.committer.date}' 2>/dev/null)
   UPSTREAM_HEAD=$(echo "$UPSTREAM_HEAD_JSON" | esc)
 
   # Discover forks
-  API_FORKS=$(gh api repos/mohammed-faris/radiantplay/forks --hostname "$HOST" --jq '.[].full_name' 2>/dev/null)
+  API_FORKS=$(timed gh api repos/mohammed-faris/radiantplay/forks --hostname "$HOST" --jq '.[].full_name' 2>/dev/null)
   KNOWN="suraj-boro/radiantplay umesh-indoriya/radiantplay vivek-sahi/radiantplay jason-knight/radiantplay irene-ren/radiantplay jayant-mishra/radiantplay simran-pandit/radiantplay aditya-wadher/radiantplay devanshi-behera/radiantplay akshay-mohankar/radiantplay komal-bains/radiantplay_komal abhinav-gupta/radiantplay yash-chauhan/radiantplay tarun-bhandari/radiantplay kshipra-sharma/radiantplay"
   ALL_FORKS=$(printf '%s\n' $API_FORKS $KNOWN | sort -u)
 
@@ -374,8 +424,8 @@ if $have_gh_galaxy && $IS_MAINTAINER; then
   FORK_TMP=$(mktemp -t rp-fork-rows)
   for f in $ALL_FORKS; do
     owner=${f%%/*}
-    pushed=$(gh api "repos/$f" --hostname "$HOST" --jq '.pushed_at' 2>/dev/null)
-    cmp=$(gh api "repos/mohammed-faris/radiantplay/compare/main...$owner:main" --hostname "$HOST" --jq '{ahead: .ahead_by, behind: .behind_by}' 2>/dev/null)
+    pushed=$(timed gh api "repos/$f" --hostname "$HOST" --jq '.pushed_at' 2>/dev/null)
+    cmp=$(timed gh api "repos/mohammed-faris/radiantplay/compare/main...$owner:main" --hostname "$HOST" --jq '{ahead: .ahead_by, behind: .behind_by}' 2>/dev/null)
     ahead=$(echo "$cmp" | sed -n 's/.*"ahead":\([0-9]*\).*/\1/p')
     behind=$(echo "$cmp" | sed -n 's/.*"behind":\([0-9]*\).*/\1/p')
     [ -z "$ahead" ] && ahead="?"
@@ -405,7 +455,7 @@ if $have_gh_galaxy && $IS_MAINTAINER; then
       "$sort_key" "$cls" "$HOST" "$f" "$f" "$status" "$behind" "$ahead" "$last_push" >> "$FORK_TMP"
 
     if [ "$ahead" != "?" ] && [ "$ahead" -gt 0 ]; then
-      msgs=$(gh api "repos/mohammed-faris/radiantplay/compare/main...$owner:main" --hostname "$HOST" --jq '.commits[].commit.message | split("\n")[0]' 2>/dev/null | grep -iE 'feat|prototype' | head -8 | esc)
+      msgs=$(timed gh api "repos/mohammed-faris/radiantplay/compare/main...$owner:main" --hostname "$HOST" --jq '.commits[].commit.message | split("\n")[0]' 2>/dev/null | grep -iE 'feat|prototype' | head -8 | esc)
       if [ -n "$msgs" ]; then
         PROTOTYPE_LINES="${PROTOTYPE_LINES}<div class='proto-block'><h4>${f}</h4><ul>"
         while IFS= read -r m; do
@@ -420,6 +470,27 @@ if $have_gh_galaxy && $IS_MAINTAINER; then
   # Sort by pushed_at descending and strip the sort key.
   FORK_ROWS=$(sort -r "$FORK_TMP" | sed 's/^[^\t]*\t//' | tr -d '\n')
   rm -f "$FORK_TMP"
+  # Save for the quick runs.
+  FORKS_SAVED_AT="$EPOCH_NOW"
+  { for v in UPSTREAM_HEAD FORK_ROWS PROTOTYPE_LINES ACTION_LINES FORKS_SAVED_AT; do printf '%s=%q\n' "$v" "${!v}"; done; } > "$FORKS_CACHE"
+elif $IS_MAINTAINER && [ -f "$FORKS_CACHE" ]; then
+  . "$FORKS_CACHE"
+fi
+
+# Census: wait for a --full run's background census, then read what's saved.
+if [ -n "$CENSUS_PID" ]; then
+  wait "$CENSUS_PID" || echo "Census didn't finish cleanly (see internal/cache/census-run.log); the Census tab keeps its last saved run."
+  grep -E 'SKIP|skipped' "$CACHE_DIR/census-run.log" 2>/dev/null | head -5
+fi
+CENSUS_AGE=""; CENSUS_STALE=false
+if [ -f "$CENSUS_CACHE" ]; then
+  census_epoch=$(stat -f %m "$CENSUS_CACHE" 2>/dev/null || echo "$EPOCH_NOW")
+  CENSUS_AGE=$(age_of "$census_epoch")
+  [ $(( EPOCH_NOW - census_epoch )) -gt 604800 ] && CENSUS_STALE=true
+  CENSUS_BLOCK=$(sed 's#run <code>/rp-prototype-census</code> to refresh (slow — fetches every fork)#refresh with <code>'"$FULL_CMD"'</code>#' "$CENSUS_CACHE")
+  $CENSUS_STALE && CENSUS_BLOCK="$(run_full_box "This census is ${CENSUS_AGE}, more than a week old. Refresh it with:")${CENSUS_BLOCK}"
+else
+  CENSUS_BLOCK=$(run_full_box "No census yet. It counts the prototypes on every fork, by creator. Run:")
 fi
 
 # ── data: designer upstream sync state ───────────────────────────────────
@@ -459,13 +530,24 @@ embed_doc() {
   echo "$id"
 }
 
-# "local" when the file is gitignored or not yet committed.
+# "local" when the file is gitignored or not yet committed. Both lists are read
+# once here (two git calls), not per file: per-file git calls were most of a run.
+NL=$'\n'
+LOCAL_UNTRACKED="${NL}$(git ls-files --others --exclude-standard 2>/dev/null)${NL}"
+LOCAL_IGNORED="${NL}$(git ls-files --others --ignored --exclude-standard --directory 2>/dev/null)${NL}"
+LOCAL_IGNORED_DIRS=$(printf '%s' "$LOCAL_IGNORED" | grep '/$')
 local_badge() {
-  local p="$1"
-  if git check-ignore -q "$p" 2>/dev/null; then
+  local p="$1" d ignored=false
+  case "$LOCAL_IGNORED" in *"${NL}${p}${NL}"*) ignored=true ;; esac
+  if ! $ignored; then
+    while IFS= read -r d; do
+      [ -n "$d" ] && case "$p" in "$d"*) ignored=true; break ;; esac
+    done <<< "$LOCAL_IGNORED_DIRS"
+  fi
+  if $ignored; then
     echo " <span class='badge local' title='Gitignored, exists only on this machine'>local</span>"
-  elif [ -n "$(git ls-files --others --exclude-standard "$p" 2>/dev/null)" ]; then
-    echo " <span class='badge local' title='Untracked, not yet committed to git'>local</span>"
+  else
+    case "$LOCAL_UNTRACKED" in *"${NL}${p}${NL}"*) echo " <span class='badge local' title='Untracked, not yet committed to git'>local</span>" ;; esac
   fi
 }
 
@@ -787,6 +869,13 @@ cat > "$OUT" <<HTML
 <meta charset="utf-8" />
 <title>${STATUS_TAB_TITLE}</title>
 $(canvas_style)
+<style>
+  .runbox { border: 1px solid var(--border-strong); border-radius: var(--radius); background: var(--surface); padding: 18px 20px; margin: 4px 0 22px; max-width: 760px; }
+  .runbox p { margin: 0; }
+  .runbox-cmd { display: flex; align-items: center; gap: 10px; margin: 12px 0; flex-wrap: wrap; }
+  .runbox-cmd code { font-size: 14px; padding: 6px 10px; }
+  .runbox-note { color: var(--text-3); font-size: 12.5px; }
+</style>
 </head>
 <body>
 <div class="wash"></div>
@@ -803,6 +892,7 @@ $(canvas_style)
     <button class="tab-btn" data-tab="branches">Branches<span class="n">${BRANCH_N}</span></button>
     <button class="tab-btn" data-tab="sites">Sites<span class="n">${SITES_TOTAL}</span></button>
     <button class="tab-btn" data-tab="forks">$( $IS_MAINTAINER && echo "Forks" || echo "Upstream" )</button>
+$( $IS_MAINTAINER && echo '    <button class="tab-btn" data-tab="census">Census</button>' )
     <button class="tab-btn" data-tab="docsplans">Docs and plans</button>
   </nav>
   <div class="tools">
@@ -897,13 +987,17 @@ HTML
 
 if $IS_MAINTAINER; then
   cat >> "$OUT" <<HTML
+HTML
+  if [ -n "$FORKS_SAVED_AT" ]; then
+    FORKS_STALE=""
+    [ $(( EPOCH_NOW - FORKS_SAVED_AT )) -gt 604800 ] && FORKS_STALE=$(run_full_box "These fork numbers are more than a week old. Refresh them with:")
+    cat >> "$OUT" <<HTML
+  <p class="file-list">Saved $(age_of "$FORKS_SAVED_AT") · refresh with <code>${FULL_CMD}</code></p>
+  ${FORKS_STALE}
   <h2>Upstream HEAD</h2>
   <pre class="file-list">${UPSTREAM_HEAD:-—}</pre>
 
   <h2>Forks</h2>
-HTML
-  if $have_gh_galaxy; then
-    cat >> "$OUT" <<HTML
   <table>
     <thead><tr><th>Fork</th><th>Status</th><th>Behind</th><th>Ahead</th><th>Last push</th></tr></thead>
     <tbody>${FORK_ROWS}</tbody>
@@ -915,16 +1009,15 @@ HTML
   <h2>Active prototype work</h2>
   ${PROTOTYPE_LINES:-<p class='empty'>No prototype commits detected on forks.</p>}
 HTML
+  elif $FULL && ! $have_gh_galaxy; then
+    cat >> "$OUT" <<HTML
+  <p class="empty">Not authenticated to ${HOST}. Run <code>gh auth login --hostname ${HOST}</code>, then <code>${FULL_CMD}</code> again for live ahead/behind numbers.</p>
+HTML
   else
     cat >> "$OUT" <<HTML
-  <p class="empty">Not authenticated to ${HOST}. Run <code>gh auth login --hostname ${HOST}</code> and re-run this script for live ahead/behind numbers.</p>
+  $(run_full_box "Fork numbers aren't loaded yet. Each fork's sync state, its last push and its prototype work come from GitHub, which is slow, so a plain run skips them. Run:")
 HTML
   fi
-  # Census is git-based (not gh) — render it whether or not gh auth works.
-  cat >> "$OUT" <<HTML
-  <h2>Prototype census</h2>
-  ${CENSUS_BLOCK}
-HTML
 elif [ -n "$DESIGNER_UPSTREAM_REMOTE" ]; then
   cat >> "$OUT" <<HTML
   <h2>Upstream sync</h2>
@@ -946,6 +1039,18 @@ fi
 
 cat >> "$OUT" <<HTML
 </section>
+HTML
+
+if $IS_MAINTAINER; then
+  cat >> "$OUT" <<HTML
+<section id="census">
+  <h2>Prototype census</h2>
+  ${CENSUS_BLOCK}
+</section>
+HTML
+fi
+
+cat >> "$OUT" <<HTML
 
 <section id="docsplans">
   <div class="subtabs">
@@ -1021,6 +1126,14 @@ cat >> "$OUT" <<HTML
 $(cat "$EMBED_FILE")
 
 $(canvas_script)
+<script>
+  // Copy buttons on the run boxes; falls back to selecting the command.
+  document.querySelectorAll('.copy-cmd').forEach((b) => b.addEventListener('click', () => {
+    const cmd = b.dataset.cmd, done = () => { b.textContent = 'Copied'; setTimeout(() => { b.textContent = 'Copy'; }, 1500); };
+    if (navigator.clipboard) navigator.clipboard.writeText(cmd).then(done, () => {});
+    else { const r = document.createRange(); r.selectNodeContents(b.previousElementSibling); getSelection().removeAllRanges(); getSelection().addRange(r); }
+  }));
+</script>
 </body>
 </html>
 HTML

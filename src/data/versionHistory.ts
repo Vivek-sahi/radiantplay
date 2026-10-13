@@ -33,6 +33,9 @@ export const versionHistory: VersionEntry[] = [
     type: 'patch',
     changes: [
       { type: 'modified', group: 'Tooling', component: 'Skills menu', description: 'rp-radiance, rp-prototype-model and rp-prototype-thumbnails no longer appear in the / menu. Claude still loads each when a request needs it (Radiance or an AI background, switching a prototype model, updating a thumbnail), and the commands that capture thumbnails still do.' },
+      { type: 'modified', group: 'Project status dashboard', component: 'Project canvas', description: 'The maintainer canvas opens in about 14 seconds instead of about two minutes: Forks shows the results saved by the last full run, with their age, and the local-file check runs once instead of per doc. /rp-project-canvas full (or census) refreshes Forks and the prototype census in the background, with a 60 second limit per fork fetch.' },
+      { type: 'added', group: 'Project status dashboard', component: 'Census tab', description: 'The prototype census moves to its own maintainer-only tab; with nothing saved or a week-old run it shows the command to run with a Copy button.' },
+      { type: 'removed', group: 'Tooling', component: '/rp-prototype-census', description: 'Replaced by /rp-project-canvas full. The census script stays.' },
     ],
   },
   {

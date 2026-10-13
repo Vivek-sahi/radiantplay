@@ -1,5 +1,6 @@
 ---
-description: Generate and open the local project canvas for this repo (content, branches, sites, forks, docs). Pure shell, no LLM tokens.
+description: Generate and open the local project canvas for this repo (content, branches, sites, forks, docs). Pure shell, no LLM tokens. Pass `full` (or `census`) to also refresh the maintainer's Forks and Census tabs in the background.
+argument-hint: "[full]"
 ---
 
 Run the status script and confirm it opened. On a designer's first run, ask two questions first (below).
@@ -9,6 +10,16 @@ bash internal/scripts/status.sh
 ```
 
 After it runs, tell the user the file path (`public/status.html`) and that it opened in the browser. Do not interpret or summarize the contents. The page is the deliverable.
+
+## Full refresh: `full` or `census`
+
+When the arguments include `full` or `census`, run this instead, in the background (it takes a few minutes):
+
+```bash
+bash internal/scripts/status.sh --full
+```
+
+It opens the quick canvas straight away, then calls GitHub for every fork, runs the prototype census (`internal/scripts/prototype-census.sh`) and rewrites the page. Tell the user the canvas is open and the Forks and Census tabs refresh in the background; when the run finishes, tell them to reload the page. On a designer's fork `full` does nothing extra: those tabs are the maintainer's.
 
 ## First run on a designer fork
 
@@ -57,7 +68,8 @@ Six tabs, each rebuilt from where the work actually is, so none of it can quietl
 | Content | Grouped by project: the two prototype registries, every standalone page in `public/`, and the project docs, newest first inside each group |
 | Branches | `git`, with divergence against each configured baseline |
 | Sites | `curl` against the configured deploys, all checked at once |
-| Forks or Upstream | `gh` on the configured host; the tab changes by role |
+| Forks or Upstream | `gh` on the configured host; the tab changes by role. On the maintainer canvas it shows the results saved by the last `full` run, with their age |
+| Census | Maintainer only: the prototype census across every fork, from the last `full` run. With nothing saved, or a week old, it shows the command to run |
 | Docs and plans | Plans, rules, slash commands, docs and articles, each openable in place |
 
 A markdown file listed under Docs and plans opens in a reader on the page, so the dashboard works from `file://` with nothing served. Files that exist only on this machine carry a `local` badge.
@@ -83,4 +95,4 @@ Light and dark follow the operating system on first load, and the Mode button ov
 
 ## Known cost
 
-The Forks tab makes two sequential `gh api` calls per fork, which is most of the run time on the maintainer path. Everything else, the site checks included, is about a second.
+A plain run takes a few seconds: it never calls GitHub per fork and never fetches forks. `full` does both (two `gh api` calls per fork, plus the census's `git fetch` of every fork), which is a few minutes, so it runs in the background and saves its results in `internal/cache/` (gitignored) for the quick runs.

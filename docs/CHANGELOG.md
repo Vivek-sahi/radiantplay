@@ -2,9 +2,13 @@
 
 ## 26.10.3a — 2026-10-13
 
-Typing `/rp-` lists only the commands you pick on purpose.
+Typing `/rp-` lists only the commands you pick on purpose, and the maintainer's project canvas opens in seconds.
 
 - The `rp-radiance`, `rp-prototype-model` and `rp-prototype-thumbnails` skills no longer appear in the `/` menu. Claude still loads each one when a request needs it: mention Radiance or an AI background, ask to switch a prototype's model ("switch it to Sonnet"), or ask to update a thumbnail. `/rp-radiant-check`, `/rp-sync-upstream` and `/rp-migrate-prototype` still capture thumbnails as before
+- `/rp-project-canvas` on the maintainer's checkout takes about 14 seconds instead of about two minutes. The Forks tab shows the results saved by the last full run, with their age, instead of calling GitHub for every fork. Checking which docs are local now takes two git calls instead of two per doc
+- `/rp-project-canvas full` (or `census`) opens the quick canvas, then refreshes the Forks tab and the prototype census in the background and rewrites the page. Each fork fetch in the census has a 60 second limit, so one slow fork no longer stalls the run
+- The census has its own Census tab on the maintainer canvas. With nothing saved, or results more than a week old, it shows the command to run with a Copy button
+- `/rp-prototype-census` is removed: `/rp-project-canvas full` replaces it. `internal/scripts/prototype-census.sh` is unchanged apart from the time limit
 
 ## 26.10.2e — 2026-10-12
 

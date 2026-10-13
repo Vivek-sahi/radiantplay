@@ -9,9 +9,9 @@
 #   internal/cache/prototype-census.json   — machine-readable data
 #   internal/cache/prototype-census.html   — fragment embedded by status.sh
 #
-# This is intentionally NOT run by /rp-project-canvas (it git-fetches ~16 repos and
-# takes a while). Run it explicitly via /rp-prototype-census when you want fresh
-# numbers. The dashboard shows the last cached run + a refresh hint.
+# A plain /rp-project-canvas only reads this cache (it git-fetches ~16 repos and
+# takes a while). `/rp-project-canvas full` (status.sh --full) runs it in the
+# background and rewrites the canvas; the Census tab shows the last run.
 #
 # Usage:  bash internal/scripts/prototype-census.sh
 set -u
@@ -27,6 +27,13 @@ NOW="$(date '+%Y-%m-%d %H:%M')"
 
 mkdir -p "$CACHE_DIR"
 
+# Off Twingate VPN the host doesn't answer and every call would hang: check first,
+# leave the saved census as it is, and stop.
+if ! curl -s -o /dev/null -m 5 "https://$HOST/"; then
+  echo "Census skipped: $HOST isn't answering (on Twingate VPN?). The saved census is unchanged."
+  exit 2
+fi
+
 # Discover forks live from the galaxy GitHub Enterprise API, using the token git
 # already has for the host. Prints one `owner/repo` per line; empty on failure.
 discover_forks() {
@@ -35,7 +42,7 @@ discover_forks() {
           | awk -F= '/^password=/{print $2}')
   [ -z "$token" ] && return 1
   while :; do
-    got=$(curl -s -H "Authorization: token $token" -H "Accept: application/vnd.github+json" \
+    got=$(curl -s -m 20 -H "Authorization: token $token" -H "Accept: application/vnd.github+json" \
       "https://$HOST/api/v3/repos/$MAINTAINER/forks?per_page=100&page=$page" 2>/dev/null \
       | python3 -c "import json,sys
 try: d=json.load(sys.stdin)
@@ -91,15 +98,35 @@ git for-each-ref --format='%(refname)' refs/census/ 2>/dev/null | while IFS= rea
   git update-ref -d "$r" 2>/dev/null
 done
 
-echo "Fetching ${#TARGETS[@]} repos (this is the slow part)…"
+# One hung fork must not stall the run (a fetch once sat for 10+ minutes), so every
+# network call gets a time limit; a fork that runs out is skipped for this run.
+CENSUS_FETCH_LIMIT="${CENSUS_FETCH_LIMIT:-45}"
+# The whole fetch phase stops starting new forks after this many seconds, so a full
+# canvas refresh stays under 10 minutes; forks not reached are skipped for this run.
+CENSUS_BUDGET="${CENSUS_BUDGET:-420}"
+timed() {
+  "$@" & local pid=$!
+  ( sleep "$CENSUS_FETCH_LIMIT"; kill -9 "$pid" 2>/dev/null ) >/dev/null 2>&1 & local watch=$!
+  wait "$pid" 2>/dev/null; local rc=$?
+  kill "$watch" 2>/dev/null; wait "$watch" 2>/dev/null
+  return $rc
+}
+
+echo "Fetching ${#TARGETS[@]} repos, up to ${CENSUS_FETCH_LIMIT}s each (this is the slow part)…"
 REACHABLE=()
 for t in "${TARGETS[@]}"; do
+  if [ "$SECONDS" -ge "$CENSUS_BUDGET" ]; then
+    echo "  SKIP $t (out of time: the census stops starting forks after ${CENSUS_BUDGET}s)"; continue
+  fi
   url="https://$HOST/$t"
   key="$(sanitize "$t")"
-  if git ls-remote --heads "$url" >/dev/null 2>&1 && [ -n "$(git ls-remote --heads "$url" 2>/dev/null)" ]; then
-    git fetch --quiet "$url" "+refs/heads/*:refs/census/$key/*" 2>/dev/null \
-      && { REACHABLE+=("$t"); echo "  ok   $t"; } \
-      || echo "  FAIL $t (fetch error)"
+  heads=$(timed git ls-remote --heads "$url" 2>/dev/null)
+  if [ -n "$heads" ]; then
+    if timed git fetch --quiet "$url" "+refs/heads/*:refs/census/$key/*" 2>/dev/null; then
+      REACHABLE+=("$t"); echo "  ok   $t"
+    else
+      echo "  SKIP $t (fetch failed or took over ${CENSUS_FETCH_LIMIT}s)"
+    fi
   else
     echo "  --   $t (unreachable / no access)"
   fi
@@ -278,7 +305,7 @@ for a, n in sorted(by_author.items(), key=lambda kv: -kv[1]):
     tag = " <span class='badge'>base library</span>" if a in BASE_AUTHORS else ""
     rows_creators += f"<tr><td>{e(a)}{tag}</td><td>{n}</td></tr>"
 
-frag = f"""<p class="file-list">Last run <strong>{e(NOW)}</strong> · {totals['reachable_forks']}/{totals['total_targets']} forks reachable · run <code>/rp-prototype-census</code> to refresh (slow — fetches every fork).</p>
+frag = f"""<p class="file-list">Last run <strong>{e(NOW)}</strong> · {totals['reachable_forks']}/{totals['total_targets']} forks reachable · refresh with <code>/rp-project-canvas full</code>.</p>
 <div class="stat-grid">
   <div class="stat"><div class="k">Prototype folders (all)</div><div class="v">{totals['folders_total']}</div></div>
   <div class="stat"><div class="k">Gallery-listed</div><div class="v">{totals['registry_total']}</div></div>
@@ -301,7 +328,7 @@ with open(os.path.join(CACHE_DIR, "prototype-census.html"), "w") as f:
 
 print(f"\n✓ {totals['folders_total']} prototype folders · {totals['registry_total']} gallery-listed "
       f"({totals['archived']} archived) across {totals['reachable_forks']} forks")
-print(f"  cache: {CACHE_DIR}/rp-prototype-census.json + .html")
+print(f"  cache: {CACHE_DIR}/prototype-census.json + .html")
 PY
 
 # Clean up fetched census refs so the working repo stays tidy.
