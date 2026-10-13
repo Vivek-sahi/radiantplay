@@ -149,6 +149,17 @@ const HIGHLIGHTS: Highlight[] = [
 
 const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '26.10.3d',
+    date: '2026-10-13',
+    title: 'Thumbnail setup works again',
+    type: 'patch',
+    changes: [
+      { category: 'fixed', label: 'Tooling', items: [
+        'Thumbnail setup failed on every machine. It now installs the screenshot tool cleanly, and the capture can wait longer for slow screens (--wait).',
+      ] },
+    ],
+  },
+  {
     version: '26.10.3c',
     date: '2026-10-13',
     title: 'Coolify only',
