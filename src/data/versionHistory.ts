@@ -50,6 +50,9 @@ export const versionHistory: VersionEntry[] = [
       { type: 'added', group: 'Documentation', component: 'On this page', description: 'Design system pages with three or more sections list them on the right once you scroll, current one highlighted. Content starts after the sidebar on every page; page titles and section headings share one style; section links are blue pills.' },
       { type: 'modified', group: 'Documentation', component: 'Radiance guide', description: 'Template builder first, with a copyable prompt for Claude instead of code; section links as pills.' },
       { type: 'modified', group: 'Documentation', component: 'Design system pages', description: 'Theme icon at the top right instead of the sidebar footer control; Inspect removed from that footer; Colours swatches follow the theme; Component Registry rows carry real Figma ids and dates; New tags trimmed to the last month; Icons usage moved to the bottom; changelog highlights follow the teaser.' },
+    ],
+  },
+  {
     version: '26.10.3a',
     date: '2026-10-13',
     type: 'patch',
