@@ -18,7 +18,7 @@ export const ArchitectureShowcase: React.FC = () => {
       {/* Header */}
       <section style={styles.headerSection}>
         <LastUpdated date="2026-10-07" />
-        <h2 style={styles.pageTitle}>Token architecture</h2>
+        <h1 style={styles.pageTitle}>Token architecture</h1>
         <p style={styles.pageDescription}>
           The Radiant design system uses three layers of tokens. Every system and component token has a
           light and a dark value, so every component follows the theme.

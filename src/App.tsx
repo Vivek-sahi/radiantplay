@@ -508,7 +508,7 @@ const RadiantLayout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
             <ThemeSwitch variant="icon" />
           </div>
         </div>
-        {/* Content stays centred on every page; wide windows keep equal room on both sides and list sections on the right */}
+        {/* Content starts after the sidebar on every page; the room on the right holds the section list */}
         <div className={onThisPageFrame}>
           <div ref={contentRef} style={styles.content}>
             {children}
@@ -778,7 +778,7 @@ const styles: Record<string, React.CSSProperties> = {
     minHeight: '100%',
     padding: 'var(--spacing-14) 32px 32px',
     maxWidth: '1200px',
-    margin: '0 auto',
+    margin: '0',
   },
   sidebarHeader: {
     display: 'flex',

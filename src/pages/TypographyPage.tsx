@@ -249,7 +249,7 @@ const TypographyExample: React.FC<TypographyExampleProps> = ({ variant, label, s
         <code style={styles.variantCode}>{variant}</code>
         <span style={styles.specsLabel}>{specs}</span>
       </div>
-      <div style={styles.typographySample}>
+      <div style={styles.typographySample} data-demo="typography-sample">
         <Typography variant={variant as any} noMargin>
           {sample || label}
         </Typography>
@@ -448,7 +448,7 @@ const TypographyPageContent: React.FC = () => {
       {/* Interactive Examples */}
       <section style={styles.section}>
         <Typography variant="modal-title" noMargin style={{ marginBottom: 16 }}>Examples</Typography>
-        <div style={styles.exampleCard}>
+        <div style={styles.exampleCard} data-demo="typography-examples">
           <div style={styles.exampleColumn}>
             <Typography variant="headline-large">Headline Large (32px)</Typography>
             <Typography variant="page-title">Page Title (24px)</Typography>

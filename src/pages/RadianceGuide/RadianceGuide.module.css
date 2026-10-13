@@ -62,16 +62,16 @@
   gap: var(--spacing-1);
   padding: var(--spacing-1);
   margin: var(--spacing-6) 0 var(--spacing-8);
-  border: 1px solid var(--rd-sys-color-border-subtle);
+  /* Same treatment as the page's cards: a hairline border on the base surface, no shadow */
+  border: 1px solid var(--rd-sys-color-background-subtle);
   border-radius: var(--radius-full);
-  background: var(--rd-sys-color-background-raised);
-  box-shadow: var(--rd-sys-color-shadow-menu);
+  background: var(--rd-sys-color-background-base);
 }
 
 .toc a {
-  padding: var(--spacing-2) var(--spacing-4);
+  padding: var(--spacing-1) var(--spacing-3);
   border-radius: var(--radius-full);
-  color: var(--rd-sys-color-content-primary);
+  color: var(--rd-sys-color-content-secondary);
   text-decoration: none;
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-emphasis);
@@ -79,7 +79,7 @@
 
 .toc a:hover {
   background: var(--rd-sys-color-background-secondary-action);
-  color: var(--rd-sys-color-content-brand);
+  color: var(--rd-sys-color-content-primary);
 }
 
 .toc a:focus-visible {

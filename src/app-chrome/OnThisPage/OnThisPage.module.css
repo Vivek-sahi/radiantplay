@@ -63,14 +63,28 @@
   .rail { transition: none; }
 }
 
-/* The content frame for the design system layout: centred, with equal room on both sides once the window
-   is wide enough for the list, so every page sits in the same place */
+/* The content frame for the design system layout: content starts after the sidebar and every page keeps the
+   same room on the right, where pages with sections list them, so content sits in one place everywhere */
 .frame {
   min-width: 0;
+  padding-right: 220px;
 }
 
-@media (min-width: 1620px) {
-  .frame {
-    padding: 0 200px;
-  }
+/* One heading style across the design system pages. Pages set many of these inline, so the layout overrides
+   them; demos ([data-demo]) keep their own type. */
+.frame h1:not([data-demo] h1) {
+  font-size: var(--font-size-3xl) !important;
+  line-height: var(--line-height-3xl) !important;
+  font-weight: var(--font-weight-emphasis) !important;
+  letter-spacing: normal !important;
+  color: var(--rd-sys-color-content-primary) !important;
+}
+
+.sectionHeading {
+  font-size: var(--font-size-xl) !important;
+  line-height: var(--line-height-xl) !important;
+  font-weight: var(--font-weight-emphasis) !important;
+  letter-spacing: normal !important;
+  text-transform: none !important;
+  color: var(--rd-sys-color-content-brand) !important;
 }

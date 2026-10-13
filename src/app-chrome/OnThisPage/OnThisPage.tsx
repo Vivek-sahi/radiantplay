@@ -4,7 +4,7 @@ import styles from './OnThisPage.module.css';
 
 /**
  * "On this page" for the design system pages. It reads the page's own section headings (h2 when there are
- * three or more, else h3 when there are three to twelve), appears once the reader scrolls, and sits in the
+ * two or more, else h3 when there are three to twelve), gives them one shared style, appears once the reader scrolls, and sits in the
  * space the layout keeps to the right of the content (onChange tells it when a page has a list).
  */
 interface Heading { id: string; label: string; el: HTMLElement }
@@ -18,7 +18,11 @@ function collect(root: HTMLElement): Heading[] {
   const pick = (sel: string) => [...root.querySelectorAll<HTMLElement>(sel)].filter((h) => !h.closest('[data-demo], [data-no-toc]') && h.textContent?.trim());
   const h2 = pick('h2');
   const h3 = pick('h3');
-  const list = h2.length >= 3 ? h2 : h3.length >= 3 && h3.length <= 12 ? h3 : [];
+  // Section headings: h2 when a page has two or more, else h3 when it has three to twelve. They all get the
+  // shared section style; the list itself needs three.
+  const list = h2.length >= 2 ? h2 : h3.length >= 3 && h3.length <= 12 ? h3 : [];
+  root.querySelectorAll(`.${styles.sectionHeading}`).forEach((el) => el.classList.remove(styles.sectionHeading));
+  list.forEach((el) => el.classList.add(styles.sectionHeading));
   const used = new Set<string>();
   return list.map((el) => {
     const label = el.textContent!.trim();
