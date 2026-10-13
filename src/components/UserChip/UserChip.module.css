@@ -1,0 +1,111 @@
+/* UserChip: Figma Input (avatar input chip, 587:16405) */
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  vertical-align: middle;
+  height: var(--spacing-7);
+  max-width: 100%;
+  min-width: 0;
+  /* Figma: 2/12/2/2 without dismiss, 2/8/2/2 with dismiss */
+  padding: 2px var(--spacing-3) 2px 2px;
+  box-sizing: border-box;
+  border: 1px solid var(--rd-sys-color-border-bold);
+  border-radius: var(--radius-2xl);
+  background-color: var(--rd-comp-color-chip-input-default);
+  transition: background-color var(--duration-fast) var(--easing-standard);
+}
+
+.removable {
+  padding-right: var(--spacing-2);
+}
+
+.chip:not(.disabled):hover {
+  background-color: var(--rd-comp-color-chip-input-hover);
+}
+
+.chip.interactive:not(.disabled):active {
+  background-color: var(--rd-comp-color-chip-input-pressed);
+}
+
+.selected {
+  background-color: var(--rd-comp-color-chip-input-selected-default);
+}
+
+.selected:not(.disabled):hover {
+  background-color: var(--rd-comp-color-chip-input-selected-hover);
+}
+
+.selected.interactive:not(.disabled):active {
+  background-color: var(--rd-comp-color-chip-input-selected-pressed);
+}
+
+.body {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  min-width: 0;
+  border-radius: var(--radius-2xl);
+}
+
+.interactive .body {
+  cursor: pointer;
+}
+
+.body:focus-visible {
+  outline: 2px solid var(--rd-sys-color-border-focus);
+  outline-offset: 2px;
+}
+
+.avatar {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.selected .avatarImage {
+  opacity: 0.3;
+}
+
+.check {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--rd-sys-color-content-inverse);
+}
+
+.name {
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-md);
+  color: var(--rd-sys-color-content-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.selected .name {
+  color: var(--rd-sys-color-content-inverse);
+}
+
+.dismiss {
+  flex-shrink: 0;
+}
+
+/* The whole chip already fades to 40%; keep the button from fading twice */
+.chip.disabled .dismiss.dismiss {
+  opacity: 1;
+}
+
+.disabled {
+  opacity: 0.4;
+}
+
+.disabled .body {
+  cursor: not-allowed;
+}

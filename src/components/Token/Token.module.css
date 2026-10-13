@@ -1,0 +1,176 @@
+/* Token: Figma Token / Read Only (16730:15349) and Token / Editable (16730:19378) */
+
+.token {
+  position: relative;
+  display: inline-flex;
+  vertical-align: middle;
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* Per-type colours from the chip comp tokens. Condition uses the filter chip. */
+.measure {
+  --token-bg: var(--rd-comp-color-chip-measure-default);
+  --token-bg-hover: var(--rd-comp-color-chip-measure-hover);
+  --token-icon: var(--rd-comp-color-chip-measure-icon);
+  --token-active-border: var(--rd-comp-color-chip-measure-active-border);
+}
+
+.attribute {
+  --token-bg: var(--rd-comp-color-chip-attribute-default);
+  --token-bg-hover: var(--rd-comp-color-chip-attribute-hover);
+  --token-icon: var(--rd-comp-color-chip-attribute-icon);
+  --token-active-border: var(--rd-comp-color-chip-attribute-active-border);
+}
+
+.condition {
+  --token-bg: var(--rd-comp-color-chip-filter-default);
+  --token-bg-hover: var(--rd-comp-color-chip-filter-hover);
+  --token-icon: var(--rd-comp-color-chip-filter-icon);
+  --token-active-border: var(--rd-comp-color-chip-filter-active-border);
+}
+
+.date {
+  --token-bg: var(--rd-comp-color-chip-date-default);
+  --token-bg-hover: var(--rd-comp-color-chip-date-hover);
+  --token-icon: var(--rd-comp-color-chip-date-icon);
+  --token-active-border: var(--rd-comp-color-chip-date-active-border);
+}
+
+/* Editable error is its own fill (Type=Error in Figma) */
+.editable.error {
+  --token-bg: var(--rd-comp-color-chip-error-default);
+  --token-bg-hover: var(--rd-comp-color-chip-error-hover);
+  --token-active-border: var(--rd-comp-color-chip-error-active-border);
+}
+
+.body {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  height: var(--spacing-6);
+  min-width: 0;
+  max-width: 100%;
+  padding: 2px var(--spacing-1);
+  box-sizing: border-box;
+  border-radius: var(--radius-sm);
+  background-color: var(--token-bg);
+  transition: background-color var(--duration-fast) var(--easing-standard);
+}
+
+.editable .body {
+  gap: var(--spacing-2);
+}
+
+.token:not(.disabled):not(.active):hover .body {
+  background-color: var(--token-bg-hover);
+}
+
+/* Read only warning and error: 1px border inside the 24px box */
+.readOnly.warning .body {
+  box-shadow: inset 0 0 0 1px var(--rd-sys-color-border-warning);
+}
+
+.readOnly.error .body {
+  box-shadow: inset 0 0 0 1px var(--rd-sys-color-border-failure);
+}
+
+/* Editable warning has no Figma variant; reuse the read only border */
+.editable.warning .body {
+  box-shadow: inset 0 0 0 1px var(--rd-sys-color-border-warning);
+}
+
+/* Active (being edited): no fill, no radius, 1px bottom line */
+.active .body {
+  background-color: transparent;
+  border-radius: 0;
+  border-bottom: 1px solid var(--token-active-border);
+  box-shadow: none;
+}
+
+.active.error .body {
+  border-bottom-style: dashed;
+}
+
+.interactive .body {
+  cursor: pointer;
+}
+
+.body:focus-visible {
+  outline: 2px solid var(--rd-sys-color-border-focus);
+  outline-offset: 2px;
+}
+
+.icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--token-icon);
+}
+
+.iconWarning {
+  color: var(--rd-sys-color-content-warning);
+}
+
+.iconError {
+  color: var(--rd-sys-color-content-failure);
+}
+
+.label {
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-md);
+  color: var(--rd-sys-color-content-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+/* Remove circle: 16px, overlaps the top right corner by 8px */
+.remove {
+  position: absolute;
+  top: calc(-1 * var(--spacing-2));
+  right: calc(-1 * var(--spacing-2));
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--spacing-4);
+  height: var(--spacing-4);
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-full);
+  background-color: var(--rd-comp-color-button-overlay);
+  color: var(--rd-sys-color-content-inverse);
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--duration-fast) var(--easing-standard);
+  z-index: 1;
+}
+
+.remove svg {
+  width: var(--spacing-2);
+  height: var(--spacing-2);
+}
+
+.removable:hover .remove,
+.removable:focus-within .remove {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.remove:focus-visible {
+  outline: 2px solid var(--rd-sys-color-border-focus);
+  outline-offset: 1px;
+}
+
+.disabled {
+  opacity: 0.4;
+}
+
+.disabled .body {
+  cursor: not-allowed;
+}

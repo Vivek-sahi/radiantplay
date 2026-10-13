@@ -27,7 +27,7 @@ import { Menu } from '../components/Menu';
 import { Pagination } from '../components/Pagination';
 import { ProgressBar } from '../components/ProgressBar';
 import { Stepper } from '../components/Stepper';
-import { DatePicker } from '../components/DatePicker';
+import { DatePicker, DateRangePicker } from '../components/DatePicker';
 import { IconGallery } from '../components/IconGallery';
 import { SegmentedControl } from '../components/SegmentedControl';
 import { GlobalHeader } from '../components/GlobalHeader';
@@ -72,6 +72,21 @@ import { LiveboardHeader } from '../components/LiveboardHeader';
 import { sysVar } from '../tokens/colors';
 import { getComponent, getSourceLabel, ComponentSource } from '../data/componentRegistry';
 import { LastUpdated } from '../components/LastUpdated';
+import { PageHeader } from '../components/PageHeader';
+import { EditHeader } from '../components/EditHeader';
+import { SplitButton } from '../components/SplitButton';
+import { DotLoader } from '../components/DotLoader';
+import { ScrollArea } from '../components/ScrollArea';
+import { Token } from '../components/Token';
+import type { TokenType } from '../components/Token';
+import { ChipIdentifier } from '../components/ChipIdentifier';
+import { UserChip } from '../components/UserChip';
+import { Breadcrumb } from '../components/Breadcrumb';
+import { NumberInput } from '../components/NumberInput';
+import { RadiantLook } from '../context/RadiantLookContext';
+import { InlineEdit } from '../components/InlineEdit';
+import { FileUploader } from '../components/FileUploader';
+import type { DateRange } from '../components/DatePicker';
 
 interface PropDefinition {
   name: string;
@@ -435,6 +450,199 @@ const componentDocs: Record<string, {
       { name: 'Dots.currentPage', type: 'number', description: 'Current page for dot indicators' },
       { name: 'Range.itemsPerPage', type: 'number', description: 'Items per page for range display' },
       { name: 'Range.totalItems', type: 'number', description: 'Total items for range calculation' },
+    ],
+  },
+  pageheader: {
+    name: 'PageHeader',
+    description: 'The Figma page header: an optional breadcrumb, a 24/32 title with optional tabs beside it and buttons on the right, and an optional description. Only the title is required.',
+    props: [
+      { name: 'title', type: 'string', description: 'Page title (required)' },
+      { name: 'description', type: 'string', description: 'Line under the title' },
+      { name: 'breadcrumbs', type: '{ label, href?, onClick? }[]', description: 'Pages above this one; shows the back button and parent links' },
+      { name: 'onBack', type: '() => void', description: 'Overrides what the breadcrumb back button does' },
+      { name: 'tabs', type: 'Tab[]', description: 'Radiant Tabs next to the title' },
+      { name: 'activeTab', type: 'string', description: 'Id of the active tab' },
+      { name: 'onTabChange', type: '(id: string) => void', description: 'Called when a tab is chosen' },
+      { name: 'actions', type: '{ label, onClick?, variant?, icon?, disabled? }[]', description: 'Buttons on the right; variant defaults to secondary' },
+    ],
+  },
+  editheader: {
+    name: 'EditHeader',
+    description: 'The Figma edit-mode page header, sibling of WizardHeader: a 20/28 title with optional segmented tabs, then Reset, Save, a divider and a tertiary Exit button. Reset is disabled until there are edits (Saved and Edited states).',
+    props: [
+      { name: 'title', type: 'string', description: 'Title of the thing being edited (required)' },
+      { name: 'edited', type: 'boolean', default: 'false', description: 'Edited state; false is Saved and disables Reset' },
+      { name: 'onReset', type: '() => void', description: 'Shows the secondary Reset button' },
+      { name: 'onSave', type: '() => void', description: 'Shows the primary Save button' },
+      { name: 'onExit', type: '() => void', description: 'Shows a divider and a tertiary Exit button' },
+      { name: 'saveDisabled', type: 'boolean', default: 'false', description: 'Disables Save' },
+      { name: 'resetLabel / saveLabel / exitLabel', type: 'string', default: "'Reset' / 'Save' / 'Exit'", description: 'Button labels' },
+      { name: 'tabs', type: 'SegmentOption[]', description: 'Segmented tabs next to the title' },
+      { name: 'activeTab', type: 'string', description: 'Id of the active tab' },
+      { name: 'onTabChange', type: '(id: string) => void', description: 'Called when a tab is chosen' },
+    ],
+  },
+  splitbutton: {
+    name: 'SplitButton',
+    description: 'A main action and a chevron that opens a menu, joined with a 2px gap. Primary and secondary types, each with a text or icon-only main action. Each half hovers, presses and disables on its own, and the chevron stays pressed while the menu is open. Enter, Space or Arrow down on the chevron opens the menu; arrow keys move; Escape closes it.',
+    props: [
+      { name: 'label', type: 'string', description: 'Main action text; the accessible name when iconOnly (required)' },
+      { name: 'onClick', type: '(e) => void', description: 'Main action handler' },
+      { name: 'items', type: '{ label, onClick?, icon?, disabled?, destructive? }[]', description: 'Menu items behind the chevron (required)' },
+      { name: 'variant', type: "'primary' | 'secondary'", default: "'primary'", description: 'Button type' },
+      { name: 'icon', type: 'IconName | ReactNode', description: 'Icon on the main action' },
+      { name: 'iconOnly', type: 'boolean', default: 'false', description: 'Main action shows only the icon (Figma Primary icon and Secondary icon)' },
+      { name: 'disabled', type: 'boolean', default: 'false', description: 'Disables both halves' },
+      { name: 'mainDisabled', type: 'boolean', default: 'false', description: 'Disables only the main action' },
+      { name: 'menuDisabled', type: 'boolean', default: 'false', description: 'Disables only the chevron' },
+      { name: 'menuPlacement', type: "'bottom-start' | 'bottom-end' | 'top-start' | 'top-end'", default: "'bottom-start'", description: 'Where the menu opens' },
+      { name: 'menuLabel', type: 'string', default: "'More options'", description: 'Accessible name of the chevron' },
+    ],
+  },
+  dotloader: {
+    name: 'DotLoader',
+    description: 'The three-dot global loader for full-area waits, such as an answer being generated. The large dot travels left to right; with reduced motion the dots hold still. An optional message sits below. LoadingIndicator stays the ring spinner for inline loading.',
+    props: [
+      { name: 'message', type: 'ReactNode', description: 'Text under the dots, 14/20 secondary, up to 256px wide' },
+      { name: 'label', type: 'string', default: "'Loading'", description: 'Accessible name when there is no message' },
+      { name: 'className', type: 'string', description: 'Extra class on the root' },
+    ],
+  },
+  scrollarea: {
+    name: 'ScrollArea',
+    description: 'A light wrapper that gives its content the Figma scroll bar: an 8px track in the secondary action background with a rounded tertiary thumb. Native scrolling styled with CSS; global scrollbars are untouched. Firefox gets the same colors at its thin width.',
+    props: [
+      { name: 'orientation', type: "'vertical' | 'horizontal' | 'both'", default: "'vertical'", description: 'Which directions scroll' },
+      { name: 'maxHeight', type: 'number | string', description: 'Height before the content scrolls' },
+      { name: 'maxWidth', type: 'number | string', description: 'Width before the content scrolls' },
+      { name: 'focusable', type: 'boolean', default: 'true', description: 'Lets keyboard users focus and scroll the area; pair with aria-label' },
+      { name: 'children', type: 'ReactNode', description: 'Scrolling content (required)' },
+    ],
+  },
+  token: {
+    name: 'Token',
+    description: 'The Figma Token / Read Only and Token / Editable sets as one component: a 24px, 4px-radius label in the chip colours for a measure, attribute, condition or date. Read only tokens carry a 14px icon and a warning or error border; editable tokens drop the icon, show a remove circle on hover and take an active look while being edited.',
+    props: [
+      { name: 'label', type: 'string', description: 'Text shown in the token (required)' },
+      { name: 'type', type: "'measure' | 'attribute' | 'condition' | 'date'", default: "'measure'", description: 'Sets the fill and icon colour; condition uses the filter chip colours' },
+      { name: 'status', type: "'default' | 'warning' | 'error'", default: "'default'", description: 'Read only: border and alert icon. Editable: error uses the error fill' },
+      { name: 'editable', type: 'boolean', default: 'false', description: 'Editable token: no icon, remove button, active look' },
+      { name: 'showIcon', type: 'boolean', default: 'true', description: 'Read only: shows the leading icon' },
+      { name: 'icon', type: 'IconName | ReactNode', description: 'Read only: overrides the default icon for the type' },
+      { name: 'active', type: 'boolean', default: 'false', description: 'Editable: being edited, no fill and a 1px bottom line' },
+      { name: 'disabled', type: 'boolean', default: 'false', description: 'Fades the token to 40%' },
+      { name: 'onClick', type: '() => void', description: 'Click or Enter/Space on the token' },
+      { name: 'onRemove', type: '() => void', description: 'Editable: shows the remove button; Delete or Backspace also fires it' },
+      { name: 'maxWidth', type: 'number', description: 'Width in px before the label truncates' },
+    ],
+  },
+  chipidentifier: {
+    name: 'ChipIdentifier',
+    description: 'The Figma Chip - identifier: a 24px, 4px-radius brand chip with inverse text that marks an identifier, such as a key column or an id. Display only.',
+    props: [
+      { name: 'label', type: 'string', description: 'Text shown in the chip (required)' },
+      { name: 'maxWidth', type: 'number', description: 'Width in px before the label truncates' },
+      { name: 'className', type: 'string', description: 'Extra class on the chip' },
+    ],
+  },
+  userchip: {
+    name: 'UserChip',
+    description: 'The Figma Input chip: a 28px pill with a 24px Avatar, the person\'s name and an optional remove button, for people inside inputs such as share or mention fields. Selected chips use the dark fill, inverse text and a checkmark over the dimmed avatar.',
+    props: [
+      { name: 'name', type: 'string', description: 'Person\'s name; also the avatar initials (required)' },
+      { name: 'src', type: 'string', description: 'Avatar image URL; falls back to initials' },
+      { name: 'id', type: 'string', description: 'Stable id for the avatar initials colour' },
+      { name: 'selected', type: 'boolean', default: 'false', description: 'Selected look with a checkmark over the avatar' },
+      { name: 'disabled', type: 'boolean', default: 'false', description: 'Fades the chip to 40%' },
+      { name: 'onClick', type: '() => void', description: 'Click or Enter/Space, e.g. to toggle selection; sets aria-pressed' },
+      { name: 'onRemove', type: '() => void', description: 'Shows the remove button; Delete or Backspace also fires it' },
+      { name: 'maxWidth', type: 'number', description: 'Width in px before the name truncates' },
+    ],
+  },
+  breadcrumb: {
+    name: 'Breadcrumb',
+    description: 'The Figma breadcrumb: a small round back button and gray links for the pages above this one, separated by chevrons. The last item is the current page (aria-current="page"). Long labels truncate.',
+    props: [
+      { name: 'items', type: '{ label, href?, onClick? }[]', description: 'Trail from the top level down; the last item is the current page (required)' },
+      { name: 'showBackButton', type: 'boolean', default: 'true', description: 'Round back button that goes to the item before the current page' },
+      { name: 'onBack', type: '() => void', description: 'Overrides what the back button does' },
+      { name: 'showCurrent', type: 'boolean', default: 'true', description: 'Shows the current page at the end; turn off when a title below names the page' },
+      { name: 'aria-label', type: 'string', default: "'Breadcrumb'", description: 'Name of the navigation landmark' },
+    ],
+  },
+  numberinput: {
+    name: 'NumberInput',
+    description: 'A number field with up and down spin buttons that show on hover and focus. Follows TextInput for label, helper text and error message, and picks up the radiant-3 look (32px field, 6px radius, 12/18 label that turns brand on focus). ArrowUp and ArrowDown step the value, Shift steps by 10, Home and End jump to min and max, and typed values are clamped on blur.',
+    props: [
+      { name: 'label', type: 'string', description: 'Label text' },
+      { name: 'value', type: 'number | null', description: 'Current value (controlled); null is empty' },
+      { name: 'defaultValue', type: 'number | null', default: 'null', description: 'Starting value when uncontrolled' },
+      { name: 'onChange', type: '(value: number | null) => void', description: 'Called with the new number, or null when cleared' },
+      { name: 'min', type: 'number', description: 'Lowest allowed value' },
+      { name: 'max', type: 'number', description: 'Highest allowed value' },
+      { name: 'step', type: 'number', default: '1', description: 'Amount each spin or arrow key adds or removes' },
+      { name: 'error', type: 'boolean', default: 'false', description: 'Error state: failure border, label and icon' },
+      { name: 'errorMessage', type: 'string', description: 'Error message below the field' },
+      { name: 'helperText', type: 'string', description: 'Helper text below the field' },
+      { name: 'disabled', type: 'boolean', default: 'false', description: 'Disables the field' },
+      { name: 'readOnly', type: 'boolean', default: 'false', description: 'Filled background, no border, no spin buttons' },
+      { name: 'hideSpinButtons', type: 'boolean', default: 'false', description: 'Hide the spin buttons; arrow keys still work' },
+    ],
+  },
+  inlineedit: {
+    name: 'InlineEdit',
+    description: 'Text that reads as plain text, shows a Border/Bold outline on hover and turns into a field with a Border/Brand outline on click, Enter, Space or F2. Enter or blur confirms, Escape cancels and puts focus back on the text. Two sizes: 14/20 and 16/24. The field grows with the text.',
+    props: [
+      { name: 'value', type: 'string', description: 'Current text (controlled)' },
+      { name: 'defaultValue', type: 'string', default: "''", description: 'Starting text when uncontrolled' },
+      { name: 'onChange', type: '(value: string) => void', description: 'Called with the new text when an edit is confirmed' },
+      { name: 'onCancel', type: '() => void', description: 'Called when an edit is cancelled with Escape' },
+      { name: 'onEditingChange', type: '(editing: boolean) => void', description: 'Called when editing starts or stops' },
+      { name: 'size', type: "'basic' | 'large'", default: "'basic'", description: "Text size: 'basic' 14/20, 'large' 16/24" },
+      { name: 'placeholder', type: 'string', description: 'Text shown when empty' },
+      { name: 'confirmOnBlur', type: 'boolean', default: 'true', description: 'Blur confirms; when false, blur cancels' },
+      { name: 'required', type: 'boolean', default: 'false', description: 'Keep the old value when confirmed empty' },
+      { name: 'disabled', type: 'boolean', default: 'false', description: 'Turns editing off' },
+      { name: 'aria-label', type: 'string', description: 'Accessible name, e.g. "Liveboard name"' },
+    ],
+  },
+  fileuploader: {
+    name: 'FileUploader',
+    description: 'A label row, a 32px field that shows the chosen file name with a clear button, and a secondary Upload button. Click the field or the button to browse, or drop files on the field (dashed brand outline while dragging). Nothing uploads: picks and removals come through onFilesChange, and you set status and progress per file to show uploading, complete or error in the file list.',
+    props: [
+      { name: 'label', type: 'string', description: 'Label above the field' },
+      { name: 'helperText', type: 'string', description: 'Shown in brackets after the label' },
+      { name: 'placeholder', type: 'string', description: 'Text inside the empty field' },
+      { name: 'buttonLabel', type: 'string', default: "'Upload'", description: 'Upload button label' },
+      { name: 'files', type: 'FileUploaderItem[]', description: 'Files (controlled): { id, name, size?, file?, status?, progress?, errorMessage? }' },
+      { name: 'defaultFiles', type: 'FileUploaderItem[]', default: '[]', description: 'Starting files when uncontrolled' },
+      { name: 'onFilesChange', type: '(files: FileUploaderItem[]) => void', description: 'Called with the full list after a pick, drop or removal' },
+      { name: 'accept', type: 'string', description: 'Accepted types, e.g. ".csv,.xlsx"' },
+      { name: 'multiple', type: 'boolean', default: 'false', description: 'Allow several files; new picks add to the list' },
+      { name: 'showFileList', type: 'boolean', description: "File list with size and status; on by default when multiple or any file has a status other than 'idle'" },
+      { name: 'error', type: 'boolean', default: 'false', description: 'Failure border' },
+      { name: 'errorMessage', type: 'string', description: 'Shown in place of the label with an error icon' },
+      { name: 'disabled', type: 'boolean', default: 'false', description: 'Whole control at 40%' },
+      { name: 'readOnly', type: 'boolean', default: 'false', description: 'Filled field, no border, Upload disabled' },
+    ],
+  },
+  daterangepicker: {
+    name: 'DateRangePicker',
+    description: 'Two date fields joined by "to" that share one calendar. The calendar opens under the active field, picking a start date moves on to the end field, and the days in between are highlighted.',
+    props: [
+      { name: 'value', type: '{ start: Date | null; end: Date | null }', default: '{ start: null, end: null }', description: 'Selected range' },
+      { name: 'onChange', type: '(range: DateRange) => void', description: 'Called with the full range on every change' },
+      { name: 'format', type: "'MM/DD/YYYY' | 'DD/MM/YYYY' | 'YYYY-MM-DD'", default: "'MM/DD/YYYY'", description: 'Date format for both fields' },
+      { name: 'label', type: 'string', description: 'Label above both fields' },
+      { name: 'startPlaceholder', type: 'string', default: "'Start date'", description: 'Start field placeholder and accessible name' },
+      { name: 'endPlaceholder', type: 'string', default: "'End date'", description: 'End field placeholder and accessible name' },
+      { name: 'separator', type: 'string', default: "'to'", description: 'Word between the fields' },
+      { name: 'hasError', type: 'boolean', default: 'false', description: 'Error state on both fields' },
+      { name: 'helperText', type: 'string', description: 'Helper or error text' },
+      { name: 'disabled', type: 'boolean', default: 'false', description: 'Disables both fields' },
+      { name: 'minDate', type: 'Date', description: 'Earliest selectable date' },
+      { name: 'maxDate', type: 'Date', description: 'Latest selectable date' },
+      { name: 'id', type: 'string', description: 'Base id; fields get <id>-start and <id>-end' },
     ],
   },
   wizardheader: {
@@ -1064,6 +1272,13 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
   const [selectedTreeIds, setSelectedTreeIds] = useState<string[]>([]);
   const [richText, setRichText] = useState('<p>Start typing <strong>rich</strong> text here…</p>');
   const [isTourRunning, setIsTourRunning] = useState(false);
+  const [dateRange, setDateRange] = useState<DateRange>({ start: null, end: null });
+  const [userChipSelected, setUserChipSelected] = useState<string[]>(['Leo Park']);
+  const [userChipPeople, setUserChipPeople] = useState<string[]>(['Priya Shah', 'Leo Park', 'Ana García']);
+  const [editableTokens, setEditableTokens] = useState<TokenType[]>(['measure', 'attribute', 'condition', 'date']);
+  const [editHeaderDirty, setEditHeaderDirty] = useState(false);
+  const [editHeaderTab, setEditHeaderTab] = useState('tables');
+  const [pageHeaderTab, setPageHeaderTab] = useState('tables');
   const [isBrandTourRunning, setIsBrandTourRunning] = useState(false);
   const [wizardHeaderStep, setWizardHeaderStep] = useState(2);
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
@@ -2620,6 +2835,322 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
           </div>
         );
 
+      case 'pageheader':
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+            <div data-demo="pageheader">
+              <PageHeader
+                breadcrumbs={[{ label: 'Previous page title', onClick: () => {} }]}
+                title="Page title"
+                description="Page description"
+              />
+            </div>
+            <PageHeader
+              breadcrumbs={[{ label: 'Data', onClick: () => {} }, { label: 'Connections', onClick: () => {} }]}
+              title="Snowflake prod"
+              description="Owned by Data platform. Synced every hour."
+              tabs={[
+                { id: 'tables', label: 'Tables' },
+                { id: 'columns', label: 'Columns' },
+                { id: 'settings', label: 'Settings' },
+              ]}
+              activeTab={pageHeaderTab}
+              onTabChange={setPageHeaderTab}
+              actions={[{ label: 'Share' }, { label: 'Edit', variant: 'primary' }]}
+            />
+            <PageHeader title="Liveboards" actions={[{ label: 'Create liveboard', variant: 'primary', icon: 'plus' }]} />
+          </div>
+        );
+      case 'editheader':
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+            <div data-demo="editheader" style={{ border: `1px solid ${sysVar('border-subtle')}`, borderRadius: 8, overflow: 'hidden' }}>
+              <EditHeader
+                title="Sales overview"
+                edited={editHeaderDirty}
+                onReset={() => setEditHeaderDirty(false)}
+                onSave={() => setEditHeaderDirty(false)}
+                onExit={() => setEditHeaderDirty(false)}
+              />
+            </div>
+            <div>
+              <Button variant="secondary" size="small" onClick={() => setEditHeaderDirty(true)}>Make an edit</Button>
+            </div>
+            <div style={{ border: `1px solid ${sysVar('border-subtle')}`, borderRadius: 8, overflow: 'hidden' }}>
+              <EditHeader
+                title="Retail model"
+                edited
+                tabs={[
+                  { id: 'tables', label: 'Tables' },
+                  { id: 'columns', label: 'Columns' },
+                  { id: 'formulas', label: 'Formulas' },
+                  { id: 'filters', label: 'Filters' },
+                ]}
+                activeTab={editHeaderTab}
+                onTabChange={setEditHeaderTab}
+                onReset={() => {}}
+                onSave={() => {}}
+                onExit={() => {}}
+              />
+            </div>
+          </div>
+        );
+      case 'splitbutton': {
+        const splitItems = [
+          { label: 'Save as copy' },
+          { label: 'Save as template' },
+          { label: 'Export' },
+        ];
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 24, paddingBottom: 160 }}>
+            <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+              <SplitButton label="Save" items={splitItems} />
+              <SplitButton label="Save" variant="secondary" items={splitItems} />
+              <SplitButton label="Reply" icon="undo" iconOnly items={splitItems} />
+              <SplitButton label="Reply" icon="undo" iconOnly variant="secondary" items={splitItems} />
+            </div>
+            <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+              <SplitButton label="Save" mainDisabled items={splitItems} />
+              <SplitButton label="Save" menuDisabled items={splitItems} />
+              <SplitButton label="Save" variant="secondary" disabled items={splitItems} />
+            </div>
+          </div>
+        );
+      }
+      case 'dotloader':
+        return (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 24 }}>
+            <div style={{ border: `1px solid ${sysVar('border-subtle')}`, borderRadius: 8 }}>
+              <DotLoader />
+            </div>
+            <div style={{ border: `1px solid ${sysVar('border-subtle')}`, borderRadius: 8 }}>
+              <DotLoader message="We're crunching a lot of numbers. Please be patient. Your answer will be here shortly." />
+            </div>
+          </div>
+        );
+      case 'scrollarea':
+        return (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 24 }}>
+            <div style={{ border: `1px solid ${sysVar('border-subtle')}`, borderRadius: 8 }}>
+              <ScrollArea maxHeight={200} aria-label="Vertical scroll example">
+                {Array.from({ length: 20 }, (_, i) => (
+                  <div key={i} style={{ padding: '6px 16px', color: sysVar('content-primary') }}>Column {i + 1}</div>
+                ))}
+              </ScrollArea>
+            </div>
+            <div style={{ border: `1px solid ${sysVar('border-subtle')}`, borderRadius: 8 }}>
+              <ScrollArea orientation="horizontal" aria-label="Horizontal scroll example">
+                <div style={{ display: 'flex', gap: 8, padding: 16, width: 'max-content' }}>
+                  {Array.from({ length: 12 }, (_, i) => (
+                    <Chip key={i} type="attribute" label={`Column ${i + 1}`} />
+                  ))}
+                </div>
+              </ScrollArea>
+            </div>
+          </div>
+        );
+      case 'token': {
+        const tokenTypes: TokenType[] = ['measure', 'attribute', 'condition', 'date'];
+        const tokenLabels: Record<TokenType, string> = { measure: 'Revenue', attribute: 'Region', condition: 'Status = Active', date: 'Last 30 days' };
+        const row = { display: 'flex', flexWrap: 'wrap' as const, alignItems: 'center', gap: 16 };
+        const caption = { fontSize: 12, color: sysVar('content-secondary'), margin: 0 };
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+            <div data-demo="token" style={row}>
+              {tokenTypes.map((t) => <Token key={t} type={t} label={tokenLabels[t]} />)}
+            </div>
+            <p style={caption}>Read only, warning and error</p>
+            <div style={row}>
+              {tokenTypes.map((t) => <Token key={t} type={t} label={tokenLabels[t]} status="warning" />)}
+            </div>
+            <div style={row}>
+              {tokenTypes.map((t) => <Token key={t} type={t} label={tokenLabels[t]} status="error" />)}
+            </div>
+            <p style={caption}>Editable: hover or focus to remove</p>
+            <div style={{ ...row, paddingTop: 8 }}>
+              {editableTokens.map((t) => (
+                <Token
+                  key={t}
+                  editable
+                  type={t}
+                  label={tokenLabels[t]}
+                  onClick={() => {}}
+                  onRemove={() => setEditableTokens((list) => list.filter((x) => x !== t))}
+                />
+              ))}
+              <Token editable status="error" label="Unknown column" onRemove={() => {}} />
+              {editableTokens.length < 4 && (
+                <Button variant="tertiary" size="small" onClick={() => setEditableTokens(tokenTypes)}>Reset</Button>
+              )}
+            </div>
+            <p style={caption}>Editable, active and disabled</p>
+            <div style={row}>
+              {tokenTypes.map((t) => <Token key={t} editable active type={t} label={tokenLabels[t]} />)}
+              <Token editable active status="error" label="Unknown column" />
+            </div>
+            <div style={row}>
+              {tokenTypes.map((t) => <Token key={t} editable disabled type={t} label={tokenLabels[t]} />)}
+            </div>
+          </div>
+        );
+      }
+      case 'chipidentifier':
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div data-demo="chipidentifier" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
+              <ChipIdentifier label="Label" />
+              <ChipIdentifier label="Order ID" />
+              <ChipIdentifier label="customer_account_identifier_long_name" maxWidth={160} />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: sysVar('content-primary') }}>
+              <span>Primary key</span>
+              <ChipIdentifier label="Customer ID" />
+            </div>
+          </div>
+        );
+      case 'userchip': {
+        const toggleUserChip = (n: string) =>
+          setUserChipSelected((s) => (s.includes(n) ? s.filter((x) => x !== n) : [...s, n]));
+        const row = { display: 'flex', flexWrap: 'wrap' as const, alignItems: 'center', gap: 12 };
+        const caption = { fontSize: 12, color: sysVar('content-secondary'), margin: 0 };
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            <div data-demo="userchip" style={row}>
+              {userChipPeople.map((n) => (
+                <UserChip
+                  key={n}
+                  name={n}
+                  selected={userChipSelected.includes(n)}
+                  onClick={() => toggleUserChip(n)}
+                  onRemove={() => setUserChipPeople((p) => p.filter((x) => x !== n))}
+                />
+              ))}
+              {userChipPeople.length < 3 && (
+                <Button variant="tertiary" size="small" onClick={() => setUserChipPeople(['Priya Shah', 'Leo Park', 'Ana García'])}>Reset</Button>
+              )}
+            </div>
+            <p style={caption}>Without remove</p>
+            <div style={row}>
+              <UserChip name="Priya Shah" />
+              <UserChip name="Leo Park" selected />
+            </div>
+            <p style={caption}>Disabled</p>
+            <div style={row}>
+              <UserChip name="Priya Shah" onRemove={() => {}} disabled />
+              <UserChip name="Leo Park" selected onRemove={() => {}} disabled />
+            </div>
+          </div>
+        );
+      }
+      case 'breadcrumb':
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+            <div data-demo="breadcrumb">
+              <Breadcrumb
+                items={[{ label: 'Previous page title', onClick: () => {} }, { label: 'Page title' }]}
+                showCurrent={false}
+              />
+            </div>
+            <Breadcrumb
+              items={[
+                { label: 'Data', onClick: () => {} },
+                { label: 'Connections', onClick: () => {} },
+                { label: 'Snowflake prod' },
+              ]}
+            />
+            <Breadcrumb
+              showBackButton={false}
+              items={[
+                { label: 'Admin', onClick: () => {} },
+                { label: 'Users and groups', onClick: () => {} },
+                { label: 'Sales analysts' },
+              ]}
+            />
+          </div>
+        );
+      case 'numberinput':
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 24, alignItems: 'start' }}>
+              <NumberInput label="Rows" defaultValue={10} min={1} max={100} />
+              <NumberInput label="Step 0.5" defaultValue={2.5} step={0.5} min={0} max={10} helperText="0 to 10" />
+              <NumberInput label="Limit" defaultValue={80} error errorMessage="Enter 50 or less" />
+              <NumberInput label="Disabled" defaultValue={10} disabled />
+              <NumberInput label="Read only" defaultValue={10} readOnly />
+            </div>
+            <RadiantLook>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 24, alignItems: 'start' }}>
+                <NumberInput label="Label" defaultValue={10} />
+                <NumberInput label="Label" defaultValue={10} error />
+                <NumberInput label="Label" defaultValue={10} disabled />
+              </div>
+            </RadiantLook>
+          </div>
+        );
+      case 'inlineedit':
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 24, alignItems: 'flex-start' }}>
+            <InlineEdit defaultValue="Sales overview" aria-label="Liveboard name" />
+            <InlineEdit size="large" defaultValue="Quarterly revenue by region" aria-label="Answer title" required />
+            <InlineEdit placeholder="Add a description" aria-label="Description" />
+            <InlineEdit defaultValue="Locked title" aria-label="Title" disabled />
+          </div>
+        );
+      case 'fileuploader':
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 32, maxWidth: 420 }}>
+            <FileUploader label="Data file" helperText="CSV up to 50 MB" accept=".csv" />
+            <FileUploader label="Data file" defaultFiles={[{ id: 'f1', name: 'orders_2026.csv', size: 482000 }]} />
+            <FileUploader label="Data file" error errorMessage="Choose a CSV file" helperText="CSV up to 50 MB" />
+            <FileUploader
+              label="Attachments"
+              multiple
+              defaultFiles={[
+                { id: 'a1', name: 'q3-forecast.xlsx', size: 1240000, status: 'uploading', progress: 45 },
+                { id: 'a2', name: 'regions.csv', size: 38000, status: 'complete' },
+                { id: 'a3', name: 'notes.pdf', size: 9800000, status: 'error', errorMessage: 'File is over 5 MB' },
+              ]}
+            />
+            <FileUploader label="Data file" disabled />
+            <FileUploader label="Data file" readOnly defaultFiles={[{ id: 'r1', name: 'orders_2026.csv' }]} />
+          </div>
+        );
+      case 'daterangepicker':
+        return (
+          <div style={styles.exampleContent}>
+            <DateRangePicker
+              label="Date range"
+              value={dateRange}
+              onChange={setDateRange}
+            />
+            <DateRangePicker
+              label="Prefilled"
+              value={{ start: new Date(2024, 11, 3), end: new Date(2024, 11, 17) }}
+              onChange={() => {}}
+            />
+            <DateRangePicker
+              label="With error"
+              value={{ start: null, end: null }}
+              onChange={() => {}}
+              hasError
+              helperText="Choose a start and an end date"
+            />
+            <DateRangePicker
+              label="Disabled"
+              value={{ start: null, end: null }}
+              onChange={() => {}}
+              disabled
+            />
+            <div style={styles.interactiveBox}>
+              <h4 style={styles.interactiveLabel}>Selected range:</h4>
+              <p style={{ margin: 0, color: sysVar('content-primary') }}>
+                {dateRange.start ? dateRange.start.toLocaleDateString() : 'No start'}
+                {' to '}
+                {dateRange.end ? dateRange.end.toLocaleDateString() : 'No end'}
+              </p>
+            </div>
+          </div>
+        );
       case 'wizardheader':
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>

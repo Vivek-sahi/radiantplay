@@ -1,0 +1,67 @@
+/* EditHeader: Figma Edit page header (16990:15522), sibling of WizardHeader */
+
+.root {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-6);
+  width: 100%;
+  height: 60px;
+  padding: 0 var(--spacing-6);
+  box-sizing: border-box;
+  background-color: var(--rd-sys-color-background-base);
+  border-bottom: 1px solid var(--rd-sys-color-border-subtle);
+  font-family: var(--font-family-primary);
+}
+
+.left {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-8);
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  font-size: var(--font-size-xl);
+  line-height: var(--line-height-xl);
+  font-weight: var(--font-weight-emphasis);
+  color: var(--rd-sys-color-content-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.tabs {
+  flex-shrink: 0;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-5);
+  flex-shrink: 0;
+}
+
+.cta {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+}
+
+.root .divider {
+  height: var(--spacing-6);
+  min-height: var(--spacing-6);
+  background-color: var(--rd-sys-color-border-subtle);
+}
+
+@media (max-width: 600px) {
+  .root {
+    padding: 0 var(--spacing-4);
+  }
+
+  .tabs {
+    display: none;
+  }
+}

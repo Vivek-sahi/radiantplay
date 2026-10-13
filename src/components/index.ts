@@ -90,3 +90,23 @@ export * from './FacetSortBar';
 
 // Liveboard
 export * from './LiveboardHeader';
+
+// Figma batch 5
+export * from './PageHeader';
+export * from './EditHeader';
+export * from './SplitButton';
+export * from './DotLoader';
+export * from './ScrollArea';
+export * from './Token';
+export * from './ChipIdentifier';
+export * from './UserChip';
+export * from './Breadcrumb';
+
+// Figma batch 5
+export * from './NumberInput';
+
+// Figma batch 5
+export * from './InlineEdit';
+
+// Figma batch 5
+export * from './FileUploader';

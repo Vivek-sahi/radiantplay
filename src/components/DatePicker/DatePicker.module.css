@@ -146,8 +146,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: var(--spacing-7);
+  height: var(--spacing-7);
   border: none;
   background: none;
   color: var(--rd-sys-color-content-secondary);
@@ -274,7 +274,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 40px;
+  height: var(--spacing-10);
   font-size: 13px;
   font-weight: var(--font-weight-medium, 500);
   color: var(--rd-sys-color-content-primary);
@@ -315,7 +315,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 40px;
+  height: var(--spacing-10);
   font-size: 13px;
   font-weight: var(--font-weight-medium, 500);
   color: var(--rd-sys-color-content-primary);
@@ -449,4 +449,62 @@
 :global([data-rd-look="radiant-3"]) .monthCell,
 :global([data-rd-look="radiant-3"]) .yearCell {
   font-size: var(--font-size-sm);
+}
+
+/* ============================================
+   RANGE (DateRangePicker only; these classes are not used by DatePicker)
+   Figma "Date Picker / Range" 18244:21015
+   ============================================ */
+
+/* Two fields with "to" between them, gap 12 */
+.rangeRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+}
+
+/* Field: 148 wide in Figma, no calendar icon so the right padding is 12 */
+.input.rangeInput {
+  width: 148px;
+  padding-right: var(--spacing-3);
+  box-sizing: border-box;
+}
+
+/* Keeps the brand border on the field whose calendar is open, even while focus is in the calendar */
+.input.rangeInputActive:not(.inputError) {
+  border-color: var(--rd-sys-color-border-brand);
+}
+
+.rangeSeparator {
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-md);
+  color: var(--rd-sys-color-content-primary);
+}
+
+/* Month and year as two header buttons, gap 8 */
+.rangeHeaderButtons {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+/* Days between start and end */
+.dayInRange {
+  background-color: color-mix(in srgb, var(--rd-sys-color-background-brand) 12%, transparent);
+  color: var(--rd-sys-color-content-primary);
+}
+
+.dayInRange:hover {
+  background-color: color-mix(in srgb, var(--rd-sys-color-background-brand) 20%, transparent);
+}
+
+.rangeCalendar .day:focus-visible,
+.rangeCalendar .monthCell:focus-visible,
+.rangeCalendar .yearCell:focus-visible {
+  outline: 2px solid var(--rd-sys-color-border-focus);
+  outline-offset: 1px;
+}
+
+:global([data-rd-look="radiant-3"]) .day.dayInRange:hover:not(.daySelected) {
+  background-color: color-mix(in srgb, var(--rd-sys-color-background-brand) 20%, transparent);
 }

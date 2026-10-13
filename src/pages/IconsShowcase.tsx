@@ -132,28 +132,6 @@ export const IconsShowcase: React.FC = () => {
         </div>
       </section>
 
-      {/* Usage */}
-      <section style={styles.usageSection}>
-        <h2 style={styles.sectionTitle}>Usage</h2>
-        <div style={styles.codeBlock}>
-          <div style={styles.codeHeader}>
-            <span>Import</span>
-            <button style={styles.copyButton} onClick={handleCopyImport}>Copy</button>
-          </div>
-          <pre style={styles.code}>
-{`import { Icon } from './components/icons';
-
-// Basic usage
-<Icon name="plus" />
-
-// With size and color
-<Icon name="chevron-down" size="s" color="#666" />
-
-// In a button
-<Button icon="plus" iconPosition="leading">Add Item</Button>`}
-          </pre>
-        </div>
-      </section>
 
       {/* Icon Grid by Category */}
       {Object.entries(filteredCategories).map(([category, icons]) => (
@@ -218,6 +196,29 @@ export const IconsShowcase: React.FC = () => {
               </p>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* Usage */}
+      <section style={styles.usageSection}>
+        <h2 style={styles.sectionTitle}>Usage</h2>
+        <div style={styles.codeBlock}>
+          <div style={styles.codeHeader}>
+            <span>Import</span>
+            <button style={styles.copyButton} onClick={handleCopyImport}>Copy</button>
+          </div>
+          <pre style={styles.code}>
+{`import { Icon } from './components/icons';
+
+// Basic usage
+<Icon name="plus" />
+
+// With size and color
+<Icon name="chevron-down" size="s" color="#666" />
+
+// In a button
+<Button icon="plus" iconPosition="leading">Add Item</Button>`}
+          </pre>
         </div>
       </section>
     </div>

@@ -33,6 +33,8 @@ export interface SidebarProps {
   header?: React.ReactNode;
   /** Content above the version and inspect row, such as a ThemeSwitch */
   footerContent?: React.ReactNode;
+  /** Show the Inspect button in the footer. Defaults to true */
+  showInspect?: boolean;
 }
 
 // Inspect icon component
@@ -115,6 +117,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onSelect,
   header,
   footerContent,
+  showInspect = true,
 }) => {
   const { inspectMode, toggleInspectMode } = useInspector();
   const [isVersionPanelOpen, setIsVersionPanelOpen] = useState(false);
@@ -187,14 +190,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <span className={styles.version}>v{currentVersion}</span>
           <span className={styles.versionIcon}>{isVersionPanelOpen ? '▼' : '▲'}</span>
         </button>
-        <button 
-          className={`${styles.inspectButton} ${inspectMode ? styles.inspectActive : ''}`}
-          onClick={toggleInspectMode}
-          title={inspectMode ? 'Disable inspect mode' : 'Enable inspect mode'}
-        >
-          <InspectIcon active={inspectMode} />
-          <span>{inspectMode ? 'Inspecting' : 'Inspect'}</span>
-        </button>
+        {showInspect && (
+          <button
+            className={`${styles.inspectButton} ${inspectMode ? styles.inspectActive : ''}`}
+            onClick={toggleInspectMode}
+            title={inspectMode ? 'Disable inspect mode' : 'Enable inspect mode'}
+          >
+            <InspectIcon active={inspectMode} />
+            <span>{inspectMode ? 'Inspecting' : 'Inspect'}</span>
+          </button>
+        )}
       </div>
       </div>
 

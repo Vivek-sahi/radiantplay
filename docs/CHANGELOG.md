@@ -1,5 +1,27 @@
 # Changelog
 
+## 26.10.3b — 2026-10-13
+
+Thirteen new Radiant components from Figma (batch 5), a token sweep with no visual change (batch 6), and a tidier design system: the theme icon moves to the top right and the Colours page follows the theme.
+
+- PageHeader: new component from Figma. A 24/32 title with optional `breadcrumbs`, `description`, `tabs` (Radiant Tabs) and `actions` (Buttons on the right).
+- EditHeader: new component from Figma, the edit-mode sibling of WizardHeader. A 20/28 title with optional segmented `tabs`, and Reset, Save and Exit buttons (`onReset`, `onSave`, `onExit`); `edited` switches between the Saved and Edited states.
+- SplitButton: a main action plus a chevron that opens an ActionMenu (Figma Split button). Props: label, onClick, items, variant (primary, secondary), icon, iconOnly, disabled, mainDisabled, menuDisabled, menuPlacement.
+- DotLoader: the three-dot global loader from Figma, with an optional message below. Props: message, label. Respects reduced motion. LoadingIndicator is unchanged.
+- ScrollArea: a wrapper that styles its content's scroll bar like Figma (8px track, rounded tertiary thumb) with CSS only. Props: orientation, maxHeight, maxWidth, focusable. Global scrollbars are unchanged.
+- Token: new 24px read only and editable token for measures, attributes, conditions and dates (`type`, `status` default/warning/error, `editable`, `active`, `onRemove`, `showIcon`). First component to use the chip date, error and active-border tokens.
+- ChipIdentifier: new 24px brand chip with inverse text for identifiers such as key columns (`label`, `maxWidth`).
+- UserChip: new 28px person chip with a Radiant Avatar, name and optional remove button for inputs (`name`, `src`, `selected`, `onClick`, `onRemove`, `disabled`). First component to use the chip input tokens.
+- Breadcrumb: new component from Figma. A round back button and gray parent links; `items` takes `{ label, href?, onClick? }`, the last item is the current page, with `showBackButton`, `onBack` and `showCurrent`.
+- NumberInput: a number field with spin buttons that show on hover and focus, with min, max, step, error, helper text, disabled and read-only states; arrow keys step the value and it follows TextInput's radiant-3 look.
+- InlineEdit: text that turns into a field on click or Enter, in 14 and 16px sizes; Enter or blur confirms, Escape cancels, with value, onChange, placeholder, required and disabled props.
+- FileUploader: a file field with an Upload button, drag and drop, a clear button and an optional file list showing uploading, complete or error per file; no real upload, with files, onFilesChange, multiple, accept, error, disabled and readOnly props.
+- DateRangePicker: new range version of DatePicker from Figma "Date Picker / Range". Two fields joined by "to" share one calendar that opens under the active field; days between start and end are highlighted, with a hover preview while picking the end. Props: value ({ start, end }), onChange, format, label, startPlaceholder, endPlaceholder, separator, hasError, helperText, disabled, minDate, maxDate. DatePicker itself is unchanged.
+- Token sweep (no visual change): GlobalHeader, AppSidebar and DatePicker now use spacing, radius, font size, weight and line height tokens wherever a token has the exact same value (54 replacements). Values with no exact token, such as 999px pills, 120ms transitions and the legacy dark sidebar colours, are unchanged.
+- Design system pages: the theme icon sits at the top right, as on the playground, instead of the Light, Dark and System control in the sidebar footer; the Inspect button is gone from that footer (Sidebar gains `showInspect`, on by default)
+- Colours page: each token is one swatch that follows the theme, with the current mode's value first and the other under it
+- Component Registry: rows for the new components, and the rows batches 1 to 4 changed now carry their real Figma node, file and sync date; placeholder Figma ids are gone
+- The New tag stays only on items added in the last month; the Icons page puts Usage at the bottom; changelog highlights follow the v26.10 teaser
 ## 26.10.3a — 2026-10-13
 
 Typing `/rp-` lists only the commands you pick on purpose, and the maintainer's project canvas opens in seconds.

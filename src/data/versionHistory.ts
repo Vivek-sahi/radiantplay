@@ -28,6 +28,25 @@ export interface VersionEntry {
  */
 export const versionHistory: VersionEntry[] = [
   {
+    version: '26.10.3b',
+    date: '2026-10-13',
+    type: 'patch',
+    changes: [
+      { type: 'added', group: 'Figma', component: 'PageHeader', description: 'new component from Figma. A 24/32 title with optional `breadcrumbs`, `description`, `tabs` (Radiant Tabs) and `actions` (Buttons on the right).' },
+      { type: 'added', group: 'Figma', component: 'EditHeader', description: 'new component from Figma, the edit-mode sibling of WizardHeader. A 20/28 title with optional segmented `tabs`, and Reset, Save and Exit buttons (`onReset`, `onSave`, `onExit`); `edited` switches between the Saved and Edited states.' },
+      { type: 'added', group: 'Figma', component: 'SplitButton', description: 'a main action plus a chevron that opens an ActionMenu (Figma Split button). Props: label, onClick, items, variant (primary, secondary), icon, iconOnly, disabled, mainDisabled, menuDisabled, menuPlacement.' },
+      { type: 'added', group: 'Figma', component: 'DotLoader', description: 'the three-dot global loader from Figma, with an optional message below. Props: message, label. Respects reduced motion. LoadingIndicator is unchanged.' },
+      { type: 'added', group: 'Figma', component: 'ScrollArea', description: 'a wrapper that styles its content\'s scroll bar like Figma (8px track, rounded tertiary thumb) with CSS only. Props: orientation, maxHeight, maxWidth, focusable. Global scrollbars are unchanged.' },
+      { type: 'added', group: 'Figma', component: 'Token', description: 'new 24px read only and editable token for measures, attributes, conditions and dates (`type`, `status` default/warning/error, `editable`, `active`, `onRemove`, `showIcon`). First component to use the chip date, error and active-border tokens.' },
+      { type: 'added', group: 'Figma', component: 'ChipIdentifier', description: 'new 24px brand chip with inverse text for identifiers such as key columns (`label`, `maxWidth`).' },
+      { type: 'added', group: 'Figma', component: 'UserChip', description: 'new 28px person chip with a Radiant Avatar, name and optional remove button for inputs (`name`, `src`, `selected`, `onClick`, `onRemove`, `disabled`). First component to use the chip input tokens.' },
+      { type: 'added', group: 'Figma', component: 'Breadcrumb', description: 'new component from Figma. A round back button and gray parent links; `items` takes `{ label, href?, onClick? }`, the last item is the current page, with `showBackButton`, `onBack` and `showCurrent`.' },
+      { type: 'added', group: 'Figma', component: 'NumberInput', description: 'a number field with spin buttons that show on hover and focus, with min, max, step, error, helper text, disabled and read-only states; arrow keys step the value and it follows TextInput\'s radiant-3 look.' },
+      { type: 'added', group: 'Figma', component: 'InlineEdit', description: 'text that turns into a field on click or Enter, in 14 and 16px sizes; Enter or blur confirms, Escape cancels, with value, onChange, placeholder, required and disabled props.' },
+      { type: 'added', group: 'Figma', component: 'FileUploader', description: 'a file field with an Upload button, drag and drop, a clear button and an optional file list showing uploading, complete or error per file; no real upload, with files, onFilesChange, multiple, accept, error, disabled and readOnly props.' },
+      { type: 'added', group: 'Figma', component: 'DateRangePicker', description: 'new range version of DatePicker from Figma "Date Picker / Range". Two fields joined by "to" share one calendar that opens under the active field; days between start and end are highlighted, with a hover preview while picking the end. Props: value ({ start, end }), onChange, format, label, startPlaceholder, endPlaceholder, separator, hasError, helperText, disabled, minDate, maxDate. DatePicker itself is unchanged.' },
+      { type: 'modified', group: 'Figma', component: 'Token sweep', description: 'GlobalHeader, AppSidebar and DatePicker use spacing, radius and type tokens where a token has the exact same value (54 replacements). No visual change.' },
+      { type: 'modified', group: 'Documentation', component: 'Design system pages', description: 'Theme icon at the top right instead of the sidebar footer control; Inspect removed from that footer; Colours swatches follow the theme; Component Registry rows carry real Figma ids and dates; New tags trimmed to the last month; Icons usage moved to the bottom; changelog highlights follow the teaser.' },
     version: '26.10.3a',
     date: '2026-10-13',
     type: 'patch',

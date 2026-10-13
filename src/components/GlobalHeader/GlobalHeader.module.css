@@ -4,10 +4,10 @@
   border-bottom: 1px solid var(--gh-border);
   box-sizing: border-box;
   display: flex;
-  gap: 16px;
+  gap: var(--spacing-4);
   height: 60px;
   justify-content: space-between;
-  padding: 0 24px;
+  padding: 0 var(--spacing-6);
   width: 100%;
 }
 
@@ -15,7 +15,7 @@
   align-items: center;
   display: flex;
   flex: 0 0 auto;
-  gap: 12px;
+  gap: var(--spacing-3);
   min-width: 0;
 }
 
@@ -23,7 +23,7 @@
   align-items: center;
   display: flex;
   flex: 0 0 auto;
-  gap: 12px;
+  gap: var(--spacing-3);
   min-width: 0;
 }
 
@@ -31,13 +31,13 @@
   align-items: center;
   background: transparent;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   color: var(--gh-text);
   cursor: pointer;
   display: inline-flex;
-  height: 28px;
+  height: var(--spacing-7);
   justify-content: center;
-  padding: 2px 4px;
+  padding: 2px var(--spacing-1);
 }
 
 .logoButton:hover {
@@ -52,7 +52,7 @@
 .logo {
   color: var(--gh-text);
   display: block;
-  height: 24px;
+  height: var(--spacing-6);
   width: auto;
 }
 
@@ -65,10 +65,10 @@
   color: var(--gh-text);
   cursor: pointer;
   display: inline-flex;
-  height: 32px;
+  height: var(--spacing-8);
   justify-content: center;
   position: relative;
-  width: 32px;
+  width: var(--spacing-8);
 }
 
 .iconButton:hover,
@@ -90,9 +90,9 @@
   border-radius: 999px;
   display: inline-flex;
   gap: 10px;
-  height: 32px;
+  height: var(--spacing-8);
   min-width: 260px;
-  padding: 0 12px;
+  padding: 0 var(--spacing-3);
 }
 
 .searchTrigger {
@@ -114,16 +114,16 @@
   color: var(--gh-muted);
   display: inline-flex;
   flex: 0 0 auto;
-  height: 16px;
-  width: 16px;
+  height: var(--spacing-4);
+  width: var(--spacing-4);
 }
 
 .searchPlaceholder {
   color: var(--gh-muted);
   flex: 1;
-  font-size: 14px;
-  font-weight: 400;
-  line-height: 20px;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-md);
   text-align: left;
   white-space: nowrap;
 }
@@ -133,8 +133,8 @@
   border: 0;
   color: var(--gh-text);
   flex: 1;
-  font-size: 14px;
-  line-height: 20px;
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-md);
   min-width: 0;
   outline: 0;
 }
@@ -145,7 +145,7 @@
 
 .keyboardHint {
   background: var(--gh-bg);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   color: var(--gh-subtle);
   font-family: var(--font-family-mono);
   font-size: 10px;
@@ -155,14 +155,14 @@
 
 .helpIcon {
   display: block;
-  height: 16px;
+  height: var(--spacing-4);
   width: 9px;
 }
 
 .notificationIcon {
   display: block;
   height: 14px;
-  width: 16px;
+  width: var(--spacing-4);
 }
 
 .notificationDot {
@@ -172,7 +172,7 @@
   height: 9px;
   position: absolute;
   right: 5px;
-  top: 4px;
+  top: var(--spacing-1);
   width: 9px;
 }
 
@@ -184,8 +184,8 @@
   color: var(--gh-text);
   cursor: pointer;
   display: inline-flex;
-  gap: 8px;
-  height: 32px;
+  gap: var(--spacing-2);
+  height: var(--spacing-8);
   max-width: 220px;
   min-width: 0;
   padding: 0 6px 0 10px;
@@ -202,8 +202,8 @@
 
 .profileName {
   color: var(--gh-text);
-  font-size: 14px;
-  font-weight: 500;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -212,9 +212,9 @@
 .avatar {
   border-radius: 999px;
   display: block;
-  height: 24px;
+  height: var(--spacing-6);
   object-fit: cover;
-  width: 24px;
+  width: var(--spacing-6);
 }
 
 .avatarFallback {
@@ -222,7 +222,7 @@
   background: var(--gh-surface-hover);
   border-radius: 999px;
   display: inline-flex;
-  height: 24px;
+  height: var(--spacing-6);
   justify-content: center;
-  width: 24px;
+  width: var(--spacing-6);
 }

@@ -7,7 +7,8 @@ import { shadowPrimitives } from '../tokens/shadows';
 import { fontFamily } from '../tokens/typography';
 import { Typography } from '../components/Typography';
 import { Grid } from '../components/Grid';
-import { Horizontal, Vertical } from '../components/Layout';
+import { Vertical } from '../components/Layout';
+import { useIsDarkMode } from '../context/ThemeContext';
 
 // ─── Reference scales ──────────────────────────────────────────────────────
 
@@ -94,38 +95,34 @@ interface TokenGroup {
 const modeLabel: Record<Mode, string> = { light: 'Light', dark: 'Dark' };
 
 /**
- * One mode's swatch. The tile uses that mode's base surface, so translucent
- * tokens and shadows read the way they do in that theme, whatever the page theme is.
+ * One swatch that follows the page theme: the tile and fill read the live CSS
+ * variables, so switching light and dark (the icon at the top right, or Ctrl+D)
+ * repaints every token. The current mode's value leads; the other sits under it.
  */
-const ModeSwatch: React.FC<{ mode: Mode; value: string; isShadow: boolean }> = ({ mode, value, isShadow }) => {
-  const modeColors = systemColors[mode];
+const TokenCard: React.FC<{ row: TokenRow }> = ({ row }) => {
+  const mode: Mode = useIsDarkMode() ? 'dark' : 'light';
+  const other: Mode = mode === 'dark' ? 'light' : 'dark';
+  const live = `var(${row.cssVar})`;
   return (
-    <Vertical gap="var(--spacing-1)" align="stretch" style={styles.modeSwatch}>
-      <div style={{ ...styles.modeTile, backgroundColor: modeColors['background-base'] }}>
-        {isShadow ? (
-          <div style={{ ...styles.shadowCard, backgroundColor: modeColors['background-raised'], boxShadow: value }} />
+    <Vertical gap="var(--spacing-2)" align="stretch" style={styles.tokenCard}>
+      <Vertical gap={2} align="stretch">
+        <span style={styles.tokenName}>{row.name}</span>
+        <span style={styles.tokenVar}>{row.cssVar}</span>
+      </Vertical>
+      <div style={{ ...styles.modeTile, backgroundColor: sysVar('background-base') }}>
+        {row.isShadow ? (
+          <div style={{ ...styles.shadowCard, backgroundColor: sysVar('background-raised'), boxShadow: live }} />
         ) : (
-          <div style={{ ...styles.modeFill, backgroundColor: value, borderColor: modeColors['border-divider'] }} />
+          <div style={{ ...styles.modeFill, backgroundColor: live, borderColor: sysVar('border-divider') }} />
         )}
       </div>
-      <span style={styles.modeLabel}>{modeLabel[mode]}</span>
-      <span style={styles.modeValue}>{value}</span>
+      <Vertical gap={2} align="stretch">
+        <span style={styles.modeValue}><span style={styles.modeLabel}>{modeLabel[mode]}</span> {row[mode]}</span>
+        <span style={{ ...styles.modeValue, opacity: 0.6 }}><span style={styles.modeLabel}>{modeLabel[other]}</span> {row[other]}</span>
+      </Vertical>
     </Vertical>
   );
 };
-
-const TokenCard: React.FC<{ row: TokenRow }> = ({ row }) => (
-  <Vertical gap="var(--spacing-2)" align="stretch" style={styles.tokenCard}>
-    <Vertical gap={2} align="stretch">
-      <span style={styles.tokenName}>{row.name}</span>
-      <span style={styles.tokenVar}>{row.cssVar}</span>
-    </Vertical>
-    <Horizontal gap="var(--spacing-2)" align="start">
-      <ModeSwatch mode="light" value={row.light} isShadow={row.isShadow} />
-      <ModeSwatch mode="dark" value={row.dark} isShadow={row.isShadow} />
-    </Horizontal>
-  </Vertical>
-);
 
 const TokenGroupBlock: React.FC<{ group: TokenGroup }> = ({ group }) => (
   <div style={styles.systemGroup}>
@@ -353,7 +350,7 @@ export const ColorSystemPage: React.FC = () => {
           The Radiant color system has three layers: reference (fixed tonal scales), system (semantic
           tokens that change with the theme) and component (per-component tokens). Their CSS variables
           start with rd-ref, rd-sys and rd-comp. Light is the default theme. Switch it with the theme
-          control or Ctrl+D; every token below shows its light and dark value side by side.
+          icon at the top right or Ctrl+D; every swatch below follows the theme and lists both values.
         </p>
       </div>
 

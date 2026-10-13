@@ -264,6 +264,19 @@ const RadiantLayout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       'loadingindicator': '/radiant/components/loadingindicator',
       'progressbar': '/radiant/components/progressbar',
       'wizardheader': '/radiant/components/wizardheader',
+      'daterangepicker': '/radiant/components/daterangepicker',
+      'fileuploader': '/radiant/components/fileuploader',
+      'inlineedit': '/radiant/components/inlineedit',
+      'numberinput': '/radiant/components/numberinput',
+      'breadcrumb': '/radiant/components/breadcrumb',
+      'userchip': '/radiant/components/userchip',
+      'chipidentifier': '/radiant/components/chipidentifier',
+      'token': '/radiant/components/token',
+      'scrollarea': '/radiant/components/scrollarea',
+      'dotloader': '/radiant/components/dotloader',
+      'splitbutton': '/radiant/components/splitbutton',
+      'editheader': '/radiant/components/editheader',
+      'pageheader': '/radiant/components/pageheader',
       // Data Display
       'table': '/radiant/components/table',
       'chip': '/radiant/components/chip',
@@ -336,16 +349,16 @@ const RadiantLayout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     { id: 'surfaces', label: 'Surfaces', icon: <SurfacesIcon />, type: 'item' },
     { id: 'registry', label: 'Component Registry', icon: <TableIcon />, type: 'item' },
     { id: 'changelog', label: 'Changelog', icon: <ChangelogIcon />, type: 'item' },
-    { id: 'spotter-showcase', label: 'Spotter DS', icon: <ComponentIcon />, type: 'item', badge: 'New' },
+    { id: 'spotter-showcase', label: 'Spotter DS', icon: <ComponentIcon />, type: 'item' },
     { id: 'radiance-guide', label: 'Radiance', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    // { id: 'roadmap', label: 'Roadmap', icon: <RoadmapIcon />, type: 'item', badge: 'New' },
+    // { id: 'roadmap', label: 'Roadmap', icon: <RoadmapIcon />, type: 'item' },
     { id: 'divider0', label: '', type: 'divider' },
     { id: 'widgets-section', label: 'Widgets', type: 'section' },
     { id: 'liveboardheader', label: 'LiveboardHeader', icon: <ComponentIcon />, type: 'item' },
     { id: 'globalheader', label: 'GlobalHeader', icon: <ComponentIcon />, type: 'item' },
     { id: 'appsidebar', label: 'AppSidebar', icon: <ComponentIcon />, type: 'item' },
     { id: 'appshell', label: 'AppShell', icon: <ComponentIcon />, type: 'item' },
-    { id: 'spottershell', label: 'SpotterShell', icon: <ComponentIcon />, type: 'item', badge: 'New' },
+    { id: 'spottershell', label: 'SpotterShell', icon: <ComponentIcon />, type: 'item' },
     { id: 'divider1', label: '', type: 'divider' },
     { id: 'components-section', label: 'Selection Controls', type: 'section' },
     { id: 'button', label: 'Button', icon: <ComponentIcon />, type: 'item', badge: '3' },
@@ -355,92 +368,105 @@ const RadiantLayout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     { id: 'divider2', label: '', type: 'divider' },
     { id: 'inputs-section', label: 'Inputs', type: 'section' },
     { id: 'textinput', label: 'TextInput', icon: <ComponentIcon />, type: 'item' },
-    { id: 'textarea', label: 'TextArea', icon: <ComponentIcon />, type: 'item', badge: 'New' },
+    { id: 'textarea', label: 'TextArea', icon: <ComponentIcon />, type: 'item' },
     { id: 'searchinput', label: 'SearchInput', icon: <ComponentIcon />, type: 'item' },
     { id: 'select', label: 'Select', icon: <ComponentIcon />, type: 'item' },
-    { id: 'datepicker', label: 'DatePicker', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'segmentedcontrol', label: 'SegmentedControl', icon: <ComponentIcon />, type: 'item', badge: 'New' },
+    { id: 'datepicker', label: 'DatePicker', icon: <ComponentIcon />, type: 'item' },
+    { id: 'segmentedcontrol', label: 'SegmentedControl', icon: <ComponentIcon />, type: 'item' },
+    { id: 'splitbutton', label: 'SplitButton', icon: <ComponentIcon />, type: 'item', badge: 'New' },
+    { id: 'numberinput', label: 'NumberInput', icon: <ComponentIcon />, type: 'item', badge: 'New' },
+    { id: 'inlineedit', label: 'InlineEdit', icon: <ComponentIcon />, type: 'item', badge: 'New' },
+    { id: 'fileuploader', label: 'FileUploader', icon: <ComponentIcon />, type: 'item', badge: 'New' },
+    { id: 'daterangepicker', label: 'DateRangePicker', icon: <ComponentIcon />, type: 'item', badge: 'New' },
     { id: 'divider3', label: '', type: 'divider' },
     { id: 'feedback-section', label: 'Feedback', type: 'section' },
     { id: 'alert', label: 'Alert', icon: <ComponentIcon />, type: 'item', badge: '5' },
-    { id: 'toast', label: 'Toast', icon: <ComponentIcon />, type: 'item', badge: 'New' },
+    { id: 'toast', label: 'Toast', icon: <ComponentIcon />, type: 'item' },
     { id: 'modal', label: 'Modal', icon: <ComponentIcon />, type: 'item' },
     { id: 'tooltip', label: 'Tooltip', icon: <ComponentIcon />, type: 'item' },
     { id: 'popover', label: 'Popover', icon: <ComponentIcon />, type: 'item' },
-    { id: 'loadingindicator', label: 'LoadingIndicator', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'progressbar', label: 'ProgressBar', icon: <ComponentIcon />, type: 'item', badge: 'New' },
+    { id: 'loadingindicator', label: 'LoadingIndicator', icon: <ComponentIcon />, type: 'item' },
+    { id: 'progressbar', label: 'ProgressBar', icon: <ComponentIcon />, type: 'item' },
     { id: 'wizardheader', label: 'WizardHeader', icon: <ComponentIcon />, type: 'item', badge: 'New' },
+    { id: 'dotloader', label: 'DotLoader', icon: <ComponentIcon />, type: 'item', badge: 'New' },
     { id: 'divider4', label: '', type: 'divider' },
     { id: 'data-section', label: 'Data Display', type: 'section' },
     { id: 'table', label: 'Table', icon: <ComponentIcon />, type: 'item' },
     { id: 'chip', label: 'Chip', icon: <ComponentIcon />, type: 'item', badge: '4' },
-    { id: 'avatar', label: 'Avatar', icon: <ComponentIcon />, type: 'item', badge: 'New' },
+    { id: 'avatar', label: 'Avatar', icon: <ComponentIcon />, type: 'item' },
+    { id: 'token', label: 'Token', icon: <ComponentIcon />, type: 'item', badge: 'New' },
+    { id: 'chipidentifier', label: 'ChipIdentifier', icon: <ComponentIcon />, type: 'item', badge: 'New' },
+    { id: 'userchip', label: 'UserChip', icon: <ComponentIcon />, type: 'item', badge: 'New' },
     { id: 'divider5', label: '', type: 'divider' },
     { id: 'navigation-section', label: 'Navigation', type: 'section' },
     { id: 'tabs', label: 'Tabs', icon: <ComponentIcon />, type: 'item' },
-    { id: 'link', label: 'Link', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'menu', label: 'Menu', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'pagination', label: 'Pagination', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'stepper', label: 'Stepper', icon: <ComponentIcon />, type: 'item', badge: 'New' },
+    { id: 'link', label: 'Link', icon: <ComponentIcon />, type: 'item' },
+    { id: 'menu', label: 'Menu', icon: <ComponentIcon />, type: 'item' },
+    { id: 'pagination', label: 'Pagination', icon: <ComponentIcon />, type: 'item' },
+    { id: 'stepper', label: 'Stepper', icon: <ComponentIcon />, type: 'item' },
+    { id: 'pageheader', label: 'PageHeader', icon: <ComponentIcon />, type: 'item', badge: 'New' },
+    { id: 'editheader', label: 'EditHeader', icon: <ComponentIcon />, type: 'item', badge: 'New' },
+    { id: 'breadcrumb', label: 'Breadcrumb', icon: <ComponentIcon />, type: 'item', badge: 'New' },
     { id: 'divider6', label: '', type: 'divider' },
     { id: 'layout-section', label: 'Layout', type: 'section' },
-    { id: 'card', label: 'Card', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'accordion', label: 'Accordion', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'divider', label: 'Divider', icon: <ComponentIcon />, type: 'item', badge: 'New' },
+    { id: 'card', label: 'Card', icon: <ComponentIcon />, type: 'item' },
+    { id: 'accordion', label: 'Accordion', icon: <ComponentIcon />, type: 'item' },
+    { id: 'divider', label: 'Divider', icon: <ComponentIcon />, type: 'item' },
+    { id: 'scrollarea', label: 'ScrollArea', icon: <ComponentIcon />, type: 'item', badge: 'New' },
     { id: 'divider7', label: '', type: 'divider' },
     // ── Layout Primitives ─────────────────────────────────────────────────
     { id: 'layout-primitives-section', label: 'Layout Primitives', type: 'section' },
-    { id: 'horizontal', label: 'Horizontal', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'vertical', label: 'Vertical', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'view', label: 'View', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'grid', label: 'Grid / RdGrid', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'splitpane', label: 'SplitPane', icon: <ComponentIcon />, type: 'item', badge: 'New' },
+    { id: 'horizontal', label: 'Horizontal', icon: <ComponentIcon />, type: 'item' },
+    { id: 'vertical', label: 'Vertical', icon: <ComponentIcon />, type: 'item' },
+    { id: 'view', label: 'View', icon: <ComponentIcon />, type: 'item' },
+    { id: 'grid', label: 'Grid / RdGrid', icon: <ComponentIcon />, type: 'item' },
+    { id: 'splitpane', label: 'SplitPane', icon: <ComponentIcon />, type: 'item' },
     { id: 'divider8', label: '', type: 'divider' },
     // ── Display & Content ─────────────────────────────────────────────────
     { id: 'display-section', label: 'Display & Content', type: 'section' },
-    { id: 'nodata', label: 'NoData', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'explainercard', label: 'ExplainerCard', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'image', label: 'Image', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'illustration', label: 'Illustration', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'legend', label: 'Legend', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'safehtml', label: 'SafeHTML', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'overlayloading', label: 'OverlayLoading', icon: <ComponentIcon />, type: 'item', badge: 'New' },
+    { id: 'nodata', label: 'NoData', icon: <ComponentIcon />, type: 'item' },
+    { id: 'explainercard', label: 'ExplainerCard', icon: <ComponentIcon />, type: 'item' },
+    { id: 'image', label: 'Image', icon: <ComponentIcon />, type: 'item' },
+    { id: 'illustration', label: 'Illustration', icon: <ComponentIcon />, type: 'item' },
+    { id: 'legend', label: 'Legend', icon: <ComponentIcon />, type: 'item' },
+    { id: 'safehtml', label: 'SafeHTML', icon: <ComponentIcon />, type: 'item' },
+    { id: 'overlayloading', label: 'OverlayLoading', icon: <ComponentIcon />, type: 'item' },
     { id: 'divider9', label: '', type: 'divider' },
     // ── Form Extensions ───────────────────────────────────────────────────
     { id: 'form-extensions-section', label: 'Form Extensions', type: 'section' },
-    { id: 'formcontrol', label: 'FormControl', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'searchbar', label: 'SearchBar', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'numericfilterinput', label: 'NumericFilterInput', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'directioncontrol', label: 'DirectionControl', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'colorpicker', label: 'ColorPicker', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'inputmentions', label: 'InputMentions', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'filtermodal', label: 'FilterModal', icon: <ComponentIcon />, type: 'item', badge: 'New' },
+    { id: 'formcontrol', label: 'FormControl', icon: <ComponentIcon />, type: 'item' },
+    { id: 'searchbar', label: 'SearchBar', icon: <ComponentIcon />, type: 'item' },
+    { id: 'numericfilterinput', label: 'NumericFilterInput', icon: <ComponentIcon />, type: 'item' },
+    { id: 'directioncontrol', label: 'DirectionControl', icon: <ComponentIcon />, type: 'item' },
+    { id: 'colorpicker', label: 'ColorPicker', icon: <ComponentIcon />, type: 'item' },
+    { id: 'inputmentions', label: 'InputMentions', icon: <ComponentIcon />, type: 'item' },
+    { id: 'filtermodal', label: 'FilterModal', icon: <ComponentIcon />, type: 'item' },
     { id: 'divider10', label: '', type: 'divider' },
     // ── Interaction ───────────────────────────────────────────────────────
     { id: 'interaction-section', label: 'Interaction', type: 'section' },
-    { id: 'actionmenu', label: 'ActionMenu', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'verticalstepper', label: 'VerticalStepper', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'list', label: 'List', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'slider', label: 'Slider', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'managedlist', label: 'ManagedList', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'trending', label: 'Trending', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'nestedcheckbox', label: 'NestedCheckbox', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'managetags', label: 'ManageTags', icon: <ComponentIcon />, type: 'item', badge: 'New' },
+    { id: 'actionmenu', label: 'ActionMenu', icon: <ComponentIcon />, type: 'item' },
+    { id: 'verticalstepper', label: 'VerticalStepper', icon: <ComponentIcon />, type: 'item' },
+    { id: 'list', label: 'List', icon: <ComponentIcon />, type: 'item' },
+    { id: 'slider', label: 'Slider', icon: <ComponentIcon />, type: 'item' },
+    { id: 'managedlist', label: 'ManagedList', icon: <ComponentIcon />, type: 'item' },
+    { id: 'trending', label: 'Trending', icon: <ComponentIcon />, type: 'item' },
+    { id: 'nestedcheckbox', label: 'NestedCheckbox', icon: <ComponentIcon />, type: 'item' },
+    { id: 'managetags', label: 'ManageTags', icon: <ComponentIcon />, type: 'item' },
     { id: 'divider11', label: '', type: 'divider' },
     // ── Data Visualization ────────────────────────────────────────────────
     { id: 'dataviz-section', label: 'Data Visualization', type: 'section' },
-    { id: 'tree', label: 'Tree', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'treetable', label: 'TreeTable', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'formatters', label: 'Formatters', icon: <ComponentIcon />, type: 'item', badge: 'New' },
+    { id: 'tree', label: 'Tree', icon: <ComponentIcon />, type: 'item' },
+    { id: 'treetable', label: 'TreeTable', icon: <ComponentIcon />, type: 'item' },
+    { id: 'formatters', label: 'Formatters', icon: <ComponentIcon />, type: 'item' },
     { id: 'divider12', label: '', type: 'divider' },
     // ── Advanced ──────────────────────────────────────────────────────────
     { id: 'advanced-section', label: 'Advanced', type: 'section' },
-    { id: 'tour', label: 'Tour', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'richtexteditor', label: 'RichTextEditor', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'dragdrop', label: 'DragDrop', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'formbuilder', label: 'FormBuilder', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'dynamicform', label: 'DynamicForm', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'facetsortbar', label: 'FacetSortBar', icon: <ComponentIcon />, type: 'item', badge: 'New' },
+    { id: 'tour', label: 'Tour', icon: <ComponentIcon />, type: 'item' },
+    { id: 'richtexteditor', label: 'RichTextEditor', icon: <ComponentIcon />, type: 'item' },
+    { id: 'dragdrop', label: 'DragDrop', icon: <ComponentIcon />, type: 'item' },
+    { id: 'formbuilder', label: 'FormBuilder', icon: <ComponentIcon />, type: 'item' },
+    { id: 'dynamicform', label: 'DynamicForm', icon: <ComponentIcon />, type: 'item' },
+    { id: 'facetsortbar', label: 'FacetSortBar', icon: <ComponentIcon />, type: 'item' },
   ];
 
   const SidebarHeader = () => (
@@ -471,9 +497,15 @@ const RadiantLayout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         activeId={getActiveId()}
         onSelect={handleNavigate}
         header={<SidebarHeader />}
-        footerContent={<ThemeSwitch fullWidth />}
+        showInspect={false}
       />
       <main style={styles.main}>
+        {/* Theme icon at the top right, as on the playground; stays put on scroll */}
+        <div style={styles.themeBar}>
+          <div style={styles.themeCorner}>
+            <ThemeSwitch variant="icon" />
+          </div>
+        </div>
         <div style={styles.content}>
           {children}
         </div>
@@ -604,6 +636,19 @@ const App: React.FC = () => {
       <Route path="/radiant/components/loadingindicator" element={<RadiantLayout><ComponentDocPage componentId="loadingindicator" /></RadiantLayout>} />
       <Route path="/radiant/components/progressbar" element={<RadiantLayout><ComponentDocPage componentId="progressbar" /></RadiantLayout>} />
       <Route path="/radiant/components/wizardheader" element={<RadiantLayout><ComponentDocPage componentId="wizardheader" /></RadiantLayout>} />
+      <Route path="/radiant/components/daterangepicker" element={<RadiantLayout><ComponentDocPage componentId="daterangepicker" /></RadiantLayout>} />
+      <Route path="/radiant/components/fileuploader" element={<RadiantLayout><ComponentDocPage componentId="fileuploader" /></RadiantLayout>} />
+      <Route path="/radiant/components/inlineedit" element={<RadiantLayout><ComponentDocPage componentId="inlineedit" /></RadiantLayout>} />
+      <Route path="/radiant/components/numberinput" element={<RadiantLayout><ComponentDocPage componentId="numberinput" /></RadiantLayout>} />
+      <Route path="/radiant/components/breadcrumb" element={<RadiantLayout><ComponentDocPage componentId="breadcrumb" /></RadiantLayout>} />
+      <Route path="/radiant/components/userchip" element={<RadiantLayout><ComponentDocPage componentId="userchip" /></RadiantLayout>} />
+      <Route path="/radiant/components/chipidentifier" element={<RadiantLayout><ComponentDocPage componentId="chipidentifier" /></RadiantLayout>} />
+      <Route path="/radiant/components/token" element={<RadiantLayout><ComponentDocPage componentId="token" /></RadiantLayout>} />
+      <Route path="/radiant/components/scrollarea" element={<RadiantLayout><ComponentDocPage componentId="scrollarea" /></RadiantLayout>} />
+      <Route path="/radiant/components/dotloader" element={<RadiantLayout><ComponentDocPage componentId="dotloader" /></RadiantLayout>} />
+      <Route path="/radiant/components/splitbutton" element={<RadiantLayout><ComponentDocPage componentId="splitbutton" /></RadiantLayout>} />
+      <Route path="/radiant/components/editheader" element={<RadiantLayout><ComponentDocPage componentId="editheader" /></RadiantLayout>} />
+      <Route path="/radiant/components/pageheader" element={<RadiantLayout><ComponentDocPage componentId="pageheader" /></RadiantLayout>} />
       
       {/* Component documentation pages - Data Display */}
       <Route path="/radiant/components/table" element={<RadiantLayout><ComponentDocPage componentId="table" /></RadiantLayout>} />
@@ -708,9 +753,21 @@ const styles: Record<string, React.CSSProperties> = {
     minHeight: '100vh',
     overflowY: 'auto',
   },
+  themeBar: {
+    position: 'sticky',
+    top: 0,
+    height: 0,
+    zIndex: 10,
+    display: 'flex',
+    justifyContent: 'flex-end',
+  },
+  themeCorner: {
+    paddingTop: 'var(--spacing-4)',
+    paddingRight: 'var(--spacing-6)',
+  },
   content: {
     minHeight: '100%',
-    padding: '32px',
+    padding: 'var(--spacing-14) 32px 32px',
     maxWidth: '1200px',
     margin: '0 auto',
   },

@@ -24,22 +24,53 @@ interface Highlight {
 }
 
 const HIGHLIGHTS: Highlight[] = [
+  // v26.10, in the order the teaser film tells it.
   {
-    title: 'Radiance, ThoughtSpot\'s AI identity',
-    description: 'The Radiance wash comes to the playground, the home page and the design system page, and RadiantPlay now ships Radiance itself: new Spotter, SpotterX, Liveboard and sign up prototypes get their official pattern automatically, and /rp-sync-upstream keeps it current. The guide is at /radiant/radiance.',
-    version: '26.10.2b',
+    title: 'Dark mode, everywhere',
+    description: 'Every page, shared component and sample prototype works in light and dark: press Ctrl+D or use the theme icon. Every new prototype is dark ready, and /rp-migrate-prototype moves your own prototypes across when you are ready.',
+    version: '26.10.1b',
     date: '2026-10-12',
   },
   {
-    title: 'Radiant components match Figma',
-    description: 'Four batches from the Radiant 3.0 audit: colour and token fixes across Button, Tooltip, Modal and more; a new Toggle, Toast and Stepper; Figma sizes as an opt-in look (new prototypes get it); card, raised, horizontal and brand variants, and a new WizardHeader.',
+    title: 'Describe it, get a working prototype',
+    description: 'Type /rp-new-prototype and a name in Claude, and it scaffolds the prototype, registers it in registry-mine.ts and opens it in the playground, dark ready from the start.',
+    version: '26.10.1b',
+    date: '2026-10-12',
+  },
+  {
+    title: 'Spotter DS in the design system',
+    description: 'The Spotter design system sits in the design system left panel: chat surfaces, blocks, icons and tokens, with every component previewed.',
     version: '26.10.2e',
     date: '2026-10-12',
   },
   {
-    title: 'Your project canvas',
-    description: '/rp-project-canvas on a designer fork now shows your own work: next steps, your prototypes and their dark and Geist readiness, how far behind RadiantPlay you are, your branches and your site.',
+    title: 'Meet Radiance, ThoughtSpot\'s AI identity',
+    description: 'The Radiance wash comes to the playground, the home page and the design system, and new Spotter, SpotterX, Liveboard and sign up prototypes get their official pattern automatically. Its guide, with patterns, rules and a template builder, is in the design system left panel.',
+    version: '26.10.2e',
+    date: '2026-10-12',
+  },
+  {
+    title: 'Skills, built in: type /rp-',
+    description: 'Every RadiantPlay command starts with rp-, so typing /rp- in Claude lists them all: new prototype, migrate, Radiant check, sync, project canvas and Coolify deploy.',
+    version: '26.10.1b',
+    date: '2026-10-12',
+  },
+  {
+    title: 'Share any branch',
+    description: '/rp-coolify-deploy puts your fork live on Coolify at its own URL, and every push redeploys it.',
+    version: '26.9.1a',
+    date: '2026-10-12',
+  },
+  {
+    title: 'See your work at a glance',
+    description: 'Run /rp-project-canvas for your next steps, sync state, your site, your branches and every prototype with its dark and Geist readiness.',
     version: '26.10.2a',
+    date: '2026-10-12',
+  },
+  {
+    title: 'Radiant matches Figma',
+    description: 'Tokens come from Figma (400 of them), type is set in Geist, and components take their Radiant 3.0 Figma shape: Toggle, Toast, Stepper, Tabs, new variants and a Wizard header, with Figma sizes as an opt-in look.',
+    version: '26.10.2e',
     date: '2026-10-12',
   },
   {
