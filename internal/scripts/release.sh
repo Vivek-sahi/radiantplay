@@ -147,5 +147,6 @@ echo "────────────────────────�
 echo "When ready:"
 echo "  git commit -m \"chore: release $VERSION\""
 echo "  git push origin main"
-echo "  git push galaxy main"
+# origin set up by install-maintainer-hooks.sh already pushes to galaxy too
+git remote get-url --push --all origin | grep -q "galaxy.corp.thoughtspot.com" || echo "  git push galaxy main"
 echo "─────────────────────────────────────────────────────"

@@ -45,8 +45,9 @@ no-git path in the designer guide.
 
 ## How a deploy happens
 
-1. Push to `galaxy`. `main` and `staging` go there as part of the normal
-   dual push; `faris` via `bash internal/scripts/push-faris.sh`.
+1. Push to `galaxy`. On the maintainer's machine `origin` pushes to GitHub
+   and galaxy, so a plain `git push` on `main`, `staging` or `faris` covers it
+   (set up by `bash internal/scripts/install-maintainer-hooks.sh`).
 2. A repo webhook on galaxy (Settings → Hooks, push events only) posts to
    `http://10.79.75.177:8000/webhooks/source/github/events/manual`. Coolify
    matches `owner/repo` + branch and deploys the right app. One webhook per
@@ -124,7 +125,7 @@ way before the secret was aligned.
 | `.claude/commands/rp-coolify-deploy.md` | `/rp-coolify-deploy` guided setup and `check` mode; reads these two docs at run time |
 | `docker/nginx.conf` | Canonical nginx config (SPA fallback + no-cache HTML); paste into every app |
 | `Dockerfile` | Multi-stage image (Node 22 build → nginx) for the no-git path |
-| `internal/scripts/push-faris.sh` | Push any branch to origin + galaxy in one step |
+| `internal/scripts/push-faris.sh` | Push any branch to origin + galaxy; kept for older instructions, a plain `git push` does the same once origin has both push URLs |
 | `scripts/hooks/pre-push` | Refuses force-push / deletion of `faris`; reminds on unversioned `main` pushes |
 | `vercel.json` | Kept for forks still on Vercel; the reference for what Coolify still lacks |
 | `docs/archive/2026-07-23-coolify-deploy-setup.md` | Original design record and decision log |

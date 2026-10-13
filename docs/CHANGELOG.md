@@ -1,5 +1,12 @@
 # Changelog
 
+## 26.10.3e — 2026-10-13
+
+One push reaches both remotes on the maintainer machine.
+
+- `origin` gets two push URLs, GitHub and galaxy, so a plain `git push` updates both. `bash internal/scripts/install-maintainer-hooks.sh` sets this up on a new clone. `push-faris.sh` still works, and `release.sh` only prints `git push galaxy main` when it is still needed
+- Designer forks are unchanged: they have one remote and push to it as before
+
 ## 26.10.3d — 2026-10-13
 
 Thumbnail setup works again.

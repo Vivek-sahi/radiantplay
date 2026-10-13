@@ -29,7 +29,7 @@
 
 There is also a `public` remote (`github.com/thoughtspot/radiant-play`), the curated public release mirror. **Never push to it directly.** The public snapshot is published separately, and only with explicit per-push approval for that specific push.
 
-**The maintainer's daily working branch is `faris`.** Work directly on `faris`; if a side branch is used, merge it back promptly rather than leaving it long-lived. Push it to both remotes in one step with `bash internal/scripts/push-faris.sh`. Keep it current by merging `main` into `faris`, never the other way round. Personal prototypes live in `registry-mine.ts`. To promote a personal prototype to the shared library: switch to `main`, move the entry from `registry-mine.ts` to `registry-core.ts`, commit, and push to both remotes.
+**The maintainer's daily working branch is `faris`.** Work directly on `faris`; if a side branch is used, merge it back promptly rather than leaving it long-lived. Push it with a plain `git push`: `origin` has two push URLs, GitHub and galaxy, so one push reaches both remotes (set up by `bash internal/scripts/install-maintainer-hooks.sh`; `internal/scripts/push-faris.sh` still works). Keep it current by merging `main` into `faris`, never the other way round. Personal prototypes live in `registry-mine.ts`. To promote a personal prototype to the shared library: switch to `main`, move the entry from `registry-mine.ts` to `registry-core.ts`, commit, and push to both remotes.
 
 Run `git remote -v` to confirm which remotes exist. Default deploy target is **staging**, not main — do not push to main unless explicitly asked.
 
@@ -189,5 +189,7 @@ The pre-push hook (`scripts/hooks/pre-push`) refuses force-pushes and deletions 
 - `public` — the public mirror (`https://github.com/thoughtspot/radiant-play.git`). A curated, stripped snapshot, not a sync peer. **Never push to it directly without explicit per-push approval for that specific push.**
 
 `origin` and `galaxy` must stay in sync on shared branches. `public` is a one-way publish target.
+
+On the maintainer's machine `origin` has two push URLs (GitHub and galaxy), so `git push origin <branch>` updates both and there is no separate `git push galaxy` step. `origin` still fetches from GitHub, and `galaxy` stays as its own remote for fetches. `bash internal/scripts/install-maintainer-hooks.sh` sets this up on a new clone. Every push to `origin` lands on galaxy too, so keep temp branches local.
 
 Always run `git remote -v` to confirm which remotes exist before pushing.

@@ -28,6 +28,14 @@ export interface VersionEntry {
  */
 export const versionHistory: VersionEntry[] = [
   {
+    version: '26.10.3e',
+    date: '2026-10-13',
+    type: 'patch',
+    changes: [
+      { type: 'modified', group: 'Tooling', component: 'Maintainer pushes', description: 'origin gets two push URLs (GitHub and galaxy), so a plain git push updates both; install-maintainer-hooks.sh sets it up. push-faris.sh still works. Designer forks are unchanged' },
+    ],
+  },
+  {
     version: '26.10.3d',
     date: '2026-10-13',
     type: 'patch',
