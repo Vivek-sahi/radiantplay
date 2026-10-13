@@ -21,6 +21,7 @@ Thirteen new Radiant components from Figma (batch 5), a token sweep with no visu
 - Design system pages: the theme icon sits at the top right, as on the playground, instead of the Light, Dark and System control in the sidebar footer; the Inspect button is gone from that footer (Sidebar gains `showInspect`, on by default)
 - Colours page: each token is one swatch that follows the theme, with the current mode's value first and the other under it
 - Component Registry: rows for the new components, and the rows batches 1 to 4 changed now carry their real Figma node, file and sync date; placeholder Figma ids are gone
+- Avatar: the count badge and status dot are solid failure red with contrasting text and a thin ring, readable in light and dark (they used the pale failure background before); purple and orange initials avatars are lighter in dark mode so their initials stay readable
 - The New tag stays only on items added in the last month; the Icons page puts Usage at the bottom; changelog highlights follow the v26.10 teaser
 ## 26.10.3a — 2026-10-13
 
