@@ -1,5 +1,12 @@
 # Changelog
 
+## 26.10.3d — 2026-10-13
+
+Thumbnail setup works again.
+
+- `npm run thumbnails:setup` failed on every machine: `npm init -y` names the package after its folder, and npm rejects `.radiantplay-visual` for the leading dot. Setup now writes its own `package.json`
+- `npm run thumbnails` takes `--wait <ms>` (default 800) to settle longer before each shot, for screens that reload an iframe when the theme switches to dark
+
 ## 26.10.3c — 2026-10-13
 
 RadiantPlay runs on Coolify only. Vercel is switched off.

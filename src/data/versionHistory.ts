@@ -28,6 +28,15 @@ export interface VersionEntry {
  */
 export const versionHistory: VersionEntry[] = [
   {
+    version: '26.10.3d',
+    date: '2026-10-13',
+    type: 'patch',
+    changes: [
+      { type: 'modified', group: 'Tooling', component: 'Thumbnail setup', description: 'npm run thumbnails:setup works again. It failed on every machine because npm rejects .radiantplay-visual as a package name; setup now writes its own package.json' },
+      { type: 'modified', group: 'Tooling', component: 'Thumbnail capture', description: 'npm run thumbnails takes --wait <ms> (default 800) to settle longer before each shot, for screens that reload an iframe when the theme switches to dark' },
+    ],
+  },
+  {
     version: '26.10.3c',
     date: '2026-10-13',
     type: 'patch',

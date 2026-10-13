@@ -9,6 +9,8 @@
  *   npm run thumbnails -- --all                   every registered prototype
  *   npm run thumbnails -- <Name> --base http://localhost:5173   use a running server
  *   npm run thumbnails -- <Name> --json           end with a JSON summary, one row per prototype
+ *   npm run thumbnails -- <Name> --wait 3000      settle 3s before each shot (default 800ms),
+ *                                                 for screens that reload an iframe on a theme switch
  *
  * Without --base it starts its own Vite dev server and stops it afterwards.
  * Playwright lives outside package.json: run `npm run thumbnails:setup` once.
@@ -47,7 +49,8 @@ try {
 const argv = process.argv.slice(2);
 const flag = (name) => argv.includes(`--${name}`);
 const value = (name) => { const i = argv.indexOf(`--${name}`); return i > -1 ? argv[i + 1] : null; };
-const names = argv.filter((a, i) => !a.startsWith('--') && argv[i - 1] !== '--base');
+const names = argv.filter((a, i) => !a.startsWith('--') && !['--base', '--wait'].includes(argv[i - 1]));
+const SETTLE_MS = Number(value('wait')) || 800;
 
 // Registered prototypes, their light-only flag and whether they are archived, read from the registry source
 function registered() {
@@ -126,7 +129,7 @@ async function capture(browser, base, name, { lightOnly }) {
   await page.goto(`${base}/playground/${name}`, { waitUntil: 'networkidle', timeout: 60000 });
   await page.addStyleTag({ content: FREEZE });
   await page.evaluate(() => document.fonts.ready);
-  await page.waitForTimeout(800);
+  await page.waitForTimeout(SETTLE_MS);
 
   const dir = path.join(ROOT, 'src/prototypes', name);
   const results = [];
@@ -143,7 +146,7 @@ async function capture(browser, base, name, { lightOnly }) {
   if (!lightOnly) {
     // Switch through the theme controller (Ctrl+D), so charts redraw for dark too
     await page.keyboard.press('Control+d');
-    await page.waitForTimeout(800);
+    await page.waitForTimeout(SETTLE_MS);
     await shoot('dark');
   }
   await context.close();
