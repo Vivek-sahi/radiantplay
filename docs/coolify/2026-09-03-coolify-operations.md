@@ -2,8 +2,8 @@
 
 What is deployed on ThoughtSpot's self-hosted Coolify, how it gets there, and
 the things that bite. For the step-by-step setup of a new app see
-`2026-09-03-deploy-guide-for-designers.md`. Vercel stays alongside Coolify for
-now: Vercel deploys from `origin` (GitHub), Coolify from `galaxy`.
+`2026-09-03-deploy-guide-for-designers.md`. Coolify is the only host: it deploys from
+`galaxy`. Vercel was switched off on 2026-10-13.
 
 ## Instance
 
@@ -14,7 +14,7 @@ now: Vercel deploys from `origin` (GitHub), Coolify from `galaxy`.
 | Project | `radiantplay-faris` (uuid `gt788yuck7au4kevlo0iykbn`), environment `production` (`fy593jra6tgvv7gxbbukjp9f`) |
 | Server | `coolify-server-02` (`p55vx2x8ooycypm3p03js76c`, 10.79.138.56) |
 | Deploy key | `GHE-radiantplay-faris` (id 58, uuid `i5qx976k4ody80y31jayht13`) — one key covers every branch of `mohammed-faris/radiantplay` |
-| Access | Corporate network / Twingate only. No password gate, no live AI (`/api/chat` is Vercel-only). |
+| Access | Corporate network / Twingate only. No password gate, no live AI (`/api/chat` only runs in local dev). |
 
 ## Apps
 
@@ -126,7 +126,7 @@ way before the secret was aligned.
 | `Dockerfile` | Multi-stage image (Node 22 build → nginx) for the no-git path |
 | `internal/scripts/push-faris.sh` | Push any branch to origin + galaxy in one step |
 | `scripts/hooks/pre-push` | Refuses force-push / deletion of `faris`; reminds on unversioned `main` pushes |
-| `vercel.json` | What the Vercel side does; the reference for what Coolify still lacks |
+| `vercel.json` | Kept for forks still on Vercel; the reference for what Coolify still lacks |
 | `docs/archive/2026-07-23-coolify-deploy-setup.md` | Original design record and decision log |
 
 ## History

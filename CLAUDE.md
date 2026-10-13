@@ -37,7 +37,7 @@ Run `git remote -v` to confirm which remotes exist. Default deploy target is **s
 
 ## Tech Stack
 
-React 19 + TypeScript + Vite 7. Deployed on Vercel (main, staging, per-branch previews) and on ThoughtSpot's self-hosted Coolify (main, staging, faris — see `docs/coolify/`). When building or modifying pages, verify the build succeeds before considering the task complete.
+React 19 + TypeScript + Vite 7. Deployed on ThoughtSpot's self-hosted Coolify (main, staging, faris — see `docs/coolify/`). Vercel is switched off; `vercel.json`, `middleware.ts` and `api/chat.ts` stay only so forks that still deploy there keep working. When building or modifying pages, verify the build succeeds before considering the task complete.
 
 ## Commands
 
@@ -171,12 +171,12 @@ Apply the 5 conventions above + verify `npm run build` passes before finishing a
 
 | Branch | Purpose | Deploys to | Pushed to |
 |--------|---------|------------|-----------|
-| `main` | Production (shared library) | radiantplay.vercel.app · radiantplay.design.coolify.thoughtspot.com | origin + galaxy |
-| `staging` | Shared preview / QA | staging-radiantplay.vercel.app · radiantplay-staging.design.coolify.thoughtspot.com | origin + galaxy |
-| `faris` | Maintainer's daily working branch — personal prototypes in `registry-mine.ts`, decks | Per-branch Vercel preview · radiantplay-faris.design.coolify.thoughtspot.com (from galaxy) | origin + galaxy |
+| `main` | Production (shared library) | radiantplay.design.coolify.thoughtspot.com | origin + galaxy |
+| `staging` | Shared preview / QA | radiantplay-staging.design.coolify.thoughtspot.com | origin + galaxy |
+| `faris` | Maintainer's daily working branch — personal prototypes in `registry-mine.ts`, decks | radiantplay-faris.design.coolify.thoughtspot.com (from galaxy) | origin + galaxy |
 | `feat/*`, `fix/*`, `chore/*` | Shared work branches | — | origin + galaxy |
 
-The pre-push hook (`scripts/hooks/pre-push`) refuses force-pushes and deletions of `faris`, since it is the real working branch rather than a mirror. Vercel deploys from `origin`; Coolify deploys from `galaxy` (setup and operations in `docs/coolify/`). To "promote" a personal prototype to the shared library, switch to `main`, move the entry from `registry-mine.ts` to `registry-core.ts`, commit, and push to both remotes.
+The pre-push hook (`scripts/hooks/pre-push`) refuses force-pushes and deletions of `faris`, since it is the real working branch rather than a mirror. Coolify deploys from `galaxy` (setup and operations in `docs/coolify/`); `origin` is the GitHub copy and deploys nothing. To "promote" a personal prototype to the shared library, switch to `main`, move the entry from `registry-mine.ts` to `registry-core.ts`, commit, and push to both remotes.
 
 ### Remotes
 

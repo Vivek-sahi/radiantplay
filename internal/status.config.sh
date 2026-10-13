@@ -75,9 +75,7 @@ STATUS_BRANCH_PURPOSE=(
 # A URL on an internal host is only reachable on Twingate VPN, and reads as
 # unreachable off it. That is the network, not a broken deploy.
 STATUS_DEPLOYS=(
-  "main|Vercel|https://radiantplay.vercel.app"
   "main|Coolify|https://radiantplay.design.coolify.thoughtspot.com"
-  "staging|Vercel|https://staging-radiantplay.vercel.app"
   "staging|Coolify|https://radiantplay-staging.design.coolify.thoughtspot.com"
   "faris|Coolify|https://radiantplay-faris.design.coolify.thoughtspot.com"
 )

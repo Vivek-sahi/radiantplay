@@ -36,4 +36,4 @@ Screenshots are preferred; they stay accurate as the prototype changes.
 
 ## Why no git hook
 
-Designer forks don't install hooks, and a hook would also run during Coolify and Vercel installs. So capture runs as part of other work: after a `/rp-radiant-check`, after a `/rp-sync-upstream`, inside `/rp-migrate-prototype`, or when a designer asks. All of them follow `.claude/skills/rp-prototype-thumbnails/SKILL.md`.
+Designer forks don't install hooks, and a hook would also run during Coolify installs. So capture runs as part of other work: after a `/rp-radiant-check`, after a `/rp-sync-upstream`, inside `/rp-migrate-prototype`, or when a designer asks. All of them follow `.claude/skills/rp-prototype-thumbnails/SKILL.md`.

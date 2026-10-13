@@ -1,5 +1,12 @@
 # Changelog
 
+## 26.10.3c — 2026-10-13
+
+RadiantPlay runs on Coolify only. Vercel is switched off.
+
+- The docs (CLAUDE.md, README, getting started, the Coolify docs) and the project canvas Sites tab list Coolify sites only
+- `vercel.json`, `middleware.ts` and `api/chat.ts` stay, so a fork that still deploys on Vercel keeps working after `/rp-sync-upstream`. The Data Model Editor's AI panel works in local dev (`npm run dev`) and not on the Coolify sites, as before
+
 ## 26.10.3b — 2026-10-13
 
 Thirteen new Radiant components from Figma (batch 5), a token sweep with no visual change (batch 6), and a tidier design system: the theme icon moves to the top right and the Colours page follows the theme.

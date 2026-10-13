@@ -979,7 +979,7 @@ cat >> "$OUT" <<HTML
     <thead><tr><th>Platform</th><th>Branch</th><th>URL</th><th>Health</th><th>Detail</th></tr></thead>
     <tbody>${SITE_ROWS:-<tr><td colspan='5' class='empty'>No deploys configured. Add rows to STATUS_DEPLOYS in internal/status.config.sh.</td></tr>}</tbody>
   </table>
-  <p class="file-list">A Coolify URL is internal and only answers on Twingate VPN. Unreachable off VPN is the network, not a broken deploy. Vercel deploys from <code>origin</code>; Coolify deploys from <code>galaxy</code>, so a push to only one remote updates only one column.</p>
+  <p class="file-list">A Coolify URL is internal and only answers on Twingate VPN. Unreachable off VPN is the network, not a broken deploy. Coolify deploys from <code>galaxy</code>, so a push to <code>origin</code> alone changes no site.</p>
 </section>
 
 <section id="forks">

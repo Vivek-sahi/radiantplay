@@ -28,6 +28,14 @@ export interface VersionEntry {
  */
 export const versionHistory: VersionEntry[] = [
   {
+    version: '26.10.3c',
+    date: '2026-10-13',
+    type: 'patch',
+    changes: [
+      { type: 'modified', group: 'Docs', component: 'Hosting', description: 'Coolify only: Vercel is switched off, and the docs and the project canvas Sites tab list Coolify sites only. vercel.json, middleware.ts and api/chat.ts stay for forks still on Vercel' },
+    ],
+  },
+  {
     version: '26.10.3b',
     date: '2026-10-13',
     type: 'patch',

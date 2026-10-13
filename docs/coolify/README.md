@@ -1,9 +1,9 @@
 # Coolify
 
-Last updated: 2026-09-03
+Last updated: 2026-10-13
 
 RadiantPlay deploys to ThoughtSpot's self-hosted Coolify from the `galaxy`
-remote, alongside Vercel (which deploys from `origin`).
+remote. It is the only host; Vercel was switched off on 2026-10-13.
 
 | Branch | URL |
 |---|---|

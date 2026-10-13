@@ -318,9 +318,9 @@ THE PULL REQUEST FLOW:
 
   4. You click "Merge" — your branch becomes part of main
 
-  5. The Vercel site auto-deploys with your changes
+  5. The Coolify site auto-deploys with your changes
      ┌──────────────────────────────────────┐
-     │  radiantplay.vercel.app              │
+     │  radiantplay.design.coolify…         │
      │  ✨ Now includes your prototype!     │
      └──────────────────────────────────────┘
 ```
@@ -359,14 +359,14 @@ Here's the complete lifecycle of building a prototype in this project:
 │                                     │                                │
 │                              5. AUTO DEPLOY                          │
 │                              ──────────────                          │
-│                              Vercel picks up                         │
+│                              Coolify picks up                        │
 │                              the merge and deploys                   │
 │                                     │                                │
 │                                     ▼                                │
 │                              ┌─────────────┐                         │
 │                              │ Live on      │                        │
 │                              │ radiantplay  │                        │
-│                              │ .vercel.app  │                        │
+│                              │ on Coolify   │                        │
 │                              └─────────────┘                         │
 │                                                                      │
 └──────────────────────────────────────────────────────────────────────┘
@@ -591,7 +591,7 @@ Commit whenever you reach a small milestone. Think of it like saving a game:
 
 ```
 main          = The published, reviewed, stable version
-                Everyone sees this. Deployed to radiantplay.vercel.app.
+                Everyone sees this. Deployed to radiantplay.design.coolify.thoughtspot.com.
 
 your branch   = Your personal workspace
                 Only you see this until you open a PR.
