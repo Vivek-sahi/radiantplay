@@ -17,32 +17,24 @@ A comprehensive guide for designers using the Radiant Play to create interactive
 
 ### Prerequisites
 
-1. **Cursor IDE** - Download from [cursor.so](https://cursor.so)
-2. **Node.js** - Version 18 or higher
+1. **Claude desktop app** - Download from [claude.ai/download](https://claude.ai/download), sign in with your ThoughtSpot account, and use the **Code** tab
+2. **Node.js** - Version 22 or higher (20.19+ also works)
 3. **Git** - For version control
 
 ### Fork and Clone
 
-1. **Fork the repository** on GitHub
-2. **Clone your fork:**
+1. **Fork the repository** on Galaxy: [galaxy.corp.thoughtspot.com/mohammed-faris/radiantplay](https://galaxy.corp.thoughtspot.com/mohammed-faris/radiantplay)
+2. **Clone your fork:** in Claude's Code tab, type `Clone https://galaxy.corp.thoughtspot.com/YOUR-USERNAME/radiantplay.git here`, or by hand:
    ```bash
-   git clone https://github.com/YOUR-USERNAME/radiantplay.git
-   cd radiantplay
+   git clone https://galaxy.corp.thoughtspot.com/YOUR-USERNAME/radiantplay.git
    ```
 
-3. **Install dependencies:**
+3. **Open the project:** start a Claude session on the `radiantplay` folder itself.
+
+4. **Start the development server:** type `Start the dev server` in the chat (Claude runs `npm install` the first time), or by hand:
    ```bash
    npm install
-   ```
-
-4. **Start the development server:**
-   ```bash
    npm run dev
-   ```
-
-5. **Open in Cursor:**
-   ```bash
-   cursor .
    ```
 
 ### Project Structure
@@ -107,7 +99,7 @@ export default MyPrototype;
 
 ### Step 3: Describe Your UI to AI
 
-In Cursor, use the AI chat to describe what you want:
+In Claude's Code tab, describe what you want in the chat:
 
 **Example prompts:**
 
@@ -122,7 +114,7 @@ In Cursor, use the AI chat to describe what you want:
 You can also paste screenshots from Figma:
 
 1. Take a screenshot of your Figma design
-2. Paste it in the Cursor AI chat
+2. Drag or paste it into the Claude chat
 3. Ask: "Recreate this UI using Radiant components"
 
 The AI will analyze the screenshot and generate matching code.

@@ -607,7 +607,7 @@ kbd { background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);bor
         <div class="pnum" style="background:rgba(39,112,239,.15);color:var(--blue-40)">1</div>
         <h3>Galaxy account</h3>
         <p>Your ThoughtSpot login works here. Sign in and confirm you can see the Radiant Play repo. Can't access it? Message your team lead on Slack.</p>
-        <span class="prereq-link">your internal Git host</span>
+        <span class="prereq-link">galaxy.corp.thoughtspot.com</span>
       </div>
       <div class="prereq-card pc-green">
         <div class="pnum" style="background:var(--green-bg);color:var(--green)">2</div>
@@ -633,7 +633,7 @@ kbd { background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);bor
           <div class="sn">1</div>
           <div>
             <h4>Go to Radiant Play on Galaxy</h4>
-            <p>Find the Radiant Play repository on Galaxy</p>
+            <p>Open <span style="font-family:var(--mono);font-size:11px;color:rgba(255,255,255,.65)">galaxy.corp.thoughtspot.com/mohammed-faris/radiantplay</span></p>
           </div>
         </div>
         <div class="step-item">
@@ -647,7 +647,7 @@ kbd { background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);bor
           <div class="sn">3</div>
           <div>
             <h4>Copy your fork's clone URL</h4>
-            <p>On your fork page, click the green <strong style="color:rgba(255,255,255,.65)">Code</strong> button → copy the <strong style="color:rgba(255,255,255,.65)">HTTPS</strong> URL. It looks like:<br><span style="font-family:var(--mono);font-size:11px;color:rgba(255,255,255,.4)">https://galaxy…/your-name/radiantplay.git</span></p>
+            <p>On your fork page, click the green <strong style="color:rgba(255,255,255,.65)">Code</strong> button → copy the <strong style="color:rgba(255,255,255,.65)">HTTPS</strong> URL. It looks like:<br><span style="font-family:var(--mono);font-size:11px;color:rgba(255,255,255,.4)">https://galaxy.corp.thoughtspot.com/your-name/radiantplay.git</span></p>
           </div>
         </div>
       </div>
@@ -713,7 +713,7 @@ kbd { background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);bor
           <div class="wstep-title">Clone your fork <span style="font-size:11px;background:var(--orange-bg);color:var(--orange);padding:2px 8px;border-radius:5px;margin-left:6px;vertical-align:middle;font-weight:700">one-time only</span></div>
           <div class="wstep-desc">Paste your fork URL into the chat and ask Claude to clone it. Claude downloads the project into a <code style="font-family:var(--mono);font-size:11px;background:rgba(255,255,255,.08);padding:1px 5px;border-radius:4px">radiantplay</code> folder.<br><span style="color:rgba(245,166,35,.7)">⚠ If Galaxy asks you to sign in:</span> run the clone in the app's terminal panel instead, so you can type your login.</div>
           <div class="wcode"><span class="cmt"># Type this in the chat:</span>
-<span class="cmd">Clone https://your-internal-git/your-name/radiantplay.git here</span>
+<span class="cmd">Clone https://galaxy.corp.thoughtspot.com/your-name/radiantplay.git here</span>
 <span class="cmt"># Replace "your-name" with your Galaxy username</span></div>
           <div class="wizard-nav">
             <button class="wbtn-p" onclick="setTab(2)">Next →</button>
@@ -734,7 +734,7 @@ kbd { background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);bor
 
         <div class="wstep">
           <div class="wstep-title">Start it up <span style="font-size:11px;background:var(--green-bg);color:var(--green);padding:2px 8px;border-radius:5px;margin-left:6px;vertical-align:middle;font-weight:700">every session</span></div>
-          <div class="wstep-desc">Ask Claude to start the dev server. The first time, it installs the project's packages too (about a minute). The app opens a preview pane that updates as Claude makes changes.<br><span style="color:rgba(245,166,35,.7)">⚠ If Node.js is missing:</span> Claude will tell you. Install the LTS version from nodejs.org, then ask again.</div>
+          <div class="wstep-desc">Ask Claude to start the dev server. The first time, it installs the project's packages too (about a minute). The app opens a preview pane that updates as Claude makes changes.<br><span style="color:rgba(245,166,35,.7)">⚠ If Node.js is missing:</span> Claude will tell you. You need Node 22 or newer: install the LTS from nodejs.org, then ask again.</div>
           <div class="wcode"><span class="cmt"># Type this in the chat:</span>
 <span class="cmd">Start the dev server</span>
 

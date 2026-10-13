@@ -1,6 +1,6 @@
 # Getting Started — A Designer's Guide to Git & This Project
 
-Welcome! This guide is written for designers who have never used Git or code editors before. By the end, you'll understand what Git is, how branches work, and how to build prototypes in this project — all explained with diagrams.
+Welcome! This guide is written for designers who have never used Git or code before. By the end, you'll understand what Git is, how branches work, and how to build prototypes in this project — all explained with diagrams.
 
 ---
 
@@ -46,6 +46,8 @@ Without Git                          With Git
 ```
 
 **GitHub** is a website that stores your Git projects online so you can share and collaborate with others. Think of Git as the engine, GitHub as the garage where everyone parks.
+
+**Galaxy** is ThoughtSpot's own GitHub (`galaxy.corp.thoughtspot.com`). Radiant Play lives there, and so will your fork. Wherever this guide says GitHub, Galaxy works the same way.
 
 ---
 
@@ -95,7 +97,7 @@ YOUR COMPUTER                                          GITHUB (cloud)
 
 | Step | What you do | What happens |
 |------|-------------|--------------|
-| 1. **Edit** | Change files in Cursor | Files are modified in your Working Directory |
+| 1. **Edit** | Ask Claude to change files | Files are modified in your Working Directory |
 | 2. **Stage** | `git add .` | You pick which changes to include |
 | 3. **Commit** | `git commit -m "Added header"` | A permanent snapshot is saved locally |
 | 4. **Push** | `git push` | Your snapshots are uploaded to GitHub |
@@ -172,7 +174,7 @@ Think of it like Figma pages:
 
 ### How to create a branch
 
-**In the terminal (Cursor):**
+**In the terminal (or ask Claude to do it):**
 ```bash
 git checkout -b add-my-prototype     # Create + switch to new branch
 ```
@@ -336,7 +338,7 @@ Here's the complete lifecycle of building a prototype in this project:
 │                                                                      │
 │   1. CREATE BRANCH            2. BUILD PROTOTYPE                     │
 │   ─────────────────           ──────────────────                     │
-│   git checkout -b             Use Cursor AI to                       │
+│   git checkout -b             Ask Claude to                          │
 │   add-my-prototype            generate code from                     │
 │        │                      Figma screenshots                      │
 │        ▼                           │                                 │
@@ -380,42 +382,41 @@ Here's the complete lifecycle of building a prototype in this project:
 
 | Tool | Download | What it does |
 |------|----------|-------------|
-| **Node.js 18+** | [nodejs.org](https://nodejs.org) | Runs JavaScript on your computer |
-| **Cursor IDE** | [cursor.so](https://cursor.so) | Code editor with AI built in |
-| **GitHub account** | [github.com](https://github.com) | Where the code lives online |
-| **GitHub Desktop** *(optional)* | [desktop.github.com](https://desktop.github.com) | Visual Git interface (no terminal needed) |
+| **Claude desktop app** | [claude.ai/download](https://claude.ai/download) | Where you build. Sign in with your ThoughtSpot account and use the **Code** tab |
+| **Node.js 22 or newer** | [nodejs.org](https://nodejs.org) (the LTS version) | Runs the project on your computer. Vite 7 won't start on Node 18 |
+| **Galaxy account** | [galaxy.corp.thoughtspot.com](https://galaxy.corp.thoughtspot.com) | Where the code lives online. Your ThoughtSpot login works |
+| **GitHub Desktop** *(optional)* | [desktop.github.com](https://desktop.github.com) | Visual Git interface, if you'd rather click than type |
 
 ### Installation
 
+1. **Fork the repo on Galaxy.** Open [galaxy.corp.thoughtspot.com/mohammed-faris/radiantplay](https://galaxy.corp.thoughtspot.com/mohammed-faris/radiantplay) and click **Fork**. Copy your fork's HTTPS URL from the green **Code** button.
+2. **Open the Code tab.** In the Claude app, click **Code**, start a new session and choose a parent folder such as `~/Documents`.
+3. **Clone your fork.** Type in the chat: `Clone https://galaxy.corp.thoughtspot.com/YOUR-USERNAME/radiantplay.git here`. If Galaxy asks you to sign in, run `git clone` with the same URL in the app's terminal panel instead.
+4. **Open the project.** Start a new session on the `radiantplay` folder itself. Claude reads the project's rules from it.
+5. **Start it up.** Type `Start the dev server`. The first time, Claude runs `npm install` too.
+
+The preview pane opens on [http://localhost:5173](http://localhost:5173), the Radiant Play homepage.
+
+Prefer the terminal? The same steps work by hand:
+
 ```bash
-# 1. Fork the repo on GitHub (click the "Fork" button on the repo page)
-
-# 2. Clone your fork to your computer
-git clone https://github.com/YOUR-USERNAME/radiantplay.git
-
-# 3. Open the folder
+git clone https://galaxy.corp.thoughtspot.com/YOUR-USERNAME/radiantplay.git
 cd radiantplay
-
-# 4. Install dependencies (downloads all the libraries the project needs)
 npm install
-
-# 5. Start the dev server
 npm run dev
 ```
-
-Open [http://localhost:5173](http://localhost:5173) — you should see the Radiant Play homepage.
 
 ```
 What just happened:
 
-  GitHub (cloud)                Your Computer
+  Galaxy (cloud)                Your Computer
   ┌────────────────┐           ┌────────────────────────────┐
-  │ radiantplay   │  clone →  │ radiantplay/              │
+  │ radiantplay    │  clone →  │ radiantplay/               │
   │ (your fork)    │           │ ├── src/                   │
-  │                │           │ │   ├── components/  (35+) │
+  │                │           │ │   ├── components/        │
   │                │           │ │   ├── prototypes/        │
   │                │           │ │   └── tokens/            │
-  │                │           │ ├── .cursor/rules/ (AI)    │
+  │                │           │ ├── CLAUDE.md   (AI rules) │
   │                │           │ └── package.json           │
   └────────────────┘           └────────────────────────────┘
                                         │
@@ -439,8 +440,10 @@ git checkout -b add-my-first-prototype
 
 ### Step 2: Scaffold the prototype
 
-```bash
-npm run new-prototype MyFirstPrototype
+Type in the Claude chat:
+
+```
+/rp-new-prototype MyFirstPrototype
 ```
 
 This creates:
@@ -452,13 +455,13 @@ src/prototypes/MyFirstPrototype/
 └── README.md        ← Notes about your prototype
 ```
 
-### Step 3: Open in Cursor and describe your UI
+### Step 3: Describe your UI to Claude
 
-Open `src/prototypes/MyFirstPrototype/index.tsx` in Cursor. In the Chat panel (Cmd+L), describe what you want:
+In the same chat, describe what you want:
 
 > "Create a settings page with a sidebar showing menu items (General, Notifications, Security) and a main area with a form that has text inputs for Name and Email, toggles for notification preferences, and a Save button at the bottom."
 
-Or paste a Figma screenshot and say:
+Or drag in a Figma screenshot and say:
 
 > "Recreate this design using Radiant components."
 
@@ -466,7 +469,7 @@ The AI will generate the code using the project's design system components.
 
 ### Step 4: Preview your work
 
-Your dev server (`npm run dev`) updates automatically. Check [localhost:5173/playground](http://localhost:5173/playground) — your prototype appears in the gallery.
+The preview pane updates as Claude works. Check [localhost:5173/playground](http://localhost:5173/playground) — your prototype appears in the gallery.
 
 ### Step 5: Save your progress (commit)
 
@@ -475,7 +478,7 @@ git add .
 git commit -m "add settings page prototype with sidebar and form"
 ```
 
-### Step 6: Push to GitHub
+### Step 6: Push to Galaxy
 
 ```bash
 git push -u origin add-my-first-prototype
@@ -485,7 +488,7 @@ The `-u` flag is only needed the first time you push a new branch.
 
 ### Step 7: Open a Pull Request
 
-1. Go to your fork on GitHub
+1. Go to your fork on Galaxy
 2. You'll see a banner: "add-my-first-prototype had recent pushes"
 3. Click **"Compare & pull request"**
 4. Write a short description of what you built
@@ -497,11 +500,11 @@ The `-u` flag is only needed the first time you push a new branch.
 YOUR JOURNEY:
 
   ┌──────────┐    ┌───────────┐    ┌────────────┐    ┌──────────┐
-  │ Create   │───▶│ Build in  │───▶│ Commit &   │───▶│ Open PR  │
-  │ branch   │    │ Cursor    │    │ push       │    │ & merge  │
+  │ Create   │───▶│ Build     │───▶│ Commit &   │───▶│ Open PR  │
+  │ branch   │    │ w/ Claude │    │ push       │    │ & merge  │
   └──────────┘    └───────────┘    └────────────┘    └──────────┘
        │               │                │                  │
-  "checkout -b"   AI generates     "add, commit,     GitHub review
+  "checkout -b"   AI generates     "add, commit,     Galaxy review
                   your code         push"             & deploy
 ```
 
@@ -519,8 +522,8 @@ YOUR JOURNEY:
 | **Save changes** | `git add . && git commit -m "message"` | Write summary → Commit |
 | **Upload to GitHub** | `git push` | Push origin button |
 | **Get latest changes** | `git pull` | Fetch origin → Pull |
-| **Start dev server** | `npm run dev` | (use terminal in Cursor) |
-| **Create a prototype** | `npm run new-prototype Name` | (use terminal in Cursor) |
+| **Start dev server** | `npm run dev` | Ask Claude: "Start the dev server" |
+| **Create a prototype** | `npm run new-prototype Name` | Type `/rp-new-prototype Name` in Claude |
 
 ### If something goes wrong
 
@@ -536,10 +539,10 @@ YOUR JOURNEY:
 
 | Problem | Solution |
 |---------|----------|
-| `npm install` fails | Make sure Node.js is installed: run `node --version` (need 18+) |
+| `npm install` or `npm run dev` fails on Node | Run `node --version`. You need 22 or newer (20.19+ also works). Install the LTS from nodejs.org |
 | `npm run dev` fails | Delete the `node_modules` folder, then run `npm install` again |
 | Browser shows a blank page | Check the terminal for errors — usually a typo in code |
-| AI doesn't know the components | Make sure you opened the `radiantplay` folder (not a parent) so Cursor loads `.cursor/rules/` |
+| AI doesn't know the components | Make sure the Claude session is open on the `radiantplay` folder (not a parent) so it reads `CLAUDE.md` |
 | Port 5173 already in use | Close other dev servers, or the terminal will show an alternate port |
 | Changes not showing in the browser | Make sure `npm run dev` is still running in the terminal |
 
@@ -556,7 +559,7 @@ GitHub  = the website where your project is stored online (like iCloud)
 
 ### "Do I need to use the terminal?"
 
-No — you can use **GitHub Desktop** for all Git operations (branch, commit, push, pull, merge). But learning a few terminal commands makes you faster. Cursor has a built-in terminal (Ctrl+` to open it).
+No. You can ask Claude to run any Git command for you ("commit my changes", "push this branch"), or use **GitHub Desktop**. The Claude app also has a terminal panel if you want to type commands yourself.
 
 ### "What if I break something?"
 
@@ -600,10 +603,10 @@ your branch   = Your personal workspace
 
 ### "What does `origin` mean?"
 
-`origin` is the nickname for your GitHub repo's URL. When you say `git push origin`, you're saying "upload to GitHub."
+`origin` is the nickname for your fork's URL on Galaxy. When you say `git push origin`, you're saying "upload to my fork."
 
 ```
-origin = https://github.com/your-username/radiantplay.git
+origin = https://galaxy.corp.thoughtspot.com/your-username/radiantplay.git
          (just a shortcut so you don't type the full URL every time)
 ```
 

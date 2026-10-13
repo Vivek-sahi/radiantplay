@@ -8,7 +8,7 @@ This guide gets you from nothing to a running prototype in the Claude desktop ap
 
 - **A Galaxy account.** Your ThoughtSpot login works. Make sure you can see the Radiant Play repo and that you have your own fork of it. The [forking guide](forking-guide.md) covers forking.
 - **The Claude desktop app.** Download it from [claude.ai/download](https://claude.ai/download) (Mac and Windows) and sign in with your ThoughtSpot account.
-- **Node.js.** Radiant Play needs it to run. If it's missing, Claude will tell you when you first start the project; install the LTS version from [nodejs.org](https://nodejs.org).
+- **Node.js 22 or newer** (20.19+ also works). If it's missing or too old, Claude will tell you when you first start the project; install the LTS version from [nodejs.org](https://nodejs.org).
 
 You don't need an API key, and you don't need to install anything in the terminal.
 
