@@ -149,6 +149,17 @@ const HIGHLIGHTS: Highlight[] = [
 
 const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '26.10.3i',
+    date: '2026-10-14',
+    title: 'Changelog highlights for v26.10',
+    type: 'patch',
+    changes: [
+      { category: 'changed', label: 'Documentation', items: [
+        'Six short highlights for v26.10: dark mode, Geist, components updated to Radiant 3.0, a new look for Radiant Play, design system updates, and one item for everything else. The page shows the first six highlights instead of everything from the last 60 days.',
+      ] },
+    ],
+  },
+  {
     version: '26.10.3h',
     date: '2026-10-14',
     title: 'Security fix for a build dependency',
