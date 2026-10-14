@@ -149,6 +149,36 @@ const HIGHLIGHTS: Highlight[] = [
 
 const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '26.10.3g',
+    date: '2026-10-14',
+    title: 'One frame for the playground and design system',
+    type: 'patch',
+    changes: [
+      { category: 'changed', label: 'Navigation', items: [
+        'The playground and the design system share one frame: a left pane with the new Radiant Play logo, a Playground / Design system switcher at the top, and the content on a raised panel. Light mode separates surfaces by fill instead of hairlines.',
+        'Help at the bottom of both left panes opens What\'s new, with the current version, and the three guides, which open in a new tab.',
+        'Design system pages scroll inside their panel, and section titles no longer jump when a page opens.',
+      ] },
+      { category: 'changed', label: 'Documentation', items: [
+        'Getting started, How it works and Claude setup and skills follow light and dark mode, in Radiant colours and Geist.',
+      ] },
+      { category: 'fixed', label: 'Components', items: [
+        'ActionMenu closes once you choose an item, and Escape and Tab always close it (from Sneharsh Damani). Tour follows scrolling inside a panel.',
+      ] },
+    ],
+  },
+  {
+    version: '26.10.3f',
+    date: '2026-10-13',
+    title: 'No more Cursor references',
+    type: 'patch',
+    changes: [
+      { category: 'changed', label: 'Documentation', items: [
+        'New prototypes start from a README that uses /rp-new-prototype and Claude. The UX writing rules say they are shared with Claude, and the Cursor model guide and video script moved to the archive.',
+      ] },
+    ],
+  },
+  {
     version: '26.10.3e',
     date: '2026-10-13',
     title: 'Set up with the Claude desktop app',
