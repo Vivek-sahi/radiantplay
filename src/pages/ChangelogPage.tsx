@@ -149,6 +149,17 @@ const HIGHLIGHTS: Highlight[] = [
 
 const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '26.10.3h',
+    date: '2026-10-14',
+    title: 'Security fix for a build dependency',
+    type: 'patch',
+    changes: [
+      { category: 'fixed', label: 'Tooling', items: [
+        'source-map-js moves to 1.2.2, closing a high-severity Dependabot alert: a crafted source map could stall the build. It only runs during development and builds, never in the site.',
+      ] },
+    ],
+  },
+  {
     version: '26.10.3g',
     date: '2026-10-14',
     title: 'One frame for the playground and design system',
