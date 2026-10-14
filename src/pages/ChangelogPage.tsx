@@ -149,6 +149,22 @@ const HIGHLIGHTS: Highlight[] = [
 
 const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '26.10.3j',
+    date: '2026-10-14',
+    title: 'Claude Code reads the tier rules again',
+    type: 'patch',
+    changes: [
+      { category: 'changed', label: 'Claude guidance', items: [
+        'CLAUDE.md tells Claude to read _orchestration.md before UI or prototype work, with the tier table naming the rule files. New prototypes and shared component work now read the rules.',
+        'The Requirements Gate hook also covers new Data Model Editor and Spotter prototypes.',
+        'Claude keeps replies short and plain by default.',
+      ] },
+      { category: 'fixed', label: 'Rule files', items: [
+        'Removed claims that the rules load on their own in Claude Code. The icon list has all 151 icons, and the Data Model Editor gate uses rp-prototype-model instead of old model ids.',
+      ] },
+    ],
+  },
+  {
     version: '26.10.3i',
     date: '2026-10-14',
     title: 'Changelog highlights for v26.10',
