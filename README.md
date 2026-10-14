@@ -129,12 +129,12 @@ After completing a full Tier 2 build, the system suggests clearing context (`/co
 └── liveboard-*/                      # Canvas-specific rules (gated by requirements)
 
 .claude/                              # Claude Code native
-├── skills/                           # Same rules as native Claude Code skills
+├── skills/                           # rp- skills, plus older flat copies of six rule files (not loaded)
 ├── hooks/                            # Automated convention enforcement
 └── commands/                         # Slash commands (/compact, /rp-explore, etc.)
 ```
 
-Claude reaches these through `CLAUDE.md` and the matching `.claude/skills/`. You don't need to configure anything.
+Claude reaches these through `CLAUDE.md`, which tells it to read `_orchestration.md` and then only the rule files the task needs. You don't need to configure anything.
 
 ---
 

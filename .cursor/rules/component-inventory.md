@@ -1,5 +1,5 @@
 ---
-description: Full Radiant component reference with props, code examples, and patterns. For a quick list of all 77 components, see component-summary.md (always loaded). Load this file when you need props, examples, or to verify a component exists.
+description: Full Radiant component reference with props, code examples, and patterns. For a quick list of the components, see component-summary.md. Load this file when you need props, examples, or to verify a component exists.
 globs: ["src/prototypes/**/index.tsx"]
 ---
 
@@ -199,16 +199,33 @@ Use this to quickly find the right component:
 | **Icon** | Iconography | `name`, `size`: xs/s/m/l/xl, `color` |
 | **IconGallery** | Icon browsing (dev tool) | N/A |
 
-**Available Icon Names (46 icons):**
+**Available Icon Names (151 icons, from `src/components/icons/registry.ts`):**
 ```
-arrow-up, arrow-down, arrow-left, arrow-right,
-chevron-up, chevron-down, chevron-left, chevron-right,
-plus, minus, cross, checkmark, checkmark-circle, cross-circle,
-exclamation-point-circle, info-circle, question-mark,
-copy, download, upload, save, refresh, pencil, trash-can,
-share, pin, filter, play, pause, eye, eye-undo, clock, cog,
-folder, funnel, lock, magnifying-glass, profile, sort, star,
-tag, expand, fullscreen, hamburger, more, information
+add-user, agenda, ai, answer, app-switcher, arrow-down,
+arrow-down-circle, arrow-left, arrow-left-circle, arrow-right,
+arrow-right-circle, arrow-up, arrow-up-circle, attribute, bold, book,
+book-closed, brush, bulb, calendar-cleaned, camera, caret-down,
+caret-left, caret-right, caret-up, case, chart, checkmark,
+checkmark-circle, chevron-down, chevron-left, chevron-right,
+chevron-up, clock, cog, collection, community, conditional-format,
+controls, copy, copy-link, cord, create-pinboard, create-worksheet,
+cross, cross-circle, cross-circle2, curious, data-column, database,
+doc, documentation, double-check, download, drag, drill-down,
+edit-text, embrace, enter, escape, excel, exclamation-point-circle,
+expand, explore, eye, eye-undo, filter, folder, follow, follow-undo,
+follow-up, following, formula, fullscreen, fullscreen-undo, funnel,
+funnel-line, grid-view, group-undo, hamburger, info-circle,
+information, italic, join-inner, join-left, join-outer, join-right,
+key, like-undo, list-view, liveboard, lock, lock-undo,
+magnifying-glass, measure, microphone, minus, monitor, more, navigate,
+note, number-format, paper-plane, pause, pdf, pencil, pin, pinboard,
+play, plus, ppt, present, profile, question-mark, r-analysis, redo,
+replay-search, reset, rocket, save, save-worksheet, schema, share,
+show-underlying-data, sign-out, sort, spotter, star, star-undo,
+strike-through, sync, table, tag, text, text-undo, thumb-down,
+thumb-down-undo, thumb-up, thumb-up-undo, trash-can, underline, undo,
+upload, upload-data, verified, video, wrench, zoom-area, search,
+settings, refresh
 ```
 
 ### Layout Primitives

@@ -1,5 +1,16 @@
 # Changelog
 
+## 26.10.3j — 2026-10-14
+
+Claude Code reads the tier rules again. Since April, `CLAUDE.md` only said "See `_orchestration.md`", and nothing in `.cursor/rules/` loads on its own in Claude Code, so new prototypes were planned without the rule files.
+
+- `CLAUDE.md` tells Claude to read `.cursor/rules/_orchestration.md` before any UI or prototype task, and carries the tier table (exploratory, 0 to 3) again
+- `CLAUDE.md` asks Claude for short, plain replies: the answer or result first, detail only when asked
+- The Requirements Gate hook now also catches new Data Model Editor and Spotter prototypes, not only Liveboards
+- Fixed sentences that sent Claude the wrong way: `_orchestration.md` said the rules were "auto-activating skills" you "may not need to manually read", `CLAUDE.md` said the orchestrator "auto-loads" the Spotter rules, the README called the flat `.claude/skills/*.md` files native skills, and `/explore` said the orchestrator would ask
+- Stale facts: the icon list has all 151 icons (it listed 46), the component count is gone from the summary, and the Data Model Editor gate uses the `rp-prototype-model` skill instead of old model ids and asking for the API key
+- `CLAUDE.public.md` imports `sysVar`, `compVar` and `shadowVar` for colours, as `CLAUDE.md` does
+
 ## 26.10.3i — 2026-10-14
 
 The changelog highlights catch up with v26.10.

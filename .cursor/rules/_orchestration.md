@@ -8,7 +8,7 @@ alwaysApply: true
 
 Classify by intent, then load only what's needed. Use semantic meaning — "make the grid responsive" is a layout concern even without the word "dashboard."
 
-> **Claude Code users:** These rules are also available as auto-activating skills in `.claude/skills/`. The skill system handles loading automatically based on file globs — you may not need to manually read rule files.
+> **Claude Code:** nothing in this folder loads automatically. `CLAUDE.md` tells Claude to read this file before UI or prototype work; then read the rule files each tier lists. The flat `.md` files in `.claude/skills/` are older copies of some of these rules and are not loaded as skills.
 
 ---
 
@@ -184,11 +184,7 @@ When the task is a **new Data Model Editor prototype** (Tier 2), BEFORE loading 
    - `'blank'` → empty canvas, "Let's build your model" welcome intro with central textarea
    - `'existing'` → pre-populated tables/joins, "Welcome back" + "Check for AI readiness" button
 2. **SpotterModel AI?** — Yes or No.
-   - **If Yes:** Ask for the Anthropic API key. Write `ANTHROPIC_API_KEY=<key>` to `.env.local`. Then ask model preference:
-     - `claude-sonnet-4-6` — balanced speed and quality **(default, recommended)**
-     - `claude-opus-4-7` — most capable, slower and more expensive
-     - `claude-haiku-4-5-20251001` — fastest and cheapest
-     Update the `model` field in `window.__DME_CONFIG__` in `index.tsx`. `init-dme.js` reads it via `window.__DME_CONFIG__?.model`.
+   - **If Yes:** The agent calls `/api/chat`, which works in local dev (`npm run dev`) with `ANTHROPIC_API_KEY` in `.env.local`. Use the `rp-prototype-model` skill to set up the key and pick Haiku, Sonnet or Opus; it writes the `model` field in `window.__DME_CONFIG__` in `index.tsx`, which `init-dme.js` reads via `window.__DME_CONFIG__?.model`.
    - **If No:** Set `window.__DME_CONFIG__ = { spotterModel: false, welcomeVariant: 'blank' }` in `index.tsx`. Agent panel will not render. No API key needed.
 3. **Dataset** — Mock retail schema (default `DATASOURCE_TABLES` — 12 tables) or custom?
    - **If custom:** Replace the `DATASOURCE_TABLES` array in the init file with the user's schema (`{ name, columns: string[] }[]`).

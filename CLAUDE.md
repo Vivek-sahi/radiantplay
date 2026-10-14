@@ -6,6 +6,7 @@
 
 ## Behavior Rules
 
+- **Keep replies short and plain.** Lead with the answer or the result in a few lines. Skip step-by-step recaps of what you did, and give more detail only when asked. Many people using Radiant Play are not engineers.
 - When asked to save or write content, write directly to the file. Do NOT create sub-tasks, todo items, or intermediate plans unless explicitly asked.
 - Do NOT add unsolicited UI elements, features, badges, or enhancements not in the request. Build exactly what was asked.
 - The project is branded as **Radiant Play** — not figmaradiant, RadiantPlay, or other legacy names in user-facing content.
@@ -34,6 +35,18 @@ There is also a `public` remote (`github.com/thoughtspot/radiant-play`), the cur
 Run `git remote -v` to confirm which remotes exist. Default deploy target is **staging**, not main — do not push to main unless explicitly asked.
 
 **Before pushing to main (main maintainer only)**: if both `origin` and `galaxy` remotes exist, always ask whether to run `bash internal/scripts/release.sh` first. This updates the platform version and changelog. If the user confirms they've already run it or wants to skip, proceed with the push. On designer forks (only `origin` exists), skip this prompt — the release ritual is a maintainer concern.
+
+## Rule files: read before UI work
+
+Nothing in `.cursor/rules/` loads on its own in Claude Code. **Before any UI or prototype task, read `.cursor/rules/_orchestration.md` and follow it:** classify the task, read only the rule files that tier lists, and run its Requirements Gate (questions to the user) before building a new Liveboard, Data Model Editor or Spotter prototype.
+
+| Tier | Task | Rule files to read |
+|---|---|---|
+| Exploratory | `/rp-explore`, UI outside Radiant | None, constraints relaxed |
+| 0 | Fix a value, swap a prop, change a label | None, this file is enough |
+| 1 | Add a section, modal, table or menu | 1 to 3, by concern |
+| 2 | New prototype or Figma page | `prototype-generation.md` and `component-inventory.md`, plus concerns |
+| 3 | Create or change a shared component in `src/components/` | `design-system.md`, `component-inventory.md`, `token-usage.md`, `content-guidelines.md` |
 
 ## Tech Stack
 
@@ -64,7 +77,7 @@ npm run new-prototype  # Scaffold a new prototype
 
 New Spotter chat surfaces render `Reasoning`, `UserMessage` and `PromptBar` from `@spotter/chat`. `ReasoningBlock` and `UserBubble` are adapters kept for consumers holding a runtime `ChatMessage`. Never vendor a Spotter block into a prototype — import from `@spotter/*` and PR improvements against `src/spotter/`. Both composers (`SpotterPrompt` and `PromptBar`) ship until the composer decision lands — see `docs/2026-09-02-spotter-refresh-adoption-plan.md` §8.1.
 
-When working on Spotter surfaces, the orchestrator auto-loads the Spotter cursor rules. For a new Spotter prototype the orchestrator runs a Requirements Gate first (mode / welcome state / data). See `.cursor/rules/_orchestration.md` → Spotter Requirements Gate.
+Nothing loads the Spotter rules automatically. For a new Spotter prototype, run the Spotter Requirements Gate in `.cursor/rules/_orchestration.md` first (mode, welcome state, data), then read the Spotter rule files it names.
 
 **Spotter modes:**
 - **Standalone Spotter** — full-page agentic chat (`src/prototypes/Spotter/`)

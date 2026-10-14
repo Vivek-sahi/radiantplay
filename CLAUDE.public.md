@@ -61,8 +61,8 @@ src/
 ### 1. Design Tokens — NEVER hard-code values
 
 ```typescript
-// Colors (3-layer: reference → system → component)
-import { systemColors, referenceColors, rdComponentColors } from '@tokens/colors';
+// Colors: theme-aware CSS variables, so the UI follows light and dark mode
+import { sysVar, compVar, shadowVar } from '@tokens/colors';
 
 // Spacing (4px base: A=4, B=8, C=12, D=16, E=20, F=24, G=28, H=32, I=40, J=48)
 import { spacing, componentSpacing } from '@tokens/spacing';

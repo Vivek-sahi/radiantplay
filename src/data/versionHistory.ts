@@ -28,6 +28,15 @@ export interface VersionEntry {
  */
 export const versionHistory: VersionEntry[] = [
   {
+    version: '26.10.3j',
+    date: '2026-10-14',
+    type: 'patch',
+    changes: [
+      { type: 'modified', group: 'Tooling', component: 'Claude guidance', description: 'CLAUDE.md tells Claude to read _orchestration.md before UI or prototype work and carries the tier table again, naming the rule files; asks for short, plain replies; the gate hook also covers new Data Model Editor and Spotter prototypes' },
+      { type: 'modified', group: 'Tooling', component: 'Rule files', description: 'Removed false claims that the rules auto-load in Claude Code; the icon list has all 151 icons; the Data Model Editor gate uses rp-prototype-model instead of old model ids' },
+    ],
+  },
+  {
     version: '26.10.3i',
     date: '2026-10-14',
     type: 'patch',
