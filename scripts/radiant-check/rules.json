@@ -84,29 +84,6 @@
       "reason": "Picks the light or dark value by mode"
     },
     {
-      "path": "src/App.tsx",
-      "kinds": [
-        "literal"
-      ],
-      "reason": "Brand logo tile: blue gradient with white text in both themes"
-    },
-    {
-      "path": "src/pages/PlaygroundGallery.tsx",
-      "kinds": [
-        "literal"
-      ],
-      "match": "#2770EF",
-      "reason": "Brand logo tile gradient"
-    },
-    {
-      "path": "src/pages/PlaygroundGallery.tsx",
-      "kinds": [
-        "literal"
-      ],
-      "match": "#ffffff",
-      "reason": "White text on the brand logo tile"
-    },
-    {
       "path": "src/pages/PlaygroundGallery.tsx",
       "kinds": [
         "literal"

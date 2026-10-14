@@ -111,7 +111,7 @@
 }
 
 .group + .group {
-  border-top: 1px solid var(--rd-sys-color-border-divider);
+  border-top: 1px solid var(--rd-sys-color-border-subtle);
   margin-top: var(--spacing-1);
   padding-top: var(--spacing-1);
 }

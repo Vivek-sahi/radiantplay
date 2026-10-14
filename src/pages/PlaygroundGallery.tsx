@@ -1,15 +1,18 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { sysVar, compVar } from '../tokens/colors';
+import { sysVar, compVar, shadowVar } from '../tokens/colors';
 import { spacing } from '../tokens/spacing';
 import { getAllProjects, ProjectMeta } from '../prototypes/registry';
 import { isLightOnly } from '../prototypes/registry-theme';
-import { getCurrentVersion } from '../data/versionHistory';
 import { Icon } from '../components/icons';
 import { ThemeSwitch } from '../components/ThemeSwitch';
 import { GalleryLivePreview } from './GalleryLivePreview';
 import { useIsDarkMode } from '../context/ThemeContext';
 import { RadianceBackground } from '../app-chrome/RadianceBackground/RadianceBackground';
+import { SectionSwitcher } from '../app-chrome/SectionSwitcher/SectionSwitcher';
+import { AppLogo } from '../app-chrome/AppLogo/AppLogo';
+import { HelpMenu } from '../app-chrome/HelpMenu/HelpMenu';
+import frame from '../app-chrome/AppFrame/AppFrame.module.css';
 
 /** Make an inline thumbnail SVG fill its card, cropping like object-fit: cover. */
 const fitSvg = (svg: string): string =>
@@ -215,10 +218,6 @@ export const PlaygroundGallery: React.FC = () => {
     navigate(`/playground/${projectId}`);
   };
 
-  const handleBackToHome = () => {
-    navigate('/home');
-  };
-
   const navItems: SideNavItem[] = [
     {
       id: 'prototypes',
@@ -235,58 +234,12 @@ export const PlaygroundGallery: React.FC = () => {
   ];
 
   return (
-    <div style={styles.container}>
-      {/* Top header — full width */}
-      <header style={styles.header}>
-        <button
-          style={styles.logoBtn}
-          onClick={handleBackToHome}
-          onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.8'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; }}
-        >
-          <div style={styles.logoMark}>R</div>
-          <div style={styles.logoTextStack}>
-            <span style={styles.logoTitle}>Radiant Play</span>
-            <span
-              style={{ ...styles.logoVersion, cursor: 'pointer' }}
-              onClick={(e) => { e.stopPropagation(); navigate('/radiant/changelog'); }}
-              title="View changelog"
-            >{getCurrentVersion()}</span>
-          </div>
-        </button>
-        <div style={styles.headerTitle}>
-          <h1 style={styles.title}>Playground</h1>
+    <div style={styles.container} className={frame.surfaces}>
+      {/* Left pane: the app's logo and its sections, full height */}
+      <nav style={styles.sidebar} aria-label="Sections">
+        <div style={styles.logoWrap}>
+          <AppLogo />
         </div>
-        <div style={styles.headerActions}>
-          {[
-            { label: 'Getting started', href: '/home' },
-            { label: 'How it works', href: '/how-it-works.html' },
-            { label: 'Design system', href: '/radiant' },
-            { label: 'Claude setup & skills', href: '/cursor-to-claude-setup.html' },
-          ].map(({ label, href }) => (
-            <a
-              key={href}
-              href={href}
-              style={styles.navLink}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = sysVar('background-information');
-                e.currentTarget.style.borderColor = sysVar('border-brand');
-                e.currentTarget.style.color = sysVar('content-brand');
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = brandTint;
-                e.currentTarget.style.borderColor = brandTintBorder;
-                e.currentTarget.style.color = sysVar('content-primary');
-              }}
-            >{label}</a>
-          ))}
-          <ThemeSwitch variant="icon" />
-        </div>
-      </header>
-
-      {/* Sidebar + main body */}
-      <div style={styles.split}>
-        <nav style={styles.sidebar} aria-label="Sections">
           {navItems.map((item) => {
             const isActive = activeSection === item.id;
             return (
@@ -296,7 +249,7 @@ export const PlaygroundGallery: React.FC = () => {
                 onClick={() => setActiveSection(item.id)}
                 style={{ ...styles.navItem, ...(isActive ? styles.navItemActive : {}) }}
                 onMouseEnter={(e) => {
-                  if (!isActive) e.currentTarget.style.background = sysVar('background-sunken');
+                  if (!isActive) e.currentTarget.style.background = navHover;
                 }}
                 onMouseLeave={(e) => {
                   if (!isActive) e.currentTarget.style.background = 'transparent';
@@ -313,6 +266,9 @@ export const PlaygroundGallery: React.FC = () => {
             );
           })}
 
+
+          {/* Bottom of the pane: Save to code when there are changes, then Help after a line */}
+          <div style={styles.paneBottom}>
           {totalUnsavedChanges > 0 && (
             <div style={styles.sidebarFooter}>
               <button
@@ -338,10 +294,24 @@ export const PlaygroundGallery: React.FC = () => {
               </div>
             </div>
           )}
+            <div style={styles.paneBottomLine} role="separator" />
+            <HelpMenu />
+          </div>
         </nav>
 
-        <main style={styles.main}>
-          <RadianceBackground heroHeight={440} />
+        <div style={styles.column}>
+        {/* Section switcher and theme icon on the page surface, outside the content canvas */}
+        <header className={frame.topRow}>
+          <span aria-hidden="true" />
+          <SectionSwitcher active="playground" />
+          <div className={frame.topRowEnd}>
+            <ThemeSwitch variant="icon" />
+          </div>
+        </header>
+        {/* Projects: a raised panel with the Radiance wash and the cards */}
+        <div style={styles.panel}>
+        <RadianceBackground heroHeight={440} />
+        <main style={styles.main} className={frame.scrollArea}>
           {activeSection === 'prototypes' && (
             <>
               {myProjects.length > 0 && (
@@ -414,7 +384,8 @@ export const PlaygroundGallery: React.FC = () => {
             </>
           )}
         </main>
-      </div>
+        </div>
+        </div>
 
       {/* Toast */}
       {toast && (
@@ -611,16 +582,16 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
       onClick={onClick}
       onMouseEnter={(e) => {
         setHovered(true);
-        e.currentTarget.style.transform = 'translateY(-2px)';
-        e.currentTarget.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.12)';
+        e.currentTarget.style.transform = 'translateY(-4px)';
+        e.currentTarget.style.boxShadow = cardShadowHover;
         e.currentTarget.style.borderColor = `color-mix(in srgb, ${sysVar('border-brand')} 40%, transparent)`;
         e.currentTarget.style.opacity = '1';
       }}
       onMouseLeave={(e) => {
         setHovered(false);
         e.currentTarget.style.transform = 'translateY(0)';
-        e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.06)';
-        e.currentTarget.style.borderColor = sysVar('background-subtle');
+        e.currentTarget.style.boxShadow = cardShadow;
+        e.currentTarget.style.borderColor = 'var(--rp-card-border)'; // back to the rest border: none in light, a hairline in dark
         e.currentTarget.style.opacity = archived ? '0.78' : '1';
       }}
       role="button"
@@ -712,134 +683,46 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Brand tints mixed from theme tokens so they follow light and dark mode.
-// In light they land within a few RGB steps of the old brand tint literals.
-const brandTint = `color-mix(in srgb, ${sysVar('background-information')} 60%, ${sysVar('background-base')})`;
+// Brand tint mixed from theme tokens so it follows light and dark mode.
 const brandTintSubtle = `color-mix(in srgb, ${sysVar('background-information')} 40%, ${sysVar('background-base')})`;
-const brandTintBorder = `color-mix(in srgb, ${sysVar('border-brand')} 25%, transparent)`;
+// Nav item hover, as in the design system's Sidebar
+const navHover = sysVar('background-ghost-hover');
+
+// Card shadows: the surface shadow token at rest, a brand glow on hover.
+const cardShadow = shadowVar('surface');
+const cardShadowHover = `0 20px 48px color-mix(in srgb, ${sysVar('content-brand')} 18%, transparent), 0 0 0 1px color-mix(in srgb, ${sysVar('content-brand')} 8%, transparent)`;
 
 const styles: Record<string, React.CSSProperties> = {
   container: {
     height: '100vh',
     display: 'flex',
-    flexDirection: 'column',
-    backgroundColor: sysVar('background-sunken'),
+    flexDirection: 'row',
     fontFamily: 'var(--font-family-primary)',
   },
 
   // Top header — full width
-  header: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: `${spacing.D}px ${spacing.H}px`,
-    backgroundColor: sysVar('background-base'),
-    borderBottom: `1px solid ${sysVar('background-subtle')}`,
-    flexShrink: 0,
+  // The shared logo; with the pane's padding it sits where the design system's does
+  logoWrap: {
+    margin: `0 0 ${spacing.E}px`,
   },
-  logoBtn: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '10px',
-    background: 'none',
-    border: 'none',
-    padding: '4px',
-    cursor: 'pointer',
-    transition: 'opacity .18s',
-    // Match the sidebar width below so the "Playground" title (which starts where this ends)
-    // aligns vertically with the content area.
-    width: '188px',
-    flexShrink: 0,
-  },
-  logoMark: {
-    width: '36px',
-    height: '36px',
-    borderRadius: '10px',
-    background: 'linear-gradient(135deg, #2770EF 0%, #1E5BBB 100%)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontFamily: 'var(--font-family-primary)',
-    fontSize: '18px',
-    fontWeight: 700,
-    color: '#ffffff',
-    boxShadow: '0 2px 8px rgba(39, 112, 239, 0.3)',
-    flexShrink: 0,
-  },
-  logoTextStack: {
+  paneBottom: {
+    marginTop: 'auto',
     display: 'flex',
     flexDirection: 'column',
-    alignItems: 'flex-start',
-    gap: '2px',
-    minWidth: 0,
+    gap: `${spacing.A}px`,
   },
-  logoTitle: {
-    fontFamily: 'var(--font-family-primary)',
-    fontSize: '15px',
-    fontWeight: 'var(--font-weight-emphasis)',
-    color: sysVar('content-primary'),
-    letterSpacing: '-0.3px',
-    lineHeight: '18px',
-    whiteSpace: 'nowrap',
-  },
-  logoVersion: {
-    fontFamily: 'var(--font-family-primary)',
-    fontSize: '10px',
-    fontWeight: 500,
-    color: sysVar('content-secondary'),
-    backgroundColor: sysVar('background-subtle'),
-    padding: `1px ${spacing.B}px`,
-    borderRadius: '10px',
-    letterSpacing: '0.2px',
-    lineHeight: '14px',
-    whiteSpace: 'nowrap',
-  },
-  headerTitle: {
-    flex: 1,
-    textAlign: 'left',
-    paddingLeft: `${spacing.H}px`, // 32px — matches main content padding so title aligns with content body
-  },
-  title: {
-    fontSize: '24px',
-    fontWeight: 'var(--font-weight-emphasis)',
-    color: sysVar('content-primary'),
-    margin: 0,
-  },
-  headerActions: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: `${spacing.D}px`,
-    justifyContent: 'flex-end',
-    minWidth: '220px',
-  },
-  navLink: {
-    fontSize: '13px',
-    fontWeight: 500,
-    color: sysVar('content-brand'),
-    textDecoration: 'none',
-    fontFamily: 'var(--font-family-primary)',
-    padding: '5px 14px',
-    borderRadius: '100px',
-    border: `1px solid ${brandTintBorder}`,
-    background: brandTint,
-    transition: 'all 0.15s',
+  paneBottomLine: {
+    height: '1px',
+    background: sysVar('background-subtle'),
+    margin: `${spacing.B}px ${spacing.C}px`,
   },
 
-  // Body split — sidebar + main
-  split: {
-    flex: 1,
-    display: 'flex',
-    flexDirection: 'row',
-    minHeight: 0,
-  },
-
-  // Light sidebar
+  // Left pane on the sunken page. 260px, the design system's Sidebar width, so the content panel and its
+  // section switcher sit in the same place on both pages.
   sidebar: {
-    width: '220px',
+    width: '260px',
     flexShrink: 0,
-    backgroundColor: sysVar('background-base'),
-    borderRight: `1px solid ${sysVar('background-subtle')}`,
-    padding: `${spacing.C}px ${spacing.B}px`,
+    padding: `${spacing.F}px ${spacing.C}px ${spacing.C}px`,
     display: 'flex',
     flexDirection: 'column',
     gap: `${spacing.A}px`,
@@ -848,7 +731,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     gap: `${spacing.C}px`,
-    padding: `${spacing.B}px ${spacing.C}px`,
+    padding: `10px ${spacing.C}px`, // the design system Sidebar's item padding
     background: 'transparent',
     border: 'none',
     borderRadius: '8px',
@@ -860,9 +743,12 @@ const styles: Record<string, React.CSSProperties> = {
     textAlign: 'left',
     width: '100%',
     transition: 'background 120ms ease, color 120ms ease',
+    textDecoration: 'none',
+    boxSizing: 'border-box',
   },
+  // Same states as the design system's Sidebar, so both left panes behave alike
   navItemActive: {
-    background: brandTint,
+    background: sysVar('background-ghost-highlight'),
     color: sysVar('content-brand'),
   },
   navItemIcon: {
@@ -888,14 +774,12 @@ const styles: Record<string, React.CSSProperties> = {
   },
   navItemBadgeActive: {
     color: sysVar('content-brand'),
-    background: sysVar('background-base'),
+    background: sysVar('background-information'),
   },
 
   // Sidebar footer — Save to code button
   sidebarFooter: {
-    marginTop: 'auto',
     padding: `${spacing.C}px ${spacing.B}px ${spacing.B}px`,
-    borderTop: `1px solid ${sysVar('background-subtle')}`,
     display: 'flex',
     flexDirection: 'column',
     gap: `${spacing.B}px`,
@@ -957,6 +841,29 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '10px',
   },
 
+  // The projects panel: raised from the sunken page like the content area in a desktop app.
+  // Parent for the Radiance home pattern (position relative, isolation isolate).
+  // Right of the left pane: the top row, then the content panel
+  column: {
+    flex: 1,
+    minWidth: 0,
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  panel: {
+    position: 'relative',
+    isolation: 'isolate',
+    flex: 1,
+    minWidth: 0,
+    display: 'flex',
+    flexDirection: 'column',
+    margin: `0 ${spacing.B}px ${spacing.B}px 0`,
+    borderRadius: '16px',
+    backgroundColor: 'var(--rp-panel)',
+    overflow: 'hidden',
+    boxShadow: shadowVar('surface'),
+  },
+
   // Main scrollable body
   main: {
     position: 'relative',
@@ -969,17 +876,16 @@ const styles: Record<string, React.CSSProperties> = {
 
   // Section header
   sectionHeader: {
-    fontSize: '14px',
+    fontSize: '18px',
     fontWeight: 'var(--font-weight-emphasis)',
     color: sysVar('content-primary'),
-    marginBottom: `${spacing.D}px`,
-    textTransform: 'uppercase',
-    letterSpacing: '0.04em',
+    margin: `0 0 ${spacing.D}px`,
+    letterSpacing: '-0.2px',
   },
   grid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
-    gap: `${spacing.E}px`,
+    gap: `${spacing.F}px`,
     maxWidth: '1200px',
   },
 
@@ -1015,13 +921,13 @@ const styles: Record<string, React.CSSProperties> = {
     position: 'relative',
     display: 'flex',
     flexDirection: 'column',
-    backgroundColor: sysVar('background-base'),
-    border: `1px solid ${sysVar('background-subtle')}`,
-    borderRadius: `${spacing.C}px`,
+    backgroundColor: 'var(--rp-card)',
+    border: '1px solid var(--rp-card-border)',
+    borderRadius: '20px',
     overflow: 'hidden',
     cursor: 'pointer',
-    transition: 'all 200ms ease',
-    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
+    transition: 'transform 200ms ease, box-shadow 200ms ease',
+    boxShadow: cardShadow,
     textAlign: 'left',
   },
   cardArchived: {
@@ -1084,7 +990,6 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    borderBottom: `1px solid ${sysVar('background-subtle')}`,
   },
   cardImage: {
     width: '100%',
@@ -1147,12 +1052,10 @@ const styles: Record<string, React.CSSProperties> = {
     background: brandTintSubtle,
     padding: `3px ${spacing.B}px`,
     borderRadius: `${spacing.A}px`,
-    border: `1px solid ${sysVar('background-information')}`,
   },
   cardPillCustom: {
     color: sysVar('content-accent-purple'),
     background: `color-mix(in srgb, ${sysVar('content-accent-purple')} 8%, transparent)`,
-    borderColor: `color-mix(in srgb, ${sysVar('content-accent-purple')} 20%, transparent)`,
   },
 
   // Toast

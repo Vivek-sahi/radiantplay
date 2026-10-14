@@ -136,14 +136,20 @@ const ActionMenuBase: React.FC<ActionMenuProps> = ({
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (!isOpen) return;
+
+      // Dismissal is about the menu, not its contents — a menu whose rows are
+      // checkboxes or anything else that isn't a `menuitem` still has to close
+      // on Escape, so this runs before the item lookup below can bail out.
+      if (e.key === 'Escape' || e.key === 'Tab') {
+        if (e.key === 'Escape') e.preventDefault();
+        close();
+        return;
+      }
+
       const items = itemRefs.current.filter(Boolean) as HTMLButtonElement[];
       if (items.length === 0) return;
 
       switch (e.key) {
-        case 'Escape':
-          e.preventDefault();
-          close();
-          break;
         case 'ArrowDown':
           e.preventDefault();
           setFocusedIndex((prev) => {
@@ -167,12 +173,26 @@ const ActionMenuBase: React.FC<ActionMenuProps> = ({
             items[focusedIndex].click();
           }
           break;
-        case 'Tab':
-          close();
-          break;
       }
     },
     [isOpen, close, focusedIndex]
+  );
+
+  /**
+   * Dismiss once a selection is made.
+   *
+   * Items arrive as opaque `children`, so their own onClick handlers cannot be
+   * wrapped without cloning — and cloning would have to know about Groups and
+   * anything else a caller nests in here. Closing on the bubbled click instead
+   * means no item has to remember to dismiss the menu, and it covers the
+   * Enter/Space path for free, since that dispatches a real click.
+   */
+  const handleMenuClick = useCallback(
+    (e: React.MouseEvent) => {
+      const item = (e.target as HTMLElement).closest('[role="menuitem"]');
+      if (item) close();
+    },
+    [close]
   );
 
   const menuClasses = [styles.menu, styles[placement.replace('-', '_')]].filter(Boolean).join(' ');
@@ -196,6 +216,7 @@ const ActionMenuBase: React.FC<ActionMenuProps> = ({
           className={menuClasses}
           role="menu"
           aria-orientation="vertical"
+          onClick={handleMenuClick}
         >
           {children}
         </div>

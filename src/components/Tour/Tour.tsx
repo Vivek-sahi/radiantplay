@@ -125,10 +125,11 @@ export const Tour: React.FC<TourProps> = ({
   useEffect(() => {
     if (!isRunning) return;
     window.addEventListener('resize', recalculate);
-    window.addEventListener('scroll', recalculate);
+    // Capture phase, so scrolling inside a container (not just the window) also moves the tour
+    window.addEventListener('scroll', recalculate, true);
     return () => {
       window.removeEventListener('resize', recalculate);
-      window.removeEventListener('scroll', recalculate);
+      window.removeEventListener('scroll', recalculate, true);
     };
   }, [isRunning, recalculate]);
 

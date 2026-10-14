@@ -1,0 +1,95 @@
+/* Shared look for the static guide pages (guide.html, how-it-works.html,
+   cursor-to-claude-setup.html): Radiant tokens, Geist, and the Radiance wash
+   that /home and /playground use. The app's tokens live in src/styles/tokens.css,
+   which static pages can't import, so the values the guides need are copied
+   here, each with the token it comes from. Keep them in step with tokens.css. guides-theme.js sets data-theme on
+   <html> from the app's saved theme and adds the wash. */
+
+@font-face {
+  font-family: 'Geist';
+  src: url('/fonts/geist/Geist-Variable.woff2') format('woff2-variations'),
+       url('/fonts/geist/Geist-Variable.woff2') format('woff2');
+  font-weight: 100 900;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Geist Mono';
+  src: url('/fonts/geist/GeistMono-Variable.woff2') format('woff2-variations'),
+       url('/fonts/geist/GeistMono-Variable.woff2') format('woff2');
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+:root {
+  --g-font: 'Geist', -apple-system, BlinkMacSystemFont, sans-serif;
+  --g-mono: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  --g-base: #FFFFFF; /* rd-sys-color-background-base */
+  --g-sunken: #F6F8FA; /* rd-sys-color-background-sunken */
+  --g-subtle: #EAEDF2; /* rd-sys-color-background-subtle */
+  --g-info: #DEE8FA; /* rd-sys-color-background-information */
+  --g-brand: #2770EF; /* rd-sys-color-background-brand */
+  --g-brand-hover: #2359B6; /* rd-comp-color-button-primary-hover */
+  --g-on-brand: #FFFFFF; /* rd-sys-color-content-alternate */
+  --g-primary: #1D232F; /* rd-sys-color-content-primary */
+  --g-secondary: #777E8B; /* rd-sys-color-content-secondary */
+  --g-tertiary: #C0C6CF; /* rd-sys-color-content-tertiary */
+  --g-border: #C0C6CF; /* rd-sys-color-border-default */
+  --g-success: #06BF7F; /* rd-sys-color-content-success */
+  --g-warning: #FCC838; /* rd-sys-color-content-warning */
+  --g-failure: #E22B3D; /* rd-sys-color-content-failure */
+  --g-purple: #8C62F5; /* rd-sys-color-content-accent-purple */
+
+  --g-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+  --g-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+  --g-shadow-hover: 0 20px 48px color-mix(in srgb, var(--g-brand) 18%, transparent),
+                    0 0 0 1px color-mix(in srgb, var(--g-brand) 8%, transparent);
+  --g-brand-tint: color-mix(in srgb, var(--g-info) 40%, var(--g-base));
+
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  --g-base: #1F2024; /* rd-sys-color-background-base */
+  --g-sunken: #18191B; /* rd-sys-color-background-sunken */
+  --g-subtle: #34363C; /* rd-sys-color-background-subtle */
+  --g-info: #082559; /* rd-sys-color-background-information */
+  --g-brand: #71A1F4; /* rd-sys-color-background-brand */
+  --g-brand-hover: #ABC7F9; /* rd-comp-color-button-primary-hover */
+  --g-on-brand: #1D232F; /* rd-sys-color-content-alternate */
+  --g-primary: #DFE0E2; /* rd-sys-color-content-primary */
+  --g-secondary: #9A9EA2; /* rd-sys-color-content-secondary */
+  --g-tertiary: #5D636A; /* rd-sys-color-content-tertiary */
+  --g-border: #5D636A; /* rd-sys-color-border-default */
+  --g-success: #56D3A8; /* rd-sys-color-content-success */
+  --g-warning: #FCD977; /* rd-sys-color-content-warning */
+  --g-failure: #F47E89; /* rd-sys-color-content-failure */
+  --g-purple: #B094F8; /* rd-sys-color-content-accent-purple */
+
+  --g-shadow: 0 4px 24px rgba(0, 0, 0, 0.32);
+  --g-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.24);
+
+  color-scheme: dark;
+}
+
+html, body {
+  background: var(--g-base);
+  color: var(--g-primary);
+  font-family: var(--g-font);
+}
+
+/* The Radiance Home wash, as RadianceBackground renders it: behind the top of
+   the page, the recipe's fade runs past the hero height. */
+.g-radiance {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: calc(var(--radiance-hero-height, 440px) + 260px);
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.g-radiance .radiance-home-stage {
+  height: var(--radiance-hero-height, 440px);
+}

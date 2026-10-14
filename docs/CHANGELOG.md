@@ -1,5 +1,16 @@
 # Changelog
 
+## 26.10.3g — 2026-10-14
+
+The playground and the design system share one frame, the guides follow light and dark mode, and menus close after a choice.
+
+- One frame for both sections: a full-height left pane with the Radiant Play logo (a play mark with "Rp", teal mixed from Radiant's green and blue), a top row with a Playground / Design system switcher and the theme icon, and the content on a raised panel. Light mode separates surfaces by fill instead of hairlines
+- Help at the bottom of both left panes opens What's new (the changelog, with the version) and the three guides, which open in a new tab. The design system's version button moved into it
+- The design system panel scrolls on its own, so its frame stays put; On this page follows it, and scrollbars show only on hover
+- Section titles in the design system no longer jump when a page opens: they get their style before the first paint
+- Getting started, How it works and Claude setup and skills use Radiant tokens and Geist, follow the app's light or dark setting, and show the Radiance Home pattern at the top, as /home and the playground do (`public/guides-theme.css` and `guides-theme.js`)
+- ActionMenu closes once an item is chosen, and Escape and Tab always close it (Sneharsh Damani's fix, taken unchanged from their fork). Tour also follows scrolling inside a container
+
 ## 26.10.3f — 2026-10-13
 
 The last Cursor mentions outside the changelog are gone.

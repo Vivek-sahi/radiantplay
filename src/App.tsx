@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { Sidebar, NavItem } from './components/Sidebar';
 import { HomePage } from './pages/HomePage';
@@ -21,11 +21,14 @@ import { TypographyPage } from './pages/TypographyPage';
 import RdModalDemo from './pages/RdModalDemo';
 // import { RoadmapPage } from './pages/RoadmapPage';
 
-import { sysVar } from './tokens/colors';
-import { getCurrentVersion } from './data/versionHistory';
+import { sysVar, shadowVar } from './tokens/colors';
 import { useTheme } from './context/ThemeContext';
 import { ThemeSwitch } from './components/ThemeSwitch';
 import { OnThisPage, onThisPageFrame } from './app-chrome/OnThisPage/OnThisPage';
+import { SectionSwitcher } from './app-chrome/SectionSwitcher/SectionSwitcher';
+import frame from './app-chrome/AppFrame/AppFrame.module.css';
+import { AppLogo } from './app-chrome/AppLogo/AppLogo';
+import { HelpMenu } from './app-chrome/HelpMenu/HelpMenu';
 import { getIconCount } from './data/componentRegistry';
 
 // Navigation icons
@@ -204,8 +207,15 @@ const ROUTES = {
 // Layout component with sidebar for Radiant section
 const RadiantLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const contentRef = useRef<HTMLDivElement>(null);
+  // The content panel scrolls, not the window, so its frame stays put
+  const panelRef = useRef<HTMLElement>(null);
   const navigate = useNavigate();
   const location = useLocation();
+
+  // A new page starts at the top of the panel (links to a section keep their place)
+  useEffect(() => {
+    if (!location.hash) panelRef.current?.scrollTo(0, 0);
+  }, [location.pathname, location.hash]);
 
   // Get active page ID from current path
   const getActiveId = (): string => {
@@ -471,51 +481,53 @@ const RadiantLayout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     { id: 'facetsortbar', label: 'FacetSortBar', icon: <ComponentIcon />, type: 'item' },
   ];
 
-  const SidebarHeader = () => (
-    <div style={styles.sidebarHeader}>
-      <div 
-        style={styles.logoWrapper}
-        onClick={() => navigate('/')}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => e.key === 'Enter' && navigate('/')}
-      >
-        <div style={styles.logo}>R</div>
-        <div style={styles.logoText}>
-          <div style={styles.logoTitleRow}>
-            <span style={styles.logoTitle}>Radiant</span>
-            <span style={styles.logoVersion}>{getCurrentVersion()}</span>
-          </div>
-          <span style={styles.logoSubtitle}>Design System</span>
-        </div>
-      </div>
-    </div>
-  );
 
   return (
-    <div style={styles.app}>
-      <Sidebar
-        items={navItems}
-        activeId={getActiveId()}
-        onSelect={handleNavigate}
-        header={<SidebarHeader />}
-        showInspect={false}
-      />
-      <main style={styles.main}>
-        {/* Theme icon at the top right, as on the playground; stays put on scroll */}
-        <div style={styles.themeBar}>
-          <div style={styles.themeCorner}>
-            <ThemeSwitch variant="icon" />
-          </div>
+    <div style={styles.app} className={frame.surfaces}>
+      {/* Left pane like the playground's: the sidebar sits on the sunken page with no fill or dividers of its
+          own, and the content is a raised panel. Structural selectors, since Sidebar takes no className. */}
+      <style>{`
+        .rp-ds-pane > aside { background: transparent; border-right: none; }
+        .rp-ds-pane > aside > div:first-child { border-bottom: none; padding: var(--spacing-6) var(--spacing-3) var(--spacing-2); }
+        .rp-ds-pane > aside > div:last-of-type { border-top: none; }
+        .rp-ds-pane > aside > div:last-of-type > div:first-child:not(:last-child) { padding: var(--spacing-2) var(--spacing-3) var(--spacing-3); }
+        .rp-ds-pane > aside > div:last-of-type > div:first-child:not(:last-child)::before { content: ''; display: block; height: 1px; margin: 0 var(--spacing-3) var(--spacing-2); background: var(--rd-sys-color-background-subtle); } /* inset line above Help, as in the playground */
+        .rp-ds-pane > aside > div:last-of-type > div:last-child:not(:first-child) { display: none; } /* the version button: Help, What's new covers it */
+        .rp-ds-pane > aside > nav { scrollbar-width: thin; scrollbar-color: transparent transparent; }
+        .rp-ds-pane > aside > nav:hover { scrollbar-color: var(--rd-sys-color-border-default) transparent; }
+        .rp-ds-pane > aside > nav::-webkit-scrollbar-thumb { background: transparent; }
+        .rp-ds-pane > aside > nav:hover::-webkit-scrollbar-thumb { background: var(--rd-sys-color-border-default); }
+      `}</style>
+      <div className="rp-ds-pane">
+        <Sidebar
+          items={navItems}
+          activeId={getActiveId()}
+          onSelect={handleNavigate}
+          header={<AppLogo />} // the same logo as the playground's left pane
+          footerContent={<HelpMenu />}
+          showInspect={false}
+        />
+      </div>
+      <div style={styles.column}>
+      {/* Section switcher and theme icon on the page surface, outside the content panel, as on the
+          playground; the row stays put while the window scrolls */}
+      <header className={frame.topRow}>
+        <span aria-hidden="true" />
+        <SectionSwitcher active="design-system" />
+        <div className={frame.topRowEnd}>
+          <ThemeSwitch variant="icon" />
         </div>
+      </header>
+      <main ref={panelRef} style={styles.main} className={frame.scrollArea}>
         {/* Content starts after the sidebar on every page; the room on the right holds the section list */}
         <div className={onThisPageFrame}>
           <div ref={contentRef} style={styles.content}>
             {children}
           </div>
         </div>
-        <OnThisPage contentRef={contentRef} />
+        <OnThisPage contentRef={contentRef} scrollRef={panelRef} />
       </main>
+      </div>
     </div>
   );
 };
@@ -748,95 +760,40 @@ const App: React.FC = () => {
 };
 
 const styles: Record<string, React.CSSProperties> = {
+  // A fixed frame: the window doesn't scroll, the content panel does
   app: {
     display: 'flex',
-    minHeight: '100vh',
-    backgroundColor: sysVar('background-sunken'),
+    height: '100vh',
+    overflow: 'hidden',
   },
+  // Right of the fixed sidebar: the top row, then the content panel
+  column: {
+    flex: 1,
+    minWidth: 0,
+    marginLeft: '260px',
+    display: 'flex',
+    flexDirection: 'column',
+    minHeight: 0,
+  },
+  // A raised panel beside the sunken left pane, as on the playground. The window still scrolls.
   main: {
     flex: 1,
-    marginLeft: '260px',
-    minHeight: '100vh',
-    // The window scrolls, not main. 'clip' trims sideways overflow without making
-    // main a scroll container, so the theme icon and in-page section links can stick.
-    overflowX: 'clip',
+    margin: '0 var(--spacing-2) var(--spacing-2) 0',
+    minHeight: 0,
+    backgroundColor: sysVar('background-base'),
+    border: `1px solid ${sysVar('background-subtle')}`,
+    borderRadius: '16px',
+    boxShadow: shadowVar('surface'),
+    // The panel is the scroll container, so its rounded frame stays put; in-page section links stick to it.
+    overflowY: 'auto',
+    overflowX: 'hidden',
     minWidth: 0,
-  },
-  themeBar: {
-    position: 'sticky',
-    top: 0,
-    height: 0,
-    zIndex: 10,
-    display: 'flex',
-    justifyContent: 'flex-end',
-  },
-  themeCorner: {
-    paddingTop: 'var(--spacing-4)',
-    paddingRight: 'var(--spacing-6)',
   },
   content: {
     minHeight: '100%',
-    padding: 'var(--spacing-14) 32px 32px calc(var(--spacing-24) + var(--spacing-8))',
+    padding: 'var(--spacing-10) 32px 32px calc(var(--spacing-24) + var(--spacing-8))',
     maxWidth: '1296px',
     margin: '0',
-  },
-  sidebarHeader: {
-    display: 'flex',
-    alignItems: 'center',
-  },
-  logoWrapper: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-    cursor: 'pointer',
-  },
-  logo: {
-    width: '36px',
-    height: '36px',
-    borderRadius: '10px',
-    background: 'linear-gradient(135deg, #2770EF 0%, #1E5BBB 100%)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontFamily: 'var(--font-family-primary)',
-    fontSize: '18px',
-    fontWeight: 700,
-    color: '#ffffff',
-    boxShadow: '0 2px 8px rgba(39, 112, 239, 0.4)',
-  },
-  logoText: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '2px',
-  },
-  logoTitleRow: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '6px',
-  },
-  logoTitle: {
-    fontFamily: 'var(--font-family-primary)',
-    fontSize: '16px',
-    fontWeight: 'var(--font-weight-emphasis)',
-    color: sysVar('content-primary'),
-    letterSpacing: '-0.3px',
-  },
-  logoVersion: {
-    fontFamily: 'var(--font-family-primary)',
-    fontSize: '10px',
-    fontWeight: 500,
-    color: sysVar('content-secondary'),
-    backgroundColor: sysVar('background-subtle'),
-    padding: '1px 6px',
-    borderRadius: '10px',
-    letterSpacing: '0.2px',
-  },
-  logoSubtitle: {
-    fontFamily: 'var(--font-family-primary)',
-    fontSize: '11px',
-    fontWeight: 400,
-    color: sysVar('content-secondary'),
-    letterSpacing: '0.2px',
   },
 };
 

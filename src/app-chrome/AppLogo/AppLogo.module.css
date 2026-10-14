@@ -1,0 +1,70 @@
+/* The logo at the top of both left panes. The 8px padding is part of the shared spacing: with each pane's own
+   top and side padding it puts the mark at the same spot in the playground and the design system. */
+.logo {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2);
+}
+
+.home {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  border-radius: var(--radius-md);
+}
+
+.home:focus-visible,
+.version:focus-visible {
+  outline: 2px solid var(--rd-sys-color-border-brand);
+  outline-offset: 2px;
+}
+
+/* The mark: "Rp" in a rounded play triangle. Teal mixed from Radiant's green and blue accents, so it follows
+   the theme; the letters use content-alternate (white in light, dark ink in dark). */
+.mark {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  display: block;
+  --logo-fill: color-mix(in srgb, var(--rd-sys-color-content-accent-green) 50%, var(--rd-sys-color-content-accent-blue));
+}
+
+.markShape {
+  fill: var(--logo-fill);
+  stroke: var(--logo-fill);
+}
+
+.markText {
+  fill: var(--rd-sys-color-content-alternate);
+  font-family: var(--font-family-primary);
+  font-weight: 700;
+}
+
+.name {
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-emphasis);
+  color: var(--rd-sys-color-content-primary);
+  letter-spacing: -0.2px;
+  white-space: nowrap;
+}
+
+.version {
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: var(--font-family-primary);
+  font-size: 11px;
+  color: var(--rd-sys-color-content-secondary);
+  white-space: nowrap;
+}
+
+.version:hover {
+  color: var(--rd-sys-color-content-primary);
+}

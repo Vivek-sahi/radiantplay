@@ -4,31 +4,30 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>How Prototyping Works — Radiant Play</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/guides-theme.css">
+<script src="/guides-theme.js"></script>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
   --blue-10:#EBF2FD;--blue-20:#DEE8FA;--blue-30:#CEDCF5;
-  --blue-40:#ABC7F9;--blue-50:#71A1F4;--blue-60:#2770EF;
+  --blue-40:var(--g-brand);--blue-50:var(--g-brand);--blue-60:#2770EF;
   --blue-70:#2359B6;--blue-80:#163772;--blue-90:#082559;
   --gray-00:#FFFFFF;--gray-10:#F6F8FA;--gray-20:#EAEDF2;
   --gray-30:#DBDFE7;--gray-40:#C0C6CF;--gray-50:#A5ACB9;
   --gray-60:#777E8B;--gray-70:#4A515E;--gray-80:#323946;
-  --gray-85:#272D38;--gray-90:#1D232F;
+  --gray-85:#272D38;--gray-90:var(--g-base);
   --green:#06BF7F;--green-bg:rgba(6,191,127,0.12);
   --orange:#F5A623;--orange-bg:rgba(245,166,35,0.12);
   --purple:#7B61FF;--purple-bg:rgba(123,97,255,0.12);
   --r:10px;--r-lg:16px;--r-xl:24px;
-  --font:'Inter',system-ui,sans-serif;
-  --mono:'SF Mono','Fira Code',monospace;
+  --font:var(--g-font);
+  --mono:var(--g-mono);
 }
-body { font-family:var(--font); background:var(--gray-90); color:#fff; height:100vh; overflow:hidden; -webkit-font-smoothing:antialiased; }
+body { font-family:var(--font); background:var(--gray-90); color:var(--g-primary); height:100vh; overflow:hidden; -webkit-font-smoothing:antialiased; }
 
 /* ── chrome ── */
 .progress-bar { position:fixed;top:0;left:0;height:3px;background:var(--blue-60);transition:width .4s cubic-bezier(.4,0,.2,1);z-index:200;box-shadow:0 0 14px rgba(39,112,239,.7); }
-.slide-badge  { position:fixed;top:20px;right:32px;font-size:12px;font-weight:500;color:rgba(255,255,255,.3);z-index:200; }
+.slide-badge  { position:fixed;top:20px;right:32px;font-size:12px;font-weight:500;color:var(--g-secondary);z-index:200; }
 .wordmark {
   position:fixed;top:18px;left:32px;z-index:200;
   display:flex;align-items:center;gap:10px;
@@ -38,25 +37,25 @@ body { font-family:var(--font); background:var(--gray-90); color:#fff; height:10
   position:fixed;top:18px;left:160px;z-index:200;
   display:flex;align-items:center;gap:6px;
   font-family:var(--font);font-size:13px;font-weight:500;
-  color:rgba(255,255,255,.4);
-  background:rgba(255,255,255,.06);
-  border:1px solid rgba(255,255,255,.1);
+  color:var(--g-secondary);
+  background:var(--g-base);box-shadow:var(--g-shadow);
+  border:1px solid color-mix(in srgb, var(--g-primary) 10%, transparent);
   border-radius:100px;padding:6px 16px 6px 12px;
   text-decoration:none;cursor:pointer;
   transition:all .18s;backdrop-filter:blur(10px);
 }
-.back-btn:hover { background:rgba(255,255,255,.12);color:rgba(255,255,255,.7);border-color:rgba(255,255,255,.2); }
+.back-btn:hover { background:color-mix(in srgb, var(--g-primary) 12%, transparent);color:var(--g-primary);border-color:color-mix(in srgb, var(--g-primary) 20%, transparent); }
 .back-btn svg { flex-shrink:0; }
 .wordmark-icon {
   width:30px;height:30px;border-radius:9px;
   background:linear-gradient(135deg,var(--blue-60) 0%,var(--blue-80) 100%);
   display:flex;align-items:center;justify-content:center;
-  font-size:14px;font-weight:900;color:#fff;letter-spacing:-.5px;
+  font-size:14px;font-weight:900;color:var(--g-primary);letter-spacing:-.5px;
   box-shadow:0 2px 8px rgba(39,112,239,.4);
   flex-shrink:0;
 }
 .wordmark-text {
-  font-size:14px;font-weight:800;color:#fff;letter-spacing:-.02em;line-height:1;
+  font-size:14px;font-weight:800;color:var(--g-primary);letter-spacing:-.02em;line-height:1;
 }
 .wordmark-text span { color:var(--blue-40); }
 
@@ -64,14 +63,14 @@ body { font-family:var(--font); background:var(--gray-90); color:#fff; height:10
 .tab-pills {
   position:fixed;top:18px;left:50%;transform:translateX(-50%);z-index:200;
   display:flex;align-items:center;gap:4px;
-  background:rgba(255,255,255,.06);
-  border:1px solid rgba(255,255,255,.1);
+  background:var(--g-base);box-shadow:var(--g-shadow);
+  border:1px solid color-mix(in srgb, var(--g-primary) 10%, transparent);
   border-radius:100px;padding:3px;
   backdrop-filter:blur(10px);
 }
 .tab-pill {
   font-family:var(--font);font-size:12px;font-weight:600;
-  color:rgba(255,255,255,.4);
+  color:var(--g-secondary);
   background:transparent;
   border:none;border-radius:100px;
   padding:6px 18px;
@@ -80,19 +79,19 @@ body { font-family:var(--font); background:var(--gray-90); color:#fff; height:10
   text-decoration:none;
   white-space:nowrap;
 }
-.tab-pill:hover { color:rgba(255,255,255,.7);background:rgba(255,255,255,.06); }
-.tab-pill.active { color:#fff;background:rgba(39,112,239,.3);box-shadow:0 1px 4px rgba(0,0,0,.2); }
+.tab-pill:hover { color:var(--g-primary);background:color-mix(in srgb, var(--g-primary) 6%, transparent); }
+.tab-pill.active { color:var(--g-primary);background:rgba(39,112,239,.3);box-shadow:0 1px 4px rgba(0,0,0,.2); }
 
 /* ── nav ── */
 .nav { position:fixed;bottom:28px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:14px;z-index:200; }
-.nav-btn { width:40px;height:40px;border-radius:50%;border:1.5px solid rgba(255,255,255,.15);background:rgba(255,255,255,.06);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .18s;backdrop-filter:blur(10px); }
-.nav-btn:hover { background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.35); }
+.nav-btn { width:40px;height:40px;border-radius:50%;border:1.5px solid color-mix(in srgb, var(--g-primary) 15%, transparent);background:var(--g-base);box-shadow:var(--g-shadow);color:var(--g-primary);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .18s;backdrop-filter:blur(10px); }
+.nav-btn:hover { background:color-mix(in srgb, var(--g-primary) 14%, transparent);border-color:color-mix(in srgb, var(--g-primary) 35%, transparent); }
 .nav-btn:disabled { opacity:.25;cursor:not-allowed; }
 .dots { display:flex;gap:5px; }
-.dot { width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.22);cursor:pointer;transition:all .2s; }
+.dot { width:5px;height:5px;border-radius:50%;background:color-mix(in srgb, var(--g-primary) 22%, transparent);cursor:pointer;transition:all .2s; }
 .dot.active { background:var(--blue-60);width:18px;border-radius:3px; }
-.kbd-hint { position:fixed;bottom:28px;right:32px;font-size:11px;color:rgba(255,255,255,.2);display:flex;align-items:center;gap:5px; }
-kbd { background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:4px;padding:2px 5px;font-family:var(--mono);font-size:10px; }
+.kbd-hint { position:fixed;bottom:28px;right:32px;font-size:11px;color:var(--g-secondary);display:flex;align-items:center;gap:5px; }
+kbd { background:color-mix(in srgb, var(--g-primary) 7%, transparent);border:1px solid color-mix(in srgb, var(--g-primary) 10%, transparent);border-radius:4px;padding:2px 5px;font-family:var(--mono);font-size:10px; }
 
 /* ── slides ── */
 .slides { width:100%;height:100vh;position:relative; }
@@ -104,79 +103,79 @@ kbd { background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);bor
 .label { display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--blue-50);background:rgba(39,112,239,.12);border-radius:100px;padding:5px 14px;margin-bottom:18px; }
 .h1 { font-size:clamp(36px,4.2vw,58px);font-weight:900;letter-spacing:-.03em;line-height:1.08; }
 .h2 { font-size:clamp(24px,2.8vw,38px);font-weight:800;letter-spacing:-.025em;line-height:1.15;margin-bottom:8px; }
-.sub { font-size:15.5px;color:rgba(255,255,255,.46);line-height:1.65; }
+.sub { font-size:15.5px;color:var(--g-secondary);line-height:1.65; }
 
 /* ════ SLIDE 1 — HERO ════ */
-.s-hero { background:linear-gradient(145deg,var(--blue-90) 0%,var(--blue-80) 40%,#1a3a8a 100%); }
-.s-hero::before { content:'';position:absolute;inset:0;background:radial-gradient(ellipse 55% 80% at 88% 50%,rgba(39,112,239,.25) 0%,transparent 70%);pointer-events:none; }
+.s-hero { background:transparent; }
+.s-hero::before { display:none; }
 .hero-inner { position:relative;z-index:1;max-width:780px;width:100%; }
 .hero-eyebrow { display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--blue-40);margin-bottom:24px; }
 .hero-dot { width:6px;height:6px;background:var(--blue-50);border-radius:50%;animation:pulse 2s infinite; }
 @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.75)} }
-.hero-title { color:#fff;margin-bottom:22px; }
+.hero-title { color:var(--g-primary);margin-bottom:22px; }
 .hero-title em { font-style:normal;color:var(--blue-40); }
-.hero-sub { font-size:18px;color:rgba(255,255,255,.65);line-height:1.65;max-width:520px;margin-bottom:40px; }
-.hero-cta { display:inline-flex;align-items:center;gap:8px;font-family:var(--font);font-size:14px;font-weight:700;color:rgba(255,255,255,.6);background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);border-radius:100px;padding:10px 24px;cursor:pointer;transition:all .2s;text-decoration:none; }
-.hero-cta:hover { color:#fff;background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.3); }
+.hero-sub { font-size:18px;color:var(--g-primary);line-height:1.65;max-width:520px;margin-bottom:40px; }
+.hero-cta { display:inline-flex;align-items:center;gap:8px;font-family:var(--font);font-size:14px;font-weight:700;color:var(--g-primary);background:color-mix(in srgb, var(--g-primary) 8%, transparent);border:1px solid color-mix(in srgb, var(--g-primary) 16%, transparent);border-radius:100px;padding:10px 24px;cursor:pointer;transition:all .2s;text-decoration:none; }
+.hero-cta:hover { color:var(--g-primary);background:color-mix(in srgb, var(--g-primary) 14%, transparent);border-color:color-mix(in srgb, var(--g-primary) 30%, transparent); }
 
 /* ════ SLIDE 2 — PIPELINE ════ */
-.s-pipeline { background:radial-gradient(ellipse at 30% 60%,#0d2040 0%,var(--gray-90) 65%); }
+.s-pipeline { background:transparent; }
 .pipeline-inner { max-width:1020px;width:100%; }
 .pipeline-wrap {
-  background:rgba(255,255,255,.03);
-  border:1px solid rgba(255,255,255,.08);
+  background:var(--g-base);box-shadow:var(--g-shadow);
+  border:1px solid color-mix(in srgb, var(--g-primary) 8%, transparent);
   border-radius:var(--r-xl);
   padding:20px 28px 16px;
   margin-top:6px;
 }
 
 /* ════ SLIDE 3 — ROUTING ════ */
-.s-routing { background:radial-gradient(ellipse at 70% 30%,#0d2040 0%,var(--gray-90) 65%); }
+.s-routing { background:transparent; }
 .routing-inner { max-width:1020px;width:100%; }
 .routing-layout { display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center; }
 .routing-left { display:flex;flex-direction:column;gap:10px; }
 .route-item {
   display:flex;align-items:center;gap:14px;
   padding:14px 18px;
-  background:rgba(255,255,255,.04);
-  border:1px solid rgba(255,255,255,.08);
+  background:var(--g-base);box-shadow:var(--g-shadow);
+  border:1px solid color-mix(in srgb, var(--g-primary) 8%, transparent);
   border-radius:var(--r-lg);
   transition:all .2s;cursor:default;
 }
-.route-item:hover { background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.14); }
+.route-item:hover { background:color-mix(in srgb, var(--g-primary) 7%, transparent);border-color:color-mix(in srgb, var(--g-primary) 14%, transparent); }
 .route-emoji {
   width:34px;height:34px;border-radius:10px;
   display:flex;align-items:center;justify-content:center;
   font-size:16px;flex-shrink:0;
 }
-.route-label { font-size:13px;font-weight:700;color:#fff; }
-.route-files { font-size:11px;color:rgba(255,255,255,.35);font-family:var(--mono);margin-top:2px; }
+.route-label { font-size:13px;font-weight:700;color:var(--g-primary); }
+.route-files { font-size:11px;color:var(--g-secondary);font-family:var(--mono);margin-top:2px; }
 .routing-visual {
-  background:rgba(255,255,255,.03);
-  border:1px solid rgba(255,255,255,.08);
+  background:var(--g-base);box-shadow:var(--g-shadow);
+  border:1px solid color-mix(in srgb, var(--g-primary) 8%, transparent);
   border-radius:var(--r-xl);
   padding:36px 32px;
 }
 
 /* ════ SLIDE 4 — PRIORITY FILES ════ */
-.s-files { background:radial-gradient(ellipse at 20% 70%,#0a1a12 0%,var(--gray-90) 55%); }
+.s-files { background:transparent; }
 .files-inner { max-width:1020px;width:100%; }
 .files-grid {
   display:grid;grid-template-columns:repeat(2,1fr);gap:16px;
   max-height:calc(100vh - 260px);overflow-y:auto;
-  scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.1) transparent;
+  scrollbar-width:thin;scrollbar-color:color-mix(in srgb, var(--g-primary) 10%, transparent) transparent;
 }
 .files-grid::-webkit-scrollbar { width:4px; }
-.files-grid::-webkit-scrollbar-thumb { background:rgba(255,255,255,.1);border-radius:2px; }
+.files-grid::-webkit-scrollbar-thumb { background:color-mix(in srgb, var(--g-primary) 10%, transparent);border-radius:2px; }
 .file-card {
   display:flex;align-items:flex-start;gap:14px;
   padding:18px 20px;
-  background:rgba(255,255,255,.04);
-  border:1px solid rgba(255,255,255,.08);
+  background:var(--g-base);box-shadow:var(--g-shadow);
+  border:1px solid color-mix(in srgb, var(--g-primary) 8%, transparent);
   border-radius:var(--r-lg);
   transition:all .2s;
 }
-.file-card:hover { background:rgba(255,255,255,.08); }
+.file-card:hover { background:color-mix(in srgb, var(--g-primary) 8%, transparent); }
 .file-num {
   width:30px;height:30px;border-radius:9px;
   background:rgba(39,112,239,.12);border:1.5px solid rgba(39,112,239,.25);
@@ -186,29 +185,29 @@ kbd { background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);bor
 }
 .file-name { font-size:13px;font-weight:700;font-family:var(--mono);margin-bottom:2px; }
 .file-role { font-size:11px;font-weight:700;color:var(--blue-50);letter-spacing:.04em;text-transform:uppercase;margin-bottom:4px; }
-.file-desc { font-size:12px;color:rgba(255,255,255,.42);line-height:1.55; }
+.file-desc { font-size:12px;color:var(--g-secondary);line-height:1.55; }
 code { font-family:var(--mono);font-size:12px;font-weight:500;color:var(--blue-50);background:rgba(39,112,239,.1);padding:2px 6px;border-radius:5px; }
 
 /* ════ SLIDE 5 — COMPONENT REUSE ════ */
-.s-reuse { background:radial-gradient(ellipse at 75% 25%,#150b2a 0%,var(--gray-90) 60%); }
+.s-reuse { background:transparent; }
 .reuse-inner { max-width:1020px;width:100%; }
 .reuse-grid { display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:28px; }
 .reuse-card {
-  background:rgba(255,255,255,.04);
-  border:1px solid rgba(255,255,255,.08);
+  background:var(--g-base);box-shadow:var(--g-shadow);
+  border:1px solid color-mix(in srgb, var(--g-primary) 8%, transparent);
   border-radius:var(--r-xl);
   padding:28px 26px;
   transition:all .22s;
   display:flex;flex-direction:column;
 }
-.reuse-card:hover { background:rgba(255,255,255,.08);transform:translateY(-3px); }
+.reuse-card:hover { background:color-mix(in srgb, var(--g-primary) 8%, transparent);transform:translateY(-3px); }
 .reuse-emoji { font-size:26px;margin-bottom:12px; }
 .reuse-title { font-size:17px;font-weight:800;margin-bottom:10px; }
-.reuse-desc { font-size:13.5px;color:rgba(255,255,255,.45);line-height:1.6;margin-bottom:18px;flex:1; }
+.reuse-desc { font-size:13.5px;color:var(--g-secondary);line-height:1.6;margin-bottom:18px;flex:1; }
 .reuse-tag { display:inline-block;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:3px 10px;border-radius:6px;align-self:flex-start; }
 .reuse-diagram {
-  background:rgba(255,255,255,.03);
-  border:1px solid rgba(255,255,255,.08);
+  background:var(--g-base);box-shadow:var(--g-shadow);
+  border:1px solid color-mix(in srgb, var(--g-primary) 8%, transparent);
   border-radius:var(--r-xl);
   padding:28px 24px;
   margin-bottom:24px;
@@ -219,18 +218,18 @@ code { font-family:var(--mono);font-size:12px;font-weight:500;color:var(--blue-5
   background:rgba(39,112,239,.08);
   border:1px solid rgba(39,112,239,.18);
   border-radius:var(--r-lg);
-  font-size:13px;color:rgba(255,255,255,.6);line-height:1.6;
+  font-size:13px;color:var(--g-primary);line-height:1.6;
 }
 
 /* ════ SLIDE 6 — FINAL ════ */
-.s-final { background:radial-gradient(ellipse at 50% 50%,#0a1f4d 0%,var(--gray-90) 65%); }
+.s-final { background:transparent; }
 .final-inner { max-width:620px;text-align:center; }
 .celebrate { font-size:48px;display:block;margin-bottom:24px; }
 .fin-title { font-size:clamp(28px,3.5vw,44px);font-weight:900;letter-spacing:-.03em;line-height:1.1;margin-bottom:18px; }
-.fin-sub { font-size:16px;color:rgba(255,255,255,.5);line-height:1.65;margin-bottom:36px; }
+.fin-sub { font-size:16px;color:var(--g-secondary);line-height:1.65;margin-bottom:36px; }
 .fin-cta {
   display:inline-flex;align-items:center;gap:10px;
-  font-family:var(--font);font-size:16px;font-weight:700;color:#fff;
+  font-family:var(--font);font-size:16px;font-weight:700;color:var(--g-primary);
   background:linear-gradient(135deg,var(--blue-60) 0%,var(--blue-80) 100%);
   border:none;border-radius:14px;padding:16px 36px;
   cursor:pointer;transition:all .22s;
@@ -243,14 +242,19 @@ code { font-family:var(--mono);font-size:12px;font-weight:500;color:var(--blue-5
 .fin-note {
   display:flex;align-items:flex-start;gap:12px;
   padding:18px 24px;
-  background:rgba(255,255,255,.04);
-  border:1px solid rgba(255,255,255,.08);
+  background:var(--g-base);box-shadow:var(--g-shadow);
+  border:1px solid color-mix(in srgb, var(--g-primary) 8%, transparent);
   border-radius:var(--r-xl);
-  font-size:14px;color:rgba(255,255,255,.55);line-height:1.65;
+  font-size:14px;color:var(--g-secondary);line-height:1.65;
   text-align:left;
   margin-bottom:36px;
   max-width:620px;
 }
+
+/* ── Radiance theme: text on solid brand blue stays white; deck above the wash ── */
+.slides { z-index:1; }
+.wordmark-icon, .wbtn-p, .fin-cta, .ava, .flip-bt, .wtab.active .wnum, .wtab.done .wnum { color:#fff; }
+.flip-bd { color:rgba(255,255,255,.82); }
 </style>
 </head>
 <body>
@@ -311,8 +315,8 @@ code { font-family:var(--mono);font-size:12px;font-weight:500;color:var(--blue-5
     <svg viewBox="0 0 1000 480" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;max-height:60vh">
 
       <!-- ── PROMPT ── -->
-      <rect x="370" y="12" width="260" height="40" rx="12" fill="rgba(255,255,255,.06)" stroke="rgba(255,255,255,.15)" stroke-width="1.5"/>
-      <text x="500" y="37" fill="rgba(255,255,255,.65)" font-size="12.5" font-weight="600" font-family="Inter,sans-serif" text-anchor="middle">Describe what you want to build</text>
+      <rect x="370" y="12" width="260" height="40" rx="12" stroke-width="1.5" style="fill:color-mix(in srgb, var(--g-primary) 6%, transparent);stroke:color-mix(in srgb, var(--g-primary) 15%, transparent)"/>
+      <text x="500" y="37" style="fill:color-mix(in srgb, var(--g-primary) 65%, transparent)" font-size="12.5" font-weight="600" font-family="Geist,sans-serif" text-anchor="middle">Describe what you want to build</text>
 
       <!-- arrow → classifier -->
       <path d="M 500 52 L 500 78" stroke="rgba(123,97,255,.45)" stroke-width="1.5" stroke-dasharray="4 3"/>
@@ -320,8 +324,8 @@ code { font-family:var(--mono);font-size:12px;font-weight:500;color:var(--blue-5
 
       <!-- ── TOKEN CLASSIFIER ── -->
       <rect x="320" y="86" width="360" height="56" rx="15" fill="rgba(123,97,255,.11)" stroke="rgba(123,97,255,.5)" stroke-width="1.5"/>
-      <text x="500" y="109" fill="#9D8FFF" font-size="10.5" font-weight="800" font-family="Inter,sans-serif" text-anchor="middle" letter-spacing=".12em">TOKEN CLASSIFIER</text>
-      <text x="500" y="130" fill="rgba(255,255,255,.38)" font-size="11" font-family="Inter,sans-serif" text-anchor="middle">Reads intent — detects task type and scope</text>
+      <text x="500" y="109" fill="#9D8FFF" font-size="10.5" font-weight="800" font-family="Geist,sans-serif" text-anchor="middle" letter-spacing=".12em">TOKEN CLASSIFIER</text>
+      <text x="500" y="130" style="fill:color-mix(in srgb, var(--g-primary) 38%, transparent)" font-size="11" font-family="Geist,sans-serif" text-anchor="middle">Reads intent — detects task type and scope</text>
 
       <!-- arrow → orchestrator -->
       <path d="M 500 142 L 500 168" stroke="rgba(39,112,239,.45)" stroke-width="1.5" stroke-dasharray="4 3"/>
@@ -329,44 +333,44 @@ code { font-family:var(--mono);font-size:12px;font-weight:500;color:var(--blue-5
 
       <!-- ── ORCHESTRATOR ── -->
       <rect x="320" y="176" width="360" height="56" rx="15" fill="rgba(39,112,239,.11)" stroke="rgba(39,112,239,.5)" stroke-width="1.5"/>
-      <text x="500" y="199" fill="#71A1F4" font-size="10.5" font-weight="800" font-family="Inter,sans-serif" text-anchor="middle" letter-spacing=".12em">ORCHESTRATOR</text>
-      <text x="500" y="220" fill="rgba(255,255,255,.38)" font-size="11" font-family="Inter,sans-serif" text-anchor="middle">Routes to the right tier and loads guidelines</text>
+      <text x="500" y="199" fill="#71A1F4" font-size="10.5" font-weight="800" font-family="Geist,sans-serif" text-anchor="middle" letter-spacing=".12em">ORCHESTRATOR</text>
+      <text x="500" y="220" style="fill:color-mix(in srgb, var(--g-primary) 38%, transparent)" font-size="11" font-family="Geist,sans-serif" text-anchor="middle">Routes to the right tier and loads guidelines</text>
 
       <!-- ── branch lines → tiers (tops at y=272, T0 cx=110 T1=330 T2=670 T3=890) ── -->
-      <path d="M 420 232 Q 370 250 110 272" stroke="rgba(255,255,255,.2)"  stroke-width="1.5" fill="none"/>
+      <path d="M 420 232 Q 370 250 110 272" style="stroke:color-mix(in srgb, var(--g-primary) 20%, transparent)"  stroke-width="1.5" fill="none"/>
       <path d="M 460 232 Q 430 255 330 272" stroke="rgba(6,191,127,.4)"    stroke-width="1.5" fill="none"/>
       <path d="M 540 232 Q 570 255 670 272" stroke="rgba(39,112,239,.45)"  stroke-width="1.5" fill="none"/>
       <path d="M 580 232 Q 630 250 890 272" stroke="rgba(245,166,35,.4)"   stroke-width="1.5" fill="none"/>
 
       <!-- ── TIER 0 (cx=110) ── -->
-      <rect x="16" y="272" width="188" height="72" rx="14" fill="rgba(255,255,255,.04)" stroke="rgba(255,255,255,.13)" stroke-width="1.5"/>
-      <text x="110" y="295" fill="rgba(255,255,255,.45)" font-size="9.5" font-weight="800" font-family="Inter,sans-serif" text-anchor="middle" letter-spacing=".12em">TIER 0</text>
-      <text x="110" y="316" fill="#fff" font-size="13" font-weight="700" font-family="Inter,sans-serif" text-anchor="middle">Minor tweak</text>
-      <text x="110" y="333" fill="rgba(255,255,255,.32)" font-size="10" font-family="Inter,sans-serif" text-anchor="middle">Single prop, label, alignment</text>
+      <rect x="16" y="272" width="188" height="72" rx="14" stroke-width="1.5" style="fill:color-mix(in srgb, var(--g-primary) 4%, transparent);stroke:color-mix(in srgb, var(--g-primary) 13%, transparent)"/>
+      <text x="110" y="295" style="fill:color-mix(in srgb, var(--g-primary) 45%, transparent)" font-size="9.5" font-weight="800" font-family="Geist,sans-serif" text-anchor="middle" letter-spacing=".12em">TIER 0</text>
+      <text x="110" y="316" fill="#fff" font-size="13" font-weight="700" font-family="Geist,sans-serif" text-anchor="middle">Minor tweak</text>
+      <text x="110" y="333" style="fill:color-mix(in srgb, var(--g-primary) 32%, transparent)" font-size="10" font-family="Geist,sans-serif" text-anchor="middle">Single prop, label, alignment</text>
 
       <!-- ── TIER 1 (cx=330) ── -->
       <rect x="236" y="272" width="188" height="72" rx="14" fill="rgba(6,191,127,.07)" stroke="rgba(6,191,127,.3)" stroke-width="1.5"/>
-      <text x="330" y="295" fill="#06BF7F" font-size="9.5" font-weight="800" font-family="Inter,sans-serif" text-anchor="middle" letter-spacing=".12em">TIER 1</text>
-      <text x="330" y="316" fill="#fff" font-size="13" font-weight="700" font-family="Inter,sans-serif" text-anchor="middle">Feature change</text>
-      <text x="330" y="333" fill="rgba(255,255,255,.32)" font-size="10" font-family="Inter,sans-serif" text-anchor="middle">New section, modal, interaction</text>
+      <text x="330" y="295" fill="#06BF7F" font-size="9.5" font-weight="800" font-family="Geist,sans-serif" text-anchor="middle" letter-spacing=".12em">TIER 1</text>
+      <text x="330" y="316" fill="#fff" font-size="13" font-weight="700" font-family="Geist,sans-serif" text-anchor="middle">Feature change</text>
+      <text x="330" y="333" style="fill:color-mix(in srgb, var(--g-primary) 32%, transparent)" font-size="10" font-family="Geist,sans-serif" text-anchor="middle">New section, modal, interaction</text>
 
       <!-- ── TIER 2 (cx=670) ── -->
       <rect x="576" y="272" width="188" height="72" rx="14" fill="rgba(39,112,239,.07)" stroke="rgba(39,112,239,.3)" stroke-width="1.5"/>
-      <text x="670" y="295" fill="#71A1F4" font-size="9.5" font-weight="800" font-family="Inter,sans-serif" text-anchor="middle" letter-spacing=".12em">TIER 2</text>
-      <text x="670" y="316" fill="#fff" font-size="13" font-weight="700" font-family="Inter,sans-serif" text-anchor="middle">Full build</text>
-      <text x="670" y="333" fill="rgba(255,255,255,.32)" font-size="10" font-family="Inter,sans-serif" text-anchor="middle">New prototype from scratch</text>
+      <text x="670" y="295" fill="#71A1F4" font-size="9.5" font-weight="800" font-family="Geist,sans-serif" text-anchor="middle" letter-spacing=".12em">TIER 2</text>
+      <text x="670" y="316" fill="#fff" font-size="13" font-weight="700" font-family="Geist,sans-serif" text-anchor="middle">Full build</text>
+      <text x="670" y="333" style="fill:color-mix(in srgb, var(--g-primary) 32%, transparent)" font-size="10" font-family="Geist,sans-serif" text-anchor="middle">New prototype from scratch</text>
 
       <!-- ── TIER 3 (cx=890) ── -->
       <rect x="796" y="272" width="188" height="72" rx="14" fill="rgba(245,166,35,.07)" stroke="rgba(245,166,35,.3)" stroke-width="1.5"/>
-      <text x="890" y="295" fill="#F5A623" font-size="9.5" font-weight="800" font-family="Inter,sans-serif" text-anchor="middle" letter-spacing=".12em">TIER 3</text>
-      <text x="890" y="316" fill="#fff" font-size="13" font-weight="700" font-family="Inter,sans-serif" text-anchor="middle">Design system</text>
-      <text x="890" y="333" fill="rgba(255,255,255,.32)" font-size="10" font-family="Inter,sans-serif" text-anchor="middle">Shared component or token</text>
+      <text x="890" y="295" fill="#F5A623" font-size="9.5" font-weight="800" font-family="Geist,sans-serif" text-anchor="middle" letter-spacing=".12em">TIER 3</text>
+      <text x="890" y="316" fill="#fff" font-size="13" font-weight="700" font-family="Geist,sans-serif" text-anchor="middle">Design system</text>
+      <text x="890" y="333" style="fill:color-mix(in srgb, var(--g-primary) 32%, transparent)" font-size="10" font-family="Geist,sans-serif" text-anchor="middle">Shared component or token</text>
 
       <!-- ════ GUIDELINE CONNECTIONS (tier bottoms y=344 → guide tops y=384)
            G centers: G1=80 G2=215 G3=345 G4=480 G5=610 G6=745
            T0→G1 (1 faint) · T1→G2,G3,G4 · T2→all · T3→G5,G6
       ════ -->
-      <path d="M 110 344 L 80  384" stroke="rgba(255,255,255,.13)" stroke-width="1.2" fill="none"/>
+      <path d="M 110 344 L 80  384" style="stroke:color-mix(in srgb, var(--g-primary) 13%, transparent)" stroke-width="1.2" fill="none"/>
 
       <path d="M 315 344 Q 275 364 215 384" stroke="rgba(6,191,127,.3)"   stroke-width="1.3" fill="none"/>
       <path d="M 330 344 L 345 384"         stroke="rgba(6,191,127,.3)"   stroke-width="1.3" fill="none"/>
@@ -383,37 +387,37 @@ code { font-family:var(--mono);font-size:12px;font-weight:500;color:var(--blue-5
       <path d="M 890 344 L 745 384"          stroke="rgba(245,166,35,.3)" stroke-width="1.3" fill="none"/>
 
       <!-- ── GUIDELINE PILLS (y=384, h=36) ── -->
-      <rect x="26"  y="384" width="108" height="36" rx="10" fill="rgba(255,255,255,.045)" stroke="rgba(255,255,255,.1)" stroke-width="1"/>
-      <text x="80"  y="407" fill="rgba(255,255,255,.5)" font-size="10" font-weight="700" font-family="Inter,sans-serif" text-anchor="middle">Components</text>
+      <rect x="26"  y="384" width="108" height="36" rx="10" stroke-width="1" style="fill:color-mix(in srgb, var(--g-primary) 4.5%, transparent);stroke:color-mix(in srgb, var(--g-primary) 10%, transparent)"/>
+      <text x="80"  y="407" style="fill:color-mix(in srgb, var(--g-primary) 50%, transparent)" font-size="10" font-weight="700" font-family="Geist,sans-serif" text-anchor="middle">Components</text>
 
-      <rect x="159" y="384" width="112" height="36" rx="10" fill="rgba(255,255,255,.045)" stroke="rgba(255,255,255,.1)" stroke-width="1"/>
-      <text x="215" y="407" fill="rgba(255,255,255,.5)" font-size="10" font-weight="700" font-family="Inter,sans-serif" text-anchor="middle">Layout</text>
+      <rect x="159" y="384" width="112" height="36" rx="10" stroke-width="1" style="fill:color-mix(in srgb, var(--g-primary) 4.5%, transparent);stroke:color-mix(in srgb, var(--g-primary) 10%, transparent)"/>
+      <text x="215" y="407" style="fill:color-mix(in srgb, var(--g-primary) 50%, transparent)" font-size="10" font-weight="700" font-family="Geist,sans-serif" text-anchor="middle">Layout</text>
 
-      <rect x="292" y="384" width="106" height="36" rx="10" fill="rgba(255,255,255,.045)" stroke="rgba(255,255,255,.1)" stroke-width="1"/>
-      <text x="345" y="407" fill="rgba(255,255,255,.5)" font-size="10" font-weight="700" font-family="Inter,sans-serif" text-anchor="middle">Modals</text>
+      <rect x="292" y="384" width="106" height="36" rx="10" stroke-width="1" style="fill:color-mix(in srgb, var(--g-primary) 4.5%, transparent);stroke:color-mix(in srgb, var(--g-primary) 10%, transparent)"/>
+      <text x="345" y="407" style="fill:color-mix(in srgb, var(--g-primary) 50%, transparent)" font-size="10" font-weight="700" font-family="Geist,sans-serif" text-anchor="middle">Modals</text>
 
-      <rect x="425" y="384" width="110" height="36" rx="10" fill="rgba(255,255,255,.045)" stroke="rgba(255,255,255,.1)" stroke-width="1"/>
-      <text x="480" y="407" fill="rgba(255,255,255,.5)" font-size="10" font-weight="700" font-family="Inter,sans-serif" text-anchor="middle">Widgets</text>
+      <rect x="425" y="384" width="110" height="36" rx="10" stroke-width="1" style="fill:color-mix(in srgb, var(--g-primary) 4.5%, transparent);stroke:color-mix(in srgb, var(--g-primary) 10%, transparent)"/>
+      <text x="480" y="407" style="fill:color-mix(in srgb, var(--g-primary) 50%, transparent)" font-size="10" font-weight="700" font-family="Geist,sans-serif" text-anchor="middle">Widgets</text>
 
-      <rect x="558" y="384" width="104" height="36" rx="10" fill="rgba(255,255,255,.045)" stroke="rgba(255,255,255,.1)" stroke-width="1"/>
-      <text x="610" y="407" fill="rgba(255,255,255,.5)" font-size="10" font-weight="700" font-family="Inter,sans-serif" text-anchor="middle">Figma map</text>
+      <rect x="558" y="384" width="104" height="36" rx="10" stroke-width="1" style="fill:color-mix(in srgb, var(--g-primary) 4.5%, transparent);stroke:color-mix(in srgb, var(--g-primary) 10%, transparent)"/>
+      <text x="610" y="407" style="fill:color-mix(in srgb, var(--g-primary) 50%, transparent)" font-size="10" font-weight="700" font-family="Geist,sans-serif" text-anchor="middle">Figma map</text>
 
-      <rect x="691" y="384" width="108" height="36" rx="10" fill="rgba(255,255,255,.045)" stroke="rgba(255,255,255,.1)" stroke-width="1"/>
-      <text x="745" y="407" fill="rgba(255,255,255,.5)" font-size="10" font-weight="700" font-family="Inter,sans-serif" text-anchor="middle">Design system</text>
+      <rect x="691" y="384" width="108" height="36" rx="10" stroke-width="1" style="fill:color-mix(in srgb, var(--g-primary) 4.5%, transparent);stroke:color-mix(in srgb, var(--g-primary) 10%, transparent)"/>
+      <text x="745" y="407" style="fill:color-mix(in srgb, var(--g-primary) 50%, transparent)" font-size="10" font-weight="700" font-family="Geist,sans-serif" text-anchor="middle">Design system</text>
 
-      <text x="840" y="407" fill="rgba(255,255,255,.28)" font-size="15" font-weight="700" font-family="Inter,sans-serif" text-anchor="middle">···</text>
+      <text x="840" y="407" style="fill:color-mix(in srgb, var(--g-primary) 28%, transparent)" font-size="15" font-weight="700" font-family="Geist,sans-serif" text-anchor="middle">···</text>
 
       <!-- ── converge → output (guide bottoms y=420, output y=448) ── -->
-      <path d="M 80  420 Q  80 436 460 448" stroke="rgba(255,255,255,.05)" stroke-width="1" fill="none"/>
-      <path d="M 215 420 Q 215 436 472 448" stroke="rgba(255,255,255,.05)" stroke-width="1" fill="none"/>
-      <path d="M 345 420 Q 380 436 486 448" stroke="rgba(255,255,255,.05)" stroke-width="1" fill="none"/>
-      <path d="M 480 420 Q 480 436 500 448" stroke="rgba(255,255,255,.05)" stroke-width="1" fill="none"/>
-      <path d="M 610 420 Q 568 436 516 448" stroke="rgba(255,255,255,.05)" stroke-width="1" fill="none"/>
-      <path d="M 745 420 Q 684 436 540 448" stroke="rgba(255,255,255,.05)" stroke-width="1" fill="none"/>
+      <path d="M 80  420 Q  80 436 460 448" style="stroke:color-mix(in srgb, var(--g-primary) 5%, transparent)" stroke-width="1" fill="none"/>
+      <path d="M 215 420 Q 215 436 472 448" style="stroke:color-mix(in srgb, var(--g-primary) 5%, transparent)" stroke-width="1" fill="none"/>
+      <path d="M 345 420 Q 380 436 486 448" style="stroke:color-mix(in srgb, var(--g-primary) 5%, transparent)" stroke-width="1" fill="none"/>
+      <path d="M 480 420 Q 480 436 500 448" style="stroke:color-mix(in srgb, var(--g-primary) 5%, transparent)" stroke-width="1" fill="none"/>
+      <path d="M 610 420 Q 568 436 516 448" style="stroke:color-mix(in srgb, var(--g-primary) 5%, transparent)" stroke-width="1" fill="none"/>
+      <path d="M 745 420 Q 684 436 540 448" style="stroke:color-mix(in srgb, var(--g-primary) 5%, transparent)" stroke-width="1" fill="none"/>
 
       <!-- ── OUTPUT ── -->
       <rect x="300" y="448" width="400" height="32" rx="11" fill="rgba(6,191,127,.09)" stroke="rgba(6,191,127,.25)" stroke-width="1.5"/>
-      <text x="500" y="469" fill="rgba(6,191,127,.85)" font-size="10.5" font-weight="700" font-family="Inter,sans-serif" text-anchor="middle" letter-spacing=".07em">LOAD GUIDELINES → GENERATE CODE</text>
+      <text x="500" y="469" fill="rgba(6,191,127,.85)" font-size="10.5" font-weight="700" font-family="Geist,sans-serif" text-anchor="middle" letter-spacing=".07em">LOAD GUIDELINES → GENERATE CODE</text>
 
     </svg>
   </div>
@@ -455,8 +459,8 @@ code { font-family:var(--mono);font-size:12px;font-weight:500;color:var(--blue-5
       <div class="routing-visual">
         <svg viewBox="0 0 320 310" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block">
           <!-- Input node -->
-          <rect x="90" y="10" width="140" height="40" rx="12" fill="rgba(255,255,255,.06)" stroke="rgba(255,255,255,.14)" stroke-width="1.5"/>
-          <text x="160" y="35" fill="rgba(255,255,255,.7)" font-size="12" font-weight="700" font-family="Inter,sans-serif" text-anchor="middle">Your prompt</text>
+          <rect x="90" y="10" width="140" height="40" rx="12" stroke-width="1.5" style="fill:color-mix(in srgb, var(--g-primary) 6%, transparent);stroke:color-mix(in srgb, var(--g-primary) 14%, transparent)"/>
+          <text x="160" y="35" style="fill:color-mix(in srgb, var(--g-primary) 70%, transparent)" font-size="12" font-weight="700" font-family="Geist,sans-serif" text-anchor="middle">Your prompt</text>
 
           <!-- Arrow → classifier -->
           <path d="M 160 50 L 160 76" stroke="rgba(123,97,255,.4)" stroke-width="1.5" stroke-dasharray="4 3"/>
@@ -464,8 +468,8 @@ code { font-family:var(--mono);font-size:12px;font-weight:500;color:var(--blue-5
 
           <!-- Token Classifier node -->
           <rect x="55" y="84" width="210" height="48" rx="14" fill="rgba(123,97,255,.1)" stroke="rgba(123,97,255,.45)" stroke-width="1.5"/>
-          <text x="160" y="104" fill="#9D8FFF" font-size="10" font-weight="800" font-family="Inter,sans-serif" text-anchor="middle" letter-spacing=".1em">TOKEN CLASSIFIER</text>
-          <text x="160" y="121" fill="rgba(255,255,255,.35)" font-size="10" font-family="Inter,sans-serif" text-anchor="middle">detects intent and task scope</text>
+          <text x="160" y="104" fill="#9D8FFF" font-size="10" font-weight="800" font-family="Geist,sans-serif" text-anchor="middle" letter-spacing=".1em">TOKEN CLASSIFIER</text>
+          <text x="160" y="121" style="fill:color-mix(in srgb, var(--g-primary) 35%, transparent)" font-size="10" font-family="Geist,sans-serif" text-anchor="middle">detects intent and task scope</text>
 
           <!-- Arrow → orchestrator -->
           <path d="M 160 132 L 160 158" stroke="rgba(39,112,239,.4)" stroke-width="1.5" stroke-dasharray="4 3"/>
@@ -473,37 +477,37 @@ code { font-family:var(--mono);font-size:12px;font-weight:500;color:var(--blue-5
 
           <!-- Orchestrator node -->
           <rect x="55" y="166" width="210" height="48" rx="14" fill="rgba(39,112,239,.1)" stroke="rgba(39,112,239,.45)" stroke-width="1.5"/>
-          <text x="160" y="186" fill="#71A1F4" font-size="10" font-weight="800" font-family="Inter,sans-serif" text-anchor="middle" letter-spacing=".1em">ORCHESTRATOR</text>
-          <text x="160" y="203" fill="rgba(255,255,255,.35)" font-size="10" font-family="Inter,sans-serif" text-anchor="middle">routes to the right tier + guidelines</text>
+          <text x="160" y="186" fill="#71A1F4" font-size="10" font-weight="800" font-family="Geist,sans-serif" text-anchor="middle" letter-spacing=".1em">ORCHESTRATOR</text>
+          <text x="160" y="203" style="fill:color-mix(in srgb, var(--g-primary) 35%, transparent)" font-size="10" font-family="Geist,sans-serif" text-anchor="middle">routes to the right tier + guidelines</text>
 
           <!-- Branching lines → tiers -->
-          <path d="M 95 214 Q 85 234 60 246" stroke="rgba(255,255,255,.2)" stroke-width="1.5" fill="none"/>
+          <path d="M 95 214 Q 85 234 60 246" style="stroke:color-mix(in srgb, var(--g-primary) 20%, transparent)" stroke-width="1.5" fill="none"/>
           <path d="M 130 214 Q 120 234 120 246" stroke="rgba(6,191,127,.35)" stroke-width="1.5" fill="none"/>
           <path d="M 190 214 Q 200 234 200 246" stroke="rgba(39,112,239,.35)" stroke-width="1.5" fill="none"/>
           <path d="M 225 214 Q 235 234 260 246" stroke="rgba(245,166,35,.35)" stroke-width="1.5" fill="none"/>
 
           <!-- Tier pills -->
-          <rect x="20" y="246" width="72" height="24" rx="8" fill="rgba(255,255,255,.05)" stroke="rgba(255,255,255,.15)" stroke-width="1"/>
-          <text x="56" y="263" fill="rgba(255,255,255,.5)" font-size="9" font-weight="800" font-family="Inter,sans-serif" text-anchor="middle">TIER 0</text>
+          <rect x="20" y="246" width="72" height="24" rx="8" stroke-width="1" style="fill:color-mix(in srgb, var(--g-primary) 5%, transparent);stroke:color-mix(in srgb, var(--g-primary) 15%, transparent)"/>
+          <text x="56" y="263" style="fill:color-mix(in srgb, var(--g-primary) 50%, transparent)" font-size="9" font-weight="800" font-family="Geist,sans-serif" text-anchor="middle">TIER 0</text>
 
           <rect x="84" y="246" width="72" height="24" rx="8" fill="rgba(6,191,127,.07)" stroke="rgba(6,191,127,.3)" stroke-width="1"/>
-          <text x="120" y="263" fill="#06BF7F" font-size="9" font-weight="800" font-family="Inter,sans-serif" text-anchor="middle">TIER 1</text>
+          <text x="120" y="263" fill="#06BF7F" font-size="9" font-weight="800" font-family="Geist,sans-serif" text-anchor="middle">TIER 1</text>
 
           <rect x="164" y="246" width="72" height="24" rx="8" fill="rgba(39,112,239,.07)" stroke="rgba(39,112,239,.3)" stroke-width="1"/>
-          <text x="200" y="263" fill="#71A1F4" font-size="9" font-weight="800" font-family="Inter,sans-serif" text-anchor="middle">TIER 2</text>
+          <text x="200" y="263" fill="#71A1F4" font-size="9" font-weight="800" font-family="Geist,sans-serif" text-anchor="middle">TIER 2</text>
 
           <rect x="228" y="246" width="72" height="24" rx="8" fill="rgba(245,166,35,.07)" stroke="rgba(245,166,35,.3)" stroke-width="1"/>
-          <text x="264" y="263" fill="#F5A623" font-size="9" font-weight="800" font-family="Inter,sans-serif" text-anchor="middle">TIER 3</text>
+          <text x="264" y="263" fill="#F5A623" font-size="9" font-weight="800" font-family="Geist,sans-serif" text-anchor="middle">TIER 3</text>
 
           <!-- Converge → output -->
-          <path d="M 56 270 Q 56 284 140 284" stroke="rgba(255,255,255,.07)" stroke-width="1" fill="none"/>
-          <path d="M 120 270 Q 120 284 150 284" stroke="rgba(255,255,255,.07)" stroke-width="1" fill="none"/>
-          <path d="M 200 270 Q 200 284 175 284" stroke="rgba(255,255,255,.07)" stroke-width="1" fill="none"/>
-          <path d="M 264 270 Q 264 284 185 284" stroke="rgba(255,255,255,.07)" stroke-width="1" fill="none"/>
+          <path d="M 56 270 Q 56 284 140 284" style="stroke:color-mix(in srgb, var(--g-primary) 7%, transparent)" stroke-width="1" fill="none"/>
+          <path d="M 120 270 Q 120 284 150 284" style="stroke:color-mix(in srgb, var(--g-primary) 7%, transparent)" stroke-width="1" fill="none"/>
+          <path d="M 200 270 Q 200 284 175 284" style="stroke:color-mix(in srgb, var(--g-primary) 7%, transparent)" stroke-width="1" fill="none"/>
+          <path d="M 264 270 Q 264 284 185 284" style="stroke:color-mix(in srgb, var(--g-primary) 7%, transparent)" stroke-width="1" fill="none"/>
 
           <!-- Output node -->
           <rect x="80" y="284" width="160" height="26" rx="9" fill="rgba(6,191,127,.08)" stroke="rgba(6,191,127,.22)" stroke-width="1.5"/>
-          <text x="160" y="301" fill="rgba(6,191,127,.8)" font-size="10" font-weight="700" font-family="Inter,sans-serif" text-anchor="middle" letter-spacing=".05em">GENERATED CODE</text>
+          <text x="160" y="301" fill="rgba(6,191,127,.8)" font-size="10" font-weight="700" font-family="Geist,sans-serif" text-anchor="middle" letter-spacing=".05em">GENERATED CODE</text>
         </svg>
       </div>
     </div>
@@ -567,19 +571,19 @@ code { font-family:var(--mono);font-size:12px;font-weight:500;color:var(--blue-5
     <div class="reuse-diagram">
       <svg viewBox="0 0 700 120" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block">
         <rect x="20" y="20" width="200" height="80" rx="16" fill="rgba(6,191,127,.06)" stroke="rgba(6,191,127,.25)" stroke-width="1.5"/>
-        <text x="120" y="50" fill="#06BF7F" font-size="11" font-weight="700" font-family="Inter,sans-serif" text-anchor="middle" letter-spacing=".06em">SHARED LIBRARY</text>
-        <text x="120" y="68" fill="rgba(255,255,255,.35)" font-size="11" font-family="Inter,sans-serif" text-anchor="middle">73+ components</text>
-        <text x="120" y="84" fill="rgba(255,255,255,.25)" font-size="10" font-family="Inter,sans-serif" text-anchor="middle">src/components/</text>
-        <path d="M 220 60 L 310 60" stroke="rgba(255,255,255,.15)" stroke-width="1.5" stroke-dasharray="4 3"/>
-        <text x="265" y="50" fill="rgba(255,255,255,.25)" font-size="10" font-weight="600" font-family="Inter,sans-serif" text-anchor="middle">imports</text>
+        <text x="120" y="50" fill="#06BF7F" font-size="11" font-weight="700" font-family="Geist,sans-serif" text-anchor="middle" letter-spacing=".06em">SHARED LIBRARY</text>
+        <text x="120" y="68" style="fill:color-mix(in srgb, var(--g-primary) 35%, transparent)" font-size="11" font-family="Geist,sans-serif" text-anchor="middle">73+ components</text>
+        <text x="120" y="84" style="fill:color-mix(in srgb, var(--g-primary) 25%, transparent)" font-size="10" font-family="Geist,sans-serif" text-anchor="middle">src/components/</text>
+        <path d="M 220 60 L 310 60" style="stroke:color-mix(in srgb, var(--g-primary) 15%, transparent)" stroke-width="1.5" stroke-dasharray="4 3"/>
+        <text x="265" y="50" style="fill:color-mix(in srgb, var(--g-primary) 25%, transparent)" font-size="10" font-weight="600" font-family="Geist,sans-serif" text-anchor="middle">imports</text>
         <rect x="310" y="20" width="200" height="80" rx="16" fill="rgba(39,112,239,.06)" stroke="rgba(39,112,239,.25)" stroke-width="1.5"/>
-        <text x="410" y="50" fill="#71A1F4" font-size="11" font-weight="700" font-family="Inter,sans-serif" text-anchor="middle" letter-spacing=".06em">YOUR PROTOTYPE</text>
-        <text x="410" y="68" fill="rgba(255,255,255,.35)" font-size="11" font-family="Inter,sans-serif" text-anchor="middle">Uses shared + local</text>
-        <text x="410" y="84" fill="rgba(255,255,255,.25)" font-size="10" font-family="Inter,sans-serif" text-anchor="middle">src/prototypes/Name/</text>
-        <path d="M 510 60 L 570 60" stroke="rgba(255,255,255,.1)" stroke-width="1.5" stroke-dasharray="4 3"/>
+        <text x="410" y="50" fill="#71A1F4" font-size="11" font-weight="700" font-family="Geist,sans-serif" text-anchor="middle" letter-spacing=".06em">YOUR PROTOTYPE</text>
+        <text x="410" y="68" style="fill:color-mix(in srgb, var(--g-primary) 35%, transparent)" font-size="11" font-family="Geist,sans-serif" text-anchor="middle">Uses shared + local</text>
+        <text x="410" y="84" style="fill:color-mix(in srgb, var(--g-primary) 25%, transparent)" font-size="10" font-family="Geist,sans-serif" text-anchor="middle">src/prototypes/Name/</text>
+        <path d="M 510 60 L 570 60" style="stroke:color-mix(in srgb, var(--g-primary) 10%, transparent)" stroke-width="1.5" stroke-dasharray="4 3"/>
         <rect x="570" y="30" width="120" height="60" rx="12" fill="rgba(245,166,35,.06)" stroke="rgba(245,166,35,.2)" stroke-width="1"/>
-        <text x="630" y="55" fill="#F5A623" font-size="10" font-weight="700" font-family="Inter,sans-serif" text-anchor="middle" letter-spacing=".06em">LOCAL ONLY</text>
-        <text x="630" y="72" fill="rgba(255,255,255,.3)" font-size="10" font-family="Inter,sans-serif" text-anchor="middle">components/</text>
+        <text x="630" y="55" fill="#F5A623" font-size="10" font-weight="700" font-family="Geist,sans-serif" text-anchor="middle" letter-spacing=".06em">LOCAL ONLY</text>
+        <text x="630" y="72" style="fill:color-mix(in srgb, var(--g-primary) 30%, transparent)" font-size="10" font-family="Geist,sans-serif" text-anchor="middle">components/</text>
       </svg>
     </div>
 

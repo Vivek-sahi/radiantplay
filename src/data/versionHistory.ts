@@ -28,6 +28,19 @@ export interface VersionEntry {
  */
 export const versionHistory: VersionEntry[] = [
   {
+    version: '26.10.3g',
+    date: '2026-10-14',
+    type: 'patch',
+    changes: [
+      { type: 'modified', group: 'Tooling', component: 'App frame', description: 'The playground and the design system share one frame: a left pane with the Radiant Play logo, a Playground / Design system switcher, and content on a raised panel; light mode separates surfaces by fill' },
+      { type: 'added', group: 'Tooling', component: 'Help menu', description: 'Help at the bottom of both left panes: What\'s new with the version, and the three guides in a new tab' },
+      { type: 'modified', group: 'Tooling', component: 'Design system layout', description: 'The panel scrolls on its own and section titles no longer jump when a page opens' },
+      { type: 'modified', group: 'Docs', component: 'Guides', description: 'Getting started, How it works and Claude setup follow light and dark mode with Radiant tokens, Geist and the Radiance Home pattern' },
+      { type: 'modified', group: 'Components', component: 'ActionMenu', description: 'Closes once an item is chosen; Escape and Tab always close it (Sneharsh Damani)' },
+      { type: 'modified', group: 'Components', component: 'Tour', description: 'Follows scrolling inside a container, not only the window' },
+    ],
+  },
+  {
     version: '26.10.3f',
     date: '2026-10-13',
     type: 'patch',

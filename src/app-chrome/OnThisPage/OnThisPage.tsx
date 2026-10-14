@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import styles from './OnThisPage.module.css';
 
@@ -14,7 +14,9 @@ const SHOW_AFTER = 240; // px scrolled before it appears
 
 const slug = (t: string) => t.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'section';
 
-function collect(root: HTMLElement): Heading[] {
+// Give the section headings the shared style. Runs before the browser paints (layout effect and
+// MutationObserver callbacks), so a heading never shows its page's own style first and then jumps.
+function styleHeadings(root: HTMLElement): HTMLElement[] {
   const pick = (sel: string) => [...root.querySelectorAll<HTMLElement>(sel)].filter((h) => !h.closest('[data-demo], [data-no-toc]') && h.textContent?.trim());
   const h2 = pick('h2');
   const h3 = pick('h3');
@@ -23,6 +25,11 @@ function collect(root: HTMLElement): Heading[] {
   const list = h2.length >= 2 ? h2 : h3.length >= 3 && h3.length <= 12 ? h3 : [];
   root.querySelectorAll(`.${styles.sectionHeading}`).forEach((el) => el.classList.remove(styles.sectionHeading));
   list.forEach((el) => el.classList.add(styles.sectionHeading));
+  return list;
+}
+
+function collect(root: HTMLElement): Heading[] {
+  const list = styleHeadings(root);
   const used = new Set<string>();
   return list.map((el) => {
     const label = el.textContent!.trim();
@@ -40,9 +47,11 @@ export const onThisPageFrame = styles.frame;
 
 export const OnThisPage: React.FC<{
   contentRef: React.RefObject<HTMLElement | null>;
+  /** The element that scrolls the page, when it isn't the window (a layout's content panel) */
+  scrollRef?: React.RefObject<HTMLElement | null>;
   /** Called with true when the page has a list, so the layout can keep room for it */
   onChange?: (hasList: boolean) => void;
-}> = ({ contentRef, onChange }) => {
+}> = ({ contentRef, scrollRef, onChange }) => {
   const { pathname } = useLocation();
   const [headings, setHeadings] = useState<Heading[]>([]);
   const [active, setActive] = useState<string | null>(null);
@@ -50,13 +59,15 @@ export const OnThisPage: React.FC<{
   const [scrolled, setScrolled] = useState(false);
 
   // Read the headings after each page renders (pages can render late, so watch for changes briefly).
-  useEffect(() => {
+  // Styling happens at once, before paint; building the list waits for the page to settle.
+  useLayoutEffect(() => {
     const root = contentRef.current;
     if (!root) return;
+    styleHeadings(root);
     let timer = 0;
     const read = () => setHeadings(collect(root));
     timer = window.setTimeout(read, 150);
-    const mo = new MutationObserver(() => { window.clearTimeout(timer); timer = window.setTimeout(read, 250); });
+    const mo = new MutationObserver(() => { styleHeadings(root); window.clearTimeout(timer); timer = window.setTimeout(read, 250); });
     mo.observe(root, { childList: true, subtree: true });
     const stop = window.setTimeout(() => mo.disconnect(), 3000);
     return () => { mo.disconnect(); window.clearTimeout(timer); window.clearTimeout(stop); };
@@ -67,18 +78,20 @@ export const OnThisPage: React.FC<{
 
   // Place it beside the content when there is room, and show it once the reader scrolls.
   useEffect(() => {
+    const scroller: HTMLElement | Window = scrollRef?.current ?? window;
+    const scrollTop = () => (scroller instanceof Window ? scroller.scrollY : scroller.scrollTop);
     const place = () => {
       const root = contentRef.current;
       if (!root) return;
       const right = root.getBoundingClientRect().right;
       setLeft(window.innerWidth - right >= ROOM ? right : null);
-      setScrolled(window.scrollY > SHOW_AFTER);
+      setScrolled(scrollTop() > SHOW_AFTER);
     };
     place();
     window.addEventListener('resize', place);
-    window.addEventListener('scroll', place, { passive: true });
-    return () => { window.removeEventListener('resize', place); window.removeEventListener('scroll', place); };
-  }, [contentRef, pathname]);
+    scroller.addEventListener('scroll', place, { passive: true });
+    return () => { window.removeEventListener('resize', place); scroller.removeEventListener('scroll', place); };
+  }, [contentRef, scrollRef, pathname]);
 
   // Highlight the section being read: the last heading above the upper third of the window.
   useEffect(() => {
@@ -90,9 +103,10 @@ export const OnThisPage: React.FC<{
       setActive(current);
     };
     update();
-    window.addEventListener('scroll', update, { passive: true });
-    return () => window.removeEventListener('scroll', update);
-  }, [headings]);
+    const scroller: HTMLElement | Window = scrollRef?.current ?? window;
+    scroller.addEventListener('scroll', update, { passive: true });
+    return () => scroller.removeEventListener('scroll', update);
+  }, [headings, scrollRef]);
 
   if (!hasList || left === null) return null;
   const shown = scrolled;

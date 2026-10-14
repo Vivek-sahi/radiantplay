@@ -1,10 +1,10 @@
 /* Fixed in the space to the right of the design system content; placed by OnThisPage.tsx */
 .rail {
   position: fixed;
-  top: var(--spacing-16);
+  top: var(--spacing-20); /* below the layout's top row */
   z-index: 5;
   width: 180px;
-  max-height: calc(100vh - var(--spacing-20));
+  max-height: calc(100vh - var(--spacing-24));
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -56,7 +56,7 @@
 
 /* Headings the rail links to land below the top of the window */
 .target {
-  scroll-margin-top: var(--spacing-20);
+  scroll-margin-top: var(--spacing-8);
 }
 
 @media (prefers-reduced-motion: reduce) {

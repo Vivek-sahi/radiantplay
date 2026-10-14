@@ -1,31 +1,36 @@
 <!DOCTYPE html>
 <html lang="en">
+<!-- Loads /guides-theme.css and /guides-theme.js from the app's root, so open it through the running app
+     (localhost:5173/cursor-to-claude-setup.html or the deployed site). Opened as a file or in a repo preview
+     it has no colours. The copy in docs/collaboration/ is kept byte-identical to the one in public/. -->
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Claude setup and skills — RadiantPlay</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/guides-theme.css" />
+  <script src="/guides-theme.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+    /* Colours come from the shared guide theme (/guides-theme.css), so the page follows the app's light and
+       dark mode. Status colours mix with the text colour so they stay readable on both. */
     :root {
-      --blue: #2770EF;
-      --blue-light: #EBF2FF;
-      --blue-mid: #C3D9FF;
-      --green: #16A34A;
-      --green-light: #DCFCE7;
-      --amber: #D97706;
-      --amber-light: #FEF3C7;
-      --red: #DC2626;
-      --red-light: #FEE2E2;
-      --text-primary: #111827;
-      --text-secondary: #6B7280;
-      --text-muted: #9CA3AF;
-      --bg: #F9FAFB;
-      --surface: #FFFFFF;
-      --border: #E5E7EB;
-      --border-strong: #D1D5DB;
+      --blue: var(--g-brand);
+      --blue-light: color-mix(in srgb, var(--g-brand) 10%, var(--g-base));
+      --blue-mid: color-mix(in srgb, var(--g-brand) 28%, var(--g-base));
+      --green: color-mix(in srgb, var(--g-success) 70%, var(--g-primary));
+      --green-light: color-mix(in srgb, var(--g-success) 14%, var(--g-base));
+      --amber: color-mix(in srgb, var(--g-warning) 50%, var(--g-primary));
+      --amber-light: color-mix(in srgb, var(--g-warning) 16%, var(--g-base));
+      --red: color-mix(in srgb, var(--g-failure) 82%, var(--g-primary));
+      --red-light: color-mix(in srgb, var(--g-failure) 12%, var(--g-base));
+      --text-primary: var(--g-primary);
+      --text-secondary: var(--g-secondary);
+      --text-muted: color-mix(in srgb, var(--g-secondary) 80%, var(--g-base));
+      --bg: var(--g-sunken);
+      --surface: var(--g-base);
+      --border: var(--g-subtle);
+      --border-strong: var(--g-border);
       --code-bg: #0D1117;
       --code-text: #E6EDF3;
       --sidebar-width: 240px;
@@ -36,7 +41,7 @@
     html { scroll-behavior: smooth; }
 
     body {
-      font-family: 'Inter', -apple-system, sans-serif;
+      font-family: var(--g-font);
       background: var(--bg);
       color: var(--text-primary);
       display: flex;
@@ -85,7 +90,7 @@
       color: #ffffff;
       box-shadow: 0 2px 6px rgba(39, 112, 239, 0.3);
       flex-shrink: 0;
-      font-family: 'Inter', -apple-system, sans-serif;
+      font-family: var(--g-font);
       letter-spacing: -0.5px;
     }
 
@@ -392,7 +397,7 @@
       color: rgba(255,255,255,0.4);
       letter-spacing: 0.06em;
       text-transform: uppercase;
-      font-family: 'JetBrains Mono', monospace;
+      font-family: var(--g-mono);
     }
 
     .terminal-dots {
@@ -411,7 +416,7 @@
 
     .code-block pre {
       padding: 18px 20px;
-      font-family: 'JetBrains Mono', monospace;
+      font-family: var(--g-mono);
       font-size: 13.5px;
       color: var(--code-text);
       line-height: 1.7;
@@ -436,10 +441,10 @@
       margin: 16px 0;
     }
 
-    .callout.info { background: var(--blue-light); border: 1px solid var(--blue-mid); color: #1D4ED8; }
-    .callout.warning { background: var(--amber-light); border: 1px solid #FDE68A; color: #92400E; }
-    .callout.success { background: var(--green-light); border: 1px solid #86EFAC; color: #14532D; }
-    .callout.danger { background: var(--red-light); border: 1px solid #FECACA; color: #991B1B; }
+    .callout.info { background: var(--blue-light); border: 1px solid var(--blue-mid); color: var(--blue); }
+    .callout.warning { background: var(--amber-light); border: 1px solid color-mix(in srgb, var(--g-warning) 40%, var(--g-base)); color: var(--amber); }
+    .callout.success { background: var(--green-light); border: 1px solid color-mix(in srgb, var(--g-success) 40%, var(--g-base)); color: var(--green); }
+    .callout.danger { background: var(--red-light); border: 1px solid color-mix(in srgb, var(--g-failure) 30%, var(--g-base)); color: var(--red); }
 
     .callout-icon { font-size: 15px; flex-shrink: 0; margin-top: 1px; }
 
@@ -471,10 +476,10 @@
     }
 
     .trouble-table td:first-child {
-      font-family: 'JetBrains Mono', monospace;
+      font-family: var(--g-mono);
       font-size: 12.5px;
-      background: #FFF8F0;
-      color: #C2410C;
+      background: var(--amber-light);
+      color: var(--amber);
       font-weight: 500;
       width: 38%;
     }
@@ -482,7 +487,7 @@
     .trouble-table td:last-child { color: var(--text-primary); }
 
     .trouble-table tr:hover td { background: var(--bg); }
-    .trouble-table tr:hover td:first-child { background: #FFF1E6; }
+    .trouble-table tr:hover td:first-child { background: color-mix(in srgb, var(--g-warning) 24%, var(--g-base)); }
 
     /* ── Skills section ── */
     .skills-grid {
@@ -517,7 +522,7 @@
     }
 
     .skill-card .command {
-      font-family: 'JetBrains Mono', monospace;
+      font-family: var(--g-mono);
       font-size: 13px;
       font-weight: 600;
       color: var(--blue);
@@ -565,9 +570,9 @@
       white-space: nowrap;
     }
 
-    .skill-tag.new { background: #DCFCE7; color: #15803D; }
+    .skill-tag.new { background: var(--green-light); color: var(--green); }
     .skill-tag.core { background: var(--blue-light); color: var(--blue); }
-    .skill-tag.sync { background: #FEF3C7; color: #92400E; }
+    .skill-tag.sync { background: var(--amber-light); color: var(--amber); }
 
     /* ── Quick ref card ── */
     .ref-grid {
@@ -594,7 +599,7 @@
     }
 
     .ref-row code {
-      font-family: 'JetBrains Mono', monospace;
+      font-family: var(--g-mono);
       font-size: 12.5px;
       color: var(--text-primary);
       background: var(--bg);
@@ -619,7 +624,7 @@
     }
 
     .compare-table th:first-child {
-      background: #F3F4F6;
+      background: var(--bg);
       color: var(--text-secondary);
       border: 1px solid var(--border);
       border-radius: var(--radius-sm) 0 0 0;
@@ -643,7 +648,7 @@
     .compare-table td:last-child {
       background: var(--blue-light);
       border-color: var(--blue-mid);
-      color: #1D4ED8;
+      color: var(--blue);
       font-weight: 500;
     }
 
@@ -656,13 +661,13 @@
 
     /* ── Inline code ── */
     code {
-      font-family: 'JetBrains Mono', monospace;
+      font-family: var(--g-mono);
       font-size: 13px;
       background: var(--bg);
       border: 1px solid var(--border);
       padding: 1px 6px;
       border-radius: 4px;
-      color: #C7254E;
+      color: var(--red);
     }
 
     p { font-size: 14.5px; color: var(--text-secondary); line-height: 1.7; margin-bottom: 12px; }
@@ -717,6 +722,9 @@
       border-radius: 20px;
       margin-bottom: 20px;
     }
+
+    /* Content above the shared Radiance wash (guides-theme.js) */
+    .main { position: relative; z-index: 1; }
   </style>
 </head>
 <body>
@@ -808,7 +816,7 @@
     <!-- Library update nudge -->
     <div style="background: var(--blue-light); border: 1px solid var(--blue-mid); border-radius: 10px; padding: 13px 18px; margin-bottom: 32px; display: flex; align-items: center; gap: 12px;">
       <span style="font-size: 15px; flex-shrink: 0;">↻</span>
-      <span style="font-size: 13.5px; color: #1D4ED8;">Already have the project on your machine? Open its folder in the Code tab and run <code>/rp-sync-upstream</code> to get the latest components and commands.</span>
+      <span style="font-size: 13.5px; color: var(--blue);">Already have the project on your machine? Open its folder in the Code tab and run <code>/rp-sync-upstream</code> to get the latest components and commands.</span>
       <a href="#library-sync" style="flex-shrink: 0; font-size: 13px; font-weight: 600; color: var(--blue); text-decoration: none; white-space: nowrap; margin-left: auto;">Update library →</a>
     </div>
 
