@@ -1,5 +1,11 @@
 # Changelog
 
+## 26.10.3h — 2026-10-14
+
+Security fix for a build tool dependency.
+
+- `source-map-js` 1.2.1 → 1.2.2 in `package-lock.json` (Dependabot alert 37, GHSA-68fv-2mgg-jv7q, high): a crafted source map could stall the build. Development only, pulled in by Vite through PostCSS; `package.json` is unchanged
+
 ## 26.10.3g — 2026-10-14
 
 The playground and the design system share one frame, the guides follow light and dark mode, and menus close after a choice.

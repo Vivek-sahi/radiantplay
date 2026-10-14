@@ -28,6 +28,14 @@ export interface VersionEntry {
  */
 export const versionHistory: VersionEntry[] = [
   {
+    version: '26.10.3h',
+    date: '2026-10-14',
+    type: 'patch',
+    changes: [
+      { type: 'modified', group: 'Tooling', component: 'Dependencies', description: 'source-map-js 1.2.2 fixes Dependabot alert 37 (high): a crafted source map could stall the build. Development only, through Vite and PostCSS' },
+    ],
+  },
+  {
     version: '26.10.3g',
     date: '2026-10-14',
     type: 'patch',
