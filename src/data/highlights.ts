@@ -1,9 +1,8 @@
 /**
  * Curated highlights — cherry-picked across releases. Newest first within each group.
  *
- * Visibility rule: items from the last 60 days, OR the most recent 6 items
- * if fewer than 6 fall inside that window. Maintainer prunes the bottom of
- * each group occasionally if entries get stale before the window drops them.
+ * Visibility rule: the first 6 items in this list show, so keep the current
+ * six at the top. Older items stay below as a record.
  *
  * Groups:
  *   - 'prototypes'  — new sample prototypes and contexts designers can build with
@@ -25,6 +24,50 @@ export const HIGHLIGHT_GROUPS: { id: HighlightGroup; label: string }[] = [
 ];
 
 export const HIGHLIGHTS: Highlight[] = [
+  // ── Current six (v26.10): the five big updates, then the rest in one ───────
+  {
+    title: 'Dark mode, everywhere',
+    description: 'Every page, component and prototype works in light and dark. Press Ctrl+D.',
+    version: '26.10.1a',
+    date: '2026-10-09',
+    group: 'enhancements',
+  },
+  {
+    title: 'New type: Geist',
+    description: "Geist and Geist Mono replace the old fonts, with Figma's weights.",
+    version: '26.10.1a',
+    date: '2026-10-09',
+    group: 'enhancements',
+  },
+  {
+    title: 'Components updated to Radiant 3.0',
+    description: 'Figma colours, new variants and 17 new components, including Toggle, Toast, Stepper and PageHeader.',
+    version: '26.10.3b',
+    date: '2026-10-13',
+    group: 'enhancements',
+  },
+  {
+    title: 'A new look for Radiant Play',
+    description: 'One frame for the playground and the design system, with a new logo and a Help menu.',
+    version: '26.10.3g',
+    date: '2026-10-14',
+    group: 'enhancements',
+  },
+  {
+    title: 'Design system updates',
+    description: '400 tokens from Figma, the Spotter DS and Radiance guides, and On this page navigation.',
+    version: '26.10.3b',
+    date: '2026-10-13',
+    group: 'enhancements',
+  },
+  {
+    title: 'And more',
+    description: "Radiance, ThoughtSpot's AI identity. /rp- skills in Claude. Guides for the Claude desktop app. Coolify deploys and the project canvas.",
+    version: '26.10.3h',
+    date: '2026-10-14',
+    group: 'enhancements',
+  },
+
   // ── Sample prototypes & contexts ───────────────────────────────────────────
   {
     title: 'Spotter Refresh blocks in the shared Spotter DS',
@@ -71,13 +114,6 @@ export const HIGHLIGHTS: Highlight[] = [
 
   // ── Radiant Play enhancements ──────────────────────────────────────────────
   {
-    title: 'Dark mode',
-    description: 'Press Ctrl+D anywhere. Every shared component, Spotter, the Liveboard tiles and every sample prototype follow the theme, on Radiant 3.0 Figma tokens and Geist type. Run /migrate-prototype to bring your own prototypes across.',
-    version: '26.10.1a',
-    date: '2026-10-09',
-    group: 'enhancements',
-  },
-  {
     title: 'Playground archive section + sidebar nav',
     description: 'Gallery has a light left sidebar with Prototypes and Archived sections. Per-card 3-dot menu archives or restores any prototype in your session. Save-to-code modal generates a Claude-ready prompt to commit the layout permanently. MiniSpotters and AdminLang now appear as archived by default.',
     version: '26.5.4a',
@@ -107,12 +143,9 @@ export const HIGHLIGHTS: Highlight[] = [
   },
 ];
 
-const SIXTY_DAYS_MS = 60 * 24 * 60 * 60 * 1000;
-
-export function getVisibleHighlights(now: number = Date.now()): Highlight[] {
-  const recent = HIGHLIGHTS.filter((h) => now - new Date(h.date).getTime() <= SIXTY_DAYS_MS);
-  if (recent.length >= 6) return recent;
-  return HIGHLIGHTS.slice(0, Math.max(6, recent.length));
+// `now` is kept so existing callers still compile; the list order decides what shows.
+export function getVisibleHighlights(_now: number = Date.now()): Highlight[] {
+  return HIGHLIGHTS.slice(0, 6);
 }
 
 /**

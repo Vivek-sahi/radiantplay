@@ -1,5 +1,12 @@
 # Changelog
 
+## 26.10.3i — 2026-10-14
+
+The changelog highlights catch up with v26.10.
+
+- Six short highlights: dark mode, Geist, components updated to Radiant 3.0, a new look for Radiant Play, design system updates, and one item for everything else
+- The page shows the first six highlights in `src/data/highlights.ts`, instead of every item from the last 60 days. Older items stay in the file
+
 ## 26.10.3h — 2026-10-14
 
 Security fix for a build tool dependency.

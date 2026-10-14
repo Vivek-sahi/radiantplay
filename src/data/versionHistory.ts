@@ -28,6 +28,14 @@ export interface VersionEntry {
  */
 export const versionHistory: VersionEntry[] = [
   {
+    version: '26.10.3i',
+    date: '2026-10-14',
+    type: 'patch',
+    changes: [
+      { type: 'modified', group: 'Documentation', component: 'Changelog highlights', description: 'Six short highlights for v26.10: dark mode, Geist, Radiant 3.0 components, the new Radiant Play look, design system updates, and one item for the rest. The first six in the list show, instead of everything from the last 60 days' },
+    ],
+  },
+  {
     version: '26.10.3h',
     date: '2026-10-14',
     type: 'patch',
