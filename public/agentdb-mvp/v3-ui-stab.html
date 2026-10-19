@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AgentDB v3 · a designer's stab</title>
+<style>
+  @font-face { font-family: 'Plain'; font-weight: 400; src: url('/fonts/Plain-Regular.otf') format('opentype'); }
+  @font-face { font-family: 'Plain'; font-weight: 500; src: url('/fonts/Plain-Medium.ttf') format('truetype'); }
+  @font-face { font-family: 'Plain'; font-weight: 375; src: url('/fonts/Plain-Light.otf') format('opentype'); }
+
+  :root {
+    --base: #FFFFFF; --sunken: #F6F8FA; --subtle: #EAEDF2; --inset: #C0C6CF;
+    --ink: #1D232F; --ink2: #777E8B; --ink3: #C0C6CF;
+    --brand: #2770EF; --brand-bg: #DEE8FA;
+    --ok: #06BF7F; --ok-bg: #E0F8EF; --warn: #FCC838; --warn-bg: #FFF8E5; --bad: #E22B3D; --bad-bg: #FFEBEC;
+    --mono: "SF Mono", Monaco, Inconsolata, "Fira Mono", monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--base); color: var(--ink); font-family: 'Plain', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 16px; line-height: 1.5; }
+  main { max-width: 1140px; margin: 0 auto; padding: 48px 24px 96px; }
+  h1 { font-size: 32px; font-weight: 500; letter-spacing: -0.3px; margin: 0 0 4px; }
+  h2 { font-size: 22px; font-weight: 500; margin: 56px 0 8px; letter-spacing: -0.2px; }
+  h3 { font-size: 16px; font-weight: 500; margin: 24px 0 6px; }
+  p { margin: 0 0 12px; max-width: 760px; }
+  .sub { color: var(--ink2); margin-bottom: 32px; }
+  ul { margin: 0 0 12px; padding-left: 20px; max-width: 760px; }
+  li { margin: 0 0 6px; }
+  .muted { color: var(--ink2); }
+  .k { display: inline-block; font-size: 11px; font-weight: 500; letter-spacing: .6px; text-transform: uppercase; color: var(--ink2); margin-right: 8px; }
+  .move { display: grid; grid-template-columns: 56px 1fr; gap: 16px; margin-top: 40px; padding-top: 24px; border-top: 1px solid var(--subtle); }
+  .move .n { font-size: 28px; font-weight: 500; color: var(--ink3); line-height: 1; }
+  .move h2 { margin: 0 0 8px; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; max-width: none; }
+  .row2 p { max-width: none; }
+  .lab { font-size: 12px; font-weight: 500; letter-spacing: .6px; text-transform: uppercase; color: var(--ink2); margin: 20px 0 8px; }
+  .lab.before::before, .lab.after::before { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 8px; vertical-align: 1px; }
+  .lab.before::before { background: var(--ink3); } .lab.after::before { background: var(--brand); }
+  table.plain { border-collapse: collapse; width: 100%; max-width: 760px; font-size: 14px; margin: 8px 0 16px; }
+  table.plain th { text-align: left; font-weight: 500; color: var(--ink2); font-size: 12px; text-transform: uppercase; letter-spacing: .5px; padding: 6px 10px; border-bottom: 1px solid var(--subtle); }
+  table.plain td { padding: 8px 10px; border-bottom: 1px solid var(--subtle); vertical-align: top; }
+
+  /* ---- mockups ---- */
+  .shot { display: flex; width: 100%; border: 1px solid var(--subtle); border-radius: 10px; overflow: hidden; font-size: 14px; line-height: 20px; color: var(--ink); background: var(--base); margin: 0 0 8px; }
+  .shot.grey .m { background: var(--sunken); }
+  .cap { font-size: 13px; color: var(--ink2); margin: 0 0 8px; max-width: none; }
+  .sb { flex: 0 0 200px; background: var(--sunken); border-right: 1px solid var(--subtle); padding: 20px 0 12px; display: flex; flex-direction: column; }
+  .sb-title { font-size: 18px; font-weight: 500; padding: 0 20px 14px; }
+  .sb-sec { font-size: 10px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; color: var(--ink2); padding: 10px 20px 2px; }
+  .sb-item { font-size: 15px; font-weight: 375; padding: 5px 20px; }
+  .sb-item.on { background: var(--brand-bg); color: var(--brand); font-weight: 500; }
+  .sb-foot { margin-top: auto; border-top: 1px solid var(--subtle); padding: 12px 20px 0; display: flex; align-items: center; gap: 8px; font-size: 14px; }
+  .av { width: 24px; height: 24px; border-radius: 50%; background: var(--brand-bg); color: var(--brand); font-size: 10px; font-weight: 500; display: inline-flex; align-items: center; justify-content: center; }
+  .m { flex: 1; min-width: 0; padding: 28px 32px 32px; display: flex; flex-direction: column; gap: 20px; }
+  .pt { display: flex; align-items: center; justify-content: space-between; }
+  .pt b { font-size: 24px; font-weight: 500; line-height: 32px; }
+  .btn { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 14px; border-radius: 6px; font-size: 14px; font-weight: 500; border: 1px solid transparent; white-space: nowrap; }
+  .btn.p { background: var(--brand); color: #fff; }
+  .btn.s { background: var(--base); border-color: var(--inset); color: var(--ink); }
+  .btn.t { color: var(--brand); padding: 0 6px; }
+  .btn.sm { height: 24px; padding: 0 10px; font-size: 13px; }
+  .kbd { font-size: 11px; opacity: .8; border: 1px solid rgba(255,255,255,.5); border-radius: 4px; padding: 0 4px; line-height: 16px; }
+  .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .card { background: var(--base); border: 1px solid var(--subtle); border-radius: 8px; padding: 16px 20px; display: flex; flex-direction: column; gap: 6px; }
+  .card .l, .card .n2 { font-size: 12px; color: var(--ink2); }
+  .card .v { font-size: 32px; font-weight: 500; line-height: 40px; }
+  .bar { height: 4px; background: var(--subtle); border-radius: 2px; overflow: hidden; }
+  .bar i { display: block; height: 100%; width: 79%; background: var(--brand); }
+  .strip { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 12px 0; border-top: 1px solid var(--subtle); border-bottom: 1px solid var(--subtle); }
+  .status { display: flex; align-items: center; gap: 10px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+  .dot.ok { background: var(--ok); } .dot.bad { background: var(--bad); }
+  .status b { font-weight: 500; }
+  .figs { display: flex; gap: 28px; }
+  .fig { display: flex; flex-direction: column; gap: 0; min-width: 96px; }
+  .fig b { font-size: 16px; font-weight: 500; line-height: 22px; }
+  .fig b.bad { color: var(--bad); }
+  .fig span { font-size: 12px; color: var(--ink2); }
+  .fig .bar { margin-top: 5px; width: 96px; }
+  .browser { display: grid; grid-template-columns: 240px 1fr; border: 1px solid var(--subtle); border-radius: 8px; overflow: hidden; flex: 1; }
+  .rail { border-right: 1px solid var(--subtle); padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+  .search { height: 32px; border: 1px solid var(--inset); border-radius: 6px; padding: 0 10px; color: var(--ink2); display: flex; align-items: center; font-size: 14px; }
+  .tree div { padding: 3px 8px; border-radius: 4px; display: flex; align-items: center; gap: 8px; }
+  .tree .db { font-weight: 500; }
+  .tree .ob { padding-left: 28px; }
+  .tree .on { background: var(--brand-bg); color: var(--brand); }
+  .tree i { width: 10px; height: 10px; border: 1.5px solid currentColor; border-radius: 2px; opacity: .7; flex: none; }
+  .tree i.d { border-radius: 50%; }
+  .tree i.v { border-style: dashed; }
+  .pane { padding: 24px; display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+  .ph { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+  .ph b { font-size: 20px; font-weight: 500; line-height: 28px; display: block; }
+  .ph span { color: var(--ink2); }
+  .tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .tbl th { background: var(--sunken); color: var(--ink2); font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: .5px; text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--subtle); white-space: nowrap; }
+  .tbl td { padding: 8px 12px; border-bottom: 1px solid var(--subtle); white-space: nowrap; }
+  .tbl td.r, .tbl th.r { text-align: right; font-variant-numeric: tabular-nums; }
+  .tbl td.a { color: var(--brand); font-weight: 500; }
+  .tbl td.ell { max-width: 300px; overflow: hidden; text-overflow: ellipsis; }
+  .tbl td.num { font-variant-numeric: tabular-nums; }
+  .tbl tr.hl td { background: var(--bad-bg); }
+  .pill { display: inline-block; border-radius: 4px; padding: 0 8px; font-size: 12px; font-weight: 500; line-height: 18px; }
+  .pill.ok { background: var(--ok-bg); color: var(--ok); } .pill.bad { background: var(--bad-bg); color: var(--bad); } .pill.info { background: var(--brand-bg); color: var(--brand); } .pill.warn { background: var(--warn-bg); color: var(--ink); } .pill.nt { background: var(--subtle); color: var(--ink2); }
+  .filters { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .seg { display: inline-flex; border: 1px solid var(--inset); border-radius: 6px; overflow: hidden; }
+  .seg span { padding: 0 12px; height: 30px; display: inline-flex; align-items: center; font-size: 13px; border-right: 1px solid var(--inset); }
+  .seg span:last-child { border-right: 0; }
+  .seg span.on { background: var(--brand-bg); color: var(--brand); font-weight: 500; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--inset); font-size: 13px; }
+  .chip.on { background: var(--brand-bg); border-color: var(--brand); color: var(--brand); font-weight: 500; }
+  .chip.bad { border-color: var(--bad); color: var(--bad); }
+  .chip .c { font-size: 11px; font-weight: 500; border-radius: 999px; padding: 0 6px; background: var(--subtle); color: var(--ink2); line-height: 16px; }
+  .chip.bad .c { background: var(--bad-bg); color: var(--bad); }
+  .chip.on .c { background: #fff; color: var(--brand); }
+  .sel { display: inline-flex; align-items: center; height: 30px; padding: 0 10px; border: 1px solid var(--inset); border-radius: 6px; font-size: 13px; gap: 16px; }
+  .sel::after { content: ''; width: 6px; height: 6px; border-right: 1.5px solid var(--ink2); border-bottom: 1.5px solid var(--ink2); transform: rotate(45deg) translateY(-2px); }
+  .spacer { flex: 1; }
+  .split { display: flex; flex-direction: column; gap: 0; flex: 1; min-height: 0; }
+  .editor { font-family: var(--mono); font-size: 13px; line-height: 1.6; padding: 12px 14px; border: 1px solid var(--inset); border-radius: 6px; min-height: 220px; white-space: pre; color: var(--ink); }
+  .editor .kw { color: var(--brand); }
+  .sline { display: flex; justify-content: space-between; font-size: 12px; color: var(--ink2); padding: 8px 0 14px; }
+  .tabs { display: flex; gap: 20px; border-bottom: 1px solid var(--subtle); font-size: 14px; }
+  .tabs span { padding: 0 2px 10px; }
+  .tabs span.on { color: var(--brand); font-weight: 500; box-shadow: inset 0 -2px 0 var(--brand); }
+  .code { background: var(--sunken); border: 1px solid var(--subtle); border-radius: 8px; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+  .code .v { font-size: 15px; font-weight: 500; overflow-wrap: anywhere; }
+  .code .l { font-size: 12px; color: var(--ink2); margin-bottom: 2px; }
+  .facts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 32px; max-width: 640px; }
+  .fact { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--subtle); }
+  .fact span { color: var(--ink2); }
+  .fact b { font-weight: 400; }
+  .fact em { font-style: normal; color: var(--brand); font-size: 13px; font-weight: 500; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; max-width: 640px; }
+  .field label { display: block; font-size: 12px; color: var(--ink2); margin-bottom: 4px; }
+  .field .sel { width: 100%; justify-content: space-between; height: 32px; font-size: 14px; }
+  .ctx { font-size: 13px; color: var(--ink2); }
+  .gear { position: absolute; right: 16px; bottom: 16px; width: 32px; height: 32px; border: 1px solid var(--inset); border-radius: 6px; background: #fff; }
+  .shot { position: relative; }
+  .gear::before { content: ''; position: absolute; inset: 9px; border: 2.5px solid var(--ink2); border-radius: 50%; }
+  .note { background: var(--sunken); border-radius: 8px; padding: 14px 18px; max-width: 760px; margin: 12px 0; }
+  .ol { counter-reset: s; list-style: none; padding: 0; max-width: 760px; }
+  .ol li { counter-increment: s; display: grid; grid-template-columns: 28px 1fr; gap: 8px; margin-bottom: 8px; }
+  .ol li::before { content: counter(s); font-weight: 500; color: var(--ink2); }
+</style>
+</head>
+<body>
+<main>
+  <h1>AgentDB v3 · a designer's stab</h1>
+  <p class="sub">15 Oct 2026 · drawn from the v3 code as it stands tonight, not from screenshots · all copy is placeholder, yours to write · nothing here is built yet</p>
+
+  <h2 style="margin-top:0">The person, and the two seconds</h2>
+  <p>Arjun is an Editor at Acme Retail. Five pipelines load into AgentDB overnight. He opens the console at nine with one question: <b>did it all land?</b> Then he looks for a table, checks it is fresh, and maybe runs a query. Once a quarter he adds a key or a person. In his first week he did the heavy lifting: tables, keys, loads, ThoughtSpot.</p>
+  <p>So the landing page has two seconds to answer his question, and the rest of the page is for finding things. Today it spends its loudest type on inventory. Storage 394 GB at 32px. Tables 10 at 32px. The one number he came for, <b>1 failed</b>, is a 12px footnote under Loads, and it is the only word on the page that should be red.</p>
+  <p>Five moves follow, heaviest first. Each keeps the 14 and 15 Oct rulings. Each is a surgical change to one or two files.</p>
+
+  <!-- ============ MOVE 1 ============ -->
+  <div class="move"><div class="n">1</div><div>
+    <h2>Signal before inventory</h2>
+    <p>One status line replaces the four tiles. A dot, a sentence, a link into the failed load. The figures move to the right, at text size, where the eye goes second. Your 15 Oct ruling holds: the metrics stay on top, above the browser. They just stop shouting.</p>
+    <p><span class="k">Touches</span>DataPage only. StatTile leaves the Data page; the same strip serves Queries in move 3.</p>
+
+    <div class="lab before">As built tonight</div>
+    <div class="shot grey">
+      <aside class="sb"><div class="sb-title">AgentDB</div><div class="sb-sec">Workspace</div><div class="sb-item on">Data</div><div class="sb-item">SQL</div><div class="sb-item">Queries</div><div class="sb-sec">Setup</div><div class="sb-item">Connect</div><div class="sb-item">API keys</div><div class="sb-item">Access</div><div class="sb-foot"><span class="av">AM</span>Arjun Mehta</div></aside>
+      <div class="m">
+        <div class="pt"><b>Data</b></div>
+        <div class="cards">
+          <div class="card"><span class="l">Storage</span><span class="v">394 GB</span><div class="bar"><i></i></div><span class="n2">of 500 GB</span></div>
+          <div class="card"><span class="l">Tables</span><span class="v">10</span><span class="n2">In 2 databases</span></div>
+          <div class="card"><span class="l">Queries</span><span class="v">48.5K</span><span class="n2">Last 24 hours</span></div>
+          <div class="card"><span class="l">Loads</span><span class="v">10</span><span class="n2" style="color:var(--bad)">1 failed</span></div>
+        </div>
+        <div class="browser" style="background:#fff">
+          <div class="rail"><div class="search">Search tables</div><div class="tree"><div class="db on"><i class="d"></i>acme_retail</div><div class="ob"><i></i>app_events</div><div class="ob"><i></i>orders</div><div class="ob"><i></i>tickets</div><div class="ob"><i></i>charges</div><div class="ob"><i class="v"></i>open_tickets</div><div class="db"><i class="d"></i>acme_marketing</div><div class="ob"><i></i>web_sessions</div></div></div>
+          <div class="pane">
+            <div class="ph"><div><b>acme_retail</b><span>7 tables · 1 view · 1 materialised view · 296 GB</span></div><span class="btn s sm">More</span></div>
+            <table class="tbl"><tr><th>Name</th><th>Kind</th><th class="r">Rows</th><th class="r">Size</th><th>Last updated</th></tr>
+              <tr><td class="a">app_events</td><td>Table</td><td class="r">6.2B</td><td class="r">214 GB</td><td>4 min ago</td></tr>
+              <tr><td class="a">tickets</td><td>Table</td><td class="r">188.3M</td><td class="r">30.7 GB</td><td>Today, 06:00</td></tr>
+              <tr><td class="a">orders</td><td>Table</td><td class="r">412.8M</td><td class="r">28.1 GB</td><td>Today, 02:04</td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="gear"></div>
+    </div>
+    <p class="cap">Three heading sizes compete above the fold: the page title at 24, the tile numbers at 32, the database at 20. The red word is the smallest thing on the page.</p>
+
+    <div class="lab after">Proposed</div>
+    <div class="shot">
+      <aside class="sb"><div class="sb-title">AgentDB</div><div class="sb-sec">Workspace</div><div class="sb-item on">Data</div><div class="sb-item">SQL</div><div class="sb-item">Queries</div><div class="sb-sec">Setup</div><div class="sb-item">Connect</div><div class="sb-item">API keys</div><div class="sb-item">Access</div><div class="sb-foot"><span class="av">AM</span>Arjun Mehta</div></aside>
+      <div class="m">
+        <div class="pt"><b>Data</b></div>
+        <div class="strip">
+          <div class="status"><span class="dot bad"></span><span><b>1 of 10 loads failed</b> in the last 24 hours · orders, 02:00 &nbsp;<span style="color:var(--brand);font-weight:500">See it</span></span></div>
+          <div class="figs">
+            <div class="fig"><b>394 GB</b><span>of 500 GB</span><div class="bar"><i></i></div></div>
+            <div class="fig"><b>10</b><span>tables in 2 databases</span></div>
+            <div class="fig"><b>48.5K</b><span>queries, 24 h</span></div>
+          </div>
+        </div>
+        <div class="browser">
+          <div class="rail"><div class="search">Search tables</div><div class="tree"><div class="db on"><i class="d"></i>acme_retail</div><div class="ob"><i></i>app_events</div><div class="ob"><i></i>orders</div><div class="ob"><i></i>tickets</div><div class="ob"><i></i>charges</div><div class="ob"><i class="v"></i>open_tickets</div><div class="db"><i class="d"></i>acme_marketing</div><div class="ob"><i></i>web_sessions</div></div></div>
+          <div class="pane">
+            <div class="ph"><div><b>acme_retail</b><span>7 tables · 1 view · 1 materialised view · 296 GB</span></div><span class="btn s sm">More</span></div>
+            <table class="tbl"><tr><th>Name</th><th>Kind</th><th>Last updated</th><th class="r">Rows</th><th class="r">Size</th></tr>
+              <tr><td class="a">app_events</td><td>Table</td><td>4 min ago</td><td class="r">6.2B</td><td class="r">214 GB</td></tr>
+              <tr><td class="a">tickets</td><td>Table</td><td>3 h ago</td><td class="r">188.3M</td><td class="r">30.7 GB</td></tr>
+              <tr><td class="a">orders</td><td>Table</td><td>7 h ago</td><td class="r">412.8M</td><td class="r">28.1 GB</td></tr>
+              <tr><td class="a">charges</td><td>Table</td><td>Yesterday, 09:14</td><td class="r">58.9M</td><td class="r">12.6 GB</td></tr>
+              <tr><td class="a">open_tickets</td><td>View</td><td class="muted">—</td><td class="r muted">—</td><td class="r muted">—</td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="gear"></div>
+    </div>
+    <p class="cap">When nothing failed the line reads "All 10 loads landed in the last 24 hours" with a green dot, and the page is quiet. Last updated moves beside the name, in one relative format: freshness is what he scans, size is what he checks.</p>
+  </div></div>
+
+  <!-- ============ MOVE 2 ============ -->
+  <div class="move"><div class="n">2</div><div>
+    <h2>The product's canvas</h2>
+    <p>White page, grey sidebar. That is the sidebar you showed me, and in the product the page beside it is white. Tonight both are the same grey, separated by a hairline, and every section floats in its own white card. Cards on grey is the dashboard idiom, VeloDB's. The product's idiom is sections on white, separated by whitespace and the Table's own header band.</p>
+    <p>The browser keeps its border, because a tree and a pane need an edge between them. Everything else loses the card: the tiles (gone in move 1), the panels on Queries, API keys and Connect. Tables sit straight on the page. The mockups above and below are all drawn this way.</p>
+    <p><span class="k">Touches</span>the shell background, Panel and StatTile in the pages that use them. No new components.</p>
+  </div></div>
+
+  <!-- ============ MOVE 3 ============ -->
+  <div class="move"><div class="n">3</div><div>
+    <h2>Queries: status before type</h2>
+    <p>The two jobs on this page are "find the one that failed" and "stop the one that is running away". Both are status. So status becomes the second column, right after time, and the status filter becomes a row of chips with counts, so the failed ones are one click away and the count is visible before the click. Type becomes a segmented control, four options. Tables and users stay dropdowns; those lists are long.</p>
+    <p>The "All queries" heading goes: it repeats the page title. The four tiles become the strip from move 1, with Failed in red.</p>
+    <p><span class="k">Touches</span>ActivityPage. SegmentedControl and Chip are Radiant components already in the library.</p>
+
+    <div class="lab after">Proposed</div>
+    <div class="shot">
+      <aside class="sb"><div class="sb-title">AgentDB</div><div class="sb-sec">Workspace</div><div class="sb-item">Data</div><div class="sb-item">SQL</div><div class="sb-item on">Queries</div><div class="sb-sec">Setup</div><div class="sb-item">Connect</div><div class="sb-item">API keys</div><div class="sb-item">Access</div><div class="sb-foot"><span class="av">AM</span>Arjun Mehta</div></aside>
+      <div class="m">
+        <div class="pt"><b>Queries</b></div>
+        <div class="strip">
+          <div class="figs">
+            <div class="fig"><b>48.5K</b><span>queries, 24 h · median 1.2 s</span></div>
+            <div class="fig"><b>10</b><span>loads · 118 GB loaded</span></div>
+            <div class="fig"><b class="bad">3</b><span>failed, queries and loads</span></div>
+            <div class="fig"><b>6.3 TB</b><span>read by queries</span></div>
+          </div>
+        </div>
+        <div class="filters">
+          <div class="seg"><span class="on">All</span><span>Reads</span><span>Writes</span><span>Loads</span></div>
+          <span class="chip on">Any status</span><span class="chip">Running <span class="c">1</span></span><span class="chip bad">Failed <span class="c">3</span></span><span class="chip">Stopped <span class="c">0</span></span>
+          <span class="spacer"></span>
+          <span class="sel">All tables</span><span class="sel">All users</span>
+        </div>
+        <table class="tbl"><tr><th>Time</th><th>Status</th><th>Type</th><th>User</th><th>Statement</th><th>Tables</th><th class="r">Duration</th><th class="r">Size</th><th></th></tr>
+          <tr><td class="num">10:43</td><td><span class="pill info">In progress</span></td><td>Read</td><td>churn-analyst</td><td class="ell">SELECT user_id, COUNT(*) FROM app_events WHERE event_time &gt; …</td><td>app_events</td><td class="r">—</td><td class="r">—</td><td><span class="btn s sm">Cancel</span></td></tr>
+          <tr><td class="num">10:39</td><td><span class="pill ok">Completed</span></td><td>Load</td><td>airflow-events</td><td class="ell">Load into app_events</td><td>app_events</td><td class="r">42 s</td><td class="r">1.1 GB</td><td></td></tr>
+          <tr><td class="num">10:31</td><td><span class="pill ok">Completed</span></td><td>Read</td><td>thoughtspot</td><td class="ell">SELECT region, SUM(amount) FROM orders GROUP BY region</td><td>orders</td><td class="r">0.8 s</td><td class="r">2.1 GB</td><td></td></tr>
+          <tr><td class="num">06:00</td><td><span class="pill ok">Completed</span></td><td>Load</td><td>crm-sync</td><td class="ell">Load into tickets</td><td>tickets</td><td class="r">6 m 12 s</td><td class="r">30.7 GB</td><td></td></tr>
+          <tr><td class="num">02:00</td><td><span class="pill bad">Failed</span></td><td>Load</td><td>shopify-sync</td><td class="ell">Load into orders · Timed out after 600 s. 18.0 GB of 28.1 GB received. Nothing was written.</td><td>orders</td><td class="r">10 m 0 s</td><td class="r">18.0 GB</td><td></td></tr>
+        </table>
+      </div>
+      <div class="gear"></div>
+    </div>
+    <p class="cap">The error reason joins the statement cell as a second phrase, not a second line under the pill, so the row stays one line tall and the pill stays scannable. "See it" on the Data strip lands here with Failed selected.</p>
+  </div></div>
+
+  <!-- ============ MOVE 4 ============ -->
+  <div class="move"><div class="n">4</div><div>
+    <h2>SQL: the editor is the page</h2>
+    <p>This is the only way to create anything, and the critical first-week job. Tonight it is a ten-row text area in the middle of a grey page with a small Run button. The editor should own the height: editor on top, results below, the split sized so both are always on screen. Run is the one primary button on the page, with the shortcut on it. The database selector sits where the eye starts, top left of the editor. Nothing else is added: no starter statements, as ruled.</p>
+    <p><span class="k">Touches</span>SqlPage layout and the editor's height rule. SplitPane is in the library if you want the divider draggable; a fixed 55/45 split is enough for the prototype.</p>
+
+    <div class="lab after">Proposed</div>
+    <div class="shot">
+      <aside class="sb"><div class="sb-title">AgentDB</div><div class="sb-sec">Workspace</div><div class="sb-item">Data</div><div class="sb-item on">SQL</div><div class="sb-item">Queries</div><div class="sb-sec">Setup</div><div class="sb-item">Connect</div><div class="sb-item">API keys</div><div class="sb-item">Access</div><div class="sb-foot"><span class="av">AM</span>Arjun Mehta</div></aside>
+      <div class="m">
+        <div class="pt"><b>SQL</b></div>
+        <div class="browser">
+          <div class="rail"><div class="search">Search tables</div><div class="tree"><div class="db"><i class="d"></i>acme_retail</div><div class="ob"><i></i>app_events</div><div class="ob on"><i></i>orders</div><div class="ob"><i></i>tickets</div><div class="ob"><i></i>charges</div><div class="db"><i class="d"></i>acme_marketing</div><div class="ob"><i></i>web_sessions</div></div></div>
+          <div class="pane" style="gap:0">
+            <div class="filters" style="margin-bottom:12px"><span class="sel">acme_retail</span><span class="spacer"></span><span class="btn t sm">Clear</span><span class="btn p">Run <span class="kbd">⌘↩</span></span></div>
+            <div class="editor"><span class="kw">SELECT</span> region, SUM(amount) AS revenue, COUNT(*) AS orders
+<span class="kw">FROM</span> orders
+<span class="kw">WHERE</span> order_date &gt;= '2026-10-01'
+<span class="kw">GROUP BY</span> region
+<span class="kw">ORDER BY</span> revenue <span class="kw">DESC</span>;</div>
+            <div class="sline"><span>Runs as Arjun Mehta · results stop at 1,000 rows</span><span>4 rows · 0.8 s · 2.1 GB read</span></div>
+            <div class="tabs"><span class="on">Result</span><span>Recent runs (3)</span></div>
+            <table class="tbl" style="margin-top:8px"><tr><th>region</th><th class="r">revenue</th><th class="r">orders</th></tr>
+              <tr><td>West</td><td class="r">1,204,311.20</td><td class="r">48,210</td></tr>
+              <tr><td>South</td><td class="r">988,004.75</td><td class="r">41,977</td></tr>
+              <tr><td>North</td><td class="r">871,330.00</td><td class="r">36,402</td></tr>
+              <tr><td>East</td><td class="r">612,998.10</td><td class="r">25,118</td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="gear"></div>
+    </div>
+    <p class="cap">The one place with a code font, as ruled. The result line doubles as the receipt: rows, time, data read, the same three numbers Queries records.</p>
+  </div></div>
+
+  <!-- ============ MOVE 5 ============ -->
+  <div class="move"><div class="n">5</div><div>
+    <h2>Connect: the thing to paste comes first</h2>
+    <p>Nobody reads this page. They copy from it and leave. Tonight the thing they came for, the connection string, is the last line under a sentence, two pickers and four facts. Put it first, big, with one Copy. The four facts go into a two-column grid under it, each with its own copy, for the tools that want fields instead of a string. The two pickers stay above, they are the only inputs. The list of tools becomes a footnote. The tabs stay, as ruled.</p>
+    <p><span class="k">Touches</span>ConnectPage only. Apps, Agents and Load data get the same shape: the paste-able thing first, its inputs above, its facts below.</p>
+
+    <div class="lab after">Proposed</div>
+    <div class="shot">
+      <aside class="sb"><div class="sb-title">AgentDB</div><div class="sb-sec">Workspace</div><div class="sb-item">Data</div><div class="sb-item">SQL</div><div class="sb-item">Queries</div><div class="sb-sec">Setup</div><div class="sb-item on">Connect</div><div class="sb-item">API keys</div><div class="sb-item">Access</div><div class="sb-foot"><span class="av">AM</span>Arjun Mehta</div></aside>
+      <div class="m">
+        <div class="pt"><b>Connect</b></div>
+        <div class="tabs"><span class="on">BI tools</span><span>Apps</span><span>Agents</span><span>Load data</span></div>
+        <div class="two">
+          <div class="field"><label>Service account</label><span class="sel">thoughtspot</span></div>
+          <div class="field"><label>Database</label><span class="sel">acme_retail</span></div>
+        </div>
+        <div class="code" style="max-width:640px"><div><div class="l">Connection string</div><div class="v">mysql://thoughtspot@acme-retail.agentdb.thoughtspot.cloud:9030/acme_retail</div></div><span class="btn p">Copy</span></div>
+        <div class="facts">
+          <div class="fact"><span>Host</span><b>acme-retail.agentdb.thoughtspot.cloud</b><em>Copy</em></div>
+          <div class="fact"><span>Port</span><b>9030</b><em>Copy</em></div>
+          <div class="fact"><span>Database</span><b>acme_retail</b><em>Copy</em></div>
+          <div class="fact"><span>Username</span><b>thoughtspot</b><em>Copy</em></div>
+        </div>
+        <div class="ctx">Any MySQL-compatible tool: DBeaver, Looker, Power BI, Tableau, ThoughtSpot. The password is the one shown when the service account was created.</div>
+      </div>
+      <div class="gear"></div>
+    </div>
+    <p class="cap">Plain throughout, as ruled this afternoon. The string earns its size by weight, not by a different font.</p>
+  </div></div>
+
+  <!-- ============ SMALLER ============ -->
+  <h2>Smaller, in the same pass</h2>
+  <table class="plain">
+    <tr><th>Change</th><th>Why, from his seat</th></tr>
+    <tr><td>One relative time format for Last updated and Last used everywhere: 4 min ago · 3 h ago · Yesterday, 09:14 · 2 Sep.</td><td>Tonight a column mixes "4 min ago", "Today, 02:04" and "Yesterday, 09:14". He has to do arithmetic to compare rows.</td></tr>
+    <tr><td>Database page columns: Name · Kind · Last updated · Rows · Size.</td><td>Freshness is the daily check; size is the monthly one. Put the daily one beside the name.</td></tr>
+    <tr><td>One primary button per page, top right: Run, Create API key, Add person, Create service account. Data, Queries and Connect have none.</td><td>Tells him what the page is for before he reads it.</td></tr>
+    <tr><td>Drop headings that repeat the page title: "All queries", "Keys", "Connect a tool".</td><td>Each costs a line and says nothing he does not know.</td></tr>
+    <tr><td>API keys: the sentence "To load data with a key, see Connect" becomes a tertiary link in the header row.</td><td>A sentence under a title reads as a warning. A link reads as a door.</td></tr>
+    <tr><td>Empty workspace: the status line reads "No loads yet" with the grey dot, and the figures read 0 GB, 1 database, 0 queries.</td><td>The same strip, honest about day one, instead of four empty cards.</td></tr>
+  </table>
+
+  <h2>What I would not touch</h2>
+  <ul>
+    <li><b>The sidebar.</b> Set today. The light AppSidebar, text only, the person at the foot.</li>
+    <li><b>The tree.</b> Kind icons on objects earn their place: a view and a table need telling apart at a glance.</li>
+    <li><b>The tables, dialogs and confirmations.</b> Radiant's, and right.</li>
+    <li><b>Sign in.</b> One card, three steps, nothing to add.</li>
+    <li><b>The gear.</b> Prototype chrome, bottom right, out of the way.</li>
+  </ul>
+
+  <h2>If you say go</h2>
+  <ol class="ol">
+    <li>The canvas: white page, Panel and StatTile retired from the pages. One shell change, then each page loses its cards.</li>
+    <li>Data: the status line and figures. Last updated beside the name. One time format.</li>
+    <li>Queries: status second column, chips with counts, segmented type, the strip.</li>
+    <li>SQL: the split, Run as the primary with the shortcut.</li>
+    <li>Connect: the string first, facts in a grid.</li>
+  </ol>
+  <p>Each step is tsc and build clean before the next. You look between steps, or at the end. Say which numbers, or all, or none.</p>
+
+  <div class="note"><b>Honest limits.</b> I drew these from the code, not from the screen; I have not seen tonight's build render. The proportions are close, the exact pixel rhythm is not. Every sentence in the mockups is placeholder copy.</div>
+</main>
+</body>
+</html>

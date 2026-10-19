@@ -1,0 +1,1231 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>How AgentDB works</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  /* Layout: one reading column, diagrams at column width. Two colours carry the whole page:
+     amber = the load door (data going in), blue = the query door (data being read). */
+  :root {
+    --bg: #f6f7f4;
+    --surface: #ffffff;
+    --ink: #1b1d1a;
+    --ink-2: #5d615a;
+    --line: #d8dbd3;
+    --code-bg: #eceee8;
+    --load: #9a5a12;
+    --load-soft: #f6e7cf;
+    --query: #2353b3;
+    --query-soft: #dbe5f8;
+    --note-bg: #eef0ea;
+    --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #151714; --surface: #1e211c; --ink: #e8eae3; --ink-2: #a4a89e; --line: #363a32;
+      --code-bg: #22251f; --load: #e2a64c; --load-soft: #3a2b12; --query: #86aaf2; --query-soft: #1a2947;
+      --note-bg: #23261f; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #151714; --surface: #1e211c; --ink: #e8eae3; --ink-2: #a4a89e; --line: #363a32;
+    --code-bg: #22251f; --load: #e2a64c; --load-soft: #3a2b12; --query: #86aaf2; --query-soft: #1a2947;
+    --note-bg: #23261f; color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg); color: var(--ink);
+    font-family: var(--sans); font-size: 17px; line-height: 1.55;
+    padding-block: 56px 96px; padding-inline: 20px;
+  }
+  main { max-width: 820px; margin-inline: auto; display: grid; gap: 64px; }
+  section { display: grid; gap: 20px; min-width: 0; }
+  h1, h2, h3 { margin: 0; text-wrap: balance; line-height: 1.15; font-weight: 600; }
+  h1 { font-size: 40px; letter-spacing: -0.01em; }
+  h2 { font-size: 26px; letter-spacing: -0.005em; border-top: 1px solid var(--line); padding-top: 24px; }
+  h3 { font-size: 19px; }
+  p { margin: 0; max-width: 68ch; }
+  p + p { margin-top: -6px; }
+  ul, ol { margin: 0; padding-left: 22px; max-width: 68ch; display: grid; gap: 8px; }
+  li { padding-left: 2px; }
+  strong { font-weight: 600; }
+  a { color: var(--query); }
+  code, pre, .mono { font-family: var(--mono); }
+  code { font-size: 0.86em; background: var(--code-bg); padding: 1px 5px; border-radius: 4px; }
+  .lede { font-size: 20px; color: var(--ink-2); max-width: 60ch; }
+  .eyebrow { font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-2); font-weight: 500; }
+  .muted { color: var(--ink-2); }
+  .small { font-size: 14.5px; }
+  .load { color: var(--load); font-weight: 600; }
+  .query { color: var(--query); font-weight: 600; }
+
+  header { display: grid; gap: 14px; }
+  header .meta { font-size: 14.5px; color: var(--ink-2); max-width: 68ch; }
+  nav.contents ol { padding-left: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 6px 24px; max-width: none; }
+  nav.contents a { text-decoration: none; color: var(--ink); border-bottom: 1px solid var(--line); }
+  nav.contents a:hover { border-color: var(--ink); }
+  nav.contents li { display: flex; gap: 10px; align-items: baseline; }
+  nav.contents .n { font-family: var(--mono); font-size: 12px; color: var(--ink-2); width: 18px; flex: none; }
+
+  figure { margin: 0; display: grid; gap: 10px; min-width: 0; }
+  figure svg { width: 100%; height: auto; display: block; }
+  figcaption { font-size: 14.5px; color: var(--ink-2); max-width: 68ch; }
+  .frame { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 18px; overflow-x: auto; }
+  svg text { font-family: var(--sans); fill: var(--ink); }
+  svg .mono { font-family: var(--mono); }
+  svg .dim { fill: var(--ink-2); }
+
+  .note {
+    background: var(--note-bg); border-left: 3px solid var(--ink-2); padding: 12px 16px; border-radius: 0 6px 6px 0;
+    display: grid; gap: 6px; max-width: 72ch; font-size: 15.5px;
+  }
+  .note .who { font-size: 12.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2); font-weight: 500; }
+  .note p { max-width: none; }
+  .decision { border-left-color: var(--load); }
+
+  .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; counter-reset: step; max-width: none; padding: 0; list-style: none; }
+  .steps li { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 14px 14px 16px; display: grid; gap: 6px; align-content: start; font-size: 15px; min-width: 0; }
+  .steps li::before { counter-increment: step; content: counter(step); font-family: var(--mono); font-size: 12px; color: var(--load); font-weight: 500; }
+  .steps li b { font-weight: 600; display: block; }
+  .steps.q li::before { color: var(--query); }
+
+  .recipe { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--surface); }
+  .recipe > div { padding: 10px 14px; border-top: 1px solid var(--line); min-width: 0; font-size: 14.5px; }
+  .recipe > div:nth-child(-n+2) { border-top: 0; }
+  .recipe .c { font-family: var(--mono); font-size: 13px; background: var(--code-bg); white-space: pre-wrap; word-break: break-all; }
+  .recipe .c.hl { color: var(--load); }
+  .recipe .h { font-size: 12.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2); font-weight: 500; background: var(--surface); }
+  .receipt { background: var(--code-bg); border-radius: 6px; padding: 12px 14px; font-size: 13px; white-space: pre-wrap; margin: 0; }
+  pre.tree { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 18px 20px; font-size: 13px; line-height: 1.5; margin: 0; overflow-x: auto; }
+  /* Sitemap: one column per page, boxed nodes, connectors drawn with borders. */
+  figure.breakout { width: min(1240px, calc(100vw - 40px)); margin-left: calc(50% - min(620px, 50vw - 20px)); }
+  .sitemap { min-width: 1120px; display: grid; gap: 0; font-size: 12.5px; line-height: 1.4; }
+  .sm-root { justify-self: center; text-align: center; border: 1.5px solid var(--ink); border-radius: 6px; padding: 8px 18px; background: var(--surface); display: grid; gap: 2px; position: relative; }
+  .sm-root b { font-size: 14px; }
+  .sm-root span { color: var(--ink-2); font-size: 12px; }
+  .sm-root::after { content: ""; position: absolute; left: 50%; top: 100%; width: 1px; height: 18px; background: var(--ink-2); }
+  .sm-groups { display: grid; grid-template-columns: 1fr 3fr 3fr; gap: 12px; margin-top: 18px; position: relative; }
+  .sm-groups::before { content: ""; position: absolute; top: 0; left: calc(100% / 14); right: calc(100% / 14 * 3); border-top: 1px solid var(--ink-2); }
+  .sm-group { text-align: center; position: relative; padding-top: 14px; }
+  .sm-group::before { content: ""; position: absolute; left: 50%; top: 0; width: 1px; height: 14px; background: var(--ink-2); }
+  .sm-group span { display: inline-block; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-2); font-weight: 500; background: var(--bg); padding: 2px 8px; border-radius: 4px; }
+  .sm-cols { display: grid; grid-template-columns: repeat(7, 1fr); gap: 12px; margin-top: 6px; }
+  .sm-col { display: grid; gap: 0; align-content: start; min-width: 0; }
+  .sm-page { border: 1.5px solid var(--ink); border-radius: 6px; padding: 7px 10px; background: var(--surface); font-weight: 600; font-size: 13px; text-align: center; position: relative; }
+  .sm-page em, .sm-node em { font-style: normal; color: var(--ink-2); font-weight: 400; font-size: 11.5px; }
+  .sm-page em { display: block; }
+  .sm-node { border: 1px solid var(--line); border-radius: 6px; padding: 7px 10px; background: var(--surface); margin-top: 16px; position: relative; min-width: 0; }
+  .sm-node::before { content: ""; position: absolute; left: 50%; top: -17px; width: 1px; height: 16px; background: var(--ink-2); }
+  .sm-node b { display: block; font-weight: 600; margin-bottom: 2px; }
+  .sm-node ul { margin: 0; padding-left: 0; list-style: none; display: grid; gap: 2px; color: var(--ink-2); font-size: 12px; }
+  .sm-node li { padding-left: 0; }
+  .sm-g1 { grid-column: 1; }
+  /* Flows: a chain of steps, each box = where · what the person does · what they see. Dashed = outside the console. */
+  .flow { display: grid; gap: 12px; }
+  .flow-head { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: baseline; }
+  .flow-head h3 { margin-right: 4px; }
+  .tag { font-size: 11.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2); font-weight: 500; background: var(--note-bg); padding: 2px 8px; border-radius: 4px; }
+  .fsteps { display: flex; flex-wrap: wrap; gap: 22px 24px; counter-reset: f; padding: 0; margin: 0; list-style: none; max-width: none; }
+  .fstep { flex: 1 1 160px; max-width: 230px; min-width: 0; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); padding: 10px 12px 12px; display: grid; gap: 3px; align-content: start; position: relative; font-size: 13.5px; line-height: 1.4; }
+  .fstep.out { border-style: dashed; }
+  .fstep::before { counter-increment: f; content: counter(f); font-family: var(--mono); font-size: 11px; color: var(--query); font-weight: 500; }
+  .fstep:not(:last-child)::after { content: ""; position: absolute; right: -17px; top: 50%; width: 8px; height: 8px; border-top: 1px solid var(--ink-2); border-right: 1px solid var(--ink-2); transform: translateY(-50%) rotate(45deg); }
+  .fstep .where { font-size: 11.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2); font-weight: 500; }
+  .fstep b { font-weight: 600; }
+  .fstep .then { color: var(--ink-2); font-size: 12.5px; }
+  .fbranch { border-left: 3px solid var(--load); background: var(--note-bg); padding: 8px 12px; border-radius: 0 6px 6px 0; font-size: 13.5px; max-width: 76ch; }
+  .fbranch b { font-weight: 600; }
+  pre.tree b { font-weight: 600; }
+  pre.tree .dim { color: var(--ink-2); }
+
+  table { border-collapse: collapse; width: 100%; font-size: 15px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .tablewrap { overflow-x: auto; min-width: 0; }
+  th, td { text-align: left; vertical-align: top; padding: 10px 12px; border-top: 1px solid var(--line); }
+  th { font-size: 12.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2); font-weight: 500; border-top: 0; }
+  td:first-child { font-weight: 600; white-space: nowrap; }
+  td .mono { font-size: 13px; }
+
+  .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; max-width: none; }
+  .cols > div { display: grid; gap: 8px; align-content: start; min-width: 0; }
+
+  dl.gloss { margin: 0; display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 10px 20px; max-width: none; font-size: 15.5px; }
+  dl.gloss dt { font-weight: 600; }
+  dl.gloss dd { margin: 0; max-width: 62ch; }
+  @media (max-width: 560px) {
+    body { font-size: 16px; padding-block: 36px 72px; padding-inline: 16px; }
+    h1 { font-size: 32px; } h2 { font-size: 23px; }
+    .recipe { grid-template-columns: 1fr; }
+    .recipe > div { border-top: 1px solid var(--line); }
+    .recipe .h:nth-child(2) { display: none; }
+    .recipe .c { border-top: 1px solid var(--line); }
+    dl.gloss { grid-template-columns: 1fr; gap: 2px 0; }
+    dl.gloss dd { margin-bottom: 10px; }
+  }
+  @media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+  :focus-visible { outline: 2px solid var(--query); outline-offset: 2px; }
+</style>
+</head>
+<body>
+<main>
+
+<header>
+  <div class="eyebrow">AgentDB console · design document</div>
+  <h1>How AgentDB works</h1>
+  <p class="lede">The mechanics of the product, the information architecture of its console, the jobs each page serves, and the decisions behind them. The single working document for the console design: to align, to build, to validate, to hand off.</p>
+  <div class="meta">Vivek Sahi, founding product designer. Draft for design leadership and the AgentDB stakeholders. Sources: the PM's December list (7 Oct), the Slack review by Dmitrii Markovskii, Damian Waldron, Rahul Kaura and Harviish (9 Oct), the design discussion of 14 Oct, and Harviish's consolidated list of 14 Oct, which is the source of truth where the others differ. Last updated 14 Oct 2026.</div>
+  <nav class="contents" aria-label="Contents">
+    <ol>
+      <li><span class="n">1</span><a href="#frame">The frame</a></li>
+      <li><span class="n">2</span><a href="#what">What AgentDB is</a></li>
+      <li><span class="n">3</span><a href="#doors">The two doors</a></li>
+      <li><span class="n">4</span><a href="#who">Who connects, and how</a></li>
+      <li><span class="n">5</span><a href="#login">Signing in</a></li>
+      <li><span class="n">6</span><a href="#load">Putting data in</a></li>
+      <li><span class="n">7</span><a href="#catalog">What is inside</a></li>
+      <li><span class="n">8</span><a href="#read">Reading data</a></li>
+      <li><span class="n">9</span><a href="#access">Who may do what</a></li>
+      <li><span class="n">10</span><a href="#ia">The console: information architecture</a></li>
+      <li><span class="n">11</span><a href="#jobs">Jobs to be done, per page</a></li>
+      <li><span class="n">12</span><a href="#flows">Flows for the critical jobs</a></li>
+      <li><span class="n">13</span><a href="#build">Build, validate, hand off</a></li>
+      <li><span class="n">14</span><a href="#decisions">Decision log</a></li>
+      <li><span class="n">15</span><a href="#list">The December list, in plain words</a></li>
+      <li><span class="n">16</span><a href="#open">Still open, and with whom</a></li>
+      <li><span class="n">17</span><a href="#gloss">Glossary</a></li>
+    </ol>
+  </nav>
+</header>
+
+<section id="frame">
+  <h2>1. The frame</h2>
+  <p><strong>What we are building.</strong> The console for AgentDB: the web app a customer uses to load data into their own analytics database and read it from any tool. The database is Apache Doris. The console is ours. It ships in December as a standalone product with its own sign-in, sold alongside ThoughtSpot and usable without it.</p>
+  <p><strong>Who it is for.</strong> Three people and a crowd of tools.</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Persona</th><th>Role</th><th>Comes to the console to</th><th>How often</th></tr></thead>
+    <tbody>
+      <tr><td>The platform owner</td><td>Admin</td><td>Set the account up: people, identities, the ThoughtSpot connection. Then keep it safe.</td><td>Week one daily, then monthly</td></tr>
+      <tr><td>The data engineer</td><td>Editor</td><td>Create tables, set up loads, check they landed, find out why not, change things.</td><td>Many times a day</td></tr>
+      <tr><td>The analyst or developer</td><td>Viewer</td><td>See what is there, run a read, test a query before an app or agent uses it.</td><td>Weekly</td></tr>
+      <tr><td>Tools</td><td>Query or Ingest identity</td><td>ThoughtSpot, other BI tools, apps and agents read. Pipelines load. They never see the console.</td><td>Constantly</td></tr>
+    </tbody>
+  </table></div>
+  <p><strong>What success looks like.</strong> First session: a new customer creates a table, loads a file into it and sees it in ThoughtSpot without asking anyone. Every day after: the data engineer can tell in under a minute whether last night's load landed, and if not, why. December: engineering ships the console from this document and the prototype without a design question they cannot answer from them.</p>
+  <p><strong>Principles.</strong> Five. Each has a consequence a screen can be checked against.</p>
+  <ol>
+    <li><strong>Show only what the database knows.</strong> No tool names, no schedules, no forecasts. If Doris cannot tell us, the console does not say it.</li>
+    <li><strong>SQL has one home.</strong> The editor creates, changes and queries. No forms and no Create buttons in December. Empty states point to the editor.</li>
+    <li><strong>Organise by job, end in something to copy.</strong> Connect is a set of clients, not a list of facts. The last element of every block is copyable.</li>
+    <li><strong>Type every identity by its door.</strong> Query or Ingest. Nothing is an "app" or a "pipeline" to the database, so nothing is to us.</li>
+    <li><strong>Borrow the standard, invent nothing.</strong> Databricks for the catalog, VeloDB for the editor, ClickHouse Cloud for Connect. An engineer who has used one database console needs no explanation.</li>
+  </ol>
+  <p><strong>Names we use.</strong> One word per thing, in the product and in this document.</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Name</th><th>Means</th><th>Not</th></tr></thead>
+    <tbody>
+      <tr><td>Account page</td><td>The top of Data: the customer's AgentDB as a whole, with the metrics and the list of databases.</td><td>Root page, home, overview</td></tr>
+      <tr><td>Database page</td><td>One database and everything in it.</td><td>Schema, folder</td></tr>
+      <tr><td>Object page</td><td>One table, view or materialised view. "Table page" when it is a table.</td><td>Detail view, modal</td></tr>
+      <tr><td>Identity</td><td>Anything that can sign in: a person, a service account, an API key.</td><td>User, account, credential</td></tr>
+      <tr><td>Query, Ingest</td><td>The two kinds of tool identity, by door.</td><td>App, pipeline, agent, read, write</td></tr>
+      <tr><td>Load</td><td>One file going into one table. "Ingest" is the page and the identity type; "load" is the event.</td><td>Sync, job, run, import</td></tr>
+      <tr><td>Queries</td><td>The one log of everything the database ran: reads, writes and loads. Also the page's name.</td><td>Activity, jobs, logs, ingest, history</td></tr>
+    </tbody>
+  </table></div>
+  <p><strong>How this document is used.</strong> To align with the PM and engineering on the mechanics and the IA. To build the prototype in two states. To validate with customers against the critical jobs. To hand off, with a per-page spec. Decisions are logged with dates and owners in <a href="#decisions">the decision log</a>; open questions carry a name in <a href="#open">the open questions</a>. Throughout, a fact, a decision and an assumption are marked as such.</p>
+</section>
+
+<section id="what">
+  <h2>2. What AgentDB is</h2>
+  <p>AgentDB is a database that ThoughtSpot sells on its own. It runs on Apache Doris, an open-source analytics database. A customer gets one AgentDB of their own. Inside it they can have several databases, and each database holds tables directly, with no folders in between. They push data in with their pipeline tools, and read it from anything: ThoughtSpot, another BI tool, an app, or an AI agent. ThoughtSpot is one client among many.</p>
+  <p>The console is the web app we are designing. It is not the database. It is the window onto the database: it shows what is in there, lets people create tables and keys, and shows what the database has been doing.</p>
+  <p>Everything else on this page follows from one fact: <strong>the console can only show what the database knows</strong>. It knows which account did what, to which table, and how long it took. It does not know what tool was behind the account, or why.</p>
+</section>
+
+<section id="doors">
+  <h2>3. The two doors</h2>
+  <p>Doris has two separate ways in, on two different ports. A port is a numbered entrance on a server. Each entrance speaks one language.</p>
+  <figure>
+    <div class="frame">
+    <svg viewBox="0 0 860 400" role="img" aria-label="Writers push files through the load door on port 8030; readers run queries through the query door on port 9030; the console sits above the database and is used by people.">
+      <defs>
+        <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--ink-2)"/></marker>
+      </defs>
+      <rect x="300" y="18" width="260" height="54" rx="6" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.2"/>
+      <text x="430" y="40" text-anchor="middle" font-size="14" font-weight="600">Console (the web app)</text>
+      <text x="430" y="59" text-anchor="middle" font-size="12.5" class="dim">people sign in · catalog, keys, queries, access</text>
+      <line x1="430" y1="72" x2="430" y2="108" stroke="var(--ink-2)" stroke-width="1.2" stroke-dasharray="3 3"/>
+      <rect x="280" y="108" width="300" height="236" rx="8" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.4"/>
+      <text x="430" y="134" text-anchor="middle" font-size="14.5" font-weight="600">AgentDB (Apache Doris)</text>
+      <text x="430" y="153" text-anchor="middle" font-size="12.5" class="dim mono">database acme_retail, one of several</text>
+      <g font-size="12.5" class="mono">
+        <rect x="340" y="172" width="180" height="26" rx="4" fill="var(--code-bg)"/><text x="430" y="189" text-anchor="middle">orders</text>
+        <rect x="340" y="204" width="180" height="26" rx="4" fill="var(--code-bg)"/><text x="430" y="221" text-anchor="middle">customers</text>
+        <rect x="340" y="236" width="180" height="26" rx="4" fill="var(--code-bg)"/><text x="430" y="253" text-anchor="middle">tickets</text>
+        <rect x="340" y="268" width="180" height="26" rx="4" fill="var(--code-bg)"/><text x="430" y="285" text-anchor="middle">fct_revenue_daily</text>
+        <text x="430" y="318" text-anchor="middle" class="dim" font-size="12">… tables, views, materialised views</text>
+      </g>
+      <rect x="262" y="176" width="36" height="120" rx="5" fill="var(--load-soft)" stroke="var(--load)" stroke-width="1.4"/>
+      <text transform="translate(285 236) rotate(-90)" text-anchor="middle" font-size="12.5" font-weight="600" fill="var(--load)">LOAD DOOR</text>
+      <rect x="562" y="176" width="36" height="120" rx="5" fill="var(--query-soft)" stroke="var(--query)" stroke-width="1.4"/>
+      <text transform="translate(585 236) rotate(-90)" text-anchor="middle" font-size="12.5" font-weight="600" fill="var(--query)">QUERY DOOR</text>
+      <g font-size="13">
+        <text x="40" y="150" font-size="12.5" class="dim" font-weight="500">WRITERS · push files in</text>
+        <rect x="40" y="166" width="170" height="34" rx="5" fill="var(--surface)" stroke="var(--line)"/><text x="52" y="188">Airflow job</text>
+        <rect x="40" y="208" width="170" height="34" rx="5" fill="var(--surface)" stroke="var(--line)"/><text x="52" y="230">dbt run</text>
+        <rect x="40" y="250" width="170" height="34" rx="5" fill="var(--surface)" stroke="var(--line)"/><text x="52" y="272">any script with curl</text>
+        <text x="40" y="312" font-size="12.5" fill="var(--load)" font-weight="600">HTTP · port 8030</text>
+        <text x="40" y="330" font-size="12.5" class="dim">stream load: send a file to a table</text>
+      </g>
+      <line x1="212" y1="183" x2="256" y2="220" stroke="var(--load)" stroke-width="1.4" marker-end="url(#arr)"/>
+      <line x1="212" y1="225" x2="256" y2="232" stroke="var(--load)" stroke-width="1.4" marker-end="url(#arr)"/>
+      <line x1="212" y1="267" x2="256" y2="246" stroke="var(--load)" stroke-width="1.4" marker-end="url(#arr)"/>
+      <g font-size="13">
+        <text x="650" y="150" font-size="12.5" class="dim" font-weight="500">READERS · ask questions</text>
+        <rect x="650" y="166" width="170" height="34" rx="5" fill="var(--surface)" stroke="var(--line)"/><text x="662" y="188">ThoughtSpot, any BI tool</text>
+        <rect x="650" y="208" width="170" height="34" rx="5" fill="var(--surface)" stroke="var(--line)"/><text x="662" y="230">apps</text>
+        <rect x="650" y="250" width="170" height="34" rx="5" fill="var(--surface)" stroke="var(--line)"/><text x="662" y="272">AI agents (via MCP)</text>
+        <text x="650" y="312" font-size="12.5" fill="var(--query)" font-weight="600">MySQL protocol · port 9030</text>
+        <text x="650" y="330" font-size="12.5" class="dim">SQL in, rows out, like a MySQL database</text>
+      </g>
+      <line x1="604" y1="220" x2="648" y2="183" stroke="var(--query)" stroke-width="1.4" marker-end="url(#arr)"/>
+      <line x1="604" y1="232" x2="648" y2="225" stroke="var(--query)" stroke-width="1.4" marker-end="url(#arr)"/>
+      <line x1="604" y1="246" x2="648" y2="267" stroke="var(--query)" stroke-width="1.4" marker-end="url(#arr)"/>
+      <text x="430" y="382" text-anchor="middle" font-size="13.5" font-weight="500">Nothing loads through the query door. Nothing is read through the load door.</text>
+    </svg>
+    </div>
+    <figcaption>The whole product in one picture. Amber is data going in, blue is data being read. The console sits on top and talks to the database on behalf of a signed-in person.</figcaption>
+  </figure>
+  <p><strong class="load">The load door</strong> speaks HTTP, the language of the web. A tool sends a whole file of rows to a web address that names the database and the table. Doris takes the file in. This is called a <em>stream load</em>. It is the only way to get data into AgentDB in volume.</p>
+  <p><strong class="query">The query door</strong> speaks the MySQL protocol. Any tool that can talk to a MySQL database can talk to AgentDB the same way: it sends SQL, it gets rows back. This is how every reader connects. The word MySQL belongs on this side of the product only. It has nothing to do with loading.</p>
+  <div class="note">
+    <div class="who">Evidence · Dmitrii, then Harviish</div>
+    <p>"No ingestion via MySQL. HTTP only." The prototype's Pipelines block told ETL tools to treat AgentDB as a MySQL destination. That was a misreading of the PM's "MySQL" item, which only meant tools can query us like MySQL.</p>
+  </div>
+</section>
+
+<section id="who">
+  <h2>4. Who connects, and how</h2>
+  <p>Three kinds of identity appear in the PM's list. <strong>People</strong> sign in to the console. <strong>Service accounts</strong> are users too, in Doris's sense: a username and password a tool signs in with. They live under Access. <strong>API keys</strong> get a page of their own. Whether a key and a service account are one thing with two names, or two things, one for each door, is the one question the list leaves open; see <a href="#open">the open questions</a>.</p>
+  <p>Either way, a tool's identity is typed by the door it uses: Query or Ingest. Scoping an identity to particular databases or tables is not December.</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Who</th><th>Door</th><th>What they hold</th><th>Examples</th></tr></thead>
+    <tbody>
+      <tr><td>Person</td><td>Console</td><td>A role: Admin, Editor or Viewer</td><td>Priya (Admin), Arjun (Editor), Sara (Viewer)</td></tr>
+      <tr><td><span class="load">Ingest</span></td><td>Load door</td><td>Permission to load</td><td><span class="mono">airflow-events</span>, <span class="mono">dbt-cloud</span></td></tr>
+      <tr><td><span class="query">Query</span></td><td>Query door</td><td>Permission to read</td><td><span class="mono">thoughtspot</span>, <span class="mono">seller-portal</span>, <span class="mono">support-copilot</span></td></tr>
+    </tbody>
+  </table></div>
+  <div class="note">
+    <div class="who">Evidence · Dmitrii, agreed by Harviish and Rahul</div>
+    <p>"Instead of App and Pipeline I would do Query and Ingest." In Doris these are literally the two everyday privileges, called Select and Load. Harviish's list: rename App to Query and Pipeline to Ingest; service accounts move from Connect to Access; API keys get a new tab. Connect uses both through pickers.</p>
+  </div>
+</section>
+
+<section id="login">
+  <h2>5. Signing in</h2>
+  <p>The console has its own sign-in. There is no ThoughtSpot sign-in and no single sign-on for December. The PM's flow, as told on 14 Oct:</p>
+  <ol class="steps q">
+    <li><b>Enter your email</b>The address an Admin invited, or the one ThoughtSpot set up the account with.</li>
+    <li><b>Receive a code</b>A one-time login code arrives by email. Enter it. This proves the address is yours.</li>
+    <li><b>Create a password</b>First time only. Rules shown inline, not after a failed attempt.</li>
+    <li><b>You are in</b>Later sign-ins: email and password. The code step returns when something looks new, such as a new device.</li>
+  </ol>
+  <p>The reason is SOC 2, the security standard enterprise buyers ask for. SOC 2 is an audit of controls, not a list of features, but a handful of its controls are visible in a console and should be designed in from the start rather than bolted on.</p>
+  <div class="cols">
+    <div>
+      <div class="eyebrow">Visible in the console</div>
+      <ul>
+        <li><strong>Invitation, not self-signup.</strong> Only an Admin adds a person. The first Admin is set up when ThoughtSpot provisions the account.</li>
+        <li><strong>A second factor for Admins</strong>, at least. The email code can serve as it for December; an authenticator app later.</li>
+        <li><strong>Sessions end.</strong> Idle sessions time out. Sensitive actions, such as creating a key or changing a role, ask for the password again.</li>
+        <li><strong>Lockout</strong> after repeated failed attempts, with a plain message.</li>
+        <li><strong>An audit trail of admin actions.</strong> Who created or revoked a key, who changed a role, who deleted a table, when. Auditors ask for this first. Not in the December list; a section under Access, later.</li>
+        <li><strong>Least privilege by default.</strong> A new person is a Viewer until someone raises them. Keys are scoped to tables, not to everything.</li>
+        <li><strong>Secrets shown once.</strong> A key's secret appears at creation and never again. Rotate replaces it.</li>
+        <li><strong>Keys can expire</strong>, and "last used" shows the stale ones. Removing a person flags the keys they created for review.</li>
+        <li><strong>Access review.</strong> The people list shows last active, so an Admin can review it quarterly.</li>
+      </ul>
+    </div>
+    <div>
+      <div class="eyebrow">Not visible, engineering's</div>
+      <ul>
+        <li>Encryption in transit on both doors. The load address should be https, not http as in the curl sample.</li>
+        <li>Encryption at rest, backups, restore, disaster recovery.</li>
+        <li>Change management, vulnerability scanning, vendor reviews, incident response.</li>
+        <li>Customer data deletion when a contract ends.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="note decision">
+    <div class="who">To confirm with Harviish</div>
+    <p>Invitation only, or can anyone with the link sign up? The flow as told could be read either way. And is the first Admin created by ThoughtSpot, or by the customer?</p>
+  </div>
+</section>
+
+<section id="load">
+  <h2>6. Putting data in</h2>
+  <p>A load is one file going into one table. Here is the whole sequence, and what the database records at the end of it.</p>
+  <ol class="steps">
+    <li><b>A table exists</b>Someone created it in the console, so Doris knows its columns and types.</li>
+    <li><b>A tool sends a file</b>The pipeline tool, or a script, sends a file to the table's load address, signed in as an Ingest key.</li>
+    <li><b>Doris checks the key</b>Can this key load into this table? If not, the load is refused.</li>
+    <li><b>Rows land</b>The rows are added to the table. Whether they replace what was there depends on the table and the tool.</li>
+    <li><b>A receipt goes back</b>To the tool that sent the file: rows loaded, bytes, time taken, success or failure.</li>
+  </ol>
+
+  <h3>The recipe Dmitrii pasted, line by line</h3>
+  <p><code>curl</code> is a small command-line tool that sends a web request. His sample is the exact command a pipeline engineer would run to push one file into one table. The console shows this on each table's own page and in Connect, filled in with the customer's host, the database, the table and the identity, with the header set explained, so nobody has to work it out.</p>
+  <div class="recipe">
+    <div class="h">Command</div><div class="h">What it means</div>
+    <div class="c">curl -u airflow-events:&lt;password&gt; \</div><div>Sign in as the Ingest key.</div>
+    <div class="c">  -H "label: orders-2026-10-14" \</div><div>A name for this load. If the tool retries, Doris sees the same label and does not load the file twice.</div>
+    <div class="c">  -H "format: csv" \</div><div>The file is comma-separated text.</div>
+    <div class="c">  -H "column_separator: ," \</div><div>Which character separates the columns.</div>
+    <div class="c">  -H "skip_lines: 1" \</div><div>Ignore the first line, the header row.</div>
+    <div class="c">  -H "compress_type: GZ" \</div><div>The file is zipped.</div>
+    <div class="c">  -H "timeout: 600" \</div><div>Give up after ten minutes.</div>
+    <div class="c">  -T orders.csv.gz \</div><div>The file to send.</div>
+    <div class="c">  -H "Expect: 100-continue" \</div><div>Ask the server first, then send the file. Doris may redirect the upload to the node that will store it.</div>
+    <div class="c hl">  "http://acme-retail.agentdb.thoughtspot.cloud:8030/api/acme_retail/orders/_stream_load"</div><div>The table's load address: the host, the load port, the database, the table. This is the line the console must show in full. A port alone is useless.</div>
+  </div>
+  <p>Doris answers with a small receipt:</p>
+  <pre class="receipt">Status: Success
+NumberLoadedRows: 412800000
+NumberFilteredRows: 0
+LoadBytes: 30172314624
+LoadTimeMs: 54210</pre>
+
+  <h3>What the console can show about loads</h3>
+  <p>Three tiers, and the difference between them decides what the Data and Queries pages may promise.</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Tier</th><th>What</th><th>Where it would show</th></tr></thead>
+    <tbody>
+      <tr><td>Certain</td><td>Per table: row count, size on disk, time of the last change. The database keeps these itself.</td><td>The table page, as it is today: Rows, Size, Last updated.</td></tr>
+      <tr><td>Only if switched on</td><td>A history of loads: which key, which table, rows, bytes, start and finish, outcome. Doris keeps this only when a setting that is off by default is turned on, and the docs do not list exactly what the record holds.</td><td>Loads in the Queries list, with user, table, rows, loaded bytes, duration and status. The History tab on a table's page, which is its own loads.</td></tr>
+      <tr><td>Never</td><td>Which tool was behind the key. Where the data originally came from. Whether another load is coming, or when.</td><td>Nowhere. Tool names such as Fivetran or Airflow cannot appear as facts.</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note">
+    <div class="who">Evidence · Dmitrii, agreed by Harviish</div>
+    <p>"Doris has no idea who is pushing data to it, so there is no source differentiation." The Overview chart "Storage by source" and the Source column on Data were built on tool names. Both go.</p>
+  </div>
+  <div class="note decision">
+    <div class="who">Asked of engineering · Harviish, 14 Oct</div>
+    <p>Doris exposes per-query latency, status, error and scanned bytes through the audit log, and per-load rows and bytes through stream-load records. Are both enabled in our setup, and what is the retention? Until the answer, the console promises only the certain tier.</p>
+  </div>
+
+  <h3>Sync modes</h3>
+  <p>A sync mode is how a pipeline tool keeps the copy in AgentDB in step with the source system.</p>
+  <ul>
+    <li><strong>Full refresh</strong> wipes the table and reloads everything, every run. Simple, slow for big tables.</li>
+    <li><strong>Incremental</strong> sends only rows that are new or changed since last time.</li>
+    <li><strong>CDC</strong>, change data capture, replays every single insert, update and delete from the source as it happens.</li>
+  </ul>
+  <p>The prototype claimed "full refresh only". Dmitrii says which modes AgentDB will support is still to be confirmed. Until then the console should not name any.</p>
+
+  <h3>When a load goes wrong</h3>
+  <p>Added on 14 Oct, and confirmed by Harviish the same day: users will use the SQL editor to query, verify and debug what has loaded. Loads fail in ordinary ways: a retry loads the same file twice, a timeout loads half of it, rows that do not fit a column type are dropped silently and counted as filtered, a comma inside a value shifts a row's columns, last week's export is sent again, a full refresh empties the table and the new load fails. The analyst sees a wrong number in ThoughtSpot and messages the data engineer. The pipeline tool says "run succeeded". The table is the only place that shows what actually landed, and the engineer checks it with two or three queries: rows per day, duplicate IDs, latest date, empty amounts.</p>
+</section>
+
+<section id="catalog">
+  <h2>7. What is inside</h2>
+  <p><strong>Where a database lives (Vivek, 19 Oct).</strong> AgentDB runs as clusters. A cluster holds many databases. Each customer is given one or more databases on a cluster, and the allocation is done by us, in the backend. A customer never creates, moves or deletes a database; the console shows the ones they have, and nothing above them. Customers never see the cluster, nor each other.</p>
+  <figure>
+    <div class="frame">
+    <svg viewBox="0 0 860 250" role="img" aria-label="One cluster holding five databases. Customer 1 is given one database, Customer 2 is given two. Two databases are not yet given to anyone. The allocation is done in the backend.">
+      <g font-size="13">
+        <rect x="330" y="16" width="200" height="40" rx="6" fill="var(--surface)" stroke="var(--ink-2)"/>
+        <text x="430" y="41" text-anchor="middle" font-weight="500">Cluster</text>
+        <path d="M430 56 V80 M110 80 H750 M110 80 V100 M270 80 V100 M430 80 V100 M590 80 V100 M750 80 V100" stroke="var(--line)" fill="none"/>
+        <g>
+          <rect x="40" y="100" width="140" height="40" rx="6" fill="var(--query-soft)" stroke="var(--query)"/><text x="110" y="125" text-anchor="middle">Database</text>
+          <rect x="200" y="100" width="140" height="40" rx="6" fill="var(--query-soft)" stroke="var(--query)"/><text x="270" y="125" text-anchor="middle">Database</text>
+          <rect x="360" y="100" width="140" height="40" rx="6" fill="var(--query-soft)" stroke="var(--query)"/><text x="430" y="125" text-anchor="middle">Database</text>
+          <rect x="520" y="100" width="140" height="40" rx="6" fill="var(--surface)" stroke="var(--line)" stroke-dasharray="4 3"/><text x="590" y="125" text-anchor="middle" class="dim">Database</text>
+          <rect x="680" y="100" width="140" height="40" rx="6" fill="var(--surface)" stroke="var(--line)" stroke-dasharray="4 3"/><text x="750" y="125" text-anchor="middle" class="dim">Database</text>
+        </g>
+        <path d="M110 140 V180 M270 140 V160 H430 V140 M350 160 V180" stroke="var(--ink-2)" fill="none"/>
+        <rect x="40" y="180" width="140" height="40" rx="6" fill="var(--surface)" stroke="var(--ink)"/><text x="110" y="205" text-anchor="middle" font-weight="500">Customer 1</text>
+        <rect x="280" y="180" width="140" height="40" rx="6" fill="var(--surface)" stroke="var(--ink)"/><text x="350" y="205" text-anchor="middle" font-weight="500">Customer 2</text>
+        <text x="670" y="170" text-anchor="middle" class="dim" font-size="12">not yet given to anyone</text>
+        <text x="670" y="210" text-anchor="middle" class="dim" font-size="12">allocation: backend only, never the customer</text>
+      </g>
+    </svg>
+    </div>
+    <figcaption>The architecture, from Vivek's sketch of 19 Oct. The console starts at the databases a customer has been given.</figcaption>
+  </figure>
+  <p>The catalog is the list of everything in the database. A customer's AgentDB holds one or more databases, and each database holds three kinds of thing directly, with no folders.</p>
+  <ul>
+    <li><strong>Tables</strong> hold rows. Data is loaded into them.</li>
+    <li><strong>Views</strong> are saved queries that behave like a table but store nothing. Each time you read a view, its query runs again on the tables underneath.</li>
+    <li><strong>Materialised views</strong> are saved queries that store their result, and refresh it later. Fast to read, but they take storage.</li>
+  </ul>
+  <p>Every database console shows the catalog the same way, which is Damian's point: a tree on the left, the chosen object on the right with its columns, a sample of its rows, and its definition. Harviish picked the Databricks version as the reference. The catalog is Doris's own metadata, tables, views, materialised views, columns, the SQL that created each, and statistics, so it works with no source information at all. Databricks lists tables and views together under a schema with a kind icon, and gives each object tabs: Overview, Sample data, Details, History, Permissions, Lineage. For December we take Columns, Sample data, Details and History. Permissions and Lineage come later.</p>
+  <figure>
+    <div class="frame">
+    <svg viewBox="0 0 860 330" role="img" aria-label="A catalog explorer: a tree of databases, each listing tables, views and materialised views with a kind label on the left, and the selected table on the right with tabs for columns, sample data, details and history.">
+      <rect x="20" y="20" width="820" height="290" rx="8" fill="var(--surface)" stroke="var(--line)"/>
+      <rect x="20" y="20" width="230" height="290" rx="8" fill="var(--code-bg)"/>
+      <rect x="20" y="20" width="230" height="290" rx="8" fill="none" stroke="var(--line)"/>
+      <g font-size="13" class="mono">
+                <text x="36" y="70">▾ acme_retail</text>
+        <rect x="48" y="80" width="190" height="22" rx="4" fill="var(--query-soft)"/>
+        <text x="58" y="95" fill="var(--query)" font-weight="500">orders</text><text x="172" y="95" class="dim" font-size="11">table</text>
+        <text x="58" y="119">customers</text><text x="172" y="119" class="dim" font-size="11">table</text>
+        <text x="58" y="143">tickets</text><text x="172" y="143" class="dim" font-size="11">table</text>
+        <text x="58" y="167">app_events</text><text x="172" y="167" class="dim" font-size="11">table</text>
+        <text x="58" y="191">open_tickets</text><text x="172" y="191" class="dim" font-size="11">view</text>
+        <text x="58" y="215">revenue_by_day</text><text x="172" y="215" class="dim" font-size="11">mat. view</text>
+        <text x="58" y="239" class="dim">…</text>
+        <text x="36" y="270">▸ acme_marketing</text>
+        <text x="36" y="294">▸ acme_finance</text>
+      </g>
+      <g font-size="13">
+        <text x="280" y="52" font-size="17" font-weight="600" class="mono">orders</text>
+        <text x="345" y="52" font-size="12.5" class="dim">table in acme_retail · 412.8M rows · 28.1 GB · last updated today, 02:00</text>
+        <g font-size="13">
+          <text x="280" y="90" font-weight="600">Columns</text>
+          <text x="360" y="90" class="dim">Sample data</text>
+          <text x="462" y="90" class="dim">Details</text>
+          <text x="530" y="90" class="dim">History</text>
+        </g>
+        <line x1="280" y1="98" x2="344" y2="98" stroke="var(--ink)" stroke-width="2"/>
+        <line x1="280" y1="99" x2="820" y2="99" stroke="var(--line)"/>
+        <g class="mono" font-size="12.5">
+          <text x="280" y="128">order_id</text><text x="470" y="128" class="dim">Whole number</text>
+          <text x="280" y="154">customer_id</text><text x="470" y="154" class="dim">Whole number</text>
+          <text x="280" y="180">order_date</text><text x="470" y="180" class="dim">Date</text>
+          <text x="280" y="206">region</text><text x="470" y="206" class="dim">Text</text>
+          <text x="280" y="232">amount</text><text x="470" y="232" class="dim">Decimal</text>
+          <text x="280" y="258">channel</text><text x="470" y="258" class="dim">Text</text>
+        </g>
+        <g>
+          <line x1="280" y1="138" x2="820" y2="138" stroke="var(--line)"/>
+          <line x1="280" y1="164" x2="820" y2="164" stroke="var(--line)"/>
+          <line x1="280" y1="190" x2="820" y2="190" stroke="var(--line)"/>
+          <line x1="280" y1="216" x2="820" y2="216" stroke="var(--line)"/>
+          <line x1="280" y1="242" x2="820" y2="242" stroke="var(--line)"/>
+        </g>
+        <text x="280" y="294" font-size="12.5" class="dim">Details shows the SQL that created it and its statistics. History lists its loads: rows, bytes, status, duration.</text>
+      </g>
+    </svg>
+    </div>
+    <figcaption>The explorer shape, Databricks style. The top node is the customer's AgentDB, then databases, then objects with a kind label. Three levels, because there are no folders.</figcaption>
+  </figure>
+
+  <h3>How things get created</h3>
+  <p>SQL has two families of commands. One family reads and writes rows: <code>SELECT</code>, <code>INSERT</code>. The other creates and changes the shape of things: <code>CREATE TABLE</code>, <code>ALTER TABLE</code>, <code>DROP TABLE</code>, <code>CREATE VIEW</code>, <code>CREATE MATERIALIZED VIEW</code>. The second family is called <strong>DDL</strong>, data definition language. Doris accepts all of it as typed text.</p>
+  <p>For our product, DDL means every action that changes the catalog: create a database or a table, add or widen a column, delete, empty, create a view. The thread's rule is simple: every one of these must be possible as typed SQL, and forms exist only for the common ones. A table made by typed SQL looks identical in the catalog to one made by the form.</p>
+  <p>So creating is one path: <strong>the SQL editor</strong>. You go to SQL, write the statement for a table, a view or a materialised view, and run it. The object appears in the catalog. Changing things works the same way, through Open in SQL on an object's page. There is no form and no Create button. The empty state of Data says so and links to SQL. SQL is typed in exactly one place, and that place also runs queries, with the results table below.</p>
+  <p>Roles are enforced by the backend, not by hiding statements: a Viewer who runs a create gets a refusal from the server, and the console shows it in plain words. A link to the documentation sits beside the editor. Starter statements that pre-fill the editor can come later; the December editor opens empty.</p>
+  <div class="note">
+    <div class="who">Evidence · Damian, Harviish, Rahul</div>
+    <p>Damian: Doris supports all standard DDL, so can the UI write SQL? Harviish: the popup is the guided path for self-serve onboarding, and a SQL editor covers the same DDL including views. Rahul: go editor-only for now, because a form for every object type gets complex. Harviish: whatever gets us to December faster; VeloDB has no forms, only an editor.</p>
+  </div>
+  <div class="note decision">
+    <div class="who">Ruled · Harviish, 14 Oct, in answer to Vivek</div>
+    <p>1. Remove the guided create-table form; provide only the SQL editor. 2. The SQL editor is also where users query, verify and debug loaded data. 3. API keys get a separate page. Later the same day: no Create button either, "one SQL editor, both for DDL and select queries, with an output table below"; the backend refuses statements a role may not run; the editor opens empty for December. The create-table wizard in v1 and v2 is retired in v3.</p>
+  </div>
+</section>
+
+<section id="read">
+  <h2>8. Reading data</h2>
+  <p>Every read is a query: a line of SQL sent through the query door by a key or a person. ThoughtSpot, another BI tool, an app, an agent, and the console's own editor all do exactly this. Doris keeps a record of each one in its audit log.</p>
+  <figure>
+    <div class="frame">
+    <svg viewBox="0 0 860 230" role="img" aria-label="A reader sends SQL through the query door; Doris runs it and leaves one audit-log row with the user, the SQL, the tables, timing, bytes read, status and a query ID.">
+      <defs>
+        <marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--query)"/></marker>
+      </defs>
+      <g font-size="13">
+        <rect x="20" y="40" width="190" height="150" rx="8" fill="var(--surface)" stroke="var(--line)"/>
+        <text x="36" y="66" font-size="12.5" class="dim" font-weight="500">A READER</text>
+        <text x="36" y="92" class="mono" font-size="12.5">support-copilot</text>
+        <text x="36" y="118">sends one SQL statement:</text>
+        <text x="36" y="142" class="mono" font-size="11.5">SELECT ticket_id, priority</text>
+        <text x="36" y="160" class="mono" font-size="11.5">FROM tickets WHERE …</text>
+      </g>
+      <line x1="214" y1="115" x2="286" y2="115" stroke="var(--query)" stroke-width="1.6" marker-end="url(#arr2)"/>
+      <rect x="290" y="70" width="120" height="90" rx="6" fill="var(--query-soft)" stroke="var(--query)" stroke-width="1.4"/>
+      <text x="350" y="108" text-anchor="middle" font-size="13" font-weight="600" fill="var(--query)">Query door</text>
+      <text x="350" y="128" text-anchor="middle" font-size="12" fill="var(--query)">runs it</text>
+      <line x1="414" y1="115" x2="486" y2="115" stroke="var(--query)" stroke-width="1.6" marker-end="url(#arr2)"/>
+      <g font-size="12.5">
+        <rect x="490" y="18" width="350" height="194" rx="8" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.2"/>
+        <text x="506" y="42" font-size="12.5" class="dim" font-weight="500">WHAT IT LEAVES BEHIND · one audit-log row</text>
+        <text x="506" y="68" class="dim">User</text><text x="600" y="68" class="mono">support-copilot</text>
+        <text x="506" y="90" class="dim">Query ID</text><text x="600" y="90" class="mono">7f3a…c21</text>
+        <text x="506" y="112" class="dim">SQL</text><text x="600" y="112" class="mono">SELECT ticket_id, … FROM tickets</text>
+        <text x="506" y="134" class="dim">Tables</text><text x="600" y="134" class="mono">tickets</text>
+        <text x="506" y="156" class="dim">Started · took</text><text x="600" y="156" class="mono">10:42:18 · 180 ms</text>
+        <text x="506" y="178" class="dim">Data read · rows</text><text x="600" y="178" class="mono">410 MB · 12</text>
+        <text x="506" y="200" class="dim">Status</text><text x="600" y="200" class="mono">Completed</text>
+      </g>
+    </svg>
+    </div>
+    <figcaption>The Queries page is this row, repeated. Every column Rahul asked for is already in it: user, data read, time taken, and the ID you need to stop a running query.</figcaption>
+  </figure>
+  <p>A query that is still running can be stopped. Doris does this by query ID, so the console shows the ID in the query's detail and offers Stop beside each running one.</p>
+  <p>Harviish wants queries and loads under one nav item, because both are activity logs on the same objects with the same filters. Vivek ruled the shape: one page called Queries, one list of every type, read, write and load, told apart by a Type column and filter. Columns: time, type, user, statement, tables, duration, size (scanned for a read, loaded for a load), status with the error, and Cancel on a running query by its ID. Whether load records exist in our setup, and for how long, is the open question to engineering.</p>
+  <div class="note">
+    <div class="who">Evidence · Dmitrii, Rahul, Harviish</div>
+    <p>Dmitrii: add a User column and filter. We removed "Run by" on 7 Oct; it comes back. Rahul: total queried size, latency and similar metrics, cancellation by ID, and ingest activity. Harviish: those are the Jobs page from the December list, and a deeper flow for the next review round.</p>
+  </div>
+</section>
+
+<section id="access">
+  <h2>9. Who may do what</h2>
+  <p>Doris thinks in three layers. A <strong>privilege</strong> is one permission on one thing, such as read the orders table, or load into the orders table. A <strong>role</strong> is a named bundle of privileges. A <strong>user</strong> is given roles. To Doris, people and service accounts are both users.</p>
+  <figure>
+    <div class="frame">
+    <svg viewBox="0 0 860 250" role="img" aria-label="Users hold roles; roles bundle privileges; privileges apply to tables and views.">
+      <defs>
+        <marker id="arr3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--ink-2)"/></marker>
+      </defs>
+      <g font-size="13">
+        <rect x="20" y="40" width="180" height="170" rx="8" fill="var(--surface)" stroke="var(--line)"/>
+        <text x="36" y="66" font-size="12.5" class="dim" font-weight="500">USERS</text>
+        <text x="36" y="96">Priya Nair</text>
+        <text x="36" y="120">Arjun Mehta</text>
+        <text x="36" y="144" class="mono" font-size="12.5" fill="var(--query)">thoughtspot</text>
+        <text x="36" y="168" class="mono" font-size="12.5" fill="var(--load)">airflow-events</text>
+        <text x="36" y="196" class="dim" font-size="12">people and service accounts</text>
+      </g>
+      <line x1="204" y1="125" x2="246" y2="125" stroke="var(--ink-2)" stroke-width="1.4" marker-end="url(#arr3)"/>
+      <text x="225" y="112" text-anchor="middle" font-size="11.5" class="dim">holds</text>
+      <g font-size="13">
+        <rect x="250" y="40" width="180" height="170" rx="8" fill="var(--surface)" stroke="var(--line)"/>
+        <text x="266" y="66" font-size="12.5" class="dim" font-weight="500">ROLES · fixed for December</text>
+        <text x="266" y="96">Admin</text>
+        <text x="266" y="120">Editor</text>
+        <text x="266" y="144">Viewer</text>
+        <text x="266" y="196" class="dim" font-size="12">custom roles: later</text>
+      </g>
+      <line x1="434" y1="125" x2="476" y2="125" stroke="var(--ink-2)" stroke-width="1.4" marker-end="url(#arr3)"/>
+      <text x="455" y="112" text-anchor="middle" font-size="11.5" class="dim">bundles</text>
+      <g font-size="13">
+        <rect x="480" y="40" width="180" height="170" rx="8" fill="var(--surface)" stroke="var(--line)"/>
+        <text x="496" y="66" font-size="12.5" class="dim" font-weight="500">PRIVILEGES · inside Doris</text>
+        <text x="496" y="96" fill="var(--query)" font-weight="500">Select (read)</text>
+        <text x="496" y="120" fill="var(--load)" font-weight="500">Load (ingest)</text>
+        <text x="496" y="144">Create, Alter, Drop</text>
+        <text x="496" y="168">Grant</text>
+        <text x="496" y="196" class="dim" font-size="12">not exposed in December</text>
+      </g>
+      <line x1="664" y1="125" x2="706" y2="125" stroke="var(--ink-2)" stroke-width="1.4" marker-end="url(#arr3)"/>
+      <text x="685" y="112" text-anchor="middle" font-size="11.5" class="dim">on</text>
+      <g font-size="13">
+        <rect x="710" y="40" width="130" height="170" rx="8" fill="var(--surface)" stroke="var(--line)"/>
+        <text x="726" y="66" font-size="12.5" class="dim" font-weight="500">OBJECTS</text>
+        <text x="726" y="96" class="mono" font-size="12.5">orders</text>
+        <text x="726" y="120" class="mono" font-size="12.5">customers</text>
+        <text x="726" y="144" class="mono" font-size="12.5">tickets</text>
+        <text x="726" y="168" class="mono" font-size="12.5">open_tickets</text>
+        <text x="726" y="196" class="dim" font-size="12">per-object grants: later</text>
+      </g>
+    </svg>
+    </div>
+    <figcaption>Select and Load are the two privileges almost everyone uses. They are the Query and Ingest types, seen from the database's side. For December the console shows only the first two columns.</figcaption>
+  </figure>
+  <p>Harviish fixed the December scope: three roles, no custom roles, no per-object privileges. The privilege layer stays inside Doris and the console does not expose it. What each role can do, in his words:</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Role</th><th>Can</th><th>Cannot</th></tr></thead>
+    <tbody>
+      <tr><td>Viewer</td><td>See everything. Run reads in the SQL editor.</td><td>Create or change anything. Cancel queries.</td></tr>
+      <tr><td>Editor</td><td>Everything a Viewer can. Create and change tables, views and materialised views. Cancel queries. Create API keys.</td><td>Add people or service accounts.</td></tr>
+      <tr><td>Admin</td><td>Everything.</td><td class="muted">Nothing.</td></tr>
+    </tbody>
+  </table></div>
+  <p>Access holds two lists, because to Doris both are users:</p>
+  <div class="cols">
+    <div>
+      <h3>People</h3>
+      <ul>
+        <li>Add a person with a role</li>
+        <li>Change a person's role</li>
+        <li>Remove a person</li>
+        <li>Reset their password</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Service accounts</h3>
+      <ul>
+        <li>Create one, typed Query or Ingest</li>
+        <li>Reset its password</li>
+        <li>Revoke it, and restore it</li>
+        <li>See when it was last used</li>
+      </ul>
+    </div>
+  </div>
+  <p><strong>Later, not December:</strong> custom roles, table-level permissions, the audit trail from <a href="#login">Signing in</a>, and reviewing a person's keys when they are removed.</p>
+  <div class="note">
+    <div class="who">Evidence · Harviish's consolidated list, 14 Oct</div>
+    <p>"Record the full user management flow, CRUD of users. Three fixed roles only, no custom roles or per-object privileges for Dec. Service accounts move from Connect to Access (they're users)."</p>
+  </div>
+</section>
+
+<section id="ia">
+  <h2>10. The console: information architecture</h2>
+  <p>Sign-in first, then three workspace pages and three set-up pages. Data is the landing page: the homepage metrics sit above its browser, so there is no separate Overview. There is no account above the databases; the tree starts at them and lands on the first. Data is the catalog in the Databricks shape. There is no header: the sidebar carries the navigation and, at its foot, the signed-in person (Vivek, 15 Oct). SQL is a page of its own with the catalog tree beside it, as in Snowflake and VeloDB. Queries is one list of everything the database ran, of every type.</p>
+  <figure class="breakout">
+    <div class="frame">
+      <div class="sitemap" role="img" aria-label="Sitemap of the AgentDB console: sign in, then Data, SQL, Queries and Ingest in the workspace group, and Connect, API keys, Access in the setup group, each with its pages and contents.">
+        <div class="sm-root"><b>AgentDB console</b><span>sidebar: Workspace · Setup · signed-in person (Docs · Sign out)</span></div>
+        <div class="sm-groups">
+          <div class="sm-group sm-g1"><span>Sign in</span></div>
+          <div class="sm-group sm-g3"><span>Workspace</span></div>
+          <div class="sm-group sm-g3"><span>Setup</span></div>
+        </div>
+        <div class="sm-cols">
+          <div class="sm-col">
+            <div class="sm-page">Sign in</div>
+            <div class="sm-node"><b>Email</b></div>
+            <div class="sm-node"><b>One-time code</b><ul><li>sent by email</li></ul></div>
+            <div class="sm-node"><b>Password</b><ul><li>created the first time</li></ul></div>
+          </div>
+          <div class="sm-col">
+            <div class="sm-page">Data <em>landing</em></div>
+            <div class="sm-node"><b>Metrics, on top</b><ul><li>storage used · tables · queries 24 h</li><li>no account page; the tree starts at the databases</li></ul></div>
+            <div class="sm-node"><b>Database page</b><ul><li>objects list: name · kind · rows · size · last updated</li><li>Delete database</li></ul></div>
+            <div class="sm-node"><b>Object page</b><ul><li>Columns · Sample data · Details · History</li><li>Open in SQL · Load data · Empty · Delete</li></ul></div>
+          </div>
+          <div class="sm-col">
+            <div class="sm-page">SQL</div>
+            <div class="sm-node"><b>Catalog tree</b><ul><li>database selector</li></ul></div>
+            <div class="sm-node"><b>Editor · Run</b><ul><li>create or change tables, views, materialised views</li><li>reads</li></ul></div>
+            <div class="sm-node"><b>Results</b><ul><li>rows · confirmation · error</li></ul></div>
+            <div class="sm-node"><b>Recent runs</b><ul><li>link to documentation</li></ul></div>
+          </div>
+          <div class="sm-col">
+            <div class="sm-page">Queries</div>
+            <div class="sm-node"><b>Metrics, 24 h</b><ul><li>queries · loads · failed · data read</li></ul></div>
+            <div class="sm-node"><b>One list, every type</b><ul><li>time · type (read, write, load) · user · statement · tables</li><li>duration · size · status / error</li><li>cancel a running query by ID</li></ul></div>
+            <div class="sm-node"><b>Filters</b><ul><li>type · table · user · status</li></ul></div>
+          </div>
+          <div class="sm-col">
+            <div class="sm-page">Connect</div>
+            <div class="sm-node"><b>Method picker</b><ul><li>BI tools (ThoughtSpot among them, alphabetical)</li><li>Apps: code sample per language</li><li>Agents: MCP config</li><li>Load data: table + API key › address · headers · curl</li></ul></div>
+            <div class="sm-node"><b>Each method</b><ul><li>identity picker, never a list</li><li>facts with Copy</li><li>the thing to paste</li></ul></div>
+          </div>
+          <div class="sm-col">
+            <div class="sm-page">API keys</div>
+            <div class="sm-node"><b>Keys list</b><ul><li>name · type · created by · last used · status</li></ul></div>
+            <div class="sm-node"><b>Actions</b><ul><li>Create, secret shown once</li><li>Rotate</li><li>Revoke</li></ul></div>
+          </div>
+          <div class="sm-col">
+            <div class="sm-page">Access</div>
+            <div class="sm-node"><b>People tab</b><ul><li>add · change role · remove · reset password</li></ul></div>
+            <div class="sm-node"><b>Service accounts tab</b><ul><li>create, Query or Ingest</li><li>reset · revoke · restore</li></ul></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <figcaption>The console as a sitemap. One column per page, the pages' sections as nodes, their contents as lines. Scroll sideways on a narrow screen.</figcaption>
+  </figure>
+  <p>The same, as a tree for copying:</p>
+<pre class="tree"><b>Sign in</b>                                   email › code › password (first time) › in
+<b>AgentDB</b>                                   no header · sidebar: Workspace · Setup · signed-in person (Docs · Sign out)
+│
+├─ <b>WORKSPACE</b>
+│  ├─ <b>Data</b>  <span class="dim">(landing)</span>                       the catalog, Databricks pattern
+│  │   ├─ metrics on top: storage used · tables · queries 24 h   <span class="dim">(no plan limit yet, no loads; no account page; databases are provisioned, not created here, for now)</span>
+│  │   ├─ tree: databases › tables, views, materialised views, each with a kind label  <span class="dim">(search on top; lands on the first database)</span>
+│  │   ├─ database page: objects list (name, kind, rows, size, last updated) · Delete database
+│  │   ├─ object page:   name, kind, rows, size, last updated
+│  │   │                  tabs: Columns · Sample data · Details (the SQL that created it, statistics) · History (its loads)
+│  │   │                  actions: Open in SQL · Load data (this table's address + curl) · Empty · Delete
+│  │   └─ empty state:     "Nothing here yet" with a link to SQL
+│  │
+│  ├─ <b>SQL</b>                                   the editor, the only DDL path
+│  │   ├─ the same catalog tree on the left · database selector
+│  │   ├─ editor + results: reads, and create or change tables, views, materialised views
+│  │   ├─ link to the documentation   <span class="dim">(starter statements: later)</span>
+│  │   └─ my recent runs
+│  │
+│  └─ <b>Queries</b>                               one list of every type: read · write · load
+│      ├─ metrics, 24 h: queries · loads · failed · data read
+│      ├─ filters: type · table · user · status
+│      ├─ list: time · type · user · statement · tables · duration · size · status / error · Cancel on a running query
+│      └─ detail: query ID, user, timing, data read or loaded, rows, SQL, where the time went
+│
+└─ <b>SETUP</b>
+   ├─ <b>Connect</b>                               how a client gets in
+   │   ├─ BI tools:  pick a service account + database › host · port · database · username · connection string
+   │   ├─ Apps:      same facts + a code sample (Python, Node, Java)
+   │   ├─ Agents:    MCP address + config
+   │   └─ Load data: pick database + table + API key › load address · header set · curl · docs link
+   │
+   ├─ <b>API keys</b>                              own page: create (secret shown once) · rotate · revoke   <span class="dim">(relation to service accounts: open)</span>
+   │
+   └─ <b>Access</b>                                who may do what
+       ├─ People tab:           list · add · change role · remove · reset password
+       └─ Service accounts tab: list · create (Query or Ingest) · reset password · revoke · restore   <span class="dim">(three fixed roles on each person; no roles table)</span></pre>
+  <p>Three rules hold it together:</p>
+  <ul>
+    <li><strong>One page per thing the database knows.</strong> Objects live in Data, what happened in Queries. Nothing appears twice.</li>
+    <li><strong>Identities live in Access, never in Connect.</strong> Connect uses them through pickers and ends every block in something to copy.</li>
+    <li><strong>Connect is organised by client</strong>, not by component. ThoughtSpot is one BI tool among the others, with no special treatment.</li>
+  </ul>
+  <p>Open in the tree: whether API keys and service accounts are one thing or two. A question for Harviish in <a href="#open">the open questions</a>.</p>
+</section>
+
+<section id="jobs">
+  <h2>11. Jobs to be done, per page</h2>
+  <p>Every job a person does in the console, grouped by the page where it happens. Who is the role that mostly does it. How often is per customer, once the product is in daily use. Criticality says what breaks if the job cannot be done: <strong>critical</strong> blocks the core path or security, <strong>high</strong> blocks a day's work, <strong>medium</strong> slows it, <strong>low</strong> is a convenience.</p>
+  <p>The core path for a new customer, in order, is the set of critical jobs: sign in, create a table, create an Ingest identity, get the table's load address, load, verify the load landed, create a Query identity, connect ThoughtSpot. Everything in the first week is on this path. Everything after is upkeep.</p>
+
+  <h3>Sign in</h3>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Job</th><th>Who</th><th>How often</th><th>Criticality</th><th>How</th></tr></thead>
+    <tbody>
+      <tr><td>Sign in for the first time</td><td>Everyone</td><td>Once per person</td><td>Critical</td><td>Email, one-time code, create a password.</td></tr>
+      <tr><td>Sign in again</td><td>Everyone</td><td>Daily</td><td>Critical</td><td>Email and password. The code returns on a new device.</td></tr>
+      <tr><td>Recover a forgotten password</td><td>Everyone</td><td>Rarely</td><td>High</td><td>Email, code, new password.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Data: metrics, tree and database page</h3>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Job</th><th>Who</th><th>How often</th><th>Criticality</th><th>How</th></tr></thead>
+    <tbody>
+      <tr><td>Check the account at a glance</td><td>Admin, Editor</td><td>Daily</td><td>Medium</td><td>The metrics above the browser: storage used, tables, queries in the last 24 hours.</td></tr>
+      <tr><td>Notice something is wrong today</td><td>Editor</td><td>Weekly</td><td>High</td><td>On Queries: the failed figure and the Failed filter. Not on Data (Vivek, 15 Oct).</td></tr>
+      <tr><td>See how much storage is used</td><td>Admin</td><td>Monthly</td><td>Medium</td><td>The storage figure. No plan limit yet (Vivek, 15 Oct).</td></tr>
+      <tr><td>Find a table</td><td>Everyone</td><td>Many times a day</td><td>High</td><td>Search at the top of the tree, or open the database and scan the list.</td></tr>
+      <tr><td>See what is in a database</td><td>Everyone</td><td>Daily</td><td>High</td><td>Database page: every object with kind, rows, size, last updated.</td></tr>
+      <tr><td>Create a table, view or materialised view</td><td>Editor</td><td>Weekly, heavy in week one</td><td>Critical</td><td>Go to SQL. The empty database page says so and links there.</td></tr>
+      <tr><td>Delete a database</td><td>Admin</td><td>Rarely</td><td>Medium, dangerous</td><td>Database page, name typed to confirm, blocked while it has tables.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Table page</h3>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Job</th><th>Who</th><th>How often</th><th>Criticality</th><th>How</th></tr></thead>
+    <tbody>
+      <tr><td>See a table's shape</td><td>Everyone</td><td>Many times a day</td><td>High</td><td>Columns tab: names and types.</td></tr>
+      <tr><td>See what the data looks like</td><td>Everyone</td><td>Daily</td><td>High</td><td>Sample data tab: the first hundred rows.</td></tr>
+      <tr><td>Check a table is fresh</td><td>Editor</td><td>Daily</td><td>Critical</td><td>Rows, size and last updated in the header.</td></tr>
+      <tr><td>See a table's load history</td><td>Editor</td><td>Weekly</td><td>High</td><td>History tab: each load with rows, bytes, duration, status.</td></tr>
+      <tr><td>Get a table's load address</td><td>Editor</td><td>Once per table</td><td>Critical</td><td>Load data action: the full address, the header set, the curl command, filled in for this table.</td></tr>
+      <tr><td>Query this table</td><td>Editor, Viewer</td><td>Daily</td><td>High</td><td>Open in SQL, with a select on the table ready to run.</td></tr>
+      <tr><td>Get the SQL that created it</td><td>Editor</td><td>Occasionally</td><td>Medium</td><td>Details tab, copyable.</td></tr>
+      <tr><td>See what a view is built from</td><td>Editor, Viewer</td><td>Occasionally</td><td>Medium</td><td>Details tab on a view or materialised view: its query, and the tables underneath.</td></tr>
+      <tr><td>Empty or delete a table</td><td>Editor</td><td>Rarely</td><td>Medium, dangerous</td><td>Action menu, with the table's name typed to confirm.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>SQL</h3>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Job</th><th>Who</th><th>How often</th><th>Criticality</th><th>How</th></tr></thead>
+    <tbody>
+      <tr><td>Create a table</td><td>Editor</td><td>Week one: daily. After: weekly</td><td>Critical</td><td>Pick the database, write the create statement, Run. The tree refreshes.</td></tr>
+      <tr><td>Create a view or materialised view</td><td>Editor</td><td>Weekly</td><td>High</td><td>Same, with a create view statement. Its query is the content.</td></tr>
+      <tr><td>Change a table</td><td>Editor</td><td>Monthly</td><td>High</td><td>Add or widen a column with an alter statement.</td></tr>
+      <tr><td>Verify a load landed right</td><td>Editor</td><td>Daily, after loads</td><td>Critical</td><td>Count rows, latest date, duplicate IDs, empty values. Two or three short queries.</td></tr>
+      <tr><td>Find why a number is wrong</td><td>Editor</td><td>Weekly</td><td>High</td><td>Run the same sum directly on the table, with the BI tool out of the way.</td></tr>
+      <tr><td>Answer an ad-hoc question</td><td>Editor, Viewer</td><td>Weekly</td><td>Medium</td><td>Write a select, read the grid.</td></tr>
+      <tr><td>Test a query before an agent or app uses it</td><td>Editor</td><td>Occasionally</td><td>Medium</td><td>Run it, check the rows and the time taken.</td></tr>
+      <tr><td>Rerun a query that failed</td><td>Editor</td><td>Occasionally</td><td>Medium</td><td>From the activity page, Open in SQL, fix, Run.</td></tr>
+      <tr><td>Reopen something I ran earlier</td><td>Editor</td><td>Daily</td><td>Medium</td><td>My recent runs.</td></tr>
+      <tr><td>Read the documentation</td><td>Editor</td><td>Week one</td><td>Medium</td><td>Link beside the editor.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Queries</h3>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Job</th><th>Who</th><th>How often</th><th>Criticality</th><th>How</th></tr></thead>
+    <tbody>
+      <tr><td>Confirm a load arrived</td><td>Editor</td><td>Daily</td><td>Critical</td><td>Type filter Loads, table filter: rows, bytes, duration, status.</td></tr>
+      <tr><td>Find a failed load and why</td><td>Editor</td><td>Weekly</td><td>Critical</td><td>Type filter Loads, status filter Failed, the error in the row.</td></tr>
+      <tr><td>Stop a runaway query</td><td>Editor, Admin</td><td>Rarely, urgent</td><td>Critical</td><td>Status filter In progress, Cancel beside the row, by query ID.</td></tr>
+      <tr><td>Find why a query failed</td><td>Editor</td><td>Weekly</td><td>High</td><td>Status filter Failed, the error in the row.</td></tr>
+      <tr><td>See who is querying what, and how heavily</td><td>Admin, Editor</td><td>Weekly</td><td>Medium</td><td>User filter, size and duration columns.</td></tr>
+      <tr><td>See a table's load history</td><td>Editor</td><td>Weekly</td><td>High</td><td>Type filter Loads with the table filter, or the table's History tab.</td></tr>
+      <tr><td>See what is running right now</td><td>Editor</td><td>Occasionally</td><td>Medium</td><td>Status filter In progress.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Connect</h3>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Job</th><th>Who</th><th>How often</th><th>Criticality</th><th>How</th></tr></thead>
+    <tbody>
+      <tr><td>Connect ThoughtSpot, or any BI tool</td><td>Admin</td><td>Once per tool</td><td>Critical</td><td>BI tools method: pick a service account and a database, copy host, port, database, username into the tool's connection form.</td></tr>
+      <tr><td>Connect an app</td><td>Editor</td><td>Once per app</td><td>High</td><td>Apps method: same facts, a code sample per language.</td></tr>
+      <tr><td>Give an AI agent access</td><td>Editor</td><td>Once per agent</td><td>High</td><td>Agents method: the MCP address and config, with the service account filled in.</td></tr>
+      <tr><td>Set up a pipeline to load a table</td><td>Editor</td><td>Once per table</td><td>Critical</td><td>Load data method: pick database, table, API key; copy the address and the curl command; link to Doris docs for the header options.</td></tr>
+      <tr><td>Look up the host again</td><td>Anyone</td><td>Rarely</td><td>Low</td><td>The facts are at the top of each block.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>API keys</h3>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Job</th><th>Who</th><th>How often</th><th>Criticality</th><th>How</th></tr></thead>
+    <tbody>
+      <tr><td>Create a key</td><td>Editor, Admin</td><td>Once per pipeline or tool</td><td>Critical</td><td>Name it, choose Query or Ingest, copy the secret once.</td></tr>
+      <tr><td>Rotate a key</td><td>Editor, Admin</td><td>Quarterly</td><td>High</td><td>New secret shown once; the old one stops working after it is replaced in the tool.</td></tr>
+      <tr><td>Revoke a key</td><td>Admin</td><td>Rarely, urgent</td><td>Critical</td><td>One action, immediate; the tool's next request fails.</td></tr>
+      <tr><td>Find keys nobody uses</td><td>Admin</td><td>Quarterly</td><td>Medium</td><td>Sort by last used.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Access</h3>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Job</th><th>Who</th><th>How often</th><th>Criticality</th><th>How</th></tr></thead>
+    <tbody>
+      <tr><td>Add a person</td><td>Admin</td><td>Monthly</td><td>High</td><td>Name, email, role. They get the sign-in email.</td></tr>
+      <tr><td>Change a person's role</td><td>Admin</td><td>Rarely</td><td>Medium</td><td>Role dropdown on the row.</td></tr>
+      <tr><td>Remove a person who left</td><td>Admin</td><td>Rarely, urgent</td><td>Critical</td><td>Remove on the row; their sign-in stops at once.</td></tr>
+      <tr><td>Reset a person's password</td><td>Admin</td><td>Rarely</td><td>Medium</td><td>Sends them the code flow again.</td></tr>
+      <tr><td>Create a service account</td><td>Admin</td><td>Once per tool</td><td>Critical</td><td>Name, Query or Ingest, password shown once.</td></tr>
+      <tr><td>Reset, revoke or restore a service account</td><td>Admin</td><td>Rarely</td><td>High</td><td>Actions on the row.</td></tr>
+      <tr><td>Review who has access</td><td>Admin</td><td>Quarterly</td><td>Medium</td><td>Both tabs, with last active and last used.</td></tr>
+    </tbody>
+  </table></div>
+
+  <p class="small muted">Jobs marked critical and done once are the onboarding; they decide the empty states. Jobs marked critical and done daily are the upkeep; they decide what the filled states put first. Frequency and criticality are the designer's estimates until validation.</p>
+</section>
+
+<section id="flows">
+  <h2>12. Flows for the critical jobs</h2>
+  <p>One flow per critical job from <a href="#jobs">the jobs tables</a>, in the order a new customer meets them. Each step says where the person is, what they do, and what they see. A dashed step happens outside the console. The amber line under a flow is what happens when it goes wrong. Ten flows; the first seven are the onboarding path and the validation tasks.</p>
+
+  <div class="flow" id="flow-1">
+    <div class="flow-head"><h3>1. Sign in for the first time</h3><span class="tag">everyone</span><span class="tag">empty state</span><span class="tag">once per person</span></div>
+    <ol class="fsteps">
+      <li class="fstep out"><span class="where">Email</span><b>Open the invitation</b><span class="then">Sent when an Admin added them. One link to the console.</span></li>
+      <li class="fstep"><span class="where">Sign in</span><b>Enter the email address</b><span class="then">"We sent a code to that address."</span></li>
+      <li class="fstep"><span class="where">Sign in</span><b>Enter the code</b><span class="then">Accepted. First time only: a password step.</span></li>
+      <li class="fstep"><span class="where">Sign in</span><b>Create a password</b><span class="then">Rules shown inline, before any mistake.</span></li>
+      <li class="fstep"><span class="where">Data</span><b>Arrive</b><span class="then">The first database, selected and empty: nothing in it, and the next step named.</span></li>
+    </ol>
+    <div class="fbranch"><b>Wrong code:</b> "That code didn't match", with Send a new code. <b>Old link:</b> ask for a new code from the same screen. <b>Returning:</b> email and password only; the code comes back on a new device.</div>
+  </div>
+
+  <div class="flow" id="flow-2">
+    <div class="flow-head"><h3>2. Create the first table</h3><span class="tag">editor</span><span class="tag">empty state</span><span class="tag">week one</span></div>
+    <ol class="fsteps">
+      <li class="fstep"><span class="where">Data, database page</span><b>Read the empty state</b><span class="then">"No tables yet. Create one in SQL." A link.</span></li>
+      <li class="fstep"><span class="where">SQL</span><b>Arrive with the database selected</b><span class="then">Empty editor, the tree beside it, the documentation link.</span></li>
+      <li class="fstep"><span class="where">SQL</span><b>Write the create statement and Run</b><span class="then">Name, columns, types. The docs link covers the syntax.</span></li>
+      <li class="fstep"><span class="where">SQL, results</span><b>Read the confirmation</b><span class="then">"Table orders created." The tree refreshes and shows it.</span></li>
+      <li class="fstep"><span class="where">Table page</span><b>Open the new table</b><span class="then">No rows, no loads yet. Load data is the one highlighted action.</span></li>
+    </ol>
+    <div class="fbranch"><b>Statement error:</b> the database's message, with the line it points at, under the editor. Fix, Run again. <b>Viewer:</b> the backend refuses; the console says "Viewers can read but not create."</div>
+  </div>
+
+  <div class="flow" id="flow-3">
+    <div class="flow-head"><h3>3. Create an identity for a tool</h3><span class="tag">admin, editor for keys</span><span class="tag">empty state</span><span class="tag">once per tool</span></div>
+    <ol class="fsteps">
+      <li class="fstep"><span class="where">Access, or API keys</span><b>Create</b><span class="then">A service account for a tool that reads (Access, Admin). An API key for a pipeline that loads (API keys, Editor or Admin).</span></li>
+      <li class="fstep"><span class="where">Dialog</span><b>Name it after the tool</b><span class="then">thoughtspot, or airflow-events. The name is what Queries shows as the user.</span></li>
+      <li class="fstep"><span class="where">Dialog</span><b>Copy the secret</b><span class="then">Shown once. "It won't be shown again." Copy is the primary action.</span></li>
+      <li class="fstep"><span class="where">The list</span><b>See the row</b><span class="then">Name · created by · created · never used.</span></li>
+    </ol>
+    <div class="fbranch"><b>Lost the secret:</b> Reset, or Rotate for a key, on the row; a new secret shown once; the old one stops. <b>If Harviish rules that keys and accounts are one thing:</b> the two lists merge into Access and the API keys page goes; nothing else changes.</div>
+  </div>
+
+  <div class="flow" id="flow-4">
+    <div class="flow-head"><h3>4. Load a file into a table</h3><span class="tag">editor</span><span class="tag">empty to filled</span><span class="tag">once per table, then every run</span></div>
+    <ol class="fsteps">
+      <li class="fstep"><span class="where">Table page</span><b>Load data</b><span class="then">A panel for this table.</span></li>
+      <li class="fstep"><span class="where">Load data panel</span><b>Pick the Ingest identity</b><span class="then">The full load address, the header set explained, the curl command filled in. Copy.</span></li>
+      <li class="fstep out"><span class="where">Pipeline tool or terminal</span><b>Paste, add the file and the secret, run</b><span class="then">The command sends the file to the load door.</span></li>
+      <li class="fstep out"><span class="where">Terminal</span><b>Read the receipt</b><span class="then">Success, rows loaded, bytes, time.</span></li>
+      <li class="fstep"><span class="where">Table page</span><b>Come back</b><span class="then">Rows, size and last updated are filled. History shows the load.</span></li>
+    </ol>
+    <div class="fbranch"><b>Receipt says Fail:</b> the message names the cause, a separator, a type that did not fit. Fix the file or the headers, run again with a new label. <b>Nothing changed on the table page:</b> the load went to a different table or database; check the address.</div>
+  </div>
+
+  <div class="flow" id="flow-5">
+    <div class="flow-head"><h3>5. Confirm last night's loads, find a failed one</h3><span class="tag">editor</span><span class="tag">filled state</span><span class="tag">daily</span></div>
+    <ol class="fsteps">
+      <li class="fstep"><span class="where">Queries</span><b>Filter by type: Loads</b><span class="then">Newest first: time, identity, table, rows, bytes, duration, status.</span></li>
+      <li class="fstep"><span class="where">Queries</span><b>Filter by status: Failed</b><span class="then">Or by table, when one is expected.</span></li>
+      <li class="fstep"><span class="where">Queries, row</span><b>Open the failed load</b><span class="then">The error from the database, the identity, the label.</span></li>
+      <li class="fstep out"><span class="where">Pipeline tool</span><b>Fix and reload</b><span class="then">Flow 4 again, with a new label.</span></li>
+      <li class="fstep"><span class="where">Queries</span><b>See the new load succeed</b><span class="then">And the table page's last updated move.</span></li>
+    </ol>
+    <div class="fbranch"><b>No row at all for a table that should have loaded:</b> the pipeline never sent. The console cannot know why; the pipeline tool can. <b>Records missing:</b> if load recording is off in our setup, this flow has nothing to show. Open with engineering.</div>
+  </div>
+
+  <div class="flow" id="flow-6">
+    <div class="flow-head"><h3>6. Verify a load landed right</h3><span class="tag">editor</span><span class="tag">filled state</span><span class="tag">daily, after loads</span></div>
+    <ol class="fsteps">
+      <li class="fstep"><span class="where">Table page</span><b>Open in SQL</b><span class="then">The editor opens with a select on this table, ready to run.</span></li>
+      <li class="fstep"><span class="where">SQL</span><b>Change it to the check and Run</b><span class="then">Rows per day. Latest date. Duplicate IDs. Empty amounts.</span></li>
+      <li class="fstep"><span class="where">SQL, results</span><b>Read the grid</b><span class="then">Row count and time taken above it.</span></li>
+      <li class="fstep"><span class="where">SQL</span><b>Judge</b><span class="then">Matches the receipt and expectations: done. Does not: flow 5.</span></li>
+    </ol>
+    <div class="fbranch"><b>Query too slow or too big:</b> results stop at a thousand rows with a note; Stop is beside Run while it runs.</div>
+  </div>
+
+  <div class="flow" id="flow-7">
+    <div class="flow-head"><h3>7. Connect ThoughtSpot</h3><span class="tag">admin</span><span class="tag">empty state</span><span class="tag">once</span></div>
+    <ol class="fsteps">
+      <li class="fstep"><span class="where">Connect</span><b>Choose BI tools</b><span class="then">ThoughtSpot is one of the named tools. The other methods: Apps, Agents, Load data.</span></li>
+      <li class="fstep"><span class="where">Connect, BI tools</span><b>Pick a service account and a database</b><span class="then">No account yet: the method links to Access, flow 3.</span></li>
+      <li class="fstep"><span class="where">Connect, BI tools</span><b>Copy host, port, database, username</b><span class="then">Each with its own Copy. The password is the account's secret.</span></li>
+      <li class="fstep out"><span class="where">ThoughtSpot</span><b>New connection, paste, test</b><span class="then">The tables appear in ThoughtSpot.</span></li>
+      <li class="fstep"><span class="where">Queries</span><b>See the first query arrive</b><span class="then">User: thoughtspot. The connection is proven from our side.</span></li>
+    </ol>
+    <div class="fbranch"><b>Connection refused:</b> the identity is revoked, or the secret is wrong. Check its row in Access; Reset gives a new secret. <b>Several databases:</b> ThoughtSpot connects to one at a time; the tile says which.</div>
+  </div>
+
+  <div class="flow" id="flow-8">
+    <div class="flow-head"><h3>8. Stop a runaway query</h3><span class="tag">editor, admin</span><span class="tag">filled state</span><span class="tag">rare, urgent</span></div>
+    <ol class="fsteps">
+      <li class="fstep"><span class="where">Queries</span><b>Filter: In progress</b><span class="then">What is running right now, with how long and how much scanned so far.</span></li>
+      <li class="fstep"><span class="where">Queries, row</span><b>Find it</b><span class="then">By user, by duration, by size.</span></li>
+      <li class="fstep"><span class="where">Queries, row</span><b>Cancel</b><span class="then">A confirmation that shows the query ID and the user.</span></li>
+      <li class="fstep"><span class="where">Queries</span><b>See it stopped</b><span class="then">Status: Stopped. The client that sent it gets an error.</span></li>
+    </ol>
+    <div class="fbranch"><b>Viewer:</b> no Cancel. The row says who can. <b>Already finished:</b> Cancel is gone; the row shows Completed.</div>
+  </div>
+
+  <div class="flow" id="flow-9">
+    <div class="flow-head"><h3>9. Remove a person who left</h3><span class="tag">admin</span><span class="tag">filled state</span><span class="tag">rare, urgent</span></div>
+    <ol class="fsteps">
+      <li class="fstep"><span class="where">Access, people</span><b>Find the row</b><span class="then">Name, email, role, last active.</span></li>
+      <li class="fstep"><span class="where">Access, people</span><b>Remove</b><span class="then">Confirmation names the person and what stops.</span></li>
+      <li class="fstep"><span class="where">Access, people</span><b>See them gone</b><span class="then">Their session ends at once. Sign-in refused.</span></li>
+      <li class="fstep"><span class="where">Access, service accounts; API keys</span><b>Check what they created</b><span class="then">Sort by created by. Rotate or revoke what should not outlive them.</span></li>
+    </ol>
+    <div class="fbranch"><b>They created the ThoughtSpot identity:</b> revoking it breaks ThoughtSpot. Rotate instead, or hand ownership to another Admin. Ownership transfer is not designed yet; December answer is Rotate.</div>
+  </div>
+
+  <div class="flow" id="flow-10">
+    <div class="flow-head"><h3>10. Revoke an identity</h3><span class="tag">admin</span><span class="tag">filled state</span><span class="tag">rare, urgent</span></div>
+    <ol class="fsteps">
+      <li class="fstep"><span class="where">Access, service accounts, or API keys</span><b>Find the row</b><span class="then">By name, by last used.</span></li>
+      <li class="fstep"><span class="where">Row</span><b>Revoke</b><span class="then">"Tools using it will fail on their next request." Confirm.</span></li>
+      <li class="fstep"><span class="where">Row</span><b>See it revoked</b><span class="then">Status: Revoked. Restore stays available.</span></li>
+    </ol>
+    <div class="fbranch"><b>Revoked by mistake:</b> Restore on the row, immediate. <b>A leaked secret:</b> Reset, not Revoke, when the tool should keep working.</div>
+  </div>
+
+  <p class="small muted">What the flows surfaced, now in <a href="#open">the open questions</a>: which identity an Ingest tool uses, and what happens to identities a removed person created.</p>
+</section>
+
+<section id="build">
+  <h2>13. Build, validate, hand off</h2>
+  <h3>Prototype versions</h3>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Version</th><th>What it is</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td>v1 · 7 Oct</td><td>The build reviewed on 7 Oct and deployed. One database, no SQL page, service accounts inside Connect, Overview with the storage chart. What Dmitrii and Damian saw.</td><td>Frozen. Stays selectable as the record of what was reviewed.</td></tr>
+      <tr><td>v2 · 14 Oct</td><td>The December list applied as written on 7 Oct: API keys, a SELECT-only SQL page, role-based views, source labels on keys, an Endpoints block.</td><td>Discarded as a whole. Parts are reused in v3.</td></tr>
+      <tr><td>v3 · 14 Oct</td><td>v1 as the base, plus this document: sign-in, the catalog, one SQL editor, Queries as one list, Connect by method, API keys, Access, in empty and filled states. Reused from v2: the editor, the role control as a prototype-only switch, the query detail and Stop. Retired: the create-table wizard and the Edit columns form.</td><td>Built 14 Oct, first pass. Reviewed 15 Oct: no header, the product's sidebar, no account level, Access as tabs, Plain type. Not yet deployed. Copy is placeholder.</td></tr>
+      <tr><td>v4 · 15 Oct</td><td>v3 with the visual design pass: the eight principles below. Same scope, same data, same flows. A white page beside the grey sidebar and no cards; the metrics in one line; status before type on Queries; the editor owning the SQL page; the thing to paste first on Connect; one time format.</td><td>Built 15 Oct. The default version. v3 stays behind the gear for comparison. Not yet reviewed.</td></tr>
+    </tbody>
+  </table></div>
+  <p class="small muted">The gear menu at the bottom right holds the version, the workspace state and the signed-in role. They are prototype controls for walking through roles and versions. None is a product feature.</p>
+
+  <h3>Two states for every page</h3>
+  <p><strong>Empty:</strong> a new customer, one database, nothing in it. The empty states teach the first critical jobs in order: create a table, create an Ingest identity, get the load address, load, check it landed, connect ThoughtSpot. <strong>Filled:</strong> the Acme Retail sample, six weeks in: nine tables across two databases, a day's queries and loads, three people, eight identities. The prototype switches between the two from the gear menu. That switch is a prototype control.</p>
+
+  <h3>Validation</h3>
+  <p><strong>Who.</strong> Five data engineers from ThoughtSpot customers already on Snowflake or Databricks, and two internal: one from Dmitrii's team, one solutions engineer. <strong>When.</strong> On the v3 prototype, before the December build locks. <strong>How.</strong> Forty-five minutes each, on the empty state, task by task, no guidance. The tasks are the critical jobs from <a href="#jobs">the jobs tables</a>:</p>
+  <ol>
+    <li>Sign in for the first time</li>
+    <li>Create a table</li>
+    <li>Create an Ingest identity and get the table's load address</li>
+    <li>Confirm a load arrived</li>
+    <li>Verify the load with a query</li>
+    <li>Connect ThoughtSpot</li>
+    <li>Stop a running query</li>
+    <li>Remove a person who left</li>
+  </ol>
+  <p><strong>What we measure.</strong> Completed without help, yes or no. Where they hesitated. The words they used for things, against the names we use. <strong>What we decide from it.</strong> The order of the empty states, the Connect tiles, and whether the editor needs starter statements in December after all.</p>
+
+  <h3>Design system audit, 14 Oct</h3>
+  <p>Everything in v3 is built from Radiant Play, checked file by file. What the audit found and fixed:</p>
+  <ul>
+    <li><strong>Components.</strong> Twenty-one Radiant components: Vertical, Horizontal, Typography, Button, Select, Table, Modal, ModalFooter, TextInput, TextArea, SearchInput, NoData, ActionMenu, ActionMenuItem, Icon, Tabs, Tree, ProgressBar, Link, Card, Avatar. Plus the prototype's own primitives from v1, all built on tokens: PageHeader, StatTile, Panel, KeyValue, CopyField, CodeBlock, StatusPill, FloatingToast. Raw HTML only for layout and wrappers: div, aside, main, nav, header, span, and code for monospace values. No inline styles.</li>
+    <li><strong>Tokens.</strong> Colours only from the system palette, six of them. Fonts only the primary and mono families. Font size only the small token. Radius only medium. Spacing tokens one to eight. Typography variants: page-title, modal-title, content-label, content-label-subhead, body-normal, footnote, overline, headline-large. No hex, no rgb, no named fonts, no pixel sizes for type.</li>
+    <li><strong>Layout sizes.</strong> The rail, search box, editor height, column widths and caps were pixel literals. They are now thirteen custom properties derived from spacing tokens, declared once, and table column widths come from one shared set of token expressions. The only literals left are one-pixel borders.</li>
+    <li><strong>Icons.</strong> Nineteen, all from the Radiant registry: database, formula, list-view, cord, key, lock, grid-view, table, collection, play, pause, copy, more, plus, add-user, upload-data, documentation, checkmark-circle, exclamation-point-circle.</li>
+    <li><strong>Copy.</strong> Sentence case throughout. Buttons are imperative verbs.</li>
+  </ul>
+  <p><strong>Known deviations, for engineering:</strong></p>
+  <ul>
+    <li>The password field masks its text with a CSS rule, because Radiant's TextInput has no password type. Radiant needs a password input.</li>
+    <li>The shared v1 files carry three pixel literals that predate v3: the status pill's line height, the toast's width, and the header height, nav width and mark size in the shell. v1 is frozen, so they stay until Radiant provides tokens for them.</li>
+    <li>Tree selection and hover colours are the component's own.</li>
+  </ul>
+
+  <h3>Design system audit, 15 Oct</h3>
+  <p>Vivek's review found that the 14 Oct audit had checked tokens, not the look. Every value was a token, and the result still did not look like Radiant. Eight of his eight notes were fonts, sizes or a sidebar that was not the product's. What it found and what changed:</p>
+  <ul>
+    <li><strong>Fonts.</strong> Identifiers (users, keys, columns, connection facts) and commands rendered in the mono family through raw <code>code</code> elements, at a size that differed from the cells around them. The mono family is a token, so the token audit passed it, but no Radiant component renders text in it. Now text renders only through Typography or a component's own default. No <code>code</code> elements, no font family in the prototype's stylesheet. The one exception is the SQL editor, which keeps the mono family (Vivek, 15 Oct). The copyable commands and samples are Plain, in v3's own CopyField and CodeBlock.</li>
+    <li><strong>Tables.</strong> The Table was Radiant's; the cell renderers were not. User, statement, tables and identifiers are now plain cell text at the Table's own size.</li>
+    <li><strong>Sidebar.</strong> The nav was built from the tertiary Button, whose own rule paints its icon brand blue, with overrides on top. Now it is Radiant's AppSidebar in the light colourway of the product's sidebar: text-only items, section labels, blue on light blue when selected, the signed-in person at the foot with the account menu. No icons, no header.</li>
+    <li><strong>Prototype controls.</strong> The version, workspace state and signed-in role left the header for one gear menu floating bottom-right, a Radiant ActionMenu with three labelled groups. On the sign-in screen too.</li>
+  </ul>
+  <p><strong>The rule the 14 Oct audit lacked.</strong> Text renders only through Typography or a Radiant component's default, never through a raw element or a font declaration in prototype CSS. Navigation only through the Radiant sidebar. And an audit compares the screen with the product, not the stylesheet with the token file.</p>
+  <p><strong>Deviations added, for engineering:</strong></p>
+  <ul>
+    <li>AppSidebar ships in the dark colourway with a tab-switcher row. v3 passes it the light system palette through its own custom properties and hides the one-tab row. Radiant needs a light variant of AppSidebar and a way to omit the tabs.</li>
+    <li>v3 no longer uses the v1 shell, so its pixel literals no longer apply to v3.</li>
+    <li>The code block for commands and samples is a <code>pre</code> in the primary family, because Radiant has no code block.</li>
+  </ul>
+
+  <h3>Visual design principles, 15 Oct</h3>
+  <p>Eight rules a screen can be checked against. None adds a feature. v4 is built to them; scope is closed, the look is open (Vivek, 15 Oct).</p>
+  <ol>
+    <li><strong>Size follows urgency, not the data model.</strong> The loudest thing on a page is what the person came for. Numbers sit at text size unless the number is the page; the only big type is the page title.</li>
+    <li><strong>Three sizes above the fold.</strong> Page title at 24, the selected thing at 20, everything else at 14 with 12 for labels. The 32px headline is not used.</li>
+    <li><strong>One canvas, no cards.</strong> White page beside the grey sidebar. Sections are separated by whitespace and the Table's own header band. The only bordered region is the browser, because a tree and a pane need an edge between them.</li>
+    <li><strong>Colour means state, nothing else.</strong> Blue is selected or clickable. Red is failed. Green is completed. Everything else is grey or black. A quiet day looks quiet.</li>
+    <li><strong>Tables are the content.</strong> The Radiant Table sits directly on the page, compact, with plain strings in every cell at one size. The only marks inside a cell are the status pill and the blue name.</li>
+    <li><strong>One primary button per page, top right.</strong> Run, Create API key, Add person, Create service account. On Connect the primary is Copy on the thing to paste. Data and Queries have none.</li>
+    <li><strong>One rhythm.</strong> 32 at the page edge, 24 between sections, 16 inside a section, 8 between things that belong together. Spacing tokens only.</li>
+    <li><strong>One way to say each thing.</strong> One relative time format for freshness (Just now · 4 min ago · 3 h ago · Yesterday, 09:14 · 2 Sep) and absolute clock times in the log, because a log is a timeline. One size format. One typeface, Plain, with the SQL editor as the single exception. If the product's screen and ours differ in how a thing reads, ours is wrong, token or not.</li>
+  </ol>
+  <p>Withdrawn from the first draft as scope, not design: a link from the metrics line into Queries, and a draggable split in SQL. Ruled out on review (Vivek, 15 Oct): a status sentence on the metrics line. The line carries figures only.</p>
+
+  <h3>Handoff</h3>
+  <p>Engineering receives three things: the v3 prototype in both states and all three roles; this document; and a spec per page. Each spec lists the states (empty, filled, loading, error, no permission), what changes per role, every piece of copy, and the Radiant components used. Listed so nobody builds it, because it is not December: custom roles, per-object permissions, the audit trail, starter statements, lineage, alerts.</p>
+</section>
+
+<section id="decisions">
+  <h2>14. Decision log</h2>
+  <p>Newest last. A decision marked proposed is ours and awaits the named person.</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Date</th><th>Decision</th><th>Who</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr><td>7 Oct</td><td>Minimum observability: the console shows only what the database knows.</td><td>Vivek</td><td>Schedules and runs belong to the pipeline tool.</td></tr>
+      <tr><td>7 Oct</td><td>v2 built from the PM's December list behind a version switch; v1 frozen.</td><td>Vivek</td><td>Keep the reviewed build intact.</td></tr>
+      <tr><td>9 Oct</td><td>No source identification. Query and Ingest. Full load address and curl. HTTP-only ingest. User column. Catalog explorer. SQL for DDL.</td><td>Dmitrii, Damian, Rahul; agreed by Harviish</td><td>What Doris can and cannot know.</td></tr>
+      <tr><td>14 Oct</td><td>Several databases per customer, no folders.</td><td>Harviish</td><td>The tenant model. Reverses the 7 Oct single database.</td></tr>
+      <tr><td>14 Oct</td><td>Sign-in is email, one-time code, password. No SSO.</td><td>Harviish</td><td>SOC 2.</td></tr>
+      <tr><td>14 Oct</td><td>No create-table form. The SQL editor is the only DDL path and the query console.</td><td>Harviish</td><td>Fastest route to December. VeloDB precedent.</td></tr>
+      <tr><td>14 Oct</td><td>API keys on their own page. Service accounts under Access.</td><td>Harviish</td><td>They are users.</td></tr>
+      <tr><td>14 Oct</td><td>Three fixed roles. No custom roles or per-object privileges.</td><td>Harviish</td><td>December scope.</td></tr>
+      <tr><td>14 Oct</td><td>Catalog follows Databricks.</td><td>Harviish</td><td>Standard pattern. Works on Doris's own metadata.</td></tr>
+      <tr><td>14 Oct</td><td>Queries and Ingest share one nav item.</td><td>Harviish</td><td>Same objects, same filters.</td></tr>
+      <tr><td>14 Oct</td><td>That item is called Queries: one list of every type, read, write and load, with a Type filter. No tabs.</td><td>Vivek</td><td>Loads are queries the database ran, seen from its side.</td></tr>
+      <tr><td>14 Oct</td><td>v3 built on v1. v2 discarded. Every page in an empty and a filled state.</td><td>Vivek</td><td>v1 is reviewed and sound; the change is IA and content.</td></tr>
+      <tr><td>14 Oct</td><td>No Create button. One editor for DDL and reads with the output table below; the backend refuses what a role may not run; the editor opens empty.</td><td>Harviish and Vivek</td><td>The editor is the create path; a button would only open it.</td></tr>
+      <tr><td>14 Oct</td><td>Edit columns form retired with the create form.</td><td>Follows from Harviish's ruling</td><td>SQL is the only DDL path.</td></tr>
+      <tr><td>14 Oct</td><td>No Overview page. The metrics sit on the account page of Data.</td><td>Vivek, proposed; Harviish to confirm</td><td>Four tiles are not a page. Amended 15 Oct: no account page; the metrics sit above the browser.</td></tr>
+      <tr><td>14 Oct</td><td>Three kinds of identity: people, service accounts for the query door (Access), API keys for the load door (own page). The Databricks shape.</td><td>Vivek, proposed; Harviish to confirm</td><td>The only reading where every line of his list is true.</td></tr>
+      <tr><td>14 Oct</td><td>No database creation in the console for now. Databases are provisioned.</td><td>Vivek</td><td>Not a December job.</td></tr>
+      <tr><td>14 Oct</td><td>Connect is instructions only, one method picker: BI tools, Apps, Agents, Load data. ThoughtSpot gets no special treatment.</td><td>Vivek</td><td>The database cannot list what is connected; identities are the list, and they live in Access and API keys.</td></tr>
+      <tr><td>15 Oct</td><td>No header. The sidebar is Radiant's AppSidebar in the product's light colourway: text-only items, no icons, the signed-in person at the foot with Docs and Sign out.</td><td>Vivek</td><td>The product's own sidebar. The header carried nothing the sidebar could not.</td></tr>
+      <tr><td>15 Oct</td><td>No account above the databases. The tree starts at the databases and Data lands on the first. The metrics sit above the browser, full width.</td><td>Vivek</td><td>A customer has two to five databases and no parent over them.</td></tr>
+      <tr><td>15 Oct</td><td>Access is two tabs, People and Service accounts. No roles table. People keep one of the three fixed roles.</td><td>Vivek</td><td>The reference table was not a job.</td></tr>
+      <tr><td>15 Oct</td><td>A code font only in the SQL editor. Everything else, identifiers and copyable commands included, in Plain.</td><td>Vivek</td><td>Radiant renders no text in mono; the editor is the one place a code font earns its keep.</td></tr>
+      <tr><td>15 Oct</td><td>The prototype controls are one gear menu floating bottom-right: version, workspace state, signed-in role.</td><td>Vivek</td><td>Not product. One nested menu, not three dropdowns.</td></tr>
+      <tr><td>15 Oct</td><td>v4: v3 with the visual design pass, behind the version switch and the default. Eight principles, section 13.</td><td>Vivek</td><td>Scope is closed; the look is open.</td></tr>
+      <tr><td>15 Oct</td><td>The metrics line carries figures only. No status sentence, no alert.</td><td>Vivek</td><td>"We won't have this error alert. Only metrics."</td></tr>
+      <tr><td>15 Oct</td><td>Data's metrics are storage used, tables, queries in 24 h. No plan limit, no database count, no loads figure.</td><td>Vivek</td><td>Harviish's list says storage, tables, queries. There is no limit yet. Whether the database records loads at all is open with engineering.</td></tr>
+      <tr><td>19 Oct</td><td>Architecture: clusters hold many databases; each customer is given one or more, allocated in the backend. Customers never create a database and never see the cluster.</td><td>Vivek</td><td>Confirms the 14 Oct "databases are provisioned" call as the model, not a stopgap.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="list">
+  <h2>15. The December list, in plain words</h2>
+  <p>The PM's fifteen items from 7 Oct, translated, with what the thread added. Most of the feedback points back at this list. The places where the prototype diverged from it are marked.</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Item</th><th>In plain words</th><th>Thread</th></tr></thead>
+    <tbody>
+      <tr><td>Tenant model</td><td>Each customer gets their own separate AgentDB, with its own address, holding several databases.</td><td>Several databases, no folders (PM, 14 Oct).</td></tr>
+      <tr><td>Metadata store</td><td>Where AgentDB keeps its own records: people, keys, roles. Separate from the customer's data.</td><td class="muted">Not discussed.</td></tr>
+      <tr><td>Standalone login</td><td>People sign in with email, a code and a password on the console. No ThoughtSpot sign-in, no SSO.</td><td>Flow told on 14 Oct, see section 4.</td></tr>
+      <tr><td>Roles</td><td>Admin, Editor, Viewer.</td><td>Three fixed roles for December. Custom roles and per-object privileges later (Harviish, 14 Oct). Definitions in <a href="#access">Who may do what</a>.</td></tr>
+      <tr><td>API keys via Stream Load proxy</td><td>A gateway in front of the load door checks the key on every load.</td><td>Own page. Query and Ingest types.</td></tr>
+      <tr><td>Schema browser, DDL UI, SQL editor</td><td>The catalog explorer, the create-table form, and typed SQL for creating things.</td><td>Explorer follows Databricks. The SQL editor is the only DDL path, for tables, views and materialised views, and is the query console; no form (Harviish, 14 Oct). <strong>Prototype diverged:</strong> flat list, SELECT-only editor.</td></tr>
+      <tr><td>MySQL</td><td>Tools connect to the query door as if to MySQL.</td><td><strong>Prototype diverged:</strong> we read it as a loading method. Loading is HTTP only.</td></tr>
+      <tr><td>AWS</td><td>Runs on Amazon's cloud first.</td><td class="muted">Not discussed.</td></tr>
+      <tr><td>Agentic schema</td><td>Descriptions on tables and columns so an AI agent understands the data.</td><td class="muted">Not discussed.</td></tr>
+      <tr><td>MCP</td><td>The standard way an AI agent connects to a tool. Agents reach AgentDB through it.</td><td class="muted">Not discussed.</td></tr>
+      <tr><td>Homepage metrics, no money</td><td>Storage, tables, queries. Never a cost figure.</td><td>Above the browser on Data, which is the landing page. No separate Overview, no chart by source.</td></tr>
+      <tr><td>Query profiling</td><td>Where a query's time went, phase by phase.</td><td>Rahul's latency metrics. In the query detail.</td></tr>
+      <tr><td>Jobs page</td><td>The history of loads and queries.</td><td>Is the Queries page: one list of every type. Depends on load records being enabled (open with engineering).</td></tr>
+      <tr><td>Source usage tracking</td><td>Which source uses how much storage and how many queries.</td><td>Dropped. "Don't identify the source. Technically we can't." (Harviish, 14 Oct)</td></tr>
+      <tr><td>DR</td><td>Disaster recovery: backups and restore. Not visible in the console for December.</td><td class="muted">Not discussed.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="open">
+  <h2>16. Still open, and with whom</h2>
+  <div class="cols">
+    <div>
+      <h3>Engineering · Dmitrii, Ashok Anand, Rahul</h3>
+      <p class="small muted">Harviish's questions, as sent on 14 Oct.</p>
+      <ul>
+        <li>Sync modes: append, upsert, delete. Which are supported?</li>
+        <li>Per query: latency, status and error, scanned bytes. Per ingest job: loaded bytes. Doris exposes these through the audit log and stream-load records. Are both enabled in our setup, and what is the retention?</li>
+      </ul>
+      <p class="small muted">Ours, still unanswered.</p>
+      <ul>
+        <li>Which pipeline tools can do a stream load? Fivetran has no Doris destination as far as we know.</li>
+        <li>Is the load address https?</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Harviish</h3>
+      <ul>
+        <li>Are API keys and service accounts two things, a key for the load door through the proxy and an account for the query door, or one thing with two names? The list has both a new API keys tab and service accounts under Access, and lets Editors create keys but not accounts.</li>
+        <li>No separate Overview page: the homepage metrics sit above the browser on Data, which is the landing page. His list refers to Overview, so confirm.</li>
+        <li>Which identity an Ingest tool uses: a service account or an API key. Flow 3 and flow 4 depend on it.</li>
+        <li>Sign-in: invitation only, or open signup? Who creates the first Admin?</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Vivek</h3>
+      <ul>
+        <li>Correct the <a href="#jobs">jobs tables</a> and <a href="#flows">the flows</a>.</li>
+        <li>What happens to identities a removed person created: the December answer in flow 9 is Rotate; ownership transfer is not designed.</li>
+      </ul>
+      <p class="small muted">Closed 14 Oct: the Edit columns form goes with the create form, since the SQL editor is the only DDL path.</p>
+    </div>
+  </div>
+  <p class="small muted">Nothing from the thread or the consolidated list is built yet, in any version.</p>
+</section>
+
+<section id="gloss">
+  <h2>17. Glossary</h2>
+  <dl class="gloss">
+    <dt>Apache Doris</dt><dd>The open-source analytics database AgentDB runs on. Fast at reading large tables, built for many users querying at once.</dd>
+    <dt>Port</dt><dd>A numbered entrance on a server. Doris listens on 9030 for SQL and 8030 for loads.</dd>
+    <dt>HTTP</dt><dd>The language of the web. Browsers use it to fetch pages; tools use it to send files to the load door.</dd>
+    <dt>MySQL protocol</dt><dd>The language MySQL databases speak. Doris speaks it too, so any MySQL-compatible tool can query AgentDB.</dd>
+    <dt>Stream load</dt><dd>Doris's way of taking in a file: send it to a web address that names the database and table.</dd>
+    <dt>curl</dt><dd>A command-line tool that sends a web request. The quickest way to try a stream load by hand.</dd>
+    <dt>Ingestion</dt><dd>Getting data into the database. Same thing as loading.</dd>
+    <dt>Sync mode</dt><dd>How a pipeline tool keeps the copy in step with the source: full refresh, incremental, or CDC.</dd>
+    <dt>CDC</dt><dd>Change data capture. Replaying every insert, update and delete from the source as it happens.</dd>
+    <dt>SQL</dt><dd>The language for asking a database questions and telling it what to create.</dd>
+    <dt>DDL</dt><dd>The SQL commands that create or change the shape of things: create, alter, drop a table or view.</dd>
+    <dt>Query</dt><dd>One SQL statement sent to the database to read rows.</dd>
+    <dt>View</dt><dd>A saved query that behaves like a table but stores nothing.</dd>
+    <dt>Materialised view</dt><dd>A saved query that stores its result and refreshes it later.</dd>
+    <dt>Catalog</dt><dd>The list of everything in the database: databases, tables, views, materialised views, and their columns.</dd>
+    <dt>Schema</dt><dd>The shape of a table: its columns and their types. Also used loosely to mean the catalog.</dd>
+    <dt>Audit log</dt><dd>Doris's own record of every query: who, what, when, how long, how much data, and the outcome.</dd>
+    <dt>Audit trail</dt><dd>The console's record of admin actions: who created a key, changed a role, deleted a table. A SOC 2 expectation.</dd>
+    <dt>Query ID</dt><dd>The identifier Doris gives each query. Needed to stop a running one.</dd>
+    <dt>API key</dt><dd>A username and secret a tool uses to connect. v1 called it a service account.</dd>
+    <dt>Privilege</dt><dd>One permission on one object. The everyday two are Select, to read, and Load, to ingest.</dd>
+    <dt>Role</dt><dd>A named bundle of privileges, given to users.</dd>
+    <dt>Login code</dt><dd>A one-time code sent by email to prove the address is yours. Part of sign-in.</dd>
+    <dt>MFA</dt><dd>Multi-factor authentication. A second proof at sign-in, such as a code, on top of the password.</dd>
+    <dt>SOC 2</dt><dd>A security audit standard enterprise buyers ask vendors for. It audits controls such as access, change and incident handling.</dd>
+    <dt>MCP</dt><dd>Model Context Protocol. The standard way an AI agent plugs into a tool to list what is there and run queries.</dd>
+    <dt>Metadata</dt><dd>Data about the data: table names, column types, who created what, when it was last loaded.</dd>
+  </dl>
+</section>
+
+</main>
+</body>
+</html>

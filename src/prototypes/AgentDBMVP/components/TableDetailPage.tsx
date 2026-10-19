@@ -5,6 +5,7 @@ import { StoreTable, TableColumn } from '../types';
 import { formatGB, formatRows } from '../data';
 import { PLAIN_TYPES, PlainType, WIDENS_TO } from '../tableSchema';
 import { KeyValue, Panel } from './primitives';
+import { canEditTables, useRole, useVariant } from '../variant';
 import styles from './pages.module.css';
 
 const NAME_RE = /^[a-z][a-z0-9_]*$/;
@@ -60,7 +61,14 @@ export const TableDetailPage: React.FC<{
   const [editing, setEditing] = useState(false);
   const [menuKey, setMenuKey] = useState(0);
   const [drafts, setDrafts] = useState<Draft[]>([]);
-  const source = t.empty ? 'your pipeline' : t.writer.label;
+  const variant = useVariant();
+  const role = useRole();
+  // v1: the writer label is the ETL tool, which owns the job. v2: it is the data source; the job is in whatever pipeline wrote it.
+  const job = variant === 'v1' && !t.empty ? t.writer.label : 'your pipeline';
+  const source = job;
+  // v2 (PM plan): purge is not December; Viewers only look.
+  const showEmpty = variant === 'v1';
+  const canEdit = canEditTables(variant, role);
 
   const startEdit = () => {
     setDrafts(t.columns.map((c, i) => ({ id: `c${i}`, name: c.name, type: c.type as PlainType, original: c })));
@@ -136,8 +144,8 @@ export const TableDetailPage: React.FC<{
                   This is the only copy of this data. Deleting it removes {formatRows(t.rows)} rows and frees {formatGB(t.sizeGB)}.
                 </Typography>
                 <Typography variant="body-normal" color="gray-light" noMargin>
-                  If {t.writer.label} is still set up to write here, its next load will fail. Turn off the job in {t.writer.label}{' '}
-                  first.
+                  If {job === 'your pipeline' ? 'a pipeline' : job} is still set up to write here, its next load will fail. Turn off the
+                  job in {job === 'your pipeline' ? 'the pipeline tool' : job} first.
                 </Typography>
               </Vertical>
             )}
@@ -231,10 +239,15 @@ export const TableDetailPage: React.FC<{
               </Typography>
               <Typography variant="body-normal" color="gray-light" noMargin>
                 {t.empty
-                  ? `Empty. Point your pipeline at ${t.name} using a service account with write access.`
-                  : `Written by ${t.writer.label} (${t.writer.detail}). The job itself is scheduled and managed in ${t.writer.label}.`}
+                  ? variant === 'v2'
+                    ? `Empty. Point your pipeline at ${t.name} with an API key that can write.`
+                    : `Empty. Point your pipeline at ${t.name} using a service account with write access.`
+                  : variant === 'v2'
+                    ? `Source: ${t.writer.label}, written with the key ${t.writer.detail}. Loads are scheduled in your pipeline tool.`
+                    : `Written by ${t.writer.label} (${t.writer.detail}). The job itself is scheduled and managed in ${t.writer.label}.`}
               </Typography>
             </Vertical>
+            {canEdit && (
             <Horizontal gap={spacing.B}>
               <Button
                 variant="secondary"
@@ -256,7 +269,7 @@ export const TableDetailPage: React.FC<{
                   </Button>
                 }
               >
-                {!t.empty && (
+                {showEmpty && !t.empty && (
                   <ActionMenuItem
                     label="Empty table"
                     onClick={() => {
@@ -275,6 +288,7 @@ export const TableDetailPage: React.FC<{
                 />
               </ActionMenu>
             </Horizontal>
+            )}
           </Horizontal>
         </Vertical>
 

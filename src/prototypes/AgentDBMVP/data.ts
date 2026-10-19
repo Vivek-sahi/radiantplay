@@ -1,4 +1,4 @@
-import { IdentityKind, Person, QueryRecord, ServiceAccount, StoreTable } from './types';
+import { IdentityKind, Person, QueryRecord, Role, ServiceAccount, StoreTable } from './types';
 
 export const ORG_NAME = 'Acme Retail';
 export const ENDPOINT_HOST = 'acme-retail.agentdb.thoughtspot.cloud';
@@ -94,17 +94,17 @@ export const PEOPLE: Person[] = [
 
 /** Recent queries, newest first. The database only sees SQL and the account that sent it. */
 export const QUERIES: QueryRecord[] = [
-  { id: 'q8', time: '10:43:02', who: 'churn-analyst', kind: 'agent', summary: 'SELECT user_id, COUNT(*) FROM app_events WHERE event_time >= … GROUP BY user_id', tables: ['app_events'], durationMs: 0, status: 'In progress' },
-  { id: 'q7', time: '10:42:40', who: 'dbt-cloud', kind: 'pipeline', summary: 'INSERT OVERWRITE TABLE fct_revenue_daily SELECT day, region, channel, SUM(amount) … FROM orders', tables: ['fct_revenue_daily', 'orders'], durationMs: 0, status: 'In progress' },
-  { id: 'q1', time: '10:42:18', who: 'support-copilot', kind: 'agent', summary: 'SELECT ticket_id, priority, status FROM tickets WHERE opened_at >= … AND customer_id = 88412', tables: ['tickets'], durationMs: 180, status: 'Completed' },
-  { id: 'q2', time: '10:42:11', who: 'thoughtspot', kind: 'app', summary: 'SELECT region, SUM(amount) FROM orders WHERE order_date >= … GROUP BY region', tables: ['orders'], durationMs: 240, status: 'Completed' },
-  { id: 'q3', time: '10:41:57', who: 'churn-analyst', kind: 'agent', summary: 'SELECT c.segment, COUNT(*) FROM customers c JOIN orders o ON … GROUP BY c.segment', tables: ['customers', 'orders'], durationMs: 920, status: 'Completed' },
-  { id: 'q4', time: '10:41:49', who: 'churn-analyst', kind: 'agent', summary: 'SELECT c.segment, COUNT(*) FROM customers c JOIN orders o ON … GROUP BY c.segment', tables: ['customers', 'orders'], durationMs: 2, status: 'Failed', note: 'Refused at the rate limit (10 queries a second)' },
-  { id: 'q5', time: '10:41:30', who: 'seller-portal', kind: 'app', summary: 'SELECT * FROM orders WHERE seller_id = 20931 AND order_date >= …', tables: ['orders'], durationMs: 12, status: 'Completed' },
-  { id: 'q6', time: '10:40:02', who: 'Sara Lee', kind: 'person', summary: 'SELECT stage, SUM(amount) FROM opportunity GROUP BY stage', tables: ['opportunity'], durationMs: 310, status: 'Completed' },
-  { id: 'q9', time: '10:35:51', who: 'support-copilot', kind: 'agent', summary: 'SELECT … FROM tickets t JOIN charges c ON t.customer_id = c.customer_id', tables: ['tickets', 'charges'], durationMs: 60, status: 'Failed', note: 'No permission to read charges' },
-  { id: 'q10', time: '10:31:26', who: 'thoughtspot', kind: 'app', summary: 'SELECT priority, COUNT(*) FROM tickets WHERE opened_at >= … GROUP BY priority', tables: ['tickets'], durationMs: 160, status: 'Completed' },
-  { id: 'q11', time: '10:29:40', who: 'seller-portal', kind: 'app', summary: 'SELECT name, industry, country FROM account WHERE id = …', tables: ['account'], durationMs: 9, status: 'Completed' },
+  { id: 'q8', time: '10:43:02', who: 'churn-analyst', kind: 'agent', summary: 'SELECT user_id, COUNT(*) FROM app_events WHERE event_time >= … GROUP BY user_id', tables: ['app_events'], durationMs: 0, status: 'In progress', bytesRead: '2.1 GB so far', profile: [{ phase: 'Plan', ms: 40 }, { phase: 'Scan', ms: 9800 }] },
+  { id: 'q7', time: '10:42:40', who: 'dbt-cloud', kind: 'pipeline', summary: 'INSERT OVERWRITE TABLE fct_revenue_daily SELECT day, region, channel, SUM(amount) … FROM orders', tables: ['fct_revenue_daily', 'orders'], durationMs: 0, status: 'In progress', bytesRead: '28.1 GB so far', profile: [{ phase: 'Plan', ms: 60 }, { phase: 'Scan', ms: 21000 }, { phase: 'Aggregate', ms: 6400 }] },
+  { id: 'q1', time: '10:42:18', who: 'support-copilot', kind: 'agent', summary: 'SELECT ticket_id, priority, status FROM tickets WHERE opened_at >= … AND customer_id = 88412', tables: ['tickets'], durationMs: 180, status: 'Completed', endedAt: '10:42:18', bytesRead: '410 MB', resultRows: 12, profile: [{ phase: 'Plan', ms: 8 }, { phase: 'Scan', ms: 130 }, { phase: 'Filter', ms: 30 }, { phase: 'Return', ms: 12 }] },
+  { id: 'q2', time: '10:42:11', who: 'thoughtspot', kind: 'app', summary: 'SELECT region, SUM(amount) FROM orders WHERE order_date >= … GROUP BY region', tables: ['orders'], durationMs: 240, status: 'Completed', endedAt: '10:42:11', bytesRead: '1.2 GB', resultRows: 4, profile: [{ phase: 'Plan', ms: 10 }, { phase: 'Scan', ms: 180 }, { phase: 'Aggregate', ms: 42 }, { phase: 'Return', ms: 8 }] },
+  { id: 'q3', time: '10:41:57', who: 'churn-analyst', kind: 'agent', summary: 'SELECT c.segment, COUNT(*) FROM customers c JOIN orders o ON … GROUP BY c.segment', tables: ['customers', 'orders'], durationMs: 920, status: 'Completed', endedAt: '10:41:58', bytesRead: '6.8 GB', resultRows: 5, profile: [{ phase: 'Plan', ms: 14 }, { phase: 'Scan', ms: 610 }, { phase: 'Join', ms: 240 }, { phase: 'Aggregate', ms: 48 }, { phase: 'Return', ms: 8 }] },
+  { id: 'q4', time: '10:41:49', who: 'churn-analyst', kind: 'agent', summary: 'SELECT c.segment, COUNT(*) FROM customers c JOIN orders o ON … GROUP BY c.segment', tables: ['customers', 'orders'], durationMs: 2, status: 'Failed', note: 'Refused at the rate limit (10 queries a second)', endedAt: '10:41:49', bytesRead: '0 B', resultRows: 0 },
+  { id: 'q5', time: '10:41:30', who: 'seller-portal', kind: 'app', summary: 'SELECT * FROM orders WHERE seller_id = 20931 AND order_date >= …', tables: ['orders'], durationMs: 12, status: 'Completed', endedAt: '10:41:30', bytesRead: '2 MB', resultRows: 31, profile: [{ phase: 'Plan', ms: 3 }, { phase: 'Scan', ms: 6 }, { phase: 'Return', ms: 3 }] },
+  { id: 'q6', time: '10:40:02', who: 'Sara Lee', kind: 'person', summary: 'SELECT stage, SUM(amount) FROM opportunity GROUP BY stage', tables: ['opportunity'], durationMs: 310, status: 'Completed', endedAt: '10:40:02', bytesRead: '220 MB', resultRows: 6, profile: [{ phase: 'Plan', ms: 9 }, { phase: 'Scan', ms: 240 }, { phase: 'Aggregate', ms: 52 }, { phase: 'Return', ms: 9 }] },
+  { id: 'q9', time: '10:35:51', who: 'support-copilot', kind: 'agent', summary: 'SELECT … FROM tickets t JOIN charges c ON t.customer_id = c.customer_id', tables: ['tickets', 'charges'], durationMs: 60, status: 'Failed', note: 'No permission to read charges', endedAt: '10:35:51', bytesRead: '0 B', resultRows: 0 },
+  { id: 'q10', time: '10:31:26', who: 'thoughtspot', kind: 'app', summary: 'SELECT priority, COUNT(*) FROM tickets WHERE opened_at >= … GROUP BY priority', tables: ['tickets'], durationMs: 160, status: 'Completed', endedAt: '10:31:26', bytesRead: '640 MB', resultRows: 4, profile: [{ phase: 'Plan', ms: 7 }, { phase: 'Scan', ms: 120 }, { phase: 'Aggregate', ms: 26 }, { phase: 'Return', ms: 7 }] },
+  { id: 'q11', time: '10:29:40', who: 'seller-portal', kind: 'app', summary: 'SELECT name, industry, country FROM account WHERE id = …', tables: ['account'], durationMs: 9, status: 'Completed', endedAt: '10:29:40', bytesRead: '1 MB', resultRows: 1, profile: [{ phase: 'Plan', ms: 2 }, { phase: 'Scan', ms: 5 }, { phase: 'Return', ms: 2 }] },
 ];
 
 /** Last 24 hours (sample). In progress is whatever is running right now. */
@@ -132,3 +132,37 @@ export const formatRows = (n: number): string => {
 export const formatGB = (gb: number): string => (gb >= 100 ? `${gb.toFixed(0)} GB` : `${gb.toFixed(1)} GB`);
 
 export const formatMs = (ms: number): string => (ms >= 1000 ? `${(ms / 1000).toFixed(1)} s` : `${ms} ms`);
+
+// ---------------------------------------------------------------------------------------------
+// v2 · PM plan (7 Oct). Nothing below is read by v1.
+// ---------------------------------------------------------------------------------------------
+
+/** Who is signed in, per role. v1 is always Priya (Admin). */
+export const CURRENT_USER: Record<Role, string> = { Admin: 'Priya Nair', Editor: 'Arjun Mehta', Viewer: 'Sara Lee' };
+
+export const roleOf = (name: string, people: Person[]): Role => people.find((p) => p.name === name)?.role ?? 'Viewer';
+
+/** PM plan item 14: one key per source, with a source label the user typed. Tables take the label of the key that wrote them. */
+export const V2_SOURCE: Record<string, { label: string; detail: string }> = {
+  t5: { label: 'S3', detail: 's3-events' },
+  t11: { label: 'Snowflake', detail: 'snowflake-sales' },
+  t12: { label: 'Snowflake', detail: 'snowflake-sales' },
+  t6: { label: 'Snowflake', detail: 'snowflake-sales' },
+  t13: { label: 'Salesforce', detail: 'salesforce-crm' },
+  t7: { label: 'Salesforce', detail: 'salesforce-crm' },
+  t8: { label: 'Salesforce', detail: 'salesforce-crm' },
+  t14: { label: 'Databricks', detail: 'databricks-marts' },
+  t9: { label: 'Databricks', detail: 'databricks-marts' },
+};
+
+/** PM plan item 5: API keys. Permission is not stored — it is the creator's role (see keyPermission). */
+export const API_KEYS: ServiceAccount[] = [
+  { id: 'k1', name: 'thoughtspot', kind: 'app', permission: 'Read', rateLimit: null, lastUsed: 'Just now', createdBy: 'Sara Lee', passwordSetAt: '12 Sep' },
+  { id: 'k2', name: 'snowflake-sales', kind: 'pipeline', permission: 'Read & write', rateLimit: null, lastUsed: 'Today, 02:00', createdBy: 'Arjun Mehta', passwordSetAt: '12 Sep', sourceLabel: 'Snowflake' },
+  { id: 'k3', name: 'salesforce-crm', kind: 'pipeline', permission: 'Read & write', rateLimit: null, lastUsed: '22 min ago', createdBy: 'Arjun Mehta', passwordSetAt: '12 Sep', sourceLabel: 'Salesforce' },
+  { id: 'k4', name: 's3-events', kind: 'pipeline', permission: 'Read & write', rateLimit: null, lastUsed: '4 min ago', createdBy: 'Arjun Mehta', passwordSetAt: '12 Sep', sourceLabel: 'S3' },
+  { id: 'k5', name: 'databricks-marts', kind: 'pipeline', permission: 'Read & write', rateLimit: null, lastUsed: 'Today, 05:30', createdBy: 'Arjun Mehta', passwordSetAt: '12 Sep', sourceLabel: 'Databricks' },
+  { id: 'k6', name: 'support-copilot', kind: 'agent', permission: 'Read & write', rateLimit: null, lastUsed: '1 min ago', createdBy: 'Priya Nair', passwordSetAt: '12 Sep' },
+  { id: 'k7', name: 'churn-analyst', kind: 'agent', permission: 'Read', rateLimit: null, lastUsed: '3 min ago', createdBy: 'Sara Lee', passwordSetAt: '12 Sep' },
+  { id: 'k8', name: 'seller-portal', kind: 'app', permission: 'Read & write', rateLimit: null, lastUsed: 'Just now', createdBy: 'Arjun Mehta', passwordSetAt: '12 Sep' },
+];

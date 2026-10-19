@@ -1,0 +1,247 @@
+/* v3 layouts. Two-pane pages share one grid: a rail and the pane.
+   Every colour, font, radius and gap is a Radiant token. Layout sizes (rail, columns, caps) are
+   derived from spacing tokens here, once, and used by name below.
+   Text is never styled here: it renders through Typography or a component's own default. The one
+   exception is the SQL editor, which uses the mono family (Vivek, 15 Oct). */
+
+.content,
+.login {
+  --v3-rail-w: calc(var(--spacing-24) * 2 + var(--spacing-20));            /* 272 */
+  --v3-search-w: calc(var(--spacing-24) * 2 + var(--spacing-20) + var(--spacing-2)); /* 280 */
+  --v3-runin-w: calc(var(--spacing-24) * 2 + var(--spacing-12));           /* 240 */
+  --v3-cell-max: calc(var(--spacing-24) * 4 + var(--spacing-14));          /* 440 */
+  --v3-scroll-h: calc(var(--spacing-24) * 4 + var(--spacing-8) + var(--spacing-1)); /* 420 */
+  --v3-editor-h: calc(var(--spacing-24) * 2 + var(--spacing-7));           /* 220 */
+  --v3-tile-min: calc(var(--spacing-24) * 2 + var(--spacing-2));           /* 200 */
+  --v3-fact-min: calc(var(--spacing-24) * 3 + var(--spacing-3));           /* 300 */
+  --v3-two-min: calc(var(--spacing-24) * 2 + var(--spacing-16) + var(--spacing-1)); /* 260 */
+  --v3-two-max: calc(var(--spacing-24) * 7 + var(--spacing-20) + var(--spacing-2)); /* 760 */
+  --v3-card-w: calc(var(--spacing-24) * 4 + var(--spacing-8) + var(--spacing-1));   /* 420 */
+  --v3-phase-label-w: calc(var(--spacing-24) + var(--spacing-6));          /* 120 */
+  --v3-phase-ms-w: var(--spacing-20);                                       /* 80 */
+}
+
+/* Shell: the sidebar and the content, side by side. No header (Vivek, 15 Oct). */
+.app {
+  min-height: 100vh;
+  display: flex;
+  align-items: flex-start;
+  background: var(--rd-sys-color-background-sunken);
+  font-family: var(--font-family-primary);
+}
+
+/* The Radiant AppSidebar, pinned to the viewport so the avatar stays at the bottom. Its
+   tab-switcher row is hidden: one product, one tab, nothing to switch. */
+.sidebarWrap {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  flex: 0 0 auto;
+}
+.sidebarWrap aside > div:first-child { display: none; }
+
+.content {
+  flex: 1;
+  min-width: 0;
+  min-height: 100vh;
+  padding: var(--spacing-8);
+  display: flex;
+  flex-direction: column;
+}
+.page { flex: 1; min-height: 0; }
+
+/* Bottom of the sidebar: the signed-in person, opening the account menu. */
+.avatarWrap { padding: 0 var(--spacing-5); }
+.avatarButton {
+  justify-content: flex-start !important;
+  color: var(--rd-sys-color-content-primary) !important;
+}
+.avatarButton > span {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+/* Prototype controls: one gear, floating bottom-right, on every screen. Not a product feature. */
+.protoControls {
+  position: fixed;
+  right: var(--spacing-4);
+  bottom: var(--spacing-16); /* above the feedback layer's own button, which sits at the corner */
+  z-index: var(--z-index-sticky);
+}
+.iconSpacer {
+  display: inline-block;
+  width: var(--spacing-4);
+  height: var(--spacing-4);
+}
+
+.catalog,
+.sqlLayout {
+  display: grid;
+  grid-template-columns: var(--v3-rail-w) minmax(0, 1fr);
+  flex: 1;
+  background: var(--rd-sys-color-background-base);
+  border: 1px solid var(--rd-sys-color-border-divider);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.rail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  padding: var(--spacing-3);
+  border-right: 1px solid var(--rd-sys-color-border-divider);
+  min-width: 0;
+}
+
+.pane {
+  min-width: 0;
+  padding: var(--spacing-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-6);
+}
+
+.crumbs {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  margin-bottom: calc(var(--spacing-4) * -1);
+}
+
+.oneLine {
+  display: block;
+  max-width: var(--v3-cell-max);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--v3-tile-min), 1fr));
+  gap: var(--spacing-4);
+}
+
+.filters { padding: 0 var(--spacing-5); }
+.search { width: var(--v3-search-w); }
+
+.nameCell {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  min-width: 0;
+}
+
+.num { font-variant-numeric: tabular-nums; }
+
+.facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--v3-fact-min), 1fr));
+  gap: var(--spacing-3) var(--spacing-8);
+}
+
+.scroll {
+  max-height: var(--v3-scroll-h);
+  overflow: auto;
+  border: 1px solid var(--rd-sys-color-border-divider);
+  border-radius: var(--radius-md);
+}
+
+.empty { padding: var(--spacing-8) var(--spacing-5); }
+
+.leftAlign { justify-content: flex-start !important; }
+
+/* A value to copy, and a block to copy. Plain text, the layout only. */
+.copyValue {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.codeBlock {
+  margin: 0;
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-sm);
+  line-height: 1.6;
+  color: var(--rd-sys-color-content-primary);
+  background: var(--rd-sys-color-background-sunken);
+  border: 1px solid var(--rd-sys-color-border-divider);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-3) var(--spacing-4);
+  overflow-x: auto;
+  white-space: pre;
+}
+
+/* The SQL editor is the one place that uses a code font (Vivek, 15 Oct). */
+.editor textarea {
+  font-family: var(--font-family-mono) !important;
+  font-size: var(--font-size-sm) !important;
+  line-height: 1.6 !important;
+  min-height: var(--v3-editor-h);
+}
+
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--spacing-3);
+  flex-wrap: wrap;
+}
+
+.runIn { width: var(--v3-runin-w); }
+
+.resultMeta { padding: 0 var(--spacing-5) var(--spacing-3); }
+
+.message {
+  display: flex;
+  gap: var(--spacing-2);
+  align-items: flex-start;
+}
+
+.headers {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: var(--spacing-1) var(--spacing-4);
+  align-items: baseline;
+}
+
+/* Sign in */
+.login {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: var(--spacing-8);
+  background: var(--rd-sys-color-background-sunken);
+  font-family: var(--font-family-primary);
+}
+
+.loginCard { width: min(var(--v3-card-w), 100%); }
+.loginInner { padding: var(--spacing-8) var(--spacing-7); }
+
+.password input { -webkit-text-security: disc; }
+
+.mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--spacing-8);
+  height: var(--spacing-8);
+  border-radius: var(--radius-md);
+  background: var(--rd-sys-color-background-brand);
+  color: var(--rd-sys-color-content-primary-inverse);
+}
+
+.grow { flex: 1; min-width: 0; }
+.phaseLabel { width: var(--v3-phase-label-w); flex: none; }
+.phaseMs { width: var(--v3-phase-ms-w); flex: none; text-align: right; font-variant-numeric: tabular-nums; }
+
+.twoUp {
+  max-width: var(--v3-two-max);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(var(--v3-two-min), 1fr));
+  gap: var(--spacing-4);
+  align-items: end;
+}

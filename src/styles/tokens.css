@@ -165,6 +165,7 @@
   /* ---- System Tokens: Background ---- */
   --rd-sys-color-background-base: #FFFFFF;
   --rd-sys-color-background-raised: #FFFFFF;
+  --rd-sys-color-background-surface: #FFFFFF;               /* added 19 Oct: ActionMenu and 12 other components read it; it was never defined, so menus were transparent */
   --rd-sys-color-background-sunken: #F6F8FA;
   --rd-sys-color-background-subtle: #EAEDF2;
   --rd-sys-color-background-inset: #C0C6CF;
@@ -267,6 +268,7 @@
   /* ---- New System Tokens: Background ---- */
   --rd-sys-color-background-base: #1D232F;
   --rd-sys-color-background-raised: #323946;
+  --rd-sys-color-background-surface: #323946;
   --rd-sys-color-background-sunken: #323946;
   --rd-sys-color-background-subtle: #4A515E;
   --rd-sys-color-background-inset: #777E8B;
@@ -342,6 +344,7 @@
     /* ---- New System Tokens: Background ---- */
     --rd-sys-color-background-base: #1D232F;
     --rd-sys-color-background-raised: #323946;
+    --rd-sys-color-background-surface: #323946;
     --rd-sys-color-background-sunken: #323946;
     --rd-sys-color-background-subtle: #4A515E;
     --rd-sys-color-background-inset: #777E8B;

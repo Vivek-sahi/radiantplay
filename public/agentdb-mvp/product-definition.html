@@ -1,0 +1,890 @@
+<title>AgentDB Data Store</title>
+<style>
+  :root{
+    --bg:#fbfbfa; --panel:#fff; --ink:#1a1a18; --ink2:#54534e; --ink3:#86847c;
+    --line:#e6e4de; --line2:#d8d5cc;
+    --open:#b45309; --open-bg:#fef6e7; --open-line:#f0d8a8;
+    --prop:#1d4ed8; --prop-bg:#eef2ff; --prop-line:#c9d4f7;
+    --fact:#15803d; --fact-bg:#edf7ef; --fact-line:#c2e0c9;
+    --risk:#b91c1c; --risk-bg:#fdf0ef; --risk-line:#f3cdc9;
+    --pivot-bg:#1f1f1c; --pivot-ink:#f7f6f2;
+    --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --bg:#141413; --panel:#1c1c1a; --ink:#eceae4; --ink2:#b3b0a7; --ink3:#87847b;
+    --line:#2e2e2b; --line2:#3b3a36;
+    --open:#e0a94a; --open-bg:#2a2117; --open-line:#4a3a1e;
+    --prop:#8fa9f5; --prop-bg:#1a1f33; --prop-line:#2d3860;
+    --fact:#6cc088; --fact-bg:#16241a; --fact-line:#264430;
+    --risk:#e8867e; --risk-bg:#2c1a19; --risk-line:#4d2a27;
+    --pivot-bg:#efece5; --pivot-ink:#1a1a18;
+  }}
+  :root[data-theme="dark"]{
+    --bg:#141413; --panel:#1c1c1a; --ink:#eceae4; --ink2:#b3b0a7; --ink3:#87847b;
+    --line:#2e2e2b; --line2:#3b3a36;
+    --open:#e0a94a; --open-bg:#2a2117; --open-line:#4a3a1e;
+    --prop:#8fa9f5; --prop-bg:#1a1f33; --prop-line:#2d3860;
+    --fact:#6cc088; --fact-bg:#16241a; --fact-line:#264430;
+    --risk:#e8867e; --risk-bg:#2c1a19; --risk-line:#4d2a27;
+    --pivot-bg:#efece5; --pivot-ink:#1a1a18;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.62 ui-sans-serif,-apple-system,"Segoe UI",Inter,system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:920px;margin:0 auto;padding:56px 28px 120px}
+  header.top{border-bottom:1px solid var(--line);padding-bottom:26px;margin-bottom:34px}
+  .eyebrow{font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink3);font-weight:600}
+  h1{font-size:38px;line-height:1.12;margin:.32em 0 .28em;letter-spacing:-.022em;font-weight:640}
+  .sub{color:var(--ink2);font-size:16.5px;max-width:64ch;margin:0}
+  .meta{margin-top:18px;font-size:13px;color:var(--ink3);display:flex;gap:18px;flex-wrap:wrap}
+
+  .stage{margin:58px 0 0;padding-top:24px;border-top:1px solid var(--line)}
+  .stage-n{font-size:11.5px;letter-spacing:.085em;text-transform:uppercase;color:var(--ink3);
+           font-weight:680}
+  .stage h2{font-size:25px;letter-spacing:-.018em;font-weight:640;margin:5px 0 8px;color:var(--ink)}
+  .stage .lead{color:var(--ink2);font-size:15.5px;margin:0 0 6px;max-width:68ch}
+  h3{font-size:17.5px;margin:34px 0 8px;letter-spacing:-.012em;font-weight:620}
+  h4{font-size:14.5px;margin:22px 0 6px;font-weight:640;color:var(--ink)}
+  p{margin:0 0 13px;max-width:70ch}
+  ul,ol{margin:0 0 13px;padding-left:20px;max-width:70ch}
+  li{margin:0 0 6px}
+  strong{font-weight:640}
+  code{font-family:var(--mono);font-size:.87em;background:var(--panel);
+       border:1px solid var(--line);border-radius:4px;padding:.1em .34em}
+
+  .tag{display:inline-block;font-size:10.5px;letter-spacing:.075em;text-transform:uppercase;
+    font-weight:700;padding:2.5px 7px;border-radius:4px;vertical-align:2px;white-space:nowrap}
+  .t-open{background:var(--open-bg);color:var(--open);border:1px solid var(--open-line)}
+  .t-prop{background:var(--prop-bg);color:var(--prop);border:1px solid var(--prop-line)}
+  .t-fact{background:var(--fact-bg);color:var(--fact);border:1px solid var(--fact-line)}
+  .t-risk{background:var(--risk-bg);color:var(--risk);border:1px solid var(--risk-line)}
+
+  .legend{display:flex;gap:9px;flex-wrap:wrap;margin:24px 0 0;padding:15px 17px;
+    background:var(--panel);border:1px solid var(--line);border-radius:9px}
+  .legend div{font-size:12.6px;color:var(--ink2);display:flex;gap:7px;align-items:baseline}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;
+        padding:19px 21px;margin:16px 0}
+  .card.open{border-left:3px solid var(--open)}
+  .card.prop{border-left:3px solid var(--prop)}
+  .card.fact{border-left:3px solid var(--fact)}
+  .card.risk{border-left:3px solid var(--risk)}
+  .card h4{margin-top:0}
+  .card p:last-child,.card ul:last-child{margin-bottom:0}
+
+  .q{margin:15px 0 0;padding:13px 15px;background:var(--open-bg);
+     border:1px solid var(--open-line);border-radius:8px;font-size:14.6px;color:var(--ink)}
+  .q b{color:var(--open);text-transform:uppercase;font-size:10.5px;letter-spacing:.075em;
+       display:block;margin-bottom:4px;font-weight:700}
+
+  .derives{margin:26px 0;padding:17px 20px;border:1px dashed var(--line2);border-radius:10px;
+    background:transparent}
+  .derives .lbl{font-size:10.5px;letter-spacing:.085em;text-transform:uppercase;
+    color:var(--ink3);font-weight:700;margin-bottom:7px}
+  .derives p{margin:0;font-size:15px;color:var(--ink2)}
+
+  table{border-collapse:collapse;width:100%;margin:16px 0;font-size:14.4px}
+  th{text-align:left;font-size:11px;letter-spacing:.075em;text-transform:uppercase;
+     color:var(--ink3);font-weight:680;padding:0 12px 8px 0;border-bottom:1px solid var(--line2);
+     vertical-align:bottom}
+  td{padding:11px 12px 11px 0;border-bottom:1px solid var(--line);vertical-align:top;color:var(--ink2)}
+  td:first-child{color:var(--ink);font-weight:560}
+  .scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+
+  .cols{display:grid;grid-template-columns:repeat(3,1fr);gap:13px;margin:18px 0}
+  .cols2{display:grid;grid-template-columns:repeat(2,1fr);gap:13px;margin:18px 0}
+  @media(max-width:720px){.cols,.cols2{grid-template-columns:1fr}}
+  .col{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px 17px}
+  .col h4{margin:0 0 3px;font-size:14px}
+  .col .lvl{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink3);
+            font-weight:680;margin-bottom:11px}
+  .col ul{padding-left:17px;margin:0;font-size:14px}
+  .col li{color:var(--ink2);margin-bottom:5px}
+  .col .note{font-size:13.4px;color:var(--ink3);margin:10px 0 0}
+
+  .flow{font-family:var(--mono);font-size:13px;line-height:1.85;background:var(--panel);
+    border:1px solid var(--line);border-radius:9px;padding:17px 19px;margin:16px 0;
+    color:var(--ink2);white-space:pre;overflow-x:auto}
+  .flow b{color:var(--ink);font-weight:600}
+
+
+  .foot{margin-top:64px;padding-top:20px;border-top:1px solid var(--line);
+        font-size:13px;color:var(--ink3)}
+
+  /* sequence list */
+  .seq{margin:22px 0 26px;border:1px solid var(--line);border-radius:11px;
+       overflow:hidden;background:var(--panel)}
+  .seq-band{padding:16px 19px 15px}
+  .seq-lbl{font-size:10.5px;letter-spacing:.085em;text-transform:uppercase;
+           color:var(--ink3);font-weight:700;margin-bottom:11px}
+  .seq-list{list-style:none;margin:0;padding:0;max-width:none}
+  .seq-list li{display:grid;grid-template-columns:24px 1fr;gap:1px 13px;
+               align-items:baseline;padding:9px 0;margin:0}
+  .seq-list li+li{border-top:1px solid var(--line)}
+  .sn{font-family:var(--mono);font-size:12.5px;color:var(--ink3);font-weight:600;
+      text-align:right;letter-spacing:-.02em}
+  .st{font-size:15.5px;color:var(--ink);font-weight:620;letter-spacing:-.008em}
+  .sd{grid-column:2;font-size:13.6px;color:var(--ink2);line-height:1.5}
+  .seq-pivot{padding:15px 19px;background:var(--pivot-bg);color:var(--pivot-ink)}
+  .seq-pivot .pt{font-size:15.5px;font-weight:650;letter-spacing:-.008em;margin-bottom:2px}
+  .seq-pivot .pd{font-size:13.6px;opacity:.72;line-height:1.5}
+</style>
+
+<div class="wrap">
+
+<header class="top">
+  <div class="eyebrow">Working draft · for markup</div>
+  <h1>AgentDB Data Store</h1>
+  <p class="sub">The second product on the data store — loading warehouse tables into AgentDB on a
+  schedule. Worked in sequence, because each stage below is derived from the one above it rather
+  than decided on its own.</p>
+  <div class="meta">
+    <span>26 August 2026</span>
+    <span>Vivek Sahi</span>
+    <span>Nothing is decided unless marked as such</span>
+  </div>
+  <div class="legend">
+    <div><span class="tag t-fact">Known</span> established with you, or read from the build</div>
+    <div><span class="tag t-prop">Proposed</span> my recommendation — argue with it</div>
+    <div><span class="tag t-open">Open</span> yours or the PM's; not filled in by inference</div>
+    <div><span class="tag t-risk">Trap</span> fails quietly; needs an answer</div>
+  </div>
+</header>
+
+<p>Two products sit on the data store. <strong>Pulse</strong> caches a whole model in one click —
+built, shipped, frozen. <strong>Data Store</strong> loads individual warehouse tables on a
+schedule, and is what this is about. Same storage underneath; two ways to fill it.</p>
+
+<p>An interface already exists — nine screens from an acquired product, with a three-step extract
+wizard. What doesn't exist is the reasoning underneath it. The risk of starting from those screens
+is that we inherit a scope that was set for someone else's product.</p>
+
+<div class="seq">
+  <div class="seq-band">
+    <div class="seq-lbl">Establish first</div>
+    <ol class="seq-list">
+      <li><span class="sn">1</span><span class="st">What it is</span>
+          <span class="sd">Its boundaries, and its value in ThoughtSpot's context</span></li>
+      <li><span class="sn">2</span><span class="st">Who the user is</span>
+          <span class="sd">One primary user, named</span></li>
+    </ol>
+  </div>
+  <div class="seq-pivot">
+    <div class="pt">Scope and mental model</div>
+    <div class="pd">The output of 1 and 2 — and the input to everything below</div>
+  </div>
+  <div class="seq-band">
+    <div class="seq-lbl">Derived from scope</div>
+    <ol class="seq-list">
+      <li><span class="sn">3</span><span class="st">Packaging</span>
+          <span class="sd">SKU, entitlement, or on for everyone — a gut call, we won't get data</span></li>
+      <li><span class="sn">4</span><span class="st">Positioning</span>
+          <span class="sd">Where it sits in the product, and why there</span></li>
+      <li><span class="sn">5</span><span class="st">Workflow</span>
+          <span class="sd">What capabilities we offer — decided by scope, not inherited</span></li>
+      <li><span class="sn">6</span><span class="st">After the run</span>
+          <span class="sd">What the user is shown, and who hears about failure</span></li>
+      <li><span class="sn">7</span><span class="st">Consumers</span>
+          <span class="sd">Where the tables surface, and how modelers use them</span></li>
+    </ol>
+  </div>
+</div>
+
+
+<!-- ═══════════════ 1 ═══════════════ -->
+<div class="stage">
+<div class="stage-n">Stage 1</div>
+<h2>What it is, its boundaries, its value here</h2>
+<p class="lead">Everything downstream depends on this being right, so it is worth being slow.</p>
+</div>
+
+<h3>What it is</h3>
+<div class="card prop">
+  <h4>The definition I'd argue for <span class="tag t-prop">Proposed</span></h4>
+  <p style="font-size:17px;color:var(--ink)"><strong>Not a general ETL tool. A loading step for
+  analysis.</strong></p>
+  <p>Fivetran is general purpose — any source, any destination, any purpose. Ours is narrow, and
+  every part of that narrowness buys a simplification:</p>
+  <ul>
+    <li>We know the destination, so there is no destination to configure.</li>
+    <li>We know the purpose, so a column can be described by what you can chart, not by SQL types.</li>
+    <li>We know what happens next — a model gets built — so loading can hand off into modeling
+        rather than ending at "table loaded."</li>
+    <li>Warehouse connectors only. No SaaS sources, so no connector library to maintain.</li>
+    <li>We are not a transformation tool, so SQL hooks are a candidate to cut.</li>
+  </ul>
+  <p>This is the sentence that lets us delete what the acquired product carries.</p>
+</div>
+
+<h3>Its boundaries</h3>
+<p>Three borders, and two of them are internal. The internal ones matter more, because that is
+where we will accidentally build the same thing twice.</p>
+
+<div class="cols">
+  <div class="col">
+    <div class="lvl">Border 1</div>
+    <h4>Against Fivetran</h4>
+    <p class="note" style="margin-top:0;color:var(--ink2);font-size:14px">They consolidate at the
+    <em>source</em> level — apps and operational databases that were never in a warehouse. We move
+    data <em>out of</em> a warehouse into ThoughtSpot, one step later in the chain. Many customers
+    already used Fivetran to fill the Snowflake we now read.</p>
+    <p class="note"><strong>Not our problem:</strong> scattered source data.</p>
+  </div>
+  <div class="col">
+    <div class="lvl">Border 2</div>
+    <h4>Against Data Studio</h4>
+    <p class="note" style="margin-top:0;color:var(--ink2);font-size:14px">Data Studio is being built
+    with modeling, exploration, testing and <strong>data cleaning</strong>. So cleaning has a proper
+    home one step later.</p>
+    <p class="note"><strong>The line:</strong> the loader's job is <em>fidelity</em> — get the data
+    here intact. Data Studio's job is <em>shape and meaning</em>.</p>
+  </div>
+  <div class="col">
+    <div class="lvl">Border 3</div>
+    <h4>Against Pulse</h4>
+    <p class="note" style="margin-top:0;color:var(--ink2);font-size:14px">Pulse caches a model.
+    Data Store loads a table. Both fill the same store and both cut cost.</p>
+    <p class="note"><strong>Unsettled</strong> — see the overlap question below. This is the border
+    a customer will actually stand on.</p>
+  </div>
+</div>
+
+<div class="card fact">
+  <h4>Why the Data Studio border is the important one <span class="tag t-fact">Known</span></h4>
+  <p>Anything the loader does to data on the way in is something Data Studio then has to work
+  around or undo, and a column cleaned in two places is a column nobody can trace.</p>
+  <p>This is the same conclusion the industry reached moving from ETL to ELT, for the same reason:
+  separate the stable act — moving bytes — from the volatile one — deciding what they mean.
+  Definitions change constantly; extraction doesn't.</p>
+  <p>Which makes the loader's feature list <em>shorter</em> than the acquired product's, not longer.</p>
+</div>
+
+<h3>Its value in ThoughtSpot's context</h3>
+<div class="scroll"><table>
+<tr><th style="width:42%">Driver</th><th style="width:29%">Pulse</th><th>Data Store</th></tr>
+<tr><td>Cut the warehouse bill, and be faster</td>
+    <td>Yes — model grain, one click</td>
+    <td>Yes — table grain, configured</td></tr>
+<tr><td>Analyse data that can't be queried live at all</td>
+    <td>No</td>
+    <td>Yes, and only this — cross-warehouse joins, unsupported sources</td></tr>
+</table></div>
+
+<p><strong>Cost is the shared driver, and probably the most common one for both.</strong> A company
+looks at its BI bill, sees what the warehouse charges, and wants it down. Either product does that,
+so a customer arriving with that problem could reasonably be sent to either.</p>
+
+<p>What the Data Store adds is <em>capability</em> — analysis otherwise impossible, most obviously
+joining tables in two different warehouses, which no live query can do. Unique to it, but not the
+only reason to want it.</p>
+
+<div class="card open">
+  <h4>The overlap question — when cost is the driver, which one? <span class="tag t-open">Open</span></h4>
+  <p>This is the real discovery problem, and it is sharper than "two different problems."</p>
+  <p>The argument for the Data Store on pure cost grounds is <strong>overlap</strong>. Models share
+  tables. Ten models all using <code>orders</code>, cached at model grain, is either ten copies of
+  <code>orders</code> or a deduplication problem. Loaded once at table grain, it is one copy that
+  ten models read.</p>
+  <p>If that holds: <strong>small scale favours Pulse for its simplicity; scale favours table
+  loading for its efficiency</strong> — and the guidance almost writes itself. Start with Pulse,
+  move to the Data Store when your cached models start overlapping.</p>
+  <p><strong>Needs confirming first:</strong> does Pulse deduplicate a table shared by several
+  cached models today, or store it once per model? The dashboard already splits storage into model
+  caches and direct loads, so it has been thought about. That answer decides whether this argument
+  is real or imagined.</p>
+</div>
+
+<div class="card open">
+  <h4>Do we claim consolidation at all? <span class="tag t-open">Open</span></h4>
+  <p>Cross-warehouse joining <em>is</em> a scatter problem, one level up from Fivetran's — the data
+  is in warehouses, just in two of them.</p>
+  <p>The uncomfortable part: a customer with a data team consolidates upstream using tools they
+  already own. Our only claim can be that we make it a click instead of a project. Worth deciding
+  whether we make that claim, because it sets who this is for — which is stage 2.</p>
+</div>
+
+
+<!-- ═══════════════ 2 ═══════════════ -->
+<div class="stage">
+<div class="stage-n">Stage 2</div>
+<h2>Who is the user</h2>
+<p class="lead">The build assumes one answer. The rest of the product assumes another.</p>
+</div>
+
+<div class="cols2">
+  <div class="col">
+    <div class="lvl">What the wizard implies</div>
+    <h4>A data engineer</h4>
+    <p class="note" style="margin-top:0;color:var(--ink2);font-size:14px">It asks for a watermark
+    column, a primary key, a hand-written <code>WHERE</code> clause with runtime variables, retry
+    counts, and pre/post-sync TQL. That is someone who runs pipelines for a living and knows the
+    source table's internals.</p>
+  </div>
+  <div class="col">
+    <div class="lvl">What Pulse implies</div>
+    <h4>A model owner</h4>
+    <p class="note" style="margin-top:0;color:var(--ink2);font-size:14px">The whole interaction is
+    "Cache Model." One decision, reversible, no knowledge of the source needed.</p>
+  </div>
+</div>
+
+<p>These sit one nav item apart in the same product, with wildly different assumed skill. The
+design currently implies one audience in two moods. The evidence says two audiences sharing a
+store.</p>
+
+<div class="card prop">
+  <h4>One consequence either way <span class="tag t-prop">Proposed</span></h4>
+  <p>Even for a data engineer, the wizard asks for knowledge that usually lives with whoever owns
+  the <em>source system</em> — which column is the real key, which one reliably updates. So the
+  product should <strong>detect and propose</strong> rather than ask cold: suggest the primary key
+  from source metadata, suggest watermark candidates by name and type, and let the user correct.</p>
+  <p>That single move makes the flow survivable for the model owner too, which may make the
+  audience question less binary than it looks.</p>
+</div>
+
+<div class="q"><b>Needs answering</b>
+Is this aimed at the data engineer only, or must a model owner be able to complete it unaided?
+Everything about the wizard's density follows from this one answer.</div>
+
+
+<!-- ═══════════════ SCOPE ═══════════════ -->
+<div class="stage">
+<div class="stage-n">Output of stages 1 and 2</div>
+<h2>Scope and mental model</h2>
+<p class="lead">The thing everything downstream is derived from. Left unfilled on purpose — this is
+the decision, not a finding.</p>
+</div>
+
+<div class="derives">
+  <div class="lbl">The mental model, once we can state it</div>
+  <p>One sentence the user would recognise as true — what they think is happening when they use
+  this. Candidate to argue with: <em>"I am bringing a copy of these warehouse tables into
+  ThoughtSpot, and keeping it current, so I can analyse them here."</em></p>
+</div>
+
+<div class="card open">
+  <h4>In scope — to be agreed <span class="tag t-open">Open</span></h4>
+  <p>My reading of what must be in, given stage 1:</p>
+  <ul>
+    <li>Pick a connection, pick tables, load them</li>
+    <li>A schedule — data that goes stale silently is worse than no data</li>
+    <li>Incremental load; without it, frequent refresh of a large table is unaffordable, which makes
+        the schedule a lie</li>
+    <li>Visible health: last sync, status, and what to do when it failed</li>
+    <li>An answer for failure, deletion and access — not polish. Nothing here falls back to live,
+        so without these the product is unsafe</li>
+  </ul>
+</div>
+
+<div class="card open">
+  <h4>Out of scope — candidates, each with its reason <span class="tag t-open">Open</span></h4>
+  <ul>
+    <li><strong>Pre/post-sync TQL.</strong> Its four real uses are: recompute a derived table, clear
+        a staging table, set permissions, run a quality check. Permissions and quality checks should
+        be done properly in the product; derived tables belong in modeling. An escape hatch is an
+        admission the product doesn't cover the case — and this one runs arbitrary SQL on a schedule
+        inside our database, invisible to everyone but its author.</li>
+    <li><strong>Schemas.</strong> A schema is simply a folder of tables. We have one database and
+        the data workspace already organises objects; a second organising system is one more thing
+        to maintain and reconcile. The one problem schemas genuinely solve for us is two connections
+        both having a <code>CUSTOMERS</code> table — auto-qualifying by connection name is more
+        legible than making people file things.</li>
+    <li><strong>Custom SQL.</strong> Powerful, and it turns a query into a maintenance liability
+        that breaks silently. Ask whether a model can do the same job later.</li>
+    <li><strong>Column renaming and type editing at load.</strong> Border 2 — this is Data Studio's
+        job. See the split below.</li>
+  </ul>
+</div>
+
+<h3>Where each decision belongs</h3>
+<p>Renaming, types, which columns matter, keys — modeling does all four. So the question is not
+whether the loader <em>can</em> do them, but where they should live.</p>
+
+<div class="cols">
+  <div class="col">
+    <div class="lvl">Must be load time</div>
+    <h4>Physical</h4>
+    <ul>
+      <li>Which columns come across</li>
+      <li>The primary key, for syncing</li>
+      <li>The watermark column</li>
+      <li>Schedule and frequency</li>
+    </ul>
+    <p class="note">You cannot model a column you didn't copy.</p>
+  </div>
+  <div class="col">
+    <div class="lvl">Better at model time</div>
+    <h4>Semantic</h4>
+    <ul>
+      <li>Display names</li>
+      <li>Business definitions</li>
+      <li>How a column is used</li>
+      <li>Joins and relationships</li>
+    </ul>
+    <p class="note">Meaning changes often; changing it shouldn't mean re-loading.</p>
+  </div>
+  <div class="col">
+    <div class="lvl">Contested</div>
+    <h4>Type</h4>
+    <ul>
+      <li>Physical — how bytes are stored</li>
+      <li>Semantic — what you can chart</li>
+    </ul>
+    <p class="note">Recommendation below.</p>
+  </div>
+</div>
+
+<div class="card prop">
+  <h4>Type — my recommendation <span class="tag t-prop">Proposed</span></h4>
+  <p>Warehouses don't share a type system: Snowflake's <code>NUMBER(38,0)</code>, BigQuery's
+  <code>INT64</code>, Postgres's <code>numeric</code> all have to become <em>something</em> here.
+  That conversion happens at load whether or not we expose it.</p>
+  <p>But what a user cares about is not storage, it is what they can do with the column — sum it,
+  put it on a date axis, use it as a label. <strong>Convert sensibly at load and don't ask. Expose
+  the question in modeling, phrased as behaviour</strong> — <em>a date · a number you can add up ·
+  a label</em> — not as database types.</p>
+  <p>Same logic for renaming: the load layer stays close to the source; the model layer is where
+  naming for humans happens. If renaming at load survives anyway, the source path must always be
+  shown beside it.</p>
+</div>
+
+
+<!-- ═══════════════ 3 ═══════════════ -->
+<div class="stage">
+<div class="stage-n">Stage 3</div>
+<h2>Packaging</h2>
+<p class="lead">A gut call — we won't get data on this, so it gets decided and revisited.</p>
+</div>
+
+<p>You've said the Data Store may not be available to everyone; most customers may only ever use
+Pulse. That is a packaging decision with real design consequences, which is why it sits before
+positioning rather than after.</p>
+
+<div class="scroll"><table>
+<tr><th style="width:26%">If it is…</th><th>Then the design must…</th></tr>
+<tr><td>A separate SKU</td><td>Be sellable and onboarded. It can assume a conversation happened, a
+need was established, and someone was trained. Density is affordable.</td></tr>
+<tr><td>An entitlement toggled per org</td><td>Be discoverable by the few who have it, and invisible
+to everyone else. The empty state carries the explaining.</td></tr>
+<tr><td>On for everyone</td><td>Be self-explanatory to someone who has never heard of ETL, and be
+safe to find by accident. That is a very different product.</td></tr>
+</table></div>
+
+<div class="q"><b>Gut call needed</b>
+Which of the three? It changes how much the interface must teach, and whether the wizard's density
+is a problem or a feature.</div>
+
+
+<!-- ═══════════════ 4 ═══════════════ -->
+<div class="stage">
+<div class="stage-n">Stage 4</div>
+<h2>Positioning — where it sits, and why there</h2>
+<p class="lead">Two live options, and they aren't cosmetic: they say different things about what
+this is.</p>
+</div>
+
+<div class="cols2">
+  <div class="col">
+    <div class="lvl">What the build does now</div>
+    <h4>Two nav items</h4>
+    <p class="note" style="margin-top:0;color:var(--ink2);font-size:14px"><code>AgentDB Store</code>
+    and <code>AgentDB Pulse</code> sit side by side in the left nav.</p>
+    <p class="note"><strong>Says:</strong> these are two products that happen to share a name. The
+    customer must know which they need before clicking.</p>
+  </div>
+  <div class="col">
+    <div class="lvl">An earlier iteration in the same folder</div>
+    <h4>One item, tabbed</h4>
+    <p class="note" style="margin-top:0;color:var(--ink2);font-size:14px">A single
+    <code>Agent DB</code> with Tables · Models · Connections · Jobs inside it.</p>
+    <p class="note"><strong>Says:</strong> one store, and what's in it arrived two ways. Matches the
+    storage meter that already splits model caches from direct loads.</p>
+  </div>
+</div>
+
+<div class="card prop">
+  <h4>Which I'd argue for <span class="tag t-prop">Proposed</span></h4>
+  <p>One store as the destination, with the two ways in living where the work is. The customer
+  should never stand at a fork choosing between two products — <strong>the surface they're on
+  should choose for them.</strong></p>
+  <p>Caching a model is a decision you make while looking at a model, so it belongs on the model.
+  Loading tables is a decision you make while looking at a connection, so it belongs there. What
+  they share is the destination: one place that answers "what is in my store, how full is it, and
+  is it healthy."</p>
+  <p><strong>But this only works if the connection question is settled</strong> — because today the
+  store needs its own new connection, which forces the choice upstream, before the user has any
+  evidence they need it. See the open question below.</p>
+</div>
+
+<div class="q"><b>Needs answering</b>
+Why must the connection be new rather than reusing an existing one — technical constraint or
+product decision, and can it change? If it must stay, the hardest design problem in this product is
+helping someone choose correctly at the moment they know least.</div>
+
+<div class="q"><b>Needs answering</b>
+Naming. The build says Agent DB is the product and Pulse is a feature inside it. The shipped Pulse
+prototype says Pulse is the product and AgentDB is the store underneath. Both are
+shipping-adjacent. This needs a person to settle it.</div>
+
+
+<!-- ═══════════════ 5 ═══════════════ -->
+<div class="stage">
+<div class="stage-n">Stage 5</div>
+<h2>The workflow</h2>
+<p class="lead">Capabilities here are <em>derived from scope</em>, not inherited from the acquired
+product. What follows is what exists today, so we can decide what survives.</p>
+</div>
+
+<div class="flow"><b>Step 1 — what data</b>
+   connection → sync a table, or the result of custom SQL → pick tables (multi-select)
+
+<b>Step 2 — what shape</b>
+   where it lands (schema, target table name)
+   per column: does it come across · what is it called · what type · is it the key
+
+<b>Step 3 — how often, and how safely</b>
+   repeat · start time · days
+   incremental load: watermark column, comparison, WHERE clause
+   alerts on failure · pre/post-sync TQL · retry policy</div>
+
+<div class="card prop">
+  <h4>What scope does to this <span class="tag t-prop">Proposed</span></h4>
+  <p>If the boundaries in stage 1 hold, step 2 nearly disappears. No schema, no renaming, no type
+  editing — leaving only <em>which columns come across</em> and <em>which is the key</em>, both of
+  which can be proposed rather than asked. Step 3 loses TQL. Step 1 loses custom SQL.</p>
+  <p>What remains: <strong>pick tables · confirm what we detected · set a schedule.</strong> That is
+  a flow a model owner could finish, which loops back to stage 2.</p>
+</div>
+
+<h3>How incremental load actually works</h3>
+<p>Two different columns doing two different jobs — the part most easily conflated:</p>
+<ul>
+  <li>The <strong>watermark</strong> answers <em>which rows do I fetch?</em> A column whose value
+      only goes up, usually <code>updated_at</code>. Each run asks for rows changed since last time.</li>
+  <li>The <strong>primary key</strong> answers <em>what do I do with each row I fetched?</em> If
+      that key is already in our copy, overwrite it; if not, add it. "Upsert" is just update + insert.</li>
+</ul>
+<p>Watermark is what to pull. Primary key is where to put it. An orders sync at 6am pulls the 4,000
+rows changed since yesterday — some new orders, some old ones whose status changed — and merges
+each by <code>order_id</code>, without re-pulling 500 million rows.</p>
+
+<h3>Bulk, or one table at a time</h3>
+<div class="card open">
+  <p>The build does both, awkwardly. Step 1 multi-selects with a select-all and a "3 of 46
+  selected" counter. Step 2 then makes you configure columns per table — so it invites you to pick
+  twenty tables and punishes you with twenty mapping screens.</p>
+  <p><strong>The fix follows from scope:</strong> if mapping shrinks to detected defaults, bulk
+  becomes genuinely fast and per-table configuration becomes an exception you open only when
+  something looks wrong. <span class="tag t-open">Open</span></p>
+</div>
+
+
+<!-- ═══════════════ 6 ═══════════════ -->
+<div class="stage">
+<div class="stage-n">Stage 6</div>
+<h2>After the run — what the user is shown</h2>
+<p class="lead">Also derived from scope: you show what the scope made possible to get wrong.</p>
+</div>
+
+<p>The build has a Jobs view, a table detail page with sync history — last sync time, who ran it,
+rows retrieved, time taken, status — and email alerts on failure. That is a reasonable start and
+covers the happy path.</p>
+
+<div class="card risk">
+  <h4>What it does not cover, and this is the serious gap <span class="tag t-risk">Trap</span></h4>
+  <p>A sync has been failing for three days. The table still exists. It still answers questions —
+  with three-day-old data, and <strong>no fallback to live</strong>. Someone is looking at stale
+  numbers believing they are current.</p>
+  <p>Pulse had a version of this and could afford to be quiet about it, because a stale cache falls
+  back to querying live. Here there is nothing to fall back to. Whatever we show has to reach the
+  <em>consumer</em> of the data, not just the person who set up the sync — which is stage 7.</p>
+</div>
+
+<div class="q"><b>Needs answering</b>
+What does a model built on a failing table show its viewer? This is the same question your parked
+Pulse freshness work was answering, and the answer there may transfer.</div>
+
+<div class="card open">
+  <h4>Capacity becomes an active constraint <span class="tag t-open">Open</span></h4>
+  <p>Raw loaded tables will dwarf model caches — the build already shows 0.47 TB of direct loads
+  against 0.84 TB of model caches, and that is with sample data. Pulse's usage meter stops being a
+  display and becomes something that blocks work.</p>
+  <p>What happens at the limit? Who is warned, at what threshold, and what gets evicted?</p>
+</div>
+
+
+<!-- ═══════════════ 7 ═══════════════ -->
+<div class="stage">
+<div class="stage-n">Stage 7</div>
+<h2>Consumers — where the tables surface, and how they get used</h2>
+<p class="lead">The stage the current build stops short of entirely, and the one where duplicating
+Data Studio is most likely.</p>
+</div>
+
+<p>Nothing in the nine screens shows a loaded table <em>becoming</em> anything. It arrives in the
+store and the story ends. But the tables also get an entry in the data workspace, and the entire
+point is that someone models on them.</p>
+
+<div class="q"><b>Needs answering</b>
+In the data workspace, does the Source column read <code>agentdb</code> for a loaded table, or the
+original warehouse? Reading <code>agentdb</code> is honest about where the query lands but loses
+provenance; reading Snowflake keeps provenance but hides that it is a copy. Pulse solved the
+equivalent problem with an indicator on the model name rather than by changing Source — which may
+be the precedent to follow.</div>
+
+<h3>Three levels, not two</h3>
+<p>Your question about deleting exposed something structural: <strong>the build treats as one
+object what is really three.</strong> Separating them says what each feature attaches to, and what
+cascades into what.</p>
+
+<div class="cols">
+  <div class="col">
+    <div class="lvl">Level 1</div>
+    <h4>Connection</h4>
+    <ul>
+      <li>Credentials, account, role</li>
+      <li>Warehouse type</li>
+      <li>What tables are reachable</li>
+      <li>Test · edit · delete</li>
+    </ul>
+    <p class="note"><strong>Deleting cascades into everything below.</strong> Largest blast radius
+    in the product.</p>
+  </div>
+  <div class="col">
+    <div class="lvl">Level 2</div>
+    <h4>Sync</h4>
+    <ul>
+      <li>Which tables, which columns</li>
+      <li>Primary key, watermark</li>
+      <li>Schedule, incremental settings</li>
+      <li>Alerts, retries</li>
+      <li>Run now · pause · edit</li>
+    </ul>
+    <p class="note">The pipeline. Configuration, not data.</p>
+  </div>
+  <div class="col">
+    <div class="lvl">Level 3</div>
+    <h4>Table</h4>
+    <ul>
+      <li>The loaded rows themselves</li>
+      <li>Size, row count, last refresh</li>
+      <li>Appears in the data workspace</li>
+      <li>Things get built on it</li>
+    </ul>
+    <p class="note">The data. What models, answers and liveboards depend on.</p>
+  </div>
+</div>
+
+<div class="card prop">
+  <h4>Which answers your delete question <span class="tag t-prop">Proposed</span></h4>
+  <p>"When you delete a table, do you want to stop its future caching too?" — it depends which
+  object is being acted on, and each combination is something someone wants:</p>
+  <ul>
+    <li>Delete the data, keep the sync → the next run refills it</li>
+    <li>Keep the data, stop the sync → it goes stale but stays usable. This is <em>pause</em></li>
+    <li>Delete both → gone entirely</li>
+  </ul>
+  <p><strong>Pulse already solved this vocabulary</strong> — purge deletes the snapshot and keeps
+  the settings; disable stops the caching and keeps everything. Already reasoned through, already
+  agreed with the team. It should transfer rather than be re-invented.</p>
+</div>
+
+<div class="card risk">
+  <h4>But deletion is not the same act in the two products <span class="tag t-risk">Trap</span></h4>
+  <p>In Pulse, purge is safe — the model falls back to live and nothing breaks. In the Data Store
+  <strong>there is no live to fall back to.</strong> The copy in AgentDB is the only copy
+  ThoughtSpot has. Delete it and every model, answer and liveboard built on it breaks.</p>
+  <p>Same word, same button, completely different consequence. Sharper still because loaded tables
+  appear in the data workspace, so people will build on them without knowing how they got there.</p>
+</div>
+
+<h3>Permissions and access — the consequence of copying</h3>
+<div class="card risk">
+  <p>With a live connection, <strong>the warehouse enforces access.</strong> The query runs as
+  someone, and if they can't see a table in Snowflake, Snowflake refuses. ThoughtSpot never has to
+  decide.</p>
+  <p>Copy the data and the warehouse is out of the loop — ThoughtSpot becomes the only thing between
+  a user and that data. <strong>So copying can silently widen who can see it.</strong> Row-level
+  security and column masking cease to exist on the copy.</p>
+  <p>This is the question an enterprise security review asks first. The acquired product answers it
+  with a Share button and permission grants hand-written into post-sync TQL.</p>
+</div>
+
+<div class="card open">
+  <h4>What has to be decided <span class="tag t-open">Open</span></h4>
+  <ul>
+    <li>Does a loaded table inherit anything from its source, or start with fresh ThoughtSpot
+        permissions?</li>
+    <li>Who may create a store connection, and who may load tables? Admin-only, or delegated?</li>
+    <li><strong>Row-level security</strong> — if the warehouse filters rows per user, that filtering
+        is gone the instant we copy. Refuse to load such tables, reproduce the rules, or accept the
+        gap knowingly?</li>
+    <li><strong>Column masking</strong> — same problem, same three options.</li>
+    <li>Who owns a loaded table, and who may delete it given the blast radius above?</li>
+  </ul>
+</div>
+
+<p>Pulse has a smaller version of this and it never surfaced, because a cached model is the same
+model with the same permissions — the cache is invisible and creates no new object. Here we create
+new objects people can find, share and build on.</p>
+
+
+<!-- ═══════════════ EVIDENCE ═══════════════ -->
+<div class="stage">
+<div class="stage-n">Running alongside</div>
+<h2>The evidence we should go and get</h2>
+<p class="lead">Most of this is decidable by gut. This part isn't, and it is obtainable.</p>
+</div>
+
+<div class="card open">
+  <h4>Who uses the current data store product, and how <span class="tag t-open">Open</span></h4>
+  <p>The strongest available evidence, and nobody has looked at it. The acquired product has real
+  customers doing real things. Specifically worth knowing:</p>
+  <ul>
+    <li>How many tables does a typical customer load, and how often do they refresh?</li>
+    <li>Do they use incremental, or full reload?</li>
+    <li>Does anyone actually use custom SQL, pre/post-sync TQL, column renaming, type editing? Each
+        answer either justifies a feature or lets us cut it.</li>
+    <li>Do loaded tables get modelled on, or loaded and forgotten?</li>
+    <li>Who are the users by role — engineers, analysts, admins?</li>
+    <li>What do they contact support about? That is the trap list, written by reality.</li>
+  </ul>
+</div>
+
+<h3>Questions for the PM</h3>
+<ol>
+  <li>Is the Data Store a separate SKU, an entitlement, or on for everyone?</li>
+  <li>Is the target user the data engineer only, or must a model owner complete it unaided?</li>
+  <li>Why must the connection be new rather than reusing an existing one — and can that change?</li>
+  <li>What happens to source permissions, row-level security and column masking on a loaded table?
+      A blocker, not a detail — it is what a security review asks first.</li>
+  <li>Does Pulse deduplicate a table shared by several cached models, or store it per model?</li>
+  <li>Is cross-warehouse joining the headline reason to build this, or is it cost and speed?</li>
+  <li>Which acquired features have real usage behind them, and which merely shipped?</li>
+  <li>Full reload as a safety net against what incremental misses — acceptable, or too expensive?</li>
+  <li>Does a loaded table show <code>agentdb</code> as its Source in the data workspace?</li>
+  <li>Where is the boundary between the loader and Data Studio's cleaning?</li>
+</ol>
+
+
+<!-- ═══════════════ TRAPS ═══════════════ -->
+<div class="stage">
+<div class="stage-n">Appendix</div>
+<h2>The traps</h2>
+<p class="lead">Cross-cutting, so they sit here rather than in one stage. Every one fails
+<em>quietly</em> — the product keeps working and the numbers are wrong. For analytics that is the
+worst failure mode there is.</p>
+</div>
+
+<div class="scroll"><table>
+<tr><th style="width:19%">Trap</th><th style="width:39%">What happens</th><th>What we need to decide</th></tr>
+
+<tr><td>Silent updates <span class="tag t-risk">Trap</span></td>
+<td>A row changes at source without <code>updated_at</code> being touched. The watermark never sees
+it, so our copy keeps the old values. No error.</td>
+<td>Require a trustworthy watermark, warn about the limitation, or schedule a periodic full reload
+to self-heal?</td></tr>
+
+<tr><td>Deleted rows <span class="tag t-risk">Trap</span></td>
+<td>A row is deleted at source. Deletion produces no new watermark value, so incremental can never
+see it. Our copy keeps a row that no longer exists — counts and totals permanently wrong.</td>
+<td>Same question, sharper. Full reload is currently the only honest answer. How often, and who
+decides?</td></tr>
+
+<tr><td>No usable key <span class="tag t-risk">Trap</span></td>
+<td>The table has no primary key, or the user picks a column that isn't unique. Merging then
+duplicates rows or overwrites the wrong ones.</td>
+<td>Detect and propose the key. Block incremental when uniqueness can't be verified?</td></tr>
+
+<tr><td>Schema drift — added</td>
+<td>Source gains a column. Our mapping doesn't know about it, so it never arrives.</td>
+<td>Follow the source automatically, or require someone to opt in?</td></tr>
+
+<tr><td>Schema drift — removed <span class="tag t-risk">Trap</span></td>
+<td>Source loses a column the mapping expects. The sync fails — or worse, succeeds without it and
+every model using it breaks downstream.</td>
+<td>Fail loudly or continue? Who is told, and what does a model built on it show?</td></tr>
+
+<tr><td>Schema drift — retyped</td>
+<td>A column's type changes at source and no longer fits the target.</td>
+<td>Fail, coerce, or re-create? Ties directly to whether we let users set types at all.</td></tr>
+
+<tr><td>Failing sync <span class="tag t-risk">Trap</span></td>
+<td>Failing for three days. The table still answers questions with stale data and no fallback to
+live. Someone believes the numbers are current.</td>
+<td>What does a model built on it show its viewer? See stage 6.</td></tr>
+
+<tr><td>Delete blast radius <span class="tag t-risk">Trap</span></td>
+<td>Deleting a loaded table breaks everything built on it, with no fallback.</td>
+<td>Show dependents first, block, or warn? See stage 7.</td></tr>
+
+<tr><td>Connection delete</td>
+<td>Deleting a connection cascades through every sync and table under it.</td>
+<td>Same question one level up, much larger radius.</td></tr>
+
+<tr><td>Access widening <span class="tag t-risk">Trap</span></td>
+<td>Live, the warehouse refuses users who shouldn't see a table. Copied, ThoughtSpot decides — so
+the data becomes visible to people the source would have blocked, with nothing saying so.</td>
+<td>Inherit source permissions, apply fresh ThoughtSpot ones, or refuse to load restricted tables?</td></tr>
+
+<tr><td>Row filters lost <span class="tag t-risk">Trap</span></td>
+<td>Source applies row-level security so each user sees only their region. The copy has no such
+rules — everyone sees everything.</td>
+<td>Detect and refuse, reproduce, or accept knowingly? Silence is not an option.</td></tr>
+
+<tr><td>Two names</td>
+<td>Renamed at load and again in the model. Neither is authoritative and no number can be traced
+back to source.</td>
+<td>Settle where naming happens — see the load/model split.</td></tr>
+
+<tr><td>Custom SQL rot</td>
+<td>The query references a column that later disappears. The sync breaks, and the logic lives
+nowhere anyone will look.</td>
+<td>Do we support custom SQL at all?</td></tr>
+
+<tr><td>Name collision</td>
+<td>Two connections each have a <code>CUSTOMERS</code> table.</td>
+<td>Schemas, auto-qualify by connection, or force unique names?</td></tr>
+
+<tr><td>Capacity <span class="tag t-risk">Trap</span></td>
+<td>Raw tables dwarf model caches. The store fills and syncs start failing.</td>
+<td>What happens at the limit, who is warned, what gets evicted?</td></tr>
+
+<tr><td>Invisible SQL</td>
+<td>Pre/post-sync TQL runs on a schedule inside our database, known only to its author.</td>
+<td>Cut it, or make it visible and auditable?</td></tr>
+
+<tr><td>Bulk burden</td>
+<td>Twenty tables selected, twenty mapping screens. People abandon, or accept defaults blindly.</td>
+<td>Defaults good enough that mapping is an exception path.</td></tr>
+</table></div>
+
+
+<!-- ═══════════════ METRICS ═══════════════ -->
+<div class="stage">
+<div class="stage-n">Appendix</div>
+<h2>Success metrics</h2>
+<p class="lead">Yours to set — structured so the choice is visible rather than implied.</p>
+</div>
+
+<div class="scroll"><table>
+<tr><th style="width:30%">Question</th><th>What it would measure</th></tr>
+<tr><td>Adoption</td><td>Orgs with at least one loaded table; tables loaded per org</td></tr>
+<tr><td>Completion</td><td>Wizards started versus finished — a flow this dense will leak</td></tr>
+<tr><td>Which step loses people</td><td>Drop-off by step. My guess is step 2, column mapping</td></tr>
+<tr><td>Health</td><td>Share of syncs failing; tables whose last success is old</td></tr>
+<tr><td>Whether it delivers</td><td>Loaded tables that end up in a model, versus loaded and never used</td></tr>
+<tr><td>Churn</td><td>Tables deleted or syncs paused after setup</td></tr>
+<tr><td>The capability claim</td><td>Models joining tables from more than one connection — the thing
+only this product enables</td></tr>
+</table></div>
+<p>The last one matters most. If cross-warehouse analysis is the reason to build this, a customer
+loading tables but never joining across them means the product is being used as a slow Pulse.</p>
+
+<div class="foot">
+  Working draft, 26 August 2026. Scope, packaging, goals and metrics are deliberately unfilled —
+  they are decisions, not findings. Everything marked Proposed is an argument, not a conclusion.
+</div>
+
+</div>

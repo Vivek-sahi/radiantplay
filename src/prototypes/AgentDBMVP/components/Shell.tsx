@@ -2,18 +2,29 @@ import React from 'react';
 import { Avatar, Button, Horizontal, Icon, Select, Typography, Vertical } from '@/components';
 import type { IconName } from '@/components';
 import { spacing } from '@tokens/spacing';
-import { Page } from '../types';
-import { SHOW_VARIANT_SWITCHER, Variant, VARIANT_OPTIONS } from '../variant';
+import { Page, Role } from '../types';
+import { CURRENT_USER } from '../data';
+import { ROLE_OPTIONS, SHOW_VARIANT_SWITCHER, Variant, VARIANT_OPTIONS } from '../variant';
 import styles from './Shell.module.css';
 
-const NAV: { group: string; items: { id: Page; label: string; icon: IconName }[] }[] = [
+type NavItem = { id: Page; label: string; icon: IconName };
+
+/** v1's nav is unchanged. v2: Data is the landing page (its metrics strip replaces Overview) and SQL is a query console. */
+const navFor = (variant: Variant): { group: string; items: NavItem[] }[] => [
   {
     group: 'Workspace',
-    items: [
-      { id: 'overview', label: 'Overview', icon: 'grid-view' },
-      { id: 'data', label: 'Data', icon: 'database' },
-      { id: 'queries', label: 'Queries', icon: 'list-view' },
-    ],
+    items:
+      variant === 'v1'
+        ? [
+            { id: 'overview', label: 'Overview', icon: 'grid-view' },
+            { id: 'data', label: 'Data', icon: 'database' },
+            { id: 'queries', label: 'Queries', icon: 'list-view' },
+          ]
+        : [
+            { id: 'data', label: 'Data', icon: 'database' },
+            { id: 'queries', label: 'Queries', icon: 'list-view' },
+            { id: 'sql', label: 'SQL', icon: 'formula' },
+          ],
   },
   {
     group: 'Manage',
@@ -26,15 +37,17 @@ const NAV: { group: string; items: { id: Page; label: string; icon: IconName }[]
 
 /**
  * Standalone console chrome: AgentDB is its own product, so there is no ThoughtSpot
- * navigation — but sign-in and the organisation come from ThoughtSpot.
+ * navigation. The header carries the prototype version and, in v2, who is signed in.
  */
 export const Shell: React.FC<{
   page: Page;
   onNavigate: (p: Page) => void;
   variant: Variant;
   onVariantChange: (v: Variant) => void;
+  role: Role;
+  onRoleChange: (r: Role) => void;
   children: React.ReactNode;
-}> = ({ page, onNavigate, variant, onVariantChange, children }) => (
+}> = ({ page, onNavigate, variant, onVariantChange, role, onRoleChange, children }) => (
   <div className={styles.app}>
     <header className={styles.header}>
       <Horizontal gap={spacing.C} align="center">
@@ -49,17 +62,20 @@ export const Shell: React.FC<{
         {SHOW_VARIANT_SWITCHER && (
           <Select size="small" options={VARIANT_OPTIONS} value={variant} onChange={(v) => onVariantChange(v as Variant)} aria-label="Prototype version" />
         )}
+        {variant === 'v2' && (
+          <Select size="small" options={ROLE_OPTIONS} value={role} onChange={(v) => onRoleChange(v as Role)} aria-label="Signed in as" />
+        )}
         <Button variant="tertiary" size="small" icon="documentation">
           Docs
         </Button>
-        <Avatar name="Priya Nair" size="s" />
+        <Avatar name={CURRENT_USER[role]} size="s" />
       </Horizontal>
     </header>
 
     <div className={styles.body}>
       <nav className={styles.nav} aria-label="AgentDB">
         <Vertical gap={spacing.F}>
-          {NAV.map((g) => (
+          {navFor(variant).map((g) => (
             <Vertical key={g.group} gap={spacing.A}>
               <Typography variant="overline" color="gray-light" noMargin className={styles.groupLabel}>
                 {g.group}

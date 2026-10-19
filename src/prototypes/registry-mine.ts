@@ -40,16 +40,26 @@ const SpotterPrep = React.lazy(() => import('./SpotterPrep'));
 const SpotterPrep2 = React.lazy(() => import('./SpotterPrep2'));
 const NearStore = React.lazy(() => import('./NearStore'));
 const AgentDBMVP = React.lazy(() => import('./AgentDBMVP'));
+const AgentDBMVPHome = React.lazy(() => import('./AgentDBMVP/Home'));
 const SearchDataOnDataModelexplorations = React.lazy(() => import('./SearchDataOnDataModelexplorations'));
 const SearchDataOnDataModelFinal = React.lazy(() => import('./SearchDataOnDataModelFinal'));
 
 export const myRegistry: ProjectMeta[] = [
   {
+    id: 'AgentDBMVPHome',
+    name: 'AgentDB MVP · Project home',
+    description: 'The landing for the AgentDB MVP project: architecture, information architecture, key flows that open the prototype, the demo script, design decisions, change log, resources.',
+    author: 'Vivek Sahi',
+    lastModified: '2026-10-19',
+    component: AgentDBMVPHome,
+    section: 'mine',
+  },
+  {
     id: 'AgentDBMVP',
     name: 'AgentDB MVP',
-    description: 'Standalone AgentDB SaaS console, V1 scope (7 Oct): Overview (storage, queries, tables, connections), Data (tables by source, create table), Queries (minimum observability), Connect (consumption, pipelines, service accounts), Access (people).',
+    description: 'Standalone AgentDB console. v4 (15 Oct, default): v3 with the visual design pass. v3 (14 Oct): sign-in, the catalog, one SQL editor, Queries, Connect, API keys, Access, empty and filled states. v1 and v2 stay behind the gear menu.',
     author: 'Vivek Sahi',
-    lastModified: '2026-10-07',
+    lastModified: '2026-10-19',
     component: AgentDBMVP,
     section: 'mine',
   },

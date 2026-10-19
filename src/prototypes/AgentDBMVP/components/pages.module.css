@@ -83,3 +83,7 @@
   grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
   gap: var(--spacing-3) var(--spacing-8);
 }
+
+/* Query profile (v2): fixed label and value columns so the bars line up. */
+.phaseLabel { width: 120px; flex: none; }
+.phaseMs { width: 80px; flex: none; text-align: right; font-variant-numeric: tabular-nums; }

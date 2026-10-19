@@ -1,0 +1,65 @@
+/* Project docs shell (Vivek, 19 Oct; after Shopify's developer docs): a full-height left panel
+   with a filter and every link grouped, the rest of the screen for content. Layout only; text
+   renders through Typography. */
+
+.shell {
+  --panel-w: calc(var(--spacing-24) * 3);                        /* 288 */
+  --content-max: calc(var(--spacing-24) * 10);                   /* 960 */
+  display: grid;
+  grid-template-columns: var(--panel-w) minmax(0, 1fr);
+  min-height: 100vh;
+  background: var(--rd-sys-color-background-base);
+  font-family: var(--font-family-primary);
+}
+
+.panel {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  background: var(--rd-sys-color-background-sunken);
+  border-right: 1px solid var(--rd-sys-color-border-divider);
+}
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  padding: var(--spacing-6) var(--spacing-4) 0;
+}
+.groupLabel { padding: 0 var(--spacing-3) var(--spacing-2); }
+
+.item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-3) var(--spacing-2) var(--spacing-6);
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  color: var(--rd-sys-color-content-secondary);
+}
+.item:hover { background: var(--rd-sys-color-background-subtle); }
+.item:focus-visible { outline: 2px solid var(--rd-sys-color-border-focus); outline-offset: -2px; }
+.active { background: var(--rd-sys-color-background-base); color: var(--rd-sys-color-content-primary); }
+.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: var(--spacing-1);
+  bottom: var(--spacing-1);
+  width: var(--spacing-1);
+  border-radius: var(--radius-sm);
+  background: var(--rd-sys-color-background-brand);
+}
+
+.content {
+  min-width: 0;
+  padding: var(--spacing-12) var(--spacing-16) var(--spacing-24);
+}
+.inner { max-width: var(--content-max); }
+
+@media (max-width: 900px) {
+  .shell { grid-template-columns: minmax(0, 1fr); }
+  .panel { position: static; height: auto; }
+  .content { padding: var(--spacing-8) var(--spacing-4) var(--spacing-16); }
+}

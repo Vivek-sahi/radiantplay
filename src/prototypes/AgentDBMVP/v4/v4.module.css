@@ -1,0 +1,315 @@
+/* v4 layouts (15 Oct): v3 with the visual design pass. The eight principles are in the design
+   document, section 13. One canvas, no cards; three sizes above the fold; colour means state.
+   Every colour, font, radius and gap is a Radiant token. Layout sizes are derived from spacing
+   tokens here, once. Text is never styled here: it renders through Typography or a component's
+   own default. The one exception is the SQL editor, which uses the mono family. */
+
+.content,
+.login {
+  --v4-rail-w: calc(var(--spacing-24) * 2 + var(--spacing-20));            /* 272 */
+  --v4-search-w: calc(var(--spacing-24) * 2 + var(--spacing-20) + var(--spacing-2)); /* 280 */
+  --v4-runin-w: calc(var(--spacing-24) * 2 + var(--spacing-12));           /* 240 */
+  --v4-cell-max: calc(var(--spacing-24) * 4 + var(--spacing-14));          /* 440 */
+  --v4-scroll-h: calc(var(--spacing-24) * 4 + var(--spacing-8) + var(--spacing-1)); /* 420 */
+  --v4-fig-min: var(--spacing-24);                                          /* 96 */
+  --v4-fact-min: calc(var(--spacing-24) * 3 + var(--spacing-3));           /* 300 */
+  --v4-fact-label-w: calc(var(--spacing-24) + var(--spacing-6));           /* 120 */
+  --v4-two-min: calc(var(--spacing-24) * 2 + var(--spacing-16) + var(--spacing-1)); /* 260 */
+  --v4-two-max: calc(var(--spacing-24) * 7 + var(--spacing-20) + var(--spacing-2)); /* 760 */
+  --v4-card-w: calc(var(--spacing-24) * 4 + var(--spacing-8) + var(--spacing-1));   /* 420 */
+  --v4-phase-label-w: calc(var(--spacing-24) + var(--spacing-6));          /* 120 */
+  --v4-phase-ms-w: var(--spacing-20);                                       /* 80 */
+}
+
+/* Shell: the sidebar and the content, side by side. No header. Principle 3: one canvas, white,
+   beside the grey sidebar. */
+.app {
+  min-height: 100vh;
+  display: flex;
+  align-items: flex-start;
+  background: var(--rd-sys-color-background-base);
+  font-family: var(--font-family-primary);
+}
+
+.sidebarWrap {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  flex: 0 0 auto;
+}
+.sidebarWrap aside > div:first-child { display: none; }
+
+/* The content owns the viewport height and scrolls inside, so a page can split it (SQL). */
+.content {
+  flex: 1;
+  min-width: 0;
+  height: 100vh;
+  overflow: auto;
+  padding: var(--spacing-8);
+  display: flex;
+  flex-direction: column;
+}
+.page { flex: 1; min-height: 0; }
+
+.avatarWrap { padding: 0 var(--spacing-5); }
+.avatarButton {
+  justify-content: flex-start !important;
+  color: var(--rd-sys-color-content-primary) !important;
+}
+.avatarButton > span {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.protoControls {
+  position: fixed;
+  right: var(--spacing-4);
+  bottom: var(--spacing-16); /* above the feedback layer's own button, which sits at the corner */
+  z-index: var(--z-index-sticky);
+}
+.iconSpacer {
+  display: inline-block;
+  width: var(--spacing-4);
+  height: var(--spacing-4);
+}
+
+/* Principle 1: the page's figures in one quiet line above the content. Figures only. */
+.strip {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-6);
+  padding: var(--spacing-3) 0;
+  border-top: 1px solid var(--rd-sys-color-border-divider);
+  border-bottom: 1px solid var(--rd-sys-color-border-divider);
+}
+.figs {
+  display: flex;
+  gap: var(--spacing-7);
+  flex: none;
+}
+.fig {
+  display: flex;
+  flex-direction: column;
+  min-width: var(--v4-fig-min);
+}
+
+/* Filters: one row above a table. */
+.filters {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  flex-wrap: wrap;
+}
+.grow { flex: 1; min-width: 0; }
+
+/* Data's browser: no box (Vivek, 19 Oct). Only the line between the tree and the pane; the
+   tree lines up with the page title. */
+.catalog {
+  display: grid;
+  grid-template-columns: var(--v4-rail-w) minmax(0, 1fr);
+  flex: 1;
+  min-height: 0;
+}
+.catalog .rail { padding-left: 0; }
+.catalog .pane { padding-right: 0; padding-top: var(--spacing-3); }
+
+.rail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  padding: var(--spacing-3);
+  border-right: 1px solid var(--rd-sys-color-border-divider);
+  min-width: 0;
+  overflow: auto;
+}
+
+.pane {
+  min-width: 0;
+  min-height: 0;
+  padding: var(--spacing-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-6);
+  overflow: auto;
+}
+
+.crumbs {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  margin-bottom: calc(var(--spacing-4) * -1);
+}
+
+.oneLine {
+  display: block;
+  max-width: var(--v4-cell-max);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.search { width: var(--v4-search-w); }
+
+.nameCell {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  min-width: 0;
+}
+
+.num { font-variant-numeric: tabular-nums; }
+
+/* Key-value facts in a detail: a responsive grid. */
+.facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--v4-fact-min), 1fr));
+  gap: var(--spacing-3) var(--spacing-8);
+}
+
+/* Principle 5 for Connect: the facts to copy, two columns, each a row with its own Copy. */
+.factGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 var(--spacing-8);
+  max-width: var(--v4-two-max);
+}
+.fact {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  padding: var(--spacing-2) 0;
+  border-bottom: 1px solid var(--rd-sys-color-border-divider);
+  min-width: 0;
+}
+.factLabel { flex: 0 0 var(--v4-fact-label-w); }
+/* The Info tab: one column of label and value rows. */
+.infoList { max-width: var(--v4-two-max); }
+.factValue {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The thing to paste, first and big, with the page's one primary button. */
+.copyBlock {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-4);
+  padding: var(--spacing-3) var(--spacing-4);
+  max-width: var(--v4-two-max);
+  background: var(--rd-sys-color-background-sunken);
+  border: 1px solid var(--rd-sys-color-border-divider);
+  border-radius: var(--radius-md);
+}
+.blockValue { min-width: 0; overflow-wrap: anywhere; }
+
+.scroll {
+  max-height: var(--v4-scroll-h);
+  overflow: auto;
+  border: 1px solid var(--rd-sys-color-border-divider);
+  border-radius: var(--radius-md);
+}
+
+.empty { padding: var(--spacing-8) var(--spacing-5); }
+
+/* A block to copy. A pre would default to monospace, so it names the primary family. */
+.codeBlock {
+  margin: 0;
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-sm);
+  line-height: 1.6;
+  color: var(--rd-sys-color-content-primary);
+  background: var(--rd-sys-color-background-sunken);
+  border: 1px solid var(--rd-sys-color-border-divider);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-3) var(--spacing-4);
+  max-width: var(--v4-two-max);
+  overflow-x: auto;
+  white-space: pre;
+}
+
+/* SQL: two zones, no box. The result zone starts at a full-width divider. */
+.resultsZone {
+  padding-top: var(--spacing-6);
+  border-top: 1px solid var(--rd-sys-color-border-divider);
+}
+
+/* Principle 4 for SQL: the editor owns the height. The one place with a code font. */
+.editor textarea {
+  font-family: var(--font-family-mono) !important;
+  font-size: var(--font-size-sm) !important;
+  line-height: 1.6 !important;
+  min-height: 40vh;
+}
+.results {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--spacing-3);
+  flex-wrap: wrap;
+}
+
+.runIn { width: var(--v4-runin-w); }
+
+.message {
+  display: flex;
+  gap: var(--spacing-2);
+  align-items: flex-start;
+}
+
+.headers {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: var(--spacing-1) var(--spacing-4);
+  align-items: baseline;
+  max-width: var(--v4-two-max);
+}
+
+/* Sign in: unchanged from v3. */
+.login {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: var(--spacing-8);
+  background: var(--rd-sys-color-background-sunken);
+  font-family: var(--font-family-primary);
+}
+
+.loginCard { width: min(var(--v4-card-w), 100%); }
+.loginInner { padding: var(--spacing-8) var(--spacing-7); }
+
+.password input { -webkit-text-security: disc; }
+
+.mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--spacing-8);
+  height: var(--spacing-8);
+  border-radius: var(--radius-md);
+  background: var(--rd-sys-color-background-brand);
+  color: var(--rd-sys-color-content-primary-inverse);
+}
+
+.phaseLabel { width: var(--v4-phase-label-w); flex: none; }
+.phaseMs { width: var(--v4-phase-ms-w); flex: none; text-align: right; font-variant-numeric: tabular-nums; }
+
+.twoUp {
+  max-width: var(--v4-two-max);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(var(--v4-two-min), 1fr));
+  gap: var(--spacing-4);
+  align-items: end;
+}

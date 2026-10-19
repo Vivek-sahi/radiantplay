@@ -5,7 +5,10 @@
 // itself knows — tables, storage, queries and their outcome. Jobs, schedules and in-progress
 // states live in the pipeline tool, so nothing here predicts or tracks a load.
 
-export type Page = 'overview' | 'data' | 'queries' | 'connect' | 'access';
+export type Page = 'overview' | 'data' | 'queries' | 'sql' | 'connect' | 'access';
+
+/** People roles. v2 (PM plan): a key inherits its creator's role. */
+export type Role = 'Admin' | 'Editor' | 'Viewer';
 
 /** How a table got into AgentDB. V1: pipelines only. ThoughtSpot is a reader, not a source. */
 export type WriterKind = 'pipeline';
@@ -59,17 +62,19 @@ export interface ServiceAccount {
   /** Access revoked — the password no longer works */
   revoked?: boolean;
   passwordSetAt: string;
+  /** v2 (PM plan): where this key's data comes from, typed by the user. Groups storage by source. */
+  sourceLabel?: string;
 }
 
 export interface Person {
   id: string;
   name: string;
   email: string;
-  role: 'Admin' | 'Editor' | 'Viewer';
+  role: Role;
   lastActive: string;
 }
 
-export type QueryStatus = 'Completed' | 'In progress' | 'Failed';
+export type QueryStatus = 'Completed' | 'In progress' | 'Failed' | 'Stopped';
 
 export interface QueryRecord {
   id: string;
@@ -84,4 +89,9 @@ export interface QueryRecord {
   durationMs: number;
   status: QueryStatus;
   note?: string;
+  /** v2 (PM plan) — from the audit log and the query profile */
+  endedAt?: string;
+  bytesRead?: string;
+  resultRows?: number;
+  profile?: { phase: string; ms: number }[];
 }

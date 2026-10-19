@@ -1,0 +1,146 @@
+/* AgentDB MVP project home: a documentation page. A section index on the left, one wide column
+   on white. Text renders through Typography and Radiant components; this file is layout only. */
+
+.page {
+  min-height: 100vh;
+  background: var(--rd-sys-color-background-base);
+  font-family: var(--font-family-primary);
+}
+
+.wrap {
+  --home-nav-w: calc(var(--spacing-24) * 2);                       /* 192 */
+  --home-col-max: calc(var(--spacing-24) * 9 + var(--spacing-16)); /* 928 */
+  display: grid;
+  grid-template-columns: var(--home-nav-w) minmax(0, var(--home-col-max));
+  gap: var(--spacing-12);
+  padding: var(--spacing-12) var(--spacing-8) var(--spacing-24);
+  margin: 0 auto;
+  max-width: calc(var(--home-nav-w) + var(--home-col-max) + var(--spacing-12) + var(--spacing-16));
+}
+
+.nav {
+  position: sticky;
+  top: var(--spacing-12);
+  align-self: start;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.section {
+  padding-top: var(--spacing-8);
+  margin-top: var(--spacing-8);
+  border-top: 1px solid var(--rd-sys-color-border-divider);
+  scroll-margin-top: var(--spacing-8);
+}
+
+
+@media (max-width: 900px) {
+  .wrap { grid-template-columns: minmax(0, 1fr); padding: var(--spacing-8) var(--spacing-4) var(--spacing-16); }
+  .nav { display: none; }
+}
+
+/* Architecture, as Vivek's sketch of 19 Oct: the cluster branches to its databases; one database
+   goes to Customer 1, two are bracketed into Customer 2. Lines are borders on connector cells. */
+.arch {
+  --line: 1px solid var(--rd-sys-color-border-default);
+  --link-w: var(--spacing-12);
+  display: grid;
+  grid-template-columns: max-content var(--link-w) max-content var(--link-w) max-content;
+  grid-auto-rows: var(--spacing-14);
+  align-items: center;
+  padding: var(--spacing-6);
+  background: var(--rd-sys-color-background-sunken);
+  border-radius: var(--radius-md);
+  overflow-x: auto;
+}
+.box {
+  padding: var(--spacing-2) var(--spacing-4);
+  border: 1px solid var(--rd-sys-color-border-default);
+  border-radius: var(--radius-md);
+  background: var(--rd-sys-color-background-base);
+  text-align: center;
+}
+.boxGiven { border-color: var(--rd-sys-color-border-brand); background: var(--rd-sys-color-background-information); }
+.boxFree { border-style: dashed; }
+.cluster { grid-column: 1; grid-row: 1 / span 4; display: flex; align-items: center; height: 100%; }
+.cluster .box { position: relative; }
+.db { grid-column: 3; }
+.cust1 { grid-column: 5; grid-row: 1; }
+.cust2 { grid-column: 5; grid-row: 2 / span 2; align-self: center; }
+.note { grid-column: 5; grid-row: 4; padding-left: var(--spacing-2); }
+
+/* Connector cells: positioned boxes whose borders draw the lines. */
+.link { position: relative; height: 100%; }
+.link::before, .link::after { content: ''; position: absolute; }
+/* Cluster to databases: a spine on the left edge, a branch to each row. */
+.spine::before { left: 0; right: 0; top: 50%; border-top: var(--line); }
+.spine::after { left: 0; border-left: var(--line); }
+.spineFirst::after { top: 50%; bottom: 0; }
+.spineMid::after { top: 0; bottom: 0; }
+.spineLast::after { top: 0; bottom: 50%; }
+/* Grid placement, no inline styles. */
+.c2 { grid-column: 2; } .c4 { grid-column: 4; }
+.r1 { grid-row: 1; } .r2 { grid-row: 2; } .r3 { grid-row: 3; } .r4 { grid-row: 4; }
+/* Database to customer. */
+.straight::before { left: 0; right: 0; top: 50%; border-top: var(--line); }
+.bracketTop::before { left: 0; width: 50%; top: 50%; bottom: 0; border-top: var(--line); border-right: var(--line); }
+.bracketTop::after { left: 50%; right: 0; bottom: 0; border-top: var(--line); }
+.bracketBottom::before { left: 0; width: 50%; top: 0; bottom: 50%; border-bottom: var(--line); border-right: var(--line); }
+
+/* The cluster's own stub into the spine. */
+.cluster::after { content: ''; width: var(--spacing-6); align-self: center; border-top: var(--line); }
+
+/* IA as a left-to-right mind map (Vivek, 19 Oct). Each node sits beside the column of its
+   children; a line runs from the node to that column's spine, and a tick from the spine to each
+   child. Lines are borders on pseudo-elements. */
+.map {
+  --line: 1px solid var(--rd-sys-color-border-default);
+  --gap: var(--spacing-8);
+  padding: var(--spacing-6);
+  background: var(--rd-sys-color-background-sunken);
+  border-radius: var(--radius-md);
+  overflow-x: auto;
+}
+.mmNode { display: flex; align-items: center; }
+.mmBox {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  flex: none;
+  min-height: var(--spacing-8);
+  padding: 0 var(--spacing-1) 0 var(--spacing-3);
+  border: 1px solid var(--rd-sys-color-border-default);
+  border-radius: var(--radius-md);
+  background: var(--rd-sys-color-background-base);
+  white-space: nowrap;
+}
+.mmRoot { border-color: var(--rd-sys-color-content-primary); }
+.mmPage { border-color: var(--rd-sys-color-border-brand); background: var(--rd-sys-color-background-information); }
+.mmKids { position: relative; display: flex; flex-direction: column; margin-left: var(--gap); }
+.mmKids::before { content: ''; position: absolute; left: calc(var(--gap) * -1); width: var(--gap); top: 50%; border-top: var(--line); }
+.mmKid { position: relative; padding: var(--spacing-1) 0 var(--spacing-1) var(--gap); }
+.mmKid::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; border-left: var(--line); }
+.mmKid:first-child::before { top: 50%; }
+.mmKid:last-child::before { bottom: 50%; }
+.mmKid:only-child::before { display: none; }
+.mmKid::after { content: ''; position: absolute; left: 0; width: var(--gap); top: 50%; border-top: var(--line); }
+
+/* Dates never break across lines. */
+.nowrap { white-space: nowrap; }
+
+/* Demo script: one step per block, the SQL to paste in a copyable block. */
+.step { display: grid; grid-template-columns: var(--spacing-8) minmax(0, 1fr); gap: var(--spacing-4); }
+.code {
+  margin: 0;
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-sm);
+  line-height: 1.6;
+  color: var(--rd-sys-color-content-primary);
+  background: var(--rd-sys-color-background-sunken);
+  border: 1px solid var(--rd-sys-color-border-divider);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-3) var(--spacing-4);
+  overflow-x: auto;
+  white-space: pre;
+}

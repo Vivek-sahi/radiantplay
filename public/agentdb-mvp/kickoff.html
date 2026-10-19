@@ -1,0 +1,612 @@
+<title>Data Store Kickoff</title>
+<style>
+  :root{
+    --bg:#fbfbfa; --panel:#fff; --ink:#1a1a18; --ink2:#54534e; --ink3:#86847c;
+    --line:#e6e4de; --line2:#d8d5cc;
+    --pm:#7c3aed; --pm-bg:#f4f0fe; --pm-line:#ddd0fa;
+    --eng:#0369a1; --eng-bg:#eaf4fb; --eng-line:#c3dcee;
+    --des:#15803d; --des-bg:#edf7ef; --des-line:#c2e0c9;
+    --risk:#b91c1c; --risk-bg:#fdf0ef; --risk-line:#f3cdc9;
+    --pivot-bg:#1f1f1c; --pivot-ink:#f7f6f2;
+    --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --bg:#141413; --panel:#1c1c1a; --ink:#eceae4; --ink2:#b3b0a7; --ink3:#87847b;
+    --line:#2e2e2b; --line2:#3b3a36;
+    --pm:#c4a8f7; --pm-bg:#211a33; --pm-line:#3a2d55;
+    --eng:#7cbde6; --eng-bg:#132430; --eng-line:#234356;
+    --des:#6cc088; --des-bg:#16241a; --des-line:#264430;
+    --risk:#e8867e; --risk-bg:#2c1a19; --risk-line:#4d2a27;
+    --pivot-bg:#efece5; --pivot-ink:#1a1a18;
+  }}
+  :root[data-theme="dark"]{
+    --bg:#141413; --panel:#1c1c1a; --ink:#eceae4; --ink2:#b3b0a7; --ink3:#87847b;
+    --line:#2e2e2b; --line2:#3b3a36;
+    --pm:#c4a8f7; --pm-bg:#211a33; --pm-line:#3a2d55;
+    --eng:#7cbde6; --eng-bg:#132430; --eng-line:#234356;
+    --des:#6cc088; --des-bg:#16241a; --des-line:#264430;
+    --risk:#e8867e; --risk-bg:#2c1a19; --risk-line:#4d2a27;
+    --pivot-bg:#efece5; --pivot-ink:#1a1a18;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.55 ui-sans-serif,-apple-system,"Segoe UI",Inter,system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:810px;margin:0 auto;padding:50px 26px 100px}
+  header.top{border-bottom:2px solid var(--ink);padding-bottom:19px;margin-bottom:24px}
+  .eyebrow{font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink3);font-weight:650}
+  h1{font-size:35px;line-height:1.1;margin:.3em 0 .22em;letter-spacing:-.022em;font-weight:650}
+  .sub{color:var(--ink2);font-size:16px;max-width:60ch;margin:0}
+  .meta{margin-top:14px;font-size:13px;color:var(--ink3);display:flex;gap:16px;flex-wrap:wrap}
+
+  .item{margin:38px 0 0;padding-top:18px;border-top:1px solid var(--line)}
+  .item-h{display:flex;gap:12px;align-items:baseline;margin-bottom:3px}
+  .num{font-family:var(--mono);font-size:14px;color:var(--ink3);font-weight:600;flex:0 0 auto}
+  .item h2{font-size:21px;letter-spacing:-.016em;font-weight:640;margin:0;color:var(--ink)}
+  .goal{color:var(--ink2);font-size:14.5px;margin:0 0 2px 32px;max-width:62ch}
+  .body{margin-left:32px}
+  @media(max-width:620px){.goal,.body{margin-left:0}}
+
+  h3{font-size:11px;letter-spacing:.085em;text-transform:uppercase;margin:21px 0 8px;
+     font-weight:700;color:var(--ink3)}
+  p{margin:0 0 10px;max-width:64ch}
+  ol{margin:0 0 10px;padding-left:19px;max-width:64ch}
+  li{margin:0 0 5px}
+  strong{font-weight:640}
+  em{color:var(--ink2)}
+  code{font-family:var(--mono);font-size:.86em;background:var(--panel);
+       border:1px solid var(--line);border-radius:4px;padding:.1em .34em}
+
+  .who{display:inline-block;font-size:10px;letter-spacing:.07em;text-transform:uppercase;
+    font-weight:700;padding:2px 6px;border-radius:3px;margin-right:6px;vertical-align:1.5px;
+    white-space:nowrap}
+  .w-pm{background:var(--pm-bg);color:var(--pm);border:1px solid var(--pm-line)}
+  .w-eng{background:var(--eng-bg);color:var(--eng);border:1px solid var(--eng-line)}
+  .w-des{background:var(--des-bg);color:var(--des);border:1px solid var(--des-line)}
+  .w-risk{background:var(--risk-bg);color:var(--risk);border:1px solid var(--risk-line)}
+
+  .legend{display:flex;gap:18px;flex-wrap:wrap;margin:17px 0 0;padding:13px 15px;
+    background:var(--panel);border:1px solid var(--line);border-radius:8px}
+  .legend div{font-size:12.5px;color:var(--ink2)}
+
+  .qs{list-style:none;padding:0;margin:0;max-width:66ch}
+  .qs li{padding:10px 0;border-bottom:1px solid var(--line);margin:0;
+         font-size:15px;color:var(--ink);line-height:1.48}
+  .qs li:last-child{border-bottom:0}
+  .qs .note{display:block;color:var(--ink3);font-size:13.2px;margin-top:3px}
+
+  .facts{list-style:none;padding:0;margin:0 0 10px;max-width:66ch}
+  .facts li{font-size:14.4px;color:var(--ink2);padding:5px 0 5px 15px;position:relative;margin:0}
+  .facts li::before{content:"";position:absolute;left:0;top:12.5px;width:5px;height:5px;
+    border-radius:50%;background:var(--line2)}
+  .facts strong{color:var(--ink)}
+
+  .flag{background:var(--risk-bg);border:1px solid var(--risk-line);border-radius:8px;
+        padding:13px 15px;margin:12px 0;font-size:14.4px;color:var(--ink2);max-width:66ch}
+  .flag .t{font-size:10.5px;letter-spacing:.075em;text-transform:uppercase;color:var(--risk);
+           font-weight:700;display:block;margin-bottom:4px}
+  .flag strong{color:var(--ink)}
+  .flag p:last-child{margin-bottom:0}
+
+  table{border-collapse:collapse;width:100%;margin:11px 0;font-size:14.1px}
+  th{text-align:left;font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;
+     color:var(--ink3);font-weight:680;padding:0 11px 7px 0;border-bottom:1px solid var(--line2)}
+  td{padding:9px 11px 9px 0;border-bottom:1px solid var(--line);vertical-align:top;color:var(--ink2)}
+  td:first-child{color:var(--ink);font-weight:560}
+  .scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+
+  .seq{margin:19px 0 22px;border:1px solid var(--line);border-radius:11px;
+       overflow:hidden;background:var(--panel)}
+  .seq-band{padding:15px 18px 14px}
+  .seq-lbl{font-size:10.5px;letter-spacing:.085em;text-transform:uppercase;
+           color:var(--ink3);font-weight:700;margin-bottom:10px}
+  .seq-list{list-style:none;margin:0;padding:0;max-width:none}
+  .seq-list li{display:grid;grid-template-columns:24px 1fr;gap:1px 13px;
+               align-items:baseline;padding:8px 0;margin:0}
+  .seq-list li+li{border-top:1px solid var(--line)}
+  .sn{font-family:var(--mono);font-size:12.5px;color:var(--ink3);font-weight:600;
+      text-align:right;letter-spacing:-.02em}
+  .st{font-size:15px;color:var(--ink);font-weight:620;letter-spacing:-.008em}
+  .sd{grid-column:2;font-size:13.4px;color:var(--ink2);line-height:1.45}
+  .seq-pivot{padding:14px 18px;background:var(--pivot-bg);color:var(--pivot-ink)}
+  .seq-pivot .pt{font-size:15px;font-weight:650;letter-spacing:-.008em;margin-bottom:1px}
+  .seq-pivot .pd{font-size:13.4px;opacity:.72}
+
+  .foot{margin-top:50px;padding-top:16px;border-top:1px solid var(--line);
+        font-size:13px;color:var(--ink3)}
+</style>
+
+<div class="wrap">
+
+<header class="top">
+  <div class="eyebrow">Session readout · for discussion</div>
+  <h1>AgentDB Data Store</h1>
+  <p class="sub">How I'm currently thinking about this product, after going through the interface
+  and what sits under it. Shared to pressure-test — and to fill the gaps together.</p>
+  <div class="meta">
+    <span>26 August 2026</span>
+    <span>PM · Engineering · Design</span>
+  </div>
+  <div class="legend">
+    <div><span class="who w-pm">PM</span> product decision</div>
+    <div><span class="who w-eng">Eng</span> technical answer</div>
+    <div><span class="who w-des">Design</span> ours, once the above land</div>
+    <div><span class="who w-risk">Risk</span> blocks release</div>
+  </div>
+</header>
+
+<p>We have nine screens of a working ETL interface from an acquired product. Designing from those
+screens means inheriting a scope set for someone else's product. <strong>So we set our own scope
+first</strong> — and in order, because each stage depends on the one above it.</p>
+
+<div class="seq">
+  <div class="seq-band">
+    <div class="seq-lbl">Establish first</div>
+    <ol class="seq-list">
+      <li><span class="sn">1</span><span class="st">What it is</span>
+          <span class="sd">Boundaries, and its value in ThoughtSpot</span></li>
+      <li><span class="sn">2</span><span class="st">Who the user is</span>
+          <span class="sd">One primary user, named</span></li>
+    </ol>
+  </div>
+  <div class="seq-pivot">
+    <div class="pt">Scope and mental model</div>
+    <div class="pd">Output of 1 and 2 — input to everything below</div>
+  </div>
+  <div class="seq-band">
+    <div class="seq-lbl">Derived from scope</div>
+    <ol class="seq-list">
+      <li><span class="sn">3</span><span class="st">Packaging</span>
+          <span class="sd">SKU, entitlement, or on for everyone</span></li>
+      <li><span class="sn">4</span><span class="st">Positioning</span>
+          <span class="sd">Where it sits, and why there</span></li>
+      <li><span class="sn">5</span><span class="st">Workflow</span>
+          <span class="sd">What we offer — decided by scope, not inherited</span></li>
+      <li><span class="sn">6</span><span class="st">After the run</span>
+          <span class="sd">What the user sees, who hears about failure</span></li>
+      <li><span class="sn">7</span><span class="st">Consumers</span>
+          <span class="sd">Where tables surface, how modelers use them</span></li>
+    </ol>
+  </div>
+</div>
+
+<h3>Baseline</h3>
+<ul class="facts">
+  <li>The data store is <strong>AgentDB</strong>. Two products sit on it.</li>
+  <li><strong>Pulse</strong> — cache a whole model, one click. Built and shipped.</li>
+  <li><strong>Data Store</strong> — load individual tables on a schedule. The acquired interface.</li>
+  <li>Warehouse connectors only. No SaaS sources.</li>
+  <li>Needs its own new connection — an existing one can't be reused.</li>
+  <li>Loaded tables also appear in the data workspace.</li>
+  <li>Data Studio is being built separately, with modeling, testing and data cleaning.</li>
+</ul>
+
+
+
+<div class="item">
+  <div class="item-h"><span class="num">00</span><h2>Where it stands — 1 September</h2></div>
+  <p class="goal">From the product thread. Several of my open questions have been answered; the
+  entry-point question has become the live argument.</p>
+  <div class="body">
+
+  <h3>Settled since this doc was written</h3>
+  <ul class="facts">
+    <li><strong>Schemas are dropped.</strong> One database per customer,
+    <code>db_[customer_name]</code>; per-schema mapping is gone. Matches the cut we proposed.</li>
+    <li><strong>Single-table selection, column subsets allowed.</strong> Multi-table selection is
+    deliberately out — it is a real UI problem for column mapping. That answers the bulk-versus-one
+    question: one at a time, on purpose.</li>
+    <li><strong>Simple by default</strong>, advanced controls collapsed behind an edit action.
+    Matches "detect and propose, mapping as the exception path".</li>
+    <li><strong>AgentDB gets its own loose connection</strong>, separate from Embrace, because it
+    <em>copies</em> rather than reads. Connections start blank — whoever creates one is usually not
+    the person doing the modelling.</li>
+    <li><strong>Synced tables surface in the normal tables and search sections</strong>, and models
+    are built on AgentDB like any other source. That closes the "what does the table become" gap.</li>
+    <li><strong>Two doors, two personas, deliberately asymmetric.</strong> Model caching is the
+    analyst's, done from the model's Caching tab; extracts are the data engineer's, done from the
+    store landing. The analyst may never see the store — which means unification is an architecture
+    and billing decision, not a demand that both personas learn one product. It also licenses the
+    store landing to carry data-engineer density.</li>
+    <li><strong>The store holds tables — always.</strong> How they arrived is metadata, not
+    identity.</li>
+    <li><strong>Grouped by what created them: model or extract.</strong> Both are the unit someone
+    acted on. <strong>Connection is a filter, not a group</strong> — there are only ever a handful,
+    so grouping by connection yields a few enormous groups. This also matches what shipped: Pulse's
+    dashboard lists models, not their constituent tables.</li>
+    <li>No migration path for existing Data Studio customers. Workarounds stay options, not
+    commitments.</li>
+  </ul>
+
+  <h3>Pinned — decide these and the design follows</h3>
+
+  <div class="flag">
+    <span class="t">Pinned 1 · one entry point or two</span>
+    <p><strong>For two:</strong> separate Doris instances · pricing limits diverge · a merged UI
+    would imply cached and ETL'd data can be combined in one model, which they can't · joins across
+    them would be unpredictable even on one instance, since cached tables are time-sliced and ETL'd
+    tables are full · different personas · different connection models · limited overlap in
+    practice.</p>
+    <p><strong>For one:</strong> customers don't care about instances · pricing can be handled by
+    showing and hiding · don't put complexity on customers or invent names that confuse them ·
+    AgentDB is a caching and storing layer, use one or both — and on that view Pulse becomes
+    invisible entirely.</p>
+    <p><strong>Built as two nav items today</strong> — option 2 of the four. Everything above the
+    workflow depends on how this lands.</p>
+  </div>
+
+  <div class="flag">
+    <span class="t">Pinned 2 · can a customer even have both?</span>
+    <p>Feature flags are proposed to enforce that a customer can't have Store and Pulse enabled at
+    once. <strong>If that holds, no customer ever sees both</strong> — and the stakeholder ask to
+    design a home page for the two together has no user. Contested: the objection is that separate
+    instances shouldn't be assumed, and noisy-neighbour worries could be handled with compute
+    groups instead.</p>
+  </div>
+
+  <div class="flag">
+    <span class="t">Pinned 3 · shared or independent storage</span>
+    <p>If Model cache and AgentDB share storage, one capacity meter and the table-overlap argument
+    both hold. If independent, they are two separate meters and two separate limits, and the
+    "start with Pulse, move to Store when models overlap" guidance falls away.</p>
+  </div>
+
+  <div class="flag">
+    <span class="t">Pinned 4 · direct JDBC access</span>
+    <p>"Customers never log into AgentDB directly" is disputed — the counter-position is that
+    AgentDB must stand on its own and customers should connect over JDBC. <strong>This changes what
+    the product is.</strong> If customers connect directly, AgentDB is a database they operate, not
+    an internal store we manage — and the access questions in item 07 get considerably sharper,
+    because we would be handing out credentials to copied data.</p>
+  </div>
+
+  <div class="flag">
+    <span class="t">Pinned 5 · who manages the data store?</span>
+    <p>Storage is one shared pool, but the two personas enter through different doors. The analyst
+    caches a model from its Caching tab and <strong>never visits the store</strong> — no capacity
+    meter, no sense there is a container at all. The data engineer lives on the store landing.</p>
+    <p><strong>So when an extract fails for want of space, the cause was created by someone who
+    can't see the pool and gets no signal.</strong> Separate products can't have this problem — each
+    has its own quota. Unified storage inherits a shared resource with no shared accountability.</p>
+    <p>Needs an owner, and probably one of: cost shown to the analyst at the moment they cache, a
+    quota per persona, or a named owner for the pool. Not a detail — it is the strongest argument
+    against unification, and it isn't the join problem everyone has been arguing about.</p>
+  </div>
+
+  <h3>Also open, less design-facing</h3>
+  <ul class="facts">
+    <li><strong>Default sync schedule</strong> — daily versus no default. Leaning daily; the worry
+    is users not noticing a default and syncing continuously.</li>
+    <li><strong>Incremental can't be a pure default</strong> — it needs key columns and watermarks
+    from the user. Confirms the trap; an API path for enterprises is worth scoping.</li>
+    <li>Query resource limits, pricing tiers (exposure around TB-scale fact tables), and timelines
+    — 26.10 / 26.11 called unrealistic against current bandwidth.</li>
+  </ul>
+  </div>
+</div>
+
+
+<div class="item">
+  <div class="item-h"><span class="num">01</span><h2>What it is, and what it isn't</h2></div>
+  <p class="goal">One sentence we all repeat the same way. Three borders we agree not to cross.</p>
+  <div class="body">
+
+  <h3>Starting point</h3>
+  <p><strong>Not a general ETL tool. A loading step for analysis.</strong></p>
+
+  <h3>Three borders</h3>
+  <div class="scroll"><table>
+  <tr><th style="width:24%">Border</th><th>Proposed line</th></tr>
+  <tr><td>Fivetran</td><td>They consolidate scattered sources into a warehouse. We move data out of
+  one into ThoughtSpot. Scattered source data isn't our problem.</td></tr>
+  <tr><td>Data Studio</td><td>Loader does <strong>fidelity</strong> — data arrives intact. Data
+  Studio does <strong>shape and meaning</strong>.</td></tr>
+  <tr><td>Pulse</td><td>Unsettled. Both cut cost. Only this one enables cross-warehouse analysis.</td></tr>
+  </table></div>
+
+  <h3>Questions</h3>
+  <ul class="qs">
+    <li><span class="who w-pm">PM</span>Is cross-warehouse joining the headline reason, or is it cost
+    and speed?</li>
+    <li><span class="who w-pm">PM</span>Do we claim consolidation at all, when a customer with a data
+    team does it upstream?</li>
+    <li><span class="who w-eng">Eng</span>Does Pulse deduplicate a table shared by several cached
+    models, or store it per model?
+    <span class="note">If ten models sharing one table means ten copies, table loading is cheaper at
+    scale — and that becomes the guidance.</span></li>
+    <li><span class="who w-pm">PM</span><span class="who w-eng">Eng</span>Where exactly is the border
+    with Data Studio's cleaning?</li>
+  </ul>
+  </div>
+</div>
+
+
+<div class="item">
+  <div class="item-h"><span class="num">02</span><h2>Who is the user</h2></div>
+  <p class="goal">Name one primary user. The interface's density follows from it.</p>
+  <div class="body">
+
+  <ul class="facts">
+    <li><strong>The build assumes a data engineer</strong> — watermark column, primary key, a
+    hand-written WHERE clause, retry counts, pre/post-sync TQL.</li>
+    <li><strong>Pulse assumes a model owner</strong> — the whole interaction is "Cache Model".</li>
+    <li>They sit one nav item apart, in the same product.</li>
+  </ul>
+
+  <h3>Questions</h3>
+  <ul class="qs">
+    <li><span class="who w-pm">PM</span>Data engineer only, or must a model owner complete it
+    unaided?</li>
+    <li><span class="who w-eng">Eng</span>Can we detect and propose the primary key and watermark from
+    source metadata?
+    <span class="note">The wizard asks for knowledge that usually sits with whoever owns the source
+    system, not the person clicking through.</span></li>
+    <li><span class="who w-pm">PM</span>Who is buying this — the team that owns models, or a
+    different one?</li>
+  </ul>
+  </div>
+</div>
+
+
+<div class="item">
+  <div class="item-h"><span class="num">&rarr;</span><h2>Scope and mental model</h2></div>
+  <p class="goal">The output of 1 and 2. If we leave with only this, the session worked.</p>
+  <div class="body">
+
+  <h3>Mental model — agree one sentence</h3>
+  <p>To argue with: <em>"I'm bringing a copy of these warehouse tables into ThoughtSpot and keeping
+  it current, so I can analyse them here."</em></p>
+
+  <h3>Proposed in scope</h3>
+  <ul class="facts">
+    <li>Pick a connection, pick tables, load them</li>
+    <li>A schedule</li>
+    <li>Incremental load — without it, frequent refresh of a large table is unaffordable</li>
+    <li>Visible health: last sync, status, what to do when it failed</li>
+    <li>An answer for failure, deletion and access — nothing here falls back to live</li>
+  </ul>
+
+  <h3>Proposed cuts</h3>
+  <div class="scroll"><table>
+  <tr><th style="width:30%">Feature</th><th>Reason</th></tr>
+  <tr><td>Pre / post-sync TQL</td><td>Arbitrary SQL on a schedule, visible to nobody. Its real uses
+  belong in the product or in modeling.</td></tr>
+  <tr><td>Schemas</td><td>A folder of tables. The data workspace already organises objects.</td></tr>
+  <tr><td>Custom SQL</td><td>A query that breaks silently, with logic nobody will find.</td></tr>
+  <tr><td>Renaming and types at load</td><td>Data Studio's job. Two names means no traceable
+  number.</td></tr>
+  </table></div>
+
+  <h3>Questions</h3>
+  <ul class="qs">
+    <li><span class="who w-pm">PM</span><span class="who w-eng">Eng</span>Do the four cuts survive?
+    <span class="note">If they all go, wizard step 2 almost disappears.</span></li>
+    <li><span class="who w-eng">Eng</span>Which of them does the current customer base actually use?</li>
+  </ul>
+  </div>
+</div>
+
+
+<div class="item">
+  <div class="item-h"><span class="num">03</span><h2>Packaging</h2></div>
+  <p class="goal">A decision. No data available — judgement, then revisit.</p>
+  <div class="body">
+  <div class="scroll"><table>
+  <tr><th style="width:30%">If it is</th><th>The design must</th></tr>
+  <tr><td>A separate SKU</td><td>Be sellable and onboarded. Density is affordable.</td></tr>
+  <tr><td>An entitlement per org</td><td>Be discoverable by the few who have it, invisible to the
+  rest.</td></tr>
+  <tr><td>On for everyone</td><td>Be self-explanatory to someone who's never heard of ETL.</td></tr>
+  </table></div>
+  <h3>Question</h3>
+  <ul class="qs">
+    <li><span class="who w-pm">PM</span>Which of the three?</li>
+  </ul>
+  </div>
+</div>
+
+
+<div class="item">
+  <div class="item-h"><span class="num">04</span><h2>Positioning</h2></div>
+  <p class="goal">Agree the shape in the nav. Settle the naming.</p>
+  <div class="body">
+
+  <ul class="facts">
+    <li><strong>Build today:</strong> two nav items — AgentDB Store, AgentDB Pulse. Says two products
+    sharing a name.</li>
+    <li><strong>Earlier iteration:</strong> one item with tabs. Says one store, filled two ways.</li>
+  </ul>
+
+  <div class="flag">
+    <span class="t">Biggest concern</span>
+    <p><strong>The Data Store needs its own new connection.</strong> That forces the choice to
+    connection-creation time — before tables, before a model, before any evidence it's needed. And a
+    customer on Snowflake who wants both ends up with two connections to the same warehouse.</p>
+  </div>
+
+  <h3>Questions</h3>
+  <ul class="qs">
+    <li><span class="who w-eng">Eng</span><span class="who w-risk">Risk</span>Why must the connection
+    be new — technical constraint or product decision? Can it change?</li>
+    <li><span class="who w-eng">Eng</span>Can a live connection be converted later, or is it
+    recreate-from-scratch?</li>
+    <li><span class="who w-pm">PM</span>Naming. The build says Agent DB is the product and Pulse a
+    feature. The Pulse prototype says the opposite.</li>
+  </ul>
+  </div>
+</div>
+
+
+<div class="item">
+  <div class="item-h"><span class="num">05</span><h2>Workflow</h2></div>
+  <p class="goal">Capabilities derived from scope, not inherited. Walk the steps, mark what survives.</p>
+  <div class="body">
+
+  <div class="scroll"><table>
+  <tr><th style="width:22%">Step</th><th>Today</th></tr>
+  <tr><td>1 · Source</td><td>Connection &rarr; a table or custom SQL &rarr; multi-select tables</td></tr>
+  <tr><td>2 · Map columns</td><td>Target schema and name; per column — comes across, name, type,
+  key</td></tr>
+  <tr><td>3 · Schedule</td><td>Repeat, days; incremental with watermark and WHERE clause; alerts;
+  pre/post-sync TQL; retries</td></tr>
+  </table></div>
+
+  <p>If the cuts hold, this collapses to <strong>pick tables &rarr; confirm what we detected &rarr;
+  set a schedule</strong>.</p>
+
+  <h3>Questions</h3>
+  <ul class="qs">
+    <li><span class="who w-eng">Eng</span>Is incremental load available on every warehouse we
+    support?</li>
+    <li><span class="who w-eng">Eng</span>Is change data capture an option, or are watermarks the only
+    mechanism?
+    <span class="note">CDC reads the transaction log, so it catches deletes and updates that don't
+    touch a timestamp — both of which watermarks miss silently.</span></li>
+    <li><span class="who w-eng">Eng</span>Can we run a periodic full reload as a safety net, and what
+    does it cost?</li>
+    <li><span class="who w-des">Design</span>Bulk versus one at a time — step 1 invites twenty tables,
+    step 2 makes you configure twenty.</li>
+  </ul>
+  </div>
+</div>
+
+
+<div class="item">
+  <div class="item-h"><span class="num">06</span><h2>After the run</h2></div>
+  <p class="goal">Agree what health looks like, and who is told when it isn't.</p>
+  <div class="body">
+
+  <p>The build covers the happy path — Jobs view, sync history, email alerts on failure.</p>
+
+  <div class="flag">
+    <span class="t">The gap</span>
+    <p>A sync failing for three days. The table still answers questions, with stale data and
+    <strong>no fallback to live</strong>. Pulse could be quiet about this because a stale cache falls
+    back. Here there's nothing to fall back to.</p>
+  </div>
+
+  <h3>Questions</h3>
+  <ul class="qs">
+    <li><span class="who w-pm">PM</span><span class="who w-risk">Risk</span>What does a model built on
+    a failing table show its viewer?
+    <span class="note">The parked Pulse freshness work was answering this — it may transfer.</span></li>
+    <li><span class="who w-eng">Eng</span>What's the storage limit, and what happens at it — syncs
+    fail, or something gets evicted?</li>
+    <li><span class="who w-pm">PM</span>Who is accountable for a failing sync? That decides who we
+    notify.</li>
+  </ul>
+  </div>
+</div>
+
+
+<div class="item">
+  <div class="item-h"><span class="num">07</span><h2>Consumers</h2></div>
+  <p class="goal">How loaded tables appear downstream. Confirm we're not rebuilding Data Studio.</p>
+  <div class="body">
+
+  <p>Nothing in the nine screens shows a loaded table becoming anything. It arrives, and the story
+  ends.</p>
+
+  <h3>Three levels, not one</h3>
+  <div class="scroll"><table>
+  <tr><th style="width:16%">Level</th><th style="width:38%">Holds</th><th>Deleting it</th></tr>
+  <tr><td>Connection</td><td>Credentials, what's reachable</td><td>Cascades through every sync and
+  table beneath it</td></tr>
+  <tr><td>Sync</td><td>Tables, columns, key, schedule</td><td>Stops refreshes. Data stays and goes
+  stale — this is <em>pause</em></td></tr>
+  <tr><td>Table</td><td>The loaded rows</td><td>Breaks every model, answer and liveboard on it</td></tr>
+  </table></div>
+  <p>Pulse already has this vocabulary — <em>purge</em> keeps settings, <em>disable</em> keeps
+  everything. It should transfer. But in Pulse purge is safe, because the model falls back to live.</p>
+
+  <div class="flag">
+    <span class="t">Treat as a blocker</span>
+    <p>Live, <strong>the warehouse enforces access</strong> — Snowflake refuses anyone who shouldn't
+    see a table. Copy the data and ThoughtSpot becomes the only thing in the way, so
+    <strong>copying can silently widen who can see it</strong>. Row-level security and column masking
+    don't survive the copy.</p>
+  </div>
+
+  <h3>Questions</h3>
+  <ul class="qs">
+    <li><span class="who w-eng">Eng</span><span class="who w-risk">Risk</span>What happens to source
+    permissions, row-level security and column masking on a loaded table?
+    <span class="note">Inherit from source, apply fresh ThoughtSpot permissions, or refuse to load
+    restricted tables. Silence isn't an option.</span></li>
+    <li><span class="who w-pm">PM</span>Who may create a store connection, and who may load tables?</li>
+    <li><span class="who w-pm">PM</span><span class="who w-des">Design</span>In the data workspace,
+    does Source read <code>agentdb</code> or the original warehouse?</li>
+    <li><span class="who w-pm">PM</span>Does deletion show dependents first — blocked, or allowed with
+    a warning?</li>
+  </ul>
+  </div>
+</div>
+
+
+<div class="item">
+  <div class="item-h"><span class="num">08</span><h2>Evidence to get</h2></div>
+  <p class="goal">The only part that can't be settled by judgement. Commission it before we design.</p>
+  <div class="body">
+  <p><strong>Who uses the current data store product, and how?</strong> Real customers, real usage,
+  nobody has looked.</p>
+  <ul class="facts">
+    <li>How many tables loaded, how often refreshed?</li>
+    <li>Incremental or full reload?</li>
+    <li>Does anyone use custom SQL, TQL hooks, renaming, type editing?</li>
+    <li>Do loaded tables get modelled on, or forgotten?</li>
+    <li>Users by role — engineers, analysts, admins?</li>
+    <li>What do they contact support about?</li>
+  </ul>
+  <h3>Question</h3>
+  <ul class="qs">
+    <li><span class="who w-pm">PM</span>Who can get this, and by when?</li>
+  </ul>
+  </div>
+</div>
+
+
+<div class="item">
+  <div class="item-h"><span class="num">09</span><h2>Risks — for assigning, not solving</h2></div>
+  <p class="goal">Each one fails quietly: the product keeps working and the numbers are wrong.</p>
+  <div class="body">
+  <div class="scroll"><table>
+  <tr><th style="width:24%">Risk</th><th style="width:46%">What happens</th><th>Owner</th></tr>
+  <tr><td>Silent updates</td><td>A row changes without the watermark column being touched. Never
+  seen.</td><td><span class="who w-eng">Eng</span></td></tr>
+  <tr><td>Deleted rows</td><td>A deletion produces no watermark value. Our copy keeps rows that no
+  longer exist.</td><td><span class="who w-eng">Eng</span></td></tr>
+  <tr><td>Access widening</td><td>Copied data is governed by us, not the warehouse.</td><td><span class="who w-pm">PM</span><span class="who w-eng">Eng</span></td></tr>
+  <tr><td>Row filters lost</td><td>Source row-level security doesn't survive the copy.</td><td><span class="who w-pm">PM</span><span class="who w-eng">Eng</span></td></tr>
+  <tr><td>Failing sync</td><td>Stale data served confidently, no fallback.</td><td><span class="who w-pm">PM</span><span class="who w-des">Design</span></td></tr>
+  <tr><td>Delete blast radius</td><td>Deleting a table breaks everything built on it.</td><td><span class="who w-des">Design</span></td></tr>
+  <tr><td>Schema drift</td><td>A source column added, removed or retyped.</td><td><span class="who w-eng">Eng</span></td></tr>
+  <tr><td>No usable key</td><td>No primary key, or a non-unique one chosen.</td><td><span class="who w-eng">Eng</span></td></tr>
+  <tr><td>Capacity</td><td>Raw tables dwarf model caches; the store fills.</td><td><span class="who w-pm">PM</span></td></tr>
+  <tr><td>Name collision</td><td>Two connections each have a <code>CUSTOMERS</code> table.</td><td><span class="who w-des">Design</span></td></tr>
+  </table></div>
+  </div>
+</div>
+
+
+<div class="item">
+  <div class="item-h"><span class="num">10</span><h2>Leave with</h2></div>
+  <div class="body">
+  <ol>
+    <li>One sentence defining what this is</li>
+    <li>The Data Studio border agreed</li>
+    <li>One named primary user</li>
+    <li>A packaging decision</li>
+    <li>An answer on why the connection must be new</li>
+    <li>The four cuts confirmed or defended</li>
+    <li>An owner and date for permissions</li>
+    <li>Someone commissioned to pull usage data</li>
+  </ol>
+  <p>Items 5, 6 and 7 don't need resolving in the room. They fall out once scope is settled.</p>
+  </div>
+</div>
+
+<div class="foot">
+  Session readout · 26 August 2026. Longer reasoning in <code>product-definition.html</code>.
+</div>
+
+</div>
