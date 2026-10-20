@@ -10,7 +10,8 @@ import { Strip } from './Strip';
 import { ObjectPage } from './ObjectPage';
 import styles from '../v4.module.css';
 
-export const KIND_ICON: Record<ObjectKind, IconName> = { table: 'table', view: 'formula', 'materialized view': 'collection' };
+/** The grid for every kind for now; views and materialised views get their own icons later (Vivek, 20 Oct). */
+export const KIND_ICON: Record<ObjectKind, IconName> = { table: 'table', view: 'table', 'materialized view': 'table' };
 
 interface Props {
   databases: Database[];
