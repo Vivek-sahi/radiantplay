@@ -5,7 +5,6 @@ import styles from './DocsShell.module.css';
 export const PROTOTYPE = '/playground/AgentDBMVP';
 export const HOME = '/playground/AgentDBMVPHome';
 export const REPO = 'https://github.com/Vivek-sahi/radiantplay/tree/prototype/data-studio/src/prototypes/AgentDBMVP';
-export const DESIGN_DOC = '/agentdb-mvp/how-agentdb-works.html';
 
 export interface NavItem {
   label: string;
@@ -28,7 +27,6 @@ const MENU: { label: string; href: string; section?: string }[] = [
   { label: 'Demo script', href: `${HOME}#demo`, section: 'demo' },
   { label: 'Design decisions', href: `${HOME}#decisions`, section: 'decisions' },
   { label: 'Change log', href: `${HOME}#changes`, section: 'changes' },
-  { label: 'Resources', href: `${HOME}#resources`, section: 'resources' },
 ];
 const SECTIONS = MENU.flatMap((m) => (m.section ? [m.section] : []));
 

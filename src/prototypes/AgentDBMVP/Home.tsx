@@ -14,7 +14,6 @@ import { DemoScript } from './Demo';
 
 const PROTOTYPE = '/playground/AgentDBMVP';
 const REPO = 'https://github.com/Vivek-sahi/radiantplay/tree/prototype/data-studio/src/prototypes/AgentDBMVP';
-const DOC = '/agentdb-mvp/how-agentdb-works.html';
 
 /**
  * The IA as a left-to-right mind map (Vivek, 19 Oct). One tree: add detail by adding a child.
@@ -175,11 +174,6 @@ const AgentDBMVPHome: React.FC = () => (
                 Open the prototype
               </Button>
             </RouterLink>
-            <a href={DOC} {...ext}>
-              <Button variant="secondary" icon="documentation">
-                Design document
-              </Button>
-            </a>
             <a href={REPO} {...ext}>
               <Button variant="secondary" icon="folder">
                 Repo
@@ -261,12 +255,6 @@ const AgentDBMVPHome: React.FC = () => (
             columns={[{ key: 'date', label: 'Date', render: (v) => <span className={styles.nowrap}>{String(v)}</span> }, { key: 'version', label: 'Version' }, { key: 'what', label: 'What changed' }]} />
         </Section>
 
-        <Section id="resources" title="Resources">
-          <Vertical gap={spacing.B}>
-            <Link href={DOC} {...ext}>Design document</Link>
-            <Link href={REPO} {...ext}>Repo</Link>
-          </Vertical>
-        </Section>
   </DocsShell>
 );
 
