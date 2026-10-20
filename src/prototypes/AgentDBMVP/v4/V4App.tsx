@@ -34,7 +34,7 @@ const flowStart = (flow: string | null): Start => {
     case 'query-table':
       return { ...base, page: 'sql' };
     case 'etl':
-      return { ...base, page: 'keys' };
+      return { ...base, appState: 'empty', page: 'keys' };
     case 'bi':
       return { ...base, page: 'connect' };
     case 'invite':
@@ -147,6 +147,12 @@ export const V4App: React.FC<{ variant: Variant; onVariantChange: (v: Variant) =
             onAddColumn={addColumn}
             onDropObject={(id) => patchObjects((os) => os.filter((o) => o.id !== id))}
             onTruncate={(id) => patchObjects((os) => os.map((o) => (o.id === id ? { ...o, rows: 0, sizeGB: 0, lastUpdated: 'Just now' } : o)))}
+            identities={data.identities}
+            onOpenObject={(id) => {
+              setSelection(`obj:${id}`);
+              setPage('data');
+            }}
+            toast={setToast}
           />
         )}
         {page === 'activity' && (

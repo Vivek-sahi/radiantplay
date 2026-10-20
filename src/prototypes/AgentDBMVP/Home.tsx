@@ -27,12 +27,26 @@ interface MapNode {
 const IA: MapNode = {
   label: 'AgentDB',
   children: [
-    { label: 'Sign in' },
-    { label: 'Data', children: [{ label: 'Tables' }, { label: 'Views' }, { label: 'Materialised views' }] },
-    { label: 'SQL', children: [{ label: 'Create table' }, { label: 'Query' }, { label: 'Modify table' }] },
-    { label: 'Connect', children: [{ label: 'Type of connection' }, { label: 'Details' }, { label: 'Accounts' }] },
-    { label: 'Access', children: [{ label: 'Users', children: [{ label: 'View' }, { label: 'Invite' }, { label: 'Remove' }] }] },
-    { label: 'API keys', children: [{ label: 'Keys', children: [{ label: 'View' }, { label: 'Create' }, { label: 'Delete' }] }] },
+    { label: 'Sign up / sign in', children: [{ label: 'SOC 2: email, one-time code, password' }] },
+    {
+      label: 'Data',
+      children: [
+        { label: 'Metrics' },
+        { label: 'Database', children: [{ label: 'Tables' }, { label: 'Views' }, { label: 'Materialised views' }] },
+      ],
+    },
+    { label: 'SQL', children: [{ label: 'Create table' }, { label: 'Query existing table' }, { label: 'Modify table' }] },
+    {
+      label: 'Queries',
+      children: [
+        { label: 'Metrics' },
+        { label: 'Filter', children: [{ label: 'Status' }, { label: 'Type' }] },
+        { label: 'Queries table' },
+      ],
+    },
+    { label: 'Connect', children: [{ label: 'Type of connection', children: [{ label: 'Details' }] }] },
+    { label: 'Access', children: [{ label: 'Users' }, { label: 'Service accounts' }] },
+    { label: 'API keys', children: [{ label: 'Keys' }] },
   ],
 };
 
@@ -95,6 +109,8 @@ const DECISIONS: { date: string; decision: string; source?: string }[] = [
   { date: '15 Oct', decision: 'Plain everywhere; a code font only in the SQL editor.' },
   { date: '19 Oct', decision: 'Clusters hold databases. Customers are given one or more, in the backend, and never create one.' },
   { date: '19 Oct', decision: 'Keep the 14 Oct shape: API keys on their own page, service accounts under Access, Load data inside Connect.' },
+  { date: '20 Oct', decision: 'No Delete database in the console. Allocating and removing databases is a backend action.' },
+  { date: '20 Oct', decision: 'Connect keeps four tabs: BI tools, Apps, Agents, Load data. Each has its own instructions.' },
 ];
 
 const CHANGES: { date: string; version: string; what: string }[] = [
@@ -110,8 +126,8 @@ const CHANGES: { date: string; version: string; what: string }[] = [
 /** The happy journey, from Vivek's sketch of 19 Oct. Each opens the prototype at the flow's first screen. */
 const FLOWS: { id: string; name: string; starts: string; open?: string }[] = [
   { id: 'login', name: 'Sign in for the first time', starts: 'Sign in, empty workspace' },
+  { id: 'etl', name: 'Connect an ETL tool: create an API key', starts: 'API keys, empty workspace', open: 'ETL through API keys, consumers through Connect? Today Connect also carries Load data.' },
   { id: 'create-table', name: 'Create a table', starts: 'SQL, empty workspace', open: 'Is running a CREATE TABLE statement enough, or also a Create table button? Today: the statement only (Harviish, 14 Oct).' },
-  { id: 'etl', name: 'Connect an ETL tool: create an API key', starts: 'API keys', open: 'ETL through API keys, consumers through Connect? Today Connect also carries Load data.' },
   { id: 'view-table', name: 'See the data land', starts: 'Data, filled workspace' },
   { id: 'query-table', name: 'Query a table', starts: 'SQL, filled workspace' },
   { id: 'bi', name: 'Connect a BI tool', starts: 'Connect, BI tools' },
@@ -205,7 +221,7 @@ const AgentDBMVPHome: React.FC = () => (
           </div>
         </Section>
 
-        <Section id="ia" title="Information architecture" note="The essentials, from Vivek's sketch of 19 Oct.">
+        <Section id="ia" title="Information architecture" note="Vivek's IA of 20 Oct. Each node collapses; add detail by adding a child.">
           <div className={styles.map} role="tree" aria-label="Information architecture">
             <MapBranch node={IA} depth={0} />
           </div>

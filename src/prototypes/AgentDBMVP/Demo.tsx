@@ -32,10 +32,23 @@ const STEPS: Step[] = [
     ],
   },
   {
+    flow: 'etl',
+    title: 'Connect the ETL tool: create an API key',
+    say: "Acme's orders come out of Shopify through their own pipeline. The pipeline needs a key, and an address to send files to.",
+    doSteps: [
+      'Open API keys. Create API key, name it shopify-sync. The secret is shown once: copy it.',
+      'The key goes into the pipeline. It needs one more thing, an address to send files to, and that comes with a table.',
+    ],
+  },
+  {
     flow: 'create-table',
     title: 'Create a table',
-    say: 'The first job is somewhere for the orders to land. In AgentDB you create things the way every database does, by writing SQL. There is no form to learn.',
-    doSteps: ['Open SQL. Paste the statement. Run.', 'The result confirms the table. Open Data: orders is in the tree, with its columns and no rows yet.'],
+    say: 'Now somewhere for the orders to land. In AgentDB you create things the way every database does, by writing SQL. There is no form to learn.',
+    doSteps: [
+      'Open SQL. Paste the statement. Run.',
+      'The result confirms the table. Open Data: orders is in the tree, with its columns and no rows yet.',
+      'On the orders page, Load instructions. Pick shopify-sync. The load address and the command are filled in for this table and this key. That command goes into the pipeline; every night it sends the day\'s orders to that address.',
+    ],
     sql: [
       {
         label: 'Create the orders table',
@@ -50,16 +63,6 @@ const STEPS: Step[] = [
 DUPLICATE KEY(order_id)
 DISTRIBUTED BY HASH(order_id) BUCKETS 8;`,
       },
-    ],
-  },
-  {
-    flow: 'etl',
-    title: 'Connect the ETL tool: create an API key',
-    say: "Acme's orders come out of Shopify through their own pipeline. The pipeline needs a key, and an address to send files to.",
-    doSteps: [
-      'Open API keys. Create API key, name it shopify-sync. The secret is shown once: copy it.',
-      'Open Connect, Load data. Pick acme_retail and orders. The load address and the command are filled in for this table and this key.',
-      'That command goes into the pipeline. Every night it sends the day\'s orders to that address.',
     ],
   },
   {

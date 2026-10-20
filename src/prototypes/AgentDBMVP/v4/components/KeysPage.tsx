@@ -174,7 +174,7 @@ export const KeysPage: React.FC<{
             />
           }
         >
-          <Vertical gap={spacing.D}>
+          <Vertical gap={spacing.D} className={styles.selectRoom}>
             <TextInput label="Name" placeholder="airflow-events" value={name} onChange={(e) => setName(e.target.value.toLowerCase())} error={!!nameError} errorMessage={nameError} />
             <Select label="Expires" options={EXPIRY} value={expiry} onChange={(v) => setExpiry(v)} fullWidth />
           </Vertical>

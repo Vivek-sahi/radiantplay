@@ -313,3 +313,6 @@
   gap: var(--spacing-4);
   align-items: end;
 }
+
+/* A dialog whose last field is a Select: room below it so the open list isn't clipped by the footer. */
+.selectRoom { padding-bottom: calc(var(--spacing-24) + var(--spacing-8)); }

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActionMenu, ActionMenuItem, Button, Horizontal, Icon, Modal, ModalFooter, NoData, SearchInput, Table, TextInput, Tree, Typography, Vertical } from '@/components';
+import { Button, Horizontal, Icon, NoData, SearchInput, Table, Tree, Typography, Vertical } from '@/components';
 import type { IconName } from '@/components';
 import type { TreeNode } from '@/components/Tree/Tree';
 import { spacing } from '@tokens/spacing';
@@ -140,12 +140,9 @@ const Crumbs: React.FC<{ items: { label: string; onClick?: () => void }[] }> = (
   </div>
 );
 
-/** One database: its objects, with search. Freshness beside the name (principle 8). Delete only when empty. */
-const DatabaseView: React.FC<Props & { db: Database }> = ({ db, objects, role, onSelect, onOpenSql, onDeleteDatabase }) => {
+/** One database: its objects, with search. Freshness beside the name (principle 8). No delete: databases are allocated in the backend (Vivek, 20 Oct). */
+const DatabaseView: React.FC<Props & { db: Database }> = ({ db, objects, role, onSelect, onOpenSql }) => {
   const [q, setQ] = useState('');
-  const [confirm, setConfirm] = useState(false);
-  const [typed, setTyped] = useState('');
-  const [menuKey, setMenuKey] = useState(0);
   const objs = objects.filter((o) => o.database === db.id);
   const count = (k: ObjectKind) => objs.filter((o) => o.kind === k).length;
   const size = objs.reduce((s, o) => s + o.sizeGB, 0);
@@ -166,27 +163,6 @@ const DatabaseView: React.FC<Props & { db: Database }> = ({ db, objects, role, o
           <Typography variant="modal-title" color="base" noMargin>
             {db.name}
           </Typography>
-          {role === 'Admin' && (
-            <ActionMenu
-              key={menuKey}
-              placement="bottom-end"
-              trigger={
-                <Button variant="secondary" icon="more" iconOnly aria-label="More actions">
-                  More
-                </Button>
-              }
-            >
-              <ActionMenuItem
-                label="Delete database"
-                destructive
-                onClick={() => {
-                  setTyped('');
-                  setConfirm(true);
-                  setMenuKey((k) => k + 1);
-                }}
-              />
-            </ActionMenu>
-          )}
         </Horizontal>
         {objs.length > 0 && (
           <Typography variant="body-normal" color="gray-light" noMargin>
@@ -239,51 +215,6 @@ const DatabaseView: React.FC<Props & { db: Database }> = ({ db, objects, role, o
             ]}
           />
         </Vertical>
-      )}
-
-      {confirm && (
-        <Modal
-          isOpen
-          onClose={() => setConfirm(false)}
-          title={`Delete ${db.name}?`}
-          size="medium"
-          footer={
-            <ModalFooter
-              secondaryAction={
-                <Button variant="secondary" onClick={() => setConfirm(false)}>
-                  Cancel
-                </Button>
-              }
-              primaryAction={
-                <Button
-                  variant="primary"
-                  disabled={objs.length > 0 || typed !== db.name}
-                  onClick={() => {
-                    onDeleteDatabase(db.id);
-                    setConfirm(false);
-                  }}
-                >
-                  Delete database
-                </Button>
-              }
-            />
-          }
-        >
-          <Vertical gap={spacing.C}>
-            {objs.length > 0 ? (
-              <Typography variant="body-normal" color="base" noMargin>
-                Delete its {objs.length} {objs.length === 1 ? 'object' : 'objects'} first.
-              </Typography>
-            ) : (
-              <>
-                <Typography variant="body-normal" color="base" noMargin>
-                  The database is empty. No data is lost.
-                </Typography>
-                <TextInput label={`Type ${db.name} to confirm`} value={typed} onChange={(e) => setTyped(e.target.value)} />
-              </>
-            )}
-          </Vertical>
-        </Modal>
       )}
     </>
   );

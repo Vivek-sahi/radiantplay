@@ -289,7 +289,7 @@ export const AccessPage: React.FC<{
             />
           }
         >
-          <Vertical gap={spacing.D}>
+          <Vertical gap={spacing.D} className={styles.selectRoom}>
             <TextInput label="Name" value={pName} onChange={(e) => setPName(e.target.value)} />
             <TextInput label="Email" value={pEmail} onChange={(e) => setPEmail(e.target.value)} error={!!emailError} errorMessage={emailError} />
             <Select label="Role" options={ROLE_OPTIONS} value={pRole} onChange={(v) => setPRole(v as Role)} fullWidth />
@@ -326,7 +326,9 @@ export const AccessPage: React.FC<{
             />
           }
         >
-          <Select label="Role" options={ROLE_OPTIONS} value={pRole} onChange={(v) => setPRole(v as Role)} fullWidth />
+          <div className={styles.selectRoom}>
+            <Select label="Role" options={ROLE_OPTIONS} value={pRole} onChange={(v) => setPRole(v as Role)} fullWidth />
+          </div>
         </Modal>
       )}
 

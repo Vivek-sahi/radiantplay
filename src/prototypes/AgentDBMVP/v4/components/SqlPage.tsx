@@ -1,17 +1,18 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Button, Horizontal, Icon, Select, Table, TextArea, Typography, Vertical } from '@/components';
+import { Button, Horizontal, Icon, Link, Modal, ModalFooter, Select, Table, TextArea, Typography, Vertical } from '@/components';
 import { spacing } from '@tokens/spacing';
-import { Column, Database, DbObject, ObjectKind, RecentRun, Role } from '../types';
+import { Column, Database, DbObject, Identity, ObjectKind, RecentRun, Role } from '../types';
 import { formatGB, formatRows, KIND_LABEL, sampleValue } from '../data';
 import { parseSql } from '../../tableSchema';
 import { PageHeader } from '../../components/primitives';
+import { LoadInstructions } from './LoadInstructions';
 import styles from '../v4.module.css';
 
 const LIMIT = 1000;
 
 type Result =
   | { kind: 'rows'; columns: string[]; rows: Record<string, string>[]; meta: string }
-  | { kind: 'message'; ok: boolean; text: string };
+  | { kind: 'message'; ok: boolean; text: string; created?: { id: string; database: string; name: string } };
 
 /**
  * SQL: one editor for everything (Harviish, 14 Oct). Create and change tables, views and
@@ -34,11 +35,15 @@ export const SqlPage: React.FC<{
   onAddColumn: (id: string, col: Column) => void;
   onDropObject: (id: string) => void;
   onTruncate: (id: string) => void;
-}> = ({ databases, objects, role, me, prefill, onConsumePrefill, onRecordRun, onCreateObject, onAddColumn, onDropObject, onTruncate }) => {
+  identities: Identity[];
+  onOpenObject: (id: string) => void;
+  toast: (m: string) => void;
+}> = ({ databases, objects, role, me, prefill, onConsumePrefill, onRecordRun, onCreateObject, onAddColumn, onDropObject, onTruncate, identities, onOpenObject, toast }) => {
   const [database, setDatabase] = useState(prefill?.database ?? databases[0]?.id ?? '');
   const [sql, setSql] = useState(prefill?.sql ?? '');
   const [result, setResult] = useState<Result | null>(null);
   const [running, setRunning] = useState(false);
+  const [loadFor, setLoadFor] = useState<{ id: string; database: string; name: string } | null>(null);
   const timer = useRef<number | null>(null);
 
   useEffect(() => {
@@ -83,12 +88,14 @@ export const SqlPage: React.FC<{
       if (!databases.some((d) => d.id === db)) return fail(`No database called ${db}.`);
       if (objects.some((o) => o.database === db && o.name === p.tableName)) return fail(`${p.tableName} already exists in ${db}.`);
       if (!p.columns.length) return fail('Add at least one column.');
+      const id = `o_${Date.now()}`;
       onCreateObject({
-        id: `o_${Date.now()}`, database: db, name: p.tableName, kind: 'table',
+        id, database: db, name: p.tableName, kind: 'table',
         columns: p.columns.map((c) => ({ name: c.name, type: c.type })),
         rows: 0, sizeGB: 0, lastUpdated: '—', createdBy: me, createdOn: 'Today',
       });
-      return ok(`Table ${p.tableName} created in ${db}.`);
+      // A new table's next job is getting data into it: the result offers the way there (Vivek, 20 Oct).
+      return { kind: 'message', ok: true, text: `Table ${p.tableName} created in ${db}.`, created: { id, database: db, name: p.tableName } };
     }
 
     if (/^create\s+(materialized\s+)?view\b/i.test(s)) {
@@ -310,7 +317,36 @@ export const SqlPage: React.FC<{
             <Typography variant="body-normal" color={result.ok ? 'base' : 'failure'} noMargin>
               {result.text}
             </Typography>
+            {result.created && (
+              <Horizontal gap={spacing.D} align="center">
+                <Link href="#" onClick={(e) => { e.preventDefault(); onOpenObject(result.created!.id); }}>
+                  Open {result.created.name}
+                </Link>
+                <Link href="#" onClick={(e) => { e.preventDefault(); setLoadFor(result.created!); }}>
+                  Load instructions
+                </Link>
+              </Horizontal>
+            )}
           </div>
+        )}
+        {loadFor && (
+          <Modal
+            isOpen
+            onClose={() => setLoadFor(null)}
+            title={`Load instructions for ${loadFor.name}`}
+            size="large"
+            footer={
+              <ModalFooter
+                primaryAction={
+                  <Button variant="primary" onClick={() => setLoadFor(null)}>
+                    Done
+                  </Button>
+                }
+              />
+            }
+          >
+            <LoadInstructions database={loadFor.database} table={loadFor.name} identities={identities} toast={toast} />
+          </Modal>
         )}
         {!running && result?.kind === 'rows' && result.rows.length > 0 && (
           <div className={styles.scroll}>
