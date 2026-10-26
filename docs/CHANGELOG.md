@@ -1,5 +1,13 @@
 # Changelog
 
+## 26.10.4a — 2026-10-26
+
+The M4 full screen modal matches the Radiant 3.0 Figma spec.
+
+- `Modal` size `M4` fills the overlay's padded area, so it sits 24px from every edge of the window. It used to take the full window height with an 8px margin, which ran past the overlay padding and left 8px at the top and bottom; the 1440px and 1366px width caps are gone too
+- The M4 header is 72px tall, border included, with the title and Close button 20px from the top (it measured 73px)
+- The Spotter `VizBlock` expand modal drops its own M4 width override, which the fix makes redundant
+
 ## 26.10.3j — 2026-10-14
 
 Claude Code reads the tier rules again. Since April, `CLAUDE.md` only said "See `_orchestration.md`", and nothing in `.cursor/rules/` loads on its own in Claude Code, so new prototypes were planned without the rule files.
