@@ -1,0 +1,355 @@
+/* Gallery sort and group headings. The rest of the gallery still uses the
+   inline styles object in PlaygroundGallery.tsx. */
+
+/* Centres the section's content in the panel; everything inside stays left aligned */
+.content {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-4);
+  margin: 0 0 var(--spacing-4);
+  max-width: 1200px;
+}
+
+/* Sections are placed with CSS order (see renderGrid), so spacing can't use sibling selectors */
+.groups {
+  display: flex;
+  flex-direction: column;
+}
+
+.group {
+  margin-top: var(--spacing-8);
+}
+
+/* Collapsed groups stack as compact rows */
+.groupCollapsed {
+  margin-top: var(--spacing-3);
+}
+
+.groupFirst,
+.groupFirst.groupCollapsed {
+  margin-top: 0;
+}
+
+/* A grid cell holding one card; the card fills it */
+.cardSlot {
+  display: flex;
+  min-width: 0;
+}
+
+.cardSlot > * {
+  flex: 1;
+  min-width: 0;
+}
+
+.groupHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  min-width: 0;
+  margin: 0 0 var(--spacing-4);
+  color: var(--rd-sys-color-content-primary);
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-emphasis);
+  line-height: var(--line-height-lg);
+}
+
+.groupCollapsed .groupHeader {
+  margin-bottom: 0;
+}
+
+.groupToggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-sm);
+  color: inherit;
+  cursor: pointer;
+}
+
+.groupToggle:focus-visible,
+.groupName:focus-visible {
+  outline: 2px solid var(--rd-sys-color-border-brand);
+}
+
+/* A name that can't be renamed: same box as InlineEdit (4px side padding), so both line up */
+.groupName {
+  padding: 0 var(--spacing-1);
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-sm);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* InlineEdit carries the heading weight */
+.groupNameEdit {
+  flex-shrink: 0;
+  font-weight: var(--font-weight-emphasis);
+  max-width: 480px;
+}
+
+.groupPeek {
+  flex: 1;
+  min-width: 0;
+  margin-left: var(--spacing-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--rd-sys-color-content-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-regular);
+}
+
+.groupChevron {
+  display: inline-flex;
+  color: var(--rd-sys-color-content-secondary);
+  transition: transform 150ms ease;
+}
+
+.groupChevronCollapsed {
+  transform: rotate(-90deg);
+}
+
+.groupCount {
+  color: var(--rd-sys-color-content-secondary);
+  font-weight: var(--font-weight-regular);
+}
+
+/* Drag a card onto a heading or a left-pane item to move it there */
+.dropTarget {
+  border-radius: var(--radius-lg);
+  outline: 1px dashed color-mix(in srgb, var(--rd-sys-color-border-brand) 50%, transparent);
+  outline-offset: var(--spacing-1);
+  transition: outline-color 120ms ease, background 120ms ease;
+}
+
+.dropTargetOver {
+  outline: 2px solid var(--rd-sys-color-border-brand);
+  background: color-mix(in srgb, var(--rd-sys-color-background-ghost-highlight) 60%, transparent);
+}
+
+.toastText {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+}
+
+.toastDetail {
+  color: color-mix(in srgb, var(--rd-sys-color-content-primary-inverse) 72%, transparent);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-sm);
+}
+
+/* Keeps menu labels aligned whether or not the check shows */
+.sortCheck {
+  display: inline-flex;
+  width: 16px;
+  height: 16px;
+  color: var(--rd-sys-color-content-brand);
+}
+
+.titleControls {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+}
+
+/* Shown while a card is dragged: drop it to start a new group */
+.newGroup {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 72px;
+  margin-top: var(--spacing-8);
+  flex-shrink: 0;
+  padding: var(--spacing-4);
+  border: 1px dashed var(--rd-sys-color-border-bold);
+  border-radius: var(--radius-lg);
+  color: var(--rd-sys-color-content-secondary);
+}
+
+.newGroupLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.newGroupForm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  width: 100%;
+  max-width: 360px;
+}
+
+.newGroupHint {
+  color: var(--rd-sys-color-content-tertiary);
+  font-size: var(--font-size-xs);
+}
+
+/* Icon-only items in the shared switcher pill */
+.viewItem {
+  padding: 6px var(--spacing-3);
+}
+
+/* Sort sits on the same grey track as the view switch, as a single pill */
+.sortTrigger {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  height: 32px;
+  padding: 0 var(--spacing-3) 0 var(--spacing-4);
+  border: none;
+  border-radius: var(--radius-full);
+  background: var(--rd-sys-color-background-subtle);
+  color: var(--rd-sys-color-content-primary);
+  font-family: var(--font-family-primary);
+  font-size: 13px;
+  font-weight: var(--font-weight-medium);
+  line-height: 20px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.sortTrigger:hover {
+  background: color-mix(in srgb, var(--rd-sys-color-content-primary) 10%, var(--rd-sys-color-background-subtle));
+}
+
+.sortTrigger:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--rd-sys-color-content-brand);
+}
+
+.sortLabel {
+  color: var(--rd-sys-color-content-secondary);
+}
+
+/* List view: one table, the group is a column */
+.list {
+  max-width: 1200px;
+  border-radius: var(--radius-lg);
+  overflow-x: auto;
+  background: var(--rd-sys-color-background-base);
+  box-shadow: var(--rd-sys-color-shadow-surface);
+}
+
+.listName {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.listTitle {
+  color: var(--rd-sys-color-content-primary);
+  font-weight: var(--font-weight-medium);
+}
+
+.listDescription {
+  color: var(--rd-sys-color-content-secondary);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-sm);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 480px;
+}
+
+.listGroup {
+  display: inline-block;
+  white-space: nowrap;
+  padding: 0 var(--spacing-2);
+  border-radius: var(--radius-full);
+  background: var(--rd-sys-color-background-sunken);
+  color: var(--rd-sys-color-content-primary);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-sm);
+}
+
+.listMuted {
+  color: var(--rd-sys-color-content-tertiary);
+  white-space: nowrap;
+}
+
+.listActions {
+  display: inline-flex;
+}
+
+.listDate {
+  white-space: nowrap;
+}
+
+/* Card without a thumbnail: the prototype's initial on a Radiance-style wash.
+   --wash-a/b/c (hues) and the glow positions come from washFor() in the gallery. */
+.placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-1);
+  width: 100%;
+  height: 100%;
+  background:
+    radial-gradient(ellipse 70% 90% at var(--wash-ax) var(--wash-ay), color-mix(in srgb, var(--wash-a) var(--wash-strong), transparent), transparent 70%),
+    radial-gradient(ellipse 65% 85% at var(--wash-bx) var(--wash-by), color-mix(in srgb, var(--wash-b) var(--wash-mid), transparent), transparent 70%),
+    radial-gradient(ellipse 80% 60% at 50% 110%, color-mix(in srgb, var(--wash-c) var(--wash-soft), transparent), transparent 75%),
+    var(--rd-sys-color-background-sunken);
+  --wash-strong: 34%;
+  --wash-mid: 30%;
+  --wash-soft: 22%;
+}
+
+/* Glows read dimmer on a dark base, so they come up a little there */
+:global([data-theme='dark']) .placeholder {
+  --wash-strong: 46%;
+  --wash-mid: 40%;
+  --wash-soft: 30%;
+}
+
+/* Frosted, like content sitting on Radiance */
+.placeholderInitial {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-xl);
+  background: color-mix(in srgb, var(--rd-sys-color-background-base) 62%, transparent);
+  box-shadow: var(--rd-sys-color-shadow-surface);
+  backdrop-filter: blur(8px);
+  color: var(--rd-sys-color-content-primary);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-emphasis);
+}
+
+.placeholderNote {
+  padding: 0 var(--spacing-2);
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--rd-sys-color-background-base) 62%, transparent);
+  color: var(--rd-sys-color-content-primary);
+  font-size: var(--font-size-xs);
+}
+
+/* The thumbnails note above the gallery, as wide as the content */
+.note {
+  max-width: 1200px;
+  margin: 0 auto var(--spacing-6);
+}

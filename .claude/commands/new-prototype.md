@@ -343,7 +343,7 @@ export default <Name>;
 
 ### 6. No thumbnail yet
 
-Don't draw a placeholder thumbnail. A new prototype has nothing to show yet, so the gallery shows a live preview of it until a real screenshot is captured. That happens on its own: `/rp-radiant-check` captures it once the prototype has its UI, and `/rp-sync-upstream` picks up any that are missing.
+Don't draw a placeholder thumbnail. A new prototype has nothing to show yet, so the gallery shows a placeholder until a real screenshot is captured. That happens on its own, or from the gallery's Capture thumbnails note under `npm run dev`: `/rp-radiant-check` captures it once the prototype has its UI, and `/rp-sync-upstream` picks up any that are missing.
 
 ---
 

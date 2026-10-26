@@ -6,7 +6,7 @@ user-invocable: false
 
 # Capture prototype thumbnails
 
-The gallery shows a real screenshot for each prototype, in light and dark. Without one it falls back to a live preview, which works but is heavier. There is no thumbnail command: /rp-radiant-check refreshes a prototype's thumbnail after a check, /rp-sync-upstream captures missing ones after a sync, /rp-migrate-prototype captures them as part of its light and dark check, and a designer can simply ask ("update my thumbnail"). Each of them follows the steps below.
+The gallery shows a real screenshot for each prototype, in light and dark. Without one it shows a placeholder (the prototype's initial). Under `npm run dev` the gallery also offers a Capture thumbnails note that runs the same capture and wiring for every prototype missing one. There is no thumbnail command: /rp-radiant-check refreshes a prototype's thumbnail after a check, /rp-sync-upstream captures missing ones after a sync, /rp-migrate-prototype captures them as part of its light and dark check, and a designer can simply ask ("update my thumbnail"). Each of them follows the steps below.
 
 ## 1. Pick the prototypes
 
@@ -19,9 +19,9 @@ The gallery shows a real screenshot for each prototype, in light and dark. Witho
 Check whether `~/.radiantplay-visual/.thumbnails-enabled` exists.
 
 - If it exists, go to step 3.
-- If `~/.radiantplay-visual/.thumbnails-declined` exists, the designer said no before. Tell them the gallery keeps showing live previews, and that they can say "set up thumbnails" any time. Stop.
+- If `~/.radiantplay-visual/.thumbnails-declined` exists, the designer said no before. Tell them the gallery keeps showing placeholders, and that they can say "set up thumbnails" any time. Stop.
 - Otherwise ask once: "Thumbnails need a one-time download of a screenshot tool (Playwright and Chromium, about 150 MB, installed outside the project). Set it up now? (yes / no)"
-  - Yes: run `npm run thumbnails:setup`. If the download fails (company networks sometimes block it), say so plainly, mention the live preview keeps working, and stop. Don't try other mirrors or workarounds.
+  - Yes: run `npm run thumbnails:setup`. If the download fails (company networks sometimes block it), say so plainly, mention the gallery keeps showing placeholders, and stop. Don't try other mirrors or workarounds.
   - No: create `~/.radiantplay-visual/.thumbnails-declined` (make the folder if needed) and stop.
 
 ## 3. Capture

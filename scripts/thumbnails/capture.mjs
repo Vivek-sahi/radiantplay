@@ -42,7 +42,7 @@ try {
   ({ chromium } = createRequire(path.join(DEPS, 'noop.js'))('playwright'));
 } catch {
   console.log('Thumbnails need Playwright, which is not installed yet. Run once: npm run thumbnails:setup');
-  console.log('Until then the gallery shows a live preview for prototypes without a thumbnail.');
+  console.log('Until then the gallery shows a placeholder for prototypes without a thumbnail.');
   process.exit(0);
 }
 

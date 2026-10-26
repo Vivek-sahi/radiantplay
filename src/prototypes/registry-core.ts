@@ -26,7 +26,7 @@ export interface ProjectMeta {
    * `npm run thumbnails -- <Name>` (src/prototypes/<Name>/thumbnail.light.jpg and .dark.jpg).
    * Also accepted: inline SVG markup imported with `?raw` (theme tokens, see
    * scripts/thumbnails/tokenize-svg.mjs) or a single image URL. Without one, the gallery
-   * shows a live preview of the prototype.
+   * shows a placeholder and, under `npm run dev`, offers to capture it.
    */
   thumbnail?: string | { light: string; dark?: string };
   /** Project component */
@@ -37,6 +37,12 @@ export interface ProjectMeta {
   customComponents?: number;
   /** Which gallery section: 'sample' for built-in examples, 'mine' for user-created (default), 'archived' for deprecated prototypes kept for reference */
   section?: 'sample' | 'mine' | 'archived';
+  /**
+   * Gallery group: the project this prototype belongs to, such as 'Apps in ThoughtSpot'. Prototypes
+   * in the same group sit together under one collapsible heading; those without one go under Other.
+   * Case doesn't matter. Designers can set it from the gallery under `npm run dev`.
+   */
+  group?: string;
   /**
    * 'global' follows the app's light and dark theme. 'light-only' keeps the prototype light while the
    * app is dark. With no value, sample prototypes follow the theme and designer prototypes
@@ -115,6 +121,7 @@ export const coreRegistry: ProjectMeta[] = [
     dsComponents: 9,
     customComponents: 10,
     section: 'sample',
+    group: 'Admin',
   },
   {
     id: 'AdminLang',
@@ -127,6 +134,7 @@ export const coreRegistry: ProjectMeta[] = [
     dsComponents: 10,
     customComponents: 4,
     section: 'archived',
+    group: 'Admin',
   },
   {
     id: 'MiniSpotters',
@@ -139,6 +147,7 @@ export const coreRegistry: ProjectMeta[] = [
     dsComponents: 8,
     customComponents: 5,
     section: 'archived',
+    group: 'Spotter',
   },
   {
     id: '_liveboard-template',
@@ -151,6 +160,7 @@ export const coreRegistry: ProjectMeta[] = [
     dsComponents: 8,
     customComponents: 4,
     section: 'sample',
+    group: 'Liveboard',
   },
   {
     id: 'DataModelEditor',
@@ -163,6 +173,7 @@ export const coreRegistry: ProjectMeta[] = [
     dsComponents: 10,
     customComponents: 13,
     section: 'sample',
+    group: 'Data model',
   },
   {
     id: 'Spotter',
@@ -176,6 +187,7 @@ export const coreRegistry: ProjectMeta[] = [
     dsComponents: 14,
     customComponents: 1,
     section: 'sample',
+    group: 'Spotter',
   },
   {
     id: 'NewUIAdmin2',
@@ -188,6 +200,7 @@ export const coreRegistry: ProjectMeta[] = [
     dsComponents: 6,
     customComponents: 4,
     section: 'sample',
+    group: 'Admin',
   },
   {
     id: 'StylingPanel',
@@ -200,6 +213,7 @@ export const coreRegistry: ProjectMeta[] = [
     dsComponents: 6,
     customComponents: 4,
     section: 'sample',
+    group: 'Liveboard',
   },
   {
     id: 'SpotterComponents',
@@ -210,5 +224,6 @@ export const coreRegistry: ProjectMeta[] = [
     lastModified: '2026-09-01',
     component: SpotterComponents,
     section: 'sample',
+    group: 'Spotter',
   },
 ];
