@@ -29,9 +29,12 @@ export const THUMBNAILS_PATH = '/__radiantplay/thumbnails';
 const REGISTRY_FILE = path.join('src', 'prototypes', 'registry-mine.ts');
 
 /** One entry's change, or a group rename across every entry in that group */
+/** One entry's change, a group rename across every entry in it, or several of these in one write */
+type EntryChangeWithId = { id: string; group?: string | null; section?: 'archived' | 'mine'; name?: string };
 type RegistryChange =
-  | { id: string; group?: string | null; section?: 'archived' | 'mine' }
-  | { renameGroup: { from: string; to: string } };
+  | EntryChangeWithId
+  | { renameGroup: { from: string; to: string } }
+  | { batch: EntryChangeWithId[] };
 
 const quote = (s: string) => `'${s.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`;
 
@@ -107,7 +110,7 @@ function setProp(entry: string, key: string, value: string | null, indent: strin
   return `${head}\n${indent}${key}: ${value},\n${entry.slice(close).replace(/^\s*/, indent.slice(2))}`;
 }
 
-type EntryChange = { group?: string | null; section?: 'archived' | 'mine' };
+type EntryChange = { group?: string | null; section?: 'archived' | 'mine'; name?: string };
 
 /** Apply a change to one entry, found by its id. Null when the id isn't in the file. */
 export function applyEntryChange(src: string, id: string, change: EntryChange): string | null {
@@ -124,6 +127,9 @@ export function applyEntryChange(src: string, id: string, change: EntryChange): 
 
   if (change.group !== undefined) {
     entry = setProp(entry, 'group', change.group ? quote(change.group) : null, indent);
+  }
+  if (change.name !== undefined) {
+    entry = setProp(entry, 'name', quote(change.name), indent);
   }
   if (change.section !== undefined) {
     entry = setProp(entry, 'section', quote(change.section), indent);
@@ -146,6 +152,14 @@ function idsInGroup(src: string, group: string): string[] {
 }
 
 export function applyRegistryChange(src: string, change: RegistryChange): string | null {
+  if ('batch' in change) {
+    // All or nothing: one missing id leaves the file as it was
+    let next: string | null = src;
+    for (const { id, ...rest } of change.batch) {
+      next = next === null ? null : applyEntryChange(next, id, rest);
+    }
+    return next;
+  }
   if ('renameGroup' in change) {
     const ids = idsInGroup(src, change.renameGroup.from);
     if (ids.length === 0) return null;
@@ -202,6 +216,18 @@ export function wireThumbnail(src: string, id: string, lightOnly: boolean): stri
 
 const isGroupName = (v: unknown): v is string => typeof v === 'string' && v.trim().length > 0 && v.length <= 60;
 
+const isName = (v: unknown): v is string => typeof v === 'string' && v.trim().length > 0 && v.length <= 80;
+
+function isEntryChange(body: unknown): body is EntryChangeWithId {
+  if (!body || typeof body !== 'object') return false;
+  const b = body as Record<string, unknown>;
+  if (typeof b.id !== 'string' || !/^[\w-]+$/.test(b.id)) return false;
+  if (b.group !== undefined && b.group !== null && !isGroupName(b.group)) return false;
+  if (b.section !== undefined && b.section !== 'archived' && b.section !== 'mine') return false;
+  if (b.name !== undefined && !isName(b.name)) return false;
+  return b.group !== undefined || b.section !== undefined || b.name !== undefined;
+}
+
 function isChange(body: unknown): body is RegistryChange {
   if (!body || typeof body !== 'object') return false;
   const b = body as Record<string, unknown>;
@@ -209,11 +235,18 @@ function isChange(body: unknown): body is RegistryChange {
     const r = b.renameGroup as Record<string, unknown> | null;
     return Boolean(r) && isGroupName(r!.from) && isGroupName(r!.to);
   }
-  if (typeof b.id !== 'string' || !/^[\w-]+$/.test(b.id)) return false;
-  if (b.group !== undefined && b.group !== null && !isGroupName(b.group)) return false;
-  if (b.section !== undefined && b.section !== 'archived' && b.section !== 'mine') return false;
-  return b.group !== undefined || b.section !== undefined;
+  if ('batch' in b) {
+    return Array.isArray(b.batch) && b.batch.length > 0 && b.batch.length <= 100 && b.batch.every(isEntryChange);
+  }
+  return isEntryChange(b);
 }
+
+const cleanEntryChange = (c: EntryChangeWithId): EntryChangeWithId => ({
+  id: c.id,
+  group: typeof c.group === 'string' ? c.group.trim() : c.group,
+  section: c.section,
+  name: c.name?.trim(),
+});
 
 // Same-origin JSON posts only: a page on another site open in the same browser could
 // otherwise post here. Browsers always send Origin on such posts.
@@ -350,7 +383,9 @@ export function registryWritePlugin(): Plugin {
             if (!isChange(body)) return reply(400, { error: 'Invalid change' });
             const change: RegistryChange = 'renameGroup' in body
               ? { renameGroup: { from: body.renameGroup.from.trim(), to: body.renameGroup.to.trim() } }
-              : { id: body.id, group: typeof body.group === 'string' ? body.group.trim() : body.group, section: body.section };
+              : 'batch' in body
+                ? { batch: body.batch.map(cleanEntryChange) }
+                : cleanEntryChange(body);
             const file = path.join(server.config.root, REGISTRY_FILE);
             const src = fs.readFileSync(file, 'utf8');
             const next = applyRegistryChange(src, change);

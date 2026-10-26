@@ -28,6 +28,15 @@ export interface VersionEntry {
  */
 export const versionHistory: VersionEntry[] = [
   {
+    version: '26.10.4h',
+    date: '2026-10-27',
+    type: 'patch',
+    changes: [
+      { type: 'added', group: 'Playground', component: 'Group suggestions', description: 'Prototypes that share a name prefix before a colon or a folder prefix get a Group them note; one click groups them and drops the prefix from their names, with Undo' },
+      { type: 'modified', group: 'Playground', component: 'Gallery notes', description: 'Group suggestion and thumbnail notes use a quieter style matching the Sort pill, instead of Alert' },
+    ],
+  },
+  {
     version: '26.10.4g',
     date: '2026-10-27',
     type: 'patch',

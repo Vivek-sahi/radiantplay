@@ -1,5 +1,13 @@
 # Changelog
 
+## 26.10.4h — 2026-10-27
+
+The gallery suggests groups for prototypes that look like one project.
+
+- Prototypes without a group that share a name prefix before a colon ("Apps in ThoughtSpot: Native"), a folder prefix before an underscore (`AppsInTS_*`) or a folder name (`MuzeTemplates`, `MuzeTemplatesAI`) get a note: "3 prototypes look like one project: Apps in ThoughtSpot". Group them sets the group in one go and drops the colon prefix from the names, with one Undo. A newcomer that matches an existing group gets Add to group
+- One suggestion shows at a time, and a dismissed one stays dismissed in that browser. On a deployed site the click copies a prompt for Claude
+- The gallery's notes (group suggestions, missing thumbnails) use a quieter style that matches the Sort pill and Help menu, instead of the Alert component
+
 ## 26.10.4g — 2026-10-27
 
 The playground gallery sorts prototypes into groups, has a list view, and saves changes made in it straight to your project.

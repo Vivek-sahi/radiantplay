@@ -11,7 +11,7 @@ import { Button } from '../components/Button';
 import { InlineEdit } from '../components/InlineEdit';
 import { Table, TableColumn } from '../components/Table';
 import { TextInput } from '../components/TextInput';
-import { Alert } from '../components/Alert';
+import { GalleryNote } from './GalleryNote';
 import { useIsDarkMode } from '../context/ThemeContext';
 import { RadianceBackground } from '../app-chrome/RadianceBackground/RadianceBackground';
 import { SectionSwitcher } from '../app-chrome/SectionSwitcher/SectionSwitcher';
@@ -22,6 +22,7 @@ import gallery from './PlaygroundGallery.module.css';
 // The view switch matches the Playground / Design system switcher above it
 import switcher from '../app-chrome/SectionSwitcher/SectionSwitcher.module.css';
 import { GalleryGroupPicker } from './GalleryGroupPicker';
+import { suggestGroups, suggestionPrompt, GroupSuggestion } from './gallerySuggestGroups';
 import {
   canSaveLocally,
   saveRegistryChange,
@@ -36,6 +37,17 @@ import {
 
 const THUMBS_DISMISSED_KEY = 'radiantplay:thumbnails-note-dismissed';
 const THUMBS_TOLD_KEY = 'radiantplay:thumbnails-announced';
+// Group suggestions the designer dismissed, by suggestion key; kept across visits
+const SUGGESTIONS_DISMISSED_KEY = 'radiantplay:group-suggestions-dismissed';
+
+function loadDismissedSuggestions(): Set<string> {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(SUGGESTIONS_DISMISSED_KEY) ?? '[]');
+    return new Set(Array.isArray(parsed) ? parsed.filter((v) => typeof v === 'string') : []);
+  } catch {
+    return new Set();
+  }
+}
 
 // Shown under every toast for a change saved to registry-mine.ts
 const SAVED_DETAIL = 'Saved here. Your shared link updates after you push your changes.';
@@ -150,6 +162,7 @@ export const PlaygroundGallery: React.FC = () => {
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dropNav, setDropNav] = useState<SectionId | null>(null);
   const [thumbs, setThumbs] = useState<ThumbnailState | null>(null);
+  const [dismissedSuggestions, setDismissedSuggestions] = useState<Set<string>>(() => loadDismissedSuggestions());
   const [thumbsDismissed, setThumbsDismissed] = useState(() => {
     try { return sessionStorage.getItem(THUMBS_DISMISSED_KEY) === '1'; } catch { return false; }
   });
@@ -267,6 +280,34 @@ export const PlaygroundGallery: React.FC = () => {
     if (!thumbs) return;
     const next = await thumbnailState(thumbs.missing);
     if (next) setThumbs(next);
+  };
+
+  const dismissSuggestion = (s: GroupSuggestion) => {
+    const next = new Set(dismissedSuggestions).add(s.key);
+    setDismissedSuggestions(next);
+    try { localStorage.setItem(SUGGESTIONS_DISMISSED_KEY, JSON.stringify([...next])); } catch { /* shows again next visit */ }
+  };
+
+  // Group the suggested prototypes in one write, so a single Undo puts them back
+  const applySuggestion = (s: GroupSuggestion) => {
+    const n = s.members.length;
+    if (s.members.every((m) => canSaveLocally({ id: m.id } as ProjectMeta))) {
+      commitLocal(
+        { batch: s.members.map((m) => ({ id: m.id, group: s.group, ...(m.newName ? { name: m.newName } : {}) })) },
+        {
+          message: s.joins
+            ? `Added ${n} prototype${n === 1 ? '' : 's'} to ${s.group}.`
+            : `Grouped ${n} prototypes as ${s.group}.`,
+          detail: SAVED_DETAIL,
+          undo: { batch: s.members.map((m) => ({ id: m.id, group: null, ...(m.newName ? { name: m.name } : {}) })) },
+        },
+      );
+      return;
+    }
+    navigator.clipboard?.writeText(suggestionPrompt(s)).then(
+      () => showToast({ message: 'Copied a prompt for Claude.', detail: 'Paste it into Claude to group these prototypes.' }),
+      () => showToast({ message: "Couldn't copy the prompt.", detail: suggestionPrompt(s) }),
+    );
   };
 
   const dismissThumbs = () => {
@@ -583,6 +624,27 @@ export const PlaygroundGallery: React.FC = () => {
         <RadianceBackground heroHeight={440} />
         <main style={styles.main} className={frame.scrollArea}>
         <CapturingContext.Provider value={new Set(thumbs?.capturing ?? [])}>
+          {activeSection === 'prototypes' && (() => {
+            // One suggestion at a time; the next shows once this one is used or dismissed
+            const s = suggestGroups(myProjects).find((x) => !dismissedSuggestions.has(x.key));
+            if (!s) return null;
+            const n = s.members.length;
+            return (
+              <div className={gallery.note}>
+                <GalleryNote
+                  icon="folder"
+                  actionLabel={s.joins ? 'Add to group' : 'Group them'}
+                  onAction={() => applySuggestion(s)}
+                  onDismiss={() => dismissSuggestion(s)}
+                >
+                  {s.joins
+                    ? <>{n} prototype{n === 1 ? ' looks' : 's look'} like part of <strong>{s.group}</strong>.</>
+                    : <>{n} prototypes look like one project: <strong>{s.group}</strong>.</>}
+                </GalleryNote>
+              </div>
+            );
+          })()}
+
           {activeSection === 'prototypes' && thumbs && (() => {
             const running = thumbs.status === 'running';
             const n = thumbs.missing.length;
@@ -590,7 +652,7 @@ export const PlaygroundGallery: React.FC = () => {
               const left = thumbs.capturing.length;
               return (
                 <div className={gallery.note}>
-                  <Alert status="info" message={`Capturing thumbnails, ${left} left…`} />
+                  <GalleryNote icon="camera">Capturing thumbnails, {left} left…</GalleryNote>
                 </div>
               );
             }
@@ -599,21 +661,13 @@ export const PlaygroundGallery: React.FC = () => {
             return (
               <div className={gallery.note}>
                 {thumbs.setup === 'ready' ? (
-                  <Alert
-                    status="info"
-                    message={`${which}.`}
-                    linkText="Capture thumbnails"
-                    onLinkClick={captureThumbnails}
-                    dismissible
-                    onDismiss={dismissThumbs}
-                  />
+                  <GalleryNote icon="camera" actionLabel="Capture thumbnails" onAction={captureThumbnails} onDismiss={dismissThumbs}>
+                    {which}.
+                  </GalleryNote>
                 ) : (
-                  <Alert
-                    status="info"
-                    message={`${which}. Ask Claude to "set up thumbnails" to capture them.`}
-                    dismissible
-                    onDismiss={dismissThumbs}
-                  />
+                  <GalleryNote icon="camera" onDismiss={dismissThumbs}>
+                    {which}. Ask Claude to &ldquo;set up thumbnails&rdquo; to capture them.
+                  </GalleryNote>
                 )}
               </div>
             );

@@ -35,9 +35,12 @@ export async function thumbnailState(ids?: string[]): Promise<ThumbnailState | n
 }
 
 /** One entry's change, or a group rename across every entry in that group */
+type EntryChange = { id: string; group?: string | null; section?: 'archived' | 'mine'; name?: string };
+/** One entry's change, a group rename across every entry in it, or several changes in one write */
 export type RegistryChange =
-  | { id: string; group?: string | null; section?: 'archived' | 'mine' }
-  | { renameGroup: { from: string; to: string } };
+  | EntryChange
+  | { renameGroup: { from: string; to: string } }
+  | { batch: EntryChange[] };
 
 /** True when this prototype's entry can be saved from the gallery right now. */
 export function canSaveLocally(project: ProjectMeta): boolean {
