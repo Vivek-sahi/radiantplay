@@ -1,5 +1,13 @@
 # Changelog
 
+## 26.10.4e — 2026-10-26
+
+Shared component work reads its rules every time, a test checks that Claude finds the rules, and release highlights land in the right file.
+
+- New `src/components/CLAUDE.md`, loaded whenever Claude works on shared components: read the four Tier 3 rule files first, keep default looks unchanged (new looks are opt-in), search for every use before changing a prop, then scan, build and update the Component Registry and changelog. In tests, Tier 3 work read all four rule files in 2 of 2 runs (before: `design-system.md` in 2 of 3)
+- `internal/scripts/guidance-test/` (maintainer only): runs 10 prompts through headless Claude Code in a throwaway copy of your checkout and scores which rule files each session read and whether it asked the gate questions. Run it after changing `CLAUDE.md`, `.cursor/rules/` or the hooks
+- `release.sh` asks for highlights for `src/data/highlights.ts`, the file the changelog page reads, instead of `ChangelogPage.tsx`, which the site doesn't show. `generate-changelog.sh` points at `versionHistory.ts` too
+
 ## 26.10.4d — 2026-10-26
 
 New prototypes keep their styles in CSS Modules, so the handoff export converts them with nothing left over.

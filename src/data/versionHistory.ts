@@ -28,6 +28,16 @@ export interface VersionEntry {
  */
 export const versionHistory: VersionEntry[] = [
   {
+    version: '26.10.4e',
+    date: '2026-10-26',
+    type: 'patch',
+    changes: [
+      { type: 'added', group: 'Tooling', component: 'src/components/CLAUDE.md', description: 'Loaded whenever Claude works on shared components: read the four Tier 3 rule files first, keep default looks unchanged, check every use before changing a prop' },
+      { type: 'added', group: 'Tooling', component: 'Guidance test', description: 'internal/scripts/guidance-test runs 10 prompts through headless Claude Code and scores whether it read the right rule files and asked the gate questions (maintainer only)' },
+      { type: 'modified', group: 'Tooling', component: 'release.sh', description: 'Highlights go to src/data/highlights.ts, the file the changelog page reads' },
+    ],
+  },
+  {
     version: '26.10.4d',
     date: '2026-10-26',
     type: 'patch',

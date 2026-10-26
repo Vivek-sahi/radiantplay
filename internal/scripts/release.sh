@@ -6,7 +6,7 @@
 #   2. Suggests a CalVer version
 #   3. Updates platformVersion.ts
 #   4. Appends to docs/CHANGELOG.md
-#   5. Prints paste-ready drafts for versionHistory.ts + ChangelogPage.tsx
+#   5. Prints paste-ready drafts for versionHistory.ts, highlights.ts and ChangelogPage.tsx
 #   6. Stages changed files ready for commit
 #
 # Usage: bash internal/scripts/release.sh
@@ -110,7 +110,7 @@ echo "  },"
 echo ""
 echo "═════════════════════════════════════════════════════"
 echo "MANUAL STEP — paste into src/pages/ChangelogPage.tsx"
-echo "(add at the top of the CHANGELOG array)"
+echo "(add at the top of the CHANGELOG array; a record only, the site shows versionHistory.ts)"
 echo "═════════════════════════════════════════════════════"
 echo "  {"
 echo "    version: '$VERSION',"
@@ -125,7 +125,7 @@ echo "  },"
 if [ "${#HIGHLIGHTS[@]}" -gt 0 ]; then
   echo ""
   echo "═════════════════════════════════════════════════════"
-  echo "MANUAL STEP — prepend to HIGHLIGHTS array in ChangelogPage.tsx"
+  echo "MANUAL STEP — prepend to HIGHLIGHTS in src/data/highlights.ts"
   echo "(curated cherry-picks across releases — newest first)"
   echo "═════════════════════════════════════════════════════"
   for h in "${HIGHLIGHTS[@]}"; do
@@ -135,12 +135,12 @@ if [ "${#HIGHLIGHTS[@]}" -gt 0 ]; then
     echo "    description: '...one-line context, why it matters...',"
     echo "    version: '$VERSION',"
     echo "    date: '$TODAY',"
+    echo "    group: 'enhancements', // or 'prototypes'"
     echo "  },"
   done
   echo ""
-  echo "Tip: highlights show for 60 days OR the most recent 6 — older ones"
-  echo "drop off the page automatically. Prune the bottom of HIGHLIGHTS"
-  echo "occasionally if entries get stale before falling out of the window."
+  echo "Tip: /radiant/changelog shows the first 6 entries in highlights.ts."
+  echo "Keep the current six at the top; older ones stay below as a record."
 fi
 echo ""
 echo "─────────────────────────────────────────────────────"

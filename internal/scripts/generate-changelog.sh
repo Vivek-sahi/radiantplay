@@ -9,7 +9,7 @@
 # Example: 26.4.1b = 2026, April, week 1, second release that week
 #
 # Output: Markdown changelog entry printed to stdout.
-# Copy-paste into docs/CHANGELOG.md and src/pages/ChangelogPage.tsx.
+# Copy-paste into docs/CHANGELOG.md and src/data/versionHistory.ts (the site shows versionHistory.ts; ChangelogPage.tsx is a record only).
 
 set -euo pipefail
 
@@ -55,5 +55,5 @@ echo "---"
 echo "Total commits since $SINCE: $(git log --oneline --since="$SINCE" | wc -l | tr -d ' ')"
 echo ""
 echo "To use: copy the relevant items into docs/CHANGELOG.md under a new"
-echo "version header, then add a matching entry to the CHANGELOG array in"
-echo "src/pages/ChangelogPage.tsx"
+echo "version header, then add a matching entry to src/data/versionHistory.ts"
+echo "(the changelog page reads it) and, as a record, src/pages/ChangelogPage.tsx"
