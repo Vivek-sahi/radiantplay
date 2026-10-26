@@ -177,7 +177,6 @@ export const VizBlock: React.FC<VizBlockProps> = ({
             title="Expand"
             size="M4"
             showCloseButton
-            className={styles.expandModalFull}
           >
             <div className={styles.expandedView}>
               <div className={styles.expandedHeader}>

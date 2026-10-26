@@ -88,19 +88,20 @@
   max-width: 1182px;
 }
 
-/* M4: Full Screen - Immersive experiences, editors */
+/* M4: Full Screen - Immersive experiences, editors.
+ * Fills the overlay's padded area, so it sits 24px (spacing F) from every
+ * edge of the window, per Figma. */
 .M4 {
-  width: calc(100vw - 16px);
-  max-width: 1440px;
-  height: calc(100vh - 16px);
+  width: 100%;
+  height: 100%;
   max-height: none;
-  margin: 8px;
 }
 
-@media (max-width: 1400px) {
-  .M4 {
-    max-width: 1366px;
-  }
+/* M4 header is 72px tall, border included, with the title and Close
+ * button 20px from the top. */
+.M4 .header {
+  height: 72px;
+  padding-bottom: 0;
 }
 
 /* Legacy size aliases for backward compatibility */

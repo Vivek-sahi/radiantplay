@@ -28,6 +28,15 @@ export interface VersionEntry {
  */
 export const versionHistory: VersionEntry[] = [
   {
+    version: '26.10.4a',
+    date: '2026-10-26',
+    type: 'patch',
+    changes: [
+      { type: 'modified', group: 'Modal alignment with Figma', component: 'Modal M4', description: 'Fills the overlay padding, so it sits 24px from every window edge instead of 8px at the top and bottom; width caps removed. Header is 72px with the title and Close button 20px from the top' },
+      { type: 'modified', group: 'Spotter chat', component: 'VizBlock M4 expand modal', description: 'Dropped its M4 width override, now redundant' },
+    ],
+  },
+  {
     version: '26.10.3j',
     date: '2026-10-14',
     type: 'patch',

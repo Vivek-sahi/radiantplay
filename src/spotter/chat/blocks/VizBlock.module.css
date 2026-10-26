@@ -254,11 +254,6 @@
   filter: brightness(0.9);
 }
 
-/* M4 modal width override — Radiant default caps at 1440px; we want true full-width minus 8px gutter. */
-.expandModalFull {
-  max-width: none !important;
-}
-
 /* Layout for the M4 fullscreen expand modal contents. */
 .expandedView {
   display: flex;
