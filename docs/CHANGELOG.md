@@ -1,5 +1,15 @@
 # Changelog
 
+## 26.10.4b — 2026-10-26
+
+Text fields on the Radiant 3.0 look follow the Figma Form spec (node 25110:47073): helper and error text sit on the label line, and nothing goes under the field.
+
+- `TextInput` and `TextArea` under `look: 'radiant-3'` read "Label (helper text)" on one line, with the helper text in the secondary colour. The label turns brand blue on focus
+- On error the label itself turns red with an exclamation icon and the field gets a red edge. The label reads `errorMessage` when one is set, or Please add “{label}” when it isn't; the helper text stays beside it
+- Without a visible label (`showLabel={false}` or no `label`), helper and error text still go under the field so nothing is lost. `TextArea` keeps its character counter under the field
+- Prototypes on the default look don't change, and the existing props (`label`, `helperText`, `error`, `errorMessage`) keep working
+- The TextInput and TextArea doc pages show the Radiant 3.0 states
+
 ## 26.10.4a — 2026-10-26
 
 The M4 full screen modal matches the Radiant 3.0 Figma spec.
