@@ -1,0 +1,134 @@
+/*
+ * Liveboard template styles.
+ *
+ * Token-only CSS Module, so a prototype built from this template exports to
+ * scaligent SCSS with `npm run handoff <Prototype>`. Only runtime geometry
+ * (tile positions, canvas height, toolbar anchor) stays inline in index.tsx.
+ */
+
+.page {
+  font-family: var(--font-family-primary);
+  background: var(--rd-sys-color-background-sunken);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.stickyNav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  flex-shrink: 0;
+}
+
+.bodyWrapper {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+.canvas {
+  flex: 1;
+  position: relative;
+  overflow-y: auto;
+  background: var(--rd-sys-color-background-sunken);
+}
+
+/* Drag and resize use transition: none while a tile follows the pointer. */
+:global(.tile-is-resizing) {
+  transition: none !important;
+}
+
+/* Drag + resize placeholder. index.tsx shows, moves and hides it directly. */
+.dropShadow {
+  display: none;
+  position: absolute;
+  background: color-mix(in srgb, var(--rd-sys-color-content-brand) 8%, transparent);
+  border: 1.5px solid color-mix(in srgb, var(--rd-sys-color-content-brand) 35%, transparent);
+  border-radius: var(--radius-2xl);
+  pointer-events: none;
+  z-index: 4;
+  box-sizing: border-box;
+  transition: none;
+}
+
+.tile {
+  position: absolute;
+  box-sizing: border-box;
+  overflow: visible;
+}
+
+.tileMultiSelected {
+  outline: 2px dashed var(--rd-sys-color-content-accent-purple);
+  outline-offset: 1px;
+  border-radius: var(--radius-2xl);
+  background: color-mix(in srgb, var(--rd-sys-color-content-accent-purple) 4%, transparent);
+}
+
+/* View mode: hover action palette */
+.viewPalette {
+  position: absolute;
+  top: var(--spacing-2);
+  right: var(--spacing-2);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  z-index: 5;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s;
+}
+
+.viewPaletteVisible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.viewActionBtn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--rd-sys-color-background-base);
+  border: 1px solid var(--rd-sys-color-border-divider);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  color: var(--rd-sys-color-content-primary);
+  padding: 0;
+  box-shadow: var(--rd-sys-color-shadow-surface);
+}
+
+/* Edit mode: toolbar above a multi-selection. left/top are set inline. */
+.multiToolbar {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-1) var(--spacing-2);
+  background: var(--rd-sys-color-background-inverse);
+  border: 1px solid var(--rd-sys-color-border-divider-inverse);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--rd-sys-color-shadow-menu);
+  z-index: 200;
+}
+
+.multiToolbarDivider {
+  width: 1px;
+  height: 20px;
+  background: color-mix(in srgb, var(--rd-sys-color-content-inverse) 15%, transparent);
+}
+
+.multiToolbarBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-xs);
+  cursor: pointer;
+  color: var(--rd-sys-color-content-inverse);
+  padding: 0;
+}

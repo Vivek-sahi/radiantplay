@@ -291,43 +291,35 @@ export const myRegistry: ProjectMeta[] = [
 
 ## Style Organization
 
-### Option 1: Inline Styles Object (Recommended for Prototypes)
+Use a CSS Module per component, with Radiant CSS variables only. This is what engineering can take: `npm run handoff <Prototype>` turns CSS Modules into the product's SCSS (`$rd-spacing--*`, `rd-sys-color()`), while inline style objects have to be rewritten by hand.
 
-```tsx
-const styles: Record<string, React.CSSProperties> = {
-  container: {
-    padding: `${spacing.F}px`,
-  },
-};
-
-// Usage
-<div style={styles.container}>
+```
+MyPrototype/
+├── index.tsx
+├── index.module.css
+└── components/
+    ├── AdminHeader.tsx
+    └── AdminHeader.module.css
 ```
 
-### Option 2: Separate styles.ts File
-
-```tsx
-// styles.ts
-import { CSSProperties } from 'react';
-import { sysVar } from '../../tokens/colors';
-
-export const styles: Record<string, CSSProperties> = {
-  layout: { ... },
-  header: { ... },
-};
-
-// Usage in component
-import { styles } from './styles';
+```css
+/* AdminHeader.module.css */
+.header {
+  padding: var(--spacing-4) var(--spacing-6);
+  background: var(--rd-sys-color-background-base);
+  border-bottom: 1px solid var(--rd-sys-color-border-subtle);
+}
 ```
 
-### Option 3: Categorized Styles
-
 ```tsx
-// styles.ts
-export const layoutStyles = { ... };
-export const headerStyles = { ... };
-export const tableStyles = { ... };
+import styles from './AdminHeader.module.css';
+
+<header className={styles.header}>
 ```
+
+- Toggle states with classes (`styles.selected`), not by spreading style objects.
+- Keep `style={{ }}` for values computed at runtime only: positions, measured sizes, colours from data. Static values never go inline.
+- Don't create `styles.ts` files of `React.CSSProperties` objects in new prototypes. Older prototypes that use them keep working.
 
 ---
 

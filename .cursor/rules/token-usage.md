@@ -21,8 +21,8 @@ Reference Tokens (primitives) → System Tokens (semantic)    → Component Toke
 
 Radiant Play has a light and a dark theme. Light is the default. Setting `data-theme="dark"` on `<html>` flips every `--rd-sys-color-*` and `--rd-comp-color-*` variable, so UI code must read colours through those variables:
 
-- **CSS Modules:** `var(--rd-sys-color-content-primary)`, `var(--rd-comp-color-button-primary-default)`, `var(--rd-sys-color-shadow-menu)`.
-- **Inline styles in TSX:** `sysVar('content-primary')`, `compVar('chip-filter-default')`, `shadowVar('surface' | 'menu' | 'modal')`, all from `@tokens/colors`. Each returns the matching `var(...)` string.
+- **CSS Modules (the default):** `var(--rd-sys-color-content-primary)`, `var(--rd-comp-color-button-primary-default)`, `var(--rd-sys-color-shadow-menu)`.
+- **Inline styles in TSX (runtime values only):** `sysVar('content-primary')`, `compVar('chip-filter-default')`, `shadowVar('surface' | 'menu' | 'modal')`, all from `@tokens/colors`. Each returns the matching `var(...)` string.
 - **Tints:** `color-mix(in srgb, var(--rd-sys-color-content-brand) 12%, transparent)`, not a hex with alpha.
 
 `systemColors.light[...]`, `rdComponentColors.light[...]` and `referenceColors.*` hold fixed values. They stay light in dark mode, so never use them for UI. They exist as token data for docs pages, swatches and canvas charts (charts read colours through `useChartTheme()` from `src/prototypes/_shared/tiles/chartTheme`).
@@ -151,19 +151,18 @@ componentSpacing.page.paddingX           // 24px
 import { fontFamily, fontSize, fontWeight, lineHeight, v2TextStyles } from '../../tokens/typography';
 ```
 
-### V2 Text Styles (Recommended)
+### Text styles in CSS Modules (Recommended)
 
-```typescript
-import { v2TextStyles } from '../../tokens/typography';
-
-style={{ ...v2TextStyles.pageTitle }}    // 24px, emphasis (550)
-style={{ ...v2TextStyles.modalTitle }}   // 20px, emphasis (550)
-style={{ ...v2TextStyles.sectionLabel }} // 18px, emphasis (550)
-style={{ ...v2TextStyles.contentLabel }} // 16px, emphasis (550)
-style={{ ...v2TextStyles.bodyNormal }}   // 14px, regular
-style={{ ...v2TextStyles.footnote }}     // 12px, regular
-style={{ ...v2TextStyles.overline }}     // 12px, uppercase
+```css
+.pageTitle    { font-size: var(--font-size-2xl); line-height: var(--line-height-2xl); font-weight: var(--font-weight-emphasis); } /* 24px */
+.modalTitle   { font-size: var(--font-size-xl);  line-height: var(--line-height-xl);  font-weight: var(--font-weight-emphasis); } /* 20px */
+.sectionLabel { font-size: var(--font-size-lg);  line-height: var(--line-height-lg);  font-weight: var(--font-weight-emphasis); } /* 18px */
+.contentLabel { font-size: var(--font-size-md);  line-height: var(--line-height-lg);  font-weight: var(--font-weight-emphasis); } /* 16px */
+.bodyNormal   { font-size: var(--font-size-sm);  line-height: var(--line-height-md);  font-weight: var(--font-weight-regular); }  /* 14px */
+.footnote     { font-size: var(--font-size-xs);  line-height: var(--line-height-sm);  font-weight: var(--font-weight-regular); }  /* 12px */
 ```
+
+`v2TextStyles` from `@tokens/typography` holds the same styles as objects. Use it only where a style must be inline, such as text drawn by a chart library.
 
 ---
 
@@ -187,7 +186,9 @@ style={{ ...v2TextStyles.overline }}     // 12px, uppercase
 }
 ```
 
-### Use sysVar / compVar / shadowVar in Inline Styles
+### Use sysVar / compVar / shadowVar for runtime values
+
+Only when a value is computed at runtime or must be passed as a prop. Static styles go in the CSS Module.
 
 ```typescript
 import { sysVar, shadowVar } from '../../tokens/colors';
@@ -207,9 +208,9 @@ const styles = {
 
 | Scenario | Use |
 |----------|-----|
-| CSS Module files | CSS Variables (`var(--rd-sys-color-...)`) |
-| Inline styles in prototypes | `sysVar('...')`, `compVar('...')`, `shadowVar('...')` |
-| Dynamic/conditional values | `sysVar('...')` / `compVar('...')` |
+| All static styles (the default) | CSS Module with CSS variables (`var(--rd-sys-color-...)`, `var(--spacing-*)`) |
+| Conditional styles | A class in the CSS Module, toggled in TSX |
+| Values computed at runtime, or colour props | `sysVar('...')` / `compVar('...')` inline |
 | Tints and translucent fills | `color-mix(in srgb, var(--rd-sys-color-...) 12%, transparent)` |
 | Canvas charts | `useChartTheme()` (reads the live theme) |
 | Docs pages and swatches that show token values | `systemColors` / `rdComponentColors` / `referenceColors` as data |

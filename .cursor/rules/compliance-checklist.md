@@ -13,7 +13,8 @@ Run these checks on every `.tsx` file you create or modify. Do NOT declare done 
 - No `#` hex values (outside SVG path data)
 - No `rgb()` / `rgba()` / `hsl()`
 - No deprecated `import { brandColors }`
-- Use `var(--rd-sys-color-*)` in CSS and `sysVar()` / `compVar()` / `shadowVar()` in inline styles
+- Use `var(--rd-sys-color-*)` in CSS Modules and `sysVar()` / `compVar()` / `shadowVar()` only for runtime inline values
+- Static styles live in a CSS Module, not `style={{ }}` or a `styles.ts` object, so `npm run handoff` can convert them
 - No `systemColors.light[...]`, `rdComponentColors.light[...]` or `referenceColors.*` in UI code: they stay light in dark mode
 
 ## Fonts — no hardcoded families
