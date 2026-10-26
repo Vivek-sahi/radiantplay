@@ -219,7 +219,7 @@ export const roles = [
 
 ## Thumbnail Requirement
 
-**Every prototype should have a light and a dark screenshot thumbnail** for the Playground Gallery. Without one, the gallery shows a scaled-down live preview of the prototype instead.
+**Every prototype should have a light and a dark screenshot thumbnail** for the Playground Gallery. Without one, the gallery shows a placeholder with the prototype's initial instead.
 
 ### Thumbnail Specifications
 

@@ -28,6 +28,16 @@ export interface VersionEntry {
  */
 export const versionHistory: VersionEntry[] = [
   {
+    version: '26.10.4g',
+    date: '2026-10-27',
+    type: 'patch',
+    changes: [
+      { type: 'added', group: 'Playground', component: 'Gallery groups', description: 'An optional group on each prototype shows as a collapsible heading. Move cards with Move to group or by dragging, rename a group by clicking its name; changes save to registry-mine.ts under npm run dev, with Undo' },
+      { type: 'added', group: 'Playground', component: 'Gallery views', description: 'Sort by recent or name, show in groups or all in one grid, and a list view with the group as a column' },
+      { type: 'modified', group: 'Playground', component: 'Gallery', description: 'Samples have their own item in the left pane. Cards without a thumbnail show a Radiance-style placeholder instead of a live preview, and a note offers to capture the missing thumbnails' },
+    ],
+  },
+  {
     version: '26.10.4f',
     date: '2026-10-26',
     type: 'patch',

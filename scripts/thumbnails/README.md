@@ -5,7 +5,7 @@ The gallery shows each prototype as a small screenshot, in light and dark. The o
 1. Captured screenshots: `src/prototypes/<Name>/thumbnail.light.jpg` and `thumbnail.dark.jpg`, set as `thumbnail: { light, dark }` in the registry.
 2. A hand-made SVG imported with `?raw`, using theme tokens so it follows light and dark.
 3. A single image URL.
-4. Nothing: a live preview of the prototype, scaled down. At most four load at once, only while the card is on screen.
+4. Nothing: a placeholder with the prototype's initial. Under `npm run dev` the gallery offers to capture the missing ones (Capture thumbnails), through the endpoint in `vite.registry-write.ts`.
 
 ## Capture
 

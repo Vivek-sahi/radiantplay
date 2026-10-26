@@ -1,5 +1,16 @@
 # Changelog
 
+## 26.10.4g — 2026-10-27
+
+The playground gallery sorts prototypes into groups, has a list view, and saves changes made in it straight to your project.
+
+- Prototypes can carry a `group` (for example 'Apps in ThoughtSpot'). The gallery shows each group as a collapsible heading; a collapsed group is one row that lists what's inside. Prototypes without a group sit under Other. `group` is optional, so existing entries don't change
+- Under `npm run dev`, changes made in the gallery save to `registry-mine.ts`, with an Undo toast: Move to group on a card's menu, dragging a card onto a heading, onto a new group or onto Archived, renaming a group by clicking its name, and archiving or restoring. On a deployed site, and for samples, the gallery copies a prompt for Claude instead. Only `registry-mine.ts` is ever written, and only by the gallery's own page
+- Sort by recent or name, show prototypes in groups or all in one grid, and switch between grid and list. The list is one table with name, group, author and date. Choices are remembered in your browser
+- Samples moved from the main Prototypes page to their own Samples item in the left pane, under Archived
+- Cards without a thumbnail show the prototype's initial on a Radiance-style wash instead of a live preview of the whole prototype, so a long gallery stays light. Under `npm run dev` a note offers Capture thumbnails, which captures and wires up the missing ones; it never runs on its own
+- Sample prototypes are grouped as Admin, Data model, Liveboard and Spotter
+
 ## 26.10.4f — 2026-10-26
 
 The Spotter composer takes the options the Apps in ThoughtSpot prototypes need, from Devanshi's Apps branch. Existing prototypes don't change.
