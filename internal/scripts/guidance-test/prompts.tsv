@@ -1,0 +1,10 @@
+p01	Change the 'Create group' button label to 'Save' in AdminGroups
+p02	Add a Filter button with a filter icon to the AdminGroups toolbar
+p03	Add a 3-dot action menu to each row in the AdminGroups table with Edit, Disable and Delete options
+p04	Add a delete confirmation to each group row in AdminGroups
+p05	Audit the button labels in AdminGroups against our content rules
+p06	Create a new prototype for user management in admin settings with a Users tab, an Authentication tab and an Add new user option
+p07	Build a new Liveboard prototype for sales pipeline
+p08	Create a new Spotter prototype for a ticket assistant
+p09	Build a new Data Model Editor prototype with a pre-loaded schema
+p10	Make the Chip component in src/components support a closable option
