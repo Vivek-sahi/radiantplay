@@ -1,4 +1,5 @@
 import React, { forwardRef, useState, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import styles from './Tooltip.module.css';
 
 /**
@@ -137,8 +138,18 @@ export const Tooltip = forwardRef<HTMLDivElement, TooltipProps>(({
   useEffect(() => {
     if (isVisible) {
       updatePosition();
+      // The first measure happens on the frame the tooltip mounts, while the
+      // fade-in transform still scales it: that reads a smaller box and can
+      // land a "top" tooltip over its own trigger. Measure again once the
+      // browser has laid it out at full size.
+      const raf = requestAnimationFrame(updatePosition);
       window.addEventListener('scroll', updatePosition, true);
       window.addEventListener('resize', updatePosition);
+      return () => {
+        cancelAnimationFrame(raf);
+        window.removeEventListener('scroll', updatePosition, true);
+        window.removeEventListener('resize', updatePosition);
+      };
     }
 
     return () => {
@@ -187,7 +198,7 @@ export const Tooltip = forwardRef<HTMLDivElement, TooltipProps>(({
         {child}
       </div>
 
-      {isVisible && (
+      {isVisible && createPortal(
         <div
           ref={(node) => {
             tooltipRef.current = node;
@@ -204,7 +215,12 @@ export const Tooltip = forwardRef<HTMLDivElement, TooltipProps>(({
         >
           {content}
           <div className={`${styles.arrow} ${styles[`arrow${placement.charAt(0).toUpperCase() + placement.slice(1)}`]}`} />
-        </div>
+        </div>,
+        // Rendered on the body, not in place: the tooltip is position: fixed,
+        // and any ancestor carrying a transform, filter or will-change would
+        // become its containing block and shift it off the trigger. Consumers
+        // animate their layouts, so in-place rendering cannot be relied on.
+        document.body,
       )}
     </>
   );

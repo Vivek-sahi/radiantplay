@@ -28,6 +28,17 @@ export interface VersionEntry {
  */
 export const versionHistory: VersionEntry[] = [
   {
+    version: '26.10.4f',
+    date: '2026-10-26',
+    type: 'patch',
+    changes: [
+      { type: 'modified', group: 'Spotter', component: 'PromptBar', description: 'New opt-in props for surfaces that gather sources elsewhere: placeholder, onBlur, showModel, showPlus, connectors and onConnectorsChange, a left connectors placement with a count badge, hover text, plusMenuContent and leftExtras. Defaults are unchanged' },
+      { type: 'modified', group: 'Spotter', component: '@spotter/chat', description: 'Exports DeepAnalysisGlyph and the Connector and ConnectorStatus types' },
+      { type: 'modified', group: 'Components', component: 'Select', description: 'Shows the icon an option already carries, in the list and in the trigger' },
+      { type: 'modified', group: 'Components', component: 'Tooltip', description: 'Renders on the page body and measures again once laid out, so it stays on its trigger inside animated or transformed layouts' },
+    ],
+  },
+  {
     version: '26.10.4e',
     date: '2026-10-26',
     type: 'patch',

@@ -223,6 +223,9 @@ export const Select = forwardRef<HTMLDivElement, SelectProps>(({
         onClick={handleToggle}
         onKeyDown={handleKeyDown}
       >
+        {selectedOption?.icon && (
+          <Icon name={selectedOption.icon as never} size="s" className={styles.valueIcon} />
+        )}
         <span className={selectedOption ? styles.value : styles.placeholder}>
           {selectedOption ? selectedOption.label : placeholder}
         </span>
@@ -273,7 +276,12 @@ export const Select = forwardRef<HTMLDivElement, SelectProps>(({
                     onClick={() => handleOptionClick(option)}
                     onMouseEnter={() => setHighlightedIndex(index)}
                   >
-                    {option.label}
+                    <span className={styles.optionLabel}>
+                      {option.icon && (
+                        <Icon name={option.icon as never} size="s" className={styles.optionIcon} />
+                      )}
+                      {option.label}
+                    </span>
                     {isSelected && (
                       <Icon name="checkmark" size="s" className={styles.checkIcon} />
                     )}
