@@ -13,6 +13,7 @@ Loaded whenever Claude works in `src/prototypes/`. The root CLAUDE.md convention
 
 - `group: 'Apps in ThoughtSpot'` on an entry puts prototypes of one project under one collapsible heading. One group per prototype; those without one sit under Other. Once a group is set, drop the project name from `name` ("Native", not "Apps in ThoughtSpot: Native").
 - Reuse a group already in `registry-mine.ts` before adding a new one.
+- The gallery suggests groups itself: prototypes with the same name prefix before a colon ("Apps in ThoughtSpot: Native"), the same folder prefix before an underscore, or one folder name starting with another get a "Group them" note (`src/pages/gallerySuggestGroups.ts`). It sets the group and drops a colon prefix from the names, with Undo.
 - Designers can also do it in the gallery while `npm run dev` runs: Move to group on a card's menu, drag a card onto a heading or onto Archived, or click a group name to rename it. That writes `registry-mine.ts` through `vite.registry-write.ts`. Sample prototypes and deployed sites fall back to a prompt for Claude.
 - When a designer asks to group or sort out their prototypes, edit their entries in `registry-mine.ts`. `group` is optional, so entries without it keep working. The gallery's Recent / Name sort needs no registry change; Recent reads `lastModified`.
 
