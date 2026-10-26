@@ -1,5 +1,14 @@
 # Changelog
 
+## 26.10.4c — 2026-10-26
+
+Prototypes can be handed to engineering as SCSS that uses the product codebase's Radiant tokens, instead of inline CSS.
+
+- `npm run handoff <Prototype>` writes the prototype's CSS Modules to `handoff/<Prototype>/` as `.module.scss`: spacing vars and on-scale px become `$rd-spacing--a` to `l`, colour vars become `rd-sys-color('name')`, and each file imports `radiant-styles/_base.scss`. Raw hex converts only when one token owns that value
+- `HANDOFF-REPORT.md` beside it lists what still needs a person: inline styles, raw `<button>`, `<input>`, `<select>` and `<table>`, typography and radius vars, shared hex values and anything off the scale
+- The lookup tables are read from `src/tokens/` each run, so they follow token changes. `handoff/` is gitignored
+- The prototype template uses a token-only CSS Module instead of inline styles, so new prototypes export clean
+
 ## 26.10.4b — 2026-10-26
 
 Text fields on the Radiant 3.0 look follow the Figma Form spec (node 25110:47073): helper and error text sit on the label line, and nothing goes under the field.

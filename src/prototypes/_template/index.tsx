@@ -1,5 +1,5 @@
 import React from 'react';
-import { sysVar } from '@tokens/colors';
+import styles from './index.module.css';
 
 /**
  * Prototype Template
@@ -90,64 +90,22 @@ import { sysVar } from '@tokens/colors';
 // Delete this placeholder and start building your prototype!
 export const PrototypeTemplate: React.FC = () => {
   return (
-    <div style={styles.container}>
-      <div style={styles.content}>
-        <h1 style={styles.title}>Your Prototype</h1>
-        <p style={styles.description}>
+    <div className={styles.container}>
+      <div className={styles.content}>
+        <h1 className={styles.title}>Your Prototype</h1>
+        <p className={styles.description}>
           Start building your prototype here. Describe what you want to create
           or paste a screenshot, and the AI will help generate the UI.
         </p>
-        <div style={styles.placeholder}>
-          <span style={styles.placeholderIcon}>🎨</span>
-          <p style={styles.placeholderText}>
+        <div className={styles.placeholder}>
+          <span className={styles.placeholderIcon}>🎨</span>
+          <p className={styles.placeholderText}>
             Replace this with your prototype content
           </p>
         </div>
       </div>
     </div>
   );
-};
-
-const styles: Record<string, React.CSSProperties> = {
-  container: {
-    minHeight: '100vh',
-    backgroundColor: sysVar('background-sunken'),
-    padding: '48px',
-    fontFamily: 'var(--font-family-primary)',
-  },
-  content: {
-    maxWidth: '800px',
-    margin: '0 auto',
-  },
-  title: {
-    fontSize: '32px',
-    fontWeight: 'var(--font-weight-emphasis)',
-    color: sysVar('content-primary'),
-    marginBottom: '16px',
-  },
-  description: {
-    fontSize: '16px',
-    color: sysVar('content-secondary'),
-    lineHeight: '24px',
-    marginBottom: '32px',
-  },
-  placeholder: {
-    backgroundColor: sysVar('background-base'),
-    border: `2px dashed ${sysVar('border-default')}`,
-    borderRadius: '12px',
-    padding: '64px',
-    textAlign: 'center' as const,
-  },
-  placeholderIcon: {
-    fontSize: '48px',
-    display: 'block',
-    marginBottom: '16px',
-  },
-  placeholderText: {
-    fontSize: '14px',
-    color: sysVar('content-secondary'),
-    margin: 0,
-  },
 };
 
 export default PrototypeTemplate;

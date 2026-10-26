@@ -24,7 +24,8 @@
     "migrate:light-only": "node scripts/radiant-check/light-only.mjs",
     "radiance:update": "node scripts/radiance/update.mjs",
     "radiance:check": "node scripts/radiance/check.mjs",
-    "radiance:lint": "node scripts/radiance/lint.mjs"
+    "radiance:lint": "node scripts/radiance/lint.mjs",
+    "handoff": "node internal/scripts/handoff-export.mjs"
   },
   "keywords": [
     "design-system",
