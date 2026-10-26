@@ -204,12 +204,31 @@
   display: flex;
   align-items: center;
   gap: 4px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+/* Only the extras scroll. Putting the overflow on .leftActions would clip the
+   + menu, which is anchored inside it. */
+.leftExtras {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.leftExtras::-webkit-scrollbar {
+  display: none;
 }
 
 .rightActions {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0;
+  padding-left: 8px;
 }
 
 /* ── Plus icon button ──────────────────────────────────────────────────────── */
@@ -240,6 +259,27 @@
 
 .plusBtnActive:hover {
   background: var(--rd-sys-color-background-ghost-highlight);
+}
+
+/* The connectors button in the 'left' placement, with its count badge. */
+.connectorsLeftBtn {
+  position: relative;
+}
+
+.connectorsBadge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 3px;
+  border-radius: var(--radius-full);
+  background: var(--rd-sys-color-content-brand);
+  color: var(--rd-sys-color-background-base);
+  font-size: 9px;
+  line-height: 14px;
+  font-weight: var(--font-weight-emphasis);
+  text-align: center;
 }
 
 /* ── Model picker button ───────────────────────────────────────────────────── */

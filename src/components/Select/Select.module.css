@@ -83,6 +83,25 @@
 }
 
 /* Value and Placeholder */
+/* The selected option's own icon, in the trigger. SelectOption has carried an
+   `icon` for a while and nothing rendered it. */
+.valueIcon {
+  flex-shrink: 0;
+  color: var(--rd-sys-color-content-primary);
+}
+
+.optionLabel {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  min-width: 0;
+}
+
+.optionIcon {
+  flex-shrink: 0;
+  color: var(--rd-sys-color-content-primary);
+}
+
 .value {
   flex: 1;
   text-align: left;

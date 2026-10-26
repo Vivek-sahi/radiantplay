@@ -1,5 +1,14 @@
 # Changelog
 
+## 26.10.4f — 2026-10-26
+
+The Spotter composer takes the options the Apps in ThoughtSpot prototypes need, from Devanshi's Apps branch. Existing prototypes don't change.
+
+- `PromptBar` gets opt-in props: `placeholder`, `onBlur`, `showModel`, `showPlus`, `connectors` and `onConnectorsChange`, a `'left'` connectors placement with a count badge (`connectorsBadge`), hover text (`connectorsTooltip`, `modelTooltip`), `plusMenuContent` and `leftExtras`. The old defaults stay
+- `@spotter/chat` exports `DeepAnalysisGlyph` and the `Connector` and `ConnectorStatus` types
+- `Select` shows the icon an option already carries, in the list and in the trigger
+- `Tooltip` renders on the page body and measures again once it's laid out, so it stays on its trigger inside animated or transformed layouts
+
 ## 26.10.4e — 2026-10-26
 
 Shared component work reads its rules every time, a test checks that Claude finds the rules, and release highlights land in the right file.

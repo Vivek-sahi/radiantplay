@@ -12,8 +12,11 @@ export type { SpotterPromptProps, SpotterPromptMode } from './SpotterPrompt';
 
 // Both composers ship until the composer decision (adoption plan §8.1): SpotterPrompt
 // carries the mode toggle + data-model picker, PromptBar model/skills/connectors.
-export { PromptBar, PromptBarPlayground } from './PromptBar';
-export type { OpenMenu, ConnectorsPlacement, PromptBarMode, PromptBarState } from './PromptBar';
+export { PromptBar, PromptBarPlayground, DeepAnalysisGlyph } from './PromptBar';
+export type {
+  OpenMenu, ConnectorsPlacement, PromptBarMode, PromptBarState,
+  Connector, ConnectorStatus,
+} from './PromptBar';
 
 // Layout
 export { ChatThread } from './ChatThread';

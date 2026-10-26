@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import type { RefObject } from 'react';
 import { Icon } from '@components/icons';
 import { Modal } from '@components/Modal';
+import { Tooltip } from '@components/Tooltip';
 import { Toggle } from '@components/Toggle';
 import { FileCard, type UserMessageFile } from './UserMessage';
 import { useSquirclePath } from './useSquirclePath';
@@ -36,14 +37,22 @@ interface PromptBarCoreProps {
   value?: string;
   onValueChange?: (v: string) => void;
   onFocus?: () => void;
+  onBlur?: () => void;
   onSend?: () => void;
   /** A response is generating — primary button shows Stop instead of Send. */
   generating?: boolean;
   onStop?: () => void;
+  /** Placeholder text. Defaults to the product's skills-and-context hint. */
+  placeholder?: string;
   /** Minimum content height in lines (landing = 2, asked = 1). */
   minLines?: number;
   /** Which way menus open. */
   menuDirection?: MenuDirection;
+  /** Show the data-model chip. Off for surfaces that pick sources elsewhere. */
+  showModel?: boolean;
+  /** Hide the + button. For surfaces that gather context somewhere else
+   *  entirely (a sources rail or card), so the bar is only for typing. */
+  showPlus?: boolean;
   /** A specific data model is selected (shows its name). */
   modelSelected?: boolean;
   /** The selected model's name. */
@@ -56,6 +65,22 @@ interface PromptBarCoreProps {
   connectorsPlacement?: ConnectorsPlacement;
   /** A file-pulling MCP (Google Drive) is connected — shows it in the + menu. */
   googleDrive?: boolean;
+  /** Connector rows for the Connectors menu. Defaults to the DS sample set;
+   *  pass a list to show the connectors a given surface actually offers. */
+  connectors?: Connector[];
+  /** Fires when a connector row is toggled or connected, with the new list, so
+   *  a surface can keep what the user connected. */
+  onConnectorsChange?: (connectors: Connector[]) => void;
+  /** Count shown on the connectors button, e.g. how many are switched on. */
+  connectorsBadge?: number;
+  /** Hover text for the connectors button, e.g. which ones are on. */
+  connectorsTooltip?: string;
+  /** Hover text for the data model chip, e.g. the chosen sources. */
+  modelTooltip?: string;
+  /** Replaces the + menu's contents, for surfaces that add other things. */
+  plusMenuContent?: React.ReactNode;
+  /** Rendered just after the + button, e.g. what has been added so far. */
+  leftExtras?: React.ReactNode;
   /** Skills feature enabled — shows it in the + menu. */
   skills?: boolean;
   /** "View data model instructions" available in the model menu. */
@@ -68,11 +93,13 @@ interface PromptBarCoreProps {
   onRemoveFile?: (index: number) => void;
 }
 
-export type ConnectorsPlacement = 'menu' | 'right';
+export type ConnectorsPlacement = 'menu' | 'right' | 'none' | 'left';
 
 // Deep-analysis glyph drawn inline so it inherits the current text colour
 // (the imported SVG asset has a fixed grey fill and can't be re-tinted).
-function DeepAnalysisGlyph({ size = 14 }: { size?: number }) {
+/** The deep-analysis atom. Exported so other Spotter surfaces (quick actions,
+ *  the landing pills) can use the same glyph the composer's chip carries. */
+export function DeepAnalysisGlyph({ size = 14 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 16 16" fill="none" aria-hidden="true">
       <path
@@ -147,9 +174,9 @@ function FollowUpGlyph({ size = 14 }: { size?: number }) {
 // connected) or a "Connect" link (not yet connected). Up to 6 are shown inline;
 // beyond that an "All connectors" entry is appended.
 
-type ConnectorStatus = 'on' | 'off' | 'connect';
+export type ConnectorStatus = 'on' | 'off' | 'connect';
 
-interface Connector {
+export interface Connector {
   id: string;
   name: string;
   status: ConnectorStatus;
@@ -182,21 +209,29 @@ function MaskIcon({ src }: { src: string }) {
   );
 }
 
-function ConnectorsMenu() {
-  const [connectors, setConnectors] = useState(CONNECTORS);
+function ConnectorsMenu({
+  items,
+  onItemsChange,
+}: {
+  items?: Connector[];
+  onItemsChange?: (connectors: Connector[]) => void;
+}) {
+  const [connectors, setConnectors] = useState(items ?? CONNECTORS);
   const visible = connectors.slice(0, MAX_VISIBLE_CONNECTORS);
   const hasMore = connectors.length > MAX_VISIBLE_CONNECTORS;
 
   // Clicking anywhere on a row does its action: a connected connector toggles
   // on/off; an unconnected one ("Connect") connects and turns on.
   const handleRow = (c: Connector) =>
-    setConnectors((cs) =>
-      cs.map((x) =>
+    setConnectors((cs) => {
+      const next = cs.map((x): Connector =>
         x.id === c.id
           ? { ...x, status: x.status === 'on' ? 'off' : 'on' }
           : x
-      )
-    );
+      );
+      onItemsChange?.(next);
+      return next;
+    });
 
   return (
     <div className={styles.menu}>
@@ -237,12 +272,16 @@ function PlusMenu({
   googleDrive,
   skills,
   showConnectors,
+  connectors,
+  onConnectorsChange,
 }: {
   deepOn: boolean;
   onDeepToggle: () => void;
   googleDrive: boolean;
   skills: boolean;
   showConnectors: boolean;
+  connectors?: Connector[];
+  onConnectorsChange?: (connectors: Connector[]) => void;
 }) {
   const [connectorsOpen, setConnectorsOpen] = useState(false);
   const [connectorsUp, setConnectorsUp] = useState(false);
@@ -315,7 +354,7 @@ function PlusMenu({
                 onMouseEnter={openConnectors}
                 onMouseLeave={scheduleClose}
               >
-                <ConnectorsMenu />
+                <ConnectorsMenu items={connectors} onItemsChange={onConnectorsChange} />
               </div>
             )}
           </div>
@@ -347,11 +386,17 @@ function PlusMenu({
 
 // ── Model picker menu ─────────────────────────────────────────────────────────
 
-function ModelMenu({ instructions }: { instructions: boolean }) {
+function ModelMenu({
+  instructions,
+  onChangeModel,
+}: {
+  instructions: boolean;
+  onChangeModel?: () => void;
+}) {
   return (
     <div className={styles.menu}>
       <div className={styles.menuList}>
-        <button className={styles.menuItem}>
+        <button className={styles.menuItem} onClick={onChangeModel}>
           <span className={styles.menuItemLabel}>Change data model</span>
         </button>
         {/* Divider only when the instructions item is present (3 items). */}
@@ -381,11 +426,15 @@ function PromptBarCore({
   value = '',
   onValueChange,
   onFocus,
+  onBlur,
   onSend,
   generating = false,
   onStop,
+  placeholder = "Press '/' for skills and '@' to add context",
   minLines = 1,
   menuDirection = 'down',
+  showModel = true,
+  showPlus = true,
   modelSelected = false,
   modelName = 'Mixpanel Daily Events',
   forceHover = false,
@@ -393,6 +442,13 @@ function PromptBarCore({
   connectorsPlacement = 'menu',
   googleDrive = false,
   skills = false,
+  connectors,
+  onConnectorsChange,
+  connectorsBadge,
+  connectorsTooltip,
+  modelTooltip,
+  plusMenuContent,
+  leftExtras,
   instructions = true,
   highlightedText,
   onRemoveHighlight,
@@ -545,11 +601,12 @@ function PromptBarCore({
           ref={taRef}
           className={styles.textarea}
           value={value}
-          placeholder="Press '/' for skills and '@' to add context"
+          placeholder={placeholder}
           rows={minLines}
           readOnly={!onValueChange}
           onChange={(e) => onValueChange?.(e.target.value)}
           onFocus={onFocus}
+          onBlur={onBlur}
           onKeyDown={handleKeyDown}
           style={{ paddingTop: topPad, minHeight: minH, maxHeight: maxH }}
         />
@@ -567,8 +624,27 @@ function PromptBarCore({
       {/* Action row */}
       <div className={styles.actions} ref={actionsRef}>
         <div className={styles.leftActions} ref={leftRef}>
-          {/* Plus button + its menu, anchored to the button */}
+          {/* Plus button + its menu, anchored to the button. In the 'left'
+              placement the connectors button takes this slot instead, because
+              that surface offers nothing else to add. */}
           <div className={styles.menuAnchor}>
+            {connectorsPlacement === 'left' ? (
+              <Tooltip content={connectorsTooltip ?? ''} placement="top" disabled={!connectorsTooltip}>
+              <button
+                className={`${styles.plusBtn} ${styles.connectorsLeftBtn} ${openMenu === 'connectors' ? styles.plusBtnActive : ''}`}
+                onClick={() => toggle('connectors')}
+                aria-label="Connectors"
+                aria-expanded={openMenu === 'connectors'}
+              >
+                <ConnectorsGlyph size={16} />
+                {!!connectorsBadge && connectorsBadge > 0 && (
+                  <span aria-hidden className={styles.connectorsBadge}>
+                    {connectorsBadge}
+                  </span>
+                )}
+              </button>
+              </Tooltip>
+            ) : showPlus ? (
             <button
               className={`${styles.plusBtn} ${openMenu === 'plus' ? styles.plusBtnActive : ''}`}
               onClick={() => toggle('plus')}
@@ -577,7 +653,17 @@ function PromptBarCore({
             >
               <Icon name="plus" size="m" />
             </button>
-            {openMenu === 'plus' && (
+            ) : null}
+            {leftExtras && <span className={styles.leftExtras}>{leftExtras}</span>}
+            {openMenu === 'connectors' && connectorsPlacement === 'left' && (
+              <div className={popoverClass}>
+                <ConnectorsMenu items={connectors} onItemsChange={onConnectorsChange} />
+              </div>
+            )}
+            {openMenu === 'plus' && plusMenuContent && (
+              <div className={popoverClass}>{plusMenuContent}</div>
+            )}
+            {openMenu === 'plus' && !plusMenuContent && (
               <div className={popoverClass}>
                 <PlusMenu
                   deepOn={deepAnalysis}
@@ -585,13 +671,17 @@ function PromptBarCore({
                   googleDrive={googleDrive}
                   skills={skills}
                   showConnectors={connectorsPlacement === 'menu'}
+                  connectors={connectors}
+                  onConnectorsChange={onConnectorsChange}
                 />
               </div>
             )}
           </div>
 
           {/* Model picker button + its menu, anchored to the button */}
+          {showModel && (
           <div className={styles.menuAnchor}>
+            <Tooltip content={modelTooltip ?? ''} placement="top" disabled={!modelTooltip}>
             <button
               className={`${styles.modelBtn} ${openMenu === 'model' ? styles.modelBtnActive : ''}`}
               onClick={() => {
@@ -610,12 +700,14 @@ function PromptBarCore({
               </span>
               <Icon name="chevron-down" size="m" />
             </button>
+            </Tooltip>
             {modelSelected && openMenu === 'model' && (
               <div className={popoverClass}>
-                <ModelMenu instructions={instructions} />
+                <ModelMenu instructions={instructions} onChangeModel={onOpenModelModal} />
               </div>
             )}
           </div>
+          )}
 
           {/* Deep analysis chip */}
           {deepAnalysis && (
@@ -659,7 +751,7 @@ function PromptBarCore({
               </button>
               {openMenu === 'connectors' && (
                 <div className={`${popoverClass} ${styles.menuPopoverRight}`}>
-                  <ConnectorsMenu />
+                  <ConnectorsMenu items={connectors} onItemsChange={onConnectorsChange} />
                 </div>
               )}
             </div>
