@@ -28,6 +28,15 @@ export interface VersionEntry {
  */
 export const versionHistory: VersionEntry[] = [
   {
+    version: '26.10.4c',
+    date: '2026-10-26',
+    type: 'patch',
+    changes: [
+      { type: 'added', group: 'Tooling', component: 'Handoff export', description: 'npm run handoff <Prototype> writes its CSS Modules as SCSS with the product\'s Radiant tokens ($rd-spacing--*, rd-sys-color()) plus a report of what still needs a person' },
+      { type: 'modified', group: 'Tooling', component: 'Prototype template', description: 'Uses a token-only CSS Module instead of inline styles, so new prototypes export clean' },
+    ],
+  },
+  {
     version: '26.10.4b',
     date: '2026-10-26',
     type: 'patch',
