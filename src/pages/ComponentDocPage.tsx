@@ -167,7 +167,8 @@ const componentDocs: Record<string, {
       { name: 'value', type: 'string', description: 'Current value' },
       { name: 'disabled', type: 'boolean', default: 'false', description: 'Whether the input is disabled' },
       { name: 'error', type: 'boolean', default: 'false', description: 'Whether the input has an error' },
-      { name: 'errorMessage', type: 'string', description: 'Error message to display' },
+      { name: 'errorMessage', type: 'string', description: 'Error message under the field. Under look: \'radiant-3\' it replaces the label text, defaulting to Please add “{label}”' },
+      { name: 'helperText', type: 'string', description: 'Helper text under the field. Under look: \'radiant-3\' it sits in brackets beside the label' },
       { name: 'onChange', type: '(e: ChangeEvent) => void', description: 'Change handler' },
     ],
   },
@@ -182,10 +183,10 @@ const componentDocs: Record<string, {
       { name: 'rows', type: 'number', default: '4', description: 'Number of visible text rows' },
       { name: 'resize', type: "'none' | 'vertical' | 'horizontal' | 'both'", default: "'vertical'", description: 'Whether to allow resizing' },
       { name: 'maxLength', type: 'number', description: 'Maximum character count (shows counter when set)' },
-      { name: 'helperText', type: 'string', description: 'Helper text below the input' },
+      { name: 'helperText', type: 'string', description: 'Helper text in brackets beside the label' },
       { name: 'disabled', type: 'boolean', default: 'false', description: 'Whether the textarea is disabled' },
       { name: 'error', type: 'boolean', default: 'false', description: 'Whether the textarea has an error' },
-      { name: 'errorMessage', type: 'string', description: 'Error message to display' },
+      { name: 'errorMessage', type: 'string', description: 'Error message under the field. Under look: \'radiant-3\' it replaces the label text, defaulting to Please add “{label}”' },
       { name: 'onChange', type: '(e: ChangeEvent) => void', description: 'Change handler' },
     ],
   },
@@ -1374,6 +1375,14 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
               <TextInput label="Disabled" placeholder="Disabled input" disabled />
               <TextInput label="Error" error errorMessage="This field is required" value="Invalid value" />
             </div>
+            <RadiantLook>
+              <div style={styles.exampleColumn}>
+                <TextInput label="Label" helperText="helper text - optional" placeholder="Text" />
+                <TextInput label="Label" helperText="helper text - optional" value="Text" error />
+                <TextInput label="Label" helperText="helper text - optional" placeholder="Text" disabled />
+                <TextInput label="Label" helperText="helper text - optional" value="Text" readOnly />
+              </div>
+            </RadiantLook>
           </div>
         );
       
@@ -1400,10 +1409,17 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
               />
               <TextArea 
                 label="Disabled" 
-                placeholder="This textarea is disabled" 
+                placeholder="This textarea is disabled"
                 disabled
               />
             </div>
+            <RadiantLook>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', maxWidth: '400px' }}>
+                <TextArea label="Label" helperText="helper text - optional" placeholder="Text" rows={4} />
+                <TextArea label="Label" helperText="helper text - optional" value="Text" error rows={4} />
+                <TextArea label="Label" helperText="helper text - optional" placeholder="Text" rows={4} disabled />
+              </div>
+            </RadiantLook>
           </div>
         );
       

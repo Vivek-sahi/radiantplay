@@ -28,6 +28,15 @@ export interface VersionEntry {
  */
 export const versionHistory: VersionEntry[] = [
   {
+    version: '26.10.4b',
+    date: '2026-10-26',
+    type: 'patch',
+    changes: [
+      { type: 'modified', group: 'Form alignment with Figma', component: 'TextInput', description: 'Under look: \'radiant-3\' the label line reads "Label (helper text)" and nothing goes under the field. On error the label turns red with an icon and reads errorMessage, or Please add “{label}” when none is set' },
+      { type: 'modified', group: 'Form alignment with Figma', component: 'TextArea', description: 'Same Radiant 3.0 label line as TextInput; the character counter stays under the field' },
+    ],
+  },
+  {
     version: '26.10.3j',
     date: '2026-10-14',
     type: 'patch',
