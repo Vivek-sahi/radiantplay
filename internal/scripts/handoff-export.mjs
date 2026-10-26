@@ -76,6 +76,15 @@ const LETTER_ALIAS = { a: 4, b: 8, c: 12, d: 16, e: 20, f: 24, g: 28, h: 32, i: 
 // ── Convert one CSS-module string to SCSS ───────────────────────────────────
 
 function convertCss(css, report) {
+  // Comments pass through untouched, so a hex or var in a note is not converted or reported.
+  const out = css
+    .split(/(\/\*[\s\S]*?\*\/)/)
+    .map((part) => (part.startsWith('/*') ? part : convertCode(part, report)))
+    .join('');
+  return `@import '~@thoughtspot/radiant-styles/_base.scss';\n\n${out.trimStart()}`;
+}
+
+function convertCode(css, report) {
   let out = css;
 
   // 1. Spacing CSS vars → $rd-spacing--<letter>
@@ -119,7 +128,7 @@ function convertCss(css, report) {
     report.manualVars.add(m[0]);
   }
 
-  return `@import '~@thoughtspot/radiant-styles/_base.scss';\n\n${out.trimStart()}`;
+  return out;
 }
 
 // ── Scan .tsx for what the converter cannot touch (Layer B) ──────────────────

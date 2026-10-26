@@ -100,7 +100,7 @@ export type {
 import { statusColors, textColors } from '../../tokens/colors';
 import { spacing } from '../../tokens/spacing';
 
-// Use tokens for inline styles or dynamic values
+// Inline only for values computed at runtime; static styles go in the CSS Module
 style={{ backgroundColor: statusColors.success.background }}
 ```
 

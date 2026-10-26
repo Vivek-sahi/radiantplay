@@ -1,5 +1,14 @@
 # Changelog
 
+## 26.10.4d — 2026-10-26
+
+New prototypes keep their styles in CSS Modules, so the handoff export converts them with nothing left over.
+
+- The rule files tell Claude to put static styles in a CSS Module next to the component. Inline `style={{ }}` is only for values computed at runtime, and the `styles.ts` object pattern is gone from the templates
+- The Liveboard template moves to CSS Modules: a new Liveboard prototype goes from 35 inline style blocks to 3, the tile positions that have to stay inline. It looks and works as before in view mode, edit mode, dragging and the SpotterViz panel
+- `npm run handoff` ignores CSS comments, so a hex value in a comment no longer shows as ambiguous
+- Existing prototypes don't change
+
 ## 26.10.4c — 2026-10-26
 
 Prototypes can be handed to engineering as SCSS that uses the product codebase's Radiant tokens, instead of inline CSS.

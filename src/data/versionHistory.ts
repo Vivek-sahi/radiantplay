@@ -28,6 +28,16 @@ export interface VersionEntry {
  */
 export const versionHistory: VersionEntry[] = [
   {
+    version: '26.10.4d',
+    date: '2026-10-26',
+    type: 'patch',
+    changes: [
+      { type: 'modified', group: 'Tooling', component: 'Rule files', description: 'Static styles go in a CSS Module next to the component; inline styles only for runtime values, so npm run handoff converts them' },
+      { type: 'modified', group: 'Tooling', component: 'Liveboard template', description: 'Moves to CSS Modules: a new Liveboard prototype has 3 inline style blocks instead of 35, and looks and works as before' },
+      { type: 'modified', group: 'Tooling', component: 'Handoff export', description: 'Ignores CSS comments, so a hex value in a comment no longer reads as ambiguous' },
+    ],
+  },
+  {
     version: '26.10.4c',
     date: '2026-10-26',
     type: 'patch',

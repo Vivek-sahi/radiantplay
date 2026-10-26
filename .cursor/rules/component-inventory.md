@@ -397,7 +397,7 @@ FormControl + FormBuilder + DynamicForm
 1. An existing component with different props can achieve the result
 2. The pattern is a composition of existing components
 3. The difference is purely styling (use tokens instead)
-4. It's a one-off prototype element (use inline styles)
+4. It's a one-off prototype element (style it with a class in the prototype's CSS Module)
 
 **DO create a new component if:**
 1. The pattern will be reused across 3+ prototypes
