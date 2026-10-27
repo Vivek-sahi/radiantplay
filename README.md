@@ -196,6 +196,7 @@ Radiant Play ships with slash commands you can run directly in Claude Code (or d
 | `/rp-new-prototype [Name]` | Scaffolds a new prototype folder with the correct structure, registers it, and pulls the latest from main first. Same as `npm run new-prototype` but with AI guidance through the setup. |
 | `/rp-project-canvas` | Opens the local project canvas: content, branches, sites, forks, plans and worktrees, with divergence vs main/staging/upstream. Pure shell, no AI tokens used. |
 | `/rp-sync-upstream` | Previews and merges the latest upstream changes into your fork. Shows what's coming first, then asks before applying. Works from any branch — stashes WIP, syncs main, forwards changes into your feature branch, restores WIP. |
+| `/rp-contribute [prototype]` | Shares your work with Radiant Play the right way. Asks what you're sharing and who should use it, works out where each piece belongs (Radiant, Spotter, shared code or a sample prototype), splits it into PRs against `staging`, runs the checks and writes the PR description. Asks before every commit and push. |
 | `/fork-status` | Reports on all downstream designer forks — which are up to date, which are behind, and what needs attention. |
 
 **Two automated hooks also run in the background (Claude Code only):**

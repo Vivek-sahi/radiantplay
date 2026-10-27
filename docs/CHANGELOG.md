@@ -1,5 +1,14 @@
 # Changelog
 
+## 26.10.4i — 2026-10-27
+
+New `/rp-contribute` command for sending work back to Radiant Play.
+
+- It asks what you're sharing, who should use it and how final it is, then reads your files and decides where each piece belongs: a Radiant component, a Spotter component, shared prototype code or a sample prototype
+- It spots copies of shared components inside a prototype, entries added to `registry-mine.ts` and changes to components other prototypes use, then proposes a set of PRs in merge order. PRs go to `staging`, or to a shared team branch in a teammate's fork (like Simran's `feat/agentic-ds`) where several designers build one set of components before its owner raises it against `staging`
+- Each PR is built in its own worktree from `upstream/staging`, checked (typecheck, build, dark scan, token lint, and the prototypes it affects opened in light and dark) and given a PR description. It asks before every commit and push, and your branch and work stay as they were
+- The forking guide's contributing steps now branch from `upstream/staging` and open PRs against `staging`
+
 ## 26.10.4h — 2026-10-27
 
 The gallery suggests groups for prototypes that look like one project.
