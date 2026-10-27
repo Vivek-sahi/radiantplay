@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AgentDB · Demo run sheet</title>
+<style>
+  :root { --ink:#1d232f; --ink-2:#4a5568; --ink-3:#8a94a6; --line:#e3e7ee; --soft:#f5f7fa; --soft-2:#eef1f6; --accent:#2770ef; --accent-soft:#eaf1fe; --ok:#0f8a5f; --warn:#b26a00; --bad:#c4314b; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,sans-serif; color:var(--ink); background:#fff; }
+  .wrap { max-width:1040px; margin:0 auto; padding:40px 24px 120px; }
+  h1 { font-size:28px; margin:0 0 6px; }
+  h2 { font-size:21px; margin:56px 0 6px; padding-top:18px; border-top:1px solid var(--line); }
+  h3 { font-size:16px; margin:26px 0 6px; }
+  p { margin:6px 0 10px; }
+  .lede { color:var(--ink-2); max-width:760px; }
+  .sub { color:var(--ink-3); font-size:13px; }
+  nav.toc { display:flex; flex-wrap:wrap; gap:6px 14px; margin:14px 0 0; font-size:14px; }
+  nav.toc a { color:var(--accent); text-decoration:none; }
+  code { font:13px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace; background:var(--soft); padding:1px 4px; border-radius:4px; }
+  .step { display:grid; grid-template-columns:44px 1fr; gap:0 14px; border:1px solid var(--line); border-radius:10px; padding:12px 14px; margin:10px 0; }
+  .step .n { font-weight:700; color:var(--ink-3); font-size:13px; padding-top:3px; }
+  .step h4 { margin:0 0 4px; font-size:15px; }
+  .step .where { display:inline-block; font-size:11px; padding:1px 7px; border-radius:9px; background:var(--soft-2); color:var(--ink-2); margin-left:8px; vertical-align:middle; }
+  .where.b { background:#e3f5ec; color:var(--ok); } .where.t { background:#1b1f27; color:#d8dde6; }
+  .do { margin:4px 0; }
+  .say { color:var(--ink-2); font-style:italic; margin:4px 0; }
+  .glance { font-size:13px; color:var(--ink-2); margin:4px 0; }
+  .glance b { color:var(--ink); }
+  .box { position:relative; margin:8px 0 4px; }
+  .box pre { font:12.5px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace; background:#f7f7f2; border:1px solid #ecebdf; color:#3b3c33; padding:10px 84px 10px 12px; border-radius:6px; overflow-x:auto; margin:0; white-space:pre-wrap; }
+  .box pre.prompt { background:var(--accent-soft); border-color:#cfe0fb; color:#1a3b73; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,sans-serif; font-size:14px; }
+  .box pre.term { background:#1b1f27; color:#d8dde6; border-color:#1b1f27; }
+  .box button { position:absolute; top:7px; right:7px; font:12px/1 -apple-system,BlinkMacSystemFont,sans-serif; padding:5px 9px; border:1px solid var(--line); background:#fff; border-radius:6px; cursor:pointer; color:var(--ink-2); }
+  .box button:hover { border-color:var(--accent); color:var(--accent); }
+  .note { background:var(--soft); border-left:3px solid var(--accent); padding:10px 14px; margin:14px 0; font-size:14px; }
+  .warn { border-left-color:var(--warn); }
+  ul { margin:6px 0 10px; padding-left:20px; } li { margin:3px 0; }
+  table { border-collapse:collapse; width:100%; font-size:14px; margin:8px 0; }
+  th, td { text-align:left; vertical-align:top; padding:7px 10px; border-bottom:1px solid var(--line); }
+  th { font-size:12px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-3); background:var(--soft); }
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>AgentDB · Demo run sheet</h1>
+<p class="lede">Two demos, one after the other. Everything you click, paste or type, in order. Every grey box has a Copy button. The console story shows what AgentDB is; the Claude Code story shows what changes when an agent operates it.</p>
+<p class="sub">27 Oct 2026 · the story and its reasoning are in <a href="demo-story.html">demo-story.html</a></p>
+<nav class="toc"><a href="#before">Before you start</a><a href="#console">Demo 1 · the console</a><a href="#claude">Demo 2 · Claude Code</a><a href="#trouble">If something goes wrong</a><a href="#record">Recording</a></nav>
+
+<h2 id="before">Before you start, both demos</h2>
+<ul>
+  <li><b>Two hidden processes.</b> The prototype's dev server and the demo state server. Both are running now. If not:</li>
+</ul>
+<div class="box"><pre>cd ~/radiantplay && npx vite --port 5190</pre><button>Copy</button></div>
+<div class="box"><pre>agentdb serve</pre><button>Copy</button></div>
+<ul>
+  <li><b>Windows.</b> Browser on the left, about 60%. Terminal on the right, font 16 to 18 px.</li>
+  <li><b>Browser.</b> The console:</li>
+</ul>
+<div class="box"><pre>http://localhost:5190/playground/AgentDBMVP</pre><button>Copy</button></div>
+<ul>
+  <li><b>Terminal.</b> Already in the demo folder:</li>
+</ul>
+<div class="box"><pre>cd ~/agentdb-demo</pre><button>Copy</button></div>
+
+<h2 id="console">Demo 1 · The console <span class="sub">about 3 minutes · Acme Retail six weeks in</span></h2>
+<div class="note">Gear button, bottom right: <b>Workspace › Filled workspace</b>, and under <b>Demo</b> make sure <b>Live</b> is unticked. Nothing in this demo touches the state file the second demo uses.</div>
+
+<div class="step"><div class="n">1</div><div>
+  <h4>Data <span class="where b">Browser</span></h4>
+  <p class="do">The one list of everything: twelve objects across two databases, tables, a view, a materialised view. Pick <b>acme_retail</b> in the database filter. Open <b>orders</b>.</p>
+  <p class="do">On the table: <b>Columns</b>, <b>Sample data</b>, <b>History</b>. History shows last night's loads: the one at 02:00 that timed out with nothing written, and the retry at 02:04 that landed 412 million rows. Point at <b>Load instructions ↗</b>, you will come back to it.</p>
+  <p class="say">What is in the database, and what happened to it, from the database's own records.</p>
+</div></div>
+
+<div class="step"><div class="n">2</div><div>
+  <h4>SQL <span class="where b">Browser</span></h4>
+  <p class="do">The workbench. Paste, then <b>Cmd+Enter</b>:</p>
+  <div class="box"><pre>SELECT region, SUM(amount) AS revenue
+FROM acme_retail.orders
+WHERE order_date >= '2026-10-01'
+GROUP BY region
+ORDER BY revenue DESC;</pre><button>Copy</button></div>
+  <p class="do">Then create a table. Paste in a new tab, <b>Cmd+Enter</b>. The result says the table exists and links to Load instructions.</p>
+  <div class="box"><pre>CREATE TABLE acme_retail.returns (
+  return_id BIGINT,
+  order_id BIGINT,
+  returned_at DATETIME,
+  amount DECIMAL(12,2),
+  reason VARCHAR(64)
+)
+UNIQUE KEY(return_id)
+DISTRIBUTED BY HASH(return_id) BUCKETS AUTO;</pre><button>Copy</button></div>
+  <p class="say">One editor for everything: reads, and the only way tables are created. No forms.</p>
+  <p class="glance"><b>Glance:</b> Data now lists returns, 0 rows, waiting for its first load.</p>
+</div></div>
+
+<div class="step"><div class="n">3</div><div>
+  <h4>Queries <span class="where b">Browser</span></h4>
+  <p class="do">One log of everything the database ran: reads, writes, loads, under the account that sent them. Set <b>Status</b> to <b>Failed</b>: the orders load that timed out, the tickets load that hit a bad value, a query from support-copilot refused for lack of permission, one from churn-analyst refused at the rate limit.</p>
+  <p class="do">Click the tickets load: the exact row and value. Click the churn-analyst one: refused at ten queries a second. Set Status back to all and find the <b>In progress</b> query: that is where <b>Cancel</b> lives.</p>
+  <p class="say">Evidence, in the database's words. This is what an agent reads too.</p>
+</div></div>
+
+<div class="step"><div class="n">4</div><div>
+  <h4>Connect <span class="where b">Browser</span></h4>
+  <p class="do"><b>Ingestion:</b> pick the key <b>shopify-sync</b>, tick <b>orders</b> and <b>returns</b>, open the <b>SeaTunnel</b> tab. The job's sink block, filled in: address, key, database, tables. Open "Values for tools set up through a form" for the field-by-field version.</p>
+  <p class="do"><b>Consumption:</b> the connection string any MySQL-speaking tool uses. ThoughtSpot is one BI tool in the list, alphabetically.</p>
+  <p class="do"><b>Agents:</b> the MCP address and the config to paste into Claude Code or Cursor.</p>
+  <p class="say">Nobody reads this page. They copy from it and leave. That config is where the second story starts.</p>
+</div></div>
+
+<div class="step"><div class="n">5</div><div>
+  <h4>API keys and Members <span class="where b">Browser</span></h4>
+  <p class="do"><b>API keys:</b> every tool's identity, with what it may do: Query, or Query and load. Rotate and revoke in the row menu. <b>Members:</b> people and their roles.</p>
+  <p class="say">Who may do what. The same keys are what an agent gets.</p>
+</div></div>
+
+<h2 id="claude">Demo 2 · Claude Code <span class="sub">about 9 minutes · a new account, operated from the terminal</span></h2>
+<div class="note">Reset first. In the terminal:</div>
+<div class="box"><pre>agentdb reset</pre><button>Copy</button></div>
+<p>Then open the console with Live on. It lands on Data, empty:</p>
+<div class="box"><pre>http://localhost:5190/playground/AgentDBMVP?live=1</pre><button>Copy</button></div>
+<p>Start Claude fresh in the demo folder:</p>
+<div class="box"><pre>cd ~/agentdb-demo && claude</pre><button>Copy</button></div>
+
+<div class="step"><div class="n">1</div><div>
+  <h4>Take a key to your agent <span class="where b">Browser</span></h4>
+  <p class="do"><b>API keys › Create API key</b>. Name <code>claude-code</code>, access <b>Query and load</b>. Create. Copy the secret while the dialog is open; it is shown once.</p>
+  <p class="say">The last thing you do in the UI is take a key to the agent.</p>
+</div></div>
+
+<div class="step"><div class="n">2</div><div>
+  <h4>Connect <span class="where t">Terminal</span></h4>
+  <div class="box"><pre class="prompt">Connect to AgentDB with this key: PASTE_THE_SECRET_HERE. Tell me what is in it.</pre><button>Copy</button></div>
+  <p class="glance"><b>Glance:</b> API keys, claude-code, last used just now.</p>
+</div></div>
+
+<div class="step"><div class="n">3</div><div>
+  <h4>Create the tables <span class="where t">Terminal</span></h4>
+  <div class="box"><pre class="prompt">Create tables in acme_retail for Shopify orders, customers and refunds. The columns are in shopify-schema.sql.</pre><button>Copy</button></div>
+  <p class="glance"><b>Glance:</b> Data lists orders, customers, refunds, 0 rows, waiting for first load. The schema file stands in for the DDL exported from the shop's Postgres.</p>
+</div></div>
+
+<div class="step"><div class="n">4</div><div>
+  <h4>Point the ETL tool at them, run the first load <span class="where t">Terminal</span></h4>
+  <div class="box"><pre class="prompt">Set up our SeaTunnel job to load orders, customers and refunds from the shop's Postgres into those tables, and run it. Tell me when the data has landed.</pre><button>Copy</button></div>
+  <p class="glance"><b>Glance:</b> Queries shows three loads under shopify-sync, refunds Failed with the row error. Data shows rows on orders and customers. Optional: Connect › Ingestion, key shopify-sync, three tables, SeaTunnel tab: the same block Claude fetched.</p>
+  <p class="say">Claude created the pipeline's identity, fetched the recipe, wrote the job, ran it, and read the evidence.</p>
+</div></div>
+
+<div class="step"><div class="n">4b</div><div>
+  <h4>Fix it where the fault is <span class="where t">Terminal</span> <span class="sub">optional</span></h4>
+  <div class="box"><pre class="prompt">Do that.</pre><button>Copy</button></div>
+  <p class="glance"><b>Glance:</b> refunds now has rows; a second load, Completed. If Claude already fixed it on its own, skip this.</p>
+</div></div>
+
+<div class="step"><div class="n">5</div><div>
+  <h4>Look at what landed <span class="where t">Terminal</span></h4>
+  <div class="box"><pre class="prompt">Show me how many orders landed and the five latest ones.</pre><button>Copy</button></div>
+  <p class="glance"><b>Glance:</b> Queries, the two SELECTs under claude-code with data read.</p>
+</div></div>
+
+<div class="step"><div class="n">5b</div><div>
+  <h4>Model it <span class="where t">Terminal</span> <span class="sub">optional, for a data-engineer audience</span></h4>
+  <div class="box"><pre class="prompt">Create orders_daily in acme_retail: revenue by day and region from orders, kept up to date.</pre><button>Copy</button></div>
+  <p class="glance"><b>Glance:</b> Data lists orders_daily as a materialised view, refresh after each load.</p>
+</div></div>
+
+<div class="step"><div class="n">6</div><div>
+  <h4>An agent workload arrives <span class="where t">Terminal</span></h4>
+  <p class="do">Say: "Meanwhile, the analytics team's agent runs its churn task." Then type this line in the Claude session. The <code>!</code> runs it as a shell command.</p>
+  <div class="box"><pre class="term">! agentdb demo churn-task</pre><button>Copy</button></div>
+  <p class="glance"><b>Glance:</b> Queries fills with forty rows under churn-analyst, two Failed. Set <b>User</b> to churn-analyst.</p>
+</div></div>
+
+<div class="step"><div class="n">7</div><div>
+  <h4>What failed, and why <span class="where t">Terminal</span></h4>
+  <div class="box"><pre class="prompt">What failed in the last hour, and why?</pre><button>Copy</button></div>
+  <p class="do">Claude lists the refunds load (fixed), a query refused because churn-analyst may not read refunds, and one refused at the rate limit, and asks what to do.</p>
+  <div class="box"><pre class="prompt">Give it refunds. Keep the limit.</pre><button>Copy</button></div>
+  <p class="glance"><b>Glance:</b> Queries, Status Failed, click the refused refunds query and the failed load: the words Claude reasoned from. API keys: churn-analyst reads refunds.</p>
+</div></div>
+
+<div class="step"><div class="n">8</div><div>
+  <h4>Who uses what, and a check that keeps watching <span class="where t">Terminal</span></h4>
+  <div class="box"><pre class="prompt">Which tables were queried this week, by whom, and which were not? Then set up a weekly check that posts unused tables to #data-eng.</pre><button>Copy</button></div>
+  <p class="glance"><b>Glance:</b> nothing new in the console. Claude shows the usage table, the script in checks/, and the cron line.</p>
+</div></div>
+
+<div class="step"><div class="n">9</div><div>
+  <h4>Close <span class="where b">Browser</span></h4>
+  <p class="do">Queries. Set <b>User</b> to claude-code, then shopify-sync, then churn-analyst.</p>
+  <p class="say">You never had to be here. When you want to look, everything is here.</p>
+</div></div>
+
+<h2 id="trouble">If something goes wrong</h2>
+<table>
+  <tr><th>What you see</th><th>What to do</th></tr>
+  <tr><td>Claude says "Unknown or revoked key"</td><td>The key did not reach the state file: Live was off when you created it. Tick Live in the gear menu, create another key with a new name, use that secret.</td></tr>
+  <tr><td>Claude asks for the Postgres host or password</td><td>Say: "Use the known source in your notes."</td></tr>
+  <tr><td>Claude fixes the refunds load without asking</td><td>Fine. Skip 4b.</td></tr>
+  <tr><td>Claude tries to do something by hand instead of with the command</td><td>Say: "Use the agentdb command."</td></tr>
+  <tr><td>The browser stops following the terminal</td><td>The state server is down. In any terminal: <code>agentdb serve</code>. Reload the browser.</td></tr>
+  <tr><td>You want to start over</td><td><code>agentdb reset</code>, reload the browser, <code>/clear</code> in Claude or start it again.</td></tr>
+  <tr><td>You want to see the state without the browser</td><td><code>agentdb status</code>, <code>agentdb tables</code>, <code>agentdb queries</code></td></tr>
+</table>
+
+<h2 id="record">Recording</h2>
+<ul>
+  <li>Demo 1 then demo 2 in one take, or two takes and cut. Reset between them regardless.</li>
+  <li>Say the italic lines out loud, or cut them in as captions.</li>
+  <li>Record two clean takes of demo 2. The second is the parachute.</li>
+</ul>
+</div>
+<script>
+  document.querySelectorAll('.box button').forEach((b) => {
+    b.addEventListener('click', async () => {
+      const text = b.parentElement.querySelector('pre').textContent;
+      try { await navigator.clipboard.writeText(text); b.textContent = 'Copied'; } catch { b.textContent = 'Select and copy'; }
+      setTimeout(() => (b.textContent = 'Copy'), 1200);
+    });
+  });
+</script>
+</body>
+</html>

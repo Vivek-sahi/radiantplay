@@ -1,0 +1,419 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AgentDB · Demo story</title>
+<style>
+  :root {
+    --ink: #1d232f; --ink-2: #4a5568; --ink-3: #8a94a6;
+    --line: #e3e7ee; --soft: #f5f7fa; --soft-2: #eef1f6;
+    --accent: #2770ef; --accent-soft: #eaf1fe;
+    --ok: #0f8a5f; --warn: #b26a00; --bad: #c4314b;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif; color: var(--ink); background: #fff; }
+  .wrap { max-width: 1160px; margin: 0 auto; padding: 48px 24px 120px; }
+  h1 { font-size: 30px; margin: 0 0 6px; letter-spacing: -0.01em; }
+  h2 { font-size: 22px; margin: 64px 0 6px; padding-top: 20px; border-top: 1px solid var(--line); }
+  h3 { font-size: 17px; margin: 32px 0 8px; }
+  h4 { font-size: 13px; margin: 0 0 6px; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-3); }
+  p { margin: 6px 0 10px; }
+  .lede { color: var(--ink-2); max-width: 780px; }
+  .sub { color: var(--ink-3); font-size: 13px; }
+  nav.toc { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 18px 0 0; font-size: 14px; }
+  nav.toc a { color: var(--accent); text-decoration: none; }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; margin: 10px 0 6px; }
+  th, td { text-align: left; vertical-align: top; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+  th { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-3); font-weight: 600; background: var(--soft); }
+  .tag { display: inline-block; font-size: 12px; padding: 1px 8px; border-radius: 10px; background: var(--soft-2); color: var(--ink-2); white-space: nowrap; }
+  .must { background: #e3f5ec; color: var(--ok); }
+  .should { background: var(--accent-soft); color: var(--accent); }
+  .later { background: #fff4e0; color: var(--warn); }
+  .out { background: #f6e6ea; color: var(--bad); }
+  .note { background: var(--soft); border-left: 3px solid var(--accent); padding: 10px 14px; margin: 14px 0; font-size: 14px; }
+  .decided { border-left-color: var(--ok); }
+  .warnbox { border-left-color: var(--warn); }
+  .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; }
+  .card { border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+  ul, ol { margin: 6px 0 10px; padding-left: 20px; }
+  li { margin: 3px 0; }
+  a { color: var(--accent); }
+  code { font: 13px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--soft); padding: 1px 4px; border-radius: 4px; }
+  pre { font: 12.5px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; background: #f7f7f2; border: 1px solid #ecebdf; color: #3b3c33; padding: 10px 12px; border-radius: 6px; overflow-x: auto; margin: 6px 0 10px; white-space: pre; }
+  pre.term { background: #1b1f27; color: #d8dde6; border-color: #1b1f27; }
+  pre.term .p { color: #8fd3a8; }
+  pre.term .c { color: #9ec1ff; }
+  pre.term .d { color: #8a94a6; }
+  pre.term .bad { color: #ff8e9e; }
+
+  /* Beats */
+  .beat { border: 1px solid var(--line); border-radius: 12px; margin: 18px 0; overflow: hidden; }
+  .beat-head { display: flex; align-items: baseline; gap: 12px; padding: 12px 16px; background: var(--soft); border-bottom: 1px solid var(--line); }
+  .beat-head .n { font-size: 12px; font-weight: 700; color: var(--ink-3); letter-spacing: .06em; }
+  .beat-head h3 { margin: 0; font-size: 16px; }
+  .beat-head .where { margin-left: auto; }
+  .beat-body { display: grid; grid-template-columns: 1fr 1.3fr 1fr; gap: 0; }
+  .beat-body > div { padding: 12px 16px; border-right: 1px solid var(--line); min-width: 0; }
+  .beat-body > div:last-child { border-right: 0; }
+  .beat-foot { padding: 10px 16px; border-top: 1px solid var(--line); font-size: 14px; color: var(--ink-2); }
+  .say { font-style: italic; color: var(--ink); }
+  .screen { background: #fff; border: 1px dashed #c9d0db; border-radius: 6px; padding: 8px 10px; font-size: 13px; color: var(--ink-2); margin: 6px 0; }
+  .screen b { color: var(--ink); }
+  @media (max-width: 900px) { .beat-body { grid-template-columns: 1fr; } .beat-body > div { border-right: 0; border-bottom: 1px solid var(--line); } }
+  .layout { display: grid; grid-template-columns: 3fr 2fr; gap: 10px; border: 1px solid #c9d0db; border-radius: 8px; padding: 10px; background: var(--soft); margin: 10px 0; }
+  .layout > div { background: #fff; border: 1px solid var(--line); border-radius: 6px; padding: 10px; font-size: 13px; min-height: 120px; }
+  .layout .t { background: #1b1f27; color: #d8dde6; border-color: #1b1f27; font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>AgentDB · Demo story</h1>
+<p class="lede">Set it up once in the console. Run everything else from Claude Code. The console shows the evidence. One data engineer, one morning, eight beats, about ten minutes on screen.</p>
+<p class="sub">27 Oct 2026 · built and verified · the step-by-step script with copy buttons is <a href="demo-runsheet.html">demo-runsheet.html</a> · prompts are placeholders for Vivek's words</p>
+<nav class="toc">
+  <a href="#claim">The claim</a>
+  <a href="#how">How it runs on your Mac</a>
+  <a href="#cast">Cast and starting state</a>
+  <a href="#beats">The story, beat by beat</a>
+  <a href="#commands">The commands</a>
+  <a href="#console">What the console needs</a>
+  <a href="#gaps">What v5 lacks</a>
+  <a href="#build">Build plan for today</a>
+  <a href="#record">Recording</a>
+  <a href="#decisions">Your decisions</a>
+  <a href="#honesty">What is real, what is a stand-in</a>
+</nav>
+
+<h2 id="claim">The claim the demo makes</h2>
+<p>A data engineer opens AgentDB once, takes a key to their coding agent, and never has to come back for the work: connecting the pipeline, modelling, finding out what failed and why, seeing who uses what. When they do come back, it is to look at evidence, not to click through screens.</p>
+<div class="grid2">
+  <div class="card"><h4>Proves</h4><ul><li>Set up in under two minutes</li><li>Build and load from Claude Code</li><li>Tables created first, the ETL tool pointed at them, load evidence read from one place</li><li>Agent workloads show up as tasks with cost and failures</li><li>Engineers extend it with their own checks</li></ul></div>
+  <div class="card"><h4>Does not prove</h4><ul><li>Faster or cheaper than anyone. That is a benchmark, not a demo</li><li>That the console is unnecessary. It shows a lifecycle that does not need it</li></ul></div>
+</div>
+
+<h2 id="how">How it runs on your Mac</h2>
+<p>No copy of the prototype. The prototype stays where it is and gains one switch, <b>Live</b>, in its gear menu. Three parts work together:</p>
+<ol>
+  <li><b>A state file.</b> One JSON file holding what the console shows: databases, tables, loads, queries, keys. In Live mode the console re-reads it every second, so whatever changes the file changes the browser.</li>
+  <li><b>An <code>agentdb</code> command.</b> A small program that reads the state file, does what it was told, writes the file back and prints a result. For SQL it reuses the engine already inside the prototype.</li>
+  <li><b>A demo folder with a note for Claude.</b> <code>~/agentdb-demo/</code> holds the command, a CLAUDE.md that says "AgentDB is operated with the agentdb command, here are its subcommands", and the prompts file. You start Claude Code inside this folder. It cannot see the prototype's code, so it cannot edit it. All it can do is run the command.</li>
+</ol>
+
+<h3>What is on screen</h3>
+<p>One browser window and one terminal window, side by side. That is all the audience sees.</p>
+<div class="layout">
+  <div><b>Browser · left, about 60%</b><br>The AgentDB console in Live mode. You click here only in the first beat and glance at it at the evidence moments.</div>
+  <div class="t">Terminal · right, about 40%<br><br>$ claude<br>&gt; Connect to AgentDB with this key …<br><br>You type the prompts here. Claude runs agentdb commands. The browser reacts.</div>
+</div>
+<p>Two processes run hidden: the prototype's dev server (<code>npx vite --port 5190</code>) and the state server (<code>agentdb serve</code>). You start both before recording and hide them. Nobody types there and no Claude session runs in the background. There is exactly one Claude Code session, the one you are typing into on screen. The console runs as <b>v6</b> with Live on: <code>localhost:5190/playground/AgentDBMVP?live=1</code>.</p>
+
+<h3>Where the MCP version goes</h3>
+<p>Not in today's build. Later, the same program is served as MCP tools instead of a command. Beat 1 then ends with <code>claude mcp add</code> and a "Claude Code connected" indicator in the console, and the terminal shows <code>agentdb · run_sql</code> tool calls instead of Bash lines. Every other beat is identical. It becomes necessary when the audience is customers or the exec team and the MCP connection is part of the claim.</p>
+
+<h2 id="cast">Cast and starting state</h2>
+<table>
+  <tr><th>Who</th><th>What</th><th>Shows up as</th></tr>
+  <tr><td>Priya, data engineer at Acme Retail</td><td>You. Signs in once, then works from Claude Code</td><td>Signed-in person in the console</td></tr>
+  <tr><td>Claude Code</td><td>Her coding agent. Runs the agentdb and seatunnel-demo commands</td><td>Identity <code>claude-code</code> on every query and load it ran</td></tr>
+  <tr><td>Shopify pipeline</td><td>A SeaTunnel job, stand-in. Reads the shop's Postgres and pushes into the tables Claude created</td><td>Identity <code>shopify-sync</code> on the loads</td></tr>
+  <tr><td>Churn agent</td><td>The analytics team's agent. Runs one task of forty queries</td><td>Identity <code>churn-analyst</code>, task <code>churn-analysis</code></td></tr>
+  <tr><td>AgentDB console</td><td>The v5 prototype in Live mode</td><td>Data · SQL · Queries · Connect · API keys · Members</td></tr>
+</table>
+<p><b>Starting state:</b> signed in as Priya, a brand-new account. One database, <code>acme_retail</code>, provisioned and empty. No tables, no keys, no activity. <code>agentdb reset</code> returns to this state before every take.</p>
+
+<h2 id="beats">The story, beat by beat</h2>
+<p class="sub">Left: what you say. Middle: what the terminal shows, abridged. Right: what the browser shows. Times are targets. Beats marked optional can be cut to reach six minutes.</p>
+
+<div class="beat">
+  <div class="beat-head"><span class="n">START · 0:10</span><h3>Signed in, empty</h3><span class="tag where">Browser</span></div>
+  <div class="beat-body">
+    <div><h4>You do</h4><p>Nothing. The recording opens on the console, already signed in as Priya, on Data. No sign-up or sign-in in the demo (Vivek, 27 Oct).</p></div>
+    <div><h4>Terminal</h4><p class="sub">Not on screen yet.</p></div>
+    <div><h4>Console</h4><div class="screen"><b>Data</b> · empty. v5 says "No tables in acme_retail yet." v6 replaces this with an empty state built for agents and humans: connect your agent first, create a table, point your ETL tool at it.</div></div>
+  </div>
+  <div class="beat-foot">Message: a new account, nothing in it, two minutes from here to working.</div>
+</div>
+
+<div class="beat">
+  <div class="beat-head"><span class="n">BEAT 1 · 0:45</span><h3>Take a key to your agent</h3><span class="tag where">Browser</span></div>
+  <div class="beat-body">
+    <div><h4>You do</h4><p><b>API keys</b> → Create → name <code>claude-code</code>, access <b>Query and load</b>. Copy the secret while it is shown. Open <b>Connect › Agents</b> and point at the endpoint.</p></div>
+    <div><h4>Terminal</h4><p class="sub">Now bring the terminal on screen, already running <code>claude</code> in the demo folder.</p></div>
+    <div><h4>Console</h4><div class="screen"><b>API keys</b> · claude-code · Query and load · Last used: never</div><div class="screen"><b>Connect › Agents</b> · endpoint and the config to paste</div></div>
+  </div>
+  <div class="beat-foot">Message: the last thing you do in the UI is take a key to the agent. Setup is over.</div>
+</div>
+
+<div class="beat">
+  <div class="beat-head"><span class="n">BEAT 2 · 0:45</span><h3>Connect and look around</h3><span class="tag where">Terminal</span></div>
+  <div class="beat-body">
+    <div><h4>You say</h4><p class="say">Connect to AgentDB with this key: adb_live_… Tell me what is in it.</p></div>
+    <div><h4>Terminal</h4><pre class="term"><span class="c">Bash(agentdb login --key adb_live_7f3…)</span>
+Signed in as <span class="p">claude-code</span> · acme · may query and load
+Databases: acme_retail (empty)
+
+<span class="c">Bash(agentdb tables)</span>
+acme_retail · no tables yet</pre><p>Claude: "Connected. One database, acme_retail, with nothing in it yet."</p></div>
+    <div><h4>Console</h4><div class="screen"><b>API keys</b> · claude-code · Last used: just now</div></div>
+  </div>
+  <div class="beat-foot">Message: the key is the identity. From here on, everything Claude does carries its name.</div>
+</div>
+
+<div class="beat">
+  <div class="beat-head"><span class="n">BEAT 3 · 1:00</span><h3>Create the tables</h3><span class="tag where">Terminal</span></div>
+  <div class="beat-body">
+    <div><h4>You say</h4><p class="say">Create tables in acme_retail for Shopify orders, customers and refunds. The columns are in shopify-schema.sql.</p><p class="sub">The schema file sits in the demo folder so you never dictate columns on camera.</p></div>
+    <div><h4>Terminal</h4><pre class="term"><span class="c">Read(shopify-schema.sql)</span>
+<span class="c">Bash(agentdb sql "CREATE TABLE acme_retail.orders (order_id BIGINT, customer_id BIGINT,
+  order_date DATE, region VARCHAR(32), amount DECIMAL(12,2), status VARCHAR(16))
+  UNIQUE KEY(order_id) DISTRIBUTED BY HASH(order_id) BUCKETS AUTO")</span>
+Table created · acme_retail.orders · 0 rows · waiting for first load
+
+<span class="c">Bash(agentdb sql "CREATE TABLE acme_retail.customers (…) UNIQUE KEY(customer_id) …")</span>
+Table created · acme_retail.customers · 0 rows · waiting for first load
+
+<span class="c">Bash(agentdb sql "CREATE TABLE acme_retail.refunds (…) UNIQUE KEY(refund_id) …")</span>
+Table created · acme_retail.refunds · 0 rows · waiting for first load</pre><p>Claude: "Three tables, empty, waiting for their first load."</p></div>
+    <div><h4>Console</h4><div class="screen"><b>Data</b> · orders, customers, refunds · 0 rows · Waiting for first load</div><div class="screen"><b>Object page</b> · SQL tab shows the statement, created by claude-code</div></div>
+  </div>
+  <div class="beat-foot">Message: tables come first, the load goes into a table that exists. Built from the agent, recorded under Claude's name. Every load replaces the table's contents in this scope; there is no append.</div>
+</div>
+
+<div class="beat">
+  <div class="beat-head"><span class="n">BEAT 4 · 1:30</span><h3>Point the ETL tool at them, run the first load</h3><span class="tag where">Terminal</span></div>
+  <div class="beat-body">
+    <div><h4>You say</h4><p class="say">Set up our SeaTunnel job to load orders, customers and refunds from the shop's Postgres into those tables, and run it. Tell me when the data has landed.</p></div>
+    <div><h4>Terminal</h4><pre class="term"><span class="c">Bash(agentdb keys create shopify-sync --access query-and-load)</span>
+Key created · shopify-sync · adb_live_c21… (shown once)
+
+<span class="c">Bash(agentdb load-recipe acme_retail --tables orders,customers,refunds --way seatunnel)</span>
+sink {
+  Doris {
+    fenodes  = "acme.agentdb.app:8030"
+    username = "shopify-sync"
+    password = "${AGENTDB_KEY}"
+    database = "acme_retail"
+    table    = "${table_name}"
+    sink.label-prefix = "acme_retail-bulk"
+    sink.enable-2pc   = "true"
+  }
+}
+
+<span class="c">Write(jobs/shopify.conf)</span>   <span class="d">source block from Postgres, sink block from the recipe</span>
+<span class="c">Bash(seatunnel-demo run jobs/shopify.conf)</span>
+Job 1042 · 3 tables · running
+
+<span class="c">Bash(agentdb loads --since 5m)</span>
+TIME   TABLE      ROWS         BYTES    STATUS
+10:41  orders     412,800,000  28.1 GB  Completed
+10:41  customers    9,400,000   3.2 GB  Completed
+10:41  refunds              0   0.9 GB  <span class="bad">Failed · Row 1,204: value 'n/a' does not
+       fit amount (Decimal). Nothing was written.</span></pre><p>Claude: "Two of three landed. refunds failed: the source has 'n/a' in amount and the column is Decimal. Nothing was written. I can add a transform in the job that maps 'n/a' to null and re-run refunds."</p></div>
+    <div><h4>Console</h4><div class="screen"><b>Connect › Ingestion</b> · key shopify-sync, three tables ticked, SeaTunnel tab: the same block Claude fetched</div><div class="screen"><b>Queries</b> · three loads under shopify-sync, one Failed with the row error</div><div class="screen"><b>Data</b> · orders and customers have rows, refunds still 0</div></div>
+  </div>
+  <div class="beat-foot">Message: the recipe the console shows is the recipe Claude fetched. Claude created the pipeline's identity, wrote the job, ran it, and read the load evidence, from one place. The failure is the database's exact words.</div>
+</div>
+
+<div class="beat">
+  <div class="beat-head"><span class="n">BEAT 4b · 0:45 · optional</span><h3>Fix it where the fault is</h3><span class="tag where">Terminal</span></div>
+  <div class="beat-body">
+    <div><h4>You say</h4><p class="say">Do that.</p></div>
+    <div><h4>Terminal</h4><pre class="term"><span class="c">Edit(jobs/shopify.conf)</span>   <span class="d">transform: amount = if(amount = 'n/a', null, amount)</span>
+<span class="c">Bash(seatunnel-demo run jobs/shopify.conf --table refunds)</span>
+Job 1043 · 1 table · running
+
+<span class="c">Bash(agentdb loads --table refunds --since 2m)</span>
+10:44  refunds  1,204,310  0.9 GB  Completed</pre></div>
+    <div><h4>Console</h4><div class="screen"><b>Data</b> · refunds: 1,204,310 rows</div><div class="screen"><b>Queries</b> · the new load, Completed</div></div>
+  </div>
+  <div class="beat-foot">Message: the database gave the evidence, the fix went to the pipeline. Cross-boundary diagnosis in one exchange.</div>
+</div>
+
+<div class="beat">
+  <div class="beat-head"><span class="n">BEAT 5 · 0:30</span><h3>Look at what landed</h3><span class="tag where">Terminal</span></div>
+  <div class="beat-body">
+    <div><h4>You say</h4><p class="say">Show me how many orders landed and the five latest ones.</p></div>
+    <div><h4>Terminal</h4><pre class="term"><span class="c">Bash(agentdb sql "SELECT COUNT(*) FROM acme_retail.orders")</span>
+count
+412,800,000
+1 row · 95 ms · 1.2 GB read
+
+<span class="c">Bash(agentdb sql "SELECT * FROM acme_retail.orders ORDER BY order_date DESC LIMIT 5")</span>
+order_id  customer_id  order_date  region  amount  status
+…</pre><p>Claude: "412.8 million orders. The latest five are from the 14th."</p></div>
+    <div><h4>Console</h4><div class="screen"><b>Queries</b> · the two SELECTs under claude-code, with data read</div></div>
+  </div>
+  <div class="beat-foot">Message: the read door, the way beat 3 showed the write door. Every engineer does this the minute a load lands.</div>
+</div>
+
+<div class="beat">
+  <div class="beat-head"><span class="n">BEAT 5b · 1:00 · optional, data-engineer audience</span><h3>Model it</h3><span class="tag where">Terminal</span></div>
+  <div class="beat-body">
+    <div><h4>You say</h4><p class="say">Create orders_daily in acme_retail: revenue by day and region from orders, kept up to date.</p></div>
+    <div><h4>Terminal</h4><pre class="term"><span class="c">Bash(agentdb sql "CREATE MATERIALIZED VIEW acme_retail.orders_daily
+  BUILD IMMEDIATE REFRESH ON COMMIT AS
+  SELECT order_date AS day, region, SUM(amount) AS revenue
+  FROM acme_retail.orders GROUP BY order_date, region")</span>
+Materialised view created · orders_daily · 2,190 rows · refresh after each load
+
+<span class="c">Bash(agentdb sql "SELECT * FROM acme_retail.orders_daily ORDER BY day DESC LIMIT 5")</span>
+DAY         REGION  REVENUE
+2026-10-26  West    1,284,310.50
+2026-10-26  East      912,077.10
+…</pre><p>Claude: "orders_daily exists, 2,190 rows, and rebuilds itself whenever orders gets a load. Here are the latest five."</p></div>
+    <div><h4>Console</h4><div class="screen"><b>Data</b> · orders_daily, materialised view</div><div class="screen"><b>Object page</b> · SQL tab shows the statement Claude ran</div><div class="screen"><b>Queries</b> · the CREATE and the SELECT, under claude-code</div></div>
+  </div>
+  <div class="beat-foot">Message: model on top of what the pipeline landed. The console records it under Claude's name.</div>
+</div>
+
+<div class="beat">
+  <div class="beat-head"><span class="n">BEAT 6 · 0:45</span><h3>An agent workload arrives</h3><span class="tag where">Terminal</span></div>
+  <div class="beat-body">
+    <div><h4>You say</h4><p>Narrate: "Meanwhile, the analytics team's agent runs its churn task." Then type <code>! agentdb demo churn-task</code>. The <code>!</code> runs it in the session without leaving Claude Code.</p></div>
+    <div><h4>Terminal</h4><pre class="term"><span class="d">! agentdb demo churn-task</span>
+Task churn-analysis · identity churn-analyst
+  40 queries · 38 ok · <span class="bad">2 failed</span> · 24.6 GB read · 41 s</pre></div>
+    <div><h4>Console</h4><div class="screen"><b>Queries</b> · forty rows fill in under churn-analyst, two Failed. Later: one task row that expands.</div></div>
+  </div>
+  <div class="beat-foot">Message: this is the workload the product is for. One task, many queries, and the database saw every one.</div>
+</div>
+
+<div class="beat">
+  <div class="beat-head"><span class="n">BEAT 7 · 1:00</span><h3>What failed, and why</h3><span class="tag where">Terminal</span></div>
+  <div class="beat-body">
+    <div><h4>You say</h4><p class="say">What failed in the last hour, and why?</p><p class="say" style="margin-top:14px">Give it refunds. Keep the limit.</p></div>
+    <div><h4>Terminal</h4><pre class="term"><span class="c">Bash(agentdb queries --status failed --since 1h)</span>
+10:52  churn-analyst  SELECT … FROM refunds …   <span class="bad">Refused: churn-analyst may not read refunds</span>
+10:51  churn-analyst  SELECT day, region …      <span class="bad">Refused at the rate limit (10 queries a second)</span>
+10:41  shopify-sync   LOAD refunds              <span class="bad">Row 1,204 'n/a' …</span> fixed 10:44
+Task churn-analysis · churn-analyst · 40 queries · 38 ok · 2 failed · 24.6 GB read · 41 s</pre><p>Claude: "Three failures. The refunds load, fixed at 10:44. Two from the churn agent: its key cannot read refunds, and once it fired faster than ten queries a second. Grant refunds, or raise the limit?"</p><pre class="term"><span class="c">Bash(agentdb keys grant churn-analyst --read acme_retail.refunds)</span>
+churn-analyst may now read acme_retail.refunds</pre></div>
+    <div><h4>Console</h4><div class="screen"><b>Queries</b> filtered to Failed · the same three, the detail shows the exact error</div><div class="screen"><b>API keys</b> · churn-analyst · reads refunds</div></div>
+  </div>
+  <div class="beat-foot">Message: the database says what it knows, as evidence. Claude reasons across the pipeline, the database and the other agent. The engineer decides.</div>
+</div>
+
+<div class="beat">
+  <div class="beat-head"><span class="n">BEAT 8 · 1:15</span><h3>Who uses what, and a check that keeps watching</h3><span class="tag where">Terminal</span></div>
+  <div class="beat-body">
+    <div><h4>You say</h4><p class="say">Which tables were queried this week, by whom, and which were not? Then set up a weekly check that posts unused tables to #data-eng.</p></div>
+    <div><h4>Terminal</h4><pre class="term"><span class="c">Bash(agentdb usage --days 7)</span>
+TABLE         QUERIES  BY                          LAST QUERIED  DATA READ
+customers          24  churn-analyst               today 10:52   17.6 GB
+orders             20  churn-analyst               today 10:52   20.5 GB
+orders_daily        8  churn-analyst, claude-code  today 10:52   96 MB
+refunds             0  — (1 refused)               never         —
+
+<span class="c">Write(checks/unused-tables.sh)</span>
+<span class="c">Bash(crontab -l; echo "0 9 * * 1 ~/agentdb-demo/checks/unused-tables.sh" | crontab -)</span>
+Scheduled · Mondays 09:00 · posts to #data-eng</pre><p>Claude: "Three tables are in use. refunds has never been read, once refused. I set up a Monday check that posts anything unused for seven days."</p></div>
+    <div><h4>Console</h4><div class="screen"><b>Queries</b> · the usage query under claude-code</div><div class="screen">Later: <b>Data</b> gains Last queried and Queried by per table</div></div>
+  </div>
+  <div class="beat-foot">Message: the engineer builds their own monitoring from the primitives, from the same place, in one sentence.</div>
+</div>
+
+<div class="beat">
+  <div class="beat-head"><span class="n">CLOSE · 0:20</span><h3>The evidence, in the console</h3><span class="tag where">Browser</span></div>
+  <div class="beat-body">
+    <div><h4>You do</h4><p>Open <b>Queries</b>, filter by user: claude-code, then shopify-sync, then churn-analyst.</p></div>
+    <div><h4>Terminal</h4><p class="sub">Idle.</p></div>
+    <div><h4>Console</h4><div class="screen"><b>Queries</b> · the whole morning under three names</div></div>
+  </div>
+  <div class="beat-foot">Message: you never had to be here. When you want to look, everything is here.</div>
+</div>
+
+<h2 id="commands">The commands</h2>
+<p>Everything Claude can run. The note in the demo folder lists exactly these, with one line each, so Claude never guesses.</p>
+<table>
+  <tr><th>Command</th><th>Does</th><th>Prints</th></tr>
+  <tr><td><code>agentdb login --key K</code></td><td>Stores the key for the session, records the identity</td><td>Identity, access, databases</td></tr>
+  <tr><td><code>agentdb tables [db]</code></td><td>Lists objects with kind, rows, size, last updated</td><td>Table</td></tr>
+  <tr><td><code>agentdb describe db.table</code></td><td>Columns, keys, row count, last load, sample values</td><td>Table + 5 sample rows</td></tr>
+  <tr><td><code>agentdb sql "…"</code></td><td>Runs a statement through the prototype's SQL engine: CREATE TABLE / VIEW / MATERIALIZED VIEW, ALTER, DROP, INSERT, SELECT. Records it in Queries under the signed-in identity</td><td>Rows, or a confirmation</td></tr>
+  <tr><td><code>agentdb loads [--table t] [--since 5m]</code></td><td>Load records</td><td>Time, table, rows, bytes, status, error</td></tr>
+  <tr><td><code>agentdb load-recipe db --tables a,b --way curl|shell|python|seatunnel|flinkcdc|kafka|datax</code></td><td>The filled-in config for that way of loading, for the chosen key, database and tables, plus the form values (load host and port, SQL port, database, username, tables). Exactly what Connect › Ingestion shows. Tables must exist first</td><td>The config block</td></tr>
+  <tr><td><code>agentdb queries [--status failed] [--since 1h] [--user u] [--table t]</code></td><td>The query log</td><td>Time, identity, statement, duration, data read, error</td></tr>
+  <tr><td><code>agentdb usage --days 7 [--unused]</code></td><td>Per-table usage from the query log</td><td>Table, queries, by whom, last queried, data read</td></tr>
+  <tr><td><code>agentdb keys create NAME --access query|query-and-load</code></td><td>Creates a key, prints the secret once</td><td>Secret</td></tr>
+  <tr><td><code>agentdb keys grant NAME --read db.table</code></td><td>Lets a key read a table it was refused on</td><td>Confirmation</td></tr>
+  <tr><td><code>agentdb connect-info [--for mysql|jdbc|mcp]</code></td><td>Connection string, endpoint and ports, MCP config. The same facts Connect › Consumption and Agents show</td><td>The string or config</td></tr>
+  <tr><td><code>agentdb members list|invite|role|remove EMAIL</code></td><td>People and roles, with an admin key. The invited person still signs in through the console</td><td>Confirmation</td></tr>
+  <tr><td><code>agentdb cancel QUERY_ID</code></td><td>Stops a running query</td><td>Confirmation</td></tr>
+  <tr><td><code>agentdb reset</code></td><td>Returns the state file to the starting state</td><td>Done</td></tr>
+  <tr><td><code>seatunnel-demo run job.conf [--table t]</code></td><td>ETL stand-in. Reads the job file Claude wrote and pushes rows into the state file as Stream Loads, a few seconds each, with the refunds failure planted until the transform is present</td><td>Job id, tables, progress</td></tr>
+  <tr><td><code>agentdb demo churn-task</code></td><td>Writes the forty churn queries under one task id, two failing</td><td>Task summary</td></tr>
+</table>
+<div class="note decided">The rule. The console and Claude are two clients of the same capabilities. If the console can do it, the command can. If the command did it, the console shows it under the agent's name. What stays in the console is policy, not capability: account birth, a secret shown once, other people's sign-in and approvals, plan and security settings.</div>
+<div class="note warnbox">Destructive statements. <code>agentdb sql</code> refuses DROP and TRUNCATE unless <code>--confirm</code> is passed, and the note tells Claude to ask you first. Not in the story, but it is there if someone asks "what stops it dropping a table".</div>
+
+<h2 id="console">What the console needs</h2>
+<table>
+  <tr><th>Change</th><th>For</th><th>When</th></tr>
+  <tr><td>Live mode switch in the gear menu. Reads the state file every second instead of the built-in sample</td><td>Every beat</td><td><span class="tag must">today</span></td></tr>
+  <tr><td>Nothing else. Sign-in, API keys, Connect › Agents, Data, object page, Queries with filters and detail all exist in v5</td><td></td><td></td></tr>
+  <tr><td>First-run page that ends in "paste this into Claude Code" and flips to Connected</td><td>Beat 1</td><td><span class="tag later">later, MCP version</span></td></tr>
+  <tr><td>Task grouping in Queries: one row per task, expands to its queries</td><td>Beat 6</td><td><span class="tag should">next</span></td></tr>
+  <tr><td>Per-table usage on Data and the object page: last queried, queried by, count this week</td><td>Beat 8</td><td><span class="tag should">next</span></td></tr>
+</table>
+
+<h2 id="gaps">What v5 lacks as a product, and where it goes</h2>
+<p>Taking v5 as shipped, with Doris, a server and MCP behind it. The human console is complete for December's jobs. These are the agent-first additions, by the page they land on. The ones marked v6 are the next prototype.</p>
+<table>
+  <tr><th>Missing</th><th>Where</th><th>Needed by</th><th>When</th></tr>
+  <tr><td>Key in the agent config instead of username and password</td><td>Connect › Agents</td><td>Beat 1</td><td><span class="tag must">v5 fix</span></td></tr>
+  <tr><td>Connected agents: which clients are in, last seen</td><td>Connect › Agents</td><td>Beat 2</td><td><span class="tag should">v6</span></td></tr>
+  <tr><td>What a key lets an agent do: the tool list per scope</td><td>Connect › Agents, API keys</td><td>Beat 1, trust before pasting</td><td><span class="tag should">v6</span></td></tr>
+  <tr><td>The envelope: read on which tables, budget per task, rate limit, concurrency, statement timeout, may it drop</td><td>API keys create and edit, a key page</td><td>Beat 7. The sample already refuses at ten a second; nothing sets that number</td><td><span class="tag should">v6</span></td></tr>
+  <tr><td>Task grouping: one row per agent task with queries, data read, failures, cost</td><td>Queries</td><td>Beat 6</td><td><span class="tag should">v6</span></td></tr>
+  <tr><td>Per-table usage: last queried, by whom, count this week, unused</td><td>Data list and object page</td><td>Beat 8</td><td><span class="tag should">v6</span></td></tr>
+  <tr><td>Table and column descriptions, editable, returned to agents by describe</td><td>Object page Details and Columns</td><td>Every agent's first query</td><td><span class="tag should">v6</span></td></tr>
+  <tr><td>Query plan and failure stage on a query; link from a failed query to the table's last load</td><td>Queries detail</td><td>Beat 7</td><td><span class="tag later">later</span></td></tr>
+  <tr><td>Admin actions in the log: key created, grant, member removed, by whom</td><td>Queries as events, or an Audit tab</td><td>"What did Claude change"</td><td><span class="tag later">later</span></td></tr>
+  <tr><td>Checks: a saved query, a schedule, a destination, last result</td><td>New thin page, or not at all</td><td>Beat 8. Vivek's call: the database offers it, or primitives only</td><td><span class="tag later">decide</span></td></tr>
+  <tr><td>The empty state built for agents and humans</td><td>Data, first visit</td><td>Start</td><td><span class="tag should">v6, first</span></td></tr>
+</table>
+<p>Untouched: SQL, Members, Ingestion. Those are done.</p>
+
+<h2 id="build">Build plan for today</h2>
+<table>
+  <tr><th>#</th><th>Milestone</th><th>You get</th><th>Est.</th></tr>
+  <tr><td>1</td><td>State file + Live mode in v6 (a copy of v5; v5 untouched)</td><td>Edit the file by hand, the browser follows</td><td>1 h</td></tr>
+  <tr><td>2</td><td><code>agentdb</code> command, all subcommands above, reusing the SQL engine</td><td>Type commands yourself, console follows</td><td>2 h</td></tr>
+  <tr><td>3</td><td><code>seatunnel-demo</code> + <code>agentdb demo churn-task</code> + <code>reset</code></td><td>Beats 4, 6 reproducible</td><td>1 h</td></tr>
+  <tr><td>4</td><td>Demo folder: CLAUDE.md note, prompts.md, checks/</td><td>Start <code>claude</code> and run the story</td><td>30 min</td></tr>
+  <tr><td>5</td><td>Three rehearsals, fix weak beats</td><td>A clean run</td><td>1 h</td></tr>
+  <tr><td>6</td><td>Record. Two takes</td><td>The video</td><td>30 min</td></tr>
+</table>
+<p>Possible today if the story is agreed this morning. Rehearsal is where it slips: Claude may phrase a step differently or add a command. The note and the prompts file are how we keep it on rails.</p>
+
+<h2 id="record">Recording</h2>
+<ul>
+  <li>Browser left at about 60% width, terminal right at about 40%. Terminal font 16 to 18 px. Light theme in both, or dark terminal and light console, your call.</li>
+  <li>Before each take: <code>agentdb reset</code>, reload the browser on Data, signed in, Live on. Start <code>claude</code> fresh in <code>~/agentdb-demo</code>.</li>
+  <li>Prompts open in a window off screen or on paper. Type the same words every take.</li>
+  <li>Screen recording of the full screen with QuickTime. Record two clean takes, keep the better one. The second take is the parachute.</li>
+  <li>Say the beat messages out loud, or cut them in later as captions.</li>
+</ul>
+
+<h2 id="decisions">Your decisions</h2>
+<ol>
+  <li><b>The story as written,</b> or cut 4b, 5b and the weekly check to land under seven minutes.</li>
+  <li><b>Which way of loading to show.</b> SeaTunnel, one batch job for all three tables, or Flink CDC, continuous sync from Postgres. Same beat either way.</li>
+  <li><b>The prompts.</b> Mine are placeholders. Yours go into prompts.md and Claude sees only those.</li>
+  <li><b>The planted failures.</b> refunds 'n/a' on load, charges refused, one rate-limit refusal. Swap any of them.</li>
+  <li><b>The name in the terminal.</b> <code>agentdb</code> as the command name, or the product's final name.</li>
+  <li><b>Record today</b> with the command version, MCP later, or wait for MCP.</li>
+</ol>
+
+<h2 id="honesty">What is real, what is a stand-in</h2>
+<div class="grid2">
+  <div class="card"><h4>Real</h4><ul><li>Claude Code, live, reasoning over real command output</li><li>The console, the v5 prototype</li><li>The DDL and SELECTs, run by the prototype's SQL engine</li><li>The evidence texts, in the shape Doris produces them</li></ul></div>
+  <div class="card"><h4>Stand-in</h4><ul><li>The database itself is a state file, not Doris</li><li><code>seatunnel-demo</code> is not SeaTunnel. It reads the real job file and fakes the loads</li><li>The churn agent is a script, not another model</li><li>The command replaces the MCP connection the product will ship</li></ul></div>
+</div>
+<p>If anyone asks, say so. The claim is about the workflow and the evidence, and both are shown honestly.</p>
+
+</div>
+</body>
+</html>
