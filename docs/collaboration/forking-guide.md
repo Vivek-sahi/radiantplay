@@ -150,17 +150,18 @@ src/prototypes/
 
 ## Contributing Back
 
-If you create something useful, consider contributing:
+If you create something useful, consider contributing. The easiest way is `/rp-contribute` in Claude: it asks what you're sharing, decides where each piece belongs (a Radiant or Spotter component, shared code, or a sample prototype), splits the work into PRs against `staging`, and runs the checks. The steps below are the manual version.
+
+Two rules either way: open PRs against `staging`, never `main`, and don't add entries to `registry-mine.ts` (every fork edits that file; samples go in `registry-core.ts`).
 
 ### 1. Create a Clean Branch
 
 ```bash
 # Start from your updated main
-git checkout main
-git pull upstream main
+git fetch upstream
 
-# Create a contribution branch
-git checkout -b contribution/my-feature
+# Create a contribution branch from upstream staging
+git checkout -b feat/my-feature upstream/staging
 ```
 
 ### 2. Make Your Changes
@@ -172,10 +173,10 @@ git checkout -b contribution/my-feature
 ### 3. Push and Create PR
 
 ```bash
-git push origin contribution/my-feature
+git push origin feat/my-feature
 ```
 
-Then create a Pull Request on galaxy from your fork to the upstream repository.
+Then create a Pull Request on galaxy from your fork to the upstream repository, with `staging` as the base.
 
 ### PR Guidelines
 

@@ -28,6 +28,14 @@ export interface VersionEntry {
  */
 export const versionHistory: VersionEntry[] = [
   {
+    version: '26.10.4i',
+    date: '2026-10-27',
+    type: 'patch',
+    changes: [
+      { type: 'added', group: 'Tooling', component: '/rp-contribute', description: 'Asks what you are sharing, decides where each piece belongs (Radiant, Spotter, shared code or a sample), splits it into PRs against staging, runs the checks and writes the PR description. Asks before every commit and push' },
+    ],
+  },
+  {
     version: '26.10.4h',
     date: '2026-10-27',
     type: 'patch',
