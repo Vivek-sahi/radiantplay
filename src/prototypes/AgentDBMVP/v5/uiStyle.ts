@@ -160,7 +160,8 @@ export const loadStyle = (): UiStyle => {
   } catch {
     /* no saved style */
   }
-  return UI_STYLES[0];
+  // Precision instrument is v5's default style (Vivek, 27 Oct); Radiant stays one pick away.
+  return UI_STYLES.find((u) => u.id === 'instrument') ?? UI_STYLES[0];
 };
 export const saveStyle = (s: UiStyle) => {
   try {

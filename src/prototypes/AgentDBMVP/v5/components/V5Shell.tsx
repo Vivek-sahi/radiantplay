@@ -3,7 +3,6 @@ import { ActionMenu, ActionMenuItem, ActionMenuItemGroup, Avatar, Button, Icon, 
 import type { IconName } from '@/components';
 import { AppSidebar } from '@/components/AppSidebar';
 import type { AppSidebarProps } from '@/components/AppSidebar';
-import { systemColors } from '@tokens/colors';
 import { ROLE_OPTIONS, Variant, VARIANT_OPTIONS } from '../../variant';
 import { AppState, Role, V3Page } from '../types';
 import { CodeIcon } from './CodeIcon';
@@ -34,30 +33,29 @@ const NAV: AppSidebarProps['categories'] = {
 
 /** Navigation option 2 (Vivek, 26 Oct): icons only; the menu button opens the names as an overlay. */
 export type NavStyle = 'labels' | 'icons';
-export const NAV_STYLE_OPTIONS: { id: NavStyle; label: string }[] = [
-  { id: 'labels', label: '1 · Names (today)' },
-  { id: 'icons', label: '2 · Icons' },
-];
 // Radiant's set has no code, plug or log icon: these are its nearest (contact sheet checked 26 Oct).
 const NAV_ICON: Record<string, IconName | React.ReactNode> = { data: <HomeIcon />, sql: <CodeIcon />, activity: 'replay-search', connect: 'copy-link', keys: 'key', access: 'community' };
 
 const TABS: AppSidebarProps['tabs'] = [{ id: 'agentdb', label: 'AgentDB', headerTitle: 'AgentDB' }];
 
-/** AppSidebar ships in the dark colourway; the product's sidebar is light. The same component, the light system palette. */
+/**
+ * AppSidebar ships in the dark colourway; the product's sidebar is light. The same component, the light
+ * system palette, read through the CSS variables so a UI style restyles it too (Vivek, 27 Oct).
+ */
 const LIGHT = {
-  '--as-bg': systemColors.light['background-sunken'],
-  '--as-panel-bg': systemColors.light['background-sunken'],
-  '--as-border': systemColors.light['border-divider'],
-  '--as-panel-selected': systemColors.light['background-subtle'],
-  '--as-text': systemColors.light['content-primary'],
-  '--as-muted': systemColors.light['content-secondary'],
-  '--as-subtle': systemColors.light['content-secondary'],
-  '--as-icon': systemColors.light['content-tertiary'],
-  '--as-active': systemColors.light['content-brand'],
-  '--as-active-bg': systemColors.light['background-information'],
-  '--as-hover-bg': systemColors.light['background-ghost-hover'],
-  '--as-highlight-bg': systemColors.light['background-information'],
-  '--as-focus': systemColors.light['border-focus'],
+  '--as-bg': 'var(--rd-sys-color-background-sunken)',
+  '--as-panel-bg': 'var(--rd-sys-color-background-sunken)',
+  '--as-border': 'var(--rd-sys-color-border-divider)',
+  '--as-panel-selected': 'var(--rd-sys-color-background-subtle)',
+  '--as-text': 'var(--rd-sys-color-content-primary)',
+  '--as-muted': 'var(--rd-sys-color-content-secondary)',
+  '--as-subtle': 'var(--rd-sys-color-content-secondary)',
+  '--as-icon': 'var(--rd-sys-color-content-tertiary)',
+  '--as-active': 'var(--rd-sys-color-content-brand)',
+  '--as-active-bg': 'var(--rd-sys-color-background-ghost-highlight)',
+  '--as-hover-bg': 'var(--rd-sys-color-background-ghost-hover)',
+  '--as-highlight-bg': 'var(--rd-sys-color-background-ghost-highlight)',
+  '--as-focus': 'var(--rd-sys-color-border-focus)',
 } as React.CSSProperties;
 
 const STATE_OPTIONS = [
@@ -194,9 +192,7 @@ export const ProtoMenu: React.FC<{
   onAppStateChange: (s: AppState) => void;
   role: Role;
   onRoleChange: (r: Role) => void;
-  navStyle: NavStyle;
-  onNavStyleChange: (n: NavStyle) => void;
-}> = ({ variant, onVariantChange, appState, onAppStateChange, role, onRoleChange, navStyle, onNavStyleChange }) => {
+}> = ({ variant, onVariantChange, appState, onAppStateChange, role, onRoleChange }) => {
   const [menuKey, setMenuKey] = useState(0);
   const pick = (fn: () => void) => () => {
     fn();
@@ -218,11 +214,6 @@ export const ProtoMenu: React.FC<{
         <ActionMenuItemGroup label="Version">
           {VARIANT_OPTIONS.map((o) => (
             <ActionMenuItem key={o.id} label={o.label} icon={mark(variant === o.id)} onClick={pick(() => onVariantChange(o.id as Variant))} />
-          ))}
-        </ActionMenuItemGroup>
-        <ActionMenuItemGroup label="Navigation">
-          {NAV_STYLE_OPTIONS.map((o) => (
-            <ActionMenuItem key={o.id} label={o.label} icon={mark(navStyle === o.id)} onClick={pick(() => onNavStyleChange(o.id))} />
           ))}
         </ActionMenuItemGroup>
         <ActionMenuItemGroup label="Workspace">

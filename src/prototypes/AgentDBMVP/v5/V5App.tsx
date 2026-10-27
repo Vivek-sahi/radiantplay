@@ -6,7 +6,10 @@ import { FloatingToast } from '../components/primitives';
 import { AppState, Column, DbObject, Identity, IdentityType, Role, SqlWorkspace, V3Page } from './types';
 import { Sample, sampleFor, sqlWorkspaceFor } from './data';
 import { addTab, openPreview } from './sqlWorkspace';
-import { applyStyle, loadStyle, saveStyle, UiStyle } from './uiStyle';
+import { applyStyle, loadStyle, saveStyle, UI_STYLES, UiStyle } from './uiStyle';
+
+/** Show the UI style brush and generator. Off: v5 uses Precision instrument (Vivek, 27 Oct). */
+const STYLE_PICKER = false;
 import { StylePanel } from './components/StylePanel';
 import { LoginPage } from './components/LoginPage';
 import { NavStyle, ProtoMenu, V5Shell } from './components/V5Shell';
@@ -72,26 +75,14 @@ export const V5App: React.FC<{ variant: Variant; onVariantChange: (v: Variant) =
     setPage('connect');
   };
   const [toast, setToast] = useState<string | null>(null);
-  // The UI style restyles Radiant while v5 is open, and is remembered (Vivek, 26 Oct).
-  const [uiStyle, setUiStyle] = useState<UiStyle>(loadStyle);
-  // Navigation option 1 (names, today) or 2 (icons, overlay names): Vivek, 26 Oct. Remembered.
-  const [navStyle, setNavStyle] = useState<NavStyle>(() => {
-    try {
-      return (localStorage.getItem('agentdb-v5-nav') as NavStyle) || 'labels';
-    } catch {
-      return 'labels';
-    }
-  });
-  const changeNav = (n: NavStyle) => {
-    setNavStyle(n);
-    try {
-      localStorage.setItem('agentdb-v5-nav', n);
-    } catch {
-      /* storage unavailable */
-    }
-  };
+  // The UI style restyles Radiant while v5 is open (Vivek, 26 Oct). Locked to Precision instrument and the
+  // brush button hidden (Vivek, 27 Oct); STYLE_PICKER brings the generator back.
+  const [uiStyle, setUiStyle] = useState<UiStyle>(() => (STYLE_PICKER ? loadStyle() : UI_STYLES.find((u) => u.id === 'instrument')!));
+  // Icons only (Vivek, 27 Oct): the gear's Navigation setting is gone. V5Shell keeps option 1 ('labels').
+  const navStyle: NavStyle = 'icons';
+
   useEffect(() => {
-    saveStyle(uiStyle);
+    if (STYLE_PICKER) saveStyle(uiStyle);
     return applyStyle(uiStyle);
   }, [uiStyle]);
 
@@ -134,8 +125,8 @@ export const V5App: React.FC<{ variant: Variant; onVariantChange: (v: Variant) =
 
   const controls = (
     <>
-      <StylePanel value={uiStyle} onChange={setUiStyle} />
-      <ProtoMenu variant={variant} onVariantChange={onVariantChange} appState={appState} onAppStateChange={changeState} role={role} onRoleChange={setRole} navStyle={navStyle} onNavStyleChange={changeNav} />
+      {STYLE_PICKER && <StylePanel value={uiStyle} onChange={setUiStyle} />}
+      <ProtoMenu variant={variant} onVariantChange={onVariantChange} appState={appState} onAppStateChange={changeState} role={role} onRoleChange={setRole} />
     </>
   );
 

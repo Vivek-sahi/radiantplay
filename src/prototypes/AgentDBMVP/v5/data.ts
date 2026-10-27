@@ -253,10 +253,7 @@ export const when = (s: string): string => {
 /** Times in the log stay absolute, because a log is a timeline. "Today, 10:43" reads 10:43; yesterday keeps its day. */
 export const logTime = (s: string): string => s.replace(/^Today, /, '');
 
-/**
- * The SQL page's queries (26 Oct). Empty workspace = first visit: one empty query. Filled = a
- * returning engineer: a few tabs left open, and a Recent list of what they ran before.
- */
+/** The SQL page's queries (26 Oct): a Recent list of what a returning engineer ran before. */
 const q = (id: string, sql: string, updated: string, age: number, extra: Partial<SqlQuery> = {}): SqlQuery => ({ id, sql, updated, age, status: 'ok', ...extra });
 const FILLED_QUERIES: SqlQuery[] = [
   q('q_loaded', 'SELECT count(*), max(ts)\nFROM acme_retail.app_events\nWHERE ts >= CURDATE();', 'Today, 09:40', 65, { pinned: true, name: 'Loaded today: app_events' }),
@@ -267,14 +264,15 @@ const FILLED_QUERIES: SqlQuery[] = [
   q('q_sessions', 'SELECT count(*)\nFROM acme_marketing.web_sessions;', '22 Oct 2026', 5760),
   q('q_orders_ddl', 'SHOW TABLES;', '21 Oct 2026', 7200, { status: undefined }),
 ];
-const FILLED_WORKSPACE: SqlWorkspace = { queries: FILLED_QUERIES, open: ['q_tableau', 'q_clicks', 'q_loaded'], active: 'q_tableau', preview: null };
-
 export const newQuery = (): SqlQuery => ({ id: `q_${Date.now()}_${Math.round(Math.random() * 1e4)}`, sql: '', updated: 'Just now', age: 0 });
 
+/**
+ * SQL opens on one empty query in both workspaces, so the demo starts with create-table (Vivek, 27 Oct).
+ * The filled workspace keeps its history in Recent.
+ */
 export const sqlWorkspaceFor = (state: AppState): SqlWorkspace => {
-  if (state === 'filled') return FILLED_WORKSPACE;
   const first = newQuery();
-  return { queries: [first], open: [first.id], active: first.id, preview: null };
+  return { queries: state === 'filled' ? [first, ...FILLED_QUERIES] : [first], open: [first.id], active: first.id, preview: null };
 };
 
 /** A column's type as the database writes it (catalog shows types as text, Vivek 26 Oct). */

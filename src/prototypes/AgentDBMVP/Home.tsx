@@ -113,6 +113,7 @@ const DECISIONS: { date: string; decision: string; source?: string }[] = [
 ];
 
 const CHANGES: { date: string; version: string; what: string }[] = [
+  { date: '27 Oct', version: 'v5', what: 'Precision instrument is the look (UI style picker hidden). Icon navigation only. SQL opens on one empty query.' },
   { date: '27 Oct', version: 'v5', what: 'Connect: Ingestion, Consumption, Agents (Apps removed), Ingestion first. Ingestion loads one table or many: key and tables dropdowns, ready settings for curl, shell, Python, SeaTunnel, Flink CDC, Kafka Connect and DataX, values for form-based tools. Table pages and create-table results link to it (Load instructions ↗). CREATE TABLE uses the only database when there is one.' },
   { date: '27 Oct', version: 'v5', what: 'Built from the team review: Overview (was Data) as one list of every table with database filter and search; Members (was Access), people only; service accounts merged into API keys with Query or Query and load access; the SQL workbench (catalog and Recent, query tabs that save as you type, code editor with autocomplete, results, agent panel); thin metric tiles; UI styles and the theme generator (brush button); navigation option 2, icons only.' },
   { date: '26 Oct', version: 'All', what: 'Shared with the team for review.' },
