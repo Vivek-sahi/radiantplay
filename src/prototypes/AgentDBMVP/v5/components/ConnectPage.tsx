@@ -13,42 +13,6 @@ const MCP_URL = `https://${ENDPOINT_HOST}/mcp`;
 /** Named alphabetically. ThoughtSpot is one of them. */
 const BI_TOOLS = ['DBeaver', 'Looker', 'Power BI', 'Tableau', 'ThoughtSpot'];
 
-const LANGS = [
-  { id: 'python', label: 'Python' },
-  { id: 'node', label: 'Node.js' },
-  { id: 'java', label: 'Java' },
-];
-
-const snippet = (lang: string, user: string, database: string): string => {
-  if (lang === 'node')
-    return `import mysql from "mysql2/promise";
-
-const conn = await mysql.createConnection({
-  host: "${ENDPOINT_HOST}",
-  port: ${SQL_PORT},
-  user: "${user}",
-  password: process.env.AGENTDB_PASSWORD,
-  database: "${database}",
-});
-const [rows] = await conn.query("SELECT region, SUM(amount) FROM orders GROUP BY region");`;
-  if (lang === 'java')
-    return `String url = "jdbc:mysql://${ENDPOINT_HOST}:${SQL_PORT}/${database}";
-Connection conn = DriverManager.getConnection(url, "${user}", System.getenv("AGENTDB_PASSWORD"));
-ResultSet rs = conn.createStatement().executeQuery("SELECT region, SUM(amount) FROM orders GROUP BY region");`;
-  return `import os
-import mysql.connector
-
-conn = mysql.connector.connect(
-    host="${ENDPOINT_HOST}",
-    port=${SQL_PORT},
-    user="${user}",
-    password=os.environ["AGENTDB_PASSWORD"],
-    database="${database}",
-)
-cur = conn.cursor()
-cur.execute("SELECT region, SUM(amount) FROM orders GROUP BY region")`;
-};
-
 const mcpConfig = (user: string): string => `{
   "mcpServers": {
     "agentdb": {
@@ -70,18 +34,20 @@ export const ConnectPage: React.FC<{
   identities: Identity[];
   onNavigate: (p: V3Page) => void;
   toast: (m: string) => void;
-}> = ({ databases, objects, identities, onNavigate, toast }) => {
-  const [method, setMethod] = useState('bi');
+  /** Arriving from a table or a create-table result: Ingestion opens with that table ticked (Vivek, 27 Oct). */
+  ingestFor?: { database: string; table: string } | null;
+  /** The tab to open on (the BI key flow opens Consumption). */
+  initialTab?: string;
+}> = ({ databases, objects, identities, onNavigate, toast, ingestFor, initialTab }) => {
+  // Ingestion first, and open first (Vivek, 27 Oct).
+  const [method, setMethod] = useState(initialTab ?? 'load');
   const [account, setAccount] = useState('');
-  const [database, setDatabase] = useState(databases[0]?.id ?? '');
-  const [table, setTable] = useState('');
-  const [lang, setLang] = useState('python');
+  const [database, setDatabase] = useState(ingestFor?.database ?? databases[0]?.id ?? '');
 
   // Any API key can query: Query keys and Query and load keys alike (Vivek, 26 Oct).
   const accounts = identities.filter((i) => !i.revoked);
   const user = accounts.some((a) => a.name === account) ? account : accounts[0]?.name ?? '<api-key>';
   const tables = objects.filter((o) => o.database === database && o.kind === 'table');
-  const tableName = tables.some((t) => t.name === table) ? table : tables[0]?.name ?? '';
   const copied = (l: string) => toast(`${l} copied`);
   const copy = (text: string, what: string) => {
     navigator.clipboard?.writeText(text).catch(() => undefined);
@@ -115,10 +81,10 @@ export const ConnectPage: React.FC<{
       <PageHeader title="Connect" />
       <Tabs
         tabs={[
-          { id: 'bi', label: 'BI tools' },
-          { id: 'apps', label: 'Apps' },
+          // Named for the job, in the order data flows (Vivek, 27 Oct): ingestion, consumption, agents. Apps removed.
+          { id: 'load', label: 'Ingestion' },
+          { id: 'bi', label: 'Consumption' },
           { id: 'agents', label: 'Agents' },
-          { id: 'load', label: 'Load data' },
         ]}
         activeTab={method}
         onTabChange={setMethod}
@@ -135,27 +101,6 @@ export const ConnectPage: React.FC<{
           <Typography variant="footnote" color="gray-light" noMargin>
             Any MySQL-compatible tool: {BI_TOOLS.join(', ')}.
           </Typography>
-        </Vertical>
-      )}
-
-      {method === 'apps' && (
-        <Vertical gap={spacing.E}>
-          <div className={styles.twoUp}>
-            {accountPicker}
-            {databasePicker}
-          </div>
-          <Vertical gap={spacing.B}>
-            <Horizontal justify="space-between" align="center" className={styles.twoUp}>
-              <div className={styles.runIn}>
-                <Select size="small" options={LANGS} value={lang} onChange={(v) => setLang(v)} fullWidth aria-label="Language" />
-              </div>
-              <Button variant="primary" icon="copy" onClick={() => copy(snippet(lang, user, database), 'Sample')}>
-                Copy sample
-              </Button>
-            </Horizontal>
-            <CodeBlock>{snippet(lang, user, database)}</CodeBlock>
-          </Vertical>
-          {facts}
         </Vertical>
       )}
 
@@ -179,22 +124,19 @@ export const ConnectPage: React.FC<{
 
       {method === 'load' && (
         <Vertical gap={spacing.E}>
-          <div className={styles.twoUp}>
-            {databasePicker}
-            {tables.length ? (
-              <Select label="Table" options={tables.map((t) => ({ id: t.name, label: t.name }))} value={tableName} onChange={(v) => setTable(v)} fullWidth />
-            ) : (
-              <Horizontal gap={spacing.C} align="center" wrap>
-                <Typography variant="body-normal" color="gray-light" noMargin>
-                  No tables in {database} yet.
-                </Typography>
-                <Button variant="secondary" size="small" onClick={() => onNavigate('sql')}>
-                  Open SQL
-                </Button>
-              </Horizontal>
-            )}
-          </div>
-          {tableName && <LoadInstructions database={database} table={tableName} identities={identities} toast={toast} onNeedKey={() => onNavigate('keys')} />}
+          <div className={styles.twoUp}>{databasePicker}</div>
+          {tables.length ? (
+            <LoadInstructions key={database} database={database} tables={tables.map((t) => t.name)} initial={ingestFor?.database === database ? [ingestFor.table] : undefined} identities={identities} toast={toast} onNeedKey={() => onNavigate('keys')} />
+          ) : (
+            <Horizontal gap={spacing.C} align="center" wrap>
+              <Typography variant="body-normal" color="gray-light" noMargin>
+                No tables in {database} yet. Tables come first: loads go into a table that exists.
+              </Typography>
+              <Button variant="secondary" size="small" onClick={() => onNavigate('sql')}>
+                Open SQL
+              </Button>
+            </Horizontal>
+          )}
         </Vertical>
       )}
     </Vertical>

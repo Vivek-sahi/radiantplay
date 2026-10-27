@@ -1,11 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ActionMenu, ActionMenuItem, Button, Checkbox, Horizontal, Icon, Link, Modal, ModalFooter, Table, Tabs, Typography, Vertical } from '@/components';
+import { ActionMenu, ActionMenuItem, Button, Checkbox, Horizontal, Icon, Link, Table, Tabs, Typography, Vertical } from '@/components';
 import type { EditorView } from '@codemirror/view';
 import { spacing } from '@tokens/spacing';
 import { Column, Database, DbObject, Identity, Role, SqlWorkspace } from '../types';
 import { executeSql, formatSql, keywordCase, lineAt, LIMIT, splitStatements, SqlResult } from '../sqlEngine';
 import { addTab, closeTab, deleteQuery, editQuery, openPreview, openQuery, recordRun, titleOf, togglePin } from '../sqlWorkspace';
-import { LoadInstructions } from './LoadInstructions';
 import { SqlCatalog } from './SqlCatalog';
 import { SqlRecent } from './SqlRecent';
 import { AgentPanel } from './AgentPanel';
@@ -38,6 +37,7 @@ export const SqlPage: React.FC<{
   onTruncate: (id: string) => void;
   identities: Identity[];
   onOpenObject: (id: string) => void;
+  onOpenIngestion: (database: string, table: string) => void;
   toast: (m: string) => void;
 }> = (props) => {
   const { databases, objects, workspace: ws, onWorkspace, toast } = props;
@@ -47,7 +47,6 @@ export const SqlPage: React.FC<{
   const [limit, setLimit] = useState(true);
   const [results, setResults] = useState<Record<string, SqlResult>>({});
   const [running, setRunning] = useState<string | null>(null);
-  const [loadFor, setLoadFor] = useState<{ id: string; database: string; name: string } | null>(null);
   const [menuKey, setMenuKey] = useState(0);
   const [agentOpen, setAgentOpen] = useState(() => {
     try {
@@ -424,7 +423,7 @@ export const SqlPage: React.FC<{
                       <Link href="#" onClick={(e) => { e.preventDefault(); props.onOpenObject(result.created!.id); }}>
                         Open {result.created.name}
                       </Link>
-                      <Link href="#" onClick={(e) => { e.preventDefault(); setLoadFor(result.created!); }}>
+                      <Link href="#" onClick={(e) => { e.preventDefault(); props.onOpenIngestion(result.created!.database, result.created!.name); }}>
                         Load instructions
                       </Link>
                     </Horizontal>
@@ -459,25 +458,6 @@ export const SqlPage: React.FC<{
       {/* Right: the agent, open by default. */}
       {agentOpen && <AgentPanel toast={toast} onCollapse={() => toggleAgent(false)} />}
 
-      {loadFor && (
-        <Modal
-          isOpen
-          onClose={() => setLoadFor(null)}
-          title={`Load instructions for ${loadFor.name}`}
-          size="large"
-          footer={
-            <ModalFooter
-              primaryAction={
-                <Button variant="primary" onClick={() => setLoadFor(null)}>
-                  Done
-                </Button>
-              }
-            />
-          }
-        >
-          <LoadInstructions database={loadFor.database} table={loadFor.name} identities={props.identities} toast={toast} />
-        </Modal>
-      )}
     </div>
   );
 };

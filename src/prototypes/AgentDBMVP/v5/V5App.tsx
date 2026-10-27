@@ -24,7 +24,7 @@ const firstDatabase = (s: Sample): string => (s.databases[0] ? `db:${s.databases
  * The seven key flows of the happy journey (Vivek, 19 Oct), each opened from the project home at
  * its first screen: /playground/AgentDBMVP?flow=<id>.
  */
-type Start = { appState: AppState; signedIn: boolean; page: V3Page; selection?: string };
+type Start = { appState: AppState; signedIn: boolean; page: V3Page; selection?: string; connectTab?: string };
 const flowStart = (flow: string | null): Start => {
   const base: Start = { appState: 'filled', signedIn: true, page: 'data' };
   switch (flow) {
@@ -39,7 +39,7 @@ const flowStart = (flow: string | null): Start => {
     case 'etl':
       return { ...base, appState: 'empty', page: 'keys' };
     case 'bi':
-      return { ...base, page: 'connect' };
+      return { ...base, page: 'connect', connectTab: 'bi' };
     case 'invite':
       return { ...base, page: 'access' };
     default:
@@ -65,6 +65,12 @@ export const V5App: React.FC<{ variant: Variant; onVariantChange: (v: Variant) =
   const [sqlWs, setSqlWs] = useState<SqlWorkspace>(() => sqlWorkspaceFor(start.appState));
   // ▶ in the catalog opens a query that runs at once.
   const [runOnOpen, setRunOnOpen] = useState<string | null>(null);
+  // A table's Load data opens Connect › Ingestion with it ticked.
+  const [ingestFor, setIngestFor] = useState<{ database: string; table: string } | null>(null);
+  const openIngestion = (database: string, table: string) => {
+    setIngestFor({ database, table });
+    setPage('connect');
+  };
   const [toast, setToast] = useState<string | null>(null);
   // The UI style restyles Radiant while v5 is open, and is remembered (Vivek, 26 Oct).
   const [uiStyle, setUiStyle] = useState<UiStyle>(loadStyle);
@@ -139,7 +145,7 @@ export const V5App: React.FC<{ variant: Variant; onVariantChange: (v: Variant) =
 
   return (
     <RoleContext.Provider value={role}>
-      <V5Shell page={page} onNavigate={setPage} me={me} onSignOut={() => setSignedIn(false)} onDocs={() => setToast('Opens the documentation')} controls={controls} navStyle={navStyle}>
+      <V5Shell page={page} onNavigate={(p) => { setIngestFor(null); setPage(p); }} me={me} onSignOut={() => setSignedIn(false)} onDocs={() => setToast('Opens the documentation')} controls={controls} navStyle={navStyle}>
         {page === 'data' && (
           <DataPage
             databases={data.databases}
@@ -161,6 +167,7 @@ export const V5App: React.FC<{ variant: Variant; onVariantChange: (v: Variant) =
             onDeleteObject={deleteObject}
             toast={setToast}
             onNavigate={setPage}
+            onOpenIngestion={openIngestion}
           />
         )}
         {page === 'sql' && (
@@ -182,6 +189,7 @@ export const V5App: React.FC<{ variant: Variant; onVariantChange: (v: Variant) =
               setSelection(`obj:${id}`);
               setPage('data');
             }}
+            onOpenIngestion={openIngestion}
             toast={setToast}
           />
         )}
@@ -204,7 +212,7 @@ export const V5App: React.FC<{ variant: Variant; onVariantChange: (v: Variant) =
             onOpenSql={openSql}
           />
         )}
-        {page === 'connect' && <ConnectPage databases={data.databases} objects={data.objects} identities={data.identities} onNavigate={setPage} toast={setToast} />}
+        {page === 'connect' && <ConnectPage key={ingestFor ? `${ingestFor.database}.${ingestFor.table}` : 'connect'} databases={data.databases} objects={data.objects} identities={data.identities} onNavigate={(p) => { setIngestFor(null); setPage(p); }} toast={setToast} ingestFor={ingestFor} initialTab={ingestFor ? 'load' : start.connectTab} />}
         {page === 'keys' && (
           <KeysPage
             keys={data.identities}

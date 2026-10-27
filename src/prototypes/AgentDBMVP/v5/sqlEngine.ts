@@ -63,8 +63,9 @@ export const executeSql = (input: string, ctx: SqlContext): SqlResult => {
     const p = parseSql(s);
     if (!p.tableName) return fail('Could not read the table name.');
     if (p.errors.length) return fail(p.errors.join('. ') + '.');
-    const db = p.database ?? database;
-    if (!db) return fail(`Pick a database in the catalog, or write it in the name: ${databases[0]?.id ?? 'db'}.${p.tableName}.`);
+    // With one database there's nothing to choose; with several, the name says which (Vivek, 27 Oct).
+    const db = p.database ?? database ?? (databases.length === 1 ? databases[0].id : null);
+    if (!db) return fail(`Say which database: CREATE TABLE ${databases[0]?.id ?? 'db'}.${p.tableName} (…). There are ${databases.length}: ${databases.map((d) => d.id).join(', ')}.`);
     if (!databases.some((d) => d.id === db)) return fail(`No database called ${db}.`);
     if (objects.some((o) => o.database === db && o.name === p.tableName)) return fail(`${p.tableName} already exists in ${db}.`);
     if (!p.columns.length) return fail('Add at least one column.');

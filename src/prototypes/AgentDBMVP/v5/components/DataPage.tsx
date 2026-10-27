@@ -31,6 +31,7 @@ interface Props {
   onDeleteObject: (id: string) => void;
   toast: (m: string) => void;
   onNavigate: (p: V3Page) => void;
+  onOpenIngestion: (database: string, table: string) => void;
 }
 
 const ALL = 'all';
@@ -69,6 +70,7 @@ export const DataPage: React.FC<Props> = (props) => {
           identities={props.identities}
           role={role}
           onBack={() => onSelect('')}
+          onLoad={() => props.onOpenIngestion(obj.database, obj.name)}
           onEmpty={() => props.onEmptyObject(obj.id)}
           onDelete={() => {
             props.onDeleteObject(obj.id);

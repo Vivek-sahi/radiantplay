@@ -416,6 +416,19 @@
 .phaseLabel { width: var(--v5-phase-label-w); flex: none; }
 .phaseMs { width: var(--v5-phase-ms-w); flex: none; text-align: right; font-variant-numeric: tabular-nums; }
 
+/* Tables picker: a field that opens a checkbox list (Vivek, 27 Oct). Label matches Radiant Select's. */
+.fieldLabel { font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); color: var(--rd-sys-color-content-primary); margin-bottom: var(--spacing-2); }
+.pickTrigger { justify-content: space-between !important; }
+.pickTrigger > span { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: var(--spacing-2); }
+.pickValue { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.codeCard { position: relative; max-width: var(--v5-two-max); }
+.codeCard pre { max-width: none; padding-top: var(--spacing-10); }
+.codeCardCopy { position: absolute; top: var(--spacing-2); right: var(--spacing-2); }
+.anySteps { margin: 0; padding-left: var(--spacing-5); display: flex; flex-direction: column; gap: var(--spacing-2); max-width: var(--v5-two-max); }
+.fieldsSection { max-width: var(--v5-two-max); }
+.fieldList { display: flex; flex-direction: column; gap: var(--spacing-1); max-width: var(--v5-two-max); }
+.pickMenu { display: flex; flex-direction: column; gap: var(--spacing-2); width: calc(var(--spacing-24) * 3); padding: var(--spacing-3); }
+.pickList { display: flex; flex-direction: column; gap: var(--spacing-2); max-height: calc(var(--spacing-24) * 2 + var(--spacing-16)); overflow: auto; }
 .twoUp {
   max-width: var(--v5-two-max);
   display: grid;
@@ -506,6 +519,7 @@
 /* Radiant Tabs paint their active colour from JS; these make every v5 tab follow the UI style
    (black in Precision instrument). The rail's tabs are also shorter (Vivek, 27 Oct). */
 .app nav[role='tablist'] > button[role='tab'] { color: var(--rd-sys-color-content-secondary) !important; border-bottom-color: transparent !important; }
+.app nav[role='tablist'] > button[role='tab']:focus:not(:focus-visible) { outline: none !important; box-shadow: none !important; }
 .app nav[role='tablist'] > button[role='tab'][aria-selected='true'] { color: var(--rd-sys-color-content-brand) !important; border-bottom-color: var(--rd-sys-color-content-brand) !important; }
 .railTabs [role='tab'] { padding: var(--spacing-2) var(--spacing-4) !important; }
 .splitButton { display: inline-flex; align-items: center; }

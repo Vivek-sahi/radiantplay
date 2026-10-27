@@ -4,17 +4,18 @@ import { spacing } from '@tokens/spacing';
 import { Database, DbObject, Identity, LoadRecord, Role } from '../types';
 import { createSqlFor, formatGB, formatMs, formatRows, KIND_LABEL, logTime, sampleValue, when } from '../data';
 import { StatusPill } from '../../components/primitives';
+import { GoToIcon } from './GoToIcon';
 import { CodeBlock } from './CopyField';
-import { LoadInstructions } from './LoadInstructions';
 import styles from '../v5.module.css';
 
-type Dialog = null | 'load' | 'empty' | 'delete';
+type Dialog = null | 'empty' | 'delete';
 
 const baseOf = (o: DbObject): string => o.definition?.match(/\bfrom\s+([`\w.]+)/i)?.[1] ?? 'a table';
 
 /**
  * One table, view or materialised view. Columns · Sample data · Details · History (tables).
- * Actions: Load data (the table's own address and command), Empty, Delete. No Open in SQL (Vivek, 26 Oct).
+ * Actions: Load data (opens Connect › Ingestion with this table ticked: Vivek, 27 Oct), Empty, Delete.
+ * No Open in SQL (Vivek, 26 Oct).
  */
 export const ObjectPage: React.FC<{
   object: DbObject;
@@ -27,7 +28,8 @@ export const ObjectPage: React.FC<{
   toast: (m: string) => void;
   /** Back to the Data list. A plain arrow beside the name, no breadcrumb (Vivek, 26 Oct). */
   onBack?: () => void;
-}> = ({ onBack, object: o, database: db, loads, identities, role, onEmpty, onDelete, toast }) => {
+  onLoad?: () => void;
+}> = ({ onBack, onLoad, object: o, database: db, loads, role, onEmpty, onDelete, toast }) => {
   const [tab, setTab] = useState('columns');
   const [dialog, setDialog] = useState<Dialog>(null);
   const [typed, setTyped] = useState('');
@@ -69,7 +71,7 @@ export const ObjectPage: React.FC<{
   };
 
   const loadButton = (
-    <Button variant="secondary" icon="upload-data" onClick={() => setDialog('load')}>
+    <Button variant="secondary" icon={<GoToIcon />} iconPosition="trailing" onClick={() => onLoad?.()}>
       Load instructions
     </Button>
   );
@@ -233,26 +235,6 @@ export const ObjectPage: React.FC<{
               </div>
             ))}
       </Vertical>
-
-      {dialog === 'load' && (
-        <Modal
-          isOpen
-          onClose={() => setDialog(null)}
-          title={`Load instructions for ${o.name}`}
-          size="large"
-          footer={
-            <ModalFooter
-              primaryAction={
-                <Button variant="primary" onClick={() => setDialog(null)}>
-                  Done
-                </Button>
-              }
-            />
-          }
-        >
-          <LoadInstructions database={db.id} table={o.name} identities={identities} toast={toast} />
-        </Modal>
-      )}
 
       {dialog === 'empty' && (
         <Modal
