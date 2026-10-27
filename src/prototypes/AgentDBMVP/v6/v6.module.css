@@ -1,0 +1,565 @@
+/* v5 layouts (26 Oct): starts as a copy of v4 (v3 with the visual design pass). The eight principles are in the design
+   document, section 13. One canvas, no cards; three sizes above the fold; colour means state.
+   Every colour, font, radius and gap is a Radiant token. Layout sizes are derived from spacing
+   tokens here, once. Text is never styled here: it renders through Typography or a component's
+   own default. The one exception is the SQL editor, which uses the mono family. */
+
+.content,
+.login {
+  --v6-rail-w: calc(var(--spacing-24) * 2 + var(--spacing-20));            /* 272 */
+  --v6-search-w: calc(var(--spacing-24) * 2 + var(--spacing-20) + var(--spacing-2)); /* 280 */
+  --v6-runin-w: calc(var(--spacing-24) * 2 + var(--spacing-12));           /* 240 */
+  --v6-cell-max: calc(var(--spacing-24) * 4 + var(--spacing-14));          /* 440 */
+  --v6-scroll-h: calc(var(--spacing-24) * 4 + var(--spacing-8) + var(--spacing-1)); /* 420 */
+  --v6-fig-min: var(--spacing-24);                                          /* 96 */
+  --v6-tile-min: calc(var(--spacing-24) * 2);                               /* 192 */
+  --v6-agent-w: calc(var(--spacing-24) * 3 + var(--spacing-12) + var(--spacing-8)); /* 320 */
+  --v6-fact-min: calc(var(--spacing-24) * 3 + var(--spacing-3));           /* 300 */
+  --v6-fact-label-w: calc(var(--spacing-24) + var(--spacing-6));           /* 120 */
+  --v6-two-min: calc(var(--spacing-24) * 2 + var(--spacing-16) + var(--spacing-1)); /* 260 */
+  --v6-two-max: calc(var(--spacing-24) * 7 + var(--spacing-20) + var(--spacing-2)); /* 760 */
+  --v6-card-w: calc(var(--spacing-24) * 4 + var(--spacing-8) + var(--spacing-1));   /* 420 */
+  --v6-phase-label-w: calc(var(--spacing-24) + var(--spacing-6));          /* 120 */
+  --v6-phase-ms-w: var(--spacing-20);                                       /* 80 */
+}
+
+/* Shell: the sidebar and the content, side by side. No header. Principle 3: one canvas, white,
+   beside the grey sidebar. */
+.app {
+  min-height: 100vh;
+  display: flex;
+  align-items: flex-start;
+  background: var(--rd-sys-color-background-base);
+  font-family: var(--font-family-primary);
+}
+
+.sidebarWrap {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  flex: 0 0 auto;
+}
+.sidebarWrap aside > div:first-child { display: none; }
+
+/* Navigation option 2: one rail on the frame's grey. Collapsed: icons. Expanded: the same rail
+   widens over the page with names beside the icons (Vivek, 26 Oct). Its right hairline is the
+   separator from the SQL page's catalog rail, which is grey too. */
+/* Sticky makes its own stacking context: the z-index goes here, or raised page controls (a Select)
+   paint over the open rail. */
+.railSpace { position: sticky; top: 0; z-index: var(--z-index-modal); flex: 0 0 auto; width: calc(var(--spacing-12) + var(--spacing-2)); height: 100vh; }
+.iconRail {
+  position: absolute;
+  inset: 0 auto 0 0;
+  z-index: var(--z-index-modal);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--spacing-1);
+  width: calc(var(--spacing-12) + var(--spacing-2));
+  padding: var(--spacing-3) var(--spacing-2);
+  background: var(--rd-sys-color-background-sunken);
+  border-right: 1px solid var(--rd-sys-color-border-divider);
+  transition: width var(--duration-normal) var(--easing-standard), box-shadow var(--duration-normal);
+  overflow: hidden;
+}
+.iconRailOpen { width: calc(var(--spacing-24) * 2 + var(--spacing-8)); box-shadow: 8px 0 24px -12px rgb(0 0 0 / 20%); }
+/* Collapsed, every icon sits on the rail's centre line; open, they stay put and the names follow. */
+.railItem { display: flex; justify-content: center; border-radius: var(--radius-md); }
+.railItem button { white-space: nowrap; color: var(--rd-sys-color-content-secondary) !important; }
+.iconRail:not(.iconRailOpen) .railItem button { width: var(--spacing-8); justify-content: center !important; padding: 0 !important; }
+.iconRailOpen .railItem { justify-content: flex-start; }
+/* The focus ring is for the keyboard; a mouse click leaves only the white current-page tile. */
+.railItem button:focus:not(:focus-visible) { box-shadow: none !important; outline: none !important; }
+.iconRailOpen .railItem button { justify-content: flex-start !important; }
+.railItemOn { background: var(--rd-sys-color-background-base); box-shadow: 0 0 0 1px var(--rd-sys-color-border-divider); }
+.railItemOn button { color: var(--rd-sys-color-content-primary) !important; }
+.iconRailRule { height: 1px; margin: var(--spacing-2) var(--spacing-2); background: var(--rd-sys-color-border-divider); }
+.navScrim { position: fixed; inset: 0; z-index: calc(var(--z-index-modal) - 1); background: rgb(0 0 0 / 6%); }
+
+/* The content owns the viewport height and scrolls inside, so a page can split it (SQL). */
+.content {
+  flex: 1;
+  min-width: 0;
+  height: 100vh;
+  overflow: auto;
+  padding: var(--spacing-8);
+  display: flex;
+  flex-direction: column;
+}
+.page { flex: 1; min-height: 0; }
+
+.avatarWrap { padding: 0 var(--spacing-5); }
+.avatarButton {
+  justify-content: flex-start !important;
+  color: var(--rd-sys-color-content-primary) !important;
+}
+.avatarButton > span {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.protoControls {
+  position: fixed;
+  left: var(--spacing-3);
+  bottom: calc(var(--spacing-16) + var(--spacing-1));
+  z-index: calc(var(--z-index-modal) + 1);
+}
+/* UI style (Vivek, 26 Oct): the brush sits left of the gear; Customize opens a drawer. */
+/* Prototype controls sit bottom-left, stacked above the avatar, so they never cover the agent's
+   composer at bottom-right (Vivek, 27 Oct). The feedback layer's own button keeps the right corner. */
+.styleControls {
+  position: fixed;
+  left: var(--spacing-3);
+  bottom: calc(var(--spacing-24) + var(--spacing-1));
+  z-index: calc(var(--z-index-modal) + 1);
+}
+.styleDrawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: calc(var(--spacing-24) * 3 + var(--spacing-20));
+  z-index: var(--z-index-modal, 1000);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-5);
+  padding: var(--spacing-5);
+  overflow: auto;
+  background: var(--rd-sys-color-background-base);
+  box-shadow: 0 0 0 1px var(--rd-sys-color-border-divider), -16px 0 40px -20px rgb(0 0 0 / 25%);
+}
+.styleSwatches { display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-2); }
+.styleSwatch {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  padding: var(--spacing-2);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--rd-sys-color-background-base);
+  box-shadow: inset 0 0 0 1px var(--rd-sys-color-border-divider);
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+}
+.styleSwatch:hover { box-shadow: inset 0 0 0 1px var(--rd-sys-color-border-hover); }
+.styleSwatchOn, .styleSwatchOn:hover { box-shadow: inset 0 0 0 2px var(--rd-sys-color-content-primary); }
+.styleStrip { display: flex; height: var(--spacing-4); border-radius: var(--radius-sm); overflow: hidden; }
+.styleStrip span { flex: 1; }
+.styleColors { display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-3); }
+.iconSpacer {
+  display: inline-block;
+  width: var(--spacing-4);
+  height: var(--spacing-4);
+}
+
+/* Principle 1: the page's figures in one quiet line above the content. Figures only. */
+.strip {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-6);
+  padding: var(--spacing-3) 0;
+  border-top: 1px solid var(--rd-sys-color-border-divider);
+  border-bottom: 1px solid var(--rd-sys-color-border-divider);
+}
+.figs {
+  display: flex;
+  gap: var(--spacing-7);
+  flex: none;
+}
+.fig {
+  display: flex;
+  flex-direction: column;
+  min-width: var(--v6-fig-min);
+}
+
+/* Metrics as tiles (Vivek, 26 Oct; replaces the one-line strip on Data and Queries). */
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--v6-tile-min), 1fr));
+  gap: var(--spacing-3);
+}
+/* Metric: thin and sleek (Vivek, 27 Oct). A hairline, tight padding, the figure in tabular digits. */
+.metric {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  padding: var(--spacing-3) var(--spacing-4);
+  border-radius: var(--radius-md);
+  box-shadow: inset 0 0 0 1px var(--rd-sys-color-border-divider);
+  background: var(--rd-sys-color-background-base);
+}
+.metricValue {
+  font-size: var(--font-size-2xl);
+  line-height: var(--line-height-2xl);
+  font-weight: var(--font-weight-medium, 500);
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--rd-sys-color-content-primary);
+}
+.metricBad { color: var(--rd-sys-color-content-failure); }
+.metricUnit { margin-left: var(--spacing-1); font-size: var(--font-size-sm); font-weight: var(--font-weight-regular, 400); letter-spacing: 0; color: var(--rd-sys-color-content-secondary); }
+.metricFoot { display: flex; align-items: baseline; justify-content: space-between; gap: var(--spacing-2); }
+/* The signed-in avatar takes the ink colour, not a random one: black in Precision instrument. */
+.meAvatar [class*='initial'] { background-color: var(--rd-sys-color-content-primary) !important; color: var(--rd-sys-color-background-base) !important; }
+
+/* Filters: one row above a table. */
+.filters {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  flex-wrap: wrap;
+}
+.grow { flex: 1; min-width: 0; }
+
+/* Data's browser: no box (Vivek, 19 Oct). Only the line between the tree and the pane; the
+   tree lines up with the page title. */
+.catalog {
+  display: grid;
+  grid-template-columns: var(--v6-rail-w) minmax(0, 1fr);
+  flex: 1;
+  min-height: 0;
+}
+.catalog .rail { padding-left: 0; }
+.catalog .pane { padding-right: 0; padding-top: var(--spacing-3); }
+
+.rail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  padding: var(--spacing-3);
+  border-right: 1px solid var(--rd-sys-color-border-divider);
+  min-width: 0;
+  overflow: auto;
+}
+
+.pane {
+  min-width: 0;
+  min-height: 0;
+  padding: var(--spacing-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-6);
+  overflow: auto;
+}
+
+.crumbs {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  margin-bottom: calc(var(--spacing-4) * -1);
+}
+
+.oneLine {
+  display: block;
+  max-width: var(--v6-cell-max);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.search { width: var(--v6-search-w); }
+
+.nameCell {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  min-width: 0;
+}
+
+.num { font-variant-numeric: tabular-nums; }
+
+/* Key-value facts in a detail: a responsive grid. */
+.facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--v6-fact-min), 1fr));
+  gap: var(--spacing-3) var(--spacing-8);
+}
+
+/* Principle 5 for Connect: the facts to copy, two columns, each a row with its own Copy. */
+.factGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 var(--spacing-8);
+  max-width: var(--v6-two-max);
+}
+.fact {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  padding: var(--spacing-2) 0;
+  border-bottom: 1px solid var(--rd-sys-color-border-divider);
+  min-width: 0;
+}
+.factLabel { flex: 0 0 var(--v6-fact-label-w); }
+/* The Info tab: one column of label and value rows. */
+.infoList { max-width: var(--v6-two-max); }
+.factValue {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The thing to paste, first and big, with the page's one primary button. */
+.copyBlock {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-4);
+  padding: var(--spacing-3) var(--spacing-4);
+  max-width: var(--v6-two-max);
+  background: var(--rd-sys-color-background-sunken);
+  border: 1px solid var(--rd-sys-color-border-divider);
+  border-radius: var(--radius-md);
+}
+.blockValue { min-width: 0; overflow-wrap: anywhere; }
+
+.scroll {
+  max-height: var(--v6-scroll-h);
+  overflow: auto;
+  border: 1px solid var(--rd-sys-color-border-divider);
+  border-radius: var(--radius-md);
+}
+
+.empty { padding: var(--spacing-8) var(--spacing-5); }
+
+/* A block to copy. A pre would default to monospace, so it names the primary family. */
+.codeBlock {
+  margin: 0;
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-sm);
+  line-height: 1.6;
+  color: var(--rd-sys-color-content-primary);
+  background: var(--rd-sys-color-background-sunken);
+  border: 1px solid var(--rd-sys-color-border-divider);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-3) var(--spacing-4);
+  max-width: var(--v6-two-max);
+  overflow-x: auto;
+  white-space: pre;
+}
+
+/* SQL: two zones, no box. The result zone starts at a full-width divider. */
+.resultsZone {
+  padding-top: var(--spacing-6);
+  border-top: 1px solid var(--rd-sys-color-border-divider);
+}
+
+/* Principle 4 for SQL: the editor owns the height. The one place with a code font. */
+.editor textarea {
+  font-family: var(--font-family-mono) !important;
+  font-size: var(--font-size-sm) !important;
+  line-height: 1.6 !important;
+  min-height: 40vh;
+}
+.results {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--spacing-3);
+  flex-wrap: wrap;
+}
+
+.runIn { width: var(--v6-runin-w); }
+
+.message {
+  display: flex;
+  gap: var(--spacing-2);
+  align-items: flex-start;
+}
+
+.headers {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: var(--spacing-1) var(--spacing-4);
+  align-items: baseline;
+  max-width: var(--v6-two-max);
+}
+
+/* Sign in: unchanged from v3. */
+.login {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: var(--spacing-8);
+  background: var(--rd-sys-color-background-sunken);
+  font-family: var(--font-family-primary);
+}
+
+.loginCard { width: min(var(--v6-card-w), 100%); }
+.loginInner { padding: var(--spacing-8) var(--spacing-7); }
+
+.password input { -webkit-text-security: disc; }
+
+.mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--spacing-8);
+  height: var(--spacing-8);
+  border-radius: var(--radius-md);
+  background: var(--rd-sys-color-background-brand);
+  color: var(--rd-sys-color-content-primary-inverse);
+}
+
+.phaseLabel { width: var(--v6-phase-label-w); flex: none; }
+.phaseMs { width: var(--v6-phase-ms-w); flex: none; text-align: right; font-variant-numeric: tabular-nums; }
+
+/* Tables picker: a field that opens a checkbox list (Vivek, 27 Oct). Label matches Radiant Select's. */
+.fieldLabel { font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); color: var(--rd-sys-color-content-primary); margin-bottom: var(--spacing-2); }
+.pickTrigger { justify-content: space-between !important; }
+.pickTrigger > span { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: var(--spacing-2); }
+.pickValue { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.codeCard { position: relative; max-width: var(--v6-two-max); }
+.codeCard pre { max-width: none; padding-top: var(--spacing-10); }
+.codeCardCopy { position: absolute; top: var(--spacing-2); right: var(--spacing-2); }
+.anySteps { margin: 0; padding-left: var(--spacing-5); display: flex; flex-direction: column; gap: var(--spacing-2); max-width: var(--v6-two-max); }
+.fieldsSection { max-width: var(--v6-two-max); }
+.fieldList { display: flex; flex-direction: column; gap: var(--spacing-1); max-width: var(--v6-two-max); }
+.pickMenu { display: flex; flex-direction: column; gap: var(--spacing-2); width: calc(var(--spacing-24) * 3); padding: var(--spacing-3); }
+.pickList { display: flex; flex-direction: column; gap: var(--spacing-2); max-height: calc(var(--spacing-24) * 2 + var(--spacing-16)); overflow: auto; }
+.twoUp {
+  max-width: var(--v6-two-max);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(var(--v6-two-min), 1fr));
+  gap: var(--spacing-4);
+  align-items: end;
+}
+
+/* A dialog whose last field is a Select: room below it so the open list isn't clipped by the footer. */
+.selectRoom { padding-bottom: calc(var(--spacing-24) + var(--spacing-8)); }
+
+/* SQL workbench, second pass (Vivek, 26 Oct: "why is our design so old"). Modelled on the
+   ClickHouse console: the workbench is the whole screen (no title, no margin, no frame); one bar
+   height for every top row; panels told apart by tone and hairlines, not boxes. Grey side panels,
+   white query. */
+.bench {
+  --bar-h: var(--spacing-10);
+  display: grid;
+  grid-template-columns: var(--v6-rail-w) minmax(0, 1fr) var(--v6-agent-w);
+  height: 100vh;
+  margin: calc(var(--spacing-8) * -1);
+  background: var(--rd-sys-color-background-base);
+}
+.bar {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  height: var(--bar-h);
+  flex: none;
+  padding: 0 var(--spacing-3);
+  border-bottom: 1px solid var(--rd-sys-color-border-divider);
+}
+.benchRail, .benchAgent {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: var(--rd-sys-color-background-sunken);
+}
+.benchRail { border-right: 1px solid var(--rd-sys-color-border-divider); }
+.benchAgent { border-left: 1px solid var(--rd-sys-color-border-divider); }
+.railBody { display: flex; flex-direction: column; gap: var(--spacing-2); padding: var(--spacing-2) var(--spacing-2) 0; flex: 1; min-height: 0; }
+.benchScroll { flex: 1; min-height: 0; overflow: auto; }
+.benchCenter { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+
+/* Catalog and Recent rows: dense, no boxes. Columns sit under their table, type on the right. */
+.catRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  min-height: var(--spacing-7);
+  padding: 0 var(--spacing-1);
+  border-radius: var(--radius-sm);
+}
+.catRow:hover { background: var(--rd-sys-color-background-ghost-hover); }
+.catRowActive { background: var(--rd-sys-color-background-ghost-highlight); }
+.catIndent1 { padding-left: var(--spacing-5); }
+.catIndent2 { padding-left: var(--spacing-10); }
+.catName { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
+.catName[draggable='true'] { cursor: grab; }
+.catActions { display: flex; visibility: hidden; }
+.catRow:hover .catActions, .catRow:focus-within .catActions { visibility: visible; }
+.catType { flex: none; }
+.catSection { padding: var(--spacing-2) var(--spacing-1) var(--spacing-1); }
+
+/* Query tabs: the top bar of the middle. The open tab is white and joins the toolbar below. */
+.qtabs { composes: bar; padding: 0; gap: 0; background: var(--rd-sys-color-background-sunken); }
+.qtab {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  height: 100%;
+  max-width: calc(var(--spacing-24) * 2);
+  padding: 0 var(--spacing-1) 0 var(--spacing-3);
+  border-right: 1px solid var(--rd-sys-color-border-divider);
+  cursor: pointer;
+}
+.qtab:hover { background: var(--rd-sys-color-background-ghost-hover); }
+.qtabActive, .qtabActive:hover { background: var(--rd-sys-color-background-base); box-shadow: inset 0 -1px 0 var(--rd-sys-color-background-base); }
+.qtabTitle { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.qtabPreview .qtabTitle { font-style: italic; }
+.qtabClose { visibility: hidden; }
+.qtab:hover .qtabClose, .qtabActive .qtabClose, .qtab:focus-within .qtabClose { visibility: visible; }
+.benchNoAgent { grid-template-columns: var(--v6-rail-w) minmax(0, 1fr); }
+.qtabsAgent { margin-left: auto; display: flex; align-items: center; padding: 0 var(--spacing-2); }
+.qtabsEnd { display: flex; align-items: center; gap: var(--spacing-1); padding: 0 var(--spacing-2); }
+
+/* Radiant Tabs paint their active colour from JS; these make every v5 tab follow the UI style
+   (black in Precision instrument). The rail's tabs are also shorter (Vivek, 27 Oct). */
+.app nav[role='tablist'] > button[role='tab'] { color: var(--rd-sys-color-content-secondary) !important; border-bottom-color: transparent !important; }
+.app nav[role='tablist'] > button[role='tab']:focus:not(:focus-visible) { outline: none !important; box-shadow: none !important; }
+.app nav[role='tablist'] > button[role='tab'][aria-selected='true'] { color: var(--rd-sys-color-content-brand) !important; border-bottom-color: var(--rd-sys-color-content-brand) !important; }
+.railTabs [role='tab'] { padding: var(--spacing-2) var(--spacing-4) !important; }
+.splitButton { display: inline-flex; align-items: center; }
+.limitSelect { width: calc(var(--spacing-24) + var(--spacing-8)); }
+.benchEditor { flex: 1 1 0; min-height: 0; overflow: hidden; }
+
+/* Result: a stats bar, the rows, a count. */
+.benchResult { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; border-top: 1px solid var(--rd-sys-color-border-divider); }
+.resultBar { composes: bar; border-bottom: 0; }
+.benchResultBody { flex: 1; min-height: 0; overflow: auto; }
+.resultMessage { display: flex; gap: var(--spacing-2); align-items: flex-start; padding: var(--spacing-4); }
+.resultEmpty { display: flex; height: 100%; align-items: center; justify-content: center; }
+.resultFoot { composes: bar; border-bottom: 0; border-top: 1px solid var(--rd-sys-color-border-divider); }
+
+/* Agent: conversation above, the composer at the bottom, as in Claude and ChatGPT. */
+.agentEmpty { flex: 1; display: flex; align-items: center; justify-content: center; text-align: center; padding: 0 var(--spacing-6); }
+.composer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  margin: var(--spacing-3);
+  padding: var(--spacing-3);
+  background: var(--rd-sys-color-background-base);
+  border: 1px solid var(--rd-sys-color-border-divider);
+  border-radius: var(--radius-xl);
+}
+/* The ThoughtSpot AI edge on focus, as on Spotter's prompt. */
+.composer:focus-within {
+  border-color: transparent;
+  background:
+    linear-gradient(var(--rd-sys-color-background-base), var(--rd-sys-color-background-base)) padding-box,
+    linear-gradient(135deg, var(--v6-signal, var(--rd-sys-color-background-accent-purple-bold)), var(--rd-sys-color-content-brand)) border-box;
+}
+.composer textarea {
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  min-height: 0 !important;
+  resize: none !important;
+  background: transparent !important;
+}
+.composer [class*='footer'] { display: none; }
+.composerSend { display: flex; justify-content: flex-end; }

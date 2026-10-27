@@ -15,6 +15,7 @@ import { CreateTableWizard, NewTableInput } from './components/CreateTableWizard
 import { V3App } from './v3/V3App';
 import { V4App } from './v4/V4App';
 import { V5App } from './v5/V5App';
+import { V6App } from './v6/V6App';
 
 /**
  * AgentDB MVP — a standalone SaaS console concept (28 Sep 2026; V1 scope cut 7 Oct 2026).
@@ -96,6 +97,8 @@ const AgentDBMVP: React.FC = () => {
   if (variant === 'v4') return <V4App variant={variant} onVariantChange={setVariant} />;
   // v5 starts as a copy of v4 (26 Oct); the team review feedback goes here.
   if (variant === 'v5') return <V5App variant={variant} onVariantChange={setVariant} />;
+  // v6 is v5 as shipped plus Live mode for the demo and the agent-first additions (27 Oct).
+  if (variant === 'v6') return <V6App variant={variant} onVariantChange={setVariant} />;
 
   return (
     <VariantContext.Provider value={variant}>

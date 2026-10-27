@@ -8,11 +8,12 @@ import { V2_SOURCE } from './data';
  * v4 — 15 Oct: v3 with the visual design pass (eight principles in the design document, section 13). Own folder: ./v4.
  *      Same scope, same data, same flows; only the visual design differs.
  * v5 — 26 Oct: starts as a copy of v4; the team review feedback goes here. Own folder: ./v5.
+ * v6 — 27 Oct: v5 as shipped plus Live mode (the demo follows the terminal) and the agent-first additions. Own folder: ./v6.
  * v2 — PM plan (discarded 14 Oct; parts reused in v3): the PM's December build list applied as written (API keys inherit the creator's
  *      role, SQL editor, stop and profile on queries, source labels, add person, no rate limits,
  *      no per-table hits, no Empty table, ThoughtSpot connects like any BI tool).
  */
-export type Variant = 'v1' | 'v2' | 'v3' | 'v4' | 'v5';
+export type Variant = 'v1' | 'v2' | 'v3' | 'v4' | 'v5' | 'v6';
 
 export const VARIANT_OPTIONS = [
   { id: 'v1', label: 'v1 · 7 Oct' },
@@ -20,10 +21,11 @@ export const VARIANT_OPTIONS = [
   { id: 'v3', label: 'v3 · 14 Oct' },
   { id: 'v4', label: 'v4 · 15 Oct' },
   { id: 'v5', label: 'v5 · 26 Oct' },
+  { id: 'v6', label: 'v6 · 27 Oct' },
 ];
 
 export const SHOW_VARIANT_SWITCHER = true;
-export const DEFAULT_VARIANT: Variant = 'v5';
+export const DEFAULT_VARIANT: Variant = 'v6';
 
 export const VariantContext = createContext<Variant>(DEFAULT_VARIANT);
 export const useVariant = () => useContext(VariantContext);

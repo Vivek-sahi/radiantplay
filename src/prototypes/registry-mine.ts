@@ -57,9 +57,9 @@ export const myRegistry: ProjectMeta[] = [
   {
     id: 'AgentDBMVP',
     name: 'AgentDB MVP',
-    description: 'Standalone AgentDB console. v4 (15 Oct, default): v3 with the visual design pass. v3 (14 Oct): sign-in, the catalog, one SQL editor, Queries, Connect, API keys, Access, empty and filled states. v1 and v2 stay behind the gear menu.',
+    description: 'Standalone AgentDB console. v6 (27 Oct, default): v5 plus Live mode, the console follows the demo terminal (?live=1). v5 (26 Oct): the team-review build, Precision instrument look, SQL workbench, Ingestion. v1 to v4 stay behind the gear menu.',
     author: 'Vivek Sahi',
-    lastModified: '2026-10-19',
+    lastModified: '2026-10-27',
     component: AgentDBMVP,
     section: 'mine',
   },

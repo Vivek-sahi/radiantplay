@@ -94,4 +94,6 @@ export interface QueryRecord {
   bytesRead?: string;
   resultRows?: number;
   profile?: { phase: string; ms: number }[];
+  /** The agent task this query belongs to, when the client said so (MCP session or SQL comment). */
+  task?: string;
 }
