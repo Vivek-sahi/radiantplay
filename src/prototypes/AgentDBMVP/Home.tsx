@@ -113,6 +113,10 @@ const DECISIONS: { date: string; decision: string; source?: string }[] = [
 ];
 
 const CHANGES: { date: string; version: string; what: string }[] = [
+  { date: '27 Oct', version: 'v5', what: 'Built from the team review: Overview (was Data) as one list of every table with database filter and search; Members (was Access), people only; service accounts merged into API keys with Query or Query and load access; the SQL workbench (catalog and Recent, query tabs that save as you type, code editor with autocomplete, results, agent panel); thin metric tiles; UI styles and the theme generator (brush button); navigation option 2, icons only.' },
+  { date: '26 Oct', version: 'All', what: 'Shared with the team for review.' },
+  { date: '20 Oct', version: 'Home', what: 'IA mind map follows Vivek\'s 20 Oct structure. Demo script and key flows put the API key before the table. Design document link and Resources removed.' },
+  { date: '20 Oct', version: 'v4', what: 'Create-table result offers Open <table> and Load instructions. No Delete database. The grid icon for every object kind for now. Dialogs ending in a dropdown leave room for the list. The ETL flow starts in the empty workspace.' },
   { date: '19 Oct', version: 'All', what: 'Action menus were see-through: a missing colour in the shared token file. Added. This project home.' },
   { date: '15 Oct', version: 'v4', what: 'Data metrics trimmed to storage used, tables, queries. Status sentence removed.' },
   { date: '15 Oct', version: 'v4', what: 'Built: v3 with the visual design pass. White canvas, metrics in one line, status before type on Queries, the editor owns SQL, the thing to paste first on Connect.' },
