@@ -28,6 +28,15 @@ export interface VersionEntry {
  */
 export const versionHistory: VersionEntry[] = [
   {
+    version: '26.10.4o',
+    date: '2026-10-28',
+    type: 'patch',
+    changes: [
+      { type: 'added', group: 'Components', component: 'Accordion', description: 'variant list (Figma basic list: 48px parents, 32px nested children) and Accordion.ListItem with single and multi select and hover actions' },
+      { type: 'modified', group: 'Components', component: 'Accordion', description: 'An open item follows its content height, so nested accordions open fully' },
+    ],
+  },
+  {
     version: '26.10.4n',
     date: '2026-10-28',
     type: 'patch',

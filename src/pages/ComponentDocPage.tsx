@@ -511,7 +511,8 @@ const componentDocs: Record<string, {
       { name: 'defaultExpanded', type: 'number | number[]', description: 'Initially expanded item(s)' },
       { name: 'expanded', type: 'number | number[]', description: 'Controlled expanded state' },
       { name: 'onExpandedChange', type: '(expanded: number[]) => void', description: 'Expansion change handler' },
-      { name: 'variant', type: "'default' | 'minimal' | 'bordered' | 'card'", default: "'default'", description: 'Visual variant. card is the Figma card: raised items with a leading chevron' },
+      { name: 'variant', type: "'default' | 'minimal' | 'bordered' | 'card' | 'list'", default: "'default'", description: 'Visual variant. card is the Figma card: raised items with a leading chevron. list is the Figma basic list: 48px parent rows, 32px child rows when nested, and Accordion.ListItem rows' },
+      { name: 'Accordion.ListItem', type: '{ label, selected?, selectMode?, icon?, actions?, disabled?, onClick? }', description: 'A 32px selectable row for the list variant. single select uses Ghost Highlight; multi select shows a checkmark. actions show on hover' },
       { name: 'Item.title', type: 'ReactNode', description: 'Item title' },
       { name: 'Item.subtitle', type: 'string', description: 'Item subtitle' },
       { name: 'Item.disabled', type: 'boolean', default: 'false', description: 'Disable item' },
@@ -1344,6 +1345,8 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
   // New component states (Phase 1-4)
   const [searchBarValue, setSearchBarValue] = useState('');
   const [tableSelection, setTableSelection] = useState<string[]>([]);
+  const [accordionPick, setAccordionPick] = useState('Weekly revenue');
+  const [accordionChecks, setAccordionChecks] = useState<string[]>(['Campaign spend']);
   // Props start collapsed on every component page, unless the link points at them
   const [openPropsFor, setOpenPropsFor] = useState<string | null>(() =>
     typeof window !== 'undefined' && window.location.hash === '#props' ? componentId : null);
@@ -2147,6 +2150,40 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
                 </Accordion.Item>
                 <Accordion.Item title="Can I schedule a report?" disabled>
                   This item is disabled.
+                </Accordion.Item>
+              </Accordion>
+            </div>
+            <div style={{ marginTop: '24px' }}>
+              <h4 style={styles.interactiveLabel}>List variant:</h4>
+              <Accordion variant="list" defaultExpanded={0}>
+                <Accordion.Item title="Sales">
+                  <Accordion variant="list" defaultExpanded={0}>
+                    <Accordion.Item title="Liveboards">
+                      {['Weekly revenue', 'Regional pipeline', 'Top accounts'].map((name) => (
+                        <Accordion.ListItem
+                          key={name}
+                          label={name}
+                          selected={accordionPick === name}
+                          onClick={() => setAccordionPick(name)}
+                          actions={<Button variant="tertiary" size="xs" iconOnly icon="more">More actions</Button>}
+                        />
+                      ))}
+                    </Accordion.Item>
+                    <Accordion.Item title="Answers">
+                      <Accordion.ListItem label="Churn by plan" />
+                    </Accordion.Item>
+                  </Accordion>
+                </Accordion.Item>
+                <Accordion.Item title="Marketing">
+                  {['Campaign spend', 'Leads by channel'].map((name) => (
+                    <Accordion.ListItem
+                      key={name}
+                      label={name}
+                      selectMode="multi"
+                      selected={accordionChecks.includes(name)}
+                      onClick={() => setAccordionChecks((c) => c.includes(name) ? c.filter((x) => x !== name) : [...c, name])}
+                    />
+                  ))}
                 </Accordion.Item>
               </Accordion>
             </div>

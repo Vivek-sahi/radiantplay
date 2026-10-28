@@ -1,5 +1,13 @@
 # Changelog
 
+## 26.10.4o — 2026-10-28
+
+Accordion gets the Figma basic list. The existing variants look the same.
+
+- `variant="list"`: 48px parent rows with a leading chevron and lines between them. A `list` nested inside an item gives 32px child rows
+- `Accordion.ListItem`: a 32px selectable row. Single select uses Ghost Highlight with brand text; `selectMode="multi"` shows a checkmark. `actions` (like Ghost icon buttons) show on hover and focus
+- For everyone: an open item follows its content's height, so an accordion inside another one no longer gets cut off when it opens
+
 ## 26.10.4n — 2026-10-28
 
 ColorPicker gets the Figma picker as a new mode. The existing modes don't change.
