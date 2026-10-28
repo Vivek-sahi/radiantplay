@@ -12,6 +12,7 @@ import { InlineEdit } from '../components/InlineEdit';
 import { Table, TableColumn } from '../components/Table';
 import { TextInput } from '../components/TextInput';
 import { GalleryNote } from './GalleryNote';
+import { GalleryAnnouncement } from './GalleryAnnouncement';
 import { useIsDarkMode } from '../context/ThemeContext';
 import { RadianceBackground } from '../app-chrome/RadianceBackground/RadianceBackground';
 import { SectionSwitcher } from '../app-chrome/SectionSwitcher/SectionSwitcher';
@@ -787,6 +788,9 @@ export const PlaygroundGallery: React.FC = () => {
           onClose={() => setSaveModalOpen(false)}
         />
       )}
+
+      {/* Shows once per browser, to introduce gallery groups */}
+      <GalleryAnnouncement />
     </div>
   );
 };

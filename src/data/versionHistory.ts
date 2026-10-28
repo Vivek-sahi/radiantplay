@@ -28,6 +28,14 @@ export interface VersionEntry {
  */
 export const versionHistory: VersionEntry[] = [
   {
+    version: '26.10.4r',
+    date: '2026-10-28',
+    type: 'patch',
+    changes: [
+      { type: 'added', group: 'Playground', component: 'Gallery announcement', description: 'A one-time splash screen introducing gallery groups, Move to group, renaming, suggestions and the list view' },
+    ],
+  },
+  {
     version: '26.10.4q',
     date: '2026-10-28',
     type: 'patch',
