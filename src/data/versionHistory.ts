@@ -28,6 +28,15 @@ export interface VersionEntry {
  */
 export const versionHistory: VersionEntry[] = [
   {
+    version: '26.10.4s',
+    date: '2026-10-28',
+    type: 'patch',
+    changes: [
+      { type: 'added', group: 'Tooling', component: '/rp-spec', description: 'Drafts a prototype\'s engineering spec from the code, reviews it with the designer section by section, and marks it Ready for build only on their approval' },
+      { type: 'added', group: 'Playground', component: 'Prototype spec', description: 'A Prototype / Spec switch on prototypes with a spec. Drafts show only under npm run dev; approved specs show to everyone and flag changes made after approval' },
+    ],
+  },
+  {
     version: '26.10.4r',
     date: '2026-10-28',
     type: 'patch',

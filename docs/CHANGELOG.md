@@ -1,5 +1,14 @@
 # Changelog
 
+## 26.10.4s — 2026-10-28
+
+Prototypes can carry an engineering spec that the designer approves, learned from Sneharsh's SpotterRefresh spec.
+
+- `/rp-spec <Prototype>`: when a prototype is ready to hand off, Claude checks it (build, dark scan, hardcoded values, raw HTML), drafts `spec.tsx` from the code (parts, live states, props, sizes, tokens, files, source), then goes through anatomy, states, behaviour, motion, scope and usage with the designer. It's marked Ready for build only when the designer approves
+- A prototype with a spec gets a floating Prototype / Spec switch. A draft shows only under `npm run dev`. An approved spec shows to everyone with who approved it and when, and reads Changed since approval as soon as the prototype's code changes (`npm run spec:hash` fingerprints it)
+- The spec page reads the prototype's tokens from its CSS Modules and lists hardcoded values left, with the `npm run handoff` command. Prototypes without a spec look the same as before
+- The Spotter components sample has an example spec (User message), as a draft
+
 ## 26.10.4r — 2026-10-28
 
 The gallery introduces groups once, with a short splash screen.

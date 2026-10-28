@@ -25,7 +25,8 @@
     "radiance:update": "node scripts/radiance/update.mjs",
     "radiance:check": "node scripts/radiance/check.mjs",
     "radiance:lint": "node scripts/radiance/lint.mjs",
-    "handoff": "node internal/scripts/handoff-export.mjs"
+    "handoff": "node internal/scripts/handoff-export.mjs",
+    "spec:hash": "node scripts/spec/prototype-hash.mjs"
   },
   "keywords": [
     "design-system",

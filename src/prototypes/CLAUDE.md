@@ -17,6 +17,12 @@ Loaded whenever Claude works in `src/prototypes/`. The root CLAUDE.md convention
 - Designers can also do it in the gallery while `npm run dev` runs: Move to group on a card's menu, drag a card onto a heading or onto Archived, or click a group name to rename it. That writes `registry-mine.ts` through `vite.registry-write.ts`. Sample prototypes and deployed sites fall back to a prompt for Claude.
 - When a designer asks to group or sort out their prototypes, edit their entries in `registry-mine.ts`. `group` is optional, so entries without it keep working. The gallery's Recent / Name sort needs no registry change; Recent reads `lastModified`.
 
+## Engineering spec
+
+- When a designer says a prototype is ready to hand off, or asks for a spec, run `/rp-spec <Name>`. It checks readiness, drafts `src/prototypes/<Name>/spec.tsx` from the code, reviews each section with the designer, and marks it Ready for build only on their explicit approval.
+- The prototype then gets a Prototype / Spec switch. A draft shows only under `npm run dev`; an approved spec shows to everyone, and reads "Changed since approval" once the prototype's code changes.
+- Never set `approval.status` to `'approved'` without the designer's yes.
+
 ## Before calling a prototype done
 
 1. Dark check: `npm run scan:dark -- src/prototypes/<Name>` reports dark ready. Fix findings with `sysVar()` / `var(--rd-sys-color-*)`, never `systemColors.light[...]` or hex. If something can't be fixed yet, leave `theme: 'global'` off and say so.
