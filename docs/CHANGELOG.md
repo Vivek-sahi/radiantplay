@@ -4,7 +4,7 @@
 
 The gallery introduces groups once, with a short splash screen.
 
-- The first time someone opens the gallery after syncing, a one-page splash shows a picture of grouped prototypes and three lines: groups and collapsing, Move to group, drag and rename, and suggestions and the list view. Got it closes it for good in that browser
+- The first time someone opens the gallery after syncing, a one-page splash shows a picture of grouped prototypes and three lines: groups and collapsing; Move to group, drag and rename; and how to keep the old view (All in one grid in the Sort menu, sorted by recent or name). Got it closes it for good in that browser
 - It uses the Modal splash screen type, with light and dark pictures in `public/announcements/`
 
 ## 26.10.4q — 2026-10-28

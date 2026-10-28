@@ -32,7 +32,7 @@ export const versionHistory: VersionEntry[] = [
     date: '2026-10-28',
     type: 'patch',
     changes: [
-      { type: 'added', group: 'Playground', component: 'Gallery announcement', description: 'A one-time splash screen introducing gallery groups, Move to group, renaming, suggestions and the list view' },
+      { type: 'added', group: 'Playground', component: 'Gallery announcement', description: 'A one-time splash screen introducing gallery groups, Move to group and renaming, and how to keep the old ungrouped view' },
     ],
   },
   {

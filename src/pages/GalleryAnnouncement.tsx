@@ -43,7 +43,7 @@ export const GalleryAnnouncement: React.FC = () => {
         bulletPoints={[
           'Prototypes of one project sit under one heading. Collapse the ones you aren’t working on.',
           'Use Move to group on a card, drag it onto a heading, or click a group name to rename it.',
-          'The gallery suggests groups for prototypes with matching names, and has a list view.',
+          'Prefer the old view? Choose All in one grid in the Sort menu. Sort by recent or name still works, and there’s a list view too.',
         ]}
       />
     </Modal>
