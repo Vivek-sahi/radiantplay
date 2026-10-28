@@ -1,11 +1,16 @@
 import React, { Suspense, useEffect, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { sysVar } from '../tokens/colors';
 import { getProject } from '../prototypes/registry';
 import { isLightOnly } from '../prototypes/registry-theme';
 import { Icon } from '../components/icons';
 import { LightOnly } from '../context/ThemeContext';
 import { RadiantLook } from '../context/RadiantLookContext';
+import { SpecSwitch } from '../app-chrome/SpecSheet/SpecSwitch';
+import { useSpecState, specVisible } from '../app-chrome/SpecSheet/useSpecState';
+
+// The spec view for engineering handoff, opened with the Prototype / Spec switch (/rp-spec writes it)
+const PrototypeSpec = React.lazy(() => import('../app-chrome/SpecSheet/PrototypeSpec'));
 
 /**
  * PlaygroundProject
@@ -19,6 +24,9 @@ export const PlaygroundProject: React.FC = () => {
   const navigate = useNavigate();
 
   const project = projectName ? getProject(projectName) : undefined;
+  const [searchParams] = useSearchParams();
+  const spec = useSpecState(project?.id ?? '');
+  const showSpecSwitch = specVisible(spec.state);
 
   // Handle escape key to go back
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
@@ -59,6 +67,17 @@ export const PlaygroundProject: React.FC = () => {
     );
   }
 
+  if (searchParams.has('spec')) {
+    return (
+      <>
+        <Suspense fallback={<LoadingState />}>
+          <PrototypeSpec projectId={project.id} projectName={project.name} info={spec} />
+        </Suspense>
+        {showSpecSwitch && <SpecSwitch state={spec.state} />}
+      </>
+    );
+  }
+
   const ProjectComponent = project.component;
   // look: 'radiant-3' opts the prototype into the Radiant 3.0 Figma sizes (RadiantLookContext.tsx)
   const content = project.look === 'radiant-3' ? <RadiantLook><ProjectComponent /></RadiantLook> : <ProjectComponent />;
@@ -77,6 +96,7 @@ export const PlaygroundProject: React.FC = () => {
           )}
         </Suspense>
       </div>
+      {showSpecSwitch && <SpecSwitch state={spec.state} />}
     </div>
   );
 };

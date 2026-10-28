@@ -10,3 +10,9 @@ declare module '*.css' {
   export default content;
 }
 
+/** Code fingerprints of prototypes with a spec.tsx (scripts/spec/prototype-hash.mjs) */
+declare module 'virtual:prototype-hashes' {
+  const hashes: Record<string, string | null>;
+  export default hashes;
+}
+
