@@ -93,6 +93,14 @@
   color: var(--rd-sys-color-content-brand);
 }
 
+.contextual.gray {
+  color: var(--rd-sys-color-content-tertiary);
+}
+
+.contextual.white {
+  color: var(--rd-sys-color-content-inverse);
+}
+
 .contextual svg {
   width: 100%;
   height: 100%;

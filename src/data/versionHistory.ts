@@ -28,6 +28,17 @@ export interface VersionEntry {
  */
 export const versionHistory: VersionEntry[] = [
   {
+    version: '26.10.4l',
+    date: '2026-10-28',
+    type: 'patch',
+    changes: [
+      { type: 'added', group: 'Components', component: 'SearchInput, Tabs, LoadingIndicator', description: 'SearchInput onClear and an underlined variant, per-tab disabled, and gray or white spinners' },
+      { type: 'modified', group: 'Components', component: 'Button', description: 'Icon-only buttons use their text children as the accessible name' },
+      { type: 'modified', group: 'Design system', component: 'Component docs', description: 'Props start collapsed behind a Show props button' },
+      { type: 'modified', group: 'Components', component: 'Radiant 3.0 look', description: 'Under look: radiant-3: Select label-line helper and error text, 8px brand ProgressBar, PageHeader divider, regular Stepper titles, 18px spinner, Avatar names that scale and groups of three' },
+    ],
+  },
+  {
     version: '26.10.4k',
     date: '2026-10-28',
     type: 'patch',

@@ -235,6 +235,8 @@ const componentDocs: Record<string, {
       { name: 'value', type: 'string', description: 'Current value' },
       { name: 'disabled', type: 'boolean', default: 'false', description: 'Whether the input is disabled' },
       { name: 'onChange', type: '(e: ChangeEvent) => void', description: 'Change handler' },
+      { name: 'onClear', type: '() => void', description: 'Shows a clear button while there is a value, and is called when it is clicked' },
+      { name: 'variant', type: "'outlined' | 'underlined'", default: "'outlined'", description: 'Underlined is a 40px row with a bottom border, for menus and panels' },
     ],
   },
   chip: {
@@ -1341,6 +1343,10 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
   const [segmentedValue, setSegmentedValue] = useState('day');
   // New component states (Phase 1-4)
   const [searchBarValue, setSearchBarValue] = useState('');
+  // Props start collapsed on every component page, unless the link points at them
+  const [openPropsFor, setOpenPropsFor] = useState<string | null>(() =>
+    typeof window !== 'undefined' && window.location.hash === '#props' ? componentId : null);
+  const propsOpen = openPropsFor === componentId;
   const [sliderValue, setSliderValue] = useState(40);
   const [managedItems, setManagedItems] = useState([
     { id: '1', label: 'Item one' },
@@ -1527,7 +1533,11 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
                 placeholder="Search..." 
                 value={searchValue} 
                 onChange={(e) => setSearchValue(e.target.value)} 
+                onClear={() => setSearchValue('')}
               />
+            </div>
+            <div style={{ maxWidth: '320px' }}>
+              <SearchInput variant="underlined" placeholder="Search in this list" />
             </div>
           </div>
         );
@@ -1670,6 +1680,12 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
                 options={[{ id: '1', label: 'Option' }]}
               />
             </div>
+            <RadiantLook>
+              <div style={styles.exampleColumn}>
+                <Select label="Label" helperText="helper text - optional" placeholder="Select" options={[{ id: '1', label: 'Option' }]} />
+                <Select label="Label" helperText="helper text - optional" placeholder="Select" error options={[{ id: '1', label: 'Option' }]} />
+              </div>
+            </RadiantLook>
           </div>
         );
 
@@ -3444,7 +3460,20 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
 
       {/* Props Table */}
       <section style={styles.section}>
-        <h2 style={styles.sectionTitle}>Props</h2>
+        <div style={styles.propsTitleRow}>
+          <h2 style={{ ...styles.sectionTitle, marginBottom: 0 }}>Props</h2>
+          <Button
+            variant="tertiary"
+            size="small"
+            icon={propsOpen ? 'chevron-up' : 'chevron-down'}
+            iconPosition="trailing"
+            aria-expanded={propsOpen}
+            onClick={() => setOpenPropsFor(propsOpen ? null : componentId)}
+          >
+            {propsOpen ? 'Hide props' : `Show ${doc.props.length} props`}
+          </Button>
+        </div>
+        {propsOpen && (
         <div style={styles.propsTable}>
           <div style={styles.propsHeader}>
             <div style={styles.propName}>Prop</div>
@@ -3467,6 +3496,7 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
             </div>
           ))}
         </div>
+        )}
       </section>
     </div>
   );
@@ -3569,6 +3599,12 @@ const styles: Record<string, React.CSSProperties> = {
     textTransform: 'uppercase',
     letterSpacing: '0.5px',
     marginBottom: '12px',
+  },
+  propsTitleRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 'var(--spacing-3)',
+    marginBottom: 'var(--spacing-4)',
   },
   usageGrid: {
     display: 'grid',

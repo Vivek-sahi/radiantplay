@@ -26,8 +26,13 @@
   margin-bottom: -1px;
 }
 
-.tab:hover {
+.tab:hover:not(:disabled) {
   color: var(--rd-sys-color-content-brand);
+}
+
+.tab:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .tab:focus-visible {

@@ -1,5 +1,25 @@
 # Changelog
 
+## 26.10.4l — 2026-10-28
+
+Batch 9 of the Figma re-audit: new opt-in options, and Radiant 3.0 sizes and states for prototypes with `look: 'radiant-3'`. Other prototypes look the same.
+
+- New options, off unless you use them:
+  - SearchInput `onClear` shows a clear button while the field has a value. `variant="underlined"` gives the 40px row with a bottom border used in menus and panels
+  - Tabs: a tab with `disabled: true` shows but can't be selected
+  - LoadingIndicator.Contextual `color`: blue (default), gray or white
+- For everyone: an icon-only Button uses its text children as its accessible name, so screen readers can announce it
+- Under `look: 'radiant-3'`:
+  - Select puts helper text beside the label, and on an error the label reads Please choose “Label” with an icon, as TextInput already does
+  - SearchInput's icon is Content/Secondary
+  - ProgressBar's default bar is 8px, fully rounded and brand blue
+  - PageHeader draws a divider between the title and the tabs
+  - Stepper and VerticalStepper titles are regular weight
+  - The Contextual spinner defaults to 18px
+  - Avatar names scale with the avatar (12, 14 or 16px), and AvatarGroup shows three avatars before +N
+- Select and SearchInput doc pages show the new options
+- Component doc pages start with Props collapsed, behind a Show props button, so Usage and the example come first. A link to `#props` opens it
+
 ## 26.10.4k — 2026-10-28
 
 More components follow the Radiant 3.0 Figma file. Two plain bugs are fixed for everyone; everything else applies only to prototypes with `look: 'radiant-3'`, so other prototypes look the same.

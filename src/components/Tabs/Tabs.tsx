@@ -5,6 +5,8 @@ export interface Tab {
   id: string;
   label: string;
   icon?: React.ReactNode;
+  /** Shows the tab but doesn't let people select it */
+  disabled?: boolean;
 }
 
 export interface TabsProps {
@@ -49,6 +51,7 @@ export const Tabs: React.FC<TabsProps> = ({
             key={tab.id}
             role="tab"
             aria-selected={isActive}
+            disabled={tab.disabled}
             className={`${styles.tab} ${isActive ? styles.active : ''}`}
             onClick={() => onTabChange(tab.id)}
           >

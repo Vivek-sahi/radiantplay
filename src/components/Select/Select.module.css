@@ -19,6 +19,18 @@
   margin-bottom: var(--spacing-2);
 }
 
+.helperInline {
+  font-weight: var(--font-weight-regular);
+  color: var(--rd-sys-color-content-secondary);
+}
+
+.labelError {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  color: var(--rd-sys-color-content-failure);
+}
+
 /* Trigger Button */
 .trigger {
   display: flex;
@@ -250,6 +262,14 @@
   line-height: var(--line-height-sm);
   margin-bottom: var(--spacing-1);
   transition: color var(--duration-fast) var(--easing-standard);
+}
+
+/* Label line: "Label (helper text)", and on error the label turns red with an
+   icon and reads Please choose “Label”. Nothing goes under the field */
+:global([data-rd-look="radiant-3"]) .label {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
 }
 
 :global([data-rd-look="radiant-3"]) .container:focus-within .label,

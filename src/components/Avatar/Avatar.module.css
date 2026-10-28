@@ -208,3 +208,28 @@
 .bgGray {
   background-color: var(--rd-sys-color-background-inset);
 }
+
+/* ============================================
+   RADIANT 3.0 LOOK (opt-in: look: 'radiant-3')
+   The name scales with the avatar: 12/18 up to 24px, 14/20 at 32px,
+   16/24 from 40px (Figma Avatar 25110:44700)
+   ============================================ */
+
+:global([data-rd-look="radiant-3"]) .sizeXs .name,
+:global([data-rd-look="radiant-3"]) .sizeS .name {
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-sm);
+}
+
+:global([data-rd-look="radiant-3"]) .sizeM .name {
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-md);
+}
+
+:global([data-rd-look="radiant-3"]) .sizeL .name,
+:global([data-rd-look="radiant-3"]) .sizeXl .name,
+:global([data-rd-look="radiant-3"]) .sizeXxl .name {
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-lg);
+}
+
