@@ -263,12 +263,13 @@ const MenuSelector: React.FC<MenuSelectorProps> = ({ value, palette, onChange, d
         trailingIcon={<span className={styles.menuHexDot} style={{ backgroundColor: hex }} />}
       />
       <div className={styles.menuGrid}>
-        {palette.map((color) => {
+        {palette.map((color, i) => {
           const normColor = normaliseHex(color) || color;
           const isSelected = normColor === hex;
           return (
             <button
-              key={color}
+              // Figma's palette repeats a tone (#e0f8ef), so the position keeps keys unique
+              key={`${color}-${i}`}
               type="button"
               className={[styles.menuSwatch, isSelected && styles.swatchSelected].filter(Boolean).join(' ')}
               style={{ backgroundColor: normColor }}

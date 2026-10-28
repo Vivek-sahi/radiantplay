@@ -6,6 +6,7 @@ Fewer merge conflicts for designers syncing their forks.
 
 - `vite.config.ts` wires the gallery's save plugin in at the top of the imports and the end of the plugin list, where forks rarely edit, so forks that added their own imports or settings merge cleanly
 - `/rp-sync-upstream` knows two more conflicts: keep both sides of `vite.config.ts` (and keep the gallery plugin), and keep the fork's own `_liveboard-template/index.tsx` when the designer built on it
+- Vite 7.3.7 fixes the dev server's security alerts (cross-origin requests to custom middleware, and its editor launcher). Only `npm run dev` was affected; the deployed sites serve built files. Run `npm install` after syncing
 
 ## 26.10.4p — 2026-10-28
 

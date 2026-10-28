@@ -33,6 +33,7 @@ export const versionHistory: VersionEntry[] = [
     type: 'patch',
     changes: [
       { type: 'modified', group: 'Tooling', component: 'Fork sync', description: 'The gallery plugin sits where forks rarely edit vite.config.ts, and /rp-sync-upstream resolves vite.config.ts and Liveboard template conflicts' },
+      { type: 'modified', group: 'Tooling', component: 'Vite', description: 'Vite 7.3.7 fixes the dev server security alerts. Run npm install after syncing' },
     ],
   },
   {
