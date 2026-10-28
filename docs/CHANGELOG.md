@@ -1,5 +1,12 @@
 # Changelog
 
+## 26.10.4n — 2026-10-28
+
+ColorPicker gets the Figma picker as a new mode. The existing modes don't change.
+
+- `selectorType="menu"`: a 32px trigger showing the current colour opens a panel with a Hex color field and 56 Radiant swatches (seven tones of gray, red, orange, purple, green, yellow, teal and blue), as in Figma 116:9059. A custom `palette` still works
+- `RADIANT_PALETTE` is exported, for prototypes that need the same swatches
+
 ## 26.10.4m — 2026-10-28
 
 Table follows the Figma Object table, the most-used component and the biggest gap in the re-audit. Existing tables look the same.

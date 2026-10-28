@@ -173,7 +173,8 @@
   box-shadow: var(--shadow-sm);
 }
 
-.swatch.swatchSelected {
+.swatch.swatchSelected,
+.menuSwatch.swatchSelected {
   outline: 2px solid var(--rd-sys-color-border-brand);
   outline-offset: 2px;
   transform: scale(1.05);
@@ -183,3 +184,76 @@
   outline: 2px solid var(--rd-sys-color-border-focus);
   outline-offset: 2px;
 }
+
+/* ── Menu selector (Figma colour picker 116:9059) ───────────────────────── */
+
+.menuTrigger {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  height: var(--spacing-8);
+  padding: 0 var(--spacing-2) 0 var(--spacing-3);
+  border: 1px solid var(--rd-sys-color-border-bold);
+  border-radius: var(--radius-md);
+  background-color: var(--rd-sys-color-background-base);
+  color: var(--rd-sys-color-content-primary);
+  cursor: pointer;
+  transition: border-color var(--duration-fast) var(--easing-standard);
+}
+
+.menuTrigger:hover:not(:disabled) {
+  border-color: var(--rd-sys-color-border-bold-hover);
+}
+
+.menuTrigger:focus-visible {
+  outline: 2px solid var(--rd-sys-color-border-focus);
+  outline-offset: 2px;
+}
+
+.menuTriggerSwatch {
+  width: var(--spacing-4);
+  height: var(--spacing-4);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--rd-sys-color-border-divider);
+}
+
+.menuPanel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  padding: var(--spacing-3);
+}
+
+.menuHexDot {
+  display: block;
+  width: var(--spacing-4);
+  height: var(--spacing-4);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--rd-sys-color-border-divider);
+}
+
+.menuGrid {
+  display: grid;
+  grid-template-columns: repeat(8, var(--spacing-4));
+  gap: var(--spacing-1);
+}
+
+.menuSwatch {
+  width: var(--spacing-4);
+  height: var(--spacing-4);
+  padding: 0;
+  border: 1px solid var(--rd-sys-color-border-divider);
+  border-radius: var(--radius-xs);
+  cursor: pointer;
+  outline: none;
+}
+
+.menuSwatch:hover {
+  box-shadow: var(--rd-sys-color-shadow-surface);
+}
+
+.menuSwatch:focus-visible {
+  outline: 2px solid var(--rd-sys-color-border-focus);
+  outline-offset: 1px;
+}
+

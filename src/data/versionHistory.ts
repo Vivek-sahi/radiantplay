@@ -28,6 +28,14 @@ export interface VersionEntry {
  */
 export const versionHistory: VersionEntry[] = [
   {
+    version: '26.10.4n',
+    date: '2026-10-28',
+    type: 'patch',
+    changes: [
+      { type: 'added', group: 'Components', component: 'ColorPicker', description: 'selectorType menu: the Figma trigger and panel with a hex field and 56 Radiant swatches. RADIANT_PALETTE is exported' },
+    ],
+  },
+  {
     version: '26.10.4m',
     date: '2026-10-28',
     type: 'patch',

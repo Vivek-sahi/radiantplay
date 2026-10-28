@@ -1057,7 +1057,7 @@ const componentDocs: Record<string, {
     props: [
       { name: 'value', type: 'string', description: 'Current CSS color string' },
       { name: 'onChange', type: '(color: string) => void', description: 'Change handler' },
-      { name: 'selectorType', type: "'hex' | 'rgb' | 'palette'", default: "'hex'", description: 'Which mode to show' },
+      { name: 'selectorType', type: "'hex' | 'rgb' | 'palette' | 'menu'", default: "'hex'", description: 'Which mode to show. menu is the Figma picker: a trigger that opens a hex field and the Radiant swatches (RADIANT_PALETTE)' },
       { name: 'palette', type: 'string[]', description: 'Swatch colors for palette mode (defaults to 12 common colors)' },
       { name: 'disabled', type: 'boolean', default: 'false', description: 'Disabled state' },
     ],
@@ -2742,6 +2742,10 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
             <div>
               <p style={{ fontSize: 12, marginBottom: 8, color: sysVar('content-secondary') }}>Palette mode</p>
               <ColorPicker value={colorValue} onChange={setColorValue} selectorType="palette" />
+            </div>
+            <div>
+              <p style={{ fontSize: 12, marginBottom: 8, color: sysVar('content-secondary') }}>Menu mode (Figma)</p>
+              <ColorPicker value={colorValue} onChange={setColorValue} selectorType="menu" />
             </div>
           </div>
         );
