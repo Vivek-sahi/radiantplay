@@ -300,6 +300,8 @@ export const componentRegistry: ComponentMeta[] = [
     states: ['default', 'with-image', 'with-badge'],
     path: '/radiant/components/avatar',
     lastModified: '2026-01-30',
+    figmaNodeId: '25110:44700',
+    figmaFileKey: '1QlRveXx4wppvDXyPVWUTK',
     source: 'scaligent',
     status: 'new',
     variants: 6,

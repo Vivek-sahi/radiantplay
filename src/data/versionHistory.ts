@@ -28,6 +28,15 @@ export interface VersionEntry {
  */
 export const versionHistory: VersionEntry[] = [
   {
+    version: '26.10.4j',
+    date: '2026-10-28',
+    type: 'patch',
+    changes: [
+      { type: 'added', group: 'Design system', component: 'Component docs', description: 'A Usage section with Do and Don\'t rules from the Radiant 3.0 Figma file, for Button, Toast, Alert, Avatar, LoadingIndicator, ExplainerCard, Modal, TextInput and TextArea. The same rules are in the component inventory Claude reads' },
+      { type: 'modified', group: 'Design system', component: 'Component docs', description: 'Wrong entries corrected (LoadingIndicator, SearchInput, Tabs, Modal, AppSidebar) and missing props added for Button, TextInput and Table' },
+    ],
+  },
+  {
     version: '26.10.4i',
     date: '2026-10-27',
     type: 'patch',

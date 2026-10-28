@@ -87,6 +87,7 @@ import { RadiantLook } from '../context/RadiantLookContext';
 import { InlineEdit } from '../components/InlineEdit';
 import { FileUploader } from '../components/FileUploader';
 import type { DateRange } from '../components/DatePicker';
+import { Icon } from '../components/icons';
 
 interface PropDefinition {
   name: string;
@@ -99,23 +100,45 @@ interface ComponentDocPageProps {
   componentId: string;
 }
 
+/** Usage rules from the Radiant 3.0 Figma pages. Claude reads these too, so keep them short and literal. */
+interface UsageGuidance {
+  use?: string[];
+  avoid?: string[];
+}
+
 const componentDocs: Record<string, {
   name: string;
   description: string;
+  usage?: UsageGuidance;
   props: PropDefinition[];
 }> = {
   button: {
     name: 'Button',
     description: 'A comprehensive button component supporting multiple variants, sizes, colorways, and states. The most used component in the Radiant design system.',
+    usage: {
+      use: [
+        'Use Primary for the one dominant action on a screen',
+        'Use Secondary for supporting or alternative actions',
+        'Use Tertiary for low-emphasis actions, like Learn more',
+      ],
+      avoid: [
+        'Place several Primary buttons close together',
+        'Use Tertiary for critical actions like Delete or Submit',
+        'Mix button styles in one group of actions unless the hierarchy needs it',
+      ],
+    },
     props: [
       { name: 'variant', type: "'primary' | 'secondary' | 'tertiary'", default: "'primary'", description: 'The visual style variant' },
-      { name: 'size', type: "'small' | 'basic' | 'large'", default: "'basic'", description: 'The size of the button' },
+      { name: 'size', type: "'xs' | 'small' | 'basic' | 'large'", default: "'basic'", description: 'The size of the button' },
       { name: 'colorway', type: "'standard' | 'white'", default: "'standard'", description: 'Color scheme for light/dark backgrounds' },
       { name: 'icon', type: 'ReactNode', description: 'Optional icon element' },
       { name: 'iconPosition', type: "'leading' | 'trailing' | 'none'", default: "'none'", description: 'Position of the icon' },
       { name: 'loading', type: 'boolean', default: 'false', description: 'Whether the button is in loading state' },
       { name: 'disabled', type: 'boolean', default: 'false', description: 'Whether the button is disabled' },
       { name: 'fullWidth', type: 'boolean', default: 'false', description: 'Whether the button spans full width' },
+      { name: 'iconOnly', type: 'boolean', default: 'false', description: 'Icon button: shows only the icon. children becomes the accessible label' },
+      { name: 'active', type: 'boolean', default: 'false', description: 'Selected or activated state, for toggle buttons' },
+      { name: 'htmlType', type: "'button' | 'submit' | 'reset'", default: "'button'", description: 'The native button type' },
     ],
   },
   checkbox: {
@@ -160,6 +183,12 @@ const componentDocs: Record<string, {
   textinput: {
     name: 'TextInput',
     description: 'A text input field with optional label and error states. Built for accessibility and form validation.',
+    usage: {
+      use: [
+        'Under look: \'radiant-3\', put helper text in brackets beside the label, not under the field',
+        'On an error, the label becomes the message, for example Please add “Name”',
+      ],
+    },
     props: [
       { name: 'label', type: 'string', description: 'Label text' },
       { name: 'showLabel', type: 'boolean', default: 'true', description: 'Whether to show the label' },
@@ -169,12 +198,20 @@ const componentDocs: Record<string, {
       { name: 'error', type: 'boolean', default: 'false', description: 'Whether the input has an error' },
       { name: 'errorMessage', type: 'string', description: 'Error message under the field. Under look: \'radiant-3\' it replaces the label text, defaulting to Please add “{label}”' },
       { name: 'helperText', type: 'string', description: 'Helper text under the field. Under look: \'radiant-3\' it sits in brackets beside the label' },
+      { name: 'trailingIcon', type: 'ReactNode', description: 'Icon at the end of the field' },
+      { name: 'readOnly', type: 'boolean', default: 'false', description: 'Shows the value without letting people edit it' },
       { name: 'onChange', type: '(e: ChangeEvent) => void', description: 'Change handler' },
     ],
   },
   textarea: {
     name: 'TextArea',
     description: 'A multi-line text input field with optional label, helper text, character counter, and error states.',
+    usage: {
+      use: [
+        'Under look: \'radiant-3\', put helper text in brackets beside the label, not under the field',
+        'On an error, the label becomes the message, for example Please add “Description”',
+      ],
+    },
     props: [
       { name: 'label', type: 'string', description: 'Label text' },
       { name: 'showLabel', type: 'boolean', default: 'true', description: 'Whether to show the label' },
@@ -192,13 +229,12 @@ const componentDocs: Record<string, {
   },
   searchinput: {
     name: 'SearchInput',
-    description: 'A search input with icon and clear functionality. Perfect for filtering and search features.',
+    description: 'A search input with a leading search icon, for filtering lists and searching content.',
     props: [
       { name: 'placeholder', type: 'string', default: "'Search'", description: 'Placeholder text' },
       { name: 'value', type: 'string', description: 'Current value' },
       { name: 'disabled', type: 'boolean', default: 'false', description: 'Whether the input is disabled' },
       { name: 'onChange', type: '(e: ChangeEvent) => void', description: 'Change handler' },
-      { name: 'onClear', type: '() => void', description: 'Handler when clear button is clicked' },
     ],
   },
   chip: {
@@ -218,6 +254,11 @@ const componentDocs: Record<string, {
   alert: {
     name: 'Alert',
     description: 'A notification component for displaying important messages. Supports different statuses and variants.',
+    usage: {
+      use: [
+        'Keep a page banner caption to 80 characters or fewer',
+      ],
+    },
     props: [
       { name: 'status', type: "'info' | 'success' | 'warning' | 'failure' | 'muted'", default: "'info'", description: 'The status/type of alert' },
       { name: 'variant', type: "'page' | 'section' | 'section-multiline'", default: "'section'", description: 'The variant/layout of the alert' },
@@ -231,6 +272,14 @@ const componentDocs: Record<string, {
   toast: {
     name: 'Toast',
     description: 'A temporary notification that appears to provide feedback about an action. Auto-dismisses after a configurable duration.',
+    usage: {
+      use: [
+        'Confirm an action that finished, like a save or a share',
+      ],
+      avoid: [
+        'Show errors or warnings in a toast. Use an Alert instead. The warning and error types are kept for older prototypes but are off-spec',
+      ],
+    },
     props: [
       { name: 'message', type: 'string', description: 'Toast message' },
       { name: 'type', type: "'success' | 'info' | 'warning' | 'error'", default: "'info'", description: 'Toast type' },
@@ -245,22 +294,37 @@ const componentDocs: Record<string, {
   modal: {
     name: 'Modal',
     description: 'An overlay modal dialog for displaying content on top of the page. Supports keyboard navigation and focus trapping.',
+    usage: {
+      use: [
+        'Pick the size for the content: M1 394px for confirmations, M2 788px, M3 1182px, M4 full screen',
+        'Use the splash screen type to introduce a new feature, once per feature',
+        'In a splash screen, use one image or a short video of 6 to 11 seconds, and at most three steps',
+      ],
+    },
     props: [
       { name: 'isOpen', type: 'boolean', description: 'Whether the modal is open' },
       { name: 'onClose', type: '() => void', description: 'Handler to close the modal' },
       { name: 'title', type: 'string', description: 'Modal title' },
       { name: 'children', type: 'ReactNode', description: 'Modal content' },
       { name: 'footer', type: 'ReactNode', description: 'Footer content (typically buttons)' },
-      { name: 'size', type: "'small' | 'medium' | 'large'", default: "'medium'", description: 'Modal size' },
+      { name: 'size', type: "'M1' | 'M2' | 'M3' | 'M4' | 'small' | 'medium' | 'large'", default: "'M2'", description: 'M1 394px, M2 788px, M3 1182px, M4 full screen. small, medium and large are older names' },
+      { name: 'type', type: "'simple' | 'wizard' | 'subnavigation' | 'splashscreen'", default: "'simple'", description: 'Layout of the modal' },
+      { name: 'eyebrow', type: 'string', description: 'Small line above the title' },
+      { name: 'currentStep', type: 'number', description: 'Wizard: the current step' },
+      { name: 'totalSteps', type: 'number', description: 'Wizard: the number of steps' },
+      { name: 'navigation', type: 'ReactNode', description: 'Sub-navigation: the left panel' },
+      { name: 'mediaContent', type: 'ReactNode', description: 'Splash screen: the media area' },
+      { name: 'showCloseButton', type: 'boolean', default: 'true', description: 'Whether to show the close button' },
       { name: 'closeOnOverlayClick', type: 'boolean', default: 'true', description: 'Whether to close on overlay click' },
       { name: 'closeOnEscape', type: 'boolean', default: 'true', description: 'Whether to close on Escape key' },
     ],
   },
   tabs: {
     name: 'Tabs',
-    description: 'Navigation tabs for content organization. Supports keyboard navigation and active state management.',
+    description: 'Navigation tabs for switching between views of the same content.',
     props: [
-      { name: 'tabs', type: 'Array<{ id: string, label: string }>', description: 'Array of tab items' },
+      { name: 'tabs', type: 'Array<{ id: string, label: string, icon?: ReactNode }>', description: 'Array of tab items' },
+      { name: 'size', type: "'medium' | 'small'", description: 'Tab height: medium 48px, small 32px. Unset keeps the older 46px tabs; look: \'radiant-3\' uses 48px' },
       { name: 'activeTab', type: 'string', description: 'Currently active tab ID' },
       { name: 'onTabChange', type: '(id: string) => void', description: 'Handler when a tab is selected' },
     ],
@@ -309,6 +373,10 @@ const componentDocs: Record<string, {
       { name: 'hoverable', type: 'boolean', default: 'true', description: 'Show hover state on rows' },
       { name: 'bordered', type: 'boolean', default: 'false', description: 'Show table borders' },
       { name: 'striped', type: 'boolean', default: 'false', description: 'Striped rows' },
+      { name: 'compact', type: 'boolean', default: 'false', description: 'Shorter rows' },
+      { name: 'stickyHeader', type: 'boolean', default: 'false', description: 'Header stays visible while the rows scroll' },
+      { name: 'onRowClick', type: '(row: T, index: number) => void', description: 'Called when a row is clicked' },
+      { name: 'columns[].sortable', type: 'boolean', default: 'false', description: 'Makes a column sortable from its header' },
     ],
   },
   tooltip: {
@@ -342,16 +410,37 @@ const componentDocs: Record<string, {
   // Phase 2: Core Components
   loadingindicator: {
     name: 'LoadingIndicator',
-    description: 'A compound component providing both contextual (inline) and global (fullscreen) loading indicators.',
+    description: 'Loading states: a spinner with optional text, a small inline spinner (Contextual), and placeholder shapes (Skeleton). For a full-area loader over content, use LoadingOverlay.',
+    usage: {
+      use: [
+        'Use Skeleton when a section is loading, for cards, titles and images',
+        'Keep border radii consistent when combining several Skeletons',
+        'Use Contextual (the spinner) for small inline waits',
+      ],
+      avoid: [
+        'Use a single Skeleton to show a whole page loading',
+      ],
+    },
     props: [
-      { name: 'Contextual.size', type: "'xs' | 's' | 'm' | 'l' | 'xl'", default: "'m'", description: 'Size of the spinner (12-48px)' },
-      { name: 'Global.dark', type: 'boolean', default: 'false', description: 'Use dark theme overlay' },
-      { name: 'Global.message', type: 'string', description: 'Optional loading message' },
+      { name: 'size', type: "'small' | 'medium' | 'large'", default: "'medium'", description: 'Size of the spinner' },
+      { name: 'text', type: 'string', description: 'Text under the spinner' },
+      { name: 'centered', type: 'boolean', default: 'false', description: 'Centres the spinner in its container' },
+      { name: 'Contextual.size', type: "'xs' | 's' | 'm' | 'l' | 'xl'", default: "'m'", description: 'Size of the inline spinner (12-48px)' },
+      { name: 'Skeleton.variant', type: "'text' | 'circular' | 'rectangular' | 'rounded'", default: "'text'", description: 'Shape of the placeholder' },
+      { name: 'Skeleton.width', type: 'number | string', description: 'Placeholder width' },
+      { name: 'Skeleton.height', type: 'number | string', description: 'Placeholder height' },
     ],
   },
   avatar: {
     name: 'Avatar',
     description: 'Displays a user avatar with automatic initials fallback, image loading, and optional badge support.',
+    usage: {
+      use: [
+        'Group one to three avatars, overlapping left to right',
+        'Make avatars clickable or not, as the context needs',
+        'Show a tooltip on hover and focus, with the same text as the avatar label',
+      ],
+    },
     props: [
       { name: 'name', type: 'string', description: 'User name (used for initials and alt text)' },
       { name: 'src', type: 'string', description: 'Image source URL' },
@@ -753,7 +842,7 @@ const componentDocs: Record<string, {
       { name: 'isOverlay', type: 'boolean', default: 'false', description: 'Render in overlay mode with shadow (for fullscreen views)' },
       { name: 'theme', type: "'auto' | 'light' | 'dark'", default: "'auto'", description: 'auto follows the app theme, like the product nav. light is the same as auto. dark is the legacy always-dark navy nav.' },
       { name: 'onClose', type: '() => void', description: 'Close handler for overlay mode' },
-      { name: 'width', type: 'number', default: '261', description: 'Sidebar width in pixels' },
+      { name: 'width', type: 'number', default: '260', description: 'Sidebar width in pixels' },
     ],
   },
   appshell: {
@@ -845,6 +934,13 @@ const componentDocs: Record<string, {
   explainercard: {
     name: 'ExplainerCard',
     description: 'Educational card with an icon, title, description body, and optional CTA. Use to explain features or onboard users.',
+    usage: {
+      use: [
+        'Opened by a click: show the dismiss button, and keep it open until people dismiss it or click outside',
+        'Opened by hover: no dismiss button, and close it when the pointer leaves',
+        'Keep the text to 4 lines or fewer',
+      ],
+    },
     props: [
       { name: 'title', type: 'string', description: 'Card heading. Leave it out for the title-less layout' },
       { name: 'description', type: 'ReactNode', description: 'Body text (required)' },
@@ -3311,6 +3407,41 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
         </div>
       </section>
 
+      {/* Usage, from the Radiant 3.0 Figma pages */}
+      {doc.usage && (
+        <section style={styles.section}>
+          <h2 style={styles.sectionTitle}>Usage</h2>
+          <div style={styles.usageGrid}>
+            {doc.usage.use && (
+              <div style={styles.usageColumn}>
+                <h3 style={styles.usageHeading}>Do</h3>
+                <ul style={styles.usageList}>
+                  {doc.usage.use.map((rule) => (
+                    <li key={rule} style={styles.usageItem}>
+                      <span style={styles.usageIcon}><Icon name="checkmark" size="s" color={sysVar('content-success')} /></span>
+                      <span>{rule}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {doc.usage.avoid && (
+              <div style={styles.usageColumn}>
+                <h3 style={styles.usageHeading}>Don't</h3>
+                <ul style={styles.usageList}>
+                  {doc.usage.avoid.map((rule) => (
+                    <li key={rule} style={styles.usageItem}>
+                      <span style={styles.usageIcon}><Icon name="cross" size="s" color={sysVar('content-failure')} /></span>
+                      <span>{rule}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
       {/* Props Table */}
       <section style={styles.section}>
         <h2 style={styles.sectionTitle}>Props</h2>
@@ -3438,6 +3569,47 @@ const styles: Record<string, React.CSSProperties> = {
     textTransform: 'uppercase',
     letterSpacing: '0.5px',
     marginBottom: '12px',
+  },
+  usageGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+    gap: 'var(--spacing-4)',
+  },
+  usageColumn: {
+    padding: 'var(--spacing-5)',
+    background: sysVar('background-base'),
+    border: `1px solid ${sysVar('border-subtle')}`,
+    borderRadius: 'var(--radius-lg)',
+  },
+  usageHeading: {
+    margin: '0 0 var(--spacing-3)',
+    fontFamily: 'var(--font-family-primary)',
+    fontSize: 'var(--font-size-sm)',
+    fontWeight: 'var(--font-weight-emphasis)',
+    color: sysVar('content-primary'),
+  },
+  usageList: {
+    margin: 0,
+    padding: 0,
+    listStyle: 'none',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 'var(--spacing-3)',
+  },
+  usageItem: {
+    display: 'flex',
+    gap: 'var(--spacing-2)',
+    alignItems: 'flex-start',
+    fontFamily: 'var(--font-family-primary)',
+    fontSize: 'var(--font-size-sm)',
+    lineHeight: 'var(--line-height-md)',
+    color: sysVar('content-secondary'),
+  },
+  usageIcon: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    flexShrink: 0,
+    height: 'var(--line-height-md)',
   },
   propsTable: {
     background: sysVar('background-base'),

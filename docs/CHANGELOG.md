@@ -1,5 +1,15 @@
 # Changelog
 
+## 26.10.4j — 2026-10-28
+
+Component docs carry the usage rules from the Radiant 3.0 Figma file, and the entries that were wrong are corrected. Components look the same.
+
+- Doc pages have a Usage section (Do and Don't) above Props, filled from Figma for Button, Toast, Alert, Avatar, LoadingIndicator, ExplainerCard, Modal, TextInput and TextArea. For example: one Primary button per screen, toasts only confirm and never show errors, page banner captions stay under 80 characters
+- `.cursor/rules/component-inventory.md` gets the same rules, so Claude follows them when building prototypes
+- Corrected doc entries: LoadingIndicator (no Global mode; adds Skeleton), SearchInput (no `onClear`), Tabs (no keyboard navigation claim; adds `size` and tab icons), Modal (sizes M1 to M4, default M2, and `type`, `eyebrow`, wizard, sub-navigation and splash props), AppSidebar width 260
+- Props tables add what was missing: Button `xs`, `iconOnly`, `active`, `htmlType`; TextInput `trailingIcon`, `readOnly`; Table `compact`, `stickyHeader`, `onRowClick` and sortable columns
+- The Avatar entry in the Component Registry links to its Figma page
+
 ## 26.10.4i — 2026-10-27
 
 New `/rp-contribute` command for sending work back to Radiant Play.
