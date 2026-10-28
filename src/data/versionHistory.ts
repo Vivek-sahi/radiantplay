@@ -28,6 +28,15 @@ export interface VersionEntry {
  */
 export const versionHistory: VersionEntry[] = [
   {
+    version: '26.10.4m',
+    date: '2026-10-28',
+    type: 'patch',
+    changes: [
+      { type: 'added', group: 'Components', component: 'Table', description: 'TableCellRenderers.title, tokens, button and iconButton, from the Figma Object table cells' },
+      { type: 'modified', group: 'Components', component: 'Table', description: 'Under look: radiant-3: 32px sentence-case header, 72px rows, Radiant checkboxes and a sort icon on hover' },
+    ],
+  },
+  {
     version: '26.10.4l',
     date: '2026-10-28',
     type: 'patch',

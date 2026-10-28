@@ -1,5 +1,20 @@
 # Changelog
 
+## 26.10.4m — 2026-10-28
+
+Table follows the Figma Object table, the most-used component and the biggest gap in the re-audit. Existing tables look the same.
+
+- New cell types in `TableCellRenderers`, for everyone:
+  - `title`: a brand title with an optional icon, description line and error line
+  - `tokens`: read-only Tokens with a +N count
+  - `button` and `iconButton`: their clicks don't select or open the row
+- Under `look: 'radiant-3'`:
+  - A 32px header on On Base, in sentence case and regular weight
+  - 72px rows (`compact` still makes them shorter)
+  - Radiant checkboxes, with the select-all box showing a partial selection
+  - The sort icon shows when you hover a sortable header, which gets a fill
+- The Table doc page lists the cell types and shows an Object table example
+
 ## 26.10.4l — 2026-10-28
 
 Batch 9 of the Figma re-audit: new opt-in options, and Radiant 3.0 sizes and states for prototypes with `look: 'radiant-3'`. Other prototypes look the same.

@@ -12,7 +12,7 @@ import { Toast } from '../components/Toast';
 import { Modal } from '../components/Modal';
 import { Tabs } from '../components/Tabs';
 import { Select } from '../components/Select';
-import { Table } from '../components/Table';
+import { Table, TableCellRenderers } from '../components/Table';
 import { Tooltip } from '../components/Tooltip';
 import { Popover } from '../components/Popover';
 // New Phase 2-4 components
@@ -362,7 +362,7 @@ const componentDocs: Record<string, {
   },
   table: {
     name: 'Table',
-    description: 'A flexible data table component for displaying tabular data with sorting, selection, and custom cell rendering.',
+    description: 'A data table with sorting, selection and custom cells. TableCellRenderers gives ready-made cells: title (with description and error lines), tokens, button, iconButton, avatar, chip, chips, status, date, number and boolean. Under look: \'radiant-3\' it follows the Figma Object table: a 32px header, 72px rows and Radiant checkboxes.',
     props: [
       { name: 'columns', type: 'Array<TableColumn>', description: 'Column definitions with key, label, width, and render function' },
       { name: 'data', type: 'Array<T>', description: 'Table data rows' },
@@ -1343,6 +1343,7 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
   const [segmentedValue, setSegmentedValue] = useState('day');
   // New component states (Phase 1-4)
   const [searchBarValue, setSearchBarValue] = useState('');
+  const [tableSelection, setTableSelection] = useState<string[]>([]);
   // Props start collapsed on every component page, unless the link points at them
   const [openPropsFor, setOpenPropsFor] = useState<string | null>(() =>
     typeof window !== 'undefined' && window.location.hash === '#props' ? componentId : null);
@@ -1778,6 +1779,27 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
               rowKey="id"
               hoverable
             />
+            <RadiantLook>
+              <Table
+                selectable
+                selectedKeys={tableSelection}
+                onSelectionChange={setTableSelection}
+                columns={[
+                  { key: 'name', label: 'Name', sortable: true, render: TableCellRenderers.title({ descriptionKey: 'description', errorKey: 'error', icon: 'table' }) },
+                  { key: 'columns', label: 'Columns', render: TableCellRenderers.tokens({ type: 'attribute', max: 2 }) },
+                  { key: 'owner', label: 'Owner', sortable: true },
+                  { key: 'open', label: '', width: '96px', render: TableCellRenderers.button({ label: 'Open', onClick: () => {} }) },
+                  { key: 'more', label: '', width: '56px', render: TableCellRenderers.iconButton({ icon: 'more', label: 'More actions', onClick: () => {} }) },
+                ]}
+                data={[
+                  { id: 'a', name: 'Retail sales', description: 'Orders, returns and stores', columns: ['Region', 'Revenue', 'Store'], owner: 'Alex Johnson' },
+                  { id: 'b', name: 'Marketing spend', description: 'Campaigns by channel', columns: ['Channel', 'Spend'], owner: 'Sarah Chen' },
+                  { id: 'c', name: 'Support tickets', error: 'Could not load ticketing system data', columns: ['Priority'], owner: 'Mike Roberts' },
+                ]}
+                rowKey="id"
+                hoverable
+              />
+            </RadiantLook>
           </div>
         );
 
