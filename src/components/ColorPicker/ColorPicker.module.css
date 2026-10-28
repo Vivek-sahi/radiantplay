@@ -173,8 +173,7 @@
   box-shadow: var(--shadow-sm);
 }
 
-.swatch.swatchSelected,
-.menuSwatch.swatchSelected {
+.swatch.swatchSelected {
   outline: 2px solid var(--rd-sys-color-border-brand);
   outline-offset: 2px;
   transform: scale(1.05);
@@ -217,11 +216,18 @@
   border: 1px solid var(--rd-sys-color-border-divider);
 }
 
+/* As wide as the 8-column grid, so the hex field and the swatches line up */
 .menuPanel {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-3);
+  box-sizing: content-box;
+  width: calc(8 * var(--spacing-4) + 7 * var(--spacing-1));
   padding: var(--spacing-3);
+}
+
+.menuPanel > * {
+  min-width: 0;
 }
 
 .menuHexDot {
@@ -250,6 +256,11 @@
 
 .menuSwatch:hover {
   box-shadow: var(--rd-sys-color-shadow-surface);
+}
+
+.menuSwatch.swatchSelected {
+  outline: 2px solid var(--rd-sys-color-border-brand);
+  outline-offset: 1px;
 }
 
 .menuSwatch:focus-visible {

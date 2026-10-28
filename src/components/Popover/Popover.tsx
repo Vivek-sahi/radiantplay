@@ -164,8 +164,18 @@ export const Popover = forwardRef<HTMLDivElement, PopoverProps>(({
       }
     }
 
-    // Keep within viewport
+    // Flip to the other side when this one runs off screen and the other has room,
+    // so the panel never lands on its own trigger
     const padding = 8;
+    if (primaryPlacement === 'bottom' && top + popoverRect.height > window.innerHeight - padding
+      && triggerRect.top - popoverRect.height - gap >= padding) {
+      top = triggerRect.top - popoverRect.height - gap;
+    } else if (primaryPlacement === 'top' && top < padding
+      && triggerRect.bottom + gap + popoverRect.height <= window.innerHeight - padding) {
+      top = triggerRect.bottom + gap;
+    }
+
+    // Keep within viewport
     left = Math.max(padding, Math.min(left, window.innerWidth - popoverRect.width - padding));
     top = Math.max(padding, Math.min(top, window.innerHeight - popoverRect.height - padding));
 

@@ -33,6 +33,7 @@ export const versionHistory: VersionEntry[] = [
     type: 'patch',
     changes: [
       { type: 'added', group: 'Components', component: 'ColorPicker', description: 'selectorType menu: the Figma trigger and panel with a hex field and 56 Radiant swatches. RADIANT_PALETTE is exported' },
+      { type: 'modified', group: 'Components', component: 'Popover', description: 'Flips to the other side of its trigger near a screen edge instead of covering it' },
     ],
   },
   {

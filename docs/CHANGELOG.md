@@ -6,6 +6,7 @@ ColorPicker gets the Figma picker as a new mode. The existing modes don't change
 
 - `selectorType="menu"`: a 32px trigger showing the current colour opens a panel with a Hex color field and 56 Radiant swatches (seven tones of gray, red, orange, purple, green, yellow, teal and blue), as in Figma 116:9059. A custom `palette` still works
 - `RADIANT_PALETTE` is exported, for prototypes that need the same swatches
+- For everyone: a Popover near the bottom or top of the screen flips to the other side of its trigger instead of being pushed on top of it
 
 ## 26.10.4m — 2026-10-28
 
