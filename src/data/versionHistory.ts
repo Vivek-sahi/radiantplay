@@ -28,6 +28,14 @@ export interface VersionEntry {
  */
 export const versionHistory: VersionEntry[] = [
   {
+    version: '26.10.4q',
+    date: '2026-10-28',
+    type: 'patch',
+    changes: [
+      { type: 'modified', group: 'Tooling', component: 'Fork sync', description: 'The gallery plugin sits where forks rarely edit vite.config.ts, and /rp-sync-upstream resolves vite.config.ts and Liveboard template conflicts' },
+    ],
+  },
+  {
     version: '26.10.4p',
     date: '2026-10-28',
     type: 'patch',
