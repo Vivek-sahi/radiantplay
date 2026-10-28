@@ -1,5 +1,19 @@
 # Changelog
 
+## 26.10.4k — 2026-10-28
+
+More components follow the Radiant 3.0 Figma file. Two plain bugs are fixed for everyone; everything else applies only to prototypes with `look: 'radiant-3'`, so other prototypes look the same.
+
+- For everyone: a tertiary icon-only button (the Ghost icon button) is round, as `iconOnly` always meant. Two class names in the tertiary style outranked it and left it square. Only the hover fill changes shape. White links keep their colour on hover and underline, instead of turning grey
+- Under `look: 'radiant-3'`:
+  - Ghost icon buttons draw the icon in Content/Primary, and in brand only when activated
+  - The active menu row and the selected Select option use Ghost Highlight with brand text instead of a solid blue fill. Menu group titles are 14px in sentence case on a 32px row
+  - The selected day, month and year in the date picker use Ghost Highlight with brand text instead of solid brand
+  - Tooltips have no arrow
+  - Segmented control segments are 4/16 with no gap, and hover uses Ghost Hover
+  - The page alert action is shaped like Button Primary White Small, and alert dismiss buttons are round with Ghost Hover
+  - Global header buttons change their fill on hover instead of drawing a ring
+
 ## 26.10.4j — 2026-10-28
 
 Component docs carry the usage rules from the Radiant 3.0 Figma file, and the entries that were wrong are corrected. Components look the same.

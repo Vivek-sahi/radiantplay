@@ -508,3 +508,14 @@
 :global([data-rd-look="radiant-3"]) .day.dayInRange:hover:not(.daySelected) {
   background-color: color-mix(in srgb, var(--rd-sys-color-background-brand) 20%, transparent);
 }
+
+/* Selected day, month and year: Ghost Highlight with brand text, not solid brand */
+:global([data-rd-look="radiant-3"]) .daySelected,
+:global([data-rd-look="radiant-3"]) .daySelected:hover,
+:global([data-rd-look="radiant-3"]) .monthCellSelected,
+:global([data-rd-look="radiant-3"]) .monthCellSelected:hover,
+:global([data-rd-look="radiant-3"]) .yearCellSelected,
+:global([data-rd-look="radiant-3"]) .yearCellSelected:hover {
+  background-color: var(--rd-sys-color-background-ghost-highlight);
+  color: var(--rd-sys-color-content-brand);
+}

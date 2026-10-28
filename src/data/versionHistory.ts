@@ -28,6 +28,15 @@ export interface VersionEntry {
  */
 export const versionHistory: VersionEntry[] = [
   {
+    version: '26.10.4k',
+    date: '2026-10-28',
+    type: 'patch',
+    changes: [
+      { type: 'modified', group: 'Components', component: 'Button, Link', description: 'Tertiary icon-only buttons are round, as iconOnly intended. White links keep their colour on hover' },
+      { type: 'modified', group: 'Components', component: 'Radiant 3.0 look', description: 'Under look: radiant-3: Ghost icon colour, Ghost Highlight for active menu rows, selected options and calendar dates, sentence-case menu group titles, no tooltip arrow, Segmented control spacing, Alert action and dismiss shapes, Global header hover fills' },
+    ],
+  },
+  {
     version: '26.10.4j',
     date: '2026-10-28',
     type: 'patch',

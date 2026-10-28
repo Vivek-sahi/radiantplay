@@ -63,3 +63,12 @@
   top: 50%;
   margin-top: -4px;
 }
+
+/* ============================================
+   RADIANT 3.0 LOOK (opt-in: look: 'radiant-3')
+   Figma's tooltip has no arrow
+   ============================================ */
+
+:global([data-rd-look="radiant-3"]) .arrow {
+  display: none;
+}

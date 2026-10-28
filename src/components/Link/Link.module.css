@@ -55,12 +55,9 @@
   color: var(--rd-sys-color-content-alternate);
 }
 
-.white:hover {
-  color: var(--rd-sys-color-background-subtle);
-}
-
+.white:hover,
 .white:active {
-  color: var(--rd-sys-color-border-default);
+  color: var(--rd-sys-color-content-alternate);
 }
 
 .gray {

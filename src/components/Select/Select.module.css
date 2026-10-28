@@ -309,3 +309,10 @@
 :global([data-rd-look="radiant-3"]) .optionDisabled:hover {
   background-color: transparent;
 }
+
+/* Selected option: Ghost Highlight with brand text */
+:global([data-rd-look="radiant-3"]) .selected,
+:global([data-rd-look="radiant-3"]) .selected:hover {
+  background-color: var(--rd-sys-color-background-ghost-highlight);
+  color: var(--rd-sys-color-content-brand);
+}
