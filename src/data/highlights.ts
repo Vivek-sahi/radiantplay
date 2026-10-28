@@ -24,7 +24,29 @@ export const HIGHLIGHT_GROUPS: { id: HighlightGroup; label: string }[] = [
 ];
 
 export const HIGHLIGHTS: Highlight[] = [
-  // ── Current six (v26.10): the five big updates, then the rest in one ───────
+  // ── 26.10.4q ────────────────────────────────────────────────────────────────
+  {
+    title: 'Groups in the gallery',
+    description: 'Sort prototypes into groups, switch to a list view, and move, rename or archive them right in the gallery while npm run dev runs. It suggests groups for prototypes that look like one project.',
+    version: '26.10.4g',
+    date: '2026-10-27',
+    group: 'enhancements',
+  },
+  {
+    title: 'Usage rules from Figma in the docs',
+    description: 'Component pages show Figma\'s Do and Don\'t rules, and Claude follows them when it builds. Table, Menu, Select and more match Radiant 3.0 under look: radiant-3.',
+    version: '26.10.4j',
+    date: '2026-10-28',
+    group: 'enhancements',
+  },
+  {
+    title: 'Share your work with /rp-contribute',
+    description: 'Asks what you are sharing, works out where each piece belongs, and opens PRs against staging or a teammate\'s branch.',
+    version: '26.10.4i',
+    date: '2026-10-27',
+    group: 'enhancements',
+  },
+  // ── v26.10 big updates ─────────────────────────────────────────────────────
   {
     title: 'Dark mode, everywhere',
     description: 'Every page, component and prototype works in light and dark. Press Ctrl+D.',

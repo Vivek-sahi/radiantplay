@@ -50,7 +50,8 @@ while true; do
 done
 
 # ── 3. Show git log since last change to platformVersion.ts ──────────────────
-SINCE_COMMIT=$(git log --follow --format="%H" -- "$PLATFORM_FILE" | head -2 | tail -1)
+# -2 rather than | head -2: with pipefail, head closing the pipe early kills the script
+SINCE_COMMIT=$(git log --follow -2 --format="%H" -- "$PLATFORM_FILE" | tail -1)
 echo ""
 echo "─────────────────────────────────────────────────────"
 echo "Commits since last release ($CURRENT):"
@@ -69,7 +70,7 @@ rm -f "${PLATFORM_FILE}.bak"
 echo "✓ Updated $PLATFORM_FILE → $VERSION"
 
 # ── 5. Append to docs/CHANGELOG.md ───────────────────────────────────────────
-COMMIT_LIST=$(git log --format="- %s" "${SINCE_COMMIT:+$SINCE_COMMIT..HEAD}" 2>/dev/null | head -20 || git log --oneline -10 --format="- %s")
+COMMIT_LIST=$(git log -20 --format="- %s" "${SINCE_COMMIT:+$SINCE_COMMIT..HEAD}" 2>/dev/null || git log -10 --format="- %s")
 
 CHANGELOG_ENTRY="
 ## $VERSION — $TODAY
@@ -104,7 +105,7 @@ echo "    date: '$TODAY',"
 echo "    type: 'minor', // change to major/patch/figma-sync as needed"
 echo "    changes: ["
 echo "      // Add your change entries here, e.g.:"
-git log --format="      // { type: 'added', component: '%s' }," "${SINCE_COMMIT:+$SINCE_COMMIT..HEAD}" 2>/dev/null | head -10
+git log -10 --format="      // { type: 'added', component: '%s' }," "${SINCE_COMMIT:+$SINCE_COMMIT..HEAD}" 2>/dev/null
 echo "    ],"
 echo "  },"
 echo ""
