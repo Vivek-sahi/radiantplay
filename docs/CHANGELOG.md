@@ -1,5 +1,12 @@
 # Changelog
 
+## 26.10.4q — 2026-10-28
+
+Fewer merge conflicts for designers syncing their forks.
+
+- `vite.config.ts` wires the gallery's save plugin in at the top of the imports and the end of the plugin list, where forks rarely edit, so forks that added their own imports or settings merge cleanly
+- `/rp-sync-upstream` knows two more conflicts: keep both sides of `vite.config.ts` (and keep the gallery plugin), and keep the fork's own `_liveboard-template/index.tsx` when the designer built on it
+
 ## 26.10.4p — 2026-10-28
 
 New FontFormatter component from Figma, and RichTextEditor draws its format buttons with Radiant icons.
