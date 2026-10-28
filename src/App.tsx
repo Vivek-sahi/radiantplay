@@ -178,6 +178,7 @@ const ROUTES = {
   numericfilterinput: '/radiant/components/numericfilterinput',
   directioncontrol: '/radiant/components/directioncontrol',
   colorpicker: '/radiant/components/colorpicker',
+  fontformatter: '/radiant/components/fontformatter',
   inputmentions: '/radiant/components/inputmentions',
   filtermodal: '/radiant/components/filtermodal',
   // Interaction
@@ -325,6 +326,7 @@ const RadiantLayout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       'numericfilterinput': '/radiant/components/numericfilterinput',
       'directioncontrol': '/radiant/components/directioncontrol',
       'colorpicker': '/radiant/components/colorpicker',
+      'fontformatter': '/radiant/components/fontformatter',
       'inputmentions': '/radiant/components/inputmentions',
       'filtermodal': '/radiant/components/filtermodal',
       // Interaction
@@ -451,6 +453,7 @@ const RadiantLayout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     { id: 'numericfilterinput', label: 'NumericFilterInput', icon: <ComponentIcon />, type: 'item' },
     { id: 'directioncontrol', label: 'DirectionControl', icon: <ComponentIcon />, type: 'item' },
     { id: 'colorpicker', label: 'ColorPicker', icon: <ComponentIcon />, type: 'item' },
+    { id: 'fontformatter', label: 'FontFormatter', icon: <ComponentIcon />, type: 'item' },
     { id: 'inputmentions', label: 'InputMentions', icon: <ComponentIcon />, type: 'item' },
     { id: 'filtermodal', label: 'FilterModal', icon: <ComponentIcon />, type: 'item' },
     { id: 'divider10', label: '', type: 'divider' },
@@ -707,6 +710,7 @@ const App: React.FC = () => {
       <Route path="/radiant/components/numericfilterinput" element={<RadiantLayout><ComponentDocPage componentId="numericfilterinput" /></RadiantLayout>} />
       <Route path="/radiant/components/directioncontrol" element={<RadiantLayout><ComponentDocPage componentId="directioncontrol" /></RadiantLayout>} />
       <Route path="/radiant/components/colorpicker" element={<RadiantLayout><ComponentDocPage componentId="colorpicker" /></RadiantLayout>} />
+      <Route path="/radiant/components/fontformatter" element={<RadiantLayout><ComponentDocPage componentId="fontformatter" /></RadiantLayout>} />
       <Route path="/radiant/components/inputmentions" element={<RadiantLayout><ComponentDocPage componentId="inputmentions" /></RadiantLayout>} />
       <Route path="/radiant/components/filtermodal" element={<RadiantLayout><ComponentDocPage componentId="filtermodal" /></RadiantLayout>} />
 

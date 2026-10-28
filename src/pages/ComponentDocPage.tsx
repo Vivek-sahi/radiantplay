@@ -88,6 +88,8 @@ import { InlineEdit } from '../components/InlineEdit';
 import { FileUploader } from '../components/FileUploader';
 import type { DateRange } from '../components/DatePicker';
 import { Icon } from '../components/icons';
+import { FontFormatter } from '../components/FontFormatter';
+import type { FontFormat } from '../components/FontFormatter';
 
 interface PropDefinition {
   name: string;
@@ -1063,6 +1065,16 @@ const componentDocs: Record<string, {
       { name: 'disabled', type: 'boolean', default: 'false', description: 'Disabled state' },
     ],
   },
+  fontformatter: {
+    name: 'FontFormatter',
+    description: 'The Figma Font formatter: bold, italic, strikethrough and underline toggles in one bordered group. A format that is on uses Ghost Highlight. RichTextEditor uses the same icons.',
+    props: [
+      { name: 'value', type: 'FontFormat[]', default: '[]', description: "Formats that are on: 'bold' | 'italic' | 'strikethrough' | 'underline'" },
+      { name: 'onChange', type: '(value: FontFormat[]) => void', description: 'Called with the new set when a toggle is pressed' },
+      { name: 'formats', type: 'FontFormat[]', default: "['bold', 'italic', 'strikethrough', 'underline']", description: 'Which toggles to show, in order' },
+      { name: 'disabled', type: 'boolean', default: 'false', description: 'Disables every toggle' },
+    ],
+  },
   inputmentions: {
     name: 'InputMentions',
     description: '@mention autocomplete textarea. Detects @ trigger, filters suggestions, supports keyboard navigation (↑↓ Enter Esc).',
@@ -1346,6 +1358,7 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
   const [searchBarValue, setSearchBarValue] = useState('');
   const [tableSelection, setTableSelection] = useState<string[]>([]);
   const [accordionPick, setAccordionPick] = useState('Weekly revenue');
+  const [fontFormats, setFontFormats] = useState<FontFormat[]>(['bold']);
   const [accordionChecks, setAccordionChecks] = useState<string[]>(['Campaign spend']);
   // Props start collapsed on every component page, unless the link points at them
   const [openPropsFor, setOpenPropsFor] = useState<string | null>(() =>
@@ -2784,6 +2797,13 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
               <p style={{ fontSize: 12, marginBottom: 8, color: sysVar('content-secondary') }}>Menu mode (Figma)</p>
               <ColorPicker value={colorValue} onChange={setColorValue} selectorType="menu" />
             </div>
+          </div>
+        );
+
+      case 'fontformatter':
+        return (
+          <div style={styles.exampleContent}>
+            <FontFormatter value={fontFormats} onChange={setFontFormats} />
           </div>
         );
 

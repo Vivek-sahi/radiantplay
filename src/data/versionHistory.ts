@@ -28,6 +28,15 @@ export interface VersionEntry {
  */
 export const versionHistory: VersionEntry[] = [
   {
+    version: '26.10.4p',
+    date: '2026-10-28',
+    type: 'patch',
+    changes: [
+      { type: 'added', group: 'Components', component: 'FontFormatter', description: 'Bold, italic, strikethrough and underline toggles from the Figma Font formatter' },
+      { type: 'modified', group: 'Components', component: 'RichTextEditor', description: 'Format buttons use Radiant icons instead of Georgia letters, and a strikethrough toolbar item is available' },
+    ],
+  },
+  {
     version: '26.10.4o',
     date: '2026-10-28',
     type: 'patch',

@@ -1,5 +1,13 @@
 # Changelog
 
+## 26.10.4p — 2026-10-28
+
+New FontFormatter component from Figma, and RichTextEditor draws its format buttons with Radiant icons.
+
+- `FontFormatter`: bold, italic, strikethrough and underline toggles in one bordered 32px group (Figma 73:9046). A format that's on uses Ghost Highlight. It has its own doc page and Component Registry row
+- RichTextEditor's bold, italic and underline buttons use the Radiant icons instead of letters drawn in Georgia, and a `strikethrough` toolbar item is available. The default toolbar is unchanged
+- `component-inventory.md` lists FontFormatter, ColorPicker's menu mode and the Accordion list
+
 ## 26.10.4o — 2026-10-28
 
 Accordion gets the Figma basic list. The existing variants look the same.

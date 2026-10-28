@@ -8,6 +8,7 @@ export * from './Checkbox';
 export * from './Chip';
 export * from './DatePicker';
 export * from './Divider';
+export * from './FontFormatter';
 export * from './IconGallery';
 export * from './Link';
 export * from './LoadingIndicator';

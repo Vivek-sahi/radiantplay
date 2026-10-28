@@ -77,10 +77,12 @@ Use this to quickly find the right component:
 ### For Advanced Inputs
 - **Numeric range / operator filter** → `NumericFilterInput`
 - **Text direction (LTR/RTL)** → `DirectionControl`
-- **Color selection** → `ColorPicker`
+- **Color selection** → `ColorPicker` (`selectorType="menu"` for the Figma trigger and swatch panel)
+- **Bold / italic / strikethrough / underline toggles** → `FontFormatter`
 - **@mention autocomplete** → `InputMentions`
 - **Tag creation and management** → `ManageTags`
 - **Sortable/draggable list** → `List` with `draggable`
+- **Two-level navigable list with selectable rows** → `Accordion variant="list"` with `Accordion.ListItem`
 - **Add/remove list management** → `ManagedList`
 - **Range slider** → `Slider`
 
