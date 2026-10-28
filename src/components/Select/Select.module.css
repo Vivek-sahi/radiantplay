@@ -19,6 +19,18 @@
   margin-bottom: var(--spacing-2);
 }
 
+.helperInline {
+  font-weight: var(--font-weight-regular);
+  color: var(--rd-sys-color-content-secondary);
+}
+
+.labelError {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  color: var(--rd-sys-color-content-failure);
+}
+
 /* Trigger Button */
 .trigger {
   display: flex;
@@ -252,6 +264,14 @@
   transition: color var(--duration-fast) var(--easing-standard);
 }
 
+/* Label line: "Label (helper text)", and on error the label turns red with an
+   icon and reads Please choose “Label”. Nothing goes under the field */
+:global([data-rd-look="radiant-3"]) .label {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+}
+
 :global([data-rd-look="radiant-3"]) .container:focus-within .label,
 :global([data-rd-look="radiant-3"]) .container:has(.open) .label {
   color: var(--rd-sys-color-content-brand);
@@ -308,4 +328,11 @@
 
 :global([data-rd-look="radiant-3"]) .optionDisabled:hover {
   background-color: transparent;
+}
+
+/* Selected option: Ghost Highlight with brand text */
+:global([data-rd-look="radiant-3"]) .selected,
+:global([data-rd-look="radiant-3"]) .selected:hover {
+  background-color: var(--rd-sys-color-background-ghost-highlight);
+  color: var(--rd-sys-color-content-brand);
 }

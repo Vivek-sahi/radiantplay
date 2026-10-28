@@ -183,3 +183,88 @@
   outline: 2px solid var(--rd-sys-color-border-focus);
   outline-offset: 2px;
 }
+
+/* ── Menu selector (Figma colour picker 116:9059) ───────────────────────── */
+
+.menuTrigger {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  height: var(--spacing-8);
+  padding: 0 var(--spacing-2) 0 var(--spacing-3);
+  border: 1px solid var(--rd-sys-color-border-bold);
+  border-radius: var(--radius-md);
+  background-color: var(--rd-sys-color-background-base);
+  color: var(--rd-sys-color-content-primary);
+  cursor: pointer;
+  transition: border-color var(--duration-fast) var(--easing-standard);
+}
+
+.menuTrigger:hover:not(:disabled) {
+  border-color: var(--rd-sys-color-border-bold-hover);
+}
+
+.menuTrigger:focus-visible {
+  outline: 2px solid var(--rd-sys-color-border-focus);
+  outline-offset: 2px;
+}
+
+.menuTriggerSwatch {
+  width: var(--spacing-4);
+  height: var(--spacing-4);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--rd-sys-color-border-divider);
+}
+
+/* As wide as the 8-column grid, so the hex field and the swatches line up */
+.menuPanel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  box-sizing: content-box;
+  width: calc(8 * var(--spacing-4) + 7 * var(--spacing-1));
+  padding: var(--spacing-3);
+}
+
+.menuPanel > * {
+  min-width: 0;
+}
+
+.menuHexDot {
+  display: block;
+  width: var(--spacing-4);
+  height: var(--spacing-4);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--rd-sys-color-border-divider);
+}
+
+.menuGrid {
+  display: grid;
+  grid-template-columns: repeat(8, var(--spacing-4));
+  gap: var(--spacing-1);
+}
+
+.menuSwatch {
+  width: var(--spacing-4);
+  height: var(--spacing-4);
+  padding: 0;
+  border: 1px solid var(--rd-sys-color-border-divider);
+  border-radius: var(--radius-xs);
+  cursor: pointer;
+  outline: none;
+}
+
+.menuSwatch:hover {
+  box-shadow: var(--rd-sys-color-shadow-surface);
+}
+
+.menuSwatch.swatchSelected {
+  outline: 2px solid var(--rd-sys-color-border-brand);
+  outline-offset: 1px;
+}
+
+.menuSwatch:focus-visible {
+  outline: 2px solid var(--rd-sys-color-border-focus);
+  outline-offset: 1px;
+}
+

@@ -1,5 +1,88 @@
 # Changelog
 
+## 26.10.4p — 2026-10-28
+
+New FontFormatter component from Figma, and RichTextEditor draws its format buttons with Radiant icons.
+
+- `FontFormatter`: bold, italic, strikethrough and underline toggles in one bordered 32px group (Figma 73:9046). A format that's on uses Ghost Highlight. It has its own doc page and Component Registry row
+- RichTextEditor's bold, italic and underline buttons use the Radiant icons instead of letters drawn in Georgia, and a `strikethrough` toolbar item is available. The default toolbar is unchanged
+- `component-inventory.md` lists FontFormatter, ColorPicker's menu mode and the Accordion list
+
+## 26.10.4o — 2026-10-28
+
+Accordion gets the Figma basic list. The existing variants look the same.
+
+- `variant="list"`: 48px parent rows with a leading chevron and lines between them. A `list` nested inside an item gives 32px child rows
+- `Accordion.ListItem`: a 32px selectable row. Single select uses Ghost Highlight with brand text; `selectMode="multi"` shows a checkmark. `actions` (like Ghost icon buttons) show on hover and focus
+- For everyone: an open item follows its content's height, so an accordion inside another one no longer gets cut off when it opens
+
+## 26.10.4n — 2026-10-28
+
+ColorPicker gets the Figma picker as a new mode. The existing modes don't change.
+
+- `selectorType="menu"`: a 32px trigger showing the current colour opens a panel with a Hex color field and 56 Radiant swatches (seven tones of gray, red, orange, purple, green, yellow, teal and blue), as in Figma 116:9059. A custom `palette` still works
+- `RADIANT_PALETTE` is exported, for prototypes that need the same swatches
+- For everyone: a Popover near the bottom or top of the screen flips to the other side of its trigger instead of being pushed on top of it
+
+## 26.10.4m — 2026-10-28
+
+Table follows the Figma Object table, the most-used component and the biggest gap in the re-audit. Existing tables look the same.
+
+- New cell types in `TableCellRenderers`, for everyone:
+  - `title`: a brand title with an optional icon, description line and error line
+  - `tokens`: read-only Tokens with a +N count
+  - `button` and `iconButton`: their clicks don't select or open the row
+- Under `look: 'radiant-3'`:
+  - A 32px header on On Base, in sentence case and regular weight
+  - 72px rows (`compact` still makes them shorter)
+  - Radiant checkboxes, with the select-all box showing a partial selection
+  - The sort icon shows when you hover a sortable header, which gets a fill
+- The Table doc page lists the cell types and shows an Object table example
+
+## 26.10.4l — 2026-10-28
+
+Batch 9 of the Figma re-audit: new opt-in options, and Radiant 3.0 sizes and states for prototypes with `look: 'radiant-3'`. Other prototypes look the same.
+
+- New options, off unless you use them:
+  - SearchInput `onClear` shows a clear button while the field has a value. `variant="underlined"` gives the 40px row with a bottom border used in menus and panels
+  - Tabs: a tab with `disabled: true` shows but can't be selected
+  - LoadingIndicator.Contextual `color`: blue (default), gray or white
+- For everyone: an icon-only Button uses its text children as its accessible name, so screen readers can announce it
+- Under `look: 'radiant-3'`:
+  - Select puts helper text beside the label, and on an error the label reads Please choose “Label” with an icon, as TextInput already does
+  - SearchInput's icon is Content/Secondary
+  - ProgressBar's default bar is 8px, fully rounded and brand blue
+  - PageHeader draws a divider between the title and the tabs
+  - Stepper and VerticalStepper titles are regular weight
+  - The Contextual spinner defaults to 18px
+  - Avatar names scale with the avatar (12, 14 or 16px), and AvatarGroup shows three avatars before +N
+- Select and SearchInput doc pages show the new options
+- Component doc pages start with Props collapsed, behind a Show props button, so Usage and the example come first. A link to `#props` opens it
+
+## 26.10.4k — 2026-10-28
+
+More components follow the Radiant 3.0 Figma file. Two plain bugs are fixed for everyone; everything else applies only to prototypes with `look: 'radiant-3'`, so other prototypes look the same.
+
+- For everyone: a tertiary icon-only button (the Ghost icon button) is round, as `iconOnly` always meant. Two class names in the tertiary style outranked it and left it square. Only the hover fill changes shape. White links keep their colour on hover and underline, instead of turning grey
+- Under `look: 'radiant-3'`:
+  - Ghost icon buttons draw the icon in Content/Primary, and in brand only when activated
+  - The active menu row and the selected Select option use Ghost Highlight with brand text instead of a solid blue fill. Menu group titles are 14px in sentence case on a 32px row
+  - The selected day, month and year in the date picker use Ghost Highlight with brand text instead of solid brand
+  - Tooltips have no arrow
+  - Segmented control segments are 4/16 with no gap, and hover uses Ghost Hover
+  - The page alert action is shaped like Button Primary White Small, and alert dismiss buttons are round with Ghost Hover
+  - Global header buttons change their fill on hover instead of drawing a ring
+
+## 26.10.4j — 2026-10-28
+
+Component docs carry the usage rules from the Radiant 3.0 Figma file, and the entries that were wrong are corrected. Components look the same.
+
+- Doc pages have a Usage section (Do and Don't) above Props, filled from Figma for Button, Toast, Alert, Avatar, LoadingIndicator, ExplainerCard, Modal, TextInput and TextArea. For example: one Primary button per screen, toasts only confirm and never show errors, page banner captions stay under 80 characters
+- `.cursor/rules/component-inventory.md` gets the same rules, so Claude follows them when building prototypes
+- Corrected doc entries: LoadingIndicator (no Global mode; adds Skeleton), SearchInput (no `onClear`), Tabs (no keyboard navigation claim; adds `size` and tab icons), Modal (sizes M1 to M4, default M2, and `type`, `eyebrow`, wizard, sub-navigation and splash props), AppSidebar width 260
+- Props tables add what was missing: Button `xs`, `iconOnly`, `active`, `htmlType`; TextInput `trailingIcon`, `readOnly`; Table `compact`, `stickyHeader`, `onRowClick` and sortable columns
+- The Avatar entry in the Component Registry links to its Figma page
+
 ## 26.10.4i — 2026-10-27
 
 New `/rp-contribute` command for sending work back to Radiant Play.

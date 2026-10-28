@@ -1,10 +1,12 @@
 import React, { useRef, useEffect, useCallback, useState } from 'react';
+import { Icon } from '../icons';
 import styles from './RichTextEditor.module.css';
 
 export type RichTextToolbarItem =
   | 'bold'
   | 'italic'
   | 'underline'
+  | 'strikethrough'
   | 'link'
   | 'list'
   | 'heading'
@@ -25,22 +27,11 @@ const DEFAULT_TOOLBAR: RichTextToolbarItem[] = ['bold', 'italic', 'underline', '
 /* ─── Toolbar icon SVGs ─────────────────────────────────────────────────── */
 
 const ICONS: Record<RichTextToolbarItem, React.ReactNode> = {
-  bold: (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-      <text x="2" y="11" fontFamily="Georgia, serif" fontWeight="bold" fontSize="12" fill="currentColor">B</text>
-    </svg>
-  ),
-  italic: (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-      <text x="3" y="11" fontFamily="Georgia, serif" fontStyle="italic" fontSize="12" fill="currentColor">I</text>
-    </svg>
-  ),
-  underline: (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-      <text x="3" y="10" fontFamily="Georgia, serif" fontSize="11" fill="currentColor" textDecoration="underline">U</text>
-      <line x1="2" y1="13" x2="12" y2="13" stroke="currentColor" strokeWidth="1.5" />
-    </svg>
-  ),
+  // Bold, italic, underline and strikethrough use the Radiant icons, as in the Figma Font formatter
+  bold: <Icon name="bold" size="s" />,
+  italic: <Icon name="italic" size="s" />,
+  underline: <Icon name="underline" size="s" />,
+  strikethrough: <Icon name="strike-through" size="s" />,
   list: (
     <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
       <circle cx="2" cy="4" r="1" fill="currentColor" />
@@ -74,6 +65,7 @@ const TOOLBAR_LABELS: Record<RichTextToolbarItem, string> = {
   bold: 'Bold',
   italic: 'Italic',
   underline: 'Underline',
+  strikethrough: 'Strikethrough',
   link: 'Insert Link',
   list: 'Unordered List',
   heading: 'Heading',
@@ -102,10 +94,10 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
 
   const updateActiveCommands = useCallback(() => {
     const active = new Set<string>();
-    const commands: RichTextToolbarItem[] = ['bold', 'italic', 'underline'];
+    const commands: RichTextToolbarItem[] = ['bold', 'italic', 'underline', 'strikethrough'];
     commands.forEach((cmd) => {
       try {
-        if (document.queryCommandState(cmd)) {
+        if (document.queryCommandState(cmd === 'strikethrough' ? 'strikeThrough' : cmd)) {
           active.add(cmd);
         }
       } catch {
@@ -144,6 +136,9 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
           break;
         case 'underline':
           document.execCommand('underline');
+          break;
+        case 'strikethrough':
+          document.execCommand('strikeThrough');
           break;
         case 'list':
           document.execCommand('insertUnorderedList');

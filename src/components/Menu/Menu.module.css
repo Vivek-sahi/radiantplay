@@ -216,3 +216,23 @@
 :global([data-rd-look="radiant-3"]) .divider {
   margin: var(--spacing-2) 0;
 }
+
+/* Activated rows use Ghost Highlight with brand text, not the heavier information fill */
+:global([data-rd-look="radiant-3"]) .menu:not(.dark) .itemActive,
+:global([data-rd-look="radiant-3"]) .menu:not(.dark) .itemActive:hover {
+  background-color: var(--rd-sys-color-background-ghost-highlight);
+  color: var(--rd-sys-color-content-brand);
+}
+
+/* Group titles: 14/20 emphasis, sentence case, on a 32px row */
+:global([data-rd-look="radiant-3"]) .menu:not(.dark) .groupLabel {
+  display: flex;
+  align-items: center;
+  min-height: var(--spacing-8);
+  padding-block: 0;
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-md);
+  color: var(--rd-sys-color-content-primary);
+  text-transform: none;
+  letter-spacing: normal;
+}

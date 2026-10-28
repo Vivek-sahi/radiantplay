@@ -127,3 +127,20 @@
 .label {
   line-height: 1;
 }
+
+/* ============================================
+   RADIANT 3.0 LOOK (opt-in: look: 'radiant-3')
+   Segments 4/16 with no gap, Ghost Hover
+   ============================================ */
+
+:global([data-rd-look="radiant-3"]) .container {
+  gap: 0;
+}
+
+:global([data-rd-look="radiant-3"]) .container.default .segment:not(.iconOnly) {
+  padding: var(--spacing-1) var(--spacing-4);
+}
+
+:global([data-rd-look="radiant-3"]) .segment:hover:not(.selected):not(.segmentDisabled) {
+  background-color: var(--rd-sys-color-background-ghost-hover);
+}

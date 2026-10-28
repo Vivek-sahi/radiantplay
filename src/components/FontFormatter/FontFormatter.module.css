@@ -1,0 +1,52 @@
+/* FontFormatter (Figma 73:9046): a bordered group of 32px format toggles */
+
+.formatter {
+  display: inline-flex;
+  align-self: flex-start;
+  width: max-content;
+  align-items: center;
+  box-sizing: border-box;
+  height: var(--spacing-8);
+  padding: 0;
+  border: 1px solid var(--rd-sys-color-border-bold);
+  border-radius: var(--radius-md);
+  background-color: var(--rd-sys-color-background-base);
+  overflow: hidden;
+}
+
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--spacing-8);
+  height: 100%;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background-color: transparent;
+  color: var(--rd-sys-color-content-primary);
+  cursor: pointer;
+  transition: background-color var(--duration-fast) var(--easing-standard);
+}
+
+.toggle:hover:not(:disabled):not(.on) {
+  background-color: var(--rd-sys-color-background-ghost-hover);
+}
+
+.toggle:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--rd-sys-color-border-focus);
+}
+
+.on {
+  background-color: var(--rd-sys-color-background-ghost-highlight);
+  color: var(--rd-sys-color-content-brand);
+}
+
+.disabled {
+  opacity: 0.4;
+}
+
+.toggle:disabled {
+  cursor: not-allowed;
+}

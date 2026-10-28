@@ -229,3 +229,34 @@
 .muted .textColumn {
   margin-left: 0;
 }
+
+/* ============================================
+   RADIANT 3.0 LOOK (opt-in: look: 'radiant-3')
+   Page action matches Button Primary White Small; dismiss buttons are the
+   round Ghost icon button
+   ============================================ */
+
+:global([data-rd-look="radiant-3"]) .actionButton {
+  height: var(--spacing-6);
+  padding: 0 var(--spacing-3);
+  border-radius: var(--radius-full);
+  background-color: var(--rd-comp-color-button-primary-on-color-default);
+}
+
+:global([data-rd-look="radiant-3"]) .actionButton:hover {
+  background-color: var(--rd-comp-color-button-primary-on-color-hover);
+}
+
+:global([data-rd-look="radiant-3"]) .actionButton:active {
+  background-color: var(--rd-comp-color-button-primary-on-color-pressed);
+}
+
+:global([data-rd-look="radiant-3"]) .dismissButton,
+:global([data-rd-look="radiant-3"]) .dismissButtonSmall {
+  border-radius: 50%;
+}
+
+:global([data-rd-look="radiant-3"]) .page .dismissButton:hover,
+:global([data-rd-look="radiant-3"]) .dismissButtonSmall:hover {
+  background-color: var(--rd-sys-color-background-ghost-hover);
+}

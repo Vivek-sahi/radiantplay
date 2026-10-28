@@ -28,6 +28,71 @@ export interface VersionEntry {
  */
 export const versionHistory: VersionEntry[] = [
   {
+    version: '26.10.4p',
+    date: '2026-10-28',
+    type: 'patch',
+    changes: [
+      { type: 'added', group: 'Components', component: 'FontFormatter', description: 'Bold, italic, strikethrough and underline toggles from the Figma Font formatter' },
+      { type: 'modified', group: 'Components', component: 'RichTextEditor', description: 'Format buttons use Radiant icons instead of Georgia letters, and a strikethrough toolbar item is available' },
+    ],
+  },
+  {
+    version: '26.10.4o',
+    date: '2026-10-28',
+    type: 'patch',
+    changes: [
+      { type: 'added', group: 'Components', component: 'Accordion', description: 'variant list (Figma basic list: 48px parents, 32px nested children) and Accordion.ListItem with single and multi select and hover actions' },
+      { type: 'modified', group: 'Components', component: 'Accordion', description: 'An open item follows its content height, so nested accordions open fully' },
+    ],
+  },
+  {
+    version: '26.10.4n',
+    date: '2026-10-28',
+    type: 'patch',
+    changes: [
+      { type: 'added', group: 'Components', component: 'ColorPicker', description: 'selectorType menu: the Figma trigger and panel with a hex field and 56 Radiant swatches. RADIANT_PALETTE is exported' },
+      { type: 'modified', group: 'Components', component: 'Popover', description: 'Flips to the other side of its trigger near a screen edge instead of covering it' },
+    ],
+  },
+  {
+    version: '26.10.4m',
+    date: '2026-10-28',
+    type: 'patch',
+    changes: [
+      { type: 'added', group: 'Components', component: 'Table', description: 'TableCellRenderers.title, tokens, button and iconButton, from the Figma Object table cells' },
+      { type: 'modified', group: 'Components', component: 'Table', description: 'Under look: radiant-3: 32px sentence-case header, 72px rows, Radiant checkboxes and a sort icon on hover' },
+    ],
+  },
+  {
+    version: '26.10.4l',
+    date: '2026-10-28',
+    type: 'patch',
+    changes: [
+      { type: 'added', group: 'Components', component: 'SearchInput, Tabs, LoadingIndicator', description: 'SearchInput onClear and an underlined variant, per-tab disabled, and gray or white spinners' },
+      { type: 'modified', group: 'Components', component: 'Button', description: 'Icon-only buttons use their text children as the accessible name' },
+      { type: 'modified', group: 'Design system', component: 'Component docs', description: 'Props start collapsed behind a Show props button' },
+      { type: 'modified', group: 'Components', component: 'Radiant 3.0 look', description: 'Under look: radiant-3: Select label-line helper and error text, 8px brand ProgressBar, PageHeader divider, regular Stepper titles, 18px spinner, Avatar names that scale and groups of three' },
+    ],
+  },
+  {
+    version: '26.10.4k',
+    date: '2026-10-28',
+    type: 'patch',
+    changes: [
+      { type: 'modified', group: 'Components', component: 'Button, Link', description: 'Tertiary icon-only buttons are round, as iconOnly intended. White links keep their colour on hover' },
+      { type: 'modified', group: 'Components', component: 'Radiant 3.0 look', description: 'Under look: radiant-3: Ghost icon colour, Ghost Highlight for active menu rows, selected options and calendar dates, sentence-case menu group titles, no tooltip arrow, Segmented control spacing, Alert action and dismiss shapes, Global header hover fills' },
+    ],
+  },
+  {
+    version: '26.10.4j',
+    date: '2026-10-28',
+    type: 'patch',
+    changes: [
+      { type: 'added', group: 'Design system', component: 'Component docs', description: 'A Usage section with Do and Don\'t rules from the Radiant 3.0 Figma file, for Button, Toast, Alert, Avatar, LoadingIndicator, ExplainerCard, Modal, TextInput and TextArea. The same rules are in the component inventory Claude reads' },
+      { type: 'modified', group: 'Design system', component: 'Component docs', description: 'Wrong entries corrected (LoadingIndicator, SearchInput, Tabs, Modal, AppSidebar) and missing props added for Button, TextInput and Table' },
+    ],
+  },
+  {
     version: '26.10.4i',
     date: '2026-10-27',
     type: 'patch',

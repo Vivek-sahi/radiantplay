@@ -1,5 +1,6 @@
 import React from 'react';
 import styles from './ProgressBar.module.css';
+import { useRadiantLook } from '../../context/RadiantLookContext';
 
 export type ProgressBarColor = 'green' | 'blue' | 'yellow' | 'red';
 export type ProgressBarSize = 'small' | 'default' | 'large';
@@ -16,7 +17,7 @@ export interface ProgressBarProps {
   max?: number;
   /**
    * Progress bar color
-   * @default 'green'
+   * @default 'green', or 'blue' under look: 'radiant-3'
    */
   color?: ProgressBarColor;
   /**
@@ -92,7 +93,7 @@ export interface ProgressBarProps {
 export const ProgressBar: React.FC<ProgressBarProps> = ({
   value,
   max = 100,
-  color = 'green',
+  color: colorProp,
   size = 'default',
   indeterminate = false,
   label,
@@ -101,6 +102,10 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
   hideOnZero = false,
   className = '',
 }) => {
+  // Radiant 3.0 (Figma 44:5712) fills with Background/Brand by default
+  const look = useRadiantLook();
+  const color = colorProp ?? (look === 'radiant-3' ? 'blue' : 'green');
+
   // Clamp value between 0 and max
   const clampedValue = Math.max(0, Math.min(value, max));
   const percentage = (clampedValue / max) * 100;

@@ -101,3 +101,17 @@
   font-weight: 500;
   color: var(--rd-sys-color-content-secondary);
 }
+
+/* ============================================
+   RADIANT 3.0 LOOK (opt-in: look: 'radiant-3')
+   The default bar is 8px and fully rounded (Figma 44:5712)
+   ============================================ */
+
+:global([data-rd-look="radiant-3"]) .progressBar:not(.small):not(.large) {
+  height: var(--spacing-2);
+  border-radius: var(--radius-full);
+}
+
+:global([data-rd-look="radiant-3"]) .progressBar:not(.small):not(.large) .progressBarInner {
+  border-radius: var(--radius-full);
+}

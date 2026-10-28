@@ -226,3 +226,15 @@
   justify-content: center;
   width: var(--spacing-6);
 }
+
+/* ============================================
+   RADIANT 3.0 LOOK (opt-in: look: 'radiant-3')
+   Hover changes the fill instead of drawing a ring
+   ============================================ */
+
+:global([data-rd-look="radiant-3"]) .iconButton:hover,
+:global([data-rd-look="radiant-3"]) .circleButton:hover,
+:global([data-rd-look="radiant-3"]) .profileButton:hover {
+  border-color: transparent;
+  background: var(--gh-surface-hover);
+}

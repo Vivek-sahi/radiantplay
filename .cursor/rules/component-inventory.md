@@ -77,10 +77,12 @@ Use this to quickly find the right component:
 ### For Advanced Inputs
 - **Numeric range / operator filter** → `NumericFilterInput`
 - **Text direction (LTR/RTL)** → `DirectionControl`
-- **Color selection** → `ColorPicker`
+- **Color selection** → `ColorPicker` (`selectorType="menu"` for the Figma trigger and swatch panel)
+- **Bold / italic / strikethrough / underline toggles** → `FontFormatter`
 - **@mention autocomplete** → `InputMentions`
 - **Tag creation and management** → `ManageTags`
 - **Sortable/draggable list** → `List` with `draggable`
+- **Two-level navigable list with selectable rows** → `Accordion variant="list"` with `Accordion.ListItem`
 - **Add/remove list management** → `ManagedList`
 - **Range slider** → `Slider`
 
@@ -110,6 +112,19 @@ Use this to quickly find the right component:
 - **Drag and drop hooks** → `DragDrop` (DragDropProvider + hooks)
 
 ---
+
+## Usage rules from Figma
+
+From the Radiant 3.0 Figma pages. Each component's doc page shows them under Usage.
+
+- **Button:** one Primary per screen. Never Tertiary for Delete or Submit. Don't mix styles in one group unless the hierarchy needs it.
+- **Toast:** confirmations only (saved, shared, copied). Errors and warnings go in an `Alert`, never a toast.
+- **Alert:** a page banner caption stays at 80 characters or fewer.
+- **Avatar:** one to three in a group, overlapping left to right, with a tooltip on hover and focus that repeats the label.
+- **Skeleton (`LoadingIndicator.Skeleton`):** for a loading section (cards, titles, images), not a whole page. Keep radii consistent when combining them.
+- **ExplainerCard:** opened by a click it has a dismiss button; opened by hover it has none. Text is 4 lines at most.
+- **Modal:** M1 394px for confirmations, M2 788px, M3 1182px, M4 full screen. A splash screen introduces a feature once, with one image or a 6 to 11 second video, and at most three steps.
+- **TextInput, TextArea (under `look: 'radiant-3'`):** helper text in brackets beside the label; on an error the label becomes the message, like Please add “Name”.
 
 ## Complete Component Reference
 

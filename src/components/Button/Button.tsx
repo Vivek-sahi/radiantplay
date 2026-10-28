@@ -170,6 +170,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
       onMouseDown={handleMouseDown}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseLeave}
+      // An icon-only button hides its children, so they become its accessible name
+      aria-label={iconOnly && typeof children === 'string' ? children : undefined}
       {...props}
     >
       {loading ? (

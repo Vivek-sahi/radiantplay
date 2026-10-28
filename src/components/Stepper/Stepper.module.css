@@ -189,3 +189,13 @@
   outline-offset: var(--spacing-1, 2px);
   border-radius: var(--radius-sm, 4px);
 }
+
+/* ============================================
+   RADIANT 3.0 LOOK (opt-in: look: 'radiant-3')
+   Step titles use Body/Normal (400), as in Figma
+   ============================================ */
+
+:global([data-rd-look="radiant-3"]) .stepTitle {
+  font-weight: var(--font-weight-regular);
+}
+

@@ -47,6 +47,21 @@
 }
 
 
+.clear {
+  flex-shrink: 0;
+}
+
+/* Underlined: a 40px row with only a bottom border */
+.container.underlined {
+  height: var(--spacing-10);
+  padding: 0 var(--spacing-4);
+  border-width: 0 0 1px;
+  border-color: var(--rd-sys-color-border-subtle);
+  border-radius: 0;
+  background-color: transparent;
+  box-sizing: border-box;
+}
+
 /* ============================================
    RADIANT 3.0 LOOK (opt-in: look: 'radiant-3')
    ============================================ */
@@ -65,4 +80,14 @@
 
 :global([data-rd-look="radiant-3"]) .input::placeholder {
   color: var(--rd-sys-color-content-secondary);
+}
+
+:global([data-rd-look="radiant-3"]) .icon {
+  color: var(--rd-sys-color-content-secondary);
+}
+
+:global([data-rd-look="radiant-3"]) .container.underlined {
+  height: var(--spacing-10);
+  padding: 0 var(--spacing-4);
+  border-radius: 0;
 }

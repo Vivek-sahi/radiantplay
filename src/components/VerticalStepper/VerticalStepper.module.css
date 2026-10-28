@@ -128,3 +128,13 @@
 .stepContent {
   margin-top: var(--spacing-3);
 }
+
+/* ============================================
+   RADIANT 3.0 LOOK (opt-in: look: 'radiant-3')
+   Step titles use Body/Normal (400), as in Figma
+   ============================================ */
+
+:global([data-rd-look="radiant-3"]) .stepTitle {
+  font-weight: var(--font-weight-regular);
+}
+

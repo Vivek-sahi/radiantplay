@@ -1,5 +1,6 @@
 import React from 'react';
 import styles from './LoadingIndicator.module.css';
+import { useRadiantLook } from '../../context/RadiantLookContext';
 
 /**
  * LoadingIndicator Size
@@ -33,9 +34,13 @@ export interface LoadingIndicatorProps {
 /**
  * Contextual Spinner Props
  */
+export type ContextualColor = 'blue' | 'gray' | 'white';
+
 export interface ContextualProps {
-  /** Size of the spinner */
+  /** Size of the spinner. Defaults to m (24px), or Figma's 18px under look: 'radiant-3' */
   size?: ContextualSize;
+  /** Blue (brand), gray, or white for dark or coloured surfaces */
+  color?: ContextualColor;
   /** Additional className */
   className?: string;
 }
@@ -182,14 +187,17 @@ const contextualSizes: Record<ContextualSize, number> = {
 };
 
 const Contextual: React.FC<ContextualProps> = ({
-  size = 'm',
+  size,
+  color = 'blue',
   className,
 }) => {
-  const sizeValue = contextualSizes[size];
-  
+  const look = useRadiantLook();
+  const sizeValue = size ? contextualSizes[size] : look === 'radiant-3' ? 18 : contextualSizes.m;
+  const colorClass = color === 'blue' ? '' : ` ${styles[color]}`;
+
   return (
     <div 
-      className={`${styles.contextual} ${className || ''}`}
+      className={`${styles.contextual}${colorClass} ${className || ''}`}
       style={{ width: sizeValue, height: sizeValue }}
     >
       <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">

@@ -1,7 +1,11 @@
 import React, { useState, useCallback } from 'react';
+import { Popover } from '../Popover';
+import { TextInput } from '../TextInput';
+import { Icon } from '../icons';
 import styles from './ColorPicker.module.css';
 
-export type ColorPickerSelectorType = 'hex' | 'rgb' | 'palette';
+/** menu is the Figma picker: a trigger that opens a hex field and the Radiant swatches */
+export type ColorPickerSelectorType = 'hex' | 'rgb' | 'palette' | 'menu';
 
 export interface ColorPickerProps {
   value?: string;
@@ -13,6 +17,20 @@ export interface ColorPickerProps {
 }
 
 // Swatch values are data (the colours a user can pick), so they stay as literals.
+/**
+ * The Radiant 3.0 swatches from the Figma colour picker (116:9059): seven
+ * tones, light to dark, for gray, red, orange, purple, green, yellow, teal and blue.
+ */
+export const RADIANT_PALETTE = [
+  '#ffffff', '#fff0f0', '#fff5f0', '#f7f5ff', '#edfff9', '#fffbf0', '#edfdff', '#001740',
+  '#eaedf2', '#ffebec', '#ffeee5', '#f0ebff', '#e0f8ef', '#fff8e5', '#e0f8ef', '#dee8fa',
+  '#dbdfe7', '#fcd4d7', '#ffddcc', '#e3d9fc', '#c7f2e3', '#fcf1d1', '#c9f0f5', '#cedcf5',
+  '#c0c6cf', '#f9b3b9', '#ffccb3', '#d1c0fb', '#9be5cb', '#fde9af', '#b5ecf2', '#abc7f9',
+  '#a5acb9', '#f47e89', '#ffa97e', '#b094f8', '#56d3a8', '#fcd977', '#82dfe9', '#71a1f4',
+  '#777e8b', '#e22b3d', '#ff8142', '#8c62f5', '#06bf7f', '#fcc838', '#48d1e0', '#2770ef',
+  '#000000', '#b6313e', '#c26232', '#6a4aba', '#049160', '#bf982a', '#369faa', '#2359b6',
+];
+
 const DEFAULT_PALETTE = [
   '#000000',
   '#ffffff',
@@ -212,6 +230,76 @@ const PaletteSelector: React.FC<PaletteSelectorProps> = ({
   );
 };
 
+interface MenuSelectorProps {
+  value: string;
+  palette: string[];
+  onChange: (color: string) => void;
+  disabled: boolean;
+}
+
+/** Figma colour picker: a trigger with the current swatch, opening a hex field and swatches */
+const MenuSelector: React.FC<MenuSelectorProps> = ({ value, palette, onChange, disabled }) => {
+  const hex = normaliseHex(value) || '#000000';
+  const [open, setOpen] = useState(false);
+  const [textValue, setTextValue] = useState(hex);
+
+  const pick = (color: string) => {
+    setTextValue(color);
+    onChange(color);
+  };
+
+  const panel = (
+    <div className={styles.menuPanel}>
+      <TextInput
+        label="Hex color"
+        value={textValue}
+        maxLength={7}
+        onChange={(e) => {
+          setTextValue(e.target.value);
+          const valid = normaliseHex(e.target.value);
+          if (valid) onChange(valid);
+        }}
+        onBlur={() => setTextValue(normaliseHex(textValue) || hex)}
+        trailingIcon={<span className={styles.menuHexDot} style={{ backgroundColor: hex }} />}
+      />
+      <div className={styles.menuGrid}>
+        {palette.map((color) => {
+          const normColor = normaliseHex(color) || color;
+          const isSelected = normColor === hex;
+          return (
+            <button
+              key={color}
+              type="button"
+              className={[styles.menuSwatch, isSelected && styles.swatchSelected].filter(Boolean).join(' ')}
+              style={{ backgroundColor: normColor }}
+              onClick={() => pick(normColor)}
+              aria-label={`Select color ${normColor}`}
+              aria-pressed={isSelected}
+              title={normColor}
+            />
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  return (
+    <Popover content={panel} placement="bottom-start" isOpen={open} onOpenChange={setOpen} disabled={disabled}>
+      <button
+        type="button"
+        className={styles.menuTrigger}
+        disabled={disabled}
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        aria-label={`Color: ${hex}`}
+      >
+        <span className={styles.menuTriggerSwatch} style={{ backgroundColor: hex }} />
+        <Icon name="chevron-down" size="xs" />
+      </button>
+    </Popover>
+  );
+};
+
 // ── Main component ──────────────────────────────────────────────────────────
 
 export const ColorPicker: React.FC<ColorPickerProps> = ({
@@ -240,6 +328,19 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
   const containerClasses = [styles.container, disabled && styles.disabled, className]
     .filter(Boolean)
     .join(' ');
+
+  if (selectorType === 'menu') {
+    return (
+      <div className={[disabled && styles.disabled, className].filter(Boolean).join(' ') || undefined}>
+        <MenuSelector
+          value={value}
+          palette={palette === DEFAULT_PALETTE ? RADIANT_PALETTE : palette}
+          onChange={handleChange}
+          disabled={disabled}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className={containerClasses}>

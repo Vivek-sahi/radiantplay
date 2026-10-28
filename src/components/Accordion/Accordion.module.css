@@ -196,3 +196,144 @@
   line-height: var(--line-height-xs);
   color: var(--rd-sys-color-content-primary);
 }
+
+/* ============================================
+   LIST VARIANT (Figma Accordion basic 84:12 to 84:210)
+   48px parent rows, 32px child rows when a list is nested, and 32px items
+   ============================================ */
+
+.list > .item {
+  border-top: 1px solid var(--rd-sys-color-border-subtle);
+  border-bottom: none;
+}
+
+.list > .item:last-child {
+  border-bottom: 1px solid var(--rd-sys-color-border-subtle);
+}
+
+.list > .item > .header {
+  justify-content: flex-start;
+  gap: var(--spacing-2);
+  min-height: var(--spacing-12);
+  padding: 0 var(--spacing-4);
+}
+
+.list > .item > .header:hover:not(.headerDisabled) {
+  background-color: var(--rd-sys-color-background-ghost-hover);
+}
+
+.list > .item > .header .headerTitle {
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-lg);
+  font-weight: var(--font-weight-emphasis);
+}
+
+.list > .item > .header .cardChevron {
+  color: var(--rd-sys-color-content-primary);
+}
+
+.list > .item > .content > .contentInner {
+  padding: 0 0 var(--spacing-2);
+}
+
+/* A list nested in a list item: 32px child rows, no lines, indented */
+.list .list > .item,
+.list .list > .item:last-child {
+  border: none;
+}
+
+.list .list > .item > .header {
+  min-height: var(--spacing-8);
+  padding-left: var(--spacing-8);
+}
+
+.list .list > .item > .header .headerTitle {
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-md);
+}
+
+.list .list > .item > .header .cardChevron {
+  width: var(--spacing-4);
+  height: var(--spacing-4);
+}
+
+.list .list > .item > .content > .contentInner {
+  padding: 0;
+}
+
+.list .headerDisabled {
+  opacity: 0.4;
+}
+
+/* Selectable item row */
+.listItem {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  min-height: var(--spacing-8);
+  /* 18px = icon size l, the parent row's chevron */
+  padding: 0 var(--spacing-4) 0 calc(var(--spacing-4) + var(--spacing-2) + 18px);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-md);
+  color: var(--rd-sys-color-content-primary);
+  cursor: pointer;
+  outline: none;
+}
+
+.list .list .listItem {
+  padding-left: calc(var(--spacing-8) + var(--spacing-2) + var(--spacing-4));
+}
+
+.listItem:hover,
+.listItem:focus-visible {
+  background-color: var(--rd-sys-color-background-ghost-hover);
+}
+
+.listItem:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--rd-sys-color-border-focus);
+}
+
+.listItemSelected,
+.listItemSelected:hover {
+  background-color: var(--rd-sys-color-background-ghost-highlight);
+  color: var(--rd-sys-color-content-brand);
+}
+
+.listItemDisabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.listItemDisabled:hover {
+  background-color: transparent;
+}
+
+.listItemIcon {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.listItemLabel {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.listItemActions {
+  display: none;
+  align-items: center;
+  gap: var(--spacing-1);
+}
+
+.listItem:hover .listItemActions,
+.listItem:focus-within .listItemActions {
+  display: inline-flex;
+}
+
+.listItemCheck {
+  flex-shrink: 0;
+  color: var(--rd-sys-color-content-brand);
+}
+

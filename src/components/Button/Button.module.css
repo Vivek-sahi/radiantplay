@@ -304,6 +304,13 @@
   height: 24px;
 }
 
+/* .tertiary.standard sets padding and a 6px radius with two classes, which
+   outranked .iconOnly and left tertiary icon buttons square */
+.tertiary.standard.iconOnly {
+  padding: 0;
+  border-radius: 50%;
+}
+
 /* ============================================
    ICON POSITION ADJUSTMENTS
    ============================================ */
@@ -354,4 +361,14 @@
 :global([data-rd-look="radiant-3"]) .large.iconOnly .icon svg {
   width: 18px;
   height: 18px;
+}
+
+/* Ghost icon button: a tertiary icon-only button draws its icon in
+   Content/Primary, and in brand only when activated */
+:global([data-rd-look="radiant-3"]) .tertiary.standard.iconOnly .icon {
+  color: var(--rd-sys-color-content-primary);
+}
+
+:global([data-rd-look="radiant-3"]) .tertiary.standard.iconOnly.active .icon {
+  color: var(--rd-sys-color-content-brand);
 }
