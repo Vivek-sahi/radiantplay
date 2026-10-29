@@ -6,7 +6,7 @@ import styles from './Slides.module.css';
 
 /**
  * Onboarding slides (Vivek, 29 Oct), opened from the project home. For people new to the project:
- * the data flow in a nutshell, how AgentDB differs from a warehouse, the user, then the core workflows,
+ * the data flow in a nutshell, the two doors (load and query), how AgentDB differs from a warehouse, the user, then the core workflows,
  * each drawn as a flow with every step marked by where it happens (AgentDB or an external tool).
  * Claude Code lanes removed (Vivek, 29 Oct). The happy path carries the main deck; the workflows sit in an
  * appendix at the end (Vivek, 29 Oct).
@@ -183,6 +183,62 @@ const DIFFERENT: { topic: string; warehouse: string; agentdb: string; value: str
   { topic: 'Pre-aggregation', warehouse: 'Materialised views on Enterprise edition, refreshed in the background for credits', agentdb: 'Aggregate tables and materialised views updated as data loads; queries rewritten to use them', value: 'Heavy dashboards answered from small pre-summed tables' },
 ];
 
+/**
+ * The two doors (Vivek, 29 Oct: "put this on slides"), from how-agentdb-works.html section 3.
+ * Amber = data going in through the load door, blue = data read through the query door.
+ */
+const DoorsDiagram: React.FC = () => (
+  <svg className={styles.doors} viewBox="0 0 900 400" role="img" aria-label="Writers push files through the load door on port 8030; readers run queries through the query door on port 9030; the console sits above the database.">
+    <defs>
+      <marker id="doorArrowIn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" className={styles.doorsLoadFill} /></marker>
+      <marker id="doorArrowOut" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" className={styles.doorsQueryFill} /></marker>
+    </defs>
+    <rect x="290" y="14" width="320" height="56" rx="6" className={styles.doorsBox} />
+    <text x="450" y="37" textAnchor="middle" fontSize="15" fontWeight="600">Console (the web app)</text>
+    <text x="450" y="57" textAnchor="middle" fontSize="13" className={styles.doorsDim}>people sign in · tables, keys, queries, members</text>
+    <line x1="450" y1="70" x2="450" y2="106" className={styles.doorsDash} />
+    <rect x="300" y="106" width="300" height="236" rx="8" className={styles.doorsDb} />
+    <text x="450" y="132" textAnchor="middle" fontSize="15.5" fontWeight="600">AgentDB (Apache Doris)</text>
+    <text x="450" y="151" textAnchor="middle" fontSize="12.5" className={`${styles.doorsDim} ${styles.doorsMono}`}>database acme_retail, one of several</text>
+    {['orders', 'customers', 'tickets', 'fct_revenue_daily'].map((t, k) => (
+      <g key={t}>
+        <rect x="360" y={170 + k * 32} width="180" height="26" rx="4" className={styles.doorsTable} />
+        <text x="450" y={187 + k * 32} textAnchor="middle" fontSize="13" className={styles.doorsMono}>{t}</text>
+      </g>
+    ))}
+    <text x="450" y="316" textAnchor="middle" fontSize="12.5" className={styles.doorsDim}>… tables, views, materialised views</text>
+    <rect x="282" y="174" width="36" height="120" rx="5" className={styles.doorsLoadDoor} />
+    <text transform="translate(305 234) rotate(-90)" textAnchor="middle" fontSize="13" fontWeight="600" className={styles.doorsLoadFill}>LOAD DOOR</text>
+    <rect x="582" y="174" width="36" height="120" rx="5" className={styles.doorsQueryDoor} />
+    <text transform="translate(605 234) rotate(-90)" textAnchor="middle" fontSize="13" fontWeight="600" className={styles.doorsQueryFill}>QUERY DOOR</text>
+    <text x="40" y="148" fontSize="12.5" fontWeight="500" className={styles.doorsDim}>WRITERS · push files in</text>
+    {['SeaTunnel, Flink, Kafka', 'Airflow job', 'any script with curl'].map((t, k) => (
+      <g key={t}>
+        <rect x="40" y={164 + k * 42} width="190" height="34" rx="5" className={styles.doorsTool} />
+        <text x="52" y={186 + k * 42} fontSize="14">{t}</text>
+      </g>
+    ))}
+    <text x="40" y="310" fontSize="13.5" fontWeight="600" className={styles.doorsLoadFill}>HTTP · port 8030</text>
+    <text x="40" y="329" fontSize="13" className={styles.doorsDim}>stream load: send a file to a table</text>
+    <line x1="232" y1="181" x2="276" y2="218" className={styles.doorsLoadLine} markerEnd="url(#doorArrowIn)" />
+    <line x1="232" y1="223" x2="276" y2="230" className={styles.doorsLoadLine} markerEnd="url(#doorArrowIn)" />
+    <line x1="232" y1="265" x2="276" y2="244" className={styles.doorsLoadLine} markerEnd="url(#doorArrowIn)" />
+    <text x="670" y="148" fontSize="12.5" fontWeight="500" className={styles.doorsDim}>READERS · ask questions</text>
+    {['ThoughtSpot, any BI tool', 'apps', 'AI agents (via MCP)'].map((t, k) => (
+      <g key={t}>
+        <rect x="670" y={164 + k * 42} width="190" height="34" rx="5" className={styles.doorsTool} />
+        <text x="682" y={186 + k * 42} fontSize="14">{t}</text>
+      </g>
+    ))}
+    <text x="670" y="310" fontSize="13.5" fontWeight="600" className={styles.doorsQueryFill}>MySQL protocol · port 9030</text>
+    <text x="670" y="329" fontSize="13" className={styles.doorsDim}>SQL in, rows out</text>
+    <line x1="624" y1="218" x2="664" y2="181" className={styles.doorsQueryLine} markerEnd="url(#doorArrowOut)" />
+    <line x1="624" y1="230" x2="664" y2="223" className={styles.doorsQueryLine} markerEnd="url(#doorArrowOut)" />
+    <line x1="624" y1="244" x2="664" y2="265" className={styles.doorsQueryLine} markerEnd="url(#doorArrowOut)" />
+    <text x="450" y="384" textAnchor="middle" fontSize="14.5" fontWeight="500">Nothing loads through the query door. Nothing is read through the load door.</text>
+  </svg>
+);
+
 /** The happy path, end to end (Vivek, 29 Oct), grouped into phases that map to the workflow slides. */
 const JOURNEY: { phase: string; workflows: string; steps: Step[]; note?: string }[] = [
   { phase: 'Connect in', workflows: '1', steps: [{ text: 'Connect AgentDB to ETL', where: 'tool', clicks: 0 }] },
@@ -272,11 +328,26 @@ export const Slides: React.FC<{ onClose: () => void }> = ({ onClose }) => {
       ),
     },
     {
+      id: 'doors',
+      render: () => (
+        <>
+          <header className={styles.head}>
+            <span className={styles.overline}>02 · How it works</span>
+            <h2 className={styles.title}>Two doors: one to load, one to read</h2>
+            <p className={styles.job}>Doris has two ways in, on two ports, each speaking one language. ETL tools push files through the load door; everything that reads, agents included, comes through the query door.</p>
+          </header>
+          <div className={styles.doorsWrap}>
+            <DoorsDiagram />
+          </div>
+        </>
+      ),
+    },
+    {
       id: 'different',
       render: () => (
         <>
           <header className={styles.head}>
-            <span className={styles.overline}>02 · The difference</span>
+            <span className={styles.overline}>03 · The difference</span>
             <h2 className={styles.title}>How it differs from a normal data warehouse</h2>
             <p className={styles.job}>Snowflake versus AgentDB, which runs on Apache Doris, the engine behind VeloDB.</p>
           </header>
@@ -302,7 +373,7 @@ export const Slides: React.FC<{ onClose: () => void }> = ({ onClose }) => {
       render: () => (
         <>
           <header className={styles.head}>
-            <span className={styles.overline}>03 · The user</span>
+            <span className={styles.overline}>04 · The user</span>
             <h2 className={styles.title}>Who it is for, and what they want</h2>
           </header>
           <div className={styles.persona}>
@@ -328,7 +399,7 @@ export const Slides: React.FC<{ onClose: () => void }> = ({ onClose }) => {
       render: () => (
         <>
           <header className={styles.head}>
-            <span className={styles.overline}>04 · The journey</span>
+            <span className={styles.overline}>05 · The journey</span>
             <h2 className={styles.title}>The happy path, end to end</h2>
           </header>
           <div className={styles.journey}>
@@ -368,7 +439,7 @@ export const Slides: React.FC<{ onClose: () => void }> = ({ onClose }) => {
       id: 'demo',
       render: () => (
         <div className={styles.cover}>
-          <span className={styles.overline}>05 · Demo</span>
+          <span className={styles.overline}>06 · Demo</span>
           <h1 className={styles.demoTitle}>See it in the prototype</h1>
           <div className={styles.demoActions}>
             <a href={LIVE} target="_blank" rel="noreferrer" className={styles.demoLink}>

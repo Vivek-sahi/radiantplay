@@ -175,3 +175,21 @@
 .demoActions .demoLink { margin-top: 0; }
 .demoLinkSecondary { padding: var(--spacing-3) var(--spacing-5); border-radius: var(--radius-md); box-shadow: inset 0 0 0 1px var(--rd-sys-color-border-default); color: var(--ink); font-size: var(--font-size-md); font-weight: var(--font-weight-medium, 500); text-decoration: none; }
 .demoUrl { font-family: var(--font-family-mono); font-size: var(--font-size-sm); color: var(--muted); }
+
+/* Two doors (Vivek, 29 Oct). Amber = in through the load door, blue = out through the query door. */
+.doorsWrap { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; }
+.doors { width: 100%; max-width: calc(var(--spacing-24) * 11); max-height: 100%; height: auto; }
+.doors text { fill: var(--ink); font-family: var(--font-family-primary); }
+.doors .doorsDim { fill: var(--muted); }
+.doors .doorsMono { font-family: var(--font-family-mono); }
+.doorsBox { fill: var(--rd-sys-color-background-base); stroke: var(--ink); stroke-width: 1.2; }
+.doorsDb { fill: var(--rd-sys-color-background-base); stroke: var(--ink); stroke-width: 1.6; }
+.doorsDash { stroke: var(--muted); stroke-width: 1.2; stroke-dasharray: 3 3; }
+.doorsTable { fill: var(--rd-sys-color-background-sunken); }
+.doorsTool { fill: var(--rd-sys-color-background-base); stroke: var(--line); }
+.doorsLoadDoor { fill: var(--rd-sys-color-background-warning); stroke: var(--rd-sys-color-border-warning); stroke-width: 1.4; }
+.doorsQueryDoor { fill: var(--rd-sys-color-background-brand-subtle); stroke: var(--rd-sys-color-border-brand); stroke-width: 1.4; }
+.doors .doorsLoadFill, .doorsLoadFill { fill: var(--rd-sys-color-content-warning); }
+.doors .doorsQueryFill, .doorsQueryFill { fill: var(--rd-sys-color-content-brand); }
+.doorsLoadLine { stroke: var(--rd-sys-color-content-warning); stroke-width: 1.4; }
+.doorsQueryLine { stroke: var(--rd-sys-color-content-brand); stroke-width: 1.4; }
