@@ -4,7 +4,7 @@ import { Button, Horizontal, Link, Table, Typography, Vertical } from '@/compone
 import { spacing } from '@tokens/spacing';
 import styles from './Home.module.css';
 import { DocsShell } from './docs/DocsShell';
-import { DemoScript } from './Demo';
+import { Slides } from './Slides';
 
 /**
  * AgentDB MVP · project home (Vivek, 19 Oct): the landing for the project. What it needs, where
@@ -13,6 +13,8 @@ import { DemoScript } from './Demo';
  */
 
 const PROTOTYPE = '/playground/AgentDBMVP';
+/** Loom recording of the workflow (Vivek, 29 Oct). */
+const LOOM = 'https://www.loom.com/share/8508c6d8fedd4b0bbcd940192b588381';
 const REPO = 'https://github.com/Vivek-sahi/radiantplay/tree/prototype/data-studio/src/prototypes/AgentDBMVP';
 
 /**
@@ -113,6 +115,7 @@ const DECISIONS: { date: string; decision: string; source?: string }[] = [
 ];
 
 const CHANGES: { date: string; version: string; what: string }[] = [
+  { date: '29 Oct', version: 'Home', what: 'Onboarding slides (Slides button): data flow, how AgentDB differs from a warehouse, the user, the happy path, a demo slide, and the six workflows in an appendix. Watch the demo (Loom). The Demo section links to the run sheets for the console and Claude Code demos.' },
   { date: '27 Oct', version: 'v6', what: 'Copy of v5 for the demo and the agent-first additions. Live mode (gear › Demo, or ?live=1): the console reads the demo state file through agentdb serve and writes its own changes back, so Claude Code in the terminal and the browser see one database. Keys made in the console carry their secret so the terminal can sign in with them.' },
   { date: '27 Oct', version: 'v5', what: 'Precision instrument is the look (UI style picker hidden). Icon navigation only. SQL opens on one empty query.' },
   { date: '27 Oct', version: 'v5', what: 'Connect: Ingestion, Consumption, Agents (Apps removed), Ingestion first. Ingestion loads one table or many: key and tables dropdowns, ready settings for curl, shell, Python, SeaTunnel, Flink CDC, Kafka Connect and DataX, values for form-based tools. Table pages and create-table results link to it (Load instructions ↗). CREATE TABLE uses the only database when there is one.' },
@@ -163,8 +166,12 @@ const Section: React.FC<{ id: string; title: string; note?: React.ReactNode; chi
   </section>
 );
 
-const AgentDBMVPHome: React.FC = () => (
+const AgentDBMVPHome: React.FC = () => {
+  // Onboarding slides open over the home (Vivek, 29 Oct).
+  const [slides, setSlides] = useState(false);
+  return (
   <DocsShell>
+        {slides && <Slides onClose={() => setSlides(false)} />}
         <Vertical gap={spacing.D}>
           <Typography variant="overline" color="gray-light" noMargin>
             ThoughtSpot · AgentDB
@@ -181,6 +188,14 @@ const AgentDBMVPHome: React.FC = () => (
                 Open the prototype
               </Button>
             </RouterLink>
+            <Button variant="secondary" icon="present" onClick={() => setSlides(true)}>
+              Slides
+            </Button>
+            <a href={LOOM} {...ext}>
+              <Button variant="secondary" icon="video">
+                Watch the demo
+              </Button>
+            </a>
             <a href={REPO} {...ext}>
               <Button variant="secondary" icon="folder">
                 Repo
@@ -238,8 +253,21 @@ const AgentDBMVPHome: React.FC = () => (
             ]} />
         </Section>
 
-        <Section id="demo" title="Demo script" note="One customer, from the first sign-in to a teammate reading revenue in ThoughtSpot. Seven steps, about ten minutes. Run it in one tab, top to bottom; each step's link reopens the prototype there if you lose your place.">
-          <DemoScript />
+        <Section id="demo" title="Demo" note="Two demos, written up as run sheets (27 Oct): the console, and Claude Code in the terminal. The Loom is the recorded run.">
+          <Vertical gap={spacing.C}>
+            <a href="/agentdb-mvp/demo-runsheet.html#console" {...ext}>
+              <Button variant="secondary">Demo 1 · The console · about 3 minutes ↗</Button>
+            </a>
+            <a href="/agentdb-mvp/demo-runsheet.html#claude" {...ext}>
+              <Button variant="secondary">Demo 2 · Claude Code · about 9 minutes ↗</Button>
+            </a>
+            <a href="/agentdb-mvp/demo-story.html" {...ext}>
+              <Button variant="tertiary">The demo story: beats, cast and commands ↗</Button>
+            </a>
+            <a href={LOOM} {...ext}>
+              <Button variant="tertiary" icon="video">Watch the recording</Button>
+            </a>
+          </Vertical>
         </Section>
 
         <Section id="decisions" title="Design decisions" note="The rulings the build stands on. Oldest first.">
@@ -263,6 +291,7 @@ const AgentDBMVPHome: React.FC = () => (
         </Section>
 
   </DocsShell>
-);
+  );
+};
 
 export default AgentDBMVPHome;

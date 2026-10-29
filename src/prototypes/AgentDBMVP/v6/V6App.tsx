@@ -50,6 +50,10 @@ const flowStart = (flow: string | null): Start => {
       return { ...base, appState: 'empty', page: 'keys' };
     case 'bi':
       return { ...base, page: 'connect', connectTab: 'bi' };
+    case 'ingest':
+      return { ...base, page: 'connect' };
+    case 'queries':
+      return { ...base, page: 'activity' };
     case 'invite':
       return { ...base, page: 'access' };
     default:
