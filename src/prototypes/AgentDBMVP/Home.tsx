@@ -28,26 +28,38 @@ interface MapNode {
 const IA: MapNode = {
   label: 'AgentDB',
   children: [
-    { label: 'Sign up / sign in', children: [{ label: 'SOC 2: email, one-time code, password' }] },
+    { label: 'Sign in', children: [{ label: 'First time by invitation' }, { label: 'SOC 2: email, one-time code, password' }] },
     {
-      label: 'Data',
+      label: 'Overview',
       children: [
-        { label: 'Metrics' },
-        { label: 'Database', children: [{ label: 'Tables' }, { label: 'Views' }, { label: 'Materialised views' }] },
+        { label: 'Metrics', children: [{ label: 'Storage' }, { label: 'Tables' }, { label: 'Queries → View queries' }] },
+        { label: 'Data objects', children: [{ label: 'Filter by database' }, { label: 'Search by name' }] },
+        { label: 'Table page', children: [{ label: 'Columns' }, { label: 'Sample data' }, { label: 'Details' }, { label: 'Load instructions ↗' }] },
       ],
     },
-    { label: 'SQL', children: [{ label: 'Create table' }, { label: 'Query existing table' }, { label: 'Modify table' }] },
+    {
+      label: 'SQL',
+      children: [
+        { label: 'Catalog', children: [{ label: 'Databases › tables › columns' }, { label: '▶ 100 rows' }] },
+        { label: 'Recent', children: [{ label: 'Pinned' }, { label: 'Delete' }] },
+        { label: 'Query tabs', children: [{ label: 'Run · Limit · Format' }, { label: 'Results' }] },
+        { label: 'Agent' },
+      ],
+    },
     {
       label: 'Queries',
+      children: [{ label: 'Metrics' }, { label: 'Filter', children: [{ label: 'Status' }, { label: 'Type' }] }, { label: 'Query log details' }],
+    },
+    {
+      label: 'Connect',
       children: [
-        { label: 'Metrics' },
-        { label: 'Filter', children: [{ label: 'Status' }, { label: 'Type' }] },
-        { label: 'Queries table' },
+        { label: 'Ingestion', children: [{ label: 'One table or many' }, { label: 'Settings per ETL tool' }] },
+        { label: 'Consumption', children: [{ label: 'BI tools, apps' }] },
+        { label: 'Agents', children: [{ label: 'MCP' }] },
       ],
     },
-    { label: 'Connect', children: [{ label: 'Type of connection', children: [{ label: 'Details' }] }] },
-    { label: 'Access', children: [{ label: 'Users' }, { label: 'Service accounts' }] },
-    { label: 'API keys', children: [{ label: 'Keys' }] },
+    { label: 'API keys', children: [{ label: 'Query' }, { label: 'Query and load' }] },
+    { label: 'Members', children: [{ label: 'Invite' }, { label: 'Role' }, { label: 'Remove' }] },
   ],
 };
 
@@ -96,26 +108,26 @@ const MapBranch: React.FC<{ node: MapNode; depth: number }> = ({ node, depth }) 
 /** Each decision can point at its source (a Slack post, a doc). Hidden until sources are added. */
 const DECISIONS: { date: string; decision: string; source?: string }[] = [
   { date: '7 Oct', decision: 'Minimum observability: the console shows only what the database knows.' },
-  { date: '9 Oct', decision: 'No source identification. Query and ingest identities. HTTP stream load with the full address and curl.' },
+  { date: '9 Oct', decision: 'No source identification. HTTP stream load with the full address.' },
   { date: '14 Oct', decision: 'Sign-in is email, one-time code, password. No SSO.' },
-  { date: '14 Oct', decision: 'No create-table form. The SQL editor is the only way to create or change anything.' },
-  { date: '14 Oct', decision: 'Catalog follows Databricks: tree on the left, the object on the right.' },
+  { date: '14 Oct', decision: 'No create-table form. Tables are created and changed in SQL.' },
   { date: '14 Oct', decision: 'Three fixed roles: Viewer, Editor, Admin.' },
-  { date: '14 Oct', decision: 'API keys on their own page. Service accounts under Access.' },
-  { date: '14 Oct', decision: 'Queries is one list of every type, read, write and load.' },
+  { date: '14 Oct', decision: 'Queries is one list of every query, with status and type filters.' },
   { date: '14 Oct', decision: 'Connect is instructions only. ThoughtSpot gets no special treatment.' },
-  { date: '15 Oct', decision: 'No header. The product\'s light sidebar, the signed-in person at its foot.' },
-  { date: '15 Oct', decision: 'No account above the databases. Data lands on the first one.' },
-  { date: '15 Oct', decision: 'Data metrics: storage used, tables, queries. No limit, no loads, no alert.' },
-  { date: '15 Oct', decision: 'Plain everywhere; a code font only in the SQL editor.' },
+  { date: '15 Oct', decision: 'No account above the databases.' },
   { date: '19 Oct', decision: 'Clusters hold databases. Customers are given one or more, in the backend, and never create one.' },
-  { date: '19 Oct', decision: 'Keep the 14 Oct shape: API keys on their own page, service accounts under Access, Load data inside Connect.' },
   { date: '20 Oct', decision: 'No Delete database in the console. Allocating and removing databases is a backend action.' },
-  { date: '20 Oct', decision: 'Connect keeps four tabs: BI tools, Apps, Agents, Load data. Each has its own instructions.' },
+  { date: '26 Oct', decision: 'Data becomes Overview: one list of data objects, filtered by database and searched by name. The catalog moves to SQL.' },
+  { date: '26 Oct', decision: 'Access becomes Members, people only. Service accounts merge into API keys: account level, Query or Query and load.' },
+  { date: '26 Oct', decision: 'SQL is a workbench: catalog and Recent on the left, query tabs in the middle, the agent on the right. Queries save as you type; no Save.' },
+  { date: '26 Oct', decision: 'Metrics as thin tiles; the Queries tile links to Queries.' },
+  { date: '27 Oct', decision: 'Precision instrument is the look. Navigation is an icon rail that widens to show names.' },
+  { date: '27 Oct', decision: 'Connect is Ingestion, Consumption, Agents. Load instructions live only in Ingestion, for one table or many; tables link there.' },
+  { date: '29 Oct', decision: 'AgentDB has no observability of load runs: the ETL tool owns it.' },
 ];
 
 const CHANGES: { date: string; version: string; what: string }[] = [
-  { date: '29 Oct', version: 'Home', what: 'Onboarding slides (Slides button): data flow, how AgentDB differs from a warehouse, the user, the happy path, a demo slide, and the six workflows in an appendix. Watch the demo (Loom). The Demo section links to the run sheets for the console and Claude Code demos.' },
+  { date: '29 Oct', version: 'Home', what: 'Onboarding slides (Slides button): data flow, how AgentDB differs from a warehouse, the user, the happy path, a demo slide, and the six workflows in an appendix. Watch the demo (Loom) and the demo run sheet at the top. Home brought up to date: IA, key flows as the six workflows, design decisions; Demo script removed.' },
   { date: '27 Oct', version: 'v6', what: 'Copy of v5 for the demo and the agent-first additions. Live mode (gear › Demo, or ?live=1): the console reads the demo state file through agentdb serve and writes its own changes back, so Claude Code in the terminal and the browser see one database. Keys made in the console carry their secret so the terminal can sign in with them.' },
   { date: '27 Oct', version: 'v5', what: 'Precision instrument is the look (UI style picker hidden). Icon navigation only. SQL opens on one empty query.' },
   { date: '27 Oct', version: 'v5', what: 'Connect: Ingestion, Consumption, Agents (Apps removed), Ingestion first. Ingestion loads one table or many: key and tables dropdowns, ready settings for curl, shell, Python, SeaTunnel, Flink CDC, Kafka Connect and DataX, values for form-based tools. Table pages and create-table results link to it (Load instructions ↗). CREATE TABLE uses the only database when there is one.' },
@@ -132,15 +144,15 @@ const CHANGES: { date: string; version: string; what: string }[] = [
   { date: '7 Oct', version: 'v1', what: 'Reviewed with engineering and deployed. Frozen.' },
 ];
 
-/** The happy journey, from Vivek's sketch of 19 Oct. Each opens the prototype at the flow's first screen. */
-const FLOWS: { id: string; name: string; starts: string; open?: string }[] = [
-  { id: 'login', name: 'Sign in for the first time', starts: 'Sign in, empty workspace' },
-  { id: 'etl', name: 'Connect an ETL tool: create an API key', starts: 'API keys, empty workspace', open: 'ETL through API keys, consumers through Connect? Today Connect also carries Load data.' },
-  { id: 'create-table', name: 'Create a table', starts: 'SQL, empty workspace', open: 'Is running a CREATE TABLE statement enough, or also a Create table button? Today: the statement only (Harviish, 14 Oct).' },
-  { id: 'view-table', name: 'See the data land', starts: 'Data, filled workspace' },
-  { id: 'query-table', name: 'Query a table', starts: 'SQL, filled workspace' },
-  { id: 'bi', name: 'Connect a BI tool', starts: 'Connect, BI tools' },
-  { id: 'invite', name: 'Invite a teammate', starts: 'Access, People' },
+/** The workflows (Vivek, 29 Oct), in the order of the happy path. Each opens the prototype at its first screen. */
+const FLOWS: { id: string; name: string; starts: string }[] = [
+  { id: 'etl', name: 'Connect with the ETL tool', starts: 'API keys, empty workspace' },
+  { id: 'create-table', name: 'Load data: create the table', starts: 'SQL, empty workspace' },
+  { id: 'ingest', name: 'Load data: copy load instructions into the ETL tool', starts: 'Connect › Ingestion' },
+  { id: 'bi', name: 'Connect a target tool', starts: 'Connect › Consumption' },
+  { id: 'queries', name: 'Query runs on data', starts: 'Queries' },
+  { id: 'queries', name: 'Monitoring: see stats of queries', starts: 'Queries' },
+  { id: 'queries', name: 'Debugging: check query log details', starts: 'Queries' },
 ];
 
 
@@ -196,6 +208,11 @@ const AgentDBMVPHome: React.FC = () => {
                 Watch the demo
               </Button>
             </a>
+            <a href="/agentdb-mvp/demo-runsheet.html" {...ext}>
+              <Button variant="secondary" icon="note">
+                Demo run sheet
+              </Button>
+            </a>
             <a href={REPO} {...ext}>
               <Button variant="secondary" icon="folder">
                 Repo
@@ -243,32 +260,15 @@ const AgentDBMVPHome: React.FC = () => {
           </div>
         </Section>
 
-        <Section id="flows" title="Key flows" note="The happy journey in the order a new customer takes it. Each opens the prototype at the flow's first screen. The demo script walks the same order.">
-          <Table compact hoverable={false} rowKey="id" data={FLOWS.map((f, i) => ({ ...f, n: String(i + 1) })) as unknown as Record<string, unknown>[]}
+        <Section id="flows" title="Key flows" note="The workflows, in the order of the happy path. Each opens the prototype at its first screen.">
+          <Table compact hoverable={false} rowKey="n" data={FLOWS.map((f, i) => ({ ...f, n: String(i + 1) })) as unknown as Record<string, unknown>[]}
             columns={[
               { key: 'n', label: '#' },
               { key: 'name', label: 'Flow', render: (v, r) => <Link href={`${PROTOTYPE}?flow=${String(r.id)}`}>{String(v)}</Link> },
               { key: 'starts', label: 'Starts at' },
-              { key: 'open', label: 'Open question', render: (v) => (v ? String(v) : '') },
             ]} />
         </Section>
 
-        <Section id="demo" title="Demo" note="Two demos, written up as run sheets (27 Oct): the console, and Claude Code in the terminal. The Loom is the recorded run.">
-          <Vertical gap={spacing.C}>
-            <a href="/agentdb-mvp/demo-runsheet.html#console" {...ext}>
-              <Button variant="secondary">Demo 1 · The console · about 3 minutes ↗</Button>
-            </a>
-            <a href="/agentdb-mvp/demo-runsheet.html#claude" {...ext}>
-              <Button variant="secondary">Demo 2 · Claude Code · about 9 minutes ↗</Button>
-            </a>
-            <a href="/agentdb-mvp/demo-story.html" {...ext}>
-              <Button variant="tertiary">The demo story: beats, cast and commands ↗</Button>
-            </a>
-            <a href={LOOM} {...ext}>
-              <Button variant="tertiary" icon="video">Watch the recording</Button>
-            </a>
-          </Vertical>
-        </Section>
 
         <Section id="decisions" title="Design decisions" note="The rulings the build stands on. Oldest first.">
           <Table compact hoverable={false} rowKey="decision" data={DECISIONS as unknown as Record<string, unknown>[]}

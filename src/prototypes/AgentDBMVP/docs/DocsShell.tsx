@@ -24,7 +24,6 @@ const MENU: { label: string; href: string; section?: string }[] = [
   { label: 'Architecture', href: `${HOME}#architecture`, section: 'architecture' },
   { label: 'Information architecture', href: `${HOME}#ia`, section: 'ia' },
   { label: 'Key flows', href: `${HOME}#flows`, section: 'flows' },
-  { label: 'Demo script', href: `${HOME}#demo`, section: 'demo' },
   { label: 'Design decisions', href: `${HOME}#decisions`, section: 'decisions' },
   { label: 'Change log', href: `${HOME}#changes`, section: 'changes' },
 ];
