@@ -3,10 +3,10 @@ import { BaseIconProps } from '../Icon.types';
 import { iconSize } from '../../../tokens/icons';
 
 const VARIANTS: Record<'xs' | 's' | 'm' | 'l', { viewBox: string; inner: string }> = {
-  xs: { viewBox: '0 0 12 12', inner: `<path fill-rule="evenodd" clip-rule="evenodd" d="M4.94281 9.70712L4 8.76431L6.86193 5.90238L4 3.04045L4.94281 2.09764L8.74755 5.90238L4.94281 9.70712Z" fill="currentColor"/>` },
-  s: { viewBox: '0 0 14 14', inner: `<path fill-rule="evenodd" clip-rule="evenodd" d="M5.76657 11.325L4.66663 10.225L8.00554 6.88611L4.66663 3.54719L5.76657 2.44725L10.2054 6.88611L5.76657 11.325Z" fill="currentColor"/>` },
-  m: { viewBox: '0 0 16 16', inner: `<path fill-rule="evenodd" clip-rule="evenodd" d="M6.59045 12.9428L5.33337 11.6857L9.14928 7.86983L5.33337 4.05392L6.59045 2.79684L11.6634 7.86983L6.59045 12.9428Z" fill="currentColor"/>` },
-  l: { viewBox: '0 0 18 18', inner: `<path fill-rule="evenodd" clip-rule="evenodd" d="M7.41421 14.5607L6 13.1465L10.2929 8.85356L6 4.56067L7.41421 3.14645L13.1213 8.85356L7.41421 14.5607Z" fill="currentColor"/>` },
+  xs: { viewBox: '0 0 12 12', inner: `<path d="M4.94281 9.70713L4 8.76432L6.86193 5.90239L4 3.04046L4.94281 2.09766L8.74755 5.90239L4.94281 9.70713Z" fill-rule="evenodd" clip-rule="evenodd" fill="currentColor"/>` },
+  s: { viewBox: '0 0 14 14', inner: `<path d="M5.76669 11.325L4.66675 10.225L8.00566 6.88613L4.66675 3.54721L5.76669 2.44727L10.2056 6.88613L5.76669 11.325Z" fill-rule="evenodd" clip-rule="evenodd" fill="currentColor"/>` },
+  m: { viewBox: '0 0 16 16', inner: `<path d="M6.59033 12.9428L5.33325 11.6858L9.14916 7.86986L5.33325 4.05395L6.59033 2.79688L11.6633 7.86986L6.59033 12.9428Z" fill-rule="evenodd" clip-rule="evenodd" fill="currentColor"/>` },
+  l: { viewBox: '0 0 18 18', inner: `<path d="M7.41421 14.5607L6 13.1465L10.2929 8.85359L6 4.5607L7.41421 3.14648L13.1213 8.85359L7.41421 14.5607Z" fill-rule="evenodd" clip-rule="evenodd" fill="currentColor"/>` },
 };
 
 export const ChevronRightIcon: React.FC<BaseIconProps> = ({

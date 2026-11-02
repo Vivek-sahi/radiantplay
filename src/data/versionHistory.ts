@@ -28,6 +28,15 @@ export interface VersionEntry {
  */
 export const versionHistory: VersionEntry[] = [
   {
+    version: '26.11.1c',
+    date: '2026-11-02',
+    type: 'figma-sync',
+    changes: [
+      { type: 'synced', group: 'Design system', component: '18 new icons', description: 'ai-star, analyst, collapse, delete, globe, memory, model, new-chat, parameter, styling, tab, trash-folder and six -stroke outlines; the rest refreshed from Figma. trash-can now aliases delete. 167 icons' },
+      { type: 'modified', group: 'Tooling', component: 'npm run sync-icons', description: 'Reads the new Iconography page in full, Solid and Stroke styles and misnamed layers; retries slow downloads and drops white frame backgrounds' },
+    ],
+  },
+  {
     version: '26.11.1b',
     date: '2026-11-02',
     type: 'patch',

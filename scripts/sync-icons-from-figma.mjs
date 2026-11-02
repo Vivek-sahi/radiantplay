@@ -22,7 +22,8 @@ const ICONS_DIR = path.join(ROOT, 'src/components/icons/icons');
 const REPORT_PATH = path.join(ROOT, 'docs/2026-05-07-icon-sync-issues.md');
 
 const FILE_KEY = '1QlRveXx4wppvDXyPVWUTK';
-const ICONS_PAGE_NODE_ID = '17651:152';
+// The Iconography page (Foundation > Iconography). It moved on 2026-11: the old icons page was 17651:152.
+const ICONS_PAGE_NODE_ID = '25069:12849';
 
 const SIZE_PIXELS = { xs: 12, s: 14, m: 16, l: 18 };
 const SIZE_ORDER = ['xs', 's', 'm', 'l'];
@@ -39,6 +40,8 @@ const ALIASES = {
   'search': 'magnifying-glass',
   'settings': 'cog',
   'refresh': 'sync',
+  // Figma renamed trash-can to delete (2026-11); prototypes still use trash-can.
+  'trash-can': 'delete',
 };
 
 // Figma layer-name typos → canonical (base, size).
@@ -47,6 +50,8 @@ const TYPO_MAP = {
   'question-sark-m': { base: 'question-mark', size: 's' },
   'question-xsark-m': { base: 'question-mark', size: 'xs' },
 };
+// Misspelt bases, whatever the size.
+const BASE_TYPOS = { 'chekmark-circle': 'checkmark-circle', 'question-sark': 'question-mark', 'question-xsark': 'question-mark' };
 
 const args = new Set(process.argv.slice(2));
 const DRY_RUN = args.has('--dry-run');
@@ -87,11 +92,14 @@ async function figmaFetch(url, attempt = 0) {
 
 function normalizeName(rawName) {
   if (!rawName) return null;
-  const name = rawName.toLowerCase().replace(/[_\s]+/g, '-');
+  // Variant names ("Property 1=Sharp-l") are read with their component set, never alone.
+  if (rawName.includes('=')) return null;
+  const name = rawName.toLowerCase().replace(/[_\s]+/g, '-').replace(/-{2,}/g, '-');
   if (TYPO_MAP[name]) return TYPO_MAP[name];
-  const m = name.match(/^(.+)-(xs|s|m|l)$/);
+  const m = name.match(/^(.+?)-?-(xs|s|m|l)$/);
   if (!m) return null;
-  return { base: m[1], size: m[2] };
+  const base = m[1].replace(/-+$/, '');
+  return { base: BASE_TYPOS[base] || base, size: m[2] };
 }
 
 function pascal(kebab) {
@@ -103,6 +111,24 @@ function pascal(kebab) {
 
 function collectIconNodes(node, acc) {
   if (!node) return;
+  // A component set "liveboard-l" holds the icon's styles as variants: "Icon type=Solid" is the
+  // icon itself, "Icon type=Stroke" becomes "liveboard-stroke". Other variant sets (corner,
+  // spacing) aren't icons in the usual sense and are reported, not generated.
+  if (node.type === 'COMPONENT_SET') {
+    const setNorm = normalizeName(node.name || '');
+    if (setNorm) {
+      for (const v of node.children || []) {
+        const t = (v.name || '').match(/icon\s*type\s*=\s*(solid|stroke)/i);
+        if (!t) {
+          issues.push(`- \`${node.name}\` variant \`${v.name}\` skipped: not a Solid or Stroke icon style.`);
+          continue;
+        }
+        const base = t[1].toLowerCase() === 'stroke' ? `${setNorm.base}-stroke` : setNorm.base;
+        acc.push({ id: v.id, base, size: setNorm.size, raw: `${node.name} / ${v.name}` });
+      }
+      return;
+    }
+  }
   const norm = normalizeName(node.name || '');
   if (norm && node.absoluteBoundingBox) {
     const { width, height } = node.absoluteBoundingBox;
@@ -117,7 +143,7 @@ function collectIconNodes(node, acc) {
 async function fetchFileTree() {
   const url = `https://api.figma.com/v1/files/${FILE_KEY}/nodes?ids=${encodeURIComponent(
     ICONS_PAGE_NODE_ID
-  )}&depth=6`;
+  )}`; // the whole page: icon variant sets sit deeper than six levels
   return figmaFetch(url);
 }
 
@@ -136,10 +162,17 @@ async function fetchSvgUrls(nodeIds) {
   return out;
 }
 
-async function downloadSvg(url) {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`SVG download ${res.status} ${url}`);
-  return res.text();
+async function downloadSvg(url, attempt = 0) {
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(20000) });
+    if (!res.ok) throw new Error(`SVG download ${res.status} ${url}`);
+    return res.text();
+  } catch (err) {
+    // Figma's image host times out now and then on long runs: retry a few times.
+    if (attempt >= 4) throw err;
+    await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
+    return downloadSvg(url, attempt + 1);
+  }
 }
 
 function parseSvg(svgText) {
@@ -149,6 +182,11 @@ function parseSvg(svgText) {
   let inner = m[2].trim();
   const vb = attrs.match(/viewBox="([^"]+)"/);
   const viewBox = vb ? vb[1] : '0 0 18 18';
+
+  // Some frames export their white background as a full-size rect; recoloured, it
+  // would turn the icon into a solid square. Drop it.
+  const [, , vbW, vbH] = viewBox.split(/\s+/);
+  inner = inner.replace(new RegExp(`^<rect width="${vbW}" height="${vbH}" fill="(white|#fff|#ffffff|#FFF|#FFFFFF)"\\s*/>\\s*`), '');
 
   // ThoughtSpot icons are monochrome. Replace every hex/named fill or stroke
   // with currentColor so the `color` prop works. Leave fill="none" alone.

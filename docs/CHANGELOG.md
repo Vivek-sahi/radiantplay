@@ -1,5 +1,13 @@
 # Changelog
 
+## 26.11.1c — 2026-11-02
+
+Icons sync from Figma again, with 18 new ones.
+
+- New: `ai-star`, `analyst`, `collapse`, `delete`, `globe`, `memory`, `model`, `new-chat`, `parameter`, `styling`, `tab` and `trash-folder`, plus `-stroke` outlines of `answer`, `delete`, `liveboard`, `model`, `table` and `trash-folder`. The other icons are refreshed from the current Figma file. 167 icons in all
+- Figma renamed Trash can to Delete; `trash-can` still works and shows the new icon
+- `npm run sync-icons` works again: it reads the new Iconography page, the whole page (icons sit deeper than before), Solid and Stroke styles, and misnamed layers. It retries slow downloads and drops white frame backgrounds that turned `analyst` into a black square
+
 ## 26.11.1b — 2026-11-02
 
 Claude picks the right icon more often, and never draws its own.
