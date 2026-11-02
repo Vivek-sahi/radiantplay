@@ -4,6 +4,7 @@ import { Icon } from '@components/icons';
 import { Modal } from '@components/Modal';
 import { Tooltip } from '@components/Tooltip';
 import { Toggle } from '@components/Toggle';
+import { ConnectorLogo } from '@components/ConnectorLogo';
 import { FileCard, type UserMessageFile } from './UserMessage';
 import { useSquirclePath } from './useSquirclePath';
 import styles from './PromptBar.module.css';
@@ -180,8 +181,8 @@ export interface Connector {
   id: string;
   name: string;
   status: ConnectorStatus;
-  // Placeholder logo background until real logos are added. These are the
-  // third-party brand colours (data), so they stay literal in both themes.
+  // Brand colour for the fallback disc when the connector has no logo in
+  // @components/ConnectorLogo yet. Third-party colours are data, so they stay literal.
   color: string;
 }
 
@@ -238,9 +239,7 @@ function ConnectorsMenu({
       <div className={styles.menuList}>
         {visible.map((c) => (
           <button className={styles.connectorRow} key={c.id} onClick={() => handleRow(c)}>
-            <span className={styles.connectorLogo} style={{ background: c.color }}>
-              {c.name.charAt(0)}
-            </span>
+            <ConnectorLogo id={c.id} name={c.name} color={c.color} size={16} label="" />
             <span className={styles.menuItemLabel}>{c.name}</span>
             <span className={styles.connectorControl}>
               {c.status === 'connect' ? (

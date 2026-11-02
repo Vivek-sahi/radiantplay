@@ -28,6 +28,48 @@ export interface VersionEntry {
  */
 export const versionHistory: VersionEntry[] = [
   {
+    version: '26.11.1e',
+    date: '2026-11-02',
+    type: 'patch',
+    changes: [
+      { type: 'modified', group: 'Tooling', component: 'Conventions reminder', description: 'A sixth line on every prompt: icons from <Icon> picked by meaning, never drawn, emoji or icon libraries; brand logos use <ConnectorLogo>' },
+    ],
+  },
+  {
+    version: '26.11.1d',
+    date: '2026-11-02',
+    type: 'patch',
+    changes: [
+      { type: 'added', group: 'Design system', component: 'ConnectorLogo', description: 'Shared connector logos (ThoughtSpot, Salesforce, HubSpot, Slack, Gong, monday.com) from one list; connectors without a logo show their brand-colour disc. Spotter\'s Connectors menu uses it' },
+    ],
+  },
+  {
+    version: '26.11.1c',
+    date: '2026-11-02',
+    type: 'figma-sync',
+    changes: [
+      { type: 'synced', group: 'Design system', component: '18 new icons', description: 'ai-star, analyst, collapse, delete, globe, memory, model, new-chat, parameter, styling, tab, trash-folder and six -stroke outlines; the rest refreshed from Figma. trash-can now aliases delete. 167 icons' },
+      { type: 'modified', group: 'Tooling', component: 'npm run sync-icons', description: 'Reads the new Iconography page in full, Solid and Stroke styles and misnamed layers; retries slow downloads and drops white frame backgrounds' },
+    ],
+  },
+  {
+    version: '26.11.1b',
+    date: '2026-11-02',
+    type: 'patch',
+    changes: [
+      { type: 'modified', group: 'Tooling', component: 'Icon guidance', description: 'Rule files list icons by what they mean and what has no icon, and say never to draw icons, use emoji or add icon libraries. /rp-radiant-check lists hand-drawn icons with the Icon to use instead' },
+      { type: 'modified', group: 'Design system', component: 'apps-stroke', description: 'Draws fully in light mode: its masks keep their white fill, and npm run sync-icons now does this for every icon' },
+    ],
+  },
+  {
+    version: '26.11.1a',
+    date: '2026-11-02',
+    type: 'figma-sync',
+    changes: [
+      { type: 'added', group: 'Design system', component: 'Apps icon', description: 'apps (solid) and apps-stroke (outline) in all four sizes, from the Radiant 3.0 Object Icons set. Listed in the Product group on the icons page and in the rule files' },
+    ],
+  },
+  {
     version: '26.10.4s',
     date: '2026-10-28',
     type: 'patch',

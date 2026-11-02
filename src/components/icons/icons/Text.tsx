@@ -3,9 +3,9 @@ import { BaseIconProps } from '../Icon.types';
 import { iconSize } from '../../../tokens/icons';
 
 const VARIANTS: Record<'xs' | 's' | 'm' | 'l', { viewBox: string; inner: string }> = {
-  xs: { viewBox: '0 0 12 12', inner: `<path d="M2.66667 2V3.33333H5.33333V10H6.66667V3.33333H9.33333V2H2.66667Z" fill="currentColor"/>` },
-  s: { viewBox: '0 0 14 14', inner: `<path d="M3.11111 2.33331V3.88887H6.22222V11.6666H7.77778V3.88887H10.8889V2.33331H3.11111Z" fill="currentColor"/>` },
-  m: { viewBox: '0 0 16 16', inner: `<path d="M3.55556 2.66669V4.44446H7.11111V13.3334H8.88889V4.44446H12.4444V2.66669H3.55556Z" fill="currentColor"/>` },
+  xs: { viewBox: '0 0 12 12', inner: `<path d="M2.66663 2V3.33333H5.33329V10H6.66663V3.33333H9.33329V2H2.66663Z" fill="currentColor"/>` },
+  s: { viewBox: '0 0 14 14', inner: `<path d="M3.11108 2.33337V3.88893H6.2222V11.6667H7.77775V3.88893H10.8889V2.33337H3.11108Z" fill="currentColor"/>` },
+  m: { viewBox: '0 0 16 16', inner: `<path d="M3.55554 2.66663V4.4444H7.1111V13.3333H8.88888V4.4444H12.4444V2.66663H3.55554Z" fill="currentColor"/>` },
   l: { viewBox: '0 0 18 18', inner: `<path d="M4 3V5H8V15H10V5H14V3H4Z" fill="currentColor"/>` },
 };
 

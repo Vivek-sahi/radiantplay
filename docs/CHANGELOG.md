@@ -1,5 +1,45 @@
 # Changelog
 
+## 26.11.1e — 2026-11-02
+
+The icon rule reaches every prompt, not only the bigger tasks.
+
+- The conventions reminder that runs on every message in Claude Code has a sixth line: icons come from `<Icon>`, picked by meaning from the rule files, never drawn as inline SVG, emoji or an icon library, and brand logos use `<ConnectorLogo>`
+
+## 26.11.1d — 2026-11-02
+
+Connector logos have one shared home, for Spotter, Apps and anything else.
+
+- `<ConnectorLogo id="salesforce" />` from `@components/ConnectorLogo` shows a connector's logo. ThoughtSpot, Salesforce, HubSpot, Slack, Gong and monday.com have logos (from the Apps film). The ThoughtSpot mark follows light and dark
+- Connectors without a logo yet (Google Workspace, OneDrive, Canva, Notion, Dropbox, Figma) show their brand-colour disc and initial, as before
+- One list, `connectors.ts`, holds each connector's name, brand colour and logo; files live in `src/assets/logos/connectors/`
+- Spotter's composer shows real logos in its Connectors menu where one exists
+- The rule files tell Claude to use ConnectorLogo for brand logos, never an icon or a drawn logo
+
+## 26.11.1c — 2026-11-02
+
+Icons sync from Figma again, with 18 new ones.
+
+- New: `ai-star`, `analyst`, `collapse`, `delete`, `globe`, `memory`, `model`, `new-chat`, `parameter`, `styling`, `tab` and `trash-folder`, plus `-stroke` outlines of `answer`, `delete`, `liveboard`, `model`, `table` and `trash-folder`. The other icons are refreshed from the current Figma file. 167 icons in all
+- Figma renamed Trash can to Delete; `trash-can` still works and shows the new icon
+- `npm run sync-icons` works again: it reads the new Iconography page, the whole page (icons sit deeper than before), Solid and Stroke styles, and misnamed layers. It retries slow downloads and drops white frame backgrounds that turned `analyst` into a black square
+
+## 26.11.1b — 2026-11-02
+
+Claude picks the right icon more often, and never draws its own.
+
+- The rule files list icons by meaning: close is `cross`, settings is `settings`, delete is `trash-can`, comment is `cord`, notifications is `monitor`, and about 40 more. They also list what has no icon (home, external link, mail and others): use the closest one or a text button, and never draw an icon as inline SVG, use emoji or add an icon library
+- `/rp-radiant-check` lists icons drawn by hand in a prototype, with the `<Icon>` to use instead
+- The component inventory no longer offers an `xl` icon size; the sizes are xs, s, m and l
+- `apps-stroke` drew faintly in light mode: its masks were recoloured. Masks now keep their white fill, in the icon and in `npm run sync-icons`
+
+## 26.11.1a — 2026-11-02
+
+The new Apps object icon from the Radiant 3.0 Figma file.
+
+- `apps` (solid) and `apps-stroke` (outline), each in all four sizes, exported from the Object Icons set in Figma. Use them like any other icon: `<Icon name="apps" />`. They sit in the Product group on the icons page, which now lists 153 icons
+- The icon lists in the rule files include both names, so Claude can find them
+
 ## 26.10.4s — 2026-10-28
 
 Prototypes can carry an engineering spec that the designer approves, learned from Sneharsh's SpotterRefresh spec.
