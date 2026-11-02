@@ -1,5 +1,15 @@
 # Changelog
 
+## 26.11.1d — 2026-11-02
+
+Connector logos have one shared home, for Spotter, Apps and anything else.
+
+- `<ConnectorLogo id="salesforce" />` from `@components/ConnectorLogo` shows a connector's logo. ThoughtSpot, Salesforce, HubSpot, Slack, Gong and monday.com have logos (from the Apps film). The ThoughtSpot mark follows light and dark
+- Connectors without a logo yet (Google Workspace, OneDrive, Canva, Notion, Dropbox, Figma) show their brand-colour disc and initial, as before
+- One list, `connectors.ts`, holds each connector's name, brand colour and logo; files live in `src/assets/logos/connectors/`
+- Spotter's composer shows real logos in its Connectors menu where one exists
+- The rule files tell Claude to use ConnectorLogo for brand logos, never an icon or a drawn logo
+
 ## 26.11.1c — 2026-11-02
 
 Icons sync from Figma again, with 18 new ones.

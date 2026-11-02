@@ -30,6 +30,14 @@
       "reason": "White colorway hover and pressed tints sit on coloured surfaces; no token fits"
     },
     {
+      "path": "src/components/ConnectorLogo/connectors.ts",
+      "kinds": [
+        "literal"
+      ],
+      "match": "color: '#",
+      "reason": "Connector brand colours (Salesforce, Slack and so on) are data, shown only when a connector has no logo"
+    },
+    {
       "path": "src/spotter/chat/PromptBar.tsx",
       "kinds": [
         "literal"

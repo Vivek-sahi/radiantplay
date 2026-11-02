@@ -28,6 +28,14 @@ export interface VersionEntry {
  */
 export const versionHistory: VersionEntry[] = [
   {
+    version: '26.11.1d',
+    date: '2026-11-02',
+    type: 'patch',
+    changes: [
+      { type: 'added', group: 'Design system', component: 'ConnectorLogo', description: 'Shared connector logos (ThoughtSpot, Salesforce, HubSpot, Slack, Gong, monday.com) from one list; connectors without a logo show their brand-colour disc. Spotter\'s Connectors menu uses it' },
+    ],
+  },
+  {
     version: '26.11.1c',
     date: '2026-11-02',
     type: 'figma-sync',

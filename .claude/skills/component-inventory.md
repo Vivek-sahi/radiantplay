@@ -203,6 +203,8 @@ Use this to quickly find the right component:
 | **Icon** | Iconography | `name`, `size`: xs/s/m/l (no xl), `color` |
 | **IconGallery** | Icon browsing (dev tool) | N/A |
 
+For connector and brand logos use `<ConnectorLogo id="salesforce" />` from `@components/ConnectorLogo` (list in `connectors.ts`, files in `src/assets/logos/connectors/`).
+
 To choose an icon by what it means, use the **Pick by meaning** table and the **No icon for** list in `component-summary.md`. Never draw an icon as inline `<svg>`.
 
 **Available Icon Names (171 icons, from `src/components/icons/registry.ts`):**

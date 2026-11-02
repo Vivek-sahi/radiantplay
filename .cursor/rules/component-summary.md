@@ -61,6 +61,8 @@ The `-undo` names are usually the filled or active state of the plain one (`star
 
 **No icon for:** home, external link, image, mail, phone, location, heart, sun and moon. Object icons (`liveboard`, `answer`, `table`, `model`, `apps`, `delete`, `trash-folder`) also come as `-stroke` outlines. Use the closest icon from the list, or a text button. **Never draw an icon** as inline `<svg>`, never use emoji, and never add an icon library. If nothing fits, say so and leave a `// TODO: icon` comment.
 
+**Connector and brand logos** (Salesforce, Slack, ThoughtSpot and others): use `<ConnectorLogo id="salesforce" />` from `@components/ConnectorLogo`, never an icon or a hand-drawn logo. Logos with files: thoughtspot, salesforce, hubspot, slack, gong, monday. Others (gworkspace, onedrive, canva, notion, dropbox, figma) show a brand-colour disc until a logo is added. To add one, put the file in `src/assets/logos/connectors/` and add it to `connectors.ts`.
+
 **Valid sizes:** `xs` (12px) · `s` (14px) · `m` (16px) · `l` (18px) — no `xl`, no numeric values
 **Button icon rule:** Always pass `iconPosition="leading"` or `"trailing"` when using the `icon` prop — default `"none"` suppresses icon rendering. Use `iconOnly` prop for circular 32×32 icon buttons.
 
