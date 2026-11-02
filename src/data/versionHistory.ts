@@ -28,6 +28,14 @@ export interface VersionEntry {
  */
 export const versionHistory: VersionEntry[] = [
   {
+    version: '26.11.1e',
+    date: '2026-11-02',
+    type: 'patch',
+    changes: [
+      { type: 'modified', group: 'Tooling', component: 'Conventions reminder', description: 'A sixth line on every prompt: icons from <Icon> picked by meaning, never drawn, emoji or icon libraries; brand logos use <ConnectorLogo>' },
+    ],
+  },
+  {
     version: '26.11.1d',
     date: '2026-11-02',
     type: 'patch',

@@ -1,5 +1,11 @@
 # Changelog
 
+## 26.11.1e — 2026-11-02
+
+The icon rule reaches every prompt, not only the bigger tasks.
+
+- The conventions reminder that runs on every message in Claude Code has a sixth line: icons come from `<Icon>`, picked by meaning from the rule files, never drawn as inline SVG, emoji or an icon library, and brand logos use `<ConnectorLogo>`
+
 ## 26.11.1d — 2026-11-02
 
 Connector logos have one shared home, for Spotter, Apps and anything else.
