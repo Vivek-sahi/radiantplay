@@ -43,6 +43,10 @@ const ALIASES = {
   // Figma renamed trash-can to delete (2026-11); prototypes still use trash-can.
   'trash-can': 'delete',
 };
+// Component names that existed before a Figma rename, re-exported so direct imports keep working.
+const LEGACY_EXPORTS = {
+  TrashCanIcon: 'delete',
+};
 
 // Figma layer-name typos → canonical (base, size).
 const TYPO_MAP = {
@@ -412,6 +416,11 @@ async function main() {
     '',
     ...allIcons.map(
       (i) => `export { ${pascal(i.base)}Icon } from './${i.fileName}';`
+    ),
+    '',
+    '// Old component names kept so code that imports them directly still works.',
+    ...Object.entries(LEGACY_EXPORTS).map(
+      ([oldName, target]) => `export { ${pascal(target)}Icon as ${oldName} } from './${pascal(target)}';`
     ),
     '',
   ].join('\n');

@@ -172,3 +172,6 @@ export { VerifiedIcon } from './Verified';
 export { VideoIcon } from './Video';
 export { WrenchIcon } from './Wrench';
 export { ZoomAreaIcon } from './ZoomArea';
+
+// Old component names kept so code that imports them directly still works.
+export { DeleteIcon as TrashCanIcon } from './Delete';
