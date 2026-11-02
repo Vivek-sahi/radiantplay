@@ -8,7 +8,7 @@ Many designers are not engineers. Ask in plain words, one round at a time.
 
 ## How the spec shows up
 
-- `src/prototypes/<Name>/spec.tsx` exports `specs: ComponentSpec[]` and `approval: SpecApproval` (types in `src/app-chrome/SpecSheet/types.ts`). `src/prototypes/SpotterComponents/spec.tsx` is a worked example.
+- `src/prototypes/<Name>/spec.tsx` exports `specs: ComponentSpec[]` and `approval: SpecApproval` (types in `src/app-chrome/SpecSheet/types.ts`). Look at an existing `spec.tsx` in the designer's own prototypes for a worked example, if there is one.
 - The prototype gets a floating Prototype / Spec switch at the bottom of the page (`?spec` in the URL).
   - Draft: only shows under `npm run dev`, with a "Draft, not approved" banner.
   - Approved: shows to everyone, including on the deployed site, as "Ready for build" with the designer's name and date.
