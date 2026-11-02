@@ -6,6 +6,7 @@ Release tidy-up.
 
 - The Spotter components sample no longer carries an example draft spec, so nothing about `/rp-spec` shows until someone runs it
 - The icons page shows its real last-updated date
+- `/rp-spec`'s type declaration moved from `src/vite-env.d.ts` to its own `src/spec-env.d.ts`, so forks that added their own declarations to `vite-env.d.ts` sync without a conflict
 - `TrashCanIcon` still works for code that imports it directly; it now shows the Delete icon, like `trash-can`. `npm run sync-icons` keeps old names like this from now on
 
 ## 26.11.1e — 2026-11-02
