@@ -24,6 +24,21 @@ export const HIGHLIGHT_GROUPS: { id: HighlightGroup; label: string }[] = [
 ];
 
 export const HIGHLIGHTS: Highlight[] = [
+  // ── 26.11.1f ────────────────────────────────────────────────────────────────
+  {
+    title: 'Icons that Claude picks right',
+    description: 'Icons sync from the Radiant 3.0 Figma file again, with 18 new ones including Apps, Model, Globe and AI star, plus outline versions of the object icons. Claude now picks icons by what they mean and never draws its own.',
+    version: '26.11.1c',
+    date: '2026-11-02',
+    group: 'enhancements',
+  },
+  {
+    title: 'Connector logos',
+    description: 'One shared set of connector logos for Spotter, Apps and anything else: <ConnectorLogo id="salesforce" /> shows the real logo, or the brand-colour disc until one is added.',
+    version: '26.11.1d',
+    date: '2026-11-02',
+    group: 'enhancements',
+  },
   // ── 26.10.4q ────────────────────────────────────────────────────────────────
   {
     title: 'Groups in the gallery',
