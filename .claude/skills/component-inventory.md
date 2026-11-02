@@ -200,8 +200,10 @@ Use this to quickly find the right component:
 
 | Component | When to Use | Key Props |
 |-----------|-------------|-----------|
-| **Icon** | Iconography | `name`, `size`: xs/s/m/l/xl, `color` |
+| **Icon** | Iconography | `name`, `size`: xs/s/m/l (no xl), `color` |
 | **IconGallery** | Icon browsing (dev tool) | N/A |
+
+To choose an icon by what it means, use the **Pick by meaning** table and the **No icon for** list in `component-summary.md`. Never draw an icon as inline `<svg>`.
 
 **Available Icon Names (153 icons, from `src/components/icons/registry.ts`):**
 ```

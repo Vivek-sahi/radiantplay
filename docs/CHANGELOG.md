@@ -1,5 +1,14 @@
 # Changelog
 
+## 26.11.1b — 2026-11-02
+
+Claude picks the right icon more often, and never draws its own.
+
+- The rule files list icons by meaning: close is `cross`, settings is `settings`, delete is `trash-can`, comment is `cord`, notifications is `monitor`, and about 40 more. They also list what has no icon (home, external link, mail and others): use the closest one or a text button, and never draw an icon as inline SVG, use emoji or add an icon library
+- `/rp-radiant-check` lists icons drawn by hand in a prototype, with the `<Icon>` to use instead
+- The component inventory no longer offers an `xl` icon size; the sizes are xs, s, m and l
+- `apps-stroke` drew faintly in light mode: its masks were recoloured. Masks now keep their white fill, in the icon and in `npm run sync-icons`
+
 ## 26.11.1a — 2026-11-02
 
 The new Apps object icon from the Radiant 3.0 Figma file.

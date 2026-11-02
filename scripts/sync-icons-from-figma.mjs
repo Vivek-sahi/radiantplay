@@ -160,6 +160,10 @@ function parseSvg(svgText) {
     }
   );
 
+  // Masks work by luminance: their fills must stay white, or the shape they
+  // reveal disappears in light mode (currentColor is dark there).
+  inner = inner.replace(/(<mask\b[^>]*?)\sfill="currentColor"/g, '$1 fill="white"');
+
   // Drop xmlns on inner elements (only needed on root <svg>).
   inner = inner.replace(/\s+xmlns="[^"]+"/g, '');
 

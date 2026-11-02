@@ -65,8 +65,10 @@ Classify each as:
 - **Reused as-is** — imported and used with no overrides
 - **Extended** — imported but wrapped in a custom component or has additional inline styles/overrides layered on top
 
-**Detailed output:** List every component with use count and classification.
-**Summary output:** "X Radiant components used (Y as-is, Z extended)"
+**Icons.** Also look for icons drawn by hand: inline `<svg>` in the prototype's `.tsx` files (`grep -n "<svg" src/prototypes/<Name> -r`), emoji used as icons, and imports from icon libraries. For each, suggest the `<Icon name="…">` that fits, using the **Pick by meaning** table in `.cursor/rules/component-summary.md`. Logos, charts and illustrations are fine as SVG; only UI icons count.
+
+**Detailed output:** List every component with use count and classification, then the hand-drawn icons with file:line and the suggested `<Icon>`.
+**Summary output:** "X Radiant components used (Y as-is, Z extended), N icons drawn by hand"
 
 #### Dimension 2 — Custom components
 List everything in `src/prototypes/<Name>/components/`. For each custom component:

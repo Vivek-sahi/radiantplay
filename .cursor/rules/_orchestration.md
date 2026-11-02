@@ -136,7 +136,7 @@ If unsure → load `component-inventory.md` before deciding to build custom.
 Read its `.module.css` — if it has `!important`, gradients, or hardcoded hex → fix first (Tier 3).
 
 **3. Using an icon?**
-Verify the name exists in `component-summary.md` icon list.
+Pick it from the **Pick by meaning** table in `component-summary.md`, and check the name is in its icon list. Never draw one as inline `<svg>`; if nothing fits, use the closest icon and say so.
 Valid sizes: `xs` · `s` · `m` · `l` — no `xl`, no numeric values.
 Always pass `iconPosition="leading"` or `"trailing"` when using the `icon` prop on Button.
 

@@ -28,6 +28,15 @@ export interface VersionEntry {
  */
 export const versionHistory: VersionEntry[] = [
   {
+    version: '26.11.1b',
+    date: '2026-11-02',
+    type: 'patch',
+    changes: [
+      { type: 'modified', group: 'Tooling', component: 'Icon guidance', description: 'Rule files list icons by what they mean and what has no icon, and say never to draw icons, use emoji or add icon libraries. /rp-radiant-check lists hand-drawn icons with the Icon to use instead' },
+      { type: 'modified', group: 'Design system', component: 'apps-stroke', description: 'Draws fully in light mode: its masks keep their white fill, and npm run sync-icons now does this for every icon' },
+    ],
+  },
+  {
     version: '26.11.1a',
     date: '2026-11-02',
     type: 'figma-sync',
