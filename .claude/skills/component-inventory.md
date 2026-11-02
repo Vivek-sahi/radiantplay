@@ -203,9 +203,9 @@ Use this to quickly find the right component:
 | **Icon** | Iconography | `name`, `size`: xs/s/m/l/xl, `color` |
 | **IconGallery** | Icon browsing (dev tool) | N/A |
 
-**Available Icon Names (151 icons, from `src/components/icons/registry.ts`):**
+**Available Icon Names (153 icons, from `src/components/icons/registry.ts`):**
 ```
-add-user, agenda, ai, answer, app-switcher, arrow-down,
+add-user, agenda, ai, answer, app-switcher, apps, apps-stroke, arrow-down,
 arrow-down-circle, arrow-left, arrow-left-circle, arrow-right,
 arrow-right-circle, arrow-up, arrow-up-circle, attribute, bold, book,
 book-closed, brush, bulb, calendar-cleaned, camera, caret-down,

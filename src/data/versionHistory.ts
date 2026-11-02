@@ -28,6 +28,14 @@ export interface VersionEntry {
  */
 export const versionHistory: VersionEntry[] = [
   {
+    version: '26.11.1a',
+    date: '2026-11-02',
+    type: 'figma-sync',
+    changes: [
+      { type: 'added', group: 'Design system', component: 'Apps icon', description: 'apps (solid) and apps-stroke (outline) in all four sizes, from the Radiant 3.0 Object Icons set. Listed in the Product group on the icons page and in the rule files' },
+    ],
+  },
+  {
     version: '26.10.4s',
     date: '2026-10-28',
     type: 'patch',

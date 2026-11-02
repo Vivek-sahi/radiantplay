@@ -1,5 +1,12 @@
 # Changelog
 
+## 26.11.1a — 2026-11-02
+
+The new Apps object icon from the Radiant 3.0 Figma file.
+
+- `apps` (solid) and `apps-stroke` (outline), each in all four sizes, exported from the Object Icons set in Figma. Use them like any other icon: `<Icon name="apps" />`. They sit in the Product group on the icons page, which now lists 153 icons
+- The icon lists in the rule files include both names, so Claude can find them
+
 ## 26.10.4s — 2026-10-28
 
 Prototypes can carry an engineering spec that the designer approves, learned from Sneharsh's SpotterRefresh spec.

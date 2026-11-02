@@ -20,7 +20,7 @@ const ICON_CATEGORIES: Record<string, IconName[]> = {
   'Data': ['database', 'schema', 'formula', 'data-column', 'attribute', 'chart', 'table', 'grid-view', 'list-view', 'measure', 'zoom-area', 'show-underlying-data', 'r-analysis', 'create-pinboard', 'create-worksheet'],
   'Joins': ['join-inner', 'join-left', 'join-outer', 'join-right'],
   'Files': ['pdf', 'ppt', 'excel', 'doc', 'note', 'documentation', 'book', 'book-closed'],
-  'Product': ['liveboard', 'answer', 'spotter', 'pinboard', 'collection', 'paper-plane'],
+  'Product': ['liveboard', 'answer', 'apps', 'apps-stroke', 'spotter', 'pinboard', 'collection', 'paper-plane'],
   'Media': ['video', 'microphone', 'camera', 'monitor'],
 };
 

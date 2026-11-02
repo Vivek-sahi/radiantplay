@@ -10,6 +10,8 @@ export { AgendaIcon } from './Agenda';
 export { AiIcon } from './Ai';
 export { AnswerIcon } from './Answer';
 export { AppSwitcherIcon } from './AppSwitcher';
+export { AppsIcon } from './Apps';
+export { AppsStrokeIcon } from './AppsStroke';
 export { ArrowDownIcon } from './ArrowDown';
 export { ArrowDownCircleIcon } from './ArrowDownCircle';
 export { ArrowLeftIcon } from './ArrowLeft';
