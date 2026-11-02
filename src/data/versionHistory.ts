@@ -28,6 +28,15 @@ export interface VersionEntry {
  */
 export const versionHistory: VersionEntry[] = [
   {
+    version: '26.11.1f',
+    date: '2026-11-02',
+    type: 'patch',
+    changes: [
+      { type: 'removed', group: 'Playground', component: 'Sample spec', description: 'The Spotter components sample no longer has an example draft spec; /rp-spec shows nothing until someone runs it' },
+      { type: 'modified', group: 'Design system', component: 'Icons page', description: 'Shows its real last-updated date' },
+    ],
+  },
+  {
     version: '26.11.1e',
     date: '2026-11-02',
     type: 'patch',

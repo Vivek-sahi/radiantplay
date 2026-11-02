@@ -1,5 +1,12 @@
 # Changelog
 
+## 26.11.1f — 2026-11-02
+
+Release tidy-up.
+
+- The Spotter components sample no longer carries an example draft spec, so nothing about `/rp-spec` shows until someone runs it
+- The icons page shows its real last-updated date
+
 ## 26.11.1e — 2026-11-02
 
 The icon rule reaches every prompt, not only the bigger tasks.

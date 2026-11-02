@@ -814,7 +814,7 @@ export const componentRegistry: ComponentMeta[] = [
     description: 'Browsable gallery of available icons',
     states: ['default'],
     path: '/radiant/components/icongallery',
-    lastModified: '2026-01-30',
+    lastModified: '2026-11-02',
     source: 'custom',
     status: 'new',
     variants: 3,
