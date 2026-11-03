@@ -514,3 +514,42 @@ export function createPivot(wb: Workbook, sourceId: string, range: string, targe
   sheets.splice(i + 1, 0, sheet);
   return { wb: { ...wb, sheets }, id };
 }
+
+// ── Upload ────────────────────────────────────────────────────────────────────
+
+function parseCsv(text: string): string[][] {
+  const rows: string[][] = [];
+  let row: string[] = []; let cur = ''; let q = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (q) {
+      if (ch === '"' && text[i + 1] === '"') { cur += '"'; i++; }
+      else if (ch === '"') q = false;
+      else cur += ch;
+    } else if (ch === '"') q = true;
+    else if (ch === ',') { row.push(cur); cur = ''; }
+    else if (ch === '\n' || ch === '\r') {
+      if (ch === '\r' && text[i + 1] === '\n') i++;
+      row.push(cur); rows.push(row); row = []; cur = '';
+    } else cur += ch;
+  }
+  if (cur || row.length) { row.push(cur); rows.push(row); }
+  return rows.filter((r) => r.some((c) => c.trim() !== ''));
+}
+
+/** A CSV becomes a Local tab: first row is the header, number columns are detected. */
+export function addCsvSheet(wb: Workbook, fileName: string, text: string): { wb: Workbook; id: string; rows: number } {
+  const [head = [], ...body] = parseCsv(text);
+  const width = Math.max(head.length, ...body.map((r) => r.length));
+  const columns: Column[] = Array.from({ length: width }, (_, c) => {
+    const vals = body.map((r) => r[c]).filter((v) => v !== undefined && v.trim() !== '');
+    const numeric = vals.length > 0 && vals.every((v) => typeof literal(v) === 'number');
+    return { title: head[c] || `Column ${c + 1}`, type: numeric ? 'number' : 'text', width: 128, input: true };
+  });
+  const rows = body.map((r) => columns.map((col, c) => { const v = r[c] ?? ''; return col.type === 'number' ? (literal(v) as number) : v; }));
+  let name = fileName.replace(/\.[^.]+$/, '');
+  let n = 2;
+  while (wb.sheets.some((s) => s.name === name)) name = `${fileName.replace(/\.[^.]+$/, '')} (${n++})`;
+  const id = `u${Date.now()}`;
+  return { wb: { ...wb, sheets: [...wb.sheets, { id, name, kind: 'local', columns, rows, cells: {}, source: `Uploaded from ${fileName}` }] }, id, rows: rows.length };
+}

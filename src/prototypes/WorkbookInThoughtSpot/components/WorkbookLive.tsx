@@ -9,7 +9,7 @@ import { CreatePivotDialog, InsertFunctionDialog, PinDialog } from './WorkbookDi
 import { PivotPanel } from './PivotPanel';
 import { colLetter, parseRef, refsIn } from '../engine/formula';
 import {
-  addRule, addSheet, createPivot, setPivot, sheetRange, defineName, deleteSheet, duplicateSheet, lastDataRow, moveSheet, pinLiveness, renameSheet, setFormat, sheetCsv, sortRows, typeOf, rawOf, readOnlyReason, refFor, setCell, shiftFormula, valueOf, type ColFormat, type Workbook,
+  addCsvSheet, addRule, addSheet, createPivot, setPivot, sheetRange, defineName, deleteSheet, duplicateSheet, lastDataRow, moveSheet, pinLiveness, renameSheet, setFormat, sheetCsv, sortRows, typeOf, rawOf, readOnlyReason, refFor, setCell, shiftFormula, valueOf, type ColFormat, type Workbook,
 } from '../engine/workbook';
 import styles from './WorkbookLive.module.css';
 
@@ -71,6 +71,7 @@ export const WorkbookLive: React.FC<WorkbookLiveProps> = ({ initial, publishedAl
   const [insertFn, setInsertFn] = useState(false);
   const [pin, setPin] = useState<{ what: string; live: boolean; reason?: string } | null>(null);
   const [pivotFrom, setPivotFrom] = useState<string | null>(null);
+  const fileInput = useRef<HTMLInputElement>(null);
   const grid = useRef<SheetGridHandle>(null);
   const bar = useRef<FormulaBarHandle>(null);
 
@@ -264,7 +265,8 @@ export const WorkbookLive: React.FC<WorkbookLiveProps> = ({ initial, publishedAl
       }
       case 'export': onSheetAction(activeId, 'download-csv'); break;
       case 'focus': setFocusCell((v) => !v); break;
-      case 'filter': case 'clear-filter': case 'size': case 'upload': case 'expand':
+      case 'upload': fileInput.current?.click(); break;
+      case 'filter': case 'clear-filter': case 'size': case 'expand':
         setNote('Not in this prototype yet');
         break;
     }
@@ -490,6 +492,24 @@ export const WorkbookLive: React.FC<WorkbookLiveProps> = ({ initial, publishedAl
           onPin={(lb) => { setPin(null); setNote(`Pinned ${pin.what} to “${lb}” as a ${pin.live ? 'live tile' : 'snapshot'}`); }}
         />
       )}
+      {/* Upload: the toolbar's upload button opens the file browser. A CSV becomes a new Local tab. */}
+      <input
+        ref={fileInput}
+        type="file"
+        accept=".csv,.xlsx,.xls"
+        className={styles.hiddenFile}
+        onChange={async (e) => {
+          const file = e.target.files?.[0];
+          e.target.value = '';
+          if (!file) return;
+          if (!/\.csv$/i.test(file.name)) { setNote(`${file.name}: Excel files with formulas come in a later step; this prototype reads CSV`); return; }
+          const out = addCsvSheet(wb, file.name, await file.text());
+          commitWb(out.wb);
+          setActiveId(out.id);
+          setSel(cellSel(0, 0));
+          setNote(`Uploaded ${file.name}: ${out.rows.toLocaleString()} rows on a new local tab`);
+        }}
+      />
       {/* The canvas grid opens its cell editor in this layer. */}
       <div id="portal" className={styles.portal} />
     </div>

@@ -71,44 +71,91 @@ export const InsertFunctionDialog: React.FC<{ isOpen: boolean; onClose: () => vo
   );
 };
 
-const LIVEBOARDS = ['FY26 Regional review', 'Revenue cockpit', 'Finance weekly', 'Board pack Q3'];
+// ThoughtSpot's Pin to Liveboard dialog (Vivek's reference, 3 Nov): the pinned object's name and an
+// optional description, search, All Liveboards with + Create Liveboard, Liveboards with tabs open
+// to pick a tab. Above the list, one line says whether this pin stays live (PM brief, screen 13).
+const LIVEBOARDS: { name: string; tabs?: string[] }[] = [
+  { name: 'FY26 Regional review', tabs: ['Overview', 'Regions', 'Plan vs actual'] },
+  { name: 'Revenue cockpit', tabs: ['Summary', 'Pipeline'] },
+  { name: 'Finance weekly' },
+  { name: 'Board pack Q3' },
+  { name: 'Daily Activity Tracker' },
+];
 
 export const PinDialog: React.FC<{ isOpen: boolean; what: string; live: boolean; reason?: string; onClose: () => void; onPin: (liveboard: string) => void }> = ({ isOpen, what, live, reason, onClose, onPin }) => {
   const [query, setQuery] = useState('');
-  const [pick, setPick] = useState(LIVEBOARDS[0]);
-  const shown = LIVEBOARDS.filter((l) => l.toLowerCase().includes(query.toLowerCase()));
+  const [title, setTitle] = useState(what.replace(/^the /, '').replace(/^\w/, (c) => c.toUpperCase()));
+  const [describing, setDescribing] = useState(false);
+  const [description, setDescription] = useState('');
+  const [open, setOpen] = useState<string | null>(null);
+  const [pick, setPick] = useState<string | null>(null);
+  const [created, setCreated] = useState<string[]>([]);
+  const all: { name: string; tabs?: string[] }[] = [...created.map((name) => ({ name })), ...LIVEBOARDS];
+  const shown = all.filter((l) => l.name.toLowerCase().includes(query.toLowerCase()));
+  const board = open ? all.find((l) => l.name === open) : null;
+
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Pin to a Liveboard"
+      title="Pin to Liveboard"
       size="medium"
       footer={
-        <Horizontal gap={8} justify="end">
+        <div className={styles.footer}>
           <Button variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button variant="primary" onClick={() => onPin(pick)}>{live ? 'Pin' : 'Pin snapshot'}</Button>
-        </Horizontal>
+          <Button variant="primary" disabled={!pick} onClick={() => pick && onPin(pick)}>Pin</Button>
+        </div>
       }
     >
       <Vertical gap={12}>
-        <Typography variant="body-normal">Pinning {what}.</Typography>
+        <TextInput value={title} onChange={(e) => setTitle(e.target.value)} aria-label="Tile name" className={styles.pinTitle} />
+        {describing ? (
+          <TextInput placeholder="Add a description" value={description} onChange={(e) => setDescription(e.target.value)} aria-label="Description" />
+        ) : (
+          <Button className={styles.linkish} variant="tertiary" size="small" onClick={() => setDescribing(true)}>Add description</Button>
+        )}
         <div className={`${styles.callout} ${live ? styles.live : styles.snapshot}`}>
           <Icon name={live ? 'sync' : 'clock'} size="s" />
           <span>{live ? 'Live tile: it updates with the data.' : reason}</span>
         </div>
         <SearchInput placeholder="Search Liveboards" value={query} onChange={(e) => setQuery(e.target.value)} onClear={() => setQuery('')} />
-        <div className={styles.list} role="listbox" aria-label="Liveboards">
-          {shown.map((l) => (
-            <button key={l} role="option" aria-selected={l === pick} className={`${styles.item} ${l === pick ? styles.itemOn : ''}`} onClick={() => setPick(l)}>
-              <Icon name="liveboard-stroke" size="s" />
-              <span className={styles.fn}>{l}</span>
-            </button>
-          ))}
-          <button className={styles.item} onClick={() => setPick('New Liveboard')}>
-            <Icon name="plus" size="s" />
-            <span className={styles.fn}>New Liveboard</span>
-          </button>
-        </div>
+        {board ? (
+          <Vertical gap={4}>
+            <Horizontal justify="space-between" align="center">
+              <Button variant="tertiary" size="small" icon="chevron-left" iconPosition="leading" onClick={() => setOpen(null)}>{board.name}</Button>
+            </Horizontal>
+            <div className={styles.rows}>
+              {(board.tabs ?? []).map((t) => {
+                const id = `${board.name} › ${t}`;
+                return (
+                  <button key={t} className={`${styles.row} ${pick === id ? styles.rowOn : ''}`} onClick={() => setPick(id)}>
+                    <span className={styles.fn}>{t}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </Vertical>
+        ) : (
+          <Vertical gap={4}>
+            <Horizontal justify="space-between" align="center">
+              <Typography variant="body-normal" color="gray">All Liveboards</Typography>
+              <Button variant="tertiary" size="small" icon="plus" iconPosition="leading" onClick={() => { const name = `${title || 'New'} Liveboard`; setCreated((c) => [name, ...c]); setPick(name); }}>Create Liveboard</Button>
+            </Horizontal>
+            <div className={styles.rows}>
+              {shown.map((l) => (
+                <button
+                  key={l.name}
+                  className={`${styles.row} ${pick === l.name || pick?.startsWith(`${l.name} ›`) ? styles.rowOn : ''}`}
+                  onClick={() => (l.tabs ? setOpen(l.name) : setPick(l.name))}
+                >
+                  <span className={styles.fn}>{l.name}</span>
+                  {l.tabs && <Icon name="chevron-right" size="s" />}
+                </button>
+              ))}
+              {!shown.length && <Typography variant="body-normal" color="gray">No Liveboard matches “{query}”</Typography>}
+            </div>
+          </Vertical>
+        )}
       </Vertical>
     </Modal>
   );

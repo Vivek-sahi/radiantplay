@@ -84,3 +84,44 @@
   gap: var(--spacing-2);
   width: 100%;
 }
+
+/* Pin to Liveboard: one row per Liveboard, divided like the product's list. */
+.rows {
+  display: flex;
+  flex-direction: column;
+  max-height: 280px;
+  overflow: auto;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  min-height: 48px;
+  padding: 0 var(--spacing-3);
+  border: 0;
+  border-top: 1px solid var(--rd-sys-color-border-subtle);
+  background: transparent;
+  color: var(--rd-sys-color-content-primary);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  text-align: left;
+  cursor: pointer;
+}
+
+.row:hover {
+  background: var(--rd-sys-color-background-sunken);
+}
+
+.rowOn,
+.rowOn:hover {
+  background: color-mix(in srgb, var(--rd-sys-color-content-brand) 10%, transparent);
+}
+
+.pinTitle input {
+  font-weight: var(--font-weight-emphasis, 600);
+}
+
+.linkish {
+  align-self: flex-start;
+}
