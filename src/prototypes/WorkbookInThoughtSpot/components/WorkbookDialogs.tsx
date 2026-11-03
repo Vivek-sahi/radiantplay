@@ -3,6 +3,8 @@ import { Modal } from '@components/Modal';
 import { Button } from '@components/Button';
 import { SearchInput } from '@components/SearchInput';
 import { Select } from '@components/Select';
+import { TextInput } from '@components/TextInput';
+import { Radio } from '@components/Radio';
 import { Typography } from '@components/Typography';
 import { Horizontal, Vertical } from '@components/Layout';
 import { Icon } from '@components/icons';
@@ -107,6 +109,46 @@ export const PinDialog: React.FC<{ isOpen: boolean; what: string; live: boolean;
             <span className={styles.fn}>New Liveboard</span>
           </button>
         </div>
+      </Vertical>
+    </Modal>
+  );
+};
+
+/** Insert > Pivot table, as in Google Sheets: the data range, and where to put the pivot. */
+export const CreatePivotDialog: React.FC<{
+  isOpen: boolean;
+  defaultRange: string;
+  emptySheets: { id: string; name: string }[];
+  onClose: () => void;
+  onCreate: (range: string, targetId?: string) => void;
+}> = ({ isOpen, defaultRange, emptySheets, onClose, onCreate }) => {
+  const [range, setRange] = useState(defaultRange);
+  const [where, setWhere] = useState<'new' | 'existing'>('new');
+  const [target, setTarget] = useState(emptySheets[0]?.id ?? '');
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Create pivot table"
+      size="small"
+      footer={
+        <div className={styles.footer}>
+          <Button variant="secondary" onClick={onClose}>Cancel</Button>
+          <Button variant="primary" disabled={!range.trim() || (where === 'existing' && !target)} onClick={() => onCreate(range.trim(), where === 'existing' ? target : undefined)}>Create</Button>
+        </div>
+      }
+    >
+      <Vertical gap={16}>
+        <TextInput label="Data range" value={range} onChange={(e) => setRange(e.target.value)} />
+        <Vertical gap={8}>
+          <Typography variant="content-label">Insert to</Typography>
+          <Radio name="pivot-where" value="new" label="New sheet" checked={where === 'new'} onChange={() => setWhere('new')} />
+          <Radio name="pivot-where" value="existing" label="Existing sheet" checked={where === 'existing'} disabled={!emptySheets.length} onChange={() => setWhere('existing')} />
+          {where === 'existing' && (
+            <Select options={emptySheets.map((s) => ({ id: s.id, label: s.name }))} value={target} onChange={setTarget} size="basic" fullWidth />
+          )}
+          {!emptySheets.length && <Typography variant="footnote" color="gray">Existing sheet needs an empty tab to put the pivot on.</Typography>}
+        </Vertical>
       </Vertical>
     </Modal>
   );

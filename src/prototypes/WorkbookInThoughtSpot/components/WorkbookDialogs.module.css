@@ -77,3 +77,10 @@
   background: var(--rd-sys-color-background-warning);
   color: var(--rd-sys-color-content-primary);
 }
+
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-2);
+  width: 100%;
+}
