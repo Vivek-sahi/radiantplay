@@ -64,9 +64,10 @@ export interface CreateFlowProps {
   startSource?: SourceId;
   /** A number unique to this run, for the Radiance state. */
   runId: number;
+  onDeleted?: () => void;
 }
 
-export const CreateFlow: React.FC<CreateFlowProps> = ({ seedPrompt, startSource, runId }) => {
+export const CreateFlow: React.FC<CreateFlowProps> = ({ seedPrompt, startSource, runId, onDeleted }) => {
   const needsCard = !startSource || startSource === 'upload';
   const [answers, setAnswers] = useState<Record<string, ClarifyAnswer>>({});
   const [stepIndex, setStepIndex] = useState(0);
@@ -214,7 +215,7 @@ export const CreateFlow: React.FC<CreateFlowProps> = ({ seedPrompt, startSource,
             {composer}
           </div>
           <div className={styles.canvas}>
-            {built ? <WorkbookLive initial={src === 'blank' ? blankWorkbook(workbookName) : financeWorkbook(src === 'model' ? detail : 'Finance', workbookName)} /> : <WorkbookLoading name={workbookName} status="Loading Sheet 1" />}
+            {built ? <WorkbookLive onDeleted={onDeleted} initial={src === 'blank' ? blankWorkbook(workbookName) : financeWorkbook(src === 'model' ? detail : 'Finance', workbookName)} /> : <WorkbookLoading name={workbookName} status="Loading Sheet 1" />}
           </div>
         </div>
       )}

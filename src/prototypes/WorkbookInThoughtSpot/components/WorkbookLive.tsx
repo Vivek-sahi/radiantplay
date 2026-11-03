@@ -2,12 +2,12 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { CompactSelection, type GridSelection } from '@glideapps/glide-data-grid';
 import { SheetGrid, type SheetGridHandle } from './SheetGrid';
 import { FormulaBar, type FormulaBarHandle } from './FormulaBar';
-import { SheetFooter, type Aggregate } from './SheetFooter';
+import { SheetFooter, type Aggregate, type SheetAction } from './SheetFooter';
 import { SheetToolbar } from './toolbar/SheetToolbar';
 import { WorkbookHeader } from './WorkbookHeader';
 import { colLetter, parseRef, refsIn } from '../engine/formula';
 import {
-  addSheet, defineName, lastDataRow, rawOf, readOnlyReason, refFor, setCell, shiftFormula, valueOf, type Workbook,
+  addSheet, defineName, deleteSheet, duplicateSheet, lastDataRow, moveSheet, renameSheet, sheetCsv, rawOf, readOnlyReason, refFor, setCell, shiftFormula, valueOf, type Workbook,
 } from '../engine/workbook';
 import styles from './WorkbookLive.module.css';
 
@@ -29,12 +29,16 @@ export interface WorkbookLiveProps {
   initial: Workbook;
   /** An existing workbook that's already been published (the edit scenario). */
   publishedAlready?: boolean;
+  /** Leave the workbook after it's deleted. */
+  onDeleted?: () => void;
 }
 
-export const WorkbookLive: React.FC<WorkbookLiveProps> = ({ initial, publishedAlready }) => {
+export const WorkbookLive: React.FC<WorkbookLiveProps> = ({ initial, publishedAlready, onDeleted }) => {
   const [wb, setWb] = useState(initial);
   const [publishCount, setPublishCount] = useState(publishedAlready ? 1 : 0);
   const [dirty, setDirty] = useState(false);
+  // Published versions and what each one held, so Restore can bring the last one back into the draft.
+  const [versions, setVersions] = useState<{ n: number; at: string; wb: Workbook }[]>(() => (publishedAlready ? [{ n: 1, at: 'Yesterday, 4:10 pm', wb: initial }] : []));
   const past = useRef<Workbook[]>([]);
   const future = useRef<Workbook[]>([]);
   const [activeId, setActiveId] = useState(initial.sheets[0].id);
@@ -173,6 +177,37 @@ export const WorkbookLive: React.FC<WorkbookLiveProps> = ({ initial, publishedAl
     return () => window.removeEventListener('keydown', onDown);
   }, [undo, redo]);
 
+  // ── sheet-level actions (the tab ▾ menu) ───────────────────────────────────
+  const onSheetAction = (id: string, a: SheetAction) => {
+    const s = wb.sheets.find((x) => x.id === id)!;
+    switch (a) {
+      case 'duplicate': { const out = duplicateSheet(wb, id); commitWb(out.wb); setActiveId(out.id); setSel(cellSel(0, 0)); setNote(`Duplicated as “${out.wb.sheets.find((x) => x.id === out.id)?.name}”`); break; }
+      case 'copy-link': navigator.clipboard?.writeText(`${window.location.href.split('#')[0]}#sheet=${encodeURIComponent(s.name)}`).catch(() => undefined); setNote(`Link to ${s.name} copied`); break;
+      case 'move-left': commitWb(moveSheet(wb, id, -1)); break;
+      case 'move-right': commitWb(moveSheet(wb, id, 1)); break;
+      case 'refresh': setNote(`${s.name} refreshed from the ${wb.model} model just now`); break;
+      case 'pin': setNote('Pin to a Liveboard comes next: the sheet, or the range you select, as a live tile'); break;
+      case 'make-app': setNote('Make an app comes next: it opens as an App tab beside your sheets'); break;
+      case 'download-csv': {
+        const url = URL.createObjectURL(new Blob([sheetCsv(wb, id)], { type: 'text/csv' }));
+        const link = document.createElement('a');
+        link.href = url; link.download = `${s.name}.csv`; link.click();
+        URL.revokeObjectURL(url);
+        setNote(`Downloaded ${s.name}.csv`);
+        break;
+      }
+      case 'delete': {
+        const i = wb.sheets.findIndex((x) => x.id === id);
+        const next = deleteSheet(wb, id);
+        commitWb(next);
+        setActiveId(next.sheets[Math.max(0, i - 1)].id);
+        setSel(cellSel(0, 0));
+        setNote(`Deleted ${s.name}. Ctrl+Z brings it back.`);
+        break;
+      }
+    }
+  };
+
   // ── what the formula bar shows ─────────────────────────────────────────────
   const editingHere = editing && editing.sheetId === activeId ? editing : null;
   const barValue = editing ? editing.draft : rawOf(sheet, ac, ar);
@@ -224,7 +259,20 @@ export const WorkbookLive: React.FC<WorkbookLiveProps> = ({ initial, publishedAl
         publishCount={publishCount}
         dirty={dirty}
         unsavedInputs={0}
+        versions={versions}
+        onRestore={() => {
+          const last = versions[versions.length - 1];
+          if (!last) return;
+          commitWb(last.wb);
+          setDirty(false);
+          setNote(`Restored version ${last.n} into your draft`);
+        }}
+        onCopy={() => setNote(`Saved a copy, “Copy of ${wb.name}”, to your Workbooks`)}
+        onDownload={() => setNote(`Downloading ${wb.name}.xlsx: one tab per sheet, formulas and formats kept`)}
+        onSchedule={() => setNote('Scheduled delivery opens here: email the workbook as Excel or PDF on a cadence')}
+        onDelete={() => onDeleted?.()}
         onPublish={() => {
+          setVersions((v) => [...v, { n: v.length + 1, at: 'Just now', wb }]);
           setPublishCount((n) => n + 1);
           setDirty(false);
           setNote(publishCount === 0 ? 'Published. Share it now: people you share with see this version.' : 'Changes published. Everyone now sees this version.');
@@ -288,6 +336,13 @@ export const WorkbookLive: React.FC<WorkbookLiveProps> = ({ initial, publishedAl
         activeId={activeId}
         onSelect={(id) => { setActiveId(id); if (!editing) setSel(cellSel(0, 0)); }}
         onAdd={() => { const out = addSheet(wb, 'local'); commitWb(out.wb); setActiveId(out.id); setSel(cellSel(0, 0)); }}
+        onRename={(id, name) => {
+          const next = renameSheet(wb, id, name);
+          if (next === wb) { setNote(`There's already a sheet called “${name}”`); return; }
+          commitWb(next);
+          setNote(`Renamed. Formulas that point at this sheet now use “${name}”.`);
+        }}
+        onAction={onSheetAction}
         agg={agg}
         status={status}
       />

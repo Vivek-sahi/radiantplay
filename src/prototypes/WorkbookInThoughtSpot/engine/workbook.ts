@@ -203,3 +203,69 @@ export function addSheet(wb: Workbook, kind: SheetKind): { wb: Workbook; id: str
 export function defineName(wb: Workbook, name: string, refText: string): Workbook {
   return { ...wb, names: { ...wb.names, [name]: refText } };
 }
+
+// ── Sheet-level operations (the tab ▾ menu) ───────────────────────────────────
+
+const quoteName = (n: string) => (/[\s!']/.test(n) ? `'${n.replace(/'/g, "''")}'` : n);
+
+/** Rename a tab and every formula that points at it, as Sheets and Excel do. */
+export function renameSheet(wb: Workbook, id: string, name: string): Workbook {
+  const old = wb.sheets.find((s) => s.id === id);
+  if (!old || !name || wb.sheets.some((s) => s.id !== id && s.name.toLowerCase() === name.toLowerCase())) return wb;
+  const pattern = new RegExp(`(^|[^\\w'])(?:'${old.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}'|${old.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})!`, 'g');
+  const fix = (f: string) => (f.startsWith('=') ? f.replace(pattern, (_m, pre) => `${pre}${quoteName(name)}!`) : f);
+  return {
+    ...wb,
+    sheets: wb.sheets.map((s) => ({
+      ...(s.id === id ? { ...s, name } : s),
+      cells: Object.fromEntries(Object.entries(s.cells).map(([k, v]) => [k, fix(v)])),
+      columns: s.columns.map((c) => (c.formula ? { ...c, formula: fix(c.formula) } : c)),
+    })),
+    names: Object.fromEntries(Object.entries(wb.names).map(([n, r]) => [n, fix(`=${r}`).slice(1)])),
+  };
+}
+
+export function duplicateSheet(wb: Workbook, id: string): { wb: Workbook; id: string } {
+  const i = wb.sheets.findIndex((s) => s.id === id);
+  const src = wb.sheets[i];
+  let n = 1;
+  let name = `Copy of ${src.name}`;
+  while (wb.sheets.some((s) => s.name === name)) name = `Copy of ${src.name} (${++n})`;
+  const copy: Sheet = { ...src, id: `s${Date.now()}`, name, kind: src.kind === 'input' ? 'local' : src.kind };
+  const sheets = [...wb.sheets];
+  sheets.splice(i + 1, 0, copy);
+  return { wb: { ...wb, sheets }, id: copy.id };
+}
+
+export function moveSheet(wb: Workbook, id: string, by: -1 | 1): Workbook {
+  const i = wb.sheets.findIndex((s) => s.id === id);
+  const j = i + by;
+  if (i < 0 || j < 0 || j >= wb.sheets.length) return wb;
+  const sheets = [...wb.sheets];
+  [sheets[i], sheets[j]] = [sheets[j], sheets[i]];
+  return { ...wb, sheets };
+}
+
+export function deleteSheet(wb: Workbook, id: string): Workbook {
+  if (wb.sheets.length < 2) return wb;
+  return { ...wb, sheets: wb.sheets.filter((s) => s.id !== id) };
+}
+
+/** A tab as CSV: header row, then the computed values. */
+export function sheetCsv(wb: Workbook, id: string): string {
+  const s = wb.sheets.find((x) => x.id === id)!;
+  let width = s.columns.length;
+  let height = s.rows.length + 1;
+  for (const k of Object.keys(s.cells)) { const [c, r] = k.split(',').map(Number); width = Math.max(width, c + 1); height = Math.max(height, r); }
+  const out: string[] = [];
+  for (let r = 1; r <= height; r++) {
+    const row: string[] = [];
+    for (let c = 0; c < width; c++) {
+      const v = valueOf(wb, s.name, c, r);
+      const t = v instanceof FormulaError ? v.code : v === null ? '' : String(v);
+      row.push(/[",\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t);
+    }
+    out.push(row.join(','));
+  }
+  return out.join('\n');
+}

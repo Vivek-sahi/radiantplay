@@ -3,6 +3,7 @@ import { Button } from '@components/Button';
 import { ActionMenu } from '@components/ActionMenu';
 import { InlineEdit } from '@components/InlineEdit';
 import { Modal } from '@components/Modal';
+import { ConfirmDialog } from '@components/ConfirmDialog';
 import { Tooltip } from '@components/Tooltip';
 import { Typography } from '@components/Typography';
 import { Horizontal, Vertical } from '@components/Layout';
@@ -27,12 +28,22 @@ export interface WorkbookHeaderProps {
   /** Input tabs with values not yet saved to the warehouse. */
   unsavedInputs: number;
   onPublish: () => void;
+  /** Published versions, newest last. */
+  versions: { n: number; at: string }[];
+  /** Restore the last published version into the draft (Model C: no stepping back through drafts). */
+  onRestore: () => void;
+  onCopy: () => void;
+  onDownload: () => void;
+  onSchedule: () => void;
+  onDelete: () => void;
 }
 
 const KIND_LABEL = { live: 'Live', input: 'Input', local: 'Local' } as const;
 
-export const WorkbookHeader: React.FC<WorkbookHeaderProps> = ({ wb, onRename, publishCount, dirty, unsavedInputs, onPublish }) => {
+export const WorkbookHeader: React.FC<WorkbookHeaderProps> = ({ wb, onRename, publishCount, dirty, unsavedInputs, onPublish, versions, onRestore, onCopy, onDownload, onSchedule, onDelete }) => {
   const [info, setInfo] = useState(false);
+  const [history, setHistory] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [share, setShare] = useState(false);
   const published = publishCount > 0;
   const isDraft = !published || dirty;
@@ -66,11 +77,15 @@ export const WorkbookHeader: React.FC<WorkbookHeaderProps> = ({ wb, onRename, pu
           placement="bottom-end"
           trigger={<Button className={styles.quiet} variant="tertiary" size="small" iconOnly icon="more" iconPosition="leading">More workbook actions</Button>}
         >
-          <ActionMenu.Item label="Version history" icon={<Icon name="clock" size="s" />} disabled={!published} />
-          <ActionMenu.Item label="Make a copy" icon={<Icon name="copy" size="s" />} />
-          <ActionMenu.Item label="Download as Excel" icon={<Icon name="download" size="s" />} />
-          <ActionMenu.Item label="Schedule" icon={<Icon name="calendar-cleaned" size="s" />} disabled={!published} />
-          <ActionMenu.Item label="Delete" icon={<Icon name="delete" size="s" />} destructive />
+          <ActionMenu.Group>
+            <ActionMenu.Item label="Version history" icon={<Icon name="clock" size="s" />} disabled={!published} onClick={() => setHistory(true)} />
+            <ActionMenu.Item label="Make a copy" icon={<Icon name="copy" size="s" />} onClick={onCopy} />
+            <ActionMenu.Item label="Download as Excel" icon={<Icon name="download" size="s" />} onClick={onDownload} />
+            <ActionMenu.Item label="Schedule" icon={<Icon name="calendar-cleaned" size="s" />} disabled={!published} onClick={onSchedule} />
+          </ActionMenu.Group>
+          <ActionMenu.Group>
+            <ActionMenu.Item label="Delete" icon={<Icon name="delete" size="s" />} destructive onClick={() => setConfirmDelete(true)} />
+          </ActionMenu.Group>
         </ActionMenu>
       </Horizontal>
 
@@ -93,6 +108,40 @@ export const WorkbookHeader: React.FC<WorkbookHeaderProps> = ({ wb, onRename, pu
           <Typography variant="footnote" color="gray">Owner: you · {published ? `Published ${publishCount} ${publishCount === 1 ? 'time' : 'times'}` : 'Not published yet'}</Typography>
         </Vertical>
       </Modal>
+
+      <Modal isOpen={history} onClose={() => setHistory(false)} title="Version history" size="medium">
+        <div className={styles.sources}>
+          {isDraft && (
+            <div className={styles.versionRow}>
+              <div className={styles.versionMeta}>
+                <span className={styles.sourceName}>Draft</span>
+                <span className={styles.sourceWhere}>Your changes since the last publish. Only editors see them.</span>
+              </div>
+            </div>
+          )}
+          {[...versions].reverse().map((v, i) => (
+            <div key={v.n} className={styles.versionRow}>
+              <div className={styles.versionMeta}>
+                <span className={styles.sourceName}>Version {v.n}{i === 0 ? ' · what everyone sees' : ''}</span>
+                <span className={styles.sourceWhere}>Published by you · {v.at}</span>
+              </div>
+              {i === 0 && dirty && (
+                <Button variant="secondary" size="small" onClick={() => { onRestore(); setHistory(false); }}>Restore into draft</Button>
+              )}
+            </div>
+          ))}
+        </div>
+      </Modal>
+
+      <ConfirmDialog
+        isOpen={confirmDelete}
+        title={`Delete ${wb.name}?`}
+        message="The workbook and its local tabs are deleted for everyone. Values already saved to the warehouse stay there."
+        confirmText="Delete"
+        status="danger"
+        onConfirm={() => { setConfirmDelete(false); onDelete(); }}
+        onCancel={() => setConfirmDelete(false)}
+      />
 
       <Modal
         isOpen={share}

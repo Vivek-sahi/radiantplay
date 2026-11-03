@@ -92,8 +92,8 @@ const WorkbookInThoughtSpot: React.FC = () => {
         <main className={styles.main}>
           {page === 'home' && <HomeView onStart={(prompt) => startCreate(prompt)} />}
           {page === 'workbooks' && <WorkbooksView onCreate={(source) => startCreate(undefined, source)} onOpen={(id) => { if (id === 'fy26-plan-vs-actual') setPage('open'); }} />}
-          {page === 'open' && <OpenWorkbook build={fy26Workbook} />}
-          {page === 'create' && <CreateFlow key={run.key} runId={run.key} seedPrompt={run.seed} startSource={run.source} />}
+          {page === 'open' && <OpenWorkbook build={fy26Workbook} onDeleted={() => setPage('workbooks')} />}
+          {page === 'create' && <CreateFlow key={run.key} runId={run.key} seedPrompt={run.seed} startSource={run.source} onDeleted={() => setPage('workbooks')} />}
         </main>
       </div>
     </div>

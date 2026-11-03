@@ -11,7 +11,7 @@ import styles from './CreateFlow.module.css';
 // Faris's Apps prototype, Spotter sits on the left beside the object, already in context, and the
 // workbook opens on the right where it was left.
 
-export const OpenWorkbook: React.FC<{ build: () => Workbook }> = ({ build }) => {
+export const OpenWorkbook: React.FC<{ build: () => Workbook; onDeleted?: () => void }> = ({ build, onDeleted }) => {
   const initial = useMemo(build, [build]);
   const [reply, setReply] = useState('');
   const [openMenu, setOpenMenu] = useState<OpenMenu>('none');
@@ -46,7 +46,7 @@ export const OpenWorkbook: React.FC<{ build: () => Workbook }> = ({ build }) => 
           </Vertical>
         </div>
         <div className={styles.canvas}>
-          <WorkbookLive initial={initial} publishedAlready />
+          <WorkbookLive initial={initial} publishedAlready onDeleted={onDeleted} />
         </div>
       </div>
     </div>

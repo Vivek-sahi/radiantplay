@@ -142,3 +142,44 @@
 .footer .tool svg * {
   pointer-events: none;
 }
+
+/* The active tab's ▾: sheet-level actions. */
+.caret {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  margin-right: calc(var(--spacing-1) * -1);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--rd-sys-color-content-secondary);
+  cursor: pointer;
+}
+
+.caret:hover {
+  background: var(--rd-sys-color-background-ghost-hover);
+}
+
+.caret svg,
+.caret svg * {
+  pointer-events: none;
+}
+
+.renameInput {
+  width: 120px;
+  height: 22px;
+  padding: 0 var(--spacing-1);
+  border: 1px solid var(--rd-sys-color-content-brand);
+  border-radius: var(--radius-sm);
+  background: var(--rd-sys-color-background-base);
+  color: var(--rd-sys-color-content-primary);
+  font: inherit;
+  outline: none;
+}
+
+/* The ▾ menu opens upward from the footer and must not be clipped by the tab strip. */
+.tabs {
+  overflow: visible;
+}

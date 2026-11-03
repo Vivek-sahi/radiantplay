@@ -71,3 +71,22 @@
 .live { background: var(--rd-sys-color-content-success); }
 .input { background: var(--rd-sys-color-content-brand); }
 .local { background: var(--rd-sys-color-content-tertiary); }
+
+.versionRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  padding: var(--spacing-3);
+  font-size: var(--font-size-sm);
+}
+
+.versionRow + .versionRow {
+  border-top: 1px solid var(--rd-sys-color-border-subtle);
+}
+
+.versionMeta {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+}
