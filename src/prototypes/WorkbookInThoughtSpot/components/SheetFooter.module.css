@@ -183,3 +183,7 @@
 .tabs {
   overflow: visible;
 }
+
+.menuHost {
+  display: inline-flex;
+}

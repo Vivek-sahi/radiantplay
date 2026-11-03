@@ -1,0 +1,30 @@
+.panel {
+  width: 260px;
+  flex-shrink: 0;
+  padding: var(--spacing-4);
+  border-left: 1px solid var(--rd-sys-color-border-subtle);
+  background: var(--rd-sys-color-background-base);
+  overflow: auto;
+}
+
+.chip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 32px;
+  padding: 0 var(--spacing-1) 0 var(--spacing-3);
+  border-radius: var(--radius-sm);
+  background: var(--rd-sys-color-background-sunken);
+  color: var(--rd-sys-color-content-primary);
+  font-size: var(--font-size-sm);
+}
+
+.quiet.quiet.quiet,
+.quiet.quiet.quiet > span {
+  color: var(--rd-sys-color-content-secondary);
+}
+
+.quiet svg,
+.quiet svg * {
+  pointer-events: none;
+}

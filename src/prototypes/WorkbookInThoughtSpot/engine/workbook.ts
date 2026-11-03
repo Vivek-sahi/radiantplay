@@ -34,6 +34,8 @@ export interface Sheet {
   formats?: Record<number, ColFormat>;
   /** Conditional formatting rules over ranges (sheet rows). */
   rules?: CondRule[];
+  /** A pivot tab: its table is computed from another tab. */
+  pivot?: PivotConfig;
 }
 
 export interface ColFormat {
@@ -227,6 +229,7 @@ export function readOnlyReason(wb: Workbook, sheetId: string, c: number, r: numb
   const s = wb.sheets.find((x) => x.id === sheetId)!;
   const col = s.columns[c];
   const di = r - 2;
+  if (s.pivot && col && di >= 0 && di < s.rows.length) return 'Pivot values update from the field panel on the right.';
   if (s.kind === 'live' && col?.fromModel && di >= 0 && di < s.rows.length)
     return `${col.title} comes from the ${wb.model} model. Type in an empty column, or on an Input or Local tab.`;
   return null;
@@ -353,4 +356,115 @@ export function sortRows(wb: Workbook, sheetId: string, c: number, dir: 1 | -1):
       return { ...s, rows };
     }),
   };
+}
+
+// ── Pivot tables ──────────────────────────────────────────────────────────────
+
+export type PivotAgg = 'sum' | 'average' | 'count';
+export interface PivotConfig {
+  sourceId: string;
+  /** Field names: a source column title, or "Quarter" / "Year" derived from a Month column. */
+  rows: string[];
+  column: string | null;
+  values: { field: string; agg: PivotAgg }[];
+  show: 'value' | 'row-pct';
+}
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/** Fields a pivot can use: the source's columns, plus Quarter and Year when it has a Month. */
+export function pivotFields(src: Sheet): { name: string; numeric: boolean }[] {
+  const fields = src.columns.map((c) => ({ name: c.title, numeric: c.type === 'currency' || c.type === 'number' || c.type === 'percent' }));
+  if (src.columns.some((c) => c.type === 'date')) fields.push({ name: 'Quarter', numeric: false }, { name: 'Year', numeric: false });
+  return fields;
+}
+
+function fieldValue(src: Sheet, row: (string | number | null)[], field: string): string | number | null {
+  const i = src.columns.findIndex((c) => c.title === field);
+  if (i >= 0) return row[i] ?? null;
+  const d = src.columns.findIndex((c) => c.type === 'date');
+  const m = d >= 0 ? /^([A-Za-z]{3}) (\d{4})$/.exec(String(row[d] ?? '')) : null;
+  if (!m) return null;
+  if (field === 'Year') return m[2];
+  if (field === 'Quarter') return `Q${Math.floor(MONTHS.indexOf(m[1]) / 3) + 1} ${m[2]}`;
+  return null;
+}
+
+/** Compute a pivot into a sheet's columns and rows (read-only; it recomputes when the config changes). */
+export function buildPivot(wb: Workbook, cfg: PivotConfig): { columns: Column[]; rows: (string | number | null)[][] } {
+  const src = wb.sheets.find((s) => s.id === cfg.sourceId);
+  if (!src || !cfg.values.length) {
+    return { columns: cfg.rows.map((r) => ({ title: r, type: 'text', width: 140, fromModel: true })), rows: [] };
+  }
+  const v = cfg.values[0];
+  const vi = src.columns.findIndex((c) => c.title === v.field);
+  const key = (row: (string | number | null)[]) => cfg.rows.map((f) => String(fieldValue(src, row, f) ?? '')).join('\u0001');
+  // Time fields sort in date order (Q4 2024 before Q1 2025), everything else alphabetically.
+  const order = (k: string) => {
+    const q = /^Q(\d) (\d{4})$/.exec(k);
+    if (q) return Number(q[2]) * 100 + Number(q[1]);
+    const m = /^([A-Za-z]{3}) (\d{4})$/.exec(k);
+    if (m && MONTHS.includes(m[1])) return Number(m[2]) * 100 + MONTHS.indexOf(m[1]);
+    return null;
+  };
+  const byOrder = (a: string, b: string) => { const x = order(a); const y = order(b); return x !== null && y !== null ? x - y : a.localeCompare(b); };
+  const colKeys = cfg.column ? [...new Set(src.rows.map((r) => String(fieldValue(src, r, cfg.column!) ?? '')))].sort(byOrder) : ['Total'];
+  const cells = new Map<string, { sum: number; n: number }>();
+  const rowKeys = new Map<string, (string | number | null)[]>();
+  for (const r of src.rows) {
+    const k = key(r);
+    if (!rowKeys.has(k)) rowKeys.set(k, cfg.rows.map((f) => fieldValue(src, r, f)));
+    const ck = cfg.column ? String(fieldValue(src, r, cfg.column) ?? '') : 'Total';
+    const x = typeof r[vi] === 'number' ? (r[vi] as number) : 0;
+    for (const id of [`${k}|${ck}`, `${k}|*`, `*|${ck}`, '*|*']) {
+      const cur = cells.get(id) ?? { sum: 0, n: 0 };
+      cur.sum += x; cur.n += 1;
+      cells.set(id, cur);
+    }
+  }
+  const agg = (id: string) => { const c = cells.get(id); if (!c) return null; return v.agg === 'sum' ? c.sum : v.agg === 'average' ? c.sum / c.n : c.n; };
+  const valueType: ColType = cfg.show === 'row-pct' ? 'percent' : v.agg === 'count' ? 'number' : src.columns[vi]?.type ?? 'number';
+  const shown = (rk: string, ck: string) => {
+    const x = agg(`${rk}|${ck}`);
+    if (x === null || cfg.show === 'value') return x;
+    const total = agg(`${rk}|*`);
+    return total ? x / total : null;
+  };
+  const sortedRows = [...rowKeys.entries()].sort((a, b) => byOrder(String(a[1].join(' ')), String(b[1].join(' '))));
+  const withTotal = cfg.column ? [...colKeys, '*'] : ['*'];
+  const columns: Column[] = [
+    ...cfg.rows.map((r) => ({ title: r, type: 'text' as ColType, width: 120, fromModel: true })),
+    ...withTotal.map((ck) => ({ title: ck === '*' ? (cfg.column ? 'Grand total' : `${v.agg === 'sum' ? 'Sum' : v.agg === 'average' ? 'Average' : 'Count'} of ${v.field}`) : ck, type: valueType, width: 136, fromModel: true })),
+  ];
+  const rows = sortedRows.map(([rk, labels]) => [...labels, ...withTotal.map((ck) => shown(rk, ck))]);
+  rows.push([...cfg.rows.map((_, i) => (i === 0 ? 'Grand total' : null)), ...withTotal.map((ck) => shown('*', ck))]);
+  return { columns, rows };
+}
+
+export function setPivot(wb: Workbook, sheetId: string, cfg: PivotConfig): Workbook {
+  const built = buildPivot(wb, cfg);
+  return { ...wb, sheets: wb.sheets.map((s) => (s.id === sheetId ? { ...s, pivot: cfg, columns: built.columns, rows: built.rows, cells: {} } : s)) };
+}
+
+/** Insert > Pivot table, from a tab: a new Pivot tab beside it, started with sensible fields. */
+export function createPivot(wb: Workbook, sourceId: string): { wb: Workbook; id: string } {
+  const src = wb.sheets.find((s) => s.id === sourceId)!;
+  const fields = pivotFields(src);
+  const firstText = fields.find((f) => !f.numeric && f.name !== 'Quarter' && f.name !== 'Year')?.name;
+  const firstNum = fields.find((f) => f.numeric)?.name;
+  const cfg: PivotConfig = {
+    sourceId,
+    rows: firstText ? [firstText] : [],
+    column: fields.some((f) => f.name === 'Quarter') ? 'Quarter' : null,
+    values: firstNum ? [{ field: firstNum, agg: 'sum' }] : [],
+    show: 'value',
+  };
+  let n = 1;
+  while (wb.sheets.some((s) => s.name === `Pivot ${n}`)) n++;
+  const id = `p${Date.now()}`;
+  const sheet: Sheet = { id, name: `Pivot ${n}`, kind: 'live', columns: [], rows: [], cells: {}, source: `Pivot of ${src.name}`, pivot: cfg };
+  const i = wb.sheets.findIndex((s) => s.id === sourceId);
+  const sheets = [...wb.sheets];
+  sheets.splice(i + 1, 0, sheet);
+  return { wb: setPivot({ ...wb, sheets }, id, cfg), id };
 }

@@ -6,9 +6,10 @@ import { SheetFooter, type Aggregate, type SheetAction } from './SheetFooter';
 import { SheetToolbar } from './toolbar/SheetToolbar';
 import { WorkbookHeader } from './WorkbookHeader';
 import { InsertFunctionDialog, PinDialog } from './WorkbookDialogs';
+import { PivotPanel } from './PivotPanel';
 import { colLetter, parseRef, refsIn } from '../engine/formula';
 import {
-  addRule, addSheet, defineName, deleteSheet, duplicateSheet, lastDataRow, moveSheet, pinLiveness, renameSheet, setFormat, sheetCsv, sortRows, typeOf, rawOf, readOnlyReason, refFor, setCell, shiftFormula, valueOf, type ColFormat, type Workbook,
+  addRule, addSheet, createPivot, setPivot, defineName, deleteSheet, duplicateSheet, lastDataRow, moveSheet, pinLiveness, renameSheet, setFormat, sheetCsv, sortRows, typeOf, rawOf, readOnlyReason, refFor, setCell, shiftFormula, valueOf, type ColFormat, type Workbook,
 } from '../engine/workbook';
 import styles from './WorkbookLive.module.css';
 
@@ -274,6 +275,14 @@ export const WorkbookLive: React.FC<WorkbookLiveProps> = ({ initial, publishedAl
     switch (a) {
       case 'duplicate': { const out = duplicateSheet(wb, id); commitWb(out.wb); setActiveId(out.id); setSel(cellSel(0, 0)); setNote(`Duplicated as “${out.wb.sheets.find((x) => x.id === out.id)?.name}”`); break; }
       case 'copy-link': navigator.clipboard?.writeText(`${window.location.href.split('#')[0]}#sheet=${encodeURIComponent(s.name)}`).catch(() => undefined); setNote(`Link to ${s.name} copied`); break;
+      case 'pivot': {
+        const out = createPivot(wb, id);
+        commitWb(out.wb);
+        setActiveId(out.id);
+        setSel(cellSel(0, 0));
+        setNote(`Pivot table from ${s.name}: pick rows, columns and values on the right`);
+        break;
+      }
       case 'move-left': commitWb(moveSheet(wb, id, -1)); break;
       case 'move-right': commitWb(moveSheet(wb, id, 1)); break;
       case 'refresh': setNote(`${s.name} refreshed from the ${wb.model} model just now`); break;
@@ -397,6 +406,7 @@ export const WorkbookLive: React.FC<WorkbookLiveProps> = ({ initial, publishedAl
         note={note}
       />
 
+      <div className={styles.gridRow}>
       <div className={styles.gridArea}>
         <SheetGrid
           key={activeId}
@@ -430,6 +440,14 @@ export const WorkbookLive: React.FC<WorkbookLiveProps> = ({ initial, publishedAl
           showSearch={search}
           onSearchClose={() => setSearch(false)}
         />
+      </div>
+      {sheet.pivot && (
+        <PivotPanel
+          cfg={sheet.pivot}
+          source={wb.sheets.find((x) => x.id === sheet.pivot!.sourceId) ?? sheet}
+          onChange={(cfg) => commitWb(setPivot(wb, activeId, cfg))}
+        />
+      )}
       </div>
 
       <SheetFooter

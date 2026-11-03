@@ -23,7 +23,7 @@ const KIND_HELP: Record<SheetKind, string> = {
 
 export type SheetAction =
   | 'duplicate' | 'copy-link' | 'move-left' | 'move-right' | 'refresh'
-  | 'pin' | 'make-app' | 'download-csv' | 'delete';
+  | 'pin' | 'make-app' | 'download-csv' | 'delete' | 'pivot';
 
 export interface Aggregate { sum: number; count: number; numbers: number }
 
@@ -124,6 +124,8 @@ export const SheetFooter: React.FC<SheetFooterProps> = ({ sheets, activeId, onSe
               )}
               <span className={styles.kind}>{KIND_LABEL[s.kind]}</span>
               {on && (
+                // The menu sits inside the tab: stop its clicks from bubbling up and re-selecting the tab.
+                <span className={styles.menuHost} onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}>
                 <ActionMenu
                   placement="top-start"
                   trigger={<button ref={caret} className={styles.caret} aria-label={`${s.name} sheet actions`} onClick={(e) => e.stopPropagation()}><Icon name="caret-down" size="xs" /></button>}
@@ -137,9 +139,14 @@ export const SheetFooter: React.FC<SheetFooterProps> = ({ sheets, activeId, onSe
                     <ActionMenu.Item label="Move left" icon={<Icon name="arrow-left" size="s" />} disabled={index === 0} onClick={act('move-left')} />
                     <ActionMenu.Item label="Move right" icon={<Icon name="arrow-right" size="s" />} disabled={index === sheets.length - 1} onClick={act('move-right')} />
                   </ActionMenu.Group>
-                  {active.kind === 'live' && (
+                  {active.kind === 'live' && !active.pivot && (
                     <ActionMenu.Group>
                       <ActionMenu.Item label="Refresh data" icon={<Icon name="refresh" size="s" />} onClick={act('refresh')} />
+                    </ActionMenu.Group>
+                  )}
+                  {active.rows.length > 0 && !active.pivot && (
+                    <ActionMenu.Group>
+                      <ActionMenu.Item label="Create pivot table" icon={<Icon name="table" size="s" />} onClick={act('pivot')} />
                     </ActionMenu.Group>
                   )}
                   <ActionMenu.Group>
@@ -151,6 +158,7 @@ export const SheetFooter: React.FC<SheetFooterProps> = ({ sheets, activeId, onSe
                     <ActionMenu.Item label="Delete" icon={<Icon name="delete" size="s" />} destructive disabled={sheets.length < 2} onClick={act('delete')} />
                   </ActionMenu.Group>
                 </ActionMenu>
+                </span>
               )}
             </div>
           );
