@@ -1,0 +1,144 @@
+.footer {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  height: 40px;
+  padding: 0 var(--spacing-2);
+  border-top: 1px solid var(--rd-sys-color-border-subtle);
+  background: var(--rd-sys-color-background-sunken);
+  font-size: var(--font-size-sm);
+}
+
+.footer .tool.tool,
+.footer .tool.tool > span {
+  color: var(--rd-sys-color-content-secondary);
+  transition: none;
+}
+
+.listWrap {
+  position: relative;
+}
+
+.list {
+  position: absolute;
+  left: 0;
+  bottom: 36px;
+  min-width: 200px;
+  padding: var(--spacing-1);
+  background: var(--rd-sys-color-background-base);
+  border: 1px solid var(--rd-sys-color-border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: var(--rd-sys-color-shadow-menu);
+  z-index: 20;
+}
+
+.listItem,
+.tab,
+.agg {
+  font: inherit;
+  border: 0;
+  cursor: pointer;
+  color: var(--rd-sys-color-content-secondary);
+  background: transparent;
+}
+
+.listItem {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  width: 100%;
+  height: 32px;
+  padding: 0 var(--spacing-2);
+  border-radius: var(--radius-sm);
+  text-align: left;
+}
+
+.listItem:hover,
+.listItemOn {
+  background: var(--rd-sys-color-background-sunken);
+  color: var(--rd-sys-color-content-primary);
+}
+
+.tabs {
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  min-width: 0;
+  height: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: 0 var(--spacing-3);
+  white-space: nowrap;
+  border-bottom: 2px solid transparent;
+}
+
+.tab:hover {
+  background: var(--rd-sys-color-background-ghost-hover);
+}
+
+.tabOn {
+  background: var(--rd-sys-color-background-base);
+  color: var(--rd-sys-color-content-primary);
+  border-bottom-color: var(--rd-sys-color-content-brand);
+  font-weight: var(--font-weight-emphasis, 600);
+}
+
+.tabName {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.kind {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-regular, 400);
+  color: var(--rd-sys-color-content-tertiary);
+}
+
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.live { background: var(--rd-sys-color-content-success); }
+.input { background: var(--rd-sys-color-content-brand); }
+.local { background: var(--rd-sys-color-content-tertiary); }
+
+.status {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-3);
+  color: var(--rd-sys-color-content-tertiary);
+  font-size: var(--font-size-xs);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.agg {
+  padding: var(--spacing-1) var(--spacing-2);
+  border-radius: var(--radius-sm);
+  color: var(--rd-sys-color-content-primary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.agg:hover {
+  background: var(--rd-sys-color-background-ghost-hover);
+}
+
+/* Radiant's Icon redraws its SVG on press; with pointer events on, the press starts on the old
+   drawing and ends on the new one, so no click fires. The button takes the click instead. */
+.footer .tool svg,
+.footer .tool svg * {
+  pointer-events: none;
+}

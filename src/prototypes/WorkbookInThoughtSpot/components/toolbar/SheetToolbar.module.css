@@ -48,3 +48,9 @@
 .bar .tool.tool:active {
   background-color: var(--rd-sys-color-background-subtle);
 }
+
+/* See SheetFooter.module.css: the button, not its redrawn icon, takes the click. */
+.bar .tool svg,
+.bar .tool svg * {
+  pointer-events: none;
+}

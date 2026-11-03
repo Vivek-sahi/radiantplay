@@ -23,7 +23,7 @@ export const CHAT_QUESTION: Partial<Record<SourceId, string>> = {
 export function buildSteps(source: SourceId, detail: string): string[] {
   switch (source) {
     case 'model':
-      return [`Opened the ${detail} model`, 'Created Sheet 1 from its columns', 'Loading live data'];
+      return [`Opened the ${detail} model`, `Added a ${detail} tab: revenue, COGS, gross profit, plan and prior year`, 'Loading live data'];
     case 'answer':
       return [`Opened "${detail}"`, 'Copied its columns and formulas into Sheet 1', 'Loading live data'];
     case 'upload':

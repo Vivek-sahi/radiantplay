@@ -8,6 +8,7 @@ import { ClarifyCard, CLARIFY_EXIT_MS, type ClarifyAnswer, type ClarifyStepView 
 import { AnsweredQuestions } from './AnsweredQuestions';
 import { WorkbookLoading } from './WorkbookLoading';
 import { WorkbookLive } from './WorkbookLive';
+import { blankWorkbook, financeWorkbook } from '../data/finance';
 import { ActionRow, AskedAQuestion, ShowWork, StreamingText, WorkingChecklist, agentTextStyle, streamMs, userBubbleStyle } from './ChatTurns';
 import { CHAT_QUESTION, SOURCES, buildSteps, type SourceId } from '../data/create';
 import styles from './CreateFlow.module.css';
@@ -213,7 +214,7 @@ export const CreateFlow: React.FC<CreateFlowProps> = ({ seedPrompt, startSource,
             {composer}
           </div>
           <div className={styles.canvas}>
-            {built ? <WorkbookLive name={workbookName} blank={src === 'blank'} /> : <WorkbookLoading name={workbookName} status="Loading Sheet 1" />}
+            {built ? <WorkbookLive initial={src === 'blank' ? blankWorkbook(workbookName) : financeWorkbook(src === 'model' ? detail : 'Finance', workbookName)} /> : <WorkbookLoading name={workbookName} status="Loading Sheet 1" />}
           </div>
         </div>
       )}

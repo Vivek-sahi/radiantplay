@@ -1,172 +1,289 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { CompactSelection, type GridSelection } from '@glideapps/glide-data-grid';
 import { Typography } from '@components/Typography';
 import { Horizontal } from '@components/Layout';
 import { Icon } from '@components/icons';
-import { useIsDarkMode } from '@/context/ThemeContext';
-import { Grid, type Aggregates, type GridHandle } from './grid/Grid';
-import { Footer } from './grid/Footer';
-import { themeVars } from './grid/theme';
-import type { CellEdit, Column, MenuEntry, Row } from './grid/types';
-import type { Sheet } from './grid/sheet';
+import { SheetGrid, type SheetGridHandle } from './SheetGrid';
+import { FormulaBar, type FormulaBarHandle } from './FormulaBar';
+import { SheetFooter, type Aggregate } from './SheetFooter';
 import { SheetToolbar } from './toolbar/SheetToolbar';
-import { blankColumns, blankRows, modelColumns, modelRows } from '../data/sheetData';
-import './grid/grid.css';
+import { colLetter, parseRef, refsIn } from '../engine/formula';
+import {
+  addSheet, defineName, lastDataRow, rawOf, readOnlyReason, refFor, setCell, shiftFormula, valueOf, type Workbook,
+} from '../engine/workbook';
 import styles from './WorkbookLive.module.css';
 
-// The live workbook (Vivek, 3 Nov 2026), in Google Sheets' order:
-//   title · toolbar (ThoughtSpot's spreadsheet toolbar spec, Figma 5LFnxv5fom9nu64N48aJzl) · formula bar ·
-//   grid (Pratheek's Klimt-Grid prototype: select, drag-select, edit, column menus, keyboard) ·
-//   footer with sheet tabs, the sheet list and Sum / Average / Count of the selection.
-// Edits are applied straight to the sheet; saving and write-back come later.
+// The live workbook (foundations, 3 Nov 2026), Google Sheets in shape and keys, ThoughtSpot in
+// what it knows: title · toolbar (ThoughtSpot's spreadsheet spec) · formula bar · canvas grid ·
+// footer with typed tabs and the selection's Sum / Average / Count.
+// Every edit is one undo step (Ctrl+Z / Ctrl+Y). Excel keys: = starts a formula, F4 locks a
+// reference, Alt+= sums, Ctrl+D / Ctrl+R fill, Ctrl+` shows formulas, Ctrl+F finds.
 
-interface SheetState {
-  columns: Column[];
-  rows: Row[];
-}
+const cellSel = (c: number, gr: number): GridSelection => ({
+  current: { cell: [c, gr], range: { x: c, y: gr, width: 1, height: 1 }, rangeStack: [] },
+  columns: CompactSelection.empty(),
+  rows: CompactSelection.empty(),
+});
 
-const COLUMN_MENU: MenuEntry[] = [
-  { id: 'sort-asc', label: 'Sort ascending', icon: 'sort-asc' },
-  { id: 'sort-desc', label: 'Sort descending', icon: 'sort-desc' },
-];
-
-// Stable empties: fresh Maps on every render made the grid re-report its selection in a loop.
-const NO_EDITS = new Map();
-const NO_ERRORS = new Map();
-const NO_NOTICES: never[] = [];
-const noop = () => undefined;
-
-const ADD_COLUMN: MenuEntry[] = [
-  { id: 'input', label: 'Input column' },
-  { id: 'formula', label: 'Formula column' },
-];
-
-const sortRows = (rows: Row[], colId: string, dir: 1 | -1) =>
-  [...rows].sort((a, b) => {
-    const x = a[colId];
-    const y = b[colId];
-    if (x === y) return 0;
-    if (x === null || x === undefined || x === '') return 1;
-    if (y === null || y === undefined || y === '') return -1;
-    return (x > y ? 1 : -1) * dir;
-  });
+interface Editing { sheetId: string; c: number; r: number; draft: string }
 
 export interface WorkbookLiveProps {
-  name: string;
-  blank?: boolean;
+  initial: Workbook;
 }
 
-export const WorkbookLive: React.FC<WorkbookLiveProps> = ({ name, blank }) => {
-  const isDark = useIsDarkMode();
-  const grid = useRef<GridHandle>(null);
-  const [sheets, setSheets] = useState<Sheet[]>([{ name: 'Sheet 1', kind: blank ? 'input' : 'answer', state: '' }]);
-  const [active, setActive] = useState(0);
-  const [data, setData] = useState<Record<string, SheetState>>(() => ({
-    'Sheet 1': blank ? { columns: blankColumns(), rows: blankRows('Sheet 1') } : { columns: modelColumns(), rows: modelRows() },
-  }));
-  const [agg, setAgg] = useState<Aggregates>({ cells: 1, numbers: 0, sum: 0 });
-  const [cell, setCell] = useState({ ref: 'A1', text: '' });
+export const WorkbookLive: React.FC<WorkbookLiveProps> = ({ initial }) => {
+  const [wb, setWb] = useState(initial);
+  const past = useRef<Workbook[]>([]);
+  const future = useRef<Workbook[]>([]);
+  const [activeId, setActiveId] = useState(initial.sheets[0].id);
+  const [sel, setSel] = useState<GridSelection>(() => cellSel(0, 0));
+  const [editing, setEditing] = useState<Editing | null>(null);
+  const [note, setNote] = useState<string | null>(null);
+  const [showFormulas, setShowFormulas] = useState(false);
+  const [search, setSearch] = useState(false);
+  const grid = useRef<SheetGridHandle>(null);
+  const bar = useRef<FormulaBarHandle>(null);
 
-  const onActiveCell = useCallback((a: { ref: string; text: string }) => setCell((c) => (c.ref === a.ref && c.text === a.text ? c : a)), []);
-  const onAgg = useCallback((a: Aggregates) => setAgg((p) => (p.cells === a.cells && p.numbers === a.numbers && p.sum === a.sum ? p : a)), []);
-  const sheetName = sheets[active].name;
-  const sheet = data[sheetName];
-  const vars = useMemo(() => themeVars(isDark ? 'dark' : 'light', 'default'), [isDark]);
+  const sheet = wb.sheets.find((s) => s.id === activeId)!;
+  const [ac, agr] = sel.current?.cell ?? [0, 0];
+  const ar = agr + 2;
 
-  const update = (fn: (s: SheetState) => SheetState) => setData((d) => ({ ...d, [sheetName]: fn(d[sheetName]) }));
+  // ── history ────────────────────────────────────────────────────────────────
+  const commitWb = useCallback((next: Workbook) => {
+    setWb((prev) => { past.current = [...past.current.slice(-99), prev]; future.current = []; return next; });
+  }, []);
+  const undo = useCallback(() => {
+    const prev = past.current.pop();
+    if (!prev) return;
+    setWb((cur) => { future.current.push(cur); return prev; });
+    setNote('Undone');
+  }, []);
+  const redo = useCallback(() => {
+    const next = future.current.pop();
+    if (!next) return;
+    setWb((cur) => { past.current.push(cur); return next; });
+    setNote('Redone');
+  }, []);
 
-  const onEdit = useCallback((edits: CellEdit[]) => {
-    setData((d) => {
-      const s = d[sheetName];
-      const byId = new Map(edits.filter((e) => e.valid).map((e) => [`${e.rowId}|${e.colId}`, e.value]));
-      const rows = s.rows.map((r) => {
-        let next = r;
-        for (const col of s.columns) {
-          const k = `${r.__id}|${col.id}`;
-          if (byId.has(k)) next = { ...next, [col.id]: byId.get(k)! };
+  const applyEdits = useCallback((edits: { c: number; r: number; text: string }[], sheetId = activeId) => {
+    let next = wb;
+    let lastNote: string | undefined;
+    for (const e of edits) {
+      if (readOnlyReason(next, sheetId, e.c, e.r)) continue;
+      const out = setCell(next, sheetId, e.c, e.r, e.text);
+      next = out.wb;
+      lastNote = out.note ?? lastNote;
+    }
+    if (next !== wb) { commitWb(next); setNote(lastNote ?? null); }
+  }, [wb, activeId, commitWb]);
+
+  // ── editing in the formula bar ─────────────────────────────────────────────
+  const startEdit = (text: string) => {
+    const reason = readOnlyReason(wb, activeId, ac, ar);
+    if (reason) { setNote(reason); return; }
+    setEditing({ sheetId: activeId, c: ac, r: ar, draft: text });
+    requestAnimationFrame(() => bar.current?.focus());
+  };
+  const finishEdit = (move: 'down' | 'right' | 'none') => {
+    if (!editing) return;
+    const { sheetId, c, r, draft } = editing;
+    setEditing(null);
+    applyEdits([{ c, r, text: draft }], sheetId);
+    setActiveId(sheetId);
+    const nc = move === 'right' ? c + 1 : c;
+    const nr = move === 'down' ? r + 1 : r;
+    setSel(cellSel(nc, nr - 2));
+    requestAnimationFrame(() => grid.current?.focus());
+  };
+  const cancelEdit = () => {
+    if (!editing) return;
+    setActiveId(editing.sheetId);
+    setEditing(null);
+    requestAnimationFrame(() => grid.current?.focus());
+  };
+
+  // Point mode: clicking a cell or a column header while typing a formula inserts its reference.
+  const pointCell = (c: number, r: number) => {
+    if (!editing || !bar.current?.wantsRef()) return false;
+    const target = wb.sheets.find((s) => s.id === activeId);
+    bar.current.insert(refFor(target, c, r, wb.sheets.find((s) => s.id === editing.sheetId)?.name).text);
+    return true;
+  };
+  const pointColumn = (c: number) => {
+    if (!editing || !bar.current?.wantsRef()) return false;
+    const target = wb.sheets.find((s) => s.id === activeId)!;
+    const editSheet = wb.sheets.find((s) => s.id === editing.sheetId)!;
+    const prefix = target.id !== editSheet.id ? `${/\s/.test(target.name) ? `'${target.name}'` : target.name}!` : '';
+    bar.current.insert(`${prefix}${colLetter(c)}:${colLetter(c)}`);
+    return true;
+  };
+
+  // ── keys the workbook handles before the grid ─────────────────────────────
+  const onKey = (k: { key: string; ctrl: boolean; alt: boolean; shift: boolean }) => {
+    if (k.key.length === 1 && !k.ctrl && !k.alt) {
+      // Every printable key goes to the edit, even while it is still opening, so none are lost.
+      if (editing) setEditing((e) => (e ? { ...e, draft: e.draft + k.key } : e));
+      else startEdit(k.key);
+      return true;
+    }
+    if (k.alt && (k.key === '=' || k.key === '≠')) { autoSum(); return true; }
+    if (k.ctrl && (k.key === 'd' || k.key === 'r')) { fill(k.key === 'd' ? 'down' : 'right'); return true; }
+    return false;
+  };
+
+  const autoSum = () => {
+    const col = sheet.columns[ac];
+    if (sheet.kind === 'live' && ar > lastDataRow(sheet)) {
+      applyEdits([{ c: ac, r: ar, text: `=SUM(${colLetter(ac)}:${colLetter(ac)})` }]);
+      return;
+    }
+    let top = ar - 1;
+    while (top >= 2 && typeof valueOf(wb, sheet.name, ac, top) === 'number') top--;
+    if (top < ar - 1 || col) startEdit(`=SUM(${colLetter(ac)}${top + 1}:${colLetter(ac)}${ar - 1})`);
+  };
+
+  const fill = (dir: 'down' | 'right') => {
+    const range = sel.current?.range;
+    if (!range || (dir === 'down' ? range.height : range.width) < 2) return;
+    const edits: { c: number; r: number; text: string }[] = [];
+    for (let y = range.y; y < range.y + range.height; y++)
+      for (let x = range.x; x < range.x + range.width; x++) {
+        const sx = dir === 'right' ? range.x : x;
+        const sy = dir === 'down' ? range.y : y;
+        if (sx === x && sy === y) continue;
+        const src = rawOf(sheet, sx, sy + 2);
+        edits.push({ c: x, r: y + 2, text: src.startsWith('=') ? shiftFormula(src, y - sy) : src });
+      }
+    applyEdits(edits);
+  };
+
+  useEffect(() => {
+    const onDown = (e: KeyboardEvent) => {
+      const mod = e.ctrlKey || e.metaKey;
+      const inBar = (e.target as HTMLElement)?.tagName === 'INPUT';
+      if (mod && e.key.toLowerCase() === 'z' && !inBar) { e.preventDefault(); if (e.shiftKey) redo(); else undo(); }
+      else if (mod && e.key.toLowerCase() === 'y' && !inBar) { e.preventDefault(); redo(); }
+      else if (mod && e.key === '`') { e.preventDefault(); setShowFormulas((v) => !v); setNote((v) => (v === 'Showing formulas' ? null : 'Showing formulas')); }
+      else if (mod && e.key.toLowerCase() === 'f' && !inBar) { e.preventDefault(); setSearch(true); }
+    };
+    window.addEventListener('keydown', onDown);
+    return () => window.removeEventListener('keydown', onDown);
+  }, [undo, redo]);
+
+  // ── what the formula bar shows ─────────────────────────────────────────────
+  const editingHere = editing && editing.sheetId === activeId ? editing : null;
+  const barValue = editing ? editing.draft : rawOf(sheet, ac, ar);
+  const cellRef = editing
+    ? `${editing.sheetId !== activeId ? `${wb.sheets.find((s) => s.id === editing.sheetId)?.name}!` : ''}${colLetter(editing.c)}${editing.r}`
+    : Object.entries(wb.names).find(([, t]) => { const p = parseRef(t); return p && p.c1 === ac && p.r1 === ar && (!p.sheet || p.sheet === sheet.name); })?.[0] ?? `${colLetter(ac)}${ar}`;
+
+  // Colour every range the formula refers to on the sheet in view.
+  const refHighlights = useMemo(() => {
+    if (!editing || !editing.draft.startsWith('=')) return undefined;
+    const editSheet = wb.sheets.find((s) => s.id === editing.sheetId)!;
+    return refsIn(editing.draft)
+      .map((r, i) => ({ ref: parseRef(r.text), color: i }))
+      .filter((x) => x.ref && (x.ref.sheet ?? editSheet.name).toLowerCase() === sheet.name.toLowerCase())
+      .map(({ ref, color }) => ({ c1: ref!.c1, r1: ref!.r1 ?? 2, c2: ref!.c2, r2: ref!.r2 ?? lastDataRow(sheet), color }));
+  }, [editing, wb, sheet]);
+
+  // ── selection totals for the footer ───────────────────────────────────────
+  const agg = useMemo<Aggregate>(() => {
+    const out = { sum: 0, count: 0, numbers: 0 };
+    const ranges = [sel.current?.range, ...(sel.current?.rangeStack ?? [])].filter(Boolean) as { x: number; y: number; width: number; height: number }[];
+    if (sel.columns.length) sel.columns.toArray().forEach((c) => ranges.push({ x: c, y: 0, width: 1, height: lastDataRow(sheet) - 1 }));
+    for (const rg of ranges)
+      for (let y = rg.y; y < rg.y + rg.height && out.count < 50000; y++)
+        for (let x = rg.x; x < rg.x + rg.width; x++) {
+          const v = valueOf(wb, sheet.name, x, y + 2);
+          if (v === null || v === '') continue;
+          out.count++;
+          if (typeof v === 'number') { out.numbers++; out.sum += v; }
         }
-        return next;
-      });
-      return { ...d, [sheetName]: { ...s, rows } };
-    });
-  }, [sheetName]);
+    return out;
+  }, [sel, wb, sheet]);
 
-  const addSheet = () => {
-    const n = `Sheet ${sheets.length + 1}`;
-    setData((d) => ({ ...d, [n]: { columns: blankColumns(), rows: blankRows(n) } }));
-    setSheets((s) => [...s, { name: n, kind: 'input', state: '' }]);
-    setActive(sheets.length);
-  };
-
-  const sortActive = (dir: 1 | -1) => {
-    const letter = cell.ref.replace(/\d+$/, '');
-    const idx = letter.split('').reduce((acc, ch) => acc * 26 + (ch.charCodeAt(0) - 64), 0) - 1;
-    const col = sheet.columns[idx];
-    if (col) update((s) => ({ ...s, rows: sortRows(s.rows, col.id, dir) }));
-  };
+  const pointing = !!editing && editing.draft.startsWith('=');
+  const status = (
+    <>
+      {pointing && <span>Point · click a cell, a column or another tab to insert it</span>}
+      {sheet.kind === 'live' && <span>Live · {wb.model} model · {sheet.rows.length.toLocaleString()} rows</span>}
+      {sheet.kind === 'input' && <span>Input · {sheet.rows.length.toLocaleString()} rows · saves back to the warehouse</span>}
+      {sheet.kind === 'local' && <span>Local · lives in this workbook</span>}
+    </>
+  );
 
   return (
     <div className={styles.frame}>
       <Horizontal gap={8} align="center" className={styles.titleBar}>
         <Icon name="table" size="m" />
-        <Typography variant="content-label">{name}</Typography>
+        <Typography variant="content-label">{wb.name}</Typography>
         <span className={styles.draft}>Draft</span>
+        {wb.model && <span className={styles.model}><span className={styles.liveDot} />{wb.model} model</span>}
       </Horizontal>
 
       <div className={styles.toolbar}>
-        <SheetToolbar onAction={(id) => id === 'sort' && sortActive(1)} />
+        <SheetToolbar onAction={(id) => {
+          if (id === 'undo') undo();
+          else if (id === 'redo') redo();
+          else if (id === 'formula') startEdit('=');
+        }} />
       </div>
 
-      <Horizontal gap={8} align="center" className={styles.formulaBar}>
-        <span className={styles.cellRef}>{cell.ref}</span>
-        <span className={styles.fx}>fx</span>
-        <span className={styles.cellText}>{cell.text}</span>
-      </Horizontal>
+      <FormulaBar
+        ref={bar}
+        cellRef={cellRef}
+        value={barValue}
+        editing={!!editing}
+        onStartEdit={startEdit}
+        onChange={(draft) => setEditing((e) => (e ? { ...e, draft } : e))}
+        onCommit={finishEdit}
+        onCancel={cancelEdit}
+        onNameBox={(text) => {
+          if (!text) return;
+          const ref = parseRef(text);
+          if (ref) { setSel(cellSel(ref.c1, (ref.r1 ?? 2) - 2)); grid.current?.select(ref.c1, ref.r1 ?? 2); return; }
+          if (/^[A-Za-z_][\w.]*$/.test(text)) {
+            const target = wb.names[text];
+            if (target) { const p = parseRef(target); if (p) { const s = wb.sheets.find((x) => x.name === p.sheet); if (s) setActiveId(s.id); grid.current?.select(p.c1, p.r1 ?? 2); } return; }
+            commitWb(defineName(wb, text, `${/\s/.test(sheet.name) ? `'${sheet.name}'` : sheet.name}!$${colLetter(ac)}$${ar}`));
+            setNote(`Named ${colLetter(ac)}${ar} "${text}". Use it in any formula on any tab.`);
+          }
+        }}
+        note={note}
+      />
 
-      <div className={`wbk ${styles.gridArea}`} style={vars as React.CSSProperties}>
-        <div className={styles.gridWrap}>
-          <Grid
-            key={sheetName}
-            ref={grid}
-            ariaLabel={`${name}, ${sheetName}`}
-            columns={sheet.columns}
-            rows={sheet.rows}
-            rowHeight="compact"
-            showLetters
-            frozenCols={blank ? 0 : 1}
-            edits={NO_EDITS}
-            cellErrors={NO_ERRORS}
-            notices={NO_NOTICES}
-            onNoticeDismiss={noop}
-            busy={false}
-            onEdit={onEdit}
-            menuFor={() => COLUMN_MENU}
-            onMenuAction={async (col, entry) => {
-              if (entry.id === 'sort-asc' || entry.id === 'sort-desc') update((s) => ({ ...s, rows: sortRows(s.rows, col.id, entry.id === 'sort-asc' ? 1 : -1) }));
-            }}
-            addColumn={{
-              items: ADD_COLUMN,
-              onPick: async (entry) => {
-                const id = `c${Date.now()}`;
-                const formula = entry.id === 'formula';
-                update((s) => ({
-                  ...s,
-                  columns: [...s.columns, {
-                    id, title: formula ? 'New formula' : 'New input', dataType: formula ? 'number' : 'text', width: 128,
-                    editable: formula ? { disabledReason: 'This column is calculated, so it can’t be typed over.' } : true,
-                    badges: [formula ? { icon: 'fx', label: 'Formula column' } : { icon: 'input', label: 'Input column' }],
-                  }],
-                }));
-                return id;
-              },
-            }}
-            onRename={async (colId, title) => update((s) => ({ ...s, columns: s.columns.map((c) => (c.id === colId ? { ...c, title } : c)) }))}
-            onSelectionChange={onAgg}
-            onActiveCell={onActiveCell}
-            statusRight={<span>{sheet.rows.length.toLocaleString()} rows</span>}
-          />
-        </div>
-        <Footer sheets={sheets} active={active} agg={agg} onSwitch={(i) => setActive(i)} onAdd={addSheet} />
+      <div className={styles.gridArea}>
+        <SheetGrid
+          key={activeId}
+          ref={grid}
+          wb={wb}
+          sheetId={activeId}
+          selection={sel}
+          onSelection={(s) => { setSel(s); if (!editing) setNote(null); }}
+          onEdits={(edits) => applyEdits(edits)}
+          onPointCell={pointCell}
+          onPointColumn={pointColumn}
+          refHighlights={editingHere || editing ? refHighlights : undefined}
+          onBlocked={(reason) => setNote(reason)}
+          showFormulas={showFormulas}
+          onKey={onKey}
+          editingCell={editingHere ? { c: editingHere.c, r: editingHere.r, text: editingHere.draft } : undefined}
+          showSearch={search}
+          onSearchClose={() => setSearch(false)}
+        />
       </div>
+
+      <SheetFooter
+        sheets={wb.sheets}
+        activeId={activeId}
+        onSelect={(id) => { setActiveId(id); if (!editing) setSel(cellSel(0, 0)); }}
+        onAdd={() => { const out = addSheet(wb, 'local'); commitWb(out.wb); setActiveId(out.id); setSel(cellSel(0, 0)); }}
+        agg={agg}
+        status={status}
+      />
+      {/* The canvas grid opens its cell editor in this layer. */}
+      <div id="portal" className={styles.portal} />
     </div>
   );
 };
