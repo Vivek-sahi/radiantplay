@@ -54,3 +54,12 @@
 .bar .tool svg * {
   pointer-events: none;
 }
+
+/* A toggled tool (Focus cell, Paint format). */
+.bar .tool.tool.on {
+  background-color: var(--rd-sys-color-background-subtle);
+}
+
+.bar .tool.tool.on > span {
+  color: var(--rd-sys-color-content-primary);
+}

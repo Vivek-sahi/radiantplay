@@ -7,7 +7,7 @@ import {
 import '@glideapps/glide-data-grid/dist/index.css';
 import { useIsDarkMode } from '@/context/ThemeContext';
 import { FormulaError, colLetter, type Result } from '../engine/formula';
-import { colCount, rawOf, readOnlyReason, rowCount, shiftFormula, valueOf, type ColType, type Workbook } from '../engine/workbook';
+import { colCount, rawOf, readOnlyReason, rowCount, shiftFormula, typeOf, valueOf, type ColType, type Workbook } from '../engine/workbook';
 
 // The workbook's grid, drawn on a canvas (Glide Data Grid) so it stays sharp and fast at any size:
 // smooth scrolling, instant selection, drag to select, fill handle, copy and paste, Excel keys.
@@ -75,14 +75,15 @@ function radiantTheme(): Partial<Theme> {
 const money = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
 const general = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 });
 
-export function display(v: Result, type: ColType | undefined): string {
+export function display(v: Result, type: ColType | undefined, decimals?: number): string {
   if (v instanceof FormulaError) return v.detail === 'Not found' ? 'Not found' : v.code;
   if (v === null || v === undefined) return '';
   if (typeof v === 'boolean') return v ? 'TRUE' : 'FALSE';
   if (typeof v === 'number') {
-    if (type === 'currency') return `${v < 0 ? '-' : ''}$${money.format(Math.abs(v))}`;
-    if (type === 'percent') return `${(v * 100).toFixed(1)}%`;
-    return general.format(v);
+    const fixed = decimals === undefined ? null : new Intl.NumberFormat('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+    if (type === 'currency') return `${v < 0 ? '-' : ''}$${(fixed ?? money).format(Math.abs(v))}`;
+    if (type === 'percent') return `${(v * 100).toFixed(decimals ?? 1)}%`;
+    return (fixed ?? general).format(v);
   }
   return String(v);
 }
@@ -117,10 +118,14 @@ export interface SheetGridProps {
   onSearchClose?: () => void;
   /** The cell being edited shows the draft as it's typed, as in Sheets. */
   editingCell?: { c: number; r: number; text: string };
+  /** Focus cell: shade the active cell's row and column, as Excel's View > Focus cell. */
+  focus?: { c: number; r: number };
+  /** Double-click a column header to rename it. */
+  onRenameColumn?: (c: number) => void;
 }
 
 export const SheetGrid = forwardRef<SheetGridHandle, SheetGridProps>(function SheetGrid(
-  { wb, sheetId, selection, onSelection, onEdits, onPointCell, refHighlights, onBlocked, onPointColumn, showFormulas, onKey, showSearch, onSearchClose, editingCell },
+  { wb, sheetId, selection, onSelection, onEdits, onPointCell, refHighlights, onBlocked, onPointColumn, showFormulas, onKey, showSearch, onSearchClose, editingCell, focus, onRenameColumn },
   ref,
 ) {
   const isDark = useIsDarkMode();
@@ -142,34 +147,58 @@ export const SheetGrid = forwardRef<SheetGridHandle, SheetGridProps>(function Sh
     [sheet, nCols],
   );
 
+  // Cell backgrounds, strongest first: conditional rules, typed input values, then focus cell.
+  const scales = useMemo(() => (sheet.rules ?? []).filter((x) => x.kind === 'scale').map((rule) => {
+    let min = Infinity;
+    let max = -Infinity;
+    for (let r = rule.r1; r <= rule.r2; r++) for (let c = rule.c1; c <= rule.c2; c++) {
+      const v = valueOf(wb, sheet.name, c, r);
+      if (typeof v === 'number') { min = Math.min(min, v); max = Math.max(max, v); }
+    }
+    return { rule, min, max };
+  }), [sheet, wb]);
+
+  const cellBackground = (c: number, r: number, v: unknown): Partial<Theme> => {
+    const inside = (x: { c1: number; c2: number; r1: number; r2: number }) => c >= x.c1 && c <= x.c2 && r >= x.r1 && r <= x.r2;
+    if (typeof v === 'number') {
+      for (const { rule, min, max } of scales) {
+        if (!inside(rule) || max <= min) continue;
+        const t = (v - min) / (max - min);
+        const base = tok('background-base');
+        return { bgCell: t < 0.5 ? mix(tok('content-failure'), Math.round((0.5 - t) * 56), base) : mix(tok('content-success'), Math.round((t - 0.5) * 56), base) };
+      }
+      if (v < 0 && (sheet.rules ?? []).some((x) => x.kind === 'negative' && inside(x))) return { bgCell: mix(tok('content-failure'), 14, tok('background-base')) };
+    }
+    if (sheet.columns[c]?.input && r - 2 < sheet.rows.length) return { bgCell: mix(tok('content-brand'), 6, tok('background-base')) };
+    if (focus && (focus.c === c || focus.r === r) && !(focus.c === c && focus.r === r)) return { bgCell: mix(tok('content-brand'), 5, tok('background-base')) };
+    return {};
+  };
+
   const getCellContent = useCallback(
     ([c, gr]: Item): GridCell => {
       const r = gr + 2;
       const raw = rawOf(sheet, c, r);
       const v = valueOf(wb, sheet.name, c, r);
-      const col = sheet.columns[c];
       const drafting = editingCell && editingCell.c === c && editingCell.r === r;
-      const text = drafting ? editingCell.text : showFormulas && raw.startsWith('=') ? raw : display(v, col?.type);
+      const fmt = sheet.formats?.[c];
+      const text = drafting ? editingCell.text : showFormulas && raw.startsWith('=') ? raw : display(v, typeOf(sheet, c), fmt?.decimals);
       const numeric = typeof v === 'number';
       const blocked = readOnlyReason(wb, sheetId, c, r);
       const negative = numeric && (v as number) < 0;
       const error = v instanceof FormulaError;
-      const typed = col?.input && r - 2 < sheet.rows.length;
       return {
         kind: GridCellKind.Text,
         data: raw,
         displayData: text,
         allowOverlay: !blocked,
         readonly: !!blocked,
-        contentAlign: numeric && !drafting ? 'right' : 'left',
-        themeOverride: error || negative
-          ? { textDark: tok('content-failure') }
-          : typed
-            ? { bgCell: mix(tok('content-brand'), 6, tok('background-base')) }
-            : undefined,
+        contentAlign: fmt?.align ?? (numeric && !drafting ? 'right' : 'left'),
+        allowWrapping: fmt?.wrap,
+        themeOverride: { ...cellBackground(c, r, v), ...(error || negative ? { textDark: tok('content-failure') } : {}) },
       };
     },
-    [wb, sheet, sheetId, showFormulas, editingCell],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [wb, sheet, sheetId, showFormulas, editingCell, focus, scales],
   );
 
   const onCellEdited = useCallback(([c, gr]: Item, v: EditableGridCell) => {
@@ -245,7 +274,10 @@ export const SheetGrid = forwardRef<SheetGridHandle, SheetGridProps>(function Sh
           if (reason && e.isDoubleClick) onBlocked?.(reason);
         }
       }}
-      onHeaderClicked={(c, e) => { if (onPointColumn?.(c)) e.preventDefault(); }}
+      onHeaderClicked={(c, e) => {
+        if (onPointColumn?.(c)) { e.preventDefault(); return; }
+        if (e.isDoubleClick) onRenameColumn?.(c);
+      }}
       onKeyDown={(e) => {
         if (onKey?.({ key: e.key, ctrl: e.ctrlKey || e.metaKey, alt: e.altKey, shift: e.shiftKey })) e.cancel();
       }}

@@ -30,7 +30,46 @@ export interface Sheet {
   cells: Record<string, string>;
   /** Where the data comes from, for Workbook details. */
   source?: string;
+  /** Formatting set from the toolbar, per column (Klimt and the product spreadsheet format by column). */
+  formats?: Record<number, ColFormat>;
+  /** Conditional formatting rules over ranges (sheet rows). */
+  rules?: CondRule[];
 }
+
+export interface ColFormat {
+  type?: ColType;
+  decimals?: number;
+  align?: 'left' | 'center' | 'right';
+  wrap?: boolean;
+}
+
+export interface CondRule {
+  c1: number; c2: number; r1: number; r2: number;
+  /** scale: red–white–green colour scale; negative: red fill below zero. */
+  kind: 'scale' | 'negative';
+}
+
+export function setFormat(wb: Workbook, sheetId: string, cols: number[], patch: (f: ColFormat, c: number) => ColFormat): Workbook {
+  return {
+    ...wb,
+    sheets: wb.sheets.map((s) => {
+      if (s.id !== sheetId) return s;
+      const formats = { ...(s.formats ?? {}) };
+      for (const c of cols) formats[c] = patch(formats[c] ?? {}, c);
+      return { ...s, formats };
+    }),
+  };
+}
+
+export function addRule(wb: Workbook, sheetId: string, rule: CondRule | null): Workbook {
+  return {
+    ...wb,
+    sheets: wb.sheets.map((s) => (s.id === sheetId ? { ...s, rules: rule ? [...(s.rules ?? []), rule] : [] } : s)),
+  };
+}
+
+/** The type a column displays as: what the toolbar set, else what the column is. */
+export const typeOf = (s: Sheet, c: number): ColType | undefined => s.formats?.[c]?.type ?? s.columns[c]?.type;
 
 export interface Workbook {
   name: string;
@@ -268,4 +307,50 @@ export function sheetCsv(wb: Workbook, id: string): string {
     out.push(row.join(','));
   }
   return out.join('\n');
+}
+
+// ── Pinning: live or snapshot ─────────────────────────────────────────────────
+
+/**
+ * A pinned range stays live when every value in it can be expressed as a query on the data model:
+ * Live and Input tabs, and formulas over them. Anything that reads a Local tab, a named value that
+ * lives on one, or a typed number on a Local tab, pins as a snapshot (PM brief, screen 13).
+ */
+export function pinLiveness(wb: Workbook, sheetId: string, range: { c1: number; c2: number; r1: number; r2: number }): { live: boolean; reason?: string } {
+  const s = wb.sheets.find((x) => x.id === sheetId)!;
+  const localSheets = new Set(wb.sheets.filter((x) => x.kind === 'local').map((x) => x.name.toLowerCase()));
+  const localNames = Object.entries(wb.names).filter(([, t]) => { const r = parseRef(t); return !!r && localSheets.has((r.sheet ?? '').toLowerCase()); }).map(([n]) => n);
+  for (let r = range.r1; r <= range.r2; r++) {
+    for (let c = range.c1; c <= range.c2; c++) {
+      const raw = rawOf(s, c, r);
+      if (!raw) continue;
+      if (raw.startsWith('=')) {
+        const name = localNames.find((n) => new RegExp(`\\b${n}\\b`, 'i').test(raw));
+        if (name) return { live: false, reason: `This uses local data (${name}), so it pins as a snapshot. Move ${name} into an input table to pin it live.` };
+        const sheetRef = [...raw.matchAll(/(?:'([^']+)'|([A-Za-z_][\w.]*))!/g)].map((m) => (m[1] ?? m[2]).toLowerCase()).find((n) => localSheets.has(n));
+        if (sheetRef) return { live: false, reason: `This reads a local tab, so it pins as a snapshot. Move those values into an input table to pin it live.` };
+      } else if (s.kind === 'local' && r > 1 && typeof literal(raw) === 'number') {
+        return { live: false, reason: 'This has numbers typed on a local tab, so it pins as a snapshot. Put them in an input table to pin it live.' };
+      }
+    }
+  }
+  return { live: true };
+}
+
+/** Sort a Live or Input tab's rows by one column. Free cells stay where they are. */
+export function sortRows(wb: Workbook, sheetId: string, c: number, dir: 1 | -1): Workbook {
+  return {
+    ...wb,
+    sheets: wb.sheets.map((s) => {
+      if (s.id !== sheetId || !s.rows.length) return s;
+      const rows = [...s.rows].sort((a, b) => {
+        const x = a[c]; const y = b[c];
+        if (x === y) return 0;
+        if (x === null || x === undefined) return 1;
+        if (y === null || y === undefined) return -1;
+        return (x > y ? 1 : -1) * dir;
+      });
+      return { ...s, rows };
+    }),
+  };
 }

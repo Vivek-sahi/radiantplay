@@ -5,9 +5,10 @@ import { FormulaBar, type FormulaBarHandle } from './FormulaBar';
 import { SheetFooter, type Aggregate, type SheetAction } from './SheetFooter';
 import { SheetToolbar } from './toolbar/SheetToolbar';
 import { WorkbookHeader } from './WorkbookHeader';
+import { InsertFunctionDialog, PinDialog } from './WorkbookDialogs';
 import { colLetter, parseRef, refsIn } from '../engine/formula';
 import {
-  addSheet, defineName, deleteSheet, duplicateSheet, lastDataRow, moveSheet, renameSheet, sheetCsv, rawOf, readOnlyReason, refFor, setCell, shiftFormula, valueOf, type Workbook,
+  addRule, addSheet, defineName, deleteSheet, duplicateSheet, lastDataRow, moveSheet, pinLiveness, renameSheet, setFormat, sheetCsv, sortRows, typeOf, rawOf, readOnlyReason, refFor, setCell, shiftFormula, valueOf, type ColFormat, type Workbook,
 } from '../engine/workbook';
 import styles from './WorkbookLive.module.css';
 
@@ -24,6 +25,23 @@ const cellSel = (c: number, gr: number): GridSelection => ({
 });
 
 interface Editing { sheetId: string; c: number; r: number; draft: string }
+
+/** Lookups match by key, not by position: say so once, as the PM's brief does ("Matched by REGION"). */
+function lookupNote(wb: Workbook, edits: { text: string }[]): string | undefined {
+  for (const e of edits) {
+    const m = /\b(XLOOKUP|SUMIFS|COUNTIFS|SUMIF|VLOOKUP)\(([^)]*)/i.exec(e.text);
+    if (!m) continue;
+    const args = m[2].split(',').map((a) => a.trim());
+    const keyArg = m[1].toUpperCase() === 'VLOOKUP' ? args[1] : m[1].toUpperCase() === 'SUMIF' ? args[0] : args[1];
+    const ref = keyArg ? parseRef(keyArg) : null;
+    if (!ref) continue;
+    const target = wb.sheets.find((x) => x.name.toLowerCase() === (ref.sheet ?? '').toLowerCase());
+    const title = target?.columns[ref.c1]?.title;
+    if (title) return `Matched by ${title}, so it survives refresh and re-sort`;
+  }
+  return undefined;
+}
+
 
 export interface WorkbookLiveProps {
   initial: Workbook;
@@ -47,6 +65,10 @@ export const WorkbookLive: React.FC<WorkbookLiveProps> = ({ initial, publishedAl
   const [note, setNote] = useState<string | null>(null);
   const [showFormulas, setShowFormulas] = useState(false);
   const [search, setSearch] = useState(false);
+  const [focusCell, setFocusCell] = useState(false);
+  const [painter, setPainter] = useState<ColFormat | null>(null);
+  const [insertFn, setInsertFn] = useState(false);
+  const [pin, setPin] = useState<{ what: string; live: boolean; reason?: string } | null>(null);
   const grid = useRef<SheetGridHandle>(null);
   const bar = useRef<FormulaBarHandle>(null);
 
@@ -81,7 +103,7 @@ export const WorkbookLive: React.FC<WorkbookLiveProps> = ({ initial, publishedAl
       next = out.wb;
       lastNote = out.note ?? lastNote;
     }
-    if (next !== wb) { commitWb(next); setNote(lastNote ?? null); }
+    if (next !== wb) { commitWb(next); setNote(lastNote ?? lookupNote(next, edits) ?? null); }
   }, [wb, activeId, commitWb]);
 
   // ── editing in the formula bar ─────────────────────────────────────────────
@@ -177,6 +199,75 @@ export const WorkbookLive: React.FC<WorkbookLiveProps> = ({ initial, publishedAl
     return () => window.removeEventListener('keydown', onDown);
   }, [undo, redo]);
 
+  // ── toolbar ────────────────────────────────────────────────────────────────
+  const selectedCols = (): number[] => {
+    const cols = new Set<number>(sel.columns.toArray());
+    const rg = sel.current?.range;
+    if (rg) for (let x = rg.x; x < rg.x + rg.width; x++) cols.add(x);
+    return [...cols];
+  };
+  const selectedRange = () => {
+    const rg = sel.current?.range ?? { x: ac, y: agr, width: 1, height: 1 };
+    const single = rg.width === 1 && rg.height === 1;
+    // One cell picked: the rule covers that column's data, as Sheets offers.
+    return single
+      ? { c1: rg.x, c2: rg.x, r1: 2, r2: Math.max(2, sheet.rows.length ? lastDataRow(sheet) : 60) }
+      : { c1: rg.x, c2: rg.x + rg.width - 1, r1: rg.y + 2, r2: rg.y + rg.height + 1 };
+  };
+  const format = (patch: (f: ColFormat, c: number) => ColFormat, said: string) => {
+    commitWb(setFormat(wb, activeId, selectedCols(), patch));
+    setNote(said);
+  };
+  const defaultDecimals = (c: number) => { const t = typeOf(sheet, c); return t === 'currency' ? 0 : t === 'percent' ? 1 : 2; };
+  const onTool = (id: string) => {
+    const cols = selectedCols();
+    const label = cols.map(colLetter).join(', ');
+    switch (id) {
+      case 'undo': undo(); break;
+      case 'redo': redo(); break;
+      case 'sort-asc': case 'sort-desc':
+        if (!sheet.rows.length) { setNote('Sort works on Live and Input tabs'); break; }
+        commitWb(sortRows(wb, activeId, ac, id === 'sort-asc' ? 1 : -1));
+        setNote(`Sorted by ${sheet.columns[ac]?.title ?? colLetter(ac)}, over all ${sheet.rows.length.toLocaleString()} rows`);
+        break;
+      case 'cf-scale': commitWb(addRule(wb, activeId, { ...selectedRange(), kind: 'scale' })); setNote('Colour scale added: red is lowest, green is highest'); break;
+      case 'cf-negative': commitWb(addRule(wb, activeId, { ...selectedRange(), kind: 'negative' })); setNote('Values below zero are highlighted'); break;
+      case 'cf-clear': commitWb(addRule(wb, activeId, null)); setNote('Conditional formatting cleared on this sheet'); break;
+      case 'align-left': case 'align-center': case 'align-right': {
+        const align = id.slice(6) as ColFormat['align'];
+        format((f) => ({ ...f, align }), `Aligned ${label} ${align}`);
+        break;
+      }
+      case 'wrap': format((f) => ({ ...f, wrap: !f.wrap }), `Wrapping turned on or off for ${label}`); break;
+      case 'currency': case 'fmt-currency': format((f) => ({ ...f, type: 'currency', decimals: undefined }), `${label} formatted as currency`); break;
+      case 'percent': case 'fmt-percent': format((f) => ({ ...f, type: 'percent', decimals: undefined }), `${label} formatted as percent`); break;
+      case 'fmt-number': format((f) => ({ ...f, type: 'number', decimals: 2 }), `${label} formatted as number`); break;
+      case 'fmt-auto': format(() => ({}), `${label} back to automatic`); break;
+      case 'fmt-text': case 'format': format((f) => ({ ...f, type: 'text' }), `${label} shown as plain text`); break;
+      case 'dec-down': format((f, c) => ({ ...f, decimals: Math.max(0, (f.decimals ?? defaultDecimals(c)) - 1) }), 'Fewer decimal places'); break;
+      case 'dec-up': format((f, c) => ({ ...f, decimals: Math.min(6, (f.decimals ?? defaultDecimals(c)) + 1) }), 'More decimal places'); break;
+      case 'painter':
+        if (painter) { setPainter(null); setNote(null); break; }
+        setPainter(sheet.formats?.[ac] ?? { type: typeOf(sheet, ac) });
+        setNote(`Paint format: click a column to give it ${colLetter(ac)}’s format`);
+        break;
+      case 'formula': setInsertFn(true); break;
+      case 'pin': {
+        const rg = sel.current?.range;
+        const whole = !rg || (rg.width === 1 && rg.height === 1);
+        const range = whole ? { c1: 0, c2: Math.max(0, sheet.columns.length - 1), r1: 1, r2: sheet.rows.length ? lastDataRow(sheet) : 60 } : { c1: rg.x, c2: rg.x + rg.width - 1, r1: rg.y + 2, r2: rg.y + rg.height + 1 };
+        const what = whole ? `the ${sheet.name} sheet` : `${colLetter(range.c1)}${range.r1}:${colLetter(range.c2)}${range.r2} on ${sheet.name}`;
+        setPin({ what, ...pinLiveness(wb, activeId, range) });
+        break;
+      }
+      case 'export': onSheetAction(activeId, 'download-csv'); break;
+      case 'focus': setFocusCell((v) => !v); break;
+      case 'filter': case 'clear-filter': case 'size': case 'upload': case 'expand':
+        setNote('Not in this prototype yet');
+        break;
+    }
+  };
+
   // ── sheet-level actions (the tab ▾ menu) ───────────────────────────────────
   const onSheetAction = (id: string, a: SheetAction) => {
     const s = wb.sheets.find((x) => x.id === id)!;
@@ -186,7 +277,7 @@ export const WorkbookLive: React.FC<WorkbookLiveProps> = ({ initial, publishedAl
       case 'move-left': commitWb(moveSheet(wb, id, -1)); break;
       case 'move-right': commitWb(moveSheet(wb, id, 1)); break;
       case 'refresh': setNote(`${s.name} refreshed from the ${wb.model} model just now`); break;
-      case 'pin': setNote('Pin to a Liveboard comes next: the sheet, or the range you select, as a live tile'); break;
+      case 'pin': setActiveId(id); setPin({ what: `the ${s.name} sheet`, ...pinLiveness(wb, id, { c1: 0, c2: Math.max(0, s.columns.length - 1), r1: 1, r2: s.rows.length ? lastDataRow(s) : 60 }) }); break;
       case 'make-app': setNote('Make an app comes next: it opens as an App tab beside your sheets'); break;
       case 'download-csv': {
         const url = URL.createObjectURL(new Blob([sheetCsv(wb, id)], { type: 'text/csv' }));
@@ -280,11 +371,7 @@ export const WorkbookLive: React.FC<WorkbookLiveProps> = ({ initial, publishedAl
       />
 
       <div className={styles.toolbar}>
-        <SheetToolbar onAction={(id) => {
-          if (id === 'undo') undo();
-          else if (id === 'redo') redo();
-          else if (id === 'formula') startEdit('=');
-        }} />
+        <SheetToolbar onAction={onTool} active={[...(focusCell ? ['focus'] : []), ...(painter ? ['painter'] : [])]} />
       </div>
 
       <FormulaBar
@@ -317,7 +404,15 @@ export const WorkbookLive: React.FC<WorkbookLiveProps> = ({ initial, publishedAl
           wb={wb}
           sheetId={activeId}
           selection={sel}
-          onSelection={(s) => { setSel(s); if (!editing) setNote(null); }}
+          onSelection={(s) => {
+            if (painter && s.current) {
+              const c = s.current.cell[0];
+              commitWb(setFormat(wb, activeId, [c], () => painter));
+              setPainter(null);
+              setNote(`Format painted onto ${colLetter(c)}`);
+            } else if (!editing) setNote(null);
+            setSel(s);
+          }}
           onEdits={(edits) => applyEdits(edits)}
           onPointCell={pointCell}
           onPointColumn={pointColumn}
@@ -326,6 +421,12 @@ export const WorkbookLive: React.FC<WorkbookLiveProps> = ({ initial, publishedAl
           showFormulas={showFormulas}
           onKey={onKey}
           editingCell={editingHere ? { c: editingHere.c, r: editingHere.r, text: editingHere.draft } : undefined}
+          focus={focusCell ? { c: ac, r: ar } : undefined}
+          onRenameColumn={(c) => {
+            setEditing({ sheetId: activeId, c, r: 1, draft: sheet.columns[c]?.title ?? sheet.cells[`${c},1`] ?? '' });
+            requestAnimationFrame(() => bar.current?.focus());
+            setNote(sheet.columns[c]?.fromModel ? 'Renames the column in this workbook only; the model keeps its name' : null);
+          }}
           showSearch={search}
           onSearchClose={() => setSearch(false)}
         />
@@ -346,6 +447,21 @@ export const WorkbookLive: React.FC<WorkbookLiveProps> = ({ initial, publishedAl
         agg={agg}
         status={status}
       />
+      <InsertFunctionDialog
+        isOpen={insertFn}
+        onClose={() => setInsertFn(false)}
+        onInsert={(name) => { setInsertFn(false); startEdit(`=${name}(`); }}
+      />
+      {pin && (
+        <PinDialog
+          isOpen
+          what={pin.what}
+          live={pin.live}
+          reason={pin.reason}
+          onClose={() => setPin(null)}
+          onPin={(lb) => { setPin(null); setNote(`Pinned ${pin.what} to “${lb}” as a ${pin.live ? 'live tile' : 'snapshot'}`); }}
+        />
+      )}
       {/* The canvas grid opens its cell editor in this layer. */}
       <div id="portal" className={styles.portal} />
     </div>
