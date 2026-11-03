@@ -26,3 +26,13 @@
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: var(--spacing-4);
 }
+
+.newBadge {
+  margin-left: var(--spacing-1);
+  padding: 1px var(--spacing-2);
+  border-radius: var(--radius-sm);
+  background-color: var(--rd-sys-color-background-brand);
+  color: var(--rd-sys-color-content-inverse);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-sm);
+}

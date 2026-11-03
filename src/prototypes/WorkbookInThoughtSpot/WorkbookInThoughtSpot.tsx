@@ -4,6 +4,7 @@ import { AppSidebar } from '@components/AppSidebar';
 import type { AppSidebarProps } from '@components/AppSidebar';
 import { HomeView } from './components/HomeView';
 import { WorkbooksView } from './components/WorkbooksView';
+import { NewBadge } from './components/NewBadge';
 import styles from './WorkbookInThoughtSpot.module.css';
 
 const TABS: AppSidebarProps['tabs'] = [
@@ -28,7 +29,7 @@ const NAV: AppSidebarProps['categories'] = {
       items: [
         { id: 'liveboards', label: 'Liveboards' },
         { id: 'answers', label: 'Answers' },
-        { id: 'workbooks', label: 'Workbooks', badge: 'New' },
+        { id: 'workbooks', label: 'Workbooks', badge: <NewBadge /> },
         { id: 'collections', label: 'Collections' },
       ],
     },
