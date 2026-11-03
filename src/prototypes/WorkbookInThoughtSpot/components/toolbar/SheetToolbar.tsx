@@ -46,7 +46,7 @@ export interface SheetToolbarProps {
 export const SheetToolbar: React.FC<SheetToolbarProps> = ({ onAction }) => {
   const tool = (t: Tool) => (
     <Tooltip key={t.id} content={t.label}>
-      <Button variant="tertiary" size="small" iconOnly icon={t.icon} iconPosition="leading" onClick={() => onAction?.(t.id)}>
+      <Button className={styles.tool} variant="tertiary" size="small" iconOnly icon={t.icon} iconPosition="leading" onClick={() => onAction?.(t.id)}>
         {t.label}
       </Button>
     </Tooltip>

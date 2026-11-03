@@ -23,7 +23,14 @@
   border-left: 1px solid var(--rd-sys-color-border-subtle);
 }
 
-/* Neutral icons, as in the spec and Google Sheets: Radiant's tertiary button is brand blue. */
-.bar :global(button) {
+/* Neutral icons, as in the spec and Google Sheets. Radiant's tertiary button colours its icon
+   wrapper brand blue at .tertiary.standard .icon, so this selector carries more weight on purpose. */
+.bar .tool.tool,
+.bar .tool.tool > span {
+  color: var(--rd-sys-color-content-secondary);
+}
+
+.bar .tool.tool:hover,
+.bar .tool.tool:hover > span {
   color: var(--rd-sys-color-content-primary);
 }
