@@ -28,7 +28,7 @@ const NAV: AppSidebarProps['categories'] = {
       items: [
         { id: 'liveboards', label: 'Liveboards' },
         { id: 'answers', label: 'Answers' },
-        { id: 'workbooks', label: 'Workbooks' },
+        { id: 'workbooks', label: 'Workbooks', badge: 'New' },
         { id: 'collections', label: 'Collections' },
       ],
     },
