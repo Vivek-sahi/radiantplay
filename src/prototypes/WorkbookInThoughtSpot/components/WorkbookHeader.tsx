@@ -9,6 +9,7 @@ import { Typography } from '@components/Typography';
 import { Horizontal, Vertical } from '@components/Layout';
 import { Icon } from '@components/icons';
 import type { Workbook } from '../engine/workbook';
+import { ShareDialog } from './ShareDialog';
 import styles from './WorkbookHeader.module.css';
 
 // The workbook's header: workbook-level things only (Vivek, 3 Nov 2026).
@@ -143,15 +144,7 @@ export const WorkbookHeader: React.FC<WorkbookHeaderProps> = ({ wb, onRename, pu
         onCancel={() => setConfirmDelete(false)}
       />
 
-      <Modal
-        isOpen={share}
-        onClose={() => setShare(false)}
-        title={`Share ${wb.name}`}
-        size="small"
-        footer={<Button variant="primary" onClick={() => setShare(false)}>Share</Button>}
-      >
-        <Typography variant="body-normal" color="gray">People you share with see the published version. Can edit lets them change the draft.</Typography>
-      </Modal>
+      <ShareDialog isOpen={share} objectName={wb.name} onClose={() => setShare(false)} onShared={() => setShare(false)} />
     </div>
   );
 };

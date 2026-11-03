@@ -1,0 +1,60 @@
+.grow {
+  flex: 1;
+  min-width: 0;
+}
+
+.info {
+  display: inline-flex;
+  color: var(--rd-sys-color-content-secondary);
+}
+
+/* Grey, not brand blue: the tertiary button colours its icon at .tertiary.standard .icon. */
+.quiet.quiet.quiet,
+.quiet.quiet.quiet > span {
+  color: var(--rd-sys-color-content-secondary);
+}
+
+.quiet svg,
+.quiet svg * {
+  pointer-events: none;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  max-height: 300px;
+  overflow: auto;
+  padding: var(--spacing-4) 0;
+  border-top: 1px solid var(--rd-sys-color-border-subtle);
+  border-bottom: 1px solid var(--rd-sys-color-border-subtle);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+}
+
+.name {
+  flex: 1;
+  min-width: 0;
+  color: var(--rd-sys-color-content-primary);
+  font-size: var(--font-size-sm);
+}
+
+.access {
+  width: 160px;
+}
+
+.link {
+  justify-content: space-between;
+}
+
+/* Cancel and Share on the right, as ThoughtSpot's dialogs place them. */
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-2);
+  width: 100%;
+}
