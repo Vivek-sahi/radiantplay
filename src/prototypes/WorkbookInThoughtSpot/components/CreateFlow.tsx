@@ -1,26 +1,27 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { SpotterPrompt, UserMessage } from '@spotter/chat';
-import { Typography } from '@components/Typography';
-import { Horizontal, Vertical } from '@components/Layout';
+import { RadianceBackground, useRadianceState } from '@/app-chrome/RadianceBackground/RadianceBackground';
+import { PromptBar, type OpenMenu } from '@spotter/chat';
+import { Vertical } from '@components/Layout';
 import { Icon } from '@components/icons';
-import { LoadingIndicator } from '@components/LoadingIndicator';
 import { FileUploader } from '@components/FileUploader';
 import { ClarifyCard, CLARIFY_EXIT_MS, type ClarifyAnswer, type ClarifyStepView } from './ClarifyCard';
 import { AnsweredQuestions } from './AnsweredQuestions';
 import { WorkbookLoading } from './WorkbookLoading';
-import { ANSWERS, INPUT_KINDS, MODELS, SOURCES, TEMPLATE_ROWS, buildSteps, type SourceId } from '../data/create';
+import { ActionRow, AskedAQuestion, ShowWork, StreamingText, WorkingChecklist, agentTextStyle, streamMs, userBubbleStyle } from './ChatTurns';
+import { CHAT_QUESTION, SOURCES, buildSteps, type SourceId } from '../data/create';
 import styles from './CreateFlow.module.css';
 
-// Creating a workbook with Spotter (Vivek, 3 Nov 2026). The questions use the Apps prototype's
-// question card (ClarifyCard, copied from AppsInTS_convoDrafts), docked above the composer.
-// Question 1 is the data source, question 2 depends on it. A start card on the Workbooks page
-// has already answered question 1, so the run starts at question 2. No plan card: once the
-// questions are answered, the workbook opens on the right in its loading state.
-
-const STRONG_MATCH = 80;
-const MatchPill: React.FC<{ confidence: number }> = ({ confidence }) => (
-  <span className={confidence >= STRONG_MATCH ? styles.matchStrong : styles.matchWeak}>{confidence}% match</span>
-);
+// Creating a workbook with Spotter (Vivek, 3 Nov 2026).
+// - The Apps prototype's question card (ClarifyCard, copied from AppsInTS_convoDrafts), docked
+//   above the composer, asks only where the data comes from: data model, Answer, upload, blank.
+// - Which data model or Answer is asked in the chat, and the user answers in the chat: every
+//   customer has their own, so a ranked list of ours would be wrong.
+// - Upload asks for the file in the card. Blank workbook needs nothing more.
+// - A start card on the Workbooks page has already picked the source, so the card is skipped.
+// - No plan card. The workbook opens on the right in its loading state.
+// - SpotterX look: the Radiance spotterx pattern behind the chat, no left nav.
+// - The thread and composer are the Apps ones: Show work, streaming text, the action row, the
+//   Working checklist, and the product composer (PromptBar) with the card docked above it.
 
 const sourceStep: ClarifyStepView = {
   id: 'source',
@@ -30,172 +31,191 @@ const sourceStep: ClarifyStepView = {
   rows: SOURCES.map((s) => ({ id: s.id, label: s.label, leading: <Icon name={s.icon} size="m" /> })),
 };
 
-function secondStep(source: SourceId, onFile: (name: string) => void): ClarifyStepView {
-  switch (source) {
-    case 'model':
-      return {
-        id: 'model',
-        question: 'Which data model?',
-        mode: 'single',
-        requireAnswer: true,
-        rows: MODELS.map((m) => ({ id: m.id, label: m.label, trailing: <MatchPill confidence={m.confidence} /> })),
-      };
-    case 'upload':
-      return {
-        id: 'upload',
-        question: 'Upload your file',
-        mode: 'single',
-        requireAnswer: true,
-        body: (
-          <div className={styles.upload}>
-            <FileUploader
-              helperText="Excel or CSV. Formulas are translated; data is saved to your warehouse."
-              onFilesChange={(files) => files[0] && onFile(files[0].name)}
-            />
-          </div>
-        ),
-      };
-    case 'answer':
-      return { id: 'answer', question: 'Which Answer?', mode: 'single', requireAnswer: true, somethingElse: true, rows: ANSWERS };
-    case 'input-table':
-      return { id: 'input-table', question: 'What will you type in?', mode: 'single', requireAnswer: true, somethingElse: true, rows: INPUT_KINDS };
-    case 'template':
-      return { id: 'template', question: 'Which template?', mode: 'single', requireAnswer: true, rows: TEMPLATE_ROWS };
-  }
-}
+const uploadStep = (onFile: (name: string) => void): ClarifyStepView => ({
+  id: 'upload',
+  question: 'Upload your file',
+  mode: 'single',
+  requireAnswer: true,
+  body: (
+    <div className={styles.upload}>
+      <FileUploader
+        helperText="Excel or CSV. Formulas are translated; data is saved to your warehouse."
+        onFilesChange={(files) => files[0] && onFile(files[0].name)}
+      />
+    </div>
+  ),
+});
 
-const labelFor = (step: ClarifyStepView, answer: ClarifyAnswer | undefined): string => {
-  if (!answer) return '';
-  if (answer.other?.trim()) return answer.other.trim();
-  if (step.id === 'upload') return answer.selected[0] ?? '';
-  return answer.selected.map((id) => step.rows?.find((r) => r.id === id)?.label ?? id).join(', ');
-};
+type Item =
+  | { kind: 'user'; text: string }
+  | { kind: 'agent'; text: string }
+  | { kind: 'recap'; pairs: { question: string; answer: string }[] };
+
+type Phase = 'card' | 'leaving' | 'chat' | 'building';
+
+const sourceLabel = (id: SourceId) => SOURCES.find((s) => s.id === id)?.label ?? '';
 
 export interface CreateFlowProps {
   /** What the user typed on Home, shown as their message. */
   seedPrompt?: string;
   /** Set when a start card on the Workbooks page already chose the source. */
   startSource?: SourceId;
+  /** A number unique to this run, for the Radiance state. */
+  runId: number;
 }
 
-type Phase = 'asking' | 'leaving' | 'building';
-
-export const CreateFlow: React.FC<CreateFlowProps> = ({ seedPrompt, startSource }) => {
+export const CreateFlow: React.FC<CreateFlowProps> = ({ seedPrompt, startSource, runId }) => {
+  const needsCard = !startSource || startSource === 'upload';
   const [answers, setAnswers] = useState<Record<string, ClarifyAnswer>>({});
   const [stepIndex, setStepIndex] = useState(0);
-  const [phase, setPhase] = useState<Phase>('asking');
-  const [done, setDone] = useState(0);
+  const [phase, setPhase] = useState<Phase>(needsCard ? 'card' : CHAT_QUESTION[startSource!] ? 'chat' : 'building');
+  const [source, setSource] = useState<SourceId | undefined>(startSource);
+  const [detail, setDetail] = useState('');
   const [reply, setReply] = useState('');
+  const [built, setBuilt] = useState(false);
+  const [openMenu, setOpenMenu] = useState<OpenMenu>('none');
+  const [barFocused, setBarFocused] = useState(false);
+  // The card docks only once the agent's turn has finished streaming, as in Apps.
+  const [dockVisible, setDockVisible] = useState(false);
+
+  const intro = needsCard ? 'Let’s set up your workbook.' : `Let’s set up a workbook from ${sourceLabel(startSource!).replace(/^An? /, 'an ').replace(/^ThoughtSpot/, 'a ThoughtSpot')}.`;
+  const [items, setItems] = useState<Item[]>(() => {
+    const first: Item[] = [];
+    if (seedPrompt) first.push({ kind: 'user', text: seedPrompt });
+    first.push({ kind: 'agent', text: intro });
+    if (startSource && CHAT_QUESTION[startSource]) first.push({ kind: 'agent', text: CHAT_QUESTION[startSource]! });
+    return first;
+  });
+
+  useEffect(() => {
+    if (phase !== 'card') return;
+    const t = setTimeout(() => setDockVisible(true), streamMs(intro));
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const onAnswer = (id: string, a: ClarifyAnswer) => setAnswers((prev) => ({ ...prev, [id]: a }));
-  const source: SourceId = startSource ?? ((answers.source?.selected[0] as SourceId) || 'model');
+  const picked = (startSource ?? answers.source?.selected[0]) as SourceId | undefined;
 
-  // Until the source is picked, question 2 is the data model one, so the card counts two steps.
   const steps = useMemo<ClarifyStepView[]>(() => {
-    const second = secondStep(source, (name) => onAnswer('upload', { selected: [name] }));
-    return startSource ? [second] : [sourceStep, second];
-  }, [source, startSource]);
+    const upload = uploadStep((name) => onAnswer('upload', { selected: [name] }));
+    if (startSource === 'upload') return [upload];
+    return picked === 'upload' ? [sourceStep, upload] : [sourceStep];
+  }, [picked, startSource]);
 
-  const second = steps[steps.length - 1];
-  const detail = labelFor(second, answers[second.id]);
-  const checklist = buildSteps(source, detail || 'your');
-  const workbookName =
-    source === 'model' ? `${detail} workbook` :
-    source === 'upload' ? detail.replace(/\.[^.]+$/, '') :
-    source === 'template' ? detail : 'Untitled workbook';
-
-  const pairs = steps
-    .map((s) => ({ question: s.question, answer: labelFor(s, answers[s.id]) }))
-    .filter((p) => p.answer);
-  if (startSource) {
-    pairs.unshift({ question: sourceStep.question, answer: SOURCES.find((s) => s.id === startSource)?.label ?? '' });
-  }
-
-  const finish = () => {
+  const finishCard = () => {
+    const chosen = picked ?? 'blank';
+    const file = answers.upload?.selected[0] ?? '';
+    const pairs = [{ question: sourceStep.question, answer: sourceLabel(chosen) }];
+    if (chosen === 'upload') pairs.push({ question: 'Upload your file', answer: file });
     setPhase('leaving');
-    setTimeout(() => setPhase('building'), CLARIFY_EXIT_MS);
+    setTimeout(() => {
+      setSource(chosen);
+      setItems((prev) => [
+        ...prev,
+        { kind: 'recap', pairs },
+        ...(CHAT_QUESTION[chosen] ? [{ kind: 'agent', text: CHAT_QUESTION[chosen]! } as Item] : []),
+      ]);
+      if (chosen === 'upload') setDetail(file);
+      setPhase(CHAT_QUESTION[chosen] ? 'chat' : 'building');
+    }, CLARIFY_EXIT_MS);
   };
 
-  // The build checklist ticks through, then the cells keep loading in the workbook.
-  useEffect(() => {
-    if (phase !== 'building') return;
-    setDone(0);
-    const timers = checklist.map((_, i) => setTimeout(() => setDone(i + 1), 900 * (i + 1)));
-    return () => timers.forEach(clearTimeout);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase]);
+  const send = () => {
+    const text = reply.trim();
+    if (!text || phase !== 'chat') return;
+    setItems((prev) => [...prev, { kind: 'user', text }]);
+    setDetail(text.charAt(0).toUpperCase() + text.slice(1));
+    setReply('');
+    setPhase('building');
+  };
 
-  const intro = startSource
-    ? 'Let’s set up your workbook. One question first.'
-    : 'Let’s set up your workbook. Two quick questions first.';
+  const src: SourceId = source ?? 'blank';
+  const checklist = buildSteps(src, detail);
+  const workbookName =
+    src === 'model' ? `${detail} workbook` :
+    src === 'upload' ? detail.replace(/\.[^.]+$/, '') || 'Uploaded workbook' :
+    src === 'answer' ? detail : 'Untitled workbook';
+
+  const radiance = useRadianceState(runId, phase === 'building' && !built);
 
   const thread = (
-    <Vertical gap={16} className={styles.thread}>
-      {seedPrompt && <UserMessage message={seedPrompt} />}
-      <Horizontal gap={8} align="start">
-        <Icon name="spotter" size="m" />
-        <Typography variant="body-normal">{intro}</Typography>
-      </Horizontal>
-      {phase === 'building' && (
-        <>
-          <AnsweredQuestions pairs={pairs} />
-          <Vertical gap={8}>
-            <Horizontal gap={8} align="start">
-              <Icon name="spotter" size="m" />
-              <Typography variant="body-normal">Building your workbook.</Typography>
-            </Horizontal>
-            <Vertical gap={6} className={styles.checklist}>
-              {checklist.map((label, i) => (
-                <Horizontal key={label} gap={8} align="center">
-                  {i < done ? <Icon name="checkmark-circle" size="s" color="var(--rd-sys-color-content-success)" /> : i === done ? <LoadingIndicator size="small" /> : <span className={styles.pending} />}
-                  <Typography variant="body-normal" color={i <= done ? undefined : 'gray'}>{label}</Typography>
-                </Horizontal>
-              ))}
-            </Vertical>
-          </Vertical>
-        </>
+    <Vertical gap={20} className={styles.thread}>
+      {items.map((item, i) =>
+        item.kind === 'user' ? (
+          <div key={i} className={styles.userRow}><div style={userBubbleStyle}>{item.text}</div></div>
+        ) : item.kind === 'recap' ? (
+          <div key={i}>
+            <AnsweredQuestions pairs={item.pairs} />
+            <AskedAQuestion />
+          </div>
+        ) : (
+          <div key={i}>
+            <ShowWork />
+            <p style={agentTextStyle}><StreamingText text={item.text} /></p>
+            <ActionRow />
+          </div>
+        ),
       )}
+      {phase === 'building' && <WorkingChecklist steps={checklist} onDone={() => setBuilt(true)} />}
     </Vertical>
   );
 
+  const showCard = (phase === 'card' && dockVisible) || phase === 'leaving';
   const composer = (
     <Vertical gap={0} className={styles.composer}>
-      {phase !== 'building' && (
-        <ClarifyCard
-          steps={steps}
-          stepIndex={stepIndex}
-          onStepIndex={setStepIndex}
-          answers={answers}
-          onAnswer={onAnswer}
-          onSkip={(id) => setAnswers((prev) => { const next = { ...prev }; delete next[id]; return next; })}
-          onFinish={finish}
-          leaving={phase === 'leaving'}
-        />
+      {showCard && (
+        <div className={styles.dock}>
+          <ClarifyCard
+            steps={steps}
+            stepIndex={stepIndex}
+            onStepIndex={setStepIndex}
+            answers={answers}
+            onAnswer={onAnswer}
+            onSkip={(id) => setAnswers((prev) => { const next = { ...prev }; delete next[id]; return next; })}
+            onFinish={finishCard}
+            leaving={phase === 'leaving'}
+          />
+        </div>
       )}
-      <SpotterPrompt value={reply} onChange={setReply} placeholder="Reply to Spotter" />
+      {/* The product composer, docked. Menus open upward because the bar sits at the bottom. */}
+      <PromptBar
+        value={reply}
+        onValueChange={setReply}
+        onSend={send}
+        placeholder={showCard ? 'or reply directly…' : phase === 'chat' ? (src === 'model' ? 'Name a data model' : 'Name an Answer') : undefined}
+        minLines={1}
+        menuDirection="up"
+        focused={barFocused}
+        onFocus={() => setBarFocused(true)}
+        onBlur={() => setBarFocused(false)}
+        openMenu={openMenu}
+        onOpenMenuChange={setOpenMenu}
+      />
     </Vertical>
   );
 
-  if (phase !== 'building') {
-    return (
-      <div className={styles.centered}>
-        <div className={styles.column}>
-          {thread}
-          {composer}
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className={styles.split}>
-      <div className={styles.chat}>
-        {thread}
-        {composer}
-      </div>
-      <div className={styles.canvas}>
-        <WorkbookLoading name={workbookName} status={done < checklist.length ? 'Loading Sheet 1' : 'Loading live data'} />
-      </div>
+    <div className={styles.root}>
+      <RadianceBackground pattern="spotterx" state={radiance} />
+      {phase !== 'building' ? (
+        <div className={styles.centered}>
+          <div className={styles.column}>
+            {thread}
+            {composer}
+          </div>
+        </div>
+      ) : (
+        <div className={styles.split}>
+          <div className={styles.chat}>
+            {thread}
+            {composer}
+          </div>
+          <div className={styles.canvas}>
+            <WorkbookLoading name={workbookName} status={built ? 'Loading live data' : 'Loading Sheet 1'} />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

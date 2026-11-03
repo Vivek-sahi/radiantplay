@@ -1,4 +1,11 @@
+.root {
+  position: relative;
+  height: 100%;
+}
+
 .centered {
+  position: relative;
+  z-index: 1;
   display: flex;
   justify-content: center;
   height: 100%;
@@ -25,6 +32,8 @@
 }
 
 .split {
+  position: relative;
+  z-index: 1;
   display: flex;
   height: 100%;
 }
@@ -35,47 +44,25 @@
   width: 400px;
   flex-shrink: 0;
   padding: var(--spacing-6);
-  border-right: 1px solid var(--rd-sys-color-border-subtle);
 }
 
 .canvas {
   flex: 1;
   min-width: 0;
-  padding: var(--spacing-4);
-  background: var(--rd-sys-color-background-sunken);
-}
-
-.checklist {
-  padding-left: var(--spacing-8);
-}
-
-.pending {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  border: 1px solid var(--rd-sys-color-border-default);
+  padding: var(--spacing-4) var(--spacing-4) var(--spacing-4) 0;
 }
 
 .upload {
   padding: var(--spacing-2) 0;
 }
 
-/* Match pills, as the Apps question card shows them: success tint above 80%, sunken below. */
-.matchStrong,
-.matchWeak {
-  padding: 1px var(--spacing-2);
-  border-radius: var(--radius-lg);
-  font-size: var(--font-size-xs);
-  line-height: var(--line-height-sm);
-  white-space: nowrap;
+
+.userRow {
+  display: flex;
+  justify-content: flex-end;
 }
 
-.matchStrong {
-  background: var(--rd-sys-color-background-success);
-  color: color-mix(in srgb, var(--rd-sys-color-content-success) 56%, var(--rd-sys-color-content-primary));
-}
-
-.matchWeak {
-  background: var(--rd-sys-color-background-sunken);
-  color: var(--rd-sys-color-content-secondary);
+/* Apps' CollectorCard: the card sits 10px above the composer. */
+.dock {
+  margin-bottom: 10px;
 }

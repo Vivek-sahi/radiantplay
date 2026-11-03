@@ -53,6 +53,8 @@ const BUILT: Page[] = ['home', 'workbooks'];
 
 const WorkbookInThoughtSpot: React.FC = () => {
   const [tab, setTab] = useState('insights');
+  // On the Spotter chat screen the nav is hidden, as in SpotterX; the hamburger opens it over the page.
+  const [navOpen, setNavOpen] = useState(false);
   const [page, setPage] = useState<Page>('home');
   // A new run each time, so the questions start fresh.
   const [run, setRun] = useState<{ key: number; seed?: string; source?: SourceId }>({ key: 0 });
@@ -63,22 +65,29 @@ const WorkbookInThoughtSpot: React.FC = () => {
 
   return (
     <div className={styles.shell}>
-      <GlobalHeader theme="auto" searchPlaceholder="Search your library" notificationCount={1} userName="Vivek Sahi" />
+      <GlobalHeader theme="auto" searchPlaceholder="Search your library" notificationCount={1} userName="Vivek Sahi" showHamburger={page === 'create'} onHamburgerClick={() => setNavOpen((o) => !o)} />
       <div className={styles.body}>
-        <AppSidebar
-          tabs={TABS}
-          activeTab={tab}
-          onTabChange={setTab}
-          categories={NAV}
-          selectedNav={page === 'create' ? '' : page}
-          onNavSelect={(id) => {
-            if (BUILT.includes(id as Page)) setPage(id as Page);
-          }}
-        />
+        {(page !== 'create' || navOpen) && (
+          <AppSidebar
+            isOverlay={page === 'create'}
+            onClose={() => setNavOpen(false)}
+            tabs={TABS}
+            activeTab={tab}
+            onTabChange={setTab}
+            categories={NAV}
+            selectedNav={page === 'create' ? '' : page}
+            onNavSelect={(id) => {
+              if (BUILT.includes(id as Page)) {
+                setPage(id as Page);
+                setNavOpen(false);
+              }
+            }}
+          />
+        )}
         <main className={styles.main}>
           {page === 'home' && <HomeView onStart={(prompt) => startCreate(prompt)} />}
           {page === 'workbooks' && <WorkbooksView onCreate={(source) => startCreate(undefined, source)} />}
-          {page === 'create' && <CreateFlow key={run.key} seedPrompt={run.seed} startSource={run.source} />}
+          {page === 'create' && <CreateFlow key={run.key} runId={run.key} seedPrompt={run.seed} startSource={run.source} />}
         </main>
       </div>
     </div>

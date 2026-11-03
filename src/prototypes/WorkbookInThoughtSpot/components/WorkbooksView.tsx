@@ -12,7 +12,7 @@ import { START_OPTIONS, TEMPLATES, WORKBOOKS, type WorkbookRow } from '../data/w
 import type { SourceId } from '../data/create';
 import styles from '../WorkbookInThoughtSpot.module.css';
 
-const CARD_SOURCE: Record<string, SourceId> = { model: 'model', answer: 'answer', 'input-table': 'input-table', excel: 'upload' };
+const CARD_SOURCE: Record<string, SourceId> = { model: 'model', answer: 'answer', 'input-table': 'blank', excel: 'upload' };
 
 // Library > Workbooks. Layout and copy from the PM's vision prototype, screen 1 (16 Oct):
 // header with New Workbook, four ways to start, and recent workbooks. Templates open from
