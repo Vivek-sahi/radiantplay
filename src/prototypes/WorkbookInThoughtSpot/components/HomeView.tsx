@@ -24,7 +24,7 @@ const ACTIONS: { id: string; label: string; icon: IconName; isNew?: boolean }[] 
   { id: 'workbook', label: 'Workbook', icon: 'table', isNew: true },
 ];
 
-export const HomeView: React.FC = () => {
+export const HomeView: React.FC<{ onStart: (prompt: string) => void }> = ({ onStart }) => {
   const [value, setValue] = useState('');
 
   const handleAction = (id: string) => {
@@ -38,7 +38,7 @@ export const HomeView: React.FC = () => {
         <h1 className={welcome.greeting}>
           Let’s <span className={welcome.greetingAccent}>make sense</span> of your data together.
         </h1>
-        <SpotterPrompt className={styles.homePrompt} value={value} onChange={setValue} placeholder="Enter your question" />
+        <SpotterPrompt className={styles.homePrompt} value={value} onChange={setValue} onSubmit={(v) => v.trim() && onStart(v.trim())} placeholder="Enter your question" />
         <Horizontal gap={12} justify="center" align="center" wrap>
           {ACTIONS.map((a) => (
             <button key={a.id} type="button" className={chip.quickAction} onClick={() => handleAction(a.id)}>

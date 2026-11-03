@@ -9,7 +9,10 @@ import { Modal } from '@components/Modal';
 import { Horizontal, Vertical } from '@components/Layout';
 import { Icon } from '@components/icons';
 import { START_OPTIONS, TEMPLATES, WORKBOOKS, type WorkbookRow } from '../data/workbooks';
+import type { SourceId } from '../data/create';
 import styles from '../WorkbookInThoughtSpot.module.css';
+
+const CARD_SOURCE: Record<string, SourceId> = { model: 'model', answer: 'answer', 'input-table': 'input-table', excel: 'upload' };
 
 // Library > Workbooks. Layout and copy from the PM's vision prototype, screen 1 (16 Oct):
 // header with New Workbook, four ways to start, and recent workbooks. Templates open from
@@ -40,7 +43,7 @@ const FILTERS = [
   { id: 'shared', label: 'Shared with me' },
 ];
 
-export const WorkbooksView: React.FC = () => {
+export const WorkbooksView: React.FC<{ onCreate: (source?: SourceId) => void }> = ({ onCreate }) => {
   const [filter, setFilter] = useState('all');
   // Templates sit behind a secondary button, not on the page (Vivek, 3 Nov: too many cards).
   const [templatesOpen, setTemplatesOpen] = useState(false);
@@ -58,13 +61,13 @@ export const WorkbooksView: React.FC = () => {
         </Vertical>
         <Horizontal gap={8} align="center">
           <Button variant="secondary" onClick={() => setTemplatesOpen(true)}>Explore templates</Button>
-          <Button variant="primary" icon="plus" iconPosition="leading">New Workbook</Button>
+          <Button variant="primary" icon="plus" iconPosition="leading" onClick={() => onCreate()}>New Workbook</Button>
         </Horizontal>
       </Horizontal>
 
       <div className={styles.cardGrid}>
         {START_OPTIONS.map((o) => (
-          <Card key={o.id} interactive>
+          <Card key={o.id} interactive onClick={() => onCreate(CARD_SOURCE[o.id])}>
             <Card.Body>
               <Vertical gap={8}>
                 <Icon name={o.icon} size="l" />

@@ -1,0 +1,81 @@
+.centered {
+  display: flex;
+  justify-content: center;
+  height: 100%;
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 760px;
+  height: 100%;
+  padding: var(--spacing-8) var(--spacing-6) var(--spacing-6);
+}
+
+.thread {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.composer {
+  flex-shrink: 0;
+  padding-top: var(--spacing-4);
+}
+
+.split {
+  display: flex;
+  height: 100%;
+}
+
+.chat {
+  display: flex;
+  flex-direction: column;
+  width: 400px;
+  flex-shrink: 0;
+  padding: var(--spacing-6);
+  border-right: 1px solid var(--rd-sys-color-border-subtle);
+}
+
+.canvas {
+  flex: 1;
+  min-width: 0;
+  padding: var(--spacing-4);
+  background: var(--rd-sys-color-background-sunken);
+}
+
+.checklist {
+  padding-left: var(--spacing-8);
+}
+
+.pending {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1px solid var(--rd-sys-color-border-default);
+}
+
+.upload {
+  padding: var(--spacing-2) 0;
+}
+
+/* Match pills, as the Apps question card shows them: success tint above 80%, sunken below. */
+.matchStrong,
+.matchWeak {
+  padding: 1px var(--spacing-2);
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-sm);
+  white-space: nowrap;
+}
+
+.matchStrong {
+  background: var(--rd-sys-color-background-success);
+  color: color-mix(in srgb, var(--rd-sys-color-content-success) 56%, var(--rd-sys-color-content-primary));
+}
+
+.matchWeak {
+  background: var(--rd-sys-color-background-sunken);
+  color: var(--rd-sys-color-content-secondary);
+}

@@ -1,0 +1,354 @@
+/* The clarifying question card, ported from the Spotter Refresh package
+   (src/prototypes/SpotterRefresh/components/ClarifyingQuestion.module.css).
+
+   Two things are ours rather than theirs, by decision:
+     • the step counter sits in the header, right, not in the footer left
+     • the footer's left slot carries "See all"
+
+   Everything else — the 40px row, the derived padding, the keyboard cursor, the
+   page-change motion, the enter hint and its mask — is theirs, unchanged. */
+
+.card {
+  width: 100%;
+  box-sizing: border-box;
+  padding: var(--spacing-3) var(--spacing-2) var(--spacing-4);
+  background: var(--rd-sys-color-background-raised);
+  border: 1px solid var(--rd-sys-color-border-subtle);
+  /* 20px — the same corner as the prompt bar it stacks on top of. There's no
+     token at 20, so both surfaces carry the literal value. */
+  border-radius: 20px;
+  box-shadow: var(--shadow-menu);
+  outline: none;
+
+  /* Option type scale — Body/Large on a 40px row. Tracking is Figma's -0.4%,
+     i.e. -0.004em, NOT -0.4px. */
+  --cq-option-font: var(--font-size-md);
+  --cq-option-line: var(--line-height-lg);
+  --cq-option-tracking: -0.004em;
+  --cq-row-height: 40px;
+
+  /* Page-change travel. Direction is set per step by the component. */
+  --cq-page-dist: 12px;
+  --cq-page-dir: 1;
+}
+
+/* ── Motion ───────────────────────────────────────────────────────────────────
+   Keyframes rather than transitions between classes: an animation plays as soon
+   as its element mounts, so there is no from-state to stage across two frames,
+   and the card cannot get stuck invisible if those frames never run. */
+
+@keyframes cqCardEnter {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes cqCardLeave {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(16px); }
+}
+
+.cardEnter { animation: cqCardEnter 180ms ease both; }
+.cardLeaving { animation: cqCardLeave 180ms ease both; }
+
+/* ── Header ───────────────────────────────────────────────────────────────── */
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-3);
+  min-height: 32px;
+  padding: 0 var(--spacing-3);
+}
+
+/* 16/24, per Figma 301:4441. Semibold rather than the spec's 550 because the
+   rows came up to 16 as well: at the same size, weight is the only thing left
+   separating a question from its answers, and half a step does not carry it. */
+.question {
+  margin: 0;
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-emphasis);
+  line-height: var(--line-height-lg);
+  letter-spacing: 0.064px;
+  font-feature-settings: 'cpsp' 1, 'case' 1;
+  color: var(--rd-sys-color-content-primary);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The counter, in the header per our own spec. */
+.pager {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  flex-shrink: 0;
+}
+
+.pagerCount {
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-sm);
+  letter-spacing: 0.072px;
+  color: var(--rd-sys-color-content-secondary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.pagerBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  /* Enabled and disabled are two tokens, not one token at two opacities. */
+  color: var(--rd-sys-color-content-secondary);
+}
+
+.pagerBtn:hover:not(:disabled) {
+  background: var(--rd-sys-color-background-ghost-hover);
+}
+
+.pagerBtn:disabled {
+  color: var(--rd-sys-color-content-tertiary);
+  cursor: default;
+}
+
+.pagerBtn:focus-visible {
+  outline: 2px solid var(--rd-sys-color-border-focus);
+  outline-offset: 1px;
+}
+
+/* ── Options ──────────────────────────────────────────────────────────────── */
+
+.options {
+  margin-top: var(--spacing-2);
+}
+
+/* The background is deliberately NOT transitioned — it is the keyboard cursor,
+   and it has to track the arrow keys exactly. */
+.row {
+  position: relative; /* anchors the enter hint out of the text flow */
+  display: flex;
+  align-items: flex-start; /* control sits on the first line, not the block centre */
+  gap: var(--spacing-3);
+  box-sizing: border-box;
+  min-height: var(--cq-row-height);
+  /* Derived, so a single-line row still measures exactly --cq-row-height and a
+     wrapped one grows by whole lines. */
+  padding: calc((var(--cq-row-height) - var(--cq-option-line)) / 2) var(--spacing-3);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  user-select: none;
+}
+
+@keyframes cqRowEnter {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.rowEnter { animation: cqRowEnter 180ms ease both; }
+
+/* Stepping between questions moves only the rows — frame, question, counter and
+   footer hold still, so the card reads as one object changing its choices. */
+
+@keyframes cqRowsOut {
+  to {
+    opacity: 0;
+    transform: translateX(calc(var(--cq-page-dist) * var(--cq-page-dir) * -1));
+  }
+}
+
+@keyframes cqRowsIn {
+  from {
+    opacity: 0;
+    transform: translateX(calc(var(--cq-page-dist) * var(--cq-page-dir)));
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.rowLeaving { animation: cqRowsOut 80ms ease both; }
+.rowArriving { animation: cqRowsIn 150ms ease both; }
+
+/* The wiggle's target, so the animation does not fight the Radiant Button's own
+   transitions. */
+.primaryWrap { display: flex; }
+
+@media (prefers-reduced-motion: reduce) {
+  .cardEnter,
+  .cardLeaving,
+  .rowEnter,
+  .rowLeaving,
+  .rowArriving {
+    animation: none;
+  }
+  .cardLeaving { opacity: 0; }
+}
+
+/* One row is always active — the keyboard cursor. Mouse hover moves it, so the
+   highlight never doubles up. */
+.rowActive {
+  background: var(--rd-sys-color-background-ghost-hover);
+}
+
+/* The Radiant control renders the box/circle only. `inert` keeps it out of the
+   tab order and hands every click to the row, which owns selection. Sized to the
+   line rather than offset, because Checkbox (20px) and Radio (16px) are not the
+   same height and matching the line box lands both on the same optical centre. */
+.control {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  height: var(--cq-option-line);
+}
+
+/* A mark that belongs to the row rather than to the control — a connector's
+   logo, a format's drawing. Same line box as the control, so it sits beside
+   line one of a label that wraps. */
+.leading {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  height: var(--cq-option-line);
+}
+
+/* A row whose mark is taller than a line of text: the format drawings are whole
+   pages at 64×44, because proportion is the thing being compared and a glyph
+   sized for legibility cannot carry it. Clamped to the 24px line box they
+   overflowed and ran into the row beneath, so these rows size to their content
+   and centre everything in it instead. */
+.rowMedia {
+  align-items: center;
+  min-height: 0;
+  padding-top: var(--spacing-2);
+  padding-bottom: var(--spacing-2);
+}
+
+.rowMedia .leading,
+.rowMedia .control {
+  height: auto;
+}
+
+.label {
+  font-family: var(--font-family-primary);
+  font-size: var(--cq-option-font);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--cq-option-line);
+  letter-spacing: var(--cq-option-tracking);
+  color: var(--rd-sys-color-content-primary);
+  overflow-wrap: break-word;
+  min-width: 0;
+  /* Always fills the rest of the row, so the fade below lands at the row's edge
+     rather than on the last word. */
+  flex: 1 1 auto;
+}
+
+/* What a row carries at its end: a match pill, a Connected badge, Connect. Same
+   line box again, so it sits beside line one of a wrapped label. */
+.trailing {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  min-height: var(--cq-option-line);
+}
+
+/* Enter affordance — on the active row only. Taken out of the text flow: as a
+   flex item it reserved width, so revealing it could push a word onto another
+   line, reflowing the label purely because the cursor arrived. */
+.enterHint {
+  position: absolute;
+  right: calc(var(--spacing-3) + 1px);
+  top: calc((var(--cq-row-height) - var(--cq-option-line)) / 2);
+  height: var(--cq-option-line);
+  display: flex;
+  align-items: center;
+  color: var(--rd-sys-color-content-secondary);
+  pointer-events: none;
+}
+
+/* The label fades out before the glyph rather than being shortened by it. `#000`
+   here is mask alpha, not a colour. */
+.rowActive .label {
+  --cq-hint-clear: 20px;
+  --cq-hint-ramp: 24px;
+  -webkit-mask-image: linear-gradient(
+    to right,
+    #000 calc(100% - var(--cq-hint-clear) - var(--cq-hint-ramp)),
+    transparent calc(100% - var(--cq-hint-clear))
+  );
+  mask-image: linear-gradient(
+    to right,
+    #000 calc(100% - var(--cq-hint-clear) - var(--cq-hint-ramp)),
+    transparent calc(100% - var(--cq-hint-clear))
+  );
+}
+
+/* A row that ends in something of its own keeps its full label: the glyph has
+   nowhere to sit, so nothing needs masking away. */
+.rowHasTrailing .enterHint { display: none; }
+.rowHasTrailing.rowActive .label { mask-image: none; -webkit-mask-image: none; }
+
+/* The freeform field is single-line, so shortening it cannot reflow anything. */
+.rowActive .otherInput {
+  padding-right: 20px;
+}
+
+/* "Something else…" reads as a placeholder until it is chosen. */
+.labelMuted {
+  color: var(--rd-sys-color-content-secondary);
+}
+
+.otherInput {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  padding: 0;
+  font-family: var(--font-family-primary);
+  font-size: var(--cq-option-font);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--cq-option-line);
+  letter-spacing: var(--cq-option-tracking);
+  color: var(--rd-sys-color-content-primary);
+  outline: none;
+}
+
+.otherInput::placeholder {
+  color: var(--rd-sys-color-content-secondary);
+}
+
+/* A step that is not a list of rows at all — the style picker's three cards. */
+.slot {
+  margin-top: var(--spacing-2);
+  padding: 0 var(--spacing-3);
+}
+
+/* ── Actions ──────────────────────────────────────────────────────────────── */
+
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-4);
+  min-height: 32px;
+  margin-top: var(--spacing-2);
+  padding: 0 var(--spacing-3);
+}
+
+.actionsRight {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  margin-left: auto;
+  /* Flush with the card's 8px inset, not the 12px row inset — the primary
+     button's own padding supplies the rest. */
+  margin-right: calc(-1 * var(--spacing-1));
+}
