@@ -5,6 +5,18 @@
   background: var(--rd-sys-color-background-base);
 }
 
+/* The Spotter chat screen: Radiance's spotterx pattern draws behind the page, so the shell
+   must be transparent there (the page itself is background-base). */
+/* Keeps the global header above the chat screen's Radiance wash. */
+.headerLayer {
+  position: relative;
+  z-index: 2;
+}
+
+.shellClear {
+  background: transparent;
+}
+
 .body {
   display: flex;
   flex: 1;

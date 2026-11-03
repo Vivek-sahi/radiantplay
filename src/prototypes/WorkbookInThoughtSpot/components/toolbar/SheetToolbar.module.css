@@ -1,0 +1,29 @@
+/* Figma spec: 40px tall, groups left-aligned with a divider between them, Expand on the right. */
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 40px;
+  padding: 0 var(--spacing-3);
+}
+
+.groups {
+  display: flex;
+  align-items: center;
+}
+
+.group {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  padding: 0 var(--spacing-2);
+}
+
+.group + .group {
+  border-left: 1px solid var(--rd-sys-color-border-subtle);
+}
+
+/* Neutral icons, as in the spec and Google Sheets: Radiant's tertiary button is brand blue. */
+.bar :global(button) {
+  color: var(--rd-sys-color-content-primary);
+}

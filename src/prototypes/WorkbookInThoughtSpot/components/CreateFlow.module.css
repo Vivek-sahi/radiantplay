@@ -1,5 +1,8 @@
+/* isolation: the spotterx wash draws at z-index -1; Radiant Play's page wrapper is white, so the
+   chat screen keeps the wash inside its own stacking context. */
 .root {
   position: relative;
+  isolation: isolate;
   height: 100%;
 }
 

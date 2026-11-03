@@ -8,13 +8,13 @@ import { Footer } from './grid/Footer';
 import { themeVars } from './grid/theme';
 import type { CellEdit, Column, MenuEntry, Row } from './grid/types';
 import type { Sheet } from './grid/sheet';
-import { DataSheetToolbar } from './toolbar/DataSheetToolbar';
+import { SheetToolbar } from './toolbar/SheetToolbar';
 import { blankColumns, blankRows, modelColumns, modelRows } from '../data/sheetData';
 import './grid/grid.css';
 import styles from './WorkbookLive.module.css';
 
 // The live workbook (Vivek, 3 Nov 2026), in Google Sheets' order:
-//   title · action toolbar (Komal's, from SearchDataOnDataModelFinal) · formula bar ·
+//   title · toolbar (ThoughtSpot's spreadsheet toolbar spec, Figma 5LFnxv5fom9nu64N48aJzl) · formula bar ·
 //   grid (Pratheek's Klimt-Grid prototype: select, drag-select, edit, column menus, keyboard) ·
 //   footer with sheet tabs, the sheet list and Sum / Average / Count of the selection.
 // Edits are applied straight to the sheet; saving and write-back come later.
@@ -113,13 +113,7 @@ export const WorkbookLive: React.FC<WorkbookLiveProps> = ({ name, blank }) => {
       </Horizontal>
 
       <div className={styles.toolbar}>
-        <DataSheetToolbar
-          expanded={false}
-          onDownloadCsv={() => undefined}
-          onUndo={() => undefined}
-          onRedo={() => undefined}
-          onSort={(d) => d !== 'clear' && sortActive(d === 'asc' ? 1 : -1)}
-        />
+        <SheetToolbar onAction={(id) => id === 'sort' && sortActive(1)} />
       </div>
 
       <Horizontal gap={8} align="center" className={styles.formulaBar}>

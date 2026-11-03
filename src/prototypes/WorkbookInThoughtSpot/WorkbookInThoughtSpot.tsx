@@ -64,8 +64,10 @@ const WorkbookInThoughtSpot: React.FC = () => {
   };
 
   return (
-    <div className={styles.shell}>
-      <GlobalHeader theme="auto" searchPlaceholder="Search your library" notificationCount={1} userName="Vivek Sahi" showHamburger={page === 'create'} onHamburgerClick={() => setNavOpen((o) => !o)} />
+    <div className={`${styles.shell} ${page === 'create' ? styles.shellClear : ''}`}>
+      <div className={styles.headerLayer}>
+        <GlobalHeader theme="auto" searchPlaceholder="Search your library" notificationCount={1} userName="Vivek Sahi" showHamburger={page === 'create'} onHamburgerClick={() => setNavOpen((o) => !o)} />
+      </div>
       <div className={styles.body}>
         {(page !== 'create' || navOpen) && (
           <AppSidebar
