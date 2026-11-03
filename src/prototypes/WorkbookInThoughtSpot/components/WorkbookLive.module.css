@@ -1,0 +1,66 @@
+.frame {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--rd-sys-color-background-base);
+  border: 1px solid var(--rd-sys-color-border-subtle);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.titleBar {
+  padding: var(--spacing-3) var(--spacing-4);
+  border-bottom: 1px solid var(--rd-sys-color-border-subtle);
+}
+
+.draft {
+  padding: 0 var(--spacing-2);
+  border-radius: var(--radius-sm);
+  background: var(--rd-sys-color-background-sunken);
+  color: var(--rd-sys-color-content-secondary);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-sm);
+}
+
+.toolbar {
+  border-bottom: 1px solid var(--rd-sys-color-border-subtle);
+}
+
+.formulaBar {
+  padding: var(--spacing-2) var(--spacing-4);
+  border-bottom: 1px solid var(--rd-sys-color-border-subtle);
+  font-size: var(--font-size-sm);
+  min-height: 36px;
+}
+
+.cellRef {
+  min-width: 48px;
+  color: var(--rd-sys-color-content-secondary);
+}
+
+.fx {
+  font-style: italic;
+  color: var(--rd-sys-color-content-tertiary);
+}
+
+.cellText {
+  color: var(--rd-sys-color-content-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gridArea {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.gridWrap {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}

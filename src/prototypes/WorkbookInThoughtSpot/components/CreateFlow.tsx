@@ -7,6 +7,7 @@ import { FileUploader } from '@components/FileUploader';
 import { ClarifyCard, CLARIFY_EXIT_MS, type ClarifyAnswer, type ClarifyStepView } from './ClarifyCard';
 import { AnsweredQuestions } from './AnsweredQuestions';
 import { WorkbookLoading } from './WorkbookLoading';
+import { WorkbookLive } from './WorkbookLive';
 import { ActionRow, AskedAQuestion, ShowWork, StreamingText, WorkingChecklist, agentTextStyle, streamMs, userBubbleStyle } from './ChatTurns';
 import { CHAT_QUESTION, SOURCES, buildSteps, type SourceId } from '../data/create';
 import styles from './CreateFlow.module.css';
@@ -18,7 +19,7 @@ import styles from './CreateFlow.module.css';
 //   customer has their own, so a ranked list of ours would be wrong.
 // - Upload asks for the file in the card. Blank workbook needs nothing more.
 // - A start card on the Workbooks page has already picked the source, so the card is skipped.
-// - No plan card. The workbook opens on the right in its loading state.
+// - No plan card. The workbook opens on the right loading, then goes live when the build ends.
 // - SpotterX look: the Radiance spotterx pattern behind the chat, no left nav.
 // - The thread and composer are the Apps ones: Show work, streaming text, the action row, the
 //   Working checklist, and the product composer (PromptBar) with the card docked above it.
@@ -212,7 +213,7 @@ export const CreateFlow: React.FC<CreateFlowProps> = ({ seedPrompt, startSource,
             {composer}
           </div>
           <div className={styles.canvas}>
-            <WorkbookLoading name={workbookName} status={built ? 'Loading live data' : 'Loading Sheet 1'} />
+            {built ? <WorkbookLive name={workbookName} blank={src === 'blank'} /> : <WorkbookLoading name={workbookName} status="Loading Sheet 1" />}
           </div>
         </div>
       )}
