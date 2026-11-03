@@ -39,7 +39,9 @@ export interface WorkbookHeaderProps {
   onDelete: () => void;
 }
 
-const KIND_LABEL = { live: 'Live', input: 'Input', local: 'Local' } as const;
+// Tab kind icons (Vivek, 3 Nov): Live = warehouse connection, Input = editable, Local = stored in this workbook.
+const KIND_ICON = { live: 'database', input: 'pencil', local: 'doc', app: 'apps' } as const;
+const KIND_LABEL = { live: 'Live', input: 'Input', local: 'Local', app: 'App' } as const;
 
 export const WorkbookHeader: React.FC<WorkbookHeaderProps> = ({ wb, onRename, publishCount, dirty, unsavedInputs, onPublish, versions, onRestore, onCopy, onDownload, onSchedule, onDelete }) => {
   const [info, setInfo] = useState(false);
@@ -64,16 +66,7 @@ export const WorkbookHeader: React.FC<WorkbookHeaderProps> = ({ wb, onRename, pu
       </Horizontal>
 
       <Horizontal gap={8} align="center">
-        <Tooltip content={published ? 'Share this workbook' : 'Publish first. A draft isn’t shared; publishing makes the version people see.'} showDelay={300} hideDelay={0}>
-          <Button variant="secondary" size="small" disabled={!published} onClick={() => setShare(true)}>Share</Button>
-        </Tooltip>
-        {publishReason ? (
-          <Tooltip content={publishReason} showDelay={300} hideDelay={0}>
-            <Button variant="primary" size="small" disabled={!canPublish} onClick={onPublish}>{publishLabel}</Button>
-          </Tooltip>
-        ) : (
-          <Button variant="primary" size="small" onClick={onPublish}>{publishLabel}</Button>
-        )}
+        {/* ⋯ sits before Share (Vivek, 3 Nov) */}
         <ActionMenu
           placement="bottom-end"
           trigger={<Button className={styles.quiet} variant="tertiary" size="small" iconOnly icon="more" iconPosition="leading">More workbook actions</Button>}
@@ -88,6 +81,16 @@ export const WorkbookHeader: React.FC<WorkbookHeaderProps> = ({ wb, onRename, pu
             <ActionMenu.Item label="Delete" icon={<Icon name="delete" size="s" />} destructive onClick={() => setConfirmDelete(true)} />
           </ActionMenu.Group>
         </ActionMenu>
+        <Tooltip content={published ? 'Share this workbook' : 'Publish first. A draft isn’t shared; publishing makes the version people see.'} showDelay={300} hideDelay={0}>
+          <Button variant="secondary" size="small" disabled={!published} onClick={() => setShare(true)}>Share</Button>
+        </Tooltip>
+        {publishReason ? (
+          <Tooltip content={publishReason} showDelay={300} hideDelay={0}>
+            <Button variant="primary" size="small" disabled={!canPublish} onClick={onPublish}>{publishLabel}</Button>
+          </Tooltip>
+        ) : (
+          <Button variant="primary" size="small" onClick={onPublish}>{publishLabel}</Button>
+        )}
       </Horizontal>
 
       <Modal isOpen={info} onClose={() => setInfo(false)} title="Workbook details" size="medium">
@@ -96,7 +99,7 @@ export const WorkbookHeader: React.FC<WorkbookHeaderProps> = ({ wb, onRename, pu
           <div className={styles.sources}>
             {wb.sheets.map((s) => (
               <div key={s.id} className={styles.sourceRow}>
-                <span className={`${styles.dot} ${styles[s.kind]}`} />
+                <Icon name={KIND_ICON[s.kind]} size="s" className={`${styles.kindIcon} ${styles[s.kind]}`} />
                 <span className={styles.sourceName}>{s.name}</span>
                 <span className={styles.sourceKind}>{KIND_LABEL[s.kind]}</span>
                 <span className={styles.sourceWhere}>{s.source ?? (s.kind === 'local' ? 'Only in this workbook' : '')}</span>

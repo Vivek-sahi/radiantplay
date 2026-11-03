@@ -1,0 +1,733 @@
+/* ── Panel shell ─────────────────────────────────────────────────────────────
+   Both states share one DOM tree so the three persistent controls — panel
+   toggle, new chat, settings — are the same elements before and after collapse.
+   That is what keeps their y position fixed through the transition.
+
+   Vertical geometry, identical in both states:
+     header  20 top + 32 toggle + 16 bottom  → toggle centre at y 36
+     new chat row  40 tall, starts at y 68   → icon centre at y 88
+     footer  20 top + 32 button + 20 bottom  → gear centre 36 above the bottom
+
+   Horizontal geometry:
+     new chat icon stays at x 24 in both states — the row inset drops 24 → 16
+     while the leading slot grows 16 → 32, so the icon itself never moves.
+     The toggle and the gear both travel left, as documented.
+   ────────────────────────────────────────────────────────────────────────── */
+
+.panel {
+  --panel-duration: 220ms;
+  --panel-ease: cubic-bezier(0.4, 0, 0.2, 1);
+  /* Text clears out faster than the width animates, so labels are gone before
+     the panel is narrow enough to squeeze them. */
+  --panel-fade: 110ms;
+  /* Section disclosure — easeOutCubic both ways, short enough that the
+     decelerating tail lands instead of dragging. */
+  --section-duration: 200ms;
+  --section-ease: cubic-bezier(0.33, 1, 0.68, 1);
+
+  --panel-width: 260px;
+  --rail-width: 64px;
+  --panel-border: 1px;
+  --control-size: 32px;
+
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: var(--panel-width);
+  flex-shrink: 0;
+  box-sizing: border-box;
+  background: var(--rd-sys-color-background-on-base);
+  border-right: 1px solid var(--rd-sys-color-border-subtle);
+  font-family: var(--font-family-primary);
+  overflow: hidden;
+  transition: width var(--panel-duration) var(--panel-ease);
+}
+
+.collapsed {
+  width: var(--rail-width);
+}
+
+/* Every control in the panel has to name the family itself.
+ *
+ * Browsers do not inherit font-family into form controls — a <button> takes the
+ * UA default regardless of what its ancestors set — so `.panel` declaring Plain
+ * above does not reach any of these, and their labels were rendering in Arial.
+ * The portalled menus are outside `.panel` entirely and need it for the same
+ * reason. Sizes and weights are already on tokens; this is only the family. */
+.itemMain,
+.itemAction,
+.iconButton,
+.sectionHeader,
+.settingsButton,
+.rowMenu,
+.settingsMenuPanel {
+  font-family: var(--font-family-primary);
+}
+
+/* ── Header ──────────────────────────────────────────────────────────────── */
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  flex-shrink: 0;
+  box-sizing: border-box;
+  /* 20 / 20 / 16 / 24 — the 32px toggle sets the row height. */
+  padding: var(--spacing-5) var(--spacing-5) var(--spacing-4) var(--spacing-6);
+  transition: padding var(--panel-duration) var(--panel-ease),
+    gap var(--panel-duration) var(--panel-ease);
+}
+
+/* 16 + 32 toggle + 16 = 64. The gap has to go too, or it offsets the toggle
+   past the 24px icon line once the title has collapsed to zero width. */
+.collapsed .header {
+  padding-left: var(--spacing-4);
+  padding-right: var(--spacing-4);
+  gap: 0;
+}
+
+.title {
+  /* Grows to push the toggle right when expanded, shrinks to nothing when the
+     panel narrows — so the toggle glides left instead of being pushed out. */
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-lg);
+  letter-spacing: -0.004em;
+  color: var(--rd-sys-color-content-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  transition: opacity var(--panel-fade) var(--panel-ease);
+}
+
+.collapsed .title {
+  opacity: 0;
+}
+
+/* ── Icon button (32px container, 16px icon) ─────────────────────────────── */
+
+.iconButton {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--rd-sys-color-content-primary);
+  cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+.iconButton:hover {
+  background: var(--rd-sys-color-background-ghost-hover);
+}
+
+.iconButton:focus-visible {
+  outline: 2px solid var(--rd-sys-color-border-focus);
+  outline-offset: 1px;
+}
+
+/* Collapsed, every control reads as a secondary icon button. */
+.collapsed .header .iconButton {
+  background: var(--rd-comp-color-button-secondary-default);
+}
+
+.collapsed .header .iconButton:hover {
+  background: var(--rd-comp-color-button-secondary-hover);
+}
+
+/* ── Scroll region ───────────────────────────────────────────────────────── */
+
+.list {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  /* No scrollbar gutter — rows run the full panel width. Figma treats the
+     scroll indicator as an overlay on top of content, not reserved space. */
+  scrollbar-width: none;
+}
+
+.list::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+/* Everything below new chat fades out on collapse. `visibility` also drops
+   these rows out of the tab order once they are invisible. */
+.hideOnCollapse {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity var(--panel-fade) var(--panel-ease);
+}
+
+.collapsed .hideOnCollapse {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity var(--panel-fade) var(--panel-ease),
+    visibility 0s linear var(--panel-fade);
+}
+
+/* ── Section header ──────────────────────────────────────────────────────── */
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 30px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  padding: 0 var(--spacing-6);
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--rd-sys-color-content-secondary);
+  transition: color 120ms ease;
+}
+
+/* Label and chevron both inherit currentColor, so they lift together. */
+.sectionHeader:hover {
+  color: var(--rd-sys-color-content-primary);
+}
+
+.sectionHeaderLabel {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-sm);
+  letter-spacing: -0.006em;
+  white-space: nowrap;
+}
+
+.sectionHeaderChevron {
+  display: flex;
+  align-items: center;
+  transition: transform 160ms ease;
+}
+
+.sectionHeaderChevronClosed {
+  transform: rotate(-90deg);
+}
+
+.sectionHeader:focus-visible {
+  outline: 2px solid var(--rd-sys-color-border-focus);
+  outline-offset: -2px;
+}
+
+/* ── List item ───────────────────────────────────────────────────────────── */
+
+.item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  width: 100%;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  /* 10 / 32 / 10 / 24. The 40px row height is a consequence of the padding and
+     the label's 20px line-height (10 + 20 + 10), not a fixed height. 10px has
+     no spacing token — it is (40 - 20) / 2. */
+  padding: 10px var(--spacing-8) 10px var(--spacing-6);
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: padding-right 120ms ease, background-color 120ms ease;
+}
+
+.item:hover {
+  background: var(--rd-sys-color-background-ghost-hover);
+}
+
+/* The 32px resting inset is the label's boundary. Once the control is revealed
+   it becomes the thing being inset, so the padding tightens to 12px — otherwise
+   the control would sit ~48px off the edge. Also applies while a menu is open,
+   since the control stays visible after the pointer leaves. */
+.item:hover,
+.item:has(.itemAction[aria-expanded='true']) {
+  padding-right: var(--spacing-3);
+}
+
+/* Opened without a preceding hover, this padding would still be animating
+   32 → 12 when the menu measures its anchor, carrying the trigger ~20px with it.
+   Snapping it keeps the trigger's rect final at measure time. */
+.item:has(.itemAction[aria-expanded='true']) {
+  transition: none;
+}
+
+.itemActive,
+.itemActive:hover {
+  background: var(--rd-sys-color-background-ghost-highlight);
+}
+
+/* The row's primary action. Fills the content box so the whole row is the hit
+   target, leaving the overflow trigger as a sibling rather than a nested
+   button. */
+.itemMain {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  /* 6px has no spacing token. Chosen against the attention dot, which sits in a
+     12px slot: the token 8 left the dot reading as parked in a gutter rather
+     than attached to the name. */
+  gap: 6px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.itemMain:focus-visible {
+  outline: 2px solid var(--rd-sys-color-border-focus);
+  outline-offset: -2px;
+}
+
+/* Collapsed, the pill moves from the row onto the leading slot itself. */
+.collapsed .item,
+.collapsed .item:hover {
+  background: transparent;
+}
+
+/* 20px slot on every row, so all labels start at x 50.
+   Glyphs are left-aligned rather than centred, and that is load-bearing: a 16px
+   glyph flush at x 24 has its centre at 32, which is exactly where the collapsed
+   rail centres its 32px controls. Centring it in the slot would push the centre
+   to 34 and force either a 2px jump during the collapse or a rail that sits 2px
+   off-centre. The upside is that every leading glyph shares a left edge. */
+.itemLeading {
+  position: relative;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  color: var(--rd-sys-color-content-primary);
+  transition: color 120ms ease;
+}
+
+/* Secondary while open, primary once the rail is all that's left. */
+.itemLeadingSecondary {
+  color: var(--rd-sys-color-content-secondary);
+}
+
+.collapsed .itemLeadingSecondary {
+  color: var(--rd-sys-color-content-primary);
+}
+
+/* The collapsed secondary-button pill. A fixed 32px circle centred on the glyph
+   that only fades — nothing resizes, so the row inset and slot can both stay put
+   and the icon never moves. Sized absolutely rather than by a negative inset, so
+   it stays 32px whatever the slot around it measures. */
+.itemLeading::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  /* Centred on the 16px glyph (slot-x 8), not the 20px slot — that is what puts
+     the pill at row-x 16..48, matching the rail's other controls. */
+  left: 8px;
+  width: var(--control-size);
+  height: var(--control-size);
+  transform: translate(-50%, -50%);
+  border-radius: var(--radius-full);
+  background: var(--rd-comp-color-button-secondary-default);
+  opacity: 0;
+  transition: opacity var(--panel-fade) var(--panel-ease),
+    background-color 120ms ease;
+}
+
+.collapsed .itemLeading::before {
+  opacity: 1;
+}
+
+.collapsed .item:hover .itemLeading::before {
+  background: var(--rd-comp-color-button-secondary-hover);
+}
+
+/* Both the pill and the glyph are painted; positioning the glyph too keeps it
+   above the absolutely-positioned pill without needing a z-index. */
+.itemLeading > * {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.itemLabel {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-md);
+  color: var(--rd-sys-color-content-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: opacity var(--panel-fade) var(--panel-ease);
+}
+
+.collapsed .itemLabel {
+  opacity: 0;
+}
+
+/* Selected rows step up from body-normal (14/20, 400) to its bold counterpart
+   at the same size, content-label-subhead (14/20, 600). Applies to analysts and
+   chats alike. */
+.itemActive .itemLabel {
+  color: var(--rd-sys-color-content-brand);
+  font-weight: var(--font-weight-semibold);
+}
+
+.itemActive .itemLeading {
+  color: var(--rd-sys-color-content-brand);
+}
+
+/* ── Collapsible section body ────────────────────────────────────────────── */
+
+/* A mask, not a squeeze: only the container's height animates, clipping the
+   rows from the bottom like a blind. The content itself never moves or fades —
+   every row holds its position and opacity for as long as it is visible. */
+.collapsible {
+  overflow: hidden;
+  transition: height var(--section-duration) var(--section-ease);
+}
+
+/* Measurement target for the height animation. Deliberately unstyled — any
+   transform or opacity here would reintroduce the content movement. */
+.collapsibleInner {
+  display: flow-root;
+}
+
+/* Trailing overflow action — a 32px control around a 16px glyph, revealed on
+   hover / keyboard focus. It takes layout width only while visible, so the
+   label runs full width at rest and gives up room when the control appears. */
+.itemAction {
+  width: 0;
+  height: var(--control-size);
+  /* The 32px control must not grow the row's 20px content box, or the row would
+     become 44px. -6px block margins pull its layout contribution back to 20px
+     while it still paints at 32px. */
+  margin-block: -6px;
+  /* Cancels the flex gap while hidden, so a hidden control costs the label
+     nothing at all. */
+  margin-left: calc(-1 * var(--spacing-2));
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--rd-sys-color-content-primary);
+  cursor: pointer;
+  opacity: 0;
+  overflow: hidden;
+  transition: opacity 120ms ease, width 120ms ease, margin-left 120ms ease,
+    background-color 120ms ease;
+}
+
+/* Stays out while its menu is open, even once the pointer has left the row. */
+.item:hover .itemAction,
+.itemAction:focus-visible,
+.itemAction[aria-expanded='true'] {
+  width: var(--control-size);
+  margin-left: 0;
+  opacity: 1;
+}
+
+.itemAction[aria-expanded='true'] {
+  background: var(--rd-sys-color-background-subtle);
+  /* Opened without a preceding hover (keyboard, or a click straight onto the
+     control), the width would still be animating 0 → 32 when the menu measures
+     its anchor, placing it ~17px off. Snapping the width keeps the rect final. */
+  transition: none;
+}
+
+/* Portalled menu panel. Positioned fixed against the trigger because the row is
+   inside both a clipped section and a scroll container. */
+.rowMenu {
+  position: fixed;
+  z-index: 1000;
+}
+
+.itemAction:hover {
+  background: var(--rd-sys-color-background-subtle);
+}
+
+/* ── Avatars ─────────────────────────────────────────────────────────────── */
+
+/* Fills whatever leading slot it sits in, so avatar sizing lives in one place. */
+.monogram {
+  width: 100%;
+  height: 100%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  line-height: 1;
+}
+
+.monogramPurple {
+  background: var(--rd-sys-color-background-accent-purple-subtle);
+  color: var(--rd-sys-color-content-accent-purple);
+}
+
+.monogramBlue {
+  background: var(--rd-sys-color-background-accent-blue);
+  color: var(--rd-sys-color-content-accent-blue);
+}
+
+/* ── Footer ──────────────────────────────────────────────────────────────── */
+
+.footer {
+  flex-shrink: 0;
+  box-sizing: border-box;
+  padding: var(--spacing-5);
+  border-top: 1px solid var(--rd-sys-color-border-subtle);
+  transition: padding var(--panel-duration) var(--panel-ease),
+    border-top-color var(--panel-fade) var(--panel-ease);
+}
+
+/* 16 + 32 button + 16 = 64. The divider is expanded-only. */
+.collapsed .footer {
+  padding-left: var(--spacing-4);
+  padding-right: var(--spacing-4);
+  border-top-color: transparent;
+}
+
+.settingsButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-2);
+  /* An explicit width, not 100%. A percentage is interpolated against a
+     containing block that is itself animating, which compounds into a curve
+     that ran the gear ~6px past its final position before pulling it back. */
+  width: calc(
+    var(--panel-width) - var(--panel-border) - 2 * var(--spacing-5)
+  );
+  height: var(--control-size);
+  padding: 0 var(--spacing-3);
+  border: none;
+  border-radius: var(--radius-full);
+  background: var(--rd-comp-color-button-secondary-default);
+  color: var(--rd-sys-color-content-primary);
+  cursor: pointer;
+  overflow: hidden;
+  transition: width var(--panel-duration) var(--panel-ease),
+    padding var(--panel-duration) var(--panel-ease),
+    gap var(--panel-duration) var(--panel-ease), background-color 120ms ease;
+}
+
+/* 32px square puts the centred gear at x 24, matching the icons above it. */
+.collapsed .settingsButton {
+  width: var(--control-size);
+  padding: 0;
+  gap: 0;
+}
+
+.settingsButton > svg {
+  flex-shrink: 0;
+}
+
+.settingsButton:hover {
+  background: var(--rd-comp-color-button-secondary-hover);
+}
+
+.settingsButton:focus-visible {
+  outline: 2px solid var(--rd-sys-color-border-focus);
+  outline-offset: 1px;
+}
+
+.settingsLabel {
+  /* Tracks the rendered width of "Settings" at 14px (50.6px). Anything larger
+     leaves dead range at the head of the transition, so the label sits at full
+     width and then collapses late — which shoved the centred gear back to the
+     right mid-flight. Raise this if the string gets longer. */
+  max-width: 52px;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-md);
+  white-space: nowrap;
+  overflow: hidden;
+  transition: max-width var(--panel-duration) var(--panel-ease),
+    opacity var(--panel-fade) var(--panel-ease);
+}
+
+.collapsed .settingsLabel {
+  max-width: 0;
+  opacity: 0;
+}
+
+/* ── Settings menu ───────────────────────────────────────────────────────────
+   Local rows matching the Radiant menu-item metrics — 8/12 padding, 14/20 text
+   — because two of these rows need shapes Menu.Item doesn't render. */
+
+/* Matches the Settings trigger's width so the two share both edges.
+   Written out rather than derived: this panel is portalled to document.body,
+   outside .panel, so --panel-width and friends don't resolve here. Keep in step
+   with .settingsButton if the panel width changes. */
+.settingsMenuPanel {
+  width: 219px;
+}
+
+.settingsItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-3);
+  width: 100%;
+  box-sizing: border-box;
+  padding: var(--spacing-2) var(--spacing-3);
+  border: none;
+  background: transparent;
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-md);
+  color: var(--rd-sys-color-content-primary);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 120ms ease;
+}
+
+.settingsItem:hover {
+  background: var(--rd-sys-color-background-sunken);
+}
+
+.settingsItem:focus-visible {
+  outline: 2px solid var(--rd-sys-color-border-focus);
+  outline-offset: -2px;
+  background: var(--rd-sys-color-background-sunken);
+}
+
+.settingsItemIcon {
+  display: flex;
+  flex-shrink: 0;
+  color: var(--rd-sys-color-content-secondary);
+}
+
+/* Row wrapper for the toggle. The control is a <label> wrapping a checkbox, so
+   it cannot live inside a <button> row like the others. */
+.settingsToggleRow {
+  display: flex;
+  width: 100%;
+  box-sizing: border-box;
+  padding: var(--spacing-2) var(--spacing-3);
+}
+
+.settingsToggle {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+}
+
+/* ── Reduced motion ─────────────────────────────────────────────────────────
+   Collapse becomes an instant state change rather than a slide. */
+
+@media (prefers-reduced-motion: reduce) {
+  .panel {
+    --panel-duration: 1ms;
+    --panel-fade: 1ms;
+    --section-duration: 1ms;
+  }
+}
+
+/* ── Attention dot ────────────────────────────────────────────────────────────
+   Something in this conversation is waiting on the user.
+
+   It takes the leading slot, but a much narrower one than the analyst glyphs:
+   12px, holding the 8px dot with 2px of slack either side. With .itemMain's 6px
+   gap that puts the dot at x 26 and a flagged label at x 42 — 8px inside where
+   the rows with glyphs start their labels. Deliberate, and the alignment was
+   given up on purpose: a dot is a marker, not a glyph, and anything wide enough
+   to line the labels up left it reading as parked in a gutter rather than
+   attached to the name it is marking.
+
+   It opens that slot on arrival, overshooting and settling onto it, so the label
+   visibly springs right: the movement is what catches the eye of someone scanning
+   the list. The dot itself is static once it lands.
+
+   Two nested elements on purpose: the outer one animates layout (the push), the
+   inner one is the dot. */
+
+.itemAttention {
+  /* 2px of slack either side of the dot, centred. */
+  width: 12px;
+  justify-content: center;
+  overflow: hidden;
+  animation: navDotOvershoot 560ms linear both;
+}
+
+/* Static. The arrival is the whole signal — the row moving is what catches the
+   eye, and a dot that keeps pulsing after it lands competes with the content
+   instead of pointing at it. */
+.itemAttentionDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--rd-sys-color-content-warning);
+  flex-shrink: 0;
+}
+
+/* Flings the slot well past its resting width, then lands on it — one overshoot,
+   no oscillation. The two per-keyframe curves are what make it asymmetric: a snappy
+   one out, then a long decelerate down onto the target. Monotonic after the peak,
+   so it never dips below where it settles.
+
+   The negative margin cancels .itemMain's 6px gap so the push starts at a true
+   zero instead of jumping the instant the dot mounts. */
+@keyframes navDotOvershoot {
+  0% {
+    width: 0;
+    margin-right: -6px;
+    animation-timing-function: cubic-bezier(0.16, 0.84, 0.3, 1);
+  }
+  /* The overshoot — 8px past where it lands. */
+  26% {
+    width: 20px;
+    margin-right: 0;
+    animation-timing-function: cubic-bezier(0.33, 0, 0.15, 1);
+  }
+  100% {
+    width: 12px;
+    margin-right: 0;
+  }
+}
+
+/* Collapsed there is no label to push, so the slot just sits at its resting
+   width. */
+.collapsed .itemAttention {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* No arrival, but the dot still has to be there. */
+  .itemAttention {
+    animation: none;
+  }
+}
+
+/* A host is driving the arrival from script — stand the CSS animation down so the
+   two don't both claim `animation`. */
+.itemAttentionScripted {
+  animation: none;
+}

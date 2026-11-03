@@ -1,0 +1,121 @@
+/* Spotter's zero state. Geometry from the Radiance Home bundle's `.home-stack`. */
+
+.landing {
+  /* Radiance `home` pattern parent: position relative, isolation isolate. */
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  min-height: 0;
+  padding: 0 var(--spacing-6) var(--spacing-3);
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* Entry motion — see landingIn. */
+.hero,
+.column,
+.disclaimer {
+  animation: landingIn 320ms cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+
+/* Entry motion — the same 320ms curve the response blocks use, so arriving on a
+   landing reads like the rest of the product rather than a cut.
+ *
+ * Applied to the content, never to `.landing` itself. That element is the glow's
+ * parent, and an opacity on it would create a stacking context that traps the
+ * glow's `z-index: -1` layers inside — they would paint over the left panel
+ * instead of behind it.
+ *
+ * `to` ends on `transform: none`, not translateY(0): a lingering transform makes
+ * a containing block, which would trap the starter card's `position: fixed`
+ * inside the column and break its measured-rect morph. */
+@keyframes landingIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero,
+  .column,
+  .disclaimer {
+    animation-duration: 1ms;
+  }
+}
+
+/* The hero takes the top third and pushes its copy to the bottom of that band,
+   so the headline sits just above the prompt bar however tall the window is. */
+.hero {
+  display: flex;
+  flex: 0 0 33.3333%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding-bottom: var(--spacing-6);
+  text-align: center;
+}
+
+/* Title/Page title. */
+.title {
+  margin: 0;
+  font-family: var(--font-family-primary);
+  font-size: 24px;
+  font-weight: var(--font-weight-emphasis);
+  line-height: 32px;
+  letter-spacing: -0.004em;
+  color: var(--rd-sys-color-content-primary);
+}
+
+.brand {
+  color: var(--rd-sys-color-content-brand);
+}
+
+/* Content sits above the glow, which paints at z-index -1. */
+.column {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 800px;
+  min-width: 0;
+}
+
+.promptArea {
+  width: 100%;
+}
+
+.chipsArea {
+  margin-top: var(--spacing-6);
+}
+
+/* `margin-top: auto` pushes it to the bottom of the canvas — it is a sibling of
+   the hero and the prompt column, so it takes whatever space is left over
+   instead of sitting under the chips. */
+.disclaimer {
+  margin: auto 0 0;
+  padding-top: var(--spacing-4);
+  font-family: var(--font-family-primary);
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--rd-sys-color-content-secondary);
+  text-align: center;
+}
+
+.disclaimerLink {
+  color: var(--rd-sys-color-content-brand);
+  text-decoration: none;
+}
+
+.disclaimerLink:hover {
+  text-decoration: underline;
+}

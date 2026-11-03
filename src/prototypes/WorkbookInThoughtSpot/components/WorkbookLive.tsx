@@ -1,14 +1,16 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { CompactSelection, type GridSelection } from '@glideapps/glide-data-grid';
 import { SheetGrid, type SheetGridHandle } from './SheetGrid';
 import { FormulaBar, type FormulaBarHandle } from './FormulaBar';
 import { SheetFooter, type Aggregate, type SheetAction } from './SheetFooter';
 import { SheetToolbar } from './toolbar/SheetToolbar';
+import { PlanApp } from './app/PlanApp';
 import { WorkbookHeader } from './WorkbookHeader';
 import { CreatePivotDialog, InsertFunctionDialog, PinDialog } from './WorkbookDialogs';
 import { PivotPanel } from './PivotPanel';
 import { colLetter, parseRef, refsIn } from '../engine/formula';
 import {
+  addAppSheet, makeInputSheet, type AppSpec,
   addCsvSheet, addRule, addSheet, createPivot, setPivot, sheetRange, defineName, deleteSheet, duplicateSheet, lastDataRow, moveSheet, pinLiveness, renameSheet, setFormat, sheetCsv, sortRows, typeOf, rawOf, readOnlyReason, refFor, setCell, shiftFormula, valueOf, type ColFormat, type Workbook,
 } from '../engine/workbook';
 import styles from './WorkbookLive.module.css';
@@ -50,9 +52,39 @@ export interface WorkbookLiveProps {
   publishedAlready?: boolean;
   /** Leave the workbook after it's deleted. */
   onDeleted?: () => void;
+  /** Lets Spotter edit this workbook through the same engine as the user's own edits. */
+  agent?: React.Ref<WorkbookAgent>;
 }
 
-export const WorkbookLive: React.FC<WorkbookLiveProps> = ({ initial, publishedAlready, onDeleted }) => {
+/** What Spotter can do to an open workbook (Vivek, 3 Nov: the agent-led edit flow). Each action is one
+ *  undo step, makes the draft dirty like a hand edit, and shows the user where it happened. */
+export interface WorkbookAgent {
+  /** Adds a titled column formula beside a Live tab's data. Returns the column, or null if the sheet is missing. */
+  addColumnFormula: (sheetName: string, title: string, formula: string) => { col: number; rows: number } | null;
+  /** Types a value into one cell (sheet row r, row 1 = header), then shows it. */
+  setValue: (sheetName: string, c: number, r: number, text: string) => void;
+  /** Goes to a tab and selects a range (sheet rows), so the user sees what Spotter is talking about. */
+  show: (sheetName: string, c1: number, c2: number, r1: number, r2: number) => void;
+  /** A red-to-green colour scale over one column's rows. */
+  colourScale: (sheetName: string, c: number, r1: number, r2: number) => void;
+  /** A new pivot tab: one value summed by rows × columns. Returns the new tab's name. */
+  pivot: (sourceName: string, rows: string, columns: string, value: string) => string | null;
+  publish: () => void;
+  /** Pins a whole tab to a Liveboard. Says whether the tile stays live. */
+  pin: (sheetName: string, liveboard: string) => { live: boolean; reason?: string };
+  /** A local tab becomes an input table (its values save to the warehouse and pin live). */
+  makeInput: (sheetName: string, source: string) => void;
+  /** Adds an App tab and opens it. */
+  addApp: (app: AppSpec) => void;
+  /** A cell's computed value (sheet row r), as a number when it is one. */
+  value: (sheetName: string, c: number, r: number) => number | string | null;
+}
+
+// Pin needs a published workbook (Vivek, 3 Nov): a Liveboard tile shows the version everyone sees, the
+// same reason Share waits for Publish. The PM docs have no publish step; this comes from the Apps model.
+const PIN_NEEDS_PUBLISH = 'Publish first. A pinned tile shows the published version, so publish your changes, then pin.';
+
+export const WorkbookLive: React.FC<WorkbookLiveProps> = ({ initial, publishedAlready, onDeleted, agent }) => {
   const [wb, setWb] = useState(initial);
   const [publishCount, setPublishCount] = useState(publishedAlready ? 1 : 0);
   const [dirty, setDirty] = useState(false);
@@ -64,6 +96,13 @@ export const WorkbookLive: React.FC<WorkbookLiveProps> = ({ initial, publishedAl
   const [sel, setSel] = useState<GridSelection>(() => cellSel(0, 0));
   const [editing, setEditing] = useState<Editing | null>(null);
   const [note, setNote] = useState<string | null>(null);
+  // Notes are passing confirmations: they fade after a few seconds and clear when you change tab (Vivek, 3 Nov).
+  // Mode notes (showing formulas, paint format) stay while the mode is on.
+  useEffect(() => {
+    if (!note || note === 'Showing formulas' || note.startsWith('Paint format')) return;
+    const t = window.setTimeout(() => setNote(null), 5000);
+    return () => window.clearTimeout(t);
+  }, [note]);
   const [showFormulas, setShowFormulas] = useState(false);
   const [search, setSearch] = useState(false);
   const [focusCell, setFocusCell] = useState(false);
@@ -84,6 +123,94 @@ export const WorkbookLive: React.FC<WorkbookLiveProps> = ({ initial, publishedAl
     setWb((prev) => { past.current = [...past.current.slice(-99), prev]; future.current = []; return next; });
     setDirty(true);
   }, []);
+  // Spotter's actions read the latest workbook, so two in a row (make an input table, then pin) see
+  // each other's changes.
+  const latest = useRef(wb);
+  latest.current = wb;
+  const agentCommit = (next: Workbook) => { latest.current = next; commitWb(next); };
+  const showRange = (id: string, c1: number, c2: number, r1: number, r2: number) => {
+    setActiveId(id);
+    setSel({ current: { cell: [c1, r1 - 2], range: { x: c1, y: r1 - 2, width: c2 - c1 + 1, height: r2 - r1 + 1 }, rangeStack: [] }, columns: CompactSelection.empty(), rows: CompactSelection.empty() });
+  };
+  const byName = (name: string) => latest.current.sheets.find((x) => x.name === name);
+  useImperativeHandle(agent, () => ({
+    addColumnFormula: (sheetName, title, formula) => {
+      const s = byName(sheetName);
+      if (!s) return null;
+      const c = s.columns.length;
+      let next = setCell(latest.current, s.id, c, 2, formula).wb;
+      next = setCell(next, s.id, c, 1, title).wb;
+      agentCommit(next);
+      setActiveId(s.id);
+      // Select the new column so the user sees where Spotter worked.
+      setSel({ current: undefined, columns: CompactSelection.fromSingleSelection(c), rows: CompactSelection.empty() });
+      setNote(`Spotter added ${title}: one column formula for all ${s.rows.length.toLocaleString()} rows`);
+      return { col: c, rows: s.rows.length };
+    },
+    setValue: (sheetName, c, r, text) => {
+      const s = byName(sheetName);
+      if (!s) return;
+      agentCommit(setCell(latest.current, s.id, c, r, text).wb);
+      showRange(s.id, c, c, r, r);
+    },
+    show: (sheetName, c1, c2, r1, r2) => {
+      const s = byName(sheetName);
+      if (s) showRange(s.id, c1, c2, r1, r2);
+    },
+    colourScale: (sheetName, c, r1, r2) => {
+      const s = byName(sheetName);
+      if (!s) return;
+      agentCommit(addRule(latest.current, s.id, { c1: c, c2: c, r1, r2, kind: 'scale' }));
+      showRange(s.id, c, c, r1, r2);
+      setNote('Spotter added a colour scale: red is lowest, green is highest');
+    },
+    pivot: (sourceName, rows, columns, value) => {
+      const src = byName(sourceName);
+      if (!src) return null;
+      const out = createPivot(latest.current, src.id, sheetRange(src));
+      const cfg = out.wb.sheets.find((x) => x.id === out.id)!.pivot!;
+      const next = setPivot(out.wb, out.id, {
+        ...cfg,
+        rows: [{ field: rows, order: 'asc', totals: true }],
+        columns: [{ field: columns, order: 'asc', totals: true }],
+        values: [{ field: value, agg: 'sum', show: 'default' }],
+      });
+      agentCommit(next);
+      setActiveId(out.id);
+      setSel(cellSel(0, 0));
+      return next.sheets.find((x) => x.id === out.id)!.name;
+    },
+    publish,
+    pin: (sheetName, liveboard) => {
+      const s = byName(sheetName);
+      if (!s) return { live: false };
+      const res = pinLiveness(latest.current, s.id, { c1: 0, c2: Math.max(0, s.columns.length - 1), r1: 1, r2: s.rows.length ? lastDataRow(s) : 60 });
+      setActiveId(s.id);
+      setNote(`Pinned the ${s.name} sheet to “${liveboard}” as a ${res.live ? 'live tile' : 'snapshot'}`);
+      return res;
+    },
+    makeInput: (sheetName, source) => {
+      const s = byName(sheetName);
+      if (!s) return;
+      agentCommit(makeInputSheet(latest.current, s.id, source));
+      setNote(`${s.name} is now an input table: ${source}`);
+    },
+    addApp: (app) => {
+      const out = addAppSheet(latest.current, app);
+      agentCommit(out.wb);
+      setActiveId(out.id);
+    },
+    value: (sheetName, c, r) => {
+      const v = valueOf(latest.current, sheetName, c, r);
+      return typeof v === 'number' || typeof v === 'string' ? v : null;
+    },
+  }), [wb, commitWb, publishCount, dirty]);
+  const publish = () => {
+    setVersions((v) => [...v, { n: v.length + 1, at: 'Just now', wb }]);
+    setPublishCount((n) => n + 1);
+    setDirty(false);
+    setNote(publishCount === 0 ? 'Published. Share it now: people you share with see this version.' : 'Changes published. Everyone now sees this version.');
+  };
   const undo = useCallback(() => {
     const prev = past.current.pop();
     if (!prev) return;
@@ -256,6 +383,7 @@ export const WorkbookLive: React.FC<WorkbookLiveProps> = ({ initial, publishedAl
         break;
       case 'formula': setInsertFn(true); break;
       case 'pin': {
+        if (publishCount === 0 || dirty) { setNote(PIN_NEEDS_PUBLISH); break; }
         const rg = sel.current?.range;
         const whole = !rg || (rg.width === 1 && rg.height === 1);
         const range = whole ? { c1: 0, c2: Math.max(0, sheet.columns.length - 1), r1: 1, r2: sheet.rows.length ? lastDataRow(sheet) : 60 } : { c1: rg.x, c2: rg.x + rg.width - 1, r1: rg.y + 2, r2: rg.y + rg.height + 1 };
@@ -282,7 +410,7 @@ export const WorkbookLive: React.FC<WorkbookLiveProps> = ({ initial, publishedAl
       case 'move-left': commitWb(moveSheet(wb, id, -1)); break;
       case 'move-right': commitWb(moveSheet(wb, id, 1)); break;
       case 'refresh': setNote(`${s.name} refreshed from the ${wb.model} model just now`); break;
-      case 'pin': setActiveId(id); setPin({ what: `the ${s.name} sheet`, ...pinLiveness(wb, id, { c1: 0, c2: Math.max(0, s.columns.length - 1), r1: 1, r2: s.rows.length ? lastDataRow(s) : 60 }) }); break;
+      case 'pin': if (publishCount === 0 || dirty) { setNote(PIN_NEEDS_PUBLISH); break; } setActiveId(id); setPin({ what: `the ${s.name} sheet`, ...pinLiveness(wb, id, { c1: 0, c2: Math.max(0, s.columns.length - 1), r1: 1, r2: s.rows.length ? lastDataRow(s) : 60 }) }); break;
       case 'make-app': setNote('Make an app comes next: it opens as an App tab beside your sheets'); break;
       case 'download-csv': {
         const url = URL.createObjectURL(new Blob([sheetCsv(wb, id)], { type: 'text/csv' }));
@@ -367,12 +495,7 @@ export const WorkbookLive: React.FC<WorkbookLiveProps> = ({ initial, publishedAl
         onDownload={() => setNote(`Downloading ${wb.name}.xlsx: one tab per sheet, formulas and formats kept`)}
         onSchedule={() => setNote('Scheduled delivery opens here: email the workbook as Excel or PDF on a cadence')}
         onDelete={() => onDeleted?.()}
-        onPublish={() => {
-          setVersions((v) => [...v, { n: v.length + 1, at: 'Just now', wb }]);
-          setPublishCount((n) => n + 1);
-          setDirty(false);
-          setNote(publishCount === 0 ? 'Published. Share it now: people you share with see this version.' : 'Changes published. Everyone now sees this version.');
-        }}
+        onPublish={publish}
       />
 
       <div className={styles.toolbar}>
@@ -404,6 +527,9 @@ export const WorkbookLive: React.FC<WorkbookLiveProps> = ({ initial, publishedAl
 
       <div className={styles.gridRow}>
       <div className={styles.gridArea}>
+        {sheet.kind === 'app' ? (
+          <PlanApp wb={wb} sheet={sheet} onChange={commitWb} onNote={setNote} />
+        ) : (
         <SheetGrid
           key={activeId}
           ref={grid}
@@ -436,6 +562,7 @@ export const WorkbookLive: React.FC<WorkbookLiveProps> = ({ initial, publishedAl
           showSearch={search}
           onSearchClose={() => setSearch(false)}
         />
+        )}
       </div>
       {sheet.pivot && (
         <PivotPanel
@@ -449,7 +576,7 @@ export const WorkbookLive: React.FC<WorkbookLiveProps> = ({ initial, publishedAl
       <SheetFooter
         sheets={wb.sheets}
         activeId={activeId}
-        onSelect={(id) => { setActiveId(id); if (!editing) setSel(cellSel(0, 0)); }}
+        onSelect={(id) => { if (id !== activeId) setNote(null); setActiveId(id); if (!editing) setSel(cellSel(0, 0)); }}
         onAdd={(kind) => {
           if (kind === 'app') { setNote('App tabs come next: the flow for making an app is still being designed'); return; }
           const out = addSheet(wb, kind === 'input' ? 'input' : 'local');

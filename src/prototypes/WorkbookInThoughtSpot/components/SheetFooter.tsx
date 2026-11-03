@@ -14,11 +14,14 @@ import styles from './SheetFooter.module.css';
 // Sheet-level actions (Vivek, 3 Nov) sit on the tab, as in Sheets, Excel and Liveboard tabs: a ▾ on
 // the active tab, right-click on any tab, double-click to rename.
 
-const KIND_LABEL: Record<SheetKind, string> = { live: 'Live', input: 'Input', local: 'Local' };
+const KIND_LABEL: Record<SheetKind, string> = { live: 'Live', input: 'Input', local: 'Local', app: 'App' };
+// Tab kind icons (Vivek, 3 Nov): Live = warehouse connection, Input = editable, Local = stored in this workbook.
+const KIND_ICON = { live: 'database', input: 'pencil', local: 'doc', app: 'apps' } as const;
 const KIND_HELP: Record<SheetKind, string> = {
   live: 'Rows come from the data model and stay live',
   input: 'Typed values, saved back to your warehouse',
   local: 'Lives only in this workbook',
+  app: 'An app built from this workbook',
 };
 
 export type SheetAction =
@@ -86,7 +89,7 @@ export const SheetFooter: React.FC<SheetFooterProps> = ({ sheets, activeId, onSe
           <div className={styles.list} role="menu">
             {sheets.map((s) => (
               <button key={s.id} role="menuitem" className={`${styles.listItem} ${s.id === activeId ? styles.listItemOn : ''}`} onClick={() => { onSelect(s.id); setListOpen(false); }}>
-                <span className={`${styles.dot} ${styles[s.kind]}`} />
+                <Icon name={KIND_ICON[s.kind]} size="s" className={`${styles.kindIcon} ${styles[s.kind]}`} />
                 {s.name}
               </button>
             ))}
@@ -112,7 +115,7 @@ export const SheetFooter: React.FC<SheetFooterProps> = ({ sheets, activeId, onSe
                 else { openMenuNext.current = true; onSelect(s.id); }
               }}
             >
-              <span className={`${styles.dot} ${styles[s.kind]}`} />
+              <Icon name={KIND_ICON[s.kind]} size="s" className={`${styles.kindIcon} ${styles[s.kind]}`} />
               {renaming?.id === s.id ? (
                 <input
                   className={styles.renameInput}

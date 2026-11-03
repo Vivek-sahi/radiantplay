@@ -1,0 +1,201 @@
+/* Spotter answer card — Figma 💾 Spotter · Saved chats, node 4405-9049.
+   Measurements come from that frame: 70px tall from 16px padding around a 38px
+   body, 16px between thumbnail and body, 8px between the text and the button. */
+
+.card {
+  /* The hover gesture, settled on the canvas and locked here — this is its only
+     source of truth. The tilt and the slice's lift are one movement, so they
+     share the single duration and curve below rather than carrying their own.
+       rotation   -15°
+       separation 1.25px at 45° from straight up → 0.884 / -0.884
+       duration   250ms
+       easing     cubic-bezier(0.18, 0.7, 0.5, 1) */
+  --ac-icon-duration: 250ms;
+  --ac-icon-ease: cubic-bezier(0.18, 0.7, 0.5, 1);
+  --ac-icon-rotate: -15deg;
+  --ac-slice-dx: 0.884px;
+  --ac-slice-dy: -0.884px;
+
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+  width: 100%;
+  padding: var(--spacing-4);
+  background-color: var(--rd-sys-color-background-base);
+  /* The border is an inset shadow, not a border, so it sits inside the box the
+     way a Figma stroke does — the card is then 70px tall (16 + 38 + 16), not 72. */
+  box-shadow: inset 0 0 0 1px var(--rd-sys-color-border-subtle);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  outline: none;
+  transition: box-shadow 0.12s ease, background-color 0.12s ease;
+}
+
+/* ── Hover ────────────────────────────────────────────────────────────────────
+   Ghost-hover is a translucent token, so it layers over the surface rather than
+   replacing it — the same two-layer fill the design uses. Card and thumbnail
+   take it together, and the icon animates. */
+
+.card:not(.stateLoading):hover,
+.stateHover {
+  background-image: linear-gradient(
+    0deg,
+    var(--rd-sys-color-background-ghost-hover) 0%,
+    var(--rd-sys-color-background-ghost-hover) 100%
+  );
+  box-shadow: inset 0 0 0 1px var(--rd-sys-color-border-subtle-hover);
+}
+
+.card:focus-visible {
+  box-shadow:
+    inset 0 0 0 1px var(--rd-sys-color-border-focus),
+    0 0 0 2px var(--rd-sys-color-border-focus);
+}
+
+/* Loading is not clickable, so it takes none of the hover treatment. */
+.stateLoading {
+  cursor: default;
+  background-image: none;
+  box-shadow: inset 0 0 0 1px var(--rd-sys-color-border-subtle);
+}
+
+/* ── Thumbnail ───────────────────────────────────────────────────────────────── */
+
+.thumbnail {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  /* 32px — a 18px glyph inside 7px of padding. */
+  width: 32px;
+  height: 32px;
+  padding: 7px;
+  background-color: var(--rd-sys-color-background-on-base);
+  border-radius: var(--radius-md);
+  background-image: none;
+}
+
+.card:not(.stateLoading):hover .thumbnail,
+.stateHover .thumbnail {
+  background-image: linear-gradient(
+    0deg,
+    var(--rd-sys-color-background-ghost-hover) 0%,
+    var(--rd-sys-color-background-ghost-hover) 100%
+  );
+}
+
+.icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--rd-sys-color-content-secondary);
+  /* The glyph tips as the card is picked up. -15° is the angle in the design. */
+  transition: transform var(--ac-icon-duration) var(--ac-icon-ease);
+}
+
+.card:not(.stateLoading):hover .icon,
+.stateHover .icon {
+  transform: rotate(var(--ac-icon-rotate));
+}
+
+/* The detached slice lifts out of the pie — mostly up, with a little outward
+   drift along its own bisector. Same duration and curve as the tilt, and no
+   delay: the slice separates as the glyph turns, not after it. The lift composes
+   with the parent's -15° rotation, which keeps it travelling along the slice's
+   own bisector as the glyph tips. */
+.slice {
+  transform: translate(0, 0);
+  transition: transform var(--ac-icon-duration) var(--ac-icon-ease);
+}
+
+.card:not(.stateLoading):hover .slice,
+.stateHover .slice {
+  /* SVG user units — the viewBox is 18×18, so 1 unit is 1px at rendered size.
+     Mostly up, with a little outward drift; the parent's rotation carries it
+     along the slice's own bisector. */
+  transform: translate(var(--ac-slice-dx), var(--ac-slice-dy));
+}
+
+/* Motion is decoration here; the hover background already carries the state. */
+@media (prefers-reduced-motion: reduce) {
+  .icon,
+  .slice {
+    transition: none;
+  }
+
+  .card:not(.stateLoading):hover .slice,
+  .stateHover .slice {
+    transform: translate(0, 0);
+  }
+}
+
+/* ── Body ─────────────────────────────────────────────────────────────────────
+   Text column and button on one row; the column takes the slack. */
+
+.body {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  flex: 1;
+  min-width: 0;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-md);
+  color: var(--rd-sys-color-content-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.description {
+  margin: 0;
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-sm);
+  /* Figma's -0.6%, i.e. -0.006em — not -0.6px. */
+  letter-spacing: -0.006em;
+  color: var(--rd-sys-color-content-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.buttons {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  flex-shrink: 0;
+}
+
+/* Forced button hover, for the canvas only — the same token the Button's own
+   :hover uses, so the state on screen is the real one. */
+.stateHoverButton .buttons button {
+  background-color: var(--rd-comp-color-button-secondary-hover);
+}
+
+/* ── Loading ──────────────────────────────────────────────────────────────────
+   Two shimmer lines where the text was: 12px and 10px tall, 8px apart, 4px of
+   padding above and below — which adds back to the 38px body. */
+
+.shimmerContent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  flex: 1;
+  padding: var(--spacing-1) 0;
+}

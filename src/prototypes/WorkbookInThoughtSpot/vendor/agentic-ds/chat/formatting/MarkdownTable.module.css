@@ -1,0 +1,208 @@
+/* Markdown table styles. Variant is set via data-variant on the table root.
+
+   Option 1 — lines: borderless table; th/td share 8/16/8/1 padding. td carries a
+   subtle bottom hairline, th a bolder (border-default) one.
+
+   Option 2 — cells: no borders; each th/td is a filled tile with a 4px radius,
+   separated by 2px gaps (the base background showing through border-spacing).
+
+   Option 3 — grid: a plain bordered grid. No gaps; 1px border-subtle hairlines.
+   th is filled with background-on-base, td unfilled. The OUTER border lives on
+   the wrapper so it follows the 10px radius cleanly; cells only draw their
+   right/bottom edges, and the last column/row drop theirs. */
+
+.wrap {
+  margin: var(--spacing-4, 16px) 0 var(--spacing-8, 32px);
+}
+
+.table {
+  width: 100%;
+  border: none;
+  border-collapse: collapse;
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-sm, 14px);
+  line-height: var(--line-height-lg, 24px);
+}
+
+.th,
+.td {
+  padding: 8px 16px 8px 1px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.th {
+  border-bottom: 1px solid var(--rd-sys-color-border-default);
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--rd-sys-color-content-primary);
+  white-space: nowrap;
+}
+
+.td {
+  border-bottom: 1px solid var(--rd-sys-color-border-subtle);
+  color: var(--rd-sys-color-content-primary);
+}
+
+/* ── Option 2 — cells ──────────────────────────────────────────────────────── */
+
+/* Round the whole table on the wrapper and clip the edge cells to match — the
+   clip must be on a block box, not the <table> (tables ignore overflow:hidden). */
+.wrap[data-variant='cells'] {
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.table[data-variant='cells'] {
+  border-collapse: separate;
+  border-spacing: 2px;
+  background-color: var(--rd-sys-color-background-base);
+  /* Pull the table 2px past the wrapper on every side so the outer border-spacing
+     ring is clipped away and the corner CELLS sit flush against the rounded
+     wrapper edge (so the 12px radius visibly clips them). Inner 2px gaps stay. */
+  width: calc(100% + 4px);
+  margin: -2px;
+}
+
+.table[data-variant='cells'] .th,
+.table[data-variant='cells'] .td {
+  border: none;
+  border-radius: 4px;
+  padding: 8px 10px;
+}
+
+.table[data-variant='cells'] .th {
+  /* Halfway between the td tile (on-base) and background-subtle — subtle is too
+     strong on its own, so blend the two tokens 50/50. */
+  background-color: color-mix(
+    in srgb,
+    var(--rd-sys-color-background-on-base),
+    var(--rd-sys-color-background-subtle)
+  );
+}
+
+.table[data-variant='cells'] .td {
+  background-color: var(--rd-sys-color-background-on-base);
+}
+
+/* ── Option 3 — grid ───────────────────────────────────────────────────────── */
+/* Horizontal rules always; vertical rules are opt-in via data-vertical-lines. */
+
+/* The outer hairline sits on the wrapper so it curves with the radius instead of
+   being clipped flat at the corners. Option 4 (zebra) shares it — the bands need
+   an outer edge to sit inside, and the clip rounds their corners too. */
+.wrap[data-variant='grid'],
+.wrap[data-variant='zebra'] {
+  border: 1px solid var(--rd-sys-color-border-subtle);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.table[data-variant='grid'] {
+  border-collapse: collapse;
+}
+
+.table[data-variant='grid'] .th,
+.table[data-variant='grid'] .td {
+  border: none;
+  border-bottom: 1px solid var(--rd-sys-color-border-subtle);
+  padding: 8px 10px;
+}
+
+/* Last row doesn't draw an edge — the wrapper provides it. */
+.table[data-variant='grid'] tbody tr:last-child .td {
+  border-bottom: none;
+}
+
+.table[data-variant='grid'] .th {
+  background-color: var(--rd-sys-color-background-on-base);
+}
+
+.table[data-variant='grid'] .td {
+  background-color: var(--rd-sys-color-background-base);
+}
+
+/* Vertical rules — each cell draws its right edge; the last column defers to
+   the wrapper so the rounded outer border stays continuous. */
+.table[data-variant='grid'][data-vertical-lines='true'] .th,
+.table[data-variant='grid'][data-vertical-lines='true'] .td {
+  border-right: 1px solid var(--rd-sys-color-border-subtle);
+}
+
+.table[data-variant='grid'][data-vertical-lines='true'] .th:last-child,
+.table[data-variant='grid'][data-vertical-lines='true'] .td:last-child {
+  border-right: none;
+}
+
+/* Optional row hover — body rows only, so the header doesn't light up.
+   Painted as a background-image layer rather than a background-color so the
+   translucent tint STACKS over the cell's base fill instead of replacing it.
+   Mixed to 50% of the token rather than hardcoding a lighter rgba, so it still
+   tracks the token if ghost-hover is retuned. */
+.table[data-variant='grid'][data-row-hover='true'] tbody tr:hover .td {
+  background-image: linear-gradient(
+    color-mix(in srgb, var(--rd-sys-color-background-ghost-hover) 50%, transparent),
+    color-mix(in srgb, var(--rd-sys-color-background-ghost-hover) 50%, transparent)
+  );
+}
+
+/* ── Option 5 — zebra ──────────────────────────────────────────────────────── */
+/* No lines at all. Body rows alternate between background-on-base and unfilled;
+   the header stays unfilled so it reads apart from the first banded row. */
+
+.table[data-variant='zebra'] {
+  border-collapse: collapse;
+}
+
+.table[data-variant='zebra'] .th,
+.table[data-variant='zebra'] .td {
+  border: none;
+  padding: 8px 10px;
+}
+
+/* The header is row 1 of the banding, so its shade sets the whole rhythm and the
+   body alternates from there. 'darker' tints the header; 'lighter' leaves it clear. */
+.table[data-variant='zebra'][data-zebra-header='darker'] .th {
+  background-color: var(--rd-sys-color-background-on-base);
+}
+
+.table[data-variant='zebra'][data-zebra-header='darker'] tbody tr:nth-child(odd) .td {
+  background-color: transparent;
+}
+
+.table[data-variant='zebra'][data-zebra-header='darker'] tbody tr:nth-child(even) .td {
+  background-color: var(--rd-sys-color-background-on-base);
+}
+
+.table[data-variant='zebra'][data-zebra-header='lighter'] .th {
+  background-color: transparent;
+}
+
+.table[data-variant='zebra'][data-zebra-header='lighter'] tbody tr:nth-child(odd) .td {
+  background-color: var(--rd-sys-color-background-on-base);
+}
+
+.table[data-variant='zebra'][data-zebra-header='lighter'] tbody tr:nth-child(even) .td {
+  background-color: transparent;
+}
+
+/* Optional rules on top of the banding (zebra only), each independently toggled.
+   Same inner-edge model as Option 3: cells draw right/bottom, and the last
+   column/row defer to the wrapper so its rounded border stays continuous. */
+.table[data-variant='zebra'][data-zebra-vlines='true'] .th,
+.table[data-variant='zebra'][data-zebra-vlines='true'] .td {
+  border-right: 1px solid var(--rd-sys-color-border-subtle);
+}
+
+.table[data-variant='zebra'][data-zebra-vlines='true'] .th:last-child,
+.table[data-variant='zebra'][data-zebra-vlines='true'] .td:last-child {
+  border-right: none;
+}
+
+.table[data-variant='zebra'][data-zebra-hlines='true'] .th,
+.table[data-variant='zebra'][data-zebra-hlines='true'] .td {
+  border-bottom: 1px solid var(--rd-sys-color-border-subtle);
+}
+
+.table[data-variant='zebra'][data-zebra-hlines='true'] tbody tr:last-child .td {
+  border-bottom: none;
+}

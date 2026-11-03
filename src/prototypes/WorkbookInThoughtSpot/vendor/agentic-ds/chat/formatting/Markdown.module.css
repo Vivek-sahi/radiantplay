@@ -1,0 +1,600 @@
+/* Rendered-answer styling for the response-formatting playground.
+   Every tunable value comes in as a CSS variable set inline by the view, so the
+   control panel can drive it live. Colours resolve to Radiant tokens.
+
+   Tables are deliberately fixed here (flat: no card, no fill, row dividers only) —
+   table styling is explored on the "Table markdown" page instead. */
+
+.md {
+  /* --preview-font lets the page swap the typeface (Plain / Geist) without touching
+     the token elsewhere. Unset everywhere else, so other surfaces keep Plain. */
+  font-family: var(--preview-font, var(--font-family-primary));
+  color: var(--body-color);
+  font-size: var(--body-size);
+  line-height: var(--body-lh);
+  font-weight: var(--body-weight);
+}
+
+/* Spacing model — one flex gap between blocks, so spacing is additive and
+   predictable (gap + A.margin-bottom + B.margin-top) rather than collapsing. */
+.engineGap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+}
+
+/* House rule: the first block of a response never carries a top margin, so an
+   answer that opens on a heading sits flush with the top of the response. */
+.md > :first-child {
+  margin-top: 0;
+}
+
+/* ── Headings ─────────────────────────────────────────────────────────────── */
+
+.md h1 {
+  color: var(--h1-color);
+  font-size: var(--h1-size);
+  font-weight: var(--h1-w);
+  line-height: var(--h1-lh);
+  letter-spacing: calc(var(--h1-ls) * 1em);
+  margin: var(--h1-mt) 0 var(--h1-mb);
+}
+.md h2 {
+  color: var(--h2-color);
+  font-size: var(--h2-size);
+  font-weight: var(--h2-w);
+  line-height: var(--h2-lh);
+  letter-spacing: calc(var(--h2-ls) * 1em);
+  margin: var(--h2-mt) 0 var(--h2-mb);
+}
+/* h3 through h6 share one style — an agent may reach for any of them, and we don't
+   want a visual distinction that deep. */
+.md h3,
+.md h4,
+.md h5,
+.md h6 {
+  color: var(--h3-color);
+  font-size: var(--h3-size);
+  font-weight: var(--h3-w);
+  line-height: var(--h3-lh);
+  letter-spacing: calc(var(--h3-ls) * 1em);
+  margin: var(--h3-mt) 0 var(--h3-mb);
+}
+
+/* ── Body & inline ────────────────────────────────────────────────────────── */
+
+.md p {
+  margin: var(--p-mt) 0 var(--p-mb);
+}
+.md strong {
+  font-weight: var(--bold-weight);
+  font-size: var(--bold-size);
+  color: var(--bold-color);
+}
+.md em {
+  color: var(--italic-color);
+}
+.md del {
+  color: var(--rd-sys-color-content-tertiary);
+}
+.md a {
+  color: var(--link-color);
+  font-weight: var(--link-weight);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--link-color) 40%, transparent);
+  text-underline-offset: 2px;
+}
+
+/* ── Lists ────────────────────────────────────────────────────────────────── */
+/* Custom markers so the glyph, colour and marker→text gap are all tunable. */
+
+.md ul,
+.md ol {
+  margin: var(--ul-mt) 0 var(--ul-mb);
+  padding-left: var(--list-indent);
+  list-style: none;
+}
+.md ol {
+  counter-reset: li;
+}
+.md li {
+  margin-bottom: var(--li-mb);
+  line-height: var(--li-lh);
+  position: relative;
+}
+/* The marker's line box is locked to one text line so a larger glyph grows
+   symmetrically around the first line instead of pushing the text down. */
+.md ul > li::before {
+  content: var(--marker-glyph);
+  position: absolute;
+  left: calc(-1 * var(--marker-gap));
+  top: 0;
+  height: calc(var(--body-size) * var(--li-lh));
+  display: flex;
+  align-items: center;
+  color: var(--marker-color);
+  font-weight: 400;
+  font-size: var(--marker-size);
+  line-height: 1;
+}
+.md ol > li {
+  counter-increment: li;
+}
+.md ol > li::before {
+  content: counter(li) '.';
+  position: absolute;
+  left: calc(-1 * var(--marker-gap));
+  top: 0;
+  height: calc(var(--body-size) * var(--li-lh));
+  display: flex;
+  align-items: center;
+  color: var(--marker-color);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.md li:last-child {
+  margin-bottom: 0;
+}
+.md li > p:first-child {
+  margin-top: 0;
+}
+.md li > p:last-child {
+  margin-bottom: 0;
+}
+/* A nested list sits inside its parent item, so its trailing margin is tuned
+   separately from a top-level list's (defaults to 0). */
+.md ul ul,
+.md ol ol,
+.md ul ol,
+.md ol ul {
+  margin: var(--li-mb) 0 var(--nested-ul-mb);
+}
+
+/* ── Code ─────────────────────────────────────────────────────────────────── */
+
+.md :not(pre) > code {
+  font-family: var(--mono-font);
+  font-size: var(--code-inline);
+  font-weight: var(--code-weight);
+  background: var(--code-bg);
+  border: 1px solid var(--rd-sys-color-border-subtle);
+  border-radius: var(--radius-sm, 6px);
+  padding: 1px 6px;
+  color: var(--code-color);
+}
+.md pre {
+  background: var(--codeblock-bg);
+  border: 1px solid var(--rd-sys-color-border-subtle);
+  border-radius: var(--radius-lg, 12px);
+  padding: 12px 14px;
+  overflow-x: auto;
+  margin: var(--code-mt) 0 var(--code-mb);
+}
+.md pre code {
+  font-family: var(--mono-font);
+  font-size: var(--code-block);
+  font-weight: var(--codeblock-weight);
+  line-height: var(--codeblock-lh);
+  color: var(--codeblock-color);
+  background: none;
+  padding: 0;
+  border: 0;
+}
+
+/* ── Blockquote ───────────────────────────────────────────────────────────── */
+
+.md blockquote {
+  padding: var(--bq-pady) var(--bq-padx);
+  color: var(--bq-color);
+  font-size: var(--bq-size);
+}
+.md blockquote p {
+  margin: 0;
+}
+.bqBorder blockquote {
+  border-left: 3px solid var(--rd-sys-color-border-default);
+}
+.bqFill blockquote {
+  background: var(--rd-sys-color-background-on-base);
+  border-radius: 0 var(--radius-md, 8px) var(--radius-md, 8px) 0;
+}
+.bqItalic blockquote {
+  font-style: italic;
+}
+
+/* ── Answer card ──────────────────────────────────────────────────────────── */
+/* A viz answer embedded in the response. Targeted by data attribute rather than a
+   module class because scenario bodies are static HTML strings. Border, radius and
+   block margins deliberately match the table so the two read as one family. */
+
+.md [data-answer-card] {
+  flex: none;
+  height: 540px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  margin: var(--table-mt) 0 var(--table-mb);
+  border: 1px solid var(--rd-sys-color-border-subtle);
+  border-radius: 10px;
+  overflow: hidden;
+  background-color: var(--rd-sys-color-background-base);
+}
+
+/* Header — query tokens on the left, viz controls on the right */
+.md [data-answer-head] {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--spacing-3, 12px);
+  padding: 12px 12px 10px;
+}
+.md [data-answer-tokens] {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.md [data-answer-chip] {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm, 6px);
+  background-color: var(--rd-sys-color-background-on-base);
+  border: 1px solid var(--rd-sys-color-border-subtle);
+  font-size: var(--font-size-xs, 12px);
+  line-height: 18px;
+  color: var(--rd-sys-color-content-primary);
+  white-space: nowrap;
+}
+.md [data-answer-chip] svg {
+  flex-shrink: 0;
+  color: var(--rd-sys-color-content-tertiary);
+}
+.md [data-answer-more] {
+  font-size: var(--font-size-xs, 12px);
+  color: var(--rd-sys-color-content-brand);
+  white-space: nowrap;
+}
+.md [data-answer-actions] {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.md [data-answer-iconbtn] {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm, 6px);
+  color: var(--rd-sys-color-content-secondary);
+}
+.md [data-answer-iconbtn][data-active] {
+  background-color: var(--rd-sys-color-background-on-base);
+  color: var(--rd-sys-color-content-primary);
+}
+
+/* Plot — horizontal bars; the label gutter and track share one grid so the
+   gridlines and axis ticks stay aligned. */
+.md [data-answer-viz] {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 4px 16px 0;
+}
+.md [data-answer-plot] {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 148px 1fr;
+  column-gap: 12px;
+  row-gap: 16px;
+  align-content: center;
+}
+.md [data-answer-rowlabel] {
+  align-self: center;
+  text-align: right;
+  font-size: var(--font-size-sm, 14px);
+  color: var(--rd-sys-color-content-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.md [data-answer-track] {
+  align-self: center;
+  height: 30px;
+  /* Vertical gridline every 20% of the plot width */
+  background-image: repeating-linear-gradient(
+    to right,
+    var(--rd-sys-color-border-subtle) 0 1px,
+    transparent 1px 20%
+  );
+}
+.md [data-answer-bar] {
+  height: 100%;
+  border-radius: 0 2px 2px 0;
+  background-color: var(--rd-sys-color-background-brand);
+}
+.md [data-answer-barvalue] {
+  display: inline-block;
+  padding-left: 8px;
+  font-size: var(--font-size-xs, 12px);
+  line-height: 30px;
+  color: var(--rd-sys-color-content-secondary);
+  vertical-align: top;
+}
+
+/* Axis */
+.md [data-answer-axis] {
+  display: grid;
+  grid-template-columns: 148px 1fr;
+  column-gap: 12px;
+}
+.md [data-answer-ticks] {
+  grid-column: 2;
+  display: flex;
+  justify-content: space-between;
+  padding-top: 5px;
+  border-top: 1px solid var(--rd-sys-color-border-subtle);
+  font-size: var(--font-size-xs, 12px);
+  color: var(--rd-sys-color-content-tertiary);
+}
+.md [data-answer-axistitle] {
+  grid-column: 2;
+  padding-top: 6px;
+  text-align: center;
+  font-size: var(--font-size-xs, 12px);
+  color: var(--rd-sys-color-content-secondary);
+}
+.md [data-answer-count] {
+  padding: 8px 16px 10px;
+  font-size: var(--font-size-xs, 12px);
+  color: var(--rd-sys-color-content-secondary);
+}
+
+/* Footer actions */
+.md [data-answer-footer] {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 9px 16px;
+  border-top: 1px solid var(--rd-sys-color-border-subtle);
+}
+.md [data-answer-action] {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--font-size-sm, 14px);
+  color: var(--rd-sys-color-content-secondary);
+  white-space: nowrap;
+}
+.md [data-answer-action] svg {
+  flex-shrink: 0;
+}
+.md [data-answer-action][data-end] {
+  margin-left: auto;
+}
+
+/* ── Table — the four variants from the "Table markdown" page ─────────────── */
+/* Each <table> is wrapped in .tableWrap at runtime; the wrapper carries the block
+   margins and (for the rounded variants) the border + clip, because a <table>
+   element doesn't honour overflow: hidden. */
+
+.tableWrap {
+  margin: var(--table-mt) 0 var(--table-mb);
+  /* Once the columns hit their floors the table stops shrinking and scrolls here
+     instead. overflow-y stays hidden so the rounded clip survives. */
+  overflow-x: auto;
+  overflow-y: hidden;
+  /* Overlay scrollbar: the track and thumb are transparent at rest so the table
+     shows no chrome until you interact with it. */
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+.tableWrap:hover,
+.tableWrap:focus-within {
+  scrollbar-color: var(--rd-sys-color-background-inset) transparent;
+}
+.tableWrap::-webkit-scrollbar {
+  height: 8px;
+}
+.tableWrap::-webkit-scrollbar-track {
+  background: transparent;
+}
+.tableWrap::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 4px;
+}
+.tableWrap:hover::-webkit-scrollbar-thumb,
+.tableWrap:focus-within::-webkit-scrollbar-thumb {
+  background: var(--rd-sys-color-background-inset);
+}
+
+.md table {
+  width: 100%;
+  border: none;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm, 14px);
+  line-height: 1.45;
+  background: transparent;
+  margin: 0;
+}
+.md th,
+.md td {
+  text-align: left;
+  vertical-align: top;
+  /* Cells wrap. break-word (not anywhere) so a long unbroken token like a flag
+     name or an ID breaks only when it genuinely can't fit, rather than being
+     chopped mid-token at every width. */
+  overflow-wrap: break-word;
+}
+.md th {
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--rd-sys-color-content-primary);
+}
+.md td {
+  color: var(--rd-sys-color-content-primary);
+}
+
+/* Lines — borderless; hairline under each row, a bolder one under the header. */
+.md[data-table-variant='lines'] th,
+.md[data-table-variant='lines'] td {
+  padding: 8px 16px 8px 1px;
+  border: none;
+}
+.md[data-table-variant='lines'] th {
+  border-bottom: 1px solid var(--rd-sys-color-border-default);
+}
+.md[data-table-variant='lines'] td {
+  border-bottom: 1px solid var(--rd-sys-color-border-subtle);
+}
+
+/* Cells — filled tiles, 4px radius, 2px gaps, clipped to a 10px rounded box.
+   The table is pulled out 2px so the corner cells (not the gap ring) get clipped. */
+.md[data-table-variant='cells'] table {
+  border-collapse: separate;
+  border-spacing: 2px;
+  background-color: var(--rd-sys-color-background-base);
+  width: calc(100% + 4px);
+  margin: -2px;
+}
+.md[data-table-variant='cells'] th,
+.md[data-table-variant='cells'] td {
+  border: none;
+  border-radius: 4px;
+  padding: 8px 10px;
+}
+.md[data-table-variant='cells'] th {
+  background-color: color-mix(
+    in srgb,
+    var(--rd-sys-color-background-on-base),
+    var(--rd-sys-color-background-subtle)
+  );
+}
+.md[data-table-variant='cells'] td {
+  background-color: var(--rd-sys-color-background-on-base);
+}
+
+/* Grid — bordered, filled header. Horizontal rules always; vertical opt-in. */
+.md[data-table-variant='grid'] th,
+.md[data-table-variant='grid'] td,
+.md[data-table-variant='zebra'] th,
+.md[data-table-variant='zebra'] td {
+  border: none;
+  padding: 8px 10px;
+}
+.md[data-table-variant='grid'] th,
+.md[data-table-variant='grid'] td {
+  border-bottom: 1px solid var(--rd-sys-color-border-subtle);
+}
+.md[data-table-variant='grid'] tbody tr:last-child td {
+  border-bottom: none;
+}
+.md[data-table-variant='grid'] th {
+  background-color: var(--rd-sys-color-background-on-base);
+}
+.md[data-table-variant='grid'] td {
+  background-color: var(--rd-sys-color-background-base);
+}
+.md[data-table-variant='grid'][data-table-vlines='true'] th,
+.md[data-table-variant='grid'][data-table-vlines='true'] td {
+  border-right: 1px solid var(--rd-sys-color-border-subtle);
+}
+.md[data-table-variant='grid'][data-table-vlines='true'] th:last-child,
+.md[data-table-variant='grid'][data-table-vlines='true'] td:last-child {
+  border-right: none;
+}
+
+/* Row hover — body rows only. Painted as a background-image layer so the translucent
+   tint stacks over the cell's base fill instead of replacing it. Mixed to 50% of the
+   token rather than hardcoding a lighter rgba. Matches MarkdownTable. */
+.md[data-table-variant='grid'][data-row-hover='true'] tbody tr:hover td {
+  background-image: linear-gradient(
+    color-mix(in srgb, var(--rd-sys-color-background-ghost-hover) 50%, transparent),
+    color-mix(in srgb, var(--rd-sys-color-background-ghost-hover) 50%, transparent)
+  );
+}
+
+/* Zebra — no lines; rows alternate filled / unfilled. Grid lines opt-in. The header
+   is row 1 of the banding, so its shade sets the rhythm and the body follows. */
+.md[data-table-variant='zebra'][data-zebra-header='darker'] th {
+  background-color: var(--rd-sys-color-background-on-base);
+}
+.md[data-table-variant='zebra'][data-zebra-header='darker'] tbody tr:nth-child(odd) td {
+  background-color: transparent;
+}
+.md[data-table-variant='zebra'][data-zebra-header='darker'] tbody tr:nth-child(even) td {
+  background-color: var(--rd-sys-color-background-on-base);
+}
+.md[data-table-variant='zebra'][data-zebra-header='lighter'] th {
+  background-color: transparent;
+}
+.md[data-table-variant='zebra'][data-zebra-header='lighter'] tbody tr:nth-child(odd) td {
+  background-color: var(--rd-sys-color-background-on-base);
+}
+.md[data-table-variant='zebra'][data-zebra-header='lighter'] tbody tr:nth-child(even) td {
+  background-color: transparent;
+}
+/* Vertical and horizontal rules toggle independently over the banding. */
+.md[data-table-variant='zebra'][data-zebra-vlines='true'] th,
+.md[data-table-variant='zebra'][data-zebra-vlines='true'] td {
+  border-right: 1px solid var(--rd-sys-color-border-subtle);
+}
+.md[data-table-variant='zebra'][data-zebra-vlines='true'] th:last-child,
+.md[data-table-variant='zebra'][data-zebra-vlines='true'] td:last-child {
+  border-right: none;
+}
+.md[data-table-variant='zebra'][data-zebra-hlines='true'] th,
+.md[data-table-variant='zebra'][data-zebra-hlines='true'] td {
+  border-bottom: 1px solid var(--rd-sys-color-border-subtle);
+}
+.md[data-table-variant='zebra'][data-zebra-hlines='true'] tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Rounded outer edge for the three variants that need it. */
+.md[data-table-variant='cells'] .tableWrap {
+  border-radius: 10px;
+  overflow: hidden;
+}
+.md[data-table-variant='grid'] .tableWrap,
+.md[data-table-variant='zebra'] .tableWrap {
+  border: 1px solid var(--rd-sys-color-border-subtle);
+  border-radius: 8px;
+  /* Not `overflow: hidden` — that clipped wide tables with no way to reach the
+     cut-off columns. overflow-x scrolls; overflow-y still clips for the radius. */
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+/* ── Divider ──────────────────────────────────────────────────────────────── */
+
+.md hr {
+  border: 0;
+  border-top: 1px solid var(--rd-sys-color-border-subtle);
+  margin: var(--hr-my) 0;
+}
+
+/* House rule: a heading following a list, table or divider drops its top margin —
+   the preceding block's own bottom margin already supplies the gap, so keeping the
+   heading's margin would double it.
+   Specificity matters: the [data-table-wrap] attribute inside the first :is() lifts
+   this to (0,2,1), which beats the (0,1,1) of `.md h1`, so the rule wins outright
+   rather than depending on declaration order. */
+.md :is(ul, ol, hr, table, [data-table-wrap]) + :is(h1, h2, h3, h4, h5, h6) {
+  margin-top: var(--h-after-block-mt);
+}
+
+/* The flex gap owns spacing, so the blockquote's own margins are zeroed. Tables and
+   code blocks are excluded — .tableWrap and pre carry their own tunable margins. */
+.engineGap blockquote {
+  margin: 0;
+}
+
+/* Measure overlay — outlines each top-level block so box gaps are visible. */
+.measure > * {
+  outline: 1px dashed color-mix(in srgb, var(--rd-sys-color-content-brand) 50%, transparent);
+  outline-offset: 0;
+}

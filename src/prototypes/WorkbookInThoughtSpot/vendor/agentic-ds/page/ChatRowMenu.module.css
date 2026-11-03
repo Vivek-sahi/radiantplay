@@ -1,0 +1,9 @@
+/* ChatRowMenu — hover menu wrapper for chat rows in the Spotter left panel.
+ *
+ * Most of the layout/visibility comes from RowMenuAffordance.module.css.
+ * This file is reserved for chat-row-specific tweaks if they emerge.
+ */
+
+.row {
+  width: 100%;
+}

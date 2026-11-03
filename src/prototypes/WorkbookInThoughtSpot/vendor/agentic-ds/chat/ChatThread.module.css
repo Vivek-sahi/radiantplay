@@ -1,0 +1,18 @@
+.thread {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-6, 24px);
+  width: 100%;
+  max-width: var(--spotter-chat-max-width, 936px);
+  margin: 0 auto;
+  padding: var(--spacing-6, 24px) var(--spacing-4, 16px);
+}
+
+/* Refresh look: CHAT_GRID.maxWidth (800px), centred, with the 24px side
+   margins supplied by the scroll container so the scrollbar sits at the pane
+   edge rather than inside the column. Nothing is inset horizontally: it is the
+   response body inside a message that insets to 768. */
+.refresh {
+  max-width: 800px;
+  padding: var(--spacing-6, 24px) 0;
+}

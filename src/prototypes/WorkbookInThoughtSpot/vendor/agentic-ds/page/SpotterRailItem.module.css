@@ -1,0 +1,28 @@
+.railItem {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  background-color: transparent;
+  border-radius: var(--radius-md, 6px);
+  color: var(--rd-sys-color-content-secondary);
+  cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+.railItem:hover {
+  background-color: var(--rd-sys-color-background-subtle);
+  color: var(--rd-sys-color-content-primary);
+}
+
+.railItem:focus-visible {
+  outline: 2px solid var(--rd-sys-color-border-focus);
+  outline-offset: 2px;
+}
+
+.railItem[data-selected='true'] {
+  background-color: var(--rd-sys-color-background-information);
+  color: var(--rd-sys-color-content-brand);
+}

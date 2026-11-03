@@ -6,6 +6,7 @@ import { HomeView } from './components/HomeView';
 import { WorkbooksView } from './components/WorkbooksView';
 import { NewBadge } from './components/NewBadge';
 import { CreateFlow } from './components/CreateFlow';
+import { AgentFlow } from './components/agent/AgentFlow';
 import { OpenWorkbook } from './components/OpenWorkbook';
 import { fy26Workbook } from './data/fy26';
 import type { SourceId } from './data/create';
@@ -50,7 +51,7 @@ const NAV: AppSidebarProps['categories'] = {
 };
 
 // Pages built so far. Every other nav item stays on the current page.
-type Page = 'home' | 'workbooks' | 'create' | 'open';
+type Page = 'home' | 'workbooks' | 'create' | 'open' | 'agent';
 const BUILT: Page[] = ['home', 'workbooks'];
 
 const WorkbookInThoughtSpot: React.FC = () => {
@@ -60,7 +61,7 @@ const WorkbookInThoughtSpot: React.FC = () => {
   const [page, setPage] = useState<Page>('home');
   // A new run each time, so the questions start fresh.
   const [run, setRun] = useState<{ key: number; seed?: string; source?: SourceId }>({ key: 0 });
-  const chatScreen = page === 'create' || page === 'open';
+  const chatScreen = page === 'create' || page === 'open' || page === 'agent';
   const startCreate = (seed?: string, source?: SourceId) => {
     setRun((r) => ({ key: r.key + 1, seed, source }));
     setPage('create');
@@ -90,9 +91,11 @@ const WorkbookInThoughtSpot: React.FC = () => {
           />
         )}
         <main className={styles.main}>
-          {page === 'home' && <HomeView onStart={(prompt) => startCreate(prompt)} />}
+          {/* A prompt typed on Home goes to Spotter, the agent-led flow (Vivek, 3 Nov). New Workbook keeps the manual one. */}
+          {page === 'home' && <HomeView onStart={(prompt) => { setRun((r) => ({ key: r.key + 1, seed: prompt })); setPage('agent'); }} />}
           {page === 'workbooks' && <WorkbooksView onCreate={(source) => startCreate(undefined, source)} onOpen={(id) => { if (id === 'fy26-plan-vs-actual') setPage('open'); }} />}
           {page === 'open' && <OpenWorkbook build={fy26Workbook} onDeleted={() => setPage('workbooks')} />}
+          {page === 'agent' && <AgentFlow key={run.key} runId={run.key} seedPrompt={run.seed ?? ''} onDeleted={() => setPage('workbooks')} />}
           {page === 'create' && <CreateFlow key={run.key} runId={run.key} seedPrompt={run.seed} startSource={run.source} onDeleted={() => setPage('workbooks')} />}
         </main>
       </div>

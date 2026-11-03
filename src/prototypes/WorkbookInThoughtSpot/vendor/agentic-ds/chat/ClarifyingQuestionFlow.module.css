@@ -1,0 +1,37 @@
+/* Chat-to-chat transition.
+ *
+ * Switching conversations used to replace the canvas in one frame, which read as
+ * a cut rather than a navigation. The incoming thread fades up from slightly
+ * below, so the swap has a direction and the eye is carried into it.
+ *
+ * Fade-in only, with no matching fade-out: waiting for the old thread to leave
+ * before the new one arrives puts a hole in the middle of the transition and
+ * doubles how long it takes to see what you clicked. The new content covering
+ * the old one is what makes it read as immediate.
+ */
+@keyframes cqChatEnter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.chatEnter {
+  animation: cqChatEnter var(--duration-normal, 200ms) var(--easing-decelerate, cubic-bezier(0, 0, 0.2, 1)) both;
+}
+
+/* The header's title changes with the thread, so it travels with it. */
+.headerEnter {
+  animation: cqChatEnter var(--duration-normal, 200ms) var(--easing-decelerate, cubic-bezier(0, 0, 0.2, 1)) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chatEnter,
+  .headerEnter {
+    animation: none;
+  }
+}

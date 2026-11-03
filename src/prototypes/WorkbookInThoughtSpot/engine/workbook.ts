@@ -4,7 +4,8 @@
 // values that write back; Local tabs live only in the workbook.
 import { colIndex, evaluate, FormulaError, parseRef, type EvalContext, type Ref, type Result } from './formula';
 
-export type SheetKind = 'live' | 'input' | 'local';
+/** app: an App tab Spotter builds from the workbook (Vivek, 3 Nov), rendered as an app, not a grid. */
+export type SheetKind = 'live' | 'input' | 'local' | 'app';
 export type ColType = 'text' | 'number' | 'currency' | 'percent' | 'date';
 
 export interface Column {
@@ -36,6 +37,15 @@ export interface Sheet {
   rules?: CondRule[];
   /** A pivot tab: its table is computed from another tab. */
   pivot?: PivotConfig;
+  /** An App tab: what the app is for and who uses it. */
+  app?: AppSpec;
+}
+
+export interface AppSpec {
+  title: string;
+  audience: string;
+  /** The input tab the app writes to. */
+  writesTo: string;
 }
 
 export interface ColFormat {
@@ -243,6 +253,17 @@ export function addSheet(wb: Workbook, kind: SheetKind): { wb: Workbook; id: str
   let k = 2;
   while (wb.sheets.some((s) => s.name === name)) name = `${name.replace(/ \(\d+\)$/, '')} (${k++})`;
   return { wb: { ...wb, sheets: [...wb.sheets, { id, name, kind, columns: [], rows: [], cells: {} }] }, id };
+}
+
+/** Adds an App tab after the last sheet. */
+export function addAppSheet(wb: Workbook, app: AppSpec): { wb: Workbook; id: string } {
+  const id = `a${Date.now()}`;
+  return { wb: { ...wb, sheets: [...wb.sheets, { id, name: app.title, kind: 'app', columns: [], rows: [], cells: {}, app, source: `App · writes to ${app.writesTo}` }] }, id };
+}
+
+/** A local tab becomes an input table: its values save to the warehouse and pin live. */
+export function makeInputSheet(wb: Workbook, sheetId: string, source: string): Workbook {
+  return { ...wb, sheets: wb.sheets.map((s) => (s.id === sheetId ? { ...s, kind: 'input', source } : s)) };
 }
 
 export function defineName(wb: Workbook, name: string, refText: string): Workbook {
