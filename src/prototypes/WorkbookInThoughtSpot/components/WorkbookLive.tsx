@@ -29,6 +29,12 @@ const COLUMN_MENU: MenuEntry[] = [
   { id: 'sort-desc', label: 'Sort descending', icon: 'sort-desc' },
 ];
 
+// Stable empties: fresh Maps on every render made the grid re-report its selection in a loop.
+const NO_EDITS = new Map();
+const NO_ERRORS = new Map();
+const NO_NOTICES: never[] = [];
+const noop = () => undefined;
+
 const ADD_COLUMN: MenuEntry[] = [
   { id: 'input', label: 'Input column' },
   { id: 'formula', label: 'Formula column' },
@@ -60,6 +66,8 @@ export const WorkbookLive: React.FC<WorkbookLiveProps> = ({ name, blank }) => {
   const [agg, setAgg] = useState<Aggregates>({ cells: 1, numbers: 0, sum: 0 });
   const [cell, setCell] = useState({ ref: 'A1', text: '' });
 
+  const onActiveCell = useCallback((a: { ref: string; text: string }) => setCell((c) => (c.ref === a.ref && c.text === a.text ? c : a)), []);
+  const onAgg = useCallback((a: Aggregates) => setAgg((p) => (p.cells === a.cells && p.numbers === a.numbers && p.sum === a.sum ? p : a)), []);
   const sheetName = sheets[active].name;
   const sheet = data[sheetName];
   const vars = useMemo(() => themeVars(isDark ? 'dark' : 'light', 'default'), [isDark]);
@@ -131,10 +139,10 @@ export const WorkbookLive: React.FC<WorkbookLiveProps> = ({ name, blank }) => {
             rowHeight="compact"
             showLetters
             frozenCols={blank ? 0 : 1}
-            edits={new Map()}
-            cellErrors={new Map()}
-            notices={[]}
-            onNoticeDismiss={() => undefined}
+            edits={NO_EDITS}
+            cellErrors={NO_ERRORS}
+            notices={NO_NOTICES}
+            onNoticeDismiss={noop}
             busy={false}
             onEdit={onEdit}
             menuFor={() => COLUMN_MENU}
@@ -158,8 +166,8 @@ export const WorkbookLive: React.FC<WorkbookLiveProps> = ({ name, blank }) => {
               },
             }}
             onRename={async (colId, title) => update((s) => ({ ...s, columns: s.columns.map((c) => (c.id === colId ? { ...c, title } : c)) }))}
-            onSelectionChange={setAgg}
-            onActiveCell={setCell}
+            onSelectionChange={onAgg}
+            onActiveCell={onActiveCell}
             statusRight={<span>{sheet.rows.length.toLocaleString()} rows</span>}
           />
         </div>
