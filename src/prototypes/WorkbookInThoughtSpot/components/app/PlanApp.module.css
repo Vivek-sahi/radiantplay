@@ -54,3 +54,20 @@
 .edited input {
   color: var(--rd-sys-color-content-brand);
 }
+
+/* Table styles, named like Excel's (Vivek, 3 Nov). Light is the default look above. */
+.banded .row:not(.head):nth-child(odd) {
+  background: color-mix(in srgb, var(--rd-sys-color-content-brand) 6%, transparent);
+}
+
+.banded .head {
+  background: color-mix(in srgb, var(--rd-sys-color-content-brand) 14%, transparent);
+}
+
+.dark .head {
+  background: var(--rd-sys-color-content-primary);
+}
+
+.dark .head > * {
+  color: var(--rd-sys-color-background-base);
+}

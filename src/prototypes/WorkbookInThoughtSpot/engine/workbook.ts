@@ -46,6 +46,8 @@ export interface AppSpec {
   audience: string;
   /** The input tab the app writes to. */
   writesTo: string;
+  /** Table style, named like Excel's: light, banded (Medium) or dark header (Dark). */
+  style?: 'light' | 'banded' | 'dark';
 }
 
 export interface ColFormat {

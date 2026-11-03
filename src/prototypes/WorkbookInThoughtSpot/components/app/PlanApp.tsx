@@ -83,7 +83,7 @@ export const PlanApp: React.FC<PlanAppProps> = ({ wb, sheet, onChange, onNote })
           ))}
         </div>
 
-        <div className={styles.table}>
+        <div className={`${styles.table} ${styles[sheet.app?.style ?? 'light']}`}>
           <div className={`${styles.row} ${styles.head}`}>
             <Typography variant="content-label">Month</Typography>
             <Typography variant="content-label" className={styles.num}>Actual</Typography>

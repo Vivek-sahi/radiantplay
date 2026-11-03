@@ -13,7 +13,7 @@ import { WorkingChecklist, agentTextStyle } from './ChatTurns';
 import {
   AFTER_APP, AFTER_GROWTH, AFTER_MARGIN, APP_BULLETS, AFTER_ONPLAN, AFTER_PIN, AFTER_PIVOT, APP_ASK, APP_BUILT, APP_INTRO, APP_STEPS, OPEN_NEXT,
   PIN_ASK, PIN_DRAFT, PIN_INTRO, THINK_APP, THINK_GROWTH, THINK_MARGIN, THINK_ONPLAN, THINK_PIVOT,
-  appPlan, growthAnswer, isApp, isGrowth, isMargin, isOnPlan, isPin, isQuarter, marginAnswer, marginFacts,
+  appPlan, styleFor, growthAnswer, isApp, isGrowth, isMargin, isOnPlan, isPin, isQuarter, marginAnswer, marginFacts,
   onPlanAnswer, pinAnswer, isShareApp, THINK_SHARE_APP, SHARE_APP_ANSWER, pivotAnswer, quarterFacts, thinkPin,
 } from '../data/agentScript';
 import type { Workbook } from '../engine/workbook';
@@ -139,7 +139,7 @@ export const OpenWorkbook: React.FC<{ build: () => Workbook; onDeleted?: () => v
       return push({ kind: 'think', items: THINK_APP, then: () => {
         push({ kind: 'agent', text: APP_INTRO, afterThinking: true });
         setTimeout(() => askThen(APP_ASK.map((q) => ({ ...q, mode: 'single' as const })), (ans) => {
-          const plan = appPlan(ans[0]?.other || ans[0]?.selected[0] || APP_ASK[0].options[0]);
+          const plan = appPlan(ans[0]?.other || ans[0]?.selected[0] || APP_ASK[0].options[0], styleFor(ans[1]?.selected[0] ?? ''));
           push({ kind: 'agent', text: 'Here’s the app I’ll build.' }, { kind: 'plan', plan });
           setBusy(false);
         }), 1400);
@@ -187,7 +187,7 @@ export const OpenWorkbook: React.FC<{ build: () => Workbook; onDeleted?: () => v
                           setAppBuild('building');
                           setBusy(true);
                           push({ kind: 'working', steps: APP_STEPS, then: () => {
-                            a().addApp({ title: t.plan.title, audience: t.plan.rows[0].value.toLowerCase(), writesTo: 'FINANCE.PLANNING.PLAN_BY_REGION' });
+                            a().addApp({ title: t.plan.title, audience: t.plan.rows[0].value.toLowerCase(), writesTo: 'FINANCE.PLANNING.PLAN_BY_REGION', style: t.plan.style });
                             setAppBuild('built');
                             push({ kind: 'built', name: t.plan.title, text: APP_BUILT, bullets: APP_BULLETS, next: AFTER_APP });
                             setBusy(false);

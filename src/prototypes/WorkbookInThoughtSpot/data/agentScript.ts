@@ -257,12 +257,23 @@ export const THINK_APP: ReasoningItem[] = [
   },
   { kind: 'tool', id: 'plan', title: 'Reading the Plan input table', doneTitle: 'Plan: 4 regions, by month, saves to FINANCE.PLANNING.PLAN_BY_REGION', icon: 'database' },
 ];
+/** App styles, named the way Excel names its table styles. */
+export type AppStyle = 'light' | 'banded' | 'dark';
+export const APP_STYLES: { id: AppStyle; label: string; plan: string }[] = [
+  { id: 'light', label: 'Light: plain rows, like Excel’s default table', plan: 'Light, plain rows' },
+  { id: 'banded', label: 'Medium: banded rows, like Excel’s Medium styles', plan: 'Medium, banded rows' },
+  { id: 'dark', label: 'Dark: a strong header row, like Excel’s Dark styles', plan: 'Dark, strong header row' },
+];
+export const styleFor = (answer: string): AppStyle => APP_STYLES.find((x) => x.label === answer)?.id ?? 'light';
+
 // Faris's context readout (chatIntroCopy / lbIntroCopy grammar): when the app is seeded from something
 // the user already has, the agent says what it knows and asks nothing about data. One question left.
 export const APP_INTRO =
-  'A data app fits. I’ve got everything from this workbook: it’s built on the Finance model, Plan is an input table keyed by Region and Month, and Summary already has actual, plan and variance. So there’s nothing to set up on data. One question.';
+  'A data app fits. I’ve got everything from this workbook: it’s built on the Finance model, Plan is an input table keyed by Region and Month, and Summary already has actual, plan and variance. So there’s nothing to set up on data. Two quick questions.';
 export const APP_ASK = [
   { question: 'Who uses it, and what happens to their changes?', options: ['Regional leads, and the plan owner approves changes', 'Regional leads, saving straight to the warehouse', 'The finance team, all regions'] },
+  // The style step (Faris's flow has one; Vivek, 3 Nov: like Excel's table styles).
+  { question: 'How should it look?', options: APP_STYLES.map((x) => x.label) },
 ];
 export const APP_BULLETS = [
   'Each lead picks their region and sees actual, plan and variance for the last 6 months',
@@ -272,12 +283,12 @@ export const APP_BULLETS = [
 export const AFTER_APP = [
   { id: 'publish-app', label: 'Publish and share it with the regional leads' },
 ];
-export const appPlan = (answer: string) => {
+export const appPlan = (answer: string, style: AppStyle = 'light') => {
   const audience = /finance team/i.test(answer) ? 'The finance team, all regions' : 'Regional leads, each in their own region';
   const approval = /straight/i.test(answer) ? 'None: changes save straight to the warehouse' : /finance team/i.test(answer) ? 'None' : 'The plan owner approves changes before they save';
-  return appPlanFor(audience, approval);
+  return { ...appPlanFor(audience, approval, style), style };
 };
-const appPlanFor = (audience: string, approval: string) => ({
+const appPlanFor = (audience: string, approval: string, style: AppStyle) => ({
   title: 'Regional plan update',
   description: `An app for ${audience.toLowerCase()} to check actual against plan and update plan month by month.`,
   rows: [
@@ -286,6 +297,7 @@ const appPlanFor = (audience: string, approval: string) => ({
     { label: 'Can change', value: 'Plan revenue, month by month' },
     { label: 'Writes to', value: 'The Plan input table: FINANCE.PLANNING.PLAN_BY_REGION' },
     { label: 'Approval', value: approval },
+    { label: 'Style', value: APP_STYLES.find((x) => x.id === style)!.plan },
   ],
 });
 export const APP_STEPS = [
