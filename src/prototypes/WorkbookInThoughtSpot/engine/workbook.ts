@@ -238,7 +238,10 @@ export function readOnlyReason(wb: Workbook, sheetId: string, c: number, r: numb
 export function addSheet(wb: Workbook, kind: SheetKind): { wb: Workbook; id: string } {
   const n = wb.sheets.length + 1;
   const id = `s${Date.now()}`;
-  const name = kind === 'local' ? `Sheet ${n}` : `Input ${n}`;
+  // Sheets numbers new sheets by count; input tables are numbered among themselves.
+  let name = kind === 'local' ? `Sheet ${n}` : `Input table ${wb.sheets.filter((s) => s.kind === 'input').length + 1}`;
+  let k = 2;
+  while (wb.sheets.some((s) => s.name === name)) name = `${name.replace(/ \(\d+\)$/, '')} (${k++})`;
   return { wb: { ...wb, sheets: [...wb.sheets, { id, name, kind, columns: [], rows: [], cells: {} }] }, id };
 }
 

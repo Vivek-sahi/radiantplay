@@ -31,7 +31,7 @@ export interface SheetFooterProps {
   sheets: Sheet[];
   activeId: string;
   onSelect: (id: string) => void;
-  onAdd: () => void;
+  onAdd: (kind: 'blank' | 'input' | 'app') => void;
   onRename: (id: string, name: string) => void;
   onAction: (id: string, action: SheetAction) => void;
   agg: Aggregate;
@@ -69,9 +69,15 @@ export const SheetFooter: React.FC<SheetFooterProps> = ({ sheets, activeId, onSe
 
   return (
     <div className={styles.footer}>
-      <Tooltip content="Add sheet" showDelay={400} hideDelay={0}>
-        <Button className={styles.tool} variant="tertiary" size="small" iconOnly icon="plus" iconPosition="leading" onClick={onAdd}>Add sheet</Button>
-      </Tooltip>
+      {/* Tab +: what kind of tab to add (Vivek, 3 Nov): a blank sheet, an input table, or an app. */}
+      <ActionMenu
+        placement="top-start"
+        trigger={<Button className={styles.tool} variant="tertiary" size="small" iconOnly icon="plus" iconPosition="leading">Add sheet</Button>}
+      >
+        <ActionMenu.Item label="Blank sheet" icon={<Icon name="table-stroke" size="s" />} onClick={() => onAdd('blank')} />
+        <ActionMenu.Item label="Input table" icon={<Icon name="edit-text" size="s" />} onClick={() => onAdd('input')} />
+        <ActionMenu.Item label="App" icon={<Icon name="apps" size="s" />} onClick={() => onAdd('app')} />
+      </ActionMenu>
       <div className={styles.listWrap}>
         <Tooltip content="All sheets" showDelay={400} hideDelay={0}>
           <Button className={styles.tool} variant="tertiary" size="small" iconOnly icon="hamburger" iconPosition="leading" onClick={() => setListOpen((o) => !o)}>All sheets</Button>

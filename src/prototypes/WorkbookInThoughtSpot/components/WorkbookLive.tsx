@@ -450,7 +450,14 @@ export const WorkbookLive: React.FC<WorkbookLiveProps> = ({ initial, publishedAl
         sheets={wb.sheets}
         activeId={activeId}
         onSelect={(id) => { setActiveId(id); if (!editing) setSel(cellSel(0, 0)); }}
-        onAdd={() => { const out = addSheet(wb, 'local'); commitWb(out.wb); setActiveId(out.id); setSel(cellSel(0, 0)); }}
+        onAdd={(kind) => {
+          if (kind === 'app') { setNote('App tabs come next: the flow for making an app is still being designed'); return; }
+          const out = addSheet(wb, kind === 'input' ? 'input' : 'local');
+          commitWb(out.wb);
+          setActiveId(out.id);
+          setSel(cellSel(0, 0));
+          setNote(kind === 'input' ? 'New input table: values you type here are meant to save back to your warehouse' : null);
+        }}
         onRename={(id, name) => {
           const next = renameSheet(wb, id, name);
           if (next === wb) { setNote(`There's already a sheet called “${name}”`); return; }
