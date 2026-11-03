@@ -10,7 +10,14 @@ import { AgentFlow } from './components/agent/AgentFlow';
 import { OpenWorkbook } from './components/OpenWorkbook';
 import { fy26Workbook } from './data/fy26';
 import type { SourceId } from './data/create';
+import { ProtoGear } from './components/ProtoGear';
+import { VariantContext, type WorkbookVariant } from './components/variant';
 import styles from './WorkbookInThoughtSpot.module.css';
+
+const VARIANT_KEY = 'workbook-in-thoughtspot:variant';
+const readVariant = (): WorkbookVariant => {
+  try { return { menuBar: false, ...JSON.parse(localStorage.getItem(VARIANT_KEY) ?? '{}') }; } catch { return { menuBar: false }; }
+};
 
 const TABS: AppSidebarProps['tabs'] = [
   { id: 'insights', label: 'Insights', headerTitle: 'Insights', showAddButton: true },
@@ -56,6 +63,12 @@ const BUILT: Page[] = ['home', 'workbooks'];
 
 const WorkbookInThoughtSpot: React.FC = () => {
   const [tab, setTab] = useState('insights');
+  // The gear's choice, remembered in this browser only.
+  const [variant, setVariant] = useState<WorkbookVariant>(readVariant);
+  const changeVariant = (v: WorkbookVariant) => {
+    setVariant(v);
+    try { localStorage.setItem(VARIANT_KEY, JSON.stringify(v)); } catch { /* storage off: keeps for this visit */ }
+  };
   // On the Spotter chat screen the nav is hidden, as in SpotterX; the hamburger opens it over the page.
   const [navOpen, setNavOpen] = useState(false);
   const [page, setPage] = useState<Page>('home');
@@ -68,6 +81,7 @@ const WorkbookInThoughtSpot: React.FC = () => {
   };
 
   return (
+    <VariantContext.Provider value={variant}>
     <div className={`${styles.shell} ${chatScreen ? styles.shellClear : ''}`}>
       <div className={styles.headerLayer}>
         <GlobalHeader theme="auto" searchPlaceholder="Search your library" notificationCount={1} userName="Vivek Sahi" showHamburger={chatScreen} onHamburgerClick={() => setNavOpen((o) => !o)} />
@@ -99,7 +113,9 @@ const WorkbookInThoughtSpot: React.FC = () => {
           {page === 'create' && <CreateFlow key={run.key} runId={run.key} seedPrompt={run.seed} startSource={run.source} onDeleted={() => setPage('workbooks')} />}
         </main>
       </div>
+      <ProtoGear value={variant} onChange={changeVariant} />
     </div>
+    </VariantContext.Provider>
   );
 };
 

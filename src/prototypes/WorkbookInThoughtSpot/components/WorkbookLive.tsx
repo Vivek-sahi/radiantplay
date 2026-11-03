@@ -1,10 +1,12 @@
-import React, { useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { CompactSelection, type GridSelection } from '@glideapps/glide-data-grid';
 import { SheetGrid, type SheetGridHandle } from './SheetGrid';
 import { FormulaBar, type FormulaBarHandle } from './FormulaBar';
 import { SheetFooter, type Aggregate, type SheetAction } from './SheetFooter';
 import { SheetToolbar } from './toolbar/SheetToolbar';
 import { PlanApp } from './app/PlanApp';
+import { MenuBar } from './MenuBar';
+import { VariantContext } from './variant';
 import { WorkbookHeader } from './WorkbookHeader';
 import { CreatePivotDialog, InsertFunctionDialog, PinDialog } from './WorkbookDialogs';
 import { PivotPanel } from './PivotPanel';
@@ -205,6 +207,16 @@ export const WorkbookLive: React.FC<WorkbookLiveProps> = ({ initial, publishedAl
       return typeof v === 'number' || typeof v === 'string' ? v : null;
     },
   }), [wb, commitWb, publishCount, dirty]);
+  const { menuBar } = useContext(VariantContext);
+  const addTab = (kind: 'blank' | 'input' | 'app') => {
+    if (kind === 'app') { setNote('Ask Spotter for an app: it builds one as an App tab beside your sheets'); return; }
+    const out = addSheet(wb, kind === 'input' ? 'input' : 'local');
+    commitWb(out.wb);
+    setActiveId(out.id);
+    setSel(cellSel(0, 0));
+    setNote(kind === 'input' ? 'New input table: values you type here are meant to save back to your warehouse' : null);
+  };
+  const [headerOpen, setHeaderOpen] = useState<{ what: 'share' | 'versions' | 'details' | 'delete'; n: number }>();
   const publish = () => {
     setVersions((v) => [...v, { n: v.length + 1, at: 'Just now', wb }]);
     setPublishCount((n) => n + 1);
@@ -475,6 +487,32 @@ export const WorkbookLive: React.FC<WorkbookLiveProps> = ({ initial, publishedAl
     </>
   );
 
+  // The Google Sheets menu bar (behind the gear): each item runs what the toolbar, the tab menu or the
+  // header already does.
+  const TOOL_IDS = ['undo', 'redo', 'sort-asc', 'sort-desc', 'cf-scale', 'cf-negative', 'cf-clear', 'align-left', 'align-center', 'align-right', 'wrap', 'fmt-auto', 'fmt-number', 'fmt-currency', 'fmt-percent', 'fmt-text', 'formula', 'upload', 'export', 'focus', 'filter', 'clear-filter', 'expand', 'pin'];
+  const key = /Mac/.test(navigator.platform) ? '⌘' : 'Ctrl+';
+  const onMenu = (id: string) => {
+    if (TOOL_IDS.includes(id)) return onTool(id);
+    const open = (what: 'share' | 'versions' | 'details' | 'delete') => setHeaderOpen((o) => ({ what, n: (o?.n ?? 0) + 1 }));
+    switch (id) {
+      case 'pivot': case 'refresh': return onSheetAction(activeId, id);
+      case 'publish': return publish();
+      case 'share': case 'versions': case 'details': return open(id);
+      case 'delete-workbook': return open('delete');
+      case 'copy': return setNote(`Saved a copy, “Copy of ${wb.name}”, to your Workbooks`);
+      case 'download-xlsx': return setNote(`Downloading ${wb.name}.xlsx: one tab per sheet, formulas and formats kept`);
+      case 'schedule': return setNote('Scheduled delivery opens here: email the workbook as Excel or PDF on a cadence');
+      case 'find': return setSearch(true);
+      case 'show-formulas': setShowFormulas((v) => !v); return setNote((v) => (v === 'Showing formulas' ? null : 'Showing formulas'));
+      case 'sheet': case 'input-table': return addTab(id === 'input-table' ? 'input' : 'blank');
+      case 'functions': return setInsertFn(true);
+      case 'cut': case 'copy-cells': case 'paste': return setNote(`Use the keyboard: ${key}X cuts, ${key}C copies, ${key}V pastes`);
+      case 'spotter': return setNote('Ask Spotter in the panel on the left');
+      case 'shortcuts': return setNote(`Excel keys work here: = starts a formula, F4 locks a reference, Alt+= sums, ${key}D fills down, ${key}\` shows formulas, ${key}F finds`);
+      default: return setNote('Not in this prototype yet');
+    }
+  };
+
   return (
     <div className={styles.frame}>
       <WorkbookHeader
@@ -496,8 +534,10 @@ export const WorkbookLive: React.FC<WorkbookLiveProps> = ({ initial, publishedAl
         onSchedule={() => setNote('Scheduled delivery opens here: email the workbook as Excel or PDF on a cadence')}
         onDelete={() => onDeleted?.()}
         onPublish={publish}
+        open={headerOpen}
       />
 
+      {menuBar && <MenuBar onItem={onMenu} />}
       <div className={styles.toolbar}>
         <SheetToolbar onAction={onTool} active={[...(focusCell ? ['focus'] : []), ...(painter ? ['painter'] : [])]} />
       </div>
@@ -577,14 +617,7 @@ export const WorkbookLive: React.FC<WorkbookLiveProps> = ({ initial, publishedAl
         sheets={wb.sheets}
         activeId={activeId}
         onSelect={(id) => { if (id !== activeId) setNote(null); setActiveId(id); if (!editing) setSel(cellSel(0, 0)); }}
-        onAdd={(kind) => {
-          if (kind === 'app') { setNote('App tabs come next: the flow for making an app is still being designed'); return; }
-          const out = addSheet(wb, kind === 'input' ? 'input' : 'local');
-          commitWb(out.wb);
-          setActiveId(out.id);
-          setSel(cellSel(0, 0));
-          setNote(kind === 'input' ? 'New input table: values you type here are meant to save back to your warehouse' : null);
-        }}
+        onAdd={addTab}
         onRename={(id, name) => {
           const next = renameSheet(wb, id, name);
           if (next === wb) { setNote(`There's already a sheet called “${name}”`); return; }

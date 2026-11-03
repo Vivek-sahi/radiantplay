@@ -1,0 +1,7 @@
+/* Prototype controls, not product UI: a small gear in the bottom-left corner (Vivek, 3 Nov). */
+.gear {
+  position: fixed;
+  left: var(--spacing-2);
+  bottom: var(--spacing-2);
+  z-index: 50;
+}

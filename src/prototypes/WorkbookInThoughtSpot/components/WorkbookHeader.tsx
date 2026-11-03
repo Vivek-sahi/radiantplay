@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@components/Button';
 import { ActionMenu } from '@components/ActionMenu';
 import { InlineEdit } from '@components/InlineEdit';
@@ -37,17 +37,26 @@ export interface WorkbookHeaderProps {
   onDownload: () => void;
   onSchedule: () => void;
   onDelete: () => void;
+  /** Opens one of the header's dialogs from elsewhere (the File menu). `n` changes on every request. */
+  open?: { what: 'share' | 'versions' | 'details' | 'delete'; n: number };
 }
 
 // Tab kind icons (Vivek, 3 Nov): Live = warehouse connection, Input = editable, Local = stored in this workbook.
 const KIND_ICON = { live: 'database', input: 'pencil', local: 'doc', app: 'apps' } as const;
 const KIND_LABEL = { live: 'Live', input: 'Input', local: 'Local', app: 'App' } as const;
 
-export const WorkbookHeader: React.FC<WorkbookHeaderProps> = ({ wb, onRename, publishCount, dirty, unsavedInputs, onPublish, versions, onRestore, onCopy, onDownload, onSchedule, onDelete }) => {
+export const WorkbookHeader: React.FC<WorkbookHeaderProps> = ({ wb, onRename, publishCount, dirty, unsavedInputs, onPublish, versions, onRestore, onCopy, onDownload, onSchedule, onDelete, open }) => {
   const [info, setInfo] = useState(false);
   const [history, setHistory] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [share, setShare] = useState(false);
+  useEffect(() => {
+    if (!open) return;
+    if (open.what === 'share') setShare(true);
+    if (open.what === 'versions') setHistory(true);
+    if (open.what === 'details') setInfo(true);
+    if (open.what === 'delete') setConfirmDelete(true);
+  }, [open]);
   const published = publishCount > 0;
   const isDraft = !published || dirty;
   const canPublish = !published || dirty;
